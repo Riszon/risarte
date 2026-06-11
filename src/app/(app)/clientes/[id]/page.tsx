@@ -11,8 +11,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ClientForm } from "../client-form";
+import {
+  JourneySection,
+  type ClientAppointment,
+  type HistoryEntry,
+} from "./journey-section";
+import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 
 export const metadata: Metadata = { title: "Ficha do cliente" };
+
+type HistoryRow = {
+  id: string;
+  phase: JourneyPhase;
+  entered_at: string;
+  exited_at: string | null;
+  profiles: { full_name: string } | null;
+};
 
 const STATUS_LABELS = {
   active: "Ativo",
@@ -30,12 +44,27 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at"
+      "id, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, journey_phase, phase_entered_at, methodology_pillar"
     )
     .eq("id", id)
     .single();
 
   if (!client) notFound();
+
+  const [{ data: history }, { data: appointments }] = await Promise.all([
+    supabase
+      .from("journey_phase_history")
+      .select("id, phase, entered_at, exited_at, profiles ( full_name )")
+      .eq("client_id", id)
+      .order("entered_at")
+      .returns<HistoryRow[]>(),
+    supabase
+      .from("appointments")
+      .select("id, type, status, starts_at")
+      .eq("client_id", id)
+      .order("starts_at")
+      .returns<ClientAppointment[]>(),
+  ]);
 
   // LGPD: every view of a client record is audited.
   await logAudit({
@@ -48,6 +77,22 @@ export default async function ClientDetailPage(
   const canEdit =
     client.status !== "anonymized" &&
     hasRoleInClinic(session, client.clinic_id, ["receptionist"]);
+
+  const canMove = hasRoleInClinic(session, client.clinic_id, [
+    "receptionist",
+    "clinical_coordinator",
+    "planner_dentist",
+    "commercial_consultant",
+    "commercial_assistant",
+  ]);
+
+  const historyEntries: HistoryEntry[] = (history ?? []).map((h) => ({
+    id: h.id,
+    phase: h.phase,
+    entered_at: h.entered_at,
+    exited_at: h.exited_at,
+    moved_by_name: h.profiles?.full_name ?? null,
+  }));
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
@@ -65,6 +110,17 @@ export default async function ClientDetailPage(
           {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
         </Badge>
       </div>
+
+      <JourneySection
+        clientId={client.id}
+        clientName={client.full_name}
+        phase={client.journey_phase as JourneyPhase}
+        phaseEnteredAt={client.phase_entered_at}
+        pillar={client.methodology_pillar as MethodologyPillar | null}
+        history={historyEntries}
+        appointments={appointments ?? []}
+        canMove={canMove}
+      />
 
       {canEdit ? (
         <ClientForm client={client} />

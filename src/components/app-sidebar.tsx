@@ -5,13 +5,16 @@ import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import {
   Building2,
+  Calendar,
   Clock,
   Home,
   LogOut,
+  Route,
   Users,
   UserCog,
   ChevronsUpDown,
 } from "lucide-react";
+import { NotificationNavItem } from "@/components/notification-nav-item";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
@@ -40,6 +43,8 @@ type Props = {
 
 const NAV_ITEMS = [
   { href: "/", label: "Início", icon: Home },
+  { href: "/jornada", label: "Jornada", icon: Route },
+  { href: "/agenda", label: "Agenda", icon: Calendar },
   { href: "/clientes", label: "Clientes", icon: Users },
 ];
 
@@ -145,6 +150,7 @@ export function AppSidebar({
             {label}
           </Link>
         ))}
+        <NotificationNavItem linkClass={linkClass("/notificacoes")} />
 
         {isAdminMaster && (
           <>
