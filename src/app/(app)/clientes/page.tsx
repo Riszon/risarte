@@ -67,7 +67,9 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
           </p>
         </div>
         {canCreate && (
-          <Button render={<Link href="/clientes/novo" />}>Novo cliente</Button>
+          <Button nativeButton={false} render={<Link href="/clientes/novo" />}>
+            Novo cliente
+          </Button>
         )}
       </div>
 
@@ -113,6 +115,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
                   <Button
                     variant="ghost"
                     size="sm"
+                    nativeButton={false}
                     render={<Link href={`/clientes/${client.id}`} />}
                   >
                     Abrir

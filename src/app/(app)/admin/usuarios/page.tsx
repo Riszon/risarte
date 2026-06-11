@@ -59,10 +59,10 @@ export default async function UsersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
           <p className="text-sm text-muted-foreground">
-            Equipe da rede e seus papéis por clínica.
+            Equipe da rede e suas funções por clínica.
           </p>
         </div>
-        <Button render={<Link href="/admin/usuarios/novo" />}>
+        <Button nativeButton={false} render={<Link href="/admin/usuarios/novo" />}>
           Novo usuário
         </Button>
       </div>
@@ -73,7 +73,7 @@ export default async function UsersPage() {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>E-mail</TableHead>
-              <TableHead>Papéis</TableHead>
+              <TableHead>Funções</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
@@ -113,6 +113,7 @@ export default async function UsersPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      nativeButton={false}
                       render={<Link href={`/admin/usuarios/${profile.id}`} />}
                     >
                       Editar

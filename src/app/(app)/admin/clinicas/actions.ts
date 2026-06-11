@@ -5,8 +5,13 @@ import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { CLINIC_TYPES, type ClinicType } from "@/lib/roles";
+import { formatCep, formatCnpj, formatPhone } from "@/lib/masks";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+function field(formData: FormData, name: string): string | null {
+  return String(formData.get(name) ?? "").trim() || null;
+}
 
 function parseClinicForm(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -15,16 +20,24 @@ function parseClinicForm(formData: FormData) {
   if (!CLINIC_TYPES.includes(type))
     return { error: "Tipo de clínica inválido." as const };
 
+  const cnpj = field(formData, "cnpj");
+  const phone = field(formData, "phone");
+  const zipCode = field(formData, "zip_code");
+
   return {
     values: {
       name,
       type,
-      cnpj: String(formData.get("cnpj") ?? "").trim() || null,
-      phone: String(formData.get("phone") ?? "").trim() || null,
-      email: String(formData.get("email") ?? "").trim() || null,
-      address: String(formData.get("address") ?? "").trim() || null,
-      city: String(formData.get("city") ?? "").trim() || null,
-      state: String(formData.get("state") ?? "").trim() || null,
+      cnpj: cnpj ? formatCnpj(cnpj) : null,
+      phone: phone ? formatPhone(phone) : null,
+      email: field(formData, "email"),
+      address: field(formData, "address"),
+      address_number: field(formData, "address_number"),
+      complement: field(formData, "complement"),
+      neighborhood: field(formData, "neighborhood"),
+      city: field(formData, "city"),
+      state: field(formData, "state")?.toUpperCase() ?? null,
+      zip_code: zipCode ? formatCep(zipCode) : null,
       is_active: formData.get("is_active") !== "false",
     },
   };

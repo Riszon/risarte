@@ -13,8 +13,8 @@ const SERVICE_KEY_HINT =
   "A chave service_role ainda não foi configurada no arquivo .env.local do servidor.";
 
 function validatePassword(password: string): string | null {
-  if (password.length < 12) {
-    return "A senha deve ter no mínimo 12 caracteres.";
+  if (password.length < 6) {
+    return "A senha deve ter no mínimo 6 caracteres.";
   }
   if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
     return "A senha deve conter letras e números.";
@@ -28,8 +28,12 @@ function parseAssignments(raw: string): RoleAssignment[] | null {
   try {
     const parsed = JSON.parse(raw) as RoleAssignment[];
     if (!Array.isArray(parsed)) return null;
+    const seenClinics = new Set<string>();
     for (const item of parsed) {
       if (!item.clinicId || !USER_ROLES.includes(item.role)) return null;
+      // One role per clinic.
+      if (seenClinics.has(item.clinicId)) return null;
+      seenClinics.add(item.clinicId);
     }
     return parsed;
   } catch {
@@ -51,7 +55,12 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
   if (!email.includes("@")) return { ok: false, error: "E-mail inválido." };
   const passwordError = validatePassword(password);
   if (passwordError) return { ok: false, error: passwordError };
-  if (!assignments) return { ok: false, error: "Papéis inválidos." };
+  if (!assignments)
+    return {
+      ok: false,
+      error:
+        "Funções inválidas. Verifique se não há duas funções na mesma clínica.",
+    };
 
   let admin;
   try {
@@ -92,7 +101,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          "Usuário criado, mas houve erro ao atribuir papéis. Edite o usuário para atribuí-los.",
+          "Usuário criado, mas houve erro ao atribuir funções. Edite o usuário para atribuí-las.",
       };
     }
   }
@@ -213,7 +222,7 @@ export async function addUserRole(
 ): Promise<ActionResult> {
   await requireAdminMaster();
   if (!USER_ROLES.includes(role)) {
-    return { ok: false, error: "Papel inválido." };
+    return { ok: false, error: "Função inválida." };
   }
 
   const supabase = await createClient();
@@ -223,8 +232,8 @@ export async function addUserRole(
 
   if (error) {
     const friendly = error.code === "23505"
-      ? "Este usuário já tem esse papel nesta clínica."
-      : "Não foi possível atribuir o papel.";
+      ? "Este usuário já tem uma função nesta clínica. Remova a atual antes de adicionar outra."
+      : "Não foi possível atribuir a função.";
     if (error.code !== "23505") {
       console.error("addUserRole failed:", error.message);
     }

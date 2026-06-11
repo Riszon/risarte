@@ -19,7 +19,7 @@ export default async function NewUserPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Novo usuário</h1>
         <p className="text-sm text-muted-foreground">
-          Crie o acesso e defina os papéis por clínica. Informe a senha
+          Crie o acesso e defina as funções por clínica. Informe a senha
           provisória ao colaborador por um canal seguro.
         </p>
       </div>

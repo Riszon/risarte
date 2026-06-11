@@ -30,7 +30,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, clinic_id, full_name, cpf, birth_date, phone, email, address, city, state, zip_code, notes, status, created_at"
+      "id, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at"
     )
     .eq("id", id)
     .single();
@@ -100,7 +100,16 @@ export default async function ClientDetailPage(
               <div className="sm:col-span-2">
                 <dt className="text-muted-foreground">Endereço</dt>
                 <dd>
-                  {[client.address, client.city, client.state, client.zip_code]
+                  {[
+                    [client.address, client.address_number]
+                      .filter(Boolean)
+                      .join(", nº "),
+                    client.complement,
+                    client.neighborhood,
+                    client.city,
+                    client.state,
+                    client.zip_code,
+                  ]
                     .filter(Boolean)
                     .join(", ") || "—"}
                 </dd>

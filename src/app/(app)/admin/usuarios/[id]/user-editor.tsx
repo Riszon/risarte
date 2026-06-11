@@ -38,10 +38,23 @@ type Props = {
   isSelf: boolean;
 };
 
+const ROLE_ITEMS = USER_ROLES.map((role) => ({
+  value: role,
+  label: ROLE_LABELS[role],
+}));
+
 export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [newClinicId, setNewClinicId] = useState(clinics[0]?.id ?? "");
+  // A user holds ONE role per clinic: only clinics without a role can be added.
+  const availableClinics = clinics.filter(
+    (c) => !roles.some((r) => r.clinicId === c.id)
+  );
+  const clinicItems = availableClinics.map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
+  const [newClinicId, setNewClinicId] = useState(availableClinics[0]?.id ?? "");
   const [newRole, setNewRole] = useState<UserRole>("receptionist");
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>, successMessage: string) {
@@ -149,8 +162,8 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
                 name="password"
                 type="text"
                 required
-                minLength={12}
-                placeholder="Mín. 12 caracteres, letras e números"
+                minLength={6}
+                placeholder="Mín. 6 caracteres, letras e números"
               />
             </div>
             <Button type="submit" variant="outline" disabled={isPending}>
@@ -162,12 +175,12 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Papéis por clínica</CardTitle>
+          <CardTitle className="text-base">Função por Clínica</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {roles.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Nenhum papel atribuído.
+              Nenhuma função atribuída.
             </p>
           )}
           {roles.map((role) => (
@@ -185,11 +198,11 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
                 variant="ghost"
                 size="icon"
                 disabled={isPending}
-                aria-label="Remover papel"
+                aria-label="Remover função"
                 onClick={() =>
                   run(
                     () => removeUserRole(role.id, profile.id),
-                    "Papel removido."
+                    "Função removida."
                   )
                 }
               >
@@ -198,39 +211,41 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
             </div>
           ))}
 
-          {clinics.length > 0 && (
+          {availableClinics.length > 0 ? (
             <div className="flex items-end gap-2 border-t pt-3">
               <div className="flex-1 space-y-1">
                 <Label className="text-xs">Clínica</Label>
                 <Select
+                  items={clinicItems}
                   value={newClinicId}
                   onValueChange={(v) => v !== null && setNewClinicId(v)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {clinics.map((clinic) => (
-                      <SelectItem key={clinic.id} value={clinic.id}>
-                        {clinic.name}
+                    {clinicItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex-1 space-y-1">
-                <Label className="text-xs">Papel</Label>
+                <Label className="text-xs">Função</Label>
                 <Select
+                  items={ROLE_ITEMS}
                   value={newRole}
-                  onValueChange={(v) => setNewRole(v as UserRole)}
+                  onValueChange={(v) => v !== null && setNewRole(v as UserRole)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {USER_ROLES.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {ROLE_LABELS[role]}
+                    {ROLE_ITEMS.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -242,13 +257,20 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
                 onClick={() =>
                   run(
                     () => addUserRole(profile.id, newClinicId, newRole),
-                    "Papel atribuído."
+                    "Função atribuída."
                   )
                 }
               >
                 Adicionar
               </Button>
             </div>
+          ) : (
+            roles.length > 0 && (
+              <p className="border-t pt-3 text-xs text-muted-foreground">
+                Este usuário já tem função em todas as clínicas. Para trocar a
+                função de uma clínica, remova a atual e adicione a nova.
+              </p>
+            )
           )}
         </CardContent>
       </Card>

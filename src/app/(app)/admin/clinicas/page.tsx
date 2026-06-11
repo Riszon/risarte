@@ -24,8 +24,12 @@ type ClinicRow = {
   phone: string | null;
   email: string | null;
   address: string | null;
+  address_number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
   city: string | null;
   state: string | null;
+  zip_code: string | null;
   is_active: boolean;
 };
 
@@ -34,7 +38,9 @@ export default async function ClinicsPage() {
   const supabase = await createClient();
   const { data: clinics } = await supabase
     .from("clinics")
-    .select("id, name, type, cnpj, phone, email, address, city, state, is_active")
+    .select(
+      "id, name, type, cnpj, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, is_active"
+    )
     .order("type")
     .order("name")
     .returns<ClinicRow[]>();
@@ -48,7 +54,16 @@ export default async function ClinicsPage() {
             Unidades da rede Risarte.
           </p>
         </div>
-        <ClinicFormDialog trigger={<Button>Nova clínica</Button>} />
+        <div className="flex gap-2">
+          <ClinicFormDialog
+            clinicType="franchisor"
+            trigger={<Button variant="outline">Cadastrar Franqueadora</Button>}
+          />
+          <ClinicFormDialog
+            clinicType="franchise_unit"
+            trigger={<Button>Nova Clínica</Button>}
+          />
+        </div>
       </div>
 
       <div className="rounded-md border bg-card">

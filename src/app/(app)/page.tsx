@@ -27,7 +27,7 @@ export default async function HomePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Suas clínicas e papéis</CardTitle>
+          <CardTitle>Suas clínicas e funções</CardTitle>
           <CardDescription>
             Use o seletor no menu lateral para trocar de clínica.
           </CardDescription>
@@ -65,7 +65,7 @@ export default async function HomePage() {
           ) : (
             !session.isAdminMaster && (
               <p className="text-sm text-muted-foreground">
-                Nenhum papel atribuído ainda. Fale com o administrador.
+                Nenhuma função atribuída ainda. Fale com o administrador.
               </p>
             )
           )}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
 import { createClientRecord, updateClientRecord } from "./actions";
 
 export type ClientFormValues = {
@@ -17,6 +18,9 @@ export type ClientFormValues = {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  address_number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
   city?: string | null;
   state?: string | null;
   zip_code?: string | null;
@@ -27,6 +31,14 @@ export function ClientForm({ client }: { client?: ClientFormValues }) {
   const isEdit = Boolean(client?.id);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  function applyMask(
+    formatter: (v: string) => string
+  ): React.ChangeEventHandler<HTMLInputElement> {
+    return (e) => {
+      e.target.value = formatter(e.target.value);
+    };
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,7 +81,9 @@ export function ClientForm({ client }: { client?: ClientFormValues }) {
               <Input
                 id="cpf"
                 name="cpf"
+                inputMode="numeric"
                 defaultValue={client?.cpf ?? ""}
+                onChange={applyMask(formatCpf)}
                 placeholder="000.000.000-00"
               />
             </div>
@@ -97,7 +111,9 @@ export function ClientForm({ client }: { client?: ClientFormValues }) {
               <Input
                 id="phone"
                 name="phone"
+                inputMode="numeric"
                 defaultValue={client?.phone ?? ""}
+                onChange={applyMask(formatPhone)}
                 placeholder="(11) 99999-9999"
               />
             </div>
@@ -111,15 +127,44 @@ export function ClientForm({ client }: { client?: ClientFormValues }) {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Endereço</Label>
-            <Input
-              id="address"
-              name="address"
-              defaultValue={client?.address ?? ""}
-            />
+          <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
+            <div className="space-y-2">
+              <Label htmlFor="address">Endereço (rua/avenida)</Label>
+              <Input
+                id="address"
+                name="address"
+                defaultValue={client?.address ?? ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address_number">Número</Label>
+              <Input
+                id="address_number"
+                name="address_number"
+                defaultValue={client?.address_number ?? ""}
+              />
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="complement">Complemento</Label>
+              <Input
+                id="complement"
+                name="complement"
+                defaultValue={client?.complement ?? ""}
+                placeholder="Apto, bloco..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="neighborhood">Bairro</Label>
+              <Input
+                id="neighborhood"
+                name="neighborhood"
+                defaultValue={client?.neighborhood ?? ""}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-[1fr_70px_120px]">
             <div className="space-y-2">
               <Label htmlFor="city">Cidade</Label>
               <Input id="city" name="city" defaultValue={client?.city ?? ""} />
@@ -138,7 +183,9 @@ export function ClientForm({ client }: { client?: ClientFormValues }) {
               <Input
                 id="zip_code"
                 name="zip_code"
+                inputMode="numeric"
                 defaultValue={client?.zip_code ?? ""}
+                onChange={applyMask(formatCep)}
                 placeholder="00000-000"
               />
             </div>

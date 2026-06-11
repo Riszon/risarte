@@ -124,10 +124,11 @@ export function SlaEditor({
               <div className="max-w-xs space-y-1">
                 <Label>Unidade</Label>
                 <Select
+                  items={clinics.map((c) => ({ value: c.id, label: c.name }))}
                   value={selectedClinicId}
                   onValueChange={(v) => v !== null && setSelectedClinicId(v)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

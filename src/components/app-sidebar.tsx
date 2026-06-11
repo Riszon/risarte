@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -112,24 +113,26 @@ export function AppSidebar({
               }
             />
             <DropdownMenuContent className="w-56" align="start">
-              <DropdownMenuLabel>Trabalhar na clínica</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {clinics.map((clinic) => (
-                <DropdownMenuItem
-                  key={clinic.id}
-                  onSelect={() => switchClinic(clinic.id)}
-                  className={cn(
-                    clinic.id === activeClinicId && "font-medium bg-accent"
-                  )}
-                >
-                  <div className="flex flex-col">
-                    <span>{clinic.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {CLINIC_TYPE_LABELS[clinic.type]}
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Trabalhar na clínica</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {clinics.map((clinic) => (
+                  <DropdownMenuItem
+                    key={clinic.id}
+                    onClick={() => switchClinic(clinic.id)}
+                    className={cn(
+                      clinic.id === activeClinicId && "font-medium bg-accent"
+                    )}
+                  >
+                    <div className="flex flex-col">
+                      <span>{clinic.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {CLINIC_TYPE_LABELS[clinic.type]}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -20,19 +20,37 @@ import { createUser, type RoleAssignment } from "../actions";
 
 type ClinicOption = { id: string; name: string };
 
+const ROLE_ITEMS = USER_ROLES.map((role) => ({
+  value: role,
+  label: ROLE_LABELS[role],
+}));
+
 export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assignments, setAssignments] = useState<RoleAssignment[]>([]);
 
+  /** Clinics not yet used by another row (a user has ONE role per clinic). */
+  function availableClinics(currentIndex: number): ClinicOption[] {
+    const usedElsewhere = assignments
+      .filter((_, i) => i !== currentIndex)
+      .map((a) => a.clinicId);
+    return clinics.filter((c) => !usedElsewhere.includes(c.id));
+  }
+
   function addAssignment() {
+    const available = availableClinics(-1);
     if (clinics.length === 0) {
-      toast.error("Cadastre uma clínica antes de atribuir papéis.");
+      toast.error("Cadastre uma clínica antes de atribuir funções.");
+      return;
+    }
+    if (available.length === 0) {
+      toast.error("Este usuário já tem função em todas as clínicas.");
       return;
     }
     setAssignments((prev) => [
       ...prev,
-      { clinicId: clinics[0].id, role: "receptionist" },
+      { clinicId: available[0].id, role: "receptionist" },
     ]);
   }
 
@@ -85,8 +103,8 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
                 name="password"
                 type="text"
                 required
-                minLength={12}
-                placeholder="Mín. 12 caracteres, letras e números"
+                minLength={6}
+                placeholder="Mín. 6 caracteres, letras e números"
               />
             </div>
           </div>
@@ -95,69 +113,83 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Papéis por clínica</CardTitle>
+          <CardTitle className="text-base">Função por Clínica</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {assignments.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Nenhum papel atribuído ainda.
+              Nenhuma função atribuída ainda.
             </p>
           )}
-          {assignments.map((assignment, index) => (
-            <div key={index} className="flex items-end gap-2">
-              <div className="flex-1 space-y-1">
-                {index === 0 && <Label className="text-xs">Clínica</Label>}
-                <Select
-                  value={assignment.clinicId}
-                  onValueChange={(v) =>
-                    v !== null && updateAssignment(index, { clinicId: v })
-                  }
+          {assignments.map((assignment, index) => {
+            const clinicItems = availableClinics(index).map((c) => ({
+              value: c.id,
+              label: c.name,
+            }));
+            return (
+              <div key={index} className="flex items-end gap-2">
+                <div className="flex-1 space-y-1">
+                  {index === 0 && <Label className="text-xs">Clínica</Label>}
+                  <Select
+                    items={clinicItems}
+                    value={assignment.clinicId}
+                    onValueChange={(v) =>
+                      v !== null && updateAssignment(index, { clinicId: v })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clinicItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 space-y-1">
+                  {index === 0 && <Label className="text-xs">Função</Label>}
+                  <Select
+                    items={ROLE_ITEMS}
+                    value={assignment.role}
+                    onValueChange={(v) =>
+                      v !== null &&
+                      updateAssignment(index, { role: v as UserRole })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_ITEMS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeAssignment(index)}
+                  aria-label="Remover função"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clinics.map((clinic) => (
-                      <SelectItem key={clinic.id} value={clinic.id}>
-                        {clinic.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Trash2 className="size-4" />
+                </Button>
               </div>
-              <div className="flex-1 space-y-1">
-                {index === 0 && <Label className="text-xs">Papel</Label>}
-                <Select
-                  value={assignment.role}
-                  onValueChange={(v) =>
-                    updateAssignment(index, { role: v as UserRole })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {USER_ROLES.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {ROLE_LABELS[role]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removeAssignment(index)}
-                aria-label="Remover papel"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-          ))}
-          <Button type="button" variant="outline" size="sm" onClick={addAssignment}>
-            Adicionar papel
+            );
+          })}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addAssignment}
+          >
+            Adicionar função
           </Button>
         </CardContent>
       </Card>
