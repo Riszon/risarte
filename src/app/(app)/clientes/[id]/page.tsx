@@ -34,6 +34,23 @@ type ClinicHistoryRow = {
   started_at: string;
   ended_at: string | null;
   clinics: { name: string } | null;
+  profiles: { full_name: string } | null;
+};
+
+type GuardianRow = {
+  id: string;
+  guardian_client_id: string | null;
+  full_name: string;
+  cpf: string | null;
+  birth_date: string | null;
+  relationship: string;
+  phone: string | null;
+};
+
+type DependentRow = {
+  id: string;
+  relationship: string;
+  clients: { id: string; full_name: string } | null;
 };
 
 const STATUS_LABELS = {
@@ -52,34 +69,53 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, journey_phase, phase_entered_at, methodology_pillar"
+      "id, code, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, journey_phase, phase_entered_at, methodology_pillar"
     )
     .eq("id", id)
     .single();
 
   if (!client) notFound();
 
-  const [{ data: history }, { data: appointments }, { data: clinicHistory }] =
-    await Promise.all([
-      supabase
-        .from("journey_phase_history")
-        .select("id, phase, entered_at, exited_at, profiles ( full_name )")
-        .eq("client_id", id)
-        .order("entered_at")
-        .returns<HistoryRow[]>(),
-      supabase
-        .from("appointments")
-        .select("id, type, status, starts_at")
-        .eq("client_id", id)
-        .order("starts_at")
-        .returns<ClientAppointment[]>(),
-      supabase
-        .from("client_clinic_history")
-        .select("id, clinic_id, started_at, ended_at, clinics ( name )")
-        .eq("client_id", id)
-        .order("started_at")
-        .returns<ClinicHistoryRow[]>(),
-    ]);
+  const [
+    { data: history },
+    { data: appointments },
+    { data: clinicHistory },
+    { data: guardians },
+    { data: dependents },
+  ] = await Promise.all([
+    supabase
+      .from("journey_phase_history")
+      .select("id, phase, entered_at, exited_at, profiles ( full_name )")
+      .eq("client_id", id)
+      .order("entered_at")
+      .returns<HistoryRow[]>(),
+    supabase
+      .from("appointments")
+      .select("id, type, status, starts_at")
+      .eq("client_id", id)
+      .order("starts_at")
+      .returns<ClientAppointment[]>(),
+    supabase
+      .from("client_clinic_history")
+      .select(
+        "id, clinic_id, started_at, ended_at, clinics ( name ), profiles ( full_name )"
+      )
+      .eq("client_id", id)
+      .order("started_at")
+      .returns<ClinicHistoryRow[]>(),
+    supabase
+      .from("client_guardians")
+      .select(
+        "id, guardian_client_id, full_name, cpf, birth_date, relationship, phone"
+      )
+      .eq("client_id", id)
+      .returns<GuardianRow[]>(),
+    supabase
+      .from("client_guardians")
+      .select("id, relationship, clients ( id, full_name )")
+      .eq("guardian_client_id", id)
+      .returns<DependentRow[]>(),
+  ]);
 
   // LGPD: every view of a client record is audited.
   await logAudit({
@@ -123,6 +159,11 @@ export default async function ClientDetailPage(
             {client.full_name}
           </h1>
           <p className="text-sm text-muted-foreground">
+            {client.code && (
+              <span className="mr-2 font-mono font-medium text-gold">
+                {client.code}
+              </span>
+            )}
             Cliente desde{" "}
             {new Date(client.created_at).toLocaleDateString("pt-BR")}
           </p>
@@ -152,6 +193,74 @@ export default async function ClientDetailPage(
         isPlannerAnywhere={isPlannerAnywhere}
       />
 
+      {(guardians ?? []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Responsáveis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {(guardians ?? []).map((guardian) => (
+                <li key={guardian.id} className="rounded-md border p-3 text-sm">
+                  <p className="font-medium">
+                    {guardian.guardian_client_id ? (
+                      <a
+                        href={`/clientes/${guardian.guardian_client_id}`}
+                        className="hover:underline"
+                      >
+                        {guardian.full_name}
+                      </a>
+                    ) : (
+                      guardian.full_name
+                    )}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({guardian.relationship})
+                    </span>
+                    {guardian.guardian_client_id && (
+                      <Badge className="ml-2 bg-gold text-gold-foreground text-[10px]">
+                        Cliente Risarte
+                      </Badge>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {[guardian.cpf, guardian.phone].filter(Boolean).join(" · ") ||
+                      "—"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {(dependents ?? []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Dependentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1.5">
+              {(dependents ?? []).map(
+                (dependent) =>
+                  dependent.clients && (
+                    <li key={dependent.id} className="text-sm">
+                      <a
+                        href={`/clientes/${dependent.clients.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {dependent.clients.full_name}
+                      </a>{" "}
+                      <span className="text-xs text-muted-foreground">
+                        (este cliente é {dependent.relationship} do dependente)
+                      </span>
+                    </li>
+                  )
+              )}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {(clinicHistory ?? []).length > 1 && (
         <Card>
           <CardHeader>
@@ -165,10 +274,29 @@ export default async function ClientDetailPage(
                     {entry.clinics?.name ?? "Unidade"}
                   </span>{" "}
                   <span className="text-xs text-muted-foreground">
-                    — de {new Date(entry.started_at).toLocaleDateString("pt-BR")}
+                    — de{" "}
+                    {new Date(entry.started_at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                     {entry.ended_at
-                      ? ` até ${new Date(entry.ended_at).toLocaleDateString("pt-BR")}`
+                      ? ` até ${new Date(entry.ended_at).toLocaleString(
+                          "pt-BR",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}`
                       : " até hoje (unidade atual)"}
+                    {entry.profiles?.full_name
+                      ? ` · registrado por ${entry.profiles.full_name}`
+                      : ""}
                   </span>
                 </li>
               ))}
@@ -178,7 +306,17 @@ export default async function ClientDetailPage(
       )}
 
       {canEdit ? (
-        <ClientForm client={client} />
+        <ClientForm
+          client={client}
+          initialGuardians={(guardians ?? []).map((g) => ({
+            fullName: g.full_name,
+            cpf: g.cpf,
+            birthDate: g.birth_date,
+            relationship: g.relationship,
+            phone: g.phone,
+            guardianClientId: g.guardian_client_id,
+          }))}
+        />
       ) : (
         <Card>
           <CardHeader>

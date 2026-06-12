@@ -47,7 +47,7 @@ export const PHASE_TRANSITIONS: {
   to: JourneyPhase;
   roles: UserRole[];
 }[] = [
-  { from: "acquisition", to: "clinical_conversion", roles: ["receptionist"] },
+  { from: "acquisition", to: "clinical_conversion", roles: ["receptionist", "sdr"] },
   { from: "clinical_conversion", to: "planning_center", roles: ["clinical_coordinator"] },
   { from: "planning_center", to: "commercial_conversion", roles: ["planner_dentist"] },
   { from: "commercial_conversion", to: "treatment_start", roles: ["commercial_consultant"] },
@@ -56,6 +56,7 @@ export const PHASE_TRANSITIONS: {
   { from: "treatment_start", to: "planning_center", roles: ["clinical_coordinator"] },
   { from: "reevaluation", to: "follow_up", roles: ["clinical_coordinator"] },
   { from: "reevaluation", to: "planning_center", roles: ["clinical_coordinator"] },
+  { from: "follow_up", to: "reevaluation", roles: ["sdr"] },
 ];
 
 export function allowedNextPhases(

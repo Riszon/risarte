@@ -23,11 +23,16 @@ function parseClinicForm(formData: FormData) {
   const cnpj = field(formData, "cnpj");
   const phone = field(formData, "phone");
   const zipCode = field(formData, "zip_code");
+  const code = field(formData, "code")?.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!code) {
+    return { error: "Informe o código da unidade (ex.: CBE)." as const };
+  }
 
   return {
     values: {
       name,
       type,
+      code,
       cnpj: cnpj ? formatCnpj(cnpj) : null,
       phone: phone ? formatPhone(phone) : null,
       email: field(formData, "email"),

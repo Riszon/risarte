@@ -9,7 +9,10 @@ export default async function NewClientPage() {
   const session = await getSessionContext();
   if (
     session.activeClinic?.type === "franchisor" ||
-    !hasRoleInClinic(session, session.activeClinic?.id, ["receptionist"])
+    !hasRoleInClinic(session, session.activeClinic?.id, [
+      "receptionist",
+      "sdr",
+    ])
   ) {
     redirect("/clientes");
   }

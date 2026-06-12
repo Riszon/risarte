@@ -29,7 +29,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CLINIC_TYPE_LABELS, type ClinicType } from "@/lib/roles";
+import {
+  CLINIC_TYPE_LABELS,
+  ROLE_LABELS,
+  type ClinicType,
+  type UserRole,
+} from "@/lib/roles";
 
 type SidebarClinic = { id: string; name: string; type: ClinicType };
 
@@ -39,6 +44,8 @@ type Props = {
   isAdminMaster: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
+  /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
+  activeClinicRoles: UserRole[];
 };
 
 const NAV_ITEMS = [
@@ -60,6 +67,7 @@ export function AppSidebar({
   isAdminMaster,
   clinics,
   activeClinicId,
+  activeClinicRoles,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -140,6 +148,18 @@ export function AppSidebar({
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* The user's role AT THIS clinic — people with several clinics
+              and different roles need this anchor. */}
+          <p className="mt-1.5 px-1 text-xs text-sidebar-foreground/70">
+            Sua função aqui:{" "}
+            <span className="font-medium text-gold">
+              {isAdminMaster
+                ? "Admin Master"
+                : activeClinicRoles.length > 0
+                  ? activeClinicRoles.map((r) => ROLE_LABELS[r]).join(", ")
+                  : "—"}
+            </span>
+          </p>
         </div>
       )}
 
@@ -168,10 +188,14 @@ export function AppSidebar({
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <div className="mb-2 px-2">
+        <Link
+          href="/perfil"
+          className="mb-2 block rounded-md px-2 py-1 hover:bg-sidebar-accent"
+          title="Meu perfil"
+        >
           <p className="truncate text-sm font-medium">{fullName}</p>
           <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
-        </div>
+        </Link>
         <Button
           variant="outline"
           size="sm"

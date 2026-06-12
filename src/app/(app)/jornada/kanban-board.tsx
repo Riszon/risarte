@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,7 @@ type Props = {
   isAdminMaster: boolean;
   clinicRoles: UserRole[];
   isPlannerAnywhere: boolean;
+  canRegister: boolean;
 };
 
 export function KanbanBoard({
@@ -54,6 +55,7 @@ export function KanbanBoard({
   isAdminMaster,
   clinicRoles,
   isPlannerAnywhere,
+  canRegister,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -91,7 +93,21 @@ export function KanbanBoard({
           >
             <div className="flex items-center justify-between border-b px-3 py-2">
               <h2 className="text-sm font-medium">{PHASE_LABELS[phase]}</h2>
-              <Badge variant="secondary">{phaseClients.length}</Badge>
+              <div className="flex items-center gap-1">
+                {phase === "acquisition" && canRegister && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    nativeButton={false}
+                    className="size-6"
+                    aria-label="Cadastrar cliente"
+                    render={<Link href="/clientes/novo" />}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                )}
+                <Badge variant="secondary">{phaseClients.length}</Badge>
+              </div>
             </div>
             <div className="flex flex-col gap-2 p-2">
               {phaseClients.map((client) => {

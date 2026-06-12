@@ -84,7 +84,8 @@ refletir nos botões da UI.
 - [ ] Consultor Comercial notificado quando: apresentação agendada com ele;
       planner finaliza planejamento (transição 3→4 já notifica — manter).
 
-## LOTE A.2 — feedback do dono após teste do Lote A (2026-06-12)
+## LOTE A.2 — feedback do dono após teste do Lote A ✅ CONCLUÍDO em 2026-06-12
+## (migrações 0007 + 0008; itens abaixo todos implementados, exceto "Adiado")
 
 ### Correções
 - [ ] Bug: salvar nome em perfis falha ("infinite recursion" na policy
@@ -108,7 +109,8 @@ refletir nos botões da UI.
 - [ ] Código da unidade: campo `code` em clinics (auto-sugerido, editável).
 
 ### Funções e acessos
-- [ ] Nova função Encantador(a) (SDR): cadastra clientes, agenda, move 1→2.
+- [ ] Nova função Encantador(a) (SDR): cadastra clientes, agenda, move 1→2 e
+      7→6 (acompanhamento → reavaliação).
 - [ ] Sidebar: mostrar a(s) função(ões) do usuário na unidade ativa.
 - [ ] Página "Meu perfil": usuário edita os próprios dados não-críticos.
 - [ ] Dentista: vê SOMENTE clientes agendados com ele (clientes, jornada e

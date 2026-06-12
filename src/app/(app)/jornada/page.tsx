@@ -57,7 +57,10 @@ export default async function JourneyPage() {
   const isPlannerAnywhere = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );
-  const canRegister = hasRoleInClinic(session, clinicId, ["receptionist"]);
+  const canRegister = hasRoleInClinic(session, clinicId, [
+    "receptionist",
+    "sdr",
+  ]);
   const isFranchisor = session.activeClinic?.type === "franchisor";
 
   return (
@@ -100,6 +103,7 @@ export default async function JourneyPage() {
           isAdminMaster={session.isAdminMaster}
           clinicRoles={clinicRoles}
           isPlannerAnywhere={isPlannerAnywhere}
+          canRegister={canRegister && !isFranchisor}
         />
       </div>
     </div>

@@ -19,6 +19,7 @@ export const metadata: Metadata = { title: "Clínicas" };
 type ClinicRow = {
   id: string;
   name: string;
+  code: string | null;
   type: ClinicType;
   cnpj: string | null;
   phone: string | null;
@@ -39,7 +40,7 @@ export default async function ClinicsPage() {
   const { data: clinics } = await supabase
     .from("clinics")
     .select(
-      "id, name, type, cnpj, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, is_active"
+      "id, name, code, type, cnpj, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, is_active"
     )
     .order("type")
     .order("name")
@@ -80,7 +81,14 @@ export default async function ClinicsPage() {
           <TableBody>
             {(clinics ?? []).map((clinic) => (
               <TableRow key={clinic.id}>
-                <TableCell className="font-medium">{clinic.name}</TableCell>
+                <TableCell className="font-medium">
+                  {clinic.name}
+                  {clinic.code && (
+                    <span className="ml-2 font-mono text-xs text-muted-foreground">
+                      {clinic.code}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>{CLINIC_TYPE_LABELS[clinic.type]}</TableCell>
                 <TableCell>
                   {clinic.city

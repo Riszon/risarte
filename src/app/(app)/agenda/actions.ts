@@ -10,6 +10,7 @@ import {
   type AppointmentStatus,
   type AppointmentType,
 } from "@/lib/appointments";
+import type { JourneyPhase } from "@/lib/journey";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -78,8 +79,11 @@ export async function createAppointment(
       error: "A Franqueadora não tem agenda própria. Selecione uma unidade.",
     };
   }
-  if (!hasRoleInClinic(session, clinicId, ["receptionist"])) {
-    return { ok: false, error: "Apenas a Recepção pode agendar." };
+  if (!hasRoleInClinic(session, clinicId, ["receptionist", "sdr"])) {
+    return {
+      ok: false,
+      error: "Apenas a Recepção ou Encantador(a) pode agendar.",
+    };
   }
 
   const parsed = parseAppointmentForm(formData);
@@ -121,15 +125,17 @@ export async function updateAppointment(
 
   const { data: existing } = await supabase
     .from("appointments")
-    .select("clinic_id, client_id, type, starts_at, ends_at, provider_user_id, notes")
+    .select(
+      "clinic_id, client_id, type, starts_at, ends_at, provider_user_id, notes"
+    )
     .eq("id", appointmentId)
     .single();
 
   if (!existing) return { ok: false, error: "Agendamento não encontrado." };
-  if (!hasRoleInClinic(session, existing.clinic_id, ["receptionist"])) {
+  if (!hasRoleInClinic(session, existing.clinic_id, ["receptionist", "sdr"])) {
     return {
       ok: false,
-      error: "Apenas a Recepção pode alterar agendamentos.",
+      error: "Apenas a Recepção ou Encantador(a) pode alterar agendamentos.",
     };
   }
 
@@ -139,7 +145,13 @@ export async function updateAppointment(
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
-  for (const key of ["type", "starts_at", "ends_at", "provider_user_id", "notes"] as const) {
+  for (const key of [
+    "type",
+    "starts_at",
+    "ends_at",
+    "provider_user_id",
+    "notes",
+  ] as const) {
     if (existing[key] !== parsed.values[key]) {
       changes[key] = { from: existing[key], to: parsed.values[key] };
     }
@@ -191,10 +203,12 @@ export async function updateAppointmentStatus(
     .single();
 
   if (!appointment) return { ok: false, error: "Agendamento não encontrado." };
-  if (!hasRoleInClinic(session, appointment.clinic_id, ["receptionist"])) {
+  if (
+    !hasRoleInClinic(session, appointment.clinic_id, ["receptionist", "sdr"])
+  ) {
     return {
       ok: false,
-      error: "Apenas a Recepção pode alterar o status do agendamento.",
+      error: "Apenas a Recepção ou Encantador(a) pode alterar o status.",
     };
   }
 
@@ -217,4 +231,45 @@ export async function updateAppointmentStatus(
   });
   revalidatePath("/agenda");
   return { ok: true };
+}
+
+export type SchedulingInfo = {
+  phase: JourneyPhase;
+  lastAppointment: {
+    type: AppointmentType;
+    status: AppointmentStatus;
+    starts_at: string;
+  } | null;
+};
+
+/**
+ * Scheduling follows the journey: tells the dialog the client's current
+ * phase (drives the appointment type) and whether the last appointment was
+ * cancelled / no-show (the client stays in the current phase — reschedule).
+ */
+export async function getClientSchedulingInfo(
+  clientId: string
+): Promise<SchedulingInfo | null> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const [{ data: client }, { data: lastAppointments }] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("journey_phase")
+      .eq("id", clientId)
+      .single(),
+    supabase
+      .from("appointments")
+      .select("type, status, starts_at")
+      .eq("client_id", clientId)
+      .order("starts_at", { ascending: false })
+      .limit(1),
+  ]);
+
+  if (!client) return null;
+  return {
+    phase: client.journey_phase as JourneyPhase,
+    lastAppointment: lastAppointments?.[0] ?? null,
+  };
 }

@@ -24,6 +24,11 @@ export default async function AppLayout({
           type,
         }))}
         activeClinicId={session.activeClinic?.id ?? null}
+        activeClinicRoles={
+          session.activeClinic
+            ? (session.rolesByClinic[session.activeClinic.id] ?? [])
+            : []
+        }
       />
       <main className="flex-1 overflow-x-auto bg-background">{children}</main>
     </div>

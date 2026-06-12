@@ -167,7 +167,14 @@ export function JourneySection({
               <li key={entry.id} className="text-sm">
                 <span className="font-medium">{PHASE_LABELS[entry.phase]}</span>{" "}
                 <span className="text-xs text-muted-foreground">
-                  — {new Date(entry.entered_at).toLocaleDateString("pt-BR")}
+                  —{" "}
+                  {new Date(entry.entered_at).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                   {" · "}
                   {entry.exited_at
                     ? `ficou ${formatStay(entry.entered_at, entry.exited_at)}`

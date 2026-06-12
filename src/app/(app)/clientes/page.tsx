@@ -19,6 +19,7 @@ export const metadata: Metadata = { title: "Clientes" };
 
 type ClientRow = {
   id: string;
+  code: string | null;
   full_name: string;
   phone: string | null;
   email: string | null;
@@ -65,7 +66,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
       let request = supabase
         .from("clients")
         .select(
-          "id, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
+          "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
         )
         .order("full_name")
         .limit(200);
@@ -85,7 +86,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
       let request = supabase
         .from("clients")
         .select(
-          "id, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
+          "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
         )
         .eq("clinic_id", clinicId)
         .order("full_name")
@@ -165,6 +166,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-28">Código</TableHead>
               <TableHead>Nome</TableHead>
               {isFranchisor && <TableHead>Unidade</TableHead>}
               <TableHead>Fase da jornada</TableHead>
@@ -176,6 +178,9 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
           <TableBody>
             {clients.map((client) => (
               <TableRow key={client.id}>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {client.code ?? "—"}
+                </TableCell>
                 <TableCell className="font-medium">
                   {client.full_name}
                 </TableCell>
@@ -210,7 +215,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
             {clients.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={isFranchisor ? 6 : 5}
+                  colSpan={isFranchisor ? 7 : 6}
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
                   {query

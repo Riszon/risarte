@@ -28,6 +28,7 @@ import { createClinic, updateClinic, type ActionResult } from "./actions";
 export type ClinicFormData = {
   id?: string;
   name?: string;
+  code?: string | null;
   type?: ClinicType;
   cnpj?: string | null;
   phone?: string | null;
@@ -110,19 +111,33 @@ export function ClinicFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
-            <Input
-              id="name"
-              name="name"
-              required
-              defaultValue={clinic?.name ?? ""}
-              placeholder={
-                type === "franchisor"
-                  ? "Risarte Franchising"
-                  : "Risarte — Unidade Centro"
-              }
-            />
+          <div className="grid grid-cols-[1fr_120px] gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome *</Label>
+              <Input
+                id="name"
+                name="name"
+                required
+                defaultValue={clinic?.name ?? ""}
+                placeholder={
+                  type === "franchisor"
+                    ? "Risarte Franchising"
+                    : "Risarte — Unidade Centro"
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="code">Código *</Label>
+              <Input
+                id="code"
+                name="code"
+                required
+                maxLength={6}
+                defaultValue={clinic?.code ?? ""}
+                placeholder="CBE"
+                className="uppercase"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

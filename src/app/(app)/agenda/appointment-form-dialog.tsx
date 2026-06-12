@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,17 +26,20 @@ import {
 import {
   APPOINTMENT_TYPES,
   APPOINTMENT_TYPE_LABELS,
+  PHASE_APPOINTMENT_TYPE,
   TYPE_PROVIDER_ROLES,
+  appointmentTypeOptions,
   type AppointmentType,
   type StaffOption,
 } from "@/lib/appointments";
+import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
-import { createAppointment, updateAppointment } from "./actions";
-
-const TYPE_ITEMS = APPOINTMENT_TYPES.map((t) => ({
-  value: t,
-  label: APPOINTMENT_TYPE_LABELS[t],
-}));
+import {
+  createAppointment,
+  getClientSchedulingInfo,
+  updateAppointment,
+  type SchedulingInfo,
+} from "./actions";
 
 const DURATION_ITEMS = [
   { value: "30", label: "30 minutos" },
@@ -44,6 +48,15 @@ const DURATION_ITEMS = [
   { value: "90", label: "1h30" },
   { value: "120", label: "2 horas" },
 ];
+
+// Time slots every 5 minutes (the native time picker ignores `step`).
+const TIME_ITEMS: { value: string; label: string }[] = [];
+for (let hour = 6; hour <= 21; hour++) {
+  for (let minute = 0; minute < 60; minute += 5) {
+    const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    TIME_ITEMS.push({ value, label: value });
+  }
+}
 
 export type AppointmentDefaults = {
   id: string;
@@ -62,7 +75,10 @@ function toLocalDate(iso: string): string {
 
 function toLocalTime(iso: string): string {
   const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const minutes = Math.round(d.getMinutes() / 5) * 5;
+  const h = minutes === 60 ? d.getHours() + 1 : d.getHours();
+  const m = minutes === 60 ? 0 : minutes;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 export function AppointmentFormDialog({
@@ -82,11 +98,17 @@ export function AppointmentFormDialog({
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [clientId, setClientId] = useState("");
+  const [schedulingInfo, setSchedulingInfo] = useState<SchedulingInfo | null>(
+    null
+  );
   const [type, setType] = useState<AppointmentType>(
     appointment?.type ?? "evaluation"
   );
   const [providerId, setProviderId] = useState(
     appointment?.provider_user_id ?? ""
+  );
+  const [time, setTime] = useState(
+    appointment ? toLocalTime(appointment.starts_at) : ""
   );
   const [duration, setDuration] = useState(
     appointment
@@ -102,7 +124,15 @@ export function AppointmentFormDialog({
 
   const clientItems = clients.map((c) => ({ value: c.id, label: c.full_name }));
 
-  // Professionals allowed for the chosen appointment type.
+  // The type follows the journey when creating; editing keeps all options.
+  const typeOptions = isEdit
+    ? [...APPOINTMENT_TYPES]
+    : appointmentTypeOptions(schedulingInfo?.phase ?? null);
+  const typeItems = typeOptions.map((t) => ({
+    value: t,
+    label: APPOINTMENT_TYPE_LABELS[t],
+  }));
+
   const providerItems = useMemo(() => {
     const allowedRoles = TYPE_PROVIDER_ROLES[type];
     return staff
@@ -118,11 +148,29 @@ export function AppointmentFormDialog({
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
+  const lastWasMissed =
+    schedulingInfo?.lastAppointment &&
+    ["cancelled", "no_show"].includes(schedulingInfo.lastAppointment.status);
+
+  function handleClientChange(id: string) {
+    setClientId(id);
+    setSchedulingInfo(null);
+    startTransition(async () => {
+      const info = await getClientSchedulingInfo(id);
+      setSchedulingInfo(info);
+      if (info) {
+        // Scheduling follows the journey.
+        setType(PHASE_APPOINTMENT_TYPE[info.phase]);
+      }
+    });
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     if (!isEdit) formData.set("client_id", clientId);
     formData.set("type", type);
+    formData.set("time", time);
     formData.set("duration", duration);
     formData.set("provider_user_id", providerValid ? providerId : "");
 
@@ -153,7 +201,7 @@ export function AppointmentFormDialog({
           <DialogDescription>
             {isEdit
               ? "Toda alteração fica registrada no histórico."
-              : "Compromisso na clínica ativa, com profissional responsável."}
+              : "O tipo do compromisso segue a fase da Jornada do cliente."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -163,7 +211,7 @@ export function AppointmentFormDialog({
               <Select
                 items={clientItems}
                 value={clientId || null}
-                onValueChange={(v) => v !== null && setClientId(v)}
+                onValueChange={(v) => v !== null && handleClientChange(v)}
               >
                 <SelectTrigger className="w-full">
                   {clientId ? (
@@ -184,11 +232,41 @@ export function AppointmentFormDialog({
               </Select>
             </div>
           )}
+
+          {!isEdit && schedulingInfo && (
+            <div className="space-y-1 rounded-md border bg-muted/40 p-2 text-xs">
+              <p className="flex items-center gap-1">
+                <Info className="size-3.5 shrink-0 text-primary" />
+                Fase atual:{" "}
+                <span className="font-medium">
+                  {PHASE_LABELS[schedulingInfo.phase]}
+                </span>
+                {" → "}será agendado:{" "}
+                <span className="font-medium">
+                  {
+                    APPOINTMENT_TYPE_LABELS[
+                      PHASE_APPOINTMENT_TYPE[schedulingInfo.phase]
+                    ]
+                  }
+                </span>
+              </p>
+              {lastWasMissed && (
+                <p className="font-medium text-destructive">
+                  O último agendamento foi{" "}
+                  {schedulingInfo!.lastAppointment!.status === "cancelled"
+                    ? "cancelado"
+                    : "uma falta"}{" "}
+                  — o cliente continua na fase atual (reagendamento).
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Tipo *</Label>
             <Select
-              items={TYPE_ITEMS}
-              value={type}
+              items={typeItems}
+              value={typeOptions.includes(type) ? type : null}
               onValueChange={(v) => {
                 if (v !== null) setType(v as AppointmentType);
               }}
@@ -197,14 +275,21 @@ export function AppointmentFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TYPE_ITEMS.map((item) => (
+                {typeItems.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {(type === "urgency" || type === "emergency") && (
+              <p className="text-xs text-muted-foreground">
+                {APPOINTMENT_TYPE_LABELS[type]} permite encaixe: pode ser
+                marcada mesmo em horário já ocupado.
+              </p>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label>Profissional responsável *</Label>
             {providerItems.length > 0 ? (
@@ -237,6 +322,7 @@ export function AppointmentFormDialog({
               </p>
             )}
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Data *</Label>
@@ -252,19 +338,32 @@ export function AppointmentFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="time">Horário *</Label>
-              <Input
-                id="time"
-                name="time"
-                type="time"
-                required
-                step={300}
-                defaultValue={
-                  appointment ? toLocalTime(appointment.starts_at) : ""
-                }
-              />
+              <Label>Horário *</Label>
+              <Select
+                items={TIME_ITEMS}
+                value={time || null}
+                onValueChange={(v) => v !== null && setTime(v)}
+              >
+                <SelectTrigger className="w-full">
+                  {time ? (
+                    <SelectValue />
+                  ) : (
+                    <span className="flex-1 text-left text-muted-foreground">
+                      --:--
+                    </span>
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
           <div className="space-y-2">
             <Label>Duração</Label>
             <Select
@@ -284,6 +383,7 @@ export function AppointmentFormDialog({
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="notes">Observações</Label>
             <Input
@@ -293,10 +393,13 @@ export function AppointmentFormDialog({
               defaultValue={appointment?.notes ?? ""}
             />
           </div>
+
           <DialogFooter>
             <Button
               type="submit"
-              disabled={isPending || (!isEdit && !clientId) || !providerValid}
+              disabled={
+                isPending || (!isEdit && !clientId) || !providerValid || !time
+              }
             >
               {isPending
                 ? "Salvando..."

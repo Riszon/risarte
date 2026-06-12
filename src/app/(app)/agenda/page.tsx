@@ -102,7 +102,10 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   let appointments: AppointmentRow[] = [];
   let clients: { id: string; full_name: string }[] = [];
   let staff: StaffOption[] = [];
-  const canSchedule = hasRoleInClinic(session, clinicId, ["receptionist"]);
+  const canSchedule = hasRoleInClinic(session, clinicId, [
+    "receptionist",
+    "sdr",
+  ]);
 
   if (clinicId) {
     const supabase = await createClient();

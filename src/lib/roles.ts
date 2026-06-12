@@ -2,6 +2,7 @@
 // Must stay in sync with the `user_role` enum in the database.
 export const USER_ROLES = [
   "receptionist",
+  "sdr",
   "clinical_coordinator",
   "planner_dentist",
   "dentist",
@@ -16,6 +17,7 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   receptionist: "Recepcionista",
+  sdr: "Encantador(a) (SDR)",
   clinical_coordinator: "Coordenador Clínico",
   planner_dentist: "Dentista Planner",
   dentist: "Dentista",

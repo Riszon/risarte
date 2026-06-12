@@ -26,6 +26,35 @@ function field(formData: FormData, name: string): string | null {
   return String(formData.get(name) ?? "").trim() || null;
 }
 
+export type GuardianInput = {
+  fullName: string;
+  cpf: string | null;
+  birthDate: string | null;
+  relationship: string;
+  phone: string | null;
+  guardianClientId: string | null;
+};
+
+function isMinor(birthDate: string): boolean {
+  const birth = new Date(`${birthDate}T00:00:00`);
+  const age =
+    (Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+  return age < 18;
+}
+
+function parseGuardians(raw: string): GuardianInput[] | null {
+  try {
+    const parsed = JSON.parse(raw) as GuardianInput[];
+    if (!Array.isArray(parsed)) return null;
+    for (const g of parsed) {
+      if (!g.fullName?.trim() || !g.relationship?.trim()) return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function parseClientForm(formData: FormData) {
   const fullName = String(formData.get("full_name") ?? "").trim();
   if (!fullName) return { error: "Informe o nome completo." as const };
@@ -41,6 +70,39 @@ function parseClientForm(formData: FormData) {
     }
   }
 
+  // Owner rule: full registration is mandatory (complement is optional).
+  const requiredFields: [string, string][] = [
+    ["birth_date", "Data de nascimento"],
+    ["phone", "Telefone/WhatsApp"],
+    ["email", "E-mail"],
+    ["address", "Endereço"],
+    ["address_number", "Número"],
+    ["neighborhood", "Bairro"],
+    ["city", "Cidade"],
+    ["state", "UF"],
+    ["zip_code", "CEP"],
+  ];
+  for (const [name, label] of requiredFields) {
+    if (!field(formData, name)) {
+      return { error: `Preencha o campo obrigatório: ${label}.` as const };
+    }
+  }
+
+  const birthDate = field(formData, "birth_date")!;
+  const guardians = parseGuardians(String(formData.get("guardians") ?? "[]"));
+  if (guardians === null) {
+    return {
+      error:
+        "Dados do responsável incompletos: nome e parentesco são obrigatórios." as const,
+    };
+  }
+  if (isMinor(birthDate) && guardians.length === 0) {
+    return {
+      error:
+        "Cliente menor de 18 anos: informe ao menos um responsável." as const,
+    };
+  }
+
   const phone = field(formData, "phone");
   const zipCode = field(formData, "zip_code");
 
@@ -48,7 +110,7 @@ function parseClientForm(formData: FormData) {
     values: {
       full_name: fullName,
       cpf: cpf && !noCpf ? formatCpf(cpf) : null,
-      birth_date: field(formData, "birth_date"),
+      birth_date: birthDate,
       phone: phone ? formatPhone(phone) : null,
       email: field(formData, "email"),
       address: field(formData, "address"),
@@ -60,6 +122,56 @@ function parseClientForm(formData: FormData) {
       zip_code: zipCode ? formatCep(zipCode) : null,
       notes: field(formData, "notes"),
     },
+    guardians,
+  };
+}
+
+async function saveGuardians(
+  clientId: string,
+  guardians: GuardianInput[]
+): Promise<void> {
+  const supabase = await createClient();
+  // Replace strategy: guardians are few; delete + reinsert keeps it simple.
+  await supabase.from("client_guardians").delete().eq("client_id", clientId);
+  if (guardians.length > 0) {
+    const { error } = await supabase.from("client_guardians").insert(
+      guardians.map((g) => ({
+        client_id: clientId,
+        guardian_client_id: g.guardianClientId,
+        full_name: g.fullName.trim(),
+        cpf: g.cpf ? formatCpf(g.cpf) : null,
+        birth_date: g.birthDate || null,
+        relationship: g.relationship.trim(),
+        phone: g.phone ? formatPhone(g.phone) : null,
+      }))
+    );
+    if (error) console.error("saveGuardians failed:", error.message);
+  }
+}
+
+/** Autofill helper: is this CPF already a Risarte client? */
+export async function lookupClientByCpf(cpf: string): Promise<{
+  found: boolean;
+  clientId?: string;
+  fullName?: string;
+  birthDate?: string | null;
+  phone?: string | null;
+}> {
+  await getSessionContext();
+  const formatted = formatCpf(cpf);
+  if (formatted.replace(/\D/g, "").length !== 11) return { found: false };
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("find_client_basic_by_cpf", {
+    p_cpf: formatted,
+  });
+  if (!data || data.length === 0) return { found: false };
+  return {
+    found: true,
+    clientId: data[0].client_id,
+    fullName: data[0].full_name,
+    birthDate: data[0].birth_date,
+    phone: data[0].phone,
   };
 }
 
@@ -71,10 +183,11 @@ export async function createClientRecord(
   if (!clinicId) {
     return { ok: false, error: "Nenhuma clínica selecionada." };
   }
-  if (!hasRoleInClinic(session, clinicId, ["receptionist"])) {
+  if (!hasRoleInClinic(session, clinicId, ["receptionist", "sdr"])) {
     return {
       ok: false,
-      error: "Apenas a Recepção pode cadastrar clientes nesta clínica.",
+      error:
+        "Apenas a Recepção ou Encantador(a) pode cadastrar clientes nesta clínica.",
     };
   }
 
@@ -123,6 +236,8 @@ export async function createClientRecord(
     return { ok: false, error: "Não foi possível cadastrar o cliente." };
   }
 
+  await saveGuardians(data.id, parsed.guardians);
+
   await logAudit({
     action: "create",
     entityType: "client",
@@ -149,10 +264,10 @@ export async function updateClientRecord(
   if (!existing) {
     return { ok: false, error: "Cliente não encontrado." };
   }
-  if (!hasRoleInClinic(session, existing.clinic_id, ["receptionist"])) {
+  if (!hasRoleInClinic(session, existing.clinic_id, ["receptionist", "sdr"])) {
     return {
       ok: false,
-      error: "Apenas a Recepção pode alterar dados de clientes.",
+      error: "Apenas a Recepção ou Encantador(a) pode alterar dados de clientes.",
     };
   }
 
@@ -168,6 +283,8 @@ export async function updateClientRecord(
     console.error("updateClientRecord failed:", error.message);
     return { ok: false, error: "Não foi possível salvar as alterações." };
   }
+
+  await saveGuardians(clientId, parsed.guardians);
 
   await logAudit({
     action: "update",
@@ -203,10 +320,11 @@ export async function transferClientToActiveClinic(
       error: "Confirme que o cliente autorizou a transferência.",
     };
   }
-  if (!hasRoleInClinic(session, clinicId, ["receptionist"])) {
+  if (!hasRoleInClinic(session, clinicId, ["receptionist", "sdr"])) {
     return {
       ok: false,
-      error: "Apenas a Recepção pode receber clientes transferidos.",
+      error:
+        "Apenas a Recepção ou Encantador(a) pode receber clientes transferidos.",
     };
   }
 

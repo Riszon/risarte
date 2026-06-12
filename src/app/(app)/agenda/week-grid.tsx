@@ -107,14 +107,32 @@ export function WeekGrid({
   });
 
   function renderCard(appointment: AgendaAppointment, compact: boolean) {
+    const isUrgent =
+      appointment.type === "urgency" || appointment.type === "emergency";
     return (
       <div
         key={appointment.id}
         className={cn(
           "rounded-md border p-2 text-xs shadow-sm",
-          STATUS_STYLES[appointment.status]
+          STATUS_STYLES[appointment.status],
+          appointment.type === "urgency" &&
+            "ring-2 ring-amber-400 border-l-amber-500",
+          appointment.type === "emergency" &&
+            "ring-2 ring-red-500 border-l-red-600"
         )}
       >
+        {isUrgent && (
+          <Badge
+            className={cn(
+              "mb-1 text-[10px] uppercase",
+              appointment.type === "emergency"
+                ? "bg-red-600 text-white"
+                : "bg-amber-500 text-white"
+            )}
+          >
+            {APPOINTMENT_TYPE_LABELS[appointment.type]} · encaixe
+          </Badge>
+        )}
         <p
           className={cn(
             "font-medium",
@@ -122,6 +140,11 @@ export function WeekGrid({
           )}
         >
           {new Date(appointment.starts_at).toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+          –
+          {new Date(appointment.ends_at).toLocaleTimeString("pt-BR", {
             hour: "2-digit",
             minute: "2-digit",
           })}{" "}
