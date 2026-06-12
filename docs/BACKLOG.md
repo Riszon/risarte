@@ -110,9 +110,16 @@ refletir nos botões da UI.
 - [ ] Visão **anual** da agenda (agregados por mês).
 - [ ] Quadros-resumo comparados com metas (rede e por unidade).
 
-## Perguntas abertas (aguardando o dono)
+## Decisões do dono (2026-06-12)
 
-1. Criar a função **Dentista (executor)** para FASE 5? (não existe hoje)
-2. Identificador para detectar cliente duplicado na rede (CPF?).
-3. Fase de entrada de novos cadastros (todos na Fase 1 Aquisição?).
-4. Metas: estrutura básica agora ou completa na Fase 2 com dashboards?
+1. **Função "Dentista" (executor): CRIAR AGORA.** Atua na unidade; vê agenda e
+   seus pacientes; acessa o plano de tratamento aprovado; não move fases, não
+   negocia, não planeja. Tipos de agendamento Início/Sessão de Tratamento (e
+   Retorno, junto com Coordenador) apontam para ela.
+2. **Duplicados: CPF obrigatório** no cadastro de clientes (identificador
+   único da rede). Sem CPF (ex.: criança), avisar quando houver nome + data de
+   nascimento iguais.
+3. **Novos cadastros entram na Fase 1 (Aquisição).** Clientes existentes
+   permanecem na fase em que estão.
+4. **Metas: versão completa na Fase 2** com os dashboards. Quadros-resumo de
+   agendamentos (sem metas) chegam antes, no Lote B.
