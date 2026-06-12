@@ -84,6 +84,63 @@ refletir nos botões da UI.
 - [ ] Consultor Comercial notificado quando: apresentação agendada com ele;
       planner finaliza planejamento (transição 3→4 já notifica — manter).
 
+## LOTE A.2 — feedback do dono após teste do Lote A (2026-06-12)
+
+### Correções
+- [ ] Bug: salvar nome em perfis falha ("infinite recursion" na policy
+      `profiles_update_own` — trocar subquery por `public.is_admin_master()`).
+- [ ] Horário de agendamento: trocar input time por lista de horários de 5 em
+      5 min (o step do input nativo é ignorado pelo navegador).
+- [ ] Card de agendamento: exibir horário de início E fim (duração).
+- [ ] Notificações enriquecidas funcionam (verificado no banco); "Por:" vazio
+      era consequência do bug do nome.
+
+### Cadastro de clientes
+- [ ] Campos obrigatórios: nome, CPF, nascimento, telefone, e-mail, endereço,
+      número, bairro, cidade, UF, CEP (complemento opcional — assunção).
+- [ ] Botão "Cadastrar cliente" na coluna Aquisição do kanban.
+- [ ] Responsáveis para menores de 18 (OBRIGATÓRIO): múltiplos responsáveis,
+      campos nome/CPF/nascimento/parentesco/contato; se o CPF do responsável
+      for cliente Risarte, auto-preencher; ficha do menor mostra responsáveis;
+      ficha do responsável mostra dependentes (tabela client_guardians).
+- [ ] Código do cliente: gerado automaticamente, identifica cliente + unidade
+      (formato CODIGO-UNIDADE-SEQUENCIA, ex.: CBE-00023).
+- [ ] Código da unidade: campo `code` em clinics (auto-sugerido, editável).
+
+### Funções e acessos
+- [ ] Nova função Encantador(a) (SDR): cadastra clientes, agenda, move 1→2.
+- [ ] Sidebar: mostrar a(s) função(ões) do usuário na unidade ativa.
+- [ ] Página "Meu perfil": usuário edita os próprios dados não-críticos.
+- [ ] Dentista: vê SOMENTE clientes agendados com ele (clientes, jornada e
+      agenda filtrados); não vê a agenda dos outros profissionais.
+
+### Agenda × Jornada (automação)
+- [ ] Tipo de agendamento automático pela fase da jornada do cliente
+      (1ª vez = Avaliação; quem já é cliente e volta = Reavaliação; fase 4 =
+      Apresentação; fase 5 = Início/Sessão; etc.), exibindo fase atual →
+      próxima no diálogo. Não alterar tipos de agendamentos passados.
+- [ ] Se o último agendamento foi cancelado/faltou: mostrar aviso de que o
+      cliente continua na fase atual (reagendamento).
+- [ ] Tipos Urgência e Emergência: sinalizados no agendamento, destaque no
+      card e permissão de encaixe (pode sobrepor horários).
+- [ ] Ao mover de fase: notificar TAMBÉM a recepção para agendar o próximo
+      compromisso (fases que exigem agendamento).
+
+### Transferência de clientes
+- [ ] Cancelar automaticamente os agendamentos futuros da unidade antiga;
+      mostrar na unidade nova quais horários foram cancelados, sugerindo
+      reagendar.
+- [ ] Notificar também Gerente e Coordenador Clínico da unidade que perdeu o
+      cliente (hoje só recepção).
+- [ ] Histórico de unidades e linha do tempo: mostrar data + HORA + usuário.
+- [ ] Unidade antiga sem ações na jornada e linha do tempo limitada até a
+      transferência — JÁ FUNCIONA por construção (RLS por clinic_id nas
+      tabelas-filhas); validar no teste.
+
+### Adiado
+- [ ] Consolidação financeira na transferência (realizado × pago × aberto)
+      → Fase 3, junto com o módulo financeiro (decisão do dono).
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de
