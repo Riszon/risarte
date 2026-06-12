@@ -7,7 +7,10 @@ export const metadata: Metadata = { title: "Novo cliente" };
 
 export default async function NewClientPage() {
   const session = await getSessionContext();
-  if (!hasRoleInClinic(session, session.activeClinic?.id, ["receptionist"])) {
+  if (
+    session.activeClinic?.type === "franchisor" ||
+    !hasRoleInClinic(session, session.activeClinic?.id, ["receptionist"])
+  ) {
     redirect("/clientes");
   }
 

@@ -1,3 +1,5 @@
+import type { UserRole } from "@/lib/roles";
+
 // Must stay in sync with the `appointment_type` / `appointment_status`
 // enums in the database.
 export const APPOINTMENT_TYPES = [
@@ -36,4 +38,20 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   completed: "Realizado",
   cancelled: "Cancelado",
   no_show: "Faltou",
+};
+
+/** Which roles may be the assigned professional for each appointment type. */
+export const TYPE_PROVIDER_ROLES: Record<AppointmentType, UserRole[]> = {
+  evaluation: ["clinical_coordinator"],
+  commercial_presentation: ["commercial_consultant"],
+  treatment_start: ["dentist"],
+  treatment_session: ["dentist"],
+  reevaluation: ["clinical_coordinator"],
+  return_visit: ["clinical_coordinator", "dentist"],
+};
+
+export type StaffOption = {
+  userId: string;
+  name: string;
+  roles: UserRole[];
 };

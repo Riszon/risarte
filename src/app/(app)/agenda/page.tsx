@@ -3,12 +3,21 @@ import Link from "next/link";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type {
   AppointmentStatus,
   AppointmentType,
+  StaffOption,
 } from "@/lib/appointments";
+import type { UserRole } from "@/lib/roles";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
-import { NewAppointmentDialog } from "./new-appointment-dialog";
+import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { WeekGrid, type AgendaAppointment } from "./week-grid";
 
 export const metadata: Metadata = { title: "Agenda" };
@@ -20,12 +29,20 @@ type AppointmentRow = {
   starts_at: string;
   ends_at: string;
   notes: string | null;
+  provider_user_id: string | null;
+  provider: { full_name: string } | null;
   clients: {
     id: string;
     full_name: string;
     journey_phase: JourneyPhase;
     methodology_pillar: MethodologyPillar | null;
   } | null;
+};
+
+type StaffRow = {
+  user_id: string;
+  role: UserRole;
+  profiles: { full_name: string } | null;
 };
 
 function startOfWeek(date: Date): Date {
@@ -45,6 +62,28 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   const session = await getSessionContext();
   const searchParams = await props.searchParams;
   const clinicId = session.activeClinic?.id;
+  const isFranchisor = session.activeClinic?.type === "franchisor";
+
+  if (isFranchisor) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+        <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              A Franqueadora não tem agenda própria
+            </CardTitle>
+            <CardDescription>
+              A Risarte Franchising é o guarda-chuva da rede — os atendimentos
+              acontecem nas unidades. Use o seletor no menu lateral para abrir
+              a agenda de uma unidade. (A visão consolidada da rede, com
+              totais por tipo e status, chega na próxima etapa.)
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const weekParam =
     typeof searchParams.semana === "string" ? searchParams.semana : "";
@@ -62,33 +101,54 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
 
   let appointments: AppointmentRow[] = [];
   let clients: { id: string; full_name: string }[] = [];
+  let staff: StaffOption[] = [];
   const canSchedule = hasRoleInClinic(session, clinicId, ["receptionist"]);
 
   if (clinicId) {
     const supabase = await createClient();
-    const [{ data: appts }, { data: clientRows }] = await Promise.all([
-      supabase
-        .from("appointments")
-        .select(
-          "id, type, status, starts_at, ends_at, notes, clients ( id, full_name, journey_phase, methodology_pillar )"
-        )
-        .eq("clinic_id", clinicId)
-        .gte("starts_at", weekStart.toISOString())
-        .lt("starts_at", weekEnd.toISOString())
-        .order("starts_at")
-        .returns<AppointmentRow[]>(),
-      canSchedule
-        ? supabase
-            .from("clients")
-            .select("id, full_name")
-            .eq("clinic_id", clinicId)
-            .eq("status", "active")
-            .order("full_name")
-            .limit(300)
-        : Promise.resolve({ data: [] }),
-    ]);
+    const [{ data: appts }, { data: clientRows }, { data: staffRows }] =
+      await Promise.all([
+        supabase
+          .from("appointments")
+          .select(
+            "id, type, status, starts_at, ends_at, notes, provider_user_id, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+          )
+          .eq("clinic_id", clinicId)
+          .gte("starts_at", weekStart.toISOString())
+          .lt("starts_at", weekEnd.toISOString())
+          .order("starts_at")
+          .returns<AppointmentRow[]>(),
+        canSchedule
+          ? supabase
+              .from("clients")
+              .select("id, full_name")
+              .eq("clinic_id", clinicId)
+              .eq("status", "active")
+              .order("full_name")
+              .limit(300)
+          : Promise.resolve({ data: [] }),
+        canSchedule
+          ? supabase
+              .from("user_clinic_roles")
+              .select("user_id, role, profiles ( full_name )")
+              .eq("clinic_id", clinicId)
+              .returns<StaffRow[]>()
+          : Promise.resolve({ data: [] as StaffRow[] }),
+      ]);
     appointments = appts ?? [];
     clients = clientRows ?? [];
+
+    const staffMap = new Map<string, StaffOption>();
+    for (const row of staffRows ?? []) {
+      const entry = staffMap.get(row.user_id) ?? {
+        userId: row.user_id,
+        name: row.profiles?.full_name ?? "—",
+        roles: [],
+      };
+      entry.roles.push(row.role);
+      staffMap.set(row.user_id, entry);
+    }
+    staff = [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   const weekLabel = `${weekStart.toLocaleDateString("pt-BR", {
@@ -136,7 +196,11 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             Próxima →
           </Button>
           {canSchedule && clinicId && (
-            <NewAppointmentDialog clients={clients} />
+            <AppointmentFormDialog
+              clients={clients}
+              staff={staff}
+              trigger={<Button size="sm">Novo agendamento</Button>}
+            />
           )}
         </div>
       </div>
@@ -147,6 +211,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             weekStartIso={weekStart.toISOString()}
             appointments={appointments as AgendaAppointment[]}
             canManage={canSchedule}
+            staff={staff}
           />
         </div>
       )}

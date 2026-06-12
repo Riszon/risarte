@@ -22,10 +22,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/lib/roles";
 import {
-  NEXT_PHASES,
   PHASE_LABELS,
   PILLAR_LABELS,
+  allowedNextPhases,
   formatTimeInPhase,
   type JourneyPhase,
   type MethodologyPillar,
@@ -71,7 +72,9 @@ export function JourneySection({
   pillar,
   history,
   appointments,
-  canMove,
+  isAdminMaster,
+  clinicRoles,
+  isPlannerAnywhere,
 }: {
   clientId: string;
   clientName: string;
@@ -80,10 +83,17 @@ export function JourneySection({
   pillar: MethodologyPillar | null;
   history: HistoryEntry[];
   appointments: ClientAppointment[];
-  canMove: boolean;
+  isAdminMaster: boolean;
+  clinicRoles: UserRole[];
+  isPlannerAnywhere: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const nextOptions = allowedNextPhases(phase, {
+    isAdminMaster,
+    clinicRoles,
+    isPlannerAnywhere,
+  });
 
   function move(next: JourneyPhase) {
     startTransition(async () => {
@@ -125,7 +135,7 @@ export function JourneySection({
           >
             {pillar ? `Pilar: ${PILLAR_LABELS[pillar]}` : "Pilar a definir"}
           </Badge>
-          {canMove && NEXT_PHASES[phase].length > 0 && (
+          {nextOptions.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -139,7 +149,7 @@ export function JourneySection({
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Próximo passo</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {NEXT_PHASES[phase].map((next) => (
+                  {nextOptions.map((next) => (
                     <DropdownMenuItem key={next} onClick={() => move(next)}>
                       {PHASE_LABELS[next]}
                     </DropdownMenuItem>

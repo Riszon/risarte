@@ -14,7 +14,16 @@ após a Etapa 3. Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - **Dentista Planner trabalha só no Centro de Planejamento (Franchising)** e
   enxerga consolidados da rede.
 
-## LOTE A — antes da Etapa 4 (correções e fundamentos estruturais)
+## LOTE A — antes da Etapa 4 ✅ CONCLUÍDO em 2026-06-12 (migrações 0005 + 0006)
+
+Tudo abaixo implementado: Fase 1 no kanban (novos cadastros entram nela),
+matriz de movimentação no banco + UI, visão de rede de clientes na
+Franchising, cliente único com CPF + transferência com consentimento +
+selo/histórico de unidades, agenda com profissional responsável (e
+notificação), edição registrada, cores por status, 5 em 5 min, sem passado,
+mesmo horário lado a lado, botões na Jornada, Franchising sem agenda própria
+(aviso até a visão consolidada do Lote B), notificações enriquecidas
+(clínica, pilar, remetente com função, fase de origem).
 
 ### A1. Fase 1 (Aquisição) no kanban
 - [ ] Adicionar `acquisition` ao enum `journey_phase` (antes de

@@ -18,12 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { SlaKey } from "@/lib/sla";
+import type { UserRole } from "@/lib/roles";
 import {
   JOURNEY_PHASES,
-  NEXT_PHASES,
   PHASE_LABELS,
   PHASE_SLA_KEY,
   PILLAR_LABELS,
+  allowedNextPhases,
   formatTimeInPhase,
   isSlaExceeded,
   type JourneyPhase,
@@ -42,10 +43,18 @@ export type KanbanClient = {
 type Props = {
   clients: KanbanClient[];
   sla: Record<SlaKey, number | null>;
-  canMove: boolean;
+  isAdminMaster: boolean;
+  clinicRoles: UserRole[];
+  isPlannerAnywhere: boolean;
 };
 
-export function KanbanBoard({ clients, sla, canMove }: Props) {
+export function KanbanBoard({
+  clients,
+  sla,
+  isAdminMaster,
+  clinicRoles,
+  isPlannerAnywhere,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -69,6 +78,11 @@ export function KanbanBoard({ clients, sla, canMove }: Props) {
         const phaseClients = clients.filter((c) => c.journey_phase === phase);
         const slaKey = PHASE_SLA_KEY[phase];
         const slaHours = slaKey ? sla[slaKey] : null;
+        const nextOptions = allowedNextPhases(phase, {
+          isAdminMaster,
+          clinicRoles,
+          isPlannerAnywhere,
+        });
 
         return (
           <div
@@ -124,7 +138,7 @@ export function KanbanBoard({ clients, sla, canMove }: Props) {
                         </Badge>
                       )}
                     </div>
-                    {canMove && NEXT_PHASES[phase].length > 0 && (
+                    {nextOptions.length > 0 && (
                       <div className="mt-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -146,7 +160,7 @@ export function KanbanBoard({ clients, sla, canMove }: Props) {
                                 Próximo passo
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              {NEXT_PHASES[phase].map((next) => (
+                              {nextOptions.map((next) => (
                                 <DropdownMenuItem
                                   key={next}
                                   onClick={() => move(client, next)}

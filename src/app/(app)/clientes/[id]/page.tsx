@@ -28,6 +28,14 @@ type HistoryRow = {
   profiles: { full_name: string } | null;
 };
 
+type ClinicHistoryRow = {
+  id: string;
+  clinic_id: string;
+  started_at: string;
+  ended_at: string | null;
+  clinics: { name: string } | null;
+};
+
 const STATUS_LABELS = {
   active: "Ativo",
   inactive: "Inativo",
@@ -51,20 +59,27 @@ export default async function ClientDetailPage(
 
   if (!client) notFound();
 
-  const [{ data: history }, { data: appointments }] = await Promise.all([
-    supabase
-      .from("journey_phase_history")
-      .select("id, phase, entered_at, exited_at, profiles ( full_name )")
-      .eq("client_id", id)
-      .order("entered_at")
-      .returns<HistoryRow[]>(),
-    supabase
-      .from("appointments")
-      .select("id, type, status, starts_at")
-      .eq("client_id", id)
-      .order("starts_at")
-      .returns<ClientAppointment[]>(),
-  ]);
+  const [{ data: history }, { data: appointments }, { data: clinicHistory }] =
+    await Promise.all([
+      supabase
+        .from("journey_phase_history")
+        .select("id, phase, entered_at, exited_at, profiles ( full_name )")
+        .eq("client_id", id)
+        .order("entered_at")
+        .returns<HistoryRow[]>(),
+      supabase
+        .from("appointments")
+        .select("id, type, status, starts_at")
+        .eq("client_id", id)
+        .order("starts_at")
+        .returns<ClientAppointment[]>(),
+      supabase
+        .from("client_clinic_history")
+        .select("id, clinic_id, started_at, ended_at, clinics ( name )")
+        .eq("client_id", id)
+        .order("started_at")
+        .returns<ClinicHistoryRow[]>(),
+    ]);
 
   // LGPD: every view of a client record is audited.
   await logAudit({
@@ -78,13 +93,19 @@ export default async function ClientDetailPage(
     client.status !== "anonymized" &&
     hasRoleInClinic(session, client.clinic_id, ["receptionist"]);
 
-  const canMove = hasRoleInClinic(session, client.clinic_id, [
-    "receptionist",
-    "clinical_coordinator",
-    "planner_dentist",
-    "commercial_consultant",
-    "commercial_assistant",
-  ]);
+  const clinicRoles = session.rolesByClinic[client.clinic_id] ?? [];
+  const isPlannerAnywhere = Object.values(session.rolesByClinic).some(
+    (roles) => roles.includes("planner_dentist")
+  );
+
+  // Was the client transferred away from the clinic the viewer belongs to?
+  const currentClinicEntry = (clinicHistory ?? []).find((h) => !h.ended_at);
+  const viewerIsFormerClinicOnly =
+    !session.isAdminMaster &&
+    !(client.clinic_id in session.rolesByClinic) &&
+    (clinicHistory ?? []).some(
+      (h) => h.ended_at && h.clinic_id in session.rolesByClinic
+    );
 
   const historyEntries: HistoryEntry[] = (history ?? []).map((h) => ({
     id: h.id,
@@ -106,9 +127,16 @@ export default async function ClientDetailPage(
             {new Date(client.created_at).toLocaleDateString("pt-BR")}
           </p>
         </div>
-        <Badge variant={client.status === "active" ? "secondary" : "outline"}>
-          {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {viewerIsFormerClinicOnly && (
+            <Badge variant="destructive">
+              Transferido para {currentClinicEntry?.clinics?.name ?? "outra unidade"}
+            </Badge>
+          )}
+          <Badge variant={client.status === "active" ? "secondary" : "outline"}>
+            {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
+          </Badge>
+        </div>
       </div>
 
       <JourneySection
@@ -119,8 +147,35 @@ export default async function ClientDetailPage(
         pillar={client.methodology_pillar as MethodologyPillar | null}
         history={historyEntries}
         appointments={appointments ?? []}
-        canMove={canMove}
+        isAdminMaster={session.isAdminMaster}
+        clinicRoles={clinicRoles}
+        isPlannerAnywhere={isPlannerAnywhere}
       />
+
+      {(clinicHistory ?? []).length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Histórico de unidades</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1.5">
+              {(clinicHistory ?? []).map((entry) => (
+                <li key={entry.id} className="text-sm">
+                  <span className="font-medium">
+                    {entry.clinics?.name ?? "Unidade"}
+                  </span>{" "}
+                  <span className="text-xs text-muted-foreground">
+                    — de {new Date(entry.started_at).toLocaleDateString("pt-BR")}
+                    {entry.ended_at
+                      ? ` até ${new Date(entry.ended_at).toLocaleDateString("pt-BR")}`
+                      : " até hoje (unidade atual)"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {canEdit ? (
         <ClientForm client={client} />

@@ -1,7 +1,9 @@
 import type { SlaKey } from "@/lib/sla";
+import type { UserRole } from "@/lib/roles";
 
 // Must stay in sync with the `journey_phase` enum in the database.
 export const JOURNEY_PHASES = [
+  "acquisition",
   "clinical_conversion",
   "planning_center",
   "commercial_conversion",
@@ -13,6 +15,7 @@ export const JOURNEY_PHASES = [
 export type JourneyPhase = (typeof JOURNEY_PHASES)[number];
 
 export const PHASE_LABELS: Record<JourneyPhase, string> = {
+  acquisition: "Aquisição",
   clinical_conversion: "Conversão Clínica",
   planning_center: "Centro de Planejamento",
   commercial_conversion: "Conversão Comercial",
@@ -23,6 +26,7 @@ export const PHASE_LABELS: Record<JourneyPhase, string> = {
 
 /** Which configured SLA applies to time spent in each phase (null = no SLA). */
 export const PHASE_SLA_KEY: Record<JourneyPhase, SlaKey | null> = {
+  acquisition: null,
   clinical_conversion: "evaluation_to_commercial_scheduling",
   planning_center: "planning",
   commercial_conversion: "presentation_to_closing",
@@ -32,18 +36,49 @@ export const PHASE_SLA_KEY: Record<JourneyPhase, SlaKey | null> = {
 };
 
 /**
- * Suggested next steps shown in the UI (the business flow). The database
- * function accepts any transition by an allowed role; this map only drives
- * which buttons appear.
+ * Owner-defined transition matrix: who moves a client between phases.
+ * The same matrix is enforced inside the database (move_client_phase);
+ * here it only drives which buttons appear.
+ * Note: planner_dentist works at the franchisor's Planning Center, so the
+ * check for that role is "has the role anywhere", not "in this clinic".
  */
-export const NEXT_PHASES: Record<JourneyPhase, JourneyPhase[]> = {
-  clinical_conversion: ["planning_center"],
-  planning_center: ["commercial_conversion"],
-  commercial_conversion: ["treatment_start", "follow_up"],
-  treatment_start: ["reevaluation", "follow_up"],
-  reevaluation: ["planning_center", "follow_up"],
-  follow_up: ["clinical_conversion", "reevaluation"],
-};
+export const PHASE_TRANSITIONS: {
+  from: JourneyPhase;
+  to: JourneyPhase;
+  roles: UserRole[];
+}[] = [
+  { from: "acquisition", to: "clinical_conversion", roles: ["receptionist"] },
+  { from: "clinical_conversion", to: "planning_center", roles: ["clinical_coordinator"] },
+  { from: "planning_center", to: "commercial_conversion", roles: ["planner_dentist"] },
+  { from: "commercial_conversion", to: "treatment_start", roles: ["commercial_consultant"] },
+  { from: "treatment_start", to: "reevaluation", roles: ["receptionist"] },
+  { from: "treatment_start", to: "follow_up", roles: ["receptionist"] },
+  { from: "treatment_start", to: "planning_center", roles: ["clinical_coordinator"] },
+  { from: "reevaluation", to: "follow_up", roles: ["clinical_coordinator"] },
+  { from: "reevaluation", to: "planning_center", roles: ["clinical_coordinator"] },
+];
+
+export function allowedNextPhases(
+  phase: JourneyPhase,
+  opts: {
+    isAdminMaster: boolean;
+    clinicRoles: UserRole[];
+    isPlannerAnywhere: boolean;
+  }
+): JourneyPhase[] {
+  if (opts.isAdminMaster) {
+    return JOURNEY_PHASES.filter((p) => p !== phase);
+  }
+  return PHASE_TRANSITIONS.filter(
+    (t) =>
+      t.from === phase &&
+      t.roles.some(
+        (role) =>
+          opts.clinicRoles.includes(role) ||
+          (role === "planner_dentist" && opts.isPlannerAnywhere)
+      )
+  ).map((t) => t.to);
+}
 
 // Must stay in sync with the `methodology_pillar` enum in the database.
 export const METHODOLOGY_PILLARS = [

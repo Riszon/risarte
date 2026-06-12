@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PHASE_LABELS, type JourneyPhase } from "@/lib/journey";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -22,7 +23,16 @@ type ClientRow = {
   phone: string | null;
   email: string | null;
   status: "active" | "inactive" | "anonymized";
+  journey_phase: JourneyPhase;
   created_at: string;
+  clinic_id: string;
+  clinics: { name: string } | null;
+};
+
+type TransferredRow = {
+  id: string;
+  full_name: string;
+  clinics: { name: string } | null;
 };
 
 const STATUS_LABELS: Record<ClientRow["status"], string> = {
@@ -35,35 +45,86 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   const session = await getSessionContext();
   const searchParams = await props.searchParams;
   const query = typeof searchParams.q === "string" ? searchParams.q.trim() : "";
+  const clinicFilter =
+    typeof searchParams.clinica === "string" ? searchParams.clinica : "";
 
   const clinicId = session.activeClinic?.id;
-  const canCreate = hasRoleInClinic(session, clinicId, ["receptionist"]);
+  const isFranchisor = session.activeClinic?.type === "franchisor";
+  const canCreate =
+    !isFranchisor && hasRoleInClinic(session, clinicId, ["receptionist"]);
+
+  const supabase = await createClient();
 
   let clients: ClientRow[] = [];
+  let transferred: TransferredRow[] = [];
+  let clinicOptions: { id: string; name: string }[] = [];
+
   if (clinicId) {
-    const supabase = await createClient();
-    let request = supabase
-      .from("clients")
-      .select("id, full_name, phone, email, status, created_at")
-      .eq("clinic_id", clinicId)
-      .order("full_name")
-      .limit(100);
-    if (query) {
-      request = request.ilike("full_name", `%${query}%`);
+    if (isFranchisor) {
+      // Franchisor context = the whole network, with an optional unit filter.
+      let request = supabase
+        .from("clients")
+        .select(
+          "id, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
+        )
+        .order("full_name")
+        .limit(200);
+      if (clinicFilter) request = request.eq("clinic_id", clinicFilter);
+      if (query) request = request.ilike("full_name", `%${query}%`);
+      const [{ data }, { data: clinicsData }] = await Promise.all([
+        request.returns<ClientRow[]>(),
+        supabase
+          .from("clinics")
+          .select("id, name")
+          .eq("type", "franchise_unit")
+          .order("name"),
+      ]);
+      clients = data ?? [];
+      clinicOptions = clinicsData ?? [];
+    } else {
+      let request = supabase
+        .from("clients")
+        .select(
+          "id, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
+        )
+        .eq("clinic_id", clinicId)
+        .order("full_name")
+        .limit(100);
+      if (query) request = request.ilike("full_name", `%${query}%`);
+      const { data } = await request.returns<ClientRow[]>();
+      clients = data ?? [];
+
+      // Clients this unit served in the past, now in another unit.
+      const { data: pastHistory } = await supabase
+        .from("client_clinic_history")
+        .select("client_id")
+        .eq("clinic_id", clinicId)
+        .not("ended_at", "is", null);
+      const pastIds = [...new Set((pastHistory ?? []).map((h) => h.client_id))];
+      if (pastIds.length > 0) {
+        const { data: transferredData } = await supabase
+          .from("clients")
+          .select("id, full_name, clinics ( name )")
+          .in("id", pastIds)
+          .neq("clinic_id", clinicId)
+          .order("full_name")
+          .returns<TransferredRow[]>();
+        transferred = transferredData ?? [];
+      }
     }
-    const { data } = await request.returns<ClientRow[]>();
-    clients = data ?? [];
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
           <p className="text-sm text-muted-foreground">
-            {session.activeClinic
-              ? `Clientes de ${session.activeClinic.name}.`
-              : "Selecione uma clínica no menu lateral."}
+            {!session.activeClinic
+              ? "Selecione uma clínica no menu lateral."
+              : isFranchisor
+                ? "Visão da rede — todos os clientes de todas as unidades."
+                : `Clientes de ${session.activeClinic.name}.`}
           </p>
         </div>
         {canCreate && (
@@ -73,13 +134,28 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         )}
       </div>
 
-      <form method="get" className="flex max-w-sm gap-2">
+      <form method="get" className="flex max-w-xl flex-wrap gap-2">
         <Input
           type="search"
           name="q"
           defaultValue={query}
           placeholder="Buscar por nome..."
+          className="max-w-xs"
         />
+        {isFranchisor && (
+          <select
+            name="clinica"
+            defaultValue={clinicFilter}
+            className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          >
+            <option value="">Todas as unidades</option>
+            {clinicOptions.map((clinic) => (
+              <option key={clinic.id} value={clinic.id}>
+                {clinic.name}
+              </option>
+            ))}
+          </select>
+        )}
         <Button type="submit" variant="outline">
           Buscar
         </Button>
@@ -90,8 +166,9 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              {isFranchisor && <TableHead>Unidade</TableHead>}
+              <TableHead>Fase da jornada</TableHead>
               <TableHead>Telefone</TableHead>
-              <TableHead>E-mail</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
@@ -102,8 +179,15 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
                 <TableCell className="font-medium">
                   {client.full_name}
                 </TableCell>
+                {isFranchisor && (
+                  <TableCell>{client.clinics?.name ?? "—"}</TableCell>
+                )}
+                <TableCell>
+                  <Badge variant="secondary">
+                    {PHASE_LABELS[client.journey_phase]}
+                  </Badge>
+                </TableCell>
                 <TableCell>{client.phone ?? "—"}</TableCell>
-                <TableCell>{client.email ?? "—"}</TableCell>
                 <TableCell>
                   <Badge
                     variant={client.status === "active" ? "secondary" : "outline"}
@@ -126,18 +210,41 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
             {clients.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={isFranchisor ? 6 : 5}
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
                   {query
                     ? "Nenhum cliente encontrado com esse nome."
-                    : "Nenhum cliente cadastrado nesta clínica ainda."}
+                    : "Nenhum cliente cadastrado ainda."}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {transferred.length > 0 && (
+        <div className="rounded-md border bg-muted/40 p-4">
+          <h2 className="mb-2 text-sm font-medium">
+            Transferidos para outras unidades
+          </h2>
+          <ul className="space-y-1">
+            {transferred.map((client) => (
+              <li key={client.id} className="flex items-center gap-2 text-sm">
+                <Link
+                  href={`/clientes/${client.id}`}
+                  className="hover:underline"
+                >
+                  {client.full_name}
+                </Link>
+                <Badge variant="destructive" className="text-[10px]">
+                  Transferido para {client.clinics?.name ?? "outra unidade"}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
