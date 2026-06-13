@@ -30,7 +30,7 @@ $$;
 -- 2. Dentista Planner works at the network Planning Center and must be able to
 --    read clients, journey history and appointments across the whole network.
 -- -----------------------------------------------------------------------------
-create function public.is_planner()
+create or replace function public.is_planner()
 returns boolean
 language sql
 stable
@@ -292,6 +292,12 @@ begin
       when v_old = 'clinical_conversion' and p_new_phase = 'planning_center'
         then public.has_role_in_clinic(v_clinic, array['clinical_coordinator']::public.user_role[])
       when v_old = 'planning_center' and p_new_phase = 'commercial_conversion'
+        then exists (
+          select 1 from public.user_clinic_roles ucr
+          where ucr.user_id = v_user and ucr.role = 'planner_dentist'
+        )
+      -- Planner may send a case back to clinical conversion (needs more data)
+      when v_old = 'planning_center' and p_new_phase = 'clinical_conversion'
         then exists (
           select 1 from public.user_clinic_roles ucr
           where ucr.user_id = v_user and ucr.role = 'planner_dentist'

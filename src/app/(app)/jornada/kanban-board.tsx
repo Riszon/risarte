@@ -38,6 +38,8 @@ export type KanbanClient = {
   journey_phase: JourneyPhase;
   phase_entered_at: string;
   methodology_pillar: MethodologyPillar | null;
+  /** Set only in the network (franchisor) view, to show the unit per card. */
+  clinic_name: string | null;
 };
 
 type Props = {
@@ -129,6 +131,11 @@ export function KanbanBoard({
                     >
                       {client.full_name}
                     </Link>
+                    {client.clinic_name && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {client.clinic_name}
+                      </p>
+                    )}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <span
                         className={cn(

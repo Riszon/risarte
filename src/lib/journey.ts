@@ -50,6 +50,7 @@ export const PHASE_TRANSITIONS: {
   { from: "acquisition", to: "clinical_conversion", roles: ["receptionist", "sdr"] },
   { from: "clinical_conversion", to: "planning_center", roles: ["clinical_coordinator"] },
   { from: "planning_center", to: "commercial_conversion", roles: ["planner_dentist"] },
+  { from: "planning_center", to: "clinical_conversion", roles: ["planner_dentist"] },
   { from: "commercial_conversion", to: "treatment_start", roles: ["commercial_consultant"] },
   { from: "treatment_start", to: "reevaluation", roles: ["receptionist"] },
   { from: "treatment_start", to: "follow_up", roles: ["receptionist"] },
