@@ -138,7 +138,12 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value) =>
+                          clinicItems.find((i) => i.value === value)?.label ??
+                          "Selecionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {clinicItems.map((item) => (

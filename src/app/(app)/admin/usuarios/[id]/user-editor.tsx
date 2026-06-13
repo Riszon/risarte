@@ -221,7 +221,12 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
                   onValueChange={(v) => v !== null && setNewClinicId(v)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value) =>
+                        clinicItems.find((i) => i.value === value)?.label ??
+                        "Selecionar"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {clinicItems.map((item) => (

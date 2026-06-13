@@ -143,6 +143,64 @@ refletir nos botões da UI.
 - [ ] Consolidação financeira na transferência (realizado × pago × aberto)
       → Fase 3, junto com o módulo financeiro (decisão do dono).
 
+## LOTE A.3 — feedback do dono após teste do Lote A.2 (2026-06-13)
+
+### Bugs corrigidos já (migração 0009 + código)
+- [x] Dentista via TODOS os clientes da clínica (acesso por histórico de
+      unidade usava user_clinic_ids incl. dentista) → usa full-access.
+- [x] Dentista Planner não conseguia abrir ficha/jornada do cliente → is_planner()
+      adicionado às policies de clients/journey/appointments.
+- [x] Notificações com símbolos (`Â·`, `ClÃ­nica`) → causa: cópia do SQL para
+      o clipboard relia UTF-8 como Latin-1. Funções recriadas com texto correto
+      e entrega via UTF-8; notificações antigas limpas.
+- [x] Seletor de clínica mostrando código no cadastro de usuário → SelectValue
+      com função que resolve o rótulo.
+
+### Cadastro de clientes (próximo lote a construir)
+- [ ] CPF em PRIMEIRO no cadastro: ao informar, verificar duplicado ANTES de
+      preencher o resto (evita refazer tudo).
+- [ ] Base de "prospects" (não-clientes): responsáveis que não são clientes
+      entram nela; ao cadastrar futuro cliente com aquele CPF, auto-preencher;
+      e logo após cadastrar, mostrar os dependentes já vinculados.
+- [ ] Responsável deve ter 18+ (validação).
+
+### Agenda / atendimento (parte vira detalhamento da Jornada)
+- [ ] Notificação de atraso (passou do horário): recepção, coordenador,
+      gerente e dentista (só os seus) + destaque visual no card exigindo
+      mudar status.
+- [ ] Registrar CHEGADA do cliente no card.
+- [ ] Tela de fluxo de atendimento: chegada → sala de espera (lista) →
+      chamar → em atendimento. (Pertence ao detalhamento da Jornada.)
+- [ ] Cadeiras de atendimento por clínica (2/3/4) e agenda dimensionada por
+      cadeiras disponíveis.
+- [ ] Visões da agenda: dia / semana / mês; domingo como 1º dia da semana,
+      sábado/domingo só aparecem se houver agendamento; nº da semana (ex.: 25/53).
+- [ ] Destaque para a lista de horários cancelados na transferência.
+
+### Usuários e RBAC
+- [ ] Cadastro de usuário: CPF (único, sem duplicar, auto-preenche se já
+      existe), nascimento, telefone, endereço, data de cadastro, histórico de
+      alterações, código de identificação do usuário.
+- [ ] Admin Master pode editar o e-mail após o cadastro.
+- [ ] Coordenador Clínico e Gerente podem cadastrar Recepcionista e Dentista
+      na sua unidade.
+- [ ] Restrição de funções por tipo de clínica:
+      - Franqueadora: Dentista Planner, Consultor Comercial, Assistente
+        Comercial, SDR.
+      - Unidades: Coordenador Clínico, Gerente de Unidade, Recepcionista,
+        Dentista.
+
+### Notificações
+- [ ] Por padrão, mostrar só as da unidade ATIVA; botão "ver todas".
+- [ ] Ao abrir notificação de outra unidade: confirmar troca de unidade e
+      trocar contexto (unidade + função) automaticamente.
+
+### Jornada (detalhamento solicitado pelo dono — fazer ANTES da Etapa 4)
+- [ ] Detalhar o passo a passo de cada fase conforme o brief original
+      (recepção → consulta → coleta de dados → ... ; o fluxo de atendimento
+      sala de espera/em atendimento entra aqui). É a espinha dorsal; alinhar
+      com o dono antes de construir Etapas 4 e 5.
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de

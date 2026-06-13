@@ -101,7 +101,10 @@ Machine quirks (this repo only exists on the owner's Windows 10 machine):
 - Tool shells don't have Node on PATH. Prefix PowerShell commands with:
   `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`
 - `api.github.com` is unreachable from this network: `gh` CLI does NOT work. Push with plain git over SSH (`git@github.com:Riszon/risarte.git`); repo-level operations (creating repos, PRs) must be done by the owner in the web UI.
-- Database migrations are NOT applied by CLI. Write a numbered file in `supabase/migrations/`, copy it to the clipboard (`Get-Content -Raw <file> | Set-Clipboard`), and ask the owner to paste/Run it in the Supabase dashboard SQL Editor. Never renumber or edit an already-applied migration; write a new one.
+- Database migrations are NOT applied by CLI. Write a numbered file in `supabase/migrations/`, copy it to the clipboard, and ask the owner to paste/Run it in the Supabase dashboard SQL Editor. Never renumber or edit an already-applied migration; write a new one.
+  - CRITICAL: copy with UTF-8, NOT `Get-Content -Raw` (PowerShell 5.1 default reads UTF-8 files as Latin-1 and turns `·`/accents into mojibake like `Â·`/`ClÃ­nica`, which then gets stored in the DB). Use:
+    `[System.IO.File]::ReadAllText('<path>', [System.Text.Encoding]::UTF8) | Set-Clipboard`
+  - This bit migrations 0004/0006/0008 (garbled notification text); fixed in 0009.
 
 ## Architecture
 
