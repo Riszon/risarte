@@ -31,6 +31,8 @@ type AppointmentRow = {
   notes: string | null;
   provider_user_id: string | null;
   provider: { full_name: string } | null;
+  clinic_id?: string;
+  clinics?: { name: string } | null;
   clients: {
     id: string;
     full_name: string;
@@ -64,27 +66,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   const clinicId = session.activeClinic?.id;
   const isFranchisor = session.activeClinic?.type === "franchisor";
 
-  if (isFranchisor) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              A Franqueadora não tem agenda própria
-            </CardTitle>
-            <CardDescription>
-              A Risarte Franchising é o guarda-chuva da rede — os atendimentos
-              acontecem nas unidades. Use o seletor no menu lateral para abrir
-              a agenda de uma unidade. (A visão consolidada da rede, com
-              totais por tipo e status, chega na próxima etapa.)
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   const weekParam =
     typeof searchParams.semana === "string" ? searchParams.semana : "";
   const baseDate = weekParam ? new Date(`${weekParam}T00:00:00`) : new Date();
@@ -98,6 +79,164 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   prevWeek.setDate(prevWeek.getDate() - 7);
   const nextWeek = new Date(weekStart);
   nextWeek.setDate(nextWeek.getDate() + 7);
+
+  const weekLabelHeader = `${weekStart.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  })} – ${new Date(weekEnd.getTime() - 864e5).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  })}`;
+
+  // -------------------------------------------------------------------------
+  // Franchisor context: consolidated NETWORK agenda focused on the cases the
+  // Dentista Planner cares about — evaluations (FASE 2), reevaluations
+  // (FASE 6) and, highlighted, commercial presentations (FASE 4).
+  // -------------------------------------------------------------------------
+  if (isFranchisor) {
+    const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
+      roles.includes("planner_dentist")
+    );
+    const canSeeNetwork =
+      session.isAdminMaster || isPlanner || session.clinics.length > 1;
+
+    if (!canSeeNetwork) {
+      return (
+        <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+          <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                A Franqueadora não tem agenda própria
+              </CardTitle>
+              <CardDescription>
+                Os atendimentos acontecem nas unidades. Use o seletor no menu
+                lateral para abrir a agenda de uma unidade.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      );
+    }
+
+    const unitFilter =
+      typeof searchParams.unidade === "string" ? searchParams.unidade : "";
+    const supabase = await createClient();
+
+    let netQuery = supabase
+      .from("appointments")
+      .select(
+        "id, type, status, starts_at, ends_at, notes, provider_user_id, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+      )
+      .in("type", ["evaluation", "reevaluation", "commercial_presentation"])
+      .gte("starts_at", weekStart.toISOString())
+      .lt("starts_at", weekEnd.toISOString())
+      .order("starts_at");
+    if (unitFilter) netQuery = netQuery.eq("clinic_id", unitFilter);
+
+    const [{ data: netAppts }, { data: unitOptions }] = await Promise.all([
+      netQuery.returns<AppointmentRow[]>(),
+      supabase
+        .from("clinics")
+        .select("id, name")
+        .eq("type", "franchise_unit")
+        .eq("is_active", true)
+        .order("name"),
+    ]);
+
+    const networkAppointments: AgendaAppointment[] = (netAppts ?? []).map(
+      (a) => ({
+        id: a.id,
+        type: a.type,
+        status: a.status,
+        starts_at: a.starts_at,
+        ends_at: a.ends_at,
+        notes: a.notes,
+        provider_user_id: a.provider_user_id,
+        provider: a.provider,
+        clinic_name: a.clinics?.name ?? null,
+        clients: a.clients,
+      })
+    );
+
+    return (
+      <div className="space-y-4 px-4 py-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Agenda da rede
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Avaliações (Fase 2), reavaliações (Fase 6) e, em{" "}
+              <span className="font-medium text-gold">destaque dourado</span>,
+              apresentações comerciais (Fase 4) — semana de {weekLabelHeader}.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <form method="get" className="flex items-center gap-2">
+              <input type="hidden" name="semana" value={toIsoDate(weekStart)} />
+              <select
+                name="unidade"
+                defaultValue={unitFilter}
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Todas as unidades</option>
+                {(unitOptions ?? []).map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="outline" size="sm">
+                Filtrar
+              </Button>
+            </form>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  href={`/agenda?semana=${toIsoDate(prevWeek)}${unitFilter ? `&unidade=${unitFilter}` : ""}`}
+                />
+              }
+            >
+              ← Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/agenda" />}
+            >
+              Hoje
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  href={`/agenda?semana=${toIsoDate(nextWeek)}${unitFilter ? `&unidade=${unitFilter}` : ""}`}
+                />
+              }
+            >
+              Próxima →
+            </Button>
+          </div>
+        </div>
+        <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
+          <WeekGrid
+            weekStartIso={weekStart.toISOString()}
+            appointments={networkAppointments}
+            canManage={false}
+            staff={[]}
+            highlightType="commercial_presentation"
+          />
+        </div>
+      </div>
+    );
+  }
 
   let appointments: AppointmentRow[] = [];
   let clients: { id: string; full_name: string }[] = [];

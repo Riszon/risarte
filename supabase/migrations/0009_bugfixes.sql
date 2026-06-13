@@ -44,7 +44,7 @@ as $$
   );
 $$;
 
-drop policy "clients_select_member" on public.clients;
+drop policy if exists "clients_select_member" on public.clients;
 create policy "clients_select_member"
   on public.clients for select
   to authenticated
@@ -61,7 +61,7 @@ create policy "clients_select_member"
     )
   );
 
-drop policy "journey_history_select_member" on public.journey_phase_history;
+drop policy if exists "journey_history_select_member" on public.journey_phase_history;
 create policy "journey_history_select_member"
   on public.journey_phase_history for select
   to authenticated
@@ -72,7 +72,7 @@ create policy "journey_history_select_member"
     or public.is_planner()
   );
 
-drop policy "appointments_select_member" on public.appointments;
+drop policy if exists "appointments_select_member" on public.appointments;
 create policy "appointments_select_member"
   on public.appointments for select
   to authenticated
@@ -296,8 +296,8 @@ begin
           select 1 from public.user_clinic_roles ucr
           where ucr.user_id = v_user and ucr.role = 'planner_dentist'
         )
-      -- Planner may send a case back to clinical conversion (needs more data)
-      when v_old = 'planning_center' and p_new_phase = 'clinical_conversion'
+      -- Planner may send a case back to clinical conversion or reevaluation
+      when v_old = 'planning_center' and p_new_phase in ('clinical_conversion', 'reevaluation')
         then exists (
           select 1 from public.user_clinic_roles ucr
           where ucr.user_id = v_user and ucr.role = 'planner_dentist'

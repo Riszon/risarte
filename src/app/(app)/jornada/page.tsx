@@ -4,7 +4,12 @@ import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Button } from "@/components/ui/button";
-import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
+import {
+  METHODOLOGY_PILLARS,
+  PILLAR_LABELS,
+  type JourneyPhase,
+  type MethodologyPillar,
+} from "@/lib/journey";
 import { KanbanBoard, type KanbanClient } from "./kanban-board";
 
 export const metadata: Metadata = { title: "Jornada do Cliente" };
@@ -40,6 +45,8 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
 
   const unitFilter =
     typeof searchParams.unidade === "string" ? searchParams.unidade : "";
+  const pillarFilter =
+    typeof searchParams.pilar === "string" ? searchParams.pilar : "";
 
   const supabase = await createClient();
 
@@ -58,6 +65,9 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
     if (unitFilter) clientsQuery = clientsQuery.eq("clinic_id", unitFilter);
   } else {
     clientsQuery = clientsQuery.eq("clinic_id", clinicId);
+  }
+  if (pillarFilter) {
+    clientsQuery = clientsQuery.eq("methodology_pillar", pillarFilter);
   }
 
   const [{ data: clients }, { data: slaRows }, { data: unitOptions }] =
@@ -119,8 +129,8 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {isFranchisor && (
-            <form method="get">
+          <form method="get" className="flex items-center gap-2">
+            {isFranchisor && (
               <select
                 name="unidade"
                 defaultValue={unitFilter}
@@ -133,11 +143,23 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
                   </option>
                 ))}
               </select>
-              <Button type="submit" variant="outline" size="sm" className="ml-2">
-                Filtrar
-              </Button>
-            </form>
-          )}
+            )}
+            <select
+              name="pilar"
+              defaultValue={pillarFilter}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">Todos os pilares</option>
+              {METHODOLOGY_PILLARS.map((pillar) => (
+                <option key={pillar} value={pillar}>
+                  {PILLAR_LABELS[pillar]}
+                </option>
+              ))}
+            </select>
+            <Button type="submit" variant="outline" size="sm">
+              Filtrar
+            </Button>
+          </form>
           {canRegister && !isFranchisor && (
             <Button
               variant="outline"

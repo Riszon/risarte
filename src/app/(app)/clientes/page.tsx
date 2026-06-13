@@ -13,7 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PHASE_LABELS, type JourneyPhase } from "@/lib/journey";
+import {
+  JOURNEY_PHASES,
+  METHODOLOGY_PILLARS,
+  PHASE_LABELS,
+  PILLAR_LABELS,
+  type JourneyPhase,
+  type MethodologyPillar,
+} from "@/lib/journey";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -48,11 +55,29 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   const query = typeof searchParams.q === "string" ? searchParams.q.trim() : "";
   const clinicFilter =
     typeof searchParams.clinica === "string" ? searchParams.clinica : "";
+  const phaseFilter =
+    typeof searchParams.fase === "string" ? searchParams.fase : "";
+  const pillarFilter =
+    typeof searchParams.pilar === "string" ? searchParams.pilar : "";
 
   const clinicId = session.activeClinic?.id;
   const isFranchisor = session.activeClinic?.type === "franchisor";
   const canCreate =
-    !isFranchisor && hasRoleInClinic(session, clinicId, ["receptionist"]);
+    !isFranchisor &&
+    hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
+
+  function applyFilters<
+    T extends {
+      eq: (col: string, val: string) => T;
+      ilike: (col: string, val: string) => T;
+    },
+  >(request: T): T {
+    let r = request;
+    if (query) r = r.ilike("full_name", `%${query}%`);
+    if (phaseFilter) r = r.eq("journey_phase", phaseFilter);
+    if (pillarFilter) r = r.eq("methodology_pillar", pillarFilter);
+    return r;
+  }
 
   const supabase = await createClient();
 
@@ -71,7 +96,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         .order("full_name")
         .limit(200);
       if (clinicFilter) request = request.eq("clinic_id", clinicFilter);
-      if (query) request = request.ilike("full_name", `%${query}%`);
+      request = applyFilters(request);
       const [{ data }, { data: clinicsData }] = await Promise.all([
         request.returns<ClientRow[]>(),
         supabase
@@ -91,7 +116,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         .eq("clinic_id", clinicId)
         .order("full_name")
         .limit(100);
-      if (query) request = request.ilike("full_name", `%${query}%`);
+      request = applyFilters(request);
       const { data } = await request.returns<ClientRow[]>();
       clients = data ?? [];
 
@@ -157,6 +182,30 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
             ))}
           </select>
         )}
+        <select
+          name="fase"
+          defaultValue={phaseFilter}
+          className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+        >
+          <option value="">Todas as fases</option>
+          {JOURNEY_PHASES.map((phase) => (
+            <option key={phase} value={phase}>
+              {PHASE_LABELS[phase]}
+            </option>
+          ))}
+        </select>
+        <select
+          name="pilar"
+          defaultValue={pillarFilter}
+          className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+        >
+          <option value="">Todos os pilares</option>
+          {METHODOLOGY_PILLARS.map((pillar) => (
+            <option key={pillar} value={pillar}>
+              {PILLAR_LABELS[pillar]}
+            </option>
+          ))}
+        </select>
         <Button type="submit" variant="outline">
           Buscar
         </Button>

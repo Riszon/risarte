@@ -43,6 +43,8 @@ export type AgendaAppointment = {
   notes: string | null;
   provider_user_id: string | null;
   provider: { full_name: string } | null;
+  /** Set only in the network (planner/franchisor) view. */
+  clinic_name?: string | null;
   clients: {
     id: string;
     full_name: string;
@@ -75,11 +77,14 @@ export function WeekGrid({
   appointments,
   canManage,
   staff,
+  highlightType,
 }: {
   weekStartIso: string;
   appointments: AgendaAppointment[];
   canManage: boolean;
   staff: StaffOption[];
+  /** Appointment type to highlight (e.g. commercial presentation for planner). */
+  highlightType?: AppointmentType;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -109,12 +114,15 @@ export function WeekGrid({
   function renderCard(appointment: AgendaAppointment, compact: boolean) {
     const isUrgent =
       appointment.type === "urgency" || appointment.type === "emergency";
+    const isHighlighted =
+      highlightType !== undefined && appointment.type === highlightType;
     return (
       <div
         key={appointment.id}
         className={cn(
           "rounded-md border p-2 text-xs shadow-sm",
           STATUS_STYLES[appointment.status],
+          isHighlighted && "ring-2 ring-gold border-l-gold",
           appointment.type === "urgency" &&
             "ring-2 ring-amber-400 border-l-amber-500",
           appointment.type === "emergency" &&
@@ -158,6 +166,11 @@ export function WeekGrid({
             >
               {appointment.clients.full_name}
             </Link>
+            {appointment.clinic_name && (
+              <p className="truncate text-[10px] font-medium text-primary">
+                {appointment.clinic_name}
+              </p>
+            )}
             {appointment.provider && (
               <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
                 <UserRound className="size-3 shrink-0" />
