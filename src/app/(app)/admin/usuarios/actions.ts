@@ -7,13 +7,48 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import {
   USER_ROLES,
+  UNIT_SCOPES,
+  FRANCHISOR_ROLES,
   isRoleAllowedForClinicType,
   ROLE_LABELS,
   type ClinicType,
+  type UnitScope,
   type UserRole,
 } from "@/lib/roles";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/**
+ * Persists the franchisor unit-access scope for a role assignment (the row in
+ * user_clinic_roles). For 'specific', stores the chosen units; otherwise clears
+ * them. No-op for non-franchisor roles.
+ */
+async function saveUnitScope(
+  roleRowId: string,
+  role: UserRole,
+  scope: UnitScope | undefined,
+  unitIds: string[] | undefined
+): Promise<void> {
+  if (!FRANCHISOR_ROLES.includes(role)) return;
+  const effectiveScope: UnitScope = scope ?? "all";
+  const supabase = await createClient();
+
+  await supabase
+    .from("user_clinic_roles")
+    .update({ unit_scope: effectiveScope })
+    .eq("id", roleRowId);
+
+  await supabase.from("role_unit_access").delete().eq("user_clinic_role_id", roleRowId);
+
+  if (effectiveScope === "specific" && unitIds && unitIds.length > 0) {
+    await supabase.from("role_unit_access").insert(
+      unitIds.map((clinicId) => ({
+        user_clinic_role_id: roleRowId,
+        clinic_id: clinicId,
+      }))
+    );
+  }
+}
 
 /**
  * Validates that each role is allowed for its clinic's type (franchisor vs
@@ -57,7 +92,12 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-export type RoleAssignment = { clinicId: string; role: UserRole };
+export type RoleAssignment = {
+  clinicId: string;
+  role: UserRole;
+  unitScope?: UnitScope;
+  unitIds?: string[];
+};
 
 function parseAssignments(raw: string): RoleAssignment[] | null {
   try {
@@ -66,6 +106,7 @@ function parseAssignments(raw: string): RoleAssignment[] | null {
     const seenClinics = new Set<string>();
     for (const item of parsed) {
       if (!item.clinicId || !USER_ROLES.includes(item.role)) return null;
+      if (item.unitScope && !UNIT_SCOPES.includes(item.unitScope)) return null;
       // One role per clinic.
       if (seenClinics.has(item.clinicId)) return null;
       seenClinics.add(item.clinicId);
@@ -125,7 +166,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
 
   const supabase = await createClient();
   if (assignments.length > 0) {
-    const { error: rolesError } = await supabase
+    const { data: insertedRoles, error: rolesError } = await supabase
       .from("user_clinic_roles")
       .insert(
         assignments.map((a) => ({
@@ -133,7 +174,8 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
           clinic_id: a.clinicId,
           role: a.role,
         }))
-      );
+      )
+      .select("id, clinic_id");
     if (rolesError) {
       console.error("role assignment failed:", rolesError.message);
       return {
@@ -141,6 +183,11 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
         error:
           "Usuário criado, mas houve erro ao atribuir funções. Edite o usuário para atribuí-las.",
       };
+    }
+    // Save the unit-access scope for franchisor-role assignments.
+    for (const a of assignments) {
+      const row = (insertedRoles ?? []).find((r) => r.clinic_id === a.clinicId);
+      if (row) await saveUnitScope(row.id, a.role, a.unitScope, a.unitIds);
     }
   }
 
@@ -256,7 +303,9 @@ export async function setUserActive(
 export async function addUserRole(
   userId: string,
   clinicId: string,
-  role: UserRole
+  role: UserRole,
+  unitScope?: UnitScope,
+  unitIds?: string[]
 ): Promise<ActionResult> {
   await requireAdminMaster();
   if (!USER_ROLES.includes(role)) {
@@ -267,9 +316,11 @@ export async function addUserRole(
   if (envError) return { ok: false, error: envError };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from("user_clinic_roles")
-    .insert({ user_id: userId, clinic_id: clinicId, role });
+    .insert({ user_id: userId, clinic_id: clinicId, role })
+    .select("id")
+    .single();
 
   if (error) {
     const friendly = error.code === "23505"
@@ -281,6 +332,8 @@ export async function addUserRole(
     return { ok: false, error: friendly };
   }
 
+  await saveUnitScope(inserted.id, role, unitScope, unitIds);
+
   await logAudit({
     action: "update",
     entityType: "user_clinic_roles",
@@ -290,6 +343,38 @@ export async function addUserRole(
   });
   revalidatePath(`/admin/usuarios/${userId}`);
   revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
+
+/** Updates the unit-access scope of an existing franchisor role assignment. */
+export async function updateRoleScope(
+  roleRowId: string,
+  userId: string,
+  unitScope: UnitScope,
+  unitIds: string[]
+): Promise<ActionResult> {
+  await requireAdminMaster();
+  if (!UNIT_SCOPES.includes(unitScope)) {
+    return { ok: false, error: "Escopo inválido." };
+  }
+
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("user_clinic_roles")
+    .select("role")
+    .eq("id", roleRowId)
+    .single();
+  if (!row) return { ok: false, error: "Função não encontrada." };
+
+  await saveUnitScope(roleRowId, row.role as UserRole, unitScope, unitIds);
+
+  await logAudit({
+    action: "update",
+    entityType: "user_clinic_roles",
+    entityId: userId,
+    details: { unit_scope: unitScope, units: unitIds.length },
+  });
+  revalidatePath(`/admin/usuarios/${userId}`);
   return { ok: true };
 }
 

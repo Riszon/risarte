@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { UserRole } from "@/lib/roles";
+import type { ClinicType, UnitScope, UserRole } from "@/lib/roles";
 import { UserEditor } from "./user-editor";
 
 export const metadata: Metadata = { title: "Editar usuário" };
@@ -11,7 +11,9 @@ type RoleRow = {
   id: string;
   clinic_id: string;
   role: UserRole;
-  clinics: { name: string } | null;
+  unit_scope: UnitScope | null;
+  clinics: { name: string; type: ClinicType } | null;
+  role_unit_access: { clinic_id: string }[] | null;
 };
 
 export default async function EditUserPage(
@@ -30,7 +32,9 @@ export default async function EditUserPage(
         .single(),
       supabase
         .from("user_clinic_roles")
-        .select("id, clinic_id, role, clinics ( name )")
+        .select(
+          "id, clinic_id, role, unit_scope, clinics ( name, type ), role_unit_access ( clinic_id )"
+        )
         .eq("user_id", id)
         .returns<RoleRow[]>(),
       supabase
@@ -57,6 +61,9 @@ export default async function EditUserPage(
           clinicId: r.clinic_id,
           role: r.role,
           clinicName: r.clinics?.name ?? "—",
+          clinicType: r.clinics?.type ?? "franchise_unit",
+          unitScope: r.unit_scope,
+          unitIds: (r.role_unit_access ?? []).map((u) => u.clinic_id),
         }))}
         clinics={clinics ?? []}
         isSelf={session.userId === profile.id}

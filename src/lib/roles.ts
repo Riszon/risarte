@@ -65,6 +65,16 @@ export function rolesForClinicType(type: ClinicType): UserRole[] {
   return type === "franchisor" ? FRANCHISOR_ROLES : UNIT_ROLES;
 }
 
+// Scope of franchise units a franchisor-role user can access.
+export const UNIT_SCOPES = ["all", "specific", "none"] as const;
+export type UnitScope = (typeof UNIT_SCOPES)[number];
+
+export const UNIT_SCOPE_LABELS: Record<UnitScope, string> = {
+  all: "Todas as unidades",
+  specific: "Unidades específicas",
+  none: "Nenhuma unidade",
+};
+
 export function isRoleAllowedForClinicType(
   role: UserRole,
   type: ClinicType

@@ -290,6 +290,30 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       entry.roles.push(row.role);
       staffMap.set(row.user_id, entry);
     }
+
+    // Commercial presentations are run by Consultores Comerciais of the matriz
+    // whose unit-access scope reaches this clinic — add them to the providers.
+    if (canSchedule) {
+      const { data: consultants } = await supabase.rpc(
+        "providers_with_access",
+        { p_clinic_id: clinicId, p_role: "commercial_consultant" }
+      );
+      for (const c of (consultants ?? []) as {
+        user_id: string;
+        full_name: string;
+      }[]) {
+        const entry = staffMap.get(c.user_id) ?? {
+          userId: c.user_id,
+          name: c.full_name ?? "—",
+          roles: [],
+        };
+        if (!entry.roles.includes("commercial_consultant")) {
+          entry.roles.push("commercial_consultant");
+        }
+        staffMap.set(c.user_id, entry);
+      }
+    }
+
     staff = [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 

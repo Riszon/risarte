@@ -22,6 +22,7 @@ import {
   type UserRole,
 } from "@/lib/roles";
 import { createUser, type RoleAssignment } from "../actions";
+import { UnitAccessControl } from "../unit-access-control";
 
 type ClinicOption = { id: string; name: string; type: ClinicType };
 
@@ -38,6 +39,11 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assignments, setAssignments] = useState<RoleAssignment[]>([]);
+  const franchiseUnits = clinics.filter((c) => c.type === "franchise_unit");
+
+  function isFranchisorClinic(clinicId: string): boolean {
+    return clinics.find((c) => c.id === clinicId)?.type === "franchisor";
+  }
 
   /** Clinics not yet used by another row (a user has ONE role per clinic). */
   function availableClinics(currentIndex: number): ClinicOption[] {
@@ -61,7 +67,12 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
     const defaultRole = rolesForClinicType(firstClinic.type)[0];
     setAssignments((prev) => [
       ...prev,
-      { clinicId: firstClinic.id, role: defaultRole },
+      {
+        clinicId: firstClinic.id,
+        role: defaultRole,
+        unitScope: firstClinic.type === "franchisor" ? "all" : undefined,
+        unitIds: [],
+      },
     ]);
   }
 
@@ -74,12 +85,18 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
       prev.map((a, i) => {
         if (i !== index) return a;
         const next = { ...a, ...patch };
-        // If the clinic changed, make sure the role is valid for the new type.
+        // If the clinic changed, fix the role and the access scope.
         if (patch.clinicId) {
-          const allowed = rolesForClinicType(
-            clinicType(patch.clinicId) ?? "franchise_unit"
-          );
+          const type = clinicType(patch.clinicId) ?? "franchise_unit";
+          const allowed = rolesForClinicType(type);
           if (!allowed.includes(next.role)) next.role = allowed[0];
+          if (type === "franchisor") {
+            next.unitScope = next.unitScope ?? "all";
+            next.unitIds = next.unitIds ?? [];
+          } else {
+            next.unitScope = undefined;
+            next.unitIds = [];
+          }
         }
         return next;
       })
@@ -153,8 +170,10 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
               label: c.name,
             }));
             const roleItems = roleItemsFor(clinicType(assignment.clinicId));
+            const showAccess = isFranchisorClinic(assignment.clinicId);
             return (
-              <div key={index} className="flex items-end gap-2">
+              <div key={index} className="space-y-2">
+              <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-1">
                   {index === 0 && <Label className="text-xs">Clínica</Label>}
                   <Select
@@ -217,6 +236,18 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
                 >
                   <Trash2 className="size-4" />
                 </Button>
+              </div>
+              {showAccess && (
+                <UnitAccessControl
+                  idPrefix={`access-${index}`}
+                  units={franchiseUnits}
+                  scope={assignment.unitScope ?? "all"}
+                  unitIds={assignment.unitIds ?? []}
+                  onChange={(scope, unitIds) =>
+                    updateAssignment(index, { unitScope: scope, unitIds })
+                  }
+                />
+              )}
               </div>
             );
           })}

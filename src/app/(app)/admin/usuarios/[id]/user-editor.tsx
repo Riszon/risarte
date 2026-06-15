@@ -17,9 +17,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  FRANCHISOR_ROLES,
   ROLE_LABELS,
+  UNIT_SCOPE_LABELS,
   rolesForClinicType,
   type ClinicType,
+  type UnitScope,
   type UserRole,
 } from "@/lib/roles";
 import {
@@ -27,8 +30,20 @@ import {
   removeUserRole,
   resetUserPassword,
   setUserActive,
+  updateRoleScope,
   updateUserName,
 } from "../actions";
+import { UnitAccessControl } from "../unit-access-control";
+
+type RoleItem = {
+  id: string;
+  clinicId: string;
+  role: UserRole;
+  clinicName: string;
+  clinicType: ClinicType;
+  unitScope: UnitScope | null;
+  unitIds: string[];
+};
 
 type Props = {
   profile: {
@@ -38,7 +53,7 @@ type Props = {
     is_admin_master: boolean;
     is_active: boolean;
   };
-  roles: { id: string; clinicId: string; role: UserRole; clinicName: string }[];
+  roles: RoleItem[];
   clinics: { id: string; name: string; type: ClinicType }[];
   isSelf: boolean;
 };
@@ -46,6 +61,7 @@ type Props = {
 export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const franchiseUnits = clinics.filter((c) => c.type === "franchise_unit");
   // A user holds ONE role per clinic: only clinics without a role can be added.
   const availableClinics = clinics.filter(
     (c) => !roles.some((r) => r.clinicId === c.id)
@@ -55,6 +71,8 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
     label: c.name,
   }));
   const [newClinicId, setNewClinicId] = useState(availableClinics[0]?.id ?? "");
+  const [newScope, setNewScope] = useState<UnitScope>("all");
+  const [newUnitIds, setNewUnitIds] = useState<string[]>([]);
   const newClinicType = clinics.find((c) => c.id === newClinicId)?.type;
   const roleItems = newClinicType
     ? rolesForClinicType(newClinicType).map((role) => ({
@@ -74,6 +92,8 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
       const allowed = rolesForClinicType(type);
       if (!allowed.includes(newRole)) setNewRole(allowed[0]);
     }
+    setNewScope("all");
+    setNewUnitIds([]);
   }
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>, successMessage: string) {
@@ -203,35 +223,45 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
             </p>
           )}
           {roles.map((role) => (
-            <div
-              key={role.id}
-              className="flex items-center justify-between rounded-md border p-3"
-            >
-              <div>
-                <p className="text-sm font-medium">{role.clinicName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {ROLE_LABELS[role.role]}
-                </p>
+            <div key={role.id} className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{role.clinicName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ROLE_LABELS[role.role]}
+                    {FRANCHISOR_ROLES.includes(role.role) &&
+                      ` · ${UNIT_SCOPE_LABELS[role.unitScope ?? "all"]}`}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={isPending}
+                  aria-label="Remover função"
+                  onClick={() =>
+                    run(
+                      () => removeUserRole(role.id, profile.id),
+                      "Função removida."
+                    )
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={isPending}
-                aria-label="Remover função"
-                onClick={() =>
-                  run(
-                    () => removeUserRole(role.id, profile.id),
-                    "Função removida."
-                  )
-                }
-              >
-                <Trash2 className="size-4" />
-              </Button>
+              {FRANCHISOR_ROLES.includes(role.role) && (
+                <RoleScopeEditor
+                  role={role}
+                  userId={profile.id}
+                  units={franchiseUnits}
+                  onSaved={() => router.refresh()}
+                />
+              )}
             </div>
           ))}
 
           {availableClinics.length > 0 ? (
-            <div className="flex items-end gap-2 border-t pt-3">
+            <div className="space-y-2 border-t pt-3">
+            <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1">
                 <Label className="text-xs">Clínica</Label>
                 <Select
@@ -285,13 +315,33 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
                 disabled={isPending || !newClinicId}
                 onClick={() =>
                   run(
-                    () => addUserRole(profile.id, newClinicId, newRole),
+                    () =>
+                      addUserRole(
+                        profile.id,
+                        newClinicId,
+                        newRole,
+                        newClinicType === "franchisor" ? newScope : undefined,
+                        newClinicType === "franchisor" ? newUnitIds : undefined
+                      ),
                     "Função atribuída."
                   )
                 }
               >
                 Adicionar
               </Button>
+            </div>
+            {newClinicType === "franchisor" && (
+              <UnitAccessControl
+                idPrefix="new-access"
+                units={franchiseUnits}
+                scope={newScope}
+                unitIds={newUnitIds}
+                onChange={(scope, unitIds) => {
+                  setNewScope(scope);
+                  setNewUnitIds(unitIds);
+                }}
+              />
+            )}
             </div>
           ) : (
             roles.length > 0 && (
@@ -303,6 +353,63 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function RoleScopeEditor({
+  role,
+  userId,
+  units,
+  onSaved,
+}: {
+  role: RoleItem;
+  userId: string;
+  units: { id: string; name: string }[];
+  onSaved: () => void;
+}) {
+  const [scope, setScope] = useState<UnitScope>(role.unitScope ?? "all");
+  const [unitIds, setUnitIds] = useState<string[]>(role.unitIds);
+  const [isPending, startTransition] = useTransition();
+
+  const dirty =
+    scope !== (role.unitScope ?? "all") ||
+    [...unitIds].sort().join(",") !== [...role.unitIds].sort().join(",");
+
+  function save() {
+    startTransition(async () => {
+      const result = await updateRoleScope(role.id, userId, scope, unitIds);
+      if (result.ok) {
+        toast.success("Acesso às unidades atualizado.");
+        onSaved();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
+  return (
+    <div className="space-y-2">
+      <UnitAccessControl
+        idPrefix={`scope-${role.id}`}
+        units={units}
+        scope={scope}
+        unitIds={unitIds}
+        onChange={(s, ids) => {
+          setScope(s);
+          setUnitIds(ids);
+        }}
+      />
+      {dirty && (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={save}
+        >
+          Salvar acesso
+        </Button>
+      )}
     </div>
   );
 }
