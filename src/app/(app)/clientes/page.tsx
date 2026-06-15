@@ -61,9 +61,21 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
 
   const clinicId = session.activeClinic?.id;
   const isFranchisor = session.activeClinic?.type === "franchisor";
-  const canCreate =
-    !isFranchisor &&
-    hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
+  const fRoles = clinicId ? (session.rolesByClinic[clinicId] ?? []) : [];
+  // Receptionist (unit) or SDR (franqueadora) can register clients.
+  const canCreate = hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
+
+  // In the Franqueadora the list is tailored to the user's role.
+  const franchisorMode: "network" | "consultant" | "planner" | "sdr" =
+    session.isAdminMaster
+      ? "network"
+      : fRoles.includes("commercial_consultant")
+        ? "consultant"
+        : fRoles.includes("planner_dentist")
+          ? "planner"
+          : fRoles.includes("sdr")
+            ? "sdr"
+            : "network";
 
   function applyFilters<
     T extends {
@@ -84,35 +96,72 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   let transferred: TransferredRow[] = [];
   let clinicOptions: { id: string; name: string }[] = [];
 
+  const SELECT =
+    "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )";
+
   if (clinicId) {
     if (isFranchisor) {
-      // Franchisor context = the whole network, with an optional unit filter.
-      let request = supabase
-        .from("clients")
-        .select(
-          "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
-        )
-        .order("full_name")
-        .limit(200);
-      if (clinicFilter) request = request.eq("clinic_id", clinicFilter);
-      request = applyFilters(request);
-      const [{ data }, { data: clinicsData }] = await Promise.all([
-        request.returns<ClientRow[]>(),
-        supabase
-          .from("clinics")
-          .select("id, name")
-          .eq("type", "franchise_unit")
-          .order("name"),
-      ]);
-      clients = data ?? [];
+      const { data: clinicsData } = await supabase
+        .from("clinics")
+        .select("id, name")
+        .eq("type", "franchise_unit")
+        .order("name");
       clinicOptions = clinicsData ?? [];
+
+      if (franchisorMode === "consultant") {
+        // Consultor: only the clients scheduled for / presented by him.
+        const { data: appts } = await supabase
+          .from("appointments")
+          .select("client_id")
+          .eq("provider_user_id", session.userId);
+        const ids = [...new Set((appts ?? []).map((a) => a.client_id))];
+        if (ids.length > 0) {
+          let request = supabase
+            .from("clients")
+            .select(SELECT)
+            .in("id", ids)
+            .order("full_name")
+            .limit(200);
+          if (clinicFilter) request = request.eq("clinic_id", clinicFilter);
+          request = applyFilters(request);
+          clients = (await request.returns<ClientRow[]>()).data ?? [];
+        }
+      } else {
+        let request = supabase
+          .from("clients")
+          .select(SELECT)
+          .order("full_name")
+          .limit(200);
+        if (clinicFilter) request = request.eq("clinic_id", clinicFilter);
+        if (franchisorMode === "sdr") {
+          request = request.eq("created_by", session.userId);
+        }
+        // Default phases per role (a chosen phase filter overrides them).
+        if (!phaseFilter) {
+          if (franchisorMode === "planner") {
+            request = request.in("journey_phase", [
+              "clinical_conversion",
+              "planning_center",
+              "commercial_conversion",
+              "reevaluation",
+            ]);
+          } else if (franchisorMode === "sdr") {
+            request = request.in("journey_phase", [
+              "acquisition",
+              "clinical_conversion",
+              "treatment_start",
+            ]);
+          }
+        }
+        request = applyFilters(request);
+        clients = (await request.returns<ClientRow[]>()).data ?? [];
+      }
     } else {
       let request = supabase
         .from("clients")
-        .select(
-          "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )"
-        )
-        .eq("clinic_id", clinicId)
+        .select(SELECT)
+        // Clients of this unit, plus SDR-registered clients who prefer it.
+        .or(`clinic_id.eq.${clinicId},preferred_clinic_id.eq.${clinicId}`)
         .order("full_name")
         .limit(100);
       request = applyFilters(request);
@@ -147,9 +196,15 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
           <p className="text-sm text-muted-foreground">
             {!session.activeClinic
               ? "Selecione uma clínica no menu lateral."
-              : isFranchisor
-                ? "Visão da rede — todos os clientes de todas as unidades."
-                : `Clientes de ${session.activeClinic.name}.`}
+              : !isFranchisor
+                ? `Clientes de ${session.activeClinic.name}.`
+                : franchisorMode === "consultant"
+                  ? "Seus clientes (agendados para você ou que você apresentou)."
+                  : franchisorMode === "planner"
+                    ? "Clientes da rede nas fases de planejamento (2, 3, 4 e 6)."
+                    : franchisorMode === "sdr"
+                      ? "Clientes que você cadastrou (em aquisição, conversão clínica e tratamento)."
+                      : "Visão da rede — todos os clientes de todas as unidades."}
           </p>
         </div>
         {canCreate && (

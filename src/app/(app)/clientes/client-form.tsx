@@ -54,9 +54,14 @@ const EMPTY_GUARDIAN: GuardianInput = {
 export function ClientForm({
   client,
   initialGuardians = [],
+  showPreferredUnit = false,
+  preferredUnits = [],
 }: {
   client?: ClientFormValues;
   initialGuardians?: GuardianInput[];
+  /** SDR registering at the Franqueadora picks the client's preferred unit. */
+  showPreferredUnit?: boolean;
+  preferredUnits?: { id: string; name: string }[];
 }) {
   const isEdit = Boolean(client?.id);
   const router = useRouter();
@@ -65,6 +70,7 @@ export function ClientForm({
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
   const [consent, setConsent] = useState(false);
   const [birthDate, setBirthDate] = useState(client?.birth_date ?? "");
+  const [preferredUnit, setPreferredUnit] = useState("");
   const [guardians, setGuardians] = useState<GuardianInput[]>(initialGuardians);
 
   const minor = isMinor(birthDate);
@@ -108,6 +114,7 @@ export function ClientForm({
     const formData = new FormData(event.currentTarget);
     formData.set("no_cpf", String(noCpf));
     formData.set("guardians", JSON.stringify(minor ? guardians : []));
+    if (showPreferredUnit) formData.set("preferred_clinic_id", preferredUnit);
     setDuplicate(null);
 
     startTransition(async () => {
@@ -205,6 +212,31 @@ export function ClientForm({
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+      {showPreferredUnit && (
+        <Card className="border-gold">
+          <CardHeader>
+            <CardTitle className="text-base">Unidade preferida *</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Cadastro pela Franqueadora (código FRA). O cliente aparecerá também
+              na lista da unidade escolhida.
+            </p>
+            <select
+              value={preferredUnit}
+              onChange={(e) => setPreferredUnit(e.target.value)}
+              className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">Selecione a unidade...</option>
+              {preferredUnits.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
           </CardContent>
         </Card>
       )}

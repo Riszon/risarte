@@ -1,9 +1,30 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import {
+  getSessionContext,
+  hasRoleInClinic,
+  type SessionContext,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+
+/**
+ * Edit permission: Recepcionista edits any appointment of her unit; an SDR
+ * edits only the appointments she created; Admin edits anything.
+ */
+function canEditAppointment(
+  session: SessionContext,
+  clinicId: string,
+  createdBy: string | null
+): boolean {
+  if (session.isAdminMaster) return true;
+  if (hasRoleInClinic(session, clinicId, ["receptionist"])) return true;
+  const isSdr = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("sdr")
+  );
+  return isSdr && createdBy === session.userId;
+}
 import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_TYPES,
@@ -126,16 +147,17 @@ export async function updateAppointment(
   const { data: existing } = await supabase
     .from("appointments")
     .select(
-      "clinic_id, client_id, type, starts_at, ends_at, provider_user_id, notes"
+      "clinic_id, client_id, type, starts_at, ends_at, provider_user_id, notes, created_by"
     )
     .eq("id", appointmentId)
     .single();
 
   if (!existing) return { ok: false, error: "Agendamento não encontrado." };
-  if (!hasRoleInClinic(session, existing.clinic_id, ["receptionist", "sdr"])) {
+  if (!canEditAppointment(session, existing.clinic_id, existing.created_by)) {
     return {
       ok: false,
-      error: "Apenas a Recepção ou Encantador(a) pode alterar agendamentos.",
+      error:
+        "Você só pode alterar agendamentos da sua unidade (ou, como Encantador(a), os que você mesmo criou).",
     };
   }
   if (new Date(existing.starts_at).getTime() < Date.now()) {
@@ -205,17 +227,18 @@ export async function updateAppointmentStatus(
 
   const { data: appointment } = await supabase
     .from("appointments")
-    .select("clinic_id, status")
+    .select("clinic_id, status, created_by")
     .eq("id", appointmentId)
     .single();
 
   if (!appointment) return { ok: false, error: "Agendamento não encontrado." };
   if (
-    !hasRoleInClinic(session, appointment.clinic_id, ["receptionist", "sdr"])
+    !canEditAppointment(session, appointment.clinic_id, appointment.created_by)
   ) {
     return {
       ok: false,
-      error: "Apenas a Recepção ou Encantador(a) pode alterar o status.",
+      error:
+        "Você só pode alterar o status de agendamentos da sua unidade (ou, como Encantador(a), os que você mesmo criou).",
     };
   }
 

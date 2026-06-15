@@ -194,6 +194,15 @@ export async function createClientRecord(
   const parsed = parseClientForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
+  // SDR registering at the Franqueadora: client owned by the matriz (FRA code)
+  // with a preferred unit, so it also shows in that unit's list.
+  const isFranchisor = session.activeClinic?.type === "franchisor";
+  const preferredClinicId =
+    isFranchisor ? String(formData.get("preferred_clinic_id") ?? "") || null : null;
+  if (isFranchisor && !preferredClinicId) {
+    return { ok: false, error: "Escolha a unidade preferida do cliente." };
+  }
+
   const supabase = await createClient();
 
   // Network-wide duplicate check (clients are unique across the network).
@@ -223,6 +232,7 @@ export async function createClientRecord(
     .insert({
       ...parsed.values,
       clinic_id: clinicId,
+      preferred_clinic_id: preferredClinicId,
       created_by: session.userId,
     })
     .select("id")
