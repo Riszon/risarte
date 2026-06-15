@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +26,13 @@ import type { UserRole } from "@/lib/roles";
 import {
   PHASE_LABELS,
   PILLAR_LABELS,
+  TREATMENT_PILLARS,
   allowedNextPhases,
+  displayedPillar,
   formatTimeInPhase,
   type JourneyPhase,
   type MethodologyPillar,
+  type TreatmentPillar,
 } from "@/lib/journey";
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -37,7 +40,7 @@ import {
   type AppointmentStatus,
   type AppointmentType,
 } from "@/lib/appointments";
-import { moveClientPhase } from "../../jornada/actions";
+import { moveClientPhase, setTreatmentPillar } from "../../jornada/actions";
 
 export type HistoryEntry = {
   id: string;
@@ -107,6 +110,21 @@ export function JourneySection({
     });
   }
 
+  const shownPillar = displayedPillar(phase, pillar);
+  const canSetPillar = isAdminMaster || isPlannerAnywhere;
+
+  function setPillar(value: TreatmentPillar) {
+    startTransition(async () => {
+      const result = await setTreatmentPillar(clientId, value);
+      if (result.ok) {
+        toast.success(`Pilar de tratamento: ${PILLAR_LABELS[value]}.`);
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
   const now = new Date();
   const futureAppointments = appointments.filter(
     (a) => new Date(a.starts_at) >= now
@@ -128,13 +146,38 @@ export function JourneySection({
           </span>
           <Badge
             className={cn(
-              pillar
+              shownPillar
                 ? "bg-gold text-gold-foreground"
                 : "bg-muted text-muted-foreground"
             )}
           >
-            {pillar ? `Pilar: ${PILLAR_LABELS[pillar]}` : "Pilar a definir"}
+            {shownPillar
+              ? `Pilar: ${PILLAR_LABELS[shownPillar]}`
+              : "Pilar a definir"}
           </Badge>
+          {canSetPillar && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="sm" disabled={isPending}>
+                    <Sparkles className="mr-1 size-3.5" />
+                    {pillar ? "Alterar pilar de tratamento" : "Definir pilar de tratamento"}
+                  </Button>
+                }
+              />
+              <DropdownMenuContent className="w-52" align="start">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Pilar de tratamento</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {TREATMENT_PILLARS.map((p) => (
+                    <DropdownMenuItem key={p} onClick={() => setPillar(p)}>
+                      {PILLAR_LABELS[p]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {nextOptions.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger

@@ -104,6 +104,41 @@ export const PILLAR_LABELS: Record<MethodologyPillar, string> = {
   prevention: "Prevenção",
 };
 
+/**
+ * The "treatment pillar" is the subset the Dentista Planner chooses (the
+ * client's stored `methodology_pillar` holds this). The displayed pillar is
+ * mostly automatic by phase; the treatment pillar shows from phase 4 on.
+ */
+export const TREATMENT_PILLARS = [
+  "health",
+  "function",
+  "aesthetics",
+  "prevention",
+] as const;
+
+export type TreatmentPillar = (typeof TREATMENT_PILLARS)[number];
+
+/** Pillar shown for a client, computed from phase + Planner's treatment pillar. */
+export function displayedPillar(
+  phase: JourneyPhase,
+  treatmentPillar: MethodologyPillar | null
+): MethodologyPillar | null {
+  switch (phase) {
+    case "acquisition":
+      return null; // a definir
+    case "clinical_conversion":
+    case "reevaluation":
+      return "diagnosis";
+    case "planning_center":
+      return "planning";
+    case "commercial_conversion":
+    case "treatment_start":
+      return treatmentPillar; // null = a definir
+    case "follow_up":
+      return treatmentPillar ?? "prevention";
+  }
+}
+
 /** Hours elapsed since a timestamp. */
 export function hoursSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / 36e5;

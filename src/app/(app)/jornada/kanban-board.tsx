@@ -25,6 +25,7 @@ import {
   PHASE_SLA_KEY,
   PILLAR_LABELS,
   allowedNextPhases,
+  displayedPillar,
   formatTimeInPhase,
   isSlaExceeded,
   type JourneyPhase,
@@ -117,6 +118,10 @@ export function KanbanBoard({
                   client.phase_entered_at,
                   slaHours
                 );
+                const pillar = displayedPillar(
+                  client.journey_phase,
+                  client.methodology_pillar
+                );
                 return (
                   <div
                     key={client.id}
@@ -153,11 +158,11 @@ export function KanbanBoard({
                           SLA estourado
                         </Badge>
                       )}
-                      {client.methodology_pillar && (
+                      {pillar && (
                         <Badge
                           className="bg-gold text-gold-foreground text-[10px]"
                         >
-                          {PILLAR_LABELS[client.methodology_pillar]}
+                          {PILLAR_LABELS[pillar]}
                         </Badge>
                       )}
                     </div>

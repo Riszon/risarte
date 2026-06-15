@@ -15,11 +15,10 @@ import {
 } from "@/components/ui/table";
 import {
   JOURNEY_PHASES,
-  METHODOLOGY_PILLARS,
+  TREATMENT_PILLARS,
   PHASE_LABELS,
   PILLAR_LABELS,
   type JourneyPhase,
-  type MethodologyPillar,
 } from "@/lib/journey";
 
 export const metadata: Metadata = { title: "Clientes" };
@@ -199,8 +198,8 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
           defaultValue={pillarFilter}
           className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
         >
-          <option value="">Todos os pilares</option>
-          {METHODOLOGY_PILLARS.map((pillar) => (
+          <option value="">Pilar de tratamento (todos)</option>
+          {TREATMENT_PILLARS.map((pillar) => (
             <option key={pillar} value={pillar}>
               {PILLAR_LABELS[pillar]}
             </option>

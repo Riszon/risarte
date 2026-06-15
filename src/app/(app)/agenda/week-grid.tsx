@@ -28,6 +28,7 @@ import {
 import {
   PHASE_LABELS,
   PILLAR_LABELS,
+  displayedPillar,
   type JourneyPhase,
   type MethodologyPillar,
 } from "@/lib/journey";
@@ -177,25 +178,30 @@ export function WeekGrid({
                 {appointment.provider.full_name}
               </p>
             )}
-            {!compact && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                <Badge variant="secondary" className="text-[10px]">
-                  {PHASE_LABELS[appointment.clients.journey_phase]}
-                </Badge>
-                <Badge
-                  className={cn(
-                    "text-[10px]",
-                    appointment.clients.methodology_pillar
-                      ? "bg-gold text-gold-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {appointment.clients.methodology_pillar
-                    ? PILLAR_LABELS[appointment.clients.methodology_pillar]
-                    : "Pilar a definir"}
-                </Badge>
-              </div>
-            )}
+            {!compact &&
+              (() => {
+                const pillar = displayedPillar(
+                  appointment.clients.journey_phase,
+                  appointment.clients.methodology_pillar
+                );
+                return (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <Badge variant="secondary" className="text-[10px]">
+                      {PHASE_LABELS[appointment.clients.journey_phase]}
+                    </Badge>
+                    <Badge
+                      className={cn(
+                        "text-[10px]",
+                        pillar
+                          ? "bg-gold text-gold-foreground"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {pillar ? PILLAR_LABELS[pillar] : "Pilar a definir"}
+                    </Badge>
+                  </div>
+                );
+              })()}
           </>
         )}
         <div className="mt-1.5 flex items-center justify-between gap-1">

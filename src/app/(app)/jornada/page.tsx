@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Button } from "@/components/ui/button";
 import {
-  METHODOLOGY_PILLARS,
+  TREATMENT_PILLARS,
   PILLAR_LABELS,
   type JourneyPhase,
   type MethodologyPillar,
@@ -149,8 +149,8 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
               defaultValue={pillarFilter}
               className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
             >
-              <option value="">Todos os pilares</option>
-              {METHODOLOGY_PILLARS.map((pillar) => (
+              <option value="">Pilar de tratamento (todos)</option>
+              {TREATMENT_PILLARS.map((pillar) => (
                 <option key={pillar} value={pillar}>
                   {PILLAR_LABELS[pillar]}
                 </option>

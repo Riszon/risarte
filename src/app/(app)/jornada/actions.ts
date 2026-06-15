@@ -3,9 +3,46 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { JOURNEY_PHASES, type JourneyPhase } from "@/lib/journey";
+import {
+  JOURNEY_PHASES,
+  TREATMENT_PILLARS,
+  type JourneyPhase,
+  type TreatmentPillar,
+} from "@/lib/journey";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/** The Dentista Planner classifies the client's treatment pillar (phase 3+). */
+export async function setTreatmentPillar(
+  clientId: string,
+  pillar: TreatmentPillar
+): Promise<ActionResult> {
+  if (!TREATMENT_PILLARS.includes(pillar)) {
+    return { ok: false, error: "Pilar inválido." };
+  }
+  await getSessionContext();
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_treatment_pillar", {
+    p_client_id: clientId,
+    p_pillar: pillar,
+  });
+
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o Dentista Planner pode definir o pilar de tratamento.",
+      };
+    }
+    console.error("set_treatment_pillar failed:", error.message);
+    return { ok: false, error: "Não foi possível definir o pilar." };
+  }
+
+  revalidatePath("/jornada");
+  revalidatePath(`/clientes/${clientId}`);
+  return { ok: true };
+}
 
 export async function moveClientPhase(
   clientId: string,
