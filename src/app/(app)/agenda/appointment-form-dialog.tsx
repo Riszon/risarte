@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
@@ -86,18 +86,23 @@ export function AppointmentFormDialog({
   staff,
   appointment,
   trigger,
+  initialClientId,
+  defaultOpen = false,
 }: {
   clients: { id: string; full_name: string }[];
   staff: StaffOption[];
   /** When set, the dialog edits/reschedules this appointment. */
   appointment?: AppointmentDefaults;
   trigger: React.ReactElement<Record<string, unknown>>;
+  /** Pre-select a client (e.g. opening the agenda from a notification). */
+  initialClientId?: string;
+  defaultOpen?: boolean;
 }) {
   const isEdit = Boolean(appointment);
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [isPending, startTransition] = useTransition();
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(initialClientId ?? "");
   const [schedulingInfo, setSchedulingInfo] = useState<SchedulingInfo | null>(
     null
   );
@@ -123,6 +128,18 @@ export function AppointmentFormDialog({
   );
 
   const clientItems = clients.map((c) => ({ value: c.id, label: c.full_name }));
+
+  // When opened pre-filled from a notification, load the client's scheduling
+  // info (current phase → suggested appointment type) once.
+  useEffect(() => {
+    if (!isEdit && initialClientId) {
+      getClientSchedulingInfo(initialClientId).then((info) => {
+        setSchedulingInfo(info);
+        if (info) setType(PHASE_APPOINTMENT_TYPE[info.phase]);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The type follows the journey when creating; editing keeps all options.
   const typeOptions = isEdit

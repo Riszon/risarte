@@ -3,13 +3,6 @@ import Link from "next/link";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import type {
   AppointmentStatus,
   AppointmentType,
@@ -94,31 +87,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   // (FASE 6) and, highlighted, commercial presentations (FASE 4).
   // -------------------------------------------------------------------------
   if (isFranchisor) {
-    const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
-      roles.includes("planner_dentist")
-    );
-    const canSeeNetwork =
-      session.isAdminMaster || isPlanner || session.clinics.length > 1;
-
-    if (!canSeeNetwork) {
-      return (
-        <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                A Franqueadora não tem agenda própria
-              </CardTitle>
-              <CardDescription>
-                Os atendimentos acontecem nas unidades. Use o seletor no menu
-                lateral para abrir a agenda de uma unidade.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      );
-    }
-
+    // Every franchisor-context user sees the consolidated agenda of the units
+    // they have access to (RLS limits the rows to their scope).
     const unitFilter =
       typeof searchParams.unidade === "string" ? searchParams.unidade : "";
     const supabase = await createClient();
@@ -241,6 +211,9 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   let appointments: AppointmentRow[] = [];
   let clients: { id: string; full_name: string }[] = [];
   let staff: StaffOption[] = [];
+  let preselectClientId: string | undefined;
+  const clienteParam =
+    typeof searchParams.cliente === "string" ? searchParams.cliente : "";
   const canSchedule = hasRoleInClinic(session, clinicId, [
     "receptionist",
     "sdr",
@@ -279,6 +252,9 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       ]);
     appointments = appts ?? [];
     clients = clientRows ?? [];
+    if (clienteParam && clients.some((c) => c.id === clienteParam)) {
+      preselectClientId = clienteParam;
+    }
 
     const staffMap = new Map<string, StaffOption>();
     for (const row of staffRows ?? []) {
@@ -366,6 +342,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               clients={clients}
               staff={staff}
               trigger={<Button size="sm">Novo agendamento</Button>}
+              initialClientId={preselectClientId}
+              defaultOpen={Boolean(preselectClientId)}
             />
           )}
         </div>

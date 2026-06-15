@@ -53,6 +53,13 @@ type DependentRow = {
   clients: { id: string; full_name: string } | null;
 };
 
+type AppointmentChangeRow = {
+  id: string;
+  changed_at: string;
+  description: string;
+  profiles: { full_name: string } | null;
+};
+
 const STATUS_LABELS = {
   active: "Ativo",
   inactive: "Inativo",
@@ -82,6 +89,7 @@ export default async function ClientDetailPage(
     { data: clinicHistory },
     { data: guardians },
     { data: dependents },
+    { data: appointmentChanges },
   ] = await Promise.all([
     supabase
       .from("journey_phase_history")
@@ -115,6 +123,13 @@ export default async function ClientDetailPage(
       .select("id, relationship, clients ( id, full_name )")
       .eq("guardian_client_id", id)
       .returns<DependentRow[]>(),
+    supabase
+      .from("appointment_changes")
+      .select("id, changed_at, description, profiles ( full_name )")
+      .eq("client_id", id)
+      .order("changed_at", { ascending: false })
+      .limit(50)
+      .returns<AppointmentChangeRow[]>(),
   ]);
 
   // LGPD: every view of a client record is audited.
@@ -296,6 +311,38 @@ export default async function ClientDetailPage(
                       : " até hoje (unidade atual)"}
                     {entry.profiles?.full_name
                       ? ` · registrado por ${entry.profiles.full_name}`
+                      : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {(appointmentChanges ?? []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Histórico de agendamentos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1.5">
+              {(appointmentChanges ?? []).map((change) => (
+                <li key={change.id} className="text-sm">
+                  <span>{change.description}</span>{" "}
+                  <span className="text-xs text-muted-foreground">
+                    —{" "}
+                    {new Date(change.changed_at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {change.profiles?.full_name
+                      ? ` · por ${change.profiles.full_name}`
                       : ""}
                   </span>
                 </li>
