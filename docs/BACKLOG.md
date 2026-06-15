@@ -201,6 +201,28 @@ refletir nos botões da UI.
       sala de espera/em atendimento entra aqui). É a espinha dorsal; alinhar
       com o dono antes de construir Etapas 4 e 5.
 
+## JORNADA — desenho detalhado (2026-06-13) → ver docs/JORNADA.md
+
+Documento-fonte do dono em `docs/JORNADA-fonte.md`; spec consolidada em
+`docs/JORNADA.md`. Decisões: pilar auto por fase + treatment_pillar do Planner;
+criar TSB/ASB + travar função por ambiente; check-in automático + sub-status;
+construir a BASE da jornada antes dos módulos clínicos.
+
+**Lote Base da Jornada (próximo a construir, nesta ordem):**
+- [ ] Funções `tsb`/`asb` + trava de atribuição por tipo de clínica.
+- [ ] Pilar automático por fase + `treatment_pillar` (renomear sentido de
+      methodology_pillar) + exibição calculada.
+- [ ] `journey_status` (sub-status por fase) automático + exibição.
+- [ ] Check-in nos agendamentos + transições automáticas (1→2, 1→5 urg/emerg,
+      4→5, 7→6, 7→5) + painel de sala de espera (chegada/em espera/em atendimento).
+- [ ] Decisões obrigatórias da fase 5 (tarefa bloqueante + escalonamento ao
+      Coordenador + avisos ao Gerente).
+- [ ] Regras automáticas de ativo/inativo (limites configuráveis no SLA).
+
+**OFFLINE/SYNC (não esquecer — fase dedicada depois do núcleo):** PWA + motor
+offline-first (avaliar PowerSync/ElectricSQL para Supabase) ou PWA+outbox.
+Manter modelo sync-friendly desde já.
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de
