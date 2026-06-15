@@ -112,6 +112,9 @@ export function AppointmentFormDialog({
   const [providerId, setProviderId] = useState(
     appointment?.provider_user_id ?? ""
   );
+  const [date, setDate] = useState(
+    appointment ? toLocalDate(appointment.starts_at) : ""
+  );
   const [time, setTime] = useState(
     appointment ? toLocalTime(appointment.starts_at) : ""
   );
@@ -164,6 +167,11 @@ export function AppointmentFormDialog({
   const providerValid = providerItems.some((p) => p.value === providerId);
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // For today, don't offer times that have already passed.
+  const nowTime = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
+  const timeItems =
+    date === minDate ? TIME_ITEMS.filter((t) => t.value > nowTime) : TIME_ITEMS;
 
   const lastWasMissed =
     schedulingInfo?.lastAppointment &&
@@ -349,15 +357,17 @@ export function AppointmentFormDialog({
                 type="date"
                 required
                 min={minDate}
-                defaultValue={
-                  appointment ? toLocalDate(appointment.starts_at) : ""
-                }
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  setTime("");
+                }}
               />
             </div>
             <div className="space-y-2">
               <Label>Horário *</Label>
               <Select
-                items={TIME_ITEMS}
+                items={timeItems}
                 value={time || null}
                 onValueChange={(v) => v !== null && setTime(v)}
               >
@@ -371,7 +381,7 @@ export function AppointmentFormDialog({
                   )}
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_ITEMS.map((item) => (
+                  {timeItems.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
                     </SelectItem>

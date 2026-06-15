@@ -35,6 +35,13 @@ export async function setTreatmentPillar(
         error: "Apenas o Dentista Planner pode definir o pilar de tratamento.",
       };
     }
+    if (error.message.includes("PILLAR_ONLY_IN_PLANNING")) {
+      return {
+        ok: false,
+        error:
+          "O pilar de tratamento só pode ser definido pelo Planner na Fase 3 (Centro de Planejamento).",
+      };
+    }
     console.error("set_treatment_pillar failed:", error.message);
     return { ok: false, error: "Não foi possível definir o pilar." };
   }
@@ -54,10 +61,30 @@ export async function moveClientPhase(
 
   await getSessionContext(); // ensures the user is authenticated
 
+  const supabase = await createClient();
+
+  // The treatment pillar is mandatory to leave the Planning Center (3 → 4).
+  if (newPhase === "commercial_conversion") {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("journey_phase, methodology_pillar")
+      .eq("id", clientId)
+      .single();
+    if (
+      client?.journey_phase === "planning_center" &&
+      !client?.methodology_pillar
+    ) {
+      return {
+        ok: false,
+        error:
+          "Defina o pilar de tratamento antes de avançar para a Conversão Comercial.",
+      };
+    }
+  }
+
   // The database function enforces the role-based transition matrix, moves
   // the client, tracks time, notifies the responsible role and writes the
   // audit log — atomically.
-  const supabase = await createClient();
   const { error } = await supabase.rpc("move_client_phase", {
     p_client_id: clientId,
     p_new_phase: newPhase,

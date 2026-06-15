@@ -247,6 +247,47 @@ Listas/acessos por função (dentro das unidades permitidas):
   jornada das unidades permitidas; lista = clientes das unidades permitidas em
   FASE 2, 3, 4 e 6.
 
+## LOTE C + AJUSTES (2026-06-13) — decisões e itens
+
+Decisões do dono: (1) Consultor vê SÓ seus clientes (agendados p/ ele + que ele
+apresentou) até o check-in na Fase 5; (2) Recepcionista edita QUALQUER
+agendamento da sua unidade; (3) cliente cadastrado pela SDR pertence à
+Franqueadora (código FRA) + unidade preferida, aparece na lista da unidade sem
+duplicar, transfere para a unidade no check-in.
+
+### Feito agora
+- [x] Planner define pilar só na Fase 3; obrigatório antes de F3→F4; fora da
+      Fase 3 só Admin Master altera (migração 0015 + app + UI).
+- [x] Card de agendamento mostra o nome do Consultor (resolvido pela lista de
+      profissionais, contornando a RLS de profiles).
+- [x] Ao agendar hoje, horários passados não aparecem como opção.
+- [x] Agendamento passado não pode ser editado — só ajuste de status.
+- [x] Agenda do Consultor = só os agendamentos no nome dele (não vê F2/F6, nem
+      agenda de outro consultor).
+
+### A fazer na sequência (Lote C / ajustes)
+- [ ] Listas por função: Consultor = só seus clientes até check-in F5; Planner =
+      F2/3/4/6 das unidades permitidas; SDR = clientes que ELA cadastrou em
+      F1/F2 (até check-in) e F5 (urgência/emergência até check-in).
+- [ ] Edição por dono: SDR edita só os agendamentos que ela criou; Recepcionista
+      edita qualquer um da sua unidade. (SDR vê toda a agenda das unidades dela.)
+- [ ] SDR: botões de cadastrar cliente e agendar (com escolha da unidade entre
+      as que ela tem acesso); cliente cadastrado pela SDR = clinic_id
+      Franqueadora (código FRA) + `preferred_clinic_id`; aparece na lista da
+      unidade preferida sem duplicar (ajustar RLS e listas).
+- [ ] Recepcionista/SDR recebem notificação de agendamentos passados que elas
+      criaram e que ficaram sem atualização de status (ex.: faltou/cancelado) —
+      precisa de verificação automática (cron) ou destaque na agenda. Fazer
+      destaque visual já; notificação por job depois.
+
+### Adiado (não esquecer)
+- [ ] Configuração de horário de funcionamento/agenda por unidade.
+- [ ] Cadeiras de atendimento por unidade (2/3/4) e agenda dimensionada por
+      cadeiras + profissionais.
+- [ ] Gênero (M/F) no cadastro de usuário e de cliente, com tratamento das
+      funções/textos conforme o gênero (Coordenadora/Coordenador, O/A cliente).
+      Adicionar o campo e aplicar os rótulos gradualmente.
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de

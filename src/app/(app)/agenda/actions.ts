@@ -138,6 +138,13 @@ export async function updateAppointment(
       error: "Apenas a Recepção ou Encantador(a) pode alterar agendamentos.",
     };
   }
+  if (new Date(existing.starts_at).getTime() < Date.now()) {
+    return {
+      ok: false,
+      error:
+        "Agendamento passado não pode ser editado — apenas o status pode ser ajustado.",
+    };
+  }
 
   // Keep the original client; only schedule details change.
   formData.set("client_id", existing.client_id);

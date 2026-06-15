@@ -111,7 +111,9 @@ export function JourneySection({
   }
 
   const shownPillar = displayedPillar(phase, pillar);
-  const canSetPillar = isAdminMaster || isPlannerAnywhere;
+  // Planner classifies only during the Planning Center phase; Admin anytime.
+  const canSetPillar =
+    isAdminMaster || (isPlannerAnywhere && phase === "planning_center");
 
   function setPillar(value: TreatmentPillar) {
     startTransition(async () => {

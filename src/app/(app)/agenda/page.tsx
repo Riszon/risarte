@@ -89,6 +89,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   if (isFranchisor) {
     // Every franchisor-context user sees the consolidated agenda of the units
     // they have access to (RLS limits the rows to their scope).
+    const isPlanner = Object.values(session.rolesByClinic).some((r) =>
+      r.includes("planner_dentist")
+    );
+    const isConsultant = Object.values(session.rolesByClinic).some((r) =>
+      r.includes("commercial_consultant")
+    );
+    // A Consultor Comercial sees ONLY the appointments under their own name.
+    const consultantOnly =
+      isConsultant && !isPlanner && !session.isAdminMaster;
+
     const unitFilter =
       typeof searchParams.unidade === "string" ? searchParams.unidade : "";
     const supabase = await createClient();
@@ -98,10 +108,20 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       .select(
         "id, type, status, starts_at, ends_at, notes, provider_user_id, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
       )
-      .in("type", ["evaluation", "reevaluation", "commercial_presentation"])
       .gte("starts_at", weekStart.toISOString())
       .lt("starts_at", weekEnd.toISOString())
       .order("starts_at");
+    if (consultantOnly) {
+      netQuery = netQuery
+        .eq("provider_user_id", session.userId)
+        .eq("type", "commercial_presentation");
+    } else {
+      netQuery = netQuery.in("type", [
+        "evaluation",
+        "reevaluation",
+        "commercial_presentation",
+      ]);
+    }
     if (unitFilter) netQuery = netQuery.eq("clinic_id", unitFilter);
 
     const [{ data: netAppts }, { data: unitOptions }] = await Promise.all([
@@ -134,12 +154,22 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Agenda da rede
+              {consultantOnly ? "Minhas apresentações" : "Agenda da rede"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Avaliações (Fase 2), reavaliações (Fase 6) e, em{" "}
-              <span className="font-medium text-gold">destaque dourado</span>,
-              apresentações comerciais (Fase 4) — semana de {weekLabelHeader}.
+              {consultantOnly ? (
+                <>
+                  Apresentações comerciais (Fase 4) agendadas para você — semana
+                  de {weekLabelHeader}.
+                </>
+              ) : (
+                <>
+                  Avaliações (Fase 2), reavaliações (Fase 6) e, em{" "}
+                  <span className="font-medium text-gold">destaque dourado</span>
+                  , apresentações comerciais (Fase 4) — semana de{" "}
+                  {weekLabelHeader}.
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -293,6 +323,29 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     staff = [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  // Resolve provider names from the staff list. The professional may be a
+  // Consultor of the matriz whose profile the receptionist can't read via the
+  // join (RLS) — but the staff list already has the name.
+  const staffNameById = new Map(staff.map((s) => [s.userId, s.name]));
+  const unitAppointments: AgendaAppointment[] = appointments.map((a) => ({
+    id: a.id,
+    type: a.type,
+    status: a.status,
+    starts_at: a.starts_at,
+    ends_at: a.ends_at,
+    notes: a.notes,
+    provider_user_id: a.provider_user_id,
+    provider: a.provider_user_id
+      ? {
+          full_name:
+            staffNameById.get(a.provider_user_id) ??
+            a.provider?.full_name ??
+            "—",
+        }
+      : null,
+    clients: a.clients,
+  }));
+
   const weekLabel = `${weekStart.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
@@ -353,7 +406,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
           <WeekGrid
             weekStartIso={weekStart.toISOString()}
-            appointments={appointments as AgendaAppointment[]}
+            appointments={unitAppointments}
             canManage={canSchedule}
             staff={staff}
           />

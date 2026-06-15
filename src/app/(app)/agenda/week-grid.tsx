@@ -216,29 +216,32 @@ export function WeekGrid({
           </span>
           {canManage && (
             <div className="flex items-center">
-              <AppointmentFormDialog
-                clients={[]}
-                staff={staff}
-                appointment={{
-                  id: appointment.id,
-                  type: appointment.type,
-                  starts_at: appointment.starts_at,
-                  ends_at: appointment.ends_at,
-                  provider_user_id: appointment.provider_user_id,
-                  notes: appointment.notes,
-                  clientName: appointment.clients?.full_name ?? "",
-                }}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 px-1"
-                    aria-label="Editar agendamento"
-                  >
-                    <Pencil className="size-3" />
-                  </Button>
-                }
-              />
+              {/* Past appointments cannot be edited — only the status. */}
+              {new Date(appointment.starts_at).getTime() >= Date.now() && (
+                <AppointmentFormDialog
+                  clients={[]}
+                  staff={staff}
+                  appointment={{
+                    id: appointment.id,
+                    type: appointment.type,
+                    starts_at: appointment.starts_at,
+                    ends_at: appointment.ends_at,
+                    provider_user_id: appointment.provider_user_id,
+                    notes: appointment.notes,
+                    clientName: appointment.clients?.full_name ?? "",
+                  }}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-1"
+                      aria-label="Editar agendamento"
+                    >
+                      <Pencil className="size-3" />
+                    </Button>
+                  }
+                />
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
