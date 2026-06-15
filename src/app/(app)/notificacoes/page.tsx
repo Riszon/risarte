@@ -17,6 +17,8 @@ export type NotificationRow = {
   clinics: { name: string } | null;
 };
 
+type ClinicTag = { id: string; name: string };
+
 export default async function NotificationsPage(
   props: PageProps<"/notificacoes">
 ) {
@@ -24,11 +26,35 @@ export default async function NotificationsPage(
   const searchParams = await props.searchParams;
   const supabase = await createClient();
 
-  // Default scope = active clinic; "todas" shows every clinic the user belongs to.
+  // Notifications are tagged with the UNIT where the client is. Franchisor
+  // users (planner, consultant, assistant, SDR) receive notifications from
+  // units, so defaulting to the active clinic would hide everything for them.
+  // Default: active clinic only when it is a UNIT; otherwise show all.
+  const activeIsUnit = session.activeClinic?.type === "franchise_unit";
   const requested =
     typeof searchParams.unidade === "string" ? searchParams.unidade : null;
   const scope =
-    requested ?? session.activeClinic?.id ?? "todas";
+    requested ?? (activeIsUnit ? session.activeClinic!.id : "todas");
+
+  // Build the unit filter from the clinics actually present in the user's
+  // notifications (works for franchisor users who only "live" in the matriz).
+  const { data: tagRows } = await supabase
+    .from("notifications")
+    .select("clinic_id, clinics ( name )")
+    .eq("user_id", session.userId)
+    .not("clinic_id", "is", null)
+    .limit(500)
+    .returns<{ clinic_id: string; clinics: { name: string } | null }[]>();
+
+  const clinicTags: ClinicTag[] = [];
+  const seen = new Set<string>();
+  for (const row of tagRows ?? []) {
+    if (row.clinic_id && !seen.has(row.clinic_id)) {
+      seen.add(row.clinic_id);
+      clinicTags.push({ id: row.clinic_id, name: row.clinics?.name ?? "—" });
+    }
+  }
+  clinicTags.sort((a, b) => a.name.localeCompare(b.name));
 
   let query = supabase
     .from("notifications")
@@ -56,7 +82,7 @@ export default async function NotificationsPage(
             Avisos automáticos da jornada dos clientes.
           </p>
         </div>
-        {session.clinics.length > 1 && (
+        {clinicTags.length > 1 && (
           <form method="get" className="flex items-center gap-2">
             <select
               name="unidade"
@@ -64,7 +90,7 @@ export default async function NotificationsPage(
               className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
             >
               <option value="todas">Todas as unidades</option>
-              {session.clinics.map((clinic) => (
+              {clinicTags.map((clinic) => (
                 <option key={clinic.id} value={clinic.id}>
                   {clinic.name}
                 </option>
