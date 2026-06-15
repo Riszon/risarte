@@ -223,6 +223,30 @@ construir a BASE da jornada antes dos módulos clínicos.
 offline-first (avaliar PowerSync/ElectricSQL para Supabase) ou PWA+outbox.
 Manter modelo sync-friendly desde já.
 
+## LOTE ACESSO FRANQUEADORA (2026-06-13) — escopo de unidades por usuário
+
+No cadastro de QUALQUER função da Franqueadora, escolher o acesso às unidades
+franqueadas: **Todas** / **Unidades específicas (várias)** / **Nenhuma**.
+O acesso (jornada, agenda, clientes) das funções da matriz passa a respeitar
+esse escopo (hoje veem tudo). Dados existentes migram como "Todas" para não
+quebrar. Modelo: coluna `unit_scope` na atribuição da função na Franqueadora +
+tabela de unidades específicas. RLS passa a usar "unidades acessíveis".
+
+Listas/acessos por função (dentro das unidades permitidas):
+- **SDR:** agenda nas unidades permitidas; cadastra clientes; vê a jornada dos
+  clientes que ELA cadastrou; lista = clientes que a própria SDR cadastrou nas
+  unidades permitidas, nas FASE 1 e 2 (até o check-in) e FASE 5
+  (urgência/emergência até o check-in).
+- **Consultor Comercial:** vê agenda e jornada das unidades permitidas; ao
+  agendar apresentação comercial, poder escolher o Consultor com permissão
+  naquela unidade (hoje o seletor de profissional busca só a equipe da unidade —
+  precisa buscar os consultores da matriz com acesso à unidade); lista =
+  clientes das unidades permitidas em FASE 3, 4 e 5 (status "aguardando início
+  do tratamento").
+- **Dentista Planner:** faz planejamentos das unidades permitidas; vê agenda e
+  jornada das unidades permitidas; lista = clientes das unidades permitidas em
+  FASE 2, 3, 4 e 6.
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de
