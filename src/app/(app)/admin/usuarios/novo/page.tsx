@@ -10,7 +10,7 @@ export default async function NewUserPage() {
   const supabase = await createClient();
   const { data: clinics } = await supabase
     .from("clinics")
-    .select("id, name")
+    .select("id, name, type")
     .eq("is_active", true)
     .order("name");
 

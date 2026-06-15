@@ -15,15 +15,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ROLE_LABELS, USER_ROLES, type UserRole } from "@/lib/roles";
+import {
+  ROLE_LABELS,
+  rolesForClinicType,
+  type ClinicType,
+  type UserRole,
+} from "@/lib/roles";
 import { createUser, type RoleAssignment } from "../actions";
 
-type ClinicOption = { id: string; name: string };
+type ClinicOption = { id: string; name: string; type: ClinicType };
 
-const ROLE_ITEMS = USER_ROLES.map((role) => ({
-  value: role,
-  label: ROLE_LABELS[role],
-}));
+/** Roles allowed for a given clinic, as Select items. */
+function roleItemsFor(type: ClinicType | undefined) {
+  if (!type) return [];
+  return rolesForClinicType(type).map((role) => ({
+    value: role,
+    label: ROLE_LABELS[role],
+  }));
+}
 
 export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
   const router = useRouter();
@@ -48,15 +57,32 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
       toast.error("Este usuário já tem função em todas as clínicas.");
       return;
     }
+    const firstClinic = available[0];
+    const defaultRole = rolesForClinicType(firstClinic.type)[0];
     setAssignments((prev) => [
       ...prev,
-      { clinicId: available[0].id, role: "receptionist" },
+      { clinicId: firstClinic.id, role: defaultRole },
     ]);
+  }
+
+  function clinicType(clinicId: string): ClinicType | undefined {
+    return clinics.find((c) => c.id === clinicId)?.type;
   }
 
   function updateAssignment(index: number, patch: Partial<RoleAssignment>) {
     setAssignments((prev) =>
-      prev.map((a, i) => (i === index ? { ...a, ...patch } : a))
+      prev.map((a, i) => {
+        if (i !== index) return a;
+        const next = { ...a, ...patch };
+        // If the clinic changed, make sure the role is valid for the new type.
+        if (patch.clinicId) {
+          const allowed = rolesForClinicType(
+            clinicType(patch.clinicId) ?? "franchise_unit"
+          );
+          if (!allowed.includes(next.role)) next.role = allowed[0];
+        }
+        return next;
+      })
     );
   }
 
@@ -126,6 +152,7 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
               value: c.id,
               label: c.name,
             }));
+            const roleItems = roleItemsFor(clinicType(assignment.clinicId));
             return (
               <div key={index} className="flex items-end gap-2">
                 <div className="flex-1 space-y-1">
@@ -157,7 +184,7 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
                 <div className="flex-1 space-y-1">
                   {index === 0 && <Label className="text-xs">Função</Label>}
                   <Select
-                    items={ROLE_ITEMS}
+                    items={roleItems}
                     value={assignment.role}
                     onValueChange={(v) =>
                       v !== null &&
@@ -165,10 +192,15 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value) =>
+                          roleItems.find((i) => i.value === value)?.label ??
+                          "Selecionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {ROLE_ITEMS.map((item) => (
+                      {roleItems.map((item) => (
                         <SelectItem key={item.value} value={item.value}>
                           {item.label}
                         </SelectItem>

@@ -35,7 +35,7 @@ export default async function EditUserPage(
         .returns<RoleRow[]>(),
       supabase
         .from("clinics")
-        .select("id, name")
+        .select("id, name, type")
         .eq("is_active", true)
         .order("name"),
     ]);

@@ -5,9 +5,44 @@ import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { USER_ROLES, type UserRole } from "@/lib/roles";
+import {
+  USER_ROLES,
+  isRoleAllowedForClinicType,
+  ROLE_LABELS,
+  type ClinicType,
+  type UserRole,
+} from "@/lib/roles";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/**
+ * Validates that each role is allowed for its clinic's type (franchisor vs
+ * unit). Returns an error message, or null when all assignments are valid.
+ */
+async function validateRoleEnvironments(
+  assignments: { clinicId: string; role: UserRole }[]
+): Promise<string | null> {
+  if (assignments.length === 0) return null;
+  const supabase = await createClient();
+  const clinicIds = [...new Set(assignments.map((a) => a.clinicId))];
+  const { data: clinics } = await supabase
+    .from("clinics")
+    .select("id, type")
+    .in("id", clinicIds);
+
+  const typeById = new Map<string, ClinicType>(
+    (clinics ?? []).map((c) => [c.id, c.type as ClinicType])
+  );
+
+  for (const a of assignments) {
+    const type = typeById.get(a.clinicId);
+    if (!type) return "Clínica não encontrada.";
+    if (!isRoleAllowedForClinicType(a.role, type)) {
+      return `A função "${ROLE_LABELS[a.role]}" não pode ser atribuída neste tipo de clínica.`;
+    }
+  }
+  return null;
+}
 
 const SERVICE_KEY_HINT =
   "A chave service_role ainda não foi configurada no arquivo .env.local do servidor.";
@@ -61,6 +96,9 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       error:
         "Funções inválidas. Verifique se não há duas funções na mesma clínica.",
     };
+
+  const envError = await validateRoleEnvironments(assignments);
+  if (envError) return { ok: false, error: envError };
 
   let admin;
   try {
@@ -224,6 +262,9 @@ export async function addUserRole(
   if (!USER_ROLES.includes(role)) {
     return { ok: false, error: "Função inválida." };
   }
+
+  const envError = await validateRoleEnvironments([{ clinicId, role }]);
+  if (envError) return { ok: false, error: envError };
 
   const supabase = await createClient();
   const { error } = await supabase

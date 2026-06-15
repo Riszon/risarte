@@ -16,7 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ROLE_LABELS, USER_ROLES, type UserRole } from "@/lib/roles";
+import {
+  ROLE_LABELS,
+  rolesForClinicType,
+  type ClinicType,
+  type UserRole,
+} from "@/lib/roles";
 import {
   addUserRole,
   removeUserRole,
@@ -34,14 +39,9 @@ type Props = {
     is_active: boolean;
   };
   roles: { id: string; clinicId: string; role: UserRole; clinicName: string }[];
-  clinics: { id: string; name: string }[];
+  clinics: { id: string; name: string; type: ClinicType }[];
   isSelf: boolean;
 };
-
-const ROLE_ITEMS = USER_ROLES.map((role) => ({
-  value: role,
-  label: ROLE_LABELS[role],
-}));
 
 export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
   const router = useRouter();
@@ -55,7 +55,26 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
     label: c.name,
   }));
   const [newClinicId, setNewClinicId] = useState(availableClinics[0]?.id ?? "");
-  const [newRole, setNewRole] = useState<UserRole>("receptionist");
+  const newClinicType = clinics.find((c) => c.id === newClinicId)?.type;
+  const roleItems = newClinicType
+    ? rolesForClinicType(newClinicType).map((role) => ({
+        value: role,
+        label: ROLE_LABELS[role],
+      }))
+    : [];
+  const [newRole, setNewRole] = useState<UserRole>(
+    newClinicType ? rolesForClinicType(newClinicType)[0] : "receptionist"
+  );
+
+  // Keep the chosen role valid for the selected clinic's type.
+  function changeClinic(clinicId: string) {
+    setNewClinicId(clinicId);
+    const type = clinics.find((c) => c.id === clinicId)?.type;
+    if (type) {
+      const allowed = rolesForClinicType(type);
+      if (!allowed.includes(newRole)) setNewRole(allowed[0]);
+    }
+  }
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>, successMessage: string) {
     startTransition(async () => {
@@ -218,7 +237,7 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
                 <Select
                   items={clinicItems}
                   value={newClinicId}
-                  onValueChange={(v) => v !== null && setNewClinicId(v)}
+                  onValueChange={(v) => v !== null && changeClinic(v)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue>
@@ -240,15 +259,20 @@ export function UserEditor({ profile, roles, clinics, isSelf }: Props) {
               <div className="flex-1 space-y-1">
                 <Label className="text-xs">Função</Label>
                 <Select
-                  items={ROLE_ITEMS}
+                  items={roleItems}
                   value={newRole}
                   onValueChange={(v) => v !== null && setNewRole(v as UserRole)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value) =>
+                        roleItems.find((i) => i.value === value)?.label ??
+                        "Selecionar"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLE_ITEMS.map((item) => (
+                    {roleItems.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}
                       </SelectItem>
