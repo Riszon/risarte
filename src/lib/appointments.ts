@@ -63,6 +63,16 @@ export type StaffOption = {
   roles: UserRole[];
 };
 
+// Waiting-room attendance flow. Must match the `attendance_status` enum.
+export const ATTENDANCE_STATUSES = ["waiting", "in_service", "done"] as const;
+export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
+
+export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
+  waiting: "Em espera",
+  in_service: "Em atendimento",
+  done: "Atendimento concluído",
+};
+
 /**
  * Scheduling follows the journey: the appointment type is derived from the
  * client's current phase (owner rule: first time = Avaliação; a returning

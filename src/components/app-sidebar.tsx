@@ -7,6 +7,7 @@ import {
   Building2,
   Calendar,
   Clock,
+  DoorOpen,
   Home,
   LogOut,
   Route,
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Início", icon: Home },
   { href: "/jornada", label: "Jornada", icon: Route },
   { href: "/agenda", label: "Agenda", icon: Calendar },
+  { href: "/atendimento", label: "Atendimento", icon: DoorOpen },
   { href: "/clientes", label: "Clientes", icon: Users },
 ];
 

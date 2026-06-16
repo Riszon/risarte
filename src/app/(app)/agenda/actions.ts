@@ -338,6 +338,50 @@ export async function getUnitSchedulingData(
   };
 }
 
+/** Reception registers the client's arrival (and the phase advances). */
+export async function checkInAppointment(
+  appointmentId: string
+): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("check_in_appointment", {
+    p_appointment_id: appointmentId,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Apenas a Recepção registra a chegada." };
+    }
+    console.error("check_in_appointment failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a chegada." };
+  }
+  revalidatePath("/atendimento");
+  revalidatePath("/agenda");
+  revalidatePath("/jornada");
+  return { ok: true };
+}
+
+/** Professional calls the client (in_service) or finishes the attendance (done). */
+export async function updateAttendance(
+  appointmentId: string,
+  state: "in_service" | "done"
+): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_attendance", {
+    p_appointment_id: appointmentId,
+    p_state: state,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite esta ação." };
+    }
+    console.error("update_attendance failed:", error.message);
+    return { ok: false, error: "Não foi possível atualizar o atendimento." };
+  }
+  revalidatePath("/atendimento");
+  return { ok: true };
+}
+
 export type SchedulingInfo = {
   phase: JourneyPhase;
   lastAppointment: {
