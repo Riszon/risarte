@@ -202,6 +202,16 @@ export function canSetStatusInPhase(
   return false;
 }
 
+// Mandatory decisions at the end of treatment.
+export type DecisionKind = "needs_reevaluation" | "needs_new_planning";
+
+export const DECISION_QUESTIONS: Record<DecisionKind, string> = {
+  needs_reevaluation:
+    "Este cliente necessita de consulta de reavaliação com o Coordenador Clínico?",
+  needs_new_planning:
+    "Este cliente necessita de novo planejamento no Centro de Planejamento?",
+};
+
 /** Hours elapsed since a timestamp. */
 export function hoursSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / 36e5;

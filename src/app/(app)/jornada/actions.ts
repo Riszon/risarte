@@ -14,6 +14,32 @@ import {
 
 export type ActionResult = { ok: boolean; error?: string };
 
+/** Answer a mandatory end-of-treatment decision (Sim / Não / Não sei). */
+export async function answerDecision(
+  decisionId: string,
+  answer: "yes" | "no" | "unsure"
+): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("answer_decision", {
+    p_decision_id: decisionId,
+    p_answer: answer,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite responder esta decisão." };
+    }
+    if (error.message.includes("ALREADY_RESOLVED")) {
+      return { ok: false, error: "Esta decisão já foi respondida." };
+    }
+    console.error("answer_decision failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a decisão." };
+  }
+  revalidatePath("/jornada");
+  revalidatePath("/notificacoes");
+  return { ok: true };
+}
+
 /** The responsible role advances the client's sub-status within a phase. */
 export async function setJourneyStatus(
   clientId: string,

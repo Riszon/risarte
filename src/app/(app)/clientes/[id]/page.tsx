@@ -16,7 +16,9 @@ import {
   type ClientAppointment,
   type HistoryEntry,
 } from "./journey-section";
+import { PendingDecision } from "./pending-decision";
 import type {
+  DecisionKind,
   JourneyPhase,
   JourneyStatus,
   MethodologyPillar,
@@ -94,6 +96,7 @@ export default async function ClientDetailPage(
     { data: guardians },
     { data: dependents },
     { data: appointmentChanges },
+    { data: openDecisions },
   ] = await Promise.all([
     supabase
       .from("journey_phase_history")
@@ -134,6 +137,12 @@ export default async function ClientDetailPage(
       .order("changed_at", { ascending: false })
       .limit(50)
       .returns<AppointmentChangeRow[]>(),
+    supabase
+      .from("journey_decisions")
+      .select("id, kind, assignee_user_id")
+      .eq("client_id", id)
+      .is("resolved_at", null)
+      .returns<{ id: string; kind: DecisionKind; assignee_user_id: string | null }[]>(),
   ]);
 
   // LGPD: every view of a client record is audited.
@@ -152,6 +161,12 @@ export default async function ClientDetailPage(
   const isPlannerAnywhere = Object.values(session.rolesByClinic).some(
     (roles) => roles.includes("planner_dentist")
   );
+
+  const decisions = openDecisions ?? [];
+  const canAnswerDecision =
+    session.isAdminMaster ||
+    clinicRoles.includes("clinical_coordinator") ||
+    decisions.some((d) => d.assignee_user_id === session.userId);
 
   // Was the client transferred away from the clinic the viewer belongs to?
   const currentClinicEntry = (clinicHistory ?? []).find((h) => !h.ended_at);
@@ -198,6 +213,11 @@ export default async function ClientDetailPage(
           </Badge>
         </div>
       </div>
+
+      <PendingDecision
+        decisions={decisions.map((d) => ({ id: d.id, kind: d.kind }))}
+        canAnswer={canAnswerDecision}
+      />
 
       <JourneySection
         clientId={client.id}
