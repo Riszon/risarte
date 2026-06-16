@@ -97,7 +97,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   let clinicOptions: { id: string; name: string }[] = [];
 
   const SELECT =
-    "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics ( name )";
+    "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics!clients_clinic_id_fkey ( name )";
 
   if (clinicId) {
     if (isFranchisor) {
@@ -178,7 +178,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
       if (pastIds.length > 0) {
         const { data: transferredData } = await supabase
           .from("clients")
-          .select("id, full_name, clinics ( name )")
+          .select("id, full_name, clinics!clients_clinic_id_fkey ( name )")
           .in("id", pastIds)
           .neq("clinic_id", clinicId)
           .order("full_name")

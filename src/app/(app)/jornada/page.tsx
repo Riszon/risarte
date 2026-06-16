@@ -51,7 +51,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
   const supabase = await createClient();
 
   const baseSelect =
-    "id, full_name, journey_phase, phase_entered_at, methodology_pillar, clinic_id, clinics ( name )";
+    "id, full_name, journey_phase, phase_entered_at, methodology_pillar, clinic_id, clinics!clients_clinic_id_fkey ( name )";
 
   let clientsQuery = supabase
     .from("clients")
