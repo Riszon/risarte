@@ -24,11 +24,13 @@ import {
   PHASE_LABELS,
   PHASE_SLA_KEY,
   PILLAR_LABELS,
+  STATUS_LABELS,
   allowedNextPhases,
   displayedPillar,
   formatTimeInPhase,
   isSlaExceeded,
   type JourneyPhase,
+  type JourneyStatus,
   type MethodologyPillar,
 } from "@/lib/journey";
 import { moveClientPhase } from "./actions";
@@ -37,6 +39,7 @@ export type KanbanClient = {
   id: string;
   full_name: string;
   journey_phase: JourneyPhase;
+  journey_status: JourneyStatus | null;
   phase_entered_at: string;
   methodology_pillar: MethodologyPillar | null;
   /** Set only in the network (franchisor) view, to show the unit per card. */
@@ -139,6 +142,11 @@ export function KanbanBoard({
                     {client.clinic_name && (
                       <p className="text-[10px] text-muted-foreground">
                         {client.clinic_name}
+                      </p>
+                    )}
+                    {client.journey_status && (
+                      <p className="mt-0.5 text-[10px] font-medium text-primary">
+                        {STATUS_LABELS[client.journey_status]}
                       </p>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">

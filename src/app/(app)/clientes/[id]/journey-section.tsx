@@ -26,11 +26,15 @@ import type { UserRole } from "@/lib/roles";
 import {
   PHASE_LABELS,
   PILLAR_LABELS,
+  STATUS_BY_PHASE,
+  STATUS_LABELS,
   TREATMENT_PILLARS,
   allowedNextPhases,
+  canSetStatusInPhase,
   displayedPillar,
   formatTimeInPhase,
   type JourneyPhase,
+  type JourneyStatus,
   type MethodologyPillar,
   type TreatmentPillar,
 } from "@/lib/journey";
@@ -40,7 +44,11 @@ import {
   type AppointmentStatus,
   type AppointmentType,
 } from "@/lib/appointments";
-import { moveClientPhase, setTreatmentPillar } from "../../jornada/actions";
+import {
+  moveClientPhase,
+  setJourneyStatus,
+  setTreatmentPillar,
+} from "../../jornada/actions";
 
 export type HistoryEntry = {
   id: string;
@@ -73,6 +81,7 @@ export function JourneySection({
   phase,
   phaseEnteredAt,
   pillar,
+  status,
   history,
   appointments,
   isAdminMaster,
@@ -84,6 +93,7 @@ export function JourneySection({
   phase: JourneyPhase;
   phaseEnteredAt: string;
   pillar: MethodologyPillar | null;
+  status: JourneyStatus | null;
   history: HistoryEntry[];
   appointments: ClientAppointment[];
   isAdminMaster: boolean;
@@ -114,6 +124,25 @@ export function JourneySection({
   // Planner classifies only during the Planning Center phase; Admin anytime.
   const canSetPillar =
     isAdminMaster || (isPlannerAnywhere && phase === "planning_center");
+
+  const statusOptions = STATUS_BY_PHASE[phase] ?? [];
+  const canSetStatus = canSetStatusInPhase(phase, {
+    isAdminMaster,
+    clinicRoles,
+    isPlannerAnywhere,
+  });
+
+  function changeStatus(value: JourneyStatus) {
+    startTransition(async () => {
+      const result = await setJourneyStatus(clientId, value);
+      if (result.ok) {
+        toast.success(`Status: ${STATUS_LABELS[value]}.`);
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
 
   function setPillar(value: TreatmentPillar) {
     startTransition(async () => {
@@ -146,6 +175,11 @@ export function JourneySection({
           <span className="text-xs text-muted-foreground">
             há {formatTimeInPhase(phaseEnteredAt)}
           </span>
+          {status && (
+            <Badge variant="outline" className="border-primary text-primary">
+              {STATUS_LABELS[status]}
+            </Badge>
+          )}
           <Badge
             className={cn(
               shownPillar
@@ -157,6 +191,28 @@ export function JourneySection({
               ? `Pilar: ${PILLAR_LABELS[shownPillar]}`
               : "Pilar a definir"}
           </Badge>
+          {canSetStatus && statusOptions.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="sm" disabled={isPending}>
+                    Definir status
+                  </Button>
+                }
+              />
+              <DropdownMenuContent className="w-64" align="start">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Status da fase</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {statusOptions.map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => changeStatus(s)}>
+                      {STATUS_LABELS[s]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {canSetPillar && (
             <DropdownMenu>
               <DropdownMenuTrigger

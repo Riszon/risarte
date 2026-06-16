@@ -139,6 +139,69 @@ export function displayedPillar(
   }
 }
 
+// Sub-status within a phase. Must stay in sync with the `journey_status` enum.
+export const JOURNEY_STATUSES = [
+  "awaiting_send_to_planning",
+  "in_planning",
+  "awaiting_plan_approval",
+  "revision_with_coordinator",
+  "awaiting_treatment_start",
+  "in_treatment",
+  "treatment_finished",
+  "treatment_cancelled",
+  "treatment_partially_cancelled",
+] as const;
+
+export type JourneyStatus = (typeof JOURNEY_STATUSES)[number];
+
+export const STATUS_LABELS: Record<JourneyStatus, string> = {
+  awaiting_send_to_planning: "Aguardando Envio para Planejamento",
+  in_planning: "Em Planejamento",
+  awaiting_plan_approval: "Aguardando Aprovação do Planejamento",
+  revision_with_coordinator: "Revisão com Coordenador Clínico",
+  awaiting_treatment_start: "Aguardando Iniciar Tratamento",
+  in_treatment: "Em Tratamento",
+  treatment_finished: "Tratamento Finalizado",
+  treatment_cancelled: "Tratamento Cancelado",
+  treatment_partially_cancelled: "Tratamento Cancelado Parcialmente",
+};
+
+/** Statuses the responsible role can set while the client is in each phase. */
+export const STATUS_BY_PHASE: Partial<Record<JourneyPhase, JourneyStatus[]>> = {
+  clinical_conversion: ["awaiting_send_to_planning"],
+  reevaluation: ["awaiting_send_to_planning"],
+  planning_center: [
+    "in_planning",
+    "awaiting_plan_approval",
+    "revision_with_coordinator",
+  ],
+  treatment_start: [
+    "awaiting_treatment_start",
+    "in_treatment",
+    "treatment_finished",
+    "treatment_cancelled",
+    "treatment_partially_cancelled",
+  ],
+};
+
+/** Roles that may set sub-statuses while in a given phase. */
+export function canSetStatusInPhase(
+  phase: JourneyPhase,
+  opts: { isAdminMaster: boolean; clinicRoles: UserRole[]; isPlannerAnywhere: boolean }
+): boolean {
+  if (opts.isAdminMaster) return Boolean(STATUS_BY_PHASE[phase]);
+  if (phase === "planning_center") return opts.isPlannerAnywhere;
+  if (phase === "clinical_conversion" || phase === "reevaluation") {
+    return opts.clinicRoles.includes("clinical_coordinator");
+  }
+  if (phase === "treatment_start") {
+    return ["clinical_coordinator", "dentist", "receptionist"].some((r) =>
+      opts.clinicRoles.includes(r as UserRole)
+    );
+  }
+  return false;
+}
+
 /** Hours elapsed since a timestamp. */
 export function hoursSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / 36e5;

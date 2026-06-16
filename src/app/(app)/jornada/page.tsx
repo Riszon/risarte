@@ -8,6 +8,7 @@ import {
   TREATMENT_PILLARS,
   PILLAR_LABELS,
   type JourneyPhase,
+  type JourneyStatus,
   type MethodologyPillar,
 } from "@/lib/journey";
 import { KanbanBoard, type KanbanClient } from "./kanban-board";
@@ -18,6 +19,7 @@ type ClientRow = {
   id: string;
   full_name: string;
   journey_phase: JourneyPhase;
+  journey_status: JourneyStatus | null;
   phase_entered_at: string;
   methodology_pillar: MethodologyPillar | null;
   clinic_id: string;
@@ -51,7 +53,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
   const supabase = await createClient();
 
   const baseSelect =
-    "id, full_name, journey_phase, phase_entered_at, methodology_pillar, clinic_id, clinics!clients_clinic_id_fkey ( name )";
+    "id, full_name, journey_phase, journey_status, phase_entered_at, methodology_pillar, clinic_id, clinics!clients_clinic_id_fkey ( name )";
 
   let clientsQuery = supabase
     .from("clients")
@@ -187,6 +189,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
             id: c.id,
             full_name: c.full_name,
             journey_phase: c.journey_phase,
+            journey_status: c.journey_status,
             phase_entered_at: c.phase_entered_at,
             methodology_pillar: c.methodology_pillar,
             clinic_name: isFranchisor ? (c.clinics?.name ?? null) : null,

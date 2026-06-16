@@ -16,7 +16,11 @@ import {
   type ClientAppointment,
   type HistoryEntry,
 } from "./journey-section";
-import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
+import type {
+  JourneyPhase,
+  JourneyStatus,
+  MethodologyPillar,
+} from "@/lib/journey";
 
 export const metadata: Metadata = { title: "Ficha do cliente" };
 
@@ -76,7 +80,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, journey_phase, phase_entered_at, methodology_pillar"
+      "id, code, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, journey_phase, journey_status, phase_entered_at, methodology_pillar"
     )
     .eq("id", id)
     .single();
@@ -201,6 +205,7 @@ export default async function ClientDetailPage(
         phase={client.journey_phase as JourneyPhase}
         phaseEnteredAt={client.phase_entered_at}
         pillar={client.methodology_pillar as MethodologyPillar | null}
+        status={client.journey_status as JourneyStatus | null}
         history={historyEntries}
         appointments={appointments ?? []}
         isAdminMaster={session.isAdminMaster}

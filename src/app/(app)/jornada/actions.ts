@@ -5,12 +5,46 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   JOURNEY_PHASES,
+  JOURNEY_STATUSES,
   TREATMENT_PILLARS,
   type JourneyPhase,
+  type JourneyStatus,
   type TreatmentPillar,
 } from "@/lib/journey";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/** The responsible role advances the client's sub-status within a phase. */
+export async function setJourneyStatus(
+  clientId: string,
+  status: JourneyStatus
+): Promise<ActionResult> {
+  if (!JOURNEY_STATUSES.includes(status)) {
+    return { ok: false, error: "Status inválido." };
+  }
+  await getSessionContext();
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_journey_status", {
+    p_client_id: clientId,
+    p_status: status,
+  });
+
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite definir este status." };
+    }
+    if (error.message.includes("STATUS_INVALID_FOR_PHASE")) {
+      return { ok: false, error: "Este status não pertence à fase atual." };
+    }
+    console.error("set_journey_status failed:", error.message);
+    return { ok: false, error: "Não foi possível atualizar o status." };
+  }
+
+  revalidatePath("/jornada");
+  revalidatePath(`/clientes/${clientId}`);
+  return { ok: true };
+}
 
 /** The Dentista Planner classifies the client's treatment pillar (phase 3+). */
 export async function setTreatmentPillar(
