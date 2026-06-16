@@ -11,6 +11,7 @@ import type {
 import type { UserRole } from "@/lib/roles";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
+import { getUnitSchedulingData } from "./actions";
 import { WeekGrid, type AgendaAppointment } from "./week-grid";
 
 export const metadata: Metadata = { title: "Agenda" };
@@ -95,9 +96,14 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     const isConsultant = Object.values(session.rolesByClinic).some((r) =>
       r.includes("commercial_consultant")
     );
+    const isSdr = Object.values(session.rolesByClinic).some((r) =>
+      r.includes("sdr")
+    );
     // A Consultor Comercial sees ONLY the appointments under their own name.
     const consultantOnly =
       isConsultant && !isPlanner && !session.isAdminMaster;
+    // The SDR sees the FULL agenda of the units she covers and can schedule.
+    const sdrOnly = isSdr && !isPlanner && !isConsultant && !session.isAdminMaster;
 
     const unitFilter =
       typeof searchParams.unidade === "string" ? searchParams.unidade : "";
@@ -115,7 +121,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       netQuery = netQuery
         .eq("provider_user_id", session.userId)
         .eq("type", "commercial_presentation");
-    } else {
+    } else if (!sdrOnly) {
       netQuery = netQuery.in("type", [
         "evaluation",
         "reevaluation",
@@ -124,15 +130,27 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     }
     if (unitFilter) netQuery = netQuery.eq("clinic_id", unitFilter);
 
-    const [{ data: netAppts }, { data: unitOptions }] = await Promise.all([
-      netQuery.returns<AppointmentRow[]>(),
-      supabase
-        .from("clinics")
-        .select("id, name")
-        .eq("type", "franchise_unit")
-        .eq("is_active", true)
-        .order("name"),
-    ]);
+    const [{ data: netAppts }, { data: unitOptions }, { data: accessIds }] =
+      await Promise.all([
+        netQuery.returns<AppointmentRow[]>(),
+        supabase
+          .from("clinics")
+          .select("id, name")
+          .eq("type", "franchise_unit")
+          .eq("is_active", true)
+          .order("name"),
+        sdrOnly
+          ? supabase.rpc("user_full_access_clinic_ids")
+          : Promise.resolve({ data: null }),
+      ]);
+
+    // Units the SDR can schedule into.
+    const accessibleIds = new Set<string>(
+      ((accessIds as { clinic_id?: string }[] | string[] | null) ?? []).map(
+        (x) => (typeof x === "string" ? x : (x.clinic_id ?? ""))
+      )
+    );
+    const sdrUnits = (unitOptions ?? []).filter((u) => accessibleIds.has(u.id));
 
     const networkAppointments: AgendaAppointment[] = (netAppts ?? []).map(
       (a) => ({
@@ -223,6 +241,15 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             >
               Próxima →
             </Button>
+            {sdrOnly && sdrUnits.length > 0 && (
+              <AppointmentFormDialog
+                clients={[]}
+                staff={[]}
+                units={sdrUnits}
+                loadUnitData={getUnitSchedulingData}
+                trigger={<Button size="sm">Novo agendamento</Button>}
+              />
+            )}
           </div>
         </div>
         <div className="mx-auto max-w-7xl overflow-x-auto pb-4">

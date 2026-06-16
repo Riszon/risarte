@@ -88,6 +88,8 @@ export function AppointmentFormDialog({
   trigger,
   initialClientId,
   defaultOpen = false,
+  units,
+  loadUnitData,
 }: {
   clients: { id: string; full_name: string }[];
   staff: StaffOption[];
@@ -97,12 +99,42 @@ export function AppointmentFormDialog({
   /** Pre-select a client (e.g. opening the agenda from a notification). */
   initialClientId?: string;
   defaultOpen?: boolean;
+  /** SDR flow: choose the target unit first, then load its clients/staff. */
+  units?: { id: string; name: string }[];
+  loadUnitData?: (
+    clinicId: string
+  ) => Promise<{ clients: { id: string; full_name: string }[]; staff: StaffOption[] }>;
 }) {
   const isEdit = Boolean(appointment);
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
   const [isPending, startTransition] = useTransition();
+  const [unitId, setUnitId] = useState("");
+  const [unitClients, setUnitClients] = useState<
+    { id: string; full_name: string }[]
+  >([]);
+  const [unitStaff, setUnitStaff] = useState<StaffOption[]>([]);
   const [clientId, setClientId] = useState(initialClientId ?? "");
+
+  const pickUnit = Boolean(units);
+  const effectiveClients = pickUnit ? unitClients : clients;
+  const effectiveStaff = pickUnit ? unitStaff : staff;
+
+  function handleUnitChange(id: string) {
+    setUnitId(id);
+    setClientId("");
+    setProviderId("");
+    setSchedulingInfo(null);
+    setUnitClients([]);
+    setUnitStaff([]);
+    if (id && loadUnitData) {
+      startTransition(async () => {
+        const data = await loadUnitData(id);
+        setUnitClients(data.clients);
+        setUnitStaff(data.staff);
+      });
+    }
+  }
   const [schedulingInfo, setSchedulingInfo] = useState<SchedulingInfo | null>(
     null
   );
@@ -130,7 +162,10 @@ export function AppointmentFormDialog({
       : "60"
   );
 
-  const clientItems = clients.map((c) => ({ value: c.id, label: c.full_name }));
+  const clientItems = effectiveClients.map((c) => ({
+    value: c.id,
+    label: c.full_name,
+  }));
 
   // When opened pre-filled from a notification, load the client's scheduling
   // info (current phase → suggested appointment type) once.
@@ -155,10 +190,10 @@ export function AppointmentFormDialog({
 
   const providerItems = useMemo(() => {
     const allowedRoles = TYPE_PROVIDER_ROLES[type];
-    return staff
+    return effectiveStaff
       .filter((s) => s.roles.some((role) => allowedRoles.includes(role)))
       .map((s) => ({ value: s.userId, label: s.name }));
-  }, [staff, type]);
+  }, [effectiveStaff, type]);
 
   const allowedRoleLabels = TYPE_PROVIDER_ROLES[type]
     .map((role) => ROLE_LABELS[role])
@@ -194,6 +229,7 @@ export function AppointmentFormDialog({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     if (!isEdit) formData.set("client_id", clientId);
+    if (pickUnit) formData.set("clinic_id", unitId);
     formData.set("type", type);
     formData.set("time", time);
     formData.set("duration", duration);
@@ -230,7 +266,24 @@ export function AppointmentFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isEdit && (
+          {pickUnit && (
+            <div className="space-y-2">
+              <Label>Unidade *</Label>
+              <select
+                value={unitId}
+                onChange={(e) => handleUnitChange(e.target.value)}
+                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Escolha a unidade...</option>
+                {(units ?? []).map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!isEdit && (!pickUnit || unitId) && (
             <div className="space-y-2">
               <Label>Cliente *</Label>
               <Select
@@ -425,7 +478,11 @@ export function AppointmentFormDialog({
             <Button
               type="submit"
               disabled={
-                isPending || (!isEdit && !clientId) || !providerValid || !time
+                isPending ||
+                (pickUnit && !unitId) ||
+                (!isEdit && !clientId) ||
+                !providerValid ||
+                !time
               }
             >
               {isPending

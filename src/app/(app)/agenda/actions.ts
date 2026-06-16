@@ -30,7 +30,9 @@ import {
   APPOINTMENT_TYPES,
   type AppointmentStatus,
   type AppointmentType,
+  type StaffOption,
 } from "@/lib/appointments";
+import type { UserRole } from "@/lib/roles";
 import type { JourneyPhase } from "@/lib/journey";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -92,18 +94,23 @@ export async function createAppointment(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  const clinicId = session.activeClinic?.id;
+  // The SDR (at the matriz) picks the target unit in the form; the
+  // receptionist schedules into her active clinic.
+  const formClinicId = String(formData.get("clinic_id") ?? "");
+  const clinicId = formClinicId || session.activeClinic?.id;
   if (!clinicId) return { ok: false, error: "Nenhuma clínica selecionada." };
-  if (session.activeClinic?.type === "franchisor") {
+
+  const isSdr = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("sdr")
+  );
+  const canSchedule =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, clinicId, ["receptionist"]) ||
+    isSdr; // RLS confirms the SDR actually has access to this unit
+  if (!canSchedule) {
     return {
       ok: false,
-      error: "A Franqueadora não tem agenda própria. Selecione uma unidade.",
-    };
-  }
-  if (!hasRoleInClinic(session, clinicId, ["receptionist", "sdr"])) {
-    return {
-      ok: false,
-      error: "Apenas a Recepção ou Encantador(a) pode agendar.",
+      error: "Você não tem permissão para agendar nesta unidade.",
     };
   }
 
@@ -261,6 +268,74 @@ export async function updateAppointmentStatus(
   });
   revalidatePath("/agenda");
   return { ok: true };
+}
+
+export type UnitSchedulingData = {
+  clients: { id: string; full_name: string }[];
+  staff: StaffOption[];
+};
+
+/**
+ * Clients and professionals available for scheduling at a given unit. Used by
+ * the SDR (who works at the matriz) to schedule into the units she covers.
+ */
+export async function getUnitSchedulingData(
+  clinicId: string
+): Promise<UnitSchedulingData> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const [{ data: clientRows }, { data: staffRows }, { data: consultants }] =
+    await Promise.all([
+      supabase
+        .from("clients")
+        .select("id, full_name")
+        .or(`clinic_id.eq.${clinicId},preferred_clinic_id.eq.${clinicId}`)
+        .eq("status", "active")
+        .order("full_name")
+        .limit(300),
+      supabase
+        .from("user_clinic_roles")
+        .select("user_id, role, profiles ( full_name )")
+        .eq("clinic_id", clinicId)
+        .returns<
+          { user_id: string; role: string; profiles: { full_name: string } | null }[]
+        >(),
+      supabase.rpc("providers_with_access", {
+        p_clinic_id: clinicId,
+        p_role: "commercial_consultant",
+      }),
+    ]);
+
+  const staffMap = new Map<string, StaffOption>();
+  for (const row of staffRows ?? []) {
+    const entry = staffMap.get(row.user_id) ?? {
+      userId: row.user_id,
+      name: row.profiles?.full_name ?? "—",
+      roles: [],
+    };
+    entry.roles.push(row.role as UserRole);
+    staffMap.set(row.user_id, entry);
+  }
+  for (const c of (consultants ?? []) as {
+    user_id: string;
+    full_name: string;
+  }[]) {
+    const entry = staffMap.get(c.user_id) ?? {
+      userId: c.user_id,
+      name: c.full_name ?? "—",
+      roles: [],
+    };
+    if (!entry.roles.includes("commercial_consultant")) {
+      entry.roles.push("commercial_consultant");
+    }
+    staffMap.set(c.user_id, entry);
+  }
+
+  return {
+    clients: (clientRows ?? []) as { id: string; full_name: string }[],
+    staff: [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
+  };
 }
 
 export type SchedulingInfo = {
