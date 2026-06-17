@@ -68,6 +68,15 @@ export type AppointmentDefaults = {
   clientName: string;
 };
 
+/** Default appointment type for a client: a session for clients already in
+ * treatment, otherwise the type that follows the current journey phase. */
+function defaultTypeFor(info: SchedulingInfo): AppointmentType {
+  if (info.phase === "treatment_start" && info.journeyStatus === "in_treatment") {
+    return "treatment_session";
+  }
+  return PHASE_APPOINTMENT_TYPE[info.phase];
+}
+
 function toLocalDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -90,6 +99,7 @@ export function AppointmentFormDialog({
   defaultOpen = false,
   units,
   loadUnitData,
+  fixedClinicId,
 }: {
   clients: { id: string; full_name: string; inactive?: boolean }[];
   staff: StaffOption[];
@@ -107,6 +117,8 @@ export function AppointmentFormDialog({
     clients: { id: string; full_name: string; inactive?: boolean }[];
     staff: StaffOption[];
   }>;
+  /** Schedule into a specific clinic (e.g. the button inside a client ficha). */
+  fixedClinicId?: string;
 }) {
   const isEdit = Boolean(appointment);
   const router = useRouter();
@@ -176,7 +188,7 @@ export function AppointmentFormDialog({
     if (!isEdit && initialClientId) {
       getClientSchedulingInfo(initialClientId).then((info) => {
         setSchedulingInfo(info);
-        if (info) setType(PHASE_APPOINTMENT_TYPE[info.phase]);
+        if (info) setType(defaultTypeFor(info));
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,8 +234,8 @@ export function AppointmentFormDialog({
       const info = await getClientSchedulingInfo(id);
       setSchedulingInfo(info);
       if (info) {
-        // Scheduling follows the journey.
-        setType(PHASE_APPOINTMENT_TYPE[info.phase]);
+        // Scheduling follows the journey (a session for clients in treatment).
+        setType(defaultTypeFor(info));
       }
     });
   }
@@ -233,6 +245,7 @@ export function AppointmentFormDialog({
     const formData = new FormData(event.currentTarget);
     if (!isEdit) formData.set("client_id", clientId);
     if (pickUnit) formData.set("clinic_id", unitId);
+    else if (fixedClinicId) formData.set("clinic_id", fixedClinicId);
     formData.set("type", type);
     formData.set("time", time);
     formData.set("duration", duration);
@@ -324,11 +337,7 @@ export function AppointmentFormDialog({
                 </span>
                 {" → "}será agendado:{" "}
                 <span className="font-medium">
-                  {
-                    APPOINTMENT_TYPE_LABELS[
-                      PHASE_APPOINTMENT_TYPE[schedulingInfo.phase]
-                    ]
-                  }
+                  {APPOINTMENT_TYPE_LABELS[defaultTypeFor(schedulingInfo)]}
                 </span>
               </p>
               {lastWasMissed && (

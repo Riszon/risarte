@@ -33,7 +33,7 @@ import {
   type StaffOption,
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
-import type { JourneyPhase } from "@/lib/journey";
+import type { JourneyPhase, JourneyStatus } from "@/lib/journey";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -403,6 +403,7 @@ export async function updateAttendance(
 
 export type SchedulingInfo = {
   phase: JourneyPhase;
+  journeyStatus: JourneyStatus | null;
   lastAppointment: {
     type: AppointmentType;
     status: AppointmentStatus;
@@ -424,7 +425,7 @@ export async function getClientSchedulingInfo(
   const [{ data: client }, { data: lastAppointments }] = await Promise.all([
     supabase
       .from("clients")
-      .select("journey_phase")
+      .select("journey_phase, journey_status")
       .eq("id", clientId)
       .single(),
     supabase
@@ -438,6 +439,7 @@ export async function getClientSchedulingInfo(
   if (!client) return null;
   return {
     phase: client.journey_phase as JourneyPhase,
+    journeyStatus: (client.journey_status as JourneyStatus | null) ?? null,
     lastAppointment: lastAppointments?.[0] ?? null,
   };
 }

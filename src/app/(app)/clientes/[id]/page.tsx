@@ -4,6 +4,7 @@ import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,6 +18,9 @@ import {
   type HistoryEntry,
 } from "./journey-section";
 import { PendingDecision } from "./pending-decision";
+import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
+import { getUnitSchedulingData } from "../../agenda/actions";
+import type { StaffOption } from "@/lib/appointments";
 import type {
   DecisionKind,
   JourneyPhase,
@@ -106,7 +110,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, creator:profiles!clients_created_by_fkey ( full_name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, creator:profiles!clients_created_by_fkey ( full_name )"
     )
     .eq("id", id)
     .single();
@@ -220,6 +224,23 @@ export default async function ClientDetailPage(
     ? formatDetailedAge(client.birth_date)
     : "";
 
+  // "Novo agendamento" from the ficha (reception of the client's unit, or SDR).
+  // SDR-registered clients belong to the Franqueadora but prefer a unit, so we
+  // schedule into the preferred unit when set.
+  const isSdr = Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("sdr")
+  );
+  const effectiveClinicId =
+    (client as { preferred_clinic_id?: string | null }).preferred_clinic_id ??
+    client.clinic_id;
+  const canScheduleFromFicha =
+    client.status !== "anonymized" &&
+    (hasRoleInClinic(session, effectiveClinicId, ["receptionist"]) || isSdr);
+  let fichaStaff: StaffOption[] = [];
+  if (canScheduleFromFicha) {
+    fichaStaff = (await getUnitSchedulingData(effectiveClinicId)).staff;
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -250,6 +271,21 @@ export default async function ClientDetailPage(
           <Badge variant={client.status === "active" ? "secondary" : "outline"}>
             {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
           </Badge>
+          {canScheduleFromFicha && (
+            <AppointmentFormDialog
+              clients={[
+                {
+                  id: client.id,
+                  full_name: client.full_name,
+                  inactive: client.status !== "active",
+                },
+              ]}
+              staff={fichaStaff}
+              initialClientId={client.id}
+              fixedClinicId={effectiveClinicId}
+              trigger={<Button size="sm">Novo agendamento</Button>}
+            />
+          )}
         </div>
       </div>
 

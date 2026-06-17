@@ -302,14 +302,18 @@ duplicar, transfere para a unidade no check-in.
       podem chamar; ao chamar abre a ficha; done → agenda "Realizado".
 - [x] Notificação ao profissional quando o cliente fica "Em espera".
 
-### A fazer na sequência
-- [ ] Cliente em tratamento: novo agendamento já vem como "Sessão de Tratamento";
-      ao concluir uma sessão sem próxima agendada, notificar recepção.
-- [ ] "Aguardando iniciar tratamento" sem agendamento → notificação em destaque
-      à recepção + ícone de alerta na lista de clientes.
-- [ ] Botão "Novo agendamento" dentro da ficha do cliente (recepção/SDR).
-- [ ] Cadastro: pedir o CPF PRIMEIRO; se já existir, preencher automaticamente
-      (cliente existente → abrir/transferir; "prospect"/responsável → preencher).
+### Etapa 1 — Status do cliente e tratamento ✅ (migração 0022 + código)
+- [x] Cliente em tratamento: novo agendamento já vem como "Sessão de Tratamento"
+      (default por journey_status in_treatment); ao concluir uma sessão sem
+      próxima sessão agendada, a recepção é notificada (update_attendance 0022).
+- [x] "Aguardando iniciar tratamento" sem agendamento futuro → banner em destaque
+      + ícone de alerta na lista de clientes (computado na página de clientes).
+      (Notificação push persistente "até agendar" ficaria com o job diário —
+      avaliar depois; o banner/ícone já é o sinal confiável.)
+- [x] Botão "Novo agendamento" dentro da ficha do cliente (recepção/SDR) —
+      AppointmentFormDialog com fixedClinicId (unidade preferida quando SDR).
+
+### Etapa 2 — Tela de Atendimento (a fazer)
 - [ ] Consultor Comercial enxerga a tela Atendimento (só os clientes agendados
       com ele).
 - [ ] Atendimento: filtros por dia/semana/mês e por profissional.
@@ -317,6 +321,10 @@ duplicar, transfere para a unidade no check-in.
       quem movimentou).
 - [ ] Sincronização agenda↔atendimento também nos rótulos intermediários
       ("aguardando atendimento", "em atendimento").
+
+### Etapa 3 — Cadastro (a fazer)
+- [ ] Cadastro: pedir o CPF PRIMEIRO; se já existir, preencher automaticamente
+      (cliente existente → abrir/transferir; "prospect"/responsável → preencher).
 
 ### Adiado (não esquecer)
 - [ ] Foto do cliente por webcam (captura + Storage).

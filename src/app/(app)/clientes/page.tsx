@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
   PHASE_LABELS,
   PILLAR_LABELS,
   type JourneyPhase,
+  type JourneyStatus,
 } from "@/lib/journey";
 
 export const metadata: Metadata = { title: "Clientes" };
@@ -31,6 +33,7 @@ type ClientRow = {
   email: string | null;
   status: "active" | "inactive" | "anonymized";
   journey_phase: JourneyPhase;
+  journey_status: JourneyStatus | null;
   created_at: string;
   clinic_id: string;
   clinics: { name: string } | null;
@@ -103,7 +106,10 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   let clinicOptions: { id: string; name: string }[] = [];
 
   const SELECT =
-    "id, code, full_name, phone, email, status, journey_phase, created_at, clinic_id, clinics!clients_clinic_id_fkey ( name )";
+    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, clinics!clients_clinic_id_fkey ( name )";
+
+  // Clients in treatment_start "awaiting start" with no future appointment.
+  const awaitingSchedule = new Set<string>();
 
   if (clinicId) {
     if (isFranchisor) {
@@ -173,6 +179,31 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
       request = applyFilters(request);
       const { data } = await request.returns<ClientRow[]>();
       clients = data ?? [];
+
+      // Flag clients "awaiting treatment start" that still have no future
+      // appointment — reception must schedule them (alert icon + banner).
+      const awaitCandidates = clients.filter(
+        (c) =>
+          c.journey_phase === "treatment_start" &&
+          c.journey_status === "awaiting_treatment_start"
+      );
+      if (awaitCandidates.length > 0) {
+        const { data: futureAppts } = await supabase
+          .from("appointments")
+          .select("client_id")
+          .in(
+            "client_id",
+            awaitCandidates.map((c) => c.id)
+          )
+          .gt("starts_at", new Date().toISOString())
+          .in("status", ["scheduled", "confirmed"]);
+        const haveFuture = new Set(
+          (futureAppts ?? []).map((a) => a.client_id as string)
+        );
+        for (const c of awaitCandidates) {
+          if (!haveFuture.has(c.id)) awaitingSchedule.add(c.id);
+        }
+      }
 
       // Clients this unit served in the past, now in another unit.
       const { data: pastHistory } = await supabase
@@ -280,6 +311,34 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         </Button>
       </form>
 
+      {awaitingSchedule.size > 0 && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4">
+          <h2 className="flex items-center gap-2 text-sm font-medium text-destructive">
+            <AlertTriangle className="size-4" />
+            {awaitingSchedule.size} cliente(s) aguardando agendamento de início de
+            tratamento
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Estes clientes estão “Aguardando Iniciar Tratamento” e ainda não têm
+            horário marcado. Faça o agendamento do início do tratamento.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {clients
+              .filter((client) => awaitingSchedule.has(client.id))
+              .map((client) => (
+                <li key={client.id} className="text-sm">
+                  <Link
+                    href={`/clientes/${client.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {client.full_name}
+                  </Link>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
@@ -300,7 +359,15 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
                   {client.code ?? "—"}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {client.full_name}
+                  <span className="inline-flex items-center gap-1.5">
+                    {awaitingSchedule.has(client.id) && (
+                      <AlertTriangle
+                        className="size-4 shrink-0 text-destructive"
+                        aria-label="Aguardando agendamento de tratamento"
+                      />
+                    )}
+                    {client.full_name}
+                  </span>
                 </TableCell>
                 {isFranchisor && (
                   <TableCell>{client.clinics?.name ?? "—"}</TableCell>
