@@ -58,6 +58,8 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
     typeof searchParams.fase === "string" ? searchParams.fase : "";
   const pillarFilter =
     typeof searchParams.pilar === "string" ? searchParams.pilar : "";
+  const statusFilter =
+    typeof searchParams.status === "string" ? searchParams.status : "";
 
   const clinicId = session.activeClinic?.id;
   const isFranchisor = session.activeClinic?.type === "franchisor";
@@ -80,6 +82,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   function applyFilters<
     T extends {
       eq: (col: string, val: string) => T;
+      neq: (col: string, val: string) => T;
       ilike: (col: string, val: string) => T;
     },
   >(request: T): T {
@@ -87,6 +90,9 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
     if (query) r = r.ilike("full_name", `%${query}%`);
     if (phaseFilter) r = r.eq("journey_phase", phaseFilter);
     if (pillarFilter) r = r.eq("methodology_pillar", pillarFilter);
+    // Status filter (default hides anonymized clients).
+    if (statusFilter) r = r.eq("status", statusFilter);
+    else r = r.neq("status", "anonymized");
     return r;
   }
 
@@ -259,6 +265,15 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
               {PILLAR_LABELS[pillar]}
             </option>
           ))}
+        </select>
+        <select
+          name="status"
+          defaultValue={statusFilter}
+          className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+        >
+          <option value="">Ativos e inativos</option>
+          <option value="active">Somente ativos</option>
+          <option value="inactive">Somente inativos</option>
         </select>
         <Button type="submit" variant="outline">
           Buscar

@@ -288,6 +288,39 @@ duplicar, transfere para a unidade no check-in.
       funções/textos conforme o gênero (Coordenadora/Coordenador, O/A cliente).
       Adicionar o campo e aplicar os rótulos gradualmente.
 
+## LOTE D — feedback do teste geral da Base da Jornada (2026-06-14)
+
+### Feito agora (migração 0021)
+- [x] BUG: SDR agendando não via o Coordenador (RLS bloqueava ler a equipe da
+      unidade) → função definer unit_scheduling_staff().
+- [x] Passo 5: "Não sei" só aparece para o profissional original; ao escalar
+      para o Coordenador, só Sim/Não.
+- [x] Agendar: aparecem também clientes inativos (marcados como "inativo").
+- [x] Clientes: filtro Ativos / Inativos.
+- [x] Ficha: idade detalhada (anos, meses, dias) + quem cadastrou o cliente.
+- [x] Atendimento: quem CHAMOU é quem CONCLUI; Coordenador/Dentista/Consultor
+      podem chamar; ao chamar abre a ficha; done → agenda "Realizado".
+- [x] Notificação ao profissional quando o cliente fica "Em espera".
+
+### A fazer na sequência
+- [ ] Cliente em tratamento: novo agendamento já vem como "Sessão de Tratamento";
+      ao concluir uma sessão sem próxima agendada, notificar recepção.
+- [ ] "Aguardando iniciar tratamento" sem agendamento → notificação em destaque
+      à recepção + ícone de alerta na lista de clientes.
+- [ ] Botão "Novo agendamento" dentro da ficha do cliente (recepção/SDR).
+- [ ] Cadastro: pedir o CPF PRIMEIRO; se já existir, preencher automaticamente
+      (cliente existente → abrir/transferir; "prospect"/responsável → preencher).
+- [ ] Consultor Comercial enxerga a tela Atendimento (só os clientes agendados
+      com ele).
+- [ ] Atendimento: filtros por dia/semana/mês e por profissional.
+- [ ] Atendimento: histórico por atendimento (tempo em espera, em atendimento,
+      quem movimentou).
+- [ ] Sincronização agenda↔atendimento também nos rótulos intermediários
+      ("aguardando atendimento", "em atendimento").
+
+### Adiado (não esquecer)
+- [ ] Foto do cliente por webcam (captura + Storage).
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de

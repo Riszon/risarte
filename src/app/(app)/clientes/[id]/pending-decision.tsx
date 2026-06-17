@@ -9,7 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DECISION_QUESTIONS, type DecisionKind } from "@/lib/journey";
 import { answerDecision } from "../../jornada/actions";
 
-export type OpenDecision = { id: string; kind: DecisionKind };
+export type OpenDecision = {
+  id: string;
+  kind: DecisionKind;
+  /** True only for the professional originally asked (drives "Não sei"). */
+  isAssignee: boolean;
+};
 
 export function PendingDecision({
   decisions,
@@ -64,7 +69,7 @@ export function PendingDecision({
                 >
                   Não
                 </Button>
-                {d.kind === "needs_reevaluation" && (
+                {d.kind === "needs_reevaluation" && d.isAssignee && (
                   <Button
                     size="sm"
                     variant="ghost"

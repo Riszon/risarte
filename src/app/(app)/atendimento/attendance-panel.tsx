@@ -25,31 +25,49 @@ export type PanelAppointment = {
   clientId: string | null;
   clientName: string;
   providerName: string | null;
+  providerUserId: string | null;
+  calledBy: string | null;
 };
 
 export function AttendancePanel({
   appointments,
   canCheckIn,
   canCall,
+  currentUserId,
+  isAdmin,
 }: {
   appointments: PanelAppointment[];
   canCheckIn: boolean;
   canCall: boolean;
+  currentUserId: string;
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  function run(action: () => Promise<{ ok: boolean; error?: string }>, msg: string) {
+  function run(
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    onSuccess?: () => void
+  ) {
     startTransition(async () => {
       const result = await action();
       if (result.ok) {
         toast.success(msg);
-        router.refresh();
+        if (onSuccess) onSuccess();
+        else router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
       }
     });
   }
+
+  // Only whoever called the client may conclude (Admin always; the assigned
+  // provider as a fallback when nobody is recorded as the caller).
+  const canConclude = (a: PanelAppointment) =>
+    isAdmin ||
+    a.calledBy === currentUserId ||
+    (a.calledBy === null && a.providerUserId === currentUserId);
 
   const toArrive = appointments.filter(
     (a) =>
@@ -170,7 +188,11 @@ export function AttendancePanel({
                       onClick={() =>
                         run(
                           () => updateAttendance(a.id, "in_service"),
-                          `${a.clientName} chamado(a).`
+                          `${a.clientName} chamado(a).`,
+                          () =>
+                            a.clientId
+                              ? router.push(`/clientes/${a.clientId}`)
+                              : router.refresh()
                         )
                       }
                     >
@@ -203,7 +225,7 @@ export function AttendancePanel({
                 key={a.id}
                 a={a}
                 action={
-                  canCall ? (
+                  canConclude(a) ? (
                     <Button
                       size="sm"
                       variant="outline"

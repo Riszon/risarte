@@ -266,7 +266,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   }
 
   let appointments: AppointmentRow[] = [];
-  let clients: { id: string; full_name: string }[] = [];
+  let clients: { id: string; full_name: string; inactive: boolean }[] = [];
   let staff: StaffOption[] = [];
   let preselectClientId: string | undefined;
   const clienteParam =
@@ -293,12 +293,15 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         canSchedule
           ? supabase
               .from("clients")
-              .select("id, full_name")
+              .select("id, full_name, status")
               .eq("clinic_id", clinicId)
-              .eq("status", "active")
+              .neq("status", "anonymized")
               .order("full_name")
               .limit(300)
-          : Promise.resolve({ data: [] }),
+              .returns<{ id: string; full_name: string; status: string }[]>()
+          : Promise.resolve({
+              data: [] as { id: string; full_name: string; status: string }[],
+            }),
         canSchedule
           ? supabase
               .from("user_clinic_roles")
@@ -308,7 +311,11 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           : Promise.resolve({ data: [] as StaffRow[] }),
       ]);
     appointments = appts ?? [];
-    clients = clientRows ?? [];
+    clients = (clientRows ?? []).map((c) => ({
+      id: c.id,
+      full_name: c.full_name,
+      inactive: c.status === "inactive",
+    }));
     if (clienteParam && clients.some((c) => c.id === clienteParam)) {
       preselectClientId = clienteParam;
     }

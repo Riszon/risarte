@@ -72,6 +72,30 @@ const STATUS_LABELS = {
   anonymized: "Anonimizado",
 } as const;
 
+/** Detailed age, e.g. "22 anos, 3 meses e 15 dias". */
+function formatDetailedAge(birthIso: string): string {
+  const birth = new Date(`${birthIso}T00:00:00`);
+  const now = new Date();
+  if (Number.isNaN(birth.getTime()) || birth > now) return "";
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  let days = now.getDate() - birth.getDate();
+  if (days < 0) {
+    months -= 1;
+    days += new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  const word = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
+  return `${word(years, "ano", "anos")}, ${word(months, "mês", "meses")} e ${word(
+    days,
+    "dia",
+    "dias"
+  )}`;
+}
+
 export default async function ClientDetailPage(
   props: PageProps<"/clientes/[id]">
 ) {
@@ -82,7 +106,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, journey_phase, journey_status, phase_entered_at, methodology_pillar"
+      "id, code, clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, creator:profiles!clients_created_by_fkey ( full_name )"
     )
     .eq("id", id)
     .single();
@@ -185,6 +209,17 @@ export default async function ClientDetailPage(
     moved_by_name: h.profiles?.full_name ?? null,
   }));
 
+  const creatorRaw = (
+    client as unknown as {
+      creator?: { full_name: string } | { full_name: string }[] | null;
+    }
+  ).creator;
+  const creator = Array.isArray(creatorRaw) ? creatorRaw[0] : creatorRaw;
+  const creatorName = creator?.full_name ?? null;
+  const ageText = client.birth_date
+    ? formatDetailedAge(client.birth_date)
+    : "";
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -200,7 +235,11 @@ export default async function ClientDetailPage(
             )}
             Cliente desde{" "}
             {new Date(client.created_at).toLocaleDateString("pt-BR")}
+            {creatorName && <> · cadastrado por {creatorName}</>}
           </p>
+          {ageText && (
+            <p className="text-sm text-muted-foreground">Idade: {ageText}</p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {viewerIsFormerClinicOnly && (
@@ -215,7 +254,11 @@ export default async function ClientDetailPage(
       </div>
 
       <PendingDecision
-        decisions={decisions.map((d) => ({ id: d.id, kind: d.kind }))}
+        decisions={decisions.map((d) => ({
+          id: d.id,
+          kind: d.kind,
+          isAssignee: d.assignee_user_id === session.userId,
+        }))}
         canAnswer={canAnswerDecision}
       />
 

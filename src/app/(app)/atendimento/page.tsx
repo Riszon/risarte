@@ -25,6 +25,8 @@ type Row = {
   starts_at: string;
   attendance: AttendanceStatus | null;
   checked_in_at: string | null;
+  provider_user_id: string | null;
+  called_by: string | null;
   provider: { full_name: string } | null;
   clients: { id: string; full_name: string; journey_phase: JourneyPhase } | null;
 };
@@ -62,7 +64,7 @@ export default async function AtendimentoPage() {
   const { data } = await supabase
     .from("appointments")
     .select(
-      "id, type, status, starts_at, attendance, checked_in_at, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase )"
+      "id, type, status, starts_at, attendance, checked_in_at, provider_user_id, called_by, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase )"
     )
     .eq("clinic_id", clinicId)
     .gte("starts_at", start.toISOString())
@@ -79,16 +81,19 @@ export default async function AtendimentoPage() {
     clientId: a.clients?.id ?? null,
     clientName: a.clients?.full_name ?? "—",
     providerName: a.provider?.full_name ?? null,
+    providerUserId: a.provider_user_id,
+    calledBy: a.called_by,
   }));
 
+  // Reception only registers arrival; the professional calls and concludes.
   const canCheckIn = hasRoleInClinic(session, clinicId, [
     "receptionist",
     "sdr",
   ]);
   const canCall = hasRoleInClinic(session, clinicId, [
-    "receptionist",
     "clinical_coordinator",
     "dentist",
+    "commercial_consultant",
   ]);
 
   return (
@@ -104,6 +109,8 @@ export default async function AtendimentoPage() {
         appointments={appointments}
         canCheckIn={canCheckIn}
         canCall={canCall}
+        currentUserId={session.userId}
+        isAdmin={session.isAdminMaster}
       />
     </div>
   );

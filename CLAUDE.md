@@ -1,148 +1,195 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guia para o Claude Code (claude.ai/code) ao trabalhar neste repositório.
+Regras de **produto e negócio** ficam aqui; regras de **código** ficam em
+`docs/ARQUITETURA-TECNICA.md`. Detalhe da jornada em `docs/JORNADA.md`; fila de
+pendências em `docs/BACKLOG.md` (ler antes de iniciar qualquer etapa nova).
 
 @AGENTS.md
+@docs/ARQUITETURA-TECNICA.md
 
-## Visão do produto e expansão (regra de arquitetura)
+## 1. Visão geral
 
-Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1 franqueadora + 2 unidades; meta: **200 unidades em 5 anos**). Este sistema será a base de gestão completa da rede: futuramente entram módulos de financeiro, RH, compras/estoque, marketing, prontuário completo e outros.
+Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1
+franqueadora + 2 unidades — Cambé e Londrina; meta: **200 unidades em 5 anos**).
+A espinha dorsal é a **Jornada do Cliente**: uma máquina de 7 fases que conduz a
+pessoa do primeiro contato até o acompanhamento pós-tratamento. Com o tempo
+entram módulos de financeiro, RH, compras/estoque, marketing e prontuário —
+por isso **toda decisão de estrutura deve favorecer somar módulos sem retrabalho**
+(novas rotas em `src/app/(app)/<modulo>/`, novas tabelas com `clinic_id` + RLS,
+configs por unidade no padrão cascata, menu lateral orientado a permissões,
+listas sempre com filtro por clínica pensando em 200 unidades).
 
-**Por isso, toda decisão de estrutura (banco, pastas, permissões, navegação) deve favorecer a adição de módulos sem retrabalho:**
+## 2. Stack e ambiente
 
-- Novas áreas do sistema = novas rotas em `src/app/(app)/<modulo>/` com `actions.ts` próprio — nunca acoplar lógica de um módulo dentro de outro.
-- Novas tabelas sempre com `clinic_id` + RLS usando os helpers existentes (`is_admin_master()`, `user_clinic_ids()`, `has_role_in_clinic()`, `is_network_viewer()`).
-- Configurações que variam por unidade seguem o padrão cascata de `sla_settings` (linha com `clinic_id NULL` = padrão da rede; linha com `clinic_id` = sobrescrita da unidade). Vale para a futura tabela de preços.
-- Navegação: itens novos entram no menu lateral (`src/components/app-sidebar.tsx`) filtrados por função — o menu já é orientado a permissões.
-- Pensar em volume de 200 unidades: listas sempre com filtro por clínica e `limit`; nunca carregar a rede inteira numa tela operacional.
+Stack fixa (decidida — não trocar): **Next.js 16** (App Router) + TypeScript +
+Tailwind v4 + **shadcn/ui (Base UI)** + **Supabase** (Postgres/Auth/Storage,
+região **sa-east-1 / São Paulo** por LGPD) + deploy **Vercel**. Banco único
+multi-tenant. Projeto Supabase `hvhbijctanrrkxhemlza`.
 
-## Stack fixa (decidida — não trocar)
+```powershell
+npm run dev     # servidor dev em http://localhost:3000 (Turbopack, hot reload)
+npm run build   # o portão de verificação: compila + checa tipos. Rodar antes de cada commit.
+npm run lint    # eslint
+```
 
-Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui + Supabase (PostgreSQL, Auth, Storage — região **São Paulo/sa-east-1** por LGPD) + deploy Vercel. Banco único multi-tenant.
+Não há testes automatizados; `npm run build` (TypeScript strict) é a única
+checagem. **Particularidades da máquina (Windows 10, repo só existe aqui):**
 
-## O que já está implementado (Etapas 1 e 2 do MVP)
+- Node não está no PATH dos shells. Prefixar comandos PowerShell com:
+  `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`
+- `api.github.com` é inacessível nesta rede: `gh` NÃO funciona. Push por git via
+  SSH (`git@github.com:Riszon/risarte.git`); operações de repositório (criar
+  repo, PR) o dono faz na web.
+- Migrações não são aplicadas por CLI: escrever arquivo numerado em
+  `supabase/migrations/`, copiar em **UTF-8** e o dono cola/roda no SQL Editor
+  do Supabase. Detalhes e regras de idempotência em `docs/ARQUITETURA-TECNICA.md`.
 
-- **Etapa 1 — Fundação:** projeto Next.js 16, tema Risarte (azul-marinho/off-white/dourado em `globals.css`), login com Supabase Auth (sem auto-cadastro; mensagens de erro genéricas), proteção de rotas em `src/proxy.ts`, migração 0001 (clinics, profiles, user_clinic_roles, audit_logs + RLS), repositório GitHub privado `Riszon/risarte`.
-- **Etapa 2 — Cadastros:** menu lateral com **seletor de clínica ativa** (cookie `risarte_active_clinic`); área admin (CRUD de clínicas com botões separados Franqueadora/Unidade; criação de usuários via service-role, redefinição de senha, ativar/desativar, **uma função por clínica** por usuário); módulo de clientes (recepcionista cadastra/edita; toda visualização de ficha gera `audit_logs`); tela de SLAs (padrão da rede + sobrescrita por unidade); máscaras automáticas de CPF/CNPJ/telefone/CEP (`src/lib/masks.ts`, aplicadas no navegador E normalizadas no servidor); migrações 0002 e 0003.
-- Padrões adotados (manter): server actions retornam `{ ok, error? }` com mensagens em pt-BR exibidas via toast; guarda de permissão no início de toda action; `logAudit()` após mutações e em acessos a dados de pacientes; `revalidatePath()` após gravar; formulários com `defaultValue` (não controlados) + FormData.
+## 3. Arquitetura — a Jornada do Cliente (7 fases)
 
-## Plano de fases — onde estamos
+Cada cliente está sempre em **uma fase + um sub-status**, com tempo registrado em
+cada uma (`journey_phase_history`). O **Centro de Planejamento (Fase 3) é o
+núcleo** do sistema: é onde o caso vira diagnóstico, plano e orçamento.
 
-1. **MVP (atual):** ✅ etapa 1 (setup/auth/RBAC) → ✅ etapa 2 (cadastros + SLA) → **➡️ etapa 3: Jornada do Cliente (kanban por fase com tempo e alerta de SLA, agenda abrindo prontuário com fase + pilar, notificações de transição)** → etapa 4: módulo do Coordenador Clínico (avaliação, gravação após consentimento, fotos, upload, envio ao planejamento, aprovar/reprovar plano) → etapa 5: Centro de Planejamento (fila, diagnóstico, plano + alternativos, pilar, aprovação, orçamento por tabela de preços, contadores por Planner).
-2. **Fase 2 (após MVP validado):** módulo comercial completo (apresentação com gravação, follow-up com histórico, integração **ASAAS** para pagamentos e **ZapSign** para assinaturas, mensagens WhatsApp pré-prontas de envio manual, regra de fechamento, NPS), transcrição/resumo por IA (serviço isolado e trocável), dashboards com metas.
-3. **Fase 3 (futuro):** portal do cliente, automação WhatsApp (Business API), módulos de gestão.
+1. **Aquisição** — entrada de novos cadastros (SDR/recepção).
+2. **Conversão Clínica** — consulta, coleta de dados (fotos, exames, áudio,
+   transcrição); ao fim, agenda a apresentação comercial.
+3. **Centro de Planejamento (núcleo, SLA 24h)** — diagnóstico → plano (+
+   alternativos) → pilar da Metodologia → aprovação do Coordenador → orçamento →
+   sinaliza ao comercial.
+4. **Conversão Comercial** — apresentação online gravada; aceito → assinatura +
+   pagamento; não aceito → follow-up. **Regra de ouro: só é venda com documentos
+   assinados E pagamento confirmado.**
+5. **Início de Tratamento** — fechamento notifica a recepção para agendar.
+6. **Reavaliação** — controle de qualidade; se preciso, volta à Fase 3.
+7. **Acompanhamento** — prevenção, retornos, inativos, resgate.
 
-**Rodada de refinamento visual (compromisso assumido):** ao final do MVP funcional, haverá uma rodada dedicada de design/layout/estética guiada pelo proprietário, tela por tela. Por isso, manter o visual sempre em camadas trocáveis: cores/identidade centralizadas nas variáveis CSS de `globals.css`, aparência nos componentes compartilhados de `src/components/ui/`, e lógica de negócio fora de ambos — para que mudanças estéticas nunca exijam retrabalho funcional.
+Toda transição **notifica automaticamente a função do próximo passo**. SLA
+estourado = **badge vermelho** em listas, kanban e agenda. Todo plano é
+classificado em **1 dos 6 pilares**: Diagnóstico, Planejamento, Saúde, Função,
+Estética, Prevenção. Agenda e prontuário exibem sempre fase + pilar. Quem move
+o cliente de fase depende da função (matriz de movimentação em `docs/JORNADA.md`,
+imposta na função `move_client_phase`).
 
-Não avançar de etapa sem o OK do proprietário.
+## 4. Decisões já tomadas (com a justificativa)
 
-## Espinha dorsal: Jornada do Cliente Risarte
+- **Assinatura digital = ZapSign.** Integração nacional, simples e com custo
+  previsível; entra na Fase 2 (módulo comercial).
+- **WhatsApp começa manual.** Mensagens pré-prontas que o usuário envia à mão
+  antes de automatizar — valida o conteúdo e evita o custo/risco da Business API
+  cedo. Automação fica para a Fase 3.
+- **Sem migração de dados.** No início há **entrada dupla** (sistema novo +
+  planilha atual) por um período — mais barato e seguro que migrar histórico
+  legado de qualidade incerta.
+- **Escala inicial pequena: ~15 usuários e ~60 avaliações/mês.** Dimensiona as
+  decisões de performance (não otimizar prematuramente), mas a estrutura já é
+  pensada para 200 unidades.
+- **Portal do cliente adiado** para depois do MVP — foco primeiro no fluxo
+  interno da equipe, que é onde está o valor imediato.
+- **SLAs configuráveis pelo Admin Master** (padrão da rede + sobrescrita por
+  unidade), não fixos no código — cada operação tem ritmo diferente.
+- **NPS após o fechamento** (não durante) — mede satisfação no momento certo,
+  sem atrapalhar a negociação.
+- **Métricas de produtividade do Planejador no dashboard** — o Centro de
+  Planejamento é o gargalo do negócio; medir é pré-requisito para escalar.
+- **Abordagem online-first** — exige internet por enquanto; offline/sync é fase
+  dedicada depois do núcleo (avaliar PWA + PowerSync/ElectricSQL). Manter o
+  modelo "sync-friendly" desde já.
+- **Pagamentos = ASAAS** (Fase 2), pelos mesmos motivos do ZapSign.
+- **Rodada de refinamento visual** dedicada (tela por tela, guiada pelo dono) ao
+  final do MVP funcional — por isso manter o visual em camadas trocáveis (cores
+  em `globals.css`, aparência em `src/components/ui/`, lógica fora de ambos).
 
-Máquina de estados com **7 fases**; cada cliente está sempre em uma fase + sub-etapa, com **tempo registrado em cada uma** (futura `journey_phase_history`):
+## 5. Controle de acesso por papéis (matriz PODE / NÃO PODE)
 
-1. Aquisição (fora do escopo por enquanto)
-2. **Conversão Clínica** — recepção, consulta, coleta de dados (fotos, radiografias, escaneamento, áudio da consulta, transcrição/resumo); ao final, recepção agenda a apresentação comercial (SLA 48h)
-3. **Centro de Planejamento (núcleo)** — diagnóstico → plano (+ alternativos) → pilar da Metodologia → aprovação do Coordenador → orçamento → sinaliza ao comercial (SLA 24h)
-4. **Conversão Comercial** — apresentação online gravada; aceito → ZapSign + ASAAS; não aceito → follow-up com histórico. **Regra de ouro: só é venda com documentos assinados E pagamento confirmado** (ou boletos emitidos/enviados no boleto sem entrada)
-5. **Início de Tratamento** — fechamento notifica a recepção automaticamente para agendar
-6. **Reavaliação** — controle de qualidade; se precisar, volta à fase 3
-7. **Acompanhamento** — prevenção, retornos, inativos, resgate
-
-Toda transição de fase **notifica automaticamente a função responsável pelo próximo passo**. SLA estourado = **destaque visual evidente (badge vermelho)** em listas, kanban e agenda. Todo planejamento é classificado em **1 dos 6 pilares da Metodologia Risarte**: Diagnóstico, Planejamento, Saúde, Função, Estética, Prevenção. Agenda e prontuário exibem sempre fase da jornada + pilar.
-
-## Matriz de funções (PODE / NÃO PODE)
+Papéis ficam em `user_clinic_roles` (um por clínica). Admin Master = flag global.
+Enums sincronizados em `src/lib/roles.ts` (enum do banco ↔ const TS ↔ rótulo
+pt-BR). Aplicar a matriz **na RLS** (barreira real) e na UI (esconder o proibido).
 
 | Função | PODE | NÃO PODE |
 |---|---|---|
-| **Recepcionista** | Cadastrar clientes; agendar apresentação comercial e acompanhar; receber notificação de fechamento p/ agendar início; solicitar anamnese e assinaturas; check-in/out | Avaliação clínica; diagnóstico/planejamento; alterar plano; apresentação comercial; fechamento |
-| **Coordenador Clínico** | Ver agenda/fases (2,3,4,6); avaliação/reavaliação; gravar áudio da consulta; fotos/exames/escaneamento/radiografias; considerações; transcrição/resumo; enviar ao Centro de Planejamento; auxiliar o Planner; **aprovar/reprovar plano**; acompanhar jornada | Diagnóstico/planejamento; alterar plano; agendamentos; apresentação; fechamento |
-| **Dentista Planner** | Ver agenda/fases; receber arquivos; diagnóstico; plano + alternativos; classificar pilar; solicitar aprovação ao Coordenador; gerar orçamento; sinalizar ao comercial | Avaliação clínica; agendamentos; contato direto com cliente; apresentação; fechamento |
-| **Consultor Comercial** | Ver agenda/fases; receber plano+orçamento+resumo; preparar/realizar apresentação (com gravação); follow-up com histórico; pedir ajustes ao planejamento; pedir apoio à recepção/coordenador; renegociar; dar desconto; definir pagamento/parcelamento | Diagnóstico/planejamento; alterar plano; avaliação clínica; agendamentos |
-| **Assistente Comercial** | Acompanhar fases 3 e 4; enviar documentos (ZapSign); enviar link de pagamento (ASAAS); acompanhar status; encaminhar cliente fechado à recepção | Diagnóstico/planejamento; avaliação; agendamentos; apresentação; negociação; alterar pagamento/parcelamento |
-| **Gerente de Unidade** | Visão completa (leitura) + dashboard da sua unidade; SLAs e indicadores | Atos clínicos e comerciais; alterar planos |
-| **Franqueadora/Rede** | Leitura + dashboard consolidado de TODAS as unidades; comparativos | Atos clínicos e comerciais |
-| **Franqueado** | Leitura + dashboard da(s) unidade(s) que possui | Atos clínicos e comerciais |
-| **Admin Master** | Tudo; cadastrar/personalizar usuários, clínicas e configurações | — |
+| **Recepcionista** | Cadastrar clientes; agendar/acompanhar; check-in/out; solicitar anamnese e assinaturas; receber notificação de fechamento p/ agendar início | Avaliação clínica; planejamento; alterar plano; apresentação; fechamento |
+| **SDR (Encantador)** | Cadastrar clientes (na Franqueadora, com unidade preferida); agendar; mover 1→2 e 7→6; ver os clientes que ela cadastrou | Atos clínicos, de planejamento e comerciais |
+| **Coordenador Clínico** | Avaliação/reavaliação; gravar consulta; fotos/exames; enviar ao Centro de Planejamento; **aprovar/reprovar plano**; auxiliar o Planner | Diagnóstico/planejamento; alterar plano; apresentação; fechamento |
+| **Dentista Planner** | Diagnóstico; plano + alternativos; classificar pilar; pedir aprovação; gerar orçamento; sinalizar ao comercial; vê consolidados da rede | Avaliação clínica; agendamentos; contato direto; apresentação; fechamento |
+| **Dentista (executor)** | Vê agenda e SEUS pacientes; executa o plano aprovado; tipos Início/Sessão/Retorno | Mover fases; planejar; negociar; ver clientes de outros |
+| **Consultor Comercial** | Apresentação (com gravação); follow-up; renegociar; desconto; definir pagamento; vê só os SEUS clientes | Planejamento; alterar plano; avaliação; agendamentos |
+| **Assistente Comercial** | Enviar documentos (ZapSign) e link de pagamento (ASAAS); acompanhar status; encaminhar fechado à recepção | Planejamento; avaliação; apresentação; negociação |
+| **Gerente de Unidade** | Visão completa (leitura) + dashboard da sua unidade; SLAs e indicadores | Atos clínicos/comerciais; alterar planos |
+| **Franqueadora / Rede** | Leitura + dashboard consolidado de TODAS as unidades | Atos clínicos/comerciais |
+| **Franqueado** | Leitura + dashboard da(s) unidade(s) que possui | Atos clínicos/comerciais |
+| **Admin Master** | Tudo; cadastrar usuários, clínicas e configurações | — |
 
-No código: enums em `src/lib/roles.ts` (DB enum ↔ TS const ↔ rótulo pt-BR sempre em sincronia). Ao criar telas novas, aplicar esta matriz **na RLS** (barreira real) e na UI (esconder o que a função não pode).
+Funções da Franqueadora (SDR, Planner, Consultor, Assistente) têm **escopo de
+unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
+(funções de unidade) estão previstas. Detalhe fino em `docs/JORNADA.md`.
 
-## LGPD (obrigatório desde o MVP)
+## 6. Restrições — LGPD (requisito de arquitetura desde o MVP)
 
-- Dados odontológicos = **dados sensíveis de saúde**: consentimento registrado (TCLE + termo LGPD com data/hora) antes de tratar; criptografia em trânsito e repouso; menor privilégio via RLS.
-- **Gravação de consulta/apresentação só inicia após o consentimento do paciente estar registrado no sistema.**
-- Exclusão de cliente = **anonimização/arquivamento** (status `anonymized`), nunca apagamento físico (guarda legal de prontuário). Não existe DELETE policy em `clients` de propósito.
-- Todo acesso a prontuário/ficha gera registro em `audit_logs` (via `logAudit()` — só ids e metadados, **nunca** dados pessoais no campo `details`).
-- Nunca expor dados de pacientes em logs, URLs ou mensagens de erro. Mídia futura: Supabase Storage com **URLs assinadas**, nunca públicas.
-- Senha forte no login; estrutura pronta para 2FA futuro. Senhas criadas pelo admin: mínimo 6 caracteres com letras e números (decisão do proprietário).
+- Dados odontológicos = **dados sensíveis de saúde**: consentimento registrado
+  (TCLE + termo LGPD com data/hora) **antes** de tratar; menor privilégio via RLS.
+- **Gravação de consulta/apresentação só inicia após o consentimento estar
+  registrado** no sistema.
+- Exclusão de cliente = **anonimização** (status `anonymized`), nunca apagamento
+  físico (guarda legal do prontuário). Não existe DELETE policy em `clients` de
+  propósito.
+- Todo acesso a ficha/prontuário gera `audit_logs` (via `logAudit()` — só ids e
+  metadados, **nunca** dado pessoal em `details`).
+- Nunca expor dado de paciente em logs, URLs ou mensagens de erro. Mídia em
+  Supabase Storage com **URLs assinadas**, nunca públicas.
 
-## Regras de trabalho com o proprietário (Jeferson)
+## 7. Estado atual
 
-- Ele **não é programador**: explicar decisões em linguagem simples (analogias ajudam), em **português do Brasil**.
-- Antes de codar cada etapa: apresentar um **plano resumido e aguardar o OK** dele. Consultá-lo antes de escolhas difíceis de reverter.
-- Ao final de cada etapa: dizer **exatamente como testar** o que foi feito (roteiro numerado).
-- **Código com nomes em inglês; interface 100% em português do Brasil.** Rotas em português (`/clientes`, `/admin/usuarios`) porque o usuário as vê.
-- Ele não edita arquivos manualmente: para segredos, usar o fluxo da área de transferência (ele copia no painel, avisa, e o assistente lê via `Get-Clipboard` no PowerShell, valida e grava sem exibir). Uma tarefa de clipboard por vez.
-- UI: visual limpo que transmita segurança; paleta azul-marinho, off-white e dourado discreto; responsivo (desktop e tablet); 100% via navegador.
+**Fase do plano: MVP.** Concluído e validado:
 
----
+- **Etapa 1 — Fundação:** Next.js 16 + tema Risarte, login Supabase (sem
+  auto-cadastro), proteção em `src/proxy.ts`, RLS base. (migração 0001)
+- **Etapa 2 — Cadastros:** seletor de clínica ativa; área admin (clínicas,
+  usuários via service-role, senha, ativar/desativar); módulo de clientes
+  (cadastro auditado); tela de SLAs; máscaras CPF/CNPJ/telefone/CEP. (0002–0003)
+- **Etapa 3 — Base da Jornada (COMPLETA):** kanban por fase com SLA; agenda com
+  profissional responsável; notificações; cliente único na rede + transferência;
+  funções TSB/ASB + trava por tipo de clínica; pilar automático + treatment_pillar;
+  `journey_status` (sub-status); **check-in + painel de atendimento** (sala de
+  espera); decisões obrigatórias da Fase 5; regras automáticas de ativo/inativo
+  configuráveis. (migrações **0004–0020**, todas aplicadas)
 
-## Commands
+**Em andamento — LOTE D** (feedback do teste geral, `docs/BACKLOG.md`): será a
+**migração 0021 + ajustes de código** (ainda NÃO escrita). Itens: corrigir o bug
+da SDR que não vê o Coordenador ao agendar (RLS — precisa de função definer
+`unit_scheduling_staff`); Passo 5 "Não sei" só para o profissional original;
+clientes inativos aparecem no agendamento (marcados); filtro Ativos/Inativos;
+ficha com idade detalhada + quem cadastrou; atendimento "quem chamou conclui" +
+abrir ficha ao chamar; notificar profissional quando o cliente fica "Em espera".
 
-```powershell
-npm run dev     # dev server at http://localhost:3000 (Turbopack, hot reload)
-npm run build   # the verification gate: compiles + type-checks. Run before every commit.
-npm run lint    # eslint (flat config)
-npx shadcn@latest add <component>   # add UI components to src/components/ui/
-```
+## 8. Próximos passos (ordem de prioridade)
 
-There are no automated tests yet; `npm run build` (TypeScript strict) is the only check.
+1. **Migração 0021 + código (LOTE D)** — corrigir os bugs e melhorias do teste
+   geral (lista acima). Bug da SDR é o mais urgente (bloqueia o agendamento dela).
+2. **Restante do LOTE D** ("a fazer na sequência" no BACKLOG): sessão de
+   tratamento como padrão; alerta de "aguardando iniciar tratamento" sem
+   agendamento; botão de agendar dentro da ficha; cadastro com CPF primeiro
+   (auto-preenche); Consultor enxerga Atendimento; filtros dia/semana/mês +
+   por profissional; histórico de tempos por atendimento.
+3. **Etapa 4 — Coordenador Clínico:** avaliação com gravação após consentimento,
+   fotos, exames, envio ao planejamento, aprovar/reprovar plano.
+4. **Etapa 5 — Centro de Planejamento:** fila priorizada, diagnóstico, plano +
+   alternativos, pilar, aprovação, orçamento por tabela de preços, contadores
+   por Planner.
+5. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
+   WhatsApp manual), transcrição/resumo por IA, dashboards com metas.
 
-Machine quirks (this repo only exists on the owner's Windows 10 machine):
-- Tool shells don't have Node on PATH. Prefix PowerShell commands with:
-  `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`
-- `api.github.com` is unreachable from this network: `gh` CLI does NOT work. Push with plain git over SSH (`git@github.com:Riszon/risarte.git`); repo-level operations (creating repos, PRs) must be done by the owner in the web UI.
-- Database migrations are NOT applied by CLI. Write a numbered file in `supabase/migrations/`, copy it to the clipboard, and ask the owner to paste/Run it in the Supabase dashboard SQL Editor. Never renumber or edit an already-applied migration; write a new one.
-  - CRITICAL: copy with UTF-8, NOT `Get-Content -Raw` (PowerShell 5.1 default reads UTF-8 files as Latin-1 and turns `·`/accents into mojibake like `Â·`/`ClÃ­nica`, which then gets stored in the DB). Use:
-    `[System.IO.File]::ReadAllText('<path>', [System.Text.Encoding]::UTF8) | Set-Clipboard`
-  - This bit migrations 0004/0006/0008 (garbled notification text); fixed in 0009.
+Não avançar de etapa sem o OK do proprietário.
 
-## Architecture
+## 9. Convenções de trabalho com o proprietário (Jeferson)
 
-Next.js 16 App Router + Supabase (Postgres/Auth/Storage, project `hvhbijctanrrkxhemlza`, sa-east-1). No separate backend: pages are server components querying Supabase directly; mutations are server actions colocated as `actions.ts` next to the route that uses them.
-
-### Auth & multi-tenant RBAC (the core invariant)
-
-Authorization is enforced twice, and only the database layer is trusted:
-
-1. **Postgres RLS** (migrations 0001+): every business table has policies built on SECURITY DEFINER helper functions — `is_admin_master()`, `user_clinic_ids()`, `has_role_in_clinic(clinic_id, roles[])`, `is_network_viewer()`. These exist to avoid RLS recursion; reuse them in new policies instead of subquerying `user_clinic_roles` directly.
-2. **App-side guards** (`src/lib/auth.ts`): `getSessionContext()` / `requireAdminMaster()` / `hasRoleInClinic()`. These exist for UX (hiding buttons, friendly errors) — never as the only barrier.
-
-Role model: `profiles.is_admin_master` is a global flag; all other roles live in `user_clinic_roles` with a UNIQUE (user_id, clinic_id) — one role per clinic, different roles across clinics allowed. `profiles.email` is a synced copy of `auth.users.email` (kept by the `handle_new_user` trigger) so admin screens never touch the auth schema.
-
-The "active clinic" the user is working in is a cookie (`risarte_active_clinic`, set via `src/lib/actions/session.ts`); `getSessionContext()` resolves and validates it. All clinic-scoped pages filter by `session.activeClinic.id`.
-
-### Three Supabase clients — pick deliberately
-
-- `src/lib/supabase/client.ts` — browser, anon key (login form, sign-out).
-- `src/lib/supabase/server.ts` — server components/actions, anon key + user cookies; RLS applies. Default choice.
-- `src/lib/supabase/admin.ts` — service-role key, **bypasses RLS**. Only inside server actions that already called `requireAdminMaster()`, and only for things RLS can't do (creating auth users, resetting passwords, ban/unban).
-
-Session refresh + redirect of unauthenticated users happens in `src/proxy.ts` (Next 16 renamed middleware → proxy). Both `proxy.ts` and the server client tolerate missing env vars so the app renders a setup notice instead of crashing.
-
-### Server action pattern
-
-Every action: (1) guard with `requireAdminMaster()` or `hasRoleInClinic()`, (2) parse/normalize FormData (masks from `src/lib/masks.ts` are applied client-side as-you-type AND server-side before saving — same functions), (3) mutate, (4) `logAudit()` (`src/lib/audit.ts`, LGPD trail — ids only, never personal data in `details`), (5) `revalidatePath()`, (6) return `{ ok, error? }` with pt-BR error messages; the client component shows them via sonner toasts. Generic auth errors on purpose (never reveal whether an e-mail exists).
-
-### Cascading settings (SLA, future price table)
-
-`sla_settings` rows with `clinic_id NULL` are the network default; a row with a clinic_id overrides it for that unit (UNIQUE NULLS NOT DISTINCT (clinic_id, sla_key)). Resolution logic in `src/lib/sla.ts` (`resolveSla`). New network-wide configurable values should follow this same pattern.
-
-### shadcn/ui here is Base UI, not Radix
-
-- No `asChild`. Compose with `render={<Component />}` (children stay on the wrapper). Buttons rendering links need `nativeButton={false}`.
-- `Select` must receive `items={[{ value, label }]}` on the root or the closed trigger shows the raw value instead of the label.
-- `Select`'s `onValueChange` receives `string | null` — guard the null.
-- `DropdownMenuLabel` is a GroupLabel: it crashes at runtime unless wrapped in `DropdownMenuGroup`.
-- Menu items use `onClick`, not `onSelect`.
-
-Brand theme (navy/off-white/gold) is CSS variables in `src/app/globals.css`, including a custom `--gold` token exposed as the `bg-gold` utility.
+- Ele **não é programador**: explicar decisões em linguagem simples (analogias
+  ajudam), em **português do Brasil**.
+- Antes de codar cada etapa: apresentar um **plano resumido e aguardar o OK**.
+  Consultá-lo antes de escolhas difíceis de reverter.
+- Ao final de cada etapa: dizer **exatamente como testar** (roteiro numerado).
+- **Código com nomes em inglês; interface 100% em pt-BR.** Rotas em português
+  (`/clientes`, `/admin/usuarios`).
+- Ele não edita arquivos: para segredos, usar o fluxo da área de transferência
+  (ele copia no painel, avisa, e o assistente lê via `Get-Clipboard`, valida e
+  grava sem exibir). **Uma tarefa de clipboard por vez.**

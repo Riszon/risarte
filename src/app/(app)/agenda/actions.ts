@@ -270,8 +270,14 @@ export async function updateAppointmentStatus(
   return { ok: true };
 }
 
+export type SchedulingClient = {
+  id: string;
+  full_name: string;
+  inactive: boolean;
+};
+
 export type UnitSchedulingData = {
-  clients: { id: string; full_name: string }[];
+  clients: SchedulingClient[];
   staff: StaffOption[];
 };
 
@@ -287,20 +293,18 @@ export async function getUnitSchedulingData(
 
   const [{ data: clientRows }, { data: staffRows }, { data: consultants }] =
     await Promise.all([
+      // Include inactive clients (marked in the UI); skip only anonymized ones.
       supabase
         .from("clients")
-        .select("id, full_name")
+        .select("id, full_name, status")
         .or(`clinic_id.eq.${clinicId},preferred_clinic_id.eq.${clinicId}`)
-        .eq("status", "active")
+        .neq("status", "anonymized")
         .order("full_name")
-        .limit(300),
-      supabase
-        .from("user_clinic_roles")
-        .select("user_id, role, profiles ( full_name )")
-        .eq("clinic_id", clinicId)
-        .returns<
-          { user_id: string; role: string; profiles: { full_name: string } | null }[]
-        >(),
+        .limit(300)
+        .returns<{ id: string; full_name: string; status: string }[]>(),
+      // Definer function: lets the SDR (based at the matriz) read the unit's
+      // staff, which the RLS on user_clinic_roles would otherwise hide.
+      supabase.rpc("unit_scheduling_staff", { p_clinic_id: clinicId }),
       supabase.rpc("providers_with_access", {
         p_clinic_id: clinicId,
         p_role: "commercial_consultant",
@@ -308,10 +312,14 @@ export async function getUnitSchedulingData(
     ]);
 
   const staffMap = new Map<string, StaffOption>();
-  for (const row of staffRows ?? []) {
+  for (const row of (staffRows ?? []) as {
+    user_id: string;
+    role: string;
+    full_name: string | null;
+  }[]) {
     const entry = staffMap.get(row.user_id) ?? {
       userId: row.user_id,
-      name: row.profiles?.full_name ?? "—",
+      name: row.full_name ?? "—",
       roles: [],
     };
     entry.roles.push(row.role as UserRole);
@@ -333,7 +341,11 @@ export async function getUnitSchedulingData(
   }
 
   return {
-    clients: (clientRows ?? []) as { id: string; full_name: string }[],
+    clients: (clientRows ?? []).map((c) => ({
+      id: c.id,
+      full_name: c.full_name,
+      inactive: c.status === "inactive",
+    })),
     staff: [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
@@ -372,6 +384,12 @@ export async function updateAttendance(
     p_state: state,
   });
   if (error) {
+    if (error.message.includes("NOT_CALLER")) {
+      return {
+        ok: false,
+        error: "Apenas quem chamou o cliente pode concluir o atendimento.",
+      };
+    }
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Sua função não permite esta ação." };
     }
@@ -379,6 +397,7 @@ export async function updateAttendance(
     return { ok: false, error: "Não foi possível atualizar o atendimento." };
   }
   revalidatePath("/atendimento");
+  revalidatePath("/agenda");
   return { ok: true };
 }
 

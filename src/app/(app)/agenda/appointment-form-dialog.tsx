@@ -91,7 +91,7 @@ export function AppointmentFormDialog({
   units,
   loadUnitData,
 }: {
-  clients: { id: string; full_name: string }[];
+  clients: { id: string; full_name: string; inactive?: boolean }[];
   staff: StaffOption[];
   /** When set, the dialog edits/reschedules this appointment. */
   appointment?: AppointmentDefaults;
@@ -103,7 +103,10 @@ export function AppointmentFormDialog({
   units?: { id: string; name: string }[];
   loadUnitData?: (
     clinicId: string
-  ) => Promise<{ clients: { id: string; full_name: string }[]; staff: StaffOption[] }>;
+  ) => Promise<{
+    clients: { id: string; full_name: string; inactive?: boolean }[];
+    staff: StaffOption[];
+  }>;
 }) {
   const isEdit = Boolean(appointment);
   const router = useRouter();
@@ -111,7 +114,7 @@ export function AppointmentFormDialog({
   const [isPending, startTransition] = useTransition();
   const [unitId, setUnitId] = useState("");
   const [unitClients, setUnitClients] = useState<
-    { id: string; full_name: string }[]
+    { id: string; full_name: string; inactive?: boolean }[]
   >([]);
   const [unitStaff, setUnitStaff] = useState<StaffOption[]>([]);
   const [clientId, setClientId] = useState(initialClientId ?? "");
@@ -164,7 +167,7 @@ export function AppointmentFormDialog({
 
   const clientItems = effectiveClients.map((c) => ({
     value: c.id,
-    label: c.full_name,
+    label: c.inactive ? `${c.full_name} (inativo)` : c.full_name,
   }));
 
   // When opened pre-filled from a notification, load the client's scheduling
