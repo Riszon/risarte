@@ -23,6 +23,7 @@ import {
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
   type AppointmentType,
+  type AttendanceStatus,
   type StaffOption,
 } from "@/lib/appointments";
 import {
@@ -44,6 +45,8 @@ export type AgendaAppointment = {
   notes: string | null;
   provider_user_id: string | null;
   provider: { full_name: string } | null;
+  /** Drives the intermediate label sync with the Atendimento screen. */
+  attendance?: AttendanceStatus | null;
   /** Set only in the network (planner/franchisor) view. */
   clinic_name?: string | null;
   clients: {
@@ -72,6 +75,23 @@ const STATUS_DOT: Record<AppointmentStatus, string> = {
   cancelled: "bg-red-400",
   no_show: "bg-orange-500",
 };
+
+/** Status shown on the card, reflecting the attendance flow when in progress. */
+function displayedStatus(a: AgendaAppointment): { label: string; dot: string } {
+  if (a.status === "completed" || a.attendance === "done") {
+    return { label: "Realizado", dot: STATUS_DOT.completed };
+  }
+  if (a.attendance === "in_service") {
+    return { label: "Em atendimento", dot: "bg-violet-500" };
+  }
+  if (a.attendance === "waiting") {
+    return { label: "Aguardando atendimento", dot: "bg-amber-500" };
+  }
+  return {
+    label: APPOINTMENT_STATUS_LABELS[a.status],
+    dot: STATUS_DOT[a.status],
+  };
+}
 
 export function WeekGrid({
   weekStartIso,
@@ -205,15 +225,15 @@ export function WeekGrid({
           </>
         )}
         <div className="mt-1.5 flex items-center justify-between gap-1">
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span
-              className={cn(
-                "size-2 rounded-full",
-                STATUS_DOT[appointment.status]
-              )}
-            />
-            {APPOINTMENT_STATUS_LABELS[appointment.status]}
-          </span>
+          {(() => {
+            const ds = displayedStatus(appointment);
+            return (
+              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className={cn("size-2 rounded-full", ds.dot)} />
+                {ds.label}
+              </span>
+            );
+          })()}
           {canManage && (
             <div className="flex items-center">
               {/* Past appointments cannot be edited — only the status. */}

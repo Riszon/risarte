@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type {
   AppointmentStatus,
   AppointmentType,
+  AttendanceStatus,
   StaffOption,
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
@@ -25,6 +26,7 @@ type AppointmentRow = {
   notes: string | null;
   provider_user_id: string | null;
   provider: { full_name: string } | null;
+  attendance: AttendanceStatus | null;
   clinic_id?: string;
   clinics?: { name: string } | null;
   clients: {
@@ -112,7 +114,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     let netQuery = supabase
       .from("appointments")
       .select(
-        "id, type, status, starts_at, ends_at, notes, provider_user_id, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+        "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
       )
       .gte("starts_at", weekStart.toISOString())
       .lt("starts_at", weekEnd.toISOString())
@@ -162,6 +164,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         notes: a.notes,
         provider_user_id: a.provider_user_id,
         provider: a.provider,
+        attendance: a.attendance,
         clinic_name: a.clinics?.name ?? null,
         clients: a.clients,
       })
@@ -283,7 +286,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         supabase
           .from("appointments")
           .select(
-            "id, type, status, starts_at, ends_at, notes, provider_user_id, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+            "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
           )
           .eq("clinic_id", clinicId)
           .gte("starts_at", weekStart.toISOString())
@@ -377,6 +380,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             "—",
         }
       : null,
+    attendance: a.attendance,
     clients: a.clients,
   }));
 

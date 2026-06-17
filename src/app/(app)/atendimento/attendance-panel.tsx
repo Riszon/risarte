@@ -27,7 +27,77 @@ export type PanelAppointment = {
   providerName: string | null;
   providerUserId: string | null;
   calledBy: string | null;
+  /** Set in the Consultor view (clients spread across units). */
+  clinicName?: string | null;
+  // Attendance timeline (for the per-visit history).
+  checkedInAt?: string | null;
+  calledAt?: string | null;
+  doneAt?: string | null;
+  checkedInByName?: string | null;
+  calledByName?: string | null;
+  doneByName?: string | null;
 };
+
+function minutesBetween(aIso: string, bIso: string): number {
+  return Math.max(
+    0,
+    Math.round((new Date(bIso).getTime() - new Date(aIso).getTime()) / 60000)
+  );
+}
+
+function fmtDur(min: number): string {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m > 0 ? `${h}h ${m}min` : `${h}h`;
+}
+
+/** Per-visit timeline: waiting time, service time and who moved the client. */
+function timeline(a: PanelAppointment): React.ReactNode {
+  const now = Date.now();
+  const waitingMin =
+    a.checkedInAt && a.calledAt
+      ? minutesBetween(a.checkedInAt, a.calledAt)
+      : a.checkedInAt && a.attendance === "waiting"
+        ? Math.max(0, Math.round((now - new Date(a.checkedInAt).getTime()) / 60000))
+        : null;
+  const serviceMin =
+    a.calledAt && a.doneAt
+      ? minutesBetween(a.calledAt, a.doneAt)
+      : a.calledAt && a.attendance === "in_service"
+        ? Math.max(0, Math.round((now - new Date(a.calledAt).getTime()) / 60000))
+        : null;
+  const movers = [
+    a.checkedInByName && `Chegada: ${a.checkedInByName}`,
+    a.calledByName && `Chamou: ${a.calledByName}`,
+    a.doneByName && `Concluiu: ${a.doneByName}`,
+  ].filter(Boolean) as string[];
+  if (waitingMin == null && serviceMin == null && movers.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+      {(waitingMin != null || serviceMin != null) && (
+        <p>
+          {waitingMin != null && (
+            <span>
+              Espera {fmtDur(waitingMin)}
+              {a.attendance === "waiting" ? " (em andamento)" : ""}
+            </span>
+          )}
+          {waitingMin != null && serviceMin != null && " · "}
+          {serviceMin != null && (
+            <span>
+              Atendimento {fmtDur(serviceMin)}
+              {a.attendance === "in_service" ? " (em andamento)" : ""}
+            </span>
+          )}
+        </p>
+      )}
+      {movers.length > 0 && <p>{movers.join(" · ")}</p>}
+    </div>
+  );
+}
 
 export function AttendancePanel({
   appointments,
@@ -107,6 +177,11 @@ export function AttendancePanel({
           ) : (
             <span className="text-sm font-medium">{a.clientName}</span>
           )}
+          {a.clinicName && (
+            <p className="text-[11px] font-medium text-primary">
+              {a.clinicName}
+            </p>
+          )}
           <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Clock className="size-3" />
@@ -120,6 +195,7 @@ export function AttendancePanel({
               </span>
             )}
           </p>
+          {timeline(a)}
         </div>
         {action}
       </li>

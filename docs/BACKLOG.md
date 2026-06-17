@@ -313,14 +313,15 @@ duplicar, transfere para a unidade no check-in.
 - [x] Botão "Novo agendamento" dentro da ficha do cliente (recepção/SDR) —
       AppointmentFormDialog com fixedClinicId (unidade preferida quando SDR).
 
-### Etapa 2 — Tela de Atendimento (a fazer)
-- [ ] Consultor Comercial enxerga a tela Atendimento (só os clientes agendados
-      com ele).
-- [ ] Atendimento: filtros por dia/semana/mês e por profissional.
-- [ ] Atendimento: histórico por atendimento (tempo em espera, em atendimento,
-      quem movimentou).
-- [ ] Sincronização agenda↔atendimento também nos rótulos intermediários
-      ("aguardando atendimento", "em atendimento").
+### Etapa 2 — Tela de Atendimento ✅ (migração 0023 + código)
+- [x] Consultor Comercial enxerga a tela Atendimento (só os clientes agendados
+      com ele, na visão "Seus atendimentos" do contexto Franqueadora).
+- [x] Atendimento: filtros por dia/semana/mês e por profissional.
+- [x] Atendimento: histórico por atendimento (tempo em espera, em atendimento,
+      quem movimentou) — carimbos checked_in_by/called_at/done_at/done_by (0023).
+- [x] Sincronização agenda↔atendimento nos rótulos intermediários: o card da
+      agenda mostra "Aguardando atendimento" / "Em atendimento" / "Realizado"
+      conforme o attendance (displayedStatus no week-grid).
 
 ### Etapa 3 — Cadastro (a fazer)
 - [ ] Cadastro: pedir o CPF PRIMEIRO; se já existir, preencher automaticamente
