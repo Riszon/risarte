@@ -332,7 +332,27 @@ duplicar, transfere para a unidade no check-in.
       como rede de segurança.
 
 ### Adiado (não esquecer)
-- [ ] Foto do cliente por webcam (captura + Storage).
+- [ ] Foto do cliente por webcam (captura + Storage) — agora pode reusar o
+      bucket privado clinical-media criado na Etapa 4.
+
+## ETAPA 4 — Módulo do Coordenador Clínico
+
+### Etapa 4.1 — Fundação ✅ (migração 0025 + código)
+- [x] Storage privado (bucket clinical-media) + RLS por clínica (links assinados).
+- [x] Consentimento (client_consents) registrado antes de coletar dados (LGPD).
+- [x] Upload de fotos/radiografias/escaneamento/exames/documentos (clinical_media,
+      upload direto do navegador; só Coordenador da clínica).
+- [x] Considerações clínicas (clinical_notes).
+- [x] Botão "Enviar ao Centro de Planejamento" na seção (reusa move_client_phase).
+- [x] Seção "Avaliação clínica" na ficha: edição p/ Coordenador, leitura p/
+      Planner/Gerente/Admin.
+
+### Etapa 4.2 — a fazer
+- [ ] Gravação de áudio da consulta no navegador (após consentimento) → bucket.
+- [ ] Transcrição/resumo por IA do áudio → FASE 2 (serviço isolado e trocável).
+
+### Etapa 4.3 — junto com a Etapa 5
+- [ ] Aprovar/Reprovar plano (depende do plano criado no Centro de Planejamento).
 
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 

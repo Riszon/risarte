@@ -20,7 +20,15 @@ import {
 import { PendingDecision } from "./pending-decision";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { getUnitSchedulingData } from "../../agenda/actions";
+import {
+  ClinicalSection,
+  type ClinicalMediaItem,
+  type ClinicalNoteItem,
+  type ConsentInfo,
+} from "./clinical-section";
+import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
 import type { StaffOption } from "@/lib/appointments";
+import { allowedNextPhases } from "@/lib/journey";
 import type {
   DecisionKind,
   JourneyPhase,
@@ -241,6 +249,95 @@ export default async function ClientDetailPage(
     fichaStaff = (await getUnitSchedulingData(effectiveClinicId)).staff;
   }
 
+  // -- Avaliação clínica (Etapa 4): consentimento, considerações e mídias. --
+  const canEditClinical =
+    session.isAdminMaster || clinicRoles.includes("clinical_coordinator");
+  const canViewClinical =
+    canEditClinical || isPlannerAnywhere || clinicRoles.includes("unit_manager");
+  const canSendToPlanning = allowedNextPhases(
+    client.journey_phase as JourneyPhase,
+    { isAdminMaster: session.isAdminMaster, clinicRoles, isPlannerAnywhere }
+  ).includes("planning_center");
+
+  let consentInfo: ConsentInfo | null = null;
+  let clinicalNotes: ClinicalNoteItem[] = [];
+  let clinicalMedia: ClinicalMediaItem[] = [];
+  if (canViewClinical) {
+    const [{ data: consentRows }, { data: noteRows }, { data: mediaRows }] =
+      await Promise.all([
+        supabase
+          .from("client_consents")
+          .select("granted_at, recorded_by")
+          .eq("client_id", id)
+          .is("revoked_at", null)
+          .order("granted_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("clinical_notes")
+          .select("id, body, created_at, created_by")
+          .eq("client_id", id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("clinical_media")
+          .select(
+            "id, kind, original_name, storage_path, size_bytes, created_at, uploaded_by"
+          )
+          .eq("client_id", id)
+          .order("created_at", { ascending: false }),
+      ]);
+
+    const ids = [
+      ...new Set(
+        [
+          consentRows?.[0]?.recorded_by,
+          ...(noteRows ?? []).map((n) => n.created_by),
+          ...(mediaRows ?? []).map((m) => m.uploaded_by),
+        ].filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const nameById = new Map<string, string>();
+    if (ids.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", ids);
+      for (const p of people ?? []) nameById.set(p.id, p.full_name);
+    }
+
+    if (consentRows?.[0]) {
+      consentInfo = {
+        grantedAt: consentRows[0].granted_at,
+        recordedByName: consentRows[0].recorded_by
+          ? (nameById.get(consentRows[0].recorded_by) ?? null)
+          : null,
+      };
+    }
+    clinicalNotes = (noteRows ?? []).map((n) => ({
+      id: n.id,
+      body: n.body,
+      createdAt: n.created_at,
+      authorName: n.created_by ? (nameById.get(n.created_by) ?? null) : null,
+    }));
+    clinicalMedia = await Promise.all(
+      (mediaRows ?? []).map(async (m) => {
+        const { data: signed } = await supabase.storage
+          .from(CLINICAL_BUCKET)
+          .createSignedUrl(m.storage_path, 600);
+        return {
+          id: m.id,
+          kind: m.kind as ClinicalMediaKind,
+          originalName: m.original_name,
+          url: signed?.signedUrl ?? null,
+          createdAt: m.created_at,
+          uploaderName: m.uploaded_by
+            ? (nameById.get(m.uploaded_by) ?? null)
+            : null,
+          sizeBytes: m.size_bytes,
+        };
+      })
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -311,6 +408,19 @@ export default async function ClientDetailPage(
         clinicRoles={clinicRoles}
         isPlannerAnywhere={isPlannerAnywhere}
       />
+
+      {canViewClinical && (
+        <ClinicalSection
+          clientId={client.id}
+          clientName={client.full_name}
+          clinicId={client.clinic_id}
+          canEdit={canEditClinical}
+          consent={consentInfo}
+          notes={clinicalNotes}
+          media={clinicalMedia}
+          canSendToPlanning={canSendToPlanning}
+        />
+      )}
 
       {(guardians ?? []).length > 0 && (
         <Card>
