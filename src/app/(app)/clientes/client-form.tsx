@@ -12,6 +12,7 @@ import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
 import {
   createClientRecord,
   lookupClientByCpf,
+  lookupCpfForRegistration,
   transferClientToActiveClinic,
   updateClientRecord,
   type DuplicateInfo,
@@ -69,11 +70,36 @@ export function ClientForm({
   const [noCpf, setNoCpf] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
   const [consent, setConsent] = useState(false);
+  const [fullName, setFullName] = useState(client?.full_name ?? "");
   const [birthDate, setBirthDate] = useState(client?.birth_date ?? "");
+  const [phone, setPhone] = useState(client?.phone ?? "");
   const [preferredUnit, setPreferredUnit] = useState("");
   const [guardians, setGuardians] = useState<GuardianInput[]>(initialGuardians);
 
   const minor = isMinor(birthDate);
+
+  // CPF-first: as soon as the CPF is filled, check the network. Already a
+  // client → block + open/transfer; a prospect (guardian) → autofill.
+  function handleClientCpfBlur(cpf: string) {
+    if (isEdit || cpf.replace(/\D/g, "").length !== 11) return;
+    startTransition(async () => {
+      const result = await lookupCpfForRegistration(cpf);
+      if (result.duplicate) {
+        setDuplicate(result.duplicate);
+        setConsent(false);
+      } else if (result.prospect) {
+        setDuplicate(null);
+        setFullName(result.prospect.fullName ?? fullName);
+        if (result.prospect.birthDate) setBirthDate(result.prospect.birthDate);
+        if (result.prospect.phone) setPhone(result.prospect.phone);
+        toast.success(
+          `${result.prospect.fullName} já estava cadastrado(a) como responsável — dados preenchidos.`
+        );
+      } else {
+        setDuplicate(null);
+      }
+    });
+  }
 
   function applyMask(
     formatter: (v: string) => string
@@ -246,38 +272,46 @@ export function ClientForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Nome completo *</Label>
+            <Label htmlFor="cpf">CPF {noCpf ? "" : "*"}</Label>
             <Input
-              id="full_name"
-              name="full_name"
-              required
-              defaultValue={client?.full_name ?? ""}
+              id="cpf"
+              name="cpf"
+              inputMode="numeric"
+              required={!noCpf}
+              disabled={noCpf}
+              defaultValue={client?.cpf ?? ""}
+              onChange={applyMask(formatCpf)}
+              onBlur={(e) => handleClientCpfBlur(e.target.value)}
+              placeholder="000.000.000-00"
             />
+            {!isEdit && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={noCpf}
+                  onChange={(e) => setNoCpf(e.target.checked)}
+                  className="size-3.5 accent-primary"
+                />
+                Cliente sem CPF (ex.: criança)
+              </label>
+            )}
+            {!isEdit && !noCpf && (
+              <p className="text-xs text-muted-foreground">
+                Informe o CPF primeiro: se já houver cadastro na rede, avisamos
+                aqui — você não precisa refazer nada.
+              </p>
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="cpf">CPF {noCpf ? "" : "*"}</Label>
+              <Label htmlFor="full_name">Nome completo *</Label>
               <Input
-                id="cpf"
-                name="cpf"
-                inputMode="numeric"
-                required={!noCpf}
-                disabled={noCpf}
-                defaultValue={client?.cpf ?? ""}
-                onChange={applyMask(formatCpf)}
-                placeholder="000.000.000-00"
+                id="full_name"
+                name="full_name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
               />
-              {!isEdit && (
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={noCpf}
-                    onChange={(e) => setNoCpf(e.target.checked)}
-                    className="size-3.5 accent-primary"
-                  />
-                  Cliente sem CPF (ex.: criança)
-                </label>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="birth_date">Data de nascimento *</Label>
@@ -417,8 +451,8 @@ export function ClientForm({
                 name="phone"
                 inputMode="numeric"
                 required
-                defaultValue={client?.phone ?? ""}
-                onChange={applyMask(formatPhone)}
+                value={phone}
+                onChange={(e) => setPhone(formatPhone(e.target.value))}
                 placeholder="(11) 99999-9999"
               />
             </div>

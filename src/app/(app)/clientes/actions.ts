@@ -175,6 +175,59 @@ export async function lookupClientByCpf(cpf: string): Promise<{
   };
 }
 
+/**
+ * CPF-first registration: as soon as the CPF is typed, tell the form whether
+ * it already belongs to a client (block + open/transfer) or to a "prospect"
+ * (someone registered as a guardian, not yet a client → autofill the form).
+ */
+export async function lookupCpfForRegistration(cpf: string): Promise<{
+  duplicate?: DuplicateInfo;
+  prospect?: { fullName: string; birthDate: string | null; phone: string | null };
+}> {
+  const session = await getSessionContext();
+  const clinicId = session.activeClinic?.id ?? null;
+  const formatted = formatCpf(cpf);
+  if (formatted.replace(/\D/g, "").length !== 11) return {};
+
+  const supabase = await createClient();
+
+  // 1) Already a client anywhere in the network? (CPF-only match.)
+  const { data: duplicates } = await supabase.rpc("find_duplicate_client", {
+    p_cpf: formatted,
+    p_full_name: "",
+    p_birth_date: null,
+  });
+  if (duplicates && duplicates.length > 0) {
+    const dup = duplicates[0];
+    return {
+      duplicate: {
+        clientId: dup.client_id,
+        fullName: dup.full_name,
+        clinicId: dup.clinic_id,
+        clinicName: dup.clinic_name,
+        matchType: dup.match_type as "cpf" | "name_birth",
+        sameClinic: dup.clinic_id === clinicId,
+      },
+    };
+  }
+
+  // 2) A prospect (registered as a guardian, not yet a client)?
+  const { data: prospect } = await supabase.rpc("find_prospect_by_cpf", {
+    p_cpf: formatted,
+  });
+  if (prospect && prospect.length > 0) {
+    return {
+      prospect: {
+        fullName: prospect[0].full_name,
+        birthDate: prospect[0].birth_date,
+        phone: prospect[0].phone,
+      },
+    };
+  }
+
+  return {};
+}
+
 export async function createClientRecord(
   formData: FormData
 ): Promise<ActionResult> {

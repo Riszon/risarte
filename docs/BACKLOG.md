@@ -323,9 +323,13 @@ duplicar, transfere para a unidade no check-in.
       agenda mostra "Aguardando atendimento" / "Em atendimento" / "Realizado"
       conforme o attendance (displayedStatus no week-grid).
 
-### Etapa 3 — Cadastro (a fazer)
-- [ ] Cadastro: pedir o CPF PRIMEIRO; se já existir, preencher automaticamente
-      (cliente existente → abrir/transferir; "prospect"/responsável → preencher).
+### Etapa 3 — Cadastro com CPF primeiro ✅ (migração 0024 + código)
+- [x] CPF no topo do cadastro, com checagem ao sair do campo (formato escolhido
+      pelo dono: formulário único, CPF no topo). Cliente já existente → card
+      "já cadastrado" com Abrir ficha / Transferir (consentimento), reaproveitando
+      o fluxo de duplicado. Prospect/responsável (find_prospect_by_cpf, 0024) →
+      auto-preenche nome, nascimento e telefone. A checagem no salvar permanece
+      como rede de segurança.
 
 ### Adiado (não esquecer)
 - [ ] Foto do cliente por webcam (captura + Storage).
