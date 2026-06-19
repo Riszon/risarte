@@ -118,7 +118,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, creator:profiles!clients_created_by_fkey ( full_name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", id)
     .single();
@@ -228,6 +228,13 @@ export default async function ClientDetailPage(
   ).creator;
   const creator = Array.isArray(creatorRaw) ? creatorRaw[0] : creatorRaw;
   const creatorName = creator?.full_name ?? null;
+  const clinicRaw = (
+    client as unknown as {
+      clinic?: { name: string } | { name: string }[] | null;
+    }
+  ).clinic;
+  const clinicName =
+    (Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw)?.name ?? null;
   const ageText = client.birth_date
     ? formatDetailedAge(client.birth_date)
     : "";
@@ -366,6 +373,11 @@ export default async function ClientDetailPage(
             {new Date(client.created_at).toLocaleDateString("pt-BR")}
             {creatorName && <> · cadastrado por {creatorName}</>}
           </p>
+          {clinicName && (
+            <p className="text-sm font-medium text-primary">
+              Unidade: {clinicName}
+            </p>
+          )}
           {ageText && (
             <p className="text-sm text-muted-foreground">Idade: {ageText}</p>
           )}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
@@ -18,6 +19,7 @@ export const metadata: Metadata = { title: "Jornada do Cliente" };
 type ClientRow = {
   id: string;
   full_name: string;
+  status: "active" | "inactive" | "anonymized";
   journey_phase: JourneyPhase;
   journey_status: JourneyStatus | null;
   phase_entered_at: string;
@@ -45,22 +47,40 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
     );
   }
 
+  // The Dentista (executor) does not have the Jornada screen (owner rule).
+  const activeRoles = session.rolesByClinic[clinicId] ?? [];
+  if (
+    !session.isAdminMaster &&
+    activeRoles.length > 0 &&
+    activeRoles.every((r) => r === "dentist")
+  ) {
+    redirect("/");
+  }
+
   const unitFilter =
     typeof searchParams.unidade === "string" ? searchParams.unidade : "";
   const pillarFilter =
     typeof searchParams.pilar === "string" ? searchParams.pilar : "";
+  const statusFilter =
+    typeof searchParams.status === "string" ? searchParams.status : "";
 
   const supabase = await createClient();
 
   const baseSelect =
-    "id, full_name, journey_phase, journey_status, phase_entered_at, methodology_pillar, clinic_id, clinics!clients_clinic_id_fkey ( name )";
+    "id, full_name, status, journey_phase, journey_status, phase_entered_at, methodology_pillar, clinic_id, clinics!clients_clinic_id_fkey ( name )";
 
   let clientsQuery = supabase
     .from("clients")
     .select(baseSelect)
-    .eq("status", "active")
     .order("phase_entered_at")
     .limit(1000);
+
+  // Inactive clients appear too (marked); default shows active + inactive.
+  if (statusFilter === "active" || statusFilter === "inactive") {
+    clientsQuery = clientsQuery.eq("status", statusFilter);
+  } else {
+    clientsQuery = clientsQuery.neq("status", "anonymized");
+  }
 
   if (isFranchisor) {
     // Network view: all units; planner/admin/franchisor see the whole rede.
@@ -114,14 +134,14 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
           <p className="text-sm text-muted-foreground">
             {isFranchisor ? (
               <>
-                Visão da rede — {phaseCounts} cliente(s) ativo(s)
+                Visão da rede — {phaseCounts} cliente(s)
                 {unitFilter ? " na unidade selecionada" : " em todas as unidades"}
                 .
               </>
             ) : (
               <>
-                {session.activeClinic?.name} — clientes ativos por fase. Cartões
-                com{" "}
+                {session.activeClinic?.name} — {phaseCounts} cliente(s) por fase.
+                Cartões com{" "}
                 <span className="font-medium text-destructive">
                   borda vermelha
                 </span>{" "}
@@ -158,6 +178,15 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
                 </option>
               ))}
             </select>
+            <select
+              name="status"
+              defaultValue={statusFilter}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">Ativos e inativos</option>
+              <option value="active">Somente ativos</option>
+              <option value="inactive">Somente inativos</option>
+            </select>
             <Button type="submit" variant="outline" size="sm">
               Filtrar
             </Button>
@@ -188,6 +217,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
           clients={(clients ?? []).map((c) => ({
             id: c.id,
             full_name: c.full_name,
+            status: c.status,
             journey_phase: c.journey_phase,
             journey_status: c.journey_status,
             phase_entered_at: c.phase_entered_at,

@@ -77,6 +77,15 @@ export function AppSidebar({
 
   const activeClinic = clinics.find((c) => c.id === activeClinicId) ?? null;
 
+  // The Dentista (executor) does not have the Jornada screen (owner rule).
+  const dentistOnly =
+    !isAdminMaster &&
+    activeClinicRoles.length > 0 &&
+    activeClinicRoles.every((r) => r === "dentist");
+  const navItems = dentistOnly
+    ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
+    : NAV_ITEMS;
+
   function switchClinic(clinicId: string) {
     startTransition(async () => {
       await setActiveClinic(clinicId);
@@ -166,7 +175,7 @@ export function AppSidebar({
       )}
 
       <nav className="flex-1 space-y-1 px-3">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        {navItems.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={linkClass(href)}>
             <Icon className="size-4" />
             {label}

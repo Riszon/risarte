@@ -369,23 +369,21 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
 - [x] E1: cliente da SDR aparece na Jornada da unidade (clinic_id = unidade).
 - [x] E2 (parte): cliente mostra a unidade certa, não "Franqueadora".
 
-### E1 — Jornada (regras de visibilidade e fases)
-- [ ] Tirar os botões de mover fase da SDR (jornada e ficha).
-- [ ] Dentista NÃO tem a tela Jornada (esconder no menu + bloquear rota).
-- [ ] Todos os usuários da unidade (exceto Dentista) veem a Jornada do cliente.
-- [ ] BUG: cliente cadastrado pela SDR com unidade de preferência não aparece na
-      Jornada da unidade (kanban filtra só por clinic_id; incluir
-      preferred_clinic_id, como já é na lista de Clientes).
-- [ ] Clientes inativos aparecem na Jornada, identificados como inativos +
-      filtro Ativo/Inativo na Jornada.
+### E1 — Jornada (regras de visibilidade e fases) ✅ (código)
+- [x] Tirar os botões de mover fase da SDR (removida do PHASE_TRANSITIONS — vale
+      jornada e ficha). 7→6 e 1→2 passam a ser por recepção/check-in.
+- [x] Dentista NÃO tem a tela Jornada (escondida no menu + rota redireciona).
+- [x] Todos os usuários da unidade (exceto Dentista) veem a Jornada.
+- [x] cliente cadastrado pela SDR aparece na Jornada da unidade — resolvido pela
+      Opção A (clinic_id = unidade).
+- [x] Clientes inativos aparecem na Jornada, identificados ("Inativo" + opacidade)
+      + filtro Ativos/Inativos.
 
-### E2 — Clientes (lista e ficha) — unidade visível p/ Franqueadora
-- [ ] Lista de Clientes: para SDR e usuários da Franqueadora, mostrar em qual
-      unidade franqueada o cliente está cadastrado (cliente da SDR mostra a
-      unidade de preferência, não "Franqueadora").
-- [ ] Ficha: para usuários da Franqueadora, mostrar claramente a unidade do
-      cliente; para a SDR, mostrar a unidade de PREFERÊNCIA.
-- [ ] Indicador de quantidade de clientes na tela Clientes.
+### E2 — Clientes (lista e ficha) — unidade visível p/ Franqueadora ✅ (código)
+- [x] Lista de Clientes: coluna Unidade na visão Franqueadora já mostra a unidade
+      do cliente (após Opção A, clinic_id = unidade, sem "Franqueadora").
+- [x] Ficha: mostra "Unidade: X" no cabeçalho (embed clinics!clients_clinic_id_fkey).
+- [x] Indicador de quantidade de clientes na tela Clientes (contador no título).
 
 ### E3 — Agendamento (conflitos e clareza da unidade)
 - [ ] Não permitir 2 clientes diferentes no mesmo horário com o MESMO

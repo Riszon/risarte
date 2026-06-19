@@ -229,7 +229,12 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Clientes{" "}
+            <span className="text-base font-normal text-muted-foreground">
+              ({clients.length})
+            </span>
+          </h1>
           <p className="text-sm text-muted-foreground">
             {!session.activeClinic
               ? "Selecione uma clínica no menu lateral."

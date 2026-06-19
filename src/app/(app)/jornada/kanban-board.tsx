@@ -38,6 +38,7 @@ import { moveClientPhase } from "./actions";
 export type KanbanClient = {
   id: string;
   full_name: string;
+  status: "active" | "inactive" | "anonymized";
   journey_phase: JourneyPhase;
   journey_status: JourneyStatus | null;
   phase_entered_at: string;
@@ -130,15 +131,26 @@ export function KanbanBoard({
                     key={client.id}
                     className={cn(
                       "rounded-md border bg-card p-3 shadow-sm",
-                      exceeded && "border-destructive"
+                      exceeded && "border-destructive",
+                      client.status === "inactive" && "opacity-75"
                     )}
                   >
-                    <Link
-                      href={`/clientes/${client.id}`}
-                      className="block text-sm font-medium hover:underline"
-                    >
-                      {client.full_name}
-                    </Link>
+                    <div className="flex items-start justify-between gap-1">
+                      <Link
+                        href={`/clientes/${client.id}`}
+                        className="block text-sm font-medium hover:underline"
+                      >
+                        {client.full_name}
+                      </Link>
+                      {client.status === "inactive" && (
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 text-[10px] text-muted-foreground"
+                        >
+                          Inativo
+                        </Badge>
+                      )}
+                    </div>
                     {client.clinic_name && (
                       <p className="text-[10px] text-muted-foreground">
                         {client.clinic_name}
