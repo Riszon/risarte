@@ -64,12 +64,21 @@ export type ClinicalMediaItem = {
 export function mediaPreviewType(
   m: ClinicalMediaItem
 ): "image" | "video" | "audio" | "pdf" | null {
-  const ct = m.contentType ?? "";
+  const ct = (m.contentType ?? "").toLowerCase();
   const name = (m.originalName ?? "").toLowerCase();
+  // Browsers can't render HEIC/HEIF (iPhone) — treat as a plain file.
+  if (ct.includes("heic") || ct.includes("heif") || /\.(heic|heif)$/.test(name)) {
+    return null;
+  }
   if (ct.startsWith("image/")) return "image";
   if (ct.startsWith("video/")) return "video";
   if (ct.startsWith("audio/")) return "audio";
   if (ct === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+  // When the stored type is generic (octet-stream), fall back to the extension.
+  if (/\.(jpe?g|png|gif|webp|bmp|svg)$/.test(name)) return "image";
+  if (/\.(mp4|webm|ogg|mov|m4v)$/.test(name)) return "video";
+  if (/\.(mp3|wav|m4a|aac|oga)$/.test(name)) return "audio";
+  // Last resort by category (HEIC already excluded above).
   if (m.kind === "photo" || m.kind === "radiograph") return "image";
   if (m.kind === "video") return "video";
   if (m.kind === "audio") return "audio";

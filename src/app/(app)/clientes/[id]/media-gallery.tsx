@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Download,
   Eye,
+  ImageOff,
   Link2,
   Trash2,
   X,
@@ -78,10 +79,13 @@ function Lightbox({
   onIndex: (i: number) => void;
 }) {
   const touchX = useRef<number | null>(null);
+  const [err, setErr] = useState(false);
   const m = items[index];
 
   const prev = () => onIndex((index - 1 + items.length) % items.length);
   const next = () => onIndex((index + 1) % items.length);
+
+  useEffect(() => setErr(false), [index]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -132,13 +136,38 @@ function Lightbox({
           <ChevronLeft className="size-6" />
         </button>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={m.url ?? ""}
-        alt={m.originalName ?? "imagem"}
-        className="max-h-[80vh] max-w-full object-contain"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {err ? (
+        <div
+          className="flex flex-col items-center gap-2 rounded-md bg-white/10 p-6 text-center text-white"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ImageOff className="size-8" />
+          <p className="text-sm">
+            Não foi possível exibir esta imagem no navegador
+            <br />
+            (formato não suportado, ex.: HEIC do iPhone).
+          </p>
+          {m.url && (
+            <a
+              href={m.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm underline"
+            >
+              Abrir / baixar o arquivo
+            </a>
+          )}
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={m.url ?? ""}
+          alt={m.originalName ?? "imagem"}
+          className="max-h-[80vh] max-w-full object-contain"
+          onClick={(e) => e.stopPropagation()}
+          onError={() => setErr(true)}
+        />
+      )}
       {items.length > 1 && (
         <button
           className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
@@ -175,6 +204,7 @@ export function MediaGallery({
     index: number;
   } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [failed, setFailed] = useState<Set<string>>(new Set());
 
   if (media.length === 0) return null;
 
@@ -314,22 +344,41 @@ export function MediaGallery({
             </p>
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {images.map((m, i) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    title={`${m.originalName ?? "imagem"} · ${metaLine(m)}`}
-                    onClick={() => setLightbox({ items: images, index: i })}
-                    className="group relative"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={m.url ?? ""}
-                      alt={m.originalName ?? "imagem"}
-                      className="size-20 rounded border object-cover transition group-hover:opacity-90"
-                    />
-                  </button>
-                ))}
+                {images.map((m, i) =>
+                  failed.has(m.id) ? (
+                    <a
+                      key={m.id}
+                      href={m.url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`${m.originalName ?? "imagem"} · ${metaLine(m)}`}
+                      className="flex size-20 flex-col items-center justify-center gap-1 rounded border bg-muted/40 p-1 text-center text-[9px] text-muted-foreground"
+                    >
+                      <ImageOff className="size-5" />
+                      <span className="line-clamp-2 break-all">
+                        {m.originalName ?? "abrir"}
+                      </span>
+                    </a>
+                  ) : (
+                    <button
+                      key={m.id}
+                      type="button"
+                      title={`${m.originalName ?? "imagem"} · ${metaLine(m)}`}
+                      onClick={() => setLightbox({ items: images, index: i })}
+                      className="group relative"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={m.url ?? ""}
+                        alt={m.originalName ?? "imagem"}
+                        className="size-20 rounded border object-cover transition group-hover:opacity-90"
+                        onError={() =>
+                          setFailed((prev) => new Set(prev).add(m.id))
+                        }
+                      />
+                    </button>
+                  )
+                )}
               </div>
             )}
             {rest.length > 0 && (

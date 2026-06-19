@@ -52,11 +52,53 @@ function randomId(): string {
 
 function guessKind(file: File): ClinicalMediaKind {
   const t = file.type;
+  const n = file.name.toLowerCase();
   if (t.startsWith("audio/")) return "audio";
   if (t.startsWith("video/")) return "video";
-  if (t.startsWith("image/")) return "photo";
-  if (t === "application/pdf") return "exam";
+  if (
+    t.startsWith("image/") ||
+    /\.(jpe?g|png|gif|webp|bmp|tiff?|heic|heif)$/i.test(n)
+  ) {
+    return "photo";
+  }
+  if (t === "application/pdf" || n.endsWith(".pdf")) return "exam";
   return "document";
+}
+
+/** iPhone HEIC photos don't render in browsers — convert to JPEG on upload. */
+async function maybeConvertHeic(
+  file: File
+): Promise<{ blob: Blob; name: string; type: string }> {
+  const isHeic =
+    /image\/hei[cf]/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+  if (!isHeic) {
+    return {
+      blob: file,
+      name: file.name,
+      type: file.type || "application/octet-stream",
+    };
+  }
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const out = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.85,
+    });
+    const blob = (Array.isArray(out) ? out[0] : out) as Blob;
+    return {
+      blob,
+      name: file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+      type: "image/jpeg",
+    };
+  } catch {
+    // Conversion failed → upload the original; the gallery still lists it.
+    return {
+      blob: file,
+      name: file.name,
+      type: file.type || "application/octet-stream",
+    };
+  }
 }
 
 function fmtDateTime(iso: string): string {
@@ -167,12 +209,13 @@ export function ClinicalSection({
       let okCount = 0;
       for (const item of picked) {
         try {
-          const safe = item.file.name.replace(/[^\w.\-]+/g, "_");
+          const conv = await maybeConvertHeic(item.file);
+          const safe = conv.name.replace(/[^\w.\-]+/g, "_");
           const path = `${clinicId}/${clientId}/${randomId()}-${safe}`;
           const { error: upErr } = await supabase.storage
             .from(CLINICAL_BUCKET)
-            .upload(path, item.file, {
-              contentType: item.file.type || undefined,
+            .upload(path, conv.blob, {
+              contentType: conv.type || undefined,
             });
           if (upErr) {
             toast.error(`${item.file.name}: ${upErr.message}`);
@@ -181,9 +224,9 @@ export function ClinicalSection({
           const result = await recordClinicalMedia(clientId, {
             kind: item.kind,
             storagePath: path,
-            originalName: item.file.name,
-            contentType: item.file.type || "application/octet-stream",
-            sizeBytes: item.file.size,
+            originalName: conv.name,
+            contentType: conv.type || "application/octet-stream",
+            sizeBytes: conv.blob.size,
           });
           if (result.ok) {
             okCount += 1;
