@@ -347,8 +347,10 @@ duplicar, transfere para a unidade no check-in.
 - [x] Seção "Avaliação clínica" na ficha: edição p/ Coordenador, leitura p/
       Planner/Gerente/Admin.
 
-### Etapa 4.2 — a fazer
-- [ ] Gravação de áudio da consulta no navegador (após consentimento) → bucket.
+### Etapa 4.2 — Gravação de áudio ✅ (só código, sem migração)
+- [x] Gravação de áudio da consulta no navegador (MediaRecorder), liberada após
+      o consentimento, enviada ao bucket clinical-media (kind 'audio'). Player de
+      áudio inline na lista de arquivos.
 - [ ] Transcrição/resumo por IA do áudio → FASE 2 (serviço isolado e trocável).
 
 ### Etapa 4.3 — junto com a Etapa 5

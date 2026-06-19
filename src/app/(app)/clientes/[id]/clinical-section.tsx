@@ -27,6 +27,7 @@ import {
   recordClinicalMedia,
   recordConsent,
 } from "./clinical-actions";
+import { AudioRecorder } from "./audio-recorder";
 import { moveClientPhase } from "../../jornada/actions";
 
 export type ConsentInfo = { grantedAt: string; recordedByName: string | null };
@@ -225,6 +226,19 @@ export function ClinicalSection({
             </div>
 
             <div className="space-y-2">
+              <Label>Gravação da consulta</Label>
+              <AudioRecorder
+                clientId={clientId}
+                clinicId={clinicId}
+                onDone={() => router.refresh()}
+              />
+              <p className="text-xs text-muted-foreground">
+                Permitida após o consentimento. Fica guardada de forma privada,
+                junto dos demais arquivos.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="clinical-note">Considerações clínicas</Label>
               <textarea
                 id="clinical-note"
@@ -297,6 +311,14 @@ export function ClinicalSection({
                       {m.uploaderName ? ` · ${m.uploaderName}` : ""}
                       {m.sizeBytes ? ` · ${fmtSize(m.sizeBytes)}` : ""}
                     </p>
+                    {m.kind === "audio" && m.url && (
+                      <audio
+                        controls
+                        preload="none"
+                        src={m.url}
+                        className="mt-1 h-8 w-full max-w-xs"
+                      />
+                    )}
                   </div>
                   {canEdit && (
                     <Button
