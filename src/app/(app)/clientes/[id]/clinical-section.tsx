@@ -6,15 +6,11 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowRight,
-  Download,
-  Link2,
   Paperclip,
   Pencil,
   ShieldCheck,
-  Trash2,
   X,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,51 +20,23 @@ import {
   CLINICAL_BUCKET,
   CLINICAL_MEDIA_KINDS,
   CLINICAL_MEDIA_LABELS,
+  type ClinicalMediaItem,
   type ClinicalMediaKind,
+  type ClinicalNoteItem,
+  type ConsentInfo,
 } from "@/lib/clinical";
 import {
   addClinicalNote,
   addExternalMedia,
-  deleteClinicalMedia,
   editClinicalNote,
   recordClinicalMedia,
   recordConsent,
 } from "./clinical-actions";
 import { AudioRecorder } from "./audio-recorder";
+import { MediaGallery } from "./media-gallery";
 import { moveClientPhase } from "../../jornada/actions";
 
-export type ConsentInfo = { grantedAt: string; recordedByName: string | null };
-export type ClinicalNoteItem = {
-  id: string;
-  body: string;
-  createdAt: string;
-  authorName: string | null;
-  updatedAt: string | null;
-  editedByName: string | null;
-};
-export type ClinicalMediaItem = {
-  id: string;
-  kind: ClinicalMediaKind;
-  originalName: string | null;
-  url: string | null;
-  externalUrl: string | null;
-  contentType: string | null;
-  createdAt: string;
-  uploaderName: string | null;
-  sizeBytes: number | null;
-};
-
-/** How to preview a Storage item inline (no download). */
-function previewType(m: ClinicalMediaItem): "image" | "video" | "audio" | null {
-  const ct = m.contentType ?? "";
-  if (ct.startsWith("image/")) return "image";
-  if (ct.startsWith("video/")) return "video";
-  if (ct.startsWith("audio/")) return "audio";
-  if (m.kind === "photo" || m.kind === "radiograph") return "image";
-  if (m.kind === "video") return "video";
-  if (m.kind === "audio") return "audio";
-  return null;
-}
+export type { ConsentInfo, ClinicalNoteItem, ClinicalMediaItem };
 
 /** Crypto-safe id that also works in non-secure contexts (LAN IP, etc.). */
 function randomId(): string {
@@ -469,113 +437,8 @@ export function ClinicalSection({
           </div>
         )}
 
-        {/* Media list (visible to viewers too). */}
-        {media.length > 0 && (
-          <div className="space-y-1.5">
-            <h3 className="text-sm font-medium">Arquivos</h3>
-            <ul className="space-y-1.5">
-              {media.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {CLINICAL_MEDIA_LABELS[m.kind]}
-                      </Badge>
-                      {m.externalUrl ? (
-                        <a
-                          href={m.externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 truncate font-medium hover:underline"
-                        >
-                          <Link2 className="size-3.5 shrink-0" />
-                          {m.originalName ?? m.externalUrl}
-                        </a>
-                      ) : m.url ? (
-                        <a
-                          href={m.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 truncate font-medium hover:underline"
-                        >
-                          <Download className="size-3.5 shrink-0" />
-                          {m.originalName ?? "arquivo"}
-                        </a>
-                      ) : (
-                        <span className="truncate">
-                          {m.originalName ?? "arquivo"}
-                        </span>
-                      )}
-                    </span>
-                    <p className="text-xs text-muted-foreground">
-                      {fmtDateTime(m.createdAt)}
-                      {m.uploaderName ? ` · ${m.uploaderName}` : ""}
-                      {m.sizeBytes ? ` · ${fmtSize(m.sizeBytes)}` : ""}
-                    </p>
-                    {m.url &&
-                      (() => {
-                        const pv = previewType(m);
-                        if (pv === "image") {
-                          return (
-                            <a
-                              href={m.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-1 block"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={m.url}
-                                alt={m.originalName ?? "imagem"}
-                                className="max-h-48 rounded border"
-                              />
-                            </a>
-                          );
-                        }
-                        if (pv === "video") {
-                          return (
-                            <video
-                              controls
-                              preload="none"
-                              src={m.url}
-                              className="mt-1 max-h-48 w-full max-w-sm rounded border"
-                            />
-                          );
-                        }
-                        if (pv === "audio") {
-                          return (
-                            <audio
-                              controls
-                              preload="none"
-                              src={m.url}
-                              className="mt-1 h-8 w-full max-w-xs"
-                            />
-                          );
-                        }
-                        return null;
-                      })()}
-                  </div>
-                  {canEdit && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Remover arquivo"
-                      disabled={isPending}
-                      onClick={() =>
-                        run(() => deleteClinicalMedia(m.id), "Arquivo removido.")
-                      }
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {/* Media gallery: grouped by category, photo lightbox, inline previews. */}
+        <MediaGallery media={media} canEdit={canEdit} />
 
         {/* Considerations list (editable). */}
         {notes.length > 0 && (

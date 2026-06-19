@@ -427,6 +427,12 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
       áudio (por content_type/kind); documentos abrem no navegador (link).
 - [x] Vídeo como tipo de mídia (migração 0028) + player inline. Link assinado de
       1h para não expirar durante a reprodução.
+- [x] Documentos (PDF) visualizáveis sem baixar (iframe embutido "Visualizar");
+      clicar no nome não baixa mais (download é botão explícito).
+- [x] Galeria de fotos (MediaGallery): miniaturas → lightbox com navegação por
+      seta do teclado, botões (mouse) e deslize (toque).
+- [x] Mídia agrupada por categoria: Fotos, Vídeos, Áudios, Radiografias, Exames,
+      Documentos, Escaneamento — sempre com quem enviou, quando e tamanho.
 
 ### E7 — GRANDE: cliente atendido em mais de uma unidade simultaneamente
 - [ ] Compartilhar o mesmo cliente temporariamente entre unidades (ex.: cliente
