@@ -244,12 +244,12 @@ export function ClientForm({
       {showPreferredUnit && (
         <Card className="border-gold">
           <CardHeader>
-            <CardTitle className="text-base">Unidade preferida *</CardTitle>
+            <CardTitle className="text-base">Unidade do cliente *</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-2 text-xs text-muted-foreground">
-              Cadastro pela Franqueadora (código FRA). O cliente aparecerá também
-              na lista da unidade escolhida.
+              O cliente será cadastrado nesta unidade (aparece na Jornada e na
+              lista dela). O código mantém o prefixo da Franqueadora (FRA).
             </p>
             <select
               value={preferredUnit}

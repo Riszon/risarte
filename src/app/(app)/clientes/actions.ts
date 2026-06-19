@@ -232,29 +232,44 @@ export async function createClientRecord(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  const clinicId = session.activeClinic?.id;
-  if (!clinicId) {
+  const activeClinicId = session.activeClinic?.id;
+  if (!activeClinicId) {
     return { ok: false, error: "Nenhuma clínica selecionada." };
   }
-  if (!hasRoleInClinic(session, clinicId, ["receptionist", "sdr"])) {
-    return {
-      ok: false,
-      error:
-        "Apenas a Recepção ou Encantador(a) pode cadastrar clientes nesta clínica.",
-    };
+
+  const isFranchisor = session.activeClinic?.type === "franchisor";
+  const isSdr = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("sdr")
+  );
+
+  // Where the client is registered, and which clinic's prefix the code uses.
+  let targetClinicId: string;
+  let codeClinicId: string | null = null;
+  if (isFranchisor) {
+    // SDR (Encantador) registering from the Franqueadora: the client BELONGS to
+    // the chosen unit, but the code keeps the Franqueadora prefix (FRA).
+    if (!isSdr && !session.isAdminMaster) {
+      return {
+        ok: false,
+        error: "Apenas o Encantador(a) (SDR) cadastra clientes na Franqueadora.",
+      };
+    }
+    const chosen = String(formData.get("preferred_clinic_id") ?? "") || null;
+    if (!chosen) return { ok: false, error: "Escolha a unidade do cliente." };
+    targetClinicId = chosen;
+    codeClinicId = activeClinicId; // Franqueadora → código FRA
+  } else {
+    if (!hasRoleInClinic(session, activeClinicId, ["receptionist"])) {
+      return {
+        ok: false,
+        error: "Apenas a Recepção pode cadastrar clientes nesta unidade.",
+      };
+    }
+    targetClinicId = activeClinicId;
   }
 
   const parsed = parseClientForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
-
-  // SDR registering at the Franqueadora: client owned by the matriz (FRA code)
-  // with a preferred unit, so it also shows in that unit's list.
-  const isFranchisor = session.activeClinic?.type === "franchisor";
-  const preferredClinicId =
-    isFranchisor ? String(formData.get("preferred_clinic_id") ?? "") || null : null;
-  if (isFranchisor && !preferredClinicId) {
-    return { ok: false, error: "Escolha a unidade preferida do cliente." };
-  }
 
   const supabase = await createClient();
 
@@ -275,17 +290,30 @@ export async function createClientRecord(
         clinicId: dup.clinic_id,
         clinicName: dup.clinic_name,
         matchType: dup.match_type as "cpf" | "name_birth",
-        sameClinic: dup.clinic_id === clinicId,
+        sameClinic: dup.clinic_id === targetClinicId,
       },
     };
+  }
+
+  // SDR registration keeps the Franqueadora code prefix (FRA-xxxxx). For the
+  // unit's own reception, leave it null so the trigger uses the unit prefix.
+  let code: string | null = null;
+  if (codeClinicId) {
+    const { data: codeData, error: codeErr } = await supabase.rpc(
+      "next_client_code",
+      { p_clinic_id: codeClinicId }
+    );
+    if (codeErr) console.error("next_client_code failed:", codeErr.message);
+    else if (typeof codeData === "string") code = codeData;
   }
 
   const { data, error } = await supabase
     .from("clients")
     .insert({
       ...parsed.values,
-      clinic_id: clinicId,
-      preferred_clinic_id: preferredClinicId,
+      clinic_id: targetClinicId,
+      preferred_clinic_id: null,
+      code,
       created_by: session.userId,
     })
     .select("id")
@@ -305,7 +333,7 @@ export async function createClientRecord(
     action: "create",
     entityType: "client",
     entityId: data.id,
-    clinicId,
+    clinicId: targetClinicId,
   });
   revalidatePath("/clientes");
   return { ok: true, clientId: data.id };

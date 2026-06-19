@@ -356,6 +356,76 @@ duplicar, transfere para a unidade no check-in.
 ### Etapa 4.3 — junto com a Etapa 5
 - [ ] Aprovar/Reprovar plano (depende do plano criado no Centro de Planejamento).
 
+## LOTE E — considerações/correções antes da Etapa 5 (2026-06-19)
+
+### E-modelo — Opção A ✅ (migração 0026 + código) — raiz de E0/E1/E2
+Confirmado: a migração 0025 ESTÁ aplicada (tabelas + bucket existem). O bug era
+o modelo: cliente da SDR pertencia à Franqueadora. Opção A: o cliente da SDR
+passa a PERTENCER À UNIDADE escolhida (clinic_id = unidade), código mantém o
+prefixo FRA (next_client_code da Franqueadora, gerado no app). Migração 0026:
+policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
+"da Franqueadora" existentes para a unidade de preferência. Isso conserta:
+- [x] E0: anexar/ler arquivos clínicos (clinic_id = unidade → Coordenador tem papel).
+- [x] E1: cliente da SDR aparece na Jornada da unidade (clinic_id = unidade).
+- [x] E2 (parte): cliente mostra a unidade certa, não "Franqueadora".
+
+### E1 — Jornada (regras de visibilidade e fases)
+- [ ] Tirar os botões de mover fase da SDR (jornada e ficha).
+- [ ] Dentista NÃO tem a tela Jornada (esconder no menu + bloquear rota).
+- [ ] Todos os usuários da unidade (exceto Dentista) veem a Jornada do cliente.
+- [ ] BUG: cliente cadastrado pela SDR com unidade de preferência não aparece na
+      Jornada da unidade (kanban filtra só por clinic_id; incluir
+      preferred_clinic_id, como já é na lista de Clientes).
+- [ ] Clientes inativos aparecem na Jornada, identificados como inativos +
+      filtro Ativo/Inativo na Jornada.
+
+### E2 — Clientes (lista e ficha) — unidade visível p/ Franqueadora
+- [ ] Lista de Clientes: para SDR e usuários da Franqueadora, mostrar em qual
+      unidade franqueada o cliente está cadastrado (cliente da SDR mostra a
+      unidade de preferência, não "Franqueadora").
+- [ ] Ficha: para usuários da Franqueadora, mostrar claramente a unidade do
+      cliente; para a SDR, mostrar a unidade de PREFERÊNCIA.
+- [ ] Indicador de quantidade de clientes na tela Clientes.
+
+### E3 — Agendamento (conflitos e clareza da unidade)
+- [ ] Não permitir 2 clientes diferentes no mesmo horário com o MESMO
+      profissional. Não permitir o MESMO cliente 2x no mesmo horário.
+- [ ] Novo Agendamento (SDR): mostrar claramente em qual unidade está sendo
+      agendado; opção de agendar em OUTRA unidade (desejo do cliente); sugerir
+      horários disponíveis e/ou botão "ver agenda".
+- [ ] Ficha do cliente (SDR): mostrar a unidade de preferência.
+
+### E4 — Cadastro de novo cliente (SDR/Recepção) — cliente já existente
+- [ ] Cliente já existe na rede → abrir a ficha com a unidade em DESTAQUE; SDR/
+      Recepção podem EDITAR os dados; toda alteração no histórico.
+- [ ] SDR cadastrando cliente que já pertence a uma unidade: NÃO pedir
+      transferência para a Franqueadora. Pedir confirmação da unidade de
+      preferência; se escolher unidade diferente da atual, exibir mensagem de
+      autorização/confirmação de transferência da unidade A → B.
+
+### E5 — Atendimento do Consultor Comercial
+- [ ] Consultor vê atendimento consolidado das suas unidades (apresentações do
+      dia), identificando a unidade de cada cliente (parcial: visão já existe +
+      clinicName no card). Falta: filtro por unidade específica; e o Consultor
+      poder movimentar o cliente em TODAS as etapas do atendimento (inclusive
+      registrar chegada das suas apresentações).
+
+### E6 — Avaliação Clínica (melhorias)
+- [ ] Upload de MÚLTIPLOS arquivos de uma vez (e tipos variados na mesma leva:
+      fotos, radiografia, link de escaneamento, etc.).
+- [ ] Considerações clínicas EDITÁVEIS posteriormente, com registro de alteração
+      (histórico de edições).
+- [ ] (ligado ao E0) Permitir anexar e acessar arquivos do cliente da SDR.
+
+### E7 — GRANDE: cliente atendido em mais de uma unidade simultaneamente
+- [ ] Compartilhar o mesmo cliente temporariamente entre unidades (ex.: cliente
+      da Clínica A precisa de urgência/emergência ou procedimento que a A não
+      oferece, vai à Clínica B sem sair da A).
+- [ ] Regras: sem agendamentos simultâneos em duas unidades; NÃO misturar planos
+      de tratamento nem financeiro entre unidades; compartilhamento temporário.
+- [ ] Requer design próprio (modelo cliente ↔ múltiplas unidades, escopo de
+      registros por unidade). Tratar como etapa separada, com plano dedicado.
+
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 
 - [ ] **Configurações de agenda por unidade** (dias da semana, horário de
