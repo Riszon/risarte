@@ -1,18 +1,22 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowRight,
   Download,
+  Link2,
+  Pencil,
   ShieldCheck,
   Trash2,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import {
@@ -23,7 +27,9 @@ import {
 } from "@/lib/clinical";
 import {
   addClinicalNote,
+  addExternalMedia,
   deleteClinicalMedia,
+  editClinicalNote,
   recordClinicalMedia,
   recordConsent,
 } from "./clinical-actions";
@@ -36,16 +42,39 @@ export type ClinicalNoteItem = {
   body: string;
   createdAt: string;
   authorName: string | null;
+  updatedAt: string | null;
+  editedByName: string | null;
 };
 export type ClinicalMediaItem = {
   id: string;
   kind: ClinicalMediaKind;
   originalName: string | null;
   url: string | null;
+  externalUrl: string | null;
   createdAt: string;
   uploaderName: string | null;
   sizeBytes: number | null;
 };
+
+/** Crypto-safe id that also works in non-secure contexts (LAN IP, etc.). */
+function randomId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* fall through */
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function guessKind(file: File): ClinicalMediaKind {
+  const t = file.type;
+  if (t.startsWith("audio/")) return "audio";
+  if (t.startsWith("image/")) return "photo";
+  if (t === "application/pdf") return "exam";
+  return "document";
+}
 
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
@@ -62,6 +91,9 @@ function fmtSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+const selectClass =
+  "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 export function ClinicalSection({
   clientId,
@@ -85,9 +117,14 @@ export function ClinicalSection({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [note, setNote] = useState("");
-  const [kind, setKind] = useState<ClinicalMediaKind>("photo");
-  const [file, setFile] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [picked, setPicked] = useState<{ file: File; kind: ClinicalMediaKind }[]>(
+    []
+  );
+  const [linkKind, setLinkKind] = useState<ClinicalMediaKind>("scan");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingBody, setEditingBody] = useState("");
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -117,41 +154,92 @@ export function ClinicalSection({
     });
   }
 
-  function handleUpload() {
-    if (!file) return;
+  function saveEdit(id: string) {
     startTransition(async () => {
-      const supabase = createBrowserClient();
-      const safe = file.name.replace(/[^\w.\-]+/g, "_");
-      const path = `${clinicId}/${clientId}/${crypto.randomUUID()}-${safe}`;
-      const { error: upErr } = await supabase.storage
-        .from(CLINICAL_BUCKET)
-        .upload(path, file, { contentType: file.type || undefined });
-      if (upErr) {
-        toast.error(`Falha no envio do arquivo: ${upErr.message}`);
-        return;
-      }
-      const result = await recordClinicalMedia(clientId, {
-        kind,
-        storagePath: path,
-        originalName: file.name,
-        contentType: file.type || "application/octet-stream",
-        sizeBytes: file.size,
-      });
+      const result = await editClinicalNote(id, editingBody);
       if (result.ok) {
-        toast.success("Arquivo enviado.");
-        setFile(null);
-        if (fileRef.current) fileRef.current.value = "";
+        toast.success("Consideração atualizada.");
+        setEditingId(null);
         router.refresh();
       } else {
-        toast.error(result.error ?? "Não foi possível registrar o arquivo.");
-        // Remove the orphan object if the metadata insert failed.
-        await supabase.storage.from(CLINICAL_BUCKET).remove([path]);
+        toast.error(result.error ?? "Algo deu errado.");
       }
     });
   }
 
-  const selectClass =
-    "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
+  function onPick(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    const items = Array.from(list).map((file) => ({
+      file,
+      kind: guessKind(file),
+    }));
+    setPicked((prev) => [...prev, ...items]);
+  }
+
+  function handleUploadAll() {
+    if (picked.length === 0) return;
+    startTransition(async () => {
+      const supabase = createBrowserClient();
+      let okCount = 0;
+      for (const item of picked) {
+        try {
+          const safe = item.file.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${clinicId}/${clientId}/${randomId()}-${safe}`;
+          const { error: upErr } = await supabase.storage
+            .from(CLINICAL_BUCKET)
+            .upload(path, item.file, {
+              contentType: item.file.type || undefined,
+            });
+          if (upErr) {
+            toast.error(`${item.file.name}: ${upErr.message}`);
+            continue;
+          }
+          const result = await recordClinicalMedia(clientId, {
+            kind: item.kind,
+            storagePath: path,
+            originalName: item.file.name,
+            contentType: item.file.type || "application/octet-stream",
+            sizeBytes: item.file.size,
+          });
+          if (result.ok) {
+            okCount += 1;
+          } else {
+            toast.error(`${item.file.name}: ${result.error}`);
+            await supabase.storage.from(CLINICAL_BUCKET).remove([path]);
+          }
+        } catch (e) {
+          toast.error(
+            `${item.file.name}: ${e instanceof Error ? e.message : "erro inesperado"}`
+          );
+        }
+      }
+      if (okCount > 0) {
+        toast.success(
+          okCount === 1 ? "Arquivo enviado." : `${okCount} arquivos enviados.`
+        );
+        setPicked([]);
+        router.refresh();
+      }
+    });
+  }
+
+  function addLink() {
+    startTransition(async () => {
+      const result = await addExternalMedia(clientId, {
+        kind: linkKind,
+        url: linkUrl,
+        label: linkLabel,
+      });
+      if (result.ok) {
+        toast.success("Link adicionado.");
+        setLinkUrl("");
+        setLinkLabel("");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
 
   return (
     <Card>
@@ -177,10 +265,7 @@ export function ClinicalSection({
               size="sm"
               disabled={isPending}
               onClick={() =>
-                run(
-                  () => recordConsent(clientId),
-                  "Consentimento registrado."
-                )
+                run(() => recordConsent(clientId), "Consentimento registrado.")
               }
             >
               Registrar consentimento do paciente
@@ -195,12 +280,86 @@ export function ClinicalSection({
         {/* Data collection (only after consent, only for the coordinator). */}
         {canEdit && consent && (
           <div className="space-y-4">
+            {/* Multi-file upload. */}
             <div className="space-y-2">
-              <Label>Adicionar arquivo (foto, radiografia, exame...)</Label>
+              <Label>Adicionar arquivos (fotos, radiografias, exames...)</Label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  onPick(e.target.files);
+                  e.target.value = "";
+                }}
+                className="block text-sm"
+              />
+              {picked.length > 0 && (
+                <ul className="space-y-1.5 rounded-md border p-2">
+                  {picked.map((item, index) => (
+                    <li
+                      key={index}
+                      className="flex flex-wrap items-center gap-2 text-sm"
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.file.name}{" "}
+                        <span className="text-xs text-muted-foreground">
+                          ({fmtSize(item.file.size)})
+                        </span>
+                      </span>
+                      <select
+                        value={item.kind}
+                        onChange={(e) =>
+                          setPicked((prev) =>
+                            prev.map((p, i) =>
+                              i === index
+                                ? { ...p, kind: e.target.value as ClinicalMediaKind }
+                                : p
+                            )
+                          )
+                        }
+                        className={selectClass}
+                      >
+                        {CLINICAL_MEDIA_KINDS.map((k) => (
+                          <option key={k} value={k}>
+                            {CLINICAL_MEDIA_LABELS[k]}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remover da lista"
+                        onClick={() =>
+                          setPicked((prev) => prev.filter((_, i) => i !== index))
+                        }
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button
+                size="sm"
+                disabled={picked.length === 0 || isPending}
+                onClick={handleUploadAll}
+              >
+                {isPending
+                  ? "Enviando..."
+                  : picked.length > 1
+                    ? `Enviar ${picked.length} arquivos`
+                    : "Enviar arquivo"}
+              </Button>
+            </div>
+
+            {/* External link (e.g. a 3D scan link). */}
+            <div className="space-y-2">
+              <Label>Adicionar link (ex.: escaneamento)</Label>
               <div className="flex flex-wrap items-center gap-2">
                 <select
-                  value={kind}
-                  onChange={(e) => setKind(e.target.value as ClinicalMediaKind)}
+                  value={linkKind}
+                  onChange={(e) =>
+                    setLinkKind(e.target.value as ClinicalMediaKind)
+                  }
                   className={selectClass}
                 >
                   {CLINICAL_MEDIA_KINDS.map((k) => (
@@ -209,22 +368,30 @@ export function ClinicalSection({
                     </option>
                   ))}
                 </select>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  className="text-sm"
+                <Input
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="max-w-xs"
+                />
+                <Input
+                  value={linkLabel}
+                  onChange={(e) => setLinkLabel(e.target.value)}
+                  placeholder="Descrição (opcional)"
+                  className="max-w-[180px]"
                 />
                 <Button
                   size="sm"
-                  disabled={!file || isPending}
-                  onClick={handleUpload}
+                  variant="outline"
+                  disabled={!linkUrl.trim() || isPending}
+                  onClick={addLink}
                 >
-                  {isPending ? "Enviando..." : "Enviar arquivo"}
+                  Adicionar link
                 </Button>
               </div>
             </div>
 
+            {/* Audio recording. */}
             <div className="space-y-2">
               <Label>Gravação da consulta</Label>
               <AudioRecorder
@@ -238,6 +405,7 @@ export function ClinicalSection({
               </p>
             </div>
 
+            {/* New consideration. */}
             <div className="space-y-2">
               <Label htmlFor="clinical-note">Considerações clínicas</Label>
               <textarea
@@ -290,7 +458,17 @@ export function ClinicalSection({
                       <Badge variant="secondary" className="text-[10px]">
                         {CLINICAL_MEDIA_LABELS[m.kind]}
                       </Badge>
-                      {m.url ? (
+                      {m.externalUrl ? (
+                        <a
+                          href={m.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 truncate font-medium hover:underline"
+                        >
+                          <Link2 className="size-3.5 shrink-0" />
+                          {m.originalName ?? m.externalUrl}
+                        </a>
+                      ) : m.url ? (
                         <a
                           href={m.url}
                           target="_blank"
@@ -327,10 +505,7 @@ export function ClinicalSection({
                       aria-label="Remover arquivo"
                       disabled={isPending}
                       onClick={() =>
-                        run(
-                          () => deleteClinicalMedia(m.id),
-                          "Arquivo removido."
-                        )
+                        run(() => deleteClinicalMedia(m.id), "Arquivo removido.")
                       }
                     >
                       <Trash2 className="size-4" />
@@ -342,18 +517,67 @@ export function ClinicalSection({
           </div>
         )}
 
-        {/* Considerations list. */}
+        {/* Considerations list (editable). */}
         {notes.length > 0 && (
           <div className="space-y-1.5">
             <h3 className="text-sm font-medium">Considerações</h3>
             <ul className="space-y-1.5">
               {notes.map((n) => (
                 <li key={n.id} className="rounded-md border p-2 text-sm">
-                  <p className="whitespace-pre-wrap">{n.body}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {fmtDateTime(n.createdAt)}
-                    {n.authorName ? ` · ${n.authorName}` : ""}
-                  </p>
+                  {editingId === n.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingBody}
+                        onChange={(e) => setEditingBody(e.target.value)}
+                        rows={3}
+                        className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={isPending}
+                          onClick={() => saveEdit(n.id)}
+                        >
+                          Salvar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="whitespace-pre-wrap">{n.body}</p>
+                        {canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Editar consideração"
+                            onClick={() => {
+                              setEditingId(n.id);
+                              setEditingBody(n.body);
+                            }}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {fmtDateTime(n.createdAt)}
+                        {n.authorName ? ` · ${n.authorName}` : ""}
+                        {n.updatedAt
+                          ? ` · editado em ${fmtDateTime(n.updatedAt)}${
+                              n.editedByName ? ` por ${n.editedByName}` : ""
+                            }`
+                          : ""}
+                      </p>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

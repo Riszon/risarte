@@ -410,12 +410,19 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
       poder movimentar o cliente em TODAS as etapas do atendimento (inclusive
       registrar chegada das suas apresentações).
 
-### E6 — Avaliação Clínica (melhorias)
-- [ ] Upload de MÚLTIPLOS arquivos de uma vez (e tipos variados na mesma leva:
-      fotos, radiografia, link de escaneamento, etc.).
-- [ ] Considerações clínicas EDITÁVEIS posteriormente, com registro de alteração
-      (histórico de edições).
-- [ ] (ligado ao E0) Permitir anexar e acessar arquivos do cliente da SDR.
+### E6 — Avaliação Clínica (melhorias) ✅ (migração 0027 + código)
+- [x] Upload de MÚLTIPLOS arquivos de uma vez (tipo por arquivo, adivinhado pelo
+      tipo do arquivo). Upload robusto: id seguro (sem crypto.randomUUID em
+      contexto inseguro) + try/catch que SEMPRE mostra o erro real (corrige o
+      "botão não funciona" silencioso).
+- [x] Link externo (ex.: escaneamento) como item de mídia (clinical_media.
+      external_url; storage_path nulo para links).
+- [x] Considerações clínicas EDITÁVEIS, com histórico (clinical_note_revisions +
+      updated_at/updated_by) e marca "editado em ... por ...".
+- [x] (ligado ao E-modelo) anexar/acessar arquivos do cliente da SDR — resolvido
+      ao cliente pertencer à unidade (0026).
+- NOTA: se o upload ainda falhar após a 0027, o erro real agora aparece em
+      vermelho — pedir ao dono a mensagem exata para diagnóstico fino.
 
 ### E7 — GRANDE: cliente atendido em mais de uma unidade simultaneamente
 - [ ] Compartilhar o mesmo cliente temporariamente entre unidades (ex.: cliente

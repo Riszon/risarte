@@ -174,7 +174,10 @@ export async function deleteClinicalMedia(
     };
   }
 
-  await supabase.storage.from(CLINICAL_BUCKET).remove([media.storage_path]);
+  // External-link items have no file in Storage.
+  if (media.storage_path) {
+    await supabase.storage.from(CLINICAL_BUCKET).remove([media.storage_path]);
+  }
   const { error } = await supabase
     .from("clinical_media")
     .delete()
@@ -191,5 +194,112 @@ export async function deleteClinicalMedia(
     details: { removed: true },
   });
   revalidatePath(`/clientes/${media.client_id}`);
+  return { ok: true };
+}
+
+/** Edit a consideration; the previous version is kept in the history. */
+export async function editClinicalNote(
+  noteId: string,
+  body: string
+): Promise<ClinicalResult> {
+  const text = body.trim();
+  if (!text) return { ok: false, error: "A consideração não pode ficar vazia." };
+
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: note } = await supabase
+    .from("clinical_notes")
+    .select("client_id, clinic_id, body")
+    .eq("id", noteId)
+    .single();
+  if (!note) return { ok: false, error: "Consideração não encontrada." };
+  if (
+    !session.isAdminMaster &&
+    !hasRoleInClinic(session, note.clinic_id, ["clinical_coordinator"])
+  ) {
+    return {
+      ok: false,
+      error: "Apenas o Coordenador Clínico pode editar as considerações.",
+    };
+  }
+  if (note.body === text) return { ok: true };
+
+  // Keep the previous version in the history before overwriting.
+  await supabase.from("clinical_note_revisions").insert({
+    note_id: noteId,
+    client_id: note.client_id,
+    clinic_id: note.clinic_id,
+    body: note.body,
+    edited_by: session.userId,
+  });
+
+  const { error } = await supabase
+    .from("clinical_notes")
+    .update({
+      body: text,
+      updated_at: new Date().toISOString(),
+      updated_by: session.userId,
+    })
+    .eq("id", noteId);
+  if (error) {
+    console.error("editClinicalNote failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a edição." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "clinical_note",
+    entityId: note.client_id,
+    clinicId: note.clinic_id,
+    details: { edited: true },
+  });
+  revalidatePath(`/clientes/${note.client_id}`);
+  return { ok: true };
+}
+
+/** Add a clinical media item that is a LINK (e.g. a 3D scan), not a file. */
+export async function addExternalMedia(
+  clientId: string,
+  input: { kind: string; url: string; label: string }
+): Promise<ClinicalResult> {
+  const url = input.url.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    return {
+      ok: false,
+      error: "Informe um link válido (começando com http:// ou https://).",
+    };
+  }
+  const guard = await requireCoordinator(clientId);
+  if ("error" in guard) return { ok: false, error: guard.error };
+  if (!(await hasConsent(clientId))) {
+    return {
+      ok: false,
+      error: "Registre o consentimento do paciente antes de adicionar dados.",
+    };
+  }
+  if (!CLINICAL_MEDIA_KINDS.includes(input.kind as never)) {
+    return { ok: false, error: "Tipo inválido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("clinical_media").insert({
+    client_id: clientId,
+    clinic_id: guard.clinicId,
+    kind: input.kind,
+    storage_path: null,
+    external_url: url,
+    original_name: input.label.trim() || url,
+    uploaded_by: guard.userId,
+  });
+  if (error) {
+    console.error("addExternalMedia failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o link." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "clinical_media",
+    entityId: clientId,
+    clinicId: guard.clinicId,
+  });
+  revalidatePath(`/clientes/${clientId}`);
   return { ok: true };
 }

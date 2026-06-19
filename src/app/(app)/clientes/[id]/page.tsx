@@ -274,13 +274,13 @@ export default async function ClientDetailPage(
           .limit(1),
         supabase
           .from("clinical_notes")
-          .select("id, body, created_at, created_by")
+          .select("id, body, created_at, created_by, updated_at, updated_by")
           .eq("client_id", id)
           .order("created_at", { ascending: false }),
         supabase
           .from("clinical_media")
           .select(
-            "id, kind, original_name, storage_path, size_bytes, created_at, uploaded_by"
+            "id, kind, original_name, storage_path, external_url, size_bytes, created_at, uploaded_by"
           )
           .eq("client_id", id)
           .order("created_at", { ascending: false }),
@@ -291,6 +291,7 @@ export default async function ClientDetailPage(
         [
           consentRows?.[0]?.recorded_by,
           ...(noteRows ?? []).map((n) => n.created_by),
+          ...(noteRows ?? []).map((n) => n.updated_by),
           ...(mediaRows ?? []).map((m) => m.uploaded_by),
         ].filter((x): x is string => Boolean(x))
       ),
@@ -317,17 +318,25 @@ export default async function ClientDetailPage(
       body: n.body,
       createdAt: n.created_at,
       authorName: n.created_by ? (nameById.get(n.created_by) ?? null) : null,
+      updatedAt: n.updated_at ?? null,
+      editedByName: n.updated_by ? (nameById.get(n.updated_by) ?? null) : null,
     }));
     clinicalMedia = await Promise.all(
       (mediaRows ?? []).map(async (m) => {
-        const { data: signed } = await supabase.storage
-          .from(CLINICAL_BUCKET)
-          .createSignedUrl(m.storage_path, 600);
+        // Only Storage-backed items get a signed URL; links use external_url.
+        let url: string | null = null;
+        if (m.storage_path) {
+          const { data: signed } = await supabase.storage
+            .from(CLINICAL_BUCKET)
+            .createSignedUrl(m.storage_path, 600);
+          url = signed?.signedUrl ?? null;
+        }
         return {
           id: m.id,
           kind: m.kind as ClinicalMediaKind,
           originalName: m.original_name,
-          url: signed?.signedUrl ?? null,
+          url,
+          externalUrl: m.external_url ?? null,
           createdAt: m.created_at,
           uploaderName: m.uploaded_by
             ? (nameById.get(m.uploaded_by) ?? null)
