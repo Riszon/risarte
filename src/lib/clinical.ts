@@ -9,6 +9,7 @@ export const CLINICAL_MEDIA_KINDS = [
   "scan",
   "exam",
   "document",
+  "video",
   "audio",
 ] as const;
 
@@ -20,6 +21,7 @@ export const CLINICAL_MEDIA_LABELS: Record<ClinicalMediaKind, string> = {
   scan: "Escaneamento",
   exam: "Exame",
   document: "Documento",
+  video: "Vídeo",
   audio: "Áudio",
 };
 

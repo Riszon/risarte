@@ -280,7 +280,7 @@ export default async function ClientDetailPage(
         supabase
           .from("clinical_media")
           .select(
-            "id, kind, original_name, storage_path, external_url, size_bytes, created_at, uploaded_by"
+            "id, kind, original_name, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
           )
           .eq("client_id", id)
           .order("created_at", { ascending: false }),
@@ -326,9 +326,10 @@ export default async function ClientDetailPage(
         // Only Storage-backed items get a signed URL; links use external_url.
         let url: string | null = null;
         if (m.storage_path) {
+          // 1h so inline video/audio playback doesn't expire mid-stream.
           const { data: signed } = await supabase.storage
             .from(CLINICAL_BUCKET)
-            .createSignedUrl(m.storage_path, 600);
+            .createSignedUrl(m.storage_path, 3600);
           url = signed?.signedUrl ?? null;
         }
         return {
@@ -337,6 +338,7 @@ export default async function ClientDetailPage(
           originalName: m.original_name,
           url,
           externalUrl: m.external_url ?? null,
+          contentType: m.content_type ?? null,
           createdAt: m.created_at,
           uploaderName: m.uploaded_by
             ? (nameById.get(m.uploaded_by) ?? null)

@@ -421,8 +421,12 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
       updated_at/updated_by) e marca "editado em ... por ...".
 - [x] (ligado ao E-modelo) anexar/acessar arquivos do cliente da SDR — resolvido
       ao cliente pertencer à unidade (0026).
-- NOTA: se o upload ainda falhar após a 0027, o erro real agora aparece em
-      vermelho — pedir ao dono a mensagem exata para diagnóstico fino.
+- [x] Upload confirmado funcionando pelo dono.
+- [x] Botão "Escolher arquivos" (input nativo escondido) no lugar do input cru.
+- [x] Visualizar sem baixar: preview inline de imagem (foto/radiografia), vídeo e
+      áudio (por content_type/kind); documentos abrem no navegador (link).
+- [x] Vídeo como tipo de mídia (migração 0028) + player inline. Link assinado de
+      1h para não expirar durante a reprodução.
 
 ### E7 — GRANDE: cliente atendido em mais de uma unidade simultaneamente
 - [ ] Compartilhar o mesmo cliente temporariamente entre unidades (ex.: cliente

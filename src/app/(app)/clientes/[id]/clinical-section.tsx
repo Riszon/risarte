@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Download,
   Link2,
+  Paperclip,
   Pencil,
   ShieldCheck,
   Trash2,
@@ -51,10 +52,23 @@ export type ClinicalMediaItem = {
   originalName: string | null;
   url: string | null;
   externalUrl: string | null;
+  contentType: string | null;
   createdAt: string;
   uploaderName: string | null;
   sizeBytes: number | null;
 };
+
+/** How to preview a Storage item inline (no download). */
+function previewType(m: ClinicalMediaItem): "image" | "video" | "audio" | null {
+  const ct = m.contentType ?? "";
+  if (ct.startsWith("image/")) return "image";
+  if (ct.startsWith("video/")) return "video";
+  if (ct.startsWith("audio/")) return "audio";
+  if (m.kind === "photo" || m.kind === "radiograph") return "image";
+  if (m.kind === "video") return "video";
+  if (m.kind === "audio") return "audio";
+  return null;
+}
 
 /** Crypto-safe id that also works in non-secure contexts (LAN IP, etc.). */
 function randomId(): string {
@@ -71,6 +85,7 @@ function randomId(): string {
 function guessKind(file: File): ClinicalMediaKind {
   const t = file.type;
   if (t.startsWith("audio/")) return "audio";
+  if (t.startsWith("video/")) return "video";
   if (t.startsWith("image/")) return "photo";
   if (t === "application/pdf") return "exam";
   return "document";
@@ -125,6 +140,7 @@ export function ClinicalSection({
   const [linkLabel, setLinkLabel] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingBody, setEditingBody] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -282,16 +298,26 @@ export function ClinicalSection({
           <div className="space-y-4">
             {/* Multi-file upload. */}
             <div className="space-y-2">
-              <Label>Adicionar arquivos (fotos, radiografias, exames...)</Label>
+              <Label>Arquivos (fotos, radiografias, exames, vídeos...)</Label>
               <input
+                ref={fileRef}
                 type="file"
                 multiple
                 onChange={(e) => {
                   onPick(e.target.files);
                   e.target.value = "";
                 }}
-                className="block text-sm"
+                className="hidden"
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Paperclip className="mr-1 size-4" />
+                Escolher arquivos
+              </Button>
               {picked.length > 0 && (
                 <ul className="space-y-1.5 rounded-md border p-2">
                   {picked.map((item, index) => (
@@ -489,14 +515,48 @@ export function ClinicalSection({
                       {m.uploaderName ? ` · ${m.uploaderName}` : ""}
                       {m.sizeBytes ? ` · ${fmtSize(m.sizeBytes)}` : ""}
                     </p>
-                    {m.kind === "audio" && m.url && (
-                      <audio
-                        controls
-                        preload="none"
-                        src={m.url}
-                        className="mt-1 h-8 w-full max-w-xs"
-                      />
-                    )}
+                    {m.url &&
+                      (() => {
+                        const pv = previewType(m);
+                        if (pv === "image") {
+                          return (
+                            <a
+                              href={m.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 block"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={m.url}
+                                alt={m.originalName ?? "imagem"}
+                                className="max-h-48 rounded border"
+                              />
+                            </a>
+                          );
+                        }
+                        if (pv === "video") {
+                          return (
+                            <video
+                              controls
+                              preload="none"
+                              src={m.url}
+                              className="mt-1 max-h-48 w-full max-w-sm rounded border"
+                            />
+                          );
+                        }
+                        if (pv === "audio") {
+                          return (
+                            <audio
+                              controls
+                              preload="none"
+                              src={m.url}
+                              className="mt-1 h-8 w-full max-w-xs"
+                            />
+                          );
+                        }
+                        return null;
+                      })()}
                   </div>
                   {canEdit && (
                     <Button
