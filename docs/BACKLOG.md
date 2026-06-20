@@ -439,14 +439,26 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
 - [x] Mídia agrupada por categoria: Fotos, Vídeos, Áudios, Radiografias, Exames,
       Documentos, Escaneamento — sempre com quem enviou, quando e tamanho.
 
-### E7 — GRANDE: cliente atendido em mais de uma unidade simultaneamente
-- [ ] Compartilhar o mesmo cliente temporariamente entre unidades (ex.: cliente
-      da Clínica A precisa de urgência/emergência ou procedimento que a A não
-      oferece, vai à Clínica B sem sair da A).
-- [ ] Regras: sem agendamentos simultâneos em duas unidades; NÃO misturar planos
-      de tratamento nem financeiro entre unidades; compartilhamento temporário.
-- [ ] Requer design próprio (modelo cliente ↔ múltiplas unidades, escopo de
-      registros por unidade). Tratar como etapa separada, com plano dedicado.
+### E7 — Cliente atendido em mais de uma unidade simultaneamente
+Decisões do dono: qualquer unidade (A ou B) pode iniciar; a B vê só o necessário
+(identidade + agendar/atender + registros da própria B), sem plano/clínico/
+financeiro da A. Regras: trava de conflito (0029) já impede agendamento
+simultâneo; registros separados por clinic_id próprio → não misturam.
+
+#### E7.1 — Base do compartilhamento ✅ (migração 0033 + código)
+- [x] Tabela client_shares (compartilhamento ativo) + funções share_client_with_unit
+      / end_client_share (qualquer unidade A ou B inicia: papel na origem OU destino).
+- [x] RLS de clients estendida: a unidade B enxerga o cliente compartilhado.
+- [x] Ficha: card "Compartilhamento entre unidades" (compartilhar + encerrar) +
+      agendamento da B vai para a B (scheduleClinicId = unidade ativa quando é a
+      origem ou uma unidade compartilhada).
+- [x] Lista de Clientes: seção "Compartilhados com a unidade" (a B encontra o cliente).
+
+#### E7.2 — a fazer
+- [ ] B INICIAR o compartilhamento por CPF (puxar um cliente de outra unidade).
+- [ ] B registrar a própria avaliação clínica do cliente compartilhado (hoje a
+      seção clínica aponta para a unidade de origem).
+- [ ] Encerrar o compartilhamento pelo lado da B (hoje só origem/Admin na ficha).
 
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 

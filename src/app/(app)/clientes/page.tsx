@@ -103,6 +103,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
 
   let clients: ClientRow[] = [];
   let transferred: TransferredRow[] = [];
+  let sharedWithUnit: TransferredRow[] = [];
   let clinicOptions: { id: string; name: string }[] = [];
 
   const SELECT =
@@ -221,6 +222,26 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
           .order("full_name")
           .returns<TransferredRow[]>();
         transferred = transferredData ?? [];
+      }
+
+      // Clients actively shared WITH this unit (their home unit is another one).
+      const { data: shareRows } = await supabase
+        .from("client_shares")
+        .select("client_id")
+        .eq("clinic_id", clinicId)
+        .is("ended_at", null);
+      const sharedIds = [
+        ...new Set((shareRows ?? []).map((s) => s.client_id as string)),
+      ];
+      if (sharedIds.length > 0) {
+        const { data: sharedData } = await supabase
+          .from("clients")
+          .select("id, full_name, clinics!clients_clinic_id_fkey ( name )")
+          .in("id", sharedIds)
+          .neq("clinic_id", clinicId)
+          .order("full_name")
+          .returns<TransferredRow[]>();
+        sharedWithUnit = sharedData ?? [];
       }
     }
   }
@@ -434,6 +455,29 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
                 </Link>
                 <Badge variant="destructive" className="text-[10px]">
                   Transferido para {client.clinics?.name ?? "outra unidade"}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {sharedWithUnit.length > 0 && (
+        <div className="rounded-md border border-gold/40 bg-gold/5 p-4">
+          <h2 className="mb-2 text-sm font-medium">
+            Compartilhados com a unidade (temporário)
+          </h2>
+          <ul className="space-y-1">
+            {sharedWithUnit.map((client) => (
+              <li key={client.id} className="flex items-center gap-2 text-sm">
+                <Link
+                  href={`/clientes/${client.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {client.full_name}
+                </Link>
+                <Badge variant="secondary" className="text-[10px]">
+                  Unidade de origem: {client.clinics?.name ?? "outra unidade"}
                 </Badge>
               </li>
             ))}

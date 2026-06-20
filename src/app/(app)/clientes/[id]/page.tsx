@@ -27,6 +27,7 @@ import {
   type ConsentInfo,
 } from "./clinical-section";
 import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
+import { ClientShares, type ActiveShare } from "./client-shares";
 import type { StaffOption } from "@/lib/appointments";
 import { allowedNextPhases } from "@/lib/journey";
 import type {
@@ -257,21 +258,74 @@ export default async function ClientDetailPage(
     ? formatDetailedAge(client.birth_date)
     : "";
 
-  // "Novo agendamento" from the ficha (reception of the client's unit, or SDR).
-  // SDR-registered clients belong to the Franqueadora but prefer a unit, so we
-  // schedule into the preferred unit when set.
+  // -- Compartilhamento entre unidades (E7) --
+  const { data: shareRows } = await supabase
+    .from("client_shares")
+    .select(
+      "id, clinic_id, reason, started_at, shared_by, clinics ( name ), profiles ( full_name )"
+    )
+    .eq("client_id", id)
+    .is("ended_at", null)
+    .order("started_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        clinic_id: string;
+        reason: string | null;
+        started_at: string;
+        shared_by: string | null;
+        clinics: { name: string } | null;
+        profiles: { full_name: string } | null;
+      }[]
+    >();
+  const activeShares: ActiveShare[] = (shareRows ?? []).map((s) => ({
+    id: s.id,
+    clinicName: s.clinics?.name ?? "Unidade",
+    reason: s.reason,
+    startedAt: s.started_at,
+    sharedByName: s.profiles?.full_name ?? null,
+  }));
+  const sharedClinicIds = (shareRows ?? []).map((s) => s.clinic_id);
+
+  const canManageShare =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, client.clinic_id, [
+      "receptionist",
+      "clinical_coordinator",
+      "unit_manager",
+    ]);
+  let shareUnits: { id: string; name: string }[] = [];
+  if (canManageShare) {
+    const { data: units } = await supabase
+      .from("clinics")
+      .select("id, name")
+      .eq("type", "franchise_unit")
+      .eq("is_active", true)
+      .neq("id", client.clinic_id)
+      .order("name");
+    shareUnits = units ?? [];
+  }
+
+  // "Novo agendamento" from the ficha. Schedule at the ACTIVE clinic when it is
+  // the client's home OR a unit the client is currently shared with (E7);
+  // otherwise fall back to the preferred unit (SDR) / home.
   const isSdr = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("sdr")
   );
-  const effectiveClinicId =
-    (client as { preferred_clinic_id?: string | null }).preferred_clinic_id ??
-    client.clinic_id;
+  const activeClinicId = session.activeClinic?.id ?? null;
+  const scheduleClinicId =
+    activeClinicId &&
+    (activeClinicId === client.clinic_id ||
+      sharedClinicIds.includes(activeClinicId))
+      ? activeClinicId
+      : ((client as { preferred_clinic_id?: string | null })
+          .preferred_clinic_id ?? client.clinic_id);
   const canScheduleFromFicha =
     client.status !== "anonymized" &&
-    (hasRoleInClinic(session, effectiveClinicId, ["receptionist"]) || isSdr);
+    (hasRoleInClinic(session, scheduleClinicId, ["receptionist"]) || isSdr);
   let fichaStaff: StaffOption[] = [];
   if (canScheduleFromFicha) {
-    fichaStaff = (await getUnitSchedulingData(effectiveClinicId)).staff;
+    fichaStaff = (await getUnitSchedulingData(scheduleClinicId)).staff;
   }
 
   // -- Avaliação clínica (Etapa 4): consentimento, considerações e mídias. --
@@ -420,7 +474,7 @@ export default async function ClientDetailPage(
               ]}
               staff={fichaStaff}
               initialClientId={client.id}
-              fixedClinicId={effectiveClinicId}
+              fixedClinicId={scheduleClinicId}
               trigger={<Button size="sm">Novo agendamento</Button>}
             />
           )}
@@ -448,6 +502,13 @@ export default async function ClientDetailPage(
         isAdminMaster={session.isAdminMaster}
         clinicRoles={clinicRoles}
         isPlannerAnywhere={isPlannerAnywhere}
+      />
+
+      <ClientShares
+        clientId={client.id}
+        shares={activeShares}
+        units={shareUnits}
+        canManage={canManageShare}
       />
 
       {canViewClinical && (
