@@ -471,6 +471,15 @@ export async function transferClientToUnit(
     p_consent: true,
   });
   if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Você não tem acesso a esta unidade para transferir o cliente.",
+      };
+    }
+    if (error.message.includes("CONSENT_REQUIRED")) {
+      return { ok: false, error: "Confirme a autorização do cliente." };
+    }
     console.error("transfer_client (unit) failed:", error.message);
     return { ok: false, error: "Não foi possível transferir o cliente." };
   }

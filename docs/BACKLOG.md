@@ -403,12 +403,17 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
       se for diferente da atual, mostra "transferir da unidade A para a B" com
       autorização/consentimento (transferClientToUnit → unidade escolhida).
 
-### E5 — Atendimento do Consultor Comercial
-- [ ] Consultor vê atendimento consolidado das suas unidades (apresentações do
-      dia), identificando a unidade de cada cliente (parcial: visão já existe +
-      clinicName no card). Falta: filtro por unidade específica; e o Consultor
-      poder movimentar o cliente em TODAS as etapas do atendimento (inclusive
-      registrar chegada das suas apresentações).
+### E5 — Atendimento do Consultor Comercial ✅ (migração 0032 + código)
+- [x] Consultor vê atendimento consolidado das suas unidades, com a unidade no
+      card + FILTRO por unidade específica.
+- [x] Consultor movimenta o cliente em TODAS as etapas: registrar chegada
+      (check_in liberado para o profissional responsável — 0032), chamar e
+      concluir (já permitidos).
+
+### CORREÇÃO transferência (migração 0031)
+- [x] BUG: SDR transferindo A→B dava "não foi possível" — transfer_client exigia
+      papel NA clínica de destino. Agora aceita SDR-com-acesso. Também corrigido
+      o fuso ('America/Sao_Paulo') do resumo de cancelados.
 
 ### E6 — Avaliação Clínica (melhorias) ✅ (migração 0027 + código)
 - [x] Upload de MÚLTIPLOS arquivos de uma vez (tipo por arquivo, adivinhado pelo

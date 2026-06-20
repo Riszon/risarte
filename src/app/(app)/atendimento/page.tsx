@@ -32,6 +32,7 @@ type Row = {
   called_by: string | null;
   done_by: string | null;
   provider_user_id: string | null;
+  clinic_id: string;
   provider: { full_name: string } | null;
   clinics: { name: string } | null;
   clients: { id: string; full_name: string; journey_phase: JourneyPhase } | null;
@@ -132,10 +133,12 @@ export default async function AtendimentoPage(
     typeof searchParams.profissional === "string"
       ? searchParams.profissional
       : "";
+  const unitFilter =
+    typeof searchParams.unidade === "string" ? searchParams.unidade : "";
   const { start, end, label: periodLabel } = periodRange(period);
 
   const SELECT =
-    "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), clients ( id, full_name, journey_phase )";
+    "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), clients ( id, full_name, journey_phase )";
 
   const supabase = await createClient();
   let query = supabase
@@ -190,10 +193,25 @@ export default async function AtendimentoPage(
         .map(([id, name]) => ({ id, name }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
-  const shown =
-    providerFilter && !consultantView
-      ? rows.filter((r) => r.provider_user_id === providerFilter)
-      : rows;
+  // Unit options for the Consultor view (their clients spread across units).
+  const consultantUnits = consultantView
+    ? [
+        ...new Map(
+          rows
+            .filter((r) => r.clinic_id)
+            .map((r) => [r.clinic_id, r.clinics?.name ?? "—"])
+        ).entries(),
+      ]
+        .map(([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
+  let shown = rows;
+  if (consultantView) {
+    if (unitFilter) shown = rows.filter((r) => r.clinic_id === unitFilter);
+  } else if (providerFilter) {
+    shown = rows.filter((r) => r.provider_user_id === providerFilter);
+  }
 
   const appointments: PanelAppointment[] = shown.map((a) => ({
     id: a.id,
@@ -215,10 +233,10 @@ export default async function AtendimentoPage(
     doneByName: nameOf(a.done_by),
   }));
 
-  // Reception only registers arrival; the professional calls and concludes.
+  // Reception registers arrival; in the Consultor view the Consultor handles
+  // all steps of their own presentations (arrival, call, conclude).
   const canCheckIn =
-    !consultantView &&
-    hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
+    consultantView || hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
   const canCall =
     consultantView ||
     hasRoleInClinic(session, clinicId, [
@@ -260,6 +278,20 @@ export default async function AtendimentoPage(
               {providerOptions.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {consultantView && consultantUnits.length > 0 && (
+            <select
+              name="unidade"
+              defaultValue={unitFilter}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">Todas as unidades</option>
+              {consultantUnits.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
                 </option>
               ))}
             </select>
