@@ -454,6 +454,12 @@ simultâneo; registros separados por clinic_id próprio → não misturam.
       origem ou uma unidade compartilhada).
 - [x] Lista de Clientes: seção "Compartilhados com a unidade" (a B encontra o cliente).
 
+#### CORREÇÃO (migração 0034) — recursão de RLS
+- [x] BUG: a 0033 recriou clients_select_member com `exists client_shares` inline,
+      causando recursão infinita com a policy de client_shares → nenhum cliente
+      aparecia (lista/jornada/agenda). Corrigido com a função SECURITY DEFINER
+      client_shared_with_user() na policy de clients.
+
 #### E7.2 — a fazer
 - [ ] B INICIAR o compartilhamento por CPF (puxar um cliente de outra unidade).
 - [ ] B registrar a própria avaliação clínica do cliente compartilhado (hoje a
