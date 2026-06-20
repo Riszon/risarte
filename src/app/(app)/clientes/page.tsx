@@ -22,6 +22,7 @@ import {
   type JourneyPhase,
   type JourneyStatus,
 } from "@/lib/journey";
+import { ShareByCpf } from "./share-by-cpf";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -69,6 +70,14 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
   const fRoles = clinicId ? (session.rolesByClinic[clinicId] ?? []) : [];
   // Receptionist (unit) or SDR (franqueadora) can register clients.
   const canCreate = hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
+  // Unit staff can pull (share) a client from another unit by CPF (E7).
+  const canShareByCpf =
+    !isFranchisor &&
+    hasRoleInClinic(session, clinicId, [
+      "receptionist",
+      "clinical_coordinator",
+      "unit_manager",
+    ]);
 
   // In the Franqueadora the list is tailored to the user's role.
   const franchisorMode: "network" | "consultant" | "planner" | "sdr" =
@@ -270,11 +279,14 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
                       : "Visão da rede — todos os clientes de todas as unidades."}
           </p>
         </div>
-        {canCreate && (
-          <Button nativeButton={false} render={<Link href="/clientes/novo" />}>
-            Novo cliente
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canShareByCpf && <ShareByCpf />}
+          {canCreate && (
+            <Button nativeButton={false} render={<Link href="/clientes/novo" />}>
+              Novo cliente
+            </Button>
+          )}
+        </div>
       </div>
 
       <form method="get" className="flex max-w-xl flex-wrap gap-2">

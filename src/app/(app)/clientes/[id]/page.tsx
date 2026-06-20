@@ -294,6 +294,16 @@ export default async function ClientDetailPage(
       "clinical_coordinator",
       "unit_manager",
     ]);
+  // The shared unit (B) can also end the share from its side.
+  const canEndShare =
+    canManageShare ||
+    sharedClinicIds.some((cid) =>
+      hasRoleInClinic(session, cid, [
+        "receptionist",
+        "clinical_coordinator",
+        "unit_manager",
+      ])
+    );
   let shareUnits: { id: string; name: string }[] = [];
   if (canManageShare) {
     const { data: units } = await supabase
@@ -328,11 +338,15 @@ export default async function ClientDetailPage(
     fichaStaff = (await getUnitSchedulingData(scheduleClinicId)).staff;
   }
 
-  // -- Avaliação clínica (Etapa 4): consentimento, considerações e mídias. --
+  // -- Avaliação clínica (Etapa 4/E7): registra na unidade ATIVA quando ela é a
+  // origem ou uma unidade compartilhada (a B mantém a avaliação dela, separada).
   const canEditClinical =
-    session.isAdminMaster || clinicRoles.includes("clinical_coordinator");
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, ["clinical_coordinator"]);
   const canViewClinical =
-    canEditClinical || isPlannerAnywhere || clinicRoles.includes("unit_manager");
+    canEditClinical ||
+    isPlannerAnywhere ||
+    hasRoleInClinic(session, scheduleClinicId, ["unit_manager"]);
   const canSendToPlanning = allowedNextPhases(
     client.journey_phase as JourneyPhase,
     { isAdminMaster: session.isAdminMaster, clinicRoles, isPlannerAnywhere }
@@ -508,14 +522,15 @@ export default async function ClientDetailPage(
         clientId={client.id}
         shares={activeShares}
         units={shareUnits}
-        canManage={canManageShare}
+        canShare={canManageShare}
+        canEnd={canEndShare}
       />
 
       {canViewClinical && (
         <ClinicalSection
           clientId={client.id}
           clientName={client.full_name}
-          clinicId={client.clinic_id}
+          clinicId={scheduleClinicId}
           canEdit={canEditClinical}
           consent={consentInfo}
           notes={clinicalNotes}

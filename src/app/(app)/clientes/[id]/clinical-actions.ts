@@ -11,7 +11,12 @@ import {
   type ClinicalResult,
 } from "@/lib/clinical";
 
-/** Only the clinic's Coordenador Clínico (or Admin) may record the evaluation. */
+/**
+ * Only the Coordenador Clínico (or Admin) may record the evaluation. The clinic
+ * the record is scoped to is the home unit OR a unit the client is currently
+ * SHARED with (E7) — preferring the user's active clinic — so a shared unit (B)
+ * keeps its own clinical records, separate from the home unit (A).
+ */
 async function requireCoordinator(
   clientId: string
 ): Promise<{ error: string } | { clinicId: string; userId: string }> {
@@ -23,13 +28,29 @@ async function requireCoordinator(
     .eq("id", clientId)
     .single();
   if (!client) return { error: "Cliente não encontrado." };
-  if (
-    !session.isAdminMaster &&
-    !hasRoleInClinic(session, client.clinic_id, ["clinical_coordinator"])
-  ) {
-    return { error: "Apenas o Coordenador Clínico pode registrar a avaliação." };
+
+  const { data: shares } = await supabase
+    .from("client_shares")
+    .select("clinic_id")
+    .eq("client_id", clientId)
+    .is("ended_at", null);
+  const sharedIds = (shares ?? []).map((s) => s.clinic_id as string);
+  const candidates = [client.clinic_id as string, ...sharedIds];
+  const canActIn = (cid: string) =>
+    session.isAdminMaster ||
+    hasRoleInClinic(session, cid, ["clinical_coordinator"]);
+
+  const active = session.activeClinic?.id ?? null;
+  if (active && candidates.includes(active) && canActIn(active)) {
+    return { clinicId: active, userId: session.userId };
   }
-  return { clinicId: client.clinic_id as string, userId: session.userId };
+  if (canActIn(client.clinic_id as string)) {
+    return { clinicId: client.clinic_id as string, userId: session.userId };
+  }
+  for (const cid of sharedIds) {
+    if (canActIn(cid)) return { clinicId: cid, userId: session.userId };
+  }
+  return { error: "Apenas o Coordenador Clínico pode registrar a avaliação." };
 }
 
 async function hasConsent(clientId: string): Promise<boolean> {

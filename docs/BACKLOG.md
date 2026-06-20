@@ -460,11 +460,17 @@ simultâneo; registros separados por clinic_id próprio → não misturam.
       aparecia (lista/jornada/agenda). Corrigido com a função SECURITY DEFINER
       client_shared_with_user() na policy de clients.
 
-#### E7.2 — a fazer
-- [ ] B INICIAR o compartilhamento por CPF (puxar um cliente de outra unidade).
-- [ ] B registrar a própria avaliação clínica do cliente compartilhado (hoje a
-      seção clínica aponta para a unidade de origem).
-- [ ] Encerrar o compartilhamento pelo lado da B (hoje só origem/Admin na ficha).
+#### E7.2 — Fecho do compartilhamento ✅ (só código, sem migração)
+- [x] B INICIAR por CPF: botão "Compartilhar cliente" na lista de Clientes da
+      unidade → diálogo CPF + motivo (shareClientByCpf → find_client_basic_by_cpf
+      + share_client_with_unit para a unidade ativa).
+- [x] B registra a PRÓPRIA avaliação clínica do compartilhado: requireCoordinator
+      aceita o Coordenador de uma unidade compartilhada e devolve a clínica certa
+      (prefere a ativa); a ficha usa scheduleClinicId na seção clínica; a RLS já
+      separa os registros por clinic_id (A não vê os de B e vice-versa).
+- [x] Encerrar pelo lado da B: canEnd inclui a equipe da unidade compartilhada.
+
+LOTE E COMPLETO (E0–E7).
 
 ## LOTE B — agenda avançada e consolidados (junto/logo após Etapas 4-5)
 

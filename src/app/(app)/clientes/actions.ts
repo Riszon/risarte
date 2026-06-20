@@ -489,6 +489,71 @@ export async function transferClientToUnit(
 }
 
 /**
+ * The active unit (B) pulls a client from another unit by CPF, sharing them
+ * temporarily with B (E7.2). The home unit (A) keeps the client.
+ */
+export async function shareClientByCpf(
+  cpf: string,
+  reason: string
+): Promise<{ ok: boolean; error?: string; clientId?: string }> {
+  const session = await getSessionContext();
+  const activeClinicId = session.activeClinic?.id;
+  if (!activeClinicId || session.activeClinic?.type !== "franchise_unit") {
+    return {
+      ok: false,
+      error: "Entre em uma unidade para compartilhar um cliente.",
+    };
+  }
+  if (
+    !session.isAdminMaster &&
+    !hasRoleInClinic(session, activeClinicId, [
+      "receptionist",
+      "clinical_coordinator",
+      "unit_manager",
+    ])
+  ) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para compartilhar nesta unidade.",
+    };
+  }
+  const formatted = formatCpf(cpf);
+  if (formatted.replace(/\D/g, "").length !== 11) {
+    return { ok: false, error: "CPF incompleto: confira os 11 dígitos." };
+  }
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("find_client_basic_by_cpf", {
+    p_cpf: formatted,
+  });
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Nenhum cliente encontrado com este CPF na rede." };
+  }
+  const clientId = data[0].client_id as string;
+
+  const { error } = await supabase.rpc("share_client_with_unit", {
+    p_client_id: clientId,
+    p_target_clinic_id: activeClinicId,
+    p_reason: reason || null,
+  });
+  if (error) {
+    if (error.message.includes("SAME_CLINIC")) {
+      return { ok: false, error: "Este cliente já é desta unidade." };
+    }
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Você não tem permissão para compartilhar este cliente.",
+      };
+    }
+    console.error("shareClientByCpf failed:", error.message);
+    return { ok: false, error: "Não foi possível compartilhar o cliente." };
+  }
+  revalidatePath("/clientes");
+  return { ok: true, clientId };
+}
+
+/**
  * Transfers a client from another unit to the caller's active clinic.
  * Requires the client's registered consent (LGPD + original brief rule).
  */

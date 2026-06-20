@@ -42,20 +42,24 @@ export function ClientShares({
   clientId,
   shares,
   units,
-  canManage,
+  canShare,
+  canEnd,
 }: {
   clientId: string;
   shares: ActiveShare[];
   units: { id: string; name: string }[];
-  canManage: boolean;
+  /** Show the "share with another unit" form (home unit / admin). */
+  canShare: boolean;
+  /** Show the "Encerrar" buttons (home unit, shared unit, or admin). */
+  canEnd: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [unitId, setUnitId] = useState("");
   const [reason, setReason] = useState("urgency");
 
-  // Nothing to show for staff who can't manage and there are no active shares.
-  if (!canManage && shares.length === 0) return null;
+  // Nothing to show for staff who can't act and there are no active shares.
+  if (!canShare && !canEnd && shares.length === 0) return null;
 
   const selectClass =
     "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -113,7 +117,7 @@ export function ClientShares({
                     {s.sharedByName ? ` · por ${s.sharedByName}` : ""}
                   </p>
                 </div>
-                {canManage && (
+                {canEnd && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -134,7 +138,7 @@ export function ClientShares({
           </p>
         )}
 
-        {canManage && available.length > 0 && (
+        {canShare && available.length > 0 && (
           <div className="space-y-2 rounded-md border border-dashed p-3">
             <Label>Compartilhar com outra unidade (temporário)</Label>
             <div className="flex flex-wrap items-center gap-2">
