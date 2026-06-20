@@ -129,6 +129,19 @@ export async function createAppointment(
     .single();
 
   if (error) {
+    if (error.message.includes("CLIENT_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error: "Este cliente já tem um agendamento neste horário.",
+      };
+    }
+    if (error.message.includes("PROVIDER_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error:
+          "Este profissional já tem um agendamento neste horário. Escolha outro horário (ou use Urgência/Emergência para encaixe).",
+      };
+    }
     console.error("createAppointment failed:", error.message);
     return { ok: false, error: "Não foi possível criar o agendamento." };
   }
@@ -206,6 +219,19 @@ export async function updateAppointment(
     .eq("id", appointmentId);
 
   if (error) {
+    if (error.message.includes("CLIENT_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error: "Este cliente já tem um agendamento neste horário.",
+      };
+    }
+    if (error.message.includes("PROVIDER_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error:
+          "Este profissional já tem um agendamento neste horário. Escolha outro horário (ou use Urgência/Emergência para encaixe).",
+      };
+    }
     console.error("updateAppointment failed:", error.message);
     return { ok: false, error: "Não foi possível alterar o agendamento." };
   }
@@ -442,4 +468,60 @@ export async function getClientSchedulingInfo(
     journeyStatus: (client.journey_status as JourneyStatus | null) ?? null,
     lastAppointment: lastAppointments?.[0] ?? null,
   };
+}
+
+export type BusyRange = { starts_at: string; ends_at: string };
+
+/**
+ * Busy time ranges on a given day, to suggest free slots in the dialog.
+ * - clientBusy: the client cannot be in two places at once (any type).
+ * - providerBusy: the professional's normal appointments (Urgência/Emergência
+ *   allow encaixe, so they don't block — matching the DB conflict rule).
+ */
+export async function getDayBusyTimes(params: {
+  providerUserId: string | null;
+  clientId: string;
+  date: string;
+  excludeId?: string;
+}): Promise<{ providerBusy: BusyRange[]; clientBusy: BusyRange[] }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const start = new Date(`${params.date}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return { providerBusy: [], clientBusy: [] };
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  const active = (s: string) => s !== "cancelled" && s !== "no_show";
+
+  const { data: clientRows } = await supabase
+    .from("appointments")
+    .select("id, starts_at, ends_at, status")
+    .eq("client_id", params.clientId)
+    .gte("starts_at", start.toISOString())
+    .lt("starts_at", end.toISOString());
+  const clientBusy = (clientRows ?? [])
+    .filter((a) => a.id !== params.excludeId && active(a.status))
+    .map((a) => ({ starts_at: a.starts_at, ends_at: a.ends_at }));
+
+  let providerBusy: BusyRange[] = [];
+  if (params.providerUserId) {
+    const { data: provRows } = await supabase
+      .from("appointments")
+      .select("id, starts_at, ends_at, status, type")
+      .eq("provider_user_id", params.providerUserId)
+      .gte("starts_at", start.toISOString())
+      .lt("starts_at", end.toISOString());
+    providerBusy = (provRows ?? [])
+      .filter(
+        (a) =>
+          a.id !== params.excludeId &&
+          active(a.status) &&
+          a.type !== "urgency" &&
+          a.type !== "emergency"
+      )
+      .map((a) => ({ starts_at: a.starts_at, ends_at: a.ends_at }));
+  }
+
+  return { providerBusy, clientBusy };
 }

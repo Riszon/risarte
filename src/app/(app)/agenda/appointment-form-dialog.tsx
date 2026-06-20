@@ -37,7 +37,9 @@ import { ROLE_LABELS } from "@/lib/roles";
 import {
   createAppointment,
   getClientSchedulingInfo,
+  getDayBusyTimes,
   updateAppointment,
+  type BusyRange,
   type SchedulingInfo,
 } from "./actions";
 
@@ -217,11 +219,59 @@ export function AppointmentFormDialog({
   const providerValid = providerItems.some((p) => p.value === providerId);
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
   // For today, don't offer times that have already passed.
   const nowTime = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
-  const timeItems =
-    date === minDate ? TIME_ITEMS.filter((t) => t.value > nowTime) : TIME_ITEMS;
+
+  // Busy ranges → suggest only free time slots (the DB still guards conflicts).
+  const [busy, setBusy] = useState<{
+    providerBusy: BusyRange[];
+    clientBusy: BusyRange[];
+  }>({ providerBusy: [], clientBusy: [] });
+
+  useEffect(() => {
+    if (!date || (!clientId && !providerId)) {
+      setBusy({ providerBusy: [], clientBusy: [] });
+      return;
+    }
+    let cancelled = false;
+    getDayBusyTimes({
+      providerUserId: providerId || null,
+      clientId: clientId || "",
+      date,
+      excludeId: appointment?.id,
+    }).then((b) => {
+      if (!cancelled) setBusy(b);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [date, clientId, providerId, appointment?.id]);
+
+  const durationMin = Number(duration) || 60;
+  const isEncaixe = type === "urgency" || type === "emergency";
+
+  const timeItems = useMemo(() => {
+    const base =
+      date === minDate
+        ? TIME_ITEMS.filter((t) => t.value > nowTime)
+        : TIME_ITEMS;
+    if (!date) return base;
+    return base.filter((t) => {
+      const s = new Date(`${date}T${t.value}:00`).getTime();
+      const e = s + durationMin * 60_000;
+      const overlaps = (r: BusyRange) =>
+        s < new Date(r.ends_at).getTime() && e > new Date(r.starts_at).getTime();
+      if (busy.clientBusy.some(overlaps)) return false;
+      if (!isEncaixe && busy.providerBusy.some(overlaps)) return false;
+      return true;
+    });
+  }, [busy, date, durationMin, isEncaixe, minDate, nowTime]);
+
+  // If the chosen time became unavailable (provider/duration changed), clear it.
+  useEffect(() => {
+    if (time && !timeItems.some((t) => t.value === time)) setTime("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeItems]);
 
   const lastWasMissed =
     schedulingInfo?.lastAppointment &&
@@ -297,6 +347,16 @@ export function AppointmentFormDialog({
                   </option>
                 ))}
               </select>
+              {unitId && (
+                <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs">
+                  Agendando na unidade:{" "}
+                  <span className="font-medium text-primary">
+                    {units?.find((u) => u.id === unitId)?.name}
+                  </span>
+                  . Para agendar em outra unidade (desejo do cliente), troque
+                  acima.
+                </p>
+              )}
             </div>
           )}
           {!isEdit && (!pickUnit || unitId) && (
@@ -455,6 +515,22 @@ export function AppointmentFormDialog({
               </Select>
             </div>
           </div>
+
+          {date && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                Horários já ocupados não aparecem na lista.
+              </span>
+              <a
+                href={pickUnit && unitId ? `/agenda?unidade=${unitId}` : "/agenda"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                Ver agenda
+              </a>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Duração</Label>

@@ -385,13 +385,14 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
 - [x] Ficha: mostra "Unidade: X" no cabeçalho (embed clinics!clients_clinic_id_fkey).
 - [x] Indicador de quantidade de clientes na tela Clientes (contador no título).
 
-### E3 — Agendamento (conflitos e clareza da unidade)
-- [ ] Não permitir 2 clientes diferentes no mesmo horário com o MESMO
-      profissional. Não permitir o MESMO cliente 2x no mesmo horário.
-- [ ] Novo Agendamento (SDR): mostrar claramente em qual unidade está sendo
-      agendado; opção de agendar em OUTRA unidade (desejo do cliente); sugerir
-      horários disponíveis e/ou botão "ver agenda".
-- [ ] Ficha do cliente (SDR): mostrar a unidade de preferência.
+### E3 — Agendamento (conflitos e clareza da unidade) ✅ (migração 0029 + código)
+- [x] Trava de conflito (trigger 0029): mesmo profissional não pode ter 2 no
+      mesmo horário (Urgência/Emergência permitem encaixe); mesmo cliente não
+      pode 2x no mesmo horário. Mensagens claras no app.
+- [x] Novo Agendamento (SDR): rótulo "Agendando na unidade: X" + troca de unidade
+      no seletor (agendar em outra unidade); botão "Ver agenda" (link p/ a agenda
+      da unidade); horários já ocupados não aparecem na lista (getDayBusyTimes).
+- [x] Ficha (SDR): unidade já mostrada (feito no E2).
 
 ### E4 — Cadastro de novo cliente (SDR/Recepção) — cliente já existente
 - [ ] Cliente já existe na rede → abrir a ficha com a unidade em DESTAQUE; SDR/
