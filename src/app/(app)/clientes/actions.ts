@@ -339,6 +339,22 @@ export async function createClientRecord(
   return { ok: true, clientId: data.id };
 }
 
+const CLIENT_FIELD_LABELS: Record<string, string> = {
+  full_name: "Nome",
+  cpf: "CPF",
+  birth_date: "Nascimento",
+  phone: "Telefone",
+  email: "E-mail",
+  address: "Endereço",
+  address_number: "Número",
+  complement: "Complemento",
+  neighborhood: "Bairro",
+  city: "Cidade",
+  state: "UF",
+  zip_code: "CEP",
+  notes: "Observações",
+};
+
 export async function updateClientRecord(
   clientId: string,
   formData: FormData
@@ -348,14 +364,25 @@ export async function updateClientRecord(
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("clients")
-    .select("clinic_id")
+    .select(
+      "clinic_id, " + Object.keys(CLIENT_FIELD_LABELS).join(", ")
+    )
     .eq("id", clientId)
-    .single();
+    .single<Record<string, unknown> & { clinic_id: string }>();
 
   if (!existing) {
     return { ok: false, error: "Cliente não encontrado." };
   }
-  if (!hasRoleInClinic(session, existing.clinic_id, ["receptionist", "sdr"])) {
+
+  // Reception of the unit, an SDR with access to it, or Admin may edit.
+  const isSdr = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("sdr")
+  );
+  const canEdit =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, existing.clinic_id, ["receptionist"]) ||
+    isSdr; // RLS confirms the SDR actually has access to this unit
+  if (!canEdit) {
     return {
       ok: false,
       error: "Apenas a Recepção ou Encantador(a) pode alterar dados de clientes.",
@@ -364,6 +391,14 @@ export async function updateClientRecord(
 
   const parsed = parseClientForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
+
+  // Which cadastral fields changed (labels only — LGPD: no values stored).
+  const changedFields: string[] = [];
+  for (const key of Object.keys(CLIENT_FIELD_LABELS)) {
+    const oldVal = (existing[key] ?? "") as string;
+    const newVal = ((parsed.values as Record<string, unknown>)[key] ?? "") as string;
+    if (oldVal !== newVal) changedFields.push(CLIENT_FIELD_LABELS[key]);
+  }
 
   const { error } = await supabase
     .from("clients")
@@ -377,12 +412,68 @@ export async function updateClientRecord(
 
   await saveGuardians(clientId, parsed.guardians);
 
+  if (changedFields.length > 0) {
+    await supabase.from("client_changes").insert({
+      client_id: clientId,
+      clinic_id: existing.clinic_id,
+      changed_by: session.userId,
+      fields: changedFields.join(", "),
+    });
+  }
+
   await logAudit({
     action: "update",
     entityType: "client",
     entityId: clientId,
     clinicId: existing.clinic_id,
   });
+  revalidatePath("/clientes");
+  revalidatePath(`/clientes/${clientId}`);
+  return { ok: true, clientId };
+}
+
+/**
+ * Transfers a client to a specific unit (e.g. the SDR moves a client who
+ * already belongs to unit A over to unit B). Requires consent. Never targets
+ * the Franqueadora.
+ */
+export async function transferClientToUnit(
+  clientId: string,
+  targetClinicId: string,
+  consentConfirmed: boolean
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!targetClinicId) return { ok: false, error: "Escolha a unidade de destino." };
+  if (!consentConfirmed) {
+    return {
+      ok: false,
+      error: "Confirme a autorização do cliente para a transferência.",
+    };
+  }
+  const isSdr = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("sdr")
+  );
+  const allowed =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, targetClinicId, ["receptionist"]) ||
+    isSdr;
+  if (!allowed) {
+    return {
+      ok: false,
+      error: "Você não tem permissão para transferir o cliente para esta unidade.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("transfer_client", {
+    p_client_id: clientId,
+    p_target_clinic_id: targetClinicId,
+    p_consent: true,
+  });
+  if (error) {
+    console.error("transfer_client (unit) failed:", error.message);
+    return { ok: false, error: "Não foi possível transferir o cliente." };
+  }
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clientId}`);
   return { ok: true, clientId };

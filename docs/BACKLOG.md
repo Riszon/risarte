@@ -394,13 +394,14 @@ policy de INSERT libera a SDR-com-acesso a criar na unidade + move os clientes
       da unidade); horários já ocupados não aparecem na lista (getDayBusyTimes).
 - [x] Ficha (SDR): unidade já mostrada (feito no E2).
 
-### E4 — Cadastro de novo cliente (SDR/Recepção) — cliente já existente
-- [ ] Cliente já existe na rede → abrir a ficha com a unidade em DESTAQUE; SDR/
-      Recepção podem EDITAR os dados; toda alteração no histórico.
-- [ ] SDR cadastrando cliente que já pertence a uma unidade: NÃO pedir
-      transferência para a Franqueadora. Pedir confirmação da unidade de
-      preferência; se escolher unidade diferente da atual, exibir mensagem de
-      autorização/confirmação de transferência da unidade A → B.
+### E4 — Cadastro de novo cliente (SDR/Recepção) — cliente já existente ✅ (migração 0030 + código)
+- [x] Cliente já existe → card mostra "já é cliente da unidade X" (destaque) +
+      "Abrir a ficha". SDR/Recepção podem EDITAR (RLS + guard liberados p/ SDR).
+- [x] Histórico de alterações cadastrais na ficha (client_changes: quem, quando,
+      quais campos — LGPD: campos, não valores).
+- [x] SDR: nunca transfere p/ Franqueadora. Card pede a unidade de preferência;
+      se for diferente da atual, mostra "transferir da unidade A para a B" com
+      autorização/consentimento (transferClientToUnit → unidade escolhida).
 
 ### E5 — Atendimento do Consultor Comercial
 - [ ] Consultor vê atendimento consolidado das suas unidades (apresentações do

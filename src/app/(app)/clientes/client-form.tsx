@@ -14,6 +14,7 @@ import {
   lookupClientByCpf,
   lookupCpfForRegistration,
   transferClientToActiveClinic,
+  transferClientToUnit,
   updateClientRecord,
   type DuplicateInfo,
   type GuardianInput,
@@ -180,6 +181,26 @@ export function ClientForm({
     });
   }
 
+  // SDR: transfer the existing client from its current unit (A) to the
+  // chosen preferred unit (B).
+  function handleTransferToUnit() {
+    if (!duplicate || !preferredUnit) return;
+    startTransition(async () => {
+      const result = await transferClientToUnit(
+        duplicate.clientId,
+        preferredUnit,
+        consent
+      );
+      if (result.ok) {
+        toast.success(`${duplicate.fullName} transferido(a) para a unidade.`);
+        router.push(`/clientes/${duplicate.clientId}`);
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {duplicate && (
@@ -192,51 +213,100 @@ export function ClientForm({
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <p>
-              <span className="font-medium">{duplicate.fullName}</span> já está
-              cadastrado(a) em{" "}
-              <span className="font-medium">{duplicate.clinicName}</span>
+              <span className="font-medium">{duplicate.fullName}</span> já é
+              cliente da unidade{" "}
+              <span className="font-medium text-primary">
+                {duplicate.clinicName}
+              </span>
               {duplicate.matchType === "cpf"
                 ? " (mesmo CPF)."
                 : " (mesmo nome e data de nascimento)."}{" "}
-              Clientes não podem ser duplicados na rede.
+              Você pode abrir a ficha para ver/editar os dados.
             </p>
-            {duplicate.sameClinic ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(`/clientes/${duplicate.clientId}`)}
-              >
-                Abrir a ficha do cliente
-              </Button>
-            ) : (
-              <div className="space-y-2 rounded-md border p-3">
-                <p className="text-muted-foreground">
-                  Se o cliente está sendo atendido agora nesta unidade,
-                  transfira o cadastro (o histórico é preservado e a unidade
-                  anterior será avisada).
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/clientes/${duplicate.clientId}`)}
+            >
+              Abrir a ficha do cliente
+            </Button>
+
+            {showPreferredUnit ? (
+              // SDR: confirm the preferred unit; transfer A→B only if different.
+              !preferredUnit ? (
+                <p className="text-xs text-muted-foreground">
+                  Escolha a unidade de preferência acima para confirmar.
                 </p>
-                <label className="flex items-start gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    className="mt-0.5 size-4 accent-primary"
-                  />
-                  <span>
-                    Confirmo que o cliente autorizou a transferência do seu
-                    cadastro para esta unidade.
-                  </span>
-                </label>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!consent || isPending}
-                  onClick={handleTransfer}
-                >
-                  {isPending ? "Transferindo..." : "Transferir para esta unidade"}
-                </Button>
-              </div>
+              ) : preferredUnit === duplicate.clinicId ? (
+                <p className="text-xs text-muted-foreground">
+                  O cliente já pertence à unidade escolhida — basta abrir a ficha.
+                </p>
+              ) : (
+                <div className="space-y-2 rounded-md border border-gold/40 bg-gold/5 p-3">
+                  <p>
+                    Transferir da unidade{" "}
+                    <span className="font-medium">{duplicate.clinicName}</span>{" "}
+                    para a unidade{" "}
+                    <span className="font-medium text-primary">
+                      {preferredUnits.find((u) => u.id === preferredUnit)?.name}
+                    </span>
+                    ? O histórico é preservado e a unidade anterior é avisada.
+                  </p>
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="mt-0.5 size-4 accent-primary"
+                    />
+                    <span>
+                      Confirmo que o cliente autorizou a transferência da unidade{" "}
+                      {duplicate.clinicName} para a unidade escolhida.
+                    </span>
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!consent || isPending}
+                    onClick={handleTransferToUnit}
+                  >
+                    {isPending ? "Transferindo..." : "Transferir cliente"}
+                  </Button>
+                </div>
+              )
+            ) : (
+              !duplicate.sameClinic && (
+                <div className="space-y-2 rounded-md border p-3">
+                  <p className="text-muted-foreground">
+                    Se o cliente está sendo atendido agora nesta unidade,
+                    transfira o cadastro (o histórico é preservado e a unidade
+                    anterior será avisada).
+                  </p>
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="mt-0.5 size-4 accent-primary"
+                    />
+                    <span>
+                      Confirmo que o cliente autorizou a transferência do seu
+                      cadastro para esta unidade.
+                    </span>
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!consent || isPending}
+                    onClick={handleTransfer}
+                  >
+                    {isPending
+                      ? "Transferindo..."
+                      : "Transferir para esta unidade"}
+                  </Button>
+                </div>
+              )
             )}
           </CardContent>
         </Card>

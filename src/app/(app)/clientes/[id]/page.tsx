@@ -189,9 +189,27 @@ export default async function ClientDetailPage(
     clinicId: client.clinic_id,
   });
 
+  const { data: clientChanges } = await supabase
+    .from("client_changes")
+    .select("id, fields, changed_at, profiles ( full_name )")
+    .eq("client_id", id)
+    .order("changed_at", { ascending: false })
+    .limit(50)
+    .returns<
+      {
+        id: string;
+        fields: string;
+        changed_at: string;
+        profiles: { full_name: string } | null;
+      }[]
+    >();
+
   const canEdit =
     client.status !== "anonymized" &&
-    hasRoleInClinic(session, client.clinic_id, ["receptionist"]);
+    (hasRoleInClinic(session, client.clinic_id, ["receptionist"]) ||
+      Object.values(session.rolesByClinic).some((roles) =>
+        roles.includes("sdr")
+      ));
 
   const clinicRoles = session.rolesByClinic[client.clinic_id] ?? [];
   const isPlannerAnywhere = Object.values(session.rolesByClinic).some(
@@ -569,6 +587,38 @@ export default async function ClientDetailPage(
               {(appointmentChanges ?? []).map((change) => (
                 <li key={change.id} className="text-sm">
                   <span>{change.description}</span>{" "}
+                  <span className="text-xs text-muted-foreground">
+                    —{" "}
+                    {new Date(change.changed_at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {change.profiles?.full_name
+                      ? ` · por ${change.profiles.full_name}`
+                      : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {(clientChanges ?? []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Histórico de alterações cadastrais
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1.5">
+              {(clientChanges ?? []).map((change) => (
+                <li key={change.id} className="text-sm">
+                  <span>Alterou: {change.fields}</span>{" "}
                   <span className="text-xs text-muted-foreground">
                     —{" "}
                     {new Date(change.changed_at).toLocaleString("pt-BR", {
