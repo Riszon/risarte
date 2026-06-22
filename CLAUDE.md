@@ -196,17 +196,23 @@ alterações, e acesso de **Admin Master + Dentista Planner** (migração 0039).
 **F3.2 entregue (sem migração):** **importar planilha Excel** (`.xlsx`, com botão
 "Baixar modelo" e biblioteca SheetJS via CDN) e **reajuste de preço em massa**
 (percentual aplicado a Todos / por Especialidade / por Pilar / Selecionados).
-**F3 (Procedimentos) completo.** Próximas: F4 (aprovação por opção), F5 (fila por
-situação), F6 (central de notificações), F7 (cockpit do Planner).
+**F3 (Procedimentos) completo.** **F4 entregue (migração 0040):** aprovação **por
+opção** — o Coordenador aprova/reprova cada opção (com considerações que valem
+ao aprovar ou reprovar); o plano vira "aprovado" só quando todas as opções têm
+decisão e ≥1 é aprovada (se todas reprovadas, devolve ao Planner). O plano
+principal aparece primeiro e em destaque, e o Coordenador vê só o **total** de
+cada opção (não o preço item a item) e não edita o orçamento. Próximas: F5 (fila
+por situação), F6 (central de notificações), F7 (cockpit do Planner).
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
 bumpar os dois a cada entrega publicada.
 
-**Migrações 0001–0039 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0035 aplicadas; 0036–0039 pendentes** (em ordem:
+**Migrações 0001–0040 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0035 aplicadas; 0036–0040 pendentes** (em ordem:
 0036 = preços+orçamento da 5.2; 0037 = aprovação da 5.3; 0038 = notificações de
-compartilhamento da F2; 0039 = campos dos Procedimentos da F3.1).
+compartilhamento da F2; 0039 = campos dos Procedimentos da F3.1; 0040 = aprovação
+por opção da F4).
 
 ## 8. Próximos passos (ordem de prioridade)
 

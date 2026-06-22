@@ -289,6 +289,51 @@ export async function reviewTreatmentPlan(
   return { ok: true };
 }
 
+/**
+ * The Coordenador approves/rejects a SINGLE plan option (F4). When all options
+ * are decided, the RPC settles the plan (approved if ≥1 approved, else returned).
+ */
+export async function reviewPlanOption(
+  optionId: string,
+  approve: boolean,
+  notes: string
+): Promise<PlanResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data: option } = await supabase
+    .from("treatment_plan_options")
+    .select("plan_id")
+    .eq("id", optionId)
+    .single();
+  if (!option) return { ok: false, error: "Opção não encontrada." };
+  const ctx = await loadPlanContext(option.plan_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase.rpc("review_plan_option", {
+    p_option_id: optionId,
+    p_approve: approve,
+    p_notes: notes.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o Coordenador Clínico pode avaliar as opções.",
+      };
+    }
+    if (error.message.includes("NOT_SUBMITTED")) {
+      return { ok: false, error: "Este plano não está aguardando aprovação." };
+    }
+    console.error("review_plan_option failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a avaliação." };
+  }
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath("/planejamento");
+  revalidatePath("/jornada");
+  revalidatePath("/notificacoes");
+  return { ok: true };
+}
+
 /** The Planner sends the plan to the Coordenador Clínico for approval. */
 export async function submitTreatmentPlan(planId: string): Promise<PlanResult> {
   const guard = await requirePlanner();

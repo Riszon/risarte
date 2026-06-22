@@ -12,7 +12,8 @@ import {
   Send,
   Sparkles,
   Star,
-  Undo2,
+  ThumbsDown,
+  ThumbsUp,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
+  OPTION_REVIEW_LABELS,
   PLAN_STATUS_LABELS,
   type PlanOption,
   type TreatmentPlan,
@@ -39,7 +42,7 @@ import {
   editPlanOption,
   removeBudgetItem,
   removePlanOption,
-  reviewTreatmentPlan,
+  reviewPlanOption,
   saveDiagnosis,
   submitTreatmentPlan,
 } from "./planning-actions";
@@ -90,8 +93,6 @@ export function PlanningSection({
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPrimary, setEditPrimary] = useState(false);
-  const [returnNotes, setReturnNotes] = useState("");
-  const [showReturn, setShowReturn] = useState(false);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -217,9 +218,10 @@ export function PlanningSection({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {plan.status === "returned" && plan.reviewNotes && (
+        {plan.status === "returned" && (
           <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-sm text-destructive">
-            Devolvido pelo Coordenador: {plan.reviewNotes}
+            Plano devolvido pelo Coordenador — veja as considerações em cada opção
+            abaixo, ajuste e reenvie.
           </p>
         )}
         {plan.status === "submitted" && (
@@ -273,7 +275,13 @@ export function PlanningSection({
           ) : (
             <ul className="space-y-2">
               {options.map((o) => (
-                <li key={o.id} className="rounded-md border p-2 text-sm">
+                <li
+                  key={o.id}
+                  className={cn(
+                    "rounded-md border p-2 text-sm",
+                    o.isPrimary && "border-gold bg-gold/5"
+                  )}
+                >
                   {editingId === o.id ? (
                     <div className="space-y-2">
                       <Input
@@ -321,14 +329,30 @@ export function PlanningSection({
                             <Star className="mr-1 inline size-3.5 fill-gold text-gold" />
                           )}
                           {o.title}
-                          {o.isPrimary && (
-                            <span className="ml-1 text-xs font-normal text-muted-foreground">
-                              (principal)
-                            </span>
-                          )}
                         </p>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          {o.isPrimary && (
+                            <Badge className="bg-gold text-gold-foreground text-[10px]">
+                              Plano principal
+                            </Badge>
+                          )}
+                          {plan.status !== "draft" && (
+                            <Badge
+                              variant={
+                                o.reviewStatus === "approved"
+                                  ? "secondary"
+                                  : o.reviewStatus === "rejected"
+                                    ? "destructive"
+                                    : "outline"
+                              }
+                              className="text-[10px]"
+                            >
+                              {OPTION_REVIEW_LABELS[o.reviewStatus]}
+                            </Badge>
+                          )}
+                        </div>
                         {o.description && (
-                          <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">
+                          <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                             {o.description}
                           </p>
                         )}
@@ -366,7 +390,19 @@ export function PlanningSection({
                     items={o.items}
                     catalog={catalog}
                     canEdit={canEdit}
+                    summaryOnly={!canEdit}
                   />
+                  {o.reviewNotes && (
+                    <p className="mt-1 rounded-md border bg-muted/30 p-2 text-xs">
+                      <span className="font-medium">
+                        Considerações do Coordenador:
+                      </span>{" "}
+                      {o.reviewNotes}
+                    </p>
+                  )}
+                  {canReview && plan.status === "submitted" && (
+                    <OptionReview optionId={o.id} optionTitle={o.title} />
+                  )}
                 </li>
               ))}
             </ul>
@@ -438,61 +474,13 @@ export function PlanningSection({
           </div>
         )}
 
-        {/* Aprovação do Coordenador (Etapa 5.3 / 4.3) */}
+        {/* Aprovação por opção (F4): o Coordenador decide cada opção acima. */}
         {canReview && plan.status === "submitted" && (
-          <div className="space-y-2 border-t pt-3">
-            <p className="text-sm font-medium">Aprovação do plano</p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={isPending}
-                onClick={() =>
-                  run(
-                    () => reviewTreatmentPlan(plan.id, true, ""),
-                    `Plano de ${clientName} aprovado.`
-                  )
-                }
-              >
-                <Check className="mr-1 size-4" />
-                Aprovar plano
-              </Button>
-              <Button
-                variant="outline"
-                disabled={isPending}
-                onClick={() => setShowReturn((s) => !s)}
-              >
-                <Undo2 className="mr-1 size-4" />
-                Devolver para revisão
-              </Button>
-            </div>
-            {showReturn && (
-              <div className="space-y-2">
-                <textarea
-                  value={returnNotes}
-                  onChange={(e) => setReturnNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Orientações para o Planner ajustar o plano..."
-                  className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!returnNotes.trim() || isPending}
-                  onClick={() =>
-                    run(
-                      () => reviewTreatmentPlan(plan.id, false, returnNotes),
-                      "Plano devolvido para revisão.",
-                      () => {
-                        setShowReturn(false);
-                        setReturnNotes("");
-                      }
-                    )
-                  }
-                >
-                  Confirmar devolução
-                </Button>
-              </div>
-            )}
-          </div>
+          <p className="border-t pt-3 text-sm text-muted-foreground">
+            Avalie <strong>cada opção</strong> acima (Aprovar ou Reprovar). O plano
+            é liberado ao Comercial quando todas as opções tiverem decisão e houver
+            ao menos uma aprovada; se todas forem reprovadas, volta ao Planner.
+          </p>
         )}
 
         {/* Envio ao Comercial após aprovação (Planner) */}
@@ -527,11 +515,14 @@ function OptionBudget({
   items,
   catalog,
   canEdit,
+  summaryOnly,
 }: {
   optionId: string;
   items: BudgetItem[];
   catalog: PricedProcedure[];
   canEdit: boolean;
+  /** Coordenador view: show only the option TOTAL, not per-item prices (F4). */
+  summaryOnly: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -573,6 +564,30 @@ function OptionBudget({
   }
 
   if (!canEdit && items.length === 0) return null;
+
+  // Coordenador (and other non-editors): only the procedures + the option TOTAL,
+  // never the per-item prices (owner rule, F4).
+  if (summaryOnly) {
+    return (
+      <div className="mt-2 rounded-md bg-muted/40 p-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">
+            Orçamento
+          </span>
+          <span className="text-sm font-semibold">{formatBRL(total)}</span>
+        </div>
+        {items.length > 0 && (
+          <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+            {items.map((it) => (
+              <li key={it.id}>
+                {it.quantity}× {it.description}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-2 rounded-md bg-muted/40 p-2">
@@ -753,6 +768,63 @@ function OptionBudget({
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Coordenador's Approve/Reject control for a single plan option (F4). */
+function OptionReview({
+  optionId,
+  optionTitle,
+}: {
+  optionId: string;
+  optionTitle: string;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [notes, setNotes] = useState("");
+
+  function decide(approve: boolean) {
+    startTransition(async () => {
+      const result = await reviewPlanOption(optionId, approve, notes);
+      if (result.ok) {
+        toast.success(
+          approve
+            ? `Opção “${optionTitle}” aprovada.`
+            : `Opção “${optionTitle}” reprovada.`
+        );
+        setNotes("");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
+  return (
+    <div className="mt-2 space-y-2 rounded-md border border-primary/30 bg-primary/5 p-2">
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={2}
+        placeholder="Considerações (opcional — valem ao aprovar ou reprovar)"
+        className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" disabled={isPending} onClick={() => decide(true)}>
+          <ThumbsUp className="mr-1 size-4" />
+          Aprovar opção
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={isPending}
+          onClick={() => decide(false)}
+        >
+          <ThumbsDown className="mr-1 size-4" />
+          Reprovar opção
+        </Button>
+      </div>
     </div>
   );
 }

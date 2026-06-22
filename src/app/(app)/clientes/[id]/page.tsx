@@ -512,8 +512,11 @@ export default async function ClientDetailPage(
     if (planRow) {
       const { data: optRows } = await supabase
         .from("treatment_plan_options")
-        .select("id, is_primary, title, description, sort_order")
+        .select(
+          "id, is_primary, title, description, sort_order, review_status, review_notes"
+        )
         .eq("plan_id", planRow.id)
+        .order("is_primary", { ascending: false })
         .order("sort_order")
         .returns<
           {
@@ -522,6 +525,8 @@ export default async function ClientDetailPage(
             title: string;
             description: string | null;
             sort_order: number;
+            review_status: "pending" | "approved" | "rejected";
+            review_notes: string | null;
           }[]
         >();
       const optionIds = (optRows ?? []).map((o) => o.id);
@@ -564,6 +569,8 @@ export default async function ClientDetailPage(
         description: o.description,
         sortOrder: o.sort_order,
         items: itemsByOption.get(o.id) ?? [],
+        reviewStatus: o.review_status,
+        reviewNotes: o.review_notes,
       }));
       treatmentPlan = {
         id: planRow.id,

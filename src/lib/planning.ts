@@ -22,6 +22,20 @@ export const PLAN_STATUS_LABELS: Record<TreatmentPlanStatus, string> = {
 
 export type PlanResult = { ok: boolean; error?: string };
 
+// Per-option review by the Coordenador (F4). Must match option_review_status.
+export const OPTION_REVIEW_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+] as const;
+export type OptionReviewStatus = (typeof OPTION_REVIEW_STATUSES)[number];
+
+export const OPTION_REVIEW_LABELS: Record<OptionReviewStatus, string> = {
+  pending: "Aguardando avaliação",
+  approved: "Aprovada",
+  rejected: "Reprovada",
+};
+
 export type PlanOption = {
   id: string;
   isPrimary: boolean;
@@ -30,6 +44,9 @@ export type PlanOption = {
   sortOrder: number;
   /** Budget lines for this option (Etapa 5.2). */
   items: BudgetItem[];
+  /** Coordenador's per-option decision (F4). */
+  reviewStatus: OptionReviewStatus;
+  reviewNotes: string | null;
 };
 
 export type TreatmentPlan = {
