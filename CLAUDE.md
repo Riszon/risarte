@@ -206,7 +206,11 @@ migração):** a fila do Centro de Planejamento (`/planejamento`) agora separa o
 casos por **situação** (aguardando planejamento / aguardando aprovação / em
 revisão / aprovados / enviados ao Comercial) com **contadores clicáveis** e
 filtro de **período** (Hoje / Esta semana / Este mês / período específico).
-Próximas: F6 (central de notificações), F7 (cockpit do Planner).
+**F6 entregue (sem migração):** central de notificações categorizada
+(`/notificacoes`) — categorias **Plano de Tratamento / Compartilhamento / Início
+de Tratamento / Transferência / Outras** (classificadas pelo título em
+`src/lib/notifications.ts`), com chips/contadores clicáveis, filtro e selo de
+categoria por aviso. Próxima e última do LOTE F: F7 (cockpit do Planner).
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —

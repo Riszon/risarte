@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
+import {
+  NOTIFICATION_CATEGORIES,
+  categorizeNotification,
+  type NotificationCategory,
+} from "@/lib/notifications";
 import { NotificationList } from "./notification-list";
 
 export const metadata: Metadata = { title: "Notificações" };
@@ -35,6 +41,8 @@ export default async function NotificationsPage(
     typeof searchParams.unidade === "string" ? searchParams.unidade : null;
   const scope =
     requested ?? (activeIsUnit ? session.activeClinic!.id : "todas");
+  const categoria =
+    typeof searchParams.categoria === "string" ? searchParams.categoria : "";
 
   // Build the unit filter from the clinics actually present in the user's
   // notifications (works for franchisor users who only "live" in the matriz).
@@ -63,13 +71,36 @@ export default async function NotificationsPage(
     )
     .eq("user_id", session.userId)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(200);
 
   if (scope !== "todas") {
     query = query.eq("clinic_id", scope);
   }
 
-  const { data: notifications } = await query.returns<NotificationRow[]>();
+  const { data: notificationRows } = await query.returns<NotificationRow[]>();
+  const all = notificationRows ?? [];
+
+  // Categorize at read time and count per category (within the unit scope).
+  const counts: Record<NotificationCategory, number> = {
+    plano: 0,
+    compartilhamento: 0,
+    inicio_tratamento: 0,
+    transferencia: 0,
+    outras: 0,
+  };
+  for (const n of all) counts[categorizeNotification(n.title)] += 1;
+
+  const notifications = categoria
+    ? all.filter((n) => categorizeNotification(n.title) === categoria)
+    : all;
+
+  function chipHref(cat: string | null): string {
+    const p = new URLSearchParams();
+    if (cat) p.set("categoria", cat);
+    if (requested) p.set("unidade", requested);
+    const qs = p.toString();
+    return qs ? `/notificacoes?${qs}` : "/notificacoes";
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
@@ -84,6 +115,9 @@ export default async function NotificationsPage(
         </div>
         {clinicTags.length > 1 && (
           <FilterForm className="flex items-center gap-2">
+            {categoria && (
+              <input type="hidden" name="categoria" value={categoria} />
+            )}
             <select
               name="unidade"
               defaultValue={scope}
@@ -99,7 +133,33 @@ export default async function NotificationsPage(
           </FilterForm>
         )}
       </div>
-      <NotificationList notifications={notifications ?? []} />
+
+      {/* Categorias (clicáveis) com contadores. */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={chipHref(null)}
+          className={`rounded-full border px-3 py-1 text-sm ${
+            categoria === "" ? "border-primary bg-primary/10 text-primary" : ""
+          }`}
+        >
+          Todas ({all.length})
+        </Link>
+        {NOTIFICATION_CATEGORIES.map((c) => (
+          <Link
+            key={c.key}
+            href={chipHref(c.key)}
+            className={`rounded-full border px-3 py-1 text-sm ${
+              categoria === c.key
+                ? "border-primary bg-primary/10 text-primary"
+                : ""
+            }`}
+          >
+            {c.label} ({counts[c.key]})
+          </Link>
+        ))}
+      </div>
+
+      <NotificationList notifications={notifications} />
     </div>
   );
 }

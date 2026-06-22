@@ -9,6 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  NOTIFICATION_CATEGORY_CLASS,
+  NOTIFICATION_CATEGORY_LABELS,
+  categorizeNotification,
+} from "@/lib/notifications";
 import type { NotificationRow } from "./page";
 import { markAllNotificationsRead, markNotificationRead } from "./actions";
 
@@ -74,6 +79,16 @@ export function NotificationList({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-medium">{notification.title}</p>
+                {(() => {
+                  const cat = categorizeNotification(notification.title);
+                  return (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] ${NOTIFICATION_CATEGORY_CLASS[cat]}`}
+                    >
+                      {NOTIFICATION_CATEGORY_LABELS[cat]}
+                    </span>
+                  );
+                })()}
                 {!notification.read_at && (
                   <Badge className="bg-gold text-gold-foreground text-[10px]">
                     Nova
