@@ -237,7 +237,7 @@ export function WeekGrid({
           {canManage && (
             <div className="flex items-center">
               {/* Past appointments cannot be edited — only the status. */}
-              {new Date(appointment.starts_at).getTime() >= Date.now() && (
+              {new Date(appointment.starts_at).getTime() >= today.getTime() && (
                 <AppointmentFormDialog
                   clients={[]}
                   staff={staff}

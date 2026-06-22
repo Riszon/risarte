@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { PlanResult } from "@/lib/planning";
+import { parseBRLToCents } from "@/lib/pricing";
 
 /**
  * Only the Dentista Planner (or Admin) works on a treatment plan. The plan is
@@ -285,4 +286,137 @@ async function touchPlan(planId: string) {
     .from("treatment_plans")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", planId);
+}
+
+// ---- Orçamento por opção (Etapa 5.2) --------------------------------------
+
+/** Resolves an option's plan/clinic/client, for scoping and revalidation. */
+async function loadOptionContext(
+  optionId: string
+): Promise<
+  | { error: string }
+  | { optionId: string; planId: string; clinicId: string; clientId: string }
+> {
+  const supabase = await createClient();
+  const { data: option } = await supabase
+    .from("treatment_plan_options")
+    .select("plan_id, clinic_id")
+    .eq("id", optionId)
+    .single();
+  if (!option) return { error: "Opção não encontrada." };
+  const ctx = await loadPlanContext(option.plan_id);
+  if ("error" in ctx) return { error: ctx.error };
+  return {
+    optionId,
+    planId: option.plan_id,
+    clinicId: option.clinic_id,
+    clientId: ctx.clientId,
+  };
+}
+
+export async function addBudgetItem(
+  optionId: string,
+  input: {
+    procedureId: string | null;
+    description: string;
+    quantity: number;
+    price: string;
+  }
+): Promise<PlanResult> {
+  const description = input.description.trim();
+  if (!description) return { ok: false, error: "Descreva o item do orçamento." };
+  const quantity = Math.max(1, Math.floor(input.quantity || 1));
+  const priceCents = parseBRLToCents(input.price);
+  if (priceCents === null) return { ok: false, error: "Valor inválido." };
+
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadOptionContext(optionId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("treatment_plan_option_items")
+    .select("id", { count: "exact", head: true })
+    .eq("option_id", optionId);
+
+  const { error } = await supabase.from("treatment_plan_option_items").insert({
+    option_id: optionId,
+    clinic_id: ctx.clinicId,
+    procedure_id: input.procedureId,
+    description,
+    quantity,
+    unit_price_cents: priceCents,
+    sort_order: count ?? 0,
+  });
+  if (error) {
+    console.error("addBudgetItem failed:", error.message);
+    return { ok: false, error: "Não foi possível adicionar o item." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  return { ok: true };
+}
+
+export async function editBudgetItem(
+  itemId: string,
+  input: { description: string; quantity: number; price: string }
+): Promise<PlanResult> {
+  const description = input.description.trim();
+  if (!description) return { ok: false, error: "Descreva o item do orçamento." };
+  const quantity = Math.max(1, Math.floor(input.quantity || 1));
+  const priceCents = parseBRLToCents(input.price);
+  if (priceCents === null) return { ok: false, error: "Valor inválido." };
+
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { ok: false, error: "Item não encontrado." };
+  const ctx = await loadOptionContext(item.option_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase
+    .from("treatment_plan_option_items")
+    .update({ description, quantity, unit_price_cents: priceCents })
+    .eq("id", itemId);
+  if (error) {
+    console.error("editBudgetItem failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o item." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  return { ok: true };
+}
+
+export async function removeBudgetItem(itemId: string): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { ok: false, error: "Item não encontrado." };
+  const ctx = await loadOptionContext(item.option_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase
+    .from("treatment_plan_option_items")
+    .delete()
+    .eq("id", itemId);
+  if (error) {
+    console.error("removeBudgetItem failed:", error.message);
+    return { ok: false, error: "Não foi possível remover o item." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  return { ok: true };
 }

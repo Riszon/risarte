@@ -33,6 +33,13 @@ import type {
   TreatmentPlan,
   TreatmentPlanStatus,
 } from "@/lib/planning";
+import {
+  resolveProcedurePrices,
+  type BudgetItem,
+  type PricedProcedure,
+  type Procedure,
+  type UnitPrice,
+} from "@/lib/pricing";
 import { ClientShares, type ActiveShare } from "./client-shares";
 import type { StaffOption } from "@/lib/appointments";
 import { allowedNextPhases } from "@/lib/journey";
@@ -494,12 +501,46 @@ export default async function ClientDetailPage(
             sort_order: number;
           }[]
         >();
+      const optionIds = (optRows ?? []).map((o) => o.id);
+      const itemsByOption = new Map<string, BudgetItem[]>();
+      if (optionIds.length > 0) {
+        const { data: itemRows } = await supabase
+          .from("treatment_plan_option_items")
+          .select(
+            "id, option_id, procedure_id, description, quantity, unit_price_cents, sort_order"
+          )
+          .in("option_id", optionIds)
+          .order("sort_order")
+          .returns<
+            {
+              id: string;
+              option_id: string;
+              procedure_id: string | null;
+              description: string;
+              quantity: number;
+              unit_price_cents: number;
+              sort_order: number;
+            }[]
+          >();
+        for (const it of itemRows ?? []) {
+          const list = itemsByOption.get(it.option_id) ?? [];
+          list.push({
+            id: it.id,
+            procedureId: it.procedure_id,
+            description: it.description,
+            quantity: it.quantity,
+            unitPriceCents: it.unit_price_cents,
+          });
+          itemsByOption.set(it.option_id, list);
+        }
+      }
       const options: PlanOption[] = (optRows ?? []).map((o) => ({
         id: o.id,
         isPrimary: o.is_primary,
         title: o.title,
         description: o.description,
         sortOrder: o.sort_order,
+        items: itemsByOption.get(o.id) ?? [],
       }));
       treatmentPlan = {
         id: planRow.id,
@@ -512,6 +553,48 @@ export default async function ClientDetailPage(
         options,
       };
     }
+  }
+
+  // Catálogo de preços com o preço efetivo da unidade do cliente (para o Planner
+  // montar o orçamento). Só carregado para quem edita o plano.
+  let priceCatalog: PricedProcedure[] = [];
+  if (canEditPlanning) {
+    const [{ data: procRows }, { data: priceRows }] = await Promise.all([
+      supabase
+        .from("procedures")
+        .select("id, code, name, category, default_price_cents, is_active")
+        .eq("is_active", true)
+        .order("category", { nullsFirst: true })
+        .order("name")
+        .returns<
+          {
+            id: string;
+            code: string | null;
+            name: string;
+            category: string | null;
+            default_price_cents: number;
+            is_active: boolean;
+          }[]
+        >(),
+      supabase
+        .from("clinic_procedure_prices")
+        .select("procedure_id, price_cents")
+        .eq("clinic_id", client.clinic_id)
+        .returns<{ procedure_id: string; price_cents: number }[]>(),
+    ]);
+    const procedures: Procedure[] = (procRows ?? []).map((p) => ({
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      category: p.category,
+      defaultPriceCents: p.default_price_cents,
+      isActive: p.is_active,
+    }));
+    const overrides: UnitPrice[] = (priceRows ?? []).map((r) => ({
+      procedureId: r.procedure_id,
+      priceCents: r.price_cents,
+    }));
+    priceCatalog = resolveProcedurePrices(procedures, overrides);
   }
 
   return (
@@ -619,6 +702,7 @@ export default async function ClientDetailPage(
           canEdit={canEditPlanning}
           inPlanningPhase={client.journey_phase === "planning_center"}
           pillarSet={Boolean(client.methodology_pillar)}
+          catalog={priceCatalog}
         />
       )}
 

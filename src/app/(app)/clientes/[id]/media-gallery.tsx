@@ -79,13 +79,14 @@ function Lightbox({
   onIndex: (i: number) => void;
 }) {
   const touchX = useRef<number | null>(null);
-  const [err, setErr] = useState(false);
+  // Track which image src failed to load; derived per-index (no effect needed —
+  // when the index changes, m.url changes and `failed` recomputes to false).
+  const [erredSrc, setErredSrc] = useState<string | null>(null);
   const m = items[index];
+  const failed = erredSrc !== null && erredSrc === (m?.url ?? "");
 
   const prev = () => onIndex((index - 1 + items.length) % items.length);
   const next = () => onIndex((index + 1) % items.length);
-
-  useEffect(() => setErr(false), [index]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -136,7 +137,7 @@ function Lightbox({
           <ChevronLeft className="size-6" />
         </button>
       )}
-      {err ? (
+      {failed ? (
         <div
           className="flex flex-col items-center gap-2 rounded-md bg-white/10 p-6 text-center text-white"
           onClick={(e) => e.stopPropagation()}
@@ -165,7 +166,7 @@ function Lightbox({
           alt={m.originalName ?? "imagem"}
           className="max-h-[80vh] max-w-full object-contain"
           onClick={(e) => e.stopPropagation()}
-          onError={() => setErr(true)}
+          onError={() => setErredSrc(m.url ?? "")}
         />
       )}
       {items.length > 1 && (

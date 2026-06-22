@@ -15,9 +15,18 @@ import {
   type TreatmentPlan,
 } from "@/lib/planning";
 import {
+  budgetTotalCents,
+  formatBRL,
+  type BudgetItem,
+  type PricedProcedure,
+} from "@/lib/pricing";
+import {
+  addBudgetItem,
   addPlanOption,
   createTreatmentPlan,
+  editBudgetItem,
   editPlanOption,
+  removeBudgetItem,
   removePlanOption,
   saveDiagnosis,
   submitTreatmentPlan,
@@ -33,6 +42,11 @@ function fmtDateTime(iso: string): string {
   });
 }
 
+/** cents → "150,00" for a text input (no currency symbol). */
+function centsToInput(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+
 export function PlanningSection({
   clientId,
   clientName,
@@ -40,6 +54,7 @@ export function PlanningSection({
   canEdit,
   inPlanningPhase,
   pillarSet,
+  catalog,
 }: {
   clientId: string;
   clientName: string;
@@ -47,6 +62,7 @@ export function PlanningSection({
   canEdit: boolean;
   inPlanningPhase: boolean;
   pillarSet: boolean;
+  catalog: PricedProcedure[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -328,6 +344,12 @@ export function PlanningSection({
                       )}
                     </div>
                   )}
+                  <OptionBudget
+                    optionId={o.id}
+                    items={o.items}
+                    catalog={catalog}
+                    canEdit={canEdit}
+                  />
                 </li>
               ))}
             </ul>
@@ -400,5 +422,241 @@ export function PlanningSection({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Budget lines + total for a single plan option (Etapa 5.2). */
+function OptionBudget({
+  optionId,
+  items,
+  catalog,
+  canEdit,
+}: {
+  optionId: string;
+  items: BudgetItem[];
+  catalog: PricedProcedure[];
+  canEdit: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [procId, setProcId] = useState("");
+  const [desc, setDesc] = useState("");
+  const [price, setPrice] = useState("");
+  const [qty, setQty] = useState("1");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [eDesc, setEDesc] = useState("");
+  const [ePrice, setEPrice] = useState("");
+  const [eQty, setEQty] = useState("1");
+
+  const total = budgetTotalCents(items);
+
+  function run(
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) {
+    startTransition(async () => {
+      const result = await action();
+      if (result.ok) {
+        toast.success(msg);
+        after?.();
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
+  function pickProcedure(id: string) {
+    setProcId(id);
+    const p = catalog.find((c) => c.id === id);
+    if (p) {
+      setDesc(p.name);
+      setPrice(centsToInput(p.effectivePriceCents));
+    }
+  }
+
+  if (!canEdit && items.length === 0) return null;
+
+  return (
+    <div className="mt-2 rounded-md bg-muted/40 p-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">
+          Orçamento
+        </span>
+        <span className="text-sm font-semibold">{formatBRL(total)}</span>
+      </div>
+
+      {items.length > 0 && (
+        <ul className="mt-1 space-y-1">
+          {items.map((it) => (
+            <li key={it.id} className="text-sm">
+              {editingId === it.id ? (
+                <div className="space-y-1.5">
+                  <Input
+                    value={eDesc}
+                    onChange={(e) => setEDesc(e.target.value)}
+                    placeholder="Descrição"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={eQty}
+                      onChange={(e) => setEQty(e.target.value)}
+                      inputMode="numeric"
+                      className="w-16"
+                      aria-label="Quantidade"
+                    />
+                    <span className="text-xs text-muted-foreground">×</span>
+                    <span className="text-sm text-muted-foreground">R$</span>
+                    <Input
+                      value={ePrice}
+                      onChange={(e) => setEPrice(e.target.value)}
+                      inputMode="decimal"
+                      className="w-28"
+                      aria-label="Valor unitário"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() =>
+                        run(
+                          () =>
+                            editBudgetItem(it.id, {
+                              description: eDesc,
+                              quantity: Number(eQty) || 1,
+                              price: ePrice,
+                            }),
+                          "Item atualizado.",
+                          () => setEditingId(null)
+                        )
+                      }
+                    >
+                      Salvar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    {it.description}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      {it.quantity} × {formatBRL(it.unitPriceCents)}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className="font-medium">
+                      {formatBRL(it.quantity * it.unitPriceCents)}
+                    </span>
+                    {canEdit && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Editar item"
+                          onClick={() => {
+                            setEditingId(it.id);
+                            setEDesc(it.description);
+                            setEPrice(centsToInput(it.unitPriceCents));
+                            setEQty(String(it.quantity));
+                          }}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Remover item"
+                          disabled={isPending}
+                          onClick={() =>
+                            run(
+                              () => removeBudgetItem(it.id),
+                              "Item removido."
+                            )
+                          }
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canEdit && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t pt-2">
+          <select
+            value={procId}
+            onChange={(e) => pickProcedure(e.target.value)}
+            className="h-9 max-w-[180px] rounded-lg border border-input bg-transparent px-2 text-sm"
+          >
+            <option value="">Item personalizado</option>
+            {catalog.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({formatBRL(p.effectivePriceCents)})
+              </option>
+            ))}
+          </select>
+          <Input
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            placeholder="Descrição"
+            className="max-w-[180px]"
+          />
+          <Input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            inputMode="numeric"
+            className="w-14"
+            aria-label="Quantidade"
+          />
+          <span className="text-sm text-muted-foreground">R$</span>
+          <Input
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            inputMode="decimal"
+            placeholder="0,00"
+            className="w-24"
+            aria-label="Valor unitário"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!desc.trim() || isPending}
+            onClick={() =>
+              run(
+                () =>
+                  addBudgetItem(optionId, {
+                    procedureId: procId || null,
+                    description: desc,
+                    quantity: Number(qty) || 1,
+                    price,
+                  }),
+                "Item adicionado.",
+                () => {
+                  setProcId("");
+                  setDesc("");
+                  setPrice("");
+                  setQty("1");
+                }
+              )
+            }
+          >
+            <Plus className="mr-1 size-4" />
+            Item
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -163,30 +163,35 @@ unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
   agendamento; editar cliente + transferir A→B; atendimento do Consultor;
   **compartilhamento de cliente entre unidades (E7)**. (0026, 0029–0034)
 
-**Em andamento — Etapa 5.1 (Centro de Planejamento), entregue, aguardando teste
-do dono:** fila priorizada em `/planejamento` (apresentação comercial mais
-próxima; empate = quem entrou antes na Fase 3); estrutura do plano na ficha
-(diagnóstico + opções principal/alternativas); envio para aprovação que define
-o sub-status "Aguardando Aprovação" e notifica o Coordenador. (migração 0035)
-A 5.2 (orçamento por tabela de preços) e a 5.3 (aprovar/reprovar = Etapa 4.3)
-vêm na sequência.
+- **Etapa 5.1 — Centro de Planejamento (validada):** fila priorizada em
+  `/planejamento` (apresentação comercial mais próxima; empate = quem entrou
+  antes na Fase 3); estrutura do plano na ficha (diagnóstico + opções
+  principal/alternativas); envio para aprovação que define o sub-status
+  "Aguardando Aprovação" e notifica o Coordenador. (migração 0035)
 
-**Migrações 0001–0035 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0034 aplicadas e testadas; a 0035 está pendente** (tabelas do
-plano de tratamento da Etapa 5.1).
+**Em andamento — Etapa 5.2 (orçamento por tabela de preços), entregue,
+aguardando teste do dono:** tela admin **Tabela de Preços** (`/admin/precos`,
+catálogo de procedimentos no padrão cascata: preço padrão da rede + ajuste por
+unidade); **orçamento por opção** na ficha (o Planner adiciona itens do catálogo
+ou linhas livres, com total por opção; valores em centavos). Falta a 5.3
+(aprovar/reprovar = Etapa 4.3 + envio ao Comercial 3→4). (migração 0036)
+A barra lateral agora mostra a **versão do sistema** (`src/lib/version.ts`,
+`APP_VERSION`) acima do botão Sair — bumpar a cada entrega publicada.
+
+**Migrações 0001–0036 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0035 aplicadas e testadas; a 0036 está pendente** (tabela de
+preços + orçamento da Etapa 5.2).
 
 ## 8. Próximos passos (ordem de prioridade)
 
-1. **Aplicar a migração 0035** e testar a Etapa 5.1 (fila + estrutura do plano).
-2. **Etapa 5.2 — Orçamento por tabela de preços:** tabela de preços configurável
-   no padrão cascata (rede → unidade) e orçamento do plano a partir dela.
-3. **Etapa 5.3 — Aprovação do plano (= Etapa 4.3):** o Coordenador aprova/devolve
+1. **Aplicar a migração 0036** e testar a Etapa 5.2 (tabela de preços + orçamento).
+2. **Etapa 5.3 — Aprovação do plano (= Etapa 4.3):** o Coordenador aprova/devolve
    (devolução com orientações → "Revisão com Coordenador"); aprovado → o Planner
    sinaliza ao Consultor → transição Fase 3 → Fase 4. Contadores por Planner.
-5. **LOTE B — agenda avançada/consolidados** (junto/após a Etapa 5): configs de
+3. **LOTE B — agenda avançada/consolidados** (junto/após a Etapa 5): configs de
    agenda por unidade; visões dia/semana/mês; quadros-resumo; visão de rede sem
    nomes de pacientes.
-6. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
+4. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
    WhatsApp manual), transcrição/resumo por IA, dashboards com metas.
 
 Adiados (em `docs/BACKLOG.md`, não esquecer): foto por webcam; cadeiras/horários

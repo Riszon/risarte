@@ -1,6 +1,8 @@
 // Shared constants/types for the treatment plan (Centro de Planejamento, Fase 3).
 // Kept out of the "use server" actions file (which may only export functions).
 
+import type { BudgetItem } from "@/lib/pricing";
+
 // Must stay in sync with the `treatment_plan_status` enum in the database.
 export const TREATMENT_PLAN_STATUSES = [
   "draft",
@@ -26,6 +28,8 @@ export type PlanOption = {
   title: string;
   description: string | null;
   sortOrder: number;
+  /** Budget lines for this option (Etapa 5.2). */
+  items: BudgetItem[];
 };
 
 export type TreatmentPlan = {

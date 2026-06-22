@@ -12,6 +12,7 @@ import {
   Home,
   LogOut,
   Route,
+  Tags,
   Users,
   UserCog,
   ChevronsUpDown,
@@ -21,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/lib/version";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -70,6 +72,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
+  { href: "/admin/precos", label: "Tabela de Preços", icon: Tags },
 ];
 
 export function AppSidebar({
@@ -220,6 +223,9 @@ export function AppSidebar({
           <p className="truncate text-sm font-medium">{fullName}</p>
           <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
         </Link>
+        <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
+          Versão {APP_VERSION}
+        </p>
         <Button
           variant="outline"
           size="sm"

@@ -228,11 +228,10 @@ export function AppointmentFormDialog({
     clientBusy: BusyRange[];
   }>({ providerBusy: [], clientBusy: [] });
 
+  const shouldFetchBusy = Boolean(date && (clientId || providerId));
+
   useEffect(() => {
-    if (!date || (!clientId && !providerId)) {
-      setBusy({ providerBusy: [], clientBusy: [] });
-      return;
-    }
+    if (!shouldFetchBusy) return;
     let cancelled = false;
     getDayBusyTimes({
       providerUserId: providerId || null,
@@ -245,7 +244,18 @@ export function AppointmentFormDialog({
     return () => {
       cancelled = true;
     };
-  }, [date, clientId, providerId, appointment?.id]);
+  }, [shouldFetchBusy, date, clientId, providerId, appointment?.id]);
+
+  // When inputs are incomplete, ignore any stale busy data (derived, no effect).
+  // Memoized for a stable reference so the timeItems memo below isn't recomputed
+  // on every render.
+  const effectiveBusy = useMemo(
+    () =>
+      shouldFetchBusy
+        ? busy
+        : { providerBusy: [] as BusyRange[], clientBusy: [] as BusyRange[] },
+    [shouldFetchBusy, busy]
+  );
 
   const durationMin = Number(duration) || 60;
   const isEncaixe = type === "urgency" || type === "emergency";
@@ -261,17 +271,16 @@ export function AppointmentFormDialog({
       const e = s + durationMin * 60_000;
       const overlaps = (r: BusyRange) =>
         s < new Date(r.ends_at).getTime() && e > new Date(r.starts_at).getTime();
-      if (busy.clientBusy.some(overlaps)) return false;
-      if (!isEncaixe && busy.providerBusy.some(overlaps)) return false;
+      if (effectiveBusy.clientBusy.some(overlaps)) return false;
+      if (!isEncaixe && effectiveBusy.providerBusy.some(overlaps)) return false;
       return true;
     });
-  }, [busy, date, durationMin, isEncaixe, minDate, nowTime]);
+  }, [effectiveBusy, date, durationMin, isEncaixe, minDate, nowTime]);
 
-  // If the chosen time became unavailable (provider/duration changed), clear it.
-  useEffect(() => {
-    if (time && !timeItems.some((t) => t.value === time)) setTime("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeItems]);
+  // The chosen time, but only while it's still an available slot (provider or
+  // duration may have changed the free slots) — derived, no effect needed.
+  const effectiveTime =
+    time && timeItems.some((t) => t.value === time) ? time : "";
 
   const lastWasMissed =
     schedulingInfo?.lastAppointment &&
@@ -297,7 +306,7 @@ export function AppointmentFormDialog({
     if (pickUnit) formData.set("clinic_id", unitId);
     else if (fixedClinicId) formData.set("clinic_id", fixedClinicId);
     formData.set("type", type);
-    formData.set("time", time);
+    formData.set("time", effectiveTime);
     formData.set("duration", duration);
     formData.set("provider_user_id", providerValid ? providerId : "");
 
@@ -493,11 +502,11 @@ export function AppointmentFormDialog({
               <Label>Horário *</Label>
               <Select
                 items={timeItems}
-                value={time || null}
+                value={effectiveTime || null}
                 onValueChange={(v) => v !== null && setTime(v)}
               >
                 <SelectTrigger className="w-full">
-                  {time ? (
+                  {effectiveTime ? (
                     <SelectValue />
                   ) : (
                     <span className="flex-1 text-left text-muted-foreground">
@@ -570,7 +579,7 @@ export function AppointmentFormDialog({
                 (pickUnit && !unitId) ||
                 (!isEdit && !clientId) ||
                 !providerValid ||
-                !time
+                !effectiveTime
               }
             >
               {isPending
