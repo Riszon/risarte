@@ -208,15 +208,19 @@ A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
 bumpar os dois a cada entrega publicada.
 
-**Correções pós-teste (migração 0041):** corrige o erro "não foi possível
-registrar a avaliação" (cast de enum no `review_plan_option`); o Planner não pode
-enviar para aprovação sem procedimentos lançados em cada opção; encerrar
-compartilhamento pela unidade B não dá mais 404 (mostra confirmação e leva a
-Clientes); busca de Procedimentos com sugestões (datalist); botão "Tornar
-principal" na opção do plano.
+**Correções pós-teste (migrações 0041–0042):** 0041 corrigiu o erro "não foi
+possível registrar a avaliação" (cast de enum no `review_plan_option`), exige
+procedimentos lançados em cada opção para enviar, busca de Procedimentos com
+sugestões (datalist) e botão "Tornar principal". 0042: encerrar compartilhamento
+pela unidade B → a ficha mostra "Compartilhamento encerrado" + detalhes (e B
+perde o acesso) em vez de 404 (`client_shares.ended_by` + tratamento na ficha);
+após a aprovação o Planner **não edita** o plano (leitura) — há **"Reabrir para
+edição"** (`reopenTreatmentPlan` → rascunho, exige nova aprovação antes do
+Comercial); **reprovar opção exige considerações** (obrigatórias).
 
-**Migrações 0001–0041 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0040 aplicadas; 0041 pendente** (correções do plano).
+**Migrações 0001–0042 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0040 aplicadas; 0041 e 0042 pendentes** (correções do plano e
+do compartilhamento).
 
 ## 8. Próximos passos (ordem de prioridade)
 

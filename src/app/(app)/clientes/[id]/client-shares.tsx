@@ -40,16 +40,12 @@ function fmtDate(iso: string): string {
 
 export function ClientShares({
   clientId,
-  clientName,
-  homeUnitName,
   shares,
   units,
   canShare,
   canEnd,
 }: {
   clientId: string;
-  clientName: string;
-  homeUnitName: string | null;
   shares: ActiveShare[];
   units: { id: string; name: string }[];
   /** Show the "share with another unit" form (home unit / admin). */
@@ -61,52 +57,9 @@ export function ClientShares({
   const [isPending, startTransition] = useTransition();
   const [unitId, setUnitId] = useState("");
   const [reason, setReason] = useState("urgency");
-  // When the shared unit (B) ends its own share it loses access to the ficha —
-  // show this confirmation instead of letting the page 404 on refresh.
-  const [ended, setEnded] = useState<{ at: string; by: string | null } | null>(
-    null
-  );
 
   const selectClass =
     "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
-
-  if (ended) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Share2 className="size-4" />
-            Compartilhamento encerrado
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p>
-            O compartilhamento de{" "}
-            <span className="font-medium">{clientName}</span>
-            {homeUnitName ? (
-              <>
-                {" "}
-                (cliente da unidade{" "}
-                <span className="font-medium text-primary">{homeUnitName}</span>)
-              </>
-            ) : null}{" "}
-            foi encerrado em{" "}
-            <span className="font-medium">{fmtDate(ended.at)}</span>
-            {ended.by ? (
-              <>
-                {" "}
-                por <span className="font-medium">{ended.by}</span>
-              </>
-            ) : null}
-            . Sua unidade não tem mais acesso a este cliente.
-          </p>
-          <Button size="sm" onClick={() => router.push("/clientes")}>
-            Voltar para Clientes
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   // Nothing to show for staff who can't act and there are no active shares.
   if (!canShare && !canEnd && shares.length === 0) return null;
@@ -129,15 +82,10 @@ export function ClientShares({
       const result = await endClientShare(shareId, clientId);
       if (result.ok) {
         toast.success("Compartilhamento encerrado.");
-        if (result.stillHasAccess) {
-          router.refresh();
-        } else {
-          // B encerrou: perde o acesso — mostra a confirmação (sem 404).
-          setEnded({
-            at: result.endedAt ?? new Date().toISOString(),
-            by: result.endedByName ?? null,
-          });
-        }
+        // If the caller is the shared unit (B), the refresh re-renders the ficha
+        // as the "compartilhamento encerrado" page (it lost access). The home
+        // unit (A) stays on the ficha with the share removed from the list.
+        router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
       }

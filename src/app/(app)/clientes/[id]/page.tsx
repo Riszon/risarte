@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -137,7 +138,72 @@ export default async function ClientDetailPage(
     .eq("id", id)
     .single();
 
-  if (!client) notFound();
+  if (!client) {
+    // The shared unit (B) loses access when its share ends — show a friendly
+    // "compartilhamento encerrado" message (with the details) instead of a 404.
+    const { data: endedShare } = await supabase
+      .from("client_shares")
+      .select(
+        "ended_at, reason, clinics ( name ), ender:profiles!client_shares_ended_by_fkey ( full_name )"
+      )
+      .eq("client_id", id)
+      .not("ended_at", "is", null)
+      .order("ended_at", { ascending: false })
+      .limit(1)
+      .returns<
+        {
+          ended_at: string;
+          reason: string | null;
+          clinics: { name: string } | null;
+          ender: { full_name: string } | { full_name: string }[] | null;
+        }[]
+      >();
+    const es = endedShare?.[0];
+    if (!es) notFound();
+    const enderRaw = es.ender;
+    const enderName = (Array.isArray(enderRaw) ? enderRaw[0] : enderRaw)
+      ?.full_name;
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Compartilhamento encerrado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p>
+              O compartilhamento deste cliente com a sua unidade
+              {es.clinics?.name ? ` (${es.clinics.name})` : ""} foi encerrado em{" "}
+              <span className="font-medium">
+                {new Date(es.ended_at).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+              {enderName ? (
+                <>
+                  {" "}
+                  por <span className="font-medium">{enderName}</span>
+                </>
+              ) : null}
+              . Sua unidade não tem mais acesso a este cliente.
+            </p>
+            <Button
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/clientes" />}
+            >
+              Voltar para Clientes
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const [
     { data: history },
@@ -719,8 +785,6 @@ export default async function ClientDetailPage(
 
       <ClientShares
         clientId={client.id}
-        clientName={client.full_name}
-        homeUnitName={clinicName}
         shares={activeShares}
         units={shareUnits}
         canShare={canManageShare}

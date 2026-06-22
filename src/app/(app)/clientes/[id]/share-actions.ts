@@ -49,14 +49,8 @@ export async function shareClientWithUnit(
 export async function endClientShare(
   shareId: string,
   clientId: string
-): Promise<
-  ShareResult & {
-    stillHasAccess?: boolean;
-    endedByName?: string | null;
-    endedAt?: string;
-  }
-> {
-  const session = await getSessionContext();
+): Promise<ShareResult> {
+  await getSessionContext();
   const supabase = await createClient();
   const { error } = await supabase.rpc("end_client_share", {
     p_share_id: shareId,
@@ -71,19 +65,8 @@ export async function endClientShare(
     console.error("end_client_share failed:", error.message);
     return { ok: false, error: "Não foi possível encerrar o compartilhamento." };
   }
-  // The shared unit (B) loses access when its share ends — detect it so the UI
-  // shows a confirmation instead of a 404 when the ficha is no longer readable.
-  const { data: check } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("id", clientId)
-    .limit(1);
-  const stillHasAccess = Boolean(check && check.length > 0);
+  // The shared unit (B) loses RLS access to the client now; its ficha re-renders
+  // as the "compartilhamento encerrado" page (handled by the page itself).
   revalidatePath(`/clientes/${clientId}`);
-  return {
-    ok: true,
-    stillHasAccess,
-    endedByName: session.fullName,
-    endedAt: new Date().toISOString(),
-  };
+  return { ok: true };
 }

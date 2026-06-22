@@ -42,6 +42,7 @@ import {
   editPlanOption,
   removeBudgetItem,
   removePlanOption,
+  reopenTreatmentPlan,
   reviewPlanOption,
   saveDiagnosis,
   setPrimaryOption,
@@ -153,11 +154,18 @@ export function PlanningSection({
   }
 
   const options = plan.options;
+  // The Planner/Admin always SEE prices; the Coordenador never does.
+  const canSeePrices = canEdit;
+  // After approval (or while awaiting it), the plan is locked for editing — the
+  // Planner must "Reabrir para edição", which sends it back for re-approval.
+  const canEditContent =
+    canEdit && (plan.status === "draft" || plan.status === "returned");
+  const canReopen =
+    canEdit && (plan.status === "submitted" || plan.status === "approved");
   const allOptionsHaveItems =
     options.length > 0 && options.every((o) => o.items.length > 0);
   const canSubmit =
-    canEdit &&
-    plan.status !== "approved" &&
+    canEditContent &&
     inPlanningPhase &&
     diagnosis.trim().length > 0 &&
     options.length > 0 &&
@@ -238,7 +246,7 @@ export function PlanningSection({
         {/* Diagnóstico */}
         <div className="space-y-2">
           <Label htmlFor="plan-diagnosis">Diagnóstico</Label>
-          {canEdit ? (
+          {canEditContent ? (
             <>
               <textarea
                 id="plan-diagnosis"
@@ -361,7 +369,7 @@ export function PlanningSection({
                           </p>
                         )}
                       </div>
-                      {canEdit && (
+                      {canEditContent && (
                         <div className="flex shrink-0 items-center gap-1">
                           {!o.isPrimary && (
                             <Button
@@ -409,8 +417,8 @@ export function PlanningSection({
                     optionId={o.id}
                     items={o.items}
                     catalog={catalog}
-                    canEdit={canEdit}
-                    summaryOnly={!canEdit}
+                    canEdit={canEditContent}
+                    summaryOnly={!canSeePrices}
                   />
                   {o.reviewNotes && (
                     <p className="mt-1 rounded-md border bg-muted/30 p-2 text-xs">
@@ -429,7 +437,7 @@ export function PlanningSection({
           )}
 
           {/* Adicionar opção */}
-          {canEdit && (
+          {canEditContent && (
             <div className="space-y-2 rounded-md border border-dashed p-2">
               <Input
                 value={optTitle}
@@ -465,7 +473,7 @@ export function PlanningSection({
         </div>
 
         {/* Envio para aprovação */}
-        {canEdit && plan.status !== "approved" && (
+        {canEditContent && (
           <div className="space-y-2 border-t pt-3">
             {!pillarSet && (
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -492,6 +500,32 @@ export function PlanningSection({
                 <strong>cada opção</strong>.
               </p>
             )}
+          </div>
+        )}
+
+        {/* Plano travado (enviado/aprovado): o Planner pode reabrir para editar,
+            mas a alteração volta para nova aprovação do Coordenador. */}
+        {canReopen && (
+          <div className="space-y-2 border-t pt-3">
+            <p className="text-xs text-muted-foreground">
+              {plan.status === "approved"
+                ? "Plano aprovado — para alterar, reabra; a alteração precisará de nova aprovação do Coordenador antes de ir ao Comercial."
+                : "Plano enviado para aprovação — para alterar, reabra (cancela o envio atual)."}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() =>
+                run(
+                  () => reopenTreatmentPlan(plan.id),
+                  "Plano reaberto para edição."
+                )
+              }
+            >
+              <Pencil className="mr-1 size-4" />
+              Reabrir para edição
+            </Button>
           </div>
         )}
 
@@ -828,10 +862,10 @@ function OptionReview({
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
-        placeholder="Considerações (opcional — valem ao aprovar ou reprovar)"
+        placeholder="Considerações (obrigatórias para reprovar)"
         className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
       />
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" disabled={isPending} onClick={() => decide(true)}>
           <ThumbsUp className="mr-1 size-4" />
           Aprovar opção
@@ -839,12 +873,17 @@ function OptionReview({
         <Button
           size="sm"
           variant="outline"
-          disabled={isPending}
+          disabled={isPending || !notes.trim()}
           onClick={() => decide(false)}
         >
           <ThumbsDown className="mr-1 size-4" />
           Reprovar opção
         </Button>
+        {!notes.trim() && (
+          <span className="text-xs text-muted-foreground">
+            Para reprovar, escreva as considerações.
+          </span>
+        )}
       </div>
     </div>
   );

@@ -357,6 +357,12 @@ export async function reviewPlanOption(
     if (error.message.includes("NOT_SUBMITTED")) {
       return { ok: false, error: "Este plano não está aguardando aprovação." };
     }
+    if (error.message.includes("NOTES_REQUIRED")) {
+      return {
+        ok: false,
+        error: "Escreva as considerações para reprovar a opção.",
+      };
+    }
     console.error("review_plan_option failed:", error.message);
     return { ok: false, error: "Não foi possível registrar a avaliação." };
   }
@@ -364,6 +370,31 @@ export async function reviewPlanOption(
   revalidatePath("/planejamento");
   revalidatePath("/jornada");
   revalidatePath("/notificacoes");
+  return { ok: true };
+}
+
+/**
+ * Reopen an approved (or submitted) plan for editing. The plan goes back to
+ * 'draft' — the Planner can edit, but must re-submit so the Coordenador approves
+ * the changes again before it can go to the Comercial (owner rule).
+ */
+export async function reopenTreatmentPlan(planId: string): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadPlanContext(planId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("treatment_plans")
+    .update({ status: "draft", updated_at: new Date().toISOString() })
+    .eq("id", planId);
+  if (error) {
+    console.error("reopenTreatmentPlan failed:", error.message);
+    return { ok: false, error: "Não foi possível reabrir o plano." };
+  }
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath("/planejamento");
   return { ok: true };
 }
 
