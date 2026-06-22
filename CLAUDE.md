@@ -169,28 +169,37 @@ unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
   principal/alternativas); envio para aprovação que define o sub-status
   "Aguardando Aprovação" e notifica o Coordenador. (migração 0035)
 
-**Em andamento — Etapa 5.2 (orçamento por tabela de preços), entregue,
-aguardando teste do dono:** tela admin **Tabela de Preços** (`/admin/precos`,
-catálogo de procedimentos no padrão cascata: preço padrão da rede + ajuste por
-unidade); **orçamento por opção** na ficha (o Planner adiciona itens do catálogo
-ou linhas livres, com total por opção; valores em centavos). Falta a 5.3
-(aprovar/reprovar = Etapa 4.3 + envio ao Comercial 3→4). (migração 0036)
-A barra lateral agora mostra a **versão do sistema** (`src/lib/version.ts`,
-`APP_VERSION`) acima do botão Sair — bumpar a cada entrega publicada.
+- **Etapa 5.2 — Orçamento (entregue):** tela admin **Tabela de Preços**
+  (`/admin/precos`, catálogo no padrão cascata: preço padrão da rede + ajuste por
+  unidade); **orçamento por opção** na ficha (itens do catálogo ou linhas livres,
+  total por opção; valores em centavos). (migração 0036)
+- **Etapa 5.3 / 4.3 — Aprovação do plano (entregue):** o Coordenador **aprova**
+  ou **devolve** (com orientações → sub-status "Revisão com Coordenador") o plano
+  submetido; aprovado → o Planner **envia ao Comercial** (Fase 3 → 4, com trava de
+  "plano aprovado"). RPC `review_treatment_plan`. (migração 0037)
 
-**Migrações 0001–0036 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0035 aplicadas e testadas; a 0036 está pendente** (tabela de
-preços + orçamento da Etapa 5.2).
+Com isso a **Etapa 5 (Centro de Planejamento) e a 4.3 estão completas** — o núcleo
+clínico do MVP (Jornada + Coordenador + Planejamento) está fechado, faltando
+testar 5.2/5.3.
+
+A barra lateral mostra a **versão do sistema** e a **última migração**
+(`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
+bumpar os dois a cada entrega publicada.
+
+**Migrações 0001–0037 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0035 aplicadas; 0036 e 0037 pendentes** (aplicar em ordem:
+0036 = preços+orçamento da 5.2; 0037 = RPC de aprovação da 5.3).
 
 ## 8. Próximos passos (ordem de prioridade)
 
-1. **Aplicar a migração 0036** e testar a Etapa 5.2 (tabela de preços + orçamento).
-2. **Etapa 5.3 — Aprovação do plano (= Etapa 4.3):** o Coordenador aprova/devolve
-   (devolução com orientações → "Revisão com Coordenador"); aprovado → o Planner
-   sinaliza ao Consultor → transição Fase 3 → Fase 4. Contadores por Planner.
-3. **LOTE B — agenda avançada/consolidados** (junto/após a Etapa 5): configs de
-   agenda por unidade; visões dia/semana/mês; quadros-resumo; visão de rede sem
-   nomes de pacientes.
+1. **Aplicar as migrações 0036 e 0037 (em ordem)** e testar as Etapas 5.2 e 5.3
+   (orçamento + aprovação do plano + envio ao Comercial).
+2. **LOTE B — agenda avançada/consolidados:** configs de agenda por unidade;
+   visões dia/semana/mês; quadros-resumo; visão de rede sem nomes de pacientes.
+   Inclui os **contadores de produtividade do Planner** (versão leve antes dos
+   dashboards da Fase 2).
+3. **Rodada de refinamento visual** (tela por tela, guiada pelo dono) ao final do
+   MVP funcional.
 4. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
    WhatsApp manual), transcrição/resumo por IA, dashboards com metas.
 

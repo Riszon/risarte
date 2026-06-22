@@ -240,6 +240,55 @@ export async function removePlanOption(optionId: string): Promise<PlanResult> {
   return { ok: true };
 }
 
+/**
+ * The Coordenador Clínico approves or returns a submitted plan (Etapa 5.3/4.3).
+ * Approve → status 'approved' + notify the Planner to send to Commercial.
+ * Return → status 'returned' with orientações + sub-status revision_with_coordinator.
+ */
+export async function reviewTreatmentPlan(
+  planId: string,
+  approve: boolean,
+  notes: string
+): Promise<PlanResult> {
+  await getSessionContext();
+  const ctx = await loadPlanContext(planId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("review_treatment_plan", {
+    p_plan_id: planId,
+    p_approve: approve,
+    p_notes: approve ? null : notes,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o Coordenador Clínico pode aprovar ou devolver o plano.",
+      };
+    }
+    if (error.message.includes("NOT_SUBMITTED")) {
+      return {
+        ok: false,
+        error: "Este plano não está aguardando aprovação.",
+      };
+    }
+    if (error.message.includes("NOTES_REQUIRED")) {
+      return {
+        ok: false,
+        error: "Escreva as orientações ao devolver o plano.",
+      };
+    }
+    console.error("review_treatment_plan failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a revisão." };
+  }
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath("/planejamento");
+  revalidatePath("/jornada");
+  revalidatePath("/notificacoes");
+  return { ok: true };
+}
+
 /** The Planner sends the plan to the Coordenador Clínico for approval. */
 export async function submitTreatmentPlan(planId: string): Promise<PlanResult> {
   const guard = await requirePlanner();

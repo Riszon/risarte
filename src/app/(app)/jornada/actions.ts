@@ -119,26 +119,41 @@ export async function moveClientPhase(
     return { ok: false, error: "Fase inválida." };
   }
 
-  await getSessionContext(); // ensures the user is authenticated
+  const session = await getSessionContext(); // ensures the user is authenticated
 
   const supabase = await createClient();
 
-  // The treatment pillar is mandatory to leave the Planning Center (3 → 4).
+  // Leaving the Planning Center (3 → 4) requires the treatment pillar AND an
+  // approved plan (Etapa 5.3). Admin Master may override.
   if (newPhase === "commercial_conversion") {
     const { data: client } = await supabase
       .from("clients")
       .select("journey_phase, methodology_pillar")
       .eq("id", clientId)
       .single();
-    if (
-      client?.journey_phase === "planning_center" &&
-      !client?.methodology_pillar
-    ) {
-      return {
-        ok: false,
-        error:
-          "Defina o pilar de tratamento antes de avançar para a Conversão Comercial.",
-      };
+    if (client?.journey_phase === "planning_center") {
+      if (!client?.methodology_pillar) {
+        return {
+          ok: false,
+          error:
+            "Defina o pilar de tratamento antes de avançar para a Conversão Comercial.",
+        };
+      }
+      if (!session.isAdminMaster) {
+        const { data: planRows } = await supabase
+          .from("treatment_plans")
+          .select("status")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (planRows?.[0]?.status !== "approved") {
+          return {
+            ok: false,
+            error:
+              "O plano precisa ser aprovado pelo Coordenador Clínico antes de enviar ao Comercial.",
+          };
+        }
+      }
     }
   }
 

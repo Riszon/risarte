@@ -3,7 +3,18 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ClipboardList, Pencil, Plus, Send, Sparkles, Star, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ClipboardList,
+  Pencil,
+  Plus,
+  Send,
+  Sparkles,
+  Star,
+  Undo2,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +39,11 @@ import {
   editPlanOption,
   removeBudgetItem,
   removePlanOption,
+  reviewTreatmentPlan,
   saveDiagnosis,
   submitTreatmentPlan,
 } from "./planning-actions";
+import { moveClientPhase } from "../../jornada/actions";
 
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
@@ -52,6 +65,7 @@ export function PlanningSection({
   clientName,
   plan,
   canEdit,
+  canReview,
   inPlanningPhase,
   pillarSet,
   catalog,
@@ -60,6 +74,7 @@ export function PlanningSection({
   clientName: string;
   plan: TreatmentPlan | null;
   canEdit: boolean;
+  canReview: boolean;
   inPlanningPhase: boolean;
   pillarSet: boolean;
   catalog: PricedProcedure[];
@@ -75,6 +90,8 @@ export function PlanningSection({
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPrimary, setEditPrimary] = useState(false);
+  const [returnNotes, setReturnNotes] = useState("");
+  const [showReturn, setShowReturn] = useState(false);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -418,6 +435,85 @@ export function PlanningSection({
                 opção de plano.
               </p>
             )}
+          </div>
+        )}
+
+        {/* Aprovação do Coordenador (Etapa 5.3 / 4.3) */}
+        {canReview && plan.status === "submitted" && (
+          <div className="space-y-2 border-t pt-3">
+            <p className="text-sm font-medium">Aprovação do plano</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={isPending}
+                onClick={() =>
+                  run(
+                    () => reviewTreatmentPlan(plan.id, true, ""),
+                    `Plano de ${clientName} aprovado.`
+                  )
+                }
+              >
+                <Check className="mr-1 size-4" />
+                Aprovar plano
+              </Button>
+              <Button
+                variant="outline"
+                disabled={isPending}
+                onClick={() => setShowReturn((s) => !s)}
+              >
+                <Undo2 className="mr-1 size-4" />
+                Devolver para revisão
+              </Button>
+            </div>
+            {showReturn && (
+              <div className="space-y-2">
+                <textarea
+                  value={returnNotes}
+                  onChange={(e) => setReturnNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Orientações para o Planner ajustar o plano..."
+                  className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!returnNotes.trim() || isPending}
+                  onClick={() =>
+                    run(
+                      () => reviewTreatmentPlan(plan.id, false, returnNotes),
+                      "Plano devolvido para revisão.",
+                      () => {
+                        setShowReturn(false);
+                        setReturnNotes("");
+                      }
+                    )
+                  }
+                >
+                  Confirmar devolução
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Envio ao Comercial após aprovação (Planner) */}
+        {canEdit && plan.status === "approved" && inPlanningPhase && (
+          <div className="space-y-2 border-t pt-3">
+            <p className="flex items-center gap-2 text-sm text-emerald-700">
+              <Check className="size-4 shrink-0" />
+              Plano aprovado pelo Coordenador. Você pode enviar ao Comercial.
+            </p>
+            <Button
+              disabled={isPending}
+              onClick={() =>
+                run(
+                  () => moveClientPhase(clientId, "commercial_conversion"),
+                  `${clientName} enviado(a) à Conversão Comercial.`
+                )
+              }
+            >
+              <ArrowRight className="mr-1 size-4" />
+              Enviar ao Comercial (Fase 4)
+            </Button>
           </div>
         )}
       </CardContent>

@@ -22,7 +22,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
 import { cn } from "@/lib/utils";
-import { APP_VERSION } from "@/lib/version";
+import { APP_VERSION, LATEST_MIGRATION } from "@/lib/version";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -224,7 +224,7 @@ export function AppSidebar({
           <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
         </Link>
         <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
-          Versão {APP_VERSION}
+          Versão {APP_VERSION} · migração {LATEST_MIGRATION}
         </p>
         <Button
           variant="outline"

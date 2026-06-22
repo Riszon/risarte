@@ -464,6 +464,10 @@ export default async function ClientDetailPage(
       "clinical_coordinator",
       "unit_manager",
     ]);
+  // The clinic's Coordenador (or Admin) approves/returns the submitted plan.
+  const canReviewPlan =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, client.clinic_id, ["clinical_coordinator"]);
   let treatmentPlan: TreatmentPlan | null = null;
   if (canViewPlanning) {
     const { data: planRows } = await supabase
@@ -700,6 +704,7 @@ export default async function ClientDetailPage(
           clientName={client.full_name}
           plan={treatmentPlan}
           canEdit={canEditPlanning}
+          canReview={canReviewPlan}
           inPlanningPhase={client.journey_phase === "planning_center"}
           pillarSet={Boolean(client.methodology_pillar)}
           catalog={priceCatalog}
