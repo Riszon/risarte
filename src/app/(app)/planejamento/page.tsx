@@ -324,7 +324,7 @@ export default async function PlanningCenterPage(
                     </td>
                     <td className="px-3 py-2">
                       <Link
-                        href={`/clientes/${c.id}`}
+                        href={`/planejamento/${c.id}`}
                         className="font-medium hover:underline"
                       >
                         {c.full_name}

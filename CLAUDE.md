@@ -210,7 +210,11 @@ filtro de **período** (Hoje / Esta semana / Este mês / período específico).
 (`/notificacoes`) — categorias **Plano de Tratamento / Compartilhamento / Início
 de Tratamento / Transferência / Outras** (classificadas pelo título em
 `src/lib/notifications.ts`), com chips/contadores clicáveis, filtro e selo de
-categoria por aviso. Próxima e última do LOTE F: F7 (cockpit do Planner).
+categoria por aviso. **F7 entregue (sem migração) — LOTE F COMPLETO:** cockpit do
+Planner (`/planejamento/[clientId]`) — tela dedicada em 2 colunas: à esquerda as
+**evidências do cliente** (galeria de mídia que abre em pop-up/lightbox +
+considerações + consentimento), à direita o **editor do plano**, sem trocar de
+tela; a fila abre o cliente direto no cockpit.
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
