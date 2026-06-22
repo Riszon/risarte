@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
+import { FilterForm } from "@/components/filter-form";
 import { NotificationList } from "./notification-list";
 
 export const metadata: Metadata = { title: "Notificações" };
@@ -83,7 +83,7 @@ export default async function NotificationsPage(
           </p>
         </div>
         {clinicTags.length > 1 && (
-          <form method="get" className="flex items-center gap-2">
+          <FilterForm className="flex items-center gap-2">
             <select
               name="unidade"
               defaultValue={scope}
@@ -96,10 +96,7 @@ export default async function NotificationsPage(
                 </option>
               ))}
             </select>
-            <Button type="submit" variant="outline" size="sm">
-              Filtrar
-            </Button>
-          </form>
+          </FilterForm>
         )}
       </div>
       <NotificationList notifications={notifications ?? []} />

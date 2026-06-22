@@ -520,3 +520,80 @@ LOTE E COMPLETO (E0–E7).
    permanecem na fase em que estão.
 4. **Metas: versão completa na Fase 2** com os dashboards. Quadros-resumo de
    agendamentos (sem metas) chegam antes, no Lote B.
+
+## LOTE F — feedback pós-teste da Etapa 5 (2026-06-22)
+
+Organizado em sub-etapas (ordem sugerida: F1 ganhos rápidos → F7 cockpit do
+Planner, o maior). Cada sub-etapa só inicia com o OK do dono.
+
+### F1 — Ganhos rápidos (correções de UX)
+- [ ] **Cadastro SDR na própria unidade:** quando o cliente já está cadastrado na
+      UNIDADE A e a SDR tenta cadastrá-lo na UNIDADE A, o sistema deve identificar
+      que já é cliente daquela unidade e fazer o preenchimento automático
+      (hoje não dispara o esperado — investigar `lookupCpfForRegistration` /
+      `find_duplicate_client` no fluxo SDR mesma-unidade).
+- [ ] **Ficha do cliente abre em modo leitura:** SDR/recepcionista veem a ficha
+      somente-leitura ao abrir, com um botão **"Editar"** que libera a edição dos
+      dados (hoje abre já editável).
+- [ ] **Filtros aplicam automaticamente** ao selecionar a opção (sem botão
+      "Filtrar"). Vale para Jornada, Clientes, Agenda, Notificações, Atendimento,
+      Procedimentos e onde mais houver filtro.
+
+### F2 — Compartilhamento de cliente entre unidades
+- [ ] Ao **iniciar e ao encerrar** o compartilhamento, **notificar os usuários das
+      DUAS unidades** (A origem e B compartilhada).
+- [ ] Toda movimentação de compartilhamento (iniciar/encerrar) fica registrada no
+      **histórico do cliente** (na ficha).
+
+### F3 — Procedimentos (renomear "Tabela de Preços" → "Procedimentos")
+- [ ] Renomear o módulo para **Procedimentos**.
+- [ ] Campos do procedimento: Nome, **Código Interno (automático)**, **Código
+      TUSS**, **Especialidade**, **Preço Padrão**, **Preço Mínimo**, **Preço
+      Máximo**, **Comissionamento**, **Pilar da Metodologia**.
+- [ ] **Importar planilha** com todos os procedimentos (cadastro em massa).
+- [ ] Acesso/edição: **Admin Master e Dentista Planner** (hoje só Admin).
+- [ ] **Campo de busca** de procedimento.
+- [ ] **Filtros:** por Especialidade, Ativo/Inativo, e por Pilar da Metodologia.
+- [ ] **Histórico** de alterações/atualizações dos procedimentos.
+- [ ] **Reajuste de preço em massa:** todos, ou específicos, ou por Especialidade,
+      ou por Pilar (percentual).
+- [ ] Editar procedimento → abre **todos os campos** editáveis.
+- [ ] **Excluir = desativar** (soft): não apagar procedimentos usados em planos
+      passados/aprovados/finalizados/planejados; apenas impedir uso futuro.
+
+### F4 — Plano de Tratamento (aprovação)
+- [ ] Coordenador aprova/reprova **cada opção** do plano (não o plano inteiro).
+- [ ] O **plano principal** sempre aparece **primeiro e com mais destaque**.
+- [ ] Na aprovação, o Coordenador vê **apenas o valor total** dos procedimentos de
+      cada opção (não o preço item a item).
+- [ ] O Coordenador **não edita** o plano nem o orçamento do Planner (confirmar
+      somente-leitura).
+- [ ] O Coordenador pode **enviar considerações também ao aprovar** (não só ao
+      devolver).
+
+### F5 — Centro de Planejamento (fila do Planner)
+- [ ] O Planner visualiza, separadas, as situações: aguardando planejamento;
+      aguardando aprovação do Coordenador; retornados para revisão; aprovados;
+      enviados ao Consultor Comercial.
+- [ ] Visualização por **Dia / Semana / Mês / período específico**.
+
+### F6 — Central de Notificações
+- [ ] Lugar específico e de fácil visualização, com notificações categorizadas:
+      aprovação/revisão de plano; compartilhamento de cliente; **início de
+      tratamento** (clientes que fecharam com o comercial); **transferência** de
+      clientes.
+
+### F7 — Módulo/cockpit do Dentista Planner (o maior)
+- [ ] Tela dedicada onde o Planner cria o planejamento com agilidade, abrindo as
+      informações do cliente em **pop-ups** (fotos, radiografias, resumos,
+      documentos, escaneamento, vídeos, áudios) **sem trocar de tela**. Ele
+      seleciona o que quer visualizar enquanto escreve o plano.
+
+**Decisões do dono (2026-06-22):**
+- Ordem: começar por **F1 + F2**.
+- **Comissionamento:** ter **os dois** campos — porcentagem (%) **e** valor fixo
+  (R$) — e o comissionamento é **condicionado à conclusão do procedimento** (só
+  conta/realiza quando o procedimento é concluído). [F3]
+- **Aprovação por opção:** o plano só vai ao Comercial quando **todas as opções
+  tiverem decisão** (aprovada ou reprovada) **e houver ao menos uma aprovada**. [F4]
+- **Importação:** planilha **Excel (.xlsx)**. [F3]

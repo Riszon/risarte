@@ -179,28 +179,37 @@ unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
   "plano aprovado"). RPC `review_treatment_plan`. (migração 0037)
 
 Com isso a **Etapa 5 (Centro de Planejamento) e a 4.3 estão completas** — o núcleo
-clínico do MVP (Jornada + Coordenador + Planejamento) está fechado, faltando
-testar 5.2/5.3.
+clínico do MVP (Jornada + Coordenador + Planejamento) está fechado.
+
+**Em andamento — LOTE F** (feedback pós-teste da Etapa 5, em `docs/BACKLOG.md`,
+7 sub-etapas F1–F7). **F1 + F2 entregues:** F1 = filtros aplicam sozinhos
+(componente `FilterForm`, sem botão "Filtrar"), ficha abre em **modo leitura**
+com botão "Editar" (`ClientDataSection`), e o cadastro reconhece o cliente já
+existente e **autopreenche** os dados; F2 = compartilhamento notifica as **duas**
+unidades ao iniciar/encerrar e a ficha mostra **Histórico de compartilhamento**
+(migração 0038). Próximas: F3 Procedimentos (grande), F4 plano (aprovação por
+opção), F5 fila por situação, F6 central de notificações, F7 cockpit do Planner.
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
 bumpar os dois a cada entrega publicada.
 
-**Migrações 0001–0037 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0035 aplicadas; 0036 e 0037 pendentes** (aplicar em ordem:
-0036 = preços+orçamento da 5.2; 0037 = RPC de aprovação da 5.3).
+**Migrações 0001–0038 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0035 aplicadas; 0036, 0037 e 0038 pendentes** (em ordem:
+0036 = preços+orçamento da 5.2; 0037 = aprovação da 5.3; 0038 = notificações de
+compartilhamento da F2).
 
 ## 8. Próximos passos (ordem de prioridade)
 
-1. **Aplicar as migrações 0036 e 0037 (em ordem)** e testar as Etapas 5.2 e 5.3
-   (orçamento + aprovação do plano + envio ao Comercial).
-2. **LOTE B — agenda avançada/consolidados:** configs de agenda por unidade;
-   visões dia/semana/mês; quadros-resumo; visão de rede sem nomes de pacientes.
-   Inclui os **contadores de produtividade do Planner** (versão leve antes dos
-   dashboards da Fase 2).
-3. **Rodada de refinamento visual** (tela por tela, guiada pelo dono) ao final do
-   MVP funcional.
-4. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
+1. **Aplicar as migrações 0036, 0037 e 0038 (em ordem)** e testar 5.2, 5.3 e a F2.
+2. **Continuar o LOTE F** (ordem F3 → F7): F3 Procedimentos (renomear, campos
+   TUSS/especialidade/preço mín-máx/comissionamento/pilar, busca/filtros,
+   importação .xlsx, reajuste em massa, histórico, soft-delete, acesso do Planner);
+   F4 aprovação por opção; F5 fila por situação + período; F6 central de
+   notificações; F7 cockpit do Planner.
+3. **LOTE B — agenda avançada/consolidados** (+ contadores leves do Planner).
+4. **Rodada de refinamento visual** (tela por tela, guiada pelo dono).
+5. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
    WhatsApp manual), transcrição/resumo por IA, dashboards com metas.
 
 Adiados (em `docs/BACKLOG.md`, não esquecer): foto por webcam; cadeiras/horários

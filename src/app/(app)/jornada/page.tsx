@@ -5,6 +5,7 @@ import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Button } from "@/components/ui/button";
+import { FilterForm } from "@/components/filter-form";
 import {
   TREATMENT_PILLARS,
   PILLAR_LABELS,
@@ -151,7 +152,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <form method="get" className="flex items-center gap-2">
+          <FilterForm className="flex items-center gap-2">
             {isFranchisor && (
               <select
                 name="unidade"
@@ -187,10 +188,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
               <option value="active">Somente ativos</option>
               <option value="inactive">Somente inativos</option>
             </select>
-            <Button type="submit" variant="outline" size="sm">
-              Filtrar
-            </Button>
-          </form>
+          </FilterForm>
           {canRegister && !isFranchisor && (
             <Button
               variant="outline"

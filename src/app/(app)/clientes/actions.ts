@@ -13,6 +13,9 @@ export type DuplicateInfo = {
   clinicName: string;
   matchType: "cpf" | "name_birth";
   sameClinic: boolean;
+  /** Existing client's data, to autofill the form (when the viewer can read it). */
+  birthDate?: string | null;
+  phone?: string | null;
 };
 
 export type ActionResult = {
@@ -199,6 +202,13 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
   });
   if (duplicates && duplicates.length > 0) {
     const dup = duplicates[0];
+    // Pull the existing client's data to autofill the form (if RLS lets the
+    // viewer read it — e.g. the SDR has access to that unit).
+    const { data: existing } = await supabase
+      .from("clients")
+      .select("birth_date, phone")
+      .eq("id", dup.client_id)
+      .limit(1);
     return {
       duplicate: {
         clientId: dup.client_id,
@@ -207,6 +217,8 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
         clinicName: dup.clinic_name,
         matchType: dup.match_type as "cpf" | "name_birth",
         sameClinic: dup.clinic_id === clinicId,
+        birthDate: existing?.[0]?.birth_date ?? null,
+        phone: existing?.[0]?.phone ?? null,
       },
     };
   }

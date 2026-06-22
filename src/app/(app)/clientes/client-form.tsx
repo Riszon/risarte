@@ -58,12 +58,15 @@ export function ClientForm({
   initialGuardians = [],
   showPreferredUnit = false,
   preferredUnits = [],
+  onSaved,
 }: {
   client?: ClientFormValues;
   initialGuardians?: GuardianInput[];
   /** SDR registering at the Franqueadora picks the client's preferred unit. */
   showPreferredUnit?: boolean;
   preferredUnits?: { id: string; name: string }[];
+  /** When editing inline on the ficha, collapse back to read-only after saving. */
+  onSaved?: () => void;
 }) {
   const isEdit = Boolean(client?.id);
   const router = useRouter();
@@ -88,6 +91,11 @@ export function ClientForm({
       if (result.duplicate) {
         setDuplicate(result.duplicate);
         setConsent(false);
+        // Already a client: autofill the visible data so the user sees who it is
+        // (and doesn't re-type) — the duplicate card guides to open/transfer.
+        if (result.duplicate.fullName) setFullName(result.duplicate.fullName);
+        if (result.duplicate.birthDate) setBirthDate(result.duplicate.birthDate);
+        if (result.duplicate.phone) setPhone(result.duplicate.phone);
       } else if (result.prospect) {
         setDuplicate(null);
         setFullName(result.prospect.fullName ?? fullName);
@@ -151,8 +159,16 @@ export function ClientForm({
 
       if (result.ok) {
         toast.success(isEdit ? "Dados salvos." : "Cliente cadastrado.");
-        router.push(result.clientId ? `/clientes/${result.clientId}` : "/clientes");
-        router.refresh();
+        if (isEdit && onSaved) {
+          // Inline edit on the ficha: collapse to read-only and refresh in place.
+          onSaved();
+          router.refresh();
+        } else {
+          router.push(
+            result.clientId ? `/clientes/${result.clientId}` : "/clientes"
+          );
+          router.refresh();
+        }
       } else if (result.duplicate) {
         setDuplicate(result.duplicate);
         setConsent(false);

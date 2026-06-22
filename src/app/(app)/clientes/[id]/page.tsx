@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ClientForm } from "../client-form";
+import { ClientDataSection } from "./client-data-section";
 import {
   JourneySection,
   type ClientAppointment,
@@ -299,6 +299,25 @@ export default async function ClientDetailPage(
     sharedByName: s.profiles?.full_name ?? null,
   }));
   const sharedClinicIds = (shareRows ?? []).map((s) => s.clinic_id);
+
+  // Histórico de compartilhamento (todos, inclusive encerrados) — F2.
+  const { data: shareHistoryRows } = await supabase
+    .from("client_shares")
+    .select(
+      "id, started_at, ended_at, reason, clinics ( name ), profiles ( full_name )"
+    )
+    .eq("client_id", id)
+    .order("started_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        started_at: string;
+        ended_at: string | null;
+        reason: string | null;
+        clinics: { name: string } | null;
+        profiles: { full_name: string } | null;
+      }[]
+    >();
 
   const canManageShare =
     session.isAdminMaster ||
@@ -779,6 +798,59 @@ export default async function ClientDetailPage(
         </Card>
       )}
 
+      {(shareHistoryRows ?? []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Histórico de compartilhamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1.5">
+              {(shareHistoryRows ?? []).map((s) => (
+                <li key={s.id} className="text-sm">
+                  <span className="font-medium">
+                    {s.clinics?.name ?? "Unidade"}
+                  </span>{" "}
+                  <Badge
+                    variant={s.ended_at ? "outline" : "secondary"}
+                    className="text-[10px]"
+                  >
+                    {s.ended_at ? "Encerrado" : "Ativo"}
+                  </Badge>
+                  <div className="text-xs text-muted-foreground">
+                    Início:{" "}
+                    {new Date(s.started_at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {s.ended_at
+                      ? ` · Encerrado: ${new Date(s.ended_at).toLocaleString(
+                          "pt-BR",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}`
+                      : ""}
+                    {s.profiles?.full_name
+                      ? ` · por ${s.profiles.full_name}`
+                      : ""}
+                    {s.reason ? ` · ${s.reason}` : ""}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {(clinicHistory ?? []).length > 1 && (
         <Card>
           <CardHeader>
@@ -887,72 +959,18 @@ export default async function ClientDetailPage(
         </Card>
       )}
 
-      {canEdit ? (
-        <ClientForm
-          client={client}
-          initialGuardians={(guardians ?? []).map((g) => ({
-            fullName: g.full_name,
-            cpf: g.cpf,
-            birthDate: g.birth_date,
-            relationship: g.relationship,
-            phone: g.phone,
-            guardianClientId: g.guardian_client_id,
-          }))}
-        />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Dados do cliente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-muted-foreground">CPF</dt>
-                <dd>{client.cpf ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Nascimento</dt>
-                <dd>
-                  {client.birth_date
-                    ? new Date(
-                        `${client.birth_date}T00:00:00`
-                      ).toLocaleDateString("pt-BR")
-                    : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Telefone</dt>
-                <dd>{client.phone ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">E-mail</dt>
-                <dd>{client.email ?? "—"}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">Endereço</dt>
-                <dd>
-                  {[
-                    [client.address, client.address_number]
-                      .filter(Boolean)
-                      .join(", nº "),
-                    client.complement,
-                    client.neighborhood,
-                    client.city,
-                    client.state,
-                    client.zip_code,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                </dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">Observações</dt>
-                <dd>{client.notes ?? "—"}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-      )}
+      <ClientDataSection
+        client={client}
+        canEdit={canEdit}
+        initialGuardians={(guardians ?? []).map((g) => ({
+          fullName: g.full_name,
+          cpf: g.cpf,
+          birthDate: g.birth_date,
+          relationship: g.relationship,
+          phone: g.phone,
+          guardianClientId: g.guardian_client_id,
+        }))}
+      />
     </div>
   );
 }

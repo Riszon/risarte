@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { FilterForm } from "@/components/filter-form";
 import type {
   AppointmentStatus,
   AppointmentType,
@@ -194,7 +195,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <form method="get" className="flex items-center gap-2">
+            <FilterForm className="flex items-center gap-2">
               <input type="hidden" name="semana" value={toIsoDate(weekStart)} />
               <select
                 name="unidade"
@@ -208,10 +209,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
                   </option>
                 ))}
               </select>
-              <Button type="submit" variant="outline" size="sm">
-                Filtrar
-              </Button>
-            </form>
+            </FilterForm>
             <Button
               variant="outline"
               size="sm"

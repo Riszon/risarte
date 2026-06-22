@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FilterForm } from "@/components/filter-form";
 import {
   Table,
   TableBody,
@@ -289,7 +290,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         </div>
       </div>
 
-      <form method="get" className="flex max-w-xl flex-wrap gap-2">
+      <FilterForm className="flex max-w-xl flex-wrap gap-2">
         <Input
           type="search"
           name="q"
@@ -347,7 +348,7 @@ export default async function ClientsPage(props: PageProps<"/clientes">) {
         <Button type="submit" variant="outline">
           Buscar
         </Button>
-      </form>
+      </FilterForm>
 
       {awaitingSchedule.size > 0 && (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4">

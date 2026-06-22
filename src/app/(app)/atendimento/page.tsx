@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
+import { FilterForm } from "@/components/filter-form";
 import {
   Card,
   CardDescription,
@@ -255,7 +255,7 @@ export default async function AtendimentoPage(
               : `Sala de espera de ${session.activeClinic?.name} — ${periodLabel}.`}
           </p>
         </div>
-        <form method="get" className="flex flex-wrap items-center gap-2">
+        <FilterForm className="flex flex-wrap items-center gap-2">
           <select
             name="periodo"
             defaultValue={period}
@@ -295,10 +295,7 @@ export default async function AtendimentoPage(
               ))}
             </select>
           )}
-          <Button type="submit" variant="outline" size="sm">
-            Filtrar
-          </Button>
-        </form>
+        </FilterForm>
       </div>
       <AttendancePanel
         appointments={appointments}
