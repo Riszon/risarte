@@ -19,6 +19,7 @@ import {
   addProcedure,
   deleteProcedure,
   editProcedure,
+  readjustPrices,
   setProcedureActive,
   setUnitPrice,
   type ProcedureInput,
@@ -185,12 +186,14 @@ function ProcedureFields({
 
 export function ProceduresEditor({
   procedures,
+  specialties,
   selectedUnitId,
   unitName,
   overrides,
   changesByProcedure,
 }: {
   procedures: Procedure[];
+  specialties: string[];
   selectedUnitId: string;
   unitName: string | null;
   overrides: UnitPrice[];
@@ -203,6 +206,16 @@ export function ProceduresEditor({
 
   const [adding, setAdding] = useState(false);
   const [newProc, setNewProc] = useState<ProcedureInput>(EMPTY);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -268,6 +281,17 @@ export function ProceduresEditor({
         </Card>
       )}
 
+      {networkMode && (
+        <ReadjustPanel
+          specialties={specialties}
+          selectedCount={selected.size}
+          isPending={isPending}
+          run={run}
+          getSelectedIds={() => [...selected]}
+          onDone={() => setSelected(new Set())}
+        />
+      )}
+
       {!networkMode && (
         <p className="rounded-md border bg-muted/30 p-2 text-sm text-muted-foreground">
           Editando os preços da unidade <strong>{unitName}</strong>. Deixe em
@@ -293,6 +317,8 @@ export function ProceduresEditor({
                   changes={changesByProcedure[p.id] ?? []}
                   isPending={isPending}
                   run={run}
+                  selected={selected.has(p.id)}
+                  onToggleSelect={() => toggleSelect(p.id)}
                 />
               ))}
             </ul>
@@ -300,6 +326,147 @@ export function ProceduresEditor({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ReadjustPanel({
+  specialties,
+  selectedCount,
+  isPending,
+  run,
+  getSelectedIds,
+  onDone,
+}: {
+  specialties: string[];
+  selectedCount: number;
+  isPending: boolean;
+  run: (
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) => void;
+  getSelectedIds: () => string[];
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [percent, setPercent] = useState("");
+  const [scope, setScope] = useState<"all" | "specialty" | "pillar" | "selected">(
+    "all"
+  );
+  const [specialty, setSpecialty] = useState("");
+  const [pillar, setPillar] = useState("");
+  const [applyToBand, setApplyToBand] = useState(true);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Reajuste de preços em massa</CardTitle>
+        <Button size="sm" variant={open ? "outline" : "default"} onClick={() => setOpen((s) => !s)}>
+          {open ? "Fechar" : "Abrir"}
+        </Button>
+      </CardHeader>
+      {open && (
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label>Percentual (%)</Label>
+              <Input
+                value={percent}
+                onChange={(e) => setPercent(e.target.value)}
+                inputMode="decimal"
+                placeholder="Ex.: 10 ou -5"
+                className="w-28"
+              />
+            </div>
+            <div>
+              <Label>Aplicar a</Label>
+              <select
+                value={scope}
+                onChange={(e) =>
+                  setScope(e.target.value as typeof scope)
+                }
+                className={selectClass.replace("w-full", "w-48")}
+              >
+                <option value="all">Todos os procedimentos</option>
+                <option value="specialty">Por especialidade</option>
+                <option value="pillar">Por pilar</option>
+                <option value="selected">Selecionados ({selectedCount})</option>
+              </select>
+            </div>
+            {scope === "specialty" && (
+              <div>
+                <Label>Especialidade</Label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className={selectClass.replace("w-full", "w-44")}
+                >
+                  <option value="">Selecione...</option>
+                  {specialties.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {scope === "pillar" && (
+              <div>
+                <Label>Pilar</Label>
+                <select
+                  value={pillar}
+                  onChange={(e) => setPillar(e.target.value)}
+                  className={selectClass.replace("w-full", "w-44")}
+                >
+                  <option value="">Selecione...</option>
+                  {METHODOLOGY_PILLARS.map((p) => (
+                    <option key={p} value={p}>
+                      {PILLAR_LABELS[p as MethodologyPillar]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={applyToBand}
+              onChange={(e) => setApplyToBand(e.target.checked)}
+            />
+            Ajustar também os preços mínimo e máximo
+          </label>
+          <Button
+            size="sm"
+            disabled={!percent.trim() || isPending}
+            onClick={() =>
+              run(
+                () =>
+                  readjustPrices({
+                    percent,
+                    scope,
+                    specialty: specialty || undefined,
+                    pillar: pillar || undefined,
+                    ids: scope === "selected" ? getSelectedIds() : undefined,
+                    applyToBand,
+                  }),
+                "Reajuste aplicado.",
+                () => {
+                  setPercent("");
+                  onDone();
+                }
+              )
+            }
+          >
+            Aplicar reajuste
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Use “Selecionados” marcando os procedimentos na lista abaixo. O
+            reajuste fica registrado no histórico de cada procedimento.
+          </p>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -311,6 +478,8 @@ function ProcedureRow({
   changes,
   isPending,
   run,
+  selected,
+  onToggleSelect,
 }: {
   procedure: Procedure;
   networkMode: boolean;
@@ -323,6 +492,8 @@ function ProcedureRow({
     msg: string,
     after?: () => void
   ) => void;
+  selected: boolean;
+  onToggleSelect: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProcedureInput>(() => toInput(p));
@@ -361,7 +532,17 @@ function ProcedureRow({
   return (
     <li className="p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-start gap-2">
+          {networkMode && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              aria-label="Selecionar procedimento"
+              className="mt-1 size-4 shrink-0 accent-primary"
+            />
+          )}
+          <div className="min-w-0">
           <p className="font-medium">
             {p.name}
             {!p.isActive && (
@@ -389,6 +570,7 @@ function ProcedureRow({
             )}
             <span>Comissão: {commissionLabel(p)}</span>
           </p>
+          </div>
         </div>
 
         {networkMode ? (

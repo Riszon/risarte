@@ -286,6 +286,175 @@ export async function deleteProcedure(id: string): Promise<ProcedureResult> {
   return { ok: true };
 }
 
+/** Bulk import from a spreadsheet (rows already mapped to ProcedureInput on the
+ * client). Matches existing procedures by name (case-insensitive): updates them,
+ * inserts the rest. Returns how many were inserted/updated and any errors. */
+export async function importProcedures(
+  rows: ProcedureInput[]
+): Promise<ProcedureResult & { inserted?: number; updated?: number; errors?: number }> {
+  const session = await getSessionContext();
+  if (!canEdit(session)) {
+    return { ok: false, error: "Sem permissão para editar procedimentos." };
+  }
+  if (rows.length === 0) return { ok: false, error: "A planilha está vazia." };
+  if (rows.length > 2000) {
+    return { ok: false, error: "Limite de 2000 procedimentos por importação." };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("procedures")
+    .select("id, name")
+    .returns<{ id: string; name: string }[]>();
+  const idByName = new Map(
+    (existing ?? []).map((p) => [p.name.trim().toLowerCase(), p.id])
+  );
+
+  const toInsert: ParsedProcedure[] = [];
+  const toUpdate: { id: string; values: ParsedProcedure }[] = [];
+  let errors = 0;
+
+  for (const row of rows) {
+    const parsed = parseProcedure(row);
+    if ("error" in parsed) {
+      errors += 1;
+      continue;
+    }
+    const id = idByName.get(parsed.values.name.trim().toLowerCase());
+    if (id) toUpdate.push({ id, values: parsed.values });
+    else toInsert.push(parsed.values);
+  }
+
+  let inserted = 0;
+  if (toInsert.length > 0) {
+    const { data, error } = await supabase
+      .from("procedures")
+      .insert(toInsert)
+      .select("id");
+    if (error) {
+      console.error("importProcedures insert failed:", error.message);
+      return { ok: false, error: "Não foi possível importar (inserção)." };
+    }
+    inserted = data?.length ?? 0;
+    if (data && data.length > 0) {
+      await supabase.from("procedure_changes").insert(
+        data.map((p) => ({
+          procedure_id: p.id,
+          changed_by: session.userId,
+          description: "Criado (importação de planilha).",
+        }))
+      );
+    }
+  }
+
+  let updated = 0;
+  for (const u of toUpdate) {
+    const { error } = await supabase
+      .from("procedures")
+      .update({ ...u.values, updated_at: new Date().toISOString() })
+      .eq("id", u.id);
+    if (!error) {
+      updated += 1;
+      await logChange(u.id, session.userId, "Atualizado (importação de planilha).");
+    }
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "procedure",
+    entityId: "import",
+    details: { inserted, updated, errors },
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true, inserted, updated, errors };
+}
+
+/** Apply a percentage readjustment to procedure prices, by scope. */
+export async function readjustPrices(input: {
+  percent: string;
+  scope: "all" | "specialty" | "pillar" | "selected";
+  specialty?: string;
+  pillar?: string;
+  ids?: string[];
+  applyToBand: boolean;
+}): Promise<ProcedureResult & { adjusted?: number }> {
+  const session = await getSessionContext();
+  if (!canEdit(session)) {
+    return { ok: false, error: "Sem permissão para editar procedimentos." };
+  }
+  const percent = Number(input.percent.replace(",", "."));
+  if (!Number.isFinite(percent) || percent === 0) {
+    return { ok: false, error: "Informe um percentual válido (ex.: 10 ou -5)." };
+  }
+  const factor = 1 + percent / 100;
+  if (factor <= 0) {
+    return { ok: false, error: "Percentual reduz o preço a zero ou menos." };
+  }
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("procedures")
+    .select("id, default_price_cents, min_price_cents, max_price_cents");
+
+  if (input.scope === "specialty") {
+    if (!input.specialty) return { ok: false, error: "Escolha a especialidade." };
+    query = query.eq("specialty", input.specialty);
+  } else if (input.scope === "pillar") {
+    if (!input.pillar) return { ok: false, error: "Escolha o pilar." };
+    query = query.eq("pillar", input.pillar);
+  } else if (input.scope === "selected") {
+    if (!input.ids || input.ids.length === 0) {
+      return { ok: false, error: "Selecione ao menos um procedimento." };
+    }
+    query = query.in("id", input.ids);
+  }
+
+  const { data: procs } = await query.returns<
+    {
+      id: string;
+      default_price_cents: number;
+      min_price_cents: number | null;
+      max_price_cents: number | null;
+    }[]
+  >();
+  if (!procs || procs.length === 0) {
+    return { ok: false, error: "Nenhum procedimento no escopo selecionado." };
+  }
+
+  const adj = (cents: number | null) =>
+    cents == null ? null : Math.max(0, Math.round(cents * factor));
+  const label = `Reajuste de ${percent > 0 ? "+" : ""}${input.percent}%.`;
+
+  let adjusted = 0;
+  for (const p of procs) {
+    const patch: Record<string, number | null | string> = {
+      default_price_cents: adj(p.default_price_cents) ?? p.default_price_cents,
+      updated_at: new Date().toISOString(),
+    };
+    if (input.applyToBand) {
+      patch.min_price_cents = adj(p.min_price_cents);
+      patch.max_price_cents = adj(p.max_price_cents);
+    }
+    const { error } = await supabase
+      .from("procedures")
+      .update(patch)
+      .eq("id", p.id);
+    if (!error) {
+      adjusted += 1;
+      await logChange(p.id, session.userId, label);
+    }
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "procedure",
+    entityId: "readjust",
+    details: { percent, scope: input.scope, adjusted },
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true, adjusted };
+}
+
 /** Set (or clear, when blank) a unit's price override for a procedure. */
 export async function setUnitPrice(
   clinicId: string,

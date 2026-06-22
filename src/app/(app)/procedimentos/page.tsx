@@ -11,6 +11,7 @@ import {
 } from "@/lib/journey";
 import type { Procedure, UnitPrice } from "@/lib/pricing";
 import { ProceduresEditor, type ProcedureChange } from "./procedures-editor";
+import { ImportProcedures } from "./import-procedures";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
@@ -199,8 +200,11 @@ export default async function ProceduresPage(
         </select>
       </FilterForm>
 
+      {!unitId && <ImportProcedures />}
+
       <ProceduresEditor
         procedures={procedures}
+        specialties={specialties}
         selectedUnitId={unitId}
         unitName={(units ?? []).find((u) => u.id === unitId)?.name ?? null}
         overrides={overrides}

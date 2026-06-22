@@ -193,9 +193,11 @@ automático, TUSS, especialidade, preço padrão/mín/máx, comissionamento %+R$
 pilar), busca + filtros (especialidade/ativo/pilar), editar todos os campos,
 **excluir = desativar** (procedimento já usado nunca é apagado), histórico de
 alterações, e acesso de **Admin Master + Dentista Planner** (migração 0039).
-Próximas: **F3.2** (importar Excel + reajuste em massa), F4 (aprovação por
-opção), F5 (fila por situação), F6 (central de notificações), F7 (cockpit do
-Planner).
+**F3.2 entregue (sem migração):** **importar planilha Excel** (`.xlsx`, com botão
+"Baixar modelo" e biblioteca SheetJS via CDN) e **reajuste de preço em massa**
+(percentual aplicado a Todos / por Especialidade / por Pilar / Selecionados).
+**F3 (Procedimentos) completo.** Próximas: F4 (aprovação por opção), F5 (fila por
+situação), F6 (central de notificações), F7 (cockpit do Planner).
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
