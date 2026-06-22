@@ -216,6 +216,14 @@ Planner (`/planejamento/[clientId]`) — tela dedicada em 2 colunas: à esquerda
 considerações + consentimento), à direita o **editor do plano**, sem trocar de
 tela; a fila abre o cliente direto no cockpit.
 
+**LOTE B em andamento — B1 entregue (sem migração):** a agenda agora tem visões
+**Dia / Semana / Mês** (seletor + navegação + nº da semana). `src/lib/agenda-view.ts`
+(range/href/nº semana), `WeekGrid` parametrizada por `dayCount` (1 = dia, 7 =
+semana), nova `MonthView` (calendário; clicar no dia abre a visão de Dia),
+`AgendaToolbar`. Vale para a agenda da unidade e a da rede. Falta no LOTE B:
+B2 config de agenda por unidade, B3 cadeiras, B4 quadros-resumo, B5 visão de rede
+sem nomes, B6 contadores do Planner (detalhe em `docs/BACKLOG.md`).
+
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
 bumpar os dois a cada entrega publicada.

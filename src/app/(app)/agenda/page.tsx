@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { FilterForm } from "@/components/filter-form";
+import {
+  agendaRange,
+  isAgendaView,
+  toIsoDate,
+  type AgendaView,
+} from "@/lib/agenda-view";
 import type {
   AppointmentStatus,
   AppointmentType,
@@ -15,6 +20,8 @@ import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { getUnitSchedulingData } from "./actions";
 import { WeekGrid, type AgendaAppointment } from "./week-grid";
+import { MonthView } from "./month-grid";
+import { AgendaToolbar } from "./agenda-toolbar";
 
 export const metadata: Metadata = { title: "Agenda" };
 
@@ -44,55 +51,31 @@ type StaffRow = {
   profiles: { full_name: string } | null;
 };
 
-function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0 = sunday
-  const diff = day === 0 ? -6 : 1 - day; // monday as first day
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-
-function toIsoDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 export default async function AgendaPage(props: PageProps<"/agenda">) {
   const session = await getSessionContext();
   const searchParams = await props.searchParams;
   const clinicId = session.activeClinic?.id;
   const isFranchisor = session.activeClinic?.type === "franchisor";
 
-  const weekParam =
-    typeof searchParams.semana === "string" ? searchParams.semana : "";
-  const baseDate = weekParam ? new Date(`${weekParam}T00:00:00`) : new Date();
-  const weekStart = startOfWeek(
-    Number.isNaN(baseDate.getTime()) ? new Date() : baseDate
-  );
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+  const view: AgendaView =
+    typeof searchParams.vista === "string" && isAgendaView(searchParams.vista)
+      ? searchParams.vista
+      : "semana";
+  const refParam = typeof searchParams.ref === "string" ? searchParams.ref : "";
+  const refBase = refParam ? new Date(`${refParam}T00:00:00`) : new Date();
+  const ref = Number.isNaN(refBase.getTime()) ? new Date() : refBase;
+  const range = agendaRange(view, ref);
 
-  const prevWeek = new Date(weekStart);
-  prevWeek.setDate(prevWeek.getDate() - 7);
-  const nextWeek = new Date(weekStart);
-  nextWeek.setDate(nextWeek.getDate() + 7);
-
-  const weekLabelHeader = `${weekStart.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  })} – ${new Date(weekEnd.getTime() - 864e5).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  })}`;
+  const periodLabel =
+    range.weekNumber !== null
+      ? `${range.label} (semana ${range.weekNumber})`
+      : range.label;
 
   // -------------------------------------------------------------------------
-  // Franchisor context: consolidated NETWORK agenda focused on the cases the
-  // Dentista Planner cares about — evaluations (FASE 2), reevaluations
-  // (FASE 6) and, highlighted, commercial presentations (FASE 4).
+  // Franchisor context: consolidated NETWORK agenda (avaliações F2, reavaliações
+  // F6 e, em destaque, apresentações comerciais F4).
   // -------------------------------------------------------------------------
   if (isFranchisor) {
-    // Every franchisor-context user sees the consolidated agenda of the units
-    // they have access to (RLS limits the rows to their scope).
     const isPlanner = Object.values(session.rolesByClinic).some((r) =>
       r.includes("planner_dentist")
     );
@@ -102,10 +85,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     const isSdr = Object.values(session.rolesByClinic).some((r) =>
       r.includes("sdr")
     );
-    // A Consultor Comercial sees ONLY the appointments under their own name.
     const consultantOnly =
       isConsultant && !isPlanner && !session.isAdminMaster;
-    // The SDR sees the FULL agenda of the units she covers and can schedule.
     const sdrOnly = isSdr && !isPlanner && !isConsultant && !session.isAdminMaster;
 
     const unitFilter =
@@ -117,8 +98,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       .select(
         "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
       )
-      .gte("starts_at", weekStart.toISOString())
-      .lt("starts_at", weekEnd.toISOString())
+      .gte("starts_at", range.start.toISOString())
+      .lt("starts_at", range.end.toISOString())
       .order("starts_at");
     if (consultantOnly) {
       netQuery = netQuery
@@ -147,7 +128,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           : Promise.resolve({ data: null }),
       ]);
 
-    // Units the SDR can schedule into.
     const accessibleIds = new Set<string>(
       ((accessIds as { clinic_id?: string }[] | string[] | null) ?? []).map(
         (x) => (typeof x === "string" ? x : (x.clinic_id ?? ""))
@@ -179,24 +159,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               {consultantOnly ? "Minhas apresentações" : "Agenda da rede"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {consultantOnly ? (
-                <>
-                  Apresentações comerciais (Fase 4) agendadas para você — semana
-                  de {weekLabelHeader}.
-                </>
-              ) : (
-                <>
-                  Avaliações (Fase 2), reavaliações (Fase 6) e, em{" "}
-                  <span className="font-medium text-gold">destaque dourado</span>
-                  , apresentações comerciais (Fase 4) — semana de{" "}
-                  {weekLabelHeader}.
-                </>
-              )}
+              {consultantOnly
+                ? "Apresentações comerciais (Fase 4) agendadas para você."
+                : "Avaliações (Fase 2), reavaliações (Fase 6) e apresentações comerciais (Fase 4, em destaque dourado)."}{" "}
+              <span className="font-medium">{periodLabel}</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <FilterForm className="flex items-center gap-2">
-              <input type="hidden" name="semana" value={toIsoDate(weekStart)} />
+              <input type="hidden" name="vista" value={view} />
+              <input type="hidden" name="ref" value={toIsoDate(range.start)} />
               <select
                 name="unidade"
                 defaultValue={unitFilter}
@@ -210,38 +182,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
                 ))}
               </select>
             </FilterForm>
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link
-                  href={`/agenda?semana=${toIsoDate(prevWeek)}${unitFilter ? `&unidade=${unitFilter}` : ""}`}
-                />
-              }
-            >
-              ← Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/agenda" />}
-            >
-              Hoje
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link
-                  href={`/agenda?semana=${toIsoDate(nextWeek)}${unitFilter ? `&unidade=${unitFilter}` : ""}`}
-                />
-              }
-            >
-              Próxima →
-            </Button>
+            <AgendaToolbar view={view} range={range} unidade={unitFilter} />
             {sdrOnly && sdrUnits.length > 0 && (
               <AppointmentFormDialog
                 clients={[]}
@@ -254,18 +195,30 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           </div>
         </div>
         <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
-          <WeekGrid
-            weekStartIso={weekStart.toISOString()}
-            appointments={networkAppointments}
-            canManage={false}
-            staff={[]}
-            highlightType="commercial_presentation"
-          />
+          {view === "mes" ? (
+            <MonthView
+              monthStartIso={range.start.toISOString()}
+              appointments={networkAppointments}
+              unidade={unitFilter || undefined}
+            />
+          ) : (
+            <WeekGrid
+              weekStartIso={range.start.toISOString()}
+              appointments={networkAppointments}
+              canManage={false}
+              staff={[]}
+              highlightType="commercial_presentation"
+              dayCount={range.dayCount}
+            />
+          )}
         </div>
       </div>
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Unit agenda.
+  // -------------------------------------------------------------------------
   let appointments: AppointmentRow[] = [];
   let clients: { id: string; full_name: string; inactive: boolean }[] = [];
   let staff: StaffOption[] = [];
@@ -287,8 +240,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
           )
           .eq("clinic_id", clinicId)
-          .gte("starts_at", weekStart.toISOString())
-          .lt("starts_at", weekEnd.toISOString())
+          .gte("starts_at", range.start.toISOString())
+          .lt("starts_at", range.end.toISOString())
           .order("starts_at")
           .returns<AppointmentRow[]>(),
         canSchedule
@@ -332,8 +285,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       staffMap.set(row.user_id, entry);
     }
 
-    // Commercial presentations are run by Consultores Comerciais of the matriz
-    // whose unit-access scope reaches this clinic — add them to the providers.
     if (canSchedule) {
       const { data: consultants } = await supabase.rpc(
         "providers_with_access",
@@ -358,9 +309,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     staff = [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Resolve provider names from the staff list. The professional may be a
-  // Consultor of the matriz whose profile the receptionist can't read via the
-  // join (RLS) — but the staff list already has the name.
   const staffNameById = new Map(staff.map((s) => [s.userId, s.name]));
   const unitAppointments: AgendaAppointment[] = appointments.map((a) => ({
     id: a.id,
@@ -382,14 +330,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     clients: a.clients,
   }));
 
-  const weekLabel = `${weekStart.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  })} – ${new Date(weekEnd.getTime() - 864e5).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  })}`;
-
   return (
     <div className="space-y-4 px-4 py-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
@@ -397,35 +337,12 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
           <p className="text-sm text-muted-foreground">
             {session.activeClinic
-              ? `${session.activeClinic.name} — semana de ${weekLabel}`
+              ? `${session.activeClinic.name} — ${periodLabel}`
               : "Selecione uma clínica no menu lateral."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/agenda?semana=${toIsoDate(prevWeek)}`} />}
-          >
-            ← Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/agenda" />}
-          >
-            Hoje
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/agenda?semana=${toIsoDate(nextWeek)}`} />}
-          >
-            Próxima →
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <AgendaToolbar view={view} range={range} />
           {canSchedule && clinicId && (
             <AppointmentFormDialog
               clients={clients}
@@ -440,12 +357,20 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
 
       {clinicId && (
         <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
-          <WeekGrid
-            weekStartIso={weekStart.toISOString()}
-            appointments={unitAppointments}
-            canManage={canSchedule}
-            staff={staff}
-          />
+          {view === "mes" ? (
+            <MonthView
+              monthStartIso={range.start.toISOString()}
+              appointments={unitAppointments}
+            />
+          ) : (
+            <WeekGrid
+              weekStartIso={range.start.toISOString()}
+              appointments={unitAppointments}
+              canManage={canSchedule}
+              staff={staff}
+              dayCount={range.dayCount}
+            />
+          )}
         </div>
       )}
     </div>

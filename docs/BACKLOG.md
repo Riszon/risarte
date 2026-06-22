@@ -597,3 +597,37 @@ Planner, o maior). Cada sub-etapa só inicia com o OK do dono.
 - **Aprovação por opção:** o plano só vai ao Comercial quando **todas as opções
   tiverem decisão** (aprovada ou reprovada) **e houver ao menos uma aprovada**. [F4]
 - **Importação:** planilha **Excel (.xlsx)**. [F3]
+
+## LOTE B — Agenda avançada e consolidados (2026-06-22, consolidado)
+
+Após o LOTE F. Sub-etapas (ordem sugerida; cada uma só inicia com o OK do dono):
+
+### B1 — Visões da agenda: Dia / Semana / Mês
+- [ ] Hoje a agenda é só semanal. Adicionar visão **Dia** e **Mês**, com
+      navegação (anterior/hoje/próximo) e **nº da semana** (ex.: 25/53).
+- [ ] Domingo como 1º dia; **sábado/domingo só aparecem se houver agendamento**.
+
+### B2 — Configuração da agenda por unidade
+- [ ] **Horário de funcionamento** (abertura/fechamento e dias) por unidade,
+      no padrão cascata (padrão da rede → override por unidade); a grade da
+      agenda passa a respeitar esse horário.
+
+### B3 — Cadeiras de atendimento por unidade
+- [ ] **Nº de cadeiras (2/3/4)** por unidade; a agenda/atendimento considera a
+      **capacidade** (avisar/limitar agendamentos simultâneos por cadeira).
+
+### B4 — Quadros-resumo de agendamentos
+- [ ] Painel com **totais** de agendamentos por período / unidade / tipo /
+      profissional (sem metas ainda — metas completas ficam na Fase 2).
+
+### B5 — Visão de rede (consolidada, sem nomes de pacientes)
+- [ ] Consolidado da rede por **unidade/fase** com **contagens**, **sem expor
+      nomes** de pacientes (privacidade/LGPD), para a Franqueadora.
+
+### B6 — Contadores de produtividade do Dentista Planner
+- [ ] Versão leve: planos criados / enviados / aprovados / devolvidos, tempo
+      médio até planejar (o gargalo do negócio). Dashboards completos = Fase 2.
+
+**Decisões a confirmar ao chegar em cada item:** B3 = avisar ou bloquear ao
+estourar a capacidade de cadeiras; B6 = quais métricas exatas; B2 = horário
+único por unidade ou por dia da semana.

@@ -99,6 +99,7 @@ export function WeekGrid({
   canManage,
   staff,
   highlightType,
+  dayCount = 7,
 }: {
   weekStartIso: string;
   appointments: AgendaAppointment[];
@@ -106,6 +107,8 @@ export function WeekGrid({
   staff: StaffOption[];
   /** Appointment type to highlight (e.g. commercial presentation for planner). */
   highlightType?: AppointmentType;
+  /** Number of day columns (7 = week, 1 = single day). */
+  dayCount?: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -126,7 +129,7 @@ export function WeekGrid({
     });
   }
 
-  const days = Array.from({ length: 7 }, (_, i) => {
+  const days = Array.from({ length: dayCount }, (_, i) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + i);
     return date;
@@ -317,7 +320,13 @@ export function WeekGrid({
         ))}
       </div>
 
-      <div className="grid min-w-[980px] grid-cols-7 gap-2">
+      <div
+        className="grid gap-2"
+        style={{
+          minWidth: dayCount > 1 ? 980 : 280,
+          gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))`,
+        }}
+      >
         {days.map((date, i) => {
           const isToday = date.toDateString() === today.toDateString();
           const dayAppointments = appointments.filter(
@@ -350,7 +359,9 @@ export function WeekGrid({
                   isToday && "bg-primary text-primary-foreground rounded-t-lg"
                 )}
               >
-                <span className="font-medium">{WEEKDAY_LABELS[i]}</span>{" "}
+                <span className="font-medium">
+                  {WEEKDAY_LABELS[(date.getDay() + 6) % 7]}
+                </span>{" "}
                 <span className={isToday ? "" : "text-muted-foreground"}>
                   {date.toLocaleDateString("pt-BR", {
                     day: "2-digit",
