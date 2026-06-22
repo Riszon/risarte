@@ -15,6 +15,18 @@ export default async function AppLayout({
   const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );
+  const reportRoles = [
+    "unit_manager",
+    "planner_dentist",
+    "franchisee",
+    "franchisor_staff",
+    "commercial_consultant",
+  ];
+  const canViewReports =
+    session.isAdminMaster ||
+    Object.values(session.rolesByClinic).some((roles) =>
+      roles.some((r) => reportRoles.includes(r))
+    );
 
   return (
     <div className="flex min-h-screen w-full">
@@ -23,6 +35,7 @@ export default async function AppLayout({
         email={session.email}
         isAdminMaster={session.isAdminMaster}
         isPlanner={isPlanner}
+        canViewReports={canViewReports}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

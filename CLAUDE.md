@@ -216,13 +216,17 @@ Planner (`/planejamento/[clientId]`) — tela dedicada em 2 colunas: à esquerda
 considerações + consentimento), à direita o **editor do plano**, sem trocar de
 tela; a fila abre o cliente direto no cockpit.
 
-**LOTE B em andamento — B1 entregue (sem migração):** a agenda agora tem visões
-**Dia / Semana / Mês** (seletor + navegação + nº da semana). `src/lib/agenda-view.ts`
-(range/href/nº semana), `WeekGrid` parametrizada por `dayCount` (1 = dia, 7 =
-semana), nova `MonthView` (calendário; clicar no dia abre a visão de Dia),
-`AgendaToolbar`. Vale para a agenda da unidade e a da rede. Falta no LOTE B:
-B2 config de agenda por unidade, B3 cadeiras, B4 quadros-resumo, B5 visão de rede
-sem nomes, B6 contadores do Planner (detalhe em `docs/BACKLOG.md`).
+**LOTE B COMPLETO (B1–B6):** **B1** — agenda com visões **Dia / Semana / Mês**
+(`src/lib/agenda-view.ts`, `WeekGrid` por `dayCount`, `MonthView`, `AgendaToolbar`).
+**B2/B3** — config de agenda por unidade (horário, dias e **cadeiras**) em
+`/admin/agenda` no padrão cascata (migração 0043, `clinic_agenda_settings`); ao
+agendar, valida fora-do-horário / dia fechado / cadeiras lotadas (exceto
+Urgência/Emergência). **B4/B5/B6** — tela **Relatórios** (`/relatorios`, papéis de
+gestão/rede): quadros-resumo de agendamentos (situação/tipo/profissional/unidade),
+rede por fase **sem nomes** de pacientes, e produtividade do Planner (planos
+criados/enviados/aprovados/devolvidos + tempo médio criação→aprovação). Adiados
+do B1 (polimento): semana começando no domingo + esconder fim de semana sem
+agendamento.
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
@@ -238,9 +242,9 @@ após a aprovação o Planner **não edita** o plano (leitura) — há **"Reabri
 edição"** (`reopenTreatmentPlan` → rascunho, exige nova aprovação antes do
 Comercial); **reprovar opção exige considerações** (obrigatórias).
 
-**Migrações 0001–0042 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0040 aplicadas; 0041 e 0042 pendentes** (correções do plano e
-do compartilhamento).
+**Migrações 0001–0043 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0042 aplicadas; 0043 pendente** (config da agenda da B2/B3 —
+`clinic_agenda_settings`).
 
 ## 8. Próximos passos (ordem de prioridade)
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import {
+  BarChart3,
   Building2,
   Calendar,
   CalendarClock,
@@ -49,6 +50,8 @@ type Props = {
   isAdminMaster: boolean;
   /** The user holds the Dentista Planner role somewhere (Centro de Planejamento). */
   isPlanner: boolean;
+  /** Management/network roles can see the consolidated Relatórios screen. */
+  canViewReports: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -69,6 +72,8 @@ const PLANNER_ITEMS = [
   { href: "/procedimentos", label: "Procedimentos", icon: Tags },
 ];
 
+const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart3 };
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
@@ -81,6 +86,7 @@ export function AppSidebar({
   email,
   isAdminMaster,
   isPlanner,
+  canViewReports,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -96,12 +102,15 @@ export function AppSidebar({
     !isAdminMaster &&
     activeClinicRoles.length > 0 &&
     activeClinicRoles.every((r) => r === "dentist");
-  const navItems = dentistOnly
+  let navItems = dentistOnly
     ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
-    : // Planner/Admin also get the Centro de Planejamento + Procedimentos.
-      isAdminMaster || isPlanner
-      ? [...NAV_ITEMS, ...PLANNER_ITEMS]
-      : NAV_ITEMS;
+    : [...NAV_ITEMS];
+  if (!dentistOnly && (isAdminMaster || isPlanner)) {
+    navItems = [...navItems, ...PLANNER_ITEMS];
+  }
+  if (!dentistOnly && canViewReports) {
+    navItems = [...navItems, REPORTS_ITEM];
+  }
 
   function switchClinic(clinicId: string) {
     startTransition(async () => {
