@@ -5,15 +5,16 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { FilterForm } from "@/components/filter-form";
 import {
   PILLAR_LABELS,
-  STATUS_LABELS,
   formatTimeInPhase,
   isSlaExceeded,
-  type JourneyStatus,
+  type JourneyPhase,
   type MethodologyPillar,
 } from "@/lib/journey";
-import { PLAN_STATUS_LABELS, type TreatmentPlanStatus } from "@/lib/planning";
+import { type TreatmentPlanStatus } from "@/lib/planning";
 
 export const metadata: Metadata = { title: "Centro de Planejamento" };
 
@@ -23,11 +24,78 @@ type QueueClient = {
   code: string | null;
   status: "active" | "inactive" | "anonymized";
   clinic_id: string;
-  journey_status: JourneyStatus | null;
+  journey_phase: JourneyPhase;
   methodology_pillar: MethodologyPillar | null;
   phase_entered_at: string;
   clinics: { name: string } | null;
 };
+
+// The situations the Planner follows in the Planning Center.
+const SITUATIONS = [
+  { key: "aguardando_planejamento", label: "Aguardando planejamento" },
+  { key: "aguardando_aprovacao", label: "Aguardando aprovação" },
+  { key: "em_revisao", label: "Em revisão" },
+  { key: "aprovados", label: "Aprovados" },
+  { key: "enviados_comercial", label: "Enviados ao Comercial" },
+] as const;
+type SituationKey = (typeof SITUATIONS)[number]["key"];
+
+const SITUATION_LABELS = Object.fromEntries(
+  SITUATIONS.map((s) => [s.key, s.label])
+) as Record<SituationKey, string>;
+
+const SITUATION_CLASS: Record<SituationKey, string> = {
+  aguardando_planejamento: "bg-muted text-muted-foreground",
+  aguardando_aprovacao: "bg-primary/10 text-primary",
+  em_revisao: "bg-destructive/10 text-destructive",
+  aprovados: "bg-emerald-100 text-emerald-800",
+  enviados_comercial: "bg-gold text-gold-foreground",
+};
+
+function situationOf(
+  phase: JourneyPhase,
+  planStatus: TreatmentPlanStatus | undefined
+): SituationKey {
+  if (phase === "commercial_conversion") return "enviados_comercial";
+  if (planStatus === "submitted") return "aguardando_aprovacao";
+  if (planStatus === "returned") return "em_revisao";
+  if (planStatus === "approved") return "aprovados";
+  return "aguardando_planejamento";
+}
+
+/** Date range for the period filter (filters by phase_entered_at). */
+function periodRange(
+  periodo: string,
+  de: string,
+  ate: string
+): { from: string | null; to: string | null } {
+  const now = new Date();
+  if (periodo === "dia") {
+    const s = new Date(now);
+    s.setHours(0, 0, 0, 0);
+    return { from: s.toISOString(), to: null };
+  }
+  if (periodo === "semana") {
+    const s = new Date(now);
+    const diff = (s.getDay() + 6) % 7; // days since Monday
+    s.setDate(s.getDate() - diff);
+    s.setHours(0, 0, 0, 0);
+    return { from: s.toISOString(), to: null };
+  }
+  if (periodo === "mes") {
+    return {
+      from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      to: null,
+    };
+  }
+  if (periodo === "periodo") {
+    return {
+      from: de ? new Date(`${de}T00:00:00`).toISOString() : null,
+      to: ate ? new Date(`${ate}T23:59:59`).toISOString() : null,
+    };
+  }
+  return { from: null, to: null };
+}
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", {
@@ -38,30 +106,43 @@ function fmtDate(iso: string): string {
   });
 }
 
-export default async function PlanningCenterPage() {
-  const session = await getSessionContext();
+const selectClass =
+  "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
+export default async function PlanningCenterPage(
+  props: PageProps<"/planejamento">
+) {
+  const session = await getSessionContext();
   const isPlanner =
     session.isAdminMaster ||
     Object.values(session.rolesByClinic).some((roles) =>
       roles.includes("planner_dentist")
     );
-  // Only the Dentista Planner (and Admin) work the Planning Center queue.
   if (!isPlanner) redirect("/");
+
+  const sp = await props.searchParams;
+  const situacao = typeof sp.situacao === "string" ? sp.situacao : "";
+  const periodo = typeof sp.periodo === "string" ? sp.periodo : "";
+  const de = typeof sp.de === "string" ? sp.de : "";
+  const ate = typeof sp.ate === "string" ? sp.ate : "";
+  const range = periodRange(periodo, de, ate);
 
   const supabase = await createClient();
 
-  // Clients in the Planning Center (Fase 3) the viewer is allowed to see (RLS).
-  const { data: clients } = await supabase
+  // Cases in the Planning Center (Fase 3) and those already sent to the
+  // Comercial (Fase 4). RLS limits to the units the Planner can see.
+  let clientsQuery = supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, clinic_id, journey_status, methodology_pillar, phase_entered_at, clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, clinic_id, journey_phase, methodology_pillar, phase_entered_at, clinics!clients_clinic_id_fkey ( name )"
     )
-    .eq("journey_phase", "planning_center")
+    .in("journey_phase", ["planning_center", "commercial_conversion"])
     .neq("status", "anonymized")
-    .limit(1000)
-    .returns<QueueClient[]>();
+    .limit(1000);
+  if (range.from) clientsQuery = clientsQuery.gte("phase_entered_at", range.from);
+  if (range.to) clientsQuery = clientsQuery.lte("phase_entered_at", range.to);
 
+  const { data: clients } = await clientsQuery.returns<QueueClient[]>();
   const ids = (clients ?? []).map((c) => c.id);
 
   const nowIso = new Date().toISOString();
@@ -100,29 +181,57 @@ export default async function PlanningCenterPage() {
         .returns<SlaSettingRow[]>(),
     ]);
 
-  // Earliest upcoming commercial presentation per client (rows already sorted).
   const presentationByClient = new Map<string, string>();
   for (const p of presentations ?? []) {
     if (!presentationByClient.has(p.client_id)) {
       presentationByClient.set(p.client_id, p.starts_at);
     }
   }
-  // Latest plan status per client (rows already sorted desc).
   const planByClient = new Map<string, TreatmentPlanStatus>();
   for (const p of planRows ?? []) {
     if (!planByClient.has(p.client_id)) planByClient.set(p.client_id, p.status);
   }
 
+  // Classify each case and count per situation.
+  const counts: Record<SituationKey, number> = {
+    aguardando_planejamento: 0,
+    aguardando_aprovacao: 0,
+    em_revisao: 0,
+    aprovados: 0,
+    enviados_comercial: 0,
+  };
+  const withSituation = (clients ?? []).map((c) => {
+    const situation = situationOf(c.journey_phase, planByClient.get(c.id));
+    counts[situation] += 1;
+    return { client: c, situation };
+  });
+
+  const filtered = situacao
+    ? withSituation.filter((x) => x.situation === situacao)
+    : withSituation;
+
   // Priority: nearest scheduled commercial presentation; tiebreak = who entered
-  // the Planning Center first.
-  const queue = [...(clients ?? [])].sort((a, b) => {
-    const pa = presentationByClient.get(a.id);
-    const pb = presentationByClient.get(b.id);
+  // the phase first.
+  const queue = [...filtered].sort((a, b) => {
+    const pa = presentationByClient.get(a.client.id);
+    const pb = presentationByClient.get(b.client.id);
     if (pa && pb && pa !== pb) return pa < pb ? -1 : 1;
     if (pa && !pb) return -1;
     if (!pa && pb) return 1;
-    return a.phase_entered_at < b.phase_entered_at ? -1 : 1;
+    return a.client.phase_entered_at < b.client.phase_entered_at ? -1 : 1;
   });
+
+  function hrefFor(key: string | null): string {
+    const p = new URLSearchParams();
+    if (key) p.set("situacao", key);
+    if (periodo) p.set("periodo", periodo);
+    if (de) p.set("de", de);
+    if (ate) p.set("ate", ate);
+    const qs = p.toString();
+    return qs ? `/planejamento?${qs}` : "/planejamento";
+  }
+
+  const total = withSituation.length;
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
@@ -131,16 +240,59 @@ export default async function PlanningCenterPage() {
           Centro de Planejamento
         </h1>
         <p className="text-sm text-muted-foreground">
-          {queue.length} caso(s) na Fase 3, em ordem de prioridade — primeiro os
-          de apresentação comercial mais próxima. Cartões com{" "}
+          Casos por situação, em ordem de prioridade (apresentação comercial mais
+          próxima). Cartões com{" "}
           <span className="font-medium text-destructive">prazo estourado</span>{" "}
           (SLA de planejamento) aparecem destacados.
         </p>
       </div>
 
+      {/* Situações (clicáveis) com contadores. */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={hrefFor(null)}
+          className={`rounded-full border px-3 py-1 text-sm ${
+            situacao === "" ? "border-primary bg-primary/10 text-primary" : ""
+          }`}
+        >
+          Todas ({total})
+        </Link>
+        {SITUATIONS.map((s) => (
+          <Link
+            key={s.key}
+            href={hrefFor(s.key)}
+            className={`rounded-full border px-3 py-1 text-sm ${
+              situacao === s.key ? "border-primary bg-primary/10 text-primary" : ""
+            }`}
+          >
+            {s.label} ({counts[s.key]})
+          </Link>
+        ))}
+      </div>
+
+      {/* Filtro de período. */}
+      <FilterForm className="flex flex-wrap items-center gap-2">
+        {situacao && <input type="hidden" name="situacao" value={situacao} />}
+        <label className="text-sm text-muted-foreground">Período:</label>
+        <select name="periodo" defaultValue={periodo} className={selectClass}>
+          <option value="">Tudo</option>
+          <option value="dia">Hoje</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mês</option>
+          <option value="periodo">Período específico</option>
+        </select>
+        {periodo === "periodo" && (
+          <>
+            <Input type="date" name="de" defaultValue={de} className="w-auto" />
+            <span className="text-sm text-muted-foreground">até</span>
+            <Input type="date" name="ate" defaultValue={ate} className="w-auto" />
+          </>
+        )}
+      </FilterForm>
+
       {queue.length === 0 ? (
         <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Nenhum caso aguardando planejamento no momento.
+          Nenhum caso nesta situação/período.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
@@ -150,23 +302,22 @@ export default async function PlanningCenterPage() {
                 <th className="px-3 py-2 font-medium">#</th>
                 <th className="px-3 py-2 font-medium">Cliente</th>
                 <th className="px-3 py-2 font-medium">Unidade</th>
-                <th className="px-3 py-2 font-medium">Plano</th>
+                <th className="px-3 py-2 font-medium">Situação</th>
                 <th className="px-3 py-2 font-medium">Apresentação</th>
                 <th className="px-3 py-2 font-medium">Tempo na fase</th>
               </tr>
             </thead>
             <tbody>
-              {queue.map((c, index) => {
+              {queue.map(({ client: c, situation }, index) => {
                 const sla = resolveSla(slaRows ?? [], c.clinic_id);
-                const overdue = isSlaExceeded(c.phase_entered_at, sla.planning);
+                const overdue =
+                  c.journey_phase === "planning_center" &&
+                  isSlaExceeded(c.phase_entered_at, sla.planning);
                 const presentation = presentationByClient.get(c.id);
-                const planStatus = planByClient.get(c.id);
                 return (
                   <tr
                     key={c.id}
-                    className={
-                      overdue ? "border-b bg-destructive/5" : "border-b"
-                    }
+                    className={overdue ? "border-b bg-destructive/5" : "border-b"}
                   >
                     <td className="px-3 py-2 text-muted-foreground">
                       {index + 1}
@@ -189,37 +340,20 @@ export default async function PlanningCenterPage() {
                             Inativo
                           </Badge>
                         )}
-                        {c.methodology_pillar ? (
-                          <span className="text-xs text-muted-foreground">
-                            {PILLAR_LABELS[c.methodology_pillar]}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Pilar a definir
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {c.methodology_pillar
+                            ? PILLAR_LABELS[c.methodology_pillar]
+                            : "Pilar a definir"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-3 py-2">{c.clinics?.name ?? "—"}</td>
                     <td className="px-3 py-2">
-                      {planStatus ? (
-                        <Badge
-                          variant={
-                            planStatus === "approved" ? "secondary" : "outline"
-                          }
-                        >
-                          {PLAN_STATUS_LABELS[planStatus]}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          Sem plano
-                        </span>
-                      )}
-                      {c.journey_status && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {STATUS_LABELS[c.journey_status]}
-                        </div>
-                      )}
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs ${SITUATION_CLASS[situation]}`}
+                      >
+                        {SITUATION_LABELS[situation]}
+                      </span>
                     </td>
                     <td className="px-3 py-2">
                       {presentation ? (
@@ -231,11 +365,16 @@ export default async function PlanningCenterPage() {
                       )}
                     </td>
                     <td className="px-3 py-2">
-                      <span className={overdue ? "font-medium text-destructive" : ""}>
+                      <span
+                        className={overdue ? "font-medium text-destructive" : ""}
+                      >
                         {formatTimeInPhase(c.phase_entered_at)}
                       </span>
                       {overdue && (
-                        <Badge variant="destructive" className="ml-2 text-[10px]">
+                        <Badge
+                          variant="destructive"
+                          className="ml-2 text-[10px]"
+                        >
                           SLA
                         </Badge>
                       )}

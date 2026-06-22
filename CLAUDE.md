@@ -201,8 +201,12 @@ opção** — o Coordenador aprova/reprova cada opção (com considerações que
 ao aprovar ou reprovar); o plano vira "aprovado" só quando todas as opções têm
 decisão e ≥1 é aprovada (se todas reprovadas, devolve ao Planner). O plano
 principal aparece primeiro e em destaque, e o Coordenador vê só o **total** de
-cada opção (não o preço item a item) e não edita o orçamento. Próximas: F5 (fila
-por situação), F6 (central de notificações), F7 (cockpit do Planner).
+cada opção (não o preço item a item) e não edita o orçamento. **F5 entregue (sem
+migração):** a fila do Centro de Planejamento (`/planejamento`) agora separa os
+casos por **situação** (aguardando planejamento / aguardando aprovação / em
+revisão / aprovados / enviados ao Comercial) com **contadores clicáveis** e
+filtro de **período** (Hoje / Esta semana / Este mês / período específico).
+Próximas: F6 (central de notificações), F7 (cockpit do Planner).
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
