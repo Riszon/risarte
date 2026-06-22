@@ -719,6 +719,8 @@ export default async function ClientDetailPage(
 
       <ClientShares
         clientId={client.id}
+        clientName={client.full_name}
+        homeUnitName={clinicName}
         shares={activeShares}
         units={shareUnits}
         canShare={canManageShare}

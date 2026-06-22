@@ -44,6 +44,7 @@ import {
   removePlanOption,
   reviewPlanOption,
   saveDiagnosis,
+  setPrimaryOption,
   submitTreatmentPlan,
 } from "./planning-actions";
 import { moveClientPhase } from "../../jornada/actions";
@@ -152,12 +153,15 @@ export function PlanningSection({
   }
 
   const options = plan.options;
+  const allOptionsHaveItems =
+    options.length > 0 && options.every((o) => o.items.length > 0);
   const canSubmit =
     canEdit &&
     plan.status !== "approved" &&
     inPlanningPhase &&
     diagnosis.trim().length > 0 &&
-    options.length > 0;
+    options.length > 0 &&
+    allOptionsHaveItems;
 
   function saveDiag() {
     run(() => saveDiagnosis(plan!.id, diagnosis), "Diagnóstico salvo.");
@@ -358,7 +362,23 @@ export function PlanningSection({
                         )}
                       </div>
                       {canEdit && (
-                        <div className="flex shrink-0 gap-1">
+                        <div className="flex shrink-0 items-center gap-1">
+                          {!o.isPrimary && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              disabled={isPending}
+                              onClick={() =>
+                                run(
+                                  () => setPrimaryOption(o.id),
+                                  "Definido como plano principal."
+                                )
+                              }
+                            >
+                              Tornar principal
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -467,8 +487,9 @@ export function PlanningSection({
             </Button>
             {!canSubmit && inPlanningPhase && (
               <p className="text-xs text-muted-foreground">
-                Para enviar, preencha o diagnóstico e adicione ao menos uma
-                opção de plano.
+                Para enviar: preencha o diagnóstico, tenha ao menos uma opção e
+                lance os <strong>procedimentos</strong> (itens do orçamento) em{" "}
+                <strong>cada opção</strong>.
               </p>
             )}
           </div>

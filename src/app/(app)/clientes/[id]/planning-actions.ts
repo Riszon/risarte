@@ -213,6 +213,39 @@ export async function editPlanOption(
   return { ok: true };
 }
 
+/** Quick action: make an option the primary one (unmarks the others). */
+export async function setPrimaryOption(optionId: string): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: option } = await supabase
+    .from("treatment_plan_options")
+    .select("plan_id")
+    .eq("id", optionId)
+    .single();
+  if (!option) return { ok: false, error: "Opção não encontrada." };
+  const ctx = await loadPlanContext(option.plan_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  // Unmark every other option first, then mark this one.
+  await supabase
+    .from("treatment_plan_options")
+    .update({ is_primary: false })
+    .eq("plan_id", option.plan_id);
+  const { error } = await supabase
+    .from("treatment_plan_options")
+    .update({ is_primary: true })
+    .eq("id", optionId);
+  if (error) {
+    console.error("setPrimaryOption failed:", error.message);
+    return { ok: false, error: "Não foi possível definir o plano principal." };
+  }
+  await touchPlan(option.plan_id);
+  revalidatePath(`/clientes/${ctx.clientId}`);
+  return { ok: true };
+}
+
 export async function removePlanOption(optionId: string): Promise<PlanResult> {
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
@@ -362,6 +395,13 @@ export async function submitTreatmentPlan(planId: string): Promise<PlanResult> {
       return {
         ok: false,
         error: "Adicione ao menos uma opção de plano antes de enviar.",
+      };
+    }
+    if (error.message.includes("OPTION_NEEDS_ITEMS")) {
+      return {
+        ok: false,
+        error:
+          "Cada opção precisa ter ao menos um procedimento lançado no orçamento antes de enviar.",
       };
     }
     console.error("submit_treatment_plan failed:", error.message);

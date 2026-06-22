@@ -73,21 +73,34 @@ export default async function ProceduresPage(
   if (statusFilter === "inactive") query = query.eq("is_active", false);
   if (pillarFilter) query = query.eq("pillar", pillarFilter);
 
-  const [{ data: procRows }, { data: specialtyRows }, { data: units }] =
-    await Promise.all([
-      query.returns<ProcedureRow[]>(),
-      supabase
-        .from("procedures")
-        .select("specialty")
-        .not("specialty", "is", null)
-        .returns<{ specialty: string }[]>(),
-      supabase
-        .from("clinics")
-        .select("id, name")
-        .eq("type", "franchise_unit")
-        .eq("is_active", true)
-        .order("name"),
-    ]);
+  const [
+    { data: procRows },
+    { data: specialtyRows },
+    { data: nameRows },
+    { data: units },
+  ] = await Promise.all([
+    query.returns<ProcedureRow[]>(),
+    supabase
+      .from("procedures")
+      .select("specialty")
+      .not("specialty", "is", null)
+      .returns<{ specialty: string }[]>(),
+    supabase
+      .from("procedures")
+      .select("name")
+      .eq("is_active", true)
+      .order("name")
+      .limit(2000)
+      .returns<{ name: string }[]>(),
+    supabase
+      .from("clinics")
+      .select("id, name")
+      .eq("type", "franchise_unit")
+      .eq("is_active", true)
+      .order("name"),
+  ]);
+
+  const nameSuggestions = [...new Set((nameRows ?? []).map((n) => n.name))];
 
   const procedures: Procedure[] = (procRows ?? []).map((p) => ({
     id: p.id,
@@ -168,7 +181,14 @@ export default async function ProceduresPage(
           defaultValue={search}
           placeholder="Buscar por nome, TUSS ou código..."
           className="max-w-xs"
+          list="proc-suggestions"
+          autoComplete="off"
         />
+        <datalist id="proc-suggestions">
+          {nameSuggestions.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
         <select name="especialidade" defaultValue={specialtyFilter} className={selectClass}>
           <option value="">Todas as especialidades</option>
           {specialties.map((s) => (

@@ -208,11 +208,15 @@ A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
 bumpar os dois a cada entrega publicada.
 
-**Migrações 0001–0040 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0035 aplicadas; 0036–0040 pendentes** (em ordem:
-0036 = preços+orçamento da 5.2; 0037 = aprovação da 5.3; 0038 = notificações de
-compartilhamento da F2; 0039 = campos dos Procedimentos da F3.1; 0040 = aprovação
-por opção da F4).
+**Correções pós-teste (migração 0041):** corrige o erro "não foi possível
+registrar a avaliação" (cast de enum no `review_plan_option`); o Planner não pode
+enviar para aprovação sem procedimentos lançados em cada opção; encerrar
+compartilhamento pela unidade B não dá mais 404 (mostra confirmação e leva a
+Clientes); busca de Procedimentos com sugestões (datalist); botão "Tornar
+principal" na opção do plano.
+
+**Migrações 0001–0041 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0040 aplicadas; 0041 pendente** (correções do plano).
 
 ## 8. Próximos passos (ordem de prioridade)
 
