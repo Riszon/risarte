@@ -27,6 +27,12 @@ import {
   type ConsentInfo,
 } from "./clinical-section";
 import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
+import { PlanningSection } from "./planning-section";
+import type {
+  PlanOption,
+  TreatmentPlan,
+  TreatmentPlanStatus,
+} from "@/lib/planning";
 import { ClientShares, type ActiveShare } from "./client-shares";
 import type { StaffOption } from "@/lib/appointments";
 import { allowedNextPhases } from "@/lib/journey";
@@ -442,6 +448,72 @@ export default async function ClientDetailPage(
     );
   }
 
+  // -- Plano de tratamento (Etapa 5 — Centro de Planejamento). O plano pertence
+  // à unidade de origem do cliente; o Planner edita, o Coordenador/Gerente leem.
+  const canEditPlanning = session.isAdminMaster || isPlannerAnywhere;
+  const canViewPlanning =
+    canEditPlanning ||
+    hasRoleInClinic(session, client.clinic_id, [
+      "clinical_coordinator",
+      "unit_manager",
+    ]);
+  let treatmentPlan: TreatmentPlan | null = null;
+  if (canViewPlanning) {
+    const { data: planRows } = await supabase
+      .from("treatment_plans")
+      .select(
+        "id, status, diagnosis, created_at, submitted_at, reviewed_at, review_notes"
+      )
+      .eq("client_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .returns<
+        {
+          id: string;
+          status: TreatmentPlanStatus;
+          diagnosis: string | null;
+          created_at: string;
+          submitted_at: string | null;
+          reviewed_at: string | null;
+          review_notes: string | null;
+        }[]
+      >();
+    const planRow = planRows?.[0];
+    if (planRow) {
+      const { data: optRows } = await supabase
+        .from("treatment_plan_options")
+        .select("id, is_primary, title, description, sort_order")
+        .eq("plan_id", planRow.id)
+        .order("sort_order")
+        .returns<
+          {
+            id: string;
+            is_primary: boolean;
+            title: string;
+            description: string | null;
+            sort_order: number;
+          }[]
+        >();
+      const options: PlanOption[] = (optRows ?? []).map((o) => ({
+        id: o.id,
+        isPrimary: o.is_primary,
+        title: o.title,
+        description: o.description,
+        sortOrder: o.sort_order,
+      }));
+      treatmentPlan = {
+        id: planRow.id,
+        status: planRow.status,
+        diagnosis: planRow.diagnosis,
+        createdAt: planRow.created_at,
+        submittedAt: planRow.submitted_at,
+        reviewedAt: planRow.reviewed_at,
+        reviewNotes: planRow.review_notes,
+        options,
+      };
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -536,6 +608,17 @@ export default async function ClientDetailPage(
           notes={clinicalNotes}
           media={clinicalMedia}
           canSendToPlanning={canSendToPlanning}
+        />
+      )}
+
+      {canViewPlanning && (
+        <PlanningSection
+          clientId={client.id}
+          clientName={client.full_name}
+          plan={treatmentPlan}
+          canEdit={canEditPlanning}
+          inPlanningPhase={client.journey_phase === "planning_center"}
+          pillarSet={Boolean(client.methodology_pillar)}
         />
       )}
 

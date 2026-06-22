@@ -12,12 +12,17 @@ export default async function AppLayout({
 
   const session = await getSessionContext();
 
+  const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("planner_dentist")
+  );
+
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar
         fullName={session.fullName}
         email={session.email}
         isAdminMaster={session.isAdminMaster}
+        isPlanner={isPlanner}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

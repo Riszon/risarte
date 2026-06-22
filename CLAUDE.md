@@ -109,7 +109,7 @@ pt-BR). Aplicar a matriz **na RLS** (barreira real) e na UI (esconder o proibido
 | Função | PODE | NÃO PODE |
 |---|---|---|
 | **Recepcionista** | Cadastrar clientes; agendar/acompanhar; check-in/out; solicitar anamnese e assinaturas; receber notificação de fechamento p/ agendar início | Avaliação clínica; planejamento; alterar plano; apresentação; fechamento |
-| **SDR (Encantador)** | Cadastrar clientes (na Franqueadora, com unidade preferida); agendar; mover 1→2 e 7→6; ver os clientes que ela cadastrou | Atos clínicos, de planejamento e comerciais |
+| **SDR (Encantador)** | Cadastrar clientes (já pertencem à **unidade** escolhida, código FRA — Opção A); agendar (inclusive em outra unidade); editar cliente; ver os clientes que ela cadastrou | Mover fases (botões removidos); atos clínicos, de planejamento e comerciais |
 | **Coordenador Clínico** | Avaliação/reavaliação; gravar consulta; fotos/exames; enviar ao Centro de Planejamento; **aprovar/reprovar plano**; auxiliar o Planner | Diagnóstico/planejamento; alterar plano; apresentação; fechamento |
 | **Dentista Planner** | Diagnóstico; plano + alternativos; classificar pilar; pedir aprovação; gerar orçamento; sinalizar ao comercial; vê consolidados da rede | Avaliação clínica; agendamentos; contato direto; apresentação; fechamento |
 | **Dentista (executor)** | Vê agenda e SEUS pacientes; executa o plano aprovado; tipos Início/Sessão/Retorno | Mover fases; planejar; negociar; ver clientes de outros |
@@ -140,44 +140,57 @@ unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
 
 ## 7. Estado atual
 
-**Fase do plano: MVP.** Concluído e validado:
+**Fase do plano: MVP.** Concluído e validado pelo dono:
 
 - **Etapa 1 — Fundação:** Next.js 16 + tema Risarte, login Supabase (sem
-  auto-cadastro), proteção em `src/proxy.ts`, RLS base. (migração 0001)
-- **Etapa 2 — Cadastros:** seletor de clínica ativa; área admin (clínicas,
-  usuários via service-role, senha, ativar/desativar); módulo de clientes
-  (cadastro auditado); tela de SLAs; máscaras CPF/CNPJ/telefone/CEP. (0002–0003)
-- **Etapa 3 — Base da Jornada (COMPLETA):** kanban por fase com SLA; agenda com
-  profissional responsável; notificações; cliente único na rede + transferência;
-  funções TSB/ASB + trava por tipo de clínica; pilar automático + treatment_pillar;
-  `journey_status` (sub-status); **check-in + painel de atendimento** (sala de
-  espera); decisões obrigatórias da Fase 5; regras automáticas de ativo/inativo
-  configuráveis. (migrações **0004–0020**, todas aplicadas)
+  auto-cadastro), proteção em `src/proxy.ts`, RLS base. (0001)
+- **Etapa 2 — Cadastros:** clínica ativa; área admin (clínicas, usuários,
+  senha, ativar/desativar); módulo de clientes auditado; SLAs; máscaras. (0002–0003)
+- **Etapa 3 — Base da Jornada:** kanban por fase com SLA; agenda com profissional
+  responsável; notificações; cliente único na rede + transferência; TSB/ASB;
+  pilar automático + treatment_pillar; `journey_status` (sub-status); check-in +
+  painel de atendimento; decisões da Fase 5; ativo/inativo configurável. (0004–0020)
+- **LOTE D — ajustes do teste geral:** bug da SDR ao agendar (`unit_scheduling_staff`);
+  "quem chamou conclui"; status em tratamento; tela de Atendimento (consultor,
+  filtros, linha do tempo); cadastro com CPF primeiro. (0021–0024)
+- **Etapa 4 — Coordenador Clínico (4.1 + 4.2):** consentimento (LGPD); upload de
+  fotos/exames/vídeo/áudio (bucket privado `clinical-media`, links assinados);
+  gravação de áudio; considerações editáveis; galeria; "Enviar ao Centro de
+  Planejamento". **4.3 (aprovar/reprovar plano)** fica para a Etapa 5. (0025, 0027, 0028)
+- **LOTE E — correções pré-Etapa 5:** modelo SDR (cliente pertence à unidade,
+  código FRA — Opção A); regras de Jornada (sem botões da SDR, dentista sem
+  Jornada, inativos + filtro); unidade visível na lista/ficha; conflitos de
+  agendamento; editar cliente + transferir A→B; atendimento do Consultor;
+  **compartilhamento de cliente entre unidades (E7)**. (0026, 0029–0034)
 
-**Em andamento — LOTE D** (feedback do teste geral, `docs/BACKLOG.md`): será a
-**migração 0021 + ajustes de código** (ainda NÃO escrita). Itens: corrigir o bug
-da SDR que não vê o Coordenador ao agendar (RLS — precisa de função definer
-`unit_scheduling_staff`); Passo 5 "Não sei" só para o profissional original;
-clientes inativos aparecem no agendamento (marcados); filtro Ativos/Inativos;
-ficha com idade detalhada + quem cadastrou; atendimento "quem chamou conclui" +
-abrir ficha ao chamar; notificar profissional quando o cliente fica "Em espera".
+**Em andamento — Etapa 5.1 (Centro de Planejamento), entregue, aguardando teste
+do dono:** fila priorizada em `/planejamento` (apresentação comercial mais
+próxima; empate = quem entrou antes na Fase 3); estrutura do plano na ficha
+(diagnóstico + opções principal/alternativas); envio para aprovação que define
+o sub-status "Aguardando Aprovação" e notifica o Coordenador. (migração 0035)
+A 5.2 (orçamento por tabela de preços) e a 5.3 (aprovar/reprovar = Etapa 4.3)
+vêm na sequência.
+
+**Migrações 0001–0035 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0034 aplicadas e testadas; a 0035 está pendente** (tabelas do
+plano de tratamento da Etapa 5.1).
 
 ## 8. Próximos passos (ordem de prioridade)
 
-1. **Migração 0021 + código (LOTE D)** — corrigir os bugs e melhorias do teste
-   geral (lista acima). Bug da SDR é o mais urgente (bloqueia o agendamento dela).
-2. **Restante do LOTE D** ("a fazer na sequência" no BACKLOG): sessão de
-   tratamento como padrão; alerta de "aguardando iniciar tratamento" sem
-   agendamento; botão de agendar dentro da ficha; cadastro com CPF primeiro
-   (auto-preenche); Consultor enxerga Atendimento; filtros dia/semana/mês +
-   por profissional; histórico de tempos por atendimento.
-3. **Etapa 4 — Coordenador Clínico:** avaliação com gravação após consentimento,
-   fotos, exames, envio ao planejamento, aprovar/reprovar plano.
-4. **Etapa 5 — Centro de Planejamento:** fila priorizada, diagnóstico, plano +
-   alternativos, pilar, aprovação, orçamento por tabela de preços, contadores
-   por Planner.
-5. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
+1. **Aplicar a migração 0035** e testar a Etapa 5.1 (fila + estrutura do plano).
+2. **Etapa 5.2 — Orçamento por tabela de preços:** tabela de preços configurável
+   no padrão cascata (rede → unidade) e orçamento do plano a partir dela.
+3. **Etapa 5.3 — Aprovação do plano (= Etapa 4.3):** o Coordenador aprova/devolve
+   (devolução com orientações → "Revisão com Coordenador"); aprovado → o Planner
+   sinaliza ao Consultor → transição Fase 3 → Fase 4. Contadores por Planner.
+5. **LOTE B — agenda avançada/consolidados** (junto/após a Etapa 5): configs de
+   agenda por unidade; visões dia/semana/mês; quadros-resumo; visão de rede sem
+   nomes de pacientes.
+6. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
    WhatsApp manual), transcrição/resumo por IA, dashboards com metas.
+
+Adiados (em `docs/BACKLOG.md`, não esquecer): foto por webcam; cadeiras/horários
+por unidade; gênero + rótulos; offline/sync (PWA + PowerSync/ElectricSQL).
 
 Não avançar de etapa sem o OK do proprietário.
 

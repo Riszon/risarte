@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import {
   Building2,
   Calendar,
+  ClipboardList,
   Clock,
   DoorOpen,
   Home,
@@ -43,6 +44,8 @@ type Props = {
   fullName: string;
   email: string;
   isAdminMaster: boolean;
+  /** The user holds the Dentista Planner role somewhere (Centro de Planejamento). */
+  isPlanner: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -57,6 +60,12 @@ const NAV_ITEMS = [
   { href: "/clientes", label: "Clientes", icon: Users },
 ];
 
+const PLANNER_ITEM = {
+  href: "/planejamento",
+  label: "Centro de Planejamento",
+  icon: ClipboardList,
+};
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
@@ -67,6 +76,7 @@ export function AppSidebar({
   fullName,
   email,
   isAdminMaster,
+  isPlanner,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -84,7 +94,10 @@ export function AppSidebar({
     activeClinicRoles.every((r) => r === "dentist");
   const navItems = dentistOnly
     ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
-    : NAV_ITEMS;
+    : // Planner/Admin also get the Centro de Planejamento (Fase 3) queue.
+      isAdminMaster || isPlanner
+      ? [...NAV_ITEMS, PLANNER_ITEM]
+      : NAV_ITEMS;
 
   function switchClinic(clinicId: string) {
     startTransition(async () => {
