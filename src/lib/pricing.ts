@@ -1,12 +1,23 @@
-// Shared types/helpers for the price table (cascade) and the plan budget.
+// Shared types/helpers for the procedures catalog (cascade) and the plan budget.
 // Money is stored and handled in CENTS (integer) to avoid float rounding.
+
+import type { MethodologyPillar } from "@/lib/journey";
 
 export type Procedure = {
   id: string;
+  /** Internal code (auto-generated, e.g. PRC-00001). */
   code: string | null;
+  tussCode: string | null;
   name: string;
-  category: string | null;
+  specialty: string | null;
   defaultPriceCents: number;
+  minPriceCents: number | null;
+  maxPriceCents: number | null;
+  /** Commission as a percentage of the procedure price (realized on completion). */
+  commissionPercent: number;
+  /** Fixed commission in cents (realized on completion). */
+  commissionFixedCents: number;
+  pillar: MethodologyPillar | null;
   isActive: boolean;
 };
 

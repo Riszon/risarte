@@ -187,17 +187,24 @@ clínico do MVP (Jornada + Coordenador + Planejamento) está fechado.
 com botão "Editar" (`ClientDataSection`), e o cadastro reconhece o cliente já
 existente e **autopreenche** os dados; F2 = compartilhamento notifica as **duas**
 unidades ao iniciar/encerrar e a ficha mostra **Histórico de compartilhamento**
-(migração 0038). Próximas: F3 Procedimentos (grande), F4 plano (aprovação por
-opção), F5 fila por situação, F6 central de notificações, F7 cockpit do Planner.
+(migração 0038). **F3.1 entregue:** módulo **Procedimentos** (`/procedimentos`,
+substitui a antiga "Tabela de Preços") com novos campos (código interno
+automático, TUSS, especialidade, preço padrão/mín/máx, comissionamento %+R$,
+pilar), busca + filtros (especialidade/ativo/pilar), editar todos os campos,
+**excluir = desativar** (procedimento já usado nunca é apagado), histórico de
+alterações, e acesso de **Admin Master + Dentista Planner** (migração 0039).
+Próximas: **F3.2** (importar Excel + reajuste em massa), F4 (aprovação por
+opção), F5 (fila por situação), F6 (central de notificações), F7 (cockpit do
+Planner).
 
 A barra lateral mostra a **versão do sistema** e a **última migração**
 (`src/lib/version.ts`: `APP_VERSION` + `LATEST_MIGRATION`) acima do botão Sair —
 bumpar os dois a cada entrega publicada.
 
-**Migrações 0001–0038 escritas.** O dono aplica cada uma no SQL Editor do
-Supabase; **0001–0035 aplicadas; 0036, 0037 e 0038 pendentes** (em ordem:
+**Migrações 0001–0039 escritas.** O dono aplica cada uma no SQL Editor do
+Supabase; **0001–0035 aplicadas; 0036–0039 pendentes** (em ordem:
 0036 = preços+orçamento da 5.2; 0037 = aprovação da 5.3; 0038 = notificações de
-compartilhamento da F2).
+compartilhamento da F2; 0039 = campos dos Procedimentos da F3.1).
 
 ## 8. Próximos passos (ordem de prioridade)
 

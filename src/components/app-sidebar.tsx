@@ -62,17 +62,16 @@ const NAV_ITEMS = [
   { href: "/clientes", label: "Clientes", icon: Users },
 ];
 
-const PLANNER_ITEM = {
-  href: "/planejamento",
-  label: "Centro de Planejamento",
-  icon: ClipboardList,
-};
+// Shown to the Dentista Planner and Admin Master (alongside the unit nav).
+const PLANNER_ITEMS = [
+  { href: "/planejamento", label: "Centro de Planejamento", icon: ClipboardList },
+  { href: "/procedimentos", label: "Procedimentos", icon: Tags },
+];
 
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
-  { href: "/admin/precos", label: "Tabela de Preços", icon: Tags },
 ];
 
 export function AppSidebar({
@@ -97,9 +96,9 @@ export function AppSidebar({
     activeClinicRoles.every((r) => r === "dentist");
   const navItems = dentistOnly
     ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
-    : // Planner/Admin also get the Centro de Planejamento (Fase 3) queue.
+    : // Planner/Admin also get the Centro de Planejamento + Procedimentos.
       isAdminMaster || isPlanner
-      ? [...NAV_ITEMS, PLANNER_ITEM]
+      ? [...NAV_ITEMS, ...PLANNER_ITEMS]
       : NAV_ITEMS;
 
   function switchClinic(clinicId: string) {

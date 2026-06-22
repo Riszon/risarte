@@ -585,17 +585,25 @@ export default async function ClientDetailPage(
     const [{ data: procRows }, { data: priceRows }] = await Promise.all([
       supabase
         .from("procedures")
-        .select("id, code, name, category, default_price_cents, is_active")
+        .select(
+          "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, is_active"
+        )
         .eq("is_active", true)
-        .order("category", { nullsFirst: true })
+        .order("specialty", { nullsFirst: true })
         .order("name")
         .returns<
           {
             id: string;
             code: string | null;
+            tuss_code: string | null;
             name: string;
-            category: string | null;
+            specialty: string | null;
             default_price_cents: number;
+            min_price_cents: number | null;
+            max_price_cents: number | null;
+            commission_percent: number;
+            commission_fixed_cents: number;
+            pillar: MethodologyPillar | null;
             is_active: boolean;
           }[]
         >(),
@@ -608,9 +616,15 @@ export default async function ClientDetailPage(
     const procedures: Procedure[] = (procRows ?? []).map((p) => ({
       id: p.id,
       code: p.code,
+      tussCode: p.tuss_code,
       name: p.name,
-      category: p.category,
+      specialty: p.specialty,
       defaultPriceCents: p.default_price_cents,
+      minPriceCents: p.min_price_cents,
+      maxPriceCents: p.max_price_cents,
+      commissionPercent: p.commission_percent,
+      commissionFixedCents: p.commission_fixed_cents,
+      pillar: p.pillar,
       isActive: p.is_active,
     }));
     const overrides: UnitPrice[] = (priceRows ?? []).map((r) => ({
