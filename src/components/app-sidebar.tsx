@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import {
   Building2,
   Calendar,
+  CalendarClock,
   ClipboardList,
   Clock,
   DoorOpen,
@@ -72,6 +73,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
+  { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
 ];
 
 export function AppSidebar({

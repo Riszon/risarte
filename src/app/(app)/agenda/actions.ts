@@ -8,6 +8,11 @@ import {
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import {
+  resolveAgendaSettings,
+  timeToMinutes,
+  type AgendaSettingRow,
+} from "@/lib/agenda-settings";
 
 /**
  * Edit permission: Recepcionista edits any appointment of her unit; an SDR
@@ -90,6 +95,69 @@ function parseAppointmentForm(
   };
 }
 
+/**
+ * Per-unit agenda rules (B2/B3): the slot must be within the unit's working
+ * hours and on an open weekday, and there must be a free chair (capacity).
+ * Urgência/Emergência bypass these (encaixe). Returns an error message or null.
+ */
+async function checkAgendaRules(
+  clinicId: string,
+  formData: FormData,
+  excludeId?: string
+): Promise<string | null> {
+  const type = String(formData.get("type") ?? "");
+  if (type === "urgency" || type === "emergency") return null;
+  const date = String(formData.get("date") ?? "");
+  const time = String(formData.get("time") ?? "");
+  const durationMin = Number(formData.get("duration") ?? 60) || 60;
+  if (!date || !time) return null;
+
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("clinic_agenda_settings")
+    .select("clinic_id, open_time, close_time, weekdays, chairs")
+    .returns<AgendaSettingRow[]>();
+  const cfg = resolveAgendaSettings(rows ?? [], clinicId);
+
+  const weekday = new Date(`${date}T00:00:00`).getDay();
+  if (!cfg.weekdays.includes(weekday)) {
+    return "A unidade não atende neste dia da semana.";
+  }
+  const startMin = timeToMinutes(time);
+  const endMin = startMin + durationMin;
+  if (startMin < timeToMinutes(cfg.openTime) || endMin > timeToMinutes(cfg.closeTime)) {
+    return `Fora do horário de funcionamento da unidade (${cfg.openTime} às ${cfg.closeTime}).`;
+  }
+
+  if (cfg.chairs > 0) {
+    const startDate = new Date(`${date}T${time}:00`);
+    const startISO = startDate.toISOString();
+    const endISO = new Date(startDate.getTime() + durationMin * 60000).toISOString();
+    const dayStartIso = new Date(`${date}T00:00:00`).toISOString();
+    const dayEndIso = new Date(
+      new Date(`${date}T00:00:00`).getTime() + 86400000
+    ).toISOString();
+    const { data: appts } = await supabase
+      .from("appointments")
+      .select("id, starts_at, ends_at, status")
+      .eq("clinic_id", clinicId)
+      .gte("starts_at", dayStartIso)
+      .lt("starts_at", dayEndIso);
+    const overlapping = (appts ?? []).filter(
+      (a) =>
+        a.id !== excludeId &&
+        a.status !== "cancelled" &&
+        a.status !== "no_show" &&
+        a.starts_at < endISO &&
+        a.ends_at > startISO
+    );
+    if (overlapping.length >= cfg.chairs) {
+      return `Todas as ${cfg.chairs} cadeira(s) da unidade estão ocupadas neste horário. Use Urgência/Emergência para encaixe.`;
+    }
+  }
+  return null;
+}
+
 export async function createAppointment(
   formData: FormData
 ): Promise<ActionResult> {
@@ -116,6 +184,9 @@ export async function createAppointment(
 
   const parsed = parseAppointmentForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
+
+  const ruleError = await checkAgendaRules(clinicId, formData);
+  if (ruleError) return { ok: false, error: ruleError };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -192,6 +263,13 @@ export async function updateAppointment(
   formData.set("client_id", existing.client_id);
   const parsed = parseAppointmentForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
+
+  const ruleError = await checkAgendaRules(
+    existing.clinic_id,
+    formData,
+    appointmentId
+  );
+  if (ruleError) return { ok: false, error: ruleError };
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
   for (const key of [
