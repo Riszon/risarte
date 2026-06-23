@@ -248,19 +248,20 @@ Supabase; **0001–0042 aplicadas; 0043 pendente** (config da agenda da B2/B3 �
 
 ## 8. Próximos passos (ordem de prioridade)
 
-1. **Aplicar as migrações 0036, 0037 e 0038 (em ordem)** e testar 5.2, 5.3 e a F2.
-2. **Continuar o LOTE F** (ordem F3 → F7): F3 Procedimentos (renomear, campos
-   TUSS/especialidade/preço mín-máx/comissionamento/pilar, busca/filtros,
-   importação .xlsx, reajuste em massa, histórico, soft-delete, acesso do Planner);
-   F4 aprovação por opção; F5 fila por situação + período; F6 central de
-   notificações; F7 cockpit do Planner.
-3. **LOTE B — agenda avançada/consolidados** (+ contadores leves do Planner).
-4. **Rodada de refinamento visual** (tela por tela, guiada pelo dono).
-5. **Fase 2 (após MVP validado):** módulo comercial (ZapSign, ASAAS, NPS,
-   WhatsApp manual), transcrição/resumo por IA, dashboards com metas.
+> Etapa 5, LOTE F (F1–F7) e LOTE B (B1–B6) **concluídos**. Resumo de estado
+> também em `ESTADO_DO_PROJETO.md` (raiz), atualizado a cada etapa.
 
-Adiados (em `docs/BACKLOG.md`, não esquecer): foto por webcam; cadeiras/horários
-por unidade; gênero + rótulos; offline/sync (PWA + PowerSync/ElectricSQL).
+1. **Aplicar a migração 0043** e fazer o **teste final do LOTE B** (config da
+   agenda + Relatórios).
+2. **Rodada de refinamento visual** — tela por tela, guiada pelo dono (cores,
+   espaçamento, textos), agora que o fluxo está completo.
+3. **Fase 2 (após MVP validado):** módulo comercial — apresentação gravada,
+   assinatura digital (ZapSign) + pagamento (ASAAS) com a regra de ouro, NPS
+   pós-fechamento, WhatsApp manual, transcrição/resumo por IA, dashboards com metas.
+
+Adiados (em `docs/BACKLOG.md`, não esquecer): semana começando no domingo +
+esconder fim de semana sem agendamento; foto por webcam; gênero + rótulos;
+offline/sync (PWA + PowerSync/ElectricSQL).
 
 Não avançar de etapa sem o OK do proprietário.
 
