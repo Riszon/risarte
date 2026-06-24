@@ -14,10 +14,13 @@ export function AgendaToolbar({
   view,
   range,
   unidade,
+  salas,
 }: {
   view: AgendaView;
   range: AgendaRange;
   unidade?: string;
+  /** Room filter (?salas=), preserved when switching view / navigating. */
+  salas?: string;
 }) {
   const todayIso = toIsoDate(new Date());
   const refIso = toIsoDate(range.start);
@@ -27,7 +30,7 @@ export function AgendaToolbar({
         {AGENDA_VIEWS.map((v) => (
           <Link
             key={v.key}
-            href={agendaHref(v.key, refIso, unidade)}
+            href={agendaHref(v.key, refIso, unidade, salas)}
             className={cn(
               "rounded-md px-2.5 py-1 text-sm",
               view === v.key
@@ -43,7 +46,9 @@ export function AgendaToolbar({
         variant="outline"
         size="sm"
         nativeButton={false}
-        render={<Link href={agendaHref(view, toIsoDate(range.prev), unidade)} />}
+        render={
+          <Link href={agendaHref(view, toIsoDate(range.prev), unidade, salas)} />
+        }
       >
         ← Anterior
       </Button>
@@ -51,7 +56,7 @@ export function AgendaToolbar({
         variant="outline"
         size="sm"
         nativeButton={false}
-        render={<Link href={agendaHref(view, todayIso, unidade)} />}
+        render={<Link href={agendaHref(view, todayIso, unidade, salas)} />}
       >
         Hoje
       </Button>
@@ -59,7 +64,9 @@ export function AgendaToolbar({
         variant="outline"
         size="sm"
         nativeButton={false}
-        render={<Link href={agendaHref(view, toIsoDate(range.next), unidade)} />}
+        render={
+          <Link href={agendaHref(view, toIsoDate(range.next), unidade, salas)} />
+        }
       >
         Próximo →
       </Button>

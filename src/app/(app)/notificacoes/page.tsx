@@ -85,6 +85,7 @@ export default async function NotificationsPage(
     plano: 0,
     compartilhamento: 0,
     inicio_tratamento: 0,
+    agenda: 0,
     transferencia: 0,
     outras: 0,
   };

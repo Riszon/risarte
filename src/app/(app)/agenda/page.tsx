@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,24 @@ import type {
 import type { UserRole } from "@/lib/roles";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
-import { getUnitSchedulingData } from "./actions";
+import {
+  getAgendaFormConfig,
+  getUnitSchedulingData,
+  notifyPendingHolidays,
+  type AgendaFormConfig,
+} from "./actions";
+import { holidaysInRange } from "@/lib/holidays";
 import { WeekGrid, type AgendaAppointment } from "./week-grid";
 import { MonthView } from "./month-grid";
+import { DayRoomGrid } from "./day-room-grid";
+import { RoomFilter } from "./room-filter";
+import { CloseAgendaDialog } from "./close-agenda-dialog";
 import { AgendaToolbar } from "./agenda-toolbar";
+import {
+  mapClosure,
+  type AgendaClosure,
+  type AgendaClosureRow,
+} from "@/lib/closures";
 
 export const metadata: Metadata = { title: "Agenda" };
 
@@ -35,6 +50,10 @@ type AppointmentRow = {
   provider_user_id: string | null;
   provider: { full_name: string } | null;
   attendance: AttendanceStatus | null;
+  room_id?: string | null;
+  is_online?: boolean | null;
+  room?: { name: string } | null;
+  needs_reschedule?: boolean | null;
   clinic_id?: string;
   clinics?: { name: string } | null;
   clients: {
@@ -96,7 +115,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     let netQuery = supabase
       .from("appointments")
       .select(
-        "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+        "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, room_id, is_online, room:clinic_rooms ( name ), clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
       )
       .gte("starts_at", range.start.toISOString())
       .lt("starts_at", range.end.toISOString())
@@ -146,6 +165,9 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         provider_user_id: a.provider_user_id,
         provider: a.provider,
         attendance: a.attendance,
+        room_id: a.room_id ?? null,
+        room_name: a.room?.name ?? null,
+        is_online: a.is_online ?? false,
         clinic_name: a.clinics?.name ?? null,
         clients: a.clients,
       })
@@ -229,15 +251,83 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     "receptionist",
     "sdr",
   ]);
+  const canConfig = hasRoleInClinic(session, clinicId, ["unit_manager"]);
+  const canCloseAgenda = hasRoleInClinic(session, clinicId, [
+    "receptionist",
+    "unit_manager",
+  ]);
+  let roomCount = 0;
+  let formConfig: AgendaFormConfig | undefined;
+  let closures: AgendaClosure[] = [];
+  let openDayDates: string[] = [];
+  const holidayClosedDates: string[] = [];
+  const holidayOpenDates: string[] = [];
+  let rangeHolidays: { date: string; name: string }[] = [];
 
   if (clinicId) {
     const supabase = await createClient();
+    formConfig = await getAgendaFormConfig(clinicId);
+    roomCount = formConfig.rooms.length;
+    const { data: closureRows } = await supabase
+      .from("agenda_closures")
+      .select(
+        "id, starts_at, ends_at, scope, reason, note, agenda_closure_rooms ( room_id ), agenda_closure_providers ( user_id )"
+      )
+      .eq("clinic_id", clinicId)
+      .lt("starts_at", range.end.toISOString())
+      .gt("ends_at", range.start.toISOString())
+      .order("starts_at");
+    closures = (closureRows ?? []).map((r) =>
+      mapClosure(r as AgendaClosureRow)
+    );
+
+    // Working days / special open days / holiday decisions (G5).
+    const rangeStartIso = toIsoDate(range.start);
+    const rangeEndIso = toIsoDate(range.end);
+    const rangeLastIso = toIsoDate(new Date(range.end.getTime() - 86_400_000));
+    const [{ data: openDayRows }, { data: holidayRows }] = await Promise.all([
+      supabase
+        .from("agenda_open_days")
+        .select("date")
+        .eq("clinic_id", clinicId)
+        .gte("date", rangeStartIso)
+        .lt("date", rangeEndIso),
+      supabase
+        .from("clinic_holiday_decisions")
+        .select("holiday_date, will_attend")
+        .eq("clinic_id", clinicId)
+        .gte("holiday_date", rangeStartIso)
+        .lt("holiday_date", rangeEndIso),
+    ]);
+    openDayDates = (openDayRows ?? []).map((r) => r.date as string);
+    for (const r of (holidayRows ?? []) as {
+      holiday_date: string;
+      will_attend: boolean;
+    }[]) {
+      if (r.will_attend) holidayOpenDates.push(r.holiday_date);
+      else holidayClosedDates.push(r.holiday_date);
+    }
+    rangeHolidays = holidaysInRange(rangeStartIso, rangeLastIso);
+
+    // Managers get a one-time notification per upcoming undecided holiday.
+    if (canConfig) {
+      const todayDate = new Date();
+      const horizon = new Date(todayDate);
+      horizon.setDate(horizon.getDate() + 60);
+      const upcoming = holidaysInRange(toIsoDate(todayDate), toIsoDate(horizon));
+      await notifyPendingHolidays(
+        clinicId,
+        upcoming.map((h) => h.date),
+        upcoming.map((h) => h.name)
+      );
+    }
+
     const [{ data: appts }, { data: clientRows }, { data: staffRows }] =
       await Promise.all([
         supabase
           .from("appointments")
           .select(
-            "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+            "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, room_id, is_online, needs_reschedule, room:clinic_rooms ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
           )
           .eq("clinic_id", clinicId)
           .gte("starts_at", range.start.toISOString())
@@ -256,7 +346,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           : Promise.resolve({
               data: [] as { id: string; full_name: string; status: string }[],
             }),
-        canSchedule
+        canSchedule || canCloseAgenda
           ? supabase
               .from("user_clinic_roles")
               .select("user_id, role, profiles ( full_name )")
@@ -327,8 +417,54 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         }
       : null,
     attendance: a.attendance,
+    room_id: a.room_id ?? null,
+    room_name: a.room?.name ?? null,
+    is_online: a.is_online ?? false,
+    needs_reschedule: a.needs_reschedule ?? false,
     clients: a.clients,
   }));
+
+  // Room filter (G3): ?salas=id,id,online (empty = all rooms).
+  const salasRaw = Array.isArray(searchParams.salas)
+    ? searchParams.salas.join(",")
+    : typeof searchParams.salas === "string"
+      ? searchParams.salas
+      : "";
+  const selectedSalas = salasRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const hasSalaFilter = selectedSalas.length > 0;
+  const filteredUnitAppointments = hasSalaFilter
+    ? unitAppointments.filter(
+        (a) =>
+          (a.is_online && selectedSalas.includes("online")) ||
+          (a.room_id != null && selectedSalas.includes(a.room_id))
+      )
+    : unitAppointments;
+  const allRooms = (formConfig?.rooms ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+  }));
+  const displayRooms = hasSalaFilter
+    ? allRooms.filter((r) => selectedSalas.includes(r.id))
+    : allRooms;
+
+  // Day open/holiday info (G5) for the day view.
+  const dayIso = toIsoDate(range.start);
+  const holidaysByDate = new Map(rangeHolidays.map((h) => [h.date, h.name]));
+  const dayHolidayName = holidaysByDate.get(dayIso) ?? null;
+  const dayHolidayDecision = holidayOpenDates.includes(dayIso)
+    ? true
+    : holidayClosedDates.includes(dayIso)
+      ? false
+      : null;
+  const weekdaysCfg = formConfig?.weekdays ?? [0, 1, 2, 3, 4, 5, 6];
+  let dayIsOpen =
+    weekdaysCfg.includes(range.start.getDay()) ||
+    openDayDates.includes(dayIso);
+  if (dayHolidayDecision === true) dayIsOpen = true;
+  if (dayHolidayDecision === false) dayIsOpen = false;
 
   return (
     <div className="space-y-4 px-4 py-8">
@@ -337,16 +473,48 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
           <p className="text-sm text-muted-foreground">
             {session.activeClinic
-              ? `${session.activeClinic.name} — ${periodLabel}`
+              ? `${session.activeClinic.name} — ${periodLabel}${
+                  roomCount > 0
+                    ? ` · ${roomCount} sala${roomCount === 1 ? "" : "s"}`
+                    : ""
+                }`
               : "Selecione uma clínica no menu lateral."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <AgendaToolbar view={view} range={range} />
+          <AgendaToolbar view={view} range={range} salas={salasRaw || undefined} />
+          {canConfig && clinicId && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/agenda/configuracao" />}
+            >
+              Configurar agenda
+            </Button>
+          )}
+          {canCloseAgenda && clinicId && (
+            <CloseAgendaDialog
+              clinicId={clinicId}
+              rooms={allRooms}
+              staff={staff}
+            />
+          )}
+          {(canSchedule || canCloseAgenda) && clinicId && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/agenda/retornos" />}
+            >
+              Retornos e controles
+            </Button>
+          )}
           {canSchedule && clinicId && (
             <AppointmentFormDialog
               clients={clients}
               staff={staff}
+              config={formConfig}
               trigger={<Button size="sm">Novo agendamento</Button>}
               initialClientId={preselectClientId}
               defaultOpen={Boolean(preselectClientId)}
@@ -355,20 +523,53 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         </div>
       </div>
 
+      {clinicId && allRooms.length > 0 && (
+        <div className="mx-auto max-w-7xl">
+          <RoomFilter rooms={allRooms} selected={selectedSalas} />
+        </div>
+      )}
+
       {clinicId && (
         <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
           {view === "mes" ? (
             <MonthView
               monthStartIso={range.start.toISOString()}
-              appointments={unitAppointments}
+              appointments={filteredUnitAppointments}
+            />
+          ) : view === "dia" ? (
+            <DayRoomGrid
+              dateIso={range.start.toISOString()}
+              appointments={filteredUnitAppointments}
+              rooms={displayRooms}
+              selectedSalas={selectedSalas}
+              unitHasRooms={allRooms.length > 0}
+              openTime={formConfig?.openTime ?? "08:00"}
+              closeTime={formConfig?.closeTime ?? "18:00"}
+              canManage={canSchedule}
+              staff={staff}
+              clients={clients}
+              config={formConfig}
+              closures={closures}
+              canManageClosures={canCloseAgenda}
+              holidayName={dayHolidayName}
+              holidayDecision={dayHolidayDecision}
+              dayOpen={dayIsOpen}
+              canDecideHoliday={canConfig}
+              clinicId={clinicId}
             />
           ) : (
             <WeekGrid
               weekStartIso={range.start.toISOString()}
-              appointments={unitAppointments}
+              appointments={filteredUnitAppointments}
               canManage={canSchedule}
               staff={staff}
+              config={formConfig}
               dayCount={range.dayCount}
+              weekdays={formConfig?.weekdays}
+              openDayDates={openDayDates}
+              holidayClosedDates={holidayClosedDates}
+              holidayOpenDates={holidayOpenDates}
+              holidays={rangeHolidays}
             />
           )}
         </div>

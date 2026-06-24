@@ -13,6 +13,57 @@ import {
   timeToMinutes,
   type AgendaSettingRow,
 } from "@/lib/agenda-settings";
+import { mapRoom, sortRooms, type Room, type RoomRow } from "@/lib/rooms";
+import {
+  closureBlocks,
+  mapClosure,
+  CLOSURE_REASON_LABELS,
+  type AgendaClosureRow,
+} from "@/lib/closures";
+
+/** Agenda config the scheduling dialog needs to offer only valid slots/rooms. */
+export type AgendaFormConfig = {
+  openTime: string;
+  closeTime: string;
+  weekdays: number[];
+  rooms: Room[];
+  coordinatorRoomId: string | null;
+};
+
+/** Loads rooms + working hours + coordinator room for a unit's scheduling form. */
+export async function getAgendaFormConfig(
+  clinicId: string
+): Promise<AgendaFormConfig> {
+  const supabase = await createClient();
+  const [{ data: settingRows }, { data: roomRows }, { data: coordRow }] =
+    await Promise.all([
+      supabase
+        .from("clinic_agenda_settings")
+        .select("clinic_id, open_time, close_time, weekdays, chairs")
+        .returns<AgendaSettingRow[]>(),
+      supabase
+        .from("clinic_rooms")
+        .select("id, clinic_id, name, sort_order, is_active")
+        .eq("clinic_id", clinicId)
+        .eq("is_active", true)
+        .returns<RoomRow[]>(),
+      supabase
+        .from("clinic_agenda_settings")
+        .select("coordinator_room_id")
+        .eq("clinic_id", clinicId)
+        .maybeSingle(),
+    ]);
+  const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
+  return {
+    openTime: cfg.openTime,
+    closeTime: cfg.closeTime,
+    weekdays: cfg.weekdays,
+    rooms: sortRooms((roomRows ?? []).map(mapRoom)),
+    coordinatorRoomId:
+      (coordRow as { coordinator_room_id: string | null } | null)
+        ?.coordinator_room_id ?? null,
+  };
+}
 
 /**
  * Edit permission: Recepcionista edits any appointment of her unit; an SDR
@@ -49,6 +100,8 @@ type ParsedAppointment = {
   ends_at: string;
   provider_user_id: string | null;
   notes: string | null;
+  room_id: string | null;
+  is_online: boolean;
 };
 
 function parseAppointmentForm(
@@ -61,6 +114,10 @@ function parseAppointmentForm(
   const durationMinutes = Number(formData.get("duration") ?? 60);
   const providerUserId = String(formData.get("provider_user_id") ?? "") || null;
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  // The commercial consultant's appointment (apresentação comercial) is ONLINE:
+  // it has no physical room. Everything else is attended in a room.
+  const isOnline = type === "commercial_presentation";
+  const roomId = isOnline ? null : String(formData.get("room_id") ?? "") || null;
 
   if (!clientId) return { error: "Escolha o cliente." };
   if (!APPOINTMENT_TYPES.includes(type)) {
@@ -91,14 +148,17 @@ function parseAppointmentForm(
       ends_at: endsAt.toISOString(),
       provider_user_id: providerUserId,
       notes,
+      room_id: roomId,
+      is_online: isOnline,
     },
   };
 }
 
 /**
- * Per-unit agenda rules (B2/B3): the slot must be within the unit's working
- * hours and on an open weekday, and there must be a free chair (capacity).
- * Urgência/Emergência bypass these (encaixe). Returns an error message or null.
+ * Per-unit agenda rules (G2): the slot must be within the unit's working hours
+ * and on an open weekday; the chosen room must be free at that time (one client
+ * per room). ONLINE appointments (apresentação comercial) don't take a room.
+ * Urgência/Emergência bypass everything (encaixe). Returns an error or null.
  */
 async function checkAgendaRules(
   clinicId: string,
@@ -106,22 +166,78 @@ async function checkAgendaRules(
   excludeId?: string
 ): Promise<string | null> {
   const type = String(formData.get("type") ?? "");
-  if (type === "urgency" || type === "emergency") return null;
+  const isEncaixe = type === "urgency" || type === "emergency";
+  const isOnline = type === "commercial_presentation";
+  const roomId = isOnline ? "" : String(formData.get("room_id") ?? "");
+  const providerId = String(formData.get("provider_user_id") ?? "");
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "");
   const durationMin = Number(formData.get("duration") ?? 60) || 60;
   if (!date || !time) return null;
 
   const supabase = await createClient();
+  const startDate = new Date(`${date}T${time}:00`);
+  const startMs = startDate.getTime();
+  const endMs = startMs + durationMin * 60000;
+
+  // Agenda closures (G4) block everyone, including encaixe.
+  const { data: closureRows } = await supabase
+    .from("agenda_closures")
+    .select(
+      "id, starts_at, ends_at, scope, reason, note, agenda_closure_rooms ( room_id ), agenda_closure_providers ( user_id )"
+    )
+    .eq("clinic_id", clinicId)
+    .lt("starts_at", new Date(endMs).toISOString())
+    .gt("ends_at", new Date(startMs).toISOString());
+  for (const row of closureRows ?? []) {
+    const closure = mapClosure(row as AgendaClosureRow);
+    if (
+      closureBlocks(closure, {
+        startMs,
+        endMs,
+        roomId: roomId || null,
+        providerId: providerId || null,
+      })
+    ) {
+      return `Agenda fechada neste período (${CLOSURE_REASON_LABELS[closure.reason]}). Escolha outro horário/sala.`;
+    }
+  }
+
+  // Holiday decided as "no attendance" blocks everyone (G5), like a closure.
+  const { data: holidayDecision } = await supabase
+    .from("clinic_holiday_decisions")
+    .select("will_attend")
+    .eq("clinic_id", clinicId)
+    .eq("holiday_date", date)
+    .maybeSingle();
+  if (holidayDecision?.will_attend === false) {
+    return "Feriado sem atendimento nesta unidade.";
+  }
+
+  // Encaixe ignores working hours and room capacity (but not closures/holidays).
+  if (isEncaixe) return null;
+
   const { data: rows } = await supabase
     .from("clinic_agenda_settings")
     .select("clinic_id, open_time, close_time, weekdays, chairs")
     .returns<AgendaSettingRow[]>();
   const cfg = resolveAgendaSettings(rows ?? [], clinicId);
 
+  // A day is open for scheduling if it's a configured weekday, OR a special
+  // open day (G5), OR a holiday the manager decided to attend.
   const weekday = new Date(`${date}T00:00:00`).getDay();
-  if (!cfg.weekdays.includes(weekday)) {
-    return "A unidade não atende neste dia da semana.";
+  const { data: openDay } = await supabase
+    .from("agenda_open_days")
+    .select("id")
+    .eq("clinic_id", clinicId)
+    .eq("date", date)
+    .maybeSingle();
+  const dayOpen =
+    cfg.weekdays.includes(weekday) ||
+    Boolean(openDay) ||
+    holidayDecision?.will_attend === true;
+  if (!dayOpen) {
+    return "A unidade não atende neste dia. Libere o dia em “Configurar agenda”.";
   }
   const startMin = timeToMinutes(time);
   const endMin = startMin + durationMin;
@@ -129,7 +245,8 @@ async function checkAgendaRules(
     return `Fora do horário de funcionamento da unidade (${cfg.openTime} às ${cfg.closeTime}).`;
   }
 
-  if (cfg.chairs > 0) {
+  // Room occupancy: a room attends one client at a time. ONLINE skips this.
+  if (!isOnline && roomId) {
     const startDate = new Date(`${date}T${time}:00`);
     const startISO = startDate.toISOString();
     const endISO = new Date(startDate.getTime() + durationMin * 60000).toISOString();
@@ -139,8 +256,9 @@ async function checkAgendaRules(
     ).toISOString();
     const { data: appts } = await supabase
       .from("appointments")
-      .select("id, starts_at, ends_at, status")
+      .select("id, starts_at, ends_at, status, room_id")
       .eq("clinic_id", clinicId)
+      .eq("room_id", roomId)
       .gte("starts_at", dayStartIso)
       .lt("starts_at", dayEndIso);
     const overlapping = (appts ?? []).filter(
@@ -151,8 +269,14 @@ async function checkAgendaRules(
         a.starts_at < endISO &&
         a.ends_at > startISO
     );
-    if (overlapping.length >= cfg.chairs) {
-      return `Todas as ${cfg.chairs} cadeira(s) da unidade estão ocupadas neste horário. Use Urgência/Emergência para encaixe.`;
+    if (overlapping.length > 0) {
+      const { data: room } = await supabase
+        .from("clinic_rooms")
+        .select("name")
+        .eq("id", roomId)
+        .maybeSingle();
+      const roomName = room?.name ?? "selecionada";
+      return `A sala ${roomName} já está ocupada neste horário. Escolha outra sala/horário (ou use Urgência/Emergência para encaixe).`;
     }
   }
   return null;
@@ -238,7 +362,7 @@ export async function updateAppointment(
   const { data: existing } = await supabase
     .from("appointments")
     .select(
-      "clinic_id, client_id, type, starts_at, ends_at, provider_user_id, notes, created_by"
+      "clinic_id, client_id, type, starts_at, ends_at, provider_user_id, notes, created_by, room_id, is_online"
     )
     .eq("id", appointmentId)
     .single();
@@ -278,6 +402,8 @@ export async function updateAppointment(
     "ends_at",
     "provider_user_id",
     "notes",
+    "room_id",
+    "is_online",
   ] as const) {
     if (existing[key] !== parsed.values[key]) {
       changes[key] = { from: existing[key], to: parsed.values[key] };
@@ -293,6 +419,11 @@ export async function updateAppointment(
       ends_at: parsed.values.ends_at,
       provider_user_id: parsed.values.provider_user_id,
       notes: parsed.values.notes,
+      room_id: parsed.values.room_id,
+      is_online: parsed.values.is_online,
+      // A successful reschedule passes the closure check, so it's no longer
+      // pending a reschedule due to a closure.
+      needs_reschedule: false,
     })
     .eq("id", appointmentId);
 
@@ -383,6 +514,7 @@ export type SchedulingClient = {
 export type UnitSchedulingData = {
   clients: SchedulingClient[];
   staff: StaffOption[];
+  config: AgendaFormConfig;
 };
 
 /**
@@ -444,6 +576,8 @@ export async function getUnitSchedulingData(
     staffMap.set(c.user_id, entry);
   }
 
+  const config = await getAgendaFormConfig(clinicId);
+
   return {
     clients: (clientRows ?? []).map((c) => ({
       id: c.id,
@@ -451,6 +585,7 @@ export async function getUnitSchedulingData(
       inactive: c.status === "inactive",
     })),
     staff: [...staffMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    config,
   };
 }
 
@@ -560,13 +695,19 @@ export async function getDayBusyTimes(params: {
   providerUserId: string | null;
   clientId: string;
   date: string;
+  roomId?: string | null;
   excludeId?: string;
-}): Promise<{ providerBusy: BusyRange[]; clientBusy: BusyRange[] }> {
+}): Promise<{
+  providerBusy: BusyRange[];
+  clientBusy: BusyRange[];
+  roomBusy: BusyRange[];
+}> {
   await getSessionContext();
   const supabase = await createClient();
 
   const start = new Date(`${params.date}T00:00:00`);
-  if (Number.isNaN(start.getTime())) return { providerBusy: [], clientBusy: [] };
+  if (Number.isNaN(start.getTime()))
+    return { providerBusy: [], clientBusy: [], roomBusy: [] };
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
@@ -601,5 +742,219 @@ export async function getDayBusyTimes(params: {
       .map((a) => ({ starts_at: a.starts_at, ends_at: a.ends_at }));
   }
 
-  return { providerBusy, clientBusy };
+  let roomBusy: BusyRange[] = [];
+  if (params.roomId) {
+    const { data: roomRows } = await supabase
+      .from("appointments")
+      .select("id, starts_at, ends_at, status")
+      .eq("room_id", params.roomId)
+      .gte("starts_at", start.toISOString())
+      .lt("starts_at", end.toISOString());
+    roomBusy = (roomRows ?? [])
+      .filter((a) => a.id !== params.excludeId && active(a.status))
+      .map((a) => ({ starts_at: a.starts_at, ends_at: a.ends_at }));
+  }
+
+  return { providerBusy, clientBusy, roomBusy };
+}
+
+// ---------------------------------------------------------------------------
+// Agenda closures (G4): close the agenda for a period (whole unit / specific
+// rooms / specific providers). Create/remove go through SECURITY DEFINER RPCs
+// that also flag affected appointments and notify the reception.
+// ---------------------------------------------------------------------------
+export async function createAgendaClosure(
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  const formClinicId = String(formData.get("clinic_id") ?? "");
+  const clinicId = formClinicId || session.activeClinic?.id;
+  if (!clinicId) return { ok: false, error: "Nenhuma clínica selecionada." };
+
+  const canClose =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager"]);
+  if (!canClose) {
+    return { ok: false, error: "Você não tem permissão para fechar a agenda." };
+  }
+
+  const startStr = String(formData.get("starts_at") ?? "");
+  const endStr = String(formData.get("ends_at") ?? "");
+  const reason = String(formData.get("reason") ?? "other");
+  const scope = String(formData.get("scope") ?? "unit");
+  const note = String(formData.get("note") ?? "").trim() || null;
+  const roomIds = formData.getAll("room_ids").map(String).filter(Boolean);
+  const providerIds = formData
+    .getAll("provider_ids")
+    .map(String)
+    .filter(Boolean);
+
+  if (!startStr || !endStr) {
+    return { ok: false, error: "Informe o início e o fim do fechamento." };
+  }
+  const startsAt = new Date(startStr);
+  const endsAt = new Date(endStr);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    return { ok: false, error: "Período inválido." };
+  }
+  if (endsAt.getTime() <= startsAt.getTime()) {
+    return { ok: false, error: "O fim deve ser depois do início." };
+  }
+  if (scope === "rooms" && roomIds.length === 0) {
+    return { ok: false, error: "Escolha ao menos uma sala." };
+  }
+  if (scope === "providers" && providerIds.length === 0) {
+    return { ok: false, error: "Escolha ao menos um profissional." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("create_agenda_closure", {
+    p_clinic_id: clinicId,
+    p_starts_at: startsAt.toISOString(),
+    p_ends_at: endsAt.toISOString(),
+    p_reason: reason,
+    p_scope: scope,
+    p_note: note,
+    p_room_ids: scope === "rooms" ? roomIds : [],
+    p_provider_ids: scope === "providers" ? providerIds : [],
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para fechar a agenda." };
+    }
+    console.error("create_agenda_closure failed:", error.message);
+    return { ok: false, error: "Não foi possível fechar a agenda." };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "agenda_closure",
+    entityId: clinicId,
+    clinicId,
+  });
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
+export async function deleteAgendaClosure(
+  closureId: string
+): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_agenda_closure", {
+    p_id: closureId,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para remover o fechamento." };
+    }
+    console.error("delete_agenda_closure failed:", error.message);
+    return { ok: false, error: "Não foi possível remover o fechamento." };
+  }
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Special open days + holiday decisions (G5). Only the Gerente de Unidade (or
+// Admin) manages these. Go through SECURITY DEFINER RPCs.
+// ---------------------------------------------------------------------------
+export async function openSpecialDays(
+  clinicId: string,
+  dates: string[],
+  staffIds: string[],
+  note: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!hasRoleInClinic(session, clinicId, ["unit_manager"])) {
+    return { ok: false, error: "Apenas a Gerente (ou Admin) libera dias." };
+  }
+  const cleanDates = [...new Set(dates.filter(Boolean))];
+  if (cleanDates.length === 0) {
+    return { ok: false, error: "Escolha ao menos um dia para liberar." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("open_special_days", {
+    p_clinic_id: clinicId,
+    p_dates: cleanDates,
+    p_staff_ids: staffIds.filter(Boolean),
+    p_note: note.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para liberar dias." };
+    }
+    console.error("open_special_days failed:", error.message);
+    return { ok: false, error: "Não foi possível liberar o(s) dia(s)." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "agenda_open_day",
+    entityId: clinicId,
+    clinicId,
+  });
+  revalidatePath("/agenda");
+  revalidatePath("/agenda/configuracao");
+  return { ok: true };
+}
+
+export async function removeSpecialDay(openDayId: string): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("remove_special_day", {
+    p_id: openDayId,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para remover o dia." };
+    }
+    console.error("remove_special_day failed:", error.message);
+    return { ok: false, error: "Não foi possível remover o dia avulso." };
+  }
+  revalidatePath("/agenda");
+  revalidatePath("/agenda/configuracao");
+  return { ok: true };
+}
+
+export async function decideHoliday(
+  clinicId: string,
+  dateIso: string,
+  willAttend: boolean
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!hasRoleInClinic(session, clinicId, ["unit_manager"])) {
+    return { ok: false, error: "Apenas a Gerente (ou Admin) confirma feriados." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("decide_holiday", {
+    p_clinic_id: clinicId,
+    p_date: dateIso,
+    p_will_attend: willAttend,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para confirmar feriados." };
+    }
+    console.error("decide_holiday failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a decisão do feriado." };
+  }
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
+/** Fire-and-forget: notify the manager about pending (undecided) holidays. */
+export async function notifyPendingHolidays(
+  clinicId: string,
+  dates: string[],
+  names: string[]
+): Promise<void> {
+  if (dates.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("notify_pending_holidays", {
+    p_clinic_id: clinicId,
+    p_dates: dates,
+    p_names: names,
+  });
+  if (error) console.error("notify_pending_holidays failed:", error.message);
 }

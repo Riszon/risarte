@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Info } from "lucide-react";
+import { Info, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,7 @@ import {
   type AppointmentType,
   type StaffOption,
 } from "@/lib/appointments";
+import { timeToMinutes } from "@/lib/agenda-settings";
 import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
@@ -39,6 +40,7 @@ import {
   getClientSchedulingInfo,
   getDayBusyTimes,
   updateAppointment,
+  type AgendaFormConfig,
   type BusyRange,
   type SchedulingInfo,
 } from "./actions";
@@ -51,13 +53,20 @@ const DURATION_ITEMS = [
   { value: "120", label: "2 horas" },
 ];
 
-// Time slots every 5 minutes (the native time picker ignores `step`).
-const TIME_ITEMS: { value: string; label: string }[] = [];
+// Wide fallback slots (every 5 min, 06–21h) used for encaixe (urgência/
+// emergência) and when a unit has no agenda configured yet.
+const WIDE_TIME_ITEMS: { value: string; label: string }[] = [];
 for (let hour = 6; hour <= 21; hour++) {
   for (let minute = 0; minute < 60; minute += 5) {
     const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-    TIME_ITEMS.push({ value, label: value });
+    WIDE_TIME_ITEMS.push({ value, label: value });
   }
+}
+
+const SLOT_STEP = 15; // configured agenda offers 15-minute slots.
+
+function minutesToHHMM(m: number): string {
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
 export type AppointmentDefaults = {
@@ -67,6 +76,7 @@ export type AppointmentDefaults = {
   ends_at: string;
   provider_user_id: string | null;
   notes: string | null;
+  room_id: string | null;
   clientName: string;
 };
 
@@ -95,60 +105,87 @@ function toLocalTime(iso: string): string {
 export function AppointmentFormDialog({
   clients,
   staff,
+  config,
   appointment,
   trigger,
   initialClientId,
+  initialDate,
+  initialTime,
+  initialRoomId,
   defaultOpen = false,
+  open,
+  onOpenChange,
   units,
   loadUnitData,
   fixedClinicId,
 }: {
   clients: { id: string; full_name: string; inactive?: boolean }[];
   staff: StaffOption[];
+  /** Rooms + working hours of the unit (direct/fixed flow). */
+  config?: AgendaFormConfig;
   /** When set, the dialog edits/reschedules this appointment. */
   appointment?: AppointmentDefaults;
-  trigger: React.ReactElement<Record<string, unknown>>;
+  /** Optional when the dialog is opened in a controlled way (open/onOpenChange). */
+  trigger?: React.ReactElement<Record<string, unknown>>;
   /** Pre-select a client (e.g. opening the agenda from a notification). */
   initialClientId?: string;
+  /** Pre-fill date/time/room (quick scheduling by clicking an empty slot). */
+  initialDate?: string;
+  initialTime?: string;
+  initialRoomId?: string;
   defaultOpen?: boolean;
+  /** Controlled open state (quick scheduling). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   /** SDR flow: choose the target unit first, then load its clients/staff. */
   units?: { id: string; name: string }[];
-  loadUnitData?: (
-    clinicId: string
-  ) => Promise<{
+  loadUnitData?: (clinicId: string) => Promise<{
     clients: { id: string; full_name: string; inactive?: boolean }[];
     staff: StaffOption[];
+    config: AgendaFormConfig;
   }>;
   /** Schedule into a specific clinic (e.g. the button inside a client ficha). */
   fixedClinicId?: string;
 }) {
   const isEdit = Boolean(appointment);
   const router = useRouter();
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isControlledOpen = open !== undefined;
+  const actualOpen = isControlledOpen ? open : internalOpen;
+  const setActualOpen = (o: boolean) => {
+    if (isControlledOpen) onOpenChange?.(o);
+    else setInternalOpen(o);
+  };
   const [isPending, startTransition] = useTransition();
   const [unitId, setUnitId] = useState("");
   const [unitClients, setUnitClients] = useState<
     { id: string; full_name: string; inactive?: boolean }[]
   >([]);
   const [unitStaff, setUnitStaff] = useState<StaffOption[]>([]);
+  const [unitConfig, setUnitConfig] = useState<AgendaFormConfig | null>(null);
   const [clientId, setClientId] = useState(initialClientId ?? "");
 
   const pickUnit = Boolean(units);
   const effectiveClients = pickUnit ? unitClients : clients;
   const effectiveStaff = pickUnit ? unitStaff : staff;
+  const effectiveConfig = pickUnit ? unitConfig : (config ?? null);
+  const rooms = useMemo(() => effectiveConfig?.rooms ?? [], [effectiveConfig]);
 
   function handleUnitChange(id: string) {
     setUnitId(id);
     setClientId("");
     setProviderId("");
+    setRoomId("");
     setSchedulingInfo(null);
     setUnitClients([]);
     setUnitStaff([]);
+    setUnitConfig(null);
     if (id && loadUnitData) {
       startTransition(async () => {
         const data = await loadUnitData(id);
         setUnitClients(data.clients);
         setUnitStaff(data.staff);
+        setUnitConfig(data.config);
       });
     }
   }
@@ -161,11 +198,14 @@ export function AppointmentFormDialog({
   const [providerId, setProviderId] = useState(
     appointment?.provider_user_id ?? ""
   );
+  const [roomId, setRoomId] = useState(
+    appointment?.room_id ?? initialRoomId ?? ""
+  );
   const [date, setDate] = useState(
-    appointment ? toLocalDate(appointment.starts_at) : ""
+    appointment ? toLocalDate(appointment.starts_at) : (initialDate ?? "")
   );
   const [time, setTime] = useState(
-    appointment ? toLocalTime(appointment.starts_at) : ""
+    appointment ? toLocalTime(appointment.starts_at) : (initialTime ?? "")
   );
   const [duration, setDuration] = useState(
     appointment
@@ -217,6 +257,30 @@ export function AppointmentFormDialog({
     .join(" ou ");
 
   const providerValid = providerItems.some((p) => p.value === providerId);
+
+  // Apresentação comercial = ONLINE (no physical room).
+  const isOnline = type === "commercial_presentation";
+  const isEncaixe = type === "urgency" || type === "emergency";
+
+  // Default room: coordinator's room for avaliação/reavaliação, else first room.
+  const prefersCoordRoom = type === "evaluation" || type === "reevaluation";
+  const defaultRoomId = useMemo(() => {
+    if (rooms.length === 0) return "";
+    const coord = effectiveConfig?.coordinatorRoomId;
+    if (prefersCoordRoom && coord && rooms.some((r) => r.id === coord)) {
+      return coord;
+    }
+    return rooms[0].id;
+  }, [rooms, effectiveConfig?.coordinatorRoomId, prefersCoordRoom]);
+
+  // Use the chosen room while it's valid; otherwise fall back to the default.
+  const effectiveRoomId = isOnline
+    ? ""
+    : roomId && rooms.some((r) => r.id === roomId)
+      ? roomId
+      : defaultRoomId;
+  const roomItems = rooms.map((r) => ({ value: r.id, label: r.name }));
+
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   // For today, don't offer times that have already passed.
@@ -226,9 +290,12 @@ export function AppointmentFormDialog({
   const [busy, setBusy] = useState<{
     providerBusy: BusyRange[];
     clientBusy: BusyRange[];
-  }>({ providerBusy: [], clientBusy: [] });
+    roomBusy: BusyRange[];
+  }>({ providerBusy: [], clientBusy: [], roomBusy: [] });
 
-  const shouldFetchBusy = Boolean(date && (clientId || providerId));
+  const shouldFetchBusy = Boolean(
+    date && (clientId || providerId || effectiveRoomId)
+  );
 
   useEffect(() => {
     if (!shouldFetchBusy) return;
@@ -237,6 +304,7 @@ export function AppointmentFormDialog({
       providerUserId: providerId || null,
       clientId: clientId || "",
       date,
+      roomId: effectiveRoomId || null,
       excludeId: appointment?.id,
     }).then((b) => {
       if (!cancelled) setBusy(b);
@@ -244,47 +312,92 @@ export function AppointmentFormDialog({
     return () => {
       cancelled = true;
     };
-  }, [shouldFetchBusy, date, clientId, providerId, appointment?.id]);
+  }, [shouldFetchBusy, date, clientId, providerId, effectiveRoomId, appointment?.id]);
 
   // When inputs are incomplete, ignore any stale busy data (derived, no effect).
-  // Memoized for a stable reference so the timeItems memo below isn't recomputed
-  // on every render.
   const effectiveBusy = useMemo(
     () =>
       shouldFetchBusy
         ? busy
-        : { providerBusy: [] as BusyRange[], clientBusy: [] as BusyRange[] },
+        : {
+            providerBusy: [] as BusyRange[],
+            clientBusy: [] as BusyRange[],
+            roomBusy: [] as BusyRange[],
+          },
     [shouldFetchBusy, busy]
   );
 
   const durationMin = Number(duration) || 60;
-  const isEncaixe = type === "urgency" || type === "emergency";
+
+  // Base slots: configured hours (15-min) for normal appointments, wide list
+  // for encaixe and when there's no agenda config yet.
+  const baseSlots = useMemo(() => {
+    if (isEncaixe || !effectiveConfig) return WIDE_TIME_ITEMS;
+    const openMin = timeToMinutes(effectiveConfig.openTime);
+    const closeMin = timeToMinutes(effectiveConfig.closeTime);
+    const items: { value: string; label: string }[] = [];
+    for (let m = openMin; m <= closeMin - SLOT_STEP; m += SLOT_STEP) {
+      const v = minutesToHHMM(m);
+      items.push({ value: v, label: v });
+    }
+    return items;
+  }, [isEncaixe, effectiveConfig]);
+
+  // Closed weekday (configured) blocks the day, except for encaixe.
+  const dayWeekday = date ? new Date(`${date}T00:00:00`).getDay() : null;
+  const dayClosed = Boolean(
+    !isEncaixe &&
+      effectiveConfig &&
+      dayWeekday !== null &&
+      !effectiveConfig.weekdays.includes(dayWeekday)
+  );
 
   const timeItems = useMemo(() => {
+    if (!date) return baseSlots;
+    if (dayClosed) return [];
+    const closeMin = effectiveConfig
+      ? timeToMinutes(effectiveConfig.closeTime)
+      : null;
     const base =
-      date === minDate
-        ? TIME_ITEMS.filter((t) => t.value > nowTime)
-        : TIME_ITEMS;
-    if (!date) return base;
+      date === minDate ? baseSlots.filter((t) => t.value > nowTime) : baseSlots;
     return base.filter((t) => {
+      const startMin = timeToMinutes(t.value);
+      if (!isEncaixe && closeMin !== null && startMin + durationMin > closeMin) {
+        return false;
+      }
       const s = new Date(`${date}T${t.value}:00`).getTime();
       const e = s + durationMin * 60_000;
       const overlaps = (r: BusyRange) =>
         s < new Date(r.ends_at).getTime() && e > new Date(r.starts_at).getTime();
       if (effectiveBusy.clientBusy.some(overlaps)) return false;
       if (!isEncaixe && effectiveBusy.providerBusy.some(overlaps)) return false;
+      if (!isEncaixe && !isOnline && effectiveBusy.roomBusy.some(overlaps)) {
+        return false;
+      }
       return true;
     });
-  }, [effectiveBusy, date, durationMin, isEncaixe, minDate, nowTime]);
+  }, [
+    baseSlots,
+    date,
+    dayClosed,
+    effectiveConfig,
+    durationMin,
+    isEncaixe,
+    isOnline,
+    minDate,
+    nowTime,
+    effectiveBusy,
+  ]);
 
-  // The chosen time, but only while it's still an available slot (provider or
-  // duration may have changed the free slots) — derived, no effect needed.
+  // The chosen time, but only while it's still an available slot.
   const effectiveTime =
     time && timeItems.some((t) => t.value === time) ? time : "";
 
   const lastWasMissed =
     schedulingInfo?.lastAppointment &&
     ["cancelled", "no_show"].includes(schedulingInfo.lastAppointment.status);
+
+  const roomMissing = !isOnline && rooms.length > 0 && !effectiveRoomId;
 
   function handleClientChange(id: string) {
     setClientId(id);
@@ -309,6 +422,7 @@ export function AppointmentFormDialog({
     formData.set("time", effectiveTime);
     formData.set("duration", duration);
     formData.set("provider_user_id", providerValid ? providerId : "");
+    formData.set("room_id", isOnline ? "" : effectiveRoomId);
 
     startTransition(async () => {
       const result = isEdit
@@ -316,7 +430,7 @@ export function AppointmentFormDialog({
         : await createAppointment(formData);
       if (result.ok) {
         toast.success(isEdit ? "Agendamento alterado." : "Agendamento criado.");
-        setOpen(false);
+        setActualOpen(false);
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
@@ -325,8 +439,8 @@ export function AppointmentFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={trigger} />
+    <Dialog open={actualOpen} onOpenChange={setActualOpen}>
+      {trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -441,10 +555,10 @@ export function AppointmentFormDialog({
                 ))}
               </SelectContent>
             </Select>
-            {(type === "urgency" || type === "emergency") && (
+            {isEncaixe && (
               <p className="text-xs text-muted-foreground">
-                {APPOINTMENT_TYPE_LABELS[type]} permite encaixe: pode ser
-                marcada mesmo em horário já ocupado.
+                {APPOINTMENT_TYPE_LABELS[type]} permite encaixe: pode ser marcada
+                em qualquer dia/horário, mesmo já ocupado.
               </p>
             )}
           </div>
@@ -478,6 +592,45 @@ export function AppointmentFormDialog({
               <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
                 Nenhum usuário com a função {allowedRoleLabels} nesta clínica.
                 Peça ao Admin Master para cadastrar.
+              </p>
+            )}
+          </div>
+
+          {/* Sala de atendimento (cadeira) — ONLINE para apresentação comercial */}
+          <div className="space-y-2">
+            <Label>Sala de atendimento{isOnline ? "" : " *"}</Label>
+            {isOnline ? (
+              <p className="flex items-center gap-1.5 rounded-md border border-sky-300 bg-sky-50 p-2 text-xs font-medium text-sky-700">
+                <Wifi className="size-3.5 shrink-0" />
+                ONLINE — apresentação comercial não ocupa sala física.
+              </p>
+            ) : rooms.length > 0 ? (
+              <Select
+                items={roomItems}
+                value={effectiveRoomId || null}
+                onValueChange={(v) => v !== null && setRoomId(v)}
+              >
+                <SelectTrigger className="w-full">
+                  {effectiveRoomId ? (
+                    <SelectValue />
+                  ) : (
+                    <span className="flex-1 text-left text-muted-foreground">
+                      Escolha a sala
+                    </span>
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {roomItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Esta unidade ainda não tem salas cadastradas (a Gerente pode
+                cadastrá-las em Configurar agenda).
               </p>
             )}
           </div>
@@ -528,7 +681,9 @@ export function AppointmentFormDialog({
           {date && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                Horários já ocupados não aparecem na lista.
+                {dayClosed
+                  ? "A unidade não atende neste dia da semana."
+                  : "Só aparecem horários livres dentro do funcionamento."}
               </span>
               <a
                 href={pickUnit && unitId ? `/agenda?unidade=${unitId}` : "/agenda"}
@@ -579,6 +734,7 @@ export function AppointmentFormDialog({
                 (pickUnit && !unitId) ||
                 (!isEdit && !clientId) ||
                 !providerValid ||
+                roomMissing ||
                 !effectiveTime
               }
             >

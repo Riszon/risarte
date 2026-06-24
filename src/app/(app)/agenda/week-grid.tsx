@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, UserRound } from "lucide-react";
+import { AlertTriangle, DoorOpen, Pencil, UserRound, Wifi } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +33,7 @@ import {
   type JourneyPhase,
   type MethodologyPillar,
 } from "@/lib/journey";
-import { updateAppointmentStatus } from "./actions";
+import { updateAppointmentStatus, type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 
 export type AgendaAppointment = {
@@ -45,6 +45,12 @@ export type AgendaAppointment = {
   notes: string | null;
   provider_user_id: string | null;
   provider: { full_name: string } | null;
+  /** Room (chair) the client is attended in; ONLINE for commercial. */
+  room_id?: string | null;
+  room_name?: string | null;
+  is_online?: boolean;
+  /** Flagged when an agenda closure (G4) requires this appointment to be moved. */
+  needs_reschedule?: boolean;
   /** Drives the intermediate label sync with the Atendimento screen. */
   attendance?: AttendanceStatus | null;
   /** Set only in the network (planner/franchisor) view. */
@@ -60,7 +66,7 @@ export type AgendaAppointment = {
 const WEEKDAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 // One color per status, applied to the card's left border + background tint.
-const STATUS_STYLES: Record<AppointmentStatus, string> = {
+export const STATUS_STYLES: Record<AppointmentStatus, string> = {
   scheduled: "border-l-4 border-l-sky-400 bg-sky-50",
   confirmed: "border-l-4 border-l-emerald-500 bg-emerald-50",
   completed: "border-l-4 border-l-zinc-400 bg-zinc-100 opacity-75",
@@ -68,7 +74,7 @@ const STATUS_STYLES: Record<AppointmentStatus, string> = {
   no_show: "border-l-4 border-l-orange-500 bg-orange-50",
 };
 
-const STATUS_DOT: Record<AppointmentStatus, string> = {
+export const STATUS_DOT: Record<AppointmentStatus, string> = {
   scheduled: "bg-sky-400",
   confirmed: "bg-emerald-500",
   completed: "bg-zinc-400",
@@ -77,7 +83,10 @@ const STATUS_DOT: Record<AppointmentStatus, string> = {
 };
 
 /** Status shown on the card, reflecting the attendance flow when in progress. */
-function displayedStatus(a: AgendaAppointment): { label: string; dot: string } {
+export function displayedStatus(a: AgendaAppointment): {
+  label: string;
+  dot: string;
+} {
   if (a.status === "completed" || a.attendance === "done") {
     return { label: "Realizado", dot: STATUS_DOT.completed };
   }
@@ -98,22 +107,43 @@ export function WeekGrid({
   appointments,
   canManage,
   staff,
+  config,
   highlightType,
   dayCount = 7,
+  weekdays,
+  openDayDates = [],
+  holidayClosedDates = [],
+  holidayOpenDates = [],
+  holidays = [],
 }: {
   weekStartIso: string;
   appointments: AgendaAppointment[];
   canManage: boolean;
   staff: StaffOption[];
+  /** Rooms + working hours, passed to the edit dialog. */
+  config?: AgendaFormConfig;
   /** Appointment type to highlight (e.g. commercial presentation for planner). */
   highlightType?: AppointmentType;
   /** Number of day columns (7 = week, 1 = single day). */
   dayCount?: number;
+  /** Configured working weekdays (G5). When set, non-working days are hidden. */
+  weekdays?: number[];
+  openDayDates?: string[];
+  holidayClosedDates?: string[];
+  holidayOpenDates?: string[];
+  holidays?: { date: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const weekStart = new Date(weekStartIso);
   const today = new Date();
+
+  const openDaySet = new Set(openDayDates);
+  const holidayClosedSet = new Set(holidayClosedDates);
+  const holidayOpenSet = new Set(holidayOpenDates);
+  const holidayNameByDate = new Map(holidays.map((h) => [h.date, h.name]));
+  const isoOf = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
   function setStatus(appointment: AgendaAppointment, status: AppointmentStatus) {
     startTransition(async () => {
@@ -129,11 +159,29 @@ export function WeekGrid({
     });
   }
 
-  const days = Array.from({ length: dayCount }, (_, i) => {
+  const hasAppts = (date: Date) =>
+    appointments.some(
+      (a) => new Date(a.starts_at).toDateString() === date.toDateString()
+    );
+
+  const allDays = Array.from({ length: dayCount }, (_, i) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + i);
     return date;
   });
+
+  // G5: when working weekdays are configured, hide days without attendance
+  // (keeping special open days, holiday-open days, and any day with bookings).
+  const days =
+    weekdays && dayCount > 1
+      ? allDays.filter((date) => {
+          const iso = isoOf(date);
+          if (holidayClosedSet.has(iso)) return hasAppts(date);
+          if (weekdays.includes(date.getDay())) return true;
+          if (openDaySet.has(iso) || holidayOpenSet.has(iso)) return true;
+          return hasAppts(date);
+        })
+      : allDays;
 
   function renderCard(appointment: AgendaAppointment, compact: boolean) {
     const isUrgent =
@@ -147,12 +195,19 @@ export function WeekGrid({
           "rounded-md border p-2 text-xs shadow-sm",
           STATUS_STYLES[appointment.status],
           isHighlighted && "ring-2 ring-gold border-l-gold",
+          appointment.needs_reschedule && "ring-2 ring-red-500 border-l-red-600",
           appointment.type === "urgency" &&
             "ring-2 ring-amber-400 border-l-amber-500",
           appointment.type === "emergency" &&
             "ring-2 ring-red-500 border-l-red-600"
         )}
       >
+        {appointment.needs_reschedule && (
+          <Badge className="mb-1 gap-1 bg-red-600 text-[10px] uppercase text-white">
+            <AlertTriangle className="size-3" />
+            Remarcar — agenda fechada
+          </Badge>
+        )}
         {isUrgent && (
           <Badge
             className={cn(
@@ -201,6 +256,19 @@ export function WeekGrid({
                 {appointment.provider.full_name}
               </p>
             )}
+            {appointment.is_online ? (
+              <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-medium text-sky-700">
+                <Wifi className="size-3 shrink-0" />
+                ONLINE
+              </p>
+            ) : (
+              appointment.room_name && (
+                <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                  <DoorOpen className="size-3 shrink-0" />
+                  {appointment.room_name}
+                </p>
+              )
+            )}
             {!compact &&
               (() => {
                 const pillar = displayedPillar(
@@ -244,6 +312,7 @@ export function WeekGrid({
                 <AppointmentFormDialog
                   clients={[]}
                   staff={staff}
+                  config={config}
                   appointment={{
                     id: appointment.id,
                     type: appointment.type,
@@ -251,6 +320,7 @@ export function WeekGrid({
                     ends_at: appointment.ends_at,
                     provider_user_id: appointment.provider_user_id,
                     notes: appointment.notes,
+                    room_id: appointment.room_id ?? null,
                     clientName: appointment.clients?.full_name ?? "",
                   }}
                   trigger={
@@ -320,15 +390,24 @@ export function WeekGrid({
         ))}
       </div>
 
+      {days.length === 0 ? (
+        <p className="rounded-lg border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+          Nenhum dia de atendimento neste período.
+        </p>
+      ) : (
       <div
         className="grid gap-2"
         style={{
-          minWidth: dayCount > 1 ? 980 : 280,
-          gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))`,
+          minWidth: days.length > 1 ? Math.max(280, days.length * 140) : 280,
+          gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
         }}
       >
         {days.map((date, i) => {
           const isToday = date.toDateString() === today.toDateString();
+          const iso = isoOf(date);
+          const holidayName = holidayNameByDate.get(iso);
+          const holidayClosed = holidayClosedSet.has(iso);
+          const isSpecialOpen = openDaySet.has(iso);
           const dayAppointments = appointments.filter(
             (a) => new Date(a.starts_at).toDateString() === date.toDateString()
           );
@@ -368,6 +447,23 @@ export function WeekGrid({
                     month: "2-digit",
                   })}
                 </span>
+                {holidayName && (
+                  <span
+                    className={cn(
+                      "mt-0.5 block truncate text-[10px]",
+                      isToday ? "text-primary-foreground/90" : "text-red-700"
+                    )}
+                    title={holidayName}
+                  >
+                    🎌 {holidayName}
+                    {holidayClosed ? " (fechado)" : ""}
+                  </span>
+                )}
+                {isSpecialOpen && !holidayName && (
+                  <span className="mt-0.5 block text-[10px] text-emerald-700">
+                    Dia avulso liberado
+                  </span>
+                )}
               </div>
               <div className="flex flex-1 flex-col gap-1.5 p-1.5">
                 {orderedGroups.map(([key, group]) =>
@@ -394,6 +490,7 @@ export function WeekGrid({
           );
         })}
       </div>
+      )}
     </div>
   );
 }

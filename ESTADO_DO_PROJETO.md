@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/06/2026 · Versão do sistema: **0.6.5** · Última migração: **0043**_
+_Atualizado em: 24/06/2026 · Versão do sistema: **0.7.7** · Última migração: **0047**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -35,13 +35,68 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
   (horário + cadeiras); **Relatórios** (resumo de agendamentos, rede por fase sem
   nomes, contadores do Planner).
 
-Migrações **0001–0043** escritas; **0001–0042 aplicadas**; **0043 pendente**.
+Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
 
-Nada em codificação. Aguardando o **teste final do LOTE B** e a aplicação da
-**migração 0043**. Nenhuma etapa nova foi iniciada (regra: não avançar sem o OK
-do dono).
+**LOTE G — Agenda (em curso).** Entregue e aguardando teste do dono:
+- **G1 — Salas + configuração na unidade:** nova tabela `clinic_rooms` (salas com
+  nome por unidade), sala do Coordenador Clínico em `clinic_agenda_settings`,
+  configuração da agenda liberada para a **Gerente de Unidade** (RLS + tela em
+  `/agenda/configuracao`), e contagem de salas exibida na agenda. Migração 0044.
+- **G2 — Agendar com sala:** agendamento passa a ter **sala** (`appointments.room_id`)
+  e marca **ONLINE** (`is_online`) para apresentação comercial; regra de ocupação
+  **por sala** (uma sala = um cliente por vez); o horário só oferece os **slots
+  configurados** (15 min, dentro do funcionamento e dias abertos); encaixe
+  (urgência/emergência) livre; sala/ONLINE aparece no **card**; sala padrão do
+  Coordenador em avaliação/reavaliação. Migração 0045.
+
+- **G3.1 — Grade de tempo + salas:** visão **Dia** vira grade com **colunas por
+  sala** (+ coluna ONLINE / "Sem sala" quando houver) e **régua de tempo** lateral
+  (hora + tiques de 15 min); **filtro de salas** por chips (`?salas=id,id,online`,
+  vazio = todas) que vale para Dia/Semana/Mês (`day-room-grid.tsx`,
+  `room-filter.tsx`). Sem nova migração.
+- **G3.2 — Agendamento rápido:** clicar num espaço vazio de uma sala (visão Dia)
+  abre o formulário já com **sala + data + horário** preenchidos; o formulário
+  ganhou abertura controlada + valores iniciais. Sem nova migração.
+- **G3.3 — Arrastar para remarcar:** card **futuro** pode ser arrastado para
+  outro horário/sala na visão Dia (chama `updateAppointment`, mantendo duração).
+  Filtro de salas agora **preservado** ao trocar de visão/navegar (`agendaHref`
+  leva `salas`); mensagem da grade orienta quando não há apresentação ONLINE no
+  dia. Sem nova migração.
+
+- **G4 — Fechar agenda:** tabela `agenda_closures` (+ salas/profissionais) e
+  `appointments.needs_reschedule`. Botão "Fechar agenda" (Recepção/Gerente/Admin)
+  bloqueia período por **unidade / salas / profissionais** (motivo: pessoal,
+  evento, manutenção, treinamento) via RPCs SECURITY DEFINER `create_agenda_closure`
+  / `delete_agenda_closure`. Bloqueia novos agendamentos **inclusive encaixe**;
+  agendamentos existentes no período são **sinalizados** (ícone de alerta no card)
+  e geram **notificação** (categoria "Agenda") para a recepção remarcar; remarcar
+  com sucesso limpa o alerta. Faixas de fechamento aparecem na visão Dia + banner
+  com remover. Migração 0046.
+
+Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia todos
+(inclusive encaixe); afetados são sinalizados (sem cancelamento automático).
+
+- **G5 — Dias de atendimento, feriados e dia avulso:** a agenda mostra **só os
+  dias configurados** (Semana esconde dias sem atendimento; Dia mostra aviso
+  "não atende"). **Liberar dia avulso** na Configurar agenda (uma ou várias
+  datas + escalar quem atende, que recebe notificação) — tabela `agenda_open_days`
+  (+ staff). **Feriados nacionais** (fixos + móveis via Páscoa, `lib/holidays.ts`)
+  marcados na agenda; a Gerente **confirma** (haverá atendimento? Sim/Não →
+  `clinic_holiday_decisions`) e recebe **notificação** de feriados próximos
+  pendentes (`notify_pending_holidays`, idempotente). Feriado "não atende"
+  bloqueia novos agendamentos; pendente apenas avisa (decisão do dono). RPCs
+  `open_special_days`/`remove_special_day`/`decide_holiday`. Migração 0047.
+
+- **G6 — Retornos e controles:** rota `/agenda/retornos` (botão na agenda, para
+  Recepção/Gerente/Admin) — lista os **retornos e controles agendados** (tipos
+  Retorno/Reavaliação no futuro) e os clientes em **Acompanhamento/Reavaliação
+  sem agendamento futuro** ("a lembrar de reagendar", com última visita e botão
+  Agendar). Sem nova migração.
+
+**LOTE G (Agenda) COMPLETO (G1–G6).** Aguardando teste final do dono.
+Migrações do Lote G: **0044–0047** (0043 também faz parte da base da agenda).
 
 ## 3. Próximos passos (ordem de prioridade)
 

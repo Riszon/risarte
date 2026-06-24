@@ -120,15 +120,17 @@ export function agendaRange(view: AgendaView, ref: Date): AgendaRange {
   };
 }
 
-/** Build the agenda URL for a view + reference date (preserving the unit). */
+/** Build the agenda URL for a view + reference date (preserving unit + rooms). */
 export function agendaHref(
   view: AgendaView,
   refIso: string,
-  unidade?: string
+  unidade?: string,
+  salas?: string
 ): string {
   const p = new URLSearchParams();
   p.set("vista", view);
   p.set("ref", refIso);
   if (unidade) p.set("unidade", unidade);
+  if (salas) p.set("salas", salas);
   return `/agenda?${p.toString()}`;
 }

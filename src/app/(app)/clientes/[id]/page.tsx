@@ -20,7 +20,10 @@ import {
 } from "./journey-section";
 import { PendingDecision } from "./pending-decision";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
-import { getUnitSchedulingData } from "../../agenda/actions";
+import {
+  getUnitSchedulingData,
+  type AgendaFormConfig,
+} from "../../agenda/actions";
 import {
   ClinicalSection,
   type ClinicalMediaItem,
@@ -432,8 +435,11 @@ export default async function ClientDetailPage(
     client.status !== "anonymized" &&
     (hasRoleInClinic(session, scheduleClinicId, ["receptionist"]) || isSdr);
   let fichaStaff: StaffOption[] = [];
+  let fichaConfig: AgendaFormConfig | undefined;
   if (canScheduleFromFicha) {
-    fichaStaff = (await getUnitSchedulingData(scheduleClinicId)).staff;
+    const schedulingData = await getUnitSchedulingData(scheduleClinicId);
+    fichaStaff = schedulingData.staff;
+    fichaConfig = schedulingData.config;
   }
 
   // -- Avaliação clínica (Etapa 4/E7): registra na unidade ATIVA quando ela é a
@@ -752,6 +758,7 @@ export default async function ClientDetailPage(
                 },
               ]}
               staff={fichaStaff}
+              config={fichaConfig}
               initialClientId={client.id}
               fixedClinicId={scheduleClinicId}
               trigger={<Button size="sm">Novo agendamento</Button>}
