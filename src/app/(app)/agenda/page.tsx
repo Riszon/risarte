@@ -27,6 +27,7 @@ import {
 } from "./actions";
 import { holidaysInRange } from "@/lib/holidays";
 import { WeekGrid, type AgendaAppointment } from "./week-grid";
+import { WeekTimeGrid } from "./week-time-grid";
 import { MonthView } from "./month-grid";
 import { DayRoomGrid } from "./day-room-grid";
 import { RoomFilter } from "./room-filter";
@@ -515,6 +516,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               clients={clients}
               staff={staff}
               config={formConfig}
+              activeClinicId={clinicId}
               trigger={<Button size="sm">Novo agendamento</Button>}
               initialClientId={preselectClientId}
               defaultOpen={Boolean(preselectClientId)}
@@ -558,13 +560,14 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               clinicId={clinicId}
             />
           ) : (
-            <WeekGrid
+            <WeekTimeGrid
               weekStartIso={range.start.toISOString()}
               appointments={filteredUnitAppointments}
               canManage={canSchedule}
               staff={staff}
               config={formConfig}
-              dayCount={range.dayCount}
+              clients={clients}
+              activeClinicId={clinicId}
               weekdays={formConfig?.weekdays}
               openDayDates={openDayDates}
               holidayClosedDates={holidayClosedDates}

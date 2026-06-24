@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,11 @@ import {
   type AppointmentType,
 } from "@/lib/appointments";
 import { PHASE_LABELS, type JourneyPhase } from "@/lib/journey";
+import {
+  resolveInactivity,
+  type InactivitySettingRow,
+} from "@/lib/sla";
+import { FilterForm } from "@/components/filter-form";
 
 export const metadata: Metadata = { title: "Retornos e controles" };
 
@@ -31,9 +37,13 @@ type UpcomingRow = {
   clients: { id: string; full_name: string } | null;
 };
 
-export default async function ReturnsPage() {
+export default async function ReturnsPage(
+  props: PageProps<"/agenda/retornos">
+) {
   const session = await getSessionContext();
   const clinic = session.activeClinic;
+  const sp = await props.searchParams;
+  const order = sp.ordem === "asc" ? "asc" : "desc"; // default: longest first
 
   if (!clinic || clinic.type === "franchisor") {
     return (
@@ -94,26 +104,97 @@ export default async function ReturnsPage() {
   const ids = (candidates ?? []).map((c) => c.id);
   const scheduledSet = new Set<string>();
   const lastVisitByClient = new Map<string, string>();
+  const lastProviderByClient = new Map<string, string>();
+
+  const { data: inactivityRows } = await supabase
+    .from("inactivity_settings")
+    .select("id, clinic_id, setting_key, value_days")
+    .returns<InactivitySettingRow[]>();
+  const inactivity = resolveInactivity(inactivityRows ?? [], clinic.id);
+
   if (ids.length > 0) {
     const { data: apptRows } = await supabase
       .from("appointments")
-      .select("client_id, starts_at, status")
+      .select(
+        "client_id, starts_at, status, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+      )
       .eq("clinic_id", clinic.id)
       .in("client_id", ids)
       .order("starts_at", { ascending: false });
-    for (const a of apptRows ?? []) {
-      const active = a.status !== "cancelled" && a.status !== "no_show";
-      if (active && a.starts_at >= nowIso) scheduledSet.add(a.client_id);
+    for (const a of (apptRows ?? []) as unknown as {
+      client_id: string;
+      starts_at: string;
+      status: string;
+      provider: { full_name: string } | null;
+    }[]) {
+      const isActive = a.status !== "cancelled" && a.status !== "no_show";
+      if (isActive && a.starts_at >= nowIso) scheduledSet.add(a.client_id);
       if (
         a.starts_at < nowIso &&
-        active &&
+        isActive &&
         !lastVisitByClient.has(a.client_id)
       ) {
         lastVisitByClient.set(a.client_id, a.starts_at);
+        if (a.provider?.full_name) {
+          lastProviderByClient.set(a.client_id, a.provider.full_name);
+        }
       }
     }
   }
-  const pending = (candidates ?? []).filter((c) => !scheduledSet.has(c.id));
+
+  const nowMs = new Date(nowIso).getTime();
+  function thresholdFor(phase: JourneyPhase): number | null {
+    if (phase === "reevaluation")
+      return inactivity.phase5_6_no_appt_days ?? inactivity.no_attendance_days;
+    if (phase === "follow_up")
+      return inactivity.phase7_inactivity_days ?? inactivity.no_attendance_days;
+    return inactivity.no_attendance_days;
+  }
+  type Severity = "ok" | "warn" | "alert" | "unknown";
+  type PendingItem = {
+    id: string;
+    full_name: string;
+    journey_phase: JourneyPhase;
+    daysSince: number | null;
+    threshold: number | null;
+    severity: Severity;
+    lastVisit: string | null;
+    lastProvider: string | null;
+  };
+  const pendingItems: PendingItem[] = (candidates ?? [])
+    .filter((c) => !scheduledSet.has(c.id))
+    .map((c) => {
+      const last = lastVisitByClient.get(c.id) ?? null;
+      const daysSince = last
+        ? Math.floor((nowMs - new Date(last).getTime()) / 86_400_000)
+        : null;
+      const threshold = thresholdFor(c.journey_phase);
+      let severity: Severity = "unknown";
+      if (daysSince !== null) {
+        if (threshold && threshold > 0) {
+          const ratio = daysSince / threshold;
+          severity = ratio >= 0.8 ? "alert" : ratio >= 0.5 ? "warn" : "ok";
+        } else {
+          severity = "ok";
+        }
+      }
+      return {
+        id: c.id,
+        full_name: c.full_name,
+        journey_phase: c.journey_phase,
+        daysSince,
+        threshold,
+        severity,
+        lastVisit: last,
+        lastProvider: lastProviderByClient.get(c.id) ?? null,
+      };
+    });
+  // Default priority: longest without attendance first (no visit = most urgent).
+  const rank = (it: PendingItem) =>
+    it.daysSince === null ? Number.POSITIVE_INFINITY : it.daysSince;
+  pendingItems.sort((a, b) =>
+    order === "asc" ? rank(a) - rank(b) : rank(b) - rank(a)
+  );
 
   const fmtDateTime = (iso: string) =>
     new Date(iso).toLocaleString("pt-BR", {
@@ -199,40 +280,77 @@ export default async function ReturnsPage() {
 
       {/* A reagendar (pré-agendados) ------------------------------------- */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">
             A lembrar de reagendar{" "}
             <span className="font-normal text-muted-foreground">
-              ({pending.length})
+              ({pendingItems.length})
             </span>
           </CardTitle>
+          <FilterForm className="flex items-center gap-1.5 text-xs">
+            <label htmlFor="ordem" className="text-muted-foreground">
+              Ordem:
+            </label>
+            <select
+              id="ordem"
+              name="ordem"
+              defaultValue={order}
+              className="h-8 rounded-lg border border-input bg-transparent px-2 text-xs"
+            >
+              <option value="desc">Maior tempo sem atendimento primeiro</option>
+              <option value="asc">Menor tempo primeiro</option>
+            </select>
+          </FilterForm>
         </CardHeader>
         <CardContent>
-          {pending.length === 0 ? (
+          {pendingItems.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhum cliente pendente de retorno no momento.
             </p>
           ) : (
             <ul className="divide-y rounded-lg border">
-              {pending.map((c) => {
-                const last = lastVisitByClient.get(c.id);
+              {pendingItems.map((c) => {
+                const tone =
+                  c.severity === "alert"
+                    ? "text-red-700"
+                    : c.severity === "warn"
+                      ? "text-amber-700"
+                      : "text-muted-foreground";
+                const timeLabel =
+                  c.daysSince === null
+                    ? "sem visita registrada"
+                    : `${c.daysSince} dia${c.daysSince === 1 ? "" : "s"} sem atendimento`;
                 return (
                   <li
                     key={c.id}
                     className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
                   >
-                    <div>
-                      <Link
-                        href={`/clientes/${c.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {c.full_name}
-                      </Link>
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {PHASE_LABELS[c.journey_phase]}
-                        {last ? ` · última visita ${fmtDate(last)}` : ""}
-                      </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {c.severity === "alert" && (
+                          <AlertTriangle className="size-3.5 shrink-0 text-red-600" />
+                        )}
+                        {c.severity === "warn" && (
+                          <Clock className="size-3.5 shrink-0 text-amber-600" />
+                        )}
+                        <Link
+                          href={`/clientes/${c.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {c.full_name}
+                        </Link>
+                        <span className={`text-xs font-medium ${tone}`}>
+                          · {timeLabel}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {PHASE_LABELS[c.journey_phase]}
+                        {c.lastVisit ? ` · última visita ${fmtDate(c.lastVisit)}` : ""}
+                        {c.lastProvider ? ` · atendeu: ${c.lastProvider}` : ""}
+                        {c.severity === "alert" && c.threshold
+                          ? ` · próximo da inatividade (${c.threshold}d)`
+                          : ""}
+                      </p>
                     </div>
                     <Button
                       size="sm"

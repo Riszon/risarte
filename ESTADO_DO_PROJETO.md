@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/06/2026 · Versão do sistema: **0.7.7** · Última migração: **0047**_
+_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.0** · Última migração: **0047**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -95,8 +95,27 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   sem agendamento futuro** ("a lembrar de reagendar", com última visita e botão
   Agendar). Sem nova migração.
 
-**LOTE G (Agenda) COMPLETO (G1–G6).** Aguardando teste final do dono.
-Migrações do Lote G: **0044–0047** (0043 também faz parte da base da agenda).
+**LOTE G (Agenda) COMPLETO (G1–G6).** Migrações do Lote G: **0044–0047**.
+
+**Refinamentos da Agenda — GR1+GR2+GR5 entregues (sem migração, v0.8.0):**
+- **GR1 — Agendamento inteligente:** duração mín. 15 min; **próximos horários
+  disponíveis** (`getNextAvailableSlots`, 3 + "ver mais", clique confirma) por
+  tipo/duração/profissional/sala respeitando dias/horários/feriados/fechamentos/
+  ocupação; **"Ver agenda"** virou pop-up de mês com contagem por dia
+  (`agenda-peek-dialog`, `getMonthDayCounts`) — clicar no dia preenche a data.
+- **GR2 — Cards e arrastar:** ícone **i** no card abre detalhes em leitura
+  (`appointment-info-dialog`); ao **arrastar** mostra o horário-alvo; visão
+  **Semana** virou **grade de tempo** com régua hora/15min (`week-time-grid`,
+  dias em colunas, só dias de atendimento).
+- **GR5 — Retornos:** "a lembrar" mostra **dias sem atendimento** com cores/ícones
+  pela inatividade do SLA (`resolveInactivity`), **ordenação** (padrão maior
+  tempo primeiro) e **quem atendeu por último**.
+
+Faltam (com migração, nesta ordem): **GR3** (fechamento: editar/confirmar/
+bloquear passado/avisos/ícones semana-mês), **GR4** (dia avulso com horário +
+carimbo + editar; horário de almoço; destaques em todas as visões), **GR6**
+(Planejamento Anual de Atendimento). Depois: **Lote H** (cronômetros do
+Atendimento).
 
 ## 3. Próximos passos (ordem de prioridade)
 

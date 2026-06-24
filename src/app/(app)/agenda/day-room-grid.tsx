@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, Lock, Pencil, UserRound, Wifi, X } from "lucide-react";
+import { AlertTriangle, Info, Lock, Pencil, UserRound, Wifi, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,7 @@ import {
   type AgendaClosure,
 } from "@/lib/closures";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
+import { AppointmentInfoDialog } from "./appointment-info-dialog";
 import {
   STATUS_STYLES,
   STATUS_DOT,
@@ -170,6 +171,10 @@ export function DayRoomGrid({
 
   // Drag-to-reschedule (G3.3): a future card can be dragged to a new slot/room.
   const [dragAppt, setDragAppt] = useState<AgendaAppointment | null>(null);
+  // Where the dragged card would land (GR2: clear visual feedback).
+  const [dragOver, setDragOver] = useState<{ col: string; time: string } | null>(
+    null
+  );
 
   function setStatus(appointment: AgendaAppointment, status: AppointmentStatus) {
     startTransition(async () => {
@@ -399,7 +404,10 @@ export function DayRoomGrid({
               }
             : undefined
         }
-        onDragEnd={() => setDragAppt(null)}
+        onDragEnd={() => {
+          setDragAppt(null);
+          setDragOver(null);
+        }}
         className={cn(
           "absolute overflow-hidden rounded-md border px-1.5 py-1 text-[11px] shadow-sm",
           STATUS_STYLES[appointment.status],
@@ -425,6 +433,20 @@ export function DayRoomGrid({
               minute: "2-digit",
             })}
           </span>
+          <span className="flex items-center">
+            <AppointmentInfoDialog
+              appointment={appointment}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0"
+                  aria-label="Ver informações"
+                >
+                  <Info className="size-3" />
+                </Button>
+              }
+            />
           {canManage && isFuture && (
             <AppointmentFormDialog
               clients={[]}
@@ -452,6 +474,7 @@ export function DayRoomGrid({
               }
             />
           )}
+          </span>
         </div>
         {appointment.clients && (
           <Link
@@ -690,7 +713,12 @@ export function DayRoomGrid({
                 onDragOver={
                   droppable
                     ? (e) => {
-                        if (dragAppt) e.preventDefault();
+                        if (!dragAppt) return;
+                        e.preventDefault();
+                        const t = slotTimeFromEvent(e);
+                        if (dragOver?.col !== c.key || dragOver?.time !== t) {
+                          setDragOver({ col: c.key, time: t });
+                        }
                       }
                     : undefined
                 }
@@ -701,11 +729,26 @@ export function DayRoomGrid({
                         if (dragAppt) {
                           reschedule(dragAppt, c.key, slotTimeFromEvent(e));
                           setDragAppt(null);
+                          setDragOver(null);
                         }
                       }
                     : undefined
                 }
               >
+                {dragOver?.col === c.key && (
+                  <div
+                    className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
+                    style={{
+                      top:
+                        (timeToMin(dragOver.time) - winStart) * PX_PER_MIN,
+                    }}
+                  >
+                    <div className="h-0.5 w-full bg-primary" />
+                    <span className="absolute -top-2 left-1 rounded bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                      {dragOver.time}
+                    </span>
+                  </div>
+                )}
                 {isRoomColumn &&
                   closuresForColumn(c.key).map((cl) =>
                     renderClosureOverlay(cl)
@@ -732,6 +775,7 @@ export function DayRoomGrid({
           clients={clients ?? []}
           staff={staff}
           config={config}
+          activeClinicId={clinicId}
           open
           onOpenChange={(o) => {
             if (!o) setQuick(null);

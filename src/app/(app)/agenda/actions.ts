@@ -20,6 +20,13 @@ import {
   CLOSURE_REASON_LABELS,
   type AgendaClosureRow,
 } from "@/lib/closures";
+import { toIsoDate } from "@/lib/agenda-view";
+
+/** "minutes since midnight" → "HH:MM". */
+function minutesToHHMM(m: number): string {
+  const mm = ((m % 1440) + 1440) % 1440;
+  return `${String(Math.floor(mm / 60)).padStart(2, "0")}:${String(mm % 60).padStart(2, "0")}`;
+}
 
 /** Agenda config the scheduling dialog needs to offer only valid slots/rooms. */
 export type AgendaFormConfig = {
@@ -957,4 +964,180 @@ export async function notifyPendingHolidays(
     p_names: names,
   });
   if (error) console.error("notify_pending_holidays failed:", error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Smart scheduling (GR1): next available slots and per-day counts for the
+// "Ver agenda" picker.
+// ---------------------------------------------------------------------------
+export type AvailableSlot = { date: string; time: string };
+
+/**
+ * Next available start times for a unit, respecting working days/hours, special
+ * open days, holiday-closed days, agenda closures and the busy times of the
+ * chosen provider / room / client. Used to suggest slots in the dialog.
+ */
+export async function getNextAvailableSlots(params: {
+  clinicId: string;
+  providerUserId: string | null;
+  roomId: string | null;
+  clientId: string | null;
+  isOnline: boolean;
+  durationMin: number;
+  limit: number;
+}): Promise<AvailableSlot[]> {
+  await getSessionContext();
+  const { clinicId, providerUserId, roomId, clientId, isOnline } = params;
+  const durationMin = Math.max(15, params.durationMin || 60);
+  const limit = Math.max(1, Math.min(30, params.limit || 3));
+  if (!clinicId) return [];
+
+  const DAYS_AHEAD = 45;
+  const now = new Date();
+  const winStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const winEnd = new Date(winStart);
+  winEnd.setDate(winEnd.getDate() + DAYS_AHEAD);
+  const startIso = winStart.toISOString();
+  const endIso = winEnd.toISOString();
+
+  const supabase = await createClient();
+  const [
+    { data: settingRows },
+    { data: closureRows },
+    { data: openDayRows },
+    { data: holidayRows },
+    { data: apptRows },
+  ] = await Promise.all([
+    supabase
+      .from("clinic_agenda_settings")
+      .select("clinic_id, open_time, close_time, weekdays, chairs")
+      .returns<AgendaSettingRow[]>(),
+    supabase
+      .from("agenda_closures")
+      .select(
+        "id, starts_at, ends_at, scope, reason, note, agenda_closure_rooms ( room_id ), agenda_closure_providers ( user_id )"
+      )
+      .eq("clinic_id", clinicId)
+      .lt("starts_at", endIso)
+      .gt("ends_at", startIso),
+    supabase
+      .from("agenda_open_days")
+      .select("date")
+      .eq("clinic_id", clinicId)
+      .gte("date", toIsoDate(winStart))
+      .lt("date", toIsoDate(winEnd)),
+    supabase
+      .from("clinic_holiday_decisions")
+      .select("holiday_date, will_attend")
+      .eq("clinic_id", clinicId)
+      .gte("holiday_date", toIsoDate(winStart))
+      .lt("holiday_date", toIsoDate(winEnd)),
+    supabase
+      .from("appointments")
+      .select("provider_user_id, room_id, client_id, starts_at, ends_at, status, type")
+      .eq("clinic_id", clinicId)
+      .gte("starts_at", startIso)
+      .lt("starts_at", endIso),
+  ]);
+
+  const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
+  const closures = (closureRows ?? []).map((r) => mapClosure(r as AgendaClosureRow));
+  const openDaySet = new Set((openDayRows ?? []).map((r) => r.date as string));
+  const holidayDecision = new Map<string, boolean>();
+  for (const r of (holidayRows ?? []) as {
+    holiday_date: string;
+    will_attend: boolean;
+  }[]) {
+    holidayDecision.set(r.holiday_date, r.will_attend);
+  }
+  const active = (s: string) => s !== "cancelled" && s !== "no_show";
+  const appts = (apptRows ?? []).filter((a) => active(a.status));
+
+  const openMin = timeToMinutes(cfg.openTime);
+  const closeMin = timeToMinutes(cfg.closeTime);
+  const nowMs = Date.now();
+  const slots: AvailableSlot[] = [];
+
+  for (let d = 0; d < DAYS_AHEAD && slots.length < limit; d++) {
+    const day = new Date(winStart);
+    day.setDate(day.getDate() + d);
+    const dateOnly = toIsoDate(day);
+    const hd = holidayDecision.get(dateOnly);
+    if (hd === false) continue;
+    const dayOpen =
+      cfg.weekdays.includes(day.getDay()) || openDaySet.has(dateOnly) || hd === true;
+    if (!dayOpen) continue;
+
+    for (let m = openMin; m + durationMin <= closeMin && slots.length < limit; m += 15) {
+      const startMs = new Date(`${dateOnly}T${minutesToHHMM(m)}:00`).getTime();
+      const endMs = startMs + durationMin * 60_000;
+      if (startMs < nowMs) continue;
+
+      const closed = closures.some((c) =>
+        closureBlocks(c, {
+          startMs,
+          endMs,
+          roomId: isOnline ? null : roomId,
+          providerId: providerUserId,
+        })
+      );
+      if (closed) continue;
+
+      const overlap = (s: string, e: string) =>
+        startMs < new Date(e).getTime() && endMs > new Date(s).getTime();
+      if (
+        providerUserId &&
+        appts.some(
+          (a) =>
+            a.provider_user_id === providerUserId &&
+            a.type !== "urgency" &&
+            a.type !== "emergency" &&
+            overlap(a.starts_at, a.ends_at)
+        )
+      )
+        continue;
+      if (
+        !isOnline &&
+        roomId &&
+        appts.some((a) => a.room_id === roomId && overlap(a.starts_at, a.ends_at))
+      )
+        continue;
+      if (
+        clientId &&
+        appts.some((a) => a.client_id === clientId && overlap(a.starts_at, a.ends_at))
+      )
+        continue;
+
+      slots.push({ date: dateOnly, time: minutesToHHMM(m) });
+    }
+  }
+  return slots;
+}
+
+/** Per-day appointment counts for a month (the "Ver agenda" picker). */
+export async function getMonthDayCounts(
+  clinicId: string,
+  monthRefIso: string
+): Promise<Record<string, number>> {
+  await getSessionContext();
+  const ref = new Date(monthRefIso);
+  if (Number.isNaN(ref.getTime())) return {};
+  const monthStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
+  const monthEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("appointments")
+    .select("starts_at, status")
+    .eq("clinic_id", clinicId)
+    .gte("starts_at", monthStart.toISOString())
+    .lt("starts_at", monthEnd.toISOString());
+
+  const counts: Record<string, number> = {};
+  for (const a of data ?? []) {
+    if (a.status === "cancelled" || a.status === "no_show") continue;
+    counts[toIsoDate(new Date(a.starts_at))] =
+      (counts[toIsoDate(new Date(a.starts_at))] ?? 0) + 1;
+  }
+  return counts;
 }

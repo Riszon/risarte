@@ -39,13 +39,17 @@ import {
   createAppointment,
   getClientSchedulingInfo,
   getDayBusyTimes,
+  getNextAvailableSlots,
   updateAppointment,
   type AgendaFormConfig,
+  type AvailableSlot,
   type BusyRange,
   type SchedulingInfo,
 } from "./actions";
+import { AgendaPeekDialog } from "./agenda-peek-dialog";
 
 const DURATION_ITEMS = [
+  { value: "15", label: "15 minutos" },
   { value: "30", label: "30 minutos" },
   { value: "45", label: "45 minutos" },
   { value: "60", label: "1 hora" },
@@ -118,6 +122,7 @@ export function AppointmentFormDialog({
   units,
   loadUnitData,
   fixedClinicId,
+  activeClinicId,
 }: {
   clients: { id: string; full_name: string; inactive?: boolean }[];
   staff: StaffOption[];
@@ -146,6 +151,8 @@ export function AppointmentFormDialog({
   }>;
   /** Schedule into a specific clinic (e.g. the button inside a client ficha). */
   fixedClinicId?: string;
+  /** The active unit's clinic id (direct flow) — for slot suggestions / peek. */
+  activeClinicId?: string;
 }) {
   const isEdit = Boolean(appointment);
   const router = useRouter();
@@ -170,6 +177,9 @@ export function AppointmentFormDialog({
   const effectiveStaff = pickUnit ? unitStaff : staff;
   const effectiveConfig = pickUnit ? unitConfig : (config ?? null);
   const rooms = useMemo(() => effectiveConfig?.rooms ?? [], [effectiveConfig]);
+  const effectiveClinicId = pickUnit
+    ? unitId
+    : (fixedClinicId ?? activeClinicId ?? "");
 
   function handleUnitChange(id: string) {
     setUnitId(id);
@@ -218,6 +228,7 @@ export function AppointmentFormDialog({
         )
       : "60"
   );
+  const [notes, setNotes] = useState(appointment?.notes ?? "");
 
   const clientItems = effectiveClients.map((c) => ({
     value: c.id,
@@ -399,6 +410,53 @@ export function AppointmentFormDialog({
 
   const roomMissing = !isOnline && rooms.length > 0 && !effectiveRoomId;
 
+  // Suggested next available slots (GR1).
+  const [slotLimit, setSlotLimit] = useState(3);
+  const [slotState, setSlotState] = useState<{
+    key: string;
+    slots: AvailableSlot[];
+  }>({ key: "", slots: [] });
+  const canSuggest =
+    !isEdit &&
+    Boolean(effectiveClinicId) &&
+    providerValid &&
+    Boolean(clientId) &&
+    (isOnline || Boolean(effectiveRoomId));
+  const slotKey = canSuggest
+    ? `${effectiveClinicId}|${providerId}|${effectiveRoomId}|${isOnline}|${clientId}|${durationMin}|${slotLimit}`
+    : "";
+
+  useEffect(() => {
+    if (!canSuggest) return;
+    let cancelled = false;
+    getNextAvailableSlots({
+      clinicId: effectiveClinicId,
+      providerUserId: providerId || null,
+      roomId: isOnline ? null : effectiveRoomId || null,
+      clientId: clientId || null,
+      isOnline,
+      durationMin,
+      limit: slotLimit,
+    }).then((res) => {
+      if (!cancelled) setSlotState({ key: slotKey, slots: res });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canSuggest,
+    slotKey,
+    effectiveClinicId,
+    providerId,
+    effectiveRoomId,
+    clientId,
+    isOnline,
+    durationMin,
+    slotLimit,
+  ]);
+  const slots = slotState.key === slotKey ? slotState.slots : [];
+  const slotsLoading = canSuggest && slotState.key !== slotKey;
+
   function handleClientChange(id: string) {
     setClientId(id);
     setSchedulingInfo(null);
@@ -412,17 +470,19 @@ export function AppointmentFormDialog({
     });
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+  function doSubmit(slotDate: string, slotTime: string) {
+    if (!slotDate || !slotTime) return;
+    const formData = new FormData();
     if (!isEdit) formData.set("client_id", clientId);
     if (pickUnit) formData.set("clinic_id", unitId);
     else if (fixedClinicId) formData.set("clinic_id", fixedClinicId);
     formData.set("type", type);
-    formData.set("time", effectiveTime);
+    formData.set("date", slotDate);
+    formData.set("time", slotTime);
     formData.set("duration", duration);
     formData.set("provider_user_id", providerValid ? providerId : "");
     formData.set("room_id", isOnline ? "" : effectiveRoomId);
+    formData.set("notes", notes);
 
     startTransition(async () => {
       const result = isEdit
@@ -436,6 +496,11 @@ export function AppointmentFormDialog({
         toast.error(result.error ?? "Algo deu errado.");
       }
     });
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    doSubmit(date, effectiveTime);
   }
 
   return (
@@ -678,21 +743,71 @@ export function AppointmentFormDialog({
             </div>
           </div>
 
-          {date && (
-            <div className="flex items-center justify-between text-xs">
+          {canSuggest && (
+            <div className="space-y-1.5 rounded-md border bg-muted/30 p-2">
+              <p className="text-xs font-medium">
+                Próximos horários disponíveis
+              </p>
+              {slotsLoading && slots.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Buscando horários…
+                </p>
+              ) : slots.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Nenhum horário livre nos próximos dias com esses filtros.
+                </p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {slots.map((s) => (
+                    <button
+                      key={`${s.date}-${s.time}`}
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => doSubmit(s.date, s.time)}
+                      className="rounded-full border bg-background px-2.5 py-1 text-xs hover:border-primary hover:bg-primary/5"
+                    >
+                      {new Date(`${s.date}T00:00:00`).toLocaleDateString("pt-BR", {
+                        weekday: "short",
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}{" "}
+                      {s.time}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={isPending || slotsLoading}
+                    onClick={() => setSlotLimit((n) => n + 5)}
+                    className="px-1.5 py-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    ver mais
+                  </button>
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground">
+                Clique num horário para confirmar o agendamento.
+              </p>
+            </div>
+          )}
+
+          {(date || effectiveClinicId) && (
+            <div className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">
-                {dayClosed
-                  ? "A unidade não atende neste dia da semana."
-                  : "Só aparecem horários livres dentro do funcionamento."}
+                {date
+                  ? dayClosed
+                    ? "A unidade não atende neste dia da semana."
+                    : "Só aparecem horários livres dentro do funcionamento."
+                  : ""}
               </span>
-              <a
-                href={pickUnit && unitId ? `/agenda?unidade=${unitId}` : "/agenda"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
-              >
-                Ver agenda
-              </a>
+              {effectiveClinicId && (
+                <AgendaPeekDialog
+                  clinicId={effectiveClinicId}
+                  onPickDate={(iso) => {
+                    setDate(iso);
+                    setTime("");
+                  }}
+                />
+              )}
             </div>
           )}
 
@@ -722,7 +837,8 @@ export function AppointmentFormDialog({
               id="notes"
               name="notes"
               placeholder="Opcional"
-              defaultValue={appointment?.notes ?? ""}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 

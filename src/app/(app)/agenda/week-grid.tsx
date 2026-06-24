@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, DoorOpen, Pencil, UserRound, Wifi } from "lucide-react";
+import { AlertTriangle, DoorOpen, Info, Pencil, UserRound, Wifi } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +35,7 @@ import {
 } from "@/lib/journey";
 import { updateAppointmentStatus, type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
+import { AppointmentInfoDialog } from "./appointment-info-dialog";
 
 export type AgendaAppointment = {
   id: string;
@@ -305,8 +306,22 @@ export function WeekGrid({
               </span>
             );
           })()}
-          {canManage && (
-            <div className="flex items-center">
+          <div className="flex items-center">
+            <AppointmentInfoDialog
+              appointment={appointment}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 px-1"
+                  aria-label="Ver informações"
+                >
+                  <Info className="size-3" />
+                </Button>
+              }
+            />
+            {canManage && (
+              <>
               {/* Past appointments cannot be edited — only the status. */}
               {new Date(appointment.starts_at).getTime() >= today.getTime() && (
                 <AppointmentFormDialog
@@ -371,8 +386,9 @@ export function WeekGrid({
                   </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     );
