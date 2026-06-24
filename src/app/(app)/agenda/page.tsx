@@ -467,6 +467,20 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   if (dayHolidayDecision === true) dayIsOpen = true;
   if (dayHolidayDecision === false) dayIsOpen = false;
 
+  // Dates within the range that have an agenda closure (week/month markers).
+  const closedDates: string[] = [];
+  for (const c of closures) {
+    const ce = new Date(c.endsAt).getTime();
+    const cur = new Date(
+      Math.max(new Date(c.startsAt).getTime(), range.start.getTime())
+    );
+    cur.setHours(0, 0, 0, 0);
+    while (cur.getTime() < ce && cur.getTime() < range.end.getTime()) {
+      closedDates.push(toIsoDate(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+
   return (
     <div className="space-y-4 px-4 py-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
@@ -537,6 +551,9 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             <MonthView
               monthStartIso={range.start.toISOString()}
               appointments={filteredUnitAppointments}
+              closedDates={closedDates}
+              openDayDates={openDayDates}
+              holidays={rangeHolidays}
             />
           ) : view === "dia" ? (
             <DayRoomGrid
@@ -573,6 +590,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               holidayClosedDates={holidayClosedDates}
               holidayOpenDates={holidayOpenDates}
               holidays={rangeHolidays}
+              closures={closures}
             />
           )}
         </div>

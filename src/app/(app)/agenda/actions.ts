@@ -807,6 +807,12 @@ export async function createAgendaClosure(
   if (endsAt.getTime() <= startsAt.getTime()) {
     return { ok: false, error: "O fim deve ser depois do início." };
   }
+  if (endsAt.getTime() <= Date.now()) {
+    return {
+      ok: false,
+      error: "Só é possível fechar a agenda em um período futuro.",
+    };
+  }
   if (scope === "rooms" && roomIds.length === 0) {
     return { ok: false, error: "Escolha ao menos uma sala." };
   }
@@ -838,6 +844,77 @@ export async function createAgendaClosure(
     entityType: "agenda_closure",
     entityId: clinicId,
     clinicId,
+  });
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
+export async function updateAgendaClosure(
+  closureId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  await getSessionContext();
+
+  const startStr = String(formData.get("starts_at") ?? "");
+  const endStr = String(formData.get("ends_at") ?? "");
+  const reason = String(formData.get("reason") ?? "other");
+  const scope = String(formData.get("scope") ?? "unit");
+  const note = String(formData.get("note") ?? "").trim() || null;
+  const roomIds = formData.getAll("room_ids").map(String).filter(Boolean);
+  const providerIds = formData
+    .getAll("provider_ids")
+    .map(String)
+    .filter(Boolean);
+
+  if (!startStr || !endStr) {
+    return { ok: false, error: "Informe o início e o fim do fechamento." };
+  }
+  const startsAt = new Date(startStr);
+  const endsAt = new Date(endStr);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    return { ok: false, error: "Período inválido." };
+  }
+  if (endsAt.getTime() <= startsAt.getTime()) {
+    return { ok: false, error: "O fim deve ser depois do início." };
+  }
+  if (endsAt.getTime() <= Date.now()) {
+    return {
+      ok: false,
+      error: "Só é possível fechar a agenda em um período futuro.",
+    };
+  }
+  if (scope === "rooms" && roomIds.length === 0) {
+    return { ok: false, error: "Escolha ao menos uma sala." };
+  }
+  if (scope === "providers" && providerIds.length === 0) {
+    return { ok: false, error: "Escolha ao menos um profissional." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_agenda_closure", {
+    p_id: closureId,
+    p_starts_at: startsAt.toISOString(),
+    p_ends_at: endsAt.toISOString(),
+    p_reason: reason,
+    p_scope: scope,
+    p_note: note,
+    p_room_ids: scope === "rooms" ? roomIds : [],
+    p_provider_ids: scope === "providers" ? providerIds : [],
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para editar o fechamento." };
+    }
+    if (error.message.includes("PERIOD_IN_PAST")) {
+      return { ok: false, error: "Não é possível mover o fechamento para o passado." };
+    }
+    console.error("update_agenda_closure failed:", error.message);
+    return { ok: false, error: "Não foi possível editar o fechamento." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "agenda_closure",
+    entityId: closureId,
   });
   revalidatePath("/agenda");
   return { ok: true };

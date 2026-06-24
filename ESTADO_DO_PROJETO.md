@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.0** · Última migração: **0047**_
+_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.1** · Última migração: **0048**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -111,11 +111,18 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   pela inatividade do SLA (`resolveInactivity`), **ordenação** (padrão maior
   tempo primeiro) e **quem atendeu por último**.
 
-Faltam (com migração, nesta ordem): **GR3** (fechamento: editar/confirmar/
-bloquear passado/avisos/ícones semana-mês), **GR4** (dia avulso com horário +
-carimbo + editar; horário de almoço; destaques em todas as visões), **GR6**
-(Planejamento Anual de Atendimento). Depois: **Lote H** (cronômetros do
-Atendimento).
+- **GR3 — Fechamento de agenda (refino, migração 0048):** seletor de data+hora
+  igual ao agendamento; **não permite período passado**; **editar** fechamento
+  (`update_agenda_closure` com confirmação + histórico antes/depois em
+  `agenda_closure_history` + recalcula afetados + notifica); **confirmar** antes
+  de remover (`closure-controls`); clicar em área fechada **não abre** agendamento
+  — só **aviso** (toast) com motivo e até quando; **ícones de fechamento** na
+  Semana (`week-time-grid`) e no Mês (`month-grid`); feriados/dias avulsos também
+  marcados no Mês.
+
+Faltam (com migração, nesta ordem): **GR4** (dia avulso com horário + carimbo +
+editar; horário de almoço; destaques em todas as visões), **GR6** (Planejamento
+Anual de Atendimento). Depois: **Lote H** (cronômetros do Atendimento).
 
 ## 3. Próximos passos (ordem de prioridade)
 

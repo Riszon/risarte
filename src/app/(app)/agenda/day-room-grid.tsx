@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, Info, Lock, Pencil, UserRound, Wifi, X } from "lucide-react";
+import { AlertTriangle, Info, Lock, Pencil, UserRound, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,6 @@ import {
 } from "@/lib/appointments";
 import {
   decideHoliday,
-  deleteAgendaClosure,
   updateAppointment,
   updateAppointmentStatus,
   type AgendaFormConfig,
@@ -37,6 +36,7 @@ import {
 } from "@/lib/closures";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
+import { ClosureControls } from "./closure-controls";
 import {
   STATUS_STYLES,
   STATUS_DOT,
@@ -224,18 +224,6 @@ export function DayRoomGrid({
     return minutesToHHMM(minute);
   }
 
-  function removeClosure(id: string) {
-    startTransition(async () => {
-      const result = await deleteAgendaClosure(id);
-      if (result.ok) {
-        toast.success("Fechamento removido.");
-        router.refresh();
-      } else {
-        toast.error(result.error ?? "Algo deu errado.");
-      }
-    });
-  }
-
   function decideHolidayDay(willAttend: boolean) {
     if (!clinicId) return;
     startTransition(async () => {
@@ -260,6 +248,18 @@ export function DayRoomGrid({
     return closures.filter(
       (c) => c.scope === "unit" || (c.scope === "rooms" && c.roomIds.includes(roomId))
     );
+  }
+
+  /** The closure blocking a column at a given time (HH:MM), if any. */
+  function blockingClosureAt(roomId: string, time: string): AgendaClosure | null {
+    const startMs = new Date(`${dayIso}T${time}:00`).getTime();
+    const endMs = startMs + SLOT_MIN * 60_000;
+    for (const c of closuresForColumn(roomId)) {
+      const cs = new Date(c.startsAt).getTime();
+      const ce = new Date(c.endsAt).getTime();
+      if (startMs < ce && endMs > cs) return c;
+    }
+    return null;
   }
 
   function closureTimeLabel(c: AgendaClosure): string {
@@ -623,16 +623,16 @@ export function DayRoomGrid({
                     · {closureTimeLabel(c)} · {detail}
                     {c.note ? ` · ${c.note}` : ""}
                   </span>
-                  {canManageClosures && (
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() => removeClosure(c.id)}
-                      className="inline-flex shrink-0 items-center gap-0.5 rounded border border-red-300 px-1.5 py-0.5 text-[11px] hover:bg-red-100"
-                    >
-                      <X className="size-3" />
-                      Remover
-                    </button>
+                  {canManageClosures && clinicId && (
+                    <ClosureControls
+                      closure={c}
+                      clinicId={clinicId}
+                      rooms={(config?.rooms ?? []).map((r) => ({
+                        id: r.id,
+                        name: r.name,
+                      }))}
+                      staff={staff}
+                    />
                   )}
                 </li>
               );
@@ -702,12 +702,24 @@ export function DayRoomGrid({
                 style={{ height: totalPx, ...columnBg }}
                 onClick={
                   clickable
-                    ? (e) =>
-                        setQuick({
-                          date: dayIso,
-                          time: slotTimeFromEvent(e),
-                          roomId: c.key,
-                        })
+                    ? (e) => {
+                        const time = slotTimeFromEvent(e);
+                        const blocking = blockingClosureAt(c.key, time);
+                        if (blocking) {
+                          toast.warning(
+                            `Agenda fechada (${CLOSURE_REASON_LABELS[blocking.reason]}) até ${new Date(
+                              blocking.endsAt
+                            ).toLocaleString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}.`
+                          );
+                          return;
+                        }
+                        setQuick({ date: dayIso, time, roomId: c.key });
+                      }
                     : undefined
                 }
                 onDragOver={

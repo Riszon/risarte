@@ -13,15 +13,27 @@ export function MonthView({
   monthStartIso,
   appointments,
   unidade,
+  closedDates = [],
+  openDayDates = [],
+  holidays = [],
 }: {
   monthStartIso: string;
   appointments: AgendaAppointment[];
   unidade?: string;
+  /** Dates (YYYY-MM-DD) with an agenda closure (GR3). */
+  closedDates?: string[];
+  /** Special open days (G5). */
+  openDayDates?: string[];
+  /** Holidays in the month (G5). */
+  holidays?: { date: string; name: string }[];
 }) {
   const monthStart = new Date(monthStartIso);
   const month = monthStart.getMonth();
   const gridStart = startOfWeek(monthStart);
   const today = new Date();
+  const closedSet = new Set(closedDates);
+  const openDaySet = new Set(openDayDates);
+  const holidayNameByDate = new Map(holidays.map((h) => [h.date, h.name]));
 
   const byDay = new Map<string, AgendaAppointment[]>();
   for (const a of appointments) {
@@ -48,6 +60,10 @@ export function MonthView({
         {cells.map((d, i) => {
           const inMonth = d.getMonth() === month;
           const isToday = d.toDateString() === today.toDateString();
+          const iso = toIsoDate(d);
+          const holidayName = holidayNameByDate.get(iso);
+          const isClosed = closedSet.has(iso);
+          const isSpecialOpen = openDaySet.has(iso);
           const dayAppts = (byDay.get(d.toDateString()) ?? []).sort((a, b) =>
             a.starts_at.localeCompare(b.starts_at)
           );
@@ -64,6 +80,22 @@ export function MonthView({
               <span className={cn("font-medium", isToday && "text-primary")}>
                 {d.getDate()}
               </span>
+              {holidayName && (
+                <span
+                  className="truncate text-[9px] text-red-700"
+                  title={holidayName}
+                >
+                  🎌 {holidayName}
+                </span>
+              )}
+              {isClosed && (
+                <span className="text-[9px] font-medium text-red-700">
+                  🔒 fechado
+                </span>
+              )}
+              {isSpecialOpen && !holidayName && (
+                <span className="text-[9px] text-emerald-700">Dia avulso</span>
+              )}
               {dayAppts.slice(0, 3).map((a) => (
                 <span
                   key={a.id}

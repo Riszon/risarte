@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Info, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import { Info, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   APPOINTMENT_TYPE_LABELS,
   type StaffOption,
 } from "@/lib/appointments";
+import { CLOSURE_REASON_LABELS, type AgendaClosure } from "@/lib/closures";
 import { type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
@@ -89,6 +91,7 @@ export function WeekTimeGrid({
   holidayClosedDates = [],
   holidayOpenDates = [],
   holidays = [],
+  closures = [],
 }: {
   weekStartIso: string;
   appointments: AgendaAppointment[];
@@ -102,6 +105,7 @@ export function WeekTimeGrid({
   holidayClosedDates?: string[];
   holidayOpenDates?: string[];
   holidays?: { date: string; name: string }[];
+  closures?: AgendaClosure[];
 }) {
   const today = new Date();
   const weekStart = new Date(weekStartIso);
@@ -113,6 +117,15 @@ export function WeekTimeGrid({
   const holidayClosedSet = new Set(holidayClosedDates);
   const holidayOpenSet = new Set(holidayOpenDates);
   const holidayNameByDate = new Map(holidays.map((h) => [h.date, h.name]));
+
+  function closuresOnDay(iso: string): AgendaClosure[] {
+    const ds = new Date(`${iso}T00:00:00`).getTime();
+    const de = ds + 86_400_000;
+    return closures.filter(
+      (c) =>
+        new Date(c.startsAt).getTime() < de && new Date(c.endsAt).getTime() > ds
+    );
+  }
 
   const hasAppts = (date: Date) =>
     appointments.some(
@@ -311,6 +324,15 @@ export function WeekTimeGrid({
                   Dia avulso
                 </span>
               )}
+              {closuresOnDay(iso).length > 0 && (
+                <span
+                  className="flex items-center justify-center gap-0.5 text-[10px] text-red-700"
+                  title="Há fechamento de agenda neste dia"
+                >
+                  <Lock className="size-2.5" />
+                  fechamento
+                </span>
+              )}
             </div>
           );
         })}
@@ -348,7 +370,29 @@ export function WeekTimeGrid({
                       let m = winStart + y / PX_PER_MIN;
                       m = Math.round(m / SLOT_MIN) * SLOT_MIN;
                       m = Math.max(winStart, Math.min(winEnd - SLOT_MIN, m));
-                      setQuick({ date: iso, time: minutesToHHMM(m) });
+                      const time = minutesToHHMM(m);
+                      const startMs = new Date(`${iso}T${time}:00`).getTime();
+                      const endMs = startMs + SLOT_MIN * 60_000;
+                      const blocking = closures.find(
+                        (c) =>
+                          c.scope === "unit" &&
+                          new Date(c.startsAt).getTime() < endMs &&
+                          new Date(c.endsAt).getTime() > startMs
+                      );
+                      if (blocking) {
+                        toast.warning(
+                          `Agenda fechada (${CLOSURE_REASON_LABELS[blocking.reason]}) até ${new Date(
+                            blocking.endsAt
+                          ).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}.`
+                        );
+                        return;
+                      }
+                      setQuick({ date: iso, time });
                     }
                   : undefined
               }
