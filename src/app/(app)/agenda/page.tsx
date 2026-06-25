@@ -574,6 +574,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               holidayDecision={dayHolidayDecision}
               dayOpen={dayIsOpen}
               canDecideHoliday={canConfig}
+              isSpecialOpenDay={openDayDates.includes(dayIso)}
               clinicId={clinicId}
             />
           ) : (

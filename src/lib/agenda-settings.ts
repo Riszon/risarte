@@ -7,6 +7,9 @@ export type AgendaSettingRow = {
   close_time: string;
   weekdays: number[]; // 0 = Sunday … 6 = Saturday
   chairs: number;
+  lunch_enabled?: boolean | null;
+  lunch_start?: string | null;
+  lunch_end?: string | null;
 };
 
 export type AgendaSettings = {
@@ -14,6 +17,9 @@ export type AgendaSettings = {
   closeTime: string;
   weekdays: number[];
   chairs: number;
+  lunchEnabled: boolean;
+  lunchStart: string;
+  lunchEnd: string;
 };
 
 export const WEEKDAY_NAMES = [
@@ -31,6 +37,9 @@ export const AGENDA_DEFAULTS: AgendaSettings = {
   closeTime: "18:00",
   weekdays: [1, 2, 3, 4, 5, 6],
   chairs: 3,
+  lunchEnabled: false,
+  lunchStart: "12:00",
+  lunchEnd: "13:00",
 };
 
 /** "HH:MM:SS" → "HH:MM". */
@@ -57,6 +66,9 @@ export function resolveAgendaSettings(
         ? row.weekdays
         : AGENDA_DEFAULTS.weekdays,
     chairs: row.chairs ?? AGENDA_DEFAULTS.chairs,
+    lunchEnabled: row.lunch_enabled ?? AGENDA_DEFAULTS.lunchEnabled,
+    lunchStart: hhmm(row.lunch_start ?? "") || AGENDA_DEFAULTS.lunchStart,
+    lunchEnd: hhmm(row.lunch_end ?? "") || AGENDA_DEFAULTS.lunchEnd,
   };
 }
 

@@ -35,6 +35,9 @@ export type AgendaFormConfig = {
   weekdays: number[];
   rooms: Room[];
   coordinatorRoomId: string | null;
+  lunchEnabled: boolean;
+  lunchStart: string;
+  lunchEnd: string;
 };
 
 /** Loads rooms + working hours + coordinator room for a unit's scheduling form. */
@@ -46,7 +49,9 @@ export async function getAgendaFormConfig(
     await Promise.all([
       supabase
         .from("clinic_agenda_settings")
-        .select("clinic_id, open_time, close_time, weekdays, chairs")
+        .select(
+          "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+        )
         .returns<AgendaSettingRow[]>(),
       supabase
         .from("clinic_rooms")
@@ -69,6 +74,9 @@ export async function getAgendaFormConfig(
     coordinatorRoomId:
       (coordRow as { coordinator_room_id: string | null } | null)
         ?.coordinator_room_id ?? null,
+    lunchEnabled: cfg.lunchEnabled,
+    lunchStart: cfg.lunchStart,
+    lunchEnd: cfg.lunchEnd,
   };
 }
 
@@ -226,7 +234,9 @@ async function checkAgendaRules(
 
   const { data: rows } = await supabase
     .from("clinic_agenda_settings")
-    .select("clinic_id, open_time, close_time, weekdays, chairs")
+    .select(
+      "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+    )
     .returns<AgendaSettingRow[]>();
   const cfg = resolveAgendaSettings(rows ?? [], clinicId);
 
@@ -235,7 +245,7 @@ async function checkAgendaRules(
   const weekday = new Date(`${date}T00:00:00`).getDay();
   const { data: openDay } = await supabase
     .from("agenda_open_days")
-    .select("id")
+    .select("id, start_time, end_time")
     .eq("clinic_id", clinicId)
     .eq("date", date)
     .maybeSingle();
@@ -246,10 +256,29 @@ async function checkAgendaRules(
   if (!dayOpen) {
     return "A unidade não atende neste dia. Libere o dia em “Configurar agenda”.";
   }
+  // Special open days use their own hours; otherwise the unit's hours.
+  const openHHMM =
+    openDay && !cfg.weekdays.includes(weekday)
+      ? (openDay.start_time as string).slice(0, 5)
+      : cfg.openTime;
+  const closeHHMM =
+    openDay && !cfg.weekdays.includes(weekday)
+      ? (openDay.end_time as string).slice(0, 5)
+      : cfg.closeTime;
   const startMin = timeToMinutes(time);
   const endMin = startMin + durationMin;
-  if (startMin < timeToMinutes(cfg.openTime) || endMin > timeToMinutes(cfg.closeTime)) {
-    return `Fora do horário de funcionamento da unidade (${cfg.openTime} às ${cfg.closeTime}).`;
+  if (startMin < timeToMinutes(openHHMM) || endMin > timeToMinutes(closeHHMM)) {
+    return `Fora do horário de funcionamento da unidade (${openHHMM} às ${closeHHMM}).`;
+  }
+
+  // Lunch break (GR4): closed for normal appointments (encaixe already returned;
+  // ONLINE/apresentação não usa sala física, então ignora o almoço).
+  if (cfg.lunchEnabled && !isOnline) {
+    const lunchStart = timeToMinutes(cfg.lunchStart);
+    const lunchEnd = timeToMinutes(cfg.lunchEnd);
+    if (startMin < lunchEnd && endMin > lunchStart) {
+      return `Horário de almoço da unidade (${cfg.lunchStart} às ${cfg.lunchEnd}). Use Urgência/Emergência para encaixe.`;
+    }
   }
 
   // Room occupancy: a room attends one client at a time. ONLINE skips this.
@@ -946,6 +975,8 @@ export async function deleteAgendaClosure(
 export async function openSpecialDays(
   clinicId: string,
   dates: string[],
+  startTime: string,
+  endTime: string,
   staffIds: string[],
   note: string
 ): Promise<ActionResult> {
@@ -957,11 +988,16 @@ export async function openSpecialDays(
   if (cleanDates.length === 0) {
     return { ok: false, error: "Escolha ao menos um dia para liberar." };
   }
+  if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+    return { ok: false, error: "O fim do atendimento deve ser depois do início." };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("open_special_days", {
     p_clinic_id: clinicId,
     p_dates: cleanDates,
+    p_start_time: startTime,
+    p_end_time: endTime,
     p_staff_ids: staffIds.filter(Boolean),
     p_note: note.trim() || null,
   });
@@ -983,6 +1019,81 @@ export async function openSpecialDays(
   return { ok: true };
 }
 
+export async function updateSpecialDay(
+  openDayId: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+  staffIds: string[],
+  note: string
+): Promise<ActionResult> {
+  await getSessionContext();
+  if (!date) return { ok: false, error: "Informe a data." };
+  if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+    return { ok: false, error: "O fim do atendimento deve ser depois do início." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_special_day", {
+    p_id: openDayId,
+    p_date: date,
+    p_start_time: startTime,
+    p_end_time: endTime,
+    p_staff_ids: staffIds.filter(Boolean),
+    p_note: note.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sem permissão para editar o dia." };
+    }
+    if (error.message.includes("PAST_DAY")) {
+      return { ok: false, error: "Dias avulsos passados não podem ser editados." };
+    }
+    console.error("update_special_day failed:", error.message);
+    return { ok: false, error: "Não foi possível editar o dia avulso." };
+  }
+  revalidatePath("/agenda");
+  revalidatePath("/agenda/configuracao");
+  return { ok: true };
+}
+
+/** Saves the unit's lunch break (Gerente/Admin). */
+export async function saveLunchBreak(
+  clinicId: string,
+  input: { enabled: boolean; start: string; end: string }
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!hasRoleInClinic(session, clinicId, ["unit_manager"])) {
+    return { ok: false, error: "Apenas a Gerente (ou Admin) configura o almoço." };
+  }
+  if (input.enabled && timeToMinutes(input.end) <= timeToMinutes(input.start)) {
+    return { ok: false, error: "O fim do almoço deve ser depois do início." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("clinic_agenda_settings").upsert(
+    {
+      clinic_id: clinicId,
+      lunch_enabled: input.enabled,
+      lunch_start: input.start,
+      lunch_end: input.end,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "clinic_id" }
+  );
+  if (error) {
+    console.error("saveLunchBreak failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o horário de almoço." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "agenda_settings",
+    entityId: clinicId,
+    clinicId,
+  });
+  revalidatePath("/agenda");
+  revalidatePath("/agenda/configuracao");
+  return { ok: true };
+}
+
 export async function removeSpecialDay(openDayId: string): Promise<ActionResult> {
   await getSessionContext();
   const supabase = await createClient();
@@ -992,6 +1103,9 @@ export async function removeSpecialDay(openDayId: string): Promise<ActionResult>
   if (error) {
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Sem permissão para remover o dia." };
+    }
+    if (error.message.includes("PAST_DAY")) {
+      return { ok: false, error: "Dias avulsos passados viram histórico (não removem)." };
     }
     console.error("remove_special_day failed:", error.message);
     return { ok: false, error: "Não foi possível remover o dia avulso." };
@@ -1087,7 +1201,9 @@ export async function getNextAvailableSlots(params: {
   ] = await Promise.all([
     supabase
       .from("clinic_agenda_settings")
-      .select("clinic_id, open_time, close_time, weekdays, chairs")
+      .select(
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+      )
       .returns<AgendaSettingRow[]>(),
     supabase
       .from("agenda_closures")
@@ -1099,7 +1215,7 @@ export async function getNextAvailableSlots(params: {
       .gt("ends_at", startIso),
     supabase
       .from("agenda_open_days")
-      .select("date")
+      .select("date, start_time, end_time")
       .eq("clinic_id", clinicId)
       .gte("date", toIsoDate(winStart))
       .lt("date", toIsoDate(winEnd)),
@@ -1119,7 +1235,17 @@ export async function getNextAvailableSlots(params: {
 
   const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
   const closures = (closureRows ?? []).map((r) => mapClosure(r as AgendaClosureRow));
-  const openDaySet = new Set((openDayRows ?? []).map((r) => r.date as string));
+  const openDayHours = new Map<string, { open: number; close: number }>();
+  for (const r of (openDayRows ?? []) as {
+    date: string;
+    start_time: string;
+    end_time: string;
+  }[]) {
+    openDayHours.set(r.date, {
+      open: timeToMinutes(r.start_time.slice(0, 5)),
+      close: timeToMinutes(r.end_time.slice(0, 5)),
+    });
+  }
   const holidayDecision = new Map<string, boolean>();
   for (const r of (holidayRows ?? []) as {
     holiday_date: string;
@@ -1130,8 +1256,8 @@ export async function getNextAvailableSlots(params: {
   const active = (s: string) => s !== "cancelled" && s !== "no_show";
   const appts = (apptRows ?? []).filter((a) => active(a.status));
 
-  const openMin = timeToMinutes(cfg.openTime);
-  const closeMin = timeToMinutes(cfg.closeTime);
+  const lunchStart = cfg.lunchEnabled ? timeToMinutes(cfg.lunchStart) : -1;
+  const lunchEnd = cfg.lunchEnabled ? timeToMinutes(cfg.lunchEnd) : -1;
   const nowMs = Date.now();
   const slots: AvailableSlot[] = [];
 
@@ -1141,11 +1267,24 @@ export async function getNextAvailableSlots(params: {
     const dateOnly = toIsoDate(day);
     const hd = holidayDecision.get(dateOnly);
     if (hd === false) continue;
-    const dayOpen =
-      cfg.weekdays.includes(day.getDay()) || openDaySet.has(dateOnly) || hd === true;
+    const isWeekdayOpen = cfg.weekdays.includes(day.getDay());
+    const special = openDayHours.get(dateOnly);
+    const dayOpen = isWeekdayOpen || Boolean(special) || hd === true;
     if (!dayOpen) continue;
+    // Special open days use their own hours.
+    const openMin = special && !isWeekdayOpen ? special.open : timeToMinutes(cfg.openTime);
+    const closeMin = special && !isWeekdayOpen ? special.close : timeToMinutes(cfg.closeTime);
 
     for (let m = openMin; m + durationMin <= closeMin && slots.length < limit; m += 15) {
+      // Skip the lunch break (not online).
+      if (
+        cfg.lunchEnabled &&
+        !isOnline &&
+        m < lunchEnd &&
+        m + durationMin > lunchStart
+      ) {
+        continue;
+      }
       const startMs = new Date(`${dateOnly}T${minutesToHHMM(m)}:00`).getTime();
       const endMs = startMs + durationMin * 60_000;
       if (startMs < nowMs) continue;

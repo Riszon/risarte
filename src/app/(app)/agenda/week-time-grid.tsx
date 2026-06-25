@@ -267,6 +267,21 @@ export function WeekTimeGrid({
     );
   }
 
+  function renderLunchBand() {
+    if (!config?.lunchEnabled) return null;
+    const s = clamp(timeToMin(config.lunchStart), winStart, winEnd);
+    const e = clamp(timeToMin(config.lunchEnd), winStart, winEnd);
+    if (e <= s) return null;
+    const top = (s - winStart) * PX_PER_MIN;
+    const height = Math.max(8, (e - s) * PX_PER_MIN);
+    return (
+      <div
+        className="pointer-events-none absolute inset-x-0 z-[1] border-y border-amber-200 bg-amber-100/50"
+        style={{ top, height }}
+      />
+    );
+  }
+
   if (days.length === 0) {
     return (
       <p className="rounded-lg border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
@@ -397,6 +412,7 @@ export function WeekTimeGrid({
                   : undefined
               }
             >
+              {renderLunchBand()}
               {dayAppts.map((a) =>
                 renderCard(a, laneOf.get(a.id) ?? 0, laneCount)
               )}

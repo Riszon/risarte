@@ -36,6 +36,9 @@ export default async function AgendaConfigPage() {
 
   const supabase = await createClient();
   const todayIso = new Date().toISOString().slice(0, 10);
+  const historyFrom = new Date();
+  historyFrom.setDate(historyFrom.getDate() - 180);
+  const historyFromIso = historyFrom.toISOString().slice(0, 10);
   const [
     { data: settingRows },
     { data: roomRows },
@@ -45,7 +48,9 @@ export default async function AgendaConfigPage() {
   ] = await Promise.all([
     supabase
       .from("clinic_agenda_settings")
-      .select("clinic_id, open_time, close_time, weekdays, chairs")
+      .select(
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+      )
       .returns<AgendaSettingRow[]>(),
     supabase
       .from("clinic_rooms")
@@ -64,15 +69,21 @@ export default async function AgendaConfigPage() {
       .returns<{ user_id: string; profiles: { full_name: string } | null }[]>(),
     supabase
       .from("agenda_open_days")
-      .select("id, date, note, agenda_open_day_staff ( user_id )")
+      .select(
+        "id, date, start_time, end_time, note, created_at, creator:profiles!agenda_open_days_created_by_fkey ( full_name ), agenda_open_day_staff ( user_id )"
+      )
       .eq("clinic_id", clinic.id)
-      .gte("date", todayIso)
+      .gte("date", historyFromIso)
       .order("date")
       .returns<
         {
           id: string;
           date: string;
+          start_time: string;
+          end_time: string;
           note: string | null;
+          created_at: string;
+          creator: { full_name: string } | null;
           agenda_open_day_staff: { user_id: string }[] | null;
         }[]
       >(),
@@ -97,8 +108,13 @@ export default async function AgendaConfigPage() {
   const openDays = (openDayRows ?? []).map((d) => ({
     id: d.id,
     date: d.date,
+    startTime: (d.start_time ?? "08:00").slice(0, 5),
+    endTime: (d.end_time ?? "18:00").slice(0, 5),
     note: d.note,
+    createdAt: d.created_at,
+    createdByName: d.creator?.full_name ?? null,
     staffIds: (d.agenda_open_day_staff ?? []).map((s) => s.user_id),
+    isPast: d.date < todayIso,
   }));
 
   return (
@@ -134,6 +150,11 @@ export default async function AgendaConfigPage() {
         coordinatorRoomId={coordinatorRoomId}
         staff={staff}
         openDays={openDays}
+        lunch={{
+          enabled: values.lunchEnabled,
+          start: values.lunchStart,
+          end: values.lunchEnd,
+        }}
       />
     </div>
   );

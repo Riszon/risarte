@@ -16,7 +16,17 @@ import {
   setCoordinatorRoom,
   setRoomActive,
 } from "./actions";
-import { openSpecialDays, removeSpecialDay } from "../actions";
+import Link from "next/link";
+import { CalendarSearch } from "lucide-react";
+import { openSpecialDays, removeSpecialDay, saveLunchBreak } from "../actions";
+import { EditOpenDayDialog } from "./edit-open-day-dialog";
+
+const TIME_OPTIONS: string[] = [];
+for (let h = 6; h <= 22; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    TIME_OPTIONS.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  }
+}
 
 const selectClass =
   "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -28,13 +38,25 @@ export function AgendaConfigEditor({
   coordinatorRoomId,
   staff,
   openDays,
+  lunch,
 }: {
   clinicId: string;
   hours: { openTime: string; closeTime: string; weekdays: number[] };
   rooms: Room[];
   coordinatorRoomId: string | null;
   staff: { userId: string; name: string }[];
-  openDays: { id: string; date: string; note: string | null; staffIds: string[] }[];
+  openDays: {
+    id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    note: string | null;
+    createdAt: string;
+    createdByName: string | null;
+    staffIds: string[];
+    isPast: boolean;
+  }[];
+  lunch: { enabled: boolean; start: string; end: string };
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -47,11 +69,18 @@ export function AgendaConfigEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
 
-  // Liberar dia avulso (G5).
+  // Liberar dia avulso (G5/GR4).
   const [releaseDates, setReleaseDates] = useState<string[]>([]);
   const [newDate, setNewDate] = useState("");
+  const [releaseStart, setReleaseStart] = useState("08:00");
+  const [releaseEnd, setReleaseEnd] = useState("18:00");
   const [releaseStaff, setReleaseStaff] = useState<Set<string>>(new Set());
   const [releaseNote, setReleaseNote] = useState("");
+
+  // Horário de almoço (GR4).
+  const [lunchEnabled, setLunchEnabled] = useState(lunch.enabled);
+  const [lunchStart, setLunchStart] = useState(lunch.start);
+  const [lunchEnd, setLunchEnd] = useState(lunch.end);
 
   const activeRooms = rooms.filter((r) => r.isActive);
   const staffNameById = new Map(staff.map((s) => [s.userId, s.name]));
@@ -353,6 +382,39 @@ export function AgendaConfigEditor({
             </div>
           )}
 
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <Label htmlFor="relStart">Início do atendimento</Label>
+              <select
+                id="relStart"
+                className={selectClass + " max-w-[8rem]"}
+                value={releaseStart}
+                onChange={(e) => setReleaseStart(e.target.value)}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="relEnd">Fim do atendimento</Label>
+              <select
+                id="relEnd"
+                className={selectClass + " max-w-[8rem]"}
+                value={releaseEnd}
+                onChange={(e) => setReleaseEnd(e.target.value)}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div>
             <Label>Quem estará disponível</Label>
             {staff.length === 0 ? (
@@ -393,6 +455,8 @@ export function AgendaConfigEditor({
                 const result = await openSpecialDays(
                   clinicId,
                   releaseDates,
+                  releaseStart,
+                  releaseEnd,
                   [...releaseStaff],
                   releaseNote
                 );
@@ -412,46 +476,172 @@ export function AgendaConfigEditor({
             <div className="space-y-1 border-t pt-3">
               <p className="text-sm font-medium">Dias avulsos liberados</p>
               <ul className="divide-y rounded-lg border">
-                {openDays.map((d) => (
-                  <li
-                    key={d.id}
-                    className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
-                  >
-                    <span>
-                      <span className="font-medium">
-                        {new Date(`${d.date}T00:00:00`).toLocaleDateString(
-                          "pt-BR",
-                          { weekday: "long", day: "2-digit", month: "long" }
-                        )}
-                      </span>
-                      {d.staffIds.length > 0 && (
+                {openDays.map((d) => {
+                  const advanceDays = Math.round(
+                    (new Date(`${d.date}T00:00:00`).getTime() -
+                      new Date(d.createdAt).getTime()) /
+                      86_400_000
+                  );
+                  return (
+                    <li
+                      key={d.id}
+                      className="flex flex-wrap items-start justify-between gap-2 px-3 py-2 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-medium">
+                          {new Date(`${d.date}T00:00:00`).toLocaleDateString(
+                            "pt-BR",
+                            { weekday: "long", day: "2-digit", month: "long" }
+                          )}
+                        </span>
                         <span className="text-muted-foreground">
                           {" "}
-                          ·{" "}
-                          {d.staffIds
-                            .map((id) => staffNameById.get(id) ?? "—")
-                            .join(", ")}
+                          · {d.startTime}–{d.endTime}
                         </span>
-                      )}
-                      {d.note ? (
-                        <span className="text-muted-foreground"> · {d.note}</span>
-                      ) : null}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isPending}
-                      onClick={() =>
-                        run(() => removeSpecialDay(d.id), "Dia removido.")
-                      }
-                    >
-                      Remover
-                    </Button>
-                  </li>
-                ))}
+                        {d.isPast && (
+                          <span className="ml-1 rounded bg-muted px-1 text-[10px] text-muted-foreground">
+                            histórico
+                          </span>
+                        )}
+                        {d.staffIds.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {d.staffIds
+                              .map((id) => staffNameById.get(id) ?? "—")
+                              .join(", ")}
+                          </p>
+                        )}
+                        {d.note && (
+                          <p className="text-xs text-muted-foreground">{d.note}</p>
+                        )}
+                        <p className="text-[11px] text-muted-foreground">
+                          Liberado em{" "}
+                          {new Date(d.createdAt).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                          {d.createdByName ? ` por ${d.createdByName}` : ""}
+                          {advanceDays >= 0
+                            ? ` · avisado com ${advanceDays} dia(s) de antecedência`
+                            : ""}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-0.5 px-2 text-xs"
+                          nativeButton={false}
+                          render={<Link href={`/agenda?vista=dia&ref=${d.date}`} />}
+                        >
+                          <CalendarSearch className="size-3" />
+                          Ver
+                        </Button>
+                        {!d.isPast && (
+                          <>
+                            <EditOpenDayDialog
+                              openDay={{
+                                id: d.id,
+                                date: d.date,
+                                startTime: d.startTime,
+                                endTime: d.endTime,
+                                note: d.note,
+                                staffIds: d.staffIds,
+                              }}
+                              staff={staff}
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              disabled={isPending}
+                              onClick={() =>
+                                run(() => removeSpecialDay(d.id), "Dia removido.")
+                              }
+                            >
+                              Remover
+                            </Button>
+                          </>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Horário de almoço (GR4) ------------------------------------------ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Horário de almoço</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={lunchEnabled}
+              onChange={(e) => setLunchEnabled(e.target.checked)}
+            />
+            Fechar a agenda no horário de almoço
+          </label>
+          {lunchEnabled && (
+            <div className="flex flex-wrap items-end gap-2">
+              <div>
+                <Label htmlFor="lunchStart">Início</Label>
+                <select
+                  id="lunchStart"
+                  className={selectClass + " max-w-[8rem]"}
+                  value={lunchStart}
+                  onChange={(e) => setLunchStart(e.target.value)}
+                >
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="lunchEnd">Fim</Label>
+                <select
+                  id="lunchEnd"
+                  className={selectClass + " max-w-[8rem]"}
+                  value={lunchEnd}
+                  onChange={(e) => setLunchEnd(e.target.value)}
+                >
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            No almoço a agenda fica fechada para agendamentos normais; encaixes,
+            urgências e emergências continuam permitidos.
+          </p>
+          <Button
+            size="sm"
+            disabled={isPending}
+            onClick={() =>
+              run(
+                () =>
+                  saveLunchBreak(clinicId, {
+                    enabled: lunchEnabled,
+                    start: lunchStart,
+                    end: lunchEnd,
+                  }),
+                "Horário de almoço salvo."
+              )
+            }
+          >
+            Salvar almoço
+          </Button>
         </CardContent>
       </Card>
     </div>

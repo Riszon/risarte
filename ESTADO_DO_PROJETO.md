@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.1** · Última migração: **0048**_
+_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.2** · Última migração: **0049**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -120,9 +120,18 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   Semana (`week-time-grid`) e no Mês (`month-grid`); feriados/dias avulsos também
   marcados no Mês.
 
-Faltam (com migração, nesta ordem): **GR4** (dia avulso com horário + carimbo +
-editar; horário de almoço; destaques em todas as visões), **GR6** (Planejamento
-Anual de Atendimento). Depois: **Lote H** (cronômetros do Atendimento).
+- **GR4 — Dia avulso + almoço (migração 0049):** dia avulso ganha **horário de
+  início/fim** (selects); **carimbo** (quem/quando liberou + antecedência do
+  aviso); **editar** dias futuros (`update_special_day` com histórico
+  `agenda_open_day_history` + notifica envolvidos), passados viram **histórico**
+  (não edita/remove — bloqueado no RPC); botão **"Ver"** o dia na agenda;
+  **horário de almoço** na config (`saveLunchBreak` + colunas em
+  `clinic_agenda_settings`) bloqueia agendamento normal no almoço (encaixe livre)
+  e aparece como **faixa "Almoço"** no Dia e na Semana; dia avulso em **destaque**
+  no Dia/Semana/Mês. Admin Master também faz tudo (RPCs e telas liberadas).
+
+Falta (com migração): **GR6** (Planejamento Anual de Atendimento). Depois:
+**Lote H** (cronômetros do Atendimento).
 
 ## 3. Próximos passos (ordem de prioridade)
 

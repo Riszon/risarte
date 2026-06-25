@@ -118,6 +118,7 @@ export function DayRoomGrid({
   holidayDecision = null,
   dayOpen = true,
   canDecideHoliday = false,
+  isSpecialOpenDay = false,
   clinicId,
 }: {
   dateIso: string;
@@ -146,6 +147,8 @@ export function DayRoomGrid({
   dayOpen?: boolean;
   /** Whether the viewer (manager) can confirm holidays. */
   canDecideHoliday?: boolean;
+  /** Whether this day is a special open day (G5/GR4) — shown in destaque. */
+  isSpecialOpenDay?: boolean;
   clinicId?: string;
 }) {
   const router = useRouter();
@@ -347,6 +350,23 @@ export function DayRoomGrid({
           <Lock className="size-2.5" />
           {CLOSURE_REASON_LABELS[closure.reason]}
         </span>
+      </div>
+    );
+  }
+
+  function renderLunchBand() {
+    if (!config?.lunchEnabled) return null;
+    const s = clamp(timeToMin(config.lunchStart), winStart, winEnd);
+    const e = clamp(timeToMin(config.lunchEnd), winStart, winEnd);
+    if (e <= s) return null;
+    const top = (s - winStart) * PX_PER_MIN;
+    const height = Math.max(8, (e - s) * PX_PER_MIN);
+    return (
+      <div
+        className="pointer-events-none absolute inset-x-0 z-[1] flex items-start justify-center overflow-hidden border-y border-amber-200 bg-amber-100/50 text-[9px] font-medium text-amber-700"
+        style={{ top, height }}
+      >
+        <span className="mt-0.5">Almoço</span>
       </div>
     );
   }
@@ -593,6 +613,12 @@ export function DayRoomGrid({
         </div>
       )}
 
+      {isSpecialOpenDay && (
+        <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-sm text-emerald-800">
+          Dia avulso liberado para atendimento.
+        </div>
+      )}
+
       {closures.length > 0 && (
         <div className="space-y-1.5 rounded-lg border border-red-200 bg-red-50/60 p-2.5">
           <p className="flex items-center gap-1 text-xs font-semibold text-red-700">
@@ -761,6 +787,7 @@ export function DayRoomGrid({
                     </span>
                   </div>
                 )}
+                {isRoomColumn && renderLunchBand()}
                 {isRoomColumn &&
                   closuresForColumn(c.key).map((cl) =>
                     renderClosureOverlay(cl)
