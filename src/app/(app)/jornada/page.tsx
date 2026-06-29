@@ -194,7 +194,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
               variant="outline"
               size="sm"
               nativeButton={false}
-              render={<Link href="/clientes/novo" />}
+              render={<Link href="/prontuarios/novo" />}
             >
               Cadastrar cliente
             </Button>

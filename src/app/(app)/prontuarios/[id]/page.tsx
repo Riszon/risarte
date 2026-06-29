@@ -54,7 +54,7 @@ import type {
   MethodologyPillar,
 } from "@/lib/journey";
 
-export const metadata: Metadata = { title: "Ficha do cliente" };
+export const metadata: Metadata = { title: "Prontuário do cliente" };
 
 type HistoryRow = {
   id: string;
@@ -127,7 +127,7 @@ function formatDetailedAge(birthIso: string): string {
 }
 
 export default async function ClientDetailPage(
-  props: PageProps<"/clientes/[id]">
+  props: PageProps<"/prontuarios/[id]">
 ) {
   const session = await getSessionContext();
   const { id } = await props.params;
@@ -198,7 +198,7 @@ export default async function ClientDetailPage(
             <Button
               size="sm"
               nativeButton={false}
-              render={<Link href="/clientes" />}
+              render={<Link href="/prontuarios" />}
             >
               Voltar para Clientes
             </Button>
@@ -836,7 +836,7 @@ export default async function ClientDetailPage(
                   <p className="font-medium">
                     {guardian.guardian_client_id ? (
                       <a
-                        href={`/clientes/${guardian.guardian_client_id}`}
+                        href={`/prontuarios/${guardian.guardian_client_id}`}
                         className="hover:underline"
                       >
                         {guardian.full_name}
@@ -876,7 +876,7 @@ export default async function ClientDetailPage(
                   dependent.clients && (
                     <li key={dependent.id} className="text-sm">
                       <a
-                        href={`/clientes/${dependent.clients.id}`}
+                        href={`/prontuarios/${dependent.clients.id}`}
                         className="font-medium hover:underline"
                       >
                         {dependent.clients.full_name}

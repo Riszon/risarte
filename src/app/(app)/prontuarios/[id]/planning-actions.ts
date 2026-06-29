@@ -92,7 +92,7 @@ export async function createTreatmentPlan(clientId: string): Promise<PlanResult>
     entityId: clientId,
     clinicId: client.clinic_id,
   });
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   revalidatePath("/planejamento");
   return { ok: true };
 }
@@ -122,7 +122,7 @@ export async function saveDiagnosis(
     clinicId: ctx.clinicId,
     details: { diagnosis: true },
   });
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -165,7 +165,7 @@ export async function addPlanOption(
     return { ok: false, error: "Não foi possível adicionar a opção." };
   }
   await touchPlan(planId);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -209,7 +209,7 @@ export async function editPlanOption(
     return { ok: false, error: "Não foi possível salvar a opção." };
   }
   await touchPlan(option.plan_id);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -242,7 +242,7 @@ export async function setPrimaryOption(optionId: string): Promise<PlanResult> {
     return { ok: false, error: "Não foi possível definir o plano principal." };
   }
   await touchPlan(option.plan_id);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -269,7 +269,7 @@ export async function removePlanOption(optionId: string): Promise<PlanResult> {
     return { ok: false, error: "Não foi possível remover a opção." };
   }
   await touchPlan(option.plan_id);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -315,7 +315,7 @@ export async function reviewTreatmentPlan(
     console.error("review_treatment_plan failed:", error.message);
     return { ok: false, error: "Não foi possível registrar a revisão." };
   }
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   revalidatePath("/planejamento");
   revalidatePath("/jornada");
   revalidatePath("/notificacoes");
@@ -366,7 +366,7 @@ export async function reviewPlanOption(
     console.error("review_plan_option failed:", error.message);
     return { ok: false, error: "Não foi possível registrar a avaliação." };
   }
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   revalidatePath("/planejamento");
   revalidatePath("/jornada");
   revalidatePath("/notificacoes");
@@ -393,7 +393,7 @@ export async function reopenTreatmentPlan(planId: string): Promise<PlanResult> {
     console.error("reopenTreatmentPlan failed:", error.message);
     return { ok: false, error: "Não foi possível reabrir o plano." };
   }
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   revalidatePath("/planejamento");
   return { ok: true };
 }
@@ -438,7 +438,7 @@ export async function submitTreatmentPlan(planId: string): Promise<PlanResult> {
     console.error("submit_treatment_plan failed:", error.message);
     return { ok: false, error: "Não foi possível enviar o plano." };
   }
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   revalidatePath("/planejamento");
   revalidatePath("/jornada");
   revalidatePath("/notificacoes");
@@ -519,7 +519,7 @@ export async function addBudgetItem(
     return { ok: false, error: "Não foi possível adicionar o item." };
   }
   await touchPlan(ctx.planId);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -555,7 +555,7 @@ export async function editBudgetItem(
     return { ok: false, error: "Não foi possível salvar o item." };
   }
   await touchPlan(ctx.planId);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
 
@@ -582,6 +582,6 @@ export async function removeBudgetItem(itemId: string): Promise<PlanResult> {
     return { ok: false, error: "Não foi possível remover o item." };
   }
   await touchPlan(ctx.planId);
-  revalidatePath(`/clientes/${ctx.clientId}`);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }

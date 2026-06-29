@@ -257,7 +257,7 @@ export function AttendancePanel({
         <div className="min-w-0">
           {a.clientId ? (
             <Link
-              href={`/clientes/${a.clientId}`}
+              href={`/prontuarios/${a.clientId}`}
               className="text-sm font-medium hover:underline"
             >
               {a.clientName}
@@ -355,7 +355,7 @@ export function AttendancePanel({
                           `${a.clientName} chamado(a).`,
                           () =>
                             a.clientId
-                              ? router.push(`/clientes/${a.clientId}`)
+                              ? router.push(`/prontuarios/${a.clientId}`)
                               : router.refresh()
                         )
                       }

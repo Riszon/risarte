@@ -42,7 +42,7 @@ export async function shareClientWithUnit(
     console.error("share_client_with_unit failed:", error.message);
     return { ok: false, error: "Não foi possível compartilhar o cliente." };
   }
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
 
@@ -67,6 +67,6 @@ export async function endClientShare(
   }
   // The shared unit (B) loses RLS access to the client now; its ficha re-renders
   // as the "compartilhamento encerrado" page (handled by the page itself).
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }

@@ -32,8 +32,8 @@ import {
   type Procedure,
   type UnitPrice,
 } from "@/lib/pricing";
-import { MediaGallery } from "../../clientes/[id]/media-gallery";
-import { PlanningSection } from "../../clientes/[id]/planning-section";
+import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
+import { PlanningSection } from "../../prontuarios/[id]/planning-section";
 
 export const metadata: Metadata = { title: "Cockpit de Planejamento" };
 
@@ -357,7 +357,7 @@ export default async function PlanningCockpitPage(
             variant="outline"
             size="sm"
             nativeButton={false}
-            render={<Link href={`/clientes/${client.id}`} />}
+            render={<Link href={`/prontuarios/${client.id}`} />}
           >
             Ver ficha completa
           </Button>

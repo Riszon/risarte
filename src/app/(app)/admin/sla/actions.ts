@@ -83,7 +83,7 @@ export async function recomputeActivity(): Promise<ActionResult> {
     console.error("recompute_client_activity failed:", error.message);
     return { ok: false, error: "Não foi possível recalcular." };
   }
-  revalidatePath("/clientes");
+  revalidatePath("/prontuarios");
   return { ok: true };
 }
 

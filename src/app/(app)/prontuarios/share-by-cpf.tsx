@@ -41,7 +41,7 @@ export function ShareByCpf() {
         toast.success("Cliente compartilhado com a sua unidade.");
         setOpen(false);
         setCpf("");
-        router.push(`/clientes/${result.clientId}`);
+        router.push(`/prontuarios/${result.clientId}`);
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");

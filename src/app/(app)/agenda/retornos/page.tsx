@@ -253,7 +253,7 @@ export default async function ReturnsPage(
                   <div>
                     {a.clients ? (
                       <Link
-                        href={`/clientes/${a.clients.id}`}
+                        href={`/prontuarios/${a.clients.id}`}
                         className="font-medium hover:underline"
                       >
                         {a.clients.full_name}
@@ -334,7 +334,7 @@ export default async function ReturnsPage(
                           <Clock className="size-3.5 shrink-0 text-amber-600" />
                         )}
                         <Link
-                          href={`/clientes/${c.id}`}
+                          href={`/prontuarios/${c.id}`}
                           className="font-medium hover:underline"
                         >
                           {c.full_name}

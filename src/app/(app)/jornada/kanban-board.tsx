@@ -108,7 +108,7 @@ export function KanbanBoard({
                     nativeButton={false}
                     className="size-6"
                     aria-label="Cadastrar cliente"
-                    render={<Link href="/clientes/novo" />}
+                    render={<Link href="/prontuarios/novo" />}
                   >
                     <Plus className="size-4" />
                   </Button>
@@ -137,7 +137,7 @@ export function KanbanBoard({
                   >
                     <div className="flex items-start justify-between gap-1">
                       <Link
-                        href={`/clientes/${client.id}`}
+                        href={`/prontuarios/${client.id}`}
                         className="block text-sm font-medium hover:underline"
                       >
                         {client.full_name}

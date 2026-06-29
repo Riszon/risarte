@@ -63,7 +63,7 @@ const NAV_ITEMS = [
   { href: "/jornada", label: "Jornada", icon: Route },
   { href: "/agenda", label: "Agenda", icon: Calendar },
   { href: "/atendimento", label: "Atendimento", icon: DoorOpen },
-  { href: "/clientes", label: "Clientes", icon: Users },
+  { href: "/prontuarios", label: "Prontuários", icon: Users },
 ];
 
 // Shown to the Dentista Planner and Admin Master (alongside the unit nav).

@@ -241,7 +241,7 @@ export function WeekGrid({
         {appointment.clients && (
           <>
             <Link
-              href={`/clientes/${appointment.clients.id}`}
+              href={`/prontuarios/${appointment.clients.id}`}
               className="mt-0.5 block truncate hover:underline"
             >
               {appointment.clients.full_name}

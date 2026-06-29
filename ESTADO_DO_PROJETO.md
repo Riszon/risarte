@@ -152,10 +152,25 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   chamada); **Concluído** mostra só o **horário de conclusão** + durações. Usa os
   carimbos já existentes (`checked_in_at`/`called_at`/`done_at`).
 
-Próximos lotes da lista original do dono (a fazer): **Prontuários** (renomear
-Clientes; aniversariantes; anamnese; abas transferidos/compartilhados);
-**Procedimentos** (tempo estimado → ajusta duração no agendamento e tempo total
-do plano; planilha-modelo); **Apresentação do plano** (PPT/PDF para o Comercial).
+**LOTE PRONTUÁRIOS — em curso.**
+- **P1 — Renomear + abas (sem migração, v0.8.5):** "Clientes" virou **Prontuários**
+  no menu e nos títulos; a **rota** mudou de `/clientes` para `/prontuarios`
+  (pasta renomeada + redirecionamento no `next.config.ts` para os links antigos
+  não darem 404). A lista virou **abas** (usuário de unidade): **Ativos** (lista +
+  filtros + aviso de início de tratamento), **Aniversariantes** (Hoje / Esta
+  semana = próximos 7 dias / Este mês, com idade e telefone — `src/lib/birthdays.ts`),
+  **Transferidos** e **Compartilhados** (antes eram blocos soltos no rodapé). O
+  aviso automático de aniversário para a Recepção é a P2. Franqueadora segue com
+  a visão de rede (sem abas de unidade). Sem nova migração.
+
+Próximas etapas do lote: **P2 — Aniversariantes + aviso da Recepção** (migração:
+RPC que avisa aniversariantes do dia antecipando fim de semana/feriado);
+**P3 — Anamnese** (Coordenador Clínico: queixa principal, histórico de saúde,
+histórico odontológico, estilo de vida — migração com tabela + RLS + histórico).
+
+Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
+estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
+**Apresentação do plano** (PPT/PDF para o Comercial).
 
 ## 3. Próximos passos (ordem de prioridade)
 

@@ -12,7 +12,7 @@ export default async function NewClientPage() {
   // Receptionist (unit) or SDR (franqueadora) can register. Other franchisor
   // roles cannot.
   if (!hasRoleInClinic(session, session.activeClinic?.id, ["receptionist", "sdr"])) {
-    redirect("/clientes");
+    redirect("/prontuarios");
   }
 
   const isFranchisor = session.activeClinic?.type === "franchisor";

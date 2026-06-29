@@ -250,7 +250,7 @@ export function WeekTimeGrid({
         </div>
         {a.clients && (
           <Link
-            href={`/clientes/${a.clients.id}`}
+            href={`/prontuarios/${a.clients.id}`}
             className="block truncate font-medium hover:underline"
           >
             {a.clients.full_name}

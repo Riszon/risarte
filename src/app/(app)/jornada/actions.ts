@@ -68,7 +68,7 @@ export async function setJourneyStatus(
   }
 
   revalidatePath("/jornada");
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
 
@@ -107,7 +107,7 @@ export async function setTreatmentPillar(
   }
 
   revalidatePath("/jornada");
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
 
@@ -177,6 +177,6 @@ export async function moveClientPhase(
   }
 
   revalidatePath("/jornada");
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }

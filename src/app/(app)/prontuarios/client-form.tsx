@@ -165,7 +165,7 @@ export function ClientForm({
           router.refresh();
         } else {
           router.push(
-            result.clientId ? `/clientes/${result.clientId}` : "/clientes"
+            result.clientId ? `/prontuarios/${result.clientId}` : "/prontuarios"
           );
           router.refresh();
         }
@@ -189,7 +189,7 @@ export function ClientForm({
         toast.success(
           `${duplicate.fullName} foi transferido(a) para esta unidade.`
         );
-        router.push(`/clientes/${duplicate.clientId}`);
+        router.push(`/prontuarios/${duplicate.clientId}`);
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
@@ -209,7 +209,7 @@ export function ClientForm({
       );
       if (result.ok) {
         toast.success(`${duplicate.fullName} transferido(a) para a unidade.`);
-        router.push(`/clientes/${duplicate.clientId}`);
+        router.push(`/prontuarios/${duplicate.clientId}`);
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
@@ -243,7 +243,7 @@ export function ClientForm({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/clientes/${duplicate.clientId}`)}
+              onClick={() => router.push(`/prontuarios/${duplicate.clientId}`)}
             >
               Abrir a ficha do cliente
             </Button>

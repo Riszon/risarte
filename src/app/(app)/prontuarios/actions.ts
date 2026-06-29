@@ -347,7 +347,7 @@ export async function createClientRecord(
     entityId: data.id,
     clinicId: targetClinicId,
   });
-  revalidatePath("/clientes");
+  revalidatePath("/prontuarios");
   return { ok: true, clientId: data.id };
 }
 
@@ -439,8 +439,8 @@ export async function updateClientRecord(
     entityId: clientId,
     clinicId: existing.clinic_id,
   });
-  revalidatePath("/clientes");
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath("/prontuarios");
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true, clientId };
 }
 
@@ -495,8 +495,8 @@ export async function transferClientToUnit(
     console.error("transfer_client (unit) failed:", error.message);
     return { ok: false, error: "Não foi possível transferir o cliente." };
   }
-  revalidatePath("/clientes");
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath("/prontuarios");
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true, clientId };
 }
 
@@ -561,7 +561,7 @@ export async function shareClientByCpf(
     console.error("shareClientByCpf failed:", error.message);
     return { ok: false, error: "Não foi possível compartilhar o cliente." };
   }
-  revalidatePath("/clientes");
+  revalidatePath("/prontuarios");
   return { ok: true, clientId };
 }
 
@@ -608,7 +608,7 @@ export async function transferClientToActiveClinic(
     return { ok: false, error: "Não foi possível transferir o cliente." };
   }
 
-  revalidatePath("/clientes");
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath("/prontuarios");
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true, clientId };
 }

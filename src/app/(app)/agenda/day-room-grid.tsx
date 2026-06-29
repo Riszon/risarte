@@ -501,7 +501,7 @@ export function DayRoomGrid({
         </div>
         {appointment.clients && (
           <Link
-            href={`/clientes/${appointment.clients.id}`}
+            href={`/prontuarios/${appointment.clients.id}`}
             className="block truncate font-medium hover:underline"
           >
             {appointment.clients.full_name}

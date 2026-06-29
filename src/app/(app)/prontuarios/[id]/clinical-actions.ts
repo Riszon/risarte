@@ -87,7 +87,7 @@ export async function recordConsent(clientId: string): Promise<ClinicalResult> {
     entityId: clientId,
     clinicId: guard.clinicId,
   });
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
 
@@ -124,7 +124,7 @@ export async function addClinicalNote(
     entityId: clientId,
     clinicId: guard.clinicId,
   });
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
 
@@ -170,7 +170,7 @@ export async function recordClinicalMedia(
     entityId: clientId,
     clinicId: guard.clinicId,
   });
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
 
@@ -214,7 +214,7 @@ export async function deleteClinicalMedia(
     clinicId: media.clinic_id,
     details: { removed: true },
   });
-  revalidatePath(`/clientes/${media.client_id}`);
+  revalidatePath(`/prontuarios/${media.client_id}`);
   return { ok: true };
 }
 
@@ -273,7 +273,7 @@ export async function editClinicalNote(
     clinicId: note.clinic_id,
     details: { edited: true },
   });
-  revalidatePath(`/clientes/${note.client_id}`);
+  revalidatePath(`/prontuarios/${note.client_id}`);
   return { ok: true };
 }
 
@@ -321,6 +321,6 @@ export async function addExternalMedia(
     entityId: clientId,
     clinicId: guard.clinicId,
   });
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
