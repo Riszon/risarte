@@ -79,6 +79,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
+  { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
 ];
 
 export function AppSidebar({

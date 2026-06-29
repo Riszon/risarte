@@ -184,6 +184,24 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
 
 **LOTE PRONTUÁRIOS COMPLETO (P1–P3).** Migrações: **0051–0052**.
 
+**LOTE ANAMNESE configurável (em curso) — feedback do dono + PDF da ficha.**
+Decisões: Admin Master cria as **fichas-padrão da rede**; o Coordenador pode
+**acrescentar perguntas** da sua unidade às fichas existentes (sem excluir as da
+rede, sem criar fichas próprias). A anamnese de 4 campos (P3) será **substituída**.
+- **A1 — Bug do consentimento (v0.8.8, sem migração):** botão **"Preencher
+  anamnese"** libera o formulário ao registrar o consentimento, sem recarregar.
+- **A2 — Configurador de fichas + ficha "Geral" (migração 0053, v0.8.9):** tabelas
+  `anamnesis_templates` + `anamnesis_questions` (clinic_id NULL = pergunta da
+  rede; preenchido = acréscimo da unidade) + RLS (Admin escreve a rede;
+  Coordenador só acréscimos da sua unidade). Tela **Administração → Fichas de
+  Anamnese** (`/admin/anamnese`) para criar/editar fichas e perguntas (tipos:
+  Sim/Não, Sim/Não/Não sei, escolha única, lista de marcar, texto curto/longo),
+  marcar **campo de detalhe ao "Sim"**, **obrigatória** e **alerta** (com
+  mensagem/condição). Ficha **"Geral"** já semeada com as perguntas do PDF.
+  Próximas: **A3** (preenchimento por clique no prontuário + Dentista/Planner
+  visualizam + alertas + pergunta específica/ad-hoc); **A4** (obrigatória na 1ª
+  consulta, atualização na reavaliação >12 meses, histórico completo).
+
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
 **Apresentação do plano** (PPT/PDF para o Comercial).
