@@ -172,9 +172,17 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   `notify_birthday_clients` (idempotente: dedupe pelo `link` com a data do dia).
   Nova categoria **"Aniversários"** na central de notificações.
 
-Próxima etapa do lote: **P3 — Anamnese** (Coordenador Clínico: queixa principal,
-histórico de saúde, histórico odontológico, estilo de vida — migração com tabela
-+ RLS + histórico).
+- **P3 — Anamnese (migração 0052, v0.8.7):** nova seção **Anamnese** na ficha
+  (logo abaixo da Avaliação clínica), preenchida pelo **Coordenador Clínico**
+  (ou Admin) com 4 campos livres — **queixa principal, histórico de saúde,
+  histórico odontológico, estilo de vida**. Atrás do **consentimento** (LGPD);
+  **leitura** para Planner/Gerente/Admin (mesma RLS das considerações). Abre em
+  **leitura** com botão **Editar**; guarda **versões anteriores**
+  (`clinical_anamnesis_revisions`, "Histórico de versões"). Uma anamnese por
+  cliente **por unidade** (a unidade compartilhada mantém a sua). Tabelas
+  `clinical_anamnesis` (+ revisões) + RLS.
+
+**LOTE PRONTUÁRIOS COMPLETO (P1–P3).** Migrações: **0051–0052**.
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);

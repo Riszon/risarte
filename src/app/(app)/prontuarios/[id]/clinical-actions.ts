@@ -277,6 +277,105 @@ export async function editClinicalNote(
   return { ok: true };
 }
 
+/**
+ * P3 — Anamnese (Coordenador Clínico). Salva a ficha de anamnese (4 campos
+ * livres) da unidade resolvida, guardando a versão anterior no histórico.
+ */
+export type AnamnesisInput = {
+  chiefComplaint: string;
+  healthHistory: string;
+  dentalHistory: string;
+  lifestyle: string;
+};
+
+export async function saveAnamnesis(
+  clientId: string,
+  input: AnamnesisInput
+): Promise<ClinicalResult> {
+  const fields = {
+    chief_complaint: input.chiefComplaint.trim() || null,
+    health_history: input.healthHistory.trim() || null,
+    dental_history: input.dentalHistory.trim() || null,
+    lifestyle: input.lifestyle.trim() || null,
+  };
+  if (!fields.chief_complaint && !fields.health_history && !fields.dental_history && !fields.lifestyle) {
+    return { ok: false, error: "Preencha ao menos um campo da anamnese." };
+  }
+
+  const guard = await requireCoordinator(clientId);
+  if ("error" in guard) return { ok: false, error: guard.error };
+  if (!(await hasConsent(clientId))) {
+    return {
+      ok: false,
+      error: "Registre o consentimento do paciente antes de preencher a anamnese.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("clinical_anamnesis")
+    .select(
+      "id, chief_complaint, health_history, dental_history, lifestyle"
+    )
+    .eq("client_id", clientId)
+    .eq("clinic_id", guard.clinicId)
+    .maybeSingle();
+
+  if (existing) {
+    const unchanged =
+      (existing.chief_complaint ?? null) === fields.chief_complaint &&
+      (existing.health_history ?? null) === fields.health_history &&
+      (existing.dental_history ?? null) === fields.dental_history &&
+      (existing.lifestyle ?? null) === fields.lifestyle;
+    if (unchanged) return { ok: true };
+
+    // Guarda a versão anterior antes de sobrescrever.
+    await supabase.from("clinical_anamnesis_revisions").insert({
+      anamnesis_id: existing.id,
+      client_id: clientId,
+      clinic_id: guard.clinicId,
+      chief_complaint: existing.chief_complaint,
+      health_history: existing.health_history,
+      dental_history: existing.dental_history,
+      lifestyle: existing.lifestyle,
+      edited_by: guard.userId,
+    });
+
+    const { error } = await supabase
+      .from("clinical_anamnesis")
+      .update({
+        ...fields,
+        updated_at: new Date().toISOString(),
+        updated_by: guard.userId,
+      })
+      .eq("id", existing.id);
+    if (error) {
+      console.error("saveAnamnesis (update) failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar a anamnese." };
+    }
+  } else {
+    const { error } = await supabase.from("clinical_anamnesis").insert({
+      client_id: clientId,
+      clinic_id: guard.clinicId,
+      ...fields,
+      created_by: guard.userId,
+    });
+    if (error) {
+      console.error("saveAnamnesis (insert) failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar a anamnese." };
+    }
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "clinical_anamnesis",
+    entityId: clientId,
+    clinicId: guard.clinicId,
+  });
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
 /** Add a clinical media item that is a LINK (e.g. a 3D scan), not a file. */
 export async function addExternalMedia(
   clientId: string,

@@ -30,6 +30,11 @@ import {
   type ClinicalNoteItem,
   type ConsentInfo,
 } from "./clinical-section";
+import {
+  AnamnesisSection,
+  type AnamnesisData,
+  type AnamnesisRevision,
+} from "./anamnesis-section";
 import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
 import { PlanningSection } from "./planning-section";
 import type {
@@ -459,29 +464,50 @@ export default async function ClientDetailPage(
   let consentInfo: ConsentInfo | null = null;
   let clinicalNotes: ClinicalNoteItem[] = [];
   let clinicalMedia: ClinicalMediaItem[] = [];
+  let anamnesis: AnamnesisData | null = null;
+  let anamnesisHistory: AnamnesisRevision[] = [];
   if (canViewClinical) {
-    const [{ data: consentRows }, { data: noteRows }, { data: mediaRows }] =
-      await Promise.all([
-        supabase
-          .from("client_consents")
-          .select("granted_at, recorded_by")
-          .eq("client_id", id)
-          .is("revoked_at", null)
-          .order("granted_at", { ascending: false })
-          .limit(1),
-        supabase
-          .from("clinical_notes")
-          .select("id, body, created_at, created_by, updated_at, updated_by")
-          .eq("client_id", id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("clinical_media")
-          .select(
-            "id, kind, original_name, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
-          )
-          .eq("client_id", id)
-          .order("created_at", { ascending: false }),
-      ]);
+    const [
+      { data: consentRows },
+      { data: noteRows },
+      { data: mediaRows },
+      { data: anamRow },
+      { data: anamRevRows },
+    ] = await Promise.all([
+      supabase
+        .from("client_consents")
+        .select("granted_at, recorded_by")
+        .eq("client_id", id)
+        .is("revoked_at", null)
+        .order("granted_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("clinical_notes")
+        .select("id, body, created_at, created_by, updated_at, updated_by")
+        .eq("client_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("clinical_media")
+        .select(
+          "id, kind, original_name, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
+        )
+        .eq("client_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("clinical_anamnesis")
+        .select(
+          "id, chief_complaint, health_history, dental_history, lifestyle, created_at, created_by, updated_at, updated_by"
+        )
+        .eq("client_id", id)
+        .eq("clinic_id", scheduleClinicId)
+        .maybeSingle(),
+      supabase
+        .from("clinical_anamnesis_revisions")
+        .select("id, edited_at, edited_by")
+        .eq("client_id", id)
+        .eq("clinic_id", scheduleClinicId)
+        .order("edited_at", { ascending: false }),
+    ]);
 
     const ids = [
       ...new Set(
@@ -490,6 +516,9 @@ export default async function ClientDetailPage(
           ...(noteRows ?? []).map((n) => n.created_by),
           ...(noteRows ?? []).map((n) => n.updated_by),
           ...(mediaRows ?? []).map((m) => m.uploaded_by),
+          anamRow?.created_by,
+          anamRow?.updated_by,
+          ...(anamRevRows ?? []).map((r) => r.edited_by),
         ].filter((x): x is string => Boolean(x))
       ),
     ];
@@ -544,6 +573,28 @@ export default async function ClientDetailPage(
         };
       })
     );
+
+    if (anamRow) {
+      anamnesis = {
+        chiefComplaint: anamRow.chief_complaint,
+        healthHistory: anamRow.health_history,
+        dentalHistory: anamRow.dental_history,
+        lifestyle: anamRow.lifestyle,
+        createdAt: anamRow.created_at,
+        createdByName: anamRow.created_by
+          ? (nameById.get(anamRow.created_by) ?? null)
+          : null,
+        updatedAt: anamRow.updated_at ?? null,
+        updatedByName: anamRow.updated_by
+          ? (nameById.get(anamRow.updated_by) ?? null)
+          : null,
+      };
+    }
+    anamnesisHistory = (anamRevRows ?? []).map((r) => ({
+      id: r.id,
+      editedAt: r.edited_at,
+      editedByName: r.edited_by ? (nameById.get(r.edited_by) ?? null) : null,
+    }));
   }
 
   // -- Plano de tratamento (Etapa 5 — Centro de Planejamento). O plano pertence
@@ -808,6 +859,16 @@ export default async function ClientDetailPage(
           notes={clinicalNotes}
           media={clinicalMedia}
           canSendToPlanning={canSendToPlanning}
+        />
+      )}
+
+      {canViewClinical && (
+        <AnamnesisSection
+          clientId={client.id}
+          canEdit={canEditClinical}
+          hasConsent={Boolean(consentInfo)}
+          anamnesis={anamnesis}
+          history={anamnesisHistory}
         />
       )}
 
