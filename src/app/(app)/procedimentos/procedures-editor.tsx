@@ -25,6 +25,7 @@ import {
 } from "@/lib/journey";
 import {
   addProcedure,
+  clearProcedureSessions,
   deleteProcedure,
   editProcedure,
   readjustPrices,
@@ -207,12 +208,41 @@ function initSessionDrafts(
   return [{ name: "", minutes: fallbackMinutes > 0 ? fallbackMinutes : 30 }];
 }
 
+/** Painel do histórico de alterações (mostrado só ao clicar). */
+function ChangeHistory({ changes }: { changes: ProcedureChange[] }) {
+  return (
+    <div className="mt-2 rounded-md bg-muted/30 p-2">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">
+        Histórico de alterações
+      </p>
+      {changes.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Nenhuma alteração registrada.
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {changes.map((c) => (
+            <li key={c.id} className="text-xs">
+              {c.description}{" "}
+              <span className="text-muted-foreground">
+                — {fmtDate(c.changedAt)}
+                {c.byName ? ` · ${c.byName}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Editor do protocolo de sessões de um procedimento (rede ou unidade). */
 function SessionProtocolPanel({
   procedureId,
   clinicId,
   initial,
   fallbackMinutes,
+  hasOverride = false,
   isPending,
   run,
 }: {
@@ -220,6 +250,8 @@ function SessionProtocolPanel({
   clinicId: string | null;
   initial: ProcedureSession[];
   fallbackMinutes: number;
+  /** (Unidade) já existe protocolo próprio? Habilita "remover personalização". */
+  hasOverride?: boolean;
   isPending: boolean;
   run: (
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -227,6 +259,7 @@ function SessionProtocolPanel({
     after?: () => void
   ) => void;
 }) {
+  const isUnit = clinicId !== null;
   const [sessions, setSessions] = useState<SessionDraft[]>(() =>
     initSessionDrafts(initial, fallbackMinutes)
   );
@@ -239,6 +272,13 @@ function SessionProtocolPanel({
 
   return (
     <div className="mt-2 space-y-3 rounded-md border bg-muted/20 p-3">
+      {isUnit && (
+        <p className="text-xs text-muted-foreground">
+          {hasOverride
+            ? "Protocolo personalizado desta unidade."
+            : "Sem personalização — base: padrão da Rede. Ajuste e salve para personalizar nesta unidade."}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">
           Este procedimento é executado em:
@@ -332,23 +372,42 @@ function SessionProtocolPanel({
           <strong>{sessions.length}</strong> sessão{sessions.length > 1 ? "ões" : ""} ·
           tempo total <strong>{formatMinutes(total)}</strong>
         </span>
-        <Button
-          size="sm"
-          disabled={isPending}
-          onClick={() =>
-            run(
-              () =>
-                setProcedureSessions(
-                  procedureId,
-                  clinicId,
-                  sessions.map((s) => ({ name: s.name, minutes: s.minutes }))
-                ),
-              "Protocolo de sessões salvo."
-            )
-          }
-        >
-          Salvar protocolo
-        </Button>
+        <div className="flex items-center gap-2">
+          {isUnit && hasOverride && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() =>
+                run(
+                  () => clearProcedureSessions(procedureId, clinicId!),
+                  "Personalização removida — voltou ao padrão da Rede."
+                )
+              }
+            >
+              Remover personalização
+            </Button>
+          )}
+          <Button
+            size="sm"
+            disabled={isPending}
+            onClick={() =>
+              run(
+                () =>
+                  setProcedureSessions(
+                    procedureId,
+                    clinicId,
+                    sessions.map((s) => ({ name: s.name, minutes: s.minutes }))
+                  ),
+                isUnit
+                  ? "Protocolo da unidade salvo."
+                  : "Protocolo de sessões salvo."
+              )
+            }
+          >
+            Salvar protocolo
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -362,6 +421,8 @@ export function ProceduresEditor({
   overrides,
   changesByProcedure,
   sessionsByProcedure,
+  unitSessionsByProcedure,
+  canManageCatalog,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -370,6 +431,8 @@ export function ProceduresEditor({
   overrides: UnitPrice[];
   changesByProcedure: Record<string, ProcedureChange[]>;
   sessionsByProcedure: Record<string, ProcedureSession[]>;
+  unitSessionsByProcedure: Record<string, ProcedureSession[]>;
+  canManageCatalog: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -411,7 +474,7 @@ export function ProceduresEditor({
   return (
     <div className="space-y-4">
       {/* Novo procedimento (somente no modo "padrão da rede"). */}
-      {networkMode && (
+      {networkMode && canManageCatalog && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Novo procedimento</CardTitle>
@@ -453,7 +516,7 @@ export function ProceduresEditor({
         </Card>
       )}
 
-      {networkMode && (
+      {networkMode && canManageCatalog && (
         <ReadjustPanel
           specialties={specialties}
           selectedCount={selected.size}
@@ -488,6 +551,8 @@ export function ProceduresEditor({
                   overrideCents={overrideByProc.get(p.id) ?? null}
                   changes={changesByProcedure[p.id] ?? []}
                   sessions={sessionsByProcedure[p.id] ?? []}
+                  unitSessions={unitSessionsByProcedure[p.id] ?? []}
+                  canManageCatalog={canManageCatalog}
                   isPending={isPending}
                   run={run}
                   selected={selected.has(p.id)}
@@ -650,6 +715,8 @@ function ProcedureRow({
   overrideCents,
   changes,
   sessions,
+  unitSessions,
+  canManageCatalog,
   isPending,
   run,
   selected,
@@ -661,6 +728,8 @@ function ProcedureRow({
   overrideCents: number | null;
   changes: ProcedureChange[];
   sessions: ProcedureSession[];
+  unitSessions: ProcedureSession[];
+  canManageCatalog: boolean;
   isPending: boolean;
   run: (
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -685,7 +754,7 @@ function ProcedureRow({
           value={form}
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             disabled={isPending}
@@ -700,7 +769,34 @@ function ProcedureRow({
           <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
             Cancelar
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSessions((s) => !s)}
+          >
+            <Clock className="mr-1 size-4" />
+            Protocolo de sessões
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowHistory((s) => !s)}
+          >
+            <History className="mr-1 size-4" />
+            Histórico
+          </Button>
         </div>
+        {showHistory && <ChangeHistory changes={changes} />}
+        {showSessions && (
+          <SessionProtocolPanel
+            procedureId={p.id}
+            clinicId={null}
+            initial={sessions}
+            fallbackMinutes={p.estimatedMinutes ?? 0}
+            isPending={isPending}
+            run={run}
+          />
+        )}
       </li>
     );
   }
@@ -820,64 +916,67 @@ function ProcedureRow({
           </div>
         ) : (
           <div className="flex shrink-0 items-center gap-1">
-            <span className="text-sm text-muted-foreground">R$</span>
-            <Input
-              value={unitPrice}
-              onChange={(e) => setUnitPriceValue(e.target.value)}
-              inputMode="decimal"
-              placeholder={centsToInput(p.defaultPriceCents)}
-              className="w-28"
-            />
             <Button
-              size="sm"
-              variant="outline"
-              disabled={isPending}
-              onClick={() =>
-                run(
-                  () => setUnitPrice(selectedUnitId, p.id, unitPrice),
-                  "Preço da unidade salvo."
-                )
-              }
+              variant="ghost"
+              size="icon"
+              aria-label="Protocolo da unidade"
+              title="Protocolo de sessões da unidade"
+              onClick={() => setShowSessions((s) => !s)}
             >
-              Salvar
+              <Clock className="size-4" />
             </Button>
+            {canManageCatalog && (
+              <>
+                <span className="text-sm text-muted-foreground">R$</span>
+                <Input
+                  value={unitPrice}
+                  onChange={(e) => setUnitPriceValue(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={centsToInput(p.defaultPriceCents)}
+                  className="w-28"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() =>
+                    run(
+                      () => setUnitPrice(selectedUnitId, p.id, unitPrice),
+                      "Preço da unidade salvo."
+                    )
+                  }
+                >
+                  Salvar
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
 
-      {showHistory && (
-        <div className="mt-2 rounded-md bg-muted/30 p-2">
-          <p className="mb-1 text-xs font-medium text-muted-foreground">
-            Histórico de alterações
-          </p>
-          {changes.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhuma alteração registrada.</p>
-          ) : (
-            <ul className="space-y-1">
-              {changes.map((c) => (
-                <li key={c.id} className="text-xs">
-                  {c.description}{" "}
-                  <span className="text-muted-foreground">
-                    — {fmtDate(c.changedAt)}
-                    {c.byName ? ` · ${c.byName}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {showHistory && <ChangeHistory changes={changes} />}
 
-      {showSessions && networkMode && (
-        <SessionProtocolPanel
-          procedureId={p.id}
-          clinicId={null}
-          initial={sessions}
-          fallbackMinutes={p.estimatedMinutes ?? 0}
-          isPending={isPending}
-          run={run}
-        />
-      )}
+      {showSessions &&
+        (networkMode ? (
+          <SessionProtocolPanel
+            procedureId={p.id}
+            clinicId={null}
+            initial={sessions}
+            fallbackMinutes={p.estimatedMinutes ?? 0}
+            isPending={isPending}
+            run={run}
+          />
+        ) : (
+          <SessionProtocolPanel
+            procedureId={p.id}
+            clinicId={selectedUnitId}
+            initial={unitSessions.length > 0 ? unitSessions : sessions}
+            fallbackMinutes={p.estimatedMinutes ?? 0}
+            hasOverride={unitSessions.length > 0}
+            isPending={isPending}
+            run={run}
+          />
+        ))}
     </li>
   );
 }

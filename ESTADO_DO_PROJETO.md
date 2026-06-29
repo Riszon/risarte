@@ -242,6 +242,14 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   contagem; salvar recalcula `procedures.estimated_minutes` (total da Rede). O
   campo solto de tempo do PR1 saiu do formulário (o total vem do protocolo; a
   importação ainda define um tempo de sessão única). Lista mostra "N sessões · Xh".
+- **E2 + ajustes (sem migração, v0.9.4):** **protocolo por unidade** — no modo
+  unidade, o relógio abre o protocolo da unidade (base = padrão da Rede; salvar
+  cria a personalização; "Remover personalização" volta ao padrão). RLS já cobria
+  (Admin/Planner/Coordenador). O **Coordenador Clínico** agora acessa
+  `/procedimentos` **só no modo unidade** (sem catálogo/preços), restrito às suas
+  unidades. Ajustes: o **relógio do protocolo** e o **histórico** ficam acessíveis
+  também ao **editar** o procedimento; o **histórico** vira um painel reutilizável
+  mostrado **só ao clicar** (`ChangeHistory`). Action `clearProcedureSessions`.
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);

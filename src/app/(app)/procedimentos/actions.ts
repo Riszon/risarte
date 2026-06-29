@@ -556,6 +556,46 @@ export async function setProcedureSessions(
   return { ok: true };
 }
 
+/** Remove a unit's customized protocol (reverts to the network default). */
+export async function clearProcedureSessions(
+  procedureId: string,
+  clinicId: string
+): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("planner_dentist")
+  );
+  const allowed =
+    session.isAdminMaster ||
+    isPlanner ||
+    hasRoleInClinic(session, clinicId, ["clinical_coordinator"]);
+  if (!allowed) return { ok: false, error: "Sem permissão." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("procedure_sessions")
+    .delete()
+    .eq("procedure_id", procedureId)
+    .eq("clinic_id", clinicId);
+  if (error) {
+    console.error("clearProcedureSessions failed:", error.message);
+    return { ok: false, error: "Não foi possível remover a personalização." };
+  }
+  await logChange(
+    procedureId,
+    session.userId,
+    "Removeu o protocolo personalizado da unidade (voltou ao padrão da Rede)."
+  );
+  await logAudit({
+    action: "update",
+    entityType: "procedure_sessions",
+    entityId: procedureId,
+    details: { cleared_unit: clinicId },
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true };
+}
+
 /** Set (or clear, when blank) a unit's price override for a procedure. */
 export async function setUnitPrice(
   clinicId: string,

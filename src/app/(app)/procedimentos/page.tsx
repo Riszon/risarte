@@ -41,14 +41,24 @@ export default async function ProceduresPage(
   const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );
-  if (!session.isAdminMaster && !isPlanner) redirect("/");
+  // Coordenador Clínico pode personalizar o PROTOCOLO da sua unidade (E2) —
+  // entra só no modo unidade, sem mexer no catálogo/preços.
+  const coordinatorUnitIds = Object.entries(session.rolesByClinic)
+    .filter(([, roles]) => roles.includes("clinical_coordinator"))
+    .map(([cid]) => cid);
+  const canManageCatalog = session.isAdminMaster || isPlanner;
+  if (!canManageCatalog && coordinatorUnitIds.length === 0) redirect("/");
 
   const sp = await props.searchParams;
   const search = typeof sp.q === "string" ? sp.q : "";
   const specialtyFilter = typeof sp.especialidade === "string" ? sp.especialidade : "";
   const statusFilter = typeof sp.status === "string" ? sp.status : "";
   const pillarFilter = typeof sp.pilar === "string" ? sp.pilar : "";
-  const unitId = typeof sp.unidade === "string" ? sp.unidade : "";
+  let unitId = typeof sp.unidade === "string" ? sp.unidade : "";
+  // Coordenador (sem catálogo): força uma das unidades dele (nunca modo rede).
+  if (!canManageCatalog && !coordinatorUnitIds.includes(unitId)) {
+    unitId = coordinatorUnitIds[0];
+  }
 
   const supabase = await createClient();
 
@@ -102,6 +112,9 @@ export default async function ProceduresPage(
   ]);
 
   const nameSuggestions = [...new Set((nameRows ?? []).map((n) => n.name))];
+  const unitOptions = canManageCatalog
+    ? (units ?? [])
+    : (units ?? []).filter((u) => coordinatorUnitIds.includes(u.id));
 
   const procedures: Procedure[] = (procRows ?? []).map((p) => ({
     id: p.id,
@@ -171,6 +184,39 @@ export default async function ProceduresPage(
     }
   }
 
+  // Unit-specific session protocols (E2), when a unit is selected.
+  const unitSessionsByProcedure: Record<string, ProcedureSession[]> = {};
+  if (unitId && ids.length > 0) {
+    const { data: unitSessionRows } = await supabase
+      .from("procedure_sessions")
+      .select(
+        "id, procedure_id, clinic_id, session_index, name, estimated_minutes"
+      )
+      .eq("clinic_id", unitId)
+      .in("procedure_id", ids)
+      .order("session_index")
+      .returns<
+        {
+          id: string;
+          procedure_id: string;
+          clinic_id: string | null;
+          session_index: number;
+          name: string | null;
+          estimated_minutes: number;
+        }[]
+      >();
+    for (const r of unitSessionRows ?? []) {
+      (unitSessionsByProcedure[r.procedure_id] ??= []).push({
+        id: r.id,
+        procedureId: r.procedure_id,
+        clinicId: r.clinic_id,
+        sessionIndex: r.session_index,
+        name: r.name,
+        estimatedMinutes: r.estimated_minutes,
+      });
+    }
+  }
+
   // Change history for the listed procedures.
   const changesByProcedure: Record<string, ProcedureChange[]> = {};
   if (ids.length > 0) {
@@ -204,8 +250,9 @@ export default async function ProceduresPage(
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Procedimentos</h1>
         <p className="text-sm text-muted-foreground">
-          Catálogo de procedimentos da rede ({procedures.length}). Preço padrão da
-          rede com ajuste por unidade; código interno gerado automaticamente.
+          {canManageCatalog
+            ? `Catálogo de procedimentos da rede (${procedures.length}). Preço padrão da rede com ajuste por unidade; código interno gerado automaticamente.`
+            : "Protocolo de sessões da sua unidade. Clique no relógio de um procedimento para personalizar os tempos/sessões (a base é o padrão da Rede)."}
         </p>
       </div>
 
@@ -246,10 +293,10 @@ export default async function ProceduresPage(
           <option value="inactive">Somente inativos</option>
         </select>
         <select name="unidade" defaultValue={unitId} className={selectClass}>
-          <option value="">Preço: padrão da rede</option>
-          {(units ?? []).map((u) => (
+          {canManageCatalog && <option value="">Padrão da rede</option>}
+          {unitOptions.map((u) => (
             <option key={u.id} value={u.id}>
-              Preço: {u.name}
+              {canManageCatalog ? `Unidade: ${u.name}` : u.name}
             </option>
           ))}
         </select>
@@ -265,6 +312,8 @@ export default async function ProceduresPage(
         overrides={overrides}
         changesByProcedure={changesByProcedure}
         sessionsByProcedure={sessionsByProcedure}
+        unitSessionsByProcedure={unitSessionsByProcedure}
+        canManageCatalog={canManageCatalog}
       />
     </div>
   );
