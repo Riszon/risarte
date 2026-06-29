@@ -19,6 +19,7 @@ export type ProcedureInput = {
   maxPrice: string;
   commissionPercent: string;
   commissionFixed: string;
+  estimatedMinutes: string;
 };
 
 /** Admin Master and Dentista Planner may manage the procedures catalog. */
@@ -53,6 +54,7 @@ type ParsedProcedure = {
   max_price_cents: number | null;
   commission_percent: number;
   commission_fixed_cents: number;
+  estimated_minutes: number | null;
 };
 
 function parseProcedure(
@@ -81,6 +83,16 @@ function parseProcedure(
     return { error: "Comissão (%) inválida." };
   }
 
+  let estimated_minutes: number | null = null;
+  const estStr = input.estimatedMinutes.trim();
+  if (estStr) {
+    const n = Number(estStr.replace(",", "."));
+    if (!Number.isFinite(n) || n < 0) {
+      return { error: "Tempo estimado inválido (use minutos, ex.: 30)." };
+    }
+    estimated_minutes = Math.round(n);
+  }
+
   return {
     values: {
       name,
@@ -92,6 +104,7 @@ function parseProcedure(
       max_price_cents: max,
       commission_percent: percent,
       commission_fixed_cents: fixed,
+      estimated_minutes,
     },
   };
 }
@@ -149,6 +162,7 @@ const FIELD_LABELS: Record<keyof ParsedProcedure, string> = {
   max_price_cents: "Preço máximo",
   commission_percent: "Comissão (%)",
   commission_fixed_cents: "Comissão (R$)",
+  estimated_minutes: "Tempo estimado (min)",
 };
 
 export async function editProcedure(
@@ -166,7 +180,7 @@ export async function editProcedure(
   const { data: old } = await supabase
     .from("procedures")
     .select(
-      "name, tuss_code, specialty, pillar, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents"
+      "name, tuss_code, specialty, pillar, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, estimated_minutes"
     )
     .eq("id", id)
     .single();

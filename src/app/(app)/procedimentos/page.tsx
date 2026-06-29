@@ -27,6 +27,7 @@ type ProcedureRow = {
   commission_percent: number;
   commission_fixed_cents: number;
   pillar: MethodologyPillar | null;
+  estimated_minutes: number | null;
   is_active: boolean;
 };
 
@@ -54,7 +55,7 @@ export default async function ProceduresPage(
   let query = supabase
     .from("procedures")
     .select(
-      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, is_active"
+      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, estimated_minutes, is_active"
     )
     .order("specialty", { nullsFirst: true })
     .order("name")
@@ -114,6 +115,7 @@ export default async function ProceduresPage(
     commissionPercent: p.commission_percent,
     commissionFixedCents: p.commission_fixed_cents,
     pillar: p.pillar,
+    estimatedMinutes: p.estimated_minutes,
     isActive: p.is_active,
   }));
 

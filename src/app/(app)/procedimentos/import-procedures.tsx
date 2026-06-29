@@ -31,6 +31,7 @@ const TEMPLATE_HEADERS = [
   "Código TUSS",
   "Especialidade",
   "Pilar da Metodologia",
+  "Tempo Estimado (min)",
   "Preço Padrão",
   "Preço Mínimo",
   "Preço Máximo",
@@ -39,8 +40,8 @@ const TEMPLATE_HEADERS = [
 ];
 
 const TEMPLATE_EXAMPLES = [
-  ["Restauração em resina", "85100201", "Dentística", "Função", "250,00", "200,00", "350,00", "10", "0"],
-  ["Clareamento dental", "", "Estética", "Estética", "800,00", "", "", "15", "50,00"],
+  ["Restauração em resina", "85100201", "Dentística", "Função", "40", "250,00", "200,00", "350,00", "10", "0"],
+  ["Clareamento dental", "", "Estética", "Estética", "60", "800,00", "", "", "15", "50,00"],
 ];
 
 function mapRow(obj: Record<string, unknown>): ProcedureInput {
@@ -56,6 +57,14 @@ function mapRow(obj: Record<string, unknown>): ProcedureInput {
     tussCode: get("codigo tuss", "tuss"),
     specialty: get("especialidade"),
     pillar: pillarLabel ? (PILLAR_BY_LABEL.get(norm(pillarLabel)) ?? "") : "",
+    estimatedMinutes: get(
+      "tempo estimado (min)",
+      "tempo estimado",
+      "tempo (min)",
+      "tempo",
+      "duracao (min)",
+      "duracao"
+    ),
     defaultPrice: get("preco padrao", "preco"),
     minPrice: get("preco minimo"),
     maxPrice: get("preco maximo"),
@@ -75,8 +84,32 @@ export function ImportProcedures() {
     try {
       const XLSX = await import("xlsx");
       const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, ...TEMPLATE_EXAMPLES]);
+      // Larguras de coluna para o cabeçalho ficar legível e destacado.
+      ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(16, h.length + 2) }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Procedimentos");
+
+      // Aba de instruções — deixa claro o papel de cada coluna do cabeçalho.
+      const pillars = METHODOLOGY_PILLARS.map((p) => PILLAR_LABELS[p]).join(", ");
+      const help = XLSX.utils.aoa_to_sheet([
+        ['INSTRUÇÕES — preencha a aba "Procedimentos"'],
+        [""],
+        ["Coluna", "Como preencher"],
+        ["Nome do Procedimento", "Obrigatório. Linhas sem nome são ignoradas."],
+        ["Código TUSS", "Opcional."],
+        ["Especialidade", "Ex.: Dentística, Endodontia, Implantodontia..."],
+        ["Pilar da Metodologia", `Um de: ${pillars} (ou em branco).`],
+        [
+          "Tempo Estimado (min)",
+          "Só o número de minutos (ex.: 30). Ajusta a duração na agenda e o tempo total do plano.",
+        ],
+        ["Preço Padrão / Mínimo / Máximo", "Em reais (ex.: 250,00)."],
+        ["Comissão (%)", "Só o número (ex.: 10)."],
+        ["Comissão (R$)", "Em reais (ex.: 50,00)."],
+      ]);
+      help["!cols"] = [{ wch: 30 }, { wch: 70 }];
+      XLSX.utils.book_append_sheet(wb, help, "Instruções");
+
       XLSX.writeFile(wb, "modelo-procedimentos.xlsx");
     } catch {
       toast.error("Não foi possível gerar o modelo.");
@@ -151,6 +184,10 @@ export function ImportProcedures() {
               <strong>Pilar da Metodologia</strong>: use um de{" "}
               {METHODOLOGY_PILLARS.map((p) => PILLAR_LABELS[p]).join(", ")} (ou
               deixe em branco).
+            </li>
+            <li>
+              <strong>Tempo Estimado (min)</strong>: minutos de execução (só o
+              número, ex.: 30) — ajusta a duração na agenda e o tempo do plano.
             </li>
             <li>Preços e comissão (R$) em reais (ex.: 250,00). Comissão (%) só o número (ex.: 10).</li>
             <li>

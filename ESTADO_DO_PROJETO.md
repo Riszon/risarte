@@ -219,6 +219,17 @@ rede, sem criar fichas próprias). A anamnese de 4 campos (P3) será **substitu�
 
 **LOTE ANAMNESE COMPLETO (A1–A4).** Migrações: **0053–0054**.
 
+**LOTE PROCEDIMENTOS (em curso) — tempo estimado.**
+- **PR1 — Tempo estimado no cadastro (migração 0055, v0.9.2):** coluna
+  `procedures.estimated_minutes`; campo **"Tempo estimado (min)"** no cadastro/
+  edição, exibição na lista, e na **importação Excel** (nova coluna "Tempo
+  Estimado (min)" + larguras de coluna + aba "Instruções" no modelo). Tipo
+  `Procedure.estimatedMinutes` propagado (ficha + cockpit do plano).
+  Próximas: **PR2** (agendamento usa o tempo do procedimento — seletor que
+  preenche a duração, `appointments.procedure_id`); **PR3** (tempo total do
+  plano somando os tempos dos procedimentos por opção). Obs.: cabeçalho em
+  negrito/cor no Excel exigiria trocar a lib (exceljs) — a fazer se o dono pedir.
+
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
 **Apresentação do plano** (PPT/PDF para o Comercial).

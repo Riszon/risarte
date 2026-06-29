@@ -255,7 +255,7 @@ export default async function PlanningCockpitPage(
     supabase
       .from("procedures")
       .select(
-        "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, is_active"
+        "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, estimated_minutes, is_active"
       )
       .eq("is_active", true)
       .order("specialty", { nullsFirst: true })
@@ -273,6 +273,7 @@ export default async function PlanningCockpitPage(
           commission_percent: number;
           commission_fixed_cents: number;
           pillar: MethodologyPillar | null;
+          estimated_minutes: number | null;
           is_active: boolean;
         }[]
       >(),
@@ -294,6 +295,7 @@ export default async function PlanningCockpitPage(
     commissionPercent: p.commission_percent,
     commissionFixedCents: p.commission_fixed_cents,
     pillar: p.pillar,
+    estimatedMinutes: p.estimated_minutes,
     isActive: p.is_active,
   }));
   const overrides: UnitPrice[] = (priceRows ?? []).map((r) => ({

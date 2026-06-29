@@ -56,6 +56,7 @@ const EMPTY: ProcedureInput = {
   maxPrice: "",
   commissionPercent: "",
   commissionFixed: "",
+  estimatedMinutes: "",
 };
 
 function toInput(p: Procedure): ProcedureInput {
@@ -73,6 +74,7 @@ function toInput(p: Procedure): ProcedureInput {
     commissionFixed: p.commissionFixedCents
       ? centsToInput(p.commissionFixedCents)
       : "",
+    estimatedMinutes: p.estimatedMinutes != null ? String(p.estimatedMinutes) : "",
   };
 }
 
@@ -134,6 +136,15 @@ function ProcedureFields({
             </option>
           ))}
         </select>
+      </div>
+      <div>
+        <Label>Tempo estimado (min)</Label>
+        <Input
+          value={value.estimatedMinutes}
+          onChange={(e) => onChange({ estimatedMinutes: e.target.value })}
+          inputMode="numeric"
+          placeholder="Ex.: 30"
+        />
       </div>
       <div>
         <Label>Preço padrão (R$)</Label>
@@ -569,6 +580,9 @@ function ProcedureRow({
               </span>
             )}
             <span>Comissão: {commissionLabel(p)}</span>
+            {p.estimatedMinutes != null && (
+              <span>Tempo: {p.estimatedMinutes} min</span>
+            )}
           </p>
           </div>
         </div>

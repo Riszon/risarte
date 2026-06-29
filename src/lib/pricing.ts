@@ -18,6 +18,8 @@ export type Procedure = {
   /** Fixed commission in cents (realized on completion). */
   commissionFixedCents: number;
   pillar: MethodologyPillar | null;
+  /** Estimated execution time in minutes (null = not set). */
+  estimatedMinutes: number | null;
   isActive: boolean;
 };
 
