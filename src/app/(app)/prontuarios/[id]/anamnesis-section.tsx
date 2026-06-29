@@ -213,9 +213,16 @@ export function AnamnesisSection({
           </div>
         ) : (
           !editing && (
-            <p className="text-sm text-muted-foreground">
-              Anamnese ainda não preenchida.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Anamnese ainda não preenchida.
+              </p>
+              {canEdit && hasConsent && (
+                <Button size="sm" onClick={() => setEditing(true)}>
+                  Preencher anamnese
+                </Button>
+              )}
+            </div>
           )
         )}
 
