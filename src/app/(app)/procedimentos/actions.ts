@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { parseBRLToCents } from "@/lib/pricing";
+import { formatSessions, parseBRLToCents } from "@/lib/pricing";
 import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
 
 export type ProcedureResult = { ok: boolean; error?: string };
@@ -544,7 +544,7 @@ export async function setProcedureSessions(
   await logChange(
     procedureId,
     session.userId,
-    `${isNetwork ? "Protocolo da rede" : "Protocolo da unidade"}: ${clean.length} sessão(ões), ${total} min.`
+    `${isNetwork ? "Protocolo da rede" : "Protocolo da unidade"}: ${formatSessions(clean.length)}, ${total} min.`
   );
   await logAudit({
     action: "update",

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import {
   formatBRL,
   formatMinutes,
+  protocolSummary,
   protocolTotalMinutes,
   SESSION_TIME_OPTIONS,
   type Procedure,
@@ -842,18 +843,16 @@ function ProcedureRow({
             )}
             <span>Comissão: {commissionLabel(p)}</span>
             {sessions.length > 0 ? (
-              <span>
-                {sessions.length} sessão{sessions.length > 1 ? "ões" : ""} ·{" "}
-                {formatMinutes(
-                  protocolTotalMinutes(
-                    sessions.map((s) => ({ minutes: s.estimatedMinutes }))
-                  )
-                )}
-              </span>
+              <span>Rede: {protocolSummary(sessions)}</span>
             ) : (
               p.estimatedMinutes != null && (
-                <span>Tempo: {formatMinutes(p.estimatedMinutes)}</span>
+                <span>Rede: {formatMinutes(p.estimatedMinutes)}</span>
               )
+            )}
+            {unitSessions.length > 0 && (
+              <span className="font-medium text-primary">
+                Unidade: {protocolSummary(unitSessions)}
+              </span>
             )}
           </p>
           </div>

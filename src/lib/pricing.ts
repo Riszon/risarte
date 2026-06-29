@@ -48,6 +48,26 @@ export function protocolTotalMinutes(sessions: { minutes: number }[]): number {
   return sessions.reduce((sum, s) => sum + (s.minutes || 0), 0);
 }
 
+/** "sessão" / "sessões" com concordância correta. */
+export function sessionsWord(n: number): string {
+  return n === 1 ? "sessão" : "sessões";
+}
+
+/** Ex.: 1 → "1 sessão"; 3 → "3 sessões". */
+export function formatSessions(n: number): string {
+  return `${n} ${sessionsWord(n)}`;
+}
+
+/** Resumo de um protocolo: "3 sessões · 2h". */
+export function protocolSummary(
+  sessions: { estimatedMinutes: number }[]
+): string {
+  const total = protocolTotalMinutes(
+    sessions.map((s) => ({ minutes: s.estimatedMinutes }))
+  );
+  return `${formatSessions(sessions.length)} · ${formatMinutes(total)}`;
+}
+
 /** Human label for a minutes amount, e.g. 90 → "1h30". */
 export function formatMinutes(min: number): string {
   if (!min) return "0 min";
