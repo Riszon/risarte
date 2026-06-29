@@ -1,5 +1,6 @@
-import { getSessionContext } from "@/lib/auth";
+import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { notifyUnitBirthdays } from "./prontuarios/actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -25,6 +26,22 @@ type FranchisorRoleRow = {
 export default async function HomePage() {
   const session = await getSessionContext();
   const supabase = await createClient();
+
+  // P2: ao abrir o sistema, a Recepção da unidade recebe (uma vez por dia) o
+  // aviso dos aniversariantes — antecipando fim de semana/feriado.
+  const homeClinic = session.activeClinic;
+  if (
+    homeClinic &&
+    homeClinic.type !== "franchisor" &&
+    (session.isAdminMaster ||
+      hasRoleInClinic(session, homeClinic.id, [
+        "receptionist",
+        "unit_manager",
+        "clinical_coordinator",
+      ]))
+  ) {
+    await notifyUnitBirthdays(homeClinic.id);
+  }
 
   // For franchisor-role users: which units are under their responsibility?
   const { data: franchisorRoles } = await supabase

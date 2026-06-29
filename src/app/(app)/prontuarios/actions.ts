@@ -5,6 +5,11 @@ import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import {
+  resolveAgendaSettings,
+  type AgendaSettingRow,
+} from "@/lib/agenda-settings";
+import { holidayOn } from "@/lib/holidays";
 
 export type DuplicateInfo = {
   clientId: string;
@@ -611,4 +616,89 @@ export async function transferClientToActiveClinic(
   revalidatePath("/prontuarios");
   revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true, clientId };
+}
+
+// ---------------------------------------------------------------------------
+// P2 — Aviso de aniversariantes para a Recepção. Idempotente (uma vez por dia),
+// disparado ao abrir o sistema. Antecipa fim de semana/feriado: cobre hoje +
+// a sequência de dias fechados imediatamente à frente, até o próximo dia de
+// atendimento (assim a Recepção parabeniza antes da unidade fechar).
+// ---------------------------------------------------------------------------
+function ymdLocal(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
+export async function notifyUnitBirthdays(clinicId: string): Promise<void> {
+  const supabase = await createClient();
+
+  const today = new Date();
+  const todayIso = ymdLocal(today);
+  const horizon = new Date(today);
+  horizon.setDate(horizon.getDate() + 9);
+  const horizonIso = ymdLocal(horizon);
+
+  // Dias de atendimento (config da unidade) + feriados decididos + dias avulsos.
+  const [{ data: settingRows }, { data: decisionRows }, { data: openDayRows }] =
+    await Promise.all([
+      supabase
+        .from("clinic_agenda_settings")
+        .select(
+          "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+        )
+        .returns<AgendaSettingRow[]>(),
+      supabase
+        .from("clinic_holiday_decisions")
+        .select("holiday_date, will_attend")
+        .eq("clinic_id", clinicId)
+        .gte("holiday_date", todayIso)
+        .lte("holiday_date", horizonIso),
+      supabase
+        .from("agenda_open_days")
+        .select("date")
+        .eq("clinic_id", clinicId)
+        .gte("date", todayIso)
+        .lte("date", horizonIso),
+    ]);
+
+  const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
+  const decision = new Map<string, boolean>();
+  for (const r of (decisionRows ?? []) as {
+    holiday_date: string;
+    will_attend: boolean;
+  }[]) {
+    decision.set(r.holiday_date, r.will_attend);
+  }
+  const openDays = new Set(
+    (openDayRows ?? []).map((r) => (r as { date: string }).date)
+  );
+
+  const isWorkingDay = (iso: string, d: Date): boolean => {
+    if (openDays.has(iso)) return true; // dia avulso liberado
+    const dec = decision.get(iso);
+    if (dec === true) return true; // feriado em que a unidade atende
+    if (dec === false) return false; // feriado fechado
+    if (holidayOn(iso)) return false; // feriado nacional pendente → antecipa
+    return cfg.weekdays.includes(d.getDay());
+  };
+
+  // Hoje + sequência de dias fechados à frente (para na 1ª data de atendimento).
+  const dates: string[] = [todayIso];
+  for (let i = 1; i <= 9; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const iso = ymdLocal(d);
+    if (isWorkingDay(iso, d)) break;
+    dates.push(iso);
+  }
+
+  const { error: rpcError } = await supabase.rpc("notify_birthday_clients", {
+    p_clinic_id: clinicId,
+    p_dates: dates,
+    p_run_date: todayIso,
+  });
+  if (rpcError) {
+    console.error("notify_birthday_clients failed:", rpcError.message);
+  }
 }

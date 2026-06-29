@@ -31,6 +31,7 @@ import {
   type BirthdayScope,
 } from "@/lib/birthdays";
 import { ShareByCpf } from "./share-by-cpf";
+import { notifyUnitBirthdays } from "./actions";
 
 export const metadata: Metadata = { title: "Prontuários" };
 
@@ -120,6 +121,21 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       "clinical_coordinator",
       "unit_manager",
     ]);
+
+  // P2: aviso de aniversariantes para a Recepção (idempotente, antecipa fim de
+  // semana/feriado) — disparado também ao abrir os Prontuários da unidade.
+  if (
+    !isFranchisor &&
+    clinicId &&
+    (session.isAdminMaster ||
+      hasRoleInClinic(session, clinicId, [
+        "receptionist",
+        "unit_manager",
+        "clinical_coordinator",
+      ]))
+  ) {
+    await notifyUnitBirthdays(clinicId);
+  }
 
   // In the Franqueadora the list is tailored to the user's role.
   const franchisorMode: "network" | "consultant" | "planner" | "sdr" =

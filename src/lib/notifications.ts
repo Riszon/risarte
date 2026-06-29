@@ -9,6 +9,7 @@ export const NOTIFICATION_CATEGORIES = [
   { key: "compartilhamento", label: "Compartilhamento" },
   { key: "inicio_tratamento", label: "Início de Tratamento" },
   { key: "agenda", label: "Agenda" },
+  { key: "aniversario", label: "Aniversários" },
   { key: "transferencia", label: "Transferência" },
   { key: "outras", label: "Outras" },
 ] as const;
@@ -26,12 +27,14 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   compartilhamento: "bg-emerald-100 text-emerald-800",
   inicio_tratamento: "bg-gold text-gold-foreground",
   agenda: "bg-red-100 text-red-800",
+  aniversario: "bg-pink-100 text-pink-800",
   transferencia: "bg-amber-100 text-amber-800",
   outras: "bg-muted text-muted-foreground",
 };
 
 export function categorizeNotification(title: string): NotificationCategory {
   const t = (title ?? "").toLowerCase();
+  if (t.includes("aniversari")) return "aniversario";
   if (t.startsWith("plano")) return "plano";
   if (t.includes("compartilh")) return "compartilhamento";
   // Agenda closures contain "fechamento" too — classify before the journey

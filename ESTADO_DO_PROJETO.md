@@ -163,10 +163,18 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   aviso automático de aniversário para a Recepção é a P2. Franqueadora segue com
   a visão de rede (sem abas de unidade). Sem nova migração.
 
-Próximas etapas do lote: **P2 — Aniversariantes + aviso da Recepção** (migração:
-RPC que avisa aniversariantes do dia antecipando fim de semana/feriado);
-**P3 — Anamnese** (Coordenador Clínico: queixa principal, histórico de saúde,
-histórico odontológico, estilo de vida — migração com tabela + RLS + histórico).
+- **P2 — Aniversariantes + aviso da Recepção (migração 0051, v0.8.6):** ao abrir
+  o sistema (página **Início** e aba **Prontuários**), a **Recepção** da unidade
+  recebe — **uma vez por dia** — uma notificação com os aniversariantes a
+  parabenizar. **Antecipa fim de semana/feriado:** cobre hoje + a sequência de
+  dias fechados imediatamente à frente, até o próximo dia de atendimento (usa a
+  config da agenda + feriados + dias avulsos). RPC SECURITY DEFINER
+  `notify_birthday_clients` (idempotente: dedupe pelo `link` com a data do dia).
+  Nova categoria **"Aniversários"** na central de notificações.
+
+Próxima etapa do lote: **P3 — Anamnese** (Coordenador Clínico: queixa principal,
+histórico de saúde, histórico odontológico, estilo de vida — migração com tabela
++ RLS + histórico).
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
