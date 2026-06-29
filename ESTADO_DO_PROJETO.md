@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.3** · Última migração: **0050**_
+_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.4** · Última migração: **0050**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -141,9 +141,21 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   encaixe; um **dia avulso** liberado passa por cima. Só edita/remove futuro.
   Marcação na agenda Dia (banner)/Semana/Mês. RPCs create/update/delete_plan_item.
 
-**Refinamentos GR1–GR6 COMPLETOS.** Aguardando teste do dono.
-Próximo: **Lote H** (cronômetros do Atendimento) e os demais lotes da lista
-original (Atendimento, Prontuários, Procedimentos-tempo, Apresentação do plano).
+**Refinamentos GR1–GR6 COMPLETOS.**
+
+- **LOTE H — Cronômetros do Atendimento (sem migração, v0.8.4):** o painel
+  `/atendimento` agora tem cronômetros **em tempo real** (tick a cada segundo,
+  `attendance-panel.tsx`): **A chegar** liga cronômetro de **atraso** a partir do
+  horário se não houve check-in; **Em espera** mostra **há quanto tempo** espera
+  (desde o check-in) + se **chegou adiantado/atrasado** e a hora do check-in;
+  **Em atendimento** mostra **há quanto tempo** está em atendimento (desde a
+  chamada); **Concluído** mostra só o **horário de conclusão** + durações. Usa os
+  carimbos já existentes (`checked_in_at`/`called_at`/`done_at`).
+
+Próximos lotes da lista original do dono (a fazer): **Prontuários** (renomear
+Clientes; aniversariantes; anamnese; abas transferidos/compartilhados);
+**Procedimentos** (tempo estimado → ajusta duração no agendamento e tempo total
+do plano; planilha-modelo); **Apresentação do plano** (PPT/PDF para o Comercial).
 
 ## 3. Próximos passos (ordem de prioridade)
 

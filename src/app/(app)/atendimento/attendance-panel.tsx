@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clock, UserRound } from "lucide-react";
+import { AlarmClock, Clock, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,49 +52,137 @@ function fmtDur(min: number): string {
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
-/** Per-visit timeline: waiting time, service time and who moved the client. */
-function timeline(a: PanelAppointment): React.ReactNode {
-  const now = Date.now();
-  const waitingMin =
-    a.checkedInAt && a.calledAt
-      ? minutesBetween(a.checkedInAt, a.calledAt)
-      : a.checkedInAt && a.attendance === "waiting"
-        ? Math.max(0, Math.round((now - new Date(a.checkedInAt).getTime()) / 60000))
-        : null;
-  const serviceMin =
-    a.calledAt && a.doneAt
-      ? minutesBetween(a.calledAt, a.doneAt)
-      : a.calledAt && a.attendance === "in_service"
-        ? Math.max(0, Math.round((now - new Date(a.calledAt).getTime()) / 60000))
-        : null;
+/** Seconds → "M:SS" (under an hour) or "Hh MMmin". */
+function fmtElapsed(totalSec: number): string {
+  const s = Math.max(0, totalSec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}min`;
+  return `${m}:${String(ss).padStart(2, "0")}`;
+}
+
+/** Ticks every second so the elapsed time updates in real time. */
+function useNow(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+/** Live count-up timer from a fixed start (Em espera / Em atendimento). */
+function LiveTimer({
+  from,
+  label,
+  tone,
+}: {
+  from: string;
+  label: string;
+  tone?: string;
+}) {
+  const now = useNow();
+  const sec = Math.floor((now - new Date(from).getTime()) / 1000);
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-medium tabular-nums ${tone ?? ""}`}
+    >
+      <AlarmClock className="size-3" />
+      {label} {fmtElapsed(sec)}
+    </span>
+  );
+}
+
+/** "A chegar": before the time shows the schedule; after it, a lateness timer. */
+function LatenessTimer({ startsAt }: { startsAt: string }) {
+  const now = useNow();
+  const startMs = new Date(startsAt).getTime();
+  const lateSec = Math.floor((now - startMs) / 1000);
+  // The lateness timer only turns on once the appointment time has passed.
+  if (lateSec < 1) return null;
+  return (
+    <span className="inline-flex items-center gap-1 font-medium tabular-nums text-red-600">
+      <AlarmClock className="size-3" />
+      Atrasado há {fmtElapsed(lateSec)}
+    </span>
+  );
+}
+
+/** Arrival note for "Em espera": early/late vs the scheduled time + check-in. */
+function arrivalNote(a: PanelAppointment): string | null {
+  if (!a.checkedInAt) return null;
+  const diffMin = Math.round(
+    (new Date(a.starts_at).getTime() - new Date(a.checkedInAt).getTime()) / 60000
+  );
+  const checkInTime = new Date(a.checkedInAt).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  let label = "Chegou no horário";
+  if (diffMin >= 1) label = `Chegou ${fmtDur(diffMin)} adiantado`;
+  else if (diffMin <= -1) label = `Chegou ${fmtDur(-diffMin)} atrasado`;
+  return `${label} · check-in ${checkInTime}`;
+}
+
+/** Real-time attendance timers + movers, depending on the client's state (Lote H). */
+function AttendanceTimers({ a }: { a: PanelAppointment }) {
   const movers = [
     a.checkedInByName && `Chegada: ${a.checkedInByName}`,
     a.calledByName && `Chamou: ${a.calledByName}`,
     a.doneByName && `Concluiu: ${a.doneByName}`,
   ].filter(Boolean) as string[];
-  if (waitingMin == null && serviceMin == null && movers.length === 0) {
-    return null;
+
+  let main: React.ReactNode = null;
+  if (a.attendance === "done") {
+    const waitingMin =
+      a.checkedInAt && a.calledAt
+        ? minutesBetween(a.checkedInAt, a.calledAt)
+        : null;
+    const serviceMin =
+      a.calledAt && a.doneAt ? minutesBetween(a.calledAt, a.doneAt) : null;
+    main = (
+      <span>
+        {a.doneAt && (
+          <>
+            Concluído às{" "}
+            {new Date(a.doneAt).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </>
+        )}
+        {waitingMin != null && ` · espera ${fmtDur(waitingMin)}`}
+        {serviceMin != null && ` · atendimento ${fmtDur(serviceMin)}`}
+      </span>
+    );
+  } else if (a.attendance === "in_service" && a.calledAt) {
+    main = (
+      <LiveTimer
+        from={a.calledAt}
+        label="Em atendimento há"
+        tone="text-violet-600"
+      />
+    );
+  } else if (a.attendance === "waiting" && a.checkedInAt) {
+    const note = arrivalNote(a);
+    main = (
+      <span className="flex flex-wrap items-center gap-x-2">
+        <LiveTimer from={a.checkedInAt} label="Em espera há" tone="text-amber-600" />
+        {note && <span className="text-muted-foreground">{note}</span>}
+      </span>
+    );
+  } else if (!a.attendance) {
+    main = <LatenessTimer startsAt={a.starts_at} />;
   }
+
+  if (!main && movers.length === 0) return null;
   return (
-    <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
-      {(waitingMin != null || serviceMin != null) && (
-        <p>
-          {waitingMin != null && (
-            <span>
-              Espera {fmtDur(waitingMin)}
-              {a.attendance === "waiting" ? " (em andamento)" : ""}
-            </span>
-          )}
-          {waitingMin != null && serviceMin != null && " · "}
-          {serviceMin != null && (
-            <span>
-              Atendimento {fmtDur(serviceMin)}
-              {a.attendance === "in_service" ? " (em andamento)" : ""}
-            </span>
-          )}
-        </p>
+    <div className="mt-1 space-y-0.5 text-[11px]">
+      {main && <p>{main}</p>}
+      {movers.length > 0 && (
+        <p className="text-muted-foreground">{movers.join(" · ")}</p>
       )}
-      {movers.length > 0 && <p>{movers.join(" · ")}</p>}
     </div>
   );
 }
@@ -195,7 +283,7 @@ export function AttendancePanel({
               </span>
             )}
           </p>
-          {timeline(a)}
+          <AttendanceTimers a={a} />
         </div>
         {action}
       </li>
