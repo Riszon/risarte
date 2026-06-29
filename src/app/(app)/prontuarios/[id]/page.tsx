@@ -670,6 +670,30 @@ export default async function ClientDetailPage(
     }
   }
 
+  // -- Anamnese A4: obrigatória na 1ª consulta; na reavaliação (Fase 6), exige
+  // atualização se a última versão tem mais de 12 meses.
+  const anamnesisCutoff = new Date();
+  anamnesisCutoff.setFullYear(anamnesisCutoff.getFullYear() - 1);
+  const anamnesisMissing = canViewAnamnesis && !anamnesisCurrent;
+  const anamnesisOutdated =
+    anamnesisCurrent != null &&
+    new Date(anamnesisCurrent.filledAt).getTime() < anamnesisCutoff.getTime();
+  const isReeval = client.journey_phase === "reevaluation";
+  const isFirstConsult = client.journey_phase === "clinical_conversion";
+  const anamnesisBlocksPlanning =
+    canViewAnamnesis && (anamnesisMissing || (isReeval && anamnesisOutdated));
+  const anamnesisBlockMessage = anamnesisMissing
+    ? "Preencha a anamnese do cliente antes de enviar ao Centro de Planejamento."
+    : "A anamnese tem mais de 12 meses. Atualize-a antes de enviar ao planejamento.";
+  const anamnesisNudge =
+    !canEditClinical
+      ? null
+      : anamnesisMissing && (isFirstConsult || isReeval)
+        ? "A anamnese ainda não foi preenchida — é obrigatória nesta consulta."
+        : isReeval && anamnesisOutdated
+          ? "Reavaliação: a anamnese tem mais de 12 meses. Atualize-a com o paciente."
+          : null;
+
   // -- Plano de tratamento (Etapa 5 — Centro de Planejamento). O plano pertence
   // à unidade de origem do cliente; o Planner edita, o Coordenador/Gerente leem.
   const canEditPlanning = session.isAdminMaster || isPlannerAnywhere;
@@ -917,6 +941,13 @@ export default async function ClientDetailPage(
         </div>
       )}
 
+      {anamnesisNudge && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900">
+          <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+          {anamnesisNudge}
+        </div>
+      )}
+
       <JourneySection
         clientId={client.id}
         clientName={client.full_name}
@@ -949,6 +980,8 @@ export default async function ClientDetailPage(
           notes={clinicalNotes}
           media={clinicalMedia}
           canSendToPlanning={canSendToPlanning}
+          anamnesisBlocksPlanning={anamnesisBlocksPlanning}
+          anamnesisBlockMessage={anamnesisBlockMessage}
         />
       )}
 

@@ -208,8 +208,16 @@ rede, sem criar fichas próprias). A anamnese de 4 campos (P3) será **substitu�
   da unidade via checkbox → vira pergunta `clinic_id` da unidade). **Alertas**
   das respostas aparecem numa **faixa no topo do prontuário** (`evaluateAlerts`).
   Cada save cria uma **nova versão** (histórico). A anamnese antiga (P3) saiu.
-  Próxima: **A4** (obrigatória na 1ª consulta, atualização na reavaliação >12
-  meses pré-preenchida, registro "atualizada sem alterações").
+- **A4 — Obrigatoriedade + reavaliação + "sem alterações" (sem migração,
+  v0.9.1):** envio ao **Centro de Planejamento** **bloqueado** (botão desabilitado
+  + aviso na Avaliação clínica) enquanto a anamnese não estiver preenchida
+  (1ª consulta) ou estiver vencida na **reavaliação** (Fase 6, >12 meses). Aviso
+  no topo do prontuário cobrando o preenchimento/atualização. "Atualizar" abre a
+  ficha **pré-preenchida** (já vinha da A3). Ao salvar sem mudar nada, registra a
+  versão como **"sem alterações"** (`no_changes`, comparando a assinatura das
+  respostas) — aparece no histórico e no aviso.
+
+**LOTE ANAMNESE COMPLETO (A1–A4).** Migrações: **0053–0054**.
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);

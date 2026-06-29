@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { AlertWhen, AnswerValue, QuestionKind } from "@/lib/anamnesis";
 
-type Result = { ok: boolean; error?: string };
+type Result = { ok: boolean; error?: string; noChanges?: boolean };
 
 export type FillAnswerInput = {
   questionId: string | null;
@@ -67,6 +67,25 @@ async function requireCoordinator(
     if (canActIn(cid)) return { clinicId: cid, userId: session.userId };
   }
   return { error: "Apenas o Coordenador Clínico pode preencher a anamnese." };
+}
+
+/** Assinatura canônica das respostas, para detectar "atualizada sem alterações". */
+function answerSignature(
+  items: {
+    questionId: string | null;
+    label: string;
+    value: AnswerValue;
+    detail: string | null;
+  }[]
+): string {
+  const norm = items
+    .map((a) => {
+      const key = a.questionId ? `q:${a.questionId}` : `ad:${a.label.trim()}`;
+      const value = Array.isArray(a.value) ? [...a.value].sort() : a.value;
+      return { key, value, detail: (a.detail ?? "").trim() };
+    })
+    .sort((x, y) => x.key.localeCompare(y.key));
+  return JSON.stringify(norm);
 }
 
 async function hasConsent(clientId: string): Promise<boolean> {
@@ -134,6 +153,40 @@ export async function saveAnamnesisFill(
     }
   }
 
+  // "Atualizada sem alterações": compara com a última versão (A4).
+  let noChanges = false;
+  const { data: lastFill } = await supabase
+    .from("anamnesis_fills")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("clinic_id", guard.clinicId)
+    .order("filled_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (lastFill) {
+    const { data: oldAns } = await supabase
+      .from("anamnesis_answers")
+      .select("question_id, label, value, detail")
+      .eq("fill_id", lastFill.id);
+    const oldSig = answerSignature(
+      (oldAns ?? []).map((a) => ({
+        questionId: a.question_id,
+        label: a.label,
+        value: a.value as AnswerValue,
+        detail: a.detail,
+      }))
+    );
+    const newSig = answerSignature(
+      answers.map((a) => ({
+        questionId: a.questionId,
+        label: a.label,
+        value: a.value,
+        detail: a.detail,
+      }))
+    );
+    noChanges = oldSig === newSig;
+  }
+
   // Cria a versão (fill) e suas respostas.
   const { data: fill, error: fillErr } = await supabase
     .from("anamnesis_fills")
@@ -144,6 +197,7 @@ export async function saveAnamnesisFill(
       template_name: payload.templateName,
       filled_by: guard.userId,
       note: payload.note ?? null,
+      no_changes: noChanges,
     })
     .select("id")
     .single();
@@ -183,5 +237,5 @@ export async function saveAnamnesisFill(
     clinicId: guard.clinicId,
   });
   revalidatePath(`/prontuarios/${clientId}`);
-  return { ok: true };
+  return { ok: true, noChanges };
 }

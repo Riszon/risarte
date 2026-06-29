@@ -129,6 +129,8 @@ export function ClinicalSection({
   notes,
   media,
   canSendToPlanning,
+  anamnesisBlocksPlanning = false,
+  anamnesisBlockMessage = "",
 }: {
   clientId: string;
   clientName: string;
@@ -138,6 +140,9 @@ export function ClinicalSection({
   notes: ClinicalNoteItem[];
   media: ClinicalMediaItem[];
   canSendToPlanning: boolean;
+  /** A4: bloqueia o envio ao Planejamento até a anamnese estar preenchida/atualizada. */
+  anamnesisBlocksPlanning?: boolean;
+  anamnesisBlockMessage?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -463,20 +468,32 @@ export function ClinicalSection({
               </Button>
             </div>
 
-            {canSendToPlanning && (
-              <Button
-                disabled={isPending}
-                onClick={() =>
-                  run(
-                    () => moveClientPhase(clientId, "planning_center"),
-                    `${clientName} enviado(a) ao Centro de Planejamento.`
-                  )
-                }
-              >
-                <ArrowRight className="mr-1 size-4" />
-                Enviar ao Centro de Planejamento
-              </Button>
-            )}
+            {canSendToPlanning &&
+              (anamnesisBlocksPlanning ? (
+                <div className="space-y-1">
+                  <Button disabled>
+                    <ArrowRight className="mr-1 size-4" />
+                    Enviar ao Centro de Planejamento
+                  </Button>
+                  <p className="flex items-center gap-1.5 text-xs text-destructive">
+                    <AlertTriangle className="size-3.5 shrink-0" />
+                    {anamnesisBlockMessage}
+                  </p>
+                </div>
+              ) : (
+                <Button
+                  disabled={isPending}
+                  onClick={() =>
+                    run(
+                      () => moveClientPhase(clientId, "planning_center"),
+                      `${clientName} enviado(a) ao Centro de Planejamento.`
+                    )
+                  }
+                >
+                  <ArrowRight className="mr-1 size-4" />
+                  Enviar ao Centro de Planejamento
+                </Button>
+              ))}
           </div>
         )}
 

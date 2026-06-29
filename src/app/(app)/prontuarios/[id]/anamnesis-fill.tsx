@@ -294,7 +294,11 @@ export function AnamnesisFill({
         answers: payloadAnswers,
       });
       if (result.ok) {
-        toast.success("Anamnese salva.");
+        toast.success(
+          result.noChanges
+            ? "Anamnese atualizada — sem alterações."
+            : "Anamnese salva."
+        );
         setEditing(false);
         router.refresh();
       } else {
