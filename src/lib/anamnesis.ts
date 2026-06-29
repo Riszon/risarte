@@ -147,3 +147,94 @@ export function groupBySection(
   }
   return groups;
 }
+
+// --- Respostas (preenchimento — A3) -------------------------------------
+export type AnswerValue = string | string[] | null;
+
+export type FilledAnswer = {
+  id: string;
+  questionId: string | null;
+  section: string | null;
+  label: string;
+  kind: QuestionKind;
+  value: AnswerValue;
+  detail: string | null;
+  isAdhoc: boolean;
+  sortOrder: number;
+  alertWhen: AlertWhen | null;
+  alertMessage: string | null;
+};
+
+export type AnamnesisAnswerRow = {
+  id: string;
+  question_id: string | null;
+  section: string | null;
+  label: string;
+  kind: QuestionKind;
+  value: AnswerValue;
+  detail: string | null;
+  is_adhoc: boolean;
+  sort_order: number;
+  alert_when: AlertWhen | null;
+  alert_message: string | null;
+};
+
+export function mapAnswer(r: AnamnesisAnswerRow): FilledAnswer {
+  return {
+    id: r.id,
+    questionId: r.question_id,
+    section: r.section,
+    label: r.label,
+    kind: r.kind,
+    value: r.value,
+    detail: r.detail,
+    isAdhoc: r.is_adhoc,
+    sortOrder: r.sort_order,
+    alertWhen: r.alert_when,
+    alertMessage: r.alert_message,
+  };
+}
+
+const YES_NO_LABEL: Record<string, string> = {
+  sim: "Sim",
+  nao: "Não",
+  nao_sei: "Não sei",
+};
+
+/** Resposta legível para exibição na ficha. */
+export function formatAnswer(value: AnswerValue, kind: QuestionKind): string {
+  if (value == null || (Array.isArray(value) && value.length === 0)) return "—";
+  if (Array.isArray(value)) return value.join(", ");
+  if (kind === "yes_no" || kind === "yes_no_unknown") {
+    return YES_NO_LABEL[value] ?? value;
+  }
+  return value;
+}
+
+/** Uma resposta dispara o alerta configurado? */
+export function isAnswerAlerting(
+  value: AnswerValue,
+  when: AlertWhen | null
+): boolean {
+  if (!when) return false;
+  if ("equals" in when) {
+    return value === when.equals;
+  }
+  if ("any_of" in when) {
+    return Array.isArray(value) && value.some((v) => when.any_of.includes(v));
+  }
+  return false;
+}
+
+/** Lista os alertas disparados pelas respostas (mensagem + pergunta). */
+export function evaluateAlerts(
+  answers: FilledAnswer[]
+): { label: string; message: string }[] {
+  const out: { label: string; message: string }[] = [];
+  for (const a of answers) {
+    if (a.alertMessage && isAnswerAlerting(a.value, a.alertWhen)) {
+      out.push({ label: a.label, message: a.alertMessage });
+    }
+  }
+  return out;
+}

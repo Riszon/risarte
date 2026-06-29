@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -31,10 +32,19 @@ import {
   type ConsentInfo,
 } from "./clinical-section";
 import {
-  AnamnesisSection,
-  type AnamnesisData,
-  type AnamnesisRevision,
-} from "./anamnesis-section";
+  AnamnesisFill,
+  type CurrentFill,
+  type FillHistoryItem,
+  type FillTemplate,
+} from "./anamnesis-fill";
+import {
+  evaluateAlerts,
+  mapAnswer,
+  mapQuestion,
+  type AnamnesisAnswerRow,
+  type AnamnesisQuestionRow,
+  type AnamnesisTemplateRow,
+} from "@/lib/anamnesis";
 import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
 import { PlanningSection } from "./planning-section";
 import type {
@@ -464,50 +474,29 @@ export default async function ClientDetailPage(
   let consentInfo: ConsentInfo | null = null;
   let clinicalNotes: ClinicalNoteItem[] = [];
   let clinicalMedia: ClinicalMediaItem[] = [];
-  let anamnesis: AnamnesisData | null = null;
-  let anamnesisHistory: AnamnesisRevision[] = [];
   if (canViewClinical) {
-    const [
-      { data: consentRows },
-      { data: noteRows },
-      { data: mediaRows },
-      { data: anamRow },
-      { data: anamRevRows },
-    ] = await Promise.all([
-      supabase
-        .from("client_consents")
-        .select("granted_at, recorded_by")
-        .eq("client_id", id)
-        .is("revoked_at", null)
-        .order("granted_at", { ascending: false })
-        .limit(1),
-      supabase
-        .from("clinical_notes")
-        .select("id, body, created_at, created_by, updated_at, updated_by")
-        .eq("client_id", id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("clinical_media")
-        .select(
-          "id, kind, original_name, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
-        )
-        .eq("client_id", id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("clinical_anamnesis")
-        .select(
-          "id, chief_complaint, health_history, dental_history, lifestyle, created_at, created_by, updated_at, updated_by"
-        )
-        .eq("client_id", id)
-        .eq("clinic_id", scheduleClinicId)
-        .maybeSingle(),
-      supabase
-        .from("clinical_anamnesis_revisions")
-        .select("id, edited_at, edited_by")
-        .eq("client_id", id)
-        .eq("clinic_id", scheduleClinicId)
-        .order("edited_at", { ascending: false }),
-    ]);
+    const [{ data: consentRows }, { data: noteRows }, { data: mediaRows }] =
+      await Promise.all([
+        supabase
+          .from("client_consents")
+          .select("granted_at, recorded_by")
+          .eq("client_id", id)
+          .is("revoked_at", null)
+          .order("granted_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("clinical_notes")
+          .select("id, body, created_at, created_by, updated_at, updated_by")
+          .eq("client_id", id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("clinical_media")
+          .select(
+            "id, kind, original_name, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
+          )
+          .eq("client_id", id)
+          .order("created_at", { ascending: false }),
+      ]);
 
     const ids = [
       ...new Set(
@@ -516,9 +505,6 @@ export default async function ClientDetailPage(
           ...(noteRows ?? []).map((n) => n.created_by),
           ...(noteRows ?? []).map((n) => n.updated_by),
           ...(mediaRows ?? []).map((m) => m.uploaded_by),
-          anamRow?.created_by,
-          anamRow?.updated_by,
-          ...(anamRevRows ?? []).map((r) => r.edited_by),
         ].filter((x): x is string => Boolean(x))
       ),
     ];
@@ -573,28 +559,115 @@ export default async function ClientDetailPage(
         };
       })
     );
+  }
 
-    if (anamRow) {
-      anamnesis = {
-        chiefComplaint: anamRow.chief_complaint,
-        healthHistory: anamRow.health_history,
-        dentalHistory: anamRow.dental_history,
-        lifestyle: anamRow.lifestyle,
-        createdAt: anamRow.created_at,
-        createdByName: anamRow.created_by
-          ? (nameById.get(anamRow.created_by) ?? null)
-          : null,
-        updatedAt: anamRow.updated_at ?? null,
-        updatedByName: anamRow.updated_by
-          ? (nameById.get(anamRow.updated_by) ?? null)
-          : null,
-      };
+  // -- Anamnese (A3): fichas configuráveis. Coordenador preenche; Dentista,
+  // Planner, Gerente e Admin visualizam. Carrega as fichas ativas (perguntas da
+  // rede + acréscimos desta unidade), o preenchimento atual e o histórico.
+  const canViewAnamnesis =
+    canViewClinical || hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
+  let anamnesisTemplates: FillTemplate[] = [];
+  let anamnesisCurrent: CurrentFill | null = null;
+  let anamnesisHistory: FillHistoryItem[] = [];
+  let anamnesisAlerts: { label: string; message: string }[] = [];
+  if (canViewAnamnesis) {
+    const [{ data: tplRows }, { data: qRows }, { data: fillRows }] =
+      await Promise.all([
+        supabase
+          .from("anamnesis_templates")
+          .select("id, name, description, is_active, is_default, sort_order")
+          .eq("is_active", true)
+          .order("sort_order")
+          .order("name")
+          .returns<AnamnesisTemplateRow[]>(),
+        // Perguntas da rede (clinic_id null) + acréscimos desta unidade.
+        supabase
+          .from("anamnesis_questions")
+          .select(
+            "id, template_id, clinic_id, section, label, kind, options, detail_prompt, required, sort_order, alert_when, alert_message"
+          )
+          .or(`clinic_id.is.null,clinic_id.eq.${scheduleClinicId}`)
+          .order("sort_order")
+          .returns<AnamnesisQuestionRow[]>(),
+        supabase
+          .from("anamnesis_fills")
+          .select(
+            "id, template_id, template_name, filled_at, filled_by, no_changes"
+          )
+          .eq("client_id", id)
+          .eq("clinic_id", scheduleClinicId)
+          .order("filled_at", { ascending: false })
+          .returns<
+            {
+              id: string;
+              template_id: string | null;
+              template_name: string | null;
+              filled_at: string;
+              filled_by: string | null;
+              no_changes: boolean;
+            }[]
+          >(),
+      ]);
+
+    const qByTemplate = new Map<string, ReturnType<typeof mapQuestion>[]>();
+    for (const r of qRows ?? []) {
+      const list = qByTemplate.get(r.template_id) ?? [];
+      list.push(mapQuestion(r));
+      qByTemplate.set(r.template_id, list);
     }
-    anamnesisHistory = (anamRevRows ?? []).map((r) => ({
-      id: r.id,
-      editedAt: r.edited_at,
-      editedByName: r.edited_by ? (nameById.get(r.edited_by) ?? null) : null,
+    anamnesisTemplates = (tplRows ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      isDefault: t.is_default,
+      questions: (qByTemplate.get(t.id) ?? []).sort(
+        (a, b) => a.sortOrder - b.sortOrder
+      ),
     }));
+
+    const fills = fillRows ?? [];
+    const fillerIds = [
+      ...new Set(fills.map((f) => f.filled_by).filter((x): x is string => Boolean(x))),
+    ];
+    const fillerNames = new Map<string, string>();
+    if (fillerIds.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", fillerIds);
+      for (const p of people ?? []) fillerNames.set(p.id, p.full_name);
+    }
+    anamnesisHistory = fills.map((f) => ({
+      id: f.id,
+      filledAt: f.filled_at,
+      filledByName: f.filled_by ? (fillerNames.get(f.filled_by) ?? null) : null,
+      templateName: f.template_name,
+      noChanges: f.no_changes,
+    }));
+
+    const latest = fills[0];
+    if (latest) {
+      const { data: ansRows } = await supabase
+        .from("anamnesis_answers")
+        .select(
+          "id, question_id, section, label, kind, value, detail, is_adhoc, sort_order, alert_when, alert_message"
+        )
+        .eq("fill_id", latest.id)
+        .order("sort_order")
+        .returns<AnamnesisAnswerRow[]>();
+      const answers = (ansRows ?? []).map(mapAnswer);
+      anamnesisCurrent = {
+        id: latest.id,
+        templateId: latest.template_id,
+        templateName: latest.template_name,
+        filledAt: latest.filled_at,
+        filledByName: latest.filled_by
+          ? (fillerNames.get(latest.filled_by) ?? null)
+          : null,
+        answers,
+      };
+      anamnesisAlerts = evaluateAlerts(answers);
+    }
   }
 
   // -- Plano de tratamento (Etapa 5 — Centro de Planejamento). O plano pertence
@@ -827,6 +900,23 @@ export default async function ClientDetailPage(
         canAnswer={canAnswerDecision}
       />
 
+      {anamnesisAlerts.length > 0 && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <AlertTriangle className="size-4" />
+            Alertas da anamnese
+          </h2>
+          <ul className="mt-1.5 space-y-1">
+            {anamnesisAlerts.map((a, i) => (
+              <li key={i} className="text-sm">
+                <span className="font-medium text-destructive">{a.message}</span>
+                <span className="text-muted-foreground"> — {a.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <JourneySection
         clientId={client.id}
         clientName={client.full_name}
@@ -862,12 +952,13 @@ export default async function ClientDetailPage(
         />
       )}
 
-      {canViewClinical && (
-        <AnamnesisSection
+      {canViewAnamnesis && (
+        <AnamnesisFill
           clientId={client.id}
           canEdit={canEditClinical}
           hasConsent={Boolean(consentInfo)}
-          anamnesis={anamnesis}
+          templates={anamnesisTemplates}
+          current={anamnesisCurrent}
           history={anamnesisHistory}
         />
       )}

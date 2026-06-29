@@ -198,9 +198,18 @@ rede, sem criar fichas próprias). A anamnese de 4 campos (P3) será **substitu�
   Sim/Não, Sim/Não/Não sei, escolha única, lista de marcar, texto curto/longo),
   marcar **campo de detalhe ao "Sim"**, **obrigatória** e **alerta** (com
   mensagem/condição). Ficha **"Geral"** já semeada com as perguntas do PDF.
-  Próximas: **A3** (preenchimento por clique no prontuário + Dentista/Planner
-  visualizam + alertas + pergunta específica/ad-hoc); **A4** (obrigatória na 1ª
-  consulta, atualização na reavaliação >12 meses, histórico completo).
+- **A3 — Preenchimento no prontuário (migração 0054, v0.9.0):** tabelas
+  `anamnesis_fills` (versão imutável por preenchimento) + `anamnesis_answers`
+  (respostas com a pergunta carimbada) + RLS — **Dentista** entra como
+  visualizador (além de Planner/Gerente/Admin); Coordenador preenche. Na ficha,
+  o componente `anamnesis-fill.tsx` substitui a anamnese de 4 campos: o
+  Coordenador **escolhe a ficha**, responde **clicando** (Sim/Não, listas,
+  texto), e pode **adicionar pergunta** (só para o cliente ou salvando na ficha
+  da unidade via checkbox → vira pergunta `clinic_id` da unidade). **Alertas**
+  das respostas aparecem numa **faixa no topo do prontuário** (`evaluateAlerts`).
+  Cada save cria uma **nova versão** (histórico). A anamnese antiga (P3) saiu.
+  Próxima: **A4** (obrigatória na 1ª consulta, atualização na reavaliação >12
+  meses pré-preenchida, registro "atualizada sem alterações").
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
