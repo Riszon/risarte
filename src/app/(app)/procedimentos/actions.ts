@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionContext, type SessionContext } from "@/lib/auth";
+import {
+  getSessionContext,
+  hasRoleInClinic,
+  type SessionContext,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { parseBRLToCents } from "@/lib/pricing";
@@ -467,6 +471,89 @@ export async function readjustPrices(input: {
   });
   revalidatePath("/procedimentos");
   return { ok: true, adjusted };
+}
+
+// ---------------------------------------------------------------------------
+// Protocolo de sessões (E1 rede / E2 unidade). Substitui o protocolo do escopo
+// (rede = clinicId null; unidade = clinicId) e, na rede, recalcula o total
+// (procedures.estimated_minutes).
+// ---------------------------------------------------------------------------
+export type SessionInput = { name: string; minutes: number };
+
+export async function setProcedureSessions(
+  procedureId: string,
+  clinicId: string | null,
+  sessions: SessionInput[]
+): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  const isNetwork = clinicId === null;
+  const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("planner_dentist")
+  );
+  const allowed = isNetwork
+    ? session.isAdminMaster || isPlanner
+    : session.isAdminMaster ||
+      isPlanner ||
+      hasRoleInClinic(session, clinicId!, ["clinical_coordinator"]);
+  if (!allowed) {
+    return { ok: false, error: "Sem permissão para configurar as sessões." };
+  }
+
+  const clean = sessions
+    .slice(0, 30)
+    .map((s, i) => ({
+      name: s.name.trim() || `Sessão ${i + 1}`,
+      minutes: Math.max(0, Math.round(Number(s.minutes) || 0)),
+    }));
+  if (clean.length === 0) {
+    return { ok: false, error: "Defina ao menos uma sessão." };
+  }
+
+  const supabase = await createClient();
+  let del = supabase
+    .from("procedure_sessions")
+    .delete()
+    .eq("procedure_id", procedureId);
+  del = isNetwork ? del.is("clinic_id", null) : del.eq("clinic_id", clinicId);
+  await del;
+
+  const rows = clean.map((s, i) => ({
+    procedure_id: procedureId,
+    clinic_id: clinicId,
+    session_index: i + 1,
+    name: s.name,
+    estimated_minutes: s.minutes,
+    created_by: session.userId,
+  }));
+  const { error } = await supabase.from("procedure_sessions").insert(rows);
+  if (error) {
+    console.error("setProcedureSessions failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar as sessões." };
+  }
+
+  const total = clean.reduce((sum, s) => sum + s.minutes, 0);
+  if (isNetwork) {
+    await supabase
+      .from("procedures")
+      .update({
+        estimated_minutes: total > 0 ? total : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", procedureId);
+  }
+  await logChange(
+    procedureId,
+    session.userId,
+    `${isNetwork ? "Protocolo da rede" : "Protocolo da unidade"}: ${clean.length} sessão(ões), ${total} min.`
+  );
+  await logAudit({
+    action: "update",
+    entityType: "procedure_sessions",
+    entityId: procedureId,
+    details: { network: isNetwork, sessions: clean.length, total },
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true };
 }
 
 /** Set (or clear, when blank) a unit's price override for a procedure. */

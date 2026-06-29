@@ -28,6 +28,35 @@ export type UnitPrice = {
   priceCents: number;
 };
 
+/** One session of a procedure's protocol (name + estimated minutes). */
+export type ProcedureSession = {
+  id: string;
+  procedureId: string;
+  clinicId: string | null; // null = protocolo da Rede; preenchido = da unidade
+  sessionIndex: number;
+  name: string | null;
+  estimatedMinutes: number;
+};
+
+/** Time options for the 15-minute selector (15 min … 4 h). */
+export const SESSION_TIME_OPTIONS = Array.from(
+  { length: 16 },
+  (_, i) => (i + 1) * 15
+);
+
+export function protocolTotalMinutes(sessions: { minutes: number }[]): number {
+  return sessions.reduce((sum, s) => sum + (s.minutes || 0), 0);
+}
+
+/** Human label for a minutes amount, e.g. 90 → "1h30". */
+export function formatMinutes(min: number): string {
+  if (!min) return "0 min";
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
+}
+
 /** A procedure with the effective price for a given clinic (override > default). */
 export type PricedProcedure = Procedure & { effectivePriceCents: number };
 

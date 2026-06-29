@@ -9,7 +9,7 @@ import {
   PILLAR_LABELS,
   type MethodologyPillar,
 } from "@/lib/journey";
-import type { Procedure, UnitPrice } from "@/lib/pricing";
+import type { Procedure, ProcedureSession, UnitPrice } from "@/lib/pricing";
 import { ProceduresEditor, type ProcedureChange } from "./procedures-editor";
 import { ImportProcedures } from "./import-procedures";
 
@@ -137,8 +137,41 @@ export default async function ProceduresPage(
     }));
   }
 
-  // Change history for the listed procedures.
+  // Network session protocols for the listed procedures (E1).
   const ids = procedures.map((p) => p.id);
+  const sessionsByProcedure: Record<string, ProcedureSession[]> = {};
+  if (ids.length > 0) {
+    const { data: sessionRows } = await supabase
+      .from("procedure_sessions")
+      .select(
+        "id, procedure_id, clinic_id, session_index, name, estimated_minutes"
+      )
+      .is("clinic_id", null)
+      .in("procedure_id", ids)
+      .order("session_index")
+      .returns<
+        {
+          id: string;
+          procedure_id: string;
+          clinic_id: string | null;
+          session_index: number;
+          name: string | null;
+          estimated_minutes: number;
+        }[]
+      >();
+    for (const r of sessionRows ?? []) {
+      (sessionsByProcedure[r.procedure_id] ??= []).push({
+        id: r.id,
+        procedureId: r.procedure_id,
+        clinicId: r.clinic_id,
+        sessionIndex: r.session_index,
+        name: r.name,
+        estimatedMinutes: r.estimated_minutes,
+      });
+    }
+  }
+
+  // Change history for the listed procedures.
   const changesByProcedure: Record<string, ProcedureChange[]> = {};
   if (ids.length > 0) {
     const { data: changeRows } = await supabase
@@ -231,6 +264,7 @@ export default async function ProceduresPage(
         unitName={(units ?? []).find((u) => u.id === unitId)?.name ?? null}
         overrides={overrides}
         changesByProcedure={changesByProcedure}
+        sessionsByProcedure={sessionsByProcedure}
       />
     </div>
   );

@@ -3,13 +3,21 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { History, Pencil, Plus, Trash2 } from "lucide-react";
+import { Clock, History, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatBRL, type Procedure, type UnitPrice } from "@/lib/pricing";
+import {
+  formatBRL,
+  formatMinutes,
+  protocolTotalMinutes,
+  SESSION_TIME_OPTIONS,
+  type Procedure,
+  type ProcedureSession,
+  type UnitPrice,
+} from "@/lib/pricing";
 import {
   METHODOLOGY_PILLARS,
   PILLAR_LABELS,
@@ -21,6 +29,7 @@ import {
   editProcedure,
   readjustPrices,
   setProcedureActive,
+  setProcedureSessions,
   setUnitPrice,
   type ProcedureInput,
 } from "./actions";
@@ -138,15 +147,6 @@ function ProcedureFields({
         </select>
       </div>
       <div>
-        <Label>Tempo estimado (min)</Label>
-        <Input
-          value={value.estimatedMinutes}
-          onChange={(e) => onChange({ estimatedMinutes: e.target.value })}
-          inputMode="numeric"
-          placeholder="Ex.: 30"
-        />
-      </div>
-      <div>
         <Label>Preço padrão (R$)</Label>
         <Input
           value={value.defaultPrice}
@@ -195,6 +195,165 @@ function ProcedureFields({
   );
 }
 
+type SessionDraft = { name: string; minutes: number };
+
+function initSessionDrafts(
+  initial: ProcedureSession[],
+  fallbackMinutes: number
+): SessionDraft[] {
+  if (initial.length > 0) {
+    return initial.map((s) => ({ name: s.name ?? "", minutes: s.estimatedMinutes }));
+  }
+  return [{ name: "", minutes: fallbackMinutes > 0 ? fallbackMinutes : 30 }];
+}
+
+/** Editor do protocolo de sessões de um procedimento (rede ou unidade). */
+function SessionProtocolPanel({
+  procedureId,
+  clinicId,
+  initial,
+  fallbackMinutes,
+  isPending,
+  run,
+}: {
+  procedureId: string;
+  clinicId: string | null;
+  initial: ProcedureSession[];
+  fallbackMinutes: number;
+  isPending: boolean;
+  run: (
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) => void;
+}) {
+  const [sessions, setSessions] = useState<SessionDraft[]>(() =>
+    initSessionDrafts(initial, fallbackMinutes)
+  );
+  const multi = sessions.length > 1;
+  const total = protocolTotalMinutes(sessions);
+
+  function patch(i: number, p: Partial<SessionDraft>) {
+    setSessions((prev) => prev.map((s, j) => (j === i ? { ...s, ...p } : s)));
+  }
+
+  return (
+    <div className="mt-2 space-y-3 rounded-md border bg-muted/20 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">
+          Este procedimento é executado em:
+        </span>
+        <Button
+          size="sm"
+          variant={multi ? "outline" : "default"}
+          onClick={() => setSessions((prev) => [prev[0]])}
+        >
+          Sessão única
+        </Button>
+        <Button
+          size="sm"
+          variant={multi ? "default" : "outline"}
+          onClick={() =>
+            setSessions((prev) =>
+              prev.length > 1
+                ? prev
+                : [...prev, { name: "", minutes: prev[0]?.minutes || 30 }]
+            )
+          }
+        >
+          Várias sessões
+        </Button>
+      </div>
+
+      <ul className="space-y-2">
+        {sessions.map((s, i) => {
+          const opts = SESSION_TIME_OPTIONS.includes(s.minutes)
+            ? SESSION_TIME_OPTIONS
+            : [s.minutes, ...SESSION_TIME_OPTIONS].sort((a, b) => a - b);
+          return (
+            <li key={i} className="flex flex-wrap items-center gap-2">
+              <span className="w-16 shrink-0 text-xs text-muted-foreground">
+                Sessão {i + 1}
+              </span>
+              {multi && (
+                <Input
+                  value={s.name}
+                  onChange={(e) => patch(i, { name: e.target.value })}
+                  placeholder={`Nome da sessão ${i + 1}`}
+                  className="max-w-[220px]"
+                />
+              )}
+              <select
+                value={s.minutes}
+                onChange={(e) => patch(i, { minutes: Number(e.target.value) })}
+                className={selectClass.replace("w-full", "w-32")}
+              >
+                {opts.map((m) => (
+                  <option key={m} value={m}>
+                    {formatMinutes(m)}
+                  </option>
+                ))}
+              </select>
+              {multi && sessions.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remover sessão"
+                  onClick={() =>
+                    setSessions((prev) => prev.filter((_, j) => j !== i))
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {multi && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            setSessions((prev) => [
+              ...prev,
+              { name: "", minutes: prev[prev.length - 1]?.minutes || 30 },
+            ])
+          }
+        >
+          <Plus className="mr-1 size-4" />
+          Adicionar sessão
+        </Button>
+      )}
+
+      <div className="flex items-center justify-between gap-2 border-t pt-2">
+        <span className="text-sm">
+          <strong>{sessions.length}</strong> sessão{sessions.length > 1 ? "ões" : ""} ·
+          tempo total <strong>{formatMinutes(total)}</strong>
+        </span>
+        <Button
+          size="sm"
+          disabled={isPending}
+          onClick={() =>
+            run(
+              () =>
+                setProcedureSessions(
+                  procedureId,
+                  clinicId,
+                  sessions.map((s) => ({ name: s.name, minutes: s.minutes }))
+                ),
+              "Protocolo de sessões salvo."
+            )
+          }
+        >
+          Salvar protocolo
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function ProceduresEditor({
   procedures,
   specialties,
@@ -202,6 +361,7 @@ export function ProceduresEditor({
   unitName,
   overrides,
   changesByProcedure,
+  sessionsByProcedure,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -209,6 +369,7 @@ export function ProceduresEditor({
   unitName: string | null;
   overrides: UnitPrice[];
   changesByProcedure: Record<string, ProcedureChange[]>;
+  sessionsByProcedure: Record<string, ProcedureSession[]>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -326,6 +487,7 @@ export function ProceduresEditor({
                   selectedUnitId={selectedUnitId}
                   overrideCents={overrideByProc.get(p.id) ?? null}
                   changes={changesByProcedure[p.id] ?? []}
+                  sessions={sessionsByProcedure[p.id] ?? []}
                   isPending={isPending}
                   run={run}
                   selected={selected.has(p.id)}
@@ -487,6 +649,7 @@ function ProcedureRow({
   selectedUnitId,
   overrideCents,
   changes,
+  sessions,
   isPending,
   run,
   selected,
@@ -497,6 +660,7 @@ function ProcedureRow({
   selectedUnitId: string;
   overrideCents: number | null;
   changes: ProcedureChange[];
+  sessions: ProcedureSession[];
   isPending: boolean;
   run: (
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -509,6 +673,7 @@ function ProcedureRow({
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProcedureInput>(() => toInput(p));
   const [showHistory, setShowHistory] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
   const [unitPrice, setUnitPriceValue] = useState(
     overrideCents != null ? centsToInput(overrideCents) : ""
   );
@@ -580,8 +745,19 @@ function ProcedureRow({
               </span>
             )}
             <span>Comissão: {commissionLabel(p)}</span>
-            {p.estimatedMinutes != null && (
-              <span>Tempo: {p.estimatedMinutes} min</span>
+            {sessions.length > 0 ? (
+              <span>
+                {sessions.length} sessão{sessions.length > 1 ? "ões" : ""} ·{" "}
+                {formatMinutes(
+                  protocolTotalMinutes(
+                    sessions.map((s) => ({ minutes: s.estimatedMinutes }))
+                  )
+                )}
+              </span>
+            ) : (
+              p.estimatedMinutes != null && (
+                <span>Tempo: {formatMinutes(p.estimatedMinutes)}</span>
+              )
             )}
           </p>
           </div>
@@ -589,6 +765,15 @@ function ProcedureRow({
 
         {networkMode ? (
           <div className="flex shrink-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Sessões"
+              title="Protocolo de sessões"
+              onClick={() => setShowSessions((s) => !s)}
+            >
+              <Clock className="size-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -681,6 +866,17 @@ function ProcedureRow({
             </ul>
           )}
         </div>
+      )}
+
+      {showSessions && networkMode && (
+        <SessionProtocolPanel
+          procedureId={p.id}
+          clinicId={null}
+          initial={sessions}
+          fallbackMinutes={p.estimatedMinutes ?? 0}
+          isPending={isPending}
+          run={run}
+        />
       )}
     </li>
   );

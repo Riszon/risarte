@@ -225,10 +225,23 @@ rede, sem criar fichas próprias). A anamnese de 4 campos (P3) será **substitu�
   edição, exibição na lista, e na **importação Excel** (nova coluna "Tempo
   Estimado (min)" + larguras de coluna + aba "Instruções" no modelo). Tipo
   `Procedure.estimatedMinutes` propagado (ficha + cockpit do plano).
-  Próximas: **PR2** (agendamento usa o tempo do procedimento — seletor que
-  preenche a duração, `appointments.procedure_id`); **PR3** (tempo total do
-  plano somando os tempos dos procedimentos por opção). Obs.: cabeçalho em
-  negrito/cor no Excel exigiria trocar a lib (exceljs) — a fazer se o dono pedir.
+  Obs.: cabeçalho em negrito/cor no Excel exigiria trocar a lib (exceljs).
+
+**Ampliação (feedback do dono) — "Protocolo de sessões".** Decisões: protocolo
+**padrão da Rede** (Admin/Planner) + **personalização por unidade** (Coordenador
+Clínico **e** Planner); o dentista **só marca finalizado** e o sistema **calcula
+o tempo real** pelo atendimento (Lote H), **rateando por procedimento** quando o
+agendamento tem vários. Etapas: **E1** protocolo da Rede; **E2** override por
+unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentista);
+**E4** agendamento por sessão; **E5** execução/auditoria + médias derivadas.
+- **E1 — Protocolo de sessões da Rede (migração 0056, v0.9.3):** tabela
+  `procedure_sessions` (clinic_id NULL = Rede; preenchido = unidade) + RLS
+  (Rede=Admin/Planner; unidade=Admin/Planner/Coordenador). No cadastro, botão
+  **relógio** abre o **protocolo**: "sessão única" ou "várias sessões", cada
+  sessão com **nome** + **tempo (seletor 15/15 min)**, com **soma automática** e
+  contagem; salvar recalcula `procedures.estimated_minutes` (total da Rede). O
+  campo solto de tempo do PR1 saiu do formulário (o total vem do protocolo; a
+  importação ainda define um tempo de sessão única). Lista mostra "N sessões · Xh".
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
