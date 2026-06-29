@@ -26,6 +26,14 @@ import {
   type AgendaFormConfig,
 } from "./actions";
 import { holidaysInRange } from "@/lib/holidays";
+import {
+  mapPlanItem,
+  UNIT_BLOCKING_TYPES,
+  PLAN_ITEM_LABELS,
+  itemCoversDate,
+  type PlanItem,
+  type PlanItemRow,
+} from "@/lib/annual-plan";
 import { WeekGrid, type AgendaAppointment } from "./week-grid";
 import { WeekTimeGrid } from "./week-time-grid";
 import { MonthView } from "./month-grid";
@@ -264,6 +272,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   const holidayClosedDates: string[] = [];
   const holidayOpenDates: string[] = [];
   let rangeHolidays: { date: string; name: string }[] = [];
+  let planItems: PlanItem[] = [];
 
   if (clinicId) {
     const supabase = await createClient();
@@ -286,20 +295,30 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     const rangeStartIso = toIsoDate(range.start);
     const rangeEndIso = toIsoDate(range.end);
     const rangeLastIso = toIsoDate(new Date(range.end.getTime() - 86_400_000));
-    const [{ data: openDayRows }, { data: holidayRows }] = await Promise.all([
-      supabase
-        .from("agenda_open_days")
-        .select("date")
-        .eq("clinic_id", clinicId)
-        .gte("date", rangeStartIso)
-        .lt("date", rangeEndIso),
-      supabase
-        .from("clinic_holiday_decisions")
-        .select("holiday_date, will_attend")
-        .eq("clinic_id", clinicId)
-        .gte("holiday_date", rangeStartIso)
-        .lt("holiday_date", rangeEndIso),
-    ]);
+    const [{ data: openDayRows }, { data: holidayRows }, { data: planRows }] =
+      await Promise.all([
+        supabase
+          .from("agenda_open_days")
+          .select("date")
+          .eq("clinic_id", clinicId)
+          .gte("date", rangeStartIso)
+          .lt("date", rangeEndIso),
+        supabase
+          .from("clinic_holiday_decisions")
+          .select("holiday_date, will_attend")
+          .eq("clinic_id", clinicId)
+          .gte("holiday_date", rangeStartIso)
+          .lt("holiday_date", rangeEndIso),
+        supabase
+          .from("agenda_plan_items")
+          .select(
+            "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+          )
+          .eq("clinic_id", clinicId)
+          .lte("starts_date", rangeLastIso)
+          .gte("ends_date", rangeStartIso),
+      ]);
+    planItems = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
     openDayDates = (openDayRows ?? []).map((r) => r.date as string);
     for (const r of (holidayRows ?? []) as {
       holiday_date: string;
@@ -481,6 +500,26 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     }
   }
 
+  // Annual-plan unit blocks (GR6): mark them too, unless a special open day
+  // overrides that date.
+  const unitPlan = planItems.filter((i) => UNIT_BLOCKING_TYPES.includes(i.type));
+  {
+    const cur = new Date(range.start);
+    cur.setHours(0, 0, 0, 0);
+    while (cur.getTime() < range.end.getTime()) {
+      const iso = toIsoDate(cur);
+      if (!openDayDates.includes(iso) && unitPlan.some((i) => itemCoversDate(i, iso))) {
+        closedDates.push(iso);
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+  const dayPlanItem = unitPlan.find((i) => itemCoversDate(i, dayIso));
+  const dayPlanLabel =
+    dayPlanItem && !openDayDates.includes(dayIso)
+      ? PLAN_ITEM_LABELS[dayPlanItem.type]
+      : null;
+
   return (
     <div className="space-y-4 px-4 py-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
@@ -506,6 +545,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               render={<Link href="/agenda/configuracao" />}
             >
               Configurar agenda
+            </Button>
+          )}
+          {canConfig && clinicId && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/agenda/planejamento-anual" />}
+            >
+              Planejamento anual
             </Button>
           )}
           {canCloseAgenda && clinicId && (
@@ -575,6 +624,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               dayOpen={dayIsOpen}
               canDecideHoliday={canConfig}
               isSpecialOpenDay={openDayDates.includes(dayIso)}
+              planBlockLabel={dayPlanLabel}
               clinicId={clinicId}
             />
           ) : (

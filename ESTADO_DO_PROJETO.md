@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.2** · Última migração: **0049**_
+_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.3** · Última migração: **0050**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -130,8 +130,20 @@ Decisões do dono na G4: Recepção+Gerente+Admin fecham; fechamento bloqueia to
   e aparece como **faixa "Almoço"** no Dia e na Semana; dia avulso em **destaque**
   no Dia/Semana/Mês. Admin Master também faz tudo (RPCs e telas liberadas).
 
-Falta (com migração): **GR6** (Planejamento Anual de Atendimento). Depois:
-**Lote H** (cronômetros do Atendimento).
+- **GR6 — Planejamento Anual de Atendimento (migração 0050):** tela
+  `/agenda/planejamento-anual` (Gerente/Admin) com seletor de ano, **resumo**
+  (dias trabalháveis, horas estimadas, contadores por tipo, feriados
+  trabalha/fecha/a-decidir), **visão dos 12 meses**, **confirmar feriados** ali,
+  e **itens** (`agenda_plan_items`): Recesso, Férias coletivas, Férias
+  individuais, Evento, Treinamento, Manutenção — com período, pessoas (férias
+  individuais), histórico (`agenda_plan_item_history`) e notificação. Itens
+  **fecham a agenda** no período (individuais = só as pessoas), inclusive
+  encaixe; um **dia avulso** liberado passa por cima. Só edita/remove futuro.
+  Marcação na agenda Dia (banner)/Semana/Mês. RPCs create/update/delete_plan_item.
+
+**Refinamentos GR1–GR6 COMPLETOS.** Aguardando teste do dono.
+Próximo: **Lote H** (cronômetros do Atendimento) e os demais lotes da lista
+original (Atendimento, Prontuários, Procedimentos-tempo, Apresentação do plano).
 
 ## 3. Próximos passos (ordem de prioridade)
 

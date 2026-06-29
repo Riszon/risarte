@@ -21,6 +21,11 @@ import {
   type AgendaClosureRow,
 } from "@/lib/closures";
 import { toIsoDate } from "@/lib/agenda-view";
+import {
+  mapPlanItem,
+  PLAN_ITEM_LABELS,
+  type PlanItemRow,
+} from "@/lib/annual-plan";
 
 /** "minutes since midnight" → "HH:MM". */
 function minutesToHHMM(m: number): string {
@@ -229,7 +234,38 @@ async function checkAgendaRules(
     return "Feriado sem atendimento nesta unidade.";
   }
 
-  // Encaixe ignores working hours and room capacity (but not closures/holidays).
+  // A special open day for this date overrides annual-plan unit blocks (GR6).
+  const { data: openDay } = await supabase
+    .from("agenda_open_days")
+    .select("id, start_time, end_time")
+    .eq("clinic_id", clinicId)
+    .eq("date", date)
+    .maybeSingle();
+
+  // Annual plan items (GR6) block everyone (including encaixe). Unit-wide types
+  // are overridden by a special open day; individual vacation blocks only the
+  // chosen professionals.
+  const { data: planRows } = await supabase
+    .from("agenda_plan_items")
+    .select(
+      "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+    )
+    .eq("clinic_id", clinicId)
+    .lte("starts_date", date)
+    .gte("ends_date", date);
+  for (const r of planRows ?? []) {
+    const item = mapPlanItem(r as PlanItemRow);
+    if (item.type === "individual_vacation") {
+      if (providerId && item.userIds.includes(providerId)) {
+        return "O profissional está de férias neste período (planejamento anual).";
+      }
+    } else if (!openDay) {
+      return `Período de ${PLAN_ITEM_LABELS[item.type]} (planejamento anual). Libere um dia avulso em “Configurar agenda” para atender.`;
+    }
+  }
+
+  // Encaixe ignores working hours and room capacity (but not closures/holidays/
+  // annual-plan blocks above).
   if (isEncaixe) return null;
 
   const { data: rows } = await supabase
@@ -243,12 +279,6 @@ async function checkAgendaRules(
   // A day is open for scheduling if it's a configured weekday, OR a special
   // open day (G5), OR a holiday the manager decided to attend.
   const weekday = new Date(`${date}T00:00:00`).getDay();
-  const { data: openDay } = await supabase
-    .from("agenda_open_days")
-    .select("id, start_time, end_time")
-    .eq("clinic_id", clinicId)
-    .eq("date", date)
-    .maybeSingle();
   const dayOpen =
     cfg.weekdays.includes(weekday) ||
     Boolean(openDay) ||

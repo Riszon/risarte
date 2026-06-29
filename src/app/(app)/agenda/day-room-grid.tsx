@@ -119,6 +119,7 @@ export function DayRoomGrid({
   dayOpen = true,
   canDecideHoliday = false,
   isSpecialOpenDay = false,
+  planBlockLabel = null,
   clinicId,
 }: {
   dateIso: string;
@@ -149,6 +150,8 @@ export function DayRoomGrid({
   canDecideHoliday?: boolean;
   /** Whether this day is a special open day (G5/GR4) — shown in destaque. */
   isSpecialOpenDay?: boolean;
+  /** Annual-plan block label (GR6) when the day is closed by the plan. */
+  planBlockLabel?: string | null;
   clinicId?: string;
 }) {
   const router = useRouter();
@@ -619,6 +622,13 @@ export function DayRoomGrid({
         </div>
       )}
 
+      {planBlockLabel && (
+        <div className="rounded-lg border border-violet-300 bg-violet-50 p-2.5 text-sm text-violet-800">
+          Período de {planBlockLabel} (planejamento anual) — agenda fechada. Para
+          atender, libere um dia avulso em “Configurar agenda”.
+        </div>
+      )}
+
       {closures.length > 0 && (
         <div className="space-y-1.5 rounded-lg border border-red-200 bg-red-50/60 p-2.5">
           <p className="flex items-center gap-1 text-xs font-semibold text-red-700">
@@ -729,6 +739,12 @@ export function DayRoomGrid({
                 onClick={
                   clickable
                     ? (e) => {
+                        if (planBlockLabel) {
+                          toast.warning(
+                            `Agenda fechada (${planBlockLabel} — planejamento anual). Libere um dia avulso para atender.`
+                          );
+                          return;
+                        }
                         const time = slotTimeFromEvent(e);
                         const blocking = blockingClosureAt(c.key, time);
                         if (blocking) {
