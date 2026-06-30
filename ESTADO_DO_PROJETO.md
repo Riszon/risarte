@@ -314,13 +314,23 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   isolada via `@media print`). Entrada: botão **"Apresentação"** na ficha
   (Planner/Coordenador/Gerente/**Comercial**, quando o plano está aprovado) e no
   cabeçalho do **cockpit**. Acesso na página: Planner, Comercial, Coordenador,
-  Gerente, Admin. **Camada 2 (Gamma)** a seguir: exige chave de API do Gamma +
-  integração externa (envia só os textos; fotos ficam no sistema).
+  Gerente, Admin.
+- **Apresentação — Camada 1.1 (mais detalhe) (migração 0060, v0.10.2):** o
+  Planner passa a registrar **Objetivos do tratamento** e **Considerações do
+  planejamento** no editor do plano (`treatment_plans.objectives` +
+  `planning_notes`, action `savePlanNarrative`). A apresentação ganhou as seções
+  **Objetivos**, **Considerações do planejamento** e **"Plano de tratamento —
+  sessão por sessão"** (lista numerada de todas as sessões, com o nome/o que será
+  feito + tempo, puxada do **protocolo** de cada procedimento — unidade > Rede;
+  sem protocolo, cai na contagem planejada). Linguagem voltada ao cliente +
+  **aviso de fluxo** (só na tela): "plano montado pelo Planner; o Consultor
+  Comercial apresenta". **Decisão do dono:** na Camada 2 as **fotos VÃO** para o
+  Gamma (revisão da decisão anterior de só-textos).
 
 Lote seguinte (a fazer): **Apresentação do plano — Camada 2 (Gamma):** botão
-"Gerar no Gamma" que envia o texto do plano (sem fotos do paciente) para o Gamma
-gerar o deck + exportações PDF/PPTX. Precisa da chave de API do Gamma (fluxo de
-clipboard) e aceitar o envio do resumo clínico textual para fora.
+"Gerar no Gamma" que envia o conteúdo do plano **(incluindo fotos do paciente —
+decisão do dono)** para o Gamma gerar o deck + exportações PDF/PPTX. Precisa da
+**chave de API do Gamma** (fluxo de clipboard) e da integração com a API externa.
 
 ## 3. Próximos passos (ordem de prioridade)
 

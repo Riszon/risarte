@@ -58,6 +58,7 @@ import {
   reopenTreatmentPlan,
   reviewPlanOption,
   saveDiagnosis,
+  savePlanNarrative,
   setPrimaryOption,
   submitTreatmentPlan,
 } from "./planning-actions";
@@ -141,6 +142,8 @@ export function PlanningSection({
   const [isPending, startTransition] = useTransition();
 
   const [diagnosis, setDiagnosis] = useState(plan?.diagnosis ?? "");
+  const [objectives, setObjectives] = useState(plan?.objectives ?? "");
+  const [planningNotes, setPlanningNotes] = useState(plan?.planningNotes ?? "");
   const [optTitle, setOptTitle] = useState("");
   const [optDesc, setOptDesc] = useState("");
   const [optPrimary, setOptPrimary] = useState(false);
@@ -238,6 +241,13 @@ export function PlanningSection({
 
   function saveDiag() {
     run(() => saveDiagnosis(plan!.id, diagnosis), "Diagnóstico salvo.");
+  }
+
+  function saveNarrative() {
+    run(
+      () => savePlanNarrative(plan!.id, objectives, planningNotes),
+      "Objetivos e considerações salvos."
+    );
   }
 
   // Confirma o pilar (sugerido ou escolhido) e envia o plano para aprovação.
@@ -373,6 +383,61 @@ export function PlanningSection({
                 </span>
               )}
             </p>
+          )}
+        </div>
+
+        {/* Objetivos do tratamento + Considerações do planejamento (apresentação) */}
+        <div className="space-y-2">
+          <Label htmlFor="plan-objectives">Objetivos do tratamento</Label>
+          {canEditContent ? (
+            <>
+              <textarea
+                id="plan-objectives"
+                value={objectives}
+                onChange={(e) => setObjectives(e.target.value)}
+                rows={3}
+                placeholder="O que este tratamento busca alcançar (ex.: devolver a mastigação, harmonizar o sorriso)..."
+                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+              />
+              <Label htmlFor="plan-notes">Considerações do planejamento</Label>
+              <textarea
+                id="plan-notes"
+                value={planningNotes}
+                onChange={(e) => setPlanningNotes(e.target.value)}
+                rows={3}
+                placeholder="Observações para a apresentação ao cliente (sequência, cuidados, alternativas)..."
+                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={
+                  isPending ||
+                  (objectives === (plan.objectives ?? "") &&
+                    planningNotes === (plan.planningNotes ?? ""))
+                }
+                onClick={saveNarrative}
+              >
+                Salvar objetivos e considerações
+              </Button>
+            </>
+          ) : (
+            (plan.objectives || plan.planningNotes) && (
+              <div className="space-y-1 text-sm">
+                {plan.objectives && (
+                  <p className="whitespace-pre-wrap">
+                    <span className="font-medium">Objetivos:</span>{" "}
+                    {plan.objectives}
+                  </p>
+                )}
+                {plan.planningNotes && (
+                  <p className="whitespace-pre-wrap">
+                    <span className="font-medium">Considerações:</span>{" "}
+                    {plan.planningNotes}
+                  </p>
+                )}
+              </div>
+            )
           )}
         </div>
 

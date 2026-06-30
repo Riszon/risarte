@@ -49,17 +49,30 @@ export default async function PresentationPage(
   // -- Plano aprovado: opção principal aprovada (ou a primeira aprovada) --
   const { data: planRows } = await supabase
     .from("treatment_plans")
-    .select("id, status, diagnosis")
+    .select("id, status, diagnosis, objectives, planning_notes")
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
     .limit(1)
-    .returns<{ id: string; status: string; diagnosis: string | null }[]>();
+    .returns<
+      {
+        id: string;
+        status: string;
+        diagnosis: string | null;
+        objectives: string | null;
+        planning_notes: string | null;
+      }[]
+    >();
   const planRow = planRows?.[0];
 
   let diagnosis: string | null = null;
+  let objectives: string | null = null;
+  let planningNotes: string | null = null;
   let option: PresentationData["option"] = null;
+  let sessionGroups: PresentationData["sessionGroups"] = [];
   if (planRow) {
     diagnosis = planRow.diagnosis;
+    objectives = planRow.objectives;
+    planningNotes = planRow.planning_notes;
     const { data: optRows } = await supabase
       .from("treatment_plan_options")
       .select("id, is_primary, title, sort_order, review_status")
@@ -144,6 +157,77 @@ export default async function PresentationPage(
           budgetTotalCents(items) > 0 ? formatBRL(budgetTotalCents(items)) : null,
         summaryLabel,
       };
+
+      // Sessão por sessão: usa o protocolo de cada procedimento (unidade > Rede);
+      // sem protocolo, cai na contagem planejada do item.
+      const procIds = items
+        .map((it) => it.procedureId)
+        .filter((x): x is string => Boolean(x));
+      const protoByProc = new Map<
+        string,
+        {
+          unit: { name: string | null; minutes: number }[];
+          net: { name: string | null; minutes: number }[];
+        }
+      >();
+      if (procIds.length > 0) {
+        const { data: protoRows } = await supabase
+          .from("procedure_sessions")
+          .select(
+            "procedure_id, clinic_id, session_index, name, estimated_minutes"
+          )
+          .in("procedure_id", procIds)
+          .or(`clinic_id.is.null,clinic_id.eq.${client.clinic_id}`)
+          .order("session_index")
+          .returns<
+            {
+              procedure_id: string;
+              clinic_id: string | null;
+              session_index: number;
+              name: string | null;
+              estimated_minutes: number;
+            }[]
+          >();
+        for (const r of protoRows ?? []) {
+          const e = protoByProc.get(r.procedure_id) ?? { unit: [], net: [] };
+          (r.clinic_id === null ? e.net : e.unit).push({
+            name: r.name,
+            minutes: r.estimated_minutes,
+          });
+          protoByProc.set(r.procedure_id, e);
+        }
+      }
+      sessionGroups = items.map((it) => {
+        const proto = it.procedureId
+          ? protoByProc.get(it.procedureId)
+          : undefined;
+        const base =
+          proto && proto.unit.length > 0 ? proto.unit : (proto?.net ?? []);
+        let sessions: { label: string; minutesLabel: string | null }[];
+        if (base.length > 0) {
+          sessions = base.map((s, i) => ({
+            label: s.name?.trim() || `Sessão ${i + 1}`,
+            minutesLabel: s.minutes ? formatMinutes(s.minutes) : null,
+          }));
+        } else {
+          const n = Math.max(1, it.plannedSessions ?? 1);
+          const per =
+            it.plannedMinutes && n > 0 ? Math.round(it.plannedMinutes / n) : null;
+          sessions = Array.from({ length: n }, (_, i) => ({
+            label: `Sessão ${i + 1}`,
+            minutesLabel: per ? formatMinutes(per) : null,
+          }));
+        }
+        return {
+          procedure: it.description,
+          quantity: it.quantity,
+          repeatNote:
+            it.quantity > 1 && base.length > 0
+              ? `Este procedimento se repete ${it.quantity}×.`
+              : null,
+          sessions,
+        };
+      });
     }
   }
 
@@ -213,9 +297,12 @@ export default async function PresentationPage(
     pillarLabel: pillar ? PILLAR_LABELS[pillar] : null,
     dateLabel: new Date().toLocaleDateString("pt-BR"),
     diagnosis,
+    objectives,
+    planningNotes,
     considerations,
     photos,
     option,
+    sessionGroups,
   };
 
   return (

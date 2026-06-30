@@ -53,6 +53,8 @@ export type TreatmentPlan = {
   id: string;
   status: TreatmentPlanStatus;
   diagnosis: string | null;
+  objectives: string | null;
+  planningNotes: string | null;
   createdAt: string;
   submittedAt: string | null;
   reviewedAt: string | null;

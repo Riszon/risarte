@@ -13,6 +13,13 @@ export type PresentationOptionItem = {
   priceLabel: string | null;
 };
 
+export type PresentationSessionGroup = {
+  procedure: string;
+  quantity: number;
+  repeatNote: string | null;
+  sessions: { label: string; minutesLabel: string | null }[];
+};
+
 export type PresentationData = {
   clientName: string;
   clientCode: string | null;
@@ -20,6 +27,8 @@ export type PresentationData = {
   pillarLabel: string | null;
   dateLabel: string;
   diagnosis: string | null;
+  objectives: string | null;
+  planningNotes: string | null;
   considerations: string[];
   photos: { id: string; url: string; name: string | null }[];
   option: {
@@ -28,6 +37,7 @@ export type PresentationData = {
     totalLabel: string | null;
     summaryLabel: string | null;
   } | null;
+  sessionGroups: PresentationSessionGroup[];
 };
 
 // Próximas etapas padrão da Jornada Risarte após a aprovação do plano.
@@ -86,6 +96,15 @@ export function PresentationView({ data }: { data: PresentationData }) {
         </Button>
       </div>
 
+      <div className="no-print mb-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+        <span className="font-medium text-primary">
+          Apresentação ao cliente.
+        </span>{" "}
+        O plano foi montado pelo Dentista Planner. Você, Consultor Comercial,
+        apresenta esta proposta ao cliente — use “Baixar PDF” para enviar ou
+        projetar.
+      </div>
+
       <div id="apresentacao" className="space-y-4">
         {/* Capa */}
         <section className="slide rounded-lg border bg-primary p-8 text-primary-foreground shadow-sm">
@@ -107,9 +126,9 @@ export function PresentationView({ data }: { data: PresentationData }) {
           )}
         </section>
 
-        {/* Queixa / condição clínica */}
+        {/* Diagnóstico e condição clínica */}
         {(data.diagnosis || data.considerations.length > 0) && (
-          <Slide title="Queixa e condição clínica">
+          <Slide title="Diagnóstico e condição">
             {data.diagnosis && (
               <p className="whitespace-pre-wrap text-sm">{data.diagnosis}</p>
             )}
@@ -122,6 +141,13 @@ export function PresentationView({ data }: { data: PresentationData }) {
                 ))}
               </ul>
             )}
+          </Slide>
+        )}
+
+        {/* Objetivos do tratamento */}
+        {data.objectives && (
+          <Slide title="Objetivos do tratamento">
+            <p className="whitespace-pre-wrap text-sm">{data.objectives}</p>
           </Slide>
         )}
 
@@ -148,9 +174,43 @@ export function PresentationView({ data }: { data: PresentationData }) {
           </Slide>
         )}
 
-        {/* Proposta */}
+        {/* Plano sessão por sessão */}
+        {data.sessionGroups.length > 0 && (
+          <Slide title="Plano de tratamento — sessão por sessão">
+            <div className="space-y-3">
+              {data.sessionGroups.map((g, gi) => (
+                <div key={gi}>
+                  <p className="text-sm font-semibold">
+                    {g.quantity > 1 ? `${g.quantity}× ` : ""}
+                    {g.procedure}
+                  </p>
+                  {g.repeatNote && (
+                    <p className="text-xs text-muted-foreground">
+                      {g.repeatNote}
+                    </p>
+                  )}
+                  <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm">
+                    {g.sessions.map((s, si) => (
+                      <li key={si}>
+                        {s.label}
+                        {s.minutesLabel && (
+                          <span className="text-xs text-muted-foreground">
+                            {" "}
+                            · {s.minutesLabel}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </Slide>
+        )}
+
+        {/* Proposta e investimento */}
         {data.option ? (
-          <Slide title="Proposta de tratamento">
+          <Slide title="Proposta e investimento">
             <ul className="space-y-2">
               {data.option.items.map((it, i) => (
                 <li
@@ -190,10 +250,17 @@ export function PresentationView({ data }: { data: PresentationData }) {
             </div>
           </Slide>
         ) : (
-          <Slide title="Proposta de tratamento">
+          <Slide title="Proposta e investimento">
             <p className="text-sm text-muted-foreground">
               O plano ainda não tem uma opção aprovada para apresentar.
             </p>
+          </Slide>
+        )}
+
+        {/* Considerações do planejamento */}
+        {data.planningNotes && (
+          <Slide title="Considerações do planejamento">
+            <p className="whitespace-pre-wrap text-sm">{data.planningNotes}</p>
           </Slide>
         )}
 

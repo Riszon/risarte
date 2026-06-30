@@ -756,7 +756,7 @@ export default async function ClientDetailPage(
     const { data: planRows } = await supabase
       .from("treatment_plans")
       .select(
-        "id, status, diagnosis, created_at, submitted_at, reviewed_at, review_notes"
+        "id, status, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes"
       )
       .eq("client_id", id)
       .order("created_at", { ascending: false })
@@ -766,6 +766,8 @@ export default async function ClientDetailPage(
           id: string;
           status: TreatmentPlanStatus;
           diagnosis: string | null;
+          objectives: string | null;
+          planning_notes: string | null;
           created_at: string;
           submitted_at: string | null;
           reviewed_at: string | null;
@@ -844,6 +846,8 @@ export default async function ClientDetailPage(
         id: planRow.id,
         status: planRow.status,
         diagnosis: planRow.diagnosis,
+        objectives: planRow.objectives,
+        planningNotes: planRow.planning_notes,
         createdAt: planRow.created_at,
         submittedAt: planRow.submitted_at,
         reviewedAt: planRow.reviewed_at,

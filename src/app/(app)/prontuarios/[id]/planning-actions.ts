@@ -126,6 +126,40 @@ export async function saveDiagnosis(
   return { ok: true };
 }
 
+export async function savePlanNarrative(
+  planId: string,
+  objectives: string,
+  planningNotes: string
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadPlanContext(planId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("treatment_plans")
+    .update({
+      objectives: objectives.trim() || null,
+      planning_notes: planningNotes.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", planId);
+  if (error) {
+    console.error("savePlanNarrative failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar os objetivos." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "treatment_plan",
+    entityId: ctx.clientId,
+    clinicId: ctx.clinicId,
+    details: { narrative: true },
+  });
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
 export async function addPlanOption(
   planId: string,
   input: { title: string; description: string; isPrimary: boolean }
