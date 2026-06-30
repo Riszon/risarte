@@ -1048,9 +1048,14 @@ export default async function ClientDetailPage(
           canEdit={canEditPlanning}
           canReview={canReviewPlan}
           inPlanningPhase={client.journey_phase === "planning_center"}
-          pillarSet={Boolean(client.methodology_pillar)}
           catalog={priceCatalog}
           protocols={protocolByProcedure}
+          currentPillar={
+            client.methodology_pillar as MethodologyPillar | null
+          }
+          cockpitHref={
+            canEditPlanning ? `/planejamento/${client.id}` : undefined
+          }
         />
       )}
 

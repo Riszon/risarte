@@ -464,9 +464,11 @@ export default async function PlanningCockpitPage(
             canEdit
             canReview={false}
             inPlanningPhase={phase === "planning_center"}
-            pillarSet={Boolean(client.methodology_pillar)}
             catalog={catalog}
             protocols={protocolByProcedure}
+            currentPillar={
+              client.methodology_pillar as MethodologyPillar | null
+            }
           />
         </div>
       </div>

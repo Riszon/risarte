@@ -261,6 +261,14 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   valores planejados seguem para o agendamento por sessão (E4). `protocolByProcedure`
   carregado nas duas páginas; `BudgetItem` ganhou plannedSessions/plannedMinutes.
   Próximas: **E4** (agendamento por sessão), **E5** (execução/auditoria + médias).
+- **Ajustes do planejamento (sem migração, v0.9.7):** **botão "Abrir cockpit"**
+  na ficha (Planner); **Pilar da Metodologia** no editor do plano com **sugestão
+  automática** (maior soma de valor por pilar, entre Saúde/Função/Estética/
+  Prevenção) e **confirmação do pilar no envio** ao Coordenador (o Planner pode
+  alterar; decisão final é dele) — `suggestTreatmentPillar` + `setTreatmentPillar`;
+  ao colocar **2× o mesmo procedimento**, a sugestão de sessões/tempo **reescala
+  (base × qtd)** e pede confirmação. (A visualização das sessões pelo Coordenador
+  já veio na E3.)
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);

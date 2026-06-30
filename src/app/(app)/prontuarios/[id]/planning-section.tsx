@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowRight,
   Check,
   ClipboardList,
+  LayoutDashboard,
   Pencil,
   Plus,
   Send,
@@ -28,6 +30,13 @@ import {
   type PlanOption,
   type TreatmentPlan,
 } from "@/lib/planning";
+import {
+  PILLAR_LABELS,
+  TREATMENT_PILLARS,
+  type MethodologyPillar,
+  type TreatmentPillar,
+} from "@/lib/journey";
+import { setTreatmentPillar } from "../../jornada/actions";
 import {
   budgetTotalCents,
   formatBRL,
@@ -68,6 +77,39 @@ function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
+/**
+ * Pilar sugerido automaticamente: soma o valor dos procedimentos por pilar
+ * (entre os 4 pilares de tratamento) e devolve o de maior soma. Usa a opção
+ * principal, ou todas as opções se não houver principal.
+ */
+function suggestTreatmentPillar(
+  options: PlanOption[],
+  catalog: PricedProcedure[]
+): TreatmentPillar | null {
+  const primary = options.find((o) => o.isPrimary);
+  const items = primary ? primary.items : options.flatMap((o) => o.items);
+  const sum = new Map<TreatmentPillar, number>();
+  for (const it of items) {
+    if (!it.procedureId) continue;
+    const proc = catalog.find((c) => c.id === it.procedureId);
+    const p = proc?.pillar;
+    if (!p || !TREATMENT_PILLARS.includes(p as TreatmentPillar)) continue;
+    sum.set(
+      p as TreatmentPillar,
+      (sum.get(p as TreatmentPillar) ?? 0) + it.quantity * it.unitPriceCents
+    );
+  }
+  let best: TreatmentPillar | null = null;
+  let bestSum = -1;
+  for (const [p, s] of sum) {
+    if (s > bestSum) {
+      bestSum = s;
+      best = p;
+    }
+  }
+  return best;
+}
+
 export function PlanningSection({
   clientId,
   clientName,
@@ -75,9 +117,10 @@ export function PlanningSection({
   canEdit,
   canReview,
   inPlanningPhase,
-  pillarSet,
   catalog,
   protocols,
+  currentPillar,
+  cockpitHref,
 }: {
   clientId: string;
   clientName: string;
@@ -85,9 +128,11 @@ export function PlanningSection({
   canEdit: boolean;
   canReview: boolean;
   inPlanningPhase: boolean;
-  pillarSet: boolean;
   catalog: PricedProcedure[];
   protocols: Record<string, ProtocolRef>;
+  currentPillar: MethodologyPillar | null;
+  /** (Ficha) link para abrir o cockpit do Planner; ausente no próprio cockpit. */
+  cockpitHref?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -100,6 +145,15 @@ export function PlanningSection({
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPrimary, setEditPrimary] = useState(false);
+
+  const currentTreatment: TreatmentPillar | "" =
+    currentPillar && TREATMENT_PILLARS.includes(currentPillar as TreatmentPillar)
+      ? (currentPillar as TreatmentPillar)
+      : "";
+  const [pillarChoice, setPillarChoice] = useState<TreatmentPillar | "">(
+    currentTreatment
+  );
+  const [confirmingSubmit, setConfirmingSubmit] = useState(false);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -161,6 +215,9 @@ export function PlanningSection({
   const options = plan.options;
   // The Planner/Admin always SEE prices; the Coordenador never does.
   const canSeePrices = canEdit;
+  const suggestedPillar = canEdit
+    ? suggestTreatmentPillar(options, catalog)
+    : null;
   // After approval (or while awaiting it), the plan is locked for editing — the
   // Planner must "Reabrir para edição", which sends it back for re-approval.
   const canEditContent =
@@ -178,6 +235,30 @@ export function PlanningSection({
 
   function saveDiag() {
     run(() => saveDiagnosis(plan!.id, diagnosis), "Diagnóstico salvo.");
+  }
+
+  // Confirma o pilar (sugerido ou escolhido) e envia o plano para aprovação.
+  function confirmSubmitPlan() {
+    startTransition(async () => {
+      if (pillarChoice && pillarChoice !== currentTreatment) {
+        const r = await setTreatmentPillar(
+          clientId,
+          pillarChoice as TreatmentPillar
+        );
+        if (!r.ok) {
+          toast.error(r.error ?? "Não foi possível definir o pilar.");
+          return;
+        }
+      }
+      const r = await submitTreatmentPlan(plan!.id);
+      if (r.ok) {
+        toast.success(`Plano de ${clientName} enviado para aprovação.`);
+        setConfirmingSubmit(false);
+        router.refresh();
+      } else {
+        toast.error(r.error ?? "Não foi possível enviar o plano.");
+      }
+    });
   }
 
   function addOption() {
@@ -222,16 +303,27 @@ export function PlanningSection({
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base">Plano de Tratamento</CardTitle>
-          <Badge
-            variant={plan.status === "approved" ? "secondary" : "outline"}
-            className={
-              plan.status === "approved"
-                ? ""
-                : "border-primary text-primary"
-            }
-          >
-            {PLAN_STATUS_LABELS[plan.status]}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {cockpitHref && canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                nativeButton={false}
+                render={<Link href={cockpitHref} />}
+              >
+                <LayoutDashboard className="mr-1 size-4" />
+                Abrir cockpit
+              </Button>
+            )}
+            <Badge
+              variant={plan.status === "approved" ? "secondary" : "outline"}
+              className={
+                plan.status === "approved" ? "" : "border-primary text-primary"
+              }
+            >
+              {PLAN_STATUS_LABELS[plan.status]}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -478,28 +570,133 @@ export function PlanningSection({
           )}
         </div>
 
-        {/* Envio para aprovação */}
+        {/* Pilar da Metodologia + envio para aprovação */}
         {canEditContent && (
-          <div className="space-y-2 border-t pt-3">
-            {!pillarSet && (
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Sparkles className="size-3.5" />
-                Defina o pilar de tratamento na seção “Jornada Risarte” acima.
+          <div className="space-y-3 border-t pt-3">
+            <div className="space-y-1.5 rounded-md border p-2">
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                <Sparkles className="size-3.5 text-gold" />
+                Pilar da Metodologia
               </p>
+              <p className="text-xs text-muted-foreground">
+                Atual:{" "}
+                {currentPillar ? PILLAR_LABELS[currentPillar] : "não definido"}
+                {suggestedPillar && (
+                  <>
+                    {" "}
+                    · Sugerido (por valor):{" "}
+                    <strong>{PILLAR_LABELS[suggestedPillar]}</strong>
+                  </>
+                )}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={pillarChoice}
+                  onChange={(e) =>
+                    setPillarChoice(e.target.value as TreatmentPillar | "")
+                  }
+                  className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm"
+                >
+                  <option value="">Selecione...</option>
+                  {TREATMENT_PILLARS.map((p) => (
+                    <option key={p} value={p}>
+                      {PILLAR_LABELS[p]}
+                    </option>
+                  ))}
+                </select>
+                {suggestedPillar && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPillarChoice(suggestedPillar)}
+                  >
+                    Usar sugerido
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  disabled={
+                    !pillarChoice ||
+                    pillarChoice === currentTreatment ||
+                    isPending
+                  }
+                  onClick={() =>
+                    run(
+                      () =>
+                        setTreatmentPillar(
+                          clientId,
+                          pillarChoice as TreatmentPillar
+                        ),
+                      "Pilar definido."
+                    )
+                  }
+                >
+                  Salvar pilar
+                </Button>
+              </div>
+            </div>
+
+            {confirmingSubmit ? (
+              <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-2">
+                <p className="text-sm">
+                  Confirme o <strong>pilar</strong> deste tratamento antes de
+                  enviar.
+                  {suggestedPillar && (
+                    <>
+                      {" "}
+                      Sugerido pelo sistema:{" "}
+                      <strong>{PILLAR_LABELS[suggestedPillar]}</strong>.
+                    </>
+                  )}{" "}
+                  A decisão final é sua.
+                </p>
+                <select
+                  value={pillarChoice}
+                  onChange={(e) =>
+                    setPillarChoice(e.target.value as TreatmentPillar | "")
+                  }
+                  className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm"
+                >
+                  <option value="">Selecione o pilar...</option>
+                  {TREATMENT_PILLARS.map((p) => (
+                    <option key={p} value={p}>
+                      {PILLAR_LABELS[p]}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <Button
+                    disabled={!pillarChoice || isPending}
+                    onClick={confirmSubmitPlan}
+                  >
+                    <Send className="mr-1 size-4" />
+                    Confirmar pilar e enviar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setConfirmingSubmit(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                disabled={!canSubmit || isPending}
+                onClick={() => {
+                  setPillarChoice(
+                    (currentTreatment || suggestedPillar || "") as
+                      | TreatmentPillar
+                      | ""
+                  );
+                  setConfirmingSubmit(true);
+                }}
+              >
+                <Send className="mr-1 size-4" />
+                Enviar para aprovação do Coordenador
+              </Button>
             )}
-            <Button
-              disabled={!canSubmit || isPending}
-              onClick={() =>
-                run(
-                  () => submitTreatmentPlan(plan.id),
-                  `Plano de ${clientName} enviado para aprovação.`
-                )
-              }
-            >
-              <Send className="mr-1 size-4" />
-              Enviar para aprovação do Coordenador
-            </Button>
-            {!canSubmit && inPlanningPhase && (
+            {!canSubmit && inPlanningPhase && !confirmingSubmit && (
               <p className="text-xs text-muted-foreground">
                 Para enviar: preencha o diagnóstico, tenha ao menos uma opção e
                 lance os <strong>procedimentos</strong> (itens do orçamento) em{" "}
@@ -603,6 +800,9 @@ function OptionBudget({
   const [qty, setQty] = useState("1");
   const [pSess, setPSess] = useState("");
   const [pMin, setPMin] = useState("");
+  // Base (por 1 unidade) do protocolo, para reescalar ao mudar a quantidade.
+  const [baseSess, setBaseSess] = useState(0);
+  const [baseMin, setBaseMin] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [eDesc, setEDesc] = useState("");
   const [ePrice, setEPrice] = useState("");
@@ -640,8 +840,19 @@ function OptionBudget({
     // Base de sessões/tempo: protocolo da unidade (se houver) ou da Rede.
     const ref = protocols[id];
     const base = ref?.unit ?? ref?.network ?? null;
-    setPSess(base ? String(base.count) : "");
-    setPMin(base ? String(base.minutes) : "");
+    const q = Math.max(1, Number(qty) || 1);
+    setBaseSess(base ? base.count : 0);
+    setBaseMin(base ? base.minutes : 0);
+    setPSess(base ? String(base.count * q) : "");
+    setPMin(base ? String(base.minutes * q) : "");
+  }
+
+  // Ao mudar a quantidade, reescala a sugestão de sessões/tempo (base × qtd).
+  function changeQty(v: string) {
+    setQty(v);
+    const q = Math.max(1, Number(v) || 1);
+    if (baseSess > 0) setPSess(String(baseSess * q));
+    if (baseMin > 0) setPMin(String(baseMin * q));
   }
 
   if (!canEdit && items.length === 0) return null;
@@ -850,7 +1061,7 @@ function OptionBudget({
             />
             <Input
               value={qty}
-              onChange={(e) => setQty(e.target.value)}
+              onChange={(e) => changeQty(e.target.value)}
               inputMode="numeric"
               className="w-14"
               aria-label="Quantidade"
@@ -913,6 +1124,12 @@ function OptionBudget({
               Item
             </Button>
           </div>
+          {procId && Number(qty) > 1 && (
+            <p className="text-xs text-amber-700">
+              Você colocou {Number(qty)}× este procedimento — confirme as sessões
+              e o tempo total (sugestão: base × {Number(qty)}).
+            </p>
+          )}
           {pickedRef && (
             <div className="rounded-md bg-muted/40 p-1.5 text-xs text-muted-foreground">
               <p>
