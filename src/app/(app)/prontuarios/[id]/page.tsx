@@ -61,6 +61,11 @@ import {
   type UnitPrice,
 } from "@/lib/pricing";
 import { ClientShares, type ActiveShare } from "./client-shares";
+import { ensureTreatmentSessions } from "./treatment-actions";
+import {
+  TreatmentSessionsPanel,
+  type TreatmentSession,
+} from "./treatment-sessions-panel";
 import type { StaffOption } from "@/lib/appointments";
 import { allowedNextPhases } from "@/lib/journey";
 import type {
@@ -456,6 +461,39 @@ export default async function ClientDetailPage(
     const schedulingData = await getUnitSchedulingData(scheduleClinicId);
     fichaStaff = schedulingData.staff;
     fichaConfig = schedulingData.config;
+  }
+
+  // Sessões do tratamento a agendar (E4): gera na Fase 5 e carrega.
+  let treatmentSessions: TreatmentSession[] = [];
+  if (client.journey_phase === "treatment_start") {
+    await ensureTreatmentSessions(id);
+    const { data: tsRows } = await supabase
+      .from("treatment_sessions")
+      .select(
+        "id, procedure_name, session_index, session_total, name, planned_minutes, status"
+      )
+      .eq("client_id", id)
+      .order("created_at")
+      .returns<
+        {
+          id: string;
+          procedure_name: string;
+          session_index: number;
+          session_total: number;
+          name: string | null;
+          planned_minutes: number | null;
+          status: "pending" | "scheduled" | "done";
+        }[]
+      >();
+    treatmentSessions = (tsRows ?? []).map((r) => ({
+      id: r.id,
+      procedureName: r.procedure_name,
+      sessionIndex: r.session_index,
+      sessionTotal: r.session_total,
+      name: r.name,
+      plannedMinutes: r.planned_minutes,
+      status: r.status,
+    }));
   }
 
   // -- Avaliação clínica (Etapa 4/E7): registra na unidade ATIVA quando ela é a
@@ -1005,6 +1043,19 @@ export default async function ClientDetailPage(
         clinicRoles={clinicRoles}
         isPlannerAnywhere={isPlannerAnywhere}
       />
+
+      {treatmentSessions.length > 0 && (
+        <TreatmentSessionsPanel
+          clientId={client.id}
+          clientName={client.full_name}
+          clientInactive={client.status !== "active"}
+          sessions={treatmentSessions}
+          canSchedule={canScheduleFromFicha}
+          staff={fichaStaff}
+          config={fichaConfig}
+          clinicId={scheduleClinicId}
+        />
+      )}
 
       <ClientShares
         clientId={client.id}

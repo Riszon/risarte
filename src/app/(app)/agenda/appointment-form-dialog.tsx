@@ -115,6 +115,7 @@ export function AppointmentFormDialog({
   initialClientId,
   initialDate,
   initialTime,
+  initialDuration,
   initialRoomId,
   defaultOpen = false,
   open,
@@ -137,6 +138,8 @@ export function AppointmentFormDialog({
   /** Pre-fill date/time/room (quick scheduling by clicking an empty slot). */
   initialDate?: string;
   initialTime?: string;
+  /** Pré-preenche a duração (min) — ex.: ao agendar uma sessão planejada (E4). */
+  initialDuration?: number;
   initialRoomId?: string;
   defaultOpen?: boolean;
   /** Controlled open state (quick scheduling). */
@@ -226,7 +229,9 @@ export function AppointmentFormDialog({
               60_000
           )
         )
-      : "60"
+      : initialDuration
+        ? String(initialDuration)
+        : "60"
   );
   const [notes, setNotes] = useState(appointment?.notes ?? "");
 

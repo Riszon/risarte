@@ -269,6 +269,16 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   ao colocar **2× o mesmo procedimento**, a sugestão de sessões/tempo **reescala
   (base × qtd)** e pede confirmação. (A visualização das sessões pelo Coordenador
   já veio na E3.)
+- **E4a — Sessões a agendar na ficha (migração 0058, v0.9.8):** decisões do dono:
+  agendar **nos dois lugares** (ficha + agenda) e **gerar na Fase 5**. Tabela
+  `treatment_sessions` + `appointments.treatment_session_id` + RPC idempotente
+  `ensure_treatment_sessions` (gera uma linha por sessão planejada da **opção
+  principal aprovada** quando o cliente entra em Início de Tratamento, com o
+  tempo de cada sessão). Painel **"Sessões do tratamento a agendar"** na ficha
+  (`treatment-sessions-panel.tsx`): lista por procedimento + status; **"Agendar"**
+  abre o formulário já com a **duração** da sessão (`AppointmentFormDialog` ganhou
+  `initialDuration`). **E4b** (vínculo sessão↔agendamento + status + sugestão na
+  agenda) e **E5** (execução + médias) a seguir.
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
