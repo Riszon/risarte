@@ -407,6 +407,21 @@ export async function createAppointment(
     return { ok: false, error: "Não foi possível criar o agendamento." };
   }
 
+  // E4b: se o agendamento é de uma sessão planejada, vincula e marca agendada.
+  const treatmentSessionId = String(
+    formData.get("treatment_session_id") ?? ""
+  ).trim();
+  if (treatmentSessionId) {
+    await supabase
+      .from("appointments")
+      .update({ treatment_session_id: treatmentSessionId })
+      .eq("id", data.id);
+    await supabase
+      .from("treatment_sessions")
+      .update({ status: "scheduled", appointment_id: data.id })
+      .eq("id", treatmentSessionId);
+  }
+
   await logAudit({
     action: "create",
     entityType: "appointment",
@@ -415,6 +430,37 @@ export async function createAppointment(
   });
   revalidatePath("/agenda");
   return { ok: true };
+}
+
+/** Sessões planejadas ainda não agendadas de um cliente (E4b — sugestão na agenda). */
+export async function getClientPendingSessions(
+  clientId: string
+): Promise<{ id: string; label: string; minutes: number | null }[]> {
+  if (!clientId) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("treatment_sessions")
+    .select(
+      "id, procedure_name, session_index, session_total, name, planned_minutes"
+    )
+    .eq("client_id", clientId)
+    .eq("status", "pending")
+    .order("created_at")
+    .returns<
+      {
+        id: string;
+        procedure_name: string;
+        session_index: number;
+        session_total: number;
+        name: string | null;
+        planned_minutes: number | null;
+      }[]
+    >();
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    label: `${r.procedure_name} — ${r.name ?? `Sessão ${r.session_index} de ${r.session_total}`}`,
+    minutes: r.planned_minutes,
+  }));
 }
 
 /** Reschedule/change an appointment. Every change is recorded (LGPD audit). */

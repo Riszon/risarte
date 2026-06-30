@@ -110,6 +110,7 @@ export function TreatmentSessionsPanel({
                             ? Math.max(15, Math.round(s.plannedMinutes / 15) * 15)
                             : undefined
                         }
+                        treatmentSessionId={s.id}
                         fixedClinicId={clinicId}
                         trigger={
                           <Button size="sm" variant="outline">

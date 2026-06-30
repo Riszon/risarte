@@ -279,6 +279,14 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   abre o formulário já com a **duração** da sessão (`AppointmentFormDialog` ganhou
   `initialDuration`). **E4b** (vínculo sessão↔agendamento + status + sugestão na
   agenda) e **E5** (execução + médias) a seguir.
+- **E4b — Vínculo + sugestão na agenda (sem migração, v0.9.9):** ao agendar uma
+  sessão, o `createAppointment` grava `appointments.treatment_session_id` e marca
+  a sessão como **agendada** (`status='scheduled'`, `appointment_id`). No
+  formulário da **Agenda**, ao escolher um cliente, aparecem **chips das sessões
+  pendentes do plano** (`getClientPendingSessions`) — clicar preenche a duração e
+  vincula o agendamento à sessão. `AppointmentFormDialog` ganhou
+  `treatmentSessionId`. **E5** (Dentista marca executada → tempo real pelo
+  atendimento, rateado por procedimento → médias unidade/dentista) a seguir.
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);

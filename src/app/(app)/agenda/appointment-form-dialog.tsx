@@ -37,6 +37,7 @@ import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
   createAppointment,
+  getClientPendingSessions,
   getClientSchedulingInfo,
   getDayBusyTimes,
   getNextAvailableSlots,
@@ -116,6 +117,7 @@ export function AppointmentFormDialog({
   initialDate,
   initialTime,
   initialDuration,
+  treatmentSessionId,
   initialRoomId,
   defaultOpen = false,
   open,
@@ -140,6 +142,8 @@ export function AppointmentFormDialog({
   initialTime?: string;
   /** Pré-preenche a duração (min) — ex.: ao agendar uma sessão planejada (E4). */
   initialDuration?: number;
+  /** Vincula este agendamento a uma sessão planejada do tratamento (E4). */
+  treatmentSessionId?: string;
   initialRoomId?: string;
   defaultOpen?: boolean;
   /** Controlled open state (quick scheduling). */
@@ -234,6 +238,10 @@ export function AppointmentFormDialog({
         : "60"
   );
   const [notes, setNotes] = useState(appointment?.notes ?? "");
+  const [sessionId, setSessionId] = useState(treatmentSessionId ?? "");
+  const [pendingSessions, setPendingSessions] = useState<
+    { id: string; label: string; minutes: number | null }[]
+  >([]);
 
   const clientItems = effectiveClients.map((c) => ({
     value: c.id,
@@ -248,6 +256,7 @@ export function AppointmentFormDialog({
         setSchedulingInfo(info);
         if (info) setType(defaultTypeFor(info));
       });
+      getClientPendingSessions(initialClientId).then(setPendingSessions);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -465,6 +474,8 @@ export function AppointmentFormDialog({
   function handleClientChange(id: string) {
     setClientId(id);
     setSchedulingInfo(null);
+    setSessionId("");
+    setPendingSessions([]);
     startTransition(async () => {
       const info = await getClientSchedulingInfo(id);
       setSchedulingInfo(info);
@@ -472,6 +483,7 @@ export function AppointmentFormDialog({
         // Scheduling follows the journey (a session for clients in treatment).
         setType(defaultTypeFor(info));
       }
+      setPendingSessions(await getClientPendingSessions(id));
     });
   }
 
@@ -488,6 +500,7 @@ export function AppointmentFormDialog({
     formData.set("provider_user_id", providerValid ? providerId : "");
     formData.set("room_id", isOnline ? "" : effectiveRoomId);
     formData.set("notes", notes);
+    if (sessionId) formData.set("treatment_session_id", sessionId);
 
     startTransition(async () => {
       const result = isEdit
@@ -812,6 +825,43 @@ export function AppointmentFormDialog({
                     setTime("");
                   }}
                 />
+              )}
+            </div>
+          )}
+
+          {!isEdit && pendingSessions.length > 0 && (
+            <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
+              <Label>Sessões do plano a agendar</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {pendingSessions.map((s) => (
+                  <Button
+                    key={s.id}
+                    type="button"
+                    size="sm"
+                    variant={sessionId === s.id ? "default" : "outline"}
+                    onClick={() => {
+                      if (sessionId === s.id) {
+                        setSessionId("");
+                      } else {
+                        setSessionId(s.id);
+                        if (s.minutes) {
+                          setDuration(
+                            String(Math.max(15, Math.round(s.minutes / 15) * 15))
+                          );
+                        }
+                      }
+                    }}
+                  >
+                    {s.label}
+                    {s.minutes ? ` (${s.minutes} min)` : ""}
+                  </Button>
+                ))}
+              </div>
+              {sessionId && (
+                <p className="text-xs text-muted-foreground">
+                  Este agendamento será vinculado à sessão selecionada (marca como
+                  agendada).
+                </p>
               )}
             </div>
           )}
