@@ -86,6 +86,15 @@ export type BudgetItem = {
   description: string;
   quantity: number;
   unitPriceCents: number;
+  /** Sessões/tempo planejados pelo Planner para este procedimento (E3). */
+  plannedSessions: number | null;
+  plannedMinutes: number | null;
+};
+
+/** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */
+export type ProtocolRef = {
+  network: { count: number; minutes: number } | null;
+  unit: { count: number; minutes: number } | null;
 };
 
 /** Merge the catalog with a unit's overrides into effective prices. */

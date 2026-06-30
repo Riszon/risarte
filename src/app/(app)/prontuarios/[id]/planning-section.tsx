@@ -31,8 +31,11 @@ import {
 import {
   budgetTotalCents,
   formatBRL,
+  formatMinutes,
+  formatSessions,
   type BudgetItem,
   type PricedProcedure,
+  type ProtocolRef,
 } from "@/lib/pricing";
 import {
   addBudgetItem,
@@ -74,6 +77,7 @@ export function PlanningSection({
   inPlanningPhase,
   pillarSet,
   catalog,
+  protocols,
 }: {
   clientId: string;
   clientName: string;
@@ -83,6 +87,7 @@ export function PlanningSection({
   inPlanningPhase: boolean;
   pillarSet: boolean;
   catalog: PricedProcedure[];
+  protocols: Record<string, ProtocolRef>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -417,6 +422,7 @@ export function PlanningSection({
                     optionId={o.id}
                     items={o.items}
                     catalog={catalog}
+                    protocols={protocols}
                     canEdit={canEditContent}
                     summaryOnly={!canSeePrices}
                   />
@@ -565,16 +571,26 @@ export function PlanningSection({
 }
 
 /** Budget lines + total for a single plan option (Etapa 5.2). */
+function plannedText(it: BudgetItem): string | null {
+  if (it.plannedSessions == null && it.plannedMinutes == null) return null;
+  const parts: string[] = [];
+  if (it.plannedSessions != null) parts.push(formatSessions(it.plannedSessions));
+  if (it.plannedMinutes != null) parts.push(formatMinutes(it.plannedMinutes));
+  return parts.join(" · ");
+}
+
 function OptionBudget({
   optionId,
   items,
   catalog,
+  protocols,
   canEdit,
   summaryOnly,
 }: {
   optionId: string;
   items: BudgetItem[];
   catalog: PricedProcedure[];
+  protocols: Record<string, ProtocolRef>;
   canEdit: boolean;
   /** Coordenador view: show only the option TOTAL, not per-item prices (F4). */
   summaryOnly: boolean;
@@ -585,12 +601,17 @@ function OptionBudget({
   const [desc, setDesc] = useState("");
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("1");
+  const [pSess, setPSess] = useState("");
+  const [pMin, setPMin] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [eDesc, setEDesc] = useState("");
   const [ePrice, setEPrice] = useState("");
   const [eQty, setEQty] = useState("1");
+  const [ePSess, setEPSess] = useState("");
+  const [ePMin, setEPMin] = useState("");
 
   const total = budgetTotalCents(items);
+  const pickedRef = procId ? protocols[procId] : undefined;
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -616,6 +637,11 @@ function OptionBudget({
       setDesc(p.name);
       setPrice(centsToInput(p.effectivePriceCents));
     }
+    // Base de sessões/tempo: protocolo da unidade (se houver) ou da Rede.
+    const ref = protocols[id];
+    const base = ref?.unit ?? ref?.network ?? null;
+    setPSess(base ? String(base.count) : "");
+    setPMin(base ? String(base.minutes) : "");
   }
 
   if (!canEdit && items.length === 0) return null;
@@ -636,6 +662,9 @@ function OptionBudget({
             {items.map((it) => (
               <li key={it.id}>
                 {it.quantity}× {it.description}
+                {plannedText(it) && (
+                  <span className="text-xs"> — {plannedText(it)}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -664,7 +693,7 @@ function OptionBudget({
                     onChange={(e) => setEDesc(e.target.value)}
                     placeholder="Descrição"
                   />
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Input
                       value={eQty}
                       onChange={(e) => setEQty(e.target.value)}
@@ -681,6 +710,26 @@ function OptionBudget({
                       className="w-28"
                       aria-label="Valor unitário"
                     />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <span>Sessões</span>
+                    <Input
+                      value={ePSess}
+                      onChange={(e) => setEPSess(e.target.value)}
+                      inputMode="numeric"
+                      className="w-14"
+                      aria-label="Sessões planejadas"
+                    />
+                    <span>· Tempo total (min)</span>
+                    <Input
+                      value={ePMin}
+                      onChange={(e) => setEPMin(e.target.value)}
+                      inputMode="numeric"
+                      className="w-16"
+                      aria-label="Tempo total planejado em minutos"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
                     <Button
                       size="sm"
                       disabled={isPending}
@@ -691,6 +740,8 @@ function OptionBudget({
                               description: eDesc,
                               quantity: Number(eQty) || 1,
                               price: ePrice,
+                              plannedSessions: Number(ePSess) || null,
+                              plannedMinutes: Number(ePMin) || null,
                             }),
                           "Item atualizado.",
                           () => setEditingId(null)
@@ -711,10 +762,17 @@ function OptionBudget({
               ) : (
                 <div className="flex items-center justify-between gap-2">
                   <span className="min-w-0">
-                    {it.description}{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {it.quantity} × {formatBRL(it.unitPriceCents)}
+                    <span className="block">
+                      {it.description}{" "}
+                      <span className="text-xs text-muted-foreground">
+                        {it.quantity} × {formatBRL(it.unitPriceCents)}
+                      </span>
                     </span>
+                    {plannedText(it) && (
+                      <span className="block text-xs text-primary">
+                        Planejado: {plannedText(it)}
+                      </span>
+                    )}
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
                     <span className="font-medium">
@@ -731,6 +789,16 @@ function OptionBudget({
                             setEDesc(it.description);
                             setEPrice(centsToInput(it.unitPriceCents));
                             setEQty(String(it.quantity));
+                            setEPSess(
+                              it.plannedSessions != null
+                                ? String(it.plannedSessions)
+                                : ""
+                            );
+                            setEPMin(
+                              it.plannedMinutes != null
+                                ? String(it.plannedMinutes)
+                                : ""
+                            );
                           }}
                         >
                           <Pencil className="size-3.5" />
@@ -760,67 +828,113 @@ function OptionBudget({
       )}
 
       {canEdit && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t pt-2">
-          <select
-            value={procId}
-            onChange={(e) => pickProcedure(e.target.value)}
-            className="h-9 max-w-[180px] rounded-lg border border-input bg-transparent px-2 text-sm"
-          >
-            <option value="">Item personalizado</option>
-            {catalog.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({formatBRL(p.effectivePriceCents)})
-              </option>
-            ))}
-          </select>
-          <Input
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            placeholder="Descrição"
-            className="max-w-[180px]"
-          />
-          <Input
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            inputMode="numeric"
-            className="w-14"
-            aria-label="Quantidade"
-          />
-          <span className="text-sm text-muted-foreground">R$</span>
-          <Input
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            inputMode="decimal"
-            placeholder="0,00"
-            className="w-24"
-            aria-label="Valor unitário"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!desc.trim() || isPending}
-            onClick={() =>
-              run(
-                () =>
-                  addBudgetItem(optionId, {
-                    procedureId: procId || null,
-                    description: desc,
-                    quantity: Number(qty) || 1,
-                    price,
-                  }),
-                "Item adicionado.",
-                () => {
-                  setProcId("");
-                  setDesc("");
-                  setPrice("");
-                  setQty("1");
-                }
-              )
-            }
-          >
-            <Plus className="mr-1 size-4" />
-            Item
-          </Button>
+        <div className="mt-2 space-y-1.5 border-t pt-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <select
+              value={procId}
+              onChange={(e) => pickProcedure(e.target.value)}
+              className="h-9 max-w-[180px] rounded-lg border border-input bg-transparent px-2 text-sm"
+            >
+              <option value="">Item personalizado</option>
+              {catalog.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({formatBRL(p.effectivePriceCents)})
+                </option>
+              ))}
+            </select>
+            <Input
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="Descrição"
+              className="max-w-[180px]"
+            />
+            <Input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              inputMode="numeric"
+              className="w-14"
+              aria-label="Quantidade"
+            />
+            <span className="text-sm text-muted-foreground">R$</span>
+            <Input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              inputMode="decimal"
+              placeholder="0,00"
+              className="w-24"
+              aria-label="Valor unitário"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <span>Sessões</span>
+            <Input
+              value={pSess}
+              onChange={(e) => setPSess(e.target.value)}
+              inputMode="numeric"
+              className="w-14"
+              aria-label="Sessões planejadas"
+            />
+            <span>· Tempo total (min)</span>
+            <Input
+              value={pMin}
+              onChange={(e) => setPMin(e.target.value)}
+              inputMode="numeric"
+              className="w-16"
+              aria-label="Tempo total planejado em minutos"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!desc.trim() || isPending}
+              onClick={() =>
+                run(
+                  () =>
+                    addBudgetItem(optionId, {
+                      procedureId: procId || null,
+                      description: desc,
+                      quantity: Number(qty) || 1,
+                      price,
+                      plannedSessions: Number(pSess) || null,
+                      plannedMinutes: Number(pMin) || null,
+                    }),
+                  "Item adicionado.",
+                  () => {
+                    setProcId("");
+                    setDesc("");
+                    setPrice("");
+                    setQty("1");
+                    setPSess("");
+                    setPMin("");
+                  }
+                )
+              }
+            >
+              <Plus className="mr-1 size-4" />
+              Item
+            </Button>
+          </div>
+          {pickedRef && (
+            <div className="rounded-md bg-muted/40 p-1.5 text-xs text-muted-foreground">
+              <p>
+                Base sugerida — Rede:{" "}
+                {pickedRef.network
+                  ? `${formatSessions(pickedRef.network.count)} · ${formatMinutes(pickedRef.network.minutes)}`
+                  : "—"}
+                {pickedRef.unit && (
+                  <span className="text-primary">
+                    {" "}
+                    · Unidade: {formatSessions(pickedRef.unit.count)} ·{" "}
+                    {formatMinutes(pickedRef.unit.minutes)}
+                  </span>
+                )}
+              </p>
+              <p>
+                Média realizada (unidade / dentista):{" "}
+                <span className="italic">sem histórico ainda</span> — será
+                preenchida com as execuções.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

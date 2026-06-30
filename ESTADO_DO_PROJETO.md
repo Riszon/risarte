@@ -250,6 +250,17 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   unidades. Ajustes: o **relógio do protocolo** e o **histórico** ficam acessíveis
   também ao **editar** o procedimento; o **histórico** vira um painel reutilizável
   mostrado **só ao clicar** (`ChangeHistory`). Action `clearProcedureSessions`.
+  Mais 2 ajustes (v0.9.5): concordância "1 sessão/2 sessões" e linha
+  **Rede/Unidade** abaixo do nome do procedimento.
+- **E3 — Planejamento com sugestões (migração 0057, v0.9.6):** o item do plano
+  (`treatment_plan_option_items`) ganhou **planned_sessions** + **planned_total_minutes**.
+  No editor do plano (ficha + cockpit), ao escolher um procedimento o sistema
+  **sugere** sessões/tempo da **Unidade** (ou da **Rede**); o Planner **ajusta**
+  por procedimento. Mostra a **base sugerida (Rede/Unidade)** e as **médias reais
+  (unidade/dentista)** como "sem histórico ainda" (serão preenchidas na E5). Os
+  valores planejados seguem para o agendamento por sessão (E4). `protocolByProcedure`
+  carregado nas duas páginas; `BudgetItem` ganhou plannedSessions/plannedMinutes.
+  Próximas: **E4** (agendamento por sessão), **E5** (execução/auditoria + médias).
 
 Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
 estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);

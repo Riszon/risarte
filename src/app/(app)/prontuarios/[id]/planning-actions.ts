@@ -479,6 +479,11 @@ async function loadOptionContext(
   };
 }
 
+/** Normaliza um inteiro positivo opcional (sessões/minutos planejados). */
+function posIntOrNull(value: number | null | undefined): number | null {
+  return value != null && value > 0 ? Math.floor(value) : null;
+}
+
 export async function addBudgetItem(
   optionId: string,
   input: {
@@ -486,6 +491,8 @@ export async function addBudgetItem(
     description: string;
     quantity: number;
     price: string;
+    plannedSessions?: number | null;
+    plannedMinutes?: number | null;
   }
 ): Promise<PlanResult> {
   const description = input.description.trim();
@@ -512,6 +519,8 @@ export async function addBudgetItem(
     description,
     quantity,
     unit_price_cents: priceCents,
+    planned_sessions: posIntOrNull(input.plannedSessions),
+    planned_total_minutes: posIntOrNull(input.plannedMinutes),
     sort_order: count ?? 0,
   });
   if (error) {
@@ -525,7 +534,13 @@ export async function addBudgetItem(
 
 export async function editBudgetItem(
   itemId: string,
-  input: { description: string; quantity: number; price: string }
+  input: {
+    description: string;
+    quantity: number;
+    price: string;
+    plannedSessions?: number | null;
+    plannedMinutes?: number | null;
+  }
 ): Promise<PlanResult> {
   const description = input.description.trim();
   if (!description) return { ok: false, error: "Descreva o item do orçamento." };
@@ -548,7 +563,13 @@ export async function editBudgetItem(
 
   const { error } = await supabase
     .from("treatment_plan_option_items")
-    .update({ description, quantity, unit_price_cents: priceCents })
+    .update({
+      description,
+      quantity,
+      unit_price_cents: priceCents,
+      planned_sessions: posIntOrNull(input.plannedSessions),
+      planned_total_minutes: posIntOrNull(input.plannedMinutes),
+    })
     .eq("id", itemId);
   if (error) {
     console.error("editBudgetItem failed:", error.message);

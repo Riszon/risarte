@@ -30,6 +30,7 @@ import {
   type BudgetItem,
   type PricedProcedure,
   type Procedure,
+  type ProtocolRef,
   type UnitPrice,
 } from "@/lib/pricing";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
@@ -201,7 +202,7 @@ export default async function PlanningCockpitPage(
       const { data: itemRows } = await supabase
         .from("treatment_plan_option_items")
         .select(
-          "id, option_id, procedure_id, description, quantity, unit_price_cents, sort_order"
+          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, sort_order"
         )
         .in("option_id", optionIds)
         .order("sort_order")
@@ -213,6 +214,8 @@ export default async function PlanningCockpitPage(
             description: string;
             quantity: number;
             unit_price_cents: number;
+            planned_sessions: number | null;
+            planned_total_minutes: number | null;
             sort_order: number;
           }[]
         >();
@@ -224,6 +227,8 @@ export default async function PlanningCockpitPage(
           description: it.description,
           quantity: it.quantity,
           unitPriceCents: it.unit_price_cents,
+          plannedSessions: it.planned_sessions,
+          plannedMinutes: it.planned_total_minutes,
         });
         itemsByOption.set(it.option_id, list);
       }
@@ -248,6 +253,45 @@ export default async function PlanningCockpitPage(
       reviewNotes: planRow.review_notes,
       options,
     };
+  }
+
+  // -- Protocolos (Rede + unidade do cliente) — base de sessões/tempo (E3) --
+  const protocolByProcedure: Record<string, ProtocolRef> = {};
+  {
+    const { data: protoRows } = await supabase
+      .from("procedure_sessions")
+      .select("procedure_id, clinic_id, estimated_minutes")
+      .or(`clinic_id.is.null,clinic_id.eq.${client.clinic_id}`)
+      .returns<
+        {
+          procedure_id: string;
+          clinic_id: string | null;
+          estimated_minutes: number;
+        }[]
+      >();
+    const proto = new Map<
+      string,
+      { net: { count: number; minutes: number }; unit: { count: number; minutes: number } }
+    >();
+    for (const r of protoRows ?? []) {
+      const e =
+        proto.get(r.procedure_id) ??
+        { net: { count: 0, minutes: 0 }, unit: { count: 0, minutes: 0 } };
+      if (r.clinic_id === null) {
+        e.net.count += 1;
+        e.net.minutes += r.estimated_minutes;
+      } else {
+        e.unit.count += 1;
+        e.unit.minutes += r.estimated_minutes;
+      }
+      proto.set(r.procedure_id, e);
+    }
+    for (const [pid, e] of proto) {
+      protocolByProcedure[pid] = {
+        network: e.net.count > 0 ? e.net : null,
+        unit: e.unit.count > 0 ? e.unit : null,
+      };
+    }
   }
 
   // -- Catálogo de preços (preço efetivo da unidade do cliente) --
@@ -422,6 +466,7 @@ export default async function PlanningCockpitPage(
             inPlanningPhase={phase === "planning_center"}
             pillarSet={Boolean(client.methodology_pillar)}
             catalog={catalog}
+            protocols={protocolByProcedure}
           />
         </div>
       </div>
