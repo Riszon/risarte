@@ -965,6 +965,25 @@ export default async function ClientDetailPage(
     priceCatalog = resolveProcedurePrices(procedures, overrides);
   }
 
+  // -- Apresentação do plano (entrada): Planner monta, Comercial apresenta --
+  const canPresent =
+    session.isAdminMaster ||
+    isPlannerAnywhere ||
+    hasRoleInClinic(session, client.clinic_id, [
+      "commercial_consultant",
+      "clinical_coordinator",
+      "unit_manager",
+    ]);
+  let hasApprovedPlan = treatmentPlan?.status === "approved";
+  if (treatmentPlan === null && canPresent) {
+    const { count } = await supabase
+      .from("treatment_plans")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", client.id)
+      .eq("status", "approved");
+    hasApprovedPlan = (count ?? 0) > 0;
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -1015,6 +1034,16 @@ export default async function ClientDetailPage(
               fixedClinicId={scheduleClinicId}
               trigger={<Button size="sm">Novo agendamento</Button>}
             />
+          )}
+          {hasApprovedPlan && canPresent && (
+            <Button
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/apresentacao/${client.id}`} />}
+            >
+              Apresentação
+            </Button>
           )}
         </div>
       </div>

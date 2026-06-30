@@ -429,6 +429,15 @@ export default async function PlanningCockpitPage(
           >
             Ver ficha completa
           </Button>
+          {treatmentPlan?.status === "approved" && (
+            <Button
+              size="sm"
+              nativeButton={false}
+              render={<Link href={`/apresentacao/${client.id}`} />}
+            >
+              Apresentação
+            </Button>
+          )}
         </div>
       </div>
 

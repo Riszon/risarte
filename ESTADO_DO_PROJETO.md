@@ -303,9 +303,24 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   multi-seleção, duração soma sozinha → cria o caso do rateio;
   `createAppointment` lê `treatment_session_ids`). O painel da ficha mostra
   **"Concluído · durou X min"**. **Lote Procedimentos completo.**
+- **Apresentação do plano — Camada 1 (interna) (sem migração, v0.10.1):** decisão
+  do dono — **gerar pode ser interno OU externo (Gamma)**; **focar agora na
+  Camada 1 (interna)**, deixando a integração com o Gamma para a Camada 2.
+  Tela **"Modo Apresentação"** (`/apresentacao/[clientId]` + `presentation-view.tsx`)
+  montada da **opção principal aprovada**: capa (cliente/unidade/data/**pilar do
+  tratamento**), queixa/condição (diagnóstico + considerações clínicas), imagens
+  (URLs assinadas, só dentro do sistema — LGPD), proposta (procedimentos,
+  sessões, tempo, valor total) e próximas etapas. Botão **Baixar PDF** (impressão
+  isolada via `@media print`). Entrada: botão **"Apresentação"** na ficha
+  (Planner/Coordenador/Gerente/**Comercial**, quando o plano está aprovado) e no
+  cabeçalho do **cockpit**. Acesso na página: Planner, Comercial, Coordenador,
+  Gerente, Admin. **Camada 2 (Gamma)** a seguir: exige chave de API do Gamma +
+  integração externa (envia só os textos; fotos ficam no sistema).
 
-Lote seguinte da lista original do dono (a fazer): **Apresentação do plano**
-(PPT/PDF para o Comercial após a aprovação).
+Lote seguinte (a fazer): **Apresentação do plano — Camada 2 (Gamma):** botão
+"Gerar no Gamma" que envia o texto do plano (sem fotos do paciente) para o Gamma
+gerar o deck + exportações PDF/PPTX. Precisa da chave de API do Gamma (fluxo de
+clipboard) e aceitar o envio do resumo clínico textual para fora.
 
 ## 3. Próximos passos (ordem de prioridade)
 
