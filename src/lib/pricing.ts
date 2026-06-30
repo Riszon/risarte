@@ -97,6 +97,14 @@ export type ProtocolRef = {
   unit: { count: number; minutes: number } | null;
 };
 
+/** Média REALIZADA de um procedimento na unidade (E5) — sessões e tempo total
+ * por tratamento concluído, com o tamanho da amostra. */
+export type RealStat = {
+  avgSessions: number;
+  avgTotalMinutes: number;
+  sample: number;
+};
+
 /** Merge the catalog with a unit's overrides into effective prices. */
 export function resolveProcedurePrices(
   procedures: Procedure[],

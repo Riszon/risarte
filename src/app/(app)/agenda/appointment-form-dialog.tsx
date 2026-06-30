@@ -41,10 +41,12 @@ import {
   getClientSchedulingInfo,
   getDayBusyTimes,
   getNextAvailableSlots,
+  getProviderProcedureStats,
   updateAppointment,
   type AgendaFormConfig,
   type AvailableSlot,
   type BusyRange,
+  type PendingSession,
   type SchedulingInfo,
 } from "./actions";
 import { AgendaPeekDialog } from "./agenda-peek-dialog";
@@ -238,10 +240,13 @@ export function AppointmentFormDialog({
         : "60"
   );
   const [notes, setNotes] = useState(appointment?.notes ?? "");
-  const [sessionId, setSessionId] = useState(treatmentSessionId ?? "");
-  const [pendingSessions, setPendingSessions] = useState<
-    { id: string; label: string; minutes: number | null }[]
-  >([]);
+  const [sessionIds, setSessionIds] = useState<string[]>(
+    treatmentSessionId ? [treatmentSessionId] : []
+  );
+  const [pendingSessions, setPendingSessions] = useState<PendingSession[]>([]);
+  const [providerStats, setProviderStats] = useState<
+    Record<string, { avgMinutes: number; sample: number }>
+  >({});
 
   const clientItems = effectiveClients.map((c) => ({
     value: c.id,
@@ -474,7 +479,7 @@ export function AppointmentFormDialog({
   function handleClientChange(id: string) {
     setClientId(id);
     setSchedulingInfo(null);
-    setSessionId("");
+    setSessionIds([]);
     setPendingSessions([]);
     startTransition(async () => {
       const info = await getClientSchedulingInfo(id);
@@ -485,6 +490,40 @@ export function AppointmentFormDialog({
       }
       setPendingSessions(await getClientPendingSessions(id));
     });
+  }
+
+  // Procedimentos distintos das sessões marcadas (para a média do dentista).
+  const selectedProcedureIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of pendingSessions) {
+      if (sessionIds.includes(s.id) && s.procedureId) set.add(s.procedureId);
+    }
+    return Array.from(set);
+  }, [pendingSessions, sessionIds]);
+
+  // E5: média real do dentista escolhido para os procedimentos marcados.
+  useEffect(() => {
+    let cancelled = false;
+    getProviderProcedureStats(providerId, selectedProcedureIds).then((r) => {
+      if (!cancelled) setProviderStats(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [providerId, selectedProcedureIds]);
+
+  // Marca/desmarca uma sessão; a duração soma o tempo planejado das marcadas.
+  function toggleSession(s: PendingSession) {
+    const next = sessionIds.includes(s.id)
+      ? sessionIds.filter((x) => x !== s.id)
+      : [...sessionIds, s.id];
+    setSessionIds(next);
+    const totalMin = pendingSessions
+      .filter((p) => next.includes(p.id))
+      .reduce((sum, p) => sum + (p.minutes ?? 0), 0);
+    if (totalMin > 0) {
+      setDuration(String(Math.max(15, Math.round(totalMin / 15) * 15)));
+    }
   }
 
   function doSubmit(slotDate: string, slotTime: string) {
@@ -500,7 +539,9 @@ export function AppointmentFormDialog({
     formData.set("provider_user_id", providerValid ? providerId : "");
     formData.set("room_id", isOnline ? "" : effectiveRoomId);
     formData.set("notes", notes);
-    if (sessionId) formData.set("treatment_session_id", sessionId);
+    if (sessionIds.length > 0) {
+      formData.set("treatment_session_ids", sessionIds.join(","));
+    }
 
     startTransition(async () => {
       const result = isEdit
@@ -832,37 +873,51 @@ export function AppointmentFormDialog({
           {!isEdit && pendingSessions.length > 0 && (
             <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
               <Label>Sessões do plano a agendar</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Marque uma — ou mais de uma, se o dentista vai executar vários
+                procedimentos neste mesmo horário (a duração soma sozinha).
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {pendingSessions.map((s) => (
                   <Button
                     key={s.id}
                     type="button"
                     size="sm"
-                    variant={sessionId === s.id ? "default" : "outline"}
-                    onClick={() => {
-                      if (sessionId === s.id) {
-                        setSessionId("");
-                      } else {
-                        setSessionId(s.id);
-                        if (s.minutes) {
-                          setDuration(
-                            String(Math.max(15, Math.round(s.minutes / 15) * 15))
-                          );
-                        }
-                      }
-                    }}
+                    variant={sessionIds.includes(s.id) ? "default" : "outline"}
+                    onClick={() => toggleSession(s)}
                   >
                     {s.label}
                     {s.minutes ? ` (${s.minutes} min)` : ""}
                   </Button>
                 ))}
               </div>
-              {sessionId && (
+              {sessionIds.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Este agendamento será vinculado à sessão selecionada (marca como
-                  agendada).
+                  {sessionIds.length === 1
+                    ? "Este agendamento será vinculado à sessão selecionada (marca como agendada)."
+                    : `${sessionIds.length} sessões serão vinculadas a este agendamento; o tempo real será rateado entre elas ao concluir.`}
                 </p>
               )}
+              {providerValid &&
+                selectedProcedureIds.some((pid) => providerStats[pid]) && (
+                  <div className="rounded-md bg-emerald-50 p-1.5 text-xs text-emerald-800">
+                    {selectedProcedureIds.map((pid) => {
+                      const st = providerStats[pid];
+                      if (!st) return null;
+                      const procName =
+                        pendingSessions
+                          .find((s) => s.procedureId === pid)
+                          ?.label.split(" — ")[0] ?? "Procedimento";
+                      return (
+                        <p key={pid}>
+                          Média deste dentista — {procName}: {st.avgMinutes}{" "}
+                          min/sessão ({st.sample}{" "}
+                          {st.sample === 1 ? "execução" : "execuções"})
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
             </div>
           )}
 

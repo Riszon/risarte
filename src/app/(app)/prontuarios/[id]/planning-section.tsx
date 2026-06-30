@@ -45,6 +45,7 @@ import {
   type BudgetItem,
   type PricedProcedure,
   type ProtocolRef,
+  type RealStat,
 } from "@/lib/pricing";
 import {
   addBudgetItem,
@@ -119,6 +120,7 @@ export function PlanningSection({
   inPlanningPhase,
   catalog,
   protocols,
+  realStats,
   currentPillar,
   cockpitHref,
 }: {
@@ -130,6 +132,7 @@ export function PlanningSection({
   inPlanningPhase: boolean;
   catalog: PricedProcedure[];
   protocols: Record<string, ProtocolRef>;
+  realStats: Record<string, RealStat>;
   currentPillar: MethodologyPillar | null;
   /** (Ficha) link para abrir o cockpit do Planner; ausente no próprio cockpit. */
   cockpitHref?: string;
@@ -515,6 +518,7 @@ export function PlanningSection({
                     items={o.items}
                     catalog={catalog}
                     protocols={protocols}
+                    realStats={realStats}
                     canEdit={canEditContent}
                     summaryOnly={!canSeePrices}
                   />
@@ -781,6 +785,7 @@ function OptionBudget({
   items,
   catalog,
   protocols,
+  realStats,
   canEdit,
   summaryOnly,
 }: {
@@ -788,6 +793,7 @@ function OptionBudget({
   items: BudgetItem[];
   catalog: PricedProcedure[];
   protocols: Record<string, ProtocolRef>;
+  realStats: Record<string, RealStat>;
   canEdit: boolean;
   /** Coordenador view: show only the option TOTAL, not per-item prices (F4). */
   summaryOnly: boolean;
@@ -812,6 +818,7 @@ function OptionBudget({
 
   const total = budgetTotalCents(items);
   const pickedRef = procId ? protocols[procId] : undefined;
+  const pickedReal = procId ? realStats[procId] : undefined;
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -1146,9 +1153,17 @@ function OptionBudget({
                 )}
               </p>
               <p>
-                Média realizada (unidade / dentista):{" "}
-                <span className="italic">sem histórico ainda</span> — será
-                preenchida com as execuções.
+                Média realizada na unidade:{" "}
+                {pickedReal ? (
+                  <span className="text-emerald-700">
+                    {formatSessions(Math.round(pickedReal.avgSessions))} ·{" "}
+                    {formatMinutes(Math.round(pickedReal.avgTotalMinutes))} (
+                    {pickedReal.sample}{" "}
+                    {pickedReal.sample === 1 ? "tratamento" : "tratamentos"})
+                  </span>
+                ) : (
+                  <span className="italic">sem histórico ainda</span>
+                )}
               </p>
             </div>
           )}

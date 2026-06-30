@@ -58,6 +58,7 @@ import {
   type PricedProcedure,
   type Procedure,
   type ProtocolRef,
+  type RealStat,
   type UnitPrice,
 } from "@/lib/pricing";
 import { ClientShares, type ActiveShare } from "./client-shares";
@@ -470,7 +471,7 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, session_index, session_total, name, planned_minutes, status"
+        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status"
       )
       .eq("client_id", id)
       .order("created_at")
@@ -482,6 +483,7 @@ export default async function ClientDetailPage(
           session_total: number;
           name: string | null;
           planned_minutes: number | null;
+          actual_minutes: number | null;
           status: "pending" | "scheduled" | "done";
         }[]
       >();
@@ -492,6 +494,7 @@ export default async function ClientDetailPage(
       sessionTotal: r.session_total,
       name: r.name,
       plannedMinutes: r.planned_minutes,
+      actualMinutes: r.actual_minutes,
       status: r.status,
     }));
   }
@@ -748,6 +751,7 @@ export default async function ClientDetailPage(
     hasRoleInClinic(session, client.clinic_id, ["clinical_coordinator"]);
   let treatmentPlan: TreatmentPlan | null = null;
   const protocolByProcedure: Record<string, ProtocolRef> = {};
+  const realStatsByProcedure: Record<string, RealStat> = {};
   if (canViewPlanning) {
     const { data: planRows } = await supabase
       .from("treatment_plans")
@@ -881,6 +885,24 @@ export default async function ClientDetailPage(
       protocolByProcedure[pid] = {
         network: e.net.count > 0 ? e.net : null,
         unit: e.unit.count > 0 ? e.unit : null,
+      };
+    }
+
+    // Médias REALIZADAS por procedimento na unidade do cliente (E5).
+    const { data: statRows } = await supabase.rpc("procedure_real_stats", {
+      p_clinic_id: client.clinic_id,
+      p_procedure_ids: null,
+    });
+    for (const r of (statRows ?? []) as {
+      procedure_id: string;
+      avg_sessions: number;
+      avg_total_minutes: number;
+      sample: number;
+    }[]) {
+      realStatsByProcedure[r.procedure_id] = {
+        avgSessions: Number(r.avg_sessions),
+        avgTotalMinutes: Number(r.avg_total_minutes),
+        sample: Number(r.sample),
       };
     }
   }
@@ -1101,6 +1123,7 @@ export default async function ClientDetailPage(
           inPlanningPhase={client.journey_phase === "planning_center"}
           catalog={priceCatalog}
           protocols={protocolByProcedure}
+          realStats={realStatsByProcedure}
           currentPillar={
             client.methodology_pillar as MethodologyPillar | null
           }

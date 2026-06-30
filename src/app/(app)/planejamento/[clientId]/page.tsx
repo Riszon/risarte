@@ -31,6 +31,7 @@ import {
   type PricedProcedure,
   type Procedure,
   type ProtocolRef,
+  type RealStat,
   type UnitPrice,
 } from "@/lib/pricing";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
@@ -294,6 +295,27 @@ export default async function PlanningCockpitPage(
     }
   }
 
+  // -- Médias REALIZADAS por procedimento na unidade do cliente (E5) --
+  const realStatsByProcedure: Record<string, RealStat> = {};
+  {
+    const { data: statRows } = await supabase.rpc("procedure_real_stats", {
+      p_clinic_id: client.clinic_id,
+      p_procedure_ids: null,
+    });
+    for (const r of (statRows ?? []) as {
+      procedure_id: string;
+      avg_sessions: number;
+      avg_total_minutes: number;
+      sample: number;
+    }[]) {
+      realStatsByProcedure[r.procedure_id] = {
+        avgSessions: Number(r.avg_sessions),
+        avgTotalMinutes: Number(r.avg_total_minutes),
+        sample: Number(r.sample),
+      };
+    }
+  }
+
   // -- Catálogo de preços (preço efetivo da unidade do cliente) --
   const [{ data: procRows }, { data: priceRows }] = await Promise.all([
     supabase
@@ -466,6 +488,7 @@ export default async function PlanningCockpitPage(
             inPlanningPhase={phase === "planning_center"}
             catalog={catalog}
             protocols={protocolByProcedure}
+            realStats={realStatsByProcedure}
             currentPillar={
               client.methodology_pillar as MethodologyPillar | null
             }

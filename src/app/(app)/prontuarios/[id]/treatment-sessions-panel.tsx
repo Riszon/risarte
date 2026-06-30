@@ -15,6 +15,7 @@ export type TreatmentSession = {
   sessionTotal: number;
   name: string | null;
   plannedMinutes: number | null;
+  actualMinutes: number | null;
   status: "pending" | "scheduled" | "done";
 };
 
@@ -92,6 +93,9 @@ export function TreatmentSessionsPanel({
                       variant={s.status === "pending" ? "outline" : "secondary"}
                     >
                       {STATUS_LABEL[s.status]}
+                      {s.status === "done" && s.actualMinutes
+                        ? ` · durou ${s.actualMinutes} min`
+                        : ""}
                     </Badge>
                     {canSchedule && s.status === "pending" && (
                       <AppointmentFormDialog

@@ -407,19 +407,25 @@ export async function createAppointment(
     return { ok: false, error: "Não foi possível criar o agendamento." };
   }
 
-  // E4b: se o agendamento é de uma sessão planejada, vincula e marca agendada.
-  const treatmentSessionId = String(
-    formData.get("treatment_session_id") ?? ""
-  ).trim();
-  if (treatmentSessionId) {
+  // E4b/E5: vincula o agendamento às sessões planejadas (uma ou várias — quando
+  // o dentista executa mais de um procedimento no mesmo horário) e marca-as
+  // como agendadas. O primeiro id fica em appointments.treatment_session_id
+  // (referência principal); o vínculo completo vai em treatment_sessions.
+  const sessionIds = String(formData.get("treatment_session_ids") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const legacyId = String(formData.get("treatment_session_id") ?? "").trim();
+  if (sessionIds.length === 0 && legacyId) sessionIds.push(legacyId);
+  if (sessionIds.length > 0) {
     await supabase
       .from("appointments")
-      .update({ treatment_session_id: treatmentSessionId })
+      .update({ treatment_session_id: sessionIds[0] })
       .eq("id", data.id);
     await supabase
       .from("treatment_sessions")
       .update({ status: "scheduled", appointment_id: data.id })
-      .eq("id", treatmentSessionId);
+      .in("id", sessionIds);
   }
 
   await logAudit({
@@ -432,16 +438,23 @@ export async function createAppointment(
   return { ok: true };
 }
 
+export type PendingSession = {
+  id: string;
+  label: string;
+  minutes: number | null;
+  procedureId: string | null;
+};
+
 /** Sessões planejadas ainda não agendadas de um cliente (E4b — sugestão na agenda). */
 export async function getClientPendingSessions(
   clientId: string
-): Promise<{ id: string; label: string; minutes: number | null }[]> {
+): Promise<PendingSession[]> {
   if (!clientId) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("treatment_sessions")
     .select(
-      "id, procedure_name, session_index, session_total, name, planned_minutes"
+      "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes"
     )
     .eq("client_id", clientId)
     .eq("status", "pending")
@@ -449,6 +462,7 @@ export async function getClientPendingSessions(
     .returns<
       {
         id: string;
+        procedure_id: string | null;
         procedure_name: string;
         session_index: number;
         session_total: number;
@@ -460,7 +474,35 @@ export async function getClientPendingSessions(
     id: r.id,
     label: `${r.procedure_name} — ${r.name ?? `Sessão ${r.session_index} de ${r.session_total}`}`,
     minutes: r.planned_minutes,
+    procedureId: r.procedure_id,
   }));
+}
+
+/** Média REAL de minutos por sessão de um dentista, por procedimento (E5 —
+ * sugestão ao escolher procedimento + dentista na agenda). */
+export async function getProviderProcedureStats(
+  providerUserId: string,
+  procedureIds: string[]
+): Promise<Record<string, { avgMinutes: number; sample: number }>> {
+  const ids = procedureIds.filter(Boolean);
+  if (!providerUserId || ids.length === 0) return {};
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("provider_procedure_minutes", {
+    p_provider_id: providerUserId,
+    p_procedure_ids: ids,
+  });
+  const out: Record<string, { avgMinutes: number; sample: number }> = {};
+  for (const r of (data ?? []) as {
+    procedure_id: string;
+    avg_minutes: number;
+    sample: number;
+  }[]) {
+    out[r.procedure_id] = {
+      avgMinutes: Math.round(Number(r.avg_minutes)),
+      sample: Number(r.sample),
+    };
+  }
+  return out;
 }
 
 /** Reschedule/change an appointment. Every change is recorded (LGPD audit). */

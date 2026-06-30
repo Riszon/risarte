@@ -285,12 +285,27 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   formulário da **Agenda**, ao escolher um cliente, aparecem **chips das sessões
   pendentes do plano** (`getClientPendingSessions`) — clicar preenche a duração e
   vincula o agendamento à sessão. `AppointmentFormDialog` ganhou
-  `treatmentSessionId`. **E5** (Dentista marca executada → tempo real pelo
-  atendimento, rateado por procedimento → médias unidade/dentista) a seguir.
+  `treatmentSessionId`. **E5** (execução + médias reais) a seguir.
+- **E5 — Execução das sessões + médias reais (migração 0059, v0.10.0):** quando o
+  dentista **conclui o atendimento** (painel `/atendimento` → `update_attendance`),
+  as sessões ligadas ao agendamento viram **"Concluído"** com o **tempo real** de
+  atendimento (chamada→conclusão). Quando o agendamento executou **mais de uma
+  sessão/procedimento**, o tempo é **rateado** proporcionalmente ao tempo
+  planejado de cada um (rateio igual quando não há tempo planejado) — helper
+  `settle_treatment_sessions` chamado de dentro do `update_attendance`; colunas
+  novas `treatment_sessions.actual_minutes` + `executed_by`. As médias reais
+  alimentam: (a) o **editor do plano** — placeholder "sem histórico ainda" agora
+  mostra a **média realizada na unidade** (`procedure_real_stats`, considera só
+  tratamentos totalmente concluídos); (b) a **agenda** — ao marcar sessões + um
+  dentista, mostra a **média real daquele dentista** por procedimento
+  (`provider_procedure_minutes` / `getProviderProcedureStats`). O formulário da
+  agenda passou a permitir **marcar mais de uma sessão** no mesmo horário (chips
+  multi-seleção, duração soma sozinha → cria o caso do rateio;
+  `createAppointment` lê `treatment_session_ids`). O painel da ficha mostra
+  **"Concluído · durou X min"**. **Lote Procedimentos completo.**
 
-Lotes seguintes da lista original do dono (a fazer): **Procedimentos** (tempo
-estimado → ajusta duração no agendamento e tempo total do plano; planilha-modelo);
-**Apresentação do plano** (PPT/PDF para o Comercial).
+Lote seguinte da lista original do dono (a fazer): **Apresentação do plano**
+(PPT/PDF para o Comercial após a aprovação).
 
 ## 3. Próximos passos (ordem de prioridade)
 
