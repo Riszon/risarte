@@ -1,0 +1,310 @@
+import "server-only";
+import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { CLINICAL_BUCKET } from "@/lib/clinical";
+import { PILLAR_LABELS, type MethodologyPillar } from "@/lib/journey";
+import {
+  budgetTotalCents,
+  formatBRL,
+  formatMinutes,
+  formatSessions,
+  type BudgetItem,
+} from "@/lib/pricing";
+import type { PresentationData } from "./presentation-view";
+
+export type LoadResult =
+  | { ok: true; data: PresentationData; clinicId: string; hasApprovedPlan: boolean }
+  | { ok: false; reason: "not_found" | "forbidden" };
+
+/** Carrega os dados da apresentação (opção principal aprovada) e valida o acesso.
+ * Usado pela página (server component) e pela action de geração no Gamma. */
+export async function loadPresentationData(
+  clientId: string
+): Promise<LoadResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select(
+      "id, full_name, code, clinic_id, journey_phase, methodology_pillar, clinic:clinics!clients_clinic_id_fkey ( name )"
+    )
+    .eq("id", clientId)
+    .single();
+  if (!client) return { ok: false, reason: "not_found" };
+
+  const isPlannerAnywhere = Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("planner_dentist")
+  );
+  const canPresent =
+    session.isAdminMaster ||
+    isPlannerAnywhere ||
+    hasRoleInClinic(session, client.clinic_id, [
+      "commercial_consultant",
+      "clinical_coordinator",
+      "unit_manager",
+    ]);
+  if (!canPresent) return { ok: false, reason: "forbidden" };
+
+  // -- Plano aprovado: opção principal aprovada (ou a primeira aprovada) --
+  const { data: planRows } = await supabase
+    .from("treatment_plans")
+    .select("id, status, diagnosis, objectives, planning_notes")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .returns<
+      {
+        id: string;
+        status: string;
+        diagnosis: string | null;
+        objectives: string | null;
+        planning_notes: string | null;
+      }[]
+    >();
+  const planRow = planRows?.[0];
+  const hasApprovedPlan = planRow?.status === "approved";
+
+  let diagnosis: string | null = null;
+  let objectives: string | null = null;
+  let planningNotes: string | null = null;
+  let option: PresentationData["option"] = null;
+  let sessionGroups: PresentationData["sessionGroups"] = [];
+  if (planRow) {
+    diagnosis = planRow.diagnosis;
+    objectives = planRow.objectives;
+    planningNotes = planRow.planning_notes;
+    const { data: optRows } = await supabase
+      .from("treatment_plan_options")
+      .select("id, is_primary, title, sort_order, review_status")
+      .eq("plan_id", planRow.id)
+      .eq("review_status", "approved")
+      .order("is_primary", { ascending: false })
+      .order("sort_order")
+      .limit(1)
+      .returns<
+        {
+          id: string;
+          is_primary: boolean;
+          title: string;
+          sort_order: number;
+          review_status: string;
+        }[]
+      >();
+    const opt = optRows?.[0];
+    if (opt) {
+      const { data: itemRows } = await supabase
+        .from("treatment_plan_option_items")
+        .select(
+          "id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, sort_order"
+        )
+        .eq("option_id", opt.id)
+        .order("sort_order")
+        .returns<
+          {
+            id: string;
+            procedure_id: string | null;
+            description: string;
+            quantity: number;
+            unit_price_cents: number;
+            planned_sessions: number | null;
+            planned_total_minutes: number | null;
+            sort_order: number;
+          }[]
+        >();
+      const items: BudgetItem[] = (itemRows ?? []).map((it) => ({
+        id: it.id,
+        procedureId: it.procedure_id,
+        description: it.description,
+        quantity: it.quantity,
+        unitPriceCents: it.unit_price_cents,
+        plannedSessions: it.planned_sessions,
+        plannedMinutes: it.planned_total_minutes,
+      }));
+      const totalSessions = items.reduce(
+        (s, it) => s + (it.plannedSessions ?? 0),
+        0
+      );
+      const totalMinutes = items.reduce(
+        (s, it) => s + (it.plannedMinutes ?? 0),
+        0
+      );
+      const summaryLabel =
+        totalSessions > 0 || totalMinutes > 0
+          ? [
+              totalSessions > 0 ? formatSessions(totalSessions) : null,
+              totalMinutes > 0 ? formatMinutes(totalMinutes) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : null;
+      option = {
+        title: opt.title,
+        items: items.map((it) => ({
+          description: it.description,
+          quantity: it.quantity,
+          sessionsLabel: it.plannedSessions
+            ? formatSessions(it.plannedSessions)
+            : null,
+          minutesLabel: it.plannedMinutes
+            ? formatMinutes(it.plannedMinutes)
+            : null,
+          priceLabel:
+            it.unitPriceCents > 0
+              ? formatBRL(it.unitPriceCents * it.quantity)
+              : null,
+        })),
+        totalLabel:
+          budgetTotalCents(items) > 0 ? formatBRL(budgetTotalCents(items)) : null,
+        summaryLabel,
+      };
+
+      // Sessão por sessão: protocolo de cada procedimento (unidade > Rede);
+      // sem protocolo, cai na contagem planejada do item.
+      const procIds = items
+        .map((it) => it.procedureId)
+        .filter((x): x is string => Boolean(x));
+      const protoByProc = new Map<
+        string,
+        {
+          unit: { name: string | null; minutes: number }[];
+          net: { name: string | null; minutes: number }[];
+        }
+      >();
+      if (procIds.length > 0) {
+        const { data: protoRows } = await supabase
+          .from("procedure_sessions")
+          .select(
+            "procedure_id, clinic_id, session_index, name, estimated_minutes"
+          )
+          .in("procedure_id", procIds)
+          .or(`clinic_id.is.null,clinic_id.eq.${client.clinic_id}`)
+          .order("session_index")
+          .returns<
+            {
+              procedure_id: string;
+              clinic_id: string | null;
+              session_index: number;
+              name: string | null;
+              estimated_minutes: number;
+            }[]
+          >();
+        for (const r of protoRows ?? []) {
+          const e = protoByProc.get(r.procedure_id) ?? { unit: [], net: [] };
+          (r.clinic_id === null ? e.net : e.unit).push({
+            name: r.name,
+            minutes: r.estimated_minutes,
+          });
+          protoByProc.set(r.procedure_id, e);
+        }
+      }
+      sessionGroups = items.map((it) => {
+        const proto = it.procedureId
+          ? protoByProc.get(it.procedureId)
+          : undefined;
+        const base =
+          proto && proto.unit.length > 0 ? proto.unit : (proto?.net ?? []);
+        let sessions: { label: string; minutesLabel: string | null }[];
+        if (base.length > 0) {
+          sessions = base.map((s, i) => ({
+            label: s.name?.trim() || `Sessão ${i + 1}`,
+            minutesLabel: s.minutes ? formatMinutes(s.minutes) : null,
+          }));
+        } else {
+          const n = Math.max(1, it.plannedSessions ?? 1);
+          const per =
+            it.plannedMinutes && n > 0 ? Math.round(it.plannedMinutes / n) : null;
+          sessions = Array.from({ length: n }, (_, i) => ({
+            label: `Sessão ${i + 1}`,
+            minutesLabel: per ? formatMinutes(per) : null,
+          }));
+        }
+        return {
+          procedure: it.description,
+          quantity: it.quantity,
+          repeatNote:
+            it.quantity > 1 && base.length > 0
+              ? `Este procedimento se repete ${it.quantity}×.`
+              : null,
+          sessions,
+        };
+      });
+    }
+  }
+
+  // -- Considerações clínicas (queixa/condição) --
+  const { data: noteRows } = await supabase
+    .from("clinical_notes")
+    .select("body, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .returns<{ body: string; created_at: string }[]>();
+  const considerations = (noteRows ?? [])
+    .map((n) => n.body)
+    .filter((b): b is string => Boolean(b && b.trim()))
+    .slice(0, 6);
+
+  // -- Imagens clínicas (somente imagens; URLs assinadas) --
+  const { data: mediaRows } = await supabase
+    .from("clinical_media")
+    .select("id, original_name, storage_path, content_type, kind, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: true })
+    .returns<
+      {
+        id: string;
+        original_name: string | null;
+        storage_path: string | null;
+        content_type: string | null;
+        kind: string;
+        created_at: string;
+      }[]
+    >();
+  const imageRows = (mediaRows ?? []).filter(
+    (m) =>
+      m.storage_path &&
+      (m.content_type?.startsWith("image/") ||
+        m.kind === "photo" ||
+        m.kind === "radiograph" ||
+        m.kind === "scan")
+  );
+  const photos = (
+    await Promise.all(
+      imageRows.map(async (m) => {
+        const { data: signed } = await supabase.storage
+          .from(CLINICAL_BUCKET)
+          .createSignedUrl(m.storage_path as string, 3600);
+        return signed?.signedUrl
+          ? { id: m.id, url: signed.signedUrl, name: m.original_name }
+          : null;
+      })
+    )
+  ).filter((p): p is { id: string; url: string; name: string | null } =>
+    Boolean(p)
+  );
+
+  const clinicRaw = (
+    client as unknown as { clinic: { name: string } | { name: string }[] | null }
+  ).clinic;
+  const clinicName =
+    (Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw)?.name ?? null;
+
+  const pillar = client.methodology_pillar as MethodologyPillar | null;
+
+  const data: PresentationData = {
+    clientName: client.full_name,
+    clientCode: client.code,
+    clinicName,
+    pillarLabel: pillar ? PILLAR_LABELS[pillar] : null,
+    dateLabel: new Date().toLocaleDateString("pt-BR"),
+    diagnosis,
+    objectives,
+    planningNotes,
+    considerations,
+    photos,
+    option,
+    sessionGroups,
+  };
+
+  return { ok: true, data, clinicId: client.clinic_id, hasApprovedPlan };
+}

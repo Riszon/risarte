@@ -324,13 +324,23 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   feito + tempo, puxada do **protocolo** de cada procedimento — unidade > Rede;
   sem protocolo, cai na contagem planejada). Linguagem voltada ao cliente +
   **aviso de fluxo** (só na tela): "plano montado pelo Planner; o Consultor
-  Comercial apresenta". **Decisão do dono:** na Camada 2 as **fotos VÃO** para o
-  Gamma (revisão da decisão anterior de só-textos).
-
-Lote seguinte (a fazer): **Apresentação do plano — Camada 2 (Gamma):** botão
-"Gerar no Gamma" que envia o conteúdo do plano **(incluindo fotos do paciente —
-decisão do dono)** para o Gamma gerar o deck + exportações PDF/PPTX. Precisa da
-**chave de API do Gamma** (fluxo de clipboard) e da integração com a API externa.
+  Comercial apresenta".
+- **Apresentação — Camada 2 (Gamma) (sem migração, v0.10.3):** botão **"Gerar no
+  Gamma"** na tela de apresentação. Integração com a **Generate API do Gamma**
+  (`https://public-api.gamma.app/**v1.0**/generations`, header `X-API-KEY`,
+  `GAMMA_API_KEY` em env): POST devolve `generationId`; o navegador faz **polling**
+  de `getGammaStatus` até `completed`, que traz o **gammaUrl** (deck editável).
+  Carregamento dos dados extraído para `presentation-data.ts` (compartilhado
+  page+action); `actions.ts` monta o texto (markdown, 1 card por bloco com
+  `---`), `imageOptions.source=noImages`, `textOptions.language=pt-br`. **Decisão
+  do dono (achado técnico):** a API do Gamma **não insere as fotos específicas do
+  paciente** — o deck é gerado **sem imagens**; o usuário **abre o gammaUrl,
+  adiciona as fotos e exporta PPTX/PDF lá** (as fotos com qualidade seguem no PDF
+  interno da Camada 1). Cada geração consome ~**3 créditos** da conta Gamma.
+  `logAudit` action `export` entityType `presentation`. **Apresentação do plano
+  (lote original) COMPLETA.** Pendência operacional: o dono deve cadastrar
+  `GAMMA_API_KEY` nas **Environment Variables da Vercel** para funcionar no ar
+  (no local já está no `.env.local`, fora do git).
 
 ## 3. Próximos passos (ordem de prioridade)
 

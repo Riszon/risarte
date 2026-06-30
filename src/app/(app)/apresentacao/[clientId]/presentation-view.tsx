@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Printer, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, Printer, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { generateGammaDeck, getGammaStatus } from "./actions";
 
 export type PresentationOptionItem = {
   description: string;
@@ -77,24 +79,124 @@ function Slide({
   );
 }
 
-export function PresentationView({ data }: { data: PresentationData }) {
+type GammaState =
+  | { phase: "idle" }
+  | { phase: "generating" }
+  | { phase: "ready"; url: string }
+  | { phase: "error"; error: string };
+
+export function PresentationView({
+  data,
+  clientId,
+}: {
+  data: PresentationData;
+  clientId: string;
+}) {
   const router = useRouter();
   const [zoom, setZoom] = useState<number | null>(null);
+  const [gamma, setGamma] = useState<GammaState>({ phase: "idle" });
+  const [generationId, setGenerationId] = useState<string | null>(null);
+
+  // Polling do status da geração no Gamma (até completar).
+  useEffect(() => {
+    if (!generationId) return;
+    let active = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const tick = async () => {
+      const st = await getGammaStatus(generationId);
+      if (!active) return;
+      if (st.status === "completed" && st.gammaUrl) {
+        setGamma({ phase: "ready", url: st.gammaUrl });
+        if (timer) clearInterval(timer);
+      } else if (st.status === "error") {
+        setGamma({
+          phase: "error",
+          error: "Não foi possível concluir a geração no Gamma.",
+        });
+        if (timer) clearInterval(timer);
+      }
+    };
+    timer = setInterval(tick, 5000);
+    tick();
+    return () => {
+      active = false;
+      if (timer) clearInterval(timer);
+    };
+  }, [generationId]);
+
+  async function startGamma() {
+    setGamma({ phase: "generating" });
+    setGenerationId(null);
+    const res = await generateGammaDeck(clientId);
+    if (res.ok) {
+      setGenerationId(res.generationId);
+    } else {
+      setGamma({ phase: "error", error: res.error });
+      toast.error(res.error);
+    }
+  }
 
   return (
     <>
       <style>{PRINT_CSS}</style>
 
-      <div className="no-print mb-4 flex items-center justify-between gap-2">
+      <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="mr-1 size-4" />
           Voltar
         </Button>
-        <Button size="sm" onClick={() => window.print()}>
-          <Printer className="mr-1 size-4" />
-          Baixar PDF
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={startGamma}
+            disabled={gamma.phase === "generating"}
+          >
+            {gamma.phase === "generating" ? (
+              <Loader2 className="mr-1 size-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1 size-4" />
+            )}
+            Gerar no Gamma
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            <Printer className="mr-1 size-4" />
+            Baixar PDF
+          </Button>
+        </div>
       </div>
+
+      {gamma.phase !== "idle" && (
+        <div className="no-print mb-4 rounded-md border border-gold/40 bg-gold/5 p-3 text-xs">
+          {gamma.phase === "generating" && (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              Gerando a apresentação no Gamma… isso costuma levar até ~1 minuto.
+            </p>
+          )}
+          {gamma.phase === "ready" && (
+            <div className="space-y-1.5">
+              <a
+                href={gamma.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <ExternalLink className="size-3.5" />
+                Abrir o deck no Gamma
+              </a>
+              <p className="text-muted-foreground">
+                No Gamma você pode <strong>adicionar as fotos do paciente</strong>{" "}
+                onde quiser e depois <strong>exportar em PPTX ou PDF</strong>. (As
+                fotos com qualidade também estão no “Baixar PDF” acima.)
+              </p>
+            </div>
+          )}
+          {gamma.phase === "error" && (
+            <p className="text-destructive">{gamma.error}</p>
+          )}
+        </div>
+      )}
 
       <div className="no-print mb-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
         <span className="font-medium text-primary">
