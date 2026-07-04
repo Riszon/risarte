@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.4** · Última migração: **0060**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.5** · Última migração: **0061**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -363,11 +363,20 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   Novo helper `hasRoleWithScopeForClinic` (`src/lib/auth.ts`, usa a RPC
   `user_full_access_clinic_ids`) aplicado em `presentation-data.ts` (acesso à
   tela/Gamma) e no `canPresent` da ficha (botão "Apresentação").
+- **H1b — Regras de chamada no atendimento (migração 0061, v0.10.5):**
+  **H1.3** um cliente não pode estar em **dois atendimentos ao mesmo tempo** —
+  chamar quem já está "Em atendimento" em outro agendamento é bloqueado no
+  banco (`CLIENT_BUSY`) e o card em espera troca o botão por "Em atendimento
+  com outro profissional". **H1.4** quem chama o cliente é o **profissional do
+  agendamento** (ou Admin); o Coordenador vê a sala de espera mas não chama
+  cliente de outro profissional (`NOT_PROVIDER`; sem profissional definido vale
+  a regra antiga por função). `update_attendance` reescrita (corpo da 0059 +
+  travas); botão "Chamar" por linha no painel (`canCallRow`); mensagens pt-BR
+  na action `updateAttendance`.
 
 ## 3. Próximos passos (ordem de prioridade)
 
-1. **LOTE H1 (bugs do teste geral):** H1.3 cliente em 2 atendimentos; H1.4
-   coordenador não chama cliente de outro dentista; H1.5 sessões somem do
+1. **LOTE H1 (bugs do teste geral):** H1.5 sessões somem do
    agendamento + editar; H1.6 dia avulso sem horários; H1.7 troca de unidade
    fecha a tela anterior + escolher unidade no login; H1.8 encerrar
    compartilhamento (botão + papéis + infos); H1.9 autopreenchimento CPF

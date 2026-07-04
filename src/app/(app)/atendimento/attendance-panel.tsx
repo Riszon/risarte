@@ -227,6 +227,14 @@ export function AttendancePanel({
     a.calledBy === currentUserId ||
     (a.calledBy === null && a.providerUserId === currentUserId);
 
+  // H1.4: only the appointment's assigned professional calls the client
+  // (Admin always; no assigned professional falls back to the role rule).
+  const canCallRow = (a: PanelAppointment) =>
+    canCall &&
+    (isAdmin ||
+      a.providerUserId === currentUserId ||
+      a.providerUserId === null);
+
   const toArrive = appointments.filter(
     (a) =>
       !a.attendance &&
@@ -237,6 +245,12 @@ export function AttendancePanel({
   const waiting = appointments.filter((a) => a.attendance === "waiting");
   const inService = appointments.filter((a) => a.attendance === "in_service");
   const done = appointments.filter((a) => a.attendance === "done");
+
+  // H1.3: a client cannot be in two attendances at once — while in service,
+  // their other waiting cards lose the "Chamar" button (the DB blocks it too).
+  const busyClientIds = new Set(
+    inService.map((a) => a.clientId).filter((id): id is string => Boolean(id))
+  );
 
   function time(iso: string) {
     return new Date(iso).toLocaleTimeString("pt-BR", {
@@ -345,7 +359,11 @@ export function AttendancePanel({
                 key={a.id}
                 a={a}
                 action={
-                  canCall ? (
+                  a.clientId && busyClientIds.has(a.clientId) ? (
+                    <span className="max-w-32 text-right text-[11px] text-muted-foreground">
+                      Em atendimento com outro profissional
+                    </span>
+                  ) : canCallRow(a) ? (
                     <Button
                       size="sm"
                       disabled={isPending}

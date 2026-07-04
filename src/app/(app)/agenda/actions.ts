@@ -783,6 +783,20 @@ export async function updateAttendance(
         error: "Apenas quem chamou o cliente pode concluir o atendimento.",
       };
     }
+    if (error.message.includes("NOT_PROVIDER")) {
+      return {
+        ok: false,
+        error:
+          "Apenas o profissional do agendamento pode chamar este cliente.",
+      };
+    }
+    if (error.message.includes("CLIENT_BUSY")) {
+      return {
+        ok: false,
+        error:
+          "Este cliente já está em atendimento com outro profissional. Conclua o atendimento atual antes de chamar.",
+      };
+    }
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Sua função não permite esta ação." };
     }
