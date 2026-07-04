@@ -475,6 +475,7 @@ export function DayRoomGrid({
               clients={[]}
               staff={staff}
               config={config}
+              activeClinicId={clinicId}
               appointment={{
                 id: appointment.id,
                 type: appointment.type,

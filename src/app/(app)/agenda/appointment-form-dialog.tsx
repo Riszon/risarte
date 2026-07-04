@@ -37,15 +37,18 @@ import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
   createAppointment,
+  getAppointmentSessionOptions,
   getClientPendingSessions,
   getClientSchedulingInfo,
   getDayBusyTimes,
+  getDaySchedule,
   getNextAvailableSlots,
   getProviderProcedureStats,
   updateAppointment,
   type AgendaFormConfig,
   type AvailableSlot,
   type BusyRange,
+  type DaySchedule,
   type PendingSession,
   type SchedulingInfo,
 } from "./actions";
@@ -244,6 +247,9 @@ export function AppointmentFormDialog({
     treatmentSessionId ? [treatmentSessionId] : []
   );
   const [pendingSessions, setPendingSessions] = useState<PendingSession[]>([]);
+  // Ao editar, só envia o campo de sessões depois de carregá-las (H1.5) —
+  // senão um salvar rápido desvincularia as sessões sem querer.
+  const [sessionsLoaded, setSessionsLoaded] = useState(!isEdit);
   const [providerStats, setProviderStats] = useState<
     Record<string, { avgMinutes: number; sample: number }>
   >({});
@@ -265,6 +271,23 @@ export function AppointmentFormDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // H1.5: editing loads the sessions already linked to this appointment +
+  // the client's still-pending ones, with the linked ones pre-checked.
+  const editAppointmentId = isEdit ? appointment?.id : undefined;
+  useEffect(() => {
+    if (!editAppointmentId || !actualOpen) return;
+    let cancelled = false;
+    getAppointmentSessionOptions(editAppointmentId).then((r) => {
+      if (cancelled) return;
+      setPendingSessions([...r.linked, ...r.pending]);
+      setSessionIds(r.linked.map((s) => s.id));
+      setSessionsLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [editAppointmentId, actualOpen]);
 
   // The type follows the journey when creating; editing keeps all options.
   const typeOptions = isEdit
@@ -359,34 +382,72 @@ export function AppointmentFormDialog({
 
   const durationMin = Number(duration) || 60;
 
+  // H1.6: situação especial do dia escolhido (dia avulso / feriado) — o
+  // seletor de horário precisa refletir as mesmas regras do servidor.
+  const [daySpecial, setDaySpecial] = useState<{
+    key: string;
+    value: DaySchedule;
+  }>({ key: "", value: { openDay: null, holidayAttend: null } });
+  const dayKey = effectiveClinicId && date ? `${effectiveClinicId}|${date}` : "";
+  useEffect(() => {
+    if (!dayKey) return;
+    let cancelled = false;
+    getDaySchedule(effectiveClinicId, date).then((value) => {
+      if (!cancelled) setDaySpecial({ key: dayKey, value });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dayKey, effectiveClinicId, date]);
+  const daySchedule: DaySchedule =
+    daySpecial.key === dayKey
+      ? daySpecial.value
+      : { openDay: null, holidayAttend: null };
+
+  const dayWeekday = date ? new Date(`${date}T00:00:00`).getDay() : null;
+  const weekdayConfigured = Boolean(
+    effectiveConfig &&
+      dayWeekday !== null &&
+      effectiveConfig.weekdays.includes(dayWeekday)
+  );
+  // Dia avulso em dia fechado usa a janela própria dele (regra do servidor).
+  const openWindow =
+    daySchedule.openDay && !weekdayConfigured ? daySchedule.openDay : null;
+  // Feriado decidido como "não atende" bloqueia todos (inclusive encaixe).
+  const holidayClosed = daySchedule.holidayAttend === false;
+
   // Base slots: configured hours (15-min) for normal appointments, wide list
-  // for encaixe and when there's no agenda config yet.
+  // for encaixe and when there's no agenda config yet. A special open day
+  // (dia avulso) offers its own window even on a closed weekday (H1.6).
   const baseSlots = useMemo(() => {
     if (isEncaixe || !effectiveConfig) return WIDE_TIME_ITEMS;
-    const openMin = timeToMinutes(effectiveConfig.openTime);
-    const closeMin = timeToMinutes(effectiveConfig.closeTime);
+    const openMin = timeToMinutes(openWindow?.start ?? effectiveConfig.openTime);
+    const closeMin = timeToMinutes(openWindow?.end ?? effectiveConfig.closeTime);
     const items: { value: string; label: string }[] = [];
     for (let m = openMin; m <= closeMin - SLOT_STEP; m += SLOT_STEP) {
       const v = minutesToHHMM(m);
       items.push({ value: v, label: v });
     }
     return items;
-  }, [isEncaixe, effectiveConfig]);
+  }, [isEncaixe, effectiveConfig, openWindow]);
 
-  // Closed weekday (configured) blocks the day, except for encaixe.
-  const dayWeekday = date ? new Date(`${date}T00:00:00`).getDay() : null;
+  // Closed weekday (configured) blocks the day, except for encaixe — unless
+  // it's a special open day or a holiday the manager decided to attend.
   const dayClosed = Boolean(
     !isEncaixe &&
       effectiveConfig &&
       dayWeekday !== null &&
-      !effectiveConfig.weekdays.includes(dayWeekday)
+      !weekdayConfigured &&
+      !openWindow &&
+      daySchedule.holidayAttend !== true
   );
 
   const timeItems = useMemo(() => {
+    if (holidayClosed) return [];
     if (!date) return baseSlots;
     if (dayClosed) return [];
     const closeMin = effectiveConfig
-      ? timeToMinutes(effectiveConfig.closeTime)
+      ? timeToMinutes(openWindow?.end ?? effectiveConfig.closeTime)
       : null;
     const base =
       date === minDate ? baseSlots.filter((t) => t.value > nowTime) : baseSlots;
@@ -410,6 +471,8 @@ export function AppointmentFormDialog({
     baseSlots,
     date,
     dayClosed,
+    holidayClosed,
+    openWindow,
     effectiveConfig,
     durationMin,
     isEncaixe,
@@ -539,7 +602,9 @@ export function AppointmentFormDialog({
     formData.set("provider_user_id", providerValid ? providerId : "");
     formData.set("room_id", isOnline ? "" : effectiveRoomId);
     formData.set("notes", notes);
-    if (sessionIds.length > 0) {
+    // H1.5: na edição o campo sempre vai (permite desmarcar sessões); na
+    // criação só vai quando há sessão marcada.
+    if (isEdit ? sessionsLoaded : sessionIds.length > 0) {
       formData.set("treatment_session_ids", sessionIds.join(","));
     }
 
@@ -851,11 +916,21 @@ export function AppointmentFormDialog({
 
           {(date || effectiveClinicId) && (
             <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="text-muted-foreground">
+              <span
+                className={
+                  holidayClosed || dayClosed
+                    ? "font-medium text-destructive"
+                    : "text-muted-foreground"
+                }
+              >
                 {date
-                  ? dayClosed
-                    ? "A unidade não atende neste dia da semana."
-                    : "Só aparecem horários livres dentro do funcionamento."
+                  ? holidayClosed
+                    ? "Feriado sem atendimento nesta unidade."
+                    : dayClosed
+                      ? "A unidade não atende neste dia da semana."
+                      : openWindow
+                        ? `Dia avulso liberado — atendimento das ${openWindow.start} às ${openWindow.end}.`
+                        : "Só aparecem horários livres dentro do funcionamento."
                   : ""}
               </span>
               {effectiveClinicId && (
@@ -870,12 +945,17 @@ export function AppointmentFormDialog({
             </div>
           )}
 
-          {!isEdit && pendingSessions.length > 0 && (
+          {pendingSessions.length > 0 && (
             <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
-              <Label>Sessões do plano a agendar</Label>
+              <Label>
+                {isEdit
+                  ? "Sessões do plano neste agendamento"
+                  : "Sessões do plano a agendar"}
+              </Label>
               <p className="text-[11px] text-muted-foreground">
-                Marque uma — ou mais de uma, se o dentista vai executar vários
-                procedimentos neste mesmo horário (a duração soma sozinha).
+                {isEdit
+                  ? "As marcadas ficam vinculadas a este agendamento; desmarcar devolve a sessão para “a agendar”."
+                  : "Marque uma — ou mais de uma, se o dentista vai executar vários procedimentos neste mesmo horário (a duração soma sozinha)."}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {pendingSessions.map((s) => (

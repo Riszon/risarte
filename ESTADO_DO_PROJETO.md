@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.5** · Última migração: **0061**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.6** · Última migração: **0061**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -373,11 +373,24 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   a regra antiga por função). `update_attendance` reescrita (corpo da 0059 +
   travas); botão "Chamar" por linha no painel (`canCallRow`); mensagens pt-BR
   na action `updateAttendance`.
+- **H1c — Sessões no agendamento + dia avulso (sem migração, v0.10.6):**
+  **H1.5** as sessões do tratamento não "somem" mais: o pop-up **"i"** do card
+  mostra as sessões vinculadas (`getAppointmentSessionOptions`); a **edição** do
+  agendamento carrega os chips com as sessões vinculadas pré-marcadas + as
+  pendentes do cliente (desmarcar devolve a sessão para "a agendar");
+  `updateAppointment` sincroniza os vínculos (link/unlink + referência
+  principal em `appointments.treatment_session_id`), só quando o formulário
+  enviou o campo (arrastar para remarcar não mexe) e registra a mudança no
+  audit. **H1.6** o seletor de horário do formulário passou a conhecer o **dia
+  avulso** (oferece a janela própria do dia mesmo em dia da semana fechado) e o
+  **feriado sem atendimento** (`getDaySchedule`), com aviso na hora de escolher
+  a data ("Dia avulso liberado — atendimento das X às Y" / "Feriado sem
+  atendimento nesta unidade", adiantando parte do H2.9). A grade do Dia passa
+  `activeClinicId` ao editar.
 
 ## 3. Próximos passos (ordem de prioridade)
 
-1. **LOTE H1 (bugs do teste geral):** H1.5 sessões somem do
-   agendamento + editar; H1.6 dia avulso sem horários; H1.7 troca de unidade
+1. **LOTE H1 (bugs do teste geral):** H1.7 troca de unidade
    fecha a tela anterior + escolher unidade no login; H1.8 encerrar
    compartilhamento (botão + papéis + infos); H1.9 autopreenchimento CPF
    completo; H1.10 cadeiras máximas definidas pelo Admin.

@@ -478,6 +478,96 @@ export async function getClientPendingSessions(
   }));
 }
 
+/** Sessões do tratamento de um agendamento (H1.5): as já vinculadas a ele +
+ * as pendentes do mesmo cliente (para marcar/desmarcar ao editar). */
+export async function getAppointmentSessionOptions(appointmentId: string): Promise<{
+  linked: PendingSession[];
+  pending: PendingSession[];
+}> {
+  if (!appointmentId) return { linked: [], pending: [] };
+  const supabase = await createClient();
+  const { data: appt } = await supabase
+    .from("appointments")
+    .select("client_id")
+    .eq("id", appointmentId)
+    .maybeSingle();
+  if (!appt?.client_id) return { linked: [], pending: [] };
+
+  const { data } = await supabase
+    .from("treatment_sessions")
+    .select(
+      "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, status, appointment_id"
+    )
+    .eq("client_id", appt.client_id)
+    .neq("status", "done")
+    .order("created_at")
+    .returns<
+      {
+        id: string;
+        procedure_id: string | null;
+        procedure_name: string;
+        session_index: number;
+        session_total: number;
+        name: string | null;
+        planned_minutes: number | null;
+        status: string;
+        appointment_id: string | null;
+      }[]
+    >();
+  const toOption = (r: NonNullable<typeof data>[number]): PendingSession => ({
+    id: r.id,
+    label: `${r.procedure_name} — ${r.name ?? `Sessão ${r.session_index} de ${r.session_total}`}`,
+    minutes: r.planned_minutes,
+    procedureId: r.procedure_id,
+  });
+  const rows = data ?? [];
+  return {
+    linked: rows.filter((r) => r.appointment_id === appointmentId).map(toOption),
+    pending: rows.filter((r) => r.status === "pending").map(toOption),
+  };
+}
+
+export type DaySchedule = {
+  /** Dia avulso liberado (G5): janela própria de atendimento. */
+  openDay: { start: string; end: string } | null;
+  /** Decisão de feriado da unidade: true=atende, false=não atende, null=sem decisão. */
+  holidayAttend: boolean | null;
+};
+
+/** Situação especial de um dia (H1.6): dia avulso + decisão de feriado, para o
+ * seletor de horário do formulário refletir as mesmas regras do servidor. */
+export async function getDaySchedule(
+  clinicId: string,
+  date: string
+): Promise<DaySchedule> {
+  if (!clinicId || !date) return { openDay: null, holidayAttend: null };
+  const supabase = await createClient();
+  const [{ data: openDay }, { data: holiday }] = await Promise.all([
+    supabase
+      .from("agenda_open_days")
+      .select("start_time, end_time")
+      .eq("clinic_id", clinicId)
+      .eq("date", date)
+      .maybeSingle(),
+    supabase
+      .from("clinic_holiday_decisions")
+      .select("will_attend")
+      .eq("clinic_id", clinicId)
+      .eq("holiday_date", date)
+      .maybeSingle(),
+  ]);
+  return {
+    openDay: openDay
+      ? {
+          start: (openDay.start_time as string).slice(0, 5),
+          end: (openDay.end_time as string).slice(0, 5),
+        }
+      : null,
+    holidayAttend:
+      holiday == null ? null : Boolean(holiday.will_attend),
+  };
+}
+
 /** Média REAL de minutos por sessão de um dentista, por procedimento (E5 —
  * sugestão ao escolher procedimento + dentista na agenda). */
 export async function getProviderProcedureStats(
@@ -563,6 +653,31 @@ export async function updateAppointment(
       changes[key] = { from: existing[key], to: parsed.values[key] };
     }
   }
+
+  // H1.5: sincroniza as sessões do tratamento vinculadas. O campo só vem
+  // quando o formulário carregou as sessões (drag para remarcar não mexe).
+  const rawSessionIds = formData.get("treatment_session_ids");
+  let sessionSync: { desired: string[]; link: string[]; unlink: string[] } | null =
+    null;
+  if (rawSessionIds !== null) {
+    const desired = String(rawSessionIds)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const { data: currentRows } = await supabase
+      .from("treatment_sessions")
+      .select("id")
+      .eq("appointment_id", appointmentId)
+      .neq("status", "done");
+    const currentIds = (currentRows ?? []).map((r) => r.id);
+    const link = desired.filter((id) => !currentIds.includes(id));
+    const unlink = currentIds.filter((id) => !desired.includes(id));
+    if (link.length > 0 || unlink.length > 0) {
+      sessionSync = { desired, link, unlink };
+      changes["treatment_sessions"] = { from: currentIds, to: desired };
+    }
+  }
+
   if (Object.keys(changes).length === 0) return { ok: true };
 
   const { error } = await supabase
@@ -597,6 +712,26 @@ export async function updateAppointment(
     }
     console.error("updateAppointment failed:", error.message);
     return { ok: false, error: "Não foi possível alterar o agendamento." };
+  }
+
+  // H1.5: aplica o vínculo das sessões (desmarcada volta a "a agendar").
+  if (sessionSync) {
+    if (sessionSync.unlink.length > 0) {
+      await supabase
+        .from("treatment_sessions")
+        .update({ status: "pending", appointment_id: null })
+        .in("id", sessionSync.unlink);
+    }
+    if (sessionSync.link.length > 0) {
+      await supabase
+        .from("treatment_sessions")
+        .update({ status: "scheduled", appointment_id: appointmentId })
+        .in("id", sessionSync.link);
+    }
+    await supabase
+      .from("appointments")
+      .update({ treatment_session_id: sessionSync.desired[0] ?? null })
+      .eq("id", appointmentId);
   }
 
   await logAudit({
