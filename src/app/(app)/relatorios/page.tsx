@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSessionContext } from "@/lib/auth";
+import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
@@ -68,30 +68,51 @@ function inRange(iso: string | null, from: string | null, to: string | null) {
 
 export default async function ReportsPage(props: PageProps<"/relatorios">) {
   const session = await getSessionContext();
-  const MGMT_ROLES = [
-    "unit_manager",
-    "planner_dentist",
-    "franchisee",
+
+  // O papel de gestão vale na CLÍNICA ATIVA (trocar de unidade troca o chapéu):
+  // Admin = tudo; Franqueadora (staff/planner/consultor) = escopo de unidades;
+  // Gerente = a unidade ativa; Franqueado = as unidades que possui.
+  const active = session.activeClinic;
+  const activeRoles = active ? (session.rolesByClinic[active.id] ?? []) : [];
+  const FRANCHISOR_REPORT_ROLES = [
     "franchisor_staff",
+    "planner_dentist",
     "commercial_consultant",
   ];
-  const canView =
-    session.isAdminMaster ||
-    Object.values(session.rolesByClinic).some((roles) =>
-      roles.some((r) => MGMT_ROLES.includes(r))
-    );
-  if (!canView) redirect("/");
+  let scopeIds: string[] | null = null; // null = sem restrição (Admin Master)
+  if (!session.isAdminMaster) {
+    if (
+      active?.type === "franchisor" &&
+      activeRoles.some((r) => FRANCHISOR_REPORT_ROLES.includes(r))
+    ) {
+      scopeIds = await fullAccessClinicIds();
+    } else if (activeRoles.includes("franchisee")) {
+      scopeIds = Object.entries(session.rolesByClinic)
+        .filter(([, roles]) => roles.includes("franchisee"))
+        .map(([id]) => id);
+    } else if (active && activeRoles.includes("unit_manager")) {
+      scopeIds = [active.id];
+    } else {
+      redirect("/");
+    }
+    if (scopeIds !== null && scopeIds.length === 0) redirect("/");
+  }
 
   const sp = await props.searchParams;
   const periodo = typeof sp.periodo === "string" ? sp.periodo : "mes";
   const de = typeof sp.de === "string" ? sp.de : "";
   const ate = typeof sp.ate === "string" ? sp.ate : "";
-  const unidade = typeof sp.unidade === "string" ? sp.unidade : "";
+  const unidadeParam = typeof sp.unidade === "string" ? sp.unidade : "";
+  // Só aceita o filtro de unidade dentro do escopo permitido.
+  const unidade =
+    unidadeParam && (scopeIds === null || scopeIds.includes(unidadeParam))
+      ? unidadeParam
+      : "";
   const range = periodRange(periodo, de, ate);
 
   const supabase = await createClient();
 
-  // -- Agendamentos no período (RLS limita às unidades visíveis) --
+  // -- Agendamentos no período (escopo aplicado explicitamente, além da RLS) --
   let apptQuery = supabase
     .from("appointments")
     .select(
@@ -100,7 +121,33 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
     .limit(5000);
   if (range.from) apptQuery = apptQuery.gte("starts_at", range.from);
   if (range.to) apptQuery = apptQuery.lte("starts_at", range.to);
+  if (scopeIds) apptQuery = apptQuery.in("clinic_id", scopeIds);
   if (unidade) apptQuery = apptQuery.eq("clinic_id", unidade);
+
+  // B5: clientes por unidade/fase (somente contagens, sem nomes).
+  let clientQuery = supabase
+    .from("clients")
+    .select("journey_phase, clinic_id, clinics!clients_clinic_id_fkey ( name )")
+    .neq("status", "anonymized")
+    .limit(5000);
+  if (scopeIds) clientQuery = clientQuery.in("clinic_id", scopeIds);
+
+  // B6: planos do Planner.
+  let planQuery = supabase
+    .from("treatment_plans")
+    .select("status, created_at, submitted_at, reviewed_at")
+    .limit(5000);
+  if (scopeIds) planQuery = planQuery.in("clinic_id", scopeIds);
+  if (unidade) planQuery = planQuery.eq("clinic_id", unidade);
+
+  // Opções do filtro de unidade: só as unidades do escopo.
+  let unitsQuery = supabase
+    .from("clinics")
+    .select("id, name")
+    .eq("type", "franchise_unit")
+    .eq("is_active", true)
+    .order("name");
+  if (scopeIds) unitsQuery = unitsQuery.in("id", scopeIds);
 
   const [{ data: appts }, { data: clientRows }, { data: planRows }, { data: units }] =
     await Promise.all([
@@ -114,38 +161,22 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
           provider: { full_name: string } | null;
         }[]
       >(),
-      // B5: clientes por unidade/fase (somente contagens, sem nomes).
-      supabase
-        .from("clients")
-        .select("journey_phase, clinic_id, clinics!clients_clinic_id_fkey ( name )")
-        .neq("status", "anonymized")
-        .limit(5000)
-        .returns<
-          {
-            journey_phase: JourneyPhase;
-            clinic_id: string;
-            clinics: { name: string } | null;
-          }[]
-        >(),
-      // B6: planos do Planner.
-      supabase
-        .from("treatment_plans")
-        .select("status, created_at, submitted_at, reviewed_at")
-        .limit(5000)
-        .returns<
-          {
-            status: TreatmentPlanStatus;
-            created_at: string;
-            submitted_at: string | null;
-            reviewed_at: string | null;
-          }[]
-        >(),
-      supabase
-        .from("clinics")
-        .select("id, name")
-        .eq("type", "franchise_unit")
-        .eq("is_active", true)
-        .order("name"),
+      clientQuery.returns<
+        {
+          journey_phase: JourneyPhase;
+          clinic_id: string;
+          clinics: { name: string } | null;
+        }[]
+      >(),
+      planQuery.returns<
+        {
+          status: TreatmentPlanStatus;
+          created_at: string;
+          submitted_at: string | null;
+          reviewed_at: string | null;
+        }[]
+      >(),
+      unitsQuery,
     ]);
 
   // ---- B4: quadros-resumo de agendamentos ----

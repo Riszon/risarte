@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/06/2026 · Versão do sistema: **0.8.4** · Última migração: **0050**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.4** · Última migração: **0060**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -342,18 +342,42 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   `GAMMA_API_KEY` nas **Environment Variables da Vercel** para funcionar no ar
   (no local já está no `.env.local`, fora do git).
 
+**TESTE GERAL DO MVP (04/07/2026):** o dono rodou o roteiro completo
+(`docs/ROTEIRO-TESTE-GERAL.md`) e devolveu ~60 pontos, todos registrados no
+**LOTE H** do `docs/BACKLOG.md` em 4 grupos: **H1** bugs/segurança (10),
+**H2** ajustes rápidos (12), **H3** melhorias médias (15), **H4** módulos novos
+(14). Ordem combinada: H1 → H2 → priorizar H3/H4 com o dono.
+
+**LOTE H1 — bugs do teste geral (em curso).**
+- **H1a — Permissão/acesso (sem migração, v0.10.4):** corrige os 2 itens de
+  acesso. **H1.1 Relatórios:** a tela `/relatorios` avaliava o papel de gestão
+  em QUALQUER unidade do usuário e confiava só na RLS — uma recepcionista que é
+  gerente em outra unidade via a rede toda. Agora o papel vale na **clínica
+  ativa** (Admin = tudo; Franqueadora staff/planner/consultor = escopo de
+  unidades via `user_full_access_clinic_ids`; Gerente = a unidade ativa;
+  Franqueado = as suas) e TODAS as consultas (agendamentos, clientes, planos,
+  seletor de unidade) filtram por `clinic_id` dentro do escopo; o item de menu
+  (layout) segue a mesma regra. **H1.2 Apresentação p/ o Comercial:** o papel do
+  Consultor fica na **Franqueadora** (com escopo de unidades), nunca na clínica
+  do cliente — a checagem `hasRoleInClinic(clínica do cliente)` sempre falhava.
+  Novo helper `hasRoleWithScopeForClinic` (`src/lib/auth.ts`, usa a RPC
+  `user_full_access_clinic_ids`) aplicado em `presentation-data.ts` (acesso à
+  tela/Gamma) e no `canPresent` da ficha (botão "Apresentação").
+
 ## 3. Próximos passos (ordem de prioridade)
 
-1. Aplicar a **migração 0043** e fazer o **teste final do LOTE B**.
-2. **Rodada de refinamento visual** — tela por tela, guiada pelo dono (cores,
-   espaçamento, textos), agora que o fluxo está completo.
-3. **Fase 2 — módulo comercial e além:** apresentação gravada; assinatura digital
-   (**ZapSign**) + pagamento (**ASAAS**) com a regra de ouro (venda só com
-   documento assinado **E** pagamento confirmado); **NPS** pós-fechamento;
-   WhatsApp manual; transcrição/resumo por **IA**; **dashboards com metas**.
-4. **Polimentos adiados** (em `docs/BACKLOG.md`): semana começando no domingo +
-   esconder fim de semana sem agendamento; foto por webcam; gênero + rótulos;
-   offline/sync (PWA).
+1. **LOTE H1 (bugs do teste geral):** H1.3 cliente em 2 atendimentos; H1.4
+   coordenador não chama cliente de outro dentista; H1.5 sessões somem do
+   agendamento + editar; H1.6 dia avulso sem horários; H1.7 troca de unidade
+   fecha a tela anterior + escolher unidade no login; H1.8 encerrar
+   compartilhamento (botão + papéis + infos); H1.9 autopreenchimento CPF
+   completo; H1.10 cadeiras máximas definidas pelo Admin.
+2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
+3. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
+4. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
+5. **Fase 2 — módulo comercial e além:** apresentação gravada; assinatura digital
+   (**ZapSign**) + pagamento (**ASAAS**) com a regra de ouro; **NPS**; WhatsApp
+   manual; transcrição/resumo por **IA**; **dashboards com metas**.
 
 ## 4. Decisões de arquitetura importantes (com justificativa)
 
@@ -374,7 +398,7 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
 
 ## 5. Pendências, dúvidas em aberto e pontos de atenção
 
-- **Migração 0043 pendente** de aplicação.
+- **Migrações 0001–0060 aplicadas** (confirmado no teste geral de 04/07/2026).
 - **Decisões tomadas pelo assistente no LOTE B (o dono confirma no teste):**
   cadeira lotada **bloqueia** o agendamento (exceto urgência/emergência) — se
   preferir só *avisar*, dá para mudar; tempo médio do Planner = criação→aprovação.

@@ -15,18 +15,18 @@ export default async function AppLayout({
   const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );
-  const reportRoles = [
-    "unit_manager",
-    "planner_dentist",
-    "franchisee",
-    "franchisor_staff",
-    "commercial_consultant",
-  ];
+  // Relatórios seguem o papel na CLÍNICA ATIVA (mesma regra de /relatorios):
+  // na Franqueadora = staff/planner/consultor; na unidade = gerente/franqueado.
+  const activeRoles = session.activeClinic
+    ? (session.rolesByClinic[session.activeClinic.id] ?? [])
+    : [];
+  const reportRoles =
+    session.activeClinic?.type === "franchisor"
+      ? ["franchisor_staff", "planner_dentist", "commercial_consultant"]
+      : ["unit_manager", "franchisee"];
   const canViewReports =
     session.isAdminMaster ||
-    Object.values(session.rolesByClinic).some((roles) =>
-      roles.some((r) => reportRoles.includes(r))
-    );
+    activeRoles.some((r) => reportRoles.includes(r));
 
   return (
     <div className="flex min-h-screen w-full">

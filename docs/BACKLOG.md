@@ -631,3 +631,168 @@ Após o LOTE F. Sub-etapas (ordem sugerida; cada uma só inicia com o OK do dono
 **Decisões a confirmar ao chegar em cada item:** B3 = avisar ou bloquear ao
 estourar a capacidade de cadeiras; B6 = quais métricas exatas; B2 = horário
 único por unidade ou por dia da semana.
+
+## LOTE H — feedback do TESTE GERAL do MVP (2026-07-04)
+
+Fonte: `docs/ROTEIRO-TESTE-GERAL.md` preenchido pelo dono após o teste geral
+por papel. Organizado em 4 grupos por prioridade (H1 bugs → H4 módulos novos).
+Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
+
+### H1 — Bugs e segurança (corrigir primeiro)
+- [ ] **H1.1 Relatórios vazando escopo (SEGURANÇA):** a recepcionista conseguiu
+      ver relatório da rede toda. Restringir `/relatorios` aos papéis de gestão
+      e ao escopo (Gerente = sua unidade; Franqueado = as suas; Rede/Admin = todas).
+- [ ] **H1.2 Comercial não vê a Apresentação:** o consultor comercial não
+      conseguiu visualizar `/apresentacao/[id]` (travou o teste da fase
+      comercial). Suspeita: o papel do consultor fica na Franqueadora (escopo de
+      unidades), não na clínica do cliente — a checagem de acesso não considera isso.
+- [ ] **H1.3 Cliente em 2 atendimentos ao mesmo tempo:** cliente em atendimento
+      com o profissional A pôde ser chamado pelo B. Bloquear chamar quem já está
+      em atendimento.
+- [ ] **H1.4 Coordenador chama cliente de outro dentista:** o Coordenador
+      Clínico só VISUALIZA; não pode chamar cliente agendado com outro profissional.
+- [ ] **H1.5 Sessões somem do agendamento:** as sessões vinculadas não aparecem
+      mais depois de criar o agendamento (nem no card, nem na edição) e o
+      agendamento não pôde ser editado. Persistir/exibir as sessões e permitir editar.
+- [ ] **H1.6 Dia avulso sem horários:** em dia liberado como "dia avulso", o
+      seletor de horário não ofereceu horários.
+- [ ] **H1.7 Troca de unidade não fecha a tela anterior:** ao trocar de unidade
+      no seletor, sair da tela da unidade anterior (redirecionar). E: usuário
+      com mais de uma unidade ESCOLHE a unidade ao entrar (tela de boas-vindas);
+      quem é só da Franqueadora entra direto.
+- [ ] **H1.8 Encerrar compartilhamento:** o botão de encerrar não foi
+      encontrado. Deve existir nas DUAS unidades (A e B); recepção, gerente e
+      coordenador podem compartilhar/encerrar e recebem as notificações; a aba
+      Compartilhados mostra quem compartilhou, quando, motivo e a clínica dona
+      do cliente + botão Encerrar.
+- [ ] **H1.9 Autopreenchimento por CPF incompleto:** preencher TODOS os dados
+      do cliente (hoje só nome, telefone e nascimento).
+- [ ] **H1.10 Cadeiras — máximo definido pelo Admin:** o Admin define a
+      QUANTIDADE de cadeiras/salas no cadastro da clínica; a Gerente configura
+      nomes, sala do coordenador e ativa/desativa, mas não cria acima do máximo.
+
+### H2 — Ajustes rápidos
+- [ ] H2.1 Renomear a aba "Ativos" → "Clientes" (o número soma ativos+inativos).
+- [ ] H2.2 Renomear o título "Usuários" → "Risartanos" (só o título/tela).
+- [ ] H2.3 Pilar: tirar a etapa de confirmação ao enviar; apenas exigir que o
+      pilar esteja definido.
+- [ ] H2.4 Depois de enviar ao Comercial: esconder "Reabrir para edição" (o
+      botão só volta se o plano for devolvido para revisão).
+- [ ] H2.5 Trocar para a visão Dia abre HOJE (não o 1º dia do mês/da semana).
+- [ ] H2.6 A visão Mês abre o mês ATUAL quando o mês vira.
+- [ ] H2.7 Na visão Semana, clicar num dia abre a visão Dia (como já é no Mês).
+- [ ] H2.8 Card de agendamento de 15 min mostra o nome do cliente.
+- [ ] H2.9 Alerta de dia fechado/feriado NA ESCOLHA da data (não só ao salvar);
+      urgência/emergência continua liberada, mas com o alerta.
+- [ ] H2.10 Dia/horário passado: não abrir o pop-up de agendamento; só avisar.
+- [ ] H2.11 Recepção pode alterar o status / cancelar agendamento FUTURO.
+- [ ] H2.12 Pop-up "i" do card: mostrar os procedimentos/sessões do agendamento.
+
+### H3 — Melhorias médias
+- [ ] H3.1 Formulário de agendamento reordenado: data/horário/sugestões como
+      ÚLTIMA etapa.
+- [ ] H3.2 "Ver agenda" (pop-up do mês) rica: mostrar bloqueios, feriados, dias
+      abertos/fechados; nº de agendamentos E de horários livres por dia (para o
+      profissional selecionado); clicar no dia sugere os horários disponíveis.
+- [ ] H3.3 Seletor de dias na lateral da agenda (bonito e intuitivo, não
+      formulário): disponibilidade por dia, feriados/fechados evidentes; clicar
+      abre a agenda do dia.
+- [ ] H3.4 Status de atendimento: faltou / cancelou em cima da hora / desistiu
+      da espera; espera longa dispara notificações insistentes aos envolvidos;
+      atendimento não concluído não fica aberto para sempre (tratamento).
+- [ ] H3.5 Check-in com confirmação (profissional, horário e sala); no futuro o
+      próprio cliente fará o check-in.
+- [ ] H3.6 Troca de profissional de última hora (check-in/sala de espera): quem
+      faz é gerente ou recepção; tudo registrado; notifica os 2 profissionais +
+      coordenador + gerente; relatório de alterações; alerta se ficar frequente.
+- [ ] H3.7 SDR: passa a ver também os clientes que ela transferiu/alterou/
+      agendou (acompanha até a reavaliação); Jornada restrita aos clientes que
+      ela vê nos prontuários; Agenda completa, mas SEM abrir prontuário de
+      cliente não permitido.
+- [ ] H3.8 WhatsApp manual: mensagem personalizável para aniversariantes
+      (individual e em massa) — no prontuário, na aba Aniversariantes e na
+      notificação. Automatizar depois (Fase 3).
+- [ ] H3.9 Notificações ampliadas: coordenador/gerente/recepção também recebem
+      em transferência (entrada e saída da unidade) e compartilhamento.
+- [ ] H3.10 Coordenador ao finalizar a avaliação: pop-up para agendar a
+      apresentação com o Comercial; enviar ao Centro de Planejamento CONCLUI o
+      atendimento "Em atendimento" automaticamente.
+- [ ] H3.11 Informações complementares ao Centro de Planejamento: espaço no
+      prontuário (após a última avaliação) para o coordenador enviar mais
+      arquivos/informações; notifica o Planner; ícone no centro de planejamento.
+- [ ] H3.12 Mídias: excluir, renomear e fazer ANOTAÇÕES em cada foto/arquivo.
+- [ ] H3.13 Centro de Planejamento/cockpit: anamnese visível ao Planner; botão
+      direto para o cockpit na fila; filtros por unidade e por pilar; colunas do
+      cockpit com rolagem independente.
+- [ ] H3.14 Sessões do plano com mais detalhe: quando agendada, mostrar data e
+      profissional; no prontuário, sessão agendada é clicável → abre o agendamento.
+- [ ] H3.15 Comercial: central de planos prontos para apresentação +
+      notificações dos casos aguardando; ao receber plano SEM agendamento com o
+      comercial → aviso forte à recepção + notificação a gerente e coordenador.
+
+### H4 — Módulos novos (planejar um a um com o dono)
+- [ ] H4.1 **Risartanos** (colaboradores): código automático; CPF, nascimento,
+      gênero, estado civil (cônjuge: nome+telefone), WhatsApp, endereço; foto +
+      "como quer ser chamado"; regime de contrato (CLT, PJ, Estagiário,
+      Autônomo…); histórico de alterações; auditoria de acessos/logins e ações;
+      vínculo com o cadastro de cliente (autopreenche; prontuário destaca que o
+      cliente "é um Risartano"; inativo vai para o histórico do prontuário).
+- [ ] H4.2 **Anamnese 2.0:** múltiplas fichas por cliente (1 de cada tipo;
+      atualizar NÃO troca o tipo); todas as perguntas obrigatórias (não finaliza
+      incompleta); perguntas condicionais por gênero (só p/ mulheres); respostas
+      com opções (tipo sanguíneo, tempo de gestação); campos condicionais de
+      texto ("sim" → qual remédio / "não soube informar"; idade do bebê);
+      histórico de alterações com quem/quando.
+- [ ] H4.3 **Protocolo 2.0 + agendamento em série:** tempo mínimo entre sessões
+      (padrão da rede; Planner ajusta por caso; senão vale o padrão); médias
+      reais rede/unidade do intervalo; previsão de data de conclusão do
+      tratamento; ao agendar, SUGERIR AS DATAS DE TODAS as sessões com o
+      dentista designado; Planner pode propor alteração de protocolo para a
+      unidade (pop-up de confirmação + notifica o coordenador da unidade) ou
+      sugerir para a rede (notifica o Admin Master); só nas unidades sob sua
+      responsabilidade.
+- [ ] H4.4 **Tela de Planos de Tratamento:** central com busca e status (em
+      planejamento / aguardando aprovação / fase comercial / aguardando iniciar
+      / finalizado), ícones coloridos com contadores; relatório detalhado;
+      escopo por papel (Admin = tudo, por unidade ou rede; gerente/coordenador =
+      unidade; franqueado = as suas); histórico de planejamentos do Planner
+      (aprovados × não evoluíram, p/ melhorar a performance).
+- [ ] H4.5 **Cockpit 2.0 (redesign):** menos rolagem, mais intuitivo; organizar
+      o tratamento em ETAPAS + sessões; sugerir profissional por procedimento;
+      propor juntar sessões num único atendimento; ajustar tempo por sessão e
+      entre sessões; previsão de término; alertas/observações/lembretes por
+      sessão e do plano como um todo.
+- [ ] H4.6 **Módulo do Dentista (atendimento clínico):** dashboard
+      (dia/semana/mês/período), execução e baixa de procedimentos, pendências
+      (procedimentos/clientes em aberto); histórico/evolução do cliente; plano
+      RESUMIDO SEM VALORES financeiros; sugestões/orientações p/ a reavaliação
+      (evidentes ao coordenador na reavaliação); pedir REVISÃO do planejamento
+      (alerta insistente ao coordenador até resolver; tudo registrado).
+- [ ] H4.7 **Atendimento conjunto:** 2+ profissionais no mesmo atendimento;
+      aparece na agenda de todos; 1 sala; responsável principal (avaliação =
+      coordenador; tratamento = dentista executor; vários procedimentos =
+      responsável por procedimento); limite de profissionais = nº de cadeiras.
+- [ ] H4.8 **Planejamento anual da rede:** feriados/datas comemorativas/eventos/
+      campanhas definidos pela franqueadora; por data, marcar se a decisão é da
+      franqueadora (travada p/ a unidade) ou da unidade; horário de ALMOÇO
+      configurável (padrão rede → unidade).
+- [ ] H4.9 **Chat interno:** canal da unidade + conversas 1:1; franqueadora ↔
+      unidade quando conectadas; pop-up + som ao receber; áudio e arquivos
+      (fotos/vídeos); insiste até ser visualizado; registro de leitura (quando
+      visualizou); histórico de conversas.
+- [ ] H4.10 **Prontuário em abas/cards** (menos rolagem, sequência lógica do
+      fluxo do cliente) + **barra lateral FIXA** em todas as telas (rolagem
+      independente do conteúdo).
+- [ ] H4.11 **Apresentação 2.0:** mais rica em informação; otimizada para
+      computador E celular; FOTOS NO GAMMA (testar links assinados embutidos no
+      texto de entrada) + padrão visual definido para os decks.
+- [ ] H4.12 **Câmera intraoral:** reconhecer a câmera conectada, capturar e
+      salvar direto no sistema (reusa o adiado "foto por webcam").
+- [ ] H4.13 **Especialidades + comissionamento:** cadastro de especialidades
+      (lista padrão ao criar/editar procedimento, como o pilar, evitando erro de
+      digitação); reajuste em massa do comissionamento FIXO; regra de negócio:
+      comissão só é devida com o procedimento FINALIZADO (todas as sessões
+      concluídas) — vale para o futuro módulo financeiro.
+- [ ] H4.14 **Definições de status:** "Iniciar tratamento" = plano aprovado e
+      NENHUM procedimento executado; "Sessão de tratamento" = tratamento já
+      iniciado (aplicar de forma consistente em agenda/jornada).

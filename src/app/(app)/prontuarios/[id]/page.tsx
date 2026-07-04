@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import {
+  getSessionContext,
+  hasRoleInClinic,
+  hasRoleWithScopeForClinic,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { Badge } from "@/components/ui/badge";
@@ -973,11 +977,11 @@ export default async function ClientDetailPage(
   const canPresent =
     session.isAdminMaster ||
     isPlannerAnywhere ||
-    hasRoleInClinic(session, client.clinic_id, [
+    (await hasRoleWithScopeForClinic(session, client.clinic_id, [
       "commercial_consultant",
       "clinical_coordinator",
       "unit_manager",
-    ]);
+    ]));
   let hasApprovedPlan = treatmentPlan?.status === "approved";
   if (treatmentPlan === null && canPresent) {
     const { count } = await supabase

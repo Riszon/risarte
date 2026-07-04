@@ -116,3 +116,36 @@ export function hasRoleInClinic(
   const clinicRoles = session.rolesByClinic[clinicId] ?? [];
   return roles.some((role) => clinicRoles.includes(role));
 }
+
+/**
+ * Clinic ids the user has broad access to: direct roles + the franchisor
+ * unit scope (Todas/específicas). Mirrors the DB helper used by RLS.
+ */
+export async function fullAccessClinicIds(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("user_full_access_clinic_ids");
+  return ((data as { clinic_id?: string }[] | string[] | null) ?? [])
+    .map((x) => (typeof x === "string" ? x : (x.clinic_id ?? "")))
+    .filter(Boolean);
+}
+
+/**
+ * Like hasRoleInClinic, but franchisor-based roles (Consultor Comercial,
+ * Planner etc.) reach the unit through their unit scope — their role row
+ * lives at the FRANCHISOR clinic, never at the client's unit.
+ */
+export async function hasRoleWithScopeForClinic(
+  session: SessionContext,
+  clinicId: string | null | undefined,
+  roles: UserRole[]
+): Promise<boolean> {
+  if (hasRoleInClinic(session, clinicId, roles)) return true;
+  if (!clinicId) return false;
+  const holdsAtFranchisor = session.clinics.some(
+    (c) =>
+      c.type === "franchisor" &&
+      (session.rolesByClinic[c.id] ?? []).some((r) => roles.includes(r))
+  );
+  if (!holdsAtFranchisor) return false;
+  return (await fullAccessClinicIds()).includes(clinicId);
+}

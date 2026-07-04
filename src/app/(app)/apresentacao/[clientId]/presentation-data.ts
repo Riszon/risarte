@@ -1,5 +1,5 @@
 import "server-only";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import { getSessionContext, hasRoleWithScopeForClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CLINICAL_BUCKET } from "@/lib/clinical";
 import { PILLAR_LABELS, type MethodologyPillar } from "@/lib/journey";
@@ -36,14 +36,16 @@ export async function loadPresentationData(
   const isPlannerAnywhere = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );
+  // O Consultor Comercial tem papel na Franqueadora (escopo de unidades),
+  // nunca na clínica do cliente — a checagem precisa considerar o escopo.
   const canPresent =
     session.isAdminMaster ||
     isPlannerAnywhere ||
-    hasRoleInClinic(session, client.clinic_id, [
+    (await hasRoleWithScopeForClinic(session, client.clinic_id, [
       "commercial_consultant",
       "clinical_coordinator",
       "unit_manager",
-    ]);
+    ]));
   if (!canPresent) return { ok: false, reason: "forbidden" };
 
   // -- Plano aprovado: opção principal aprovada (ou a primeira aprovada) --
