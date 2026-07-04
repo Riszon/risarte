@@ -30,6 +30,52 @@ export type ActionResult = {
   duplicate?: DuplicateInfo;
 };
 
+/** Full set of client fields to autofill the registration form (H1.9). */
+export type ClientAutofill = {
+  fullName: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  addressNumber: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+};
+
+const CLIENT_AUTOFILL_COLUMNS =
+  "full_name, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code";
+
+function toAutofill(row: {
+  full_name?: string | null;
+  birth_date?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  address_number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+}): ClientAutofill {
+  return {
+    fullName: row.full_name ?? null,
+    birthDate: row.birth_date ?? null,
+    phone: row.phone ?? null,
+    email: row.email ?? null,
+    address: row.address ?? null,
+    addressNumber: row.address_number ?? null,
+    complement: row.complement ?? null,
+    neighborhood: row.neighborhood ?? null,
+    city: row.city ?? null,
+    state: row.state ?? null,
+    zipCode: row.zip_code ?? null,
+  };
+}
+
 function field(formData: FormData, name: string): string | null {
   return String(formData.get(name) ?? "").trim() || null;
 }
@@ -191,6 +237,8 @@ export async function lookupClientByCpf(cpf: string): Promise<{
 export async function lookupCpfForRegistration(cpf: string): Promise<{
   duplicate?: DuplicateInfo;
   prospect?: { fullName: string; birthDate: string | null; phone: string | null };
+  /** H1.9: todos os dados do cliente existente, para autopreencher o formulário. */
+  autofill?: ClientAutofill;
 }> {
   const session = await getSessionContext();
   const clinicId = session.activeClinic?.id ?? null;
@@ -207,13 +255,15 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
   });
   if (duplicates && duplicates.length > 0) {
     const dup = duplicates[0];
-    // Pull the existing client's data to autofill the form (if RLS lets the
-    // viewer read it — e.g. the SDR has access to that unit).
+    // Pull the existing client's full data to autofill the form (if RLS lets the
+    // viewer read it — e.g. the SDR has access to that unit). LGPD: só volta o
+    // que a RLS permite; sem acesso, os campos ficam vazios.
     const { data: existing } = await supabase
       .from("clients")
-      .select("birth_date, phone")
+      .select(CLIENT_AUTOFILL_COLUMNS)
       .eq("id", dup.client_id)
       .limit(1);
+    const row = existing?.[0];
     return {
       duplicate: {
         clientId: dup.client_id,
@@ -222,9 +272,10 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
         clinicName: dup.clinic_name,
         matchType: dup.match_type as "cpf" | "name_birth",
         sameClinic: dup.clinic_id === clinicId,
-        birthDate: existing?.[0]?.birth_date ?? null,
-        phone: existing?.[0]?.phone ?? null,
+        birthDate: row?.birth_date ?? null,
+        phone: row?.phone ?? null,
       },
+      autofill: row ? toAutofill(row) : undefined,
     };
   }
 

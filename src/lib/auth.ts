@@ -22,6 +22,9 @@ export type SessionContext = {
   /** Roles per clinic id */
   rolesByClinic: Record<string, UserRole[]>;
   activeClinic: Clinic | null;
+  /** True when the active clinic came from an explicit choice (cookie), not a
+   * fallback default — drives the "choose your unit" welcome screen (H1.7). */
+  activeClinicExplicit: boolean;
 };
 
 type RoleRow = {
@@ -83,8 +86,12 @@ export async function getSessionContext(): Promise<SessionContext> {
 
   const cookieStore = await cookies();
   const requestedClinicId = cookieStore.get(ACTIVE_CLINIC_COOKIE)?.value;
-  const activeClinic =
-    clinics.find((c) => c.id === requestedClinicId) ?? clinics[0] ?? null;
+  const chosen = clinics.find((c) => c.id === requestedClinicId) ?? null;
+  // Franqueadora users enter the franchisor environment directly (owner rule);
+  // otherwise fall back to the first clinic (the welcome screen handles the
+  // "choose your unit" case for regular multi-unit users — H1.7).
+  const franchisor = clinics.find((c) => c.type === "franchisor") ?? null;
+  const activeClinic = chosen ?? franchisor ?? clinics[0] ?? null;
 
   return {
     userId: user.id,
@@ -94,6 +101,7 @@ export async function getSessionContext(): Promise<SessionContext> {
     clinics,
     rolesByClinic,
     activeClinic,
+    activeClinicExplicit: chosen !== null,
   };
 }
 

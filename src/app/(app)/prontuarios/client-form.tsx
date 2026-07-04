@@ -77,8 +77,46 @@ export function ClientForm({
   const [fullName, setFullName] = useState(client?.full_name ?? "");
   const [birthDate, setBirthDate] = useState(client?.birth_date ?? "");
   const [phone, setPhone] = useState(client?.phone ?? "");
+  // Campos de contato/endereço controlados para o autopreenchimento por CPF (H1.9).
+  const [email, setEmail] = useState(client?.email ?? "");
+  const [address, setAddress] = useState(client?.address ?? "");
+  const [addressNumber, setAddressNumber] = useState(
+    client?.address_number ?? ""
+  );
+  const [complement, setComplement] = useState(client?.complement ?? "");
+  const [neighborhood, setNeighborhood] = useState(client?.neighborhood ?? "");
+  const [city, setCity] = useState(client?.city ?? "");
+  const [state, setState] = useState(client?.state ?? "");
+  const [zipCode, setZipCode] = useState(client?.zip_code ?? "");
   const [preferredUnit, setPreferredUnit] = useState("");
   const [guardians, setGuardians] = useState<GuardianInput[]>(initialGuardians);
+
+  // H1.9: autopreenche TODOS os campos com os dados do cliente já existente.
+  function applyAutofill(a: {
+    fullName: string | null;
+    birthDate: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    addressNumber: string | null;
+    complement: string | null;
+    neighborhood: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+  }) {
+    if (a.fullName) setFullName(a.fullName);
+    if (a.birthDate) setBirthDate(a.birthDate);
+    if (a.phone) setPhone(a.phone);
+    if (a.email) setEmail(a.email);
+    if (a.address) setAddress(a.address);
+    if (a.addressNumber) setAddressNumber(a.addressNumber);
+    if (a.complement) setComplement(a.complement);
+    if (a.neighborhood) setNeighborhood(a.neighborhood);
+    if (a.city) setCity(a.city);
+    if (a.state) setState(a.state);
+    if (a.zipCode) setZipCode(a.zipCode);
+  }
 
   const minor = isMinor(birthDate);
 
@@ -91,11 +129,10 @@ export function ClientForm({
       if (result.duplicate) {
         setDuplicate(result.duplicate);
         setConsent(false);
-        // Already a client: autofill the visible data so the user sees who it is
-        // (and doesn't re-type) — the duplicate card guides to open/transfer.
-        if (result.duplicate.fullName) setFullName(result.duplicate.fullName);
-        if (result.duplicate.birthDate) setBirthDate(result.duplicate.birthDate);
-        if (result.duplicate.phone) setPhone(result.duplicate.phone);
+        // Já é cliente: autopreenche TODOS os dados visíveis (H1.9) para o
+        // usuário ver de quem se trata — o card de duplicado guia abrir/transferir.
+        if (result.autofill) applyAutofill(result.autofill);
+        else if (result.duplicate.fullName) setFullName(result.duplicate.fullName);
       } else if (result.prospect) {
         setDuplicate(null);
         setFullName(result.prospect.fullName ?? fullName);
@@ -549,7 +586,8 @@ export function ClientForm({
                 name="email"
                 type="email"
                 required
-                defaultValue={client?.email ?? ""}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
@@ -560,7 +598,8 @@ export function ClientForm({
                 id="address"
                 name="address"
                 required
-                defaultValue={client?.address ?? ""}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -569,7 +608,8 @@ export function ClientForm({
                 id="address_number"
                 name="address_number"
                 required
-                defaultValue={client?.address_number ?? ""}
+                value={addressNumber}
+                onChange={(e) => setAddressNumber(e.target.value)}
               />
             </div>
           </div>
@@ -579,7 +619,8 @@ export function ClientForm({
               <Input
                 id="complement"
                 name="complement"
-                defaultValue={client?.complement ?? ""}
+                value={complement}
+                onChange={(e) => setComplement(e.target.value)}
                 placeholder="Apto, bloco..."
               />
             </div>
@@ -589,7 +630,8 @@ export function ClientForm({
                 id="neighborhood"
                 name="neighborhood"
                 required
-                defaultValue={client?.neighborhood ?? ""}
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
               />
             </div>
           </div>
@@ -600,7 +642,8 @@ export function ClientForm({
                 id="city"
                 name="city"
                 required
-                defaultValue={client?.city ?? ""}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -610,7 +653,8 @@ export function ClientForm({
                 name="state"
                 required
                 maxLength={2}
-                defaultValue={client?.state ?? ""}
+                value={state}
+                onChange={(e) => setState(e.target.value.toUpperCase())}
               />
             </div>
             <div className="space-y-2">
@@ -620,8 +664,8 @@ export function ClientForm({
                 name="zip_code"
                 inputMode="numeric"
                 required
-                defaultValue={client?.zip_code ?? ""}
-                onChange={applyMask(formatCep)}
+                value={zipCode}
+                onChange={(e) => setZipCode(formatCep(e.target.value))}
                 placeholder="00000-000"
               />
             </div>

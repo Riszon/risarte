@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.6** · Última migração: **0061**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.7** · Última migração: **0061**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -387,13 +387,24 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   a data ("Dia avulso liberado — atendimento das X às Y" / "Feriado sem
   atendimento nesta unidade", adiantando parte do H2.9). A grade do Dia passa
   `activeClinicId` ao editar.
+- **H1d — Troca de unidade + autopreenchimento (sem migração, v0.10.7):**
+  **H1.7** trocar de unidade no seletor agora **fecha a tela da unidade
+  anterior** (`router.push("/")`, para uma ficha da unidade A não continuar
+  aberta na B); e o usuário com **mais de uma unidade** (sem Franqueadora, que
+  entra direto) **escolhe a unidade no login** numa tela de boas-vindas
+  (`ChooseClinicWelcome`, mostrada pelo layout quando não há escolha explícita
+  ainda) — `SessionContext.activeClinicExplicit` distingue a escolha real do
+  padrão, e o padrão passou a priorizar a **Franqueadora**. **H1.9** o
+  autopreenchimento por CPF agora traz **todos os dados** do cliente já
+  existente (e-mail, endereço completo, etc.), não só nome/telefone/nascimento
+  — `lookupCpfForRegistration` devolve um `ClientAutofill` (respeitando a RLS:
+  sem acesso, campos vazios) e o formulário virou controlado nesses campos.
 
 ## 3. Próximos passos (ordem de prioridade)
 
-1. **LOTE H1 (bugs do teste geral):** H1.7 troca de unidade
-   fecha a tela anterior + escolher unidade no login; H1.8 encerrar
-   compartilhamento (botão + papéis + infos); H1.9 autopreenchimento CPF
-   completo; H1.10 cadeiras máximas definidas pelo Admin.
+1. **LOTE H1 (bugs do teste geral):** H1.8 encerrar
+   compartilhamento (botão + papéis + infos); H1.10 cadeiras máximas definidas
+   pelo Admin.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
 3. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
 4. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

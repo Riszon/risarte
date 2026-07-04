@@ -2,6 +2,7 @@ import { getSessionContext } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ChooseClinicWelcome } from "@/components/choose-clinic-welcome";
 
 export default async function AppLayout({
   children,
@@ -11,6 +12,27 @@ export default async function AppLayout({
   }
 
   const session = await getSessionContext();
+
+  // H1.7: usuário com acesso a mais de uma unidade (e sem Franqueadora, que
+  // entra direto) escolhe a unidade no login antes de ver qualquer tela.
+  const hasFranchisor = session.clinics.some((c) => c.type === "franchisor");
+  if (
+    !session.isAdminMaster &&
+    !hasFranchisor &&
+    !session.activeClinicExplicit &&
+    session.clinics.length > 1
+  ) {
+    return (
+      <ChooseClinicWelcome
+        fullName={session.fullName}
+        clinics={session.clinics.map(({ id, name, type }) => ({
+          id,
+          name,
+          type,
+        }))}
+      />
+    );
+  }
 
   const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")

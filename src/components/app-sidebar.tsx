@@ -114,8 +114,12 @@ export function AppSidebar({
   }
 
   function switchClinic(clinicId: string) {
+    if (clinicId === activeClinicId) return;
     startTransition(async () => {
       await setActiveClinic(clinicId);
+      // H1.7: trocar de unidade fecha a tela da unidade anterior (ex.: uma
+      // ficha de cliente da unidade A não pode continuar aberta na B).
+      router.push("/");
       router.refresh();
     });
   }
