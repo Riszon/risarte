@@ -8,6 +8,7 @@ import {
   Building2,
   Calendar,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   DoorOpen,
@@ -52,6 +53,8 @@ type Props = {
   isPlanner: boolean;
   /** Management/network roles can see the consolidated Relatórios screen. */
   canViewReports: boolean;
+  /** H4.4: gestão/planner podem ver a central de Planos de Tratamento. */
+  canViewPlans: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -72,6 +75,13 @@ const PLANNER_ITEMS = [
   { href: "/procedimentos", label: "Procedimentos", icon: Tags },
 ];
 
+// H4.4: central dos planos de tratamento (gestão + planner + comercial).
+const PLANS_ITEM = {
+  href: "/planos",
+  label: "Planos de Tratamento",
+  icon: ClipboardCheck,
+};
+
 const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart3 };
 
 const ADMIN_ITEMS = [
@@ -89,6 +99,7 @@ export function AppSidebar({
   isAdminMaster,
   isPlanner,
   canViewReports,
+  canViewPlans,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -107,6 +118,9 @@ export function AppSidebar({
   let navItems = dentistOnly
     ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
     : [...NAV_ITEMS];
+  if (!dentistOnly && canViewPlans) {
+    navItems = [...navItems, PLANS_ITEM];
+  }
   if (!dentistOnly && (isAdminMaster || isPlanner)) {
     navItems = [...navItems, ...PLANNER_ITEMS];
   }

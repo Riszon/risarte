@@ -50,6 +50,15 @@ export default async function AppLayout({
     session.isAdminMaster ||
     activeRoles.some((r) => reportRoles.includes(r));
 
+  // H4.4: central de Planos de Tratamento — gestão da unidade (coordenador/
+  // gerente/franqueado) e papéis da Franqueadora (planner/staff/consultor).
+  const planRoles =
+    session.activeClinic?.type === "franchisor"
+      ? ["franchisor_staff", "planner_dentist", "commercial_consultant"]
+      : ["unit_manager", "clinical_coordinator", "franchisee"];
+  const canViewPlans =
+    session.isAdminMaster || activeRoles.some((r) => planRoles.includes(r));
+
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar
@@ -58,6 +67,7 @@ export default async function AppLayout({
         isAdminMaster={session.isAdminMaster}
         isPlanner={isPlanner}
         canViewReports={canViewReports}
+        canViewPlans={canViewPlans}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

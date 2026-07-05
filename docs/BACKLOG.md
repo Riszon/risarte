@@ -741,12 +741,11 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       unidade (pop-up de confirmação + notifica o coordenador da unidade) ou
       sugerir para a rede (notifica o Admin Master); só nas unidades sob sua
       responsabilidade.
-- [ ] H4.4 **Tela de Planos de Tratamento:** central com busca e status (em
-      planejamento / aguardando aprovação / fase comercial / aguardando iniciar
-      / finalizado), ícones coloridos com contadores; relatório detalhado;
-      escopo por papel (Admin = tudo, por unidade ou rede; gerente/coordenador =
-      unidade; franqueado = as suas); histórico de planejamentos do Planner
-      (aprovados × não evoluíram, p/ melhorar a performance).
+- [x] H4.4 **Tela de Planos de Tratamento** ✅ (04/07/2026, v0.11.1, sem
+      migração): `/planos` no menu; chips coloridos com contadores por situação
+      (7, clicáveis); busca + filtro de unidade; escopo por papel; tabela com
+      Ficha/Cockpit; relatório (totais + evolução aprovados → tratamento +
+      quadro unidade × situação).
 - [ ] H4.5 **Cockpit 2.0 (redesign):** menos rolagem, mais intuitivo; organizar
       o tratamento em ETAPAS + sessões; sugerir profissional por procedimento;
       propor juntar sessões num único atendimento; ajustar tempo por sessão e

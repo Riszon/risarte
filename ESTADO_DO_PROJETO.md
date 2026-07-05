@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.0** · Última migração: **0062**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.1** · Última migração: **0062**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -438,11 +438,27 @@ aviso (Dia + Semana). **H2.11** o pop-up **"i"** ganhou **"Alterar situação"**
 cancelamento/falta **devolve as sessões do tratamento** para "a agendar"
 (`updateAppointmentStatus`). **H2.12** já saíra no H1c (sessões no "i").
 
+**H4.4 — Tela de Planos de Tratamento (sem migração, v0.11.1):** nova central
+**"Planos de Tratamento"** no menu (`/planos`), para gestão/planner/comercial
+(escopo por papel na clínica ativa, como /relatorios: Admin = tudo;
+Franqueadora = escopo; Coordenador/Gerente = a unidade; Franqueado = as dele).
+**Chips coloridos com contadores** por situação — Em planejamento / Aguardando
+aprovação / Aprovado—no Centro / Fase comercial / Aguardando iniciar / Em
+tratamento / Finalizado — clicáveis para filtrar (situação = status do plano +
+fase/sub-status da jornada, `classify()`); **busca por cliente** + filtro de
+unidade; tabela com selo colorido, fase, datas e ações (Ficha / Cockpit p/
+Planner-Admin); bloco **"Relatório dos planos"**: totais (aprovados, chegaram
+ao tratamento Fase 5+, ainda em negociação Fases 3–4) + quadro unidade ×
+situação. Decisão do dono: H4.4 primeiro; depois seguir a ordem numérica do
+backlog (H3.1 em diante).
+
 ## 3. Próximos passos (ordem de prioridade)
 
-1. **H3 (melhorias médias, 15 itens) / H4 (módulos novos, 14 itens)** —
-   priorizar com o dono (`docs/BACKLOG.md`, LOTE H).
-2. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
+1. **H3 em ordem numérica** (decisão do dono, 04/07): H3.1 formulário de
+   agendamento reordenado; H3.2 "Ver agenda" rica; H3.3 seletor de dias; H3.4
+   status de atendimento; ... até H3.15 (`docs/BACKLOG.md`).
+2. Depois, **H4 restantes** (módulos novos) na ordem.
+3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
 3. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
 4. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
