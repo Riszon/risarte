@@ -42,7 +42,12 @@ export function AgendaConfigEditor({
   lunch,
 }: {
   clinicId: string;
-  hours: { openTime: string; closeTime: string; weekdays: number[] };
+  hours: {
+    openTime: string;
+    closeTime: string;
+    weekdays: number[];
+    waitingAlertMinutes: number;
+  };
   rooms: Room[];
   /** Teto de salas/cadeiras definido pelo Admin no cadastro da clínica (H1.10). */
   maxRooms: number;
@@ -67,6 +72,9 @@ export function AgendaConfigEditor({
   const [openTime, setOpenTime] = useState(hours.openTime);
   const [closeTime, setCloseTime] = useState(hours.closeTime);
   const [weekdays, setWeekdays] = useState<number[]>(hours.weekdays);
+  const [waitingAlert, setWaitingAlert] = useState(
+    String(hours.waitingAlertMinutes)
+  );
 
   const [newRoom, setNewRoom] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -169,13 +177,37 @@ export function AgendaConfigEditor({
               ))}
             </div>
           </div>
+          <div>
+            <Label htmlFor="waiting-alert">
+              Alerta de espera longa (minutos)
+            </Label>
+            <Input
+              id="waiting-alert"
+              type="number"
+              min={5}
+              max={240}
+              className="mt-1 w-28"
+              value={waitingAlert}
+              onChange={(e) => setWaitingAlert(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cliente em espera acima deste tempo destaca o painel de
+              Atendimento em vermelho e dispara avisos (que se repetem a cada
+              15 min) para recepção, coordenador, gerente e o profissional.
+            </p>
+          </div>
           <Button
             size="sm"
             disabled={isPending}
             onClick={() =>
               run(
                 () =>
-                  saveAgendaHours(clinicId, { openTime, closeTime, weekdays }),
+                  saveAgendaHours(clinicId, {
+                    openTime,
+                    closeTime,
+                    weekdays,
+                    waitingAlertMinutes: Number(waitingAlert) || 0,
+                  }),
                 "Horário salvo."
               )
             }

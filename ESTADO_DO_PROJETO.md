@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.4** · Última migração: **0062**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.5** · Última migração: **0063**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -464,7 +464,11 @@ backlog (H3.1 em diante).
    `getMonthAgendaPeek`); ~~H3.3~~ ✅ (v0.11.4, seletor de dias — régua rolável
    `day-strip.tsx` no topo da agenda com disponibilidade verde/vermelho por
    dia, feriados/fechados/avulsos/bloqueios evidentes; clicar abre a visão
-   Dia); próximo: H3.4 status de atendimento; ... até H3.15
+   Dia); ~~H3.4~~ ✅ (v0.11.5, migração 0063 — Faltou/Cancelou no "A chegar",
+   Desistiu na espera com estado `gave_up`, limite de espera configurável +
+   alerta vermelho + notificações repetidas a cada 15 min via
+   `notify_attendance_alerts`, aviso diário + banner p/ pendências de dias
+   anteriores); próximo: H3.5 check-in com confirmação; ... até H3.15
    (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

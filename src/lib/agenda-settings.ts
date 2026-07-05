@@ -10,6 +10,8 @@ export type AgendaSettingRow = {
   lunch_enabled?: boolean | null;
   lunch_start?: string | null;
   lunch_end?: string | null;
+  /** H3.4: minutos de espera que disparam o alerta de espera longa. */
+  waiting_alert_minutes?: number | null;
 };
 
 export type AgendaSettings = {
@@ -20,6 +22,7 @@ export type AgendaSettings = {
   lunchEnabled: boolean;
   lunchStart: string;
   lunchEnd: string;
+  waitingAlertMinutes: number;
 };
 
 export const WEEKDAY_NAMES = [
@@ -40,6 +43,7 @@ export const AGENDA_DEFAULTS: AgendaSettings = {
   lunchEnabled: false,
   lunchStart: "12:00",
   lunchEnd: "13:00",
+  waitingAlertMinutes: 20,
 };
 
 /** "HH:MM:SS" → "HH:MM". */
@@ -69,6 +73,10 @@ export function resolveAgendaSettings(
     lunchEnabled: row.lunch_enabled ?? AGENDA_DEFAULTS.lunchEnabled,
     lunchStart: hhmm(row.lunch_start ?? "") || AGENDA_DEFAULTS.lunchStart,
     lunchEnd: hhmm(row.lunch_end ?? "") || AGENDA_DEFAULTS.lunchEnd,
+    waitingAlertMinutes:
+      row.waiting_alert_minutes ??
+      network?.waiting_alert_minutes ??
+      AGENDA_DEFAULTS.waitingAlertMinutes,
   };
 }
 

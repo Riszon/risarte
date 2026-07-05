@@ -28,7 +28,13 @@ async function requireAgendaManager(
  * the number of active rooms (legacy capacity fallback). */
 export async function saveAgendaHours(
   clinicId: string,
-  input: { openTime: string; closeTime: string; weekdays: number[] }
+  input: {
+    openTime: string;
+    closeTime: string;
+    weekdays: number[];
+    /** H3.4: minutos de espera que disparam o alerta de espera longa. */
+    waitingAlertMinutes: number;
+  }
 ): Promise<AgendaConfigResult> {
   if (!clinicId) return { ok: false, error: "Unidade inválida." };
   const guard = await requireAgendaManager(clinicId);
@@ -50,6 +56,13 @@ export async function saveAgendaHours(
   if (weekdays.length === 0) {
     return { ok: false, error: "Escolha ao menos um dia de atendimento." };
   }
+  const waitingAlert = Math.round(input.waitingAlertMinutes);
+  if (!Number.isFinite(waitingAlert) || waitingAlert < 5 || waitingAlert > 240) {
+    return {
+      ok: false,
+      error: "O alerta de espera deve ficar entre 5 e 240 minutos.",
+    };
+  }
 
   const supabase = await createClient();
   const { count } = await supabase
@@ -66,6 +79,7 @@ export async function saveAgendaHours(
       close_time: input.closeTime,
       weekdays,
       chairs,
+      waiting_alert_minutes: waitingAlert,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "clinic_id" }

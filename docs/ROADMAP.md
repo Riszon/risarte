@@ -36,11 +36,15 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       bolinha verde (tem sala livre) / vermelha (lotado), nº de agendamentos,
       Fechado/Feriado/Avulso/Bloqueado evidentes, tooltip com o motivo e
       legenda; clicar abre a visão Dia daquela data (preserva filtro de salas).
-- [ ] **H3.4 Status de atendimento [M/G] 🗄️** — desistiu da espera / cancelou
-      em cima da hora / não apareceu; espera longa → notificações insistentes
-      (limite configurável tipo SLA); atendimento não concluído no fim do dia
-      gera aviso. Novo estado no atendimento + botões no painel + verificação
-      automática.
+- [x] **H3.4 Status de atendimento** ✅ (04/07, v0.11.5, migração 0063) —
+      "A chegar" ganhou menu **Faltou / Cancelou em cima da hora**; "Em espera"
+      ganhou **Desistiu** (estado `gave_up` → status cancelado + aviso ao
+      profissional; aparece nos Concluídos com selo vermelho); **limite de
+      espera configurável** (Configurar agenda, padrão 20 min) — acima dele o
+      timer fica vermelho "Espera longa" e `notify_attendance_alerts` dispara
+      avisos que **repetem a cada 15 min** (recepção/coordenador/gerente/
+      profissional, dedupe pelo link); atendimentos de **dias anteriores** não
+      concluídos geram aviso diário + banner vermelho no painel.
 - [ ] **H3.5 Check-in com confirmação [P]** — pop-up confirmando profissional,
       horário e sala antes de registrar a chegada (prepara o auto check-in).
 - [ ] **H3.6 Troca de profissional de última hora [M] 🗄️** — botão no

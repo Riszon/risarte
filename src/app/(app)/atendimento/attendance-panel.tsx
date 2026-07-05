@@ -4,17 +4,30 @@ import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlarmClock, Clock, UserRound } from "lucide-react";
+import { AlarmClock, Clock, MoreHorizontal, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
   type AppointmentType,
   type AttendanceStatus,
 } from "@/lib/appointments";
-import { checkInAppointment, updateAttendance } from "../agenda/actions";
+import {
+  checkInAppointment,
+  updateAppointmentStatus,
+  updateAttendance,
+} from "../agenda/actions";
 
 export type PanelAppointment = {
   id: string;
@@ -72,24 +85,35 @@ function useNow(): number {
   return now;
 }
 
-/** Live count-up timer from a fixed start (Em espera / Em atendimento). */
+/** Live count-up timer from a fixed start (Em espera / Em atendimento).
+ * H3.4: acima de `alertAfterSec`, o timer vira vermelho com selo "Espera longa". */
 function LiveTimer({
   from,
   label,
   tone,
+  alertAfterSec,
 }: {
   from: string;
   label: string;
   tone?: string;
+  alertAfterSec?: number;
 }) {
   const now = useNow();
   const sec = Math.floor((now - new Date(from).getTime()) / 1000);
+  const alerting = alertAfterSec !== undefined && sec >= alertAfterSec;
   return (
     <span
-      className={`inline-flex items-center gap-1 font-medium tabular-nums ${tone ?? ""}`}
+      className={`inline-flex items-center gap-1 font-medium tabular-nums ${
+        alerting ? "text-red-600" : (tone ?? "")
+      }`}
     >
       <AlarmClock className="size-3" />
       {label} {fmtElapsed(sec)}
+      {alerting && (
+        <span className="animate-pulse rounded bg-red-100 px-1 text-[10px] font-semibold text-red-700">
+          Espera longa
+        </span>
+      )}
     </span>
   );
 }
@@ -126,7 +150,13 @@ function arrivalNote(a: PanelAppointment): string | null {
 }
 
 /** Real-time attendance timers + movers, depending on the client's state (Lote H). */
-function AttendanceTimers({ a }: { a: PanelAppointment }) {
+function AttendanceTimers({
+  a,
+  waitingAlertMinutes,
+}: {
+  a: PanelAppointment;
+  waitingAlertMinutes?: number;
+}) {
   const movers = [
     a.checkedInByName && `Chegada: ${a.checkedInByName}`,
     a.calledByName && `Chamou: ${a.calledByName}`,
@@ -134,7 +164,11 @@ function AttendanceTimers({ a }: { a: PanelAppointment }) {
   ].filter(Boolean) as string[];
 
   let main: React.ReactNode = null;
-  if (a.attendance === "done") {
+  if (a.attendance === "gave_up") {
+    main = (
+      <span className="font-medium text-red-600">Desistiu da espera</span>
+    );
+  } else if (a.attendance === "done") {
     const waitingMin =
       a.checkedInAt && a.calledAt
         ? minutesBetween(a.checkedInAt, a.calledAt)
@@ -168,7 +202,14 @@ function AttendanceTimers({ a }: { a: PanelAppointment }) {
     const note = arrivalNote(a);
     main = (
       <span className="flex flex-wrap items-center gap-x-2">
-        <LiveTimer from={a.checkedInAt} label="Em espera há" tone="text-amber-600" />
+        <LiveTimer
+          from={a.checkedInAt}
+          label="Em espera há"
+          tone="text-amber-600"
+          alertAfterSec={
+            waitingAlertMinutes ? waitingAlertMinutes * 60 : undefined
+          }
+        />
         {note && <span className="text-muted-foreground">{note}</span>}
       </span>
     );
@@ -193,12 +234,15 @@ export function AttendancePanel({
   canCall,
   currentUserId,
   isAdmin,
+  waitingAlertMinutes,
 }: {
   appointments: PanelAppointment[];
   canCheckIn: boolean;
   canCall: boolean;
   currentUserId: string;
   isAdmin: boolean;
+  /** H3.4: minutos de espera que disparam o destaque "Espera longa". */
+  waitingAlertMinutes?: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -244,7 +288,10 @@ export function AttendancePanel({
   );
   const waiting = appointments.filter((a) => a.attendance === "waiting");
   const inService = appointments.filter((a) => a.attendance === "in_service");
-  const done = appointments.filter((a) => a.attendance === "done");
+  // H3.4: quem desistiu da espera aparece junto dos concluídos (com selo).
+  const done = appointments.filter(
+    (a) => a.attendance === "done" || a.attendance === "gave_up"
+  );
 
   // H1.3: a client cannot be in two attendances at once — while in service,
   // their other waiting cards lose the "Chamar" button (the DB blocks it too).
@@ -297,7 +344,7 @@ export function AttendancePanel({
               </span>
             )}
           </p>
-          <AttendanceTimers a={a} />
+          <AttendanceTimers a={a} waitingAlertMinutes={waitingAlertMinutes} />
         </div>
         {action}
       </li>
@@ -321,18 +368,66 @@ export function AttendancePanel({
                 a={a}
                 action={
                   canCheckIn ? (
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() =>
-                        run(
-                          () => checkInAppointment(a.id),
-                          `Chegada registrada: ${a.clientName}.`
-                        )
-                      }
-                    >
-                      Registrar chegada
-                    </Button>
+                    <span className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() =>
+                          run(
+                            () => checkInAppointment(a.id),
+                            `Chegada registrada: ${a.clientName}.`
+                          )
+                        }
+                      >
+                        Registrar chegada
+                      </Button>
+                      {/* H3.4: o cliente não veio / cancelou em cima da hora. */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={isPending}
+                              aria-label="Outras opções"
+                              className="h-8 px-1.5"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuGroup>
+                            <DropdownMenuLabel>
+                              O cliente não veio?
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() =>
+                                run(
+                                  () =>
+                                    updateAppointmentStatus(a.id, "no_show"),
+                                  `${a.clientName}: falta registrada.`
+                                )
+                              }
+                            >
+                              Não compareceu (faltou)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                run(
+                                  () =>
+                                    updateAppointmentStatus(a.id, "cancelled"),
+                                  `${a.clientName}: agendamento cancelado.`
+                                )
+                              }
+                            >
+                              Cancelou em cima da hora
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </span>
                   ) : null
                 }
               />
@@ -359,28 +454,49 @@ export function AttendancePanel({
                 key={a.id}
                 a={a}
                 action={
-                  a.clientId && busyClientIds.has(a.clientId) ? (
-                    <span className="max-w-32 text-right text-[11px] text-muted-foreground">
-                      Em atendimento com outro profissional
-                    </span>
-                  ) : canCallRow(a) ? (
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() =>
-                        run(
-                          () => updateAttendance(a.id, "in_service"),
-                          `${a.clientName} chamado(a).`,
-                          () =>
-                            a.clientId
-                              ? router.push(`/prontuarios/${a.clientId}`)
-                              : router.refresh()
-                        )
-                      }
-                    >
-                      Chamar
-                    </Button>
-                  ) : null
+                  <span className="flex items-center gap-1">
+                    {a.clientId && busyClientIds.has(a.clientId) ? (
+                      <span className="max-w-32 text-right text-[11px] text-muted-foreground">
+                        Em atendimento com outro profissional
+                      </span>
+                    ) : canCallRow(a) ? (
+                      <Button
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() =>
+                          run(
+                            () => updateAttendance(a.id, "in_service"),
+                            `${a.clientName} chamado(a).`,
+                            () =>
+                              a.clientId
+                                ? router.push(`/prontuarios/${a.clientId}`)
+                                : router.refresh()
+                          )
+                        }
+                      >
+                        Chamar
+                      </Button>
+                    ) : null}
+                    {/* H3.4: o cliente desistiu de esperar. */}
+                    {(canCheckIn ||
+                      isAdmin ||
+                      a.providerUserId === currentUserId) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs text-muted-foreground"
+                        disabled={isPending}
+                        onClick={() =>
+                          run(
+                            () => updateAttendance(a.id, "gave_up"),
+                            `${a.clientName}: desistência registrada.`
+                          )
+                        }
+                      >
+                        Desistiu
+                      </Button>
+                    )}
+                  </span>
                 }
               />
             ))}

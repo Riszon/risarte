@@ -64,13 +64,19 @@ export type StaffOption = {
 };
 
 // Waiting-room attendance flow. Must match the `attendance_status` enum.
-export const ATTENDANCE_STATUSES = ["waiting", "in_service", "done"] as const;
+export const ATTENDANCE_STATUSES = [
+  "waiting",
+  "in_service",
+  "done",
+  "gave_up",
+] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
 
 export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
   waiting: "Em espera",
   in_service: "Em atendimento",
   done: "Atendimento concluído",
+  gave_up: "Desistiu da espera",
 };
 
 /**

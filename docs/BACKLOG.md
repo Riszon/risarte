@@ -691,9 +691,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H3.3 Seletor de dias na agenda ✅ (v0.11.4): régua rolável de 42 dias com
       disponibilidade (verde/vermelho), nº de agendamentos e feriados/fechados/
       avulsos/bloqueios evidentes; clicar abre a visão Dia.
-- [ ] H3.4 Status de atendimento: faltou / cancelou em cima da hora / desistiu
-      da espera; espera longa dispara notificações insistentes aos envolvidos;
-      atendimento não concluído não fica aberto para sempre (tratamento).
+- [x] H3.4 Status de atendimento ✅ (v0.11.5, migração 0063): faltou / cancelou
+      em cima da hora / desistiu da espera (gave_up); espera longa (limite
+      configurável, padrão 20 min) destaca em vermelho e notifica a cada 15 min;
+      pendências de dias anteriores geram aviso diário + banner no painel.
 - [ ] H3.5 Check-in com confirmação (profissional, horário e sala); no futuro o
       próprio cliente fará o check-in.
 - [ ] H3.6 Troca de profissional de última hora (check-in/sala de espera): quem

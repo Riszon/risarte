@@ -50,7 +50,7 @@ export default async function AgendaConfigPage() {
     supabase
       .from("clinic_agenda_settings")
       .select(
-        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end, waiting_alert_minutes"
       )
       .returns<AgendaSettingRow[]>(),
     supabase
@@ -153,6 +153,7 @@ export default async function AgendaConfigPage() {
           openTime: values.openTime,
           closeTime: values.closeTime,
           weekdays: values.weekdays,
+          waitingAlertMinutes: values.waitingAlertMinutes,
         }}
         rooms={rooms}
         maxRooms={maxRooms}

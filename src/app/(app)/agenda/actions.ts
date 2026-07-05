@@ -915,10 +915,11 @@ export async function checkInAppointment(
   return { ok: true };
 }
 
-/** Professional calls the client (in_service) or finishes the attendance (done). */
+/** Professional calls the client (in_service), finishes the attendance (done)
+ * or records that the client gave up waiting (gave_up — H3.4). */
 export async function updateAttendance(
   appointmentId: string,
-  state: "in_service" | "done"
+  state: "in_service" | "done" | "gave_up"
 ): Promise<ActionResult> {
   await getSessionContext();
   const supabase = await createClient();
@@ -945,6 +946,13 @@ export async function updateAttendance(
         ok: false,
         error:
           "Este cliente já está em atendimento com outro profissional. Conclua o atendimento atual antes de chamar.",
+      };
+    }
+    if (error.message.includes("NOT_WAITING")) {
+      return {
+        ok: false,
+        error:
+          "Só é possível registrar desistência de quem está na sala de espera.",
       };
     }
     if (error.message.includes("NOT_ALLOWED")) {

@@ -13,6 +13,10 @@ import type {
   AppointmentType,
   AttendanceStatus,
 } from "@/lib/appointments";
+import {
+  resolveAgendaSettings,
+  type AgendaSettingRow,
+} from "@/lib/agenda-settings";
 import type { JourneyPhase } from "@/lib/journey";
 import { AttendancePanel, type PanelAppointment } from "./attendance-panel";
 
@@ -140,6 +144,36 @@ export default async function AtendimentoPage(
     "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), clients ( id, full_name, journey_phase )";
 
   const supabase = await createClient();
+
+  // H3.4: dispara os alertas de espera longa / pendências de dias anteriores
+  // (idempotente — dedupe no banco) e resolve o limite de espera da unidade.
+  let waitingAlertMinutes = 20;
+  let staleCount = 0;
+  if (!consultantView && clinicId) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const [{ data: settingRows }, { count: stale }] = await Promise.all([
+      supabase
+        .from("clinic_agenda_settings")
+        .select(
+          "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end, waiting_alert_minutes"
+        )
+        .returns<AgendaSettingRow[]>(),
+      supabase
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId)
+        .in("attendance", ["waiting", "in_service"])
+        .lt("starts_at", todayStart.toISOString()),
+      supabase.rpc("notify_attendance_alerts", { p_clinic_id: clinicId }),
+    ]);
+    waitingAlertMinutes = resolveAgendaSettings(
+      settingRows ?? [],
+      clinicId
+    ).waitingAlertMinutes;
+    staleCount = stale ?? 0;
+  }
+
   let query = supabase
     .from("appointments")
     .select(SELECT)
@@ -297,12 +331,22 @@ export default async function AtendimentoPage(
           )}
         </FilterForm>
       </div>
+      {staleCount > 0 && (
+        <p className="rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+          ⚠ {staleCount} atendimento{staleCount === 1 ? "" : "s"} de dias
+          anteriores continua{staleCount === 1 ? "" : "m"} em aberto (em espera
+          ou em atendimento). Use o filtro <strong>Semana</strong> ou{" "}
+          <strong>Mês</strong> para localizá-los e conclua — ou registre falta/
+          desistência.
+        </p>
+      )}
       <AttendancePanel
         appointments={appointments}
         canCheckIn={canCheckIn}
         canCall={canCall}
         currentUserId={session.userId}
         isAdmin={session.isAdminMaster}
+        waitingAlertMinutes={waitingAlertMinutes}
       />
     </div>
   );
