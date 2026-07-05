@@ -21,6 +21,7 @@ type ClinicRow = {
   name: string;
   code: string | null;
   type: ClinicType;
+  max_rooms: number | null;
   cnpj: string | null;
   phone: string | null;
   email: string | null;
@@ -40,7 +41,7 @@ export default async function ClinicsPage() {
   const { data: clinics } = await supabase
     .from("clinics")
     .select(
-      "id, name, code, type, cnpj, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, is_active"
+      "id, name, code, type, max_rooms, cnpj, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, is_active"
     )
     .order("type")
     .order("name")

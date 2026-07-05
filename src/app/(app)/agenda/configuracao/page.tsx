@@ -45,6 +45,7 @@ export default async function AgendaConfigPage() {
     { data: coordRow },
     { data: staffRows },
     { data: openDayRows },
+    { data: clinicMeta },
   ] = await Promise.all([
     supabase
       .from("clinic_agenda_settings")
@@ -87,10 +88,17 @@ export default async function AgendaConfigPage() {
           agenda_open_day_staff: { user_id: string }[] | null;
         }[]
       >(),
+    supabase
+      .from("clinics")
+      .select("max_rooms")
+      .eq("id", clinic.id)
+      .maybeSingle(),
   ]);
 
   const values = resolveAgendaSettings(settingRows ?? [], clinic.id);
   const rooms = sortRooms((roomRows ?? []).map(mapRoom));
+  const maxRooms =
+    (clinicMeta as { max_rooms: number | null } | null)?.max_rooms ?? 4;
   const coordinatorRoomId =
     (coordRow as { coordinator_room_id: string | null } | null)
       ?.coordinator_room_id ?? null;
@@ -147,6 +155,7 @@ export default async function AgendaConfigPage() {
           weekdays: values.weekdays,
         }}
         rooms={rooms}
+        maxRooms={maxRooms}
         coordinatorRoomId={coordinatorRoomId}
         staff={staff}
         openDays={openDays}

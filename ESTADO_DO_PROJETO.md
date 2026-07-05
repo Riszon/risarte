@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.7** · Última migração: **0061**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.8** · Última migração: **0062**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -400,11 +400,20 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   — `lookupCpfForRegistration` devolve um `ClientAutofill` (respeitando a RLS:
   sem acesso, campos vazios) e o formulário virou controlado nesses campos.
 
+- **H1e — Teto de cadeiras pelo Admin (migração 0062, v0.10.8):** **H1.10** quem
+  define quantas salas/cadeiras a unidade tem é o **Admin Master**, no cadastro
+  da clínica (`clinics.max_rooms`, campo "Salas de atendimento (cadeiras)" só
+  para unidades). A **Gerente** continua nomeando/ativando/desativando e
+  escolhendo a sala do Coordenador em "Configurar agenda", mas o botão
+  **"Adicionar sala"** some ao atingir o teto e a action `addRoom` bloqueia no
+  servidor; o editor mostra "N de M cadeiras". Editar a clínica não deixa
+  **reduzir** o teto abaixo das salas já criadas. Backfill: unidades existentes
+  recebem `greatest(salas atuais, 4)`.
+
 ## 3. Próximos passos (ordem de prioridade)
 
 1. **LOTE H1 (bugs do teste geral):** H1.8 encerrar
-   compartilhamento (botão + papéis + infos); H1.10 cadeiras máximas definidas
-   pelo Admin.
+   compartilhamento (botão + papéis + infos) — último item do Grupo 1.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
 3. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
 4. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

@@ -35,6 +35,7 @@ export function AgendaConfigEditor({
   clinicId,
   hours,
   rooms,
+  maxRooms,
   coordinatorRoomId,
   staff,
   openDays,
@@ -43,6 +44,8 @@ export function AgendaConfigEditor({
   clinicId: string;
   hours: { openTime: string; closeTime: string; weekdays: number[] };
   rooms: Room[];
+  /** Teto de salas/cadeiras definido pelo Admin no cadastro da clínica (H1.10). */
+  maxRooms: number;
   coordinatorRoomId: string | null;
   staff: { userId: string; name: string }[];
   openDays: {
@@ -188,7 +191,8 @@ export function AgendaConfigEditor({
           <CardTitle className="text-base">
             Salas de atendimento{" "}
             <span className="font-normal text-muted-foreground">
-              ({activeRooms.length} ativa{activeRooms.length === 1 ? "" : "s"})
+              ({activeRooms.length} ativa{activeRooms.length === 1 ? "" : "s"} ·{" "}
+              {rooms.length} de {maxRooms} cadeiras)
             </span>
           </CardTitle>
         </CardHeader>
@@ -267,27 +271,35 @@ export function AgendaConfigEditor({
               </li>
             ))}
           </ul>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              className="h-8 max-w-[14rem]"
-              placeholder="Nome da nova sala"
-              value={newRoom}
-              onChange={(e) => setNewRoom(e.target.value)}
-            />
-            <Button
-              size="sm"
-              disabled={isPending || !newRoom.trim()}
-              onClick={() =>
-                run(async () => {
-                  const result = await addRoom(clinicId, newRoom);
-                  if (result.ok) setNewRoom("");
-                  return result;
-                }, "Sala adicionada.")
-              }
-            >
-              Adicionar sala
-            </Button>
-          </div>
+          {rooms.length >= maxRooms ? (
+            <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs text-muted-foreground">
+              Limite de {maxRooms} cadeira(s) atingido (definido pelo Admin no
+              cadastro da clínica). Para ter mais cadeiras, peça ao Admin para
+              aumentar o limite da unidade.
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                className="h-8 max-w-[14rem]"
+                placeholder="Nome da nova sala"
+                value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+              />
+              <Button
+                size="sm"
+                disabled={isPending || !newRoom.trim()}
+                onClick={() =>
+                  run(async () => {
+                    const result = await addRoom(clinicId, newRoom);
+                    if (result.ok) setNewRoom("");
+                    return result;
+                  }, "Sala adicionada.")
+                }
+              >
+                Adicionar sala
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

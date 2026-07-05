@@ -30,6 +30,7 @@ export type ClinicFormData = {
   name?: string;
   code?: string | null;
   type?: ClinicType;
+  max_rooms?: number | null;
   cnpj?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -139,6 +140,26 @@ export function ClinicFormDialog({
               />
             </div>
           </div>
+          {type === "franchise_unit" && (
+            <div className="space-y-2">
+              <Label htmlFor="max_rooms">Salas de atendimento (cadeiras) *</Label>
+              <Input
+                id="max_rooms"
+                name="max_rooms"
+                type="number"
+                min={1}
+                max={50}
+                required
+                defaultValue={clinic?.max_rooms ?? 3}
+                className="w-28"
+              />
+              <p className="text-xs text-muted-foreground">
+                Número máximo de cadeiras da unidade. A Gerente nomeia, ativa e
+                desativa as cadeiras em “Configurar agenda”, mas não pode criar
+                além deste total.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cnpj">CNPJ</Label>

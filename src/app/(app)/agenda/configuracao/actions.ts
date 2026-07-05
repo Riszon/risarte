@@ -100,6 +100,23 @@ export async function addRoom(
   }
 
   const supabase = await createClient();
+
+  // H1.10: a Gerente não cria salas acima do teto definido pelo Admin.
+  const [{ data: clinic }, { count }] = await Promise.all([
+    supabase.from("clinics").select("max_rooms").eq("id", clinicId).maybeSingle(),
+    supabase
+      .from("clinic_rooms")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId),
+  ]);
+  const maxRooms = clinic?.max_rooms ?? 0;
+  if (maxRooms > 0 && (count ?? 0) >= maxRooms) {
+    return {
+      ok: false,
+      error: `Esta unidade permite no máximo ${maxRooms} sala(s) (definido pelo Admin no cadastro da clínica).`,
+    };
+  }
+
   const { data: last } = await supabase
     .from("clinic_rooms")
     .select("sort_order")

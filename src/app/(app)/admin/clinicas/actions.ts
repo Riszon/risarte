@@ -28,11 +28,24 @@ function parseClinicForm(formData: FormData) {
     return { error: "Informe o código da unidade (ex.: CBE)." as const };
   }
 
+  // H1.10: quem define quantas salas/cadeiras a unidade tem é o Admin. A
+  // Franqueadora não tem agenda/cadeiras — usa 1 (mínimo do check).
+  let maxRooms = 1;
+  if (type === "franchise_unit") {
+    maxRooms = Number(formData.get("max_rooms") ?? 0);
+    if (!Number.isInteger(maxRooms) || maxRooms < 1 || maxRooms > 50) {
+      return {
+        error: "Informe o número de salas/cadeiras (de 1 a 50)." as const,
+      };
+    }
+  }
+
   return {
     values: {
       name,
       type,
       code,
+      max_rooms: maxRooms,
       cnpj: cnpj ? formatCnpj(cnpj) : null,
       phone: phone ? formatPhone(phone) : null,
       email: field(formData, "email"),
@@ -84,6 +97,19 @@ export async function updateClinic(
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
+
+  // H1.10: não permitir baixar o teto abaixo das salas que a unidade já tem.
+  const { count } = await supabase
+    .from("clinic_rooms")
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId);
+  if (parsed.values.max_rooms < (count ?? 0)) {
+    return {
+      ok: false,
+      error: `Esta unidade já tem ${count} sala(s) cadastrada(s). Desative ou remova salas antes de reduzir o limite.`,
+    };
+  }
+
   const { error } = await supabase
     .from("clinics")
     .update(parsed.values)
