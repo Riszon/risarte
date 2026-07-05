@@ -70,6 +70,8 @@ export type PanelAppointment = {
   clinicName?: string | null;
   /** Sala/cadeira do atendimento (ou "ONLINE") — confirmação de check-in (H3.5). */
   roomName?: string | null;
+  /** H3.4b: dia (YYYY-MM-DD) desde quando está pendente, se veio de dia anterior. */
+  pendingSinceIso?: string | null;
   // Attendance timeline (for the per-visit history).
   checkedInAt?: string | null;
   calledAt?: string | null;
@@ -378,8 +380,18 @@ export function AttendancePanel({
     a: PanelAppointment;
     action?: React.ReactNode;
   }) {
+    const pendingSince = a.pendingSinceIso
+      ? new Date(`${a.pendingSinceIso}T00:00:00`).toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+        })
+      : null;
     return (
-      <li className="flex items-center justify-between gap-2 rounded-md border bg-card p-3">
+      <li
+        className={`flex items-center justify-between gap-2 rounded-md border p-3 ${
+          pendingSince ? "border-red-300 bg-red-50" : "bg-card"
+        }`}
+      >
         <div className="min-w-0">
           {a.clientId ? (
             <Link
@@ -390,6 +402,14 @@ export function AttendancePanel({
             </Link>
           ) : (
             <span className="text-sm font-medium">{a.clientName}</span>
+          )}
+          {pendingSince && (
+            <Badge
+              variant="outline"
+              className="ml-1 border-red-300 bg-red-100 text-[10px] text-red-700"
+            >
+              Pendente desde {pendingSince}
+            </Badge>
           )}
           {a.clinicName && (
             <p className="text-[11px] font-medium text-primary">

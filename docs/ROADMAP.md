@@ -36,6 +36,13 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       bolinha verde (tem sala livre) / vermelha (lotado), nº de agendamentos,
       Fechado/Feriado/Avulso/Bloqueado evidentes, tooltip com o motivo e
       legenda; clicar abre a visão Dia daquela data (preserva filtro de salas).
+- [x] **H3.4b Atendimento não resolvido carrega para o dia (v0.11.8, migração
+      0065)** — pendências de dias anteriores (a chegar / em espera / em
+      atendimento) são **trazidas para o painel de hoje** com selo vermelho
+      **"Pendente desde DD/MM"** (registra o dia de origem) + banner; um
+      **"em atendimento" não concluído bloqueia a cadeira e o profissional**
+      (`PROVIDER_BUSY`/`ROOM_BUSY` em `update_attendance`): não dá para chamar
+      outro cliente naquela sala/profissional até concluir — força resolver.
 - [x] **H3.4 Status de atendimento** ✅ (04/07, v0.11.5, migração 0063) —
       "A chegar" ganhou menu **Faltou / Cancelou em cima da hora**; "Em espera"
       ganhou **Desistiu** (estado `gave_up` → status cancelado + aviso ao

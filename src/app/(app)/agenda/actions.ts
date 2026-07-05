@@ -948,6 +948,20 @@ export async function updateAttendance(
           "Este cliente já está em atendimento com outro profissional. Conclua o atendimento atual antes de chamar.",
       };
     }
+    if (error.message.includes("PROVIDER_BUSY")) {
+      return {
+        ok: false,
+        error:
+          "Este profissional já está em atendimento não concluído. Conclua o atendimento atual antes de chamar outro cliente.",
+      };
+    }
+    if (error.message.includes("ROOM_BUSY")) {
+      return {
+        ok: false,
+        error:
+          "A sala/cadeira já está ocupada por um atendimento não concluído. Conclua-o antes de chamar outro cliente para esta sala.",
+      };
+    }
     if (error.message.includes("NOT_WAITING")) {
       return {
         ok: false,

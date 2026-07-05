@@ -150,34 +150,24 @@ export default async function AtendimentoPage(
     "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, is_online, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), room:clinic_rooms ( name ), clients ( id, full_name, journey_phase )";
 
   const supabase = await createClient();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
   // H3.4: dispara os alertas de espera longa / pendências de dias anteriores
   // (idempotente — dedupe no banco) e resolve o limite de espera da unidade.
   let waitingAlertMinutes = 20;
-  let staleCount = 0;
   if (!consultantView && clinicId) {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const [{ data: settingRows }, { count: stale }] = await Promise.all([
-      supabase
-        .from("clinic_agenda_settings")
-        .select(
-          "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end, waiting_alert_minutes"
-        )
-        .returns<AgendaSettingRow[]>(),
-      supabase
-        .from("appointments")
-        .select("id", { count: "exact", head: true })
-        .eq("clinic_id", clinicId)
-        .in("attendance", ["waiting", "in_service"])
-        .lt("starts_at", todayStart.toISOString()),
-      supabase.rpc("notify_attendance_alerts", { p_clinic_id: clinicId }),
-    ]);
+    const { data: settingRows } = await supabase
+      .from("clinic_agenda_settings")
+      .select(
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end, waiting_alert_minutes"
+      )
+      .returns<AgendaSettingRow[]>();
+    await supabase.rpc("notify_attendance_alerts", { p_clinic_id: clinicId });
     waitingAlertMinutes = resolveAgendaSettings(
       settingRows ?? [],
       clinicId
     ).waitingAlertMinutes;
-    staleCount = stale ?? 0;
   }
 
   let query = supabase
@@ -192,7 +182,26 @@ export default async function AtendimentoPage(
     query = query.eq("clinic_id", clinicId!);
   }
   const { data } = await query.returns<Row[]>();
-  const rows = data ?? [];
+  let rows = data ?? [];
+
+  // H3.4b: pendências de dias anteriores (a chegar / em espera / em atendimento)
+  // são CARREGADAS para o painel de hoje até serem resolvidas — sem precisar
+  // caçar em que dia ficaram. (Só na visão da unidade.)
+  let carriedCount = 0;
+  if (!consultantView && clinicId) {
+    const { data: carried } = await supabase
+      .from("appointments")
+      .select(SELECT)
+      .eq("clinic_id", clinicId)
+      .in("status", ["scheduled", "confirmed"])
+      .lt("starts_at", todayStart.toISOString())
+      .order("starts_at")
+      .returns<Row[]>();
+    const seen = new Set(rows.map((r) => r.id));
+    const extra = (carried ?? []).filter((r) => !seen.has(r.id));
+    carriedCount = extra.length;
+    rows = [...extra, ...rows];
+  }
 
   // Resolve the names of everyone who moved a client (and the providers, for
   // the professional filter) in a single query.
@@ -252,26 +261,36 @@ export default async function AtendimentoPage(
     shown = rows.filter((r) => r.provider_user_id === providerFilter);
   }
 
-  const appointments: PanelAppointment[] = shown.map((a) => ({
-    id: a.id,
-    type: a.type,
-    status: a.status,
-    starts_at: a.starts_at,
-    attendance: a.attendance,
-    clientId: a.clients?.id ?? null,
-    clientName: a.clients?.full_name ?? "—",
-    providerName: nameOf(a.provider_user_id, a.provider?.full_name),
-    providerUserId: a.provider_user_id,
-    calledBy: a.called_by,
-    clinicName: consultantView ? (a.clinics?.name ?? null) : null,
-    roomName: a.is_online ? "ONLINE" : (a.room?.name ?? null),
-    checkedInAt: a.checked_in_at,
-    calledAt: a.called_at,
-    doneAt: a.done_at,
-    checkedInByName: nameOf(a.checked_in_by),
-    calledByName: nameOf(a.called_by),
-    doneByName: nameOf(a.done_by),
-  }));
+  const todayIsoDate = `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, "0")}-${String(todayStart.getDate()).padStart(2, "0")}`;
+  const localDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const appointments: PanelAppointment[] = shown.map((a) => {
+    const apptDate = localDate(a.starts_at);
+    return {
+      id: a.id,
+      type: a.type,
+      status: a.status,
+      starts_at: a.starts_at,
+      attendance: a.attendance,
+      clientId: a.clients?.id ?? null,
+      clientName: a.clients?.full_name ?? "—",
+      providerName: nameOf(a.provider_user_id, a.provider?.full_name),
+      providerUserId: a.provider_user_id,
+      calledBy: a.called_by,
+      clinicName: consultantView ? (a.clinics?.name ?? null) : null,
+      roomName: a.is_online ? "ONLINE" : (a.room?.name ?? null),
+      // H3.4b: carregado de um dia anterior ainda sem resolução.
+      pendingSinceIso: apptDate < todayIsoDate ? apptDate : null,
+      checkedInAt: a.checked_in_at,
+      calledAt: a.called_at,
+      doneAt: a.done_at,
+      checkedInByName: nameOf(a.checked_in_by),
+      calledByName: nameOf(a.called_by),
+      doneByName: nameOf(a.done_by),
+    };
+  });
 
   // Reception registers arrival; in the Consultor view the Consultor handles
   // all steps of their own presentations (arrival, call, conclude).
@@ -386,13 +405,14 @@ export default async function AtendimentoPage(
           )}
         </FilterForm>
       </div>
-      {staleCount > 0 && (
+      {carriedCount > 0 && (
         <p className="rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700">
-          ⚠ {staleCount} atendimento{staleCount === 1 ? "" : "s"} de dias
-          anteriores continua{staleCount === 1 ? "" : "m"} em aberto (em espera
-          ou em atendimento). Use o filtro <strong>Semana</strong> ou{" "}
-          <strong>Mês</strong> para localizá-los e conclua — ou registre falta/
-          desistência.
+          ⚠ {carriedCount} atendimento{carriedCount === 1 ? "" : "s"} de dias
+          anteriores continua{carriedCount === 1 ? "" : "m"} em aberto e
+          {carriedCount === 1 ? " foi trazido" : " foram trazidos"} para o
+          painel de hoje (marcados como <strong>“Pendente desde…”</strong>).
+          Conclua o atendimento ou registre falta/desistência para liberar a
+          cadeira e o profissional.
         </p>
       )}
       <AttendancePanel

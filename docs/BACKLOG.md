@@ -695,6 +695,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       em cima da hora / desistiu da espera (gave_up); espera longa (limite
       configurável, padrão 20 min) destaca em vermelho e notifica a cada 15 min;
       pendências de dias anteriores geram aviso diário + banner no painel.
+- [x] H3.4b Atendimento não resolvido carrega para o dia ✅ (v0.11.8, migração
+      0065): pendentes (a chegar/em espera/em atendimento) de dias anteriores
+      aparecem no painel de hoje com "Pendente desde DD/MM"; "em atendimento"
+      não concluído bloqueia a cadeira e o profissional até concluir.
 - [x] H3.5 Check-in com confirmação ✅ (v0.11.6): pop-up confirma cliente,
       horário/tipo, profissional e sala antes de registrar a chegada.
 - [x] H3.6 Troca de profissional de última hora ✅ (v0.11.7, migração 0064):
