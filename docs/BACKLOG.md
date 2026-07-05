@@ -697,9 +697,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       pendências de dias anteriores geram aviso diário + banner no painel.
 - [x] H3.5 Check-in com confirmação ✅ (v0.11.6): pop-up confirma cliente,
       horário/tipo, profissional e sala antes de registrar a chegada.
-- [ ] H3.6 Troca de profissional de última hora (check-in/sala de espera): quem
-      faz é gerente ou recepção; tudo registrado; notifica os 2 profissionais +
-      coordenador + gerente; relatório de alterações; alerta se ficar frequente.
+- [x] H3.6 Troca de profissional de última hora ✅ (v0.11.7, migração 0064):
+      recepção/gerente troca no A chegar/Em espera; registra em
+      appointment_provider_swaps; notifica os 2 profissionais + coordenador +
+      gerente; ≥5 trocas no mês na unidade dispara alerta de frequência.
 - [ ] H3.7 SDR: passa a ver também os clientes que ela transferiu/alterou/
       agendou (acompanha até a reavaliação); Jornada restrita aos clientes que
       ela vê nos prontuários; Agenda completa, mas SEM abrir prontuário de

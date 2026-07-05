@@ -18,7 +18,11 @@ import {
   type AgendaSettingRow,
 } from "@/lib/agenda-settings";
 import type { JourneyPhase } from "@/lib/journey";
-import { AttendancePanel, type PanelAppointment } from "./attendance-panel";
+import {
+  AttendancePanel,
+  type PanelAppointment,
+  type SwapStaff,
+} from "./attendance-panel";
 
 export const metadata: Metadata = { title: "Atendimento" };
 
@@ -281,6 +285,54 @@ export default async function AtendimentoPage(
       "commercial_consultant",
     ]);
 
+  // H3.6: Recepção ou Gerente troca o profissional de última hora. Carrega a
+  // equipe da unidade para o seletor do novo profissional.
+  const canSwapProvider =
+    !consultantView &&
+    Boolean(clinicId) &&
+    hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager"]);
+  let swapStaff: SwapStaff[] = [];
+  if (canSwapProvider && clinicId) {
+    const [{ data: roleRows }, { data: consultants }] = await Promise.all([
+      supabase
+        .from("user_clinic_roles")
+        .select("user_id, role, profiles ( full_name )")
+        .eq("clinic_id", clinicId)
+        .returns<
+          { user_id: string; role: string; profiles: { full_name: string } | null }[]
+        >(),
+      supabase.rpc("providers_with_access", {
+        p_clinic_id: clinicId,
+        p_role: "commercial_consultant",
+      }),
+    ]);
+    const map = new Map<string, SwapStaff>();
+    for (const r of roleRows ?? []) {
+      const e = map.get(r.user_id) ?? {
+        userId: r.user_id,
+        name: r.profiles?.full_name ?? "—",
+        roles: [],
+      };
+      e.roles.push(r.role);
+      map.set(r.user_id, e);
+    }
+    for (const c of (consultants ?? []) as {
+      user_id: string;
+      full_name: string;
+    }[]) {
+      const e = map.get(c.user_id) ?? {
+        userId: c.user_id,
+        name: c.full_name ?? "—",
+        roles: [],
+      };
+      if (!e.roles.includes("commercial_consultant")) {
+        e.roles.push("commercial_consultant");
+      }
+      map.set(c.user_id, e);
+    }
+    swapStaff = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -350,6 +402,8 @@ export default async function AtendimentoPage(
         currentUserId={session.userId}
         isAdmin={session.isAdminMaster}
         waitingAlertMinutes={waitingAlertMinutes}
+        canSwapProvider={canSwapProvider}
+        swapStaff={swapStaff}
       />
     </div>
   );

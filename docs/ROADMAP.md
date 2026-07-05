@@ -49,9 +49,13 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       chegada" abre um pop-up confirmando **cliente, horário/tipo, profissional
       e sala** antes de concluir (SELECT do painel ganhou sala/ONLINE). Prepara
       o auto check-in do cliente no futuro.
-- [ ] **H3.6 Troca de profissional de última hora [M] 🗄️** — botão no
-      check-in/espera (recepção/gerente); registra tudo; notifica os 2
-      profissionais + coordenador + gerente; alerta se ficar frequente no mês.
+- [x] **H3.6 Troca de profissional de última hora** ✅ (04/07, v0.11.7,
+      migração 0064) — "Trocar profissional" no A chegar / Em espera
+      (recepção/gerente/admin) → escolhe outro profissional (filtrado pela
+      função do tipo) + motivo; RPC `swap_appointment_provider` grava em
+      `appointment_provider_swaps`, valida conflito de horário e notifica o
+      profissional anterior, o novo, o coordenador e a gerente; ≥5 trocas no
+      mês na unidade disparam alerta de frequência a coordenador/gerente.
 - [ ] **H3.7 Visibilidade da SDR [M/G] 🗄️** — SDR vê também clientes que
       transferiu/alterou/agendou (até a reavaliação); Jornada restrita a esses;
       Agenda completa mas sem abrir prontuário não permitido. Nova regra RLS

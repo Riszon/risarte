@@ -966,6 +966,59 @@ export async function updateAttendance(
   return { ok: true };
 }
 
+/** H3.6: troca o profissional de um atendimento de última hora (check-in/espera).
+ * Recepção ou Gerente da unidade (ou Admin). Notifica os envolvidos. */
+export async function swapAppointmentProvider(
+  appointmentId: string,
+  newProviderId: string,
+  reason: string
+): Promise<ActionResult> {
+  await getSessionContext();
+  if (!newProviderId) return { ok: false, error: "Escolha o novo profissional." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("swap_appointment_provider", {
+    p_appointment_id: appointmentId,
+    p_new_provider: newProviderId,
+    p_reason: reason.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas a Recepção ou a Gerente pode trocar o profissional.",
+      };
+    }
+    if (error.message.includes("SAME_PROVIDER")) {
+      return { ok: false, error: "Escolha um profissional diferente do atual." };
+    }
+    if (error.message.includes("NOT_SWAPPABLE")) {
+      return {
+        ok: false,
+        error:
+          "Só é possível trocar o profissional antes de concluir o atendimento.",
+      };
+    }
+    if (error.message.includes("PROVIDER_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error:
+          "O profissional escolhido já tem outro atendimento neste horário.",
+      };
+    }
+    console.error("swap_appointment_provider failed:", error.message);
+    return { ok: false, error: "Não foi possível trocar o profissional." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "appointment",
+    entityId: appointmentId,
+    details: { changes: { provider_swap: true } },
+  });
+  revalidatePath("/atendimento");
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
 export type SchedulingInfo = {
   phase: JourneyPhase;
   journeyStatus: JourneyStatus | null;

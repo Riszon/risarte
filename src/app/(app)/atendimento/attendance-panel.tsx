@@ -31,14 +31,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   APPOINTMENT_TYPE_LABELS,
+  TYPE_PROVIDER_ROLES,
   type AppointmentStatus,
   type AppointmentType,
   type AttendanceStatus,
 } from "@/lib/appointments";
+import type { UserRole } from "@/lib/roles";
 import {
   checkInAppointment,
+  swapAppointmentProvider,
   updateAppointmentStatus,
   updateAttendance,
 } from "../agenda/actions";
@@ -65,6 +77,13 @@ export type PanelAppointment = {
   checkedInByName?: string | null;
   calledByName?: string | null;
   doneByName?: string | null;
+};
+
+/** Equipe da unidade para a troca de profissional (H3.6). */
+export type SwapStaff = {
+  userId: string;
+  name: string;
+  roles: string[];
 };
 
 function minutesBetween(aIso: string, bIso: string): number {
@@ -251,6 +270,8 @@ export function AttendancePanel({
   currentUserId,
   isAdmin,
   waitingAlertMinutes,
+  canSwapProvider,
+  swapStaff,
 }: {
   appointments: PanelAppointment[];
   canCheckIn: boolean;
@@ -259,6 +280,9 @@ export function AttendancePanel({
   isAdmin: boolean;
   /** H3.4: minutos de espera que disparam o destaque "Espera longa". */
   waitingAlertMinutes?: number;
+  /** H3.6: Recepção/Gerente pode trocar o profissional de última hora. */
+  canSwapProvider?: boolean;
+  swapStaff?: SwapStaff[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -266,6 +290,10 @@ export function AttendancePanel({
   const [confirmCheckIn, setConfirmCheckIn] = useState<PanelAppointment | null>(
     null
   );
+  // H3.6: troca de profissional (qual atendimento + novo profissional + motivo).
+  const [swapFor, setSwapFor] = useState<PanelAppointment | null>(null);
+  const [swapProviderId, setSwapProviderId] = useState("");
+  const [swapReason, setSwapReason] = useState("");
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -290,6 +318,23 @@ export function AttendancePanel({
     isAdmin ||
     a.calledBy === currentUserId ||
     (a.calledBy === null && a.providerUserId === currentUserId);
+
+  // H3.6: profissionais elegíveis para assumir o atendimento (pela função que
+  // o tipo do compromisso exige), exceto o atual.
+  const eligibleProviders = (a: PanelAppointment) => {
+    const roles = TYPE_PROVIDER_ROLES[a.type];
+    return (swapStaff ?? []).filter(
+      (s) =>
+        s.userId !== a.providerUserId &&
+        s.roles.some((r) => roles.includes(r as UserRole))
+    );
+  };
+
+  function openSwap(a: PanelAppointment) {
+    setSwapFor(a);
+    setSwapProviderId("");
+    setSwapReason("");
+  }
 
   // H1.4: only the appointment's assigned professional calls the client
   // (Admin always; no assigned professional falls back to the role rule).
@@ -437,6 +482,103 @@ export function AttendancePanel({
         </DialogContent>
       </Dialog>
 
+      {/* H3.6: troca de profissional de última hora. */}
+      <Dialog open={swapFor !== null} onOpenChange={(o) => !o && setSwapFor(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Trocar profissional</DialogTitle>
+            <DialogDescription>
+              Troca de última hora. A alteração fica registrada e todos os
+              envolvidos (profissional anterior, novo, coordenador e gerente)
+              são avisados.
+            </DialogDescription>
+          </DialogHeader>
+          {swapFor && (
+            <div className="space-y-3 text-sm">
+              <p>
+                <span className="font-medium">{swapFor.clientName}</span> ·{" "}
+                {time(swapFor.starts_at)} ·{" "}
+                {APPOINTMENT_TYPE_LABELS[swapFor.type]}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Profissional atual: {swapFor.providerName ?? "—"}
+              </p>
+              <div className="space-y-1.5">
+                <Label>Novo profissional *</Label>
+                {eligibleProviders(swapFor).length > 0 ? (
+                  <Select
+                    items={eligibleProviders(swapFor).map((s) => ({
+                      value: s.userId,
+                      label: s.name,
+                    }))}
+                    value={swapProviderId || null}
+                    onValueChange={(v) => v !== null && setSwapProviderId(v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      {swapProviderId ? (
+                        <SelectValue />
+                      ) : (
+                        <span className="flex-1 text-left text-muted-foreground">
+                          Escolha o profissional
+                        </span>
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eligibleProviders(swapFor).map((s) => (
+                        <SelectItem key={s.userId} value={s.userId}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                    Não há outro profissional com a função necessária nesta
+                    unidade.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="swap-reason">Motivo (opcional)</Label>
+                <Input
+                  id="swap-reason"
+                  value={swapReason}
+                  onChange={(e) => setSwapReason(e.target.value)}
+                  placeholder="Ex.: imprevisto do profissional"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSwapFor(null)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={isPending || !swapProviderId}
+              onClick={() => {
+                const a = swapFor;
+                if (!a || !swapProviderId) return;
+                run(
+                  () =>
+                    swapAppointmentProvider(a.id, swapProviderId, swapReason),
+                  `Profissional trocado no atendimento de ${a.clientName}.`,
+                  () => {
+                    setSwapFor(null);
+                    router.refresh();
+                  }
+                );
+              }}
+            >
+              Confirmar troca
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -504,6 +646,14 @@ export function AttendancePanel({
                             >
                               Cancelou em cima da hora
                             </DropdownMenuItem>
+                            {canSwapProvider && a.providerUserId && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => openSwap(a)}>
+                                  Trocar profissional
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuGroup>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -557,24 +707,49 @@ export function AttendancePanel({
                         Chamar
                       </Button>
                     ) : null}
-                    {/* H3.4: o cliente desistiu de esperar. */}
+                    {/* H3.4/H3.6: desistência da espera / troca de profissional. */}
                     {(canCheckIn ||
                       isAdmin ||
-                      a.providerUserId === currentUserId) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs text-muted-foreground"
-                        disabled={isPending}
-                        onClick={() =>
-                          run(
-                            () => updateAttendance(a.id, "gave_up"),
-                            `${a.clientName}: desistência registrada.`
-                          )
-                        }
-                      >
-                        Desistiu
-                      </Button>
+                      a.providerUserId === currentUserId ||
+                      (canSwapProvider && Boolean(a.providerUserId))) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={isPending}
+                              aria-label="Outras opções"
+                              className="h-8 px-1.5"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuGroup>
+                            {canSwapProvider && a.providerUserId && (
+                              <DropdownMenuItem onClick={() => openSwap(a)}>
+                                Trocar profissional
+                              </DropdownMenuItem>
+                            )}
+                            {(canCheckIn ||
+                              isAdmin ||
+                              a.providerUserId === currentUserId) && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  run(
+                                    () => updateAttendance(a.id, "gave_up"),
+                                    `${a.clientName}: desistência registrada.`
+                                  )
+                                }
+                              >
+                                Desistiu da espera
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </span>
                 }
