@@ -688,9 +688,9 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       fechados/avulsos + nº de agendamentos e de horários livres por dia (para
       o profissional/sala/duração escolhidos); clicar no dia preenche a data e
       o seletor lista os horários livres.
-- [ ] H3.3 Seletor de dias na lateral da agenda (bonito e intuitivo, não
-      formulário): disponibilidade por dia, feriados/fechados evidentes; clicar
-      abre a agenda do dia.
+- [x] H3.3 Seletor de dias na agenda ✅ (v0.11.4): régua rolável de 42 dias com
+      disponibilidade (verde/vermelho), nº de agendamentos e feriados/fechados/
+      avulsos/bloqueios evidentes; clicar abre a visão Dia.
 - [ ] H3.4 Status de atendimento: faltou / cancelou em cima da hora / desistiu
       da espera; espera longa dispara notificações insistentes aos envolvidos;
       atendimento não concluído não fica aberto para sempre (tratamento).

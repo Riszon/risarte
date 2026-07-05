@@ -31,9 +31,11 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       dias fechados/bloqueados não são clicáveis; clicar num dia disponível
       preenche a data e o seletor lista os horários livres. Action
       `getMonthAgendaPeek` substituiu `getMonthDayCounts`.
-- [ ] **H3.3 Seletor de dias na lateral [M]** — régua de dias (não formulário)
-      na agenda: vaga/feriado/fechado por dia; clicar abre a visão Dia.
-      Componente novo com os mesmos dados de config/feriados/vagas.
+- [x] **H3.3 Seletor de dias [M]** ✅ (04/07, v0.11.4) — régua rolável
+      (`day-strip.tsx`, 42 dias a partir de hoje) no topo da agenda: por dia,
+      bolinha verde (tem sala livre) / vermelha (lotado), nº de agendamentos,
+      Fechado/Feriado/Avulso/Bloqueado evidentes, tooltip com o motivo e
+      legenda; clicar abre a visão Dia daquela data (preserva filtro de salas).
 - [ ] **H3.4 Status de atendimento [M/G] 🗄️** — desistiu da espera / cancelou
       em cima da hora / não apareceu; espera longa → notificações insistentes
       (limite configurável tipo SLA); atendimento não concluído no fim do dia

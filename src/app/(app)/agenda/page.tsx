@@ -38,6 +38,7 @@ import { WeekGrid, type AgendaAppointment } from "./week-grid";
 import { WeekTimeGrid } from "./week-time-grid";
 import { MonthView } from "./month-grid";
 import { DayRoomGrid } from "./day-room-grid";
+import { DayStrip } from "./day-strip";
 import { RoomFilter } from "./room-filter";
 import { CloseAgendaDialog } from "./close-agenda-dialog";
 import { AgendaToolbar } from "./agenda-toolbar";
@@ -587,6 +588,17 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           )}
         </div>
       </div>
+
+      {/* H3.3: seletor de dias — régua rolável com disponibilidade por dia. */}
+      {clinicId && (
+        <div className="mx-auto max-w-7xl">
+          <DayStrip
+            clinicId={clinicId}
+            selectedIso={view === "dia" ? dayIso : null}
+            salas={salasRaw || undefined}
+          />
+        </div>
+      )}
 
       {clinicId && allRooms.length > 0 && (
         <div className="mx-auto max-w-7xl">
