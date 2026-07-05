@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 
-export const metadata: Metadata = { title: "Usuários" };
+export const metadata: Metadata = { title: "Risartanos" };
 
 type ProfileRow = {
   id: string;
@@ -57,9 +57,9 @@ export default async function UsersPage() {
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Risartanos</h1>
           <p className="text-sm text-muted-foreground">
-            Equipe da rede e suas funções por clínica.
+            Os colaboradores da rede e suas funções por clínica.
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/admin/usuarios/novo" />}>

@@ -441,6 +441,15 @@ export function AppointmentFormDialog({
       !openWindow &&
       daySchedule.holidayAttend !== true
   );
+  // H2.9: encaixe em dia fechado é permitido, mas com alerta na escolha da data.
+  const encaixeClosedDay = Boolean(
+    isEncaixe &&
+      effectiveConfig &&
+      dayWeekday !== null &&
+      !weekdayConfigured &&
+      !openWindow &&
+      daySchedule.holidayAttend !== true
+  );
 
   const timeItems = useMemo(() => {
     if (holidayClosed) return [];
@@ -920,7 +929,9 @@ export function AppointmentFormDialog({
                 className={
                   holidayClosed || dayClosed
                     ? "font-medium text-destructive"
-                    : "text-muted-foreground"
+                    : encaixeClosedDay
+                      ? "font-medium text-amber-700"
+                      : "text-muted-foreground"
                 }
               >
                 {date
@@ -928,9 +939,11 @@ export function AppointmentFormDialog({
                     ? "Feriado sem atendimento nesta unidade."
                     : dayClosed
                       ? "A unidade não atende neste dia da semana."
-                      : openWindow
-                        ? `Dia avulso liberado — atendimento das ${openWindow.start} às ${openWindow.end}.`
-                        : "Só aparecem horários livres dentro do funcionamento."
+                      : encaixeClosedDay
+                        ? "Atenção: a unidade não atende neste dia — o agendamento só é permitido por ser Urgência/Emergência."
+                        : openWindow
+                          ? `Dia avulso liberado — atendimento das ${openWindow.start} às ${openWindow.end}.`
+                          : "Só aparecem horários livres dentro do funcionamento."
                   : ""}
               </span>
               {effectiveClinicId && (

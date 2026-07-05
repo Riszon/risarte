@@ -76,7 +76,8 @@ const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart
 
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
-  { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
+  // H2.2: colaboradores da rede são "Risartanos" (só o rótulo; rota mantida).
+  { href: "/admin/usuarios", label: "Risartanos", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },

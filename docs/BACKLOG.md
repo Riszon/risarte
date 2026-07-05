@@ -661,22 +661,22 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] **H1.10 Cadeiras — máximo definido pelo Admin:** `clinics.max_rooms` no
       cadastro; a Gerente não cria acima do teto (migração 0062, v0.10.8).
 
-### H2 — Ajustes rápidos
-- [ ] H2.1 Renomear a aba "Ativos" → "Clientes" (o número soma ativos+inativos).
-- [ ] H2.2 Renomear o título "Usuários" → "Risartanos" (só o título/tela).
-- [ ] H2.3 Pilar: tirar a etapa de confirmação ao enviar; apenas exigir que o
-      pilar esteja definido.
-- [ ] H2.4 Depois de enviar ao Comercial: esconder "Reabrir para edição" (o
-      botão só volta se o plano for devolvido para revisão).
-- [ ] H2.5 Trocar para a visão Dia abre HOJE (não o 1º dia do mês/da semana).
-- [ ] H2.6 A visão Mês abre o mês ATUAL quando o mês vira.
-- [ ] H2.7 Na visão Semana, clicar num dia abre a visão Dia (como já é no Mês).
-- [ ] H2.8 Card de agendamento de 15 min mostra o nome do cliente.
-- [ ] H2.9 Alerta de dia fechado/feriado NA ESCOLHA da data (não só ao salvar);
-      urgência/emergência continua liberada, mas com o alerta.
-- [ ] H2.10 Dia/horário passado: não abrir o pop-up de agendamento; só avisar.
-- [ ] H2.11 Recepção pode alterar o status / cancelar agendamento FUTURO.
-- [ ] H2.12 Pop-up "i" do card: mostrar os procedimentos/sessões do agendamento.
+### H2 — Ajustes rápidos ✅ COMPLETO (04/07/2026, sem migração, v0.11.0)
+- [x] H2.1 Aba "Ativos" → "Clientes" (o número soma ativos+inativos).
+- [x] H2.2 "Usuários" → "Risartanos" (menu + título; rota mantida).
+- [x] H2.3 Pilar: sem etapa de confirmação; envio só exige o pilar definido.
+- [x] H2.4 Depois de enviar ao Comercial: "Reabrir para edição" some (volta se
+      o caso retornar ao Centro de Planejamento).
+- [x] H2.5 Trocar para a visão Dia abre HOJE (toolbar parte de hoje).
+- [x] H2.6 A visão Mês abre o mês ATUAL (idem — toolbar parte de hoje).
+- [x] H2.7 Na visão Semana, clicar no dia (cabeçalho) abre a visão Dia.
+- [x] H2.8 Card de 15 min compacto com o nome do cliente (Dia + Semana).
+- [x] H2.9 Alerta na escolha da data: dia fechado/feriado/dia avulso + alerta
+      âmbar quando urgência/emergência em dia fechado (liberado com aviso).
+- [x] H2.10 Dia/horário passado não abre o pop-up de agendamento; só avisa.
+- [x] H2.11 Alterar situação (cancelar/faltou) pelo pop-up "i" em qualquer
+      visão; cancelamento devolve as sessões do tratamento para "a agendar".
+- [x] H2.12 Pop-up "i" mostra as sessões/procedimentos do agendamento (via H1c).
 
 ### H3 — Melhorias médias
 - [ ] H3.1 Formulário de agendamento reordenado: data/horário/sugestões como

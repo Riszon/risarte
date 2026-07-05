@@ -411,6 +411,9 @@ export function DayRoomGrid({
     const ds = displayedStatus(appointment);
     const isFuture =
       new Date(appointment.starts_at).getTime() >= today.getTime();
+    // H2.8: agendamento curto (15 min) vira card compacto de UMA linha com o
+    // nome do cliente visível (status/edição continuam pelo pop-up "i").
+    const compact = height < 40;
 
     const draggable = canManage && isFuture;
     return (
@@ -432,7 +435,10 @@ export function DayRoomGrid({
           setDragOver(null);
         }}
         className={cn(
-          "absolute overflow-hidden rounded-md border px-1.5 py-1 text-[11px] shadow-sm",
+          "absolute overflow-hidden rounded-md border shadow-sm",
+          compact
+            ? "flex items-center px-1 text-[10px]"
+            : "px-1.5 py-1 text-[11px]",
           STATUS_STYLES[appointment.status],
           draggable && "cursor-grab active:cursor-grabbing",
           appointment.needs_reschedule && "ring-2 ring-red-500",
@@ -446,8 +452,13 @@ export function DayRoomGrid({
           width: `calc(${widthPct}% - 2px)`,
         }}
       >
-        <div className="flex items-center justify-between gap-1">
-          <span className="flex items-center gap-1 font-medium">
+        <div
+          className={cn(
+            "flex items-center gap-1",
+            compact ? "min-w-0 flex-1" : "justify-between"
+          )}
+        >
+          <span className="flex shrink-0 items-center gap-1 font-medium">
             {appointment.needs_reschedule && (
               <AlertTriangle className="size-3 shrink-0 text-red-600" />
             )}
@@ -456,9 +467,18 @@ export function DayRoomGrid({
               minute: "2-digit",
             })}
           </span>
-          <span className="flex items-center">
+          {compact && appointment.clients && (
+            <Link
+              href={`/prontuarios/${appointment.clients.id}`}
+              className="min-w-0 flex-1 truncate font-medium hover:underline"
+            >
+              {appointment.clients.full_name}
+            </Link>
+          )}
+          <span className="flex shrink-0 items-center">
             <AppointmentInfoDialog
               appointment={appointment}
+              canManage={canManage}
               trigger={
                 <Button
                   variant="ghost"
@@ -500,67 +520,71 @@ export function DayRoomGrid({
           )}
           </span>
         </div>
-        {appointment.clients && (
-          <Link
-            href={`/prontuarios/${appointment.clients.id}`}
-            className="block truncate font-medium hover:underline"
-          >
-            {appointment.clients.full_name}
-          </Link>
+        {!compact && (
+          <>
+            {appointment.clients && (
+              <Link
+                href={`/prontuarios/${appointment.clients.id}`}
+                className="block truncate font-medium hover:underline"
+              >
+                {appointment.clients.full_name}
+              </Link>
+            )}
+            <p className="truncate text-[10px] text-muted-foreground">
+              {APPOINTMENT_TYPE_LABELS[appointment.type]}
+            </p>
+            {height >= 54 && appointment.provider && (
+              <p className="flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                <UserRound className="size-3 shrink-0" />
+                {appointment.provider.full_name}
+              </p>
+            )}
+            <div className="mt-0.5 flex items-center justify-between gap-1">
+              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className={cn("size-2 rounded-full", ds.dot)} />
+                {ds.label}
+              </span>
+              {canManage && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        className="h-4 px-1 text-[10px]"
+                      >
+                        •••
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Status</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {APPOINTMENT_STATUSES.filter(
+                        (st) => st !== appointment.status
+                      ).map((st) => (
+                        <DropdownMenuItem
+                          key={st}
+                          onClick={() => setStatus(appointment, st)}
+                        >
+                          <span
+                            className={cn(
+                              "mr-1.5 size-2 rounded-full",
+                              STATUS_DOT[st]
+                            )}
+                          />
+                          {APPOINTMENT_STATUS_LABELS[st]}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </>
         )}
-        <p className="truncate text-[10px] text-muted-foreground">
-          {APPOINTMENT_TYPE_LABELS[appointment.type]}
-        </p>
-        {height >= 54 && appointment.provider && (
-          <p className="flex items-center gap-1 truncate text-[10px] text-muted-foreground">
-            <UserRound className="size-3 shrink-0" />
-            {appointment.provider.full_name}
-          </p>
-        )}
-        <div className="mt-0.5 flex items-center justify-between gap-1">
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span className={cn("size-2 rounded-full", ds.dot)} />
-            {ds.label}
-          </span>
-          {canManage && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    className="h-4 px-1 text-[10px]"
-                  >
-                    •••
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Status</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {APPOINTMENT_STATUSES.filter(
-                    (st) => st !== appointment.status
-                  ).map((st) => (
-                    <DropdownMenuItem
-                      key={st}
-                      onClick={() => setStatus(appointment, st)}
-                    >
-                      <span
-                        className={cn(
-                          "mr-1.5 size-2 rounded-full",
-                          STATUS_DOT[st]
-                        )}
-                      />
-                      {APPOINTMENT_STATUS_LABELS[st]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
       </div>
     );
   }
@@ -747,6 +771,15 @@ export function DayRoomGrid({
                           return;
                         }
                         const time = slotTimeFromEvent(e);
+                        // H2.10: dia/horário passado não abre o pop-up — só avisa.
+                        if (
+                          new Date(`${dayIso}T${time}:00`).getTime() < Date.now()
+                        ) {
+                          toast.warning(
+                            "Não é possível criar agendamento no passado."
+                          );
+                          return;
+                        }
                         const blocking = blockingClosureAt(c.key, time);
                         if (blocking) {
                           toast.warning(

@@ -159,7 +159,6 @@ export function PlanningSection({
   const [pillarChoice, setPillarChoice] = useState<TreatmentPillar | "">(
     currentTreatment
   );
-  const [confirmingSubmit, setConfirmingSubmit] = useState(false);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -228,8 +227,12 @@ export function PlanningSection({
   // Planner must "Reabrir para edição", which sends it back for re-approval.
   const canEditContent =
     canEdit && (plan.status === "draft" || plan.status === "returned");
+  // H2.4: depois de enviado ao Comercial (cliente saiu da Fase 3), o botão de
+  // reabrir some — só volta se o caso retornar ao Centro de Planejamento.
   const canReopen =
-    canEdit && (plan.status === "submitted" || plan.status === "approved");
+    canEdit &&
+    inPlanningPhase &&
+    (plan.status === "submitted" || plan.status === "approved");
   const allOptionsHaveItems =
     options.length > 0 && options.every((o) => o.items.length > 0);
   const canSubmit =
@@ -250,10 +253,14 @@ export function PlanningSection({
     );
   }
 
-  // Confirma o pilar (sugerido ou escolhido) e envia o plano para aprovação.
-  function confirmSubmitPlan() {
+  // H2.3: envio direto — sem etapa de confirmação; só exige o pilar definido.
+  function submitPlan() {
     startTransition(async () => {
-      if (pillarChoice && pillarChoice !== currentTreatment) {
+      if (!pillarChoice) {
+        toast.error("Defina o pilar da Metodologia antes de enviar.");
+        return;
+      }
+      if (pillarChoice !== currentTreatment) {
         const r = await setTreatmentPillar(
           clientId,
           pillarChoice as TreatmentPillar
@@ -266,7 +273,6 @@ export function PlanningSection({
       const r = await submitTreatmentPlan(plan!.id);
       if (r.ok) {
         toast.success(`Plano de ${clientName} enviado para aprovação.`);
-        setConfirmingSubmit(false);
         router.refresh();
       } else {
         toast.error(r.error ?? "Não foi possível enviar o plano.");
@@ -705,71 +711,19 @@ export function PlanningSection({
               </div>
             </div>
 
-            {confirmingSubmit ? (
-              <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-2">
-                <p className="text-sm">
-                  Confirme o <strong>pilar</strong> deste tratamento antes de
-                  enviar.
-                  {suggestedPillar && (
-                    <>
-                      {" "}
-                      Sugerido pelo sistema:{" "}
-                      <strong>{PILLAR_LABELS[suggestedPillar]}</strong>.
-                    </>
-                  )}{" "}
-                  A decisão final é sua.
-                </p>
-                <select
-                  value={pillarChoice}
-                  onChange={(e) =>
-                    setPillarChoice(e.target.value as TreatmentPillar | "")
-                  }
-                  className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm"
-                >
-                  <option value="">Selecione o pilar...</option>
-                  {TREATMENT_PILLARS.map((p) => (
-                    <option key={p} value={p}>
-                      {PILLAR_LABELS[p]}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex gap-2">
-                  <Button
-                    disabled={!pillarChoice || isPending}
-                    onClick={confirmSubmitPlan}
-                  >
-                    <Send className="mr-1 size-4" />
-                    Confirmar pilar e enviar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setConfirmingSubmit(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                disabled={!canSubmit || isPending}
-                onClick={() => {
-                  setPillarChoice(
-                    (currentTreatment || suggestedPillar || "") as
-                      | TreatmentPillar
-                      | ""
-                  );
-                  setConfirmingSubmit(true);
-                }}
-              >
-                <Send className="mr-1 size-4" />
-                Enviar para aprovação do Coordenador
-              </Button>
-            )}
-            {!canSubmit && inPlanningPhase && !confirmingSubmit && (
+            <Button
+              disabled={!canSubmit || !pillarChoice || isPending}
+              onClick={submitPlan}
+            >
+              <Send className="mr-1 size-4" />
+              Enviar para aprovação do Coordenador
+            </Button>
+            {(!canSubmit || !pillarChoice) && inPlanningPhase && (
               <p className="text-xs text-muted-foreground">
-                Para enviar: preencha o diagnóstico, tenha ao menos uma opção e
+                Para enviar: preencha o diagnóstico, tenha ao menos uma opção,
                 lance os <strong>procedimentos</strong> (itens do orçamento) em{" "}
-                <strong>cada opção</strong>.
+                <strong>cada opção</strong> e defina o{" "}
+                <strong>pilar da Metodologia</strong> acima.
               </p>
             )}
           </div>
@@ -800,6 +754,17 @@ export function PlanningSection({
             </Button>
           </div>
         )}
+
+        {/* H2.4: já foi ao Comercial — edição bloqueada (sem botão de reabrir). */}
+        {canEdit &&
+          plan.status === "approved" &&
+          !inPlanningPhase && (
+            <p className="border-t pt-3 text-xs text-muted-foreground">
+              Plano enviado ao Comercial — a edição fica bloqueada. Se o caso
+              voltar ao Centro de Planejamento (revisão), o plano poderá ser
+              reaberto.
+            </p>
+          )}
 
         {/* Aprovação por opção (F4): o Coordenador decide cada opção acima. */}
         {canReview && plan.status === "submitted" && (

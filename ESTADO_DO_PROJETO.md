@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.9** · Última migração: **0062**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.0** · Última migração: **0062**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -420,13 +420,29 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   no banco). O card da ficha (`ClientShares`) já tinha o Encerrar; o problema era
   achá-lo na lista. **LOTE H1 (Grupo 1 — bugs/segurança) COMPLETO (H1.1–H1.10).**
 
+**LOTE H2 — ajustes rápidos do teste geral COMPLETO (sem migração, v0.11.0):**
+**H2.1** aba "Ativos" → **"Clientes"** (a contagem soma ativos+inativos).
+**H2.2** "Usuários" → **"Risartanos"** (menu + título; rota mantida). **H2.3**
+envio do plano **sem etapa de confirmação** do pilar — só exige o pilar definido
+(botão desabilitado + dica). **H2.4** depois de ir ao Comercial o **"Reabrir
+para edição" some** (`canReopen` exige Fase 3; nota explicativa no lugar).
+**H2.5/H2.6** trocar de visão na agenda parte de **HOJE** (Dia abre o dia de
+hoje; Mês abre o mês atual) — `AgendaToolbar` usa `todayIso`. **H2.7** na visão
+Semana, **clicar no dia** (cabeçalho) abre a visão Dia. **H2.8** card de **15
+min** virou compacto de uma linha com o **nome do cliente** visível (Dia +
+Semana; `compact` quando altura < 40px). **H2.9** encaixe em dia fechado mostra
+**alerta âmbar na escolha da data** (complementa o aviso de feriado/dia avulso
+do H1c). **H2.10** clicar em **dia/horário passado** não abre o pop-up — só um
+aviso (Dia + Semana). **H2.11** o pop-up **"i"** ganhou **"Alterar situação"**
+(cancelar/faltou etc.) para Recepção/Gerente/Admin em qualquer visão — e
+cancelamento/falta **devolve as sessões do tratamento** para "a agendar"
+(`updateAppointmentStatus`). **H2.12** já saíra no H1c (sessões no "i").
+
 ## 3. Próximos passos (ordem de prioridade)
 
-1. **LOTE H2 (ajustes rápidos, 12 itens)** — `docs/BACKLOG.md`: renomear abas,
-   tirar confirmação de pilar, visão Dia abre hoje, card 15 min com nome, alerta
-   de dia fechado na escolha da data, cancelar/alterar status de agendamento
-   futuro, etc.
-2. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
+1. **H3 (melhorias médias, 15 itens) / H4 (módulos novos, 14 itens)** —
+   priorizar com o dono (`docs/BACKLOG.md`, LOTE H).
+2. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
 3. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
 4. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

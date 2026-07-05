@@ -181,12 +181,16 @@ export function WeekTimeGrid({
     const w = 100 / lanes;
     const ds = displayedStatus(a);
     const isFuture = new Date(a.starts_at).getTime() >= today.getTime();
+    // H2.8: agendamento curto (15 min) vira um card compacto de UMA linha,
+    // com o nome do cliente visível (antes ficava uma faixa vazia).
+    const compact = height < 40;
     return (
       <div
         key={a.id}
         onClick={(ev) => ev.stopPropagation()}
         className={cn(
-          "absolute overflow-hidden rounded border px-1 py-0.5 text-[10px] shadow-sm",
+          "absolute overflow-hidden rounded border px-1 shadow-sm",
+          compact ? "flex items-center gap-1 text-[9px]" : "py-0.5 text-[10px]",
           STATUS_STYLES[a.status],
           a.needs_reschedule && "ring-2 ring-red-500"
         )}
@@ -197,16 +201,30 @@ export function WeekTimeGrid({
           width: `calc(${w}% - 2px)`,
         }}
       >
-        <div className="flex items-center justify-between gap-0.5">
-          <span className="font-medium">
+        <div
+          className={cn(
+            "flex items-center gap-0.5",
+            compact ? "min-w-0 flex-1" : "justify-between"
+          )}
+        >
+          <span className="shrink-0 font-medium">
             {new Date(a.starts_at).toLocaleTimeString("pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </span>
-          <span className="flex items-center">
+          {compact && a.clients && (
+            <Link
+              href={`/prontuarios/${a.clients.id}`}
+              className="min-w-0 truncate font-medium hover:underline"
+            >
+              {a.clients.full_name}
+            </Link>
+          )}
+          <span className="flex shrink-0 items-center">
             <AppointmentInfoDialog
               appointment={a}
+              canManage={canManage}
               trigger={
                 <Button
                   variant="ghost"
@@ -248,21 +266,25 @@ export function WeekTimeGrid({
             )}
           </span>
         </div>
-        {a.clients && (
-          <Link
-            href={`/prontuarios/${a.clients.id}`}
-            className="block truncate font-medium hover:underline"
-          >
-            {a.clients.full_name}
-          </Link>
+        {!compact && (
+          <>
+            {a.clients && (
+              <Link
+                href={`/prontuarios/${a.clients.id}`}
+                className="block truncate font-medium hover:underline"
+              >
+                {a.clients.full_name}
+              </Link>
+            )}
+            <p className="truncate text-muted-foreground">
+              {APPOINTMENT_TYPE_LABELS[a.type]}
+            </p>
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <span className={cn("size-1.5 rounded-full", ds.dot)} />
+              {ds.label}
+            </span>
+          </>
         )}
-        <p className="truncate text-muted-foreground">
-          {APPOINTMENT_TYPE_LABELS[a.type]}
-        </p>
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <span className={cn("size-1.5 rounded-full", ds.dot)} />
-          {ds.label}
-        </span>
       </div>
     );
   }
@@ -316,15 +338,22 @@ export function WeekTimeGrid({
                 isToday && "bg-primary/5"
               )}
             >
-              <span className="font-medium">
-                {WEEKDAY_LABELS[(date.getDay() + 6) % 7]}
-              </span>{" "}
-              <span className="text-muted-foreground">
-                {date.toLocaleDateString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                })}
-              </span>
+              {/* H2.7: clicar no dia abre a visão Dia (como já é no Mês). */}
+              <Link
+                href={`/agenda?vista=dia&ref=${iso}`}
+                className="hover:underline"
+                title="Abrir a visão do dia"
+              >
+                <span className="font-medium">
+                  {WEEKDAY_LABELS[(date.getDay() + 6) % 7]}
+                </span>{" "}
+                <span className="text-muted-foreground">
+                  {date.toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                  })}
+                </span>
+              </Link>
               {holidayName && (
                 <span
                   className="block truncate text-[10px] text-red-700"
@@ -388,6 +417,13 @@ export function WeekTimeGrid({
                       const time = minutesToHHMM(m);
                       const startMs = new Date(`${iso}T${time}:00`).getTime();
                       const endMs = startMs + SLOT_MIN * 60_000;
+                      // H2.10: dia/horário passado não abre o pop-up — só avisa.
+                      if (startMs < Date.now()) {
+                        toast.warning(
+                          "Não é possível criar agendamento no passado."
+                        );
+                        return;
+                      }
                       const blocking = closures.find(
                         (c) =>
                           c.scope === "unit" &&

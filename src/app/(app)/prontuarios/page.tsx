@@ -72,7 +72,8 @@ const STATUS_LABELS: Record<ClientRow["status"], string> = {
 
 type Tab = "ativos" | "aniversariantes" | "transferidos" | "compartilhados";
 const TAB_LABELS: Record<Tab, string> = {
-  ativos: "Ativos",
+  // H2.1: a contagem soma ativos+inativos, então a aba chama "Clientes".
+  ativos: "Clientes",
   aniversariantes: "Aniversariantes",
   transferidos: "Transferidos",
   compartilhados: "Compartilhados",

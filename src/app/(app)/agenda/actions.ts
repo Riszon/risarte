@@ -783,6 +783,20 @@ export async function updateAppointmentStatus(
     return { ok: false, error: "Não foi possível alterar o status." };
   }
 
+  // H2.11: cancelamento/falta devolve as sessões do tratamento vinculadas para
+  // "a agendar" (senão ficariam presas a um agendamento cancelado).
+  if (status === "cancelled" || status === "no_show") {
+    await supabase
+      .from("treatment_sessions")
+      .update({ status: "pending", appointment_id: null })
+      .eq("appointment_id", appointmentId)
+      .neq("status", "done");
+    await supabase
+      .from("appointments")
+      .update({ treatment_session_id: null })
+      .eq("id", appointmentId);
+  }
+
   await logAudit({
     action: "update",
     entityType: "appointment",

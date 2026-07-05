@@ -23,14 +23,15 @@ export function AgendaToolbar({
   salas?: string;
 }) {
   const todayIso = toIsoDate(new Date());
-  const refIso = toIsoDate(range.start);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex rounded-lg border p-0.5">
+        {/* H2.5/H2.6: trocar de visão sempre parte de HOJE (Dia abre o dia de
+            hoje; Mês abre o mês atual), não do início do período anterior. */}
         {AGENDA_VIEWS.map((v) => (
           <Link
             key={v.key}
-            href={agendaHref(v.key, refIso, unidade, salas)}
+            href={agendaHref(v.key, todayIso, unidade, salas)}
             className={cn(
               "rounded-md px-2.5 py-1 text-sm",
               view === v.key
