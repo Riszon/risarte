@@ -638,38 +638,28 @@ Fonte: `docs/ROTEIRO-TESTE-GERAL.md` preenchido pelo dono após o teste geral
 por papel. Organizado em 4 grupos por prioridade (H1 bugs → H4 módulos novos).
 Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 
-### H1 — Bugs e segurança (corrigir primeiro)
-- [ ] **H1.1 Relatórios vazando escopo (SEGURANÇA):** a recepcionista conseguiu
-      ver relatório da rede toda. Restringir `/relatorios` aos papéis de gestão
-      e ao escopo (Gerente = sua unidade; Franqueado = as suas; Rede/Admin = todas).
-- [ ] **H1.2 Comercial não vê a Apresentação:** o consultor comercial não
-      conseguiu visualizar `/apresentacao/[id]` (travou o teste da fase
-      comercial). Suspeita: o papel do consultor fica na Franqueadora (escopo de
-      unidades), não na clínica do cliente — a checagem de acesso não considera isso.
-- [ ] **H1.3 Cliente em 2 atendimentos ao mesmo tempo:** cliente em atendimento
-      com o profissional A pôde ser chamado pelo B. Bloquear chamar quem já está
-      em atendimento.
-- [ ] **H1.4 Coordenador chama cliente de outro dentista:** o Coordenador
-      Clínico só VISUALIZA; não pode chamar cliente agendado com outro profissional.
-- [ ] **H1.5 Sessões somem do agendamento:** as sessões vinculadas não aparecem
-      mais depois de criar o agendamento (nem no card, nem na edição) e o
-      agendamento não pôde ser editado. Persistir/exibir as sessões e permitir editar.
-- [ ] **H1.6 Dia avulso sem horários:** em dia liberado como "dia avulso", o
-      seletor de horário não ofereceu horários.
-- [ ] **H1.7 Troca de unidade não fecha a tela anterior:** ao trocar de unidade
-      no seletor, sair da tela da unidade anterior (redirecionar). E: usuário
-      com mais de uma unidade ESCOLHE a unidade ao entrar (tela de boas-vindas);
-      quem é só da Franqueadora entra direto.
-- [ ] **H1.8 Encerrar compartilhamento:** o botão de encerrar não foi
-      encontrado. Deve existir nas DUAS unidades (A e B); recepção, gerente e
-      coordenador podem compartilhar/encerrar e recebem as notificações; a aba
-      Compartilhados mostra quem compartilhou, quando, motivo e a clínica dona
-      do cliente + botão Encerrar.
-- [ ] **H1.9 Autopreenchimento por CPF incompleto:** preencher TODOS os dados
-      do cliente (hoje só nome, telefone e nascimento).
-- [ ] **H1.10 Cadeiras — máximo definido pelo Admin:** o Admin define a
-      QUANTIDADE de cadeiras/salas no cadastro da clínica; a Gerente configura
-      nomes, sala do coordenador e ativa/desativa, mas não cria acima do máximo.
+### H1 — Bugs e segurança ✅ COMPLETO (04/07/2026, migrações 0061–0062)
+- [x] **H1.1 Relatórios vazando escopo (SEGURANÇA):** papel de gestão vale na
+      clínica ativa + todas as consultas filtram pelo escopo (v0.10.4).
+- [x] **H1.2 Comercial não vê a Apresentação:** helper `hasRoleWithScopeForClinic`
+      considera o escopo de unidades da Franqueadora (v0.10.4).
+- [x] **H1.3 Cliente em 2 atendimentos ao mesmo tempo:** bloqueado no banco
+      (`CLIENT_BUSY`) + card em espera sem botão (migração 0061, v0.10.5).
+- [x] **H1.4 Coordenador chama cliente de outro dentista:** só o profissional do
+      agendamento chama (`NOT_PROVIDER` + `canCallRow`) (0061, v0.10.5).
+- [x] **H1.5 Sessões somem do agendamento:** pop-up "i" + edição mostram/editam
+      as sessões vinculadas; `updateAppointment` sincroniza (v0.10.6).
+- [x] **H1.6 Dia avulso sem horários:** seletor conhece dia avulso/feriado
+      (`getDaySchedule`) e oferece a janela do dia (v0.10.6).
+- [x] **H1.7 Troca de unidade não fecha a tela anterior:** redireciona ao Início +
+      tela de boas-vindas escolhe a unidade no login (v0.10.7).
+- [x] **H1.8 Encerrar compartilhamento:** aba Compartilhados lista os 2 sentidos
+      com detalhes + botão Encerrar (recepção/coordenador/gerente/admin); banco já
+      notifica as 2 unidades (v0.10.9).
+- [x] **H1.9 Autopreenchimento por CPF incompleto:** traz todos os dados do
+      cliente (e-mail, endereço, etc.) via `ClientAutofill` (v0.10.7).
+- [x] **H1.10 Cadeiras — máximo definido pelo Admin:** `clinics.max_rooms` no
+      cadastro; a Gerente não cria acima do teto (migração 0062, v0.10.8).
 
 ### H2 — Ajustes rápidos
 - [ ] H2.1 Renomear a aba "Ativos" → "Clientes" (o número soma ativos+inativos).
