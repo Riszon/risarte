@@ -24,11 +24,13 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       cliente → tipo → profissional → sala → sessões → duração → observações →
       **data/horário/sugestões por último**, com o título "Quando será o
       atendimento?" abrindo a etapa final.
-- [ ] **H3.2 "Ver agenda" rica [M]** — pop-up do mês com feriados/fechamentos/
-      dias avulsos, nº de agendamentos **e horários livres** por dia (do
-      profissional selecionado, cores por disponibilidade); clicar no dia
-      preenche a data e lista os horários livres. Como: ampliar
-      `getMonthDayCounts` reusando a lógica dos "próximos horários".
+- [x] **H3.2 "Ver agenda" rica** ✅ (04/07, v0.11.3) — pop-up do mês mostra por
+      dia: nº de agendamentos, nº de **horários livres** (verde/vermelho, para o
+      profissional/sala/duração do formulário), feriados (decidido/a confirmar),
+      fechados, dias avulsos e bloqueios do planejamento anual (com legenda);
+      dias fechados/bloqueados não são clicáveis; clicar num dia disponível
+      preenche a data e o seletor lista os horários livres. Action
+      `getMonthAgendaPeek` substituiu `getMonthDayCounts`.
 - [ ] **H3.3 Seletor de dias na lateral [M]** — régua de dias (não formulário)
       na agenda: vaga/feriado/fechado por dia; clicar abre a visão Dia.
       Componente novo com os mesmos dados de config/feriados/vagas.

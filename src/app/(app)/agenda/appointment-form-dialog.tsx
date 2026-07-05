@@ -1047,6 +1047,10 @@ export function AppointmentFormDialog({
               {effectiveClinicId && (
                 <AgendaPeekDialog
                   clinicId={effectiveClinicId}
+                  providerUserId={providerValid ? providerId : null}
+                  roomId={isOnline ? null : effectiveRoomId || null}
+                  isOnline={isOnline}
+                  durationMin={durationMin}
                   onPickDate={(iso) => {
                     setDate(iso);
                     setTime("");

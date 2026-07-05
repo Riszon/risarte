@@ -684,9 +684,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 ### H3 — Melhorias médias
 - [x] H3.1 Formulário de agendamento reordenado ✅ (v0.11.2): data/horário/
       sugestões como ÚLTIMA etapa, sob o título "Quando será o atendimento?".
-- [ ] H3.2 "Ver agenda" (pop-up do mês) rica: mostrar bloqueios, feriados, dias
-      abertos/fechados; nº de agendamentos E de horários livres por dia (para o
-      profissional selecionado); clicar no dia sugere os horários disponíveis.
+- [x] H3.2 "Ver agenda" rica ✅ (v0.11.3): bloqueios, feriados, dias abertos/
+      fechados/avulsos + nº de agendamentos e de horários livres por dia (para
+      o profissional/sala/duração escolhidos); clicar no dia preenche a data e
+      o seletor lista os horários livres.
 - [ ] H3.3 Seletor de dias na lateral da agenda (bonito e intuitivo, não
       formulário): disponibilidade por dia, feriados/fechados evidentes; clicar
       abre a agenda do dia.

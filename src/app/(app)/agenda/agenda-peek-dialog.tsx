@@ -13,24 +13,56 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { startOfWeek, toIsoDate } from "@/lib/agenda-view";
-import { getMonthDayCounts } from "./actions";
+import { getMonthAgendaPeek, type PeekDay } from "./actions";
 
 const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
+// H3.2: cor de fundo por estado do dia.
+const STATE_CELL: Record<PeekDay["state"], string> = {
+  normal: "",
+  closed: "bg-muted/60 text-muted-foreground",
+  holiday_closed: "bg-red-50 text-red-700",
+  holiday_pending: "bg-amber-50 text-amber-800",
+  holiday_open: "bg-emerald-50/60",
+  open_day: "bg-gold/10 border-gold/50",
+  plan_block: "bg-red-50 text-red-700",
+};
+
+const STATE_TAG: Partial<Record<PeekDay["state"], string>> = {
+  closed: "Fechado",
+  holiday_closed: "Feriado",
+  holiday_pending: "Feriado?",
+  holiday_open: "Feriado ✓",
+  open_day: "Avulso",
+  plan_block: "Bloqueado",
+};
+
 /**
- * "Ver agenda" picker (GR1): a pop-up month calendar showing how busy each day
- * is; clicking a day feeds that date back to the scheduling form.
+ * "Ver agenda" (GR1 + H3.2): calendário do mês com a situação de cada dia —
+ * agendamentos, horários LIVRES para o contexto escolhido (profissional/sala/
+ * duração), feriados, fechamentos, dias avulsos e bloqueios do planejamento
+ * anual. Clicar num dia disponível devolve a data ao formulário (que então já
+ * lista os horários livres daquele dia).
  */
 export function AgendaPeekDialog({
   clinicId,
+  providerUserId,
+  roomId,
+  isOnline,
+  durationMin,
   onPickDate,
 }: {
   clinicId: string;
+  /** Contexto do formulário — os horários livres são calculados para ele. */
+  providerUserId?: string | null;
+  roomId?: string | null;
+  isOnline?: boolean;
+  durationMin?: number;
   onPickDate: (dateIso: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [ref, setRef] = useState(() => new Date());
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [days, setDays] = useState<Record<string, PeekDay>>({});
   const [isPending, startTransition] = useTransition();
 
   const todayIso = toIsoDate(new Date());
@@ -38,10 +70,17 @@ export function AgendaPeekDialog({
   useEffect(() => {
     if (!open) return;
     startTransition(async () => {
-      const data = await getMonthDayCounts(clinicId, ref.toISOString());
-      setCounts(data);
+      const data = await getMonthAgendaPeek({
+        clinicId,
+        monthRefIso: ref.toISOString(),
+        providerUserId: providerUserId || null,
+        roomId: roomId || null,
+        isOnline: Boolean(isOnline),
+        durationMin: durationMin || 60,
+      });
+      setDays(data);
     });
-  }, [open, ref, clinicId]);
+  }, [open, ref, clinicId, providerUserId, roomId, isOnline, durationMin]);
 
   const monthStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
   const gridStart = startOfWeek(monthStart);
@@ -65,12 +104,13 @@ export function AgendaPeekDialog({
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Ver agenda</DialogTitle>
           <DialogDescription>
-            Clique num dia para agendar nele. O número mostra quantos
-            agendamentos o dia já tem.
+            Cada dia mostra os agendamentos e os horários livres
+            {providerUserId ? " do profissional escolhido" : " da unidade"}.
+            Clique num dia disponível para agendar nele.
           </DialogDescription>
         </DialogHeader>
 
@@ -99,34 +139,78 @@ export function AgendaPeekDialog({
             const iso = toIsoDate(d);
             const inMonth = d.getMonth() === monthStart.getMonth();
             const isPast = iso < todayIso;
-            const count = counts[iso] ?? 0;
+            const info = days[iso];
+            const state = info?.state ?? "normal";
+            const blocked =
+              state === "closed" ||
+              state === "holiday_closed" ||
+              state === "plan_block";
+            const tag = STATE_TAG[state];
             return (
               <button
                 key={i}
                 type="button"
-                disabled={isPast}
+                disabled={isPast || blocked}
+                title={info?.note ?? undefined}
                 onClick={() => {
                   onPickDate(iso);
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex min-h-12 flex-col items-center rounded-md border p-1 text-xs transition-colors",
+                  "flex min-h-16 flex-col items-center gap-0.5 rounded-md border p-1 text-xs transition-colors",
+                  STATE_CELL[state],
                   !inMonth && "opacity-40",
-                  isPast
-                    ? "cursor-not-allowed text-muted-foreground"
+                  isPast || blocked
+                    ? "cursor-not-allowed"
                     : "hover:border-primary hover:bg-primary/5",
+                  isPast && "text-muted-foreground",
                   iso === todayIso && "border-primary"
                 )}
               >
                 <span className="font-medium">{d.getDate()}</span>
-                {count > 0 && (
-                  <span className="mt-0.5 rounded-full bg-muted px-1 text-[10px]">
-                    {count}
+                {tag && (
+                  <span className="rounded bg-background/70 px-1 text-[9px] font-medium leading-tight">
+                    {tag}
+                  </span>
+                )}
+                {info && !isPast && (
+                  <span className="space-x-1 text-[10px] leading-tight">
+                    {info.count > 0 && (
+                      <span className="rounded-full bg-muted px-1">
+                        {info.count} ag.
+                      </span>
+                    )}
+                    {info.free !== null && !blocked && (
+                      <span
+                        className={cn(
+                          "font-medium",
+                          info.free > 0 ? "text-emerald-700" : "text-red-600"
+                        )}
+                      >
+                        {info.free} livre{info.free === 1 ? "" : "s"}
+                      </span>
+                    )}
                   </span>
                 )}
               </button>
             );
           })}
+        </div>
+
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2 rounded-sm bg-muted" /> Fechado
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2 rounded-sm bg-red-200" /> Feriado/Bloqueio
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2 rounded-sm bg-amber-200" /> Feriado a confirmar
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2 rounded-sm bg-gold/40" /> Dia avulso
+          </span>
+          <span className="text-emerald-700">N livres = horários disponíveis</span>
         </div>
       </DialogContent>
     </Dialog>

@@ -26,6 +26,7 @@ import {
   PLAN_ITEM_LABELS,
   type PlanItemRow,
 } from "@/lib/annual-plan";
+import { holidayOn } from "@/lib/holidays";
 
 /** "minutes since midnight" → "HH:MM". */
 function minutesToHHMM(m: number): string {
@@ -1611,30 +1612,263 @@ export async function getNextAvailableSlots(params: {
   return slots;
 }
 
-/** Per-day appointment counts for a month (the "Ver agenda" picker). */
-export async function getMonthDayCounts(
-  clinicId: string,
-  monthRefIso: string
-): Promise<Record<string, number>> {
+// H3.2: situação de cada dia no pop-up "Ver agenda".
+export type PeekDay = {
+  /** Agendamentos ativos no dia (a unidade toda). */
+  count: number;
+  /** Horários livres p/ o contexto do formulário; null = dia sem atendimento. */
+  free: number | null;
+  /** Estado do dia (dirige a cor/rótulo da célula). */
+  state:
+    | "normal"
+    | "closed"
+    | "holiday_closed"
+    | "holiday_pending"
+    | "holiday_open"
+    | "open_day"
+    | "plan_block";
+  /** Rótulo curto (nome do feriado, motivo do bloqueio, janela do dia avulso). */
+  note: string | null;
+};
+
+/**
+ * H3.2 — "Ver agenda" rica: por dia do mês, devolve nº de agendamentos, nº de
+ * horários LIVRES para o contexto escolhido (profissional/sala/duração) e a
+ * situação do dia (fechado, feriado, dia avulso, bloqueio do planejamento
+ * anual), usando as MESMAS regras do servidor de agendamento.
+ */
+export async function getMonthAgendaPeek(params: {
+  clinicId: string;
+  monthRefIso: string;
+  providerUserId: string | null;
+  roomId: string | null;
+  isOnline: boolean;
+  durationMin: number;
+}): Promise<Record<string, PeekDay>> {
   await getSessionContext();
-  const ref = new Date(monthRefIso);
-  if (Number.isNaN(ref.getTime())) return {};
+  const { clinicId, providerUserId, roomId, isOnline } = params;
+  const durationMin = Math.max(15, params.durationMin || 60);
+  const ref = new Date(params.monthRefIso);
+  if (!clinicId || Number.isNaN(ref.getTime())) return {};
   const monthStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
   const monthEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
+  const startIso = monthStart.toISOString();
+  const endIso = monthEnd.toISOString();
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("appointments")
-    .select("starts_at, status")
-    .eq("clinic_id", clinicId)
-    .gte("starts_at", monthStart.toISOString())
-    .lt("starts_at", monthEnd.toISOString());
+  const [
+    { data: settingRows },
+    { data: apptRows },
+    { data: closureRows },
+    { data: openDayRows },
+    { data: holidayRows },
+    { data: planRows },
+  ] = await Promise.all([
+    supabase
+      .from("clinic_agenda_settings")
+      .select(
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+      )
+      .returns<AgendaSettingRow[]>(),
+    supabase
+      .from("appointments")
+      .select("provider_user_id, room_id, starts_at, ends_at, status, type")
+      .eq("clinic_id", clinicId)
+      .gte("starts_at", startIso)
+      .lt("starts_at", endIso),
+    supabase
+      .from("agenda_closures")
+      .select(
+        "id, starts_at, ends_at, scope, reason, note, agenda_closure_rooms ( room_id ), agenda_closure_providers ( user_id )"
+      )
+      .eq("clinic_id", clinicId)
+      .lt("starts_at", endIso)
+      .gt("ends_at", startIso),
+    supabase
+      .from("agenda_open_days")
+      .select("date, start_time, end_time")
+      .eq("clinic_id", clinicId)
+      .gte("date", toIsoDate(monthStart))
+      .lt("date", toIsoDate(monthEnd)),
+    supabase
+      .from("clinic_holiday_decisions")
+      .select("holiday_date, will_attend")
+      .eq("clinic_id", clinicId)
+      .gte("holiday_date", toIsoDate(monthStart))
+      .lt("holiday_date", toIsoDate(monthEnd)),
+    supabase
+      .from("agenda_plan_items")
+      .select(
+        "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+      )
+      .eq("clinic_id", clinicId)
+      .lte("starts_date", toIsoDate(monthEnd))
+      .gte("ends_date", toIsoDate(monthStart)),
+  ]);
 
-  const counts: Record<string, number> = {};
-  for (const a of data ?? []) {
-    if (a.status === "cancelled" || a.status === "no_show") continue;
-    counts[toIsoDate(new Date(a.starts_at))] =
-      (counts[toIsoDate(new Date(a.starts_at))] ?? 0) + 1;
+  const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
+  const closures = (closureRows ?? []).map((r) =>
+    mapClosure(r as AgendaClosureRow)
+  );
+  const openDayHours = new Map<
+    string,
+    { open: number; close: number; label: string }
+  >();
+  for (const r of (openDayRows ?? []) as {
+    date: string;
+    start_time: string;
+    end_time: string;
+  }[]) {
+    const start = r.start_time.slice(0, 5);
+    const end = r.end_time.slice(0, 5);
+    openDayHours.set(r.date, {
+      open: timeToMinutes(start),
+      close: timeToMinutes(end),
+      label: `Dia avulso ${start}–${end}`,
+    });
   }
-  return counts;
+  const holidayDecision = new Map<string, boolean>();
+  for (const r of (holidayRows ?? []) as {
+    holiday_date: string;
+    will_attend: boolean;
+  }[]) {
+    holidayDecision.set(r.holiday_date, r.will_attend);
+  }
+  const planItems = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
+  const activeAppt = (s: string) => s !== "cancelled" && s !== "no_show";
+  const appts = (apptRows ?? []).filter((a) => activeAppt(a.status));
+
+  const lunchStart = cfg.lunchEnabled ? timeToMinutes(cfg.lunchStart) : -1;
+  const lunchEnd = cfg.lunchEnabled ? timeToMinutes(cfg.lunchEnd) : -1;
+  const nowMs = Date.now();
+  const daysInMonth = new Date(
+    ref.getFullYear(),
+    ref.getMonth() + 1,
+    0
+  ).getDate();
+
+  const out: Record<string, PeekDay> = {};
+  for (let d = 1; d <= daysInMonth; d++) {
+    const day = new Date(ref.getFullYear(), ref.getMonth(), d);
+    const dateOnly = toIsoDate(day);
+    const count = appts.filter(
+      (a) => toIsoDate(new Date(a.starts_at)) === dateOnly
+    ).length;
+
+    const holiday = holidayOn(dateOnly);
+    const hd = holidayDecision.get(dateOnly);
+    const special = openDayHours.get(dateOnly);
+    const isWeekdayOpen = cfg.weekdays.includes(day.getDay());
+    const dayPlanItems = planItems.filter(
+      (i) => i.startsDate <= dateOnly && i.endsDate >= dateOnly
+    );
+    const unitBlock = dayPlanItems.find((i) => i.type !== "individual_vacation");
+    const providerVacation = Boolean(
+      providerUserId &&
+        dayPlanItems.some(
+          (i) =>
+            i.type === "individual_vacation" &&
+            i.userIds.includes(providerUserId)
+        )
+    );
+
+    // Estado do dia — mesma precedência do checkAgendaRules.
+    let state: PeekDay["state"] = "normal";
+    let note: string | null = null;
+    if (hd === false) {
+      state = "holiday_closed";
+      note = holiday?.name ?? "Feriado sem atendimento";
+    } else if (unitBlock && !special) {
+      state = "plan_block";
+      note = unitBlock.title || PLAN_ITEM_LABELS[unitBlock.type];
+    } else if (special) {
+      state = "open_day";
+      note = special.label;
+    } else if (!isWeekdayOpen && hd !== true) {
+      state = "closed";
+      note = "Não atende";
+    } else if (holiday && hd === true) {
+      state = "holiday_open";
+      note = `${holiday.name} (atende)`;
+    } else if (holiday && hd === undefined) {
+      state = "holiday_pending";
+      note = `${holiday.name} — a confirmar`;
+    }
+
+    const dayOpen =
+      state === "normal" ||
+      state === "open_day" ||
+      state === "holiday_open" ||
+      state === "holiday_pending";
+    let free: number | null = null;
+    if (dayOpen) {
+      free = 0;
+      if (!providerVacation) {
+        const openMin =
+          special && !isWeekdayOpen ? special.open : timeToMinutes(cfg.openTime);
+        const closeMin =
+          special && !isWeekdayOpen
+            ? special.close
+            : timeToMinutes(cfg.closeTime);
+        const overlap = (s: string, e: string, startMs: number, endMs: number) =>
+          startMs < new Date(e).getTime() && endMs > new Date(s).getTime();
+        for (let m = openMin; m + durationMin <= closeMin; m += 15) {
+          if (
+            cfg.lunchEnabled &&
+            !isOnline &&
+            m < lunchEnd &&
+            m + durationMin > lunchStart
+          ) {
+            continue;
+          }
+          const startMs = new Date(
+            `${dateOnly}T${minutesToHHMM(m)}:00`
+          ).getTime();
+          const endMs = startMs + durationMin * 60_000;
+          if (startMs < nowMs) continue;
+          if (
+            closures.some((c) =>
+              closureBlocks(c, {
+                startMs,
+                endMs,
+                roomId: isOnline ? null : roomId,
+                providerId: providerUserId,
+              })
+            )
+          ) {
+            continue;
+          }
+          if (
+            providerUserId &&
+            appts.some(
+              (a) =>
+                a.provider_user_id === providerUserId &&
+                a.type !== "urgency" &&
+                a.type !== "emergency" &&
+                overlap(a.starts_at, a.ends_at, startMs, endMs)
+            )
+          ) {
+            continue;
+          }
+          if (
+            !isOnline &&
+            roomId &&
+            appts.some(
+              (a) =>
+                a.room_id === roomId &&
+                overlap(a.starts_at, a.ends_at, startMs, endMs)
+            )
+          ) {
+            continue;
+          }
+          free += 1;
+        }
+      } else {
+        note = note ? `${note} · Profissional de férias` : "Profissional de férias";
+      }
+    }
+
+    out[dateOnly] = { count, free, state, note };
+  }
+  return out;
 }
