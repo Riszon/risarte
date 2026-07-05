@@ -45,8 +45,10 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       avisos que **repetem a cada 15 min** (recepção/coordenador/gerente/
       profissional, dedupe pelo link); atendimentos de **dias anteriores** não
       concluídos geram aviso diário + banner vermelho no painel.
-- [ ] **H3.5 Check-in com confirmação [P]** — pop-up confirmando profissional,
-      horário e sala antes de registrar a chegada (prepara o auto check-in).
+- [x] **H3.5 Check-in com confirmação** ✅ (04/07, v0.11.6) — "Registrar
+      chegada" abre um pop-up confirmando **cliente, horário/tipo, profissional
+      e sala** antes de concluir (SELECT do painel ganhou sala/ONLINE). Prepara
+      o auto check-in do cliente no futuro.
 - [ ] **H3.6 Troca de profissional de última hora [M] 🗄️** — botão no
       check-in/espera (recepção/gerente); registra tudo; notifica os 2
       profissionais + coordenador + gerente; alerta se ficar frequente no mês.

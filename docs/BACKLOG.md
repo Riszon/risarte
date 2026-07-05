@@ -695,8 +695,8 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       em cima da hora / desistiu da espera (gave_up); espera longa (limite
       configurável, padrão 20 min) destaca em vermelho e notifica a cada 15 min;
       pendências de dias anteriores geram aviso diário + banner no painel.
-- [ ] H3.5 Check-in com confirmação (profissional, horário e sala); no futuro o
-      próprio cliente fará o check-in.
+- [x] H3.5 Check-in com confirmação ✅ (v0.11.6): pop-up confirma cliente,
+      horário/tipo, profissional e sala antes de registrar a chegada.
 - [ ] H3.6 Troca de profissional de última hora (check-in/sala de espera): quem
       faz é gerente ou recepção; tudo registrado; notifica os 2 profissionais +
       coordenador + gerente; relatório de alterações; alerta se ficar frequente.

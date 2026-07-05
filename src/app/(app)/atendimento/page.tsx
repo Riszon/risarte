@@ -36,8 +36,10 @@ type Row = {
   done_by: string | null;
   provider_user_id: string | null;
   clinic_id: string;
+  is_online: boolean | null;
   provider: { full_name: string } | null;
   clinics: { name: string } | null;
+  room: { name: string } | null;
   clients: { id: string; full_name: string; journey_phase: JourneyPhase } | null;
 };
 
@@ -141,7 +143,7 @@ export default async function AtendimentoPage(
   const { start, end, label: periodLabel } = periodRange(period);
 
   const SELECT =
-    "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), clients ( id, full_name, journey_phase )";
+    "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, is_online, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), room:clinic_rooms ( name ), clients ( id, full_name, journey_phase )";
 
   const supabase = await createClient();
 
@@ -258,6 +260,7 @@ export default async function AtendimentoPage(
     providerUserId: a.provider_user_id,
     calledBy: a.called_by,
     clinicName: consultantView ? (a.clinics?.name ?? null) : null,
+    roomName: a.is_online ? "ONLINE" : (a.room?.name ?? null),
     checkedInAt: a.checked_in_at,
     calledAt: a.called_at,
     doneAt: a.done_at,

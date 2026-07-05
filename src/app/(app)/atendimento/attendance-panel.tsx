@@ -4,10 +4,24 @@ import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlarmClock, Clock, MoreHorizontal, UserRound } from "lucide-react";
+import {
+  AlarmClock,
+  Clock,
+  DoorClosed,
+  MoreHorizontal,
+  UserRound,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +56,8 @@ export type PanelAppointment = {
   calledBy: string | null;
   /** Set in the Consultor view (clients spread across units). */
   clinicName?: string | null;
+  /** Sala/cadeira do atendimento (ou "ONLINE") — confirmação de check-in (H3.5). */
+  roomName?: string | null;
   // Attendance timeline (for the per-visit history).
   checkedInAt?: string | null;
   calledAt?: string | null;
@@ -246,6 +262,10 @@ export function AttendancePanel({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // H3.5: check-in passa por uma confirmação (profissional, horário e sala).
+  const [confirmCheckIn, setConfirmCheckIn] = useState<PanelAppointment | null>(
+    null
+  );
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -352,11 +372,76 @@ export function AttendancePanel({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            A chegar{" "}
+    <>
+      {/* H3.5: confirmação da chegada — profissional, horário e sala. */}
+      <Dialog
+        open={confirmCheckIn !== null}
+        onOpenChange={(o) => !o && setConfirmCheckIn(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirmar chegada</DialogTitle>
+            <DialogDescription>
+              Confira os dados do atendimento com o cliente antes de registrar a
+              chegada.
+            </DialogDescription>
+          </DialogHeader>
+          {confirmCheckIn && (
+            <div className="space-y-2 text-sm">
+              <p className="text-base font-medium">
+                {confirmCheckIn.clientName}
+              </p>
+              <div className="flex items-center gap-2">
+                <Clock className="size-4 text-muted-foreground" />
+                <span>
+                  {time(confirmCheckIn.starts_at)} ·{" "}
+                  {APPOINTMENT_TYPE_LABELS[confirmCheckIn.type]}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <UserRound className="size-4 text-muted-foreground" />
+                <span>{confirmCheckIn.providerName ?? "Sem profissional"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DoorClosed className="size-4 text-muted-foreground" />
+                <span>{confirmCheckIn.roomName ?? "Sala a definir"}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmCheckIn(null)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={isPending}
+              onClick={() => {
+                const a = confirmCheckIn;
+                if (!a) return;
+                run(
+                  () => checkInAppointment(a.id),
+                  `Chegada registrada: ${a.clientName}.`,
+                  () => {
+                    setConfirmCheckIn(null);
+                    router.refresh();
+                  }
+                );
+              }}
+            >
+              Confirmar chegada
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              A chegar{" "}
             <Badge variant="secondary">{toArrive.length}</Badge>
           </CardTitle>
         </CardHeader>
@@ -372,12 +457,7 @@ export function AttendancePanel({
                       <Button
                         size="sm"
                         disabled={isPending}
-                        onClick={() =>
-                          run(
-                            () => checkInAppointment(a.id),
-                            `Chegada registrada: ${a.clientName}.`
-                          )
-                        }
+                        onClick={() => setConfirmCheckIn(a)}
                       >
                         Registrar chegada
                       </Button>
@@ -569,6 +649,7 @@ export function AttendancePanel({
           </ul>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }

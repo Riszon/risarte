@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.5** · Última migração: **0063**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.6** · Última migração: **0063**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -468,7 +468,9 @@ backlog (H3.1 em diante).
    Desistiu na espera com estado `gave_up`, limite de espera configurável +
    alerta vermelho + notificações repetidas a cada 15 min via
    `notify_attendance_alerts`, aviso diário + banner p/ pendências de dias
-   anteriores); próximo: H3.5 check-in com confirmação; ... até H3.15
+   anteriores); ~~H3.5~~ ✅ (v0.11.6, check-in com confirmação — pop-up mostra
+   cliente, horário/tipo, profissional e sala antes de registrar a chegada);
+   próximo: H3.6 troca de profissional de última hora; ... até H3.15
    (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
