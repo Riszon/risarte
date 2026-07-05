@@ -833,6 +833,104 @@ export function AppointmentFormDialog({
             )}
           </div>
 
+          {pendingSessions.length > 0 && (
+            <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
+              <Label>
+                {isEdit
+                  ? "Sessões do plano neste agendamento"
+                  : "Sessões do plano a agendar"}
+              </Label>
+              <p className="text-[11px] text-muted-foreground">
+                {isEdit
+                  ? "As marcadas ficam vinculadas a este agendamento; desmarcar devolve a sessão para “a agendar”."
+                  : "Marque uma — ou mais de uma, se o dentista vai executar vários procedimentos neste mesmo horário (a duração soma sozinha)."}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {pendingSessions.map((s) => (
+                  <Button
+                    key={s.id}
+                    type="button"
+                    size="sm"
+                    variant={sessionIds.includes(s.id) ? "default" : "outline"}
+                    onClick={() => toggleSession(s)}
+                  >
+                    {s.label}
+                    {s.minutes ? ` (${s.minutes} min)` : ""}
+                  </Button>
+                ))}
+              </div>
+              {sessionIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {sessionIds.length === 1
+                    ? "Este agendamento será vinculado à sessão selecionada (marca como agendada)."
+                    : `${sessionIds.length} sessões serão vinculadas a este agendamento; o tempo real será rateado entre elas ao concluir.`}
+                </p>
+              )}
+              {providerValid &&
+                selectedProcedureIds.some((pid) => providerStats[pid]) && (
+                  <div className="rounded-md bg-emerald-50 p-1.5 text-xs text-emerald-800">
+                    {selectedProcedureIds.map((pid) => {
+                      const st = providerStats[pid];
+                      if (!st) return null;
+                      const procName =
+                        pendingSessions
+                          .find((s) => s.procedureId === pid)
+                          ?.label.split(" — ")[0] ?? "Procedimento";
+                      return (
+                        <p key={pid}>
+                          Média deste dentista — {procName}: {st.avgMinutes}{" "}
+                          min/sessão ({st.sample}{" "}
+                          {st.sample === 1 ? "execução" : "execuções"})
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label>Duração</Label>
+            <Select
+              items={DURATION_ITEMS}
+              value={duration}
+              onValueChange={(v) => v !== null && setDuration(v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DURATION_ITEMS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Observações</Label>
+            <Input
+              id="notes"
+              name="notes"
+              placeholder="Opcional"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          {/* H3.1: data/horário/sugestões são a ÚLTIMA etapa do agendamento —
+              com tipo, profissional, sala e duração definidos, o sistema já
+              sabe filtrar os horários certos. */}
+          <div className="space-y-1 border-t pt-3">
+            <Label>Quando será o atendimento?</Label>
+            <p className="text-xs text-muted-foreground">
+              Última etapa: escolha a data e o horário — ou clique numa das
+              sugestões de horários livres.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Data *</Label>
@@ -957,93 +1055,6 @@ export function AppointmentFormDialog({
               )}
             </div>
           )}
-
-          {pendingSessions.length > 0 && (
-            <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
-              <Label>
-                {isEdit
-                  ? "Sessões do plano neste agendamento"
-                  : "Sessões do plano a agendar"}
-              </Label>
-              <p className="text-[11px] text-muted-foreground">
-                {isEdit
-                  ? "As marcadas ficam vinculadas a este agendamento; desmarcar devolve a sessão para “a agendar”."
-                  : "Marque uma — ou mais de uma, se o dentista vai executar vários procedimentos neste mesmo horário (a duração soma sozinha)."}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {pendingSessions.map((s) => (
-                  <Button
-                    key={s.id}
-                    type="button"
-                    size="sm"
-                    variant={sessionIds.includes(s.id) ? "default" : "outline"}
-                    onClick={() => toggleSession(s)}
-                  >
-                    {s.label}
-                    {s.minutes ? ` (${s.minutes} min)` : ""}
-                  </Button>
-                ))}
-              </div>
-              {sessionIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {sessionIds.length === 1
-                    ? "Este agendamento será vinculado à sessão selecionada (marca como agendada)."
-                    : `${sessionIds.length} sessões serão vinculadas a este agendamento; o tempo real será rateado entre elas ao concluir.`}
-                </p>
-              )}
-              {providerValid &&
-                selectedProcedureIds.some((pid) => providerStats[pid]) && (
-                  <div className="rounded-md bg-emerald-50 p-1.5 text-xs text-emerald-800">
-                    {selectedProcedureIds.map((pid) => {
-                      const st = providerStats[pid];
-                      if (!st) return null;
-                      const procName =
-                        pendingSessions
-                          .find((s) => s.procedureId === pid)
-                          ?.label.split(" — ")[0] ?? "Procedimento";
-                      return (
-                        <p key={pid}>
-                          Média deste dentista — {procName}: {st.avgMinutes}{" "}
-                          min/sessão ({st.sample}{" "}
-                          {st.sample === 1 ? "execução" : "execuções"})
-                        </p>
-                      );
-                    })}
-                  </div>
-                )}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>Duração</Label>
-            <Select
-              items={DURATION_ITEMS}
-              value={duration}
-              onValueChange={(v) => v !== null && setDuration(v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_ITEMS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
-            <Input
-              id="notes"
-              name="notes"
-              placeholder="Opcional"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
 
           <DialogFooter>
             <Button

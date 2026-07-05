@@ -20,9 +20,10 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 
 ## GRUPO 3 — próximo (H3.1 → H3.15)
 
-- [ ] **H3.1 Formulário de agendamento reordenado [P]** — cliente → tipo →
-      profissional → sessões → sala → duração → observações → **data/horário/
-      sugestões por último**. Só o componente `appointment-form-dialog`.
+- [x] **H3.1 Formulário de agendamento reordenado** ✅ (04/07, v0.11.2) —
+      cliente → tipo → profissional → sala → sessões → duração → observações →
+      **data/horário/sugestões por último**, com o título "Quando será o
+      atendimento?" abrindo a etapa final.
 - [ ] **H3.2 "Ver agenda" rica [M]** — pop-up do mês com feriados/fechamentos/
       dias avulsos, nº de agendamentos **e horários livres** por dia (do
       profissional selecionado, cores por disponibilidade); clicar no dia

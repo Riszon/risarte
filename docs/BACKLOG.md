@@ -682,8 +682,8 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H2.12 Pop-up "i" mostra as sessões/procedimentos do agendamento (via H1c).
 
 ### H3 — Melhorias médias
-- [ ] H3.1 Formulário de agendamento reordenado: data/horário/sugestões como
-      ÚLTIMA etapa.
+- [x] H3.1 Formulário de agendamento reordenado ✅ (v0.11.2): data/horário/
+      sugestões como ÚLTIMA etapa, sob o título "Quando será o atendimento?".
 - [ ] H3.2 "Ver agenda" (pop-up do mês) rica: mostrar bloqueios, feriados, dias
       abertos/fechados; nº de agendamentos E de horários livres por dia (para o
       profissional selecionado); clicar no dia sugere os horários disponíveis.

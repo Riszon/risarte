@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.1** · Última migração: **0062**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.2** · Última migração: **0062**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -457,9 +457,10 @@ backlog (H3.1 em diante).
 > **Roadmap completo com o "como construir" de cada item: `docs/ROADMAP.md`**
 > (criado em 04/07/2026 a pedido do dono — ler antes de iniciar cada lote).
 
-1. **H3 em ordem numérica** (decisão do dono, 04/07): H3.1 formulário de
-   agendamento reordenado; H3.2 "Ver agenda" rica; H3.3 seletor de dias; H3.4
-   status de atendimento; ... até H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
+1. **H3 em ordem numérica** (decisão do dono, 04/07): ~~H3.1~~ ✅ (v0.11.2,
+   formulário reordenado — data/horário/sugestões por último, sob "Quando será
+   o atendimento?"); próximo: H3.2 "Ver agenda" rica; H3.3 seletor de dias;
+   H3.4 status de atendimento; ... até H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
