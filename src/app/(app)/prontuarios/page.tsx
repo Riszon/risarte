@@ -31,6 +31,7 @@ import {
   type BirthdayScope,
 } from "@/lib/birthdays";
 import { ShareByCpf } from "./share-by-cpf";
+import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
 
 export const metadata: Metadata = { title: "Prontuários" };
@@ -121,6 +122,14 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       "clinical_coordinator",
       "unit_manager",
     ]);
+  // Recepção/Coordenador/Gerente (ou Admin) podem encerrar compartilhamento (H1.8).
+  const canEndShare =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, clinicId, [
+      "receptionist",
+      "clinical_coordinator",
+      "unit_manager",
+    ]);
 
   // P2: aviso de aniversariantes para a Recepção (idempotente, antecipa fim de
   // semana/feriado) — disparado também ao abrir os Prontuários da unidade.
@@ -170,7 +179,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
 
   let clients: ClientRow[] = [];
   let transferred: TransferredRow[] = [];
-  let sharedWithUnit: TransferredRow[] = [];
+  let sharedEntries: SharedEntry[] = [];
   let birthdays: BirthdayClient[] = [];
   let clinicOptions: { id: string; name: string }[] = [];
 
@@ -292,25 +301,62 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
         transferred = transferredData ?? [];
       }
 
-      // Clients actively shared WITH this unit (their home unit is another one).
-      const { data: shareRows } = await supabase
-        .from("client_shares")
-        .select("client_id")
-        .eq("clinic_id", clinicId)
-        .is("ended_at", null);
-      const sharedIds = [
-        ...new Set((shareRows ?? []).map((s) => s.client_id as string)),
-      ];
-      if (sharedIds.length > 0) {
-        const { data: sharedData } = await supabase
-          .from("clients")
-          .select("id, full_name, clinics!clients_clinic_id_fkey ( name )")
-          .in("id", sharedIds)
+      // Compartilhamentos ativos ligados a esta unidade (H1.8): tanto os que
+      // ela RECEBEU (é a unidade B) quanto os que ela COMPARTILHOU (é a A),
+      // com detalhes (motivo, quando, quem, clínica dona) + Encerrar.
+      const shareSelect =
+        "id, reason, started_at, clinic_id, shared_by, target:clinics!client_shares_clinic_id_fkey ( name ), client:clients!client_shares_client_id_fkey ( id, full_name, clinic_id, home:clinics!clients_clinic_id_fkey ( name ) ), sharer:profiles!client_shares_shared_by_fkey ( full_name )";
+      type ShareRow = {
+        id: string;
+        reason: string | null;
+        started_at: string;
+        clinic_id: string;
+        shared_by: string | null;
+        target: { name: string } | null;
+        client: {
+          id: string;
+          full_name: string;
+          clinic_id: string;
+          home: { name: string } | null;
+        } | null;
+        sharer: { full_name: string } | null;
+      };
+      const [{ data: incoming }, { data: outgoing }] = await Promise.all([
+        // Recebidos: esta unidade é o destino (B).
+        supabase
+          .from("client_shares")
+          .select(shareSelect)
+          .eq("clinic_id", clinicId)
+          .is("ended_at", null)
+          .returns<ShareRow[]>(),
+        // Enviados: o cliente é desta unidade (A) e o destino é outra.
+        supabase
+          .from("client_shares")
+          .select(shareSelect)
+          .eq("client.clinic_id", clinicId)
           .neq("clinic_id", clinicId)
-          .order("full_name")
-          .returns<TransferredRow[]>();
-        sharedWithUnit = sharedData ?? [];
-      }
+          .is("ended_at", null)
+          .returns<ShareRow[]>(),
+      ]);
+      const mapShare = (s: ShareRow, direction: "in" | "out"): SharedEntry => ({
+        shareId: s.id,
+        clientId: s.client?.id ?? "",
+        clientName: s.client?.full_name ?? "Cliente",
+        homeClinicName: s.client?.home?.name ?? "outra unidade",
+        sharedClinicName: s.target?.name ?? "outra unidade",
+        reason: s.reason,
+        startedAt: s.started_at,
+        sharedByName: s.sharer?.full_name ?? null,
+        direction,
+      });
+      sharedEntries = [
+        ...(incoming ?? [])
+          .filter((s) => s.client)
+          .map((s) => mapShare(s, "in")),
+        ...(outgoing ?? [])
+          .filter((s) => s.client)
+          .map((s) => mapShare(s, "out")),
+      ].sort((a, b) => a.clientName.localeCompare(b.clientName));
 
       // Aniversariantes da unidade (ativos e inativos; anonimizados não).
       const { data: birthdayRows } = await supabase
@@ -340,7 +386,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     ativos: clients.length,
     aniversariantes: birthdayMonthCount,
     transferidos: transferred.length,
-    compartilhados: sharedWithUnit.length,
+    compartilhados: sharedEntries.length,
   };
   const tabs: Tab[] = isFranchisor
     ? ["ativos"]
@@ -716,28 +762,16 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       {tab === "compartilhados" && (
         <div className="rounded-md border border-gold/40 bg-gold/5 p-4">
           <p className="mb-3 text-sm text-muted-foreground">
-            Clientes de outra unidade compartilhados temporariamente com a sua.
+            Compartilhamentos ativos da sua unidade — os que você recebeu de
+            outra unidade e os que compartilhou com outra. Qualquer uma das duas
+            unidades pode encerrar.
           </p>
-          {sharedWithUnit.length === 0 ? (
+          {sharedEntries.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhum cliente compartilhado com a sua unidade no momento.
+              Nenhum compartilhamento ativo no momento.
             </p>
           ) : (
-            <ul className="space-y-1.5">
-              {sharedWithUnit.map((client) => (
-                <li key={client.id} className="flex items-center gap-2 text-sm">
-                  <Link
-                    href={`/prontuarios/${client.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {client.full_name}
-                  </Link>
-                  <Badge variant="secondary" className="text-[10px]">
-                    Unidade de origem: {client.clinics?.name ?? "outra unidade"}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
+            <SharedClientsList entries={sharedEntries} canEnd={canEndShare} />
           )}
         </div>
       )}

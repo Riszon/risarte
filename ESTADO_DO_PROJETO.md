@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.8** · Última migração: **0062**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.10.9** · Última migração: **0062**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -409,11 +409,24 @@ unidade; **E3** planejamento com sugestões + médias reais (Rede/Unidade/dentis
   servidor; o editor mostra "N de M cadeiras". Editar a clínica não deixa
   **reduzir** o teto abaixo das salas já criadas. Backfill: unidades existentes
   recebem `greatest(salas atuais, 4)`.
+- **H1f — Encerrar compartilhamento na lista (sem migração, v0.10.9):** **H1.8**
+  a aba **Compartilhados** dos Prontuários agora lista os compartilhamentos
+  ativos da unidade nos **dois sentidos** (recebidos da outra unidade + enviados
+  para outra) com **detalhes** (cliente, clínica dona, unidade compartilhada,
+  motivo, desde quando, quem compartilhou) e um botão **Encerrar** por linha
+  (`shared-clients-list.tsx` + `endClientShare`). Quem encerra: Recepção,
+  Coordenador, Gerente ou Admin (o banco já permitia ambos os lados e já
+  **notifica as duas unidades** ao iniciar/encerrar — migração 0038, nada novo
+  no banco). O card da ficha (`ClientShares`) já tinha o Encerrar; o problema era
+  achá-lo na lista. **LOTE H1 (Grupo 1 — bugs/segurança) COMPLETO (H1.1–H1.10).**
 
 ## 3. Próximos passos (ordem de prioridade)
 
-1. **LOTE H1 (bugs do teste geral):** H1.8 encerrar
-   compartilhamento (botão + papéis + infos) — último item do Grupo 1.
+1. **LOTE H2 (ajustes rápidos, 12 itens)** — `docs/BACKLOG.md`: renomear abas,
+   tirar confirmação de pilar, visão Dia abre hoje, card 15 min com nome, alerta
+   de dia fechado na escolha da data, cancelar/alterar status de agendamento
+   futuro, etc.
+2. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
 3. **H3/H4** — priorizar com o dono (melhorias médias + módulos novos).
 4. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
