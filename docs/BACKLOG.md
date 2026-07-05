@@ -638,6 +638,9 @@ Fonte: `docs/ROTEIRO-TESTE-GERAL.md` preenchido pelo dono após o teste geral
 por papel. Organizado em 4 grupos por prioridade (H1 bugs → H4 módulos novos).
 Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 
+> **Ordem de construção + "como fazer" de cada item: `docs/ROADMAP.md`**
+> (decisão do dono: H3.1 → H3.15 em sequência, depois H4.1 → H4.14).
+
 ### H1 — Bugs e segurança ✅ COMPLETO (04/07/2026, migrações 0061–0062)
 - [x] **H1.1 Relatórios vazando escopo (SEGURANÇA):** papel de gestão vale na
       clínica ativa + todas as consultas filtram pelo escopo (v0.10.4).
