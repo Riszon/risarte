@@ -715,9 +715,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H3.9 Notificações ampliadas ✅ (v0.12.1, migração 0067): transferência
       notifica sempre o DESTINO (recepção/gerente/coordenador) além da origem;
       compartilhamento já notificava os 3 papéis das duas unidades (0038).
-- [ ] H3.10 Coordenador ao finalizar a avaliação: pop-up para agendar a
-      apresentação com o Comercial; enviar ao Centro de Planejamento CONCLUI o
-      atendimento "Em atendimento" automaticamente.
+- [x] H3.10 Coordenador ao finalizar a avaliação ✅ (v0.12.2, migração 0068):
+      enviar ao Centro de Planejamento conclui o atendimento "Em atendimento"
+      automaticamente + pop-up para agendar a apresentação com o Comercial +
+      aviso à Recepção.
 - [ ] H3.11 Informações complementares ao Centro de Planejamento: espaço no
       prontuário (após a última avaliação) para o coordenador enviar mais
       arquivos/informações; notifica o Planner; ícone no centro de planejamento.

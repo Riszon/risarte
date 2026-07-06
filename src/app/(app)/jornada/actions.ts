@@ -180,3 +180,27 @@ export async function moveClientPhase(
   revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }
+
+/**
+ * H3.10: Coordenador envia o cliente ao Centro de Planejamento — move a fase e,
+ * em seguida, conclui o atendimento em curso e avisa a Recepção para agendar a
+ * apresentação comercial (RPC send_to_planning_followup).
+ */
+export async function sendToPlanningCenter(
+  clientId: string
+): Promise<ActionResult> {
+  const moved = await moveClientPhase(clientId, "planning_center");
+  if (!moved.ok) return moved;
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("send_to_planning_followup", {
+    p_client_id: clientId,
+  });
+  if (error) {
+    // Follow-up é best-effort — a movimentação já ocorreu.
+    console.error("send_to_planning_followup failed:", error.message);
+  }
+  revalidatePath("/atendimento");
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}

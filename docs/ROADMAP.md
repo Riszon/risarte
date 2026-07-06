@@ -81,9 +81,13 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       Gerente e Coordenador: "Cliente transferido para a sua unidade"), além da
       origem que já era avisada; o compartilhamento já notificava os 3 papéis
       das duas unidades (0038). Só mudança de banco (`transfer_client`).
-- [ ] **H3.10 Fluxo pós-avaliação do Coordenador [M]** — enviar ao Centro de
-      Planejamento (a) conclui o atendimento automaticamente e (b) abre pop-up
-      para agendar a apresentação com o Comercial.
+- [x] **H3.10 Fluxo pós-avaliação do Coordenador** ✅ (04/07, v0.12.2, migração
+      0068) — "Enviar ao Centro de Planejamento" agora (a) **conclui o
+      atendimento em curso** do cliente automaticamente e avisa a Recepção
+      p/ agendar a apresentação (`send_to_planning_followup`), e (b) abre um
+      **pop-up** oferecendo agendar a apresentação comercial (recepção/SDR
+      agenda ali; senão avisa que a Recepção foi notificada). Action
+      `sendToPlanningCenter`.
 - [ ] **H3.11 Informações complementares [M] 🗄️** — espaço no prontuário
       (pós-envio) para o coordenador mandar mais infos ao Planner; notifica o
       Planner; ícone "chegou informação nova" no Centro de Planejamento.

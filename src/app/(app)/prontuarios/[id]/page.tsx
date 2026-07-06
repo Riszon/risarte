@@ -1191,6 +1191,10 @@ export default async function ClientDetailPage(
           canSendToPlanning={canSendToPlanning}
           anamnesisBlocksPlanning={anamnesisBlocksPlanning}
           anamnesisBlockMessage={anamnesisBlockMessage}
+          canSchedulePresentation={canScheduleFromFicha}
+          scheduleStaff={fichaStaff}
+          scheduleConfig={fichaConfig}
+          scheduleClinicId={scheduleClinicId}
         />
       )}
 

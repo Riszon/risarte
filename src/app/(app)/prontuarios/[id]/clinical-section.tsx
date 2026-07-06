@@ -34,7 +34,18 @@ import {
 } from "./clinical-actions";
 import { AudioRecorder } from "./audio-recorder";
 import { MediaGallery } from "./media-gallery";
-import { moveClientPhase } from "../../jornada/actions";
+import { sendToPlanningCenter } from "../../jornada/actions";
+import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
+import type { AgendaFormConfig } from "../../agenda/actions";
+import type { StaffOption } from "@/lib/appointments";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export type { ConsentInfo, ClinicalNoteItem, ClinicalMediaItem };
 
@@ -131,6 +142,10 @@ export function ClinicalSection({
   canSendToPlanning,
   anamnesisBlocksPlanning = false,
   anamnesisBlockMessage = "",
+  canSchedulePresentation = false,
+  scheduleStaff = [],
+  scheduleConfig,
+  scheduleClinicId,
 }: {
   clientId: string;
   clientName: string;
@@ -143,6 +158,11 @@ export function ClinicalSection({
   /** A4: bloqueia o envio ao Planejamento até a anamnese estar preenchida/atualizada. */
   anamnesisBlocksPlanning?: boolean;
   anamnesisBlockMessage?: string;
+  /** H3.10: quem opera a ficha pode agendar a apresentação (recepção/SDR). */
+  canSchedulePresentation?: boolean;
+  scheduleStaff?: StaffOption[];
+  scheduleConfig?: AgendaFormConfig;
+  scheduleClinicId?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -155,6 +175,8 @@ export function ClinicalSection({
   const [linkLabel, setLinkLabel] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingBody, setEditingBody] = useState("");
+  // H3.10: pop-up para agendar a apresentação após enviar ao Planejamento.
+  const [showSchedulePrompt, setShowSchedulePrompt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function run(
@@ -484,10 +506,19 @@ export function ClinicalSection({
                 <Button
                   disabled={isPending}
                   onClick={() =>
-                    run(
-                      () => moveClientPhase(clientId, "planning_center"),
-                      `${clientName} enviado(a) ao Centro de Planejamento.`
-                    )
+                    startTransition(async () => {
+                      const result = await sendToPlanningCenter(clientId);
+                      if (result.ok) {
+                        toast.success(
+                          `${clientName} enviado(a) ao Centro de Planejamento.`
+                        );
+                        // H3.10: abre o pop-up para agendar a apresentação.
+                        setShowSchedulePrompt(true);
+                        router.refresh();
+                      } else {
+                        toast.error(result.error ?? "Algo deu errado.");
+                      }
+                    })
                   }
                 >
                   <ArrowRight className="mr-1 size-4" />
@@ -496,6 +527,53 @@ export function ClinicalSection({
               ))}
           </div>
         )}
+
+        {/* H3.10: após enviar ao Planejamento, agendar a apresentação comercial. */}
+        <Dialog open={showSchedulePrompt} onOpenChange={setShowSchedulePrompt}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Agendar apresentação comercial</DialogTitle>
+              <DialogDescription>
+                {clientName} passou pela avaliação e foi ao Centro de
+                Planejamento. Agende agora a apresentação online do plano com o
+                Consultor Comercial.
+              </DialogDescription>
+            </DialogHeader>
+            {canSchedulePresentation && scheduleClinicId ? (
+              <div className="flex flex-wrap gap-2">
+                <AppointmentFormDialog
+                  clients={[{ id: clientId, full_name: clientName }]}
+                  staff={scheduleStaff}
+                  config={scheduleConfig}
+                  initialClientId={clientId}
+                  fixedClinicId={scheduleClinicId}
+                  onOpenChange={(o) => {
+                    if (o) setShowSchedulePrompt(false);
+                  }}
+                  trigger={<Button>Agendar apresentação agora</Button>}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSchedulePrompt(false)}
+                >
+                  Agendar depois
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-sm">
+                  A Recepção foi avisada para agendar a apresentação comercial
+                  com o Consultor.
+                </p>
+                <DialogFooter>
+                  <Button onClick={() => setShowSchedulePrompt(false)}>
+                    Entendi
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Media gallery: grouped by category, photo lightbox, inline previews. */}
         <MediaGallery media={media} canEdit={canEdit} />

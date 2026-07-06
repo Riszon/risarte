@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.12.1** · Última migração: **0067**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.12.2** · Última migração: **0068**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -483,8 +483,10 @@ backlog (H3.1 em diante).
    editável {nome} + botão por cliente, e botão no prontuário no dia do
    aniversário; `src/lib/whatsapp.ts`); ~~H3.9~~ ✅ (v0.12.1, migração 0067 — transferência
    notifica sempre o destino, recepção/gerente/coordenador; compartilhamento
-   já cobria os 3 papéis das 2 unidades); próximo: H3.10 fluxo pós-avaliação
-   do Coordenador; ... até H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
+   já cobria os 3 papéis das 2 unidades); ~~H3.10~~ ✅ (v0.12.2, migração 0068 —
+   enviar ao Planejamento conclui o atendimento automaticamente + avisa a
+   recepção + pop-up para agendar a apresentação comercial); próximo: H3.11
+   informações complementares; ... até H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.
