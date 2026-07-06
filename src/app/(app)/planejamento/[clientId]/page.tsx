@@ -96,6 +96,38 @@ export default async function PlanningCockpitPage(
         .order("created_at", { ascending: false }),
     ]);
 
+  // H3.11: informações complementares do Coordenador — mostra e marca como
+  // vistas (limpa o ícone da fila) ao abrir o cockpit.
+  const { data: supRows } = await supabase
+    .from("planning_supplements")
+    .select(
+      "id, body, created_at, author:profiles!planning_supplements_created_by_fkey ( full_name )"
+    )
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        body: string;
+        created_at: string;
+        author: { full_name: string } | { full_name: string }[] | null;
+      }[]
+    >();
+  const supplements = (supRows ?? []).map((s) => {
+    const a = Array.isArray(s.author) ? s.author[0] : s.author;
+    return {
+      id: s.id,
+      body: s.body,
+      createdAt: s.created_at,
+      authorName: a?.full_name ?? null,
+    };
+  });
+  if (supplements.length > 0) {
+    await supabase.rpc("mark_planning_supplements_seen", {
+      p_client_id: clientId,
+    });
+  }
+
   const peopleIds = [
     ...new Set(
       [
@@ -488,6 +520,33 @@ export default async function PlanningCockpitPage(
               )}
             </CardContent>
           </Card>
+
+          {/* H3.11: informações complementares enviadas pelo Coordenador. */}
+          {supplements.length > 0 && (
+            <Card className="border-primary/40">
+              <CardHeader>
+                <CardTitle className="text-base text-primary">
+                  Informações complementares do Coordenador
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {supplements.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded-md border border-primary/30 bg-primary/5 p-2 text-sm"
+                    >
+                      <p className="whitespace-pre-wrap">{s.body}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {fmtDateTime(s.createdAt)}
+                        {s.authorName ? ` · ${s.authorName}` : ""}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Editor do plano (mesma tela). */}

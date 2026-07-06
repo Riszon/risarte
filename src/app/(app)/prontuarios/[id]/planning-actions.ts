@@ -31,6 +31,56 @@ async function requirePlanner(): Promise<
   return { userId: session.userId };
 }
 
+/**
+ * H3.11: Coordenador envia informações complementares ao Centro de
+ * Planejamento — notifica o Planner e sinaliza no cliente (ícone na fila).
+ */
+export async function addPlanningSupplement(
+  clientId: string,
+  body: string
+): Promise<{ ok: boolean; error?: string }> {
+  await getSessionContext();
+  if (!body.trim()) {
+    return { ok: false, error: "Escreva a informação a enviar." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("add_planning_supplement", {
+    p_client_id: clientId,
+    p_body: body.trim(),
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o Coordenador Clínico pode enviar essas informações.",
+      };
+    }
+    console.error("add_planning_supplement failed:", error.message);
+    return { ok: false, error: "Não foi possível enviar a informação." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "planning_supplement",
+    entityId: clientId,
+  });
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath(`/planejamento/${clientId}`);
+  revalidatePath("/planejamento");
+  return { ok: true };
+}
+
+/** H3.11: o Planner marca as informações do cliente como vistas (limpa o ícone). */
+export async function markPlanningSupplementsSeen(
+  clientId: string
+): Promise<void> {
+  await getSessionContext();
+  const supabase = await createClient();
+  await supabase.rpc("mark_planning_supplements_seen", {
+    p_client_id: clientId,
+  });
+  revalidatePath("/planejamento");
+}
+
 /** Resolves a plan's client + clinic, for revalidation and option scoping. */
 async function loadPlanContext(
   planId: string

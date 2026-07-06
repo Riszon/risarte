@@ -69,6 +69,10 @@ import {
 } from "@/lib/pricing";
 import { ClientShares, type ActiveShare } from "./client-shares";
 import { BirthdayWhatsAppButton } from "../birthday-whatsapp";
+import {
+  PlanningSupplements,
+  type PlanningSupplement,
+} from "./planning-supplements";
 import { ensureTreatmentSessions } from "./treatment-actions";
 import {
   TreatmentSessionsPanel,
@@ -651,6 +655,38 @@ export default async function ClientDetailPage(
     );
   }
 
+  // H3.11: informações complementares ao Centro de Planejamento.
+  let planningSupplements: PlanningSupplement[] = [];
+  if (canViewClinical) {
+    const { data: supRows } = await supabase
+      .from("planning_supplements")
+      .select(
+        "id, body, created_at, seen_at, author:profiles!planning_supplements_created_by_fkey ( full_name )"
+      )
+      .eq("client_id", id)
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          body: string;
+          created_at: string;
+          seen_at: string | null;
+          author: { full_name: string } | { full_name: string }[] | null;
+        }[]
+      >();
+    planningSupplements = (supRows ?? []).map((s) => {
+      const a = Array.isArray(s.author) ? s.author[0] : s.author;
+      return {
+        id: s.id,
+        body: s.body,
+        createdAt: s.created_at,
+        authorName: a?.full_name ?? null,
+        seenAt: s.seen_at,
+      };
+    });
+  }
+  const canAddSupplement = canEditClinical;
+
   // -- Anamnese (A3): fichas configuráveis. Coordenador preenche; Dentista,
   // Planner, Gerente e Admin visualizam. Carrega as fichas ativas (perguntas da
   // rede + acréscimos desta unidade), o preenchimento atual e o histórico.
@@ -1195,6 +1231,14 @@ export default async function ClientDetailPage(
           scheduleStaff={fichaStaff}
           scheduleConfig={fichaConfig}
           scheduleClinicId={scheduleClinicId}
+        />
+      )}
+
+      {canViewClinical && (
+        <PlanningSupplements
+          clientId={client.id}
+          canAdd={canAddSupplement}
+          supplements={planningSupplements}
         />
       )}
 

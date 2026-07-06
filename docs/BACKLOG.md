@@ -719,9 +719,9 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       enviar ao Centro de Planejamento conclui o atendimento "Em atendimento"
       automaticamente + pop-up para agendar a apresentação com o Comercial +
       aviso à Recepção.
-- [ ] H3.11 Informações complementares ao Centro de Planejamento: espaço no
-      prontuário (após a última avaliação) para o coordenador enviar mais
-      arquivos/informações; notifica o Planner; ícone no centro de planejamento.
+- [x] H3.11 Informações complementares ✅ (v0.12.3, migração 0069): card na
+      ficha para o coordenador enviar mais info ao Planner (notifica); selo
+      "nova info" na fila /planejamento até o Planner abrir o cockpit.
 - [ ] H3.12 Mídias: excluir, renomear e fazer ANOTAÇÕES em cada foto/arquivo.
 - [ ] H3.13 Centro de Planejamento/cockpit: anamnese visível ao Planner; botão
       direto para o cockpit na fila; filtros por unidade e por pilar; colunas do

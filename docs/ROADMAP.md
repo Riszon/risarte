@@ -88,9 +88,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       **pop-up** oferecendo agendar a apresentação comercial (recepção/SDR
       agenda ali; senão avisa que a Recepção foi notificada). Action
       `sendToPlanningCenter`.
-- [ ] **H3.11 Informações complementares [M] 🗄️** — espaço no prontuário
-      (pós-envio) para o coordenador mandar mais infos ao Planner; notifica o
-      Planner; ícone "chegou informação nova" no Centro de Planejamento.
+- [x] **H3.11 Informações complementares** ✅ (04/07, v0.12.3, migração 0069) —
+      card "Informações complementares ao Centro de Planejamento" na ficha
+      (Coordenador escreve → `add_planning_supplement` notifica o Planner);
+      tabela `planning_supplements`; na fila `/planejamento` o cliente ganha o
+      selo "nova info" até o Planner abrir o cockpit (que mostra as infos e
+      chama `mark_planning_supplements_seen`).
 - [ ] **H3.12 Mídias: excluir, renomear e anotar [M] 🗄️** — por foto/arquivo,
       com registro de auditoria (LGPD).
 - [ ] **H3.13 Centro/cockpit — melhorias leves [M]** — anamnese no cockpit;

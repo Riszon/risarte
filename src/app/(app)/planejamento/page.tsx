@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Info } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
@@ -146,7 +147,7 @@ export default async function PlanningCenterPage(
   const ids = (clients ?? []).map((c) => c.id);
 
   const nowIso = new Date().toISOString();
-  const [{ data: presentations }, { data: planRows }, { data: slaRows }] =
+  const [{ data: presentations }, { data: planRows }, { data: slaRows }, { data: supRows }] =
     await Promise.all([
       ids.length > 0
         ? supabase
@@ -179,6 +180,15 @@ export default async function PlanningCenterPage(
         .from("sla_settings")
         .select("id, clinic_id, sla_key, hours")
         .returns<SlaSettingRow[]>(),
+      // H3.11: clientes com informação complementar ainda não vista pelo Planner.
+      ids.length > 0
+        ? supabase
+            .from("planning_supplements")
+            .select("client_id")
+            .in("client_id", ids)
+            .is("seen_at", null)
+            .returns<{ client_id: string }[]>()
+        : Promise.resolve({ data: [] as { client_id: string }[] }),
     ]);
 
   const presentationByClient = new Map<string, string>();
@@ -191,6 +201,9 @@ export default async function PlanningCenterPage(
   for (const p of planRows ?? []) {
     if (!planByClient.has(p.client_id)) planByClient.set(p.client_id, p.status);
   }
+  const clientsWithNewInfo = new Set(
+    (supRows ?? []).map((s) => s.client_id)
+  );
 
   // Classify each case and count per situation.
   const counts: Record<SituationKey, number> = {
@@ -323,12 +336,23 @@ export default async function PlanningCenterPage(
                       {index + 1}
                     </td>
                     <td className="px-3 py-2">
-                      <Link
-                        href={`/planejamento/${c.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {c.full_name}
-                      </Link>
+                      <span className="flex items-center gap-1.5">
+                        <Link
+                          href={`/planejamento/${c.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {c.full_name}
+                        </Link>
+                        {clientsWithNewInfo.has(c.id) && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                            title="Chegou informação complementar do Coordenador"
+                          >
+                            <Info className="size-3" />
+                            nova info
+                          </span>
+                        )}
+                      </span>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {c.code && (
                           <span className="font-mono text-xs text-gold">
