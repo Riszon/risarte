@@ -162,7 +162,29 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       contador de novos e acesso rápido (**Apresentação** p/ o Consultor +
       **Ver plano**); marca também os que estão sem apresentação.
 
-**AJUSTES PRÉ-GRUPO 4 COMPLETOS (AJ1–AJ5).** Próximo: GRUPO 4 (módulos novos).
+**AJUSTES PRÉ-GRUPO 4 COMPLETOS (AJ1–AJ5).**
+
+## AJUSTES 2 PRÉ-GRUPO 4 (2ª rodada de feedback)
+
+- [x] **AJ6 Pop-up da recepção organizado** ✅ (06/07, v0.12.16, sem migração) —
+      altura limitada + rolagem + nome do cliente enxuto + botão **"Marcar todos
+      como agendados"** (`markNotificationsRead`) para não bagunçar com vários.
+- [ ] **AJ7 Liberar horário/período avulso [G] 🗄️** — estender o horário de um
+      dia normal (começar antes / terminar depois); regras (não liberar o que já
+      é normal; sem fim = até o início normal / a partir do fim normal); mesma
+      notificação; aparece na agenda; segue com a Gerência.
+- [ ] **AJ8 Marcar visualmente horários não permitidos [M]** — antes/depois do
+      horário normal, como o almoço.
+- [ ] **AJ9 Primeiro horário não some [P]** — espaço no topo da grade da agenda.
+- [ ] **AJ10 Linha do tempo (faixa de dias) [G]** — ver passado (histórico) +
+      ~1 ano à frente; navegar com o scroll do mouse; mês só no 1º dia + todos os
+      dias; dia com agenda fechada mostra **o motivo** (não "lotado"); fechamento
+      parcial (cadeira/profissional/período) vira **alerta de atenção**.
+- [ ] **AJ11 Consultor recebe notificação [M] 🗄️** — plano pronto vai também às
+      notificações do Consultor (incl. consultor da Franqueadora com escopo); e
+      aviso quando há apresentação agendada e plano não pronto.
+
+Próximo depois destes: GRUPO 4 (módulos novos).
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 

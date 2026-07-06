@@ -27,6 +27,29 @@ export async function markNotificationRead(
   return { ok: true };
 }
 
+/** Marca uma LISTA de notificações como lidas (usado pelo pop-up da recepção). */
+export async function markNotificationsRead(
+  ids: string[]
+): Promise<ActionResult> {
+  if (ids.length === 0) return { ok: true };
+  const session = await getSessionContext();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("user_id", session.userId)
+    .is("read_at", null);
+
+  if (error) {
+    console.error("markNotificationsRead failed:", error.message);
+    return { ok: false, error: "Não foi possível marcar como lidas." };
+  }
+  revalidatePath("/notificacoes");
+  return { ok: true };
+}
+
 export async function markAllNotificationsRead(): Promise<ActionResult> {
   const session = await getSessionContext();
   const supabase = await createClient();

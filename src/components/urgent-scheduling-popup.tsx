@@ -14,14 +14,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { markNotificationRead } from "@/app/(app)/notificacoes/actions";
+import {
+  markNotificationRead,
+  markNotificationsRead,
+} from "@/app/(app)/notificacoes/actions";
 
 type Item = { id: string; title: string; body: string | null; link: string | null };
 
+/** Só o nome do cliente do corpo "Nome — Clínica: ... — Veio de: ...". */
+function clientNameFromBody(body: string | null, fallback: string): string {
+  if (!body) return fallback;
+  const first = body.split(" — ")[0]?.trim();
+  return first || fallback;
+}
+
 /**
- * AJ4: pop-up para a recepção. Verifica a cada ~45s se há pedidos NÃO lidos de
- * "agendar apresentação comercial" e abre um modal para agir na hora. Só quem
- * recebe esses avisos (recepção) vê algo — os demais nunca têm esses registros.
+ * AJ4/AJ6: pop-up para a recepção. Verifica a cada ~45s se há pedidos NÃO lidos
+ * de "agendar apresentação comercial" e abre um modal para agir na hora. Altura
+ * limitada + rolagem + "marcar todos" para não bagunçar quando há vários.
  */
 export function UrgentSchedulingPopup() {
   const router = useRouter();
@@ -42,7 +52,7 @@ export function UrgentSchedulingPopup() {
         .is("read_at", null)
         .ilike("title", "%agendar apresenta%")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50);
       if (cancelled) return;
       const list = (data ?? []) as Item[];
       setItems(list);
@@ -70,6 +80,17 @@ export function UrgentSchedulingPopup() {
     });
   }
 
+  function resolveAll() {
+    const ids = items.map((i) => i.id);
+    startTransition(async () => {
+      await markNotificationsRead(ids);
+      for (const id of ids) dismissed.current.add(id);
+      setItems([]);
+      setOpen(false);
+      router.refresh();
+    });
+  }
+
   function dismissAll() {
     for (const i of items) dismissed.current.add(i.id);
     setOpen(false);
@@ -84,7 +105,7 @@ export function UrgentSchedulingPopup() {
         if (!o) dismissAll();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-red-700">
             <AlarmClock className="size-5" />
@@ -92,15 +113,17 @@ export function UrgentSchedulingPopup() {
           </DialogTitle>
           <DialogDescription>
             {items.length === 1
-              ? "Há um cliente esperando o agendamento da apresentação comercial."
-              : `Há ${items.length} clientes esperando o agendamento da apresentação comercial.`}{" "}
+              ? "1 cliente aguardando o agendamento da apresentação comercial."
+              : `${items.length} clientes aguardando o agendamento da apresentação comercial.`}{" "}
             Agende o quanto antes.
           </DialogDescription>
         </DialogHeader>
-        <ul className="space-y-2">
+        <ul className="-mx-1 max-h-[52vh] space-y-2 overflow-y-auto px-1">
           {items.map((i) => (
             <li key={i.id} className="rounded-md border p-2 text-sm">
-              <p className="font-medium">{i.body ?? i.title}</p>
+              <p className="font-medium">
+                {clientNameFromBody(i.body, i.title)}
+              </p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {i.link && (
                   <Button
@@ -127,8 +150,16 @@ export function UrgentSchedulingPopup() {
             </li>
           ))}
         </ul>
-        <DialogFooter>
-          <Button variant="ghost" onClick={dismissAll}>
+        <DialogFooter className="sm:justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={resolveAll}
+          >
+            Marcar todos como agendados
+          </Button>
+          <Button variant="ghost" size="sm" onClick={dismissAll}>
             Fechar
           </Button>
         </DialogFooter>
