@@ -156,10 +156,13 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       agendamento"** (RPC `request_commercial_scheduling`, com dedup) que avisa a
       recepção; a recepção vê um **pop-up** (`UrgentSchedulingPopup`, verifica a
       cada 45s) com "Abrir agenda" / "Já agendei".
-- [ ] **AJ5 Vitrine "Prontos para apresentar" p/ o Consultor [P/M]** — seção
-      destacada no topo de /planos com acesso rápido aos planos novos prontos.
+- [x] **AJ5 Vitrine "Prontos para apresentar" p/ o Consultor** ✅ (06/07,
+      v0.12.15, sem migração) — card destacado (dourado) no topo de `/planos`
+      com os casos na fase comercial, selo **"novo"** (entrou há <3 dias),
+      contador de novos e acesso rápido (**Apresentação** p/ o Consultor +
+      **Ver plano**); marca também os que estão sem apresentação.
 
-Próximo depois dos ajustes: GRUPO 4 (módulos novos).
+**AJUSTES PRÉ-GRUPO 4 COMPLETOS (AJ1–AJ5).** Próximo: GRUPO 4 (módulos novos).
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlarmClock, AlertTriangle } from "lucide-react";
+import { AlarmClock, AlertTriangle, Sparkles } from "lucide-react";
 import { PresentationCountdown } from "@/components/presentation-countdown";
 import { RequestSchedulingButton } from "./request-scheduling-button";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
@@ -117,6 +117,7 @@ type PlanRow = {
     code: string | null;
     journey_phase: JourneyPhase;
     journey_status: JourneyStatus | null;
+    phase_entered_at: string | null;
   } | null;
 };
 
@@ -181,7 +182,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   let planQuery = supabase
     .from("treatment_plans")
     .select(
-      "id, client_id, clinic_id, status, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status )"
+      "id, client_id, clinic_id, status, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
     )
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -218,6 +219,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
       ),
       createdAt: p.created_at,
       lastAt: p.reviewed_at ?? p.submitted_at ?? p.updated_at ?? p.created_at,
+      phaseEnteredAt: p.clients!.phase_entered_at,
     }));
 
   // H3.15: quais casos na fase comercial JÁ têm apresentação comercial futura
@@ -295,6 +297,25 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   // AJ3: total de casos com apresentação marcada e plano ainda não pronto.
   const notReadyCount = filtered.filter((e) =>
     planNotReadyAt(e.clientId, e.situation)
+  ).length;
+
+  // AJ5: vitrine "Prontos para apresentar" — casos na fase comercial (plano
+  // aprovado e enviado ao Comercial). "Novo" = entrou na fase há menos de 3 dias.
+  const readyThreshold = new Date().getTime() - 3 * 86_400_000;
+  const isConsultant = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("commercial_consultant")
+  );
+  const readyToPresent = filtered
+    .filter((e) => e.situation === "fase_comercial")
+    .sort((a, b) =>
+      (b.phaseEnteredAt ?? "").localeCompare(a.phaseEnteredAt ?? "")
+    );
+  const isNewReady = (phaseEnteredAt: string | null) =>
+    Boolean(
+      phaseEnteredAt && new Date(phaseEnteredAt).getTime() >= readyThreshold
+    );
+  const newReadyCount = readyToPresent.filter((e) =>
+    isNewReady(e.phaseEnteredAt)
   ).length;
 
   const shown = onlyMissing
@@ -390,6 +411,76 @@ export default async function PlansPage(props: PageProps<"/planos">) {
             <strong>apresentação comercial marcada e plano ainda não pronto</strong>{" "}
             — o Centro de Planejamento precisa concluir o plano antes do dia.
           </span>
+        </div>
+      )}
+
+      {/* AJ5: vitrine "Prontos para apresentar" — acesso rápido ao plano. */}
+      {readyToPresent.length > 0 && (
+        <div className="rounded-lg border border-gold/50 bg-gold/5 p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="size-4 text-gold" />
+            <h2 className="text-sm font-semibold">
+              Prontos para apresentar ({readyToPresent.length})
+            </h2>
+            {newReadyCount > 0 && (
+              <span className="rounded-full bg-gold px-1.5 py-0.5 text-[11px] font-medium text-gold-foreground">
+                {newReadyCount} novo(s)
+              </span>
+            )}
+          </div>
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {readyToPresent.slice(0, 8).map((e) => (
+              <li
+                key={e.planId}
+                className="flex items-center justify-between gap-2 rounded-md border bg-background px-2.5 py-1.5 text-sm"
+              >
+                <div className="min-w-0">
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate font-medium">{e.clientName}</span>
+                    {isNewReady(e.phaseEnteredAt) && (
+                      <span className="shrink-0 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium text-gold-foreground">
+                        novo
+                      </span>
+                    )}
+                    {missingPresentation(e.clientId, e.situation) && (
+                      <span className="shrink-0 rounded-full border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">
+                        sem apresentação
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {e.clinicName}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-2 text-xs">
+                  {isConsultant && (
+                    <Link
+                      href={`/apresentacao/${e.clientId}`}
+                      className="text-primary hover:underline"
+                    >
+                      Apresentação
+                    </Link>
+                  )}
+                  <Link
+                    href={`/prontuarios/${e.clientId}`}
+                    className="text-primary hover:underline"
+                  >
+                    Ver plano
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {readyToPresent.length > 8 && (
+            <div className="mt-2">
+              <Link
+                href={chipHref("fase_comercial")}
+                className="text-xs text-primary hover:underline"
+              >
+                ver todos os {readyToPresent.length} na lista →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
