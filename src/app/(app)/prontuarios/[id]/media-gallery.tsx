@@ -220,8 +220,8 @@ export function MediaGallery({
   } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [failed, setFailed] = useState<Set<string>>(new Set());
-  // H3.12: renomear/anotar uma mídia.
-  const [editing, setEditing] = useState<string | null>(null);
+  // H3.12: renomear/anotar uma mídia — em um pop-up com a prévia + campos grandes.
+  const [editing, setEditing] = useState<ClinicalMediaItem | null>(null);
   const [editName, setEditName] = useState("");
   const [editNote, setEditNote] = useState("");
   // H3.12: confirmação de exclusão (diálogo do sistema, não o do navegador).
@@ -245,7 +245,7 @@ export function MediaGallery({
   }
 
   function startEdit(m: ClinicalMediaItem) {
-    setEditing(m.id);
+    setEditing(m);
     setEditName(m.displayName ?? m.originalName ?? "");
     setEditNote(m.note ?? "");
   }
@@ -282,41 +282,9 @@ export function MediaGallery({
     byKind.set(m.kind, list);
   }
 
-  // NB: estas são FUNÇÕES que retornam JSX (chamadas como {renderX(...)}), não
-  // componentes aninhados — senão o React recria o <input> a cada tecla e o
-  // campo perde o foco ("uma letra por vez").
-  const renderEditor = (id: string) => (
-    <div className="mt-1.5 space-y-2 rounded-md border bg-muted/40 p-2.5">
-      <div className="space-y-1">
-        <Label className="text-xs">Nome do arquivo</Label>
-        <Input
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          placeholder="Ex.: Foto frontal inicial"
-          className="h-8 text-sm"
-        />
-      </div>
-      <div className="space-y-1">
-        <Label className="text-xs">Anotação (opcional)</Label>
-        <textarea
-          value={editNote}
-          onChange={(e) => setEditNote(e.target.value)}
-          rows={2}
-          placeholder="Observação sobre este arquivo..."
-          className="w-full rounded-md border border-input bg-transparent p-1.5 text-sm"
-        />
-      </div>
-      <div className="flex gap-1.5">
-        <Button size="sm" disabled={isPending} onClick={() => saveEdit(id)}>
-          Salvar
-        </Button>
-        <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
-          Cancelar
-        </Button>
-      </div>
-    </div>
-  );
-
+  // NB: renderRow/renderEditButton/renderDeleteButton são FUNÇÕES que retornam
+  // JSX (chamadas como {renderX(...)}), não componentes aninhados — senão o
+  // React remontaria o subtree a cada render.
   const renderEditButton = (m: ClinicalMediaItem) =>
     canEdit ? (
       <Button
@@ -420,7 +388,6 @@ export function MediaGallery({
             className="mt-1 h-96 w-full rounded border"
           />
         )}
-        {editing === m.id && renderEditor(m.id)}
       </li>
     );
   };
@@ -510,7 +477,6 @@ export function MediaGallery({
                         </>
                       )}
                     </p>
-                    {editing === m.id && renderEditor(m.id)}
                   </div>
                 ))}
               </div>
@@ -532,6 +498,74 @@ export function MediaGallery({
           }
         />
       )}
+
+      {/* H3.12: editar (renomear/anotar) em pop-up com a prévia + campos grandes. */}
+      <Dialog
+        open={editing !== null}
+        onOpenChange={(o) => !o && setEditing(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar arquivo</DialogTitle>
+            <DialogDescription>
+              Dê um nome fácil de reconhecer e escreva uma anotação sobre este
+              arquivo, se quiser.
+            </DialogDescription>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              {/* Prévia do arquivo. */}
+              {editing.url && mediaPreviewType(editing) === "image" ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={editing.url}
+                  alt={mediaDisplayName(editing)}
+                  className="mx-auto max-h-56 rounded border object-contain"
+                />
+              ) : (
+                <p className="rounded-md border bg-muted/40 p-3 text-center text-sm text-muted-foreground">
+                  {mediaDisplayName(editing)}
+                </p>
+              )}
+              <div className="space-y-1">
+                <Label htmlFor="media-name">Nome do arquivo</Label>
+                <Input
+                  id="media-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Ex.: Foto frontal inicial"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="media-note">Anotação (opcional)</Label>
+                <textarea
+                  id="media-note"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  rows={5}
+                  placeholder="Observações sobre este arquivo..."
+                  className="w-full rounded-md border border-input bg-transparent p-2 text-sm"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditing(null)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={isPending}
+              onClick={() => editing && saveEdit(editing.id)}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* H3.12: confirmação de exclusão (diálogo do sistema). */}
       <Dialog

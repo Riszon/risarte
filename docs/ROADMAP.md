@@ -103,7 +103,9 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       **foto** do grid; corrigido o bug de foco no editor (digitava 1 letra por
       vez — os subcomponentes viraram funções `renderX`); editor reorganizado
       com rótulos; confirmação de exclusão virou **diálogo do sistema** (não o
-      `window.confirm` do navegador).
+      `window.confirm` do navegador). **Ajuste v0.12.6:** editar virou um **pop-up**
+      com a **prévia da foto/arquivo** e campos grandes (nome + anotação com 5
+      linhas) — o editor inline espremido na coluna da foto saiu.
 - [ ] **H3.13 Centro/cockpit — melhorias leves [M]** — anamnese no cockpit;
       filtros unidade/pilar na fila; colunas com rolagem independente.
       (Redesign completo = H4.5.)
