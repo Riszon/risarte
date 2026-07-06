@@ -78,7 +78,11 @@ import {
   TreatmentSessionsPanel,
   type TreatmentSession,
 } from "./treatment-sessions-panel";
-import type { StaffOption } from "@/lib/appointments";
+import type {
+  AppointmentStatus,
+  AppointmentType,
+  StaffOption,
+} from "@/lib/appointments";
 import { allowedNextPhases } from "@/lib/journey";
 import type {
   DecisionKind,
@@ -523,7 +527,7 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status"
+        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("created_at")
@@ -537,6 +541,20 @@ export default async function ClientDetailPage(
           planned_minutes: number | null;
           actual_minutes: number | null;
           status: "pending" | "scheduled" | "done";
+          appointment: {
+            id: string;
+            type: string;
+            status: string;
+            starts_at: string;
+            ends_at: string;
+            notes: string | null;
+            provider_user_id: string | null;
+            room_id: string | null;
+            is_online: boolean | null;
+            needs_reschedule: boolean | null;
+            room: { name: string | null } | null;
+            provider: { full_name: string } | null;
+          } | null;
         }[]
       >();
     treatmentSessions = (tsRows ?? []).map((r) => ({
@@ -548,6 +566,30 @@ export default async function ClientDetailPage(
       plannedMinutes: r.planned_minutes,
       actualMinutes: r.actual_minutes,
       status: r.status,
+      // H3.14: agendamento vinculado (quando/quem) para exibir e abrir os detalhes.
+      appointment: r.appointment
+        ? {
+            id: r.appointment.id,
+            type: r.appointment.type as AppointmentType,
+            status: r.appointment.status as AppointmentStatus,
+            starts_at: r.appointment.starts_at,
+            ends_at: r.appointment.ends_at,
+            notes: r.appointment.notes,
+            provider_user_id: r.appointment.provider_user_id,
+            provider: r.appointment.provider,
+            room_id: r.appointment.room_id ?? null,
+            room_name: r.appointment.room?.name ?? null,
+            is_online: r.appointment.is_online ?? false,
+            needs_reschedule: r.appointment.needs_reschedule ?? false,
+            clients: {
+              id: client.id,
+              full_name: client.full_name,
+              journey_phase: client.journey_phase as JourneyPhase,
+              methodology_pillar:
+                client.methodology_pillar as MethodologyPillar | null,
+            },
+          }
+        : null,
     }));
   }
 

@@ -729,8 +729,9 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       cockpit; filtros por unidade e por pilar na fila; colunas do cockpit com
       rolagem independente. (Botão "Abrir cockpit" na fila já existia; nome do
       cliente na fila já leva ao cockpit.)
-- [ ] H3.14 Sessões do plano com mais detalhe: quando agendada, mostrar data e
+- [x] H3.14 Sessões do plano com mais detalhe: quando agendada, mostrar data e
       profissional; no prontuário, sessão agendada é clicável → abre o agendamento.
+      ✅ (06/07, v0.12.8, sem migração)
 - [ ] H3.15 Comercial: central de planos prontos para apresentação +
       notificações dos casos aguardando; ao receber plano SEM agendamento com o
       comercial → aviso forte à recepção + notificação a gerente e coordenador.

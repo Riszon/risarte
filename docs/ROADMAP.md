@@ -110,9 +110,11 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       **Anamnese** (leitura) no cockpit com alertas; **filtros por unidade e por
       pilar** na fila `/planejamento`; as duas colunas do cockpit têm **rolagem
       independente** (não rola a página inteira). (Redesign completo = H4.5.)
-- [ ] **H3.14 Sessões com data + profissional [P/M]** — sessão agendada mostra
-      quando e com quem (ficha + visão do coordenador); clicável → abre o
-      agendamento.
+- [x] **H3.14 Sessões com data + profissional** ✅ (06/07, v0.12.8) — no card
+      "Sessões do tratamento" da ficha, a sessão agendada mostra **quando e com
+      quem** ("DD/MM às HH:MM · Profissional") e é **clicável → abre os detalhes
+      do agendamento** (data, horário, local, profissional, situação). Sem
+      migração.
 - [ ] **H3.15 Comercial: prontos para apresentação [M]** — `/planos` já dá a
       central; falta: notificar o consultor quando o plano chega e, se o
       cliente NÃO tiver apresentação agendada, aviso forte à recepção +
