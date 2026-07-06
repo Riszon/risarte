@@ -712,8 +712,9 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H3.8 WhatsApp manual aniversariantes ✅ (v0.12.0): painel na aba
       Aniversariantes (mensagem editável {nome} + botão por cliente = individual
       e em massa) + botão no prontuário quando é o aniversário. Automação = Fase 3.
-- [ ] H3.9 Notificações ampliadas: coordenador/gerente/recepção também recebem
-      em transferência (entrada e saída da unidade) e compartilhamento.
+- [x] H3.9 Notificações ampliadas ✅ (v0.12.1, migração 0067): transferência
+      notifica sempre o DESTINO (recepção/gerente/coordenador) além da origem;
+      compartilhamento já notificava os 3 papéis das duas unidades (0038).
 - [ ] H3.10 Coordenador ao finalizar a avaliação: pop-up para agendar a
       apresentação com o Comercial; enviar ao Centro de Planejamento CONCLUI o
       atendimento "Em atendimento" automaticamente.
