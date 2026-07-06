@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlarmClock, AlertTriangle } from "lucide-react";
 import { PresentationCountdown } from "@/components/presentation-countdown";
+import { RequestSchedulingButton } from "./request-scheduling-button";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
@@ -172,6 +173,8 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   const situacao = SITUATIONS.includes(searchParams.situacao as Situation)
     ? (searchParams.situacao as Situation)
     : "";
+  // AJ4: filtro especial pelo banner — só os casos comerciais sem apresentação.
+  const onlyMissing = searchParams.alerta === "sem_apresentacao";
 
   const supabase = await createClient();
 
@@ -294,9 +297,11 @@ export default async function PlansPage(props: PageProps<"/planos">) {
     planNotReadyAt(e.clientId, e.situation)
   ).length;
 
-  const shown = situacao
-    ? filtered.filter((e) => e.situation === situacao)
-    : filtered;
+  const shown = onlyMissing
+    ? filtered.filter((e) => missingPresentation(e.clientId, e.situation))
+    : situacao
+      ? filtered.filter((e) => e.situation === situacao)
+      : filtered;
 
   // Relatório: quadro unidade × situação + evolução dos aprovados.
   const byUnit = new Map<string, { name: string; counts: Record<string, number> }>();
@@ -330,6 +335,16 @@ export default async function PlansPage(props: PageProps<"/planos">) {
     return q ? `/planos?${q}` : "/planos";
   };
 
+  // AJ4: alterna o filtro "sem apresentação agendada" preservando busca/unidade.
+  const missingAlertParams = new URLSearchParams();
+  if (busca) missingAlertParams.set("busca", busca);
+  if (unidade) missingAlertParams.set("unidade", unidade);
+  const clearAlertHref = missingAlertParams.toString()
+    ? `/planos?${missingAlertParams.toString()}`
+    : "/planos";
+  missingAlertParams.set("alerta", "sem_apresentacao");
+  const missingAlertHref = `/planos?${missingAlertParams.toString()}`;
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div>
@@ -343,16 +358,27 @@ export default async function PlansPage(props: PageProps<"/planos">) {
         </p>
       </div>
 
-      {/* H3.15: aviso forte — casos comerciais sem apresentação agendada. */}
+      {/* H3.15/AJ4: aviso forte — clicável, filtra só esses casos. */}
       {missingPresentationCount > 0 && (
-        <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Link
+          href={onlyMissing ? clearAlertHref : missingAlertHref}
+          className={cn(
+            "flex items-start gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
+            onlyMissing
+              ? "border-red-400 bg-red-100 text-red-900"
+              : "border-red-300 bg-red-50 text-red-800 hover:bg-red-100"
+          )}
+        >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>
             <strong>{missingPresentationCount}</strong> caso(s) na fase comercial{" "}
             <strong>sem apresentação agendada</strong> — a recepção precisa
-            agendar a apresentação comercial para o caso não travar.
+            agendar a apresentação comercial para o caso não travar.{" "}
+            <span className="underline">
+              {onlyMissing ? "ver todos os planos" : "clique para filtrar"}
+            </span>
           </span>
-        </div>
+        </Link>
       )}
 
       {/* AJ3: apresentação marcada mas plano ainda não pronto. */}
@@ -426,8 +452,12 @@ export default async function PlansPage(props: PageProps<"/planos">) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {situacao ? SITUATION_LABELS[situacao] : "Todos os planos"} (
-            {shown.length})
+            {onlyMissing
+              ? "Fase comercial sem apresentação agendada"
+              : situacao
+                ? SITUATION_LABELS[situacao]
+                : "Todos os planos"}{" "}
+            ({shown.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -527,6 +557,12 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                             Cockpit
                           </Link>
                         </>
+                      )}
+                      {/* AJ4: pedir à recepção que agende a apresentação. */}
+                      {missingPresentation(e.clientId, e.situation) && (
+                        <div className="mt-1">
+                          <RequestSchedulingButton clientId={e.clientId} />
+                        </div>
                       )}
                     </td>
                   </tr>

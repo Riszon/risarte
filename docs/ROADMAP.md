@@ -150,9 +150,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       (banner "apresentação marcada e plano não pronto") e no **/planos** (banner
       + cronômetro nas linhas em planejamento/aprovação). Cobre Consultor
       (via /planos), Planner e Coordenador.
-- [ ] **AJ4 Alerta clicável + "Pedir agendamento" + pop-up recepção [M] 🗄️** —
-      o banner de /planos filtra os casos; botão pede o agendamento e a recepção
-      recebe um pop-up na tela para marcar a apresentação.
+- [x] **AJ4 Alerta clicável + "Pedir agendamento" + pop-up recepção** ✅ (06/07,
+      v0.12.14, migração 0074) — o banner vermelho de `/planos` vira **clicável →
+      filtra** só os casos sem apresentação; cada linha ganha **"Pedir
+      agendamento"** (RPC `request_commercial_scheduling`, com dedup) que avisa a
+      recepção; a recepção vê um **pop-up** (`UrgentSchedulingPopup`, verifica a
+      cada 45s) com "Abrir agenda" / "Já agendei".
 - [ ] **AJ5 Vitrine "Prontos para apresentar" p/ o Consultor [P/M]** — seção
       destacada no topo de /planos com acesso rápido aos planos novos prontos.
 

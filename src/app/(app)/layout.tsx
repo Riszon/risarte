@@ -3,6 +3,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChooseClinicWelcome } from "@/components/choose-clinic-welcome";
+import { UrgentSchedulingPopup } from "@/components/urgent-scheduling-popup";
 
 export default async function AppLayout({
   children,
@@ -81,6 +82,8 @@ export default async function AppLayout({
         }
       />
       <main className="flex-1 overflow-x-auto bg-background">{children}</main>
+      {/* AJ4: pop-up da recepção para pedidos de agendamento de apresentação. */}
+      <UrgentSchedulingPopup />
     </div>
   );
 }
