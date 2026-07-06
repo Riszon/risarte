@@ -25,6 +25,8 @@ const SLOT_PX = 16;
 const PX_PER_MIN = SLOT_PX / SLOT_MIN;
 const AXIS_W = 52;
 const COL_MIN_W = 132;
+// AJ9: respiro no topo para o primeiro horário não colar na linha do cabeçalho.
+const TOP_PAD_PX = 12;
 const WEEKDAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 function localMinutes(iso: string): number {
@@ -176,7 +178,7 @@ export function WeekTimeGrid({
     let endMin = localMinutes(a.ends_at);
     if (endMin <= localMinutes(a.starts_at)) endMin = 24 * 60;
     const e = clamp(endMin, winStart, winEnd);
-    const top = (s - winStart) * PX_PER_MIN;
+    const top = TOP_PAD_PX + (s - winStart) * PX_PER_MIN;
     const height = Math.max(15, (e - s) * PX_PER_MIN);
     const w = 100 / lanes;
     const ds = displayedStatus(a);
@@ -294,7 +296,7 @@ export function WeekTimeGrid({
     const s = clamp(timeToMin(config.lunchStart), winStart, winEnd);
     const e = clamp(timeToMin(config.lunchEnd), winStart, winEnd);
     if (e <= s) return null;
-    const top = (s - winStart) * PX_PER_MIN;
+    const top = TOP_PAD_PX + (s - winStart) * PX_PER_MIN;
     const height = Math.max(8, (e - s) * PX_PER_MIN);
     return (
       <div
@@ -302,6 +304,36 @@ export function WeekTimeGrid({
         style={{ top, height }}
       />
     );
+  }
+
+  // AJ8: marca em cinza tracejado os horários FORA do expediente normal (antes
+  // da abertura e depois do fechamento), como o almoço é marcado em âmbar.
+  function renderOutsideBands() {
+    if (!config) return null;
+    const openMin = timeToMin(config.openTime);
+    const closeMin = timeToMin(config.closeTime);
+    const bands: React.ReactNode[] = [];
+    const push = (from: number, to: number, key: string) => {
+      const s = clamp(from, winStart, winEnd);
+      const e = clamp(to, winStart, winEnd);
+      if (e <= s) return;
+      bands.push(
+        <div
+          key={key}
+          className="pointer-events-none absolute inset-x-0 z-[1] border-y border-slate-200"
+          style={{
+            top: TOP_PAD_PX + (s - winStart) * PX_PER_MIN,
+            height: Math.max(4, (e - s) * PX_PER_MIN),
+            backgroundImage:
+              "repeating-linear-gradient(45deg, rgba(100,116,139,0.13) 0, rgba(100,116,139,0.13) 6px, transparent 6px, transparent 12px)",
+          }}
+          title="Fora do horário normal de atendimento"
+        />
+      );
+    };
+    push(winStart, openMin, "before-open");
+    push(closeMin, winEnd, "after-close");
+    return bands;
   }
 
   if (days.length === 0) {
@@ -318,7 +350,7 @@ export function WeekTimeGrid({
         className="grid"
         style={{
           gridTemplateColumns: `${AXIS_W}px repeat(${days.length}, minmax(${COL_MIN_W}px, 1fr))`,
-          gridTemplateRows: `auto ${totalPx}px`,
+          gridTemplateRows: `auto ${totalPx + TOP_PAD_PX}px`,
           minWidth: AXIS_W + days.length * COL_MIN_W,
         }}
       >
@@ -382,12 +414,12 @@ export function WeekTimeGrid({
         })}
 
         {/* Time ruler */}
-        <div className="relative" style={{ height: totalPx }}>
+        <div className="relative" style={{ height: totalPx + TOP_PAD_PX }}>
           {hourLines.map((h) => (
             <div
               key={h}
               className="absolute right-1 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground"
-              style={{ top: (h - winStart) * PX_PER_MIN }}
+              style={{ top: TOP_PAD_PX + (h - winStart) * PX_PER_MIN }}
             >
               {minutesToHHMM(h)}
             </div>
@@ -405,13 +437,17 @@ export function WeekTimeGrid({
             <div
               key={iso}
               className={cn("relative border-l", canQuickCreate && "cursor-pointer")}
-              style={{ height: totalPx, ...columnBg }}
+              style={{
+                height: totalPx + TOP_PAD_PX,
+                backgroundPositionY: `${TOP_PAD_PX}px`,
+                ...columnBg,
+              }}
               onClick={
                 canQuickCreate
                   ? (e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
                       const y = e.clientY - rect.top;
-                      let m = winStart + y / PX_PER_MIN;
+                      let m = winStart + (y - TOP_PAD_PX) / PX_PER_MIN;
                       m = Math.round(m / SLOT_MIN) * SLOT_MIN;
                       m = Math.max(winStart, Math.min(winEnd - SLOT_MIN, m));
                       const time = minutesToHHMM(m);
@@ -448,6 +484,7 @@ export function WeekTimeGrid({
                   : undefined
               }
             >
+              {renderOutsideBands()}
               {renderLunchBand()}
               {dayAppts.map((a) =>
                 renderCard(a, laneOf.get(a.id) ?? 0, laneCount)

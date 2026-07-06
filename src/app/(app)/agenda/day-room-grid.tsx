@@ -49,6 +49,8 @@ const SLOT_PX = 18; // height of one 15-min slot.
 const PX_PER_MIN = SLOT_PX / SLOT_MIN;
 const AXIS_W = 56; // left time ruler width.
 const COL_MIN_W = 150;
+// AJ9: respiro no topo para o primeiro horário não colar no cabeçalho.
+const TOP_PAD_PX = 12;
 
 type DayColumn = {
   key: string;
@@ -224,7 +226,7 @@ export function DayRoomGrid({
   function slotTimeFromEvent(e: React.MouseEvent | React.DragEvent): string {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const y = e.clientY - rect.top;
-    let minute = winStart + y / PX_PER_MIN;
+    let minute = winStart + (y - TOP_PAD_PX) / PX_PER_MIN;
     minute = Math.round(minute / SLOT_MIN) * SLOT_MIN;
     minute = Math.max(winStart, Math.min(winEnd - SLOT_MIN, minute));
     return minutesToHHMM(minute);
@@ -336,7 +338,7 @@ export function DayRoomGrid({
     if (ce <= cs) return null;
     const startMin = clamp((cs - dayStartMs) / 60_000, winStart, winEnd);
     const endMin = clamp((ce - dayStartMs) / 60_000, winStart, winEnd);
-    const top = (startMin - winStart) * PX_PER_MIN;
+    const top = TOP_PAD_PX + (startMin - winStart) * PX_PER_MIN;
     const height = Math.max(10, (endMin - startMin) * PX_PER_MIN);
     return (
       <div
@@ -362,7 +364,7 @@ export function DayRoomGrid({
     const s = clamp(timeToMin(config.lunchStart), winStart, winEnd);
     const e = clamp(timeToMin(config.lunchEnd), winStart, winEnd);
     if (e <= s) return null;
-    const top = (s - winStart) * PX_PER_MIN;
+    const top = TOP_PAD_PX + (s - winStart) * PX_PER_MIN;
     const height = Math.max(8, (e - s) * PX_PER_MIN);
     return (
       <div
@@ -372,6 +374,35 @@ export function DayRoomGrid({
         <span className="mt-0.5">Almoço</span>
       </div>
     );
+  }
+
+  // AJ8: marca em cinza tracejado os horários FORA do expediente normal (antes
+  // da abertura / depois do fechamento), como o almoço é marcado em âmbar.
+  function renderOutsideBands() {
+    const openMin = timeToMin(openTime);
+    const closeMin = timeToMin(closeTime);
+    const bands: React.ReactNode[] = [];
+    const push = (from: number, to: number, key: string) => {
+      const s = clamp(from, winStart, winEnd);
+      const e = clamp(to, winStart, winEnd);
+      if (e <= s) return;
+      bands.push(
+        <div
+          key={key}
+          className="pointer-events-none absolute inset-x-0 z-[1] border-y border-slate-200"
+          style={{
+            top: TOP_PAD_PX + (s - winStart) * PX_PER_MIN,
+            height: Math.max(4, (e - s) * PX_PER_MIN),
+            backgroundImage:
+              "repeating-linear-gradient(45deg, rgba(100,116,139,0.13) 0, rgba(100,116,139,0.13) 6px, transparent 6px, transparent 12px)",
+          }}
+          title="Fora do horário normal de atendimento"
+        />
+      );
+    };
+    push(winStart, openMin, "before-open");
+    push(closeMin, winEnd, "after-close");
+    return bands;
   }
 
   if (columns.length === 0) {
@@ -405,7 +436,7 @@ export function DayRoomGrid({
     let endMin = localMinutes(appointment.ends_at);
     if (endMin <= localMinutes(appointment.starts_at)) endMin = 24 * 60;
     const e = clamp(endMin, winStart, winEnd);
-    const top = (s - winStart) * PX_PER_MIN;
+    const top = TOP_PAD_PX + (s - winStart) * PX_PER_MIN;
     const height = Math.max(16, (e - s) * PX_PER_MIN);
     const widthPct = 100 / laneCount;
     const ds = displayedStatus(appointment);
@@ -707,7 +738,7 @@ export function DayRoomGrid({
           className="grid"
           style={{
             gridTemplateColumns: `${AXIS_W}px repeat(${columns.length}, minmax(${COL_MIN_W}px, 1fr))`,
-            gridTemplateRows: `auto ${totalPx}px`,
+            gridTemplateRows: `auto ${totalPx + TOP_PAD_PX}px`,
             minWidth: AXIS_W + columns.length * COL_MIN_W,
           }}
         >
@@ -730,12 +761,12 @@ export function DayRoomGrid({
           ))}
 
           {/* Time ruler */}
-          <div className="relative" style={{ height: totalPx }}>
+          <div className="relative" style={{ height: totalPx + TOP_PAD_PX }}>
             {hourLines.map((h) => (
               <div
                 key={h}
                 className="absolute right-1 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground"
-                style={{ top: (h - winStart) * PX_PER_MIN }}
+                style={{ top: TOP_PAD_PX + (h - winStart) * PX_PER_MIN }}
               >
                 {minutesToHHMM(h)}
               </div>
@@ -760,7 +791,11 @@ export function DayRoomGrid({
                   clickable && "cursor-pointer",
                   isDropTarget && "bg-primary/5 ring-1 ring-inset ring-primary/40"
                 )}
-                style={{ height: totalPx, ...columnBg }}
+                style={{
+                  height: totalPx + TOP_PAD_PX,
+                  backgroundPositionY: `${TOP_PAD_PX}px`,
+                  ...columnBg,
+                }}
                 onClick={
                   clickable
                     ? (e) => {
@@ -828,6 +863,7 @@ export function DayRoomGrid({
                     className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
                     style={{
                       top:
+                        TOP_PAD_PX +
                         (timeToMin(dragOver.time) - winStart) * PX_PER_MIN,
                     }}
                   >
@@ -837,6 +873,7 @@ export function DayRoomGrid({
                     </span>
                   </div>
                 )}
+                {isRoomColumn && renderOutsideBands()}
                 {isRoomColumn && renderLunchBand()}
                 {isRoomColumn &&
                   closuresForColumn(c.key).map((cl) =>

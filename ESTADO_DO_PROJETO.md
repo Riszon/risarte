@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/07/2026 · Versão do sistema: **0.12.17** · Última migração: **0075**_
+_Atualizado em: 06/07/2026 · Versão do sistema: **0.12.18** · Última migração: **0075**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -513,8 +513,9 @@ backlog (H3.1 em diante).
    andamento: **AJUSTES 2** — ~~AJ6~~ ✅ (v0.12.16, pop-up da recepção
    organizado); ~~AJ11~~ ✅ (v0.12.17, migração 0075 — Consultor recebe
    notificação de plano pronto, incl. franqueadora com escopo, + aviso de
-   apresentação agendada); faltam AJ9 primeiro horário não some, AJ8 marcar
-   horários não permitidos, AJ7 liberar horário avulso, AJ10 linha do tempo.
+   apresentação agendada); ~~AJ8~~+~~AJ9~~ ✅ (v0.12.18, sem migração — faixas
+   cinza dos horários fora do expediente + respiro no topo da grade, Dia e
+   Semana); faltam AJ7 liberar horário avulso, AJ10 linha do tempo.
    Depois: **GRUPO 4**
    (módulos novos), um a um com o dono (`docs/ROADMAP.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).

@@ -173,9 +173,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       dia normal (começar antes / terminar depois); regras (não liberar o que já
       é normal; sem fim = até o início normal / a partir do fim normal); mesma
       notificação; aparece na agenda; segue com a Gerência.
-- [ ] **AJ8 Marcar visualmente horários não permitidos [M]** — antes/depois do
-      horário normal, como o almoço.
-- [ ] **AJ9 Primeiro horário não some [P]** — espaço no topo da grade da agenda.
+- [x] **AJ8 Marcar visualmente horários não permitidos** ✅ (06/07, v0.12.18,
+      sem migração) — faixas cinza tracejadas (antes da abertura / depois do
+      fechamento) na visão Dia e Semana, como o almoço em âmbar.
+- [x] **AJ9 Primeiro horário não some** ✅ (06/07, v0.12.18, sem migração) —
+      `TOP_PAD_PX` no topo da grade (Dia e Semana) para o primeiro horário não
+      colar na linha do cabeçalho.
 - [ ] **AJ10 Linha do tempo (faixa de dias) [G]** — ver passado (histórico) +
       ~1 ano à frente; navegar com o scroll do mouse; mês só no 1º dia + todos os
       dias; dia com agenda fechada mostra **o motivo** (não "lotado"); fechamento
