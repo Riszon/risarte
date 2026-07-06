@@ -17,6 +17,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   mediaDisplayName,
   mediaPreviewType,
@@ -215,16 +224,19 @@ export function MediaGallery({
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editNote, setEditNote] = useState("");
+  // H3.12: confirmação de exclusão (diálogo do sistema, não o do navegador).
+  const [confirmDelete, setConfirmDelete] = useState<ClinicalMediaItem | null>(
+    null
+  );
 
   if (media.length === 0) return null;
 
-  function remove(id: string) {
-    if (!window.confirm("Remover este arquivo? Esta ação não pode ser desfeita."))
-      return;
+  function doRemove(id: string) {
     startTransition(async () => {
       const result = await deleteClinicalMedia(id);
       if (result.ok) {
         toast.success("Arquivo removido.");
+        setConfirmDelete(null);
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
@@ -254,53 +266,6 @@ export function MediaGallery({
     });
   }
 
-  function MediaEditor({ id }: { id: string }) {
-    return (
-      <div className="mt-1.5 space-y-1.5 rounded-md border bg-muted/30 p-2">
-        <Input
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          placeholder="Nome do arquivo"
-          className="h-8 text-sm"
-        />
-        <textarea
-          value={editNote}
-          onChange={(e) => setEditNote(e.target.value)}
-          rows={2}
-          placeholder="Anotação sobre este arquivo (opcional)"
-          className="w-full rounded-md border border-input bg-transparent p-1.5 text-sm"
-        />
-        <div className="flex gap-1.5">
-          <Button size="sm" disabled={isPending} onClick={() => saveEdit(id)}>
-            Salvar
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setEditing(null)}
-          >
-            Cancelar
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  function EditButton({ m }: { m: ClinicalMediaItem }) {
-    if (!canEdit) return null;
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Renomear ou anotar"
-        disabled={isPending}
-        onClick={() => startEdit(m)}
-      >
-        <Pencil className="size-4" />
-      </Button>
-    );
-  }
-
   function toggle(id: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -317,25 +282,71 @@ export function MediaGallery({
     byKind.set(m.kind, list);
   }
 
-  function DeleteButton({ id }: { id: string }) {
-    if (!canEdit) return null;
-    return (
+  // NB: estas são FUNÇÕES que retornam JSX (chamadas como {renderX(...)}), não
+  // componentes aninhados — senão o React recria o <input> a cada tecla e o
+  // campo perde o foco ("uma letra por vez").
+  const renderEditor = (id: string) => (
+    <div className="mt-1.5 space-y-2 rounded-md border bg-muted/40 p-2.5">
+      <div className="space-y-1">
+        <Label className="text-xs">Nome do arquivo</Label>
+        <Input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          placeholder="Ex.: Foto frontal inicial"
+          className="h-8 text-sm"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Anotação (opcional)</Label>
+        <textarea
+          value={editNote}
+          onChange={(e) => setEditNote(e.target.value)}
+          rows={2}
+          placeholder="Observação sobre este arquivo..."
+          className="w-full rounded-md border border-input bg-transparent p-1.5 text-sm"
+        />
+      </div>
+      <div className="flex gap-1.5">
+        <Button size="sm" disabled={isPending} onClick={() => saveEdit(id)}>
+          Salvar
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderEditButton = (m: ClinicalMediaItem) =>
+    canEdit ? (
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Renomear ou anotar"
+        disabled={isPending}
+        onClick={() => startEdit(m)}
+      >
+        <Pencil className="size-4" />
+      </Button>
+    ) : null;
+
+  const renderDeleteButton = (m: ClinicalMediaItem) =>
+    canEdit ? (
       <Button
         variant="ghost"
         size="icon"
         aria-label="Remover arquivo"
         disabled={isPending}
-        onClick={() => remove(id)}
+        onClick={() => setConfirmDelete(m)}
       >
-        <Trash2 className="size-4" />
+        <Trash2 className="size-4 text-destructive" />
       </Button>
-    );
-  }
+    ) : null;
 
-  function Row({ m }: { m: ClinicalMediaItem }) {
+  const renderRow = (m: ClinicalMediaItem) => {
     const pv = mediaPreviewType(m);
     return (
-      <li className="rounded-md border p-2 text-sm">
+      <li key={m.id} className="rounded-md border p-2 text-sm">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             {m.externalUrl ? (
@@ -360,7 +371,7 @@ export function MediaGallery({
             )}
           </div>
           <div className="flex shrink-0 items-center">
-            <EditButton m={m} />
+            {renderEditButton(m)}
             {m.url && pv === "pdf" && (
               <Button
                 variant="ghost"
@@ -383,7 +394,7 @@ export function MediaGallery({
                 <Download className="size-4" />
               </a>
             )}
-            <DeleteButton id={m.id} />
+            {renderDeleteButton(m)}
           </div>
         </div>
         {m.url && pv === "video" && (
@@ -409,10 +420,10 @@ export function MediaGallery({
             className="mt-1 h-96 w-full rounded border"
           />
         )}
-        {editing === m.id && <MediaEditor id={m.id} />}
+        {editing === m.id && renderEditor(m.id)}
       </li>
     );
-  }
+  };
 
   return (
     <div className="space-y-3">
@@ -477,28 +488,35 @@ export function MediaGallery({
                         {mediaDisplayName(m)}
                       </span>
                       {canEdit && (
-                        <button
-                          type="button"
-                          aria-label="Renomear ou anotar"
-                          disabled={isPending}
-                          onClick={() => startEdit(m)}
-                          className="shrink-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <Pencil className="size-3" />
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Renomear ou anotar"
+                            disabled={isPending}
+                            onClick={() => startEdit(m)}
+                            className="shrink-0 text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="size-3" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Remover foto"
+                            disabled={isPending}
+                            onClick={() => setConfirmDelete(m)}
+                            className="shrink-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        </>
                       )}
                     </p>
-                    {editing === m.id && <MediaEditor id={m.id} />}
+                    {editing === m.id && renderEditor(m.id)}
                   </div>
                 ))}
               </div>
             )}
             {rest.length > 0 && (
-              <ul className="space-y-1.5">
-                {rest.map((m) => (
-                  <Row key={m.id} m={m} />
-                ))}
-              </ul>
+              <ul className="space-y-1.5">{rest.map((m) => renderRow(m))}</ul>
             )}
           </div>
         );
@@ -514,6 +532,41 @@ export function MediaGallery({
           }
         />
       )}
+
+      {/* H3.12: confirmação de exclusão (diálogo do sistema). */}
+      <Dialog
+        open={confirmDelete !== null}
+        onOpenChange={(o) => !o && setConfirmDelete(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover arquivo</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover{" "}
+              <span className="font-medium">
+                {confirmDelete ? mediaDisplayName(confirmDelete) : ""}
+              </span>
+              ? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDelete(null)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isPending}
+              onClick={() => confirmDelete && doRemove(confirmDelete.id)}
+            >
+              Remover arquivo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
