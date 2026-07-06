@@ -141,24 +141,11 @@ export function ClinicFormDialog({
             </div>
           </div>
           {type === "franchise_unit" && (
-            <div className="space-y-2">
-              <Label htmlFor="max_rooms">Salas de atendimento (cadeiras) *</Label>
-              <Input
-                id="max_rooms"
-                name="max_rooms"
-                type="number"
-                min={1}
-                max={50}
-                required
-                defaultValue={clinic?.max_rooms ?? 3}
-                className="w-28"
-              />
-              <p className="text-xs text-muted-foreground">
-                Número máximo de cadeiras da unidade. A Gerente nomeia, ativa e
-                desativa as cadeiras em “Configurar agenda”, mas não pode criar
-                além deste total.
-              </p>
-            </div>
+            <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+              As <strong>cadeiras</strong> desta unidade (quantidade, nomes e
+              limite) são geridas em <strong>“Configurar agenda”</strong>,
+              escolhendo a unidade no menu lateral.
+            </p>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

@@ -45,9 +45,10 @@ export default async function AgendaConfigPage(
           Configuração da Agenda
         </h1>
         <p className="text-sm text-muted-foreground">
-          Horário de funcionamento, dias de atendimento e nº de cadeiras. O
-          padrão da rede vale para todas as unidades; cada unidade pode ter o
-          seu. A agenda passa a respeitar essas regras (exceto Urgência/Emergência).
+          Horário de funcionamento e dias de atendimento. O padrão da rede vale
+          para todas as unidades; cada unidade pode ter o seu. As <strong>
+          cadeiras</strong> de cada unidade ficam em “Configurar agenda”. A
+          agenda passa a respeitar essas regras (exceto Urgência/Emergência).
         </p>
       </div>
       <AgendaSettingsEditor

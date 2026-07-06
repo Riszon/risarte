@@ -315,6 +315,57 @@ export async function deleteRoom(roomId: string): Promise<AgendaConfigResult> {
   return { ok: true };
 }
 
+/**
+ * Ajuste #1b: define o LIMITE máximo de cadeiras da unidade — só o Admin. Fica
+ * em "Configurar agenda" (antes ficava no cadastro da clínica), junto das
+ * cadeiras. Não pode ficar abaixo das cadeiras vivas já existentes.
+ */
+export async function setMaxRooms(
+  clinicId: string,
+  value: number
+): Promise<AgendaConfigResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) {
+    return { ok: false, error: "Apenas o Admin pode alterar o limite de cadeiras." };
+  }
+  const max = Math.floor(value);
+  if (!Number.isFinite(max) || max < 1 || max > 50) {
+    return { ok: false, error: "O limite deve ficar entre 1 e 50 cadeiras." };
+  }
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("clinic_rooms")
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId)
+    .is("deleted_at", null);
+  if (max < (count ?? 0)) {
+    return {
+      ok: false,
+      error: `Esta unidade já tem ${count} cadeira(s). Exclua ou desative cadeiras antes de baixar o limite.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("clinics")
+    .update({ max_rooms: max })
+    .eq("id", clinicId);
+  if (error) {
+    console.error("setMaxRooms failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o limite de cadeiras." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "clinic",
+    entityId: clinicId,
+    clinicId,
+    details: { max_rooms: max },
+  });
+  revalidatePath("/agenda/configuracao");
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
 /** Sets which room the Clinical Coordinator uses (or clears it). */
 export async function setCoordinatorRoom(
   clinicId: string,

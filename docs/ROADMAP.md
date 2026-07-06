@@ -132,6 +132,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       o Admin exclui uma cadeira (soft delete): some do agendamento futuro, mas
       os agendamentos passados mantêm a cadeira marcada "(excluída)". Botão só
       para o Admin; mantém ≥1 cadeira viva; lista de excluídas na config.
+- [x] **AJ1b Cadeiras numa casa só** ✅ (06/07, v0.12.11, sem migração) — as
+      cadeiras deixam de aparecer em 3 lugares: removido o campo "Cadeiras"
+      (número, legado) de `/admin/agenda` e o campo do **cadastro da clínica**;
+      o **limite máximo** virou um campo **só do Admin** dentro de "Configurar
+      agenda", junto da lista de cadeiras. Agora tudo sobre cadeiras vive em
+      "Configurar agenda".
 - [ ] **AJ2 Agendamento fora do horário — permite com alerta [M] 🗄️** — início
       dentro do horário, fim pode passar do expediente/almoço; alerta a quem
       agenda + notifica o profissional do atendimento que extrapola.

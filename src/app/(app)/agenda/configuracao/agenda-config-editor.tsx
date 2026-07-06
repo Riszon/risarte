@@ -15,6 +15,7 @@ import {
   renameRoom,
   saveAgendaHours,
   setCoordinatorRoom,
+  setMaxRooms,
   setRoomActive,
 } from "./actions";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -84,6 +85,7 @@ export function AgendaConfigEditor({
   const [newRoom, setNewRoom] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [maxRoomsInput, setMaxRoomsInput] = useState(String(maxRooms));
 
   // Liberar dia avulso (G5/GR4).
   const [releaseDates, setReleaseDates] = useState<string[]>([]);
@@ -237,6 +239,48 @@ export function AgendaConfigEditor({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Ajuste #1b: limite de cadeiras — editável só pelo Admin, aqui na
+              mesma tela das cadeiras (saiu do cadastro da clínica). */}
+          {isAdmin ? (
+            <div className="flex flex-wrap items-end gap-2 rounded-md border border-gold/40 bg-gold/5 p-2">
+              <div>
+                <Label htmlFor="maxRooms" className="text-xs">
+                  Limite de cadeiras (só Admin)
+                </Label>
+                <Input
+                  id="maxRooms"
+                  type="number"
+                  min={Math.max(1, liveRooms.length)}
+                  max={50}
+                  className="mt-1 h-8 w-24"
+                  value={maxRoomsInput}
+                  onChange={(e) => setMaxRoomsInput(e.target.value)}
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                onClick={() =>
+                  run(
+                    () => setMaxRooms(clinicId, Number(maxRoomsInput) || 0),
+                    "Limite de cadeiras salvo."
+                  )
+                }
+              >
+                Salvar limite
+              </Button>
+              <p className="basis-full text-xs text-muted-foreground">
+                A unidade pode ter até este número de cadeiras. A Gerente cria e
+                nomeia as cadeiras até o limite; só o Admin exclui.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Limite de cadeiras da unidade: <strong>{maxRooms}</strong>{" "}
+              (definido pelo Admin).
+            </p>
+          )}
           <ul className="divide-y rounded-lg border">
             {liveRooms.length === 0 && (
               <li className="px-3 py-2 text-sm text-muted-foreground">

@@ -14,7 +14,6 @@ export async function saveAgendaSettings(
     openTime: string;
     closeTime: string;
     weekdays: number[];
-    chairs: number;
   }
 ): Promise<AgendaSettingsResult> {
   await requireAdminMaster();
@@ -29,8 +28,8 @@ export async function saveAgendaSettings(
   if (weekdays.length === 0) {
     return { ok: false, error: "Escolha ao menos um dia de atendimento." };
   }
-  const chairs = Math.max(1, Math.min(20, Math.floor(input.chairs || 1)));
 
+  // As cadeiras (salas nomeadas) são geridas em "Configurar agenda", não aqui.
   const supabase = await createClient();
   const { error } = await supabase.from("clinic_agenda_settings").upsert(
     {
@@ -38,7 +37,6 @@ export async function saveAgendaSettings(
       open_time: input.openTime,
       close_time: input.closeTime,
       weekdays,
-      chairs,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "clinic_id" }

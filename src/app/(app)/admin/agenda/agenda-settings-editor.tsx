@@ -33,7 +33,6 @@ export function AgendaSettingsEditor({
   const [openTime, setOpenTime] = useState(values.openTime);
   const [closeTime, setCloseTime] = useState(values.closeTime);
   const [weekdays, setWeekdays] = useState<number[]>(values.weekdays);
-  const [chairs, setChairs] = useState(String(values.chairs));
 
   const isNetwork = scope === "";
 
@@ -49,7 +48,6 @@ export function AgendaSettingsEditor({
         openTime,
         closeTime,
         weekdays,
-        chairs: Number(chairs) || 1,
       });
       if (result.ok) {
         toast.success("Configuração salva.");
@@ -100,7 +98,7 @@ export function AgendaSettingsEditor({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="open">Abertura</Label>
               <Input
@@ -117,17 +115,6 @@ export function AgendaSettingsEditor({
                 type="time"
                 value={closeTime}
                 onChange={(e) => setCloseTime(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="chairs">Cadeiras</Label>
-              <Input
-                id="chairs"
-                type="number"
-                min={1}
-                max={20}
-                value={chairs}
-                onChange={(e) => setChairs(e.target.value)}
               />
             </div>
           </div>
