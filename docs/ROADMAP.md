@@ -180,9 +180,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       ~1 ano à frente; navegar com o scroll do mouse; mês só no 1º dia + todos os
       dias; dia com agenda fechada mostra **o motivo** (não "lotado"); fechamento
       parcial (cadeira/profissional/período) vira **alerta de atenção**.
-- [ ] **AJ11 Consultor recebe notificação [M] 🗄️** — plano pronto vai também às
-      notificações do Consultor (incl. consultor da Franqueadora com escopo); e
-      aviso quando há apresentação agendada e plano não pronto.
+- [x] **AJ11 Consultor recebe notificação** ✅ (06/07, v0.12.17, migração 0075) —
+      `move_client_phase` agora avisa Consultor/Assistente via
+      `providers_with_access` (inclui os da Franqueadora com escopo — antes o
+      consultor da matriz não recebia nada); e novo RPC
+      `notify_commercial_presentation` avisa o Consultor quando uma apresentação
+      é agendada (para cobrar o Centro de Planejamento).
 
 Próximo depois destes: GRUPO 4 (módulos novos).
 

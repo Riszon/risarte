@@ -477,6 +477,15 @@ export async function createAppointment(
     if (notifyErr) console.error("notify_appointment_overrun:", notifyErr.message);
   }
 
+  // AJ11: apresentação comercial agendada — avisa o Consultor/Assistente para
+  // acompanhar o plano a tempo (inclui os da Franqueadora com escopo na unidade).
+  if (String(formData.get("type") ?? "") === "commercial_presentation") {
+    const { error: presErr } = await supabase.rpc("notify_commercial_presentation", {
+      p_appointment_id: data.id,
+    });
+    if (presErr) console.error("notify_commercial_presentation:", presErr.message);
+  }
+
   await logAudit({
     action: "create",
     entityType: "appointment",
