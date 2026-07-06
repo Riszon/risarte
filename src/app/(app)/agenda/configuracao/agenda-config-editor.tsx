@@ -11,11 +11,13 @@ import { WEEKDAY_NAMES } from "@/lib/agenda-settings";
 import type { Room } from "@/lib/rooms";
 import {
   addRoom,
+  deleteRoom,
   renameRoom,
   saveAgendaHours,
   setCoordinatorRoom,
   setRoomActive,
 } from "./actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
 import { CalendarSearch } from "lucide-react";
 import { openSpecialDays, removeSpecialDay, saveLunchBreak } from "../actions";
@@ -33,6 +35,7 @@ const selectClass =
 
 export function AgendaConfigEditor({
   clinicId,
+  isAdmin,
   hours,
   rooms,
   maxRooms,
@@ -42,6 +45,8 @@ export function AgendaConfigEditor({
   lunch,
 }: {
   clinicId: string;
+  /** Ajuste #1: só o Admin vê o botão de EXCLUIR cadeira. */
+  isAdmin: boolean;
   hours: {
     openTime: string;
     closeTime: string;
@@ -93,7 +98,10 @@ export function AgendaConfigEditor({
   const [lunchStart, setLunchStart] = useState(lunch.start);
   const [lunchEnd, setLunchEnd] = useState(lunch.end);
 
-  const activeRooms = rooms.filter((r) => r.isActive);
+  // Ajuste #1: cadeiras vivas (não excluídas) x excluídas (histórico).
+  const liveRooms = rooms.filter((r) => !r.deletedAt);
+  const deletedRooms = rooms.filter((r) => r.deletedAt);
+  const activeRooms = liveRooms.filter((r) => r.isActive);
   const staffNameById = new Map(staff.map((s) => [s.userId, s.name]));
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -224,18 +232,18 @@ export function AgendaConfigEditor({
             Salas de atendimento{" "}
             <span className="font-normal text-muted-foreground">
               ({activeRooms.length} ativa{activeRooms.length === 1 ? "" : "s"} ·{" "}
-              {rooms.length} de {maxRooms} cadeiras)
+              {liveRooms.length} de {maxRooms} cadeiras)
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <ul className="divide-y rounded-lg border">
-            {rooms.length === 0 && (
+            {liveRooms.length === 0 && (
               <li className="px-3 py-2 text-sm text-muted-foreground">
                 Nenhuma sala cadastrada ainda.
               </li>
             )}
-            {rooms.map((room) => (
+            {liveRooms.map((room) => (
               <li
                 key={room.id}
                 className="flex flex-wrap items-center gap-2 px-3 py-2"
@@ -298,12 +306,63 @@ export function AgendaConfigEditor({
                     >
                       {room.isActive ? "Desativar" : "Ativar"}
                     </Button>
+                    {isAdmin && (
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Excluir
+                          </Button>
+                        }
+                        title="Excluir cadeira"
+                        description={
+                          <>
+                            A cadeira <strong>{room.name}</strong> sairá dos
+                            próximos agendamentos. Os agendamentos passados mantêm
+                            o registro dela, marcada como “excluída”. Deseja
+                            excluir?
+                          </>
+                        }
+                        confirmLabel="Excluir cadeira"
+                        successMessage="Cadeira excluída."
+                        destructive
+                        onConfirm={() => deleteRoom(room.id)}
+                      />
+                    )}
                   </>
                 )}
               </li>
             ))}
           </ul>
-          {rooms.length >= maxRooms ? (
+
+          {/* Cadeiras excluídas (histórico) — visível ao Admin. */}
+          {isAdmin && deletedRooms.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                Cadeiras excluídas
+              </p>
+              <ul className="divide-y rounded-lg border border-dashed">
+                {deletedRooms.map((room) => (
+                  <li
+                    key={room.id}
+                    className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-muted-foreground"
+                  >
+                    <span className="line-through">{room.name}</span>
+                    <span className="text-xs">
+                      excluída em{" "}
+                      {room.deletedAt
+                        ? new Date(room.deletedAt).toLocaleDateString("pt-BR")
+                        : "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {liveRooms.length >= maxRooms ? (
             <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs text-muted-foreground">
               Limite de {maxRooms} cadeira(s) atingido (definido pelo Admin no
               cadastro da clínica). Para ter mais cadeiras, peça ao Admin para

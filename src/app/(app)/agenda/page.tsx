@@ -22,6 +22,7 @@ import type {
   StaffOption,
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
+import { roomLabel } from "@/lib/rooms";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import {
@@ -67,7 +68,7 @@ type AppointmentRow = {
   attendance: AttendanceStatus | null;
   room_id?: string | null;
   is_online?: boolean | null;
-  room?: { name: string } | null;
+  room?: { name: string; deleted_at?: string | null } | null;
   needs_reschedule?: boolean | null;
   clinic_id?: string;
   clinics?: { name: string } | null;
@@ -130,7 +131,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     let netQuery = supabase
       .from("appointments")
       .select(
-        "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, room_id, is_online, room:clinic_rooms ( name ), clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+        "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, room_id, is_online, room:clinic_rooms ( name, deleted_at ), clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
       )
       .gte("starts_at", range.start.toISOString())
       .lt("starts_at", range.end.toISOString())
@@ -188,7 +189,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         provider: a.provider,
         attendance: a.attendance,
         room_id: a.room_id ?? null,
-        room_name: a.room?.name ?? null,
+        room_name: roomLabel(a.room),
         is_online: a.is_online ?? false,
         clinic_name: a.clinics?.name ?? null,
         clientLinkable: sdrClientIds
@@ -365,7 +366,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         supabase
           .from("appointments")
           .select(
-            "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, room_id, is_online, needs_reschedule, room:clinic_rooms ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
+            "id, type, status, starts_at, ends_at, notes, provider_user_id, attendance, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ), clients ( id, full_name, journey_phase, methodology_pillar )"
           )
           .eq("clinic_id", clinicId)
           .gte("starts_at", range.start.toISOString())
@@ -456,7 +457,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       : null,
     attendance: a.attendance,
     room_id: a.room_id ?? null,
-    room_name: a.room?.name ?? null,
+    room_name: roomLabel(a.room),
     is_online: a.is_online ?? false,
     needs_reschedule: a.needs_reschedule ?? false,
     clients: a.clients,

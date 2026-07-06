@@ -64,6 +64,7 @@ export async function getAgendaFormConfig(
         .select("id, clinic_id, name, sort_order, is_active")
         .eq("clinic_id", clinicId)
         .eq("is_active", true)
+        .is("deleted_at", null)
         .returns<RoomRow[]>(),
       supabase
         .from("clinic_agenda_settings")

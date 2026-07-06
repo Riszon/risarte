@@ -102,7 +102,8 @@ export async function updateClinic(
   const { count } = await supabase
     .from("clinic_rooms")
     .select("id", { count: "exact", head: true })
-    .eq("clinic_id", clinicId);
+    .eq("clinic_id", clinicId)
+    .is("deleted_at", null);
   if (parsed.values.max_rooms < (count ?? 0)) {
     return {
       ok: false,

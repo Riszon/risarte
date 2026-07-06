@@ -124,7 +124,28 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       apresentação" nas linhas da fase comercial. Nova categoria **Comercial**
       na central de notificações.
 
-**GRUPO 3 (H3.1–H3.15) COMPLETO.** Próximo: GRUPO 4 (módulos novos).
+**GRUPO 3 (H3.1–H3.15) COMPLETO.**
+
+## AJUSTES PRÉ-GRUPO 4 (feedback do dono, antes dos módulos novos)
+
+- [x] **AJ1 Excluir cadeira (só Admin)** ✅ (06/07, v0.12.10, migração 0072) —
+      o Admin exclui uma cadeira (soft delete): some do agendamento futuro, mas
+      os agendamentos passados mantêm a cadeira marcada "(excluída)". Botão só
+      para o Admin; mantém ≥1 cadeira viva; lista de excluídas na config.
+- [ ] **AJ2 Agendamento fora do horário — permite com alerta [M] 🗄️** — início
+      dentro do horário, fim pode passar do expediente/almoço; alerta a quem
+      agenda + notifica o profissional do atendimento que extrapola.
+- [ ] **AJ3 Comercial agendado SEM plano pronto — destaque + cronômetro [M]** —
+      quando há apresentação marcada mas o plano não está pronto, destaque
+      vermelho + cronômetro para Consultor/Planner/Coordenador (em /planos,
+      fila do /planejamento e cockpit).
+- [ ] **AJ4 Alerta clicável + "Pedir agendamento" + pop-up recepção [M] 🗄️** —
+      o banner de /planos filtra os casos; botão pede o agendamento e a recepção
+      recebe um pop-up na tela para marcar a apresentação.
+- [ ] **AJ5 Vitrine "Prontos para apresentar" p/ o Consultor [P/M]** — seção
+      destacada no topo de /planos com acesso rápido aos planos novos prontos.
+
+Próximo depois dos ajustes: GRUPO 4 (módulos novos).
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 

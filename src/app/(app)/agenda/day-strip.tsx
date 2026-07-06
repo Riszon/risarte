@@ -85,7 +85,8 @@ export async function DayStrip({
       .from("clinic_rooms")
       .select("id")
       .eq("clinic_id", clinicId)
-      .eq("is_active", true),
+      .eq("is_active", true)
+      .is("deleted_at", null),
     supabase
       .from("appointments")
       .select("room_id, is_online, starts_at, ends_at, status")

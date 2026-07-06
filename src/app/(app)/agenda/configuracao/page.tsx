@@ -55,7 +55,7 @@ export default async function AgendaConfigPage() {
       .returns<AgendaSettingRow[]>(),
     supabase
       .from("clinic_rooms")
-      .select("id, clinic_id, name, sort_order, is_active")
+      .select("id, clinic_id, name, sort_order, is_active, deleted_at")
       .eq("clinic_id", clinic.id)
       .returns<RoomRow[]>(),
     supabase
@@ -149,6 +149,7 @@ export default async function AgendaConfigPage() {
 
       <AgendaConfigEditor
         clinicId={clinic.id}
+        isAdmin={session.isAdminMaster}
         hours={{
           openTime: values.openTime,
           closeTime: values.closeTime,

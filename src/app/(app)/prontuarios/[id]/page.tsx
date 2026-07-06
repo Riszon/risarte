@@ -83,6 +83,7 @@ import type {
   AppointmentType,
   StaffOption,
 } from "@/lib/appointments";
+import { roomLabel } from "@/lib/rooms";
 import { allowedNextPhases } from "@/lib/journey";
 import type {
   DecisionKind,
@@ -527,7 +528,7 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("created_at")
@@ -552,7 +553,7 @@ export default async function ClientDetailPage(
             room_id: string | null;
             is_online: boolean | null;
             needs_reschedule: boolean | null;
-            room: { name: string | null } | null;
+            room: { name: string | null; deleted_at: string | null } | null;
             provider: { full_name: string } | null;
           } | null;
         }[]
@@ -578,7 +579,7 @@ export default async function ClientDetailPage(
             provider_user_id: r.appointment.provider_user_id,
             provider: r.appointment.provider,
             room_id: r.appointment.room_id ?? null,
-            room_name: r.appointment.room?.name ?? null,
+            room_name: roomLabel(r.appointment.room),
             is_online: r.appointment.is_online ?? false,
             needs_reschedule: r.appointment.needs_reschedule ?? false,
             clients: {

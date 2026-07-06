@@ -8,6 +8,8 @@ export type RoomRow = {
   name: string;
   sort_order: number;
   is_active: boolean;
+  /** Ajuste #1: preenchido quando a cadeira foi EXCLUÍDA (soft delete). */
+  deleted_at?: string | null;
 };
 
 export type Room = {
@@ -16,6 +18,8 @@ export type Room = {
   name: string;
   sortOrder: number;
   isActive: boolean;
+  /** ISO da exclusão; null = cadeira viva. */
+  deletedAt: string | null;
 };
 
 export function mapRoom(r: RoomRow): Room {
@@ -25,7 +29,19 @@ export function mapRoom(r: RoomRow): Room {
     name: r.name,
     sortOrder: r.sort_order,
     isActive: r.is_active,
+    deletedAt: r.deleted_at ?? null,
   };
+}
+
+/**
+ * Ajuste #1: rótulo da cadeira para exibir num agendamento — marca "(excluída)"
+ * quando a sala foi excluída (soft delete), preservando o histórico.
+ */
+export function roomLabel(
+  room?: { name: string | null; deleted_at?: string | null } | null
+): string | null {
+  if (!room?.name) return null;
+  return room.deleted_at ? `${room.name} (excluída)` : room.name;
 }
 
 /** Sort by sort_order, then name (stable, case-insensitive). */

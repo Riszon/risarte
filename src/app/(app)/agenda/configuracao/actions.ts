@@ -69,7 +69,8 @@ export async function saveAgendaHours(
     .from("clinic_rooms")
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .is("deleted_at", null);
   const chairs = Math.max(1, count ?? 1);
 
   const { error } = await supabase.from("clinic_agenda_settings").upsert(
@@ -121,7 +122,8 @@ export async function addRoom(
     supabase
       .from("clinic_rooms")
       .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId),
+      .eq("clinic_id", clinicId)
+      .is("deleted_at", null),
   ]);
   const maxRooms = clinic?.max_rooms ?? 0;
   if (maxRooms > 0 && (count ?? 0) >= maxRooms) {
@@ -217,7 +219,8 @@ export async function setRoomActive(
       .from("clinic_rooms")
       .select("id", { count: "exact", head: true })
       .eq("clinic_id", room.clinic_id)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .is("deleted_at", null);
     if ((count ?? 0) <= 1) {
       return {
         ok: false,
@@ -239,6 +242,73 @@ export async function setRoomActive(
     entityType: "clinic_room",
     entityId: roomId,
     clinicId: room.clinic_id,
+  });
+  revalidatePath("/agenda/configuracao");
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
+/**
+ * Ajuste #1: EXCLUI uma cadeira (soft delete) — só o Admin Master. A sala sai
+ * das opções de agendamento futuro, mas os agendamentos passados mantêm o
+ * vínculo (o nome continua e a interface marca "(excluída)"). Exige que reste
+ * ao menos uma cadeira viva na unidade.
+ */
+export async function deleteRoom(roomId: string): Promise<AgendaConfigResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) {
+    return { ok: false, error: "Apenas o Admin pode excluir uma cadeira." };
+  }
+
+  const supabase = await createClient();
+  const { data: room } = await supabase
+    .from("clinic_rooms")
+    .select("clinic_id, deleted_at")
+    .eq("id", roomId)
+    .maybeSingle();
+  if (!room) return { ok: false, error: "Sala não encontrada." };
+  if (room.deleted_at) return { ok: true }; // já excluída — nada a fazer
+
+  // A unidade precisa manter ao menos uma cadeira viva.
+  const { count } = await supabase
+    .from("clinic_rooms")
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", room.clinic_id)
+    .is("deleted_at", null);
+  if ((count ?? 0) <= 1) {
+    return {
+      ok: false,
+      error: "A unidade precisa de ao menos uma cadeira. Crie outra antes de excluir esta.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("clinic_rooms")
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: session.userId,
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", roomId);
+  if (error) {
+    console.error("deleteRoom failed:", error.message);
+    return { ok: false, error: "Não foi possível excluir a cadeira." };
+  }
+
+  // Se era a sala do Coordenador, limpa a referência.
+  await supabase
+    .from("clinic_agenda_settings")
+    .update({ coordinator_room_id: null })
+    .eq("clinic_id", room.clinic_id)
+    .eq("coordinator_room_id", roomId);
+
+  await logAudit({
+    action: "update",
+    entityType: "clinic_room",
+    entityId: roomId,
+    clinicId: room.clinic_id,
+    details: { deleted: true },
   });
   revalidatePath("/agenda/configuracao");
   revalidatePath("/agenda");
