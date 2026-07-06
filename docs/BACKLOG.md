@@ -705,10 +705,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       recepção/gerente troca no A chegar/Em espera; registra em
       appointment_provider_swaps; notifica os 2 profissionais + coordenador +
       gerente; ≥5 trocas no mês na unidade dispara alerta de frequência.
-- [ ] H3.7 SDR: passa a ver também os clientes que ela transferiu/alterou/
-      agendou (acompanha até a reavaliação); Jornada restrita aos clientes que
-      ela vê nos prontuários; Agenda completa, mas SEM abrir prontuário de
-      cliente não permitido.
+- [x] H3.7 SDR ✅ (v0.11.9, migração 0066): vê os clientes que tocou
+      (cadastrou/editou/agendou/transferiu) em Prontuários e Jornada; ficha
+      bloqueia cliente que não é dela; Agenda completa, mas o nome de cliente
+      não permitido aparece sem link (decisão do dono: mostrar o nome).
 - [ ] H3.8 WhatsApp manual: mensagem personalizável para aniversariantes
       (individual e em massa) — no prontuário, na aba Aniversariantes e na
       notificação. Automatizar depois (Fase 3).

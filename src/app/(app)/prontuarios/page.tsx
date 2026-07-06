@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, Gift } from "lucide-react";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import {
+  getSessionContext,
+  hasRoleInClinic,
+  sdrAccessibleClientIds,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +39,9 @@ import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
 
 export const metadata: Metadata = { title: "Prontuários" };
+
+// UUID inexistente para uma cláusula .in([]) nunca casar (evita erro/lista cheia).
+const NO_MATCH_ID = "00000000-0000-0000-0000-000000000000";
 
 type ClientRow = {
   id: string;
@@ -225,7 +232,10 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
           .limit(200);
         if (clinicFilter) request = request.eq("clinic_id", clinicFilter);
         if (franchisorMode === "sdr") {
-          request = request.eq("created_by", session.userId);
+          // H3.7: a SDR vê os clientes que TOCOU (cadastrou/editou/agendou/
+          // transferiu), não só os que cadastrou.
+          const ids = await sdrAccessibleClientIds();
+          request = request.in("id", ids.length > 0 ? ids : [NO_MATCH_ID]);
         }
         // Default phases per role (a chosen phase filter overrides them).
         if (!phaseFilter) {

@@ -6,6 +6,8 @@ import {
   getSessionContext,
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
+  isSdrRestricted,
+  sdrAccessibleClientIds,
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -232,6 +234,38 @@ export default async function ClientDetailPage(
         </Card>
       </div>
     );
+  }
+
+  // H3.7: a SDR "pura" só abre a ficha de clientes que ela tocou (cadastrou/
+  // editou/agendou/transferiu). A RLS ainda deixa ver o nome na agenda; aqui
+  // bloqueamos o acesso ao prontuário/cadastro completo.
+  if (isSdrRestricted(session)) {
+    const accessibleIds = await sdrAccessibleClientIds();
+    if (!accessibleIds.includes(client.id)) {
+      return (
+        <div className="mx-auto max-w-xl px-4 py-16">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Acesso restrito</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p>
+                Você só tem acesso ao prontuário de clientes que você cadastrou,
+                editou, agendou ou transferiu. Este cliente não faz parte do seu
+                acompanhamento.
+              </p>
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/prontuarios" />}
+              >
+                Voltar para Prontuários
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
   }
 
   const [

@@ -63,10 +63,14 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       `appointment_provider_swaps`, valida conflito de horário e notifica o
       profissional anterior, o novo, o coordenador e a gerente; ≥5 trocas no
       mês na unidade disparam alerta de frequência a coordenador/gerente.
-- [ ] **H3.7 Visibilidade da SDR [M/G] 🗄️** — SDR vê também clientes que
-      transferiu/alterou/agendou (até a reavaliação); Jornada restrita a esses;
-      Agenda completa mas sem abrir prontuário não permitido. Nova regra RLS
-      ("clientes que a SDR tocou") + ajustes nas telas.
+- [x] **H3.7 Visibilidade da SDR** ✅ (04/07, v0.11.9, migração 0066) — função
+      `sdr_accessible_client_ids()` (clientes que a SDR cadastrou/editou/
+      agendou/transferiu); Prontuários e Jornada da SDR "pura" passam a mostrar
+      só esse conjunto; a **ficha** bloqueia cliente que não é dela ("Acesso
+      restrito"); a **Agenda continua completa**, mas o nome de cliente que não
+      é da SDR aparece **sem link** (decisão do dono: mostrar o nome, não abrir
+      a ficha). `isSdrRestricted` só restringe a SDR "pura" (sem outro papel
+      amplo).
 - [ ] **H3.8 WhatsApp aniversariantes [P/M]** — botão wa.me com mensagem
       personalizável no prontuário, na aba Aniversariantes (individual e em
       lote) e na notificação. Manual; automação = Fase 3.

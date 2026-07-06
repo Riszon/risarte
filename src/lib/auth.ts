@@ -137,6 +137,48 @@ export async function fullAccessClinicIds(): Promise<string[]> {
     .filter(Boolean);
 }
 
+// Papéis que já dão visão ampla de clientes — se o usuário tiver algum deles
+// (além de SDR), NÃO restringimos a visão dele à dos "clientes tocados" (H3.7).
+const BROAD_CLIENT_ROLES: UserRole[] = [
+  "receptionist",
+  "clinical_coordinator",
+  "unit_manager",
+  "dentist",
+  "planner_dentist",
+  "commercial_consultant",
+  "commercial_assistant",
+  "franchisor_staff",
+  "franchisee",
+];
+
+/**
+ * H3.7: o usuário é uma SDR "pura" — tem o papel de SDR e nenhum outro que já
+ * dê visão ampla de clientes. Só nesse caso a visão de Prontuários/Jornada/
+ * ficha é limitada aos clientes que ela mesma tocou.
+ */
+export function isSdrRestricted(session: SessionContext): boolean {
+  if (session.isAdminMaster) return false;
+  const allRoles = Object.values(session.rolesByClinic).flat();
+  const isSdr = allRoles.includes("sdr");
+  if (!isSdr) return false;
+  return !allRoles.some((r) => BROAD_CLIENT_ROLES.includes(r));
+}
+
+/**
+ * H3.7: ids dos clientes que a SDR pode ver (cadastrou/editou/agendou/
+ * transferiu). Vazio = a SDR não tocou em ninguém ainda.
+ */
+export async function sdrAccessibleClientIds(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("sdr_accessible_client_ids");
+  return ((data as { sdr_accessible_client_ids?: string }[] | string[] | null) ??
+    [])
+    .map((x) =>
+      typeof x === "string" ? x : (x.sdr_accessible_client_ids ?? "")
+    )
+    .filter(Boolean);
+}
+
 /**
  * Like hasRoleInClinic, but franchisor-based roles (Consultor Comercial,
  * Planner etc.) reach the unit through their unit scope — their role row

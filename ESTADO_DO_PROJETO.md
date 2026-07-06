@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.8** · Última migração: **0065**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.11.9** · Última migração: **0066**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -475,8 +475,11 @@ backlog (H3.1 em diante).
    notificações + alerta de frequência); **H3.4b** ✅ (v0.11.8, migração 0065 —
    pendências de dias anteriores carregam para o painel de hoje com "Pendente
    desde DD/MM"; "em atendimento" não concluído bloqueia cadeira+profissional
-   via PROVIDER_BUSY/ROOM_BUSY); próximo: H3.7 visibilidade da SDR; ... até
-   H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
+   via PROVIDER_BUSY/ROOM_BUSY); ~~H3.7~~ ✅ (v0.11.9, migração 0066 —
+   visibilidade da SDR: `sdr_accessible_client_ids`; Prontuários/Jornada da SDR
+   "pura" só os clientes que ela tocou; ficha bloqueia os demais; agenda
+   completa mas nome sem link p/ não-permitidos); próximo: H3.8 WhatsApp
+   aniversariantes; ... até H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.

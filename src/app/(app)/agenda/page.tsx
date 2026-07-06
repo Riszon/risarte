@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import {
+  getSessionContext,
+  hasRoleInClinic,
+  isSdrRestricted,
+  sdrAccessibleClientIds,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { FilterForm } from "@/components/filter-form";
@@ -164,6 +169,13 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     );
     const sdrUnits = (unitOptions ?? []).filter((u) => accessibleIds.has(u.id));
 
+    // H3.7: a SDR vê a agenda toda, mas só abre a ficha dos clientes que ela
+    // tocou; nos demais, o nome aparece sem link.
+    const sdrClientIds =
+      sdrOnly && isSdrRestricted(session)
+        ? new Set(await sdrAccessibleClientIds())
+        : null;
+
     const networkAppointments: AgendaAppointment[] = (netAppts ?? []).map(
       (a) => ({
         id: a.id,
@@ -179,6 +191,11 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         room_name: a.room?.name ?? null,
         is_online: a.is_online ?? false,
         clinic_name: a.clinics?.name ?? null,
+        clientLinkable: sdrClientIds
+          ? a.clients
+            ? sdrClientIds.has(a.clients.id)
+            : true
+          : true,
         clients: a.clients,
       })
     );

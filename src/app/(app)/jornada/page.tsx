@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import {
+  getSessionContext,
+  hasRoleInClinic,
+  isSdrRestricted,
+  sdrAccessibleClientIds,
+} from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Button } from "@/components/ui/button";
@@ -91,6 +96,16 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
   }
   if (pillarFilter) {
     clientsQuery = clientsQuery.eq("methodology_pillar", pillarFilter);
+  }
+
+  // H3.7: a SDR "pura" vê na Jornada só os clientes que ela tocou (mesmo
+  // conjunto de Prontuários), não a rede toda.
+  if (isSdrRestricted(session)) {
+    const ids = await sdrAccessibleClientIds();
+    clientsQuery = clientsQuery.in(
+      "id",
+      ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]
+    );
   }
 
   const [{ data: clients }, { data: slaRows }, { data: unitOptions }] =

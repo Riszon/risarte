@@ -56,6 +56,8 @@ export type AgendaAppointment = {
   attendance?: AttendanceStatus | null;
   /** Set only in the network (planner/franchisor) view. */
   clinic_name?: string | null;
+  /** H3.7: false quando a SDR não pode abrir o prontuário deste cliente. */
+  clientLinkable?: boolean;
   clients: {
     id: string;
     full_name: string;
@@ -240,12 +242,21 @@ export function WeekGrid({
         </p>
         {appointment.clients && (
           <>
-            <Link
-              href={`/prontuarios/${appointment.clients.id}`}
-              className="mt-0.5 block truncate hover:underline"
-            >
-              {appointment.clients.full_name}
-            </Link>
+            {appointment.clientLinkable === false ? (
+              <span
+                className="mt-0.5 block truncate"
+                title="Você não tem acesso ao prontuário deste cliente."
+              >
+                {appointment.clients.full_name}
+              </span>
+            ) : (
+              <Link
+                href={`/prontuarios/${appointment.clients.id}`}
+                className="mt-0.5 block truncate hover:underline"
+              >
+                {appointment.clients.full_name}
+              </Link>
+            )}
             {appointment.clinic_name && (
               <p className="truncate text-[10px] font-medium text-primary">
                 {appointment.clinic_name}
