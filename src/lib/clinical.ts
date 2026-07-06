@@ -52,6 +52,9 @@ export type ClinicalMediaItem = {
   id: string;
   kind: ClinicalMediaKind;
   originalName: string | null;
+  /** H3.12: nome de exibição editável (renomear) + anotação. */
+  displayName: string | null;
+  note: string | null;
   url: string | null;
   externalUrl: string | null;
   contentType: string | null;
@@ -59,6 +62,15 @@ export type ClinicalMediaItem = {
   uploaderName: string | null;
   sizeBytes: number | null;
 };
+
+/** Nome a exibir para a mídia: o renomeado, senão o original. */
+export function mediaDisplayName(m: ClinicalMediaItem): string {
+  return (
+    m.displayName?.trim() ||
+    m.originalName?.trim() ||
+    CLINICAL_MEDIA_LABELS[m.kind]
+  );
+}
 
 /** How a Storage-backed item can be shown inline (no download). */
 export function mediaPreviewType(

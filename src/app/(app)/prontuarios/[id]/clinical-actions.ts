@@ -218,6 +218,62 @@ export async function deleteClinicalMedia(
   return { ok: true };
 }
 
+/** H3.12: renomeia e/ou anota uma mídia clínica (Coordenador/Admin). */
+export async function updateClinicalMedia(
+  mediaId: string,
+  input: { displayName?: string; note?: string }
+): Promise<ClinicalResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: media } = await supabase
+    .from("clinical_media")
+    .select("client_id, clinic_id")
+    .eq("id", mediaId)
+    .single();
+  if (!media) return { ok: false, error: "Arquivo não encontrado." };
+  if (
+    !session.isAdminMaster &&
+    !hasRoleInClinic(session, media.clinic_id, ["clinical_coordinator"])
+  ) {
+    return {
+      ok: false,
+      error: "Apenas o Coordenador Clínico pode editar arquivos.",
+    };
+  }
+
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+    updated_by: session.userId,
+  };
+  if (input.displayName !== undefined) {
+    patch.display_name = input.displayName.trim() || null;
+  }
+  if (input.note !== undefined) {
+    patch.note = input.note.trim() || null;
+  }
+
+  const { error } = await supabase
+    .from("clinical_media")
+    .update(patch)
+    .eq("id", mediaId);
+  if (error) {
+    console.error("updateClinicalMedia failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar as alterações." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "clinical_media",
+    entityId: media.client_id,
+    clinicId: media.clinic_id,
+    details: {
+      renamed: input.displayName !== undefined,
+      annotated: input.note !== undefined,
+    },
+  });
+  revalidatePath(`/prontuarios/${media.client_id}`);
+  return { ok: true };
+}
+
 /** Edit a consideration; the previous version is kept in the history. */
 export async function editClinicalNote(
   noteId: string,

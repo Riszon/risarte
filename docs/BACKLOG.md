@@ -722,7 +722,9 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H3.11 Informações complementares ✅ (v0.12.3, migração 0069): card na
       ficha para o coordenador enviar mais info ao Planner (notifica); selo
       "nova info" na fila /planejamento até o Planner abrir o cockpit.
-- [ ] H3.12 Mídias: excluir, renomear e fazer ANOTAÇÕES em cada foto/arquivo.
+- [x] H3.12 Mídias: excluir, renomear e anotar ✅ (v0.12.4, migração 0070):
+      nome editável + anotação por foto/arquivo na galeria; excluir com
+      confirmação; Coordenador/Admin editam; auditado.
 - [ ] H3.13 Centro de Planejamento/cockpit: anamnese visível ao Planner; botão
       direto para o cockpit na fila; filtros por unidade e por pilar; colunas do
       cockpit com rolagem independente.

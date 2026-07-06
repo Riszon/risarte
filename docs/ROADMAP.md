@@ -94,8 +94,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       tabela `planning_supplements`; na fila `/planejamento` o cliente ganha o
       selo "nova info" até o Planner abrir o cockpit (que mostra as infos e
       chama `mark_planning_supplements_seen`).
-- [ ] **H3.12 Mídias: excluir, renomear e anotar [M] 🗄️** — por foto/arquivo,
-      com registro de auditoria (LGPD).
+- [x] **H3.12 Mídias: excluir, renomear e anotar** ✅ (04/07, v0.12.4, migração
+      0070) — cada foto/arquivo ganhou **nome editável** + **anotação**
+      (colunas `display_name`/`note` + policy de update; `updateClinicalMedia`)
+      na galeria (lista, grid de fotos com selo de anotação e no lightbox);
+      **excluir** já existia (agora com confirmação). Coordenador/Admin editam;
+      tudo auditado.
 - [ ] **H3.13 Centro/cockpit — melhorias leves [M]** — anamnese no cockpit;
       filtros unidade/pilar na fila; colunas com rolagem independente.
       (Redesign completo = H4.5.)

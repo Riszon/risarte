@@ -10,16 +10,20 @@ import {
   Eye,
   ImageOff,
   Link2,
+  Pencil,
+  StickyNote,
   Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
+  mediaDisplayName,
   mediaPreviewType,
   type ClinicalMediaItem,
   type ClinicalMediaKind,
 } from "@/lib/clinical";
-import { deleteClinicalMedia } from "./clinical-actions";
+import { deleteClinicalMedia, updateClinicalMedia } from "./clinical-actions";
 
 const CATEGORY_ORDER: ClinicalMediaKind[] = [
   "photo",
@@ -185,7 +189,8 @@ function Lightbox({
         className="mt-3 max-w-full text-center text-xs text-white/80"
         onClick={(e) => e.stopPropagation()}
       >
-        {m.originalName ?? "imagem"} · {metaLine(m)} · {index + 1}/{items.length}
+        {mediaDisplayName(m)} · {metaLine(m)} · {index + 1}/{items.length}
+        {m.note && <p className="mt-1 text-white/70">{m.note}</p>}
       </div>
     </div>
   );
@@ -206,10 +211,16 @@ export function MediaGallery({
   } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [failed, setFailed] = useState<Set<string>>(new Set());
+  // H3.12: renomear/anotar uma mídia.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editNote, setEditNote] = useState("");
 
   if (media.length === 0) return null;
 
   function remove(id: string) {
+    if (!window.confirm("Remover este arquivo? Esta ação não pode ser desfeita."))
+      return;
     startTransition(async () => {
       const result = await deleteClinicalMedia(id);
       if (result.ok) {
@@ -219,6 +230,75 @@ export function MediaGallery({
         toast.error(result.error ?? "Algo deu errado.");
       }
     });
+  }
+
+  function startEdit(m: ClinicalMediaItem) {
+    setEditing(m.id);
+    setEditName(m.displayName ?? m.originalName ?? "");
+    setEditNote(m.note ?? "");
+  }
+
+  function saveEdit(id: string) {
+    startTransition(async () => {
+      const result = await updateClinicalMedia(id, {
+        displayName: editName,
+        note: editNote,
+      });
+      if (result.ok) {
+        toast.success("Arquivo atualizado.");
+        setEditing(null);
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
+  function MediaEditor({ id }: { id: string }) {
+    return (
+      <div className="mt-1.5 space-y-1.5 rounded-md border bg-muted/30 p-2">
+        <Input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          placeholder="Nome do arquivo"
+          className="h-8 text-sm"
+        />
+        <textarea
+          value={editNote}
+          onChange={(e) => setEditNote(e.target.value)}
+          rows={2}
+          placeholder="Anotação sobre este arquivo (opcional)"
+          className="w-full rounded-md border border-input bg-transparent p-1.5 text-sm"
+        />
+        <div className="flex gap-1.5">
+          <Button size="sm" disabled={isPending} onClick={() => saveEdit(id)}>
+            Salvar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setEditing(null)}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  function EditButton({ m }: { m: ClinicalMediaItem }) {
+    if (!canEdit) return null;
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Renomear ou anotar"
+        disabled={isPending}
+        onClick={() => startEdit(m)}
+      >
+        <Pencil className="size-4" />
+      </Button>
+    );
   }
 
   function toggle(id: string) {
@@ -266,14 +346,21 @@ export function MediaGallery({
                 className="inline-flex items-center gap-1 truncate font-medium hover:underline"
               >
                 <Link2 className="size-3.5 shrink-0" />
-                {m.originalName ?? m.externalUrl}
+                {mediaDisplayName(m)}
               </a>
             ) : (
-              <span className="font-medium">{m.originalName ?? "arquivo"}</span>
+              <span className="font-medium">{mediaDisplayName(m)}</span>
             )}
             <p className="text-xs text-muted-foreground">{metaLine(m)}</p>
+            {m.note && (
+              <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground">
+                <StickyNote className="mt-0.5 size-3 shrink-0 text-gold" />
+                <span className="whitespace-pre-wrap">{m.note}</span>
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 items-center">
+            <EditButton m={m} />
             {m.url && pv === "pdf" && (
               <Button
                 variant="ghost"
@@ -318,10 +405,11 @@ export function MediaGallery({
         {m.url && pv === "pdf" && expanded.has(m.id) && (
           <iframe
             src={m.url}
-            title={m.originalName ?? "documento"}
+            title={mediaDisplayName(m)}
             className="mt-1 h-96 w-full rounded border"
           />
         )}
+        {editing === m.id && <MediaEditor id={m.id} />}
       </li>
     );
   }
@@ -345,41 +433,64 @@ export function MediaGallery({
             </p>
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {images.map((m, i) =>
-                  failed.has(m.id) ? (
-                    <a
-                      key={m.id}
-                      href={m.url ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={`${m.originalName ?? "imagem"} · ${metaLine(m)}`}
-                      className="flex size-20 flex-col items-center justify-center gap-1 rounded border bg-muted/40 p-1 text-center text-[9px] text-muted-foreground"
-                    >
-                      <ImageOff className="size-5" />
-                      <span className="line-clamp-2 break-all">
-                        {m.originalName ?? "abrir"}
+                {images.map((m, i) => (
+                  <div key={m.id} className="w-20">
+                    {failed.has(m.id) ? (
+                      <a
+                        href={m.url ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`${mediaDisplayName(m)} · ${metaLine(m)}`}
+                        className="flex size-20 flex-col items-center justify-center gap-1 rounded border bg-muted/40 p-1 text-center text-[9px] text-muted-foreground"
+                      >
+                        <ImageOff className="size-5" />
+                        <span className="line-clamp-2 break-all">
+                          {mediaDisplayName(m)}
+                        </span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        title={`${mediaDisplayName(m)} · ${metaLine(m)}`}
+                        onClick={() => setLightbox({ items: images, index: i })}
+                        className="group relative block"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={m.url ?? ""}
+                          alt={mediaDisplayName(m)}
+                          className="size-20 rounded border object-cover transition group-hover:opacity-90"
+                          onError={() =>
+                            setFailed((prev) => new Set(prev).add(m.id))
+                          }
+                        />
+                        {m.note && (
+                          <StickyNote
+                            className="absolute right-0.5 top-0.5 size-3.5 rounded bg-white/80 p-0.5 text-gold"
+                            aria-label="Tem anotação"
+                          />
+                        )}
+                      </button>
+                    )}
+                    <p className="mt-0.5 flex items-center gap-0.5">
+                      <span className="line-clamp-1 flex-1 break-all text-[10px] text-muted-foreground">
+                        {mediaDisplayName(m)}
                       </span>
-                    </a>
-                  ) : (
-                    <button
-                      key={m.id}
-                      type="button"
-                      title={`${m.originalName ?? "imagem"} · ${metaLine(m)}`}
-                      onClick={() => setLightbox({ items: images, index: i })}
-                      className="group relative"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={m.url ?? ""}
-                        alt={m.originalName ?? "imagem"}
-                        className="size-20 rounded border object-cover transition group-hover:opacity-90"
-                        onError={() =>
-                          setFailed((prev) => new Set(prev).add(m.id))
-                        }
-                      />
-                    </button>
-                  )
-                )}
+                      {canEdit && (
+                        <button
+                          type="button"
+                          aria-label="Renomear ou anotar"
+                          disabled={isPending}
+                          onClick={() => startEdit(m)}
+                          className="shrink-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="size-3" />
+                        </button>
+                      )}
+                    </p>
+                    {editing === m.id && <MediaEditor id={m.id} />}
+                  </div>
+                ))}
               </div>
             )}
             {rest.length > 0 && (

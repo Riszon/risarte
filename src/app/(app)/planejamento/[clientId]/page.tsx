@@ -90,7 +90,7 @@ export default async function PlanningCockpitPage(
       supabase
         .from("clinical_media")
         .select(
-          "id, kind, original_name, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
+          "id, kind, original_name, display_name, note, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
         )
         .eq("client_id", clientId)
         .order("created_at", { ascending: false }),
@@ -175,6 +175,9 @@ export default async function PlanningCockpitPage(
         id: m.id,
         kind: m.kind as ClinicalMediaKind,
         originalName: m.original_name,
+        displayName:
+          (m as { display_name?: string | null }).display_name ?? null,
+        note: (m as { note?: string | null }).note ?? null,
         url,
         externalUrl: m.external_url ?? null,
         contentType: m.content_type ?? null,
