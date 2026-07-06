@@ -732,9 +732,11 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H3.14 Sessões do plano com mais detalhe: quando agendada, mostrar data e
       profissional; no prontuário, sessão agendada é clicável → abre o agendamento.
       ✅ (06/07, v0.12.8, sem migração)
-- [ ] H3.15 Comercial: central de planos prontos para apresentação +
+- [x] H3.15 Comercial: central de planos prontos para apresentação +
       notificações dos casos aguardando; ao receber plano SEM agendamento com o
       comercial → aviso forte à recepção + notificação a gerente e coordenador.
+      ✅ (06/07, v0.12.9, migração 0071 — move_client_phase enriquecido +
+      banner/selo no /planos + categoria Comercial nas notificações)
 
 ### H4 — Módulos novos (planejar um a um com o dono)
 - [ ] H4.1 **Risartanos** (colaboradores): código automático; CPF, nascimento,

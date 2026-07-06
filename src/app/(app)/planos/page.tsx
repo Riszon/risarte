@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
@@ -215,6 +216,30 @@ export default async function PlansPage(props: PageProps<"/planos">) {
       lastAt: p.reviewed_at ?? p.submitted_at ?? p.updated_at ?? p.created_at,
     }));
 
+  // H3.15: quais casos na fase comercial JÁ têm apresentação comercial futura
+  // agendada. Os que estão em "fase_comercial" e não estão neste conjunto ficam
+  // sinalizados (a recepção precisa agendar).
+  const commercialClientIds = entries
+    .filter((e) => e.situation === "fase_comercial")
+    .map((e) => e.clientId);
+  const withPresentation = new Set<string>();
+  if (commercialClientIds.length > 0) {
+    const nowIso = new Date().toISOString();
+    const { data: presRows } = await supabase
+      .from("appointments")
+      .select("client_id")
+      .in("client_id", commercialClientIds)
+      .eq("type", "commercial_presentation")
+      .in("status", ["scheduled", "confirmed"])
+      .gte("starts_at", nowIso)
+      .returns<{ client_id: string | null }[]>();
+    for (const r of presRows ?? []) {
+      if (r.client_id) withPresentation.add(r.client_id);
+    }
+  }
+  const missingPresentation = (clientId: string, situation: Situation) =>
+    situation === "fase_comercial" && !withPresentation.has(clientId);
+
   // Busca por nome (aplica antes dos contadores; a situação filtra depois).
   const term = busca.trim().toLowerCase();
   const filtered = term
@@ -224,6 +249,11 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   const counts = {} as Record<Situation, number>;
   for (const s of SITUATIONS) counts[s] = 0;
   for (const e of filtered) counts[e.situation] += 1;
+
+  // H3.15: total de casos na fase comercial sem apresentação agendada (banner).
+  const missingPresentationCount = filtered.filter((e) =>
+    missingPresentation(e.clientId, e.situation)
+  ).length;
 
   const shown = situacao
     ? filtered.filter((e) => e.situation === situacao)
@@ -273,6 +303,18 @@ export default async function PlansPage(props: PageProps<"/planos">) {
           comercial, aguardando iniciar, em tratamento e finalizado.
         </p>
       </div>
+
+      {/* H3.15: aviso forte — casos comerciais sem apresentação agendada. */}
+      {missingPresentationCount > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <span>
+            <strong>{missingPresentationCount}</strong> caso(s) na fase comercial{" "}
+            <strong>sem apresentação agendada</strong> — a recepção precisa
+            agendar a apresentação comercial para o caso não travar.
+          </span>
+        </div>
+      )}
 
       {/* Chips por situação (contadores clicáveis) */}
       <div className="flex flex-wrap gap-1.5">
@@ -388,6 +430,15 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                         />
                         {SITUATION_LABELS[e.situation]}
                       </Badge>
+                      {missingPresentation(e.clientId, e.situation) && (
+                        <Badge
+                          variant="outline"
+                          className="ml-1 gap-1 border-red-300 bg-red-50 text-[11px] text-red-700"
+                        >
+                          <AlertTriangle className="size-3" />
+                          sem apresentação
+                        </Badge>
+                      )}
                     </td>
                     <td className="px-2 py-1.5 text-xs text-muted-foreground">
                       {PHASE_LABELS[e.phase]}

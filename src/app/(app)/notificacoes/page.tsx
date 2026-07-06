@@ -83,6 +83,7 @@ export default async function NotificationsPage(
   // Categorize at read time and count per category (within the unit scope).
   const counts: Record<NotificationCategory, number> = {
     plano: 0,
+    comercial: 0,
     compartilhamento: 0,
     inicio_tratamento: 0,
     agenda: 0,

@@ -115,10 +115,16 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       quem** ("DD/MM às HH:MM · Profissional") e é **clicável → abre os detalhes
       do agendamento** (data, horário, local, profissional, situação). Sem
       migração.
-- [ ] **H3.15 Comercial: prontos para apresentação [M]** — `/planos` já dá a
-      central; falta: notificar o consultor quando o plano chega e, se o
-      cliente NÃO tiver apresentação agendada, aviso forte à recepção +
-      notificação a gerente/coordenador.
+- [x] **H3.15 Comercial: prontos para apresentação** ✅ (06/07, v0.12.9,
+      migração 0071) — ao enviar o caso à Conversão Comercial, o sistema
+      verifica se há apresentação comercial **futura agendada**: avisa
+      Consultor + Assistente (com a data, ou "sem apresentação"); se **não**
+      houver, dispara **aviso forte à recepção** + avisa **gerente e
+      coordenador**. `/planos` ganha **banner vermelho** + selo "sem
+      apresentação" nas linhas da fase comercial. Nova categoria **Comercial**
+      na central de notificações.
+
+**GRUPO 3 (H3.1–H3.15) COMPLETO.** Próximo: GRUPO 4 (módulos novos).
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 
