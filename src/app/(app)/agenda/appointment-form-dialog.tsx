@@ -455,16 +455,12 @@ export function AppointmentFormDialog({
     if (holidayClosed) return [];
     if (!date) return baseSlots;
     if (dayClosed) return [];
-    const closeMin = effectiveConfig
-      ? timeToMinutes(openWindow?.end ?? effectiveConfig.closeTime)
-      : null;
     const base =
       date === minDate ? baseSlots.filter((t) => t.value > nowTime) : baseSlots;
     return base.filter((t) => {
-      const startMin = timeToMinutes(t.value);
-      if (!isEncaixe && closeMin !== null && startMin + durationMin > closeMin) {
-        return false;
-      }
+      // AJ2: baseSlots já limita o INÍCIO ao horário de funcionamento; o FIM
+      // pode passar do fechamento (permitido, com alerta ao agendar), então não
+      // filtramos por duração aqui.
       const s = new Date(`${date}T${t.value}:00`).getTime();
       const e = s + durationMin * 60_000;
       const overlaps = (r: BusyRange) =>
@@ -481,8 +477,6 @@ export function AppointmentFormDialog({
     date,
     dayClosed,
     holidayClosed,
-    openWindow,
-    effectiveConfig,
     durationMin,
     isEncaixe,
     isOnline,
@@ -623,6 +617,14 @@ export function AppointmentFormDialog({
         : await createAppointment(formData);
       if (result.ok) {
         toast.success(isEdit ? "Agendamento alterado." : "Agendamento criado.");
+        // AJ2: atendimento fora do horário — alerta forte a quem agendou; o
+        // profissional recebe uma notificação separada.
+        if (result.warning) {
+          toast.warning(result.warning, {
+            description: "O profissional foi avisado.",
+            duration: 8000,
+          });
+        }
         setActualOpen(false);
         router.refresh();
       } else {

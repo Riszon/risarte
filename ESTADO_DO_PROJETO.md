@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/07/2026 · Versão do sistema: **0.12.11** · Última migração: **0072**_
+_Atualizado em: 06/07/2026 · Versão do sistema: **0.12.12** · Última migração: **0073**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -501,7 +501,9 @@ backlog (H3.1 em diante).
    cadeira por soft delete; some do futuro, passado marca "(excluída)"); ~~AJ1b~~
    ✅ (v0.12.11, sem migração — cadeiras numa casa só: removido o número de
    `/admin/agenda` e o campo do cadastro da clínica; limite virou campo só do
-   Admin em "Configurar agenda"); próximos: AJ2 agendamento fora do horário,
+   Admin em "Configurar agenda"); ~~AJ2~~ ✅ (v0.12.12, migração 0073 —
+   agendamento fora do horário permitido: início dentro do horário, fim pode
+   passar; alerta a quem agenda + notifica o profissional); próximos:
    AJ3 comercial sem plano pronto,
    AJ4 pop-up recepção, AJ5 vitrine de planos prontos. Depois: **GRUPO 4**
    (módulos novos), um a um com o dono (`docs/ROADMAP.md`).

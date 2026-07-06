@@ -138,9 +138,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       o **limite máximo** virou um campo **só do Admin** dentro de "Configurar
       agenda", junto da lista de cadeiras. Agora tudo sobre cadeiras vive em
       "Configurar agenda".
-- [ ] **AJ2 Agendamento fora do horário — permite com alerta [M] 🗄️** — início
-      dentro do horário, fim pode passar do expediente/almoço; alerta a quem
-      agenda + notifica o profissional do atendimento que extrapola.
+- [x] **AJ2 Agendamento fora do horário — permite com alerta** ✅ (06/07,
+      v0.12.12, migração 0073) — o **início** tem de estar dentro do horário; o
+      **fim pode passar** do fechamento ou avançar sobre o almoço. Quem agenda
+      recebe um **alerta** (toast) e o **profissional** recebe uma **notificação**
+      (RPC `notify_appointment_overrun`). Seletor de horário e regras do servidor
+      atualizados juntos.
 - [ ] **AJ3 Comercial agendado SEM plano pronto — destaque + cronômetro [M]** —
       quando há apresentação marcada mas o plano não está pronto, destaque
       vermelho + cronômetro para Consultor/Planner/Coordenador (em /planos,

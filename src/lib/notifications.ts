@@ -42,8 +42,13 @@ export function categorizeNotification(title: string): NotificationCategory {
   if (t.includes("apresenta") || t.includes("comercial")) return "comercial";
   if (t.includes("compartilh")) return "compartilhamento";
   // Agenda closures contain "fechamento" too — classify before the journey
-  // "Fechamento!" (início de tratamento) check below.
-  if (t.includes("fechamento de agenda") || t.includes("remarcar")) {
+  // "Fechamento!" (início de tratamento) check below. "fora do horário" = aviso
+  // de atendimento que extrapola o expediente (AJ2).
+  if (
+    t.includes("fechamento de agenda") ||
+    t.includes("remarcar") ||
+    t.includes("fora do horário")
+  ) {
     return "agenda";
   }
   if (

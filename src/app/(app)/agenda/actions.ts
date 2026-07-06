@@ -113,7 +113,7 @@ import {
 import type { UserRole } from "@/lib/roles";
 import type { JourneyPhase, JourneyStatus } from "@/lib/journey";
 
-export type ActionResult = { ok: boolean; error?: string };
+export type ActionResult = { ok: boolean; error?: string; warning?: string };
 
 type ParsedAppointment = {
   client_id: string;
@@ -180,13 +180,15 @@ function parseAppointmentForm(
  * Per-unit agenda rules (G2): the slot must be within the unit's working hours
  * and on an open weekday; the chosen room must be free at that time (one client
  * per room). ONLINE appointments (apresentação comercial) don't take a room.
- * Urgência/Emergência bypass everything (encaixe). Returns an error or null.
+ * Urgência/Emergência bypass everything (encaixe). Returns `{ block }` when the
+ * slot is not allowed, or `{ warn }` (AJ2) when it's allowed but extends past
+ * the unit's hours/lunch — the caller keeps the appointment and alerts.
  */
 async function checkAgendaRules(
   clinicId: string,
   formData: FormData,
   excludeId?: string
-): Promise<string | null> {
+): Promise<{ block?: string; warn?: string }> {
   const type = String(formData.get("type") ?? "");
   const isEncaixe = type === "urgency" || type === "emergency";
   const isOnline = type === "commercial_presentation";
@@ -195,12 +197,14 @@ async function checkAgendaRules(
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "");
   const durationMin = Number(formData.get("duration") ?? 60) || 60;
-  if (!date || !time) return null;
+  if (!date || !time) return {};
 
   const supabase = await createClient();
   const startDate = new Date(`${date}T${time}:00`);
   const startMs = startDate.getTime();
   const endMs = startMs + durationMin * 60000;
+  // AJ2: acumula um alerta quando o atendimento é permitido mas extrapola.
+  let warn: string | undefined;
 
   // Agenda closures (G4) block everyone, including encaixe.
   const { data: closureRows } = await supabase
@@ -221,7 +225,9 @@ async function checkAgendaRules(
         providerId: providerId || null,
       })
     ) {
-      return `Agenda fechada neste período (${CLOSURE_REASON_LABELS[closure.reason]}). Escolha outro horário/sala.`;
+      return {
+        block: `Agenda fechada neste período (${CLOSURE_REASON_LABELS[closure.reason]}). Escolha outro horário/sala.`,
+      };
     }
   }
 
@@ -233,7 +239,7 @@ async function checkAgendaRules(
     .eq("holiday_date", date)
     .maybeSingle();
   if (holidayDecision?.will_attend === false) {
-    return "Feriado sem atendimento nesta unidade.";
+    return { block: "Feriado sem atendimento nesta unidade." };
   }
 
   // A special open day for this date overrides annual-plan unit blocks (GR6).
@@ -259,16 +265,21 @@ async function checkAgendaRules(
     const item = mapPlanItem(r as PlanItemRow);
     if (item.type === "individual_vacation") {
       if (providerId && item.userIds.includes(providerId)) {
-        return "O profissional está de férias neste período (planejamento anual).";
+        return {
+          block:
+            "O profissional está de férias neste período (planejamento anual).",
+        };
       }
     } else if (!openDay) {
-      return `Período de ${PLAN_ITEM_LABELS[item.type]} (planejamento anual). Libere um dia avulso em “Configurar agenda” para atender.`;
+      return {
+        block: `Período de ${PLAN_ITEM_LABELS[item.type]} (planejamento anual). Libere um dia avulso em “Configurar agenda” para atender.`,
+      };
     }
   }
 
   // Encaixe ignores working hours and room capacity (but not closures/holidays/
   // annual-plan blocks above).
-  if (isEncaixe) return null;
+  if (isEncaixe) return {};
 
   const { data: rows } = await supabase
     .from("clinic_agenda_settings")
@@ -286,7 +297,10 @@ async function checkAgendaRules(
     Boolean(openDay) ||
     holidayDecision?.will_attend === true;
   if (!dayOpen) {
-    return "A unidade não atende neste dia. Libere o dia em “Configurar agenda”.";
+    return {
+      block:
+        "A unidade não atende neste dia. Libere o dia em “Configurar agenda”.",
+    };
   }
   // Special open days use their own hours; otherwise the unit's hours.
   const openHHMM =
@@ -297,19 +311,41 @@ async function checkAgendaRules(
     openDay && !cfg.weekdays.includes(weekday)
       ? (openDay.end_time as string).slice(0, 5)
       : cfg.closeTime;
+  const openM = timeToMinutes(openHHMM);
+  const closeM = timeToMinutes(closeHHMM);
   const startMin = timeToMinutes(time);
   const endMin = startMin + durationMin;
-  if (startMin < timeToMinutes(openHHMM) || endMin > timeToMinutes(closeHHMM)) {
-    return `Fora do horário de funcionamento da unidade (${openHHMM} às ${closeHHMM}).`;
+
+  // AJ2: o INÍCIO precisa estar dentro do horário (>= abertura e antes do
+  // fechamento). O FIM pode passar do fechamento — permite, mas alerta.
+  if (startMin < openM) {
+    return {
+      block: `O atendimento não pode começar antes da abertura (${openHHMM}).`,
+    };
+  }
+  if (startMin >= closeM) {
+    return {
+      block: `O atendimento não pode começar após o fechamento (${closeHHMM}).`,
+    };
+  }
+  if (endMin > closeM) {
+    warn = `Este atendimento termina após o horário de fechamento (${closeHHMM}).`;
   }
 
-  // Lunch break (GR4): closed for normal appointments (encaixe already returned;
-  // ONLINE/apresentação não usa sala física, então ignora o almoço).
+  // Lunch break (GR4/AJ2): o início não pode cair DENTRO do almoço; mas pode
+  // começar antes e avançar sobre o almoço — permite com alerta. ONLINE/
+  // apresentação não usa sala física, então ignora o almoço.
   if (cfg.lunchEnabled && !isOnline) {
     const lunchStart = timeToMinutes(cfg.lunchStart);
     const lunchEnd = timeToMinutes(cfg.lunchEnd);
-    if (startMin < lunchEnd && endMin > lunchStart) {
-      return `Horário de almoço da unidade (${cfg.lunchStart} às ${cfg.lunchEnd}). Use Urgência/Emergência para encaixe.`;
+    if (startMin >= lunchStart && startMin < lunchEnd) {
+      return {
+        block: `O atendimento não pode começar no horário de almoço (${cfg.lunchStart} às ${cfg.lunchEnd}). Use Urgência/Emergência para encaixe.`,
+      };
+    }
+    if (startMin < lunchStart && endMin > lunchStart) {
+      const lunchWarn = `Este atendimento avança sobre o horário de almoço (${cfg.lunchStart} às ${cfg.lunchEnd}).`;
+      warn = warn ? `${warn} ${lunchWarn}` : lunchWarn;
     }
   }
 
@@ -344,10 +380,12 @@ async function checkAgendaRules(
         .eq("id", roomId)
         .maybeSingle();
       const roomName = room?.name ?? "selecionada";
-      return `A sala ${roomName} já está ocupada neste horário. Escolha outra sala/horário (ou use Urgência/Emergência para encaixe).`;
+      return {
+        block: `A sala ${roomName} já está ocupada neste horário. Escolha outra sala/horário (ou use Urgência/Emergência para encaixe).`,
+      };
     }
   }
-  return null;
+  return { warn };
 }
 
 export async function createAppointment(
@@ -377,8 +415,8 @@ export async function createAppointment(
   const parsed = parseAppointmentForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
-  const ruleError = await checkAgendaRules(clinicId, formData);
-  if (ruleError) return { ok: false, error: ruleError };
+  const rule = await checkAgendaRules(clinicId, formData);
+  if (rule.block) return { ok: false, error: rule.block };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -430,6 +468,15 @@ export async function createAppointment(
       .in("id", sessionIds);
   }
 
+  // AJ2: atendimento que extrapola o horário — avisa o profissional (RPC
+  // security-definer; sem função aplicada, não quebra o agendamento).
+  if (rule.warn) {
+    const { error: notifyErr } = await supabase.rpc("notify_appointment_overrun", {
+      p_appointment_id: data.id,
+    });
+    if (notifyErr) console.error("notify_appointment_overrun:", notifyErr.message);
+  }
+
   await logAudit({
     action: "create",
     entityType: "appointment",
@@ -437,7 +484,7 @@ export async function createAppointment(
     clinicId,
   });
   revalidatePath("/agenda");
-  return { ok: true };
+  return { ok: true, warning: rule.warn };
 }
 
 export type PendingSession = {
@@ -634,12 +681,12 @@ export async function updateAppointment(
   const parsed = parseAppointmentForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
-  const ruleError = await checkAgendaRules(
+  const rule = await checkAgendaRules(
     existing.clinic_id,
     formData,
     appointmentId
   );
-  if (ruleError) return { ok: false, error: ruleError };
+  if (rule.block) return { ok: false, error: rule.block };
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
   for (const key of [
@@ -736,6 +783,14 @@ export async function updateAppointment(
       .eq("id", appointmentId);
   }
 
+  // AJ2: se a alteração deixou o atendimento fora do horário, avisa o profissional.
+  if (rule.warn) {
+    const { error: notifyErr } = await supabase.rpc("notify_appointment_overrun", {
+      p_appointment_id: appointmentId,
+    });
+    if (notifyErr) console.error("notify_appointment_overrun:", notifyErr.message);
+  }
+
   await logAudit({
     action: "update",
     entityType: "appointment",
@@ -744,7 +799,7 @@ export async function updateAppointment(
     details: { changes },
   });
   revalidatePath("/agenda");
-  return { ok: true };
+  return { ok: true, warning: rule.warn };
 }
 
 export async function updateAppointmentStatus(
