@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlarmClock, AlertTriangle } from "lucide-react";
+import { PresentationCountdown } from "@/components/presentation-countdown";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
@@ -240,6 +241,39 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   const missingPresentation = (clientId: string, situation: Situation) =>
     situation === "fase_comercial" && !withPresentation.has(clientId);
 
+  // AJ3: casos ainda EM PLANEJAMENTO/APROVAÇÃO que já têm apresentação comercial
+  // marcada — o plano precisa ficar pronto antes do dia. Guarda a data para o
+  // cronômetro.
+  const preApprovalIds = entries
+    .filter(
+      (e) =>
+        e.situation === "em_planejamento" ||
+        e.situation === "aguardando_aprovacao"
+    )
+    .map((e) => e.clientId);
+  const presentationByClient = new Map<string, string>();
+  if (preApprovalIds.length > 0) {
+    const nowIso = new Date().toISOString();
+    const { data: presRows2 } = await supabase
+      .from("appointments")
+      .select("client_id, starts_at")
+      .in("client_id", preApprovalIds)
+      .eq("type", "commercial_presentation")
+      .in("status", ["scheduled", "confirmed"])
+      .gte("starts_at", nowIso)
+      .order("starts_at")
+      .returns<{ client_id: string | null; starts_at: string }[]>();
+    for (const r of presRows2 ?? []) {
+      if (r.client_id && !presentationByClient.has(r.client_id)) {
+        presentationByClient.set(r.client_id, r.starts_at);
+      }
+    }
+  }
+  const planNotReadyAt = (clientId: string, situation: Situation) =>
+    situation === "em_planejamento" || situation === "aguardando_aprovacao"
+      ? (presentationByClient.get(clientId) ?? null)
+      : null;
+
   // Busca por nome (aplica antes dos contadores; a situação filtra depois).
   const term = busca.trim().toLowerCase();
   const filtered = term
@@ -253,6 +287,11 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   // H3.15: total de casos na fase comercial sem apresentação agendada (banner).
   const missingPresentationCount = filtered.filter((e) =>
     missingPresentation(e.clientId, e.situation)
+  ).length;
+
+  // AJ3: total de casos com apresentação marcada e plano ainda não pronto.
+  const notReadyCount = filtered.filter((e) =>
+    planNotReadyAt(e.clientId, e.situation)
   ).length;
 
   const shown = situacao
@@ -312,6 +351,18 @@ export default async function PlansPage(props: PageProps<"/planos">) {
             <strong>{missingPresentationCount}</strong> caso(s) na fase comercial{" "}
             <strong>sem apresentação agendada</strong> — a recepção precisa
             agendar a apresentação comercial para o caso não travar.
+          </span>
+        </div>
+      )}
+
+      {/* AJ3: apresentação marcada mas plano ainda não pronto. */}
+      {notReadyCount > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <AlarmClock className="mt-0.5 size-4 shrink-0" />
+          <span>
+            <strong>{notReadyCount}</strong> caso(s) com{" "}
+            <strong>apresentação comercial marcada e plano ainda não pronto</strong>{" "}
+            — o Centro de Planejamento precisa concluir o plano antes do dia.
           </span>
         </div>
       )}
@@ -439,6 +490,15 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                           sem apresentação
                         </Badge>
                       )}
+                      {/* AJ3: apresentação marcada, plano ainda não pronto. */}
+                      {(() => {
+                        const at = planNotReadyAt(e.clientId, e.situation);
+                        return at ? (
+                          <span className="ml-1 inline-flex">
+                            <PresentationCountdown startsAt={at} alarm />
+                          </span>
+                        ) : null;
+                      })()}
                     </td>
                     <td className="px-2 py-1.5 text-xs text-muted-foreground">
                       {PHASE_LABELS[e.phase]}

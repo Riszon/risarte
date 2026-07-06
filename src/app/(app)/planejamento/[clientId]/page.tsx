@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { AlarmClock } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { PresentationCountdown } from "@/components/presentation-countdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -251,6 +253,20 @@ export default async function PlanningCockpitPage(
       }[]
     >();
   const planRow = planRows?.[0];
+
+  // AJ3: próxima apresentação comercial futura — alimenta o cronômetro no topo.
+  const { data: presRows } = await supabase
+    .from("appointments")
+    .select("starts_at")
+    .eq("client_id", clientId)
+    .eq("type", "commercial_presentation")
+    .in("status", ["scheduled", "confirmed"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at")
+    .limit(1)
+    .returns<{ starts_at: string }[]>();
+  const presentationAt = presRows?.[0]?.starts_at ?? null;
+
   if (planRow) {
     const { data: optRows } = await supabase
       .from("treatment_plan_options")
@@ -516,6 +532,25 @@ export default async function PlanningCockpitPage(
           )}
         </div>
       </div>
+
+      {/* AJ3: apresentação marcada mas plano ainda não pronto — destaque +
+          cronômetro para pressionar o Centro de Planejamento. */}
+      {presentationAt && treatmentPlan?.status !== "approved" && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <AlarmClock className="size-4 shrink-0" />
+          <span className="font-medium">
+            Apresentação comercial marcada para{" "}
+            {new Date(presentationAt).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            — e o plano ainda não está pronto.
+          </span>
+          <PresentationCountdown startsAt={presentationAt} alarm />
+        </div>
+      )}
 
       {/* H3.13: colunas com rolagem independente (não rola a página inteira). */}
       <div className="grid gap-4 lg:grid-cols-2">

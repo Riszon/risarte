@@ -144,10 +144,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       recebe um **alerta** (toast) e o **profissional** recebe uma **notificação**
       (RPC `notify_appointment_overrun`). Seletor de horário e regras do servidor
       atualizados juntos.
-- [ ] **AJ3 Comercial agendado SEM plano pronto — destaque + cronômetro [M]** —
-      quando há apresentação marcada mas o plano não está pronto, destaque
-      vermelho + cronômetro para Consultor/Planner/Coordenador (em /planos,
-      fila do /planejamento e cockpit).
+- [x] **AJ3 Comercial agendado SEM plano pronto — destaque + cronômetro** ✅
+      (06/07, v0.12.13, sem migração) — componente `PresentationCountdown`
+      (regressivo, vermelho a <2 dias) na **fila do /planejamento**, no **cockpit**
+      (banner "apresentação marcada e plano não pronto") e no **/planos** (banner
+      + cronômetro nas linhas em planejamento/aprovação). Cobre Consultor
+      (via /planos), Planner e Coordenador.
 - [ ] **AJ4 Alerta clicável + "Pedir agendamento" + pop-up recepção [M] 🗄️** —
       o banner de /planos filtra os casos; botão pede o agendamento e a recepção
       recebe um pop-up na tela para marcar a apresentação.

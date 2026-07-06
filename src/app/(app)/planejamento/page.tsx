@@ -8,6 +8,7 @@ import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
+import { PresentationCountdown } from "@/components/presentation-countdown";
 import {
   METHODOLOGY_PILLARS,
   PILLAR_LABELS,
@@ -415,7 +416,18 @@ export default async function PlanningCenterPage(
                     </td>
                     <td className="px-3 py-2">
                       {presentation ? (
-                        fmtDate(presentation)
+                        <span className="flex flex-col items-start gap-1">
+                          <span>{fmtDate(presentation)}</span>
+                          {/* AJ3: cronômetro; alarme quando o plano ainda não
+                              está pronto (não aprovado / não enviado). */}
+                          <PresentationCountdown
+                            startsAt={presentation}
+                            alarm={
+                              situation !== "aprovados" &&
+                              situation !== "enviados_comercial"
+                            }
+                          />
+                        </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">
                           Não agendada
