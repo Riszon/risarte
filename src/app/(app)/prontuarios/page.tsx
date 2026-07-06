@@ -35,6 +35,7 @@ import {
   type BirthdayScope,
 } from "@/lib/birthdays";
 import { ShareByCpf } from "./share-by-cpf";
+import { BirthdayWhatsApp } from "./birthday-whatsapp";
 import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
 
@@ -660,6 +661,15 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                   : "Aniversariantes do mês atual."}
             </p>
           </div>
+
+          {/* H3.8: parabenizar por WhatsApp (individual e em massa). */}
+          <BirthdayWhatsApp
+            clients={birthdayList.map((p) => ({
+              id: p.id,
+              fullName: p.fullName,
+              phone: p.phone,
+            }))}
+          />
 
           <div className="rounded-md border bg-card">
             <Table>

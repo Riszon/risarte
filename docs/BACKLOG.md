@@ -709,9 +709,9 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
       (cadastrou/editou/agendou/transferiu) em Prontuários e Jornada; ficha
       bloqueia cliente que não é dela; Agenda completa, mas o nome de cliente
       não permitido aparece sem link (decisão do dono: mostrar o nome).
-- [ ] H3.8 WhatsApp manual: mensagem personalizável para aniversariantes
-      (individual e em massa) — no prontuário, na aba Aniversariantes e na
-      notificação. Automatizar depois (Fase 3).
+- [x] H3.8 WhatsApp manual aniversariantes ✅ (v0.12.0): painel na aba
+      Aniversariantes (mensagem editável {nome} + botão por cliente = individual
+      e em massa) + botão no prontuário quando é o aniversário. Automação = Fase 3.
 - [ ] H3.9 Notificações ampliadas: coordenador/gerente/recepção também recebem
       em transferência (entrada e saída da unidade) e compartilhamento.
 - [ ] H3.10 Coordenador ao finalizar a avaliação: pop-up para agendar a

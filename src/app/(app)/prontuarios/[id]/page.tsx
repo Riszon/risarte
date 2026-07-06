@@ -68,6 +68,7 @@ import {
   type UnitPrice,
 } from "@/lib/pricing";
 import { ClientShares, type ActiveShare } from "./client-shares";
+import { BirthdayWhatsAppButton } from "../birthday-whatsapp";
 import { ensureTreatmentSessions } from "./treatment-actions";
 import {
   TreatmentSessionsPanel,
@@ -399,6 +400,15 @@ export default async function ClientDetailPage(
   const ageText = client.birth_date
     ? formatDetailedAge(client.birth_date)
     : "";
+  // H3.8: aniversário HOJE (compara mês/dia, sem fuso).
+  const isBirthdayToday = (() => {
+    if (!client.birth_date) return false;
+    const [, bm, bd] = client.birth_date.split("-");
+    const now = new Date();
+    return (
+      Number(bm) === now.getMonth() + 1 && Number(bd) === now.getDate()
+    );
+  })();
 
   // -- Compartilhamento entre unidades (E7) --
   const { data: shareRows } = await supabase
@@ -1050,6 +1060,17 @@ export default async function ClientDetailPage(
           )}
           {ageText && (
             <p className="text-sm text-muted-foreground">Idade: {ageText}</p>
+          )}
+          {isBirthdayToday && (
+            <div className="mt-1 flex items-center gap-2">
+              <Badge className="bg-gold/20 text-gold-foreground">
+                🎉 Aniversário hoje
+              </Badge>
+              <BirthdayWhatsAppButton
+                fullName={client.full_name}
+                phone={client.phone}
+              />
+            </div>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">

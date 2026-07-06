@@ -71,9 +71,11 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       é da SDR aparece **sem link** (decisão do dono: mostrar o nome, não abrir
       a ficha). `isSdrRestricted` só restringe a SDR "pura" (sem outro papel
       amplo).
-- [ ] **H3.8 WhatsApp aniversariantes [P/M]** — botão wa.me com mensagem
-      personalizável no prontuário, na aba Aniversariantes (individual e em
-      lote) e na notificação. Manual; automação = Fase 3.
+- [x] **H3.8 WhatsApp aniversariantes** ✅ (04/07, v0.12.0) — painel
+      "Parabenizar por WhatsApp" na aba Aniversariantes (mensagem editável com
+      `{nome}` + botão por cliente = individual e em massa) e botão
+      "Parabenizar no WhatsApp" no prontuário quando é o aniversário hoje;
+      `src/lib/whatsapp.ts` (wa.me com 55+DDD). Envio manual; automação = Fase 3.
 - [ ] **H3.9 Notificações ampliadas [P] 🗄️** — coordenador/gerente/recepção
       também notificados em transferência (entrada/saída) e compartilhamento.
       Ajustar as funções de notificação no banco.
