@@ -725,9 +725,10 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [x] H3.12 Mídias: excluir, renomear e anotar ✅ (v0.12.4, migração 0070):
       nome editável + anotação por foto/arquivo na galeria; excluir com
       confirmação; Coordenador/Admin editam; auditado.
-- [ ] H3.13 Centro de Planejamento/cockpit: anamnese visível ao Planner; botão
-      direto para o cockpit na fila; filtros por unidade e por pilar; colunas do
-      cockpit com rolagem independente.
+- [x] H3.13 Centro de Planejamento/cockpit ✅ (v0.12.7): anamnese (leitura) no
+      cockpit; filtros por unidade e por pilar na fila; colunas do cockpit com
+      rolagem independente. (Botão "Abrir cockpit" na fila já existia; nome do
+      cliente na fila já leva ao cockpit.)
 - [ ] H3.14 Sessões do plano com mais detalhe: quando agendada, mostrar data e
       profissional; no prontuário, sessão agendada é clicável → abre o agendamento.
 - [ ] H3.15 Comercial: central de planos prontos para apresentação +

@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/07/2026 · Versão do sistema: **0.12.6** · Última migração: **0070**_
+_Atualizado em: 04/07/2026 · Versão do sistema: **0.12.7** · Última migração: **0070**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -489,8 +489,9 @@ backlog (H3.1 em diante).
    complementares ao Centro de Planejamento: card na ficha + notifica o Planner
    + selo "nova info" na fila até abrir o cockpit); ~~H3.12~~ ✅ (v0.12.4, migração
    0070 — mídias: renomear + anotar por foto/arquivo na galeria, excluir com
-   confirmação); próximo: H3.13 cockpit — anamnese/filtros/rolagem; ... até
-   H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
+   confirmação); ~~H3.13~~ ✅ (v0.12.7, cockpit — anamnese em leitura + filtros
+   unidade/pilar na fila + rolagem independente das colunas); próximo: H3.14
+   sessões com data+profissional; ... até H3.15 (`docs/ROADMAP.md` + `docs/BACKLOG.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.
 2. **LOTE H2 (ajustes rápidos)** — 12 itens no `docs/BACKLOG.md`.

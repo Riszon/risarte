@@ -34,6 +34,13 @@ import {
   type RealStat,
   type UnitPrice,
 } from "@/lib/pricing";
+import {
+  evaluateAlerts,
+  formatAnswer,
+  mapAnswer,
+  type AnamnesisAnswerRow,
+  type FilledAnswer,
+} from "@/lib/anamnesis";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanningSection } from "../../prontuarios/[id]/planning-section";
 
@@ -126,6 +133,36 @@ export default async function PlanningCockpitPage(
     await supabase.rpc("mark_planning_supplements_seen", {
       p_client_id: clientId,
     });
+  }
+
+  // H3.13: anamnese do cliente (leitura) — última versão preenchida.
+  let anamnesisAnswers: FilledAnswer[] = [];
+  let anamnesisAlerts: { label: string; message: string }[] = [];
+  let anamnesisInfo: { filledAt: string; templateName: string | null } | null =
+    null;
+  const { data: latestFill } = await supabase
+    .from("anamnesis_fills")
+    .select("id, template_name, filled_at")
+    .eq("client_id", clientId)
+    .eq("clinic_id", client.clinic_id)
+    .order("filled_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestFill) {
+    const { data: ansRows } = await supabase
+      .from("anamnesis_answers")
+      .select(
+        "id, question_id, section, label, kind, value, detail, is_adhoc, sort_order, alert_when, alert_message"
+      )
+      .eq("fill_id", latestFill.id)
+      .order("sort_order")
+      .returns<AnamnesisAnswerRow[]>();
+    anamnesisAnswers = (ansRows ?? []).map(mapAnswer);
+    anamnesisAlerts = evaluateAlerts(anamnesisAnswers);
+    anamnesisInfo = {
+      filledAt: latestFill.filled_at as string,
+      templateName: (latestFill.template_name as string | null) ?? null,
+    };
   }
 
   const peopleIds = [
@@ -480,9 +517,10 @@ export default async function PlanningCockpitPage(
         </div>
       </div>
 
+      {/* H3.13: colunas com rolagem independente (não rola a página inteira). */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Evidências do cliente (abrem em pop-up, sem trocar de tela). */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Evidências do cliente</CardTitle>
@@ -496,6 +534,45 @@ export default async function PlanningCockpitPage(
                   : "Sem consentimento registrado."}
               </p>
               <MediaGallery media={media} canEdit={false} />
+            </CardContent>
+          </Card>
+
+          {/* H3.13: anamnese do cliente (leitura). */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Anamnese</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {anamnesisInfo == null ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma anamnese preenchida.
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {anamnesisInfo.templateName ?? "Ficha"} · atualizada em{" "}
+                    {fmtDateTime(anamnesisInfo.filledAt)}
+                  </p>
+                  {anamnesisAlerts.length > 0 && (
+                    <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                      {anamnesisAlerts.map((a, i) => (
+                        <p key={i}>⚠ {a.message}</p>
+                      ))}
+                    </div>
+                  )}
+                  <ul className="space-y-1 text-sm">
+                    {anamnesisAnswers.map((a) => (
+                      <li key={a.id} className="flex flex-wrap gap-x-2">
+                        <span className="text-muted-foreground">{a.label}:</span>
+                        <span className="font-medium">
+                          {formatAnswer(a.value, a.kind)}
+                          {a.detail ? ` — ${a.detail}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -552,8 +629,8 @@ export default async function PlanningCockpitPage(
           )}
         </div>
 
-        {/* Editor do plano (mesma tela). */}
-        <div>
+        {/* Editor do plano (mesma tela) — rolagem independente. */}
+        <div className="lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pl-1">
           <PlanningSection
             clientId={client.id}
             clientName={client.full_name}

@@ -106,9 +106,10 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       `window.confirm` do navegador). **Ajuste v0.12.6:** editar virou um **pop-up**
       com a **prévia da foto/arquivo** e campos grandes (nome + anotação com 5
       linhas) — o editor inline espremido na coluna da foto saiu.
-- [ ] **H3.13 Centro/cockpit — melhorias leves [M]** — anamnese no cockpit;
-      filtros unidade/pilar na fila; colunas com rolagem independente.
-      (Redesign completo = H4.5.)
+- [x] **H3.13 Centro/cockpit — melhorias leves** ✅ (04/07, v0.12.7) — card de
+      **Anamnese** (leitura) no cockpit com alertas; **filtros por unidade e por
+      pilar** na fila `/planejamento`; as duas colunas do cockpit têm **rolagem
+      independente** (não rola a página inteira). (Redesign completo = H4.5.)
 - [ ] **H3.14 Sessões com data + profissional [P/M]** — sessão agendada mostra
       quando e com quem (ficha + visão do coordenador); clicável → abre o
       agendamento.

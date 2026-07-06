@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import {
+  METHODOLOGY_PILLARS,
   PILLAR_LABELS,
   formatTimeInPhase,
   isSlaExceeded,
@@ -126,6 +127,9 @@ export default async function PlanningCenterPage(
   const periodo = typeof sp.periodo === "string" ? sp.periodo : "";
   const de = typeof sp.de === "string" ? sp.de : "";
   const ate = typeof sp.ate === "string" ? sp.ate : "";
+  // H3.13: filtros por unidade e por pilar da metodologia.
+  const unidade = typeof sp.unidade === "string" ? sp.unidade : "";
+  const pilar = typeof sp.pilar === "string" ? sp.pilar : "";
   const range = periodRange(periodo, de, ate);
 
   const supabase = await createClient();
@@ -142,9 +146,19 @@ export default async function PlanningCenterPage(
     .limit(1000);
   if (range.from) clientsQuery = clientsQuery.gte("phase_entered_at", range.from);
   if (range.to) clientsQuery = clientsQuery.lte("phase_entered_at", range.to);
+  if (unidade) clientsQuery = clientsQuery.eq("clinic_id", unidade);
+  if (pilar) clientsQuery = clientsQuery.eq("methodology_pillar", pilar);
 
   const { data: clients } = await clientsQuery.returns<QueueClient[]>();
   const ids = (clients ?? []).map((c) => c.id);
+
+  // H3.13: unidades para o filtro (RLS limita às visíveis pelo Planner).
+  const { data: unitOptions } = await supabase
+    .from("clinics")
+    .select("id, name")
+    .eq("type", "franchise_unit")
+    .eq("is_active", true)
+    .order("name");
 
   const nowIso = new Date().toISOString();
   const [{ data: presentations }, { data: planRows }, { data: slaRows }, { data: supRows }] =
@@ -240,6 +254,8 @@ export default async function PlanningCenterPage(
     if (periodo) p.set("periodo", periodo);
     if (de) p.set("de", de);
     if (ate) p.set("ate", ate);
+    if (unidade) p.set("unidade", unidade);
+    if (pilar) p.set("pilar", pilar);
     const qs = p.toString();
     return qs ? `/planejamento?${qs}` : "/planejamento";
   }
@@ -301,6 +317,24 @@ export default async function PlanningCenterPage(
             <Input type="date" name="ate" defaultValue={ate} className="w-auto" />
           </>
         )}
+        {(unitOptions ?? []).length > 1 && (
+          <select name="unidade" defaultValue={unidade} className={selectClass}>
+            <option value="">Todas as unidades</option>
+            {(unitOptions ?? []).map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <select name="pilar" defaultValue={pilar} className={selectClass}>
+          <option value="">Todos os pilares</option>
+          {METHODOLOGY_PILLARS.map((p) => (
+            <option key={p} value={p}>
+              {PILLAR_LABELS[p]}
+            </option>
+          ))}
+        </select>
       </FilterForm>
 
       {queue.length === 0 ? (
