@@ -84,3 +84,26 @@ export function timeToMinutes(time: string): number {
   const [h, m] = hhmm(time).split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
 }
+
+/**
+ * AJ7: janela de atendimento efetiva de um dia. Sem "dia avulso" = horário
+ * normal. Num dia NORMAL com dia avulso = EXTENSÃO (une o horário normal com o
+ * avulso — começa antes / termina depois). Num dia FECHADO com dia avulso =
+ * usa só a janela do avulso (abre um dia que não atende normalmente).
+ */
+export function effectiveDayHours(
+  normalOpen: string,
+  normalClose: string,
+  openDay: { start: string; end: string } | null,
+  isNormalDay: boolean
+): { open: string; close: string } {
+  if (!openDay) return { open: hhmm(normalOpen), close: hhmm(normalClose) };
+  const start = hhmm(openDay.start);
+  const end = hhmm(openDay.end);
+  if (!isNormalDay) return { open: start, close: end };
+  const open =
+    timeToMinutes(start) < timeToMinutes(normalOpen) ? start : hhmm(normalOpen);
+  const close =
+    timeToMinutes(end) > timeToMinutes(normalClose) ? end : hhmm(normalClose);
+  return { open, close };
+}

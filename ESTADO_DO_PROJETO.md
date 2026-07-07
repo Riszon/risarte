@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/07/2026 · Versão do sistema: **0.12.20** · Última migração: **0075**_
+_Atualizado em: 07/07/2026 · Versão do sistema: **0.12.21** · Última migração: **0075**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -517,8 +517,11 @@ backlog (H3.1 em diante).
    cinza dos horários fora do expediente + respiro no topo da grade, Dia e
    Semana); ~~AJ10~~ ✅ (v0.12.19, sem migração — faixa de dias passado/1 ano,
    scroll do mouse, dia fechado mostra motivo + fechamento parcial = alerta);
-   falta só **AJ7 liberar horário avulso** (grande, com migração — apresentar
-   plano antes). Depois: **GRUPO 4**
+   ~~AJ7~~ ✅ (v0.12.21, sem migração — "liberar dia avulso" também estende o
+   horário de um dia normal: une com o normal, fim opcional, bloqueia o que já é
+   normal; helper `effectiveDayHours` no servidor/seletor/faixa/visão Dia).
+   **AJUSTES 2 COMPLETOS (AJ6–AJ11).** Agora sim: **GRUPO 4** (módulos novos),
+   um a um com o dono
    (módulos novos), um a um com o dono (`docs/ROADMAP.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

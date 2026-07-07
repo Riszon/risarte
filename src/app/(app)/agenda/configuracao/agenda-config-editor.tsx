@@ -475,9 +475,11 @@ export function AgendaConfigEditor({
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Abra um ou mais dias fora dos dias normais de atendimento (ex.: um
-            sábado) e escale quem estará disponível — cada um recebe uma
-            notificação.
+            Abra um dia fora dos dias normais (ex.: um sábado) <strong>ou</strong>{" "}
+            estenda o horário de um dia normal (começar antes / terminar depois).
+            Escale quem estará disponível — cada um recebe uma notificação. Para
+            só <strong>começar antes</strong>, deixe o fim em “—” (vai até a
+            abertura normal).
           </p>
 
           <div className="flex flex-wrap items-end gap-2">
@@ -553,6 +555,7 @@ export function AgendaConfigEditor({
                 value={releaseEnd}
                 onChange={(e) => setReleaseEnd(e.target.value)}
               >
+                <option value="">— (até a abertura)</option>
                 {TIME_OPTIONS.map((t) => (
                   <option key={t} value={t}>
                     {t}

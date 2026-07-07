@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import {
+  effectiveDayHours,
   resolveAgendaSettings,
   timeToMinutes,
   type AgendaSettingRow,
@@ -302,15 +303,21 @@ async function checkAgendaRules(
         "A unidade não atende neste dia. Libere o dia em “Configurar agenda”.",
     };
   }
-  // Special open days use their own hours; otherwise the unit's hours.
-  const openHHMM =
-    openDay && !cfg.weekdays.includes(weekday)
-      ? (openDay.start_time as string).slice(0, 5)
-      : cfg.openTime;
-  const closeHHMM =
-    openDay && !cfg.weekdays.includes(weekday)
-      ? (openDay.end_time as string).slice(0, 5)
-      : cfg.closeTime;
+  // AJ7: janela efetiva do dia — dia avulso num dia NORMAL estende o horário
+  // (une); num dia fechado usa a janela própria.
+  const isNormalDay =
+    cfg.weekdays.includes(weekday) || holidayDecision?.will_attend === true;
+  const { open: openHHMM, close: closeHHMM } = effectiveDayHours(
+    cfg.openTime,
+    cfg.closeTime,
+    openDay
+      ? {
+          start: (openDay.start_time as string).slice(0, 5),
+          end: (openDay.end_time as string).slice(0, 5),
+        }
+      : null,
+    isNormalDay
+  );
   const openM = timeToMinutes(openHHMM);
   const closeM = timeToMinutes(closeHHMM);
   const startMin = timeToMinutes(time);
@@ -1410,16 +1417,57 @@ export async function openSpecialDays(
   if (cleanDates.length === 0) {
     return { ok: false, error: "Escolha ao menos um dia para liberar." };
   }
-  if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
-    return { ok: false, error: "O fim do atendimento deve ser depois do início." };
+  if (!/^\d{2}:\d{2}$/.test(startTime)) {
+    return { ok: false, error: "Informe o horário de início." };
   }
 
   const supabase = await createClient();
+  const { data: settingRows } = await supabase
+    .from("clinic_agenda_settings")
+    .select("clinic_id, open_time, close_time, weekdays, chairs")
+    .returns<AgendaSettingRow[]>();
+  const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
+  const normalOpen = timeToMinutes(cfg.openTime);
+  const normalClose = timeToMinutes(cfg.closeTime);
+  const startMin = timeToMinutes(startTime);
+
+  // AJ7: fim opcional — sem fim, entende-se "até a abertura normal" (liberar
+  // ANTES do expediente); nesse caso o início precisa ser antes da abertura.
+  let end = endTime;
+  if (!/^\d{2}:\d{2}$/.test(endTime)) {
+    if (startMin >= normalOpen) {
+      return {
+        ok: false,
+        error: `Sem horário de fim, o início precisa ser antes da abertura normal (${cfg.openTime}).`,
+      };
+    }
+    end = cfg.openTime;
+  }
+  const endMin = timeToMinutes(end);
+  if (endMin <= startMin) {
+    return { ok: false, error: "O fim do atendimento deve ser depois do início." };
+  }
+
+  // AJ7: num dia NORMAL de atendimento, o período tem de EXTENDER além do
+  // horário normal (começar antes ou terminar depois). Não adianta "liberar" o
+  // que já é atendido normalmente.
+  const noopDate = cleanDates.find((d) => {
+    const wd = new Date(`${d}T00:00:00`).getDay();
+    return cfg.weekdays.includes(wd) && startMin >= normalOpen && endMin <= normalClose;
+  });
+  if (noopDate) {
+    const dd = new Date(`${noopDate}T00:00:00`).toLocaleDateString("pt-BR");
+    return {
+      ok: false,
+      error: `Em ${dd} esse horário já é atendido normalmente. Para estender, comece antes de ${cfg.openTime} ou termine depois de ${cfg.closeTime}.`,
+    };
+  }
+
   const { error } = await supabase.rpc("open_special_days", {
     p_clinic_id: clinicId,
     p_dates: cleanDates,
     p_start_time: startTime,
-    p_end_time: endTime,
+    p_end_time: end,
     p_staff_ids: staffIds.filter(Boolean),
     p_note: note.trim() || null,
   });
@@ -1693,9 +1741,20 @@ export async function getNextAvailableSlots(params: {
     const special = openDayHours.get(dateOnly);
     const dayOpen = isWeekdayOpen || Boolean(special) || hd === true;
     if (!dayOpen) continue;
-    // Special open days use their own hours.
-    const openMin = special && !isWeekdayOpen ? special.open : timeToMinutes(cfg.openTime);
-    const closeMin = special && !isWeekdayOpen ? special.close : timeToMinutes(cfg.closeTime);
+    // AJ7: dia avulso num dia NORMAL estende (une); em dia fechado usa a própria.
+    const normalOpenMin = timeToMinutes(cfg.openTime);
+    const normalCloseMin = timeToMinutes(cfg.closeTime);
+    const isNormalDay = isWeekdayOpen || hd === true;
+    const openMin = special
+      ? isNormalDay
+        ? Math.min(normalOpenMin, special.open)
+        : special.open
+      : normalOpenMin;
+    const closeMin = special
+      ? isNormalDay
+        ? Math.max(normalCloseMin, special.close)
+        : special.close
+      : normalCloseMin;
 
     for (let m = openMin; m + durationMin <= closeMin && slots.length < limit; m += 15) {
       // Skip the lunch break (not online).

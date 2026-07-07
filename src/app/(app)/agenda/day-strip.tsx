@@ -201,10 +201,16 @@ export async function DayStrip({
       state === "holiday_open" ||
       state === "holiday_pending";
 
-    const openMin =
-      special && !isWeekdayOpen ? special.open : timeToMinutes(cfg.openTime);
-    const closeMin =
-      special && !isWeekdayOpen ? special.close : timeToMinutes(cfg.closeTime);
+    // AJ7: dia avulso num dia NORMAL estende (une); em dia fechado usa a própria.
+    const normalOpenMin = timeToMinutes(cfg.openTime);
+    const normalCloseMin = timeToMinutes(cfg.closeTime);
+    const isNormalDay = isWeekdayOpen || hd === true;
+    let openMin = normalOpenMin;
+    let closeMin = normalCloseMin;
+    if (special) {
+      openMin = isNormalDay ? Math.min(normalOpenMin, special.open) : special.open;
+      closeMin = isNormalDay ? Math.max(normalCloseMin, special.close) : special.close;
+    }
 
     // AJ10: fechamentos do dia — total da unidade (mostra o MOTIVO, não "lotado")
     // x parcial (sala/profissional/período → alerta de atenção).

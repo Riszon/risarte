@@ -23,6 +23,7 @@ import type {
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
 import { roomLabel } from "@/lib/rooms";
+import { effectiveDayHours } from "@/lib/agenda-settings";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import {
@@ -288,6 +289,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   let formConfig: AgendaFormConfig | undefined;
   let closures: AgendaClosure[] = [];
   let openDayDates: string[] = [];
+  // AJ7: horas do dia avulso por data — para estender o horário na agenda.
+  const openDayHoursMap = new Map<string, { start: string; end: string }>();
   const holidayClosedDates: string[] = [];
   const holidayOpenDates: string[] = [];
   let rangeHolidays: { date: string; name: string }[] = [];
@@ -318,7 +321,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       await Promise.all([
         supabase
           .from("agenda_open_days")
-          .select("date")
+          .select("date, start_time, end_time")
           .eq("clinic_id", clinicId)
           .gte("date", rangeStartIso)
           .lt("date", rangeEndIso),
@@ -339,6 +342,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       ]);
     planItems = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
     openDayDates = (openDayRows ?? []).map((r) => r.date as string);
+    for (const r of (openDayRows ?? []) as {
+      date: string;
+      start_time: string;
+      end_time: string;
+    }[]) {
+      openDayHoursMap.set(r.date, {
+        start: r.start_time.slice(0, 5),
+        end: r.end_time.slice(0, 5),
+      });
+    }
     for (const r of (holidayRows ?? []) as {
       holiday_date: string;
       will_attend: boolean;
@@ -505,6 +518,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   if (dayHolidayDecision === true) dayIsOpen = true;
   if (dayHolidayDecision === false) dayIsOpen = false;
 
+  // AJ7: horário efetivo do dia (dia avulso num dia normal ESTENDE o horário).
+  const dayIsNormal =
+    weekdaysCfg.includes(range.start.getDay()) || dayHolidayDecision === true;
+  const dayEffective = effectiveDayHours(
+    formConfig?.openTime ?? "08:00",
+    formConfig?.closeTime ?? "18:00",
+    openDayHoursMap.get(dayIso) ?? null,
+    dayIsNormal
+  );
+
   // Dates within the range that have an agenda closure (week/month markers).
   const closedDates: string[] = [];
   for (const c of closures) {
@@ -641,8 +664,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               rooms={displayRooms}
               selectedSalas={selectedSalas}
               unitHasRooms={allRooms.length > 0}
-              openTime={formConfig?.openTime ?? "08:00"}
-              closeTime={formConfig?.closeTime ?? "18:00"}
+              openTime={dayEffective.open}
+              closeTime={dayEffective.close}
               canManage={canSchedule}
               staff={staff}
               clients={clients}

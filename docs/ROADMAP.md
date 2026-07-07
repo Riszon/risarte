@@ -169,10 +169,14 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 - [x] **AJ6 Pop-up da recepção organizado** ✅ (06/07, v0.12.16, sem migração) —
       altura limitada + rolagem + nome do cliente enxuto + botão **"Marcar todos
       como agendados"** (`markNotificationsRead`) para não bagunçar com vários.
-- [ ] **AJ7 Liberar horário/período avulso [G] 🗄️** — estender o horário de um
-      dia normal (começar antes / terminar depois); regras (não liberar o que já
-      é normal; sem fim = até o início normal / a partir do fim normal); mesma
-      notificação; aparece na agenda; segue com a Gerência.
+- [x] **AJ7 Liberar horário/período avulso** ✅ (07/07, v0.12.21, sem migração)
+      — "Liberar dia avulso" agora também **estende o horário de um dia normal**:
+      num dia normal, o dia avulso **une** com o horário normal (começar antes /
+      terminar depois); fim opcional (vazio = até a abertura); bloqueia liberar o
+      que já é normal; mesma notificação; segue com a Gerência. Helper
+      `effectiveDayHours` aplicado no servidor (checkAgendaRules), seletor de
+      horário, sugestões, faixa de dias e visão Dia. (Visão Semana: agendamentos
+      estendidos aparecem; refino da faixa cinza fica p/ a rodada visual.)
 - [x] **AJ8 Marcar visualmente horários não permitidos** ✅ (06/07, v0.12.18,
       sem migração) — faixas cinza tracejadas (antes da abertura / depois do
       fechamento) na visão Dia e Semana, como o almoço em âmbar.
@@ -192,7 +196,7 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       `notify_commercial_presentation` avisa o Consultor quando uma apresentação
       é agendada (para cobrar o Centro de Planejamento).
 
-Próximo depois destes: GRUPO 4 (módulos novos).
+**AJUSTES 2 PRÉ-GRUPO 4 COMPLETOS (AJ6–AJ11).** Próximo: GRUPO 4 (módulos novos).
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 

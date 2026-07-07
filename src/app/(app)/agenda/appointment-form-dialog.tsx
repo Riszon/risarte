@@ -32,7 +32,7 @@ import {
   type AppointmentType,
   type StaffOption,
 } from "@/lib/appointments";
-import { timeToMinutes } from "@/lib/agenda-settings";
+import { effectiveDayHours, timeToMinutes } from "@/lib/agenda-settings";
 import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
@@ -410,9 +410,20 @@ export function AppointmentFormDialog({
       dayWeekday !== null &&
       effectiveConfig.weekdays.includes(dayWeekday)
   );
-  // Dia avulso em dia fechado usa a janela própria dele (regra do servidor).
+  // AJ7: dia avulso num dia NORMAL estende o horário (une); em dia fechado usa a
+  // janela própria. Mesma regra do servidor (effectiveDayHours).
   const openWindow =
-    daySchedule.openDay && !weekdayConfigured ? daySchedule.openDay : null;
+    daySchedule.openDay && effectiveConfig
+      ? (() => {
+          const eff = effectiveDayHours(
+            effectiveConfig.openTime,
+            effectiveConfig.closeTime,
+            daySchedule.openDay,
+            weekdayConfigured || daySchedule.holidayAttend === true
+          );
+          return { start: eff.open, end: eff.close };
+        })()
+      : null;
   // Feriado decidido como "não atende" bloqueia todos (inclusive encaixe).
   const holidayClosed = daySchedule.holidayAttend === false;
 
