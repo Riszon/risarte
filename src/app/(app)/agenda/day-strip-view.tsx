@@ -87,7 +87,6 @@ export function DayStripView({
             Boolean(d.closedReason);
           const isSelected = d.iso === selectedIso;
           const isToday = d.iso === todayIso;
-          const showMonth = date.getDate() === 1 || d.iso === days[0].iso;
           const tooltip = [
             d.closedReason ? `Fechado: ${d.closedReason}` : d.note,
             d.attention ? "Atenção: há fechamento parcial neste dia" : null,
@@ -133,11 +132,10 @@ export function DayStripView({
               <span className="text-sm font-semibold leading-tight">
                 {date.getDate()}
               </span>
-              {showMonth && (
-                <span className="text-[9px] capitalize leading-tight text-muted-foreground">
-                  {date.toLocaleDateString("pt-BR", { month: "short" })}
-                </span>
-              )}
+              {/* AJ10: mês em TODOS os dias (facilita saber o mês ao rolar). */}
+              <span className="text-[9px] capitalize leading-tight text-muted-foreground">
+                {date.toLocaleDateString("pt-BR", { month: "short" })}
+              </span>
               {blocked ? (
                 <span className="mt-0.5 max-w-[3.2rem] truncate text-[9px] font-medium leading-tight">
                   {d.closedReason

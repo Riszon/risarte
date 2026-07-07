@@ -18,8 +18,8 @@ import {
 import { holidayOn } from "@/lib/holidays";
 import { DayStripView, type StripDay } from "./day-strip-view";
 
-// AJ10: faixa longa — algum passado (histórico) e ~1 ano à frente; rolável.
-const PAST_DAYS = 14;
+// AJ10: faixa longa — 1 mês de passado (histórico) e ~1 ano à frente; rolável.
+const PAST_DAYS = 30;
 const FUTURE_DAYS = 365;
 const TOTAL_DAYS = PAST_DAYS + FUTURE_DAYS;
 // "Tem horário livre?" só é calculado perto (agendar é o que importa no curto

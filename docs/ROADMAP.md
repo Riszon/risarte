@@ -180,8 +180,8 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
       `TOP_PAD_PX` no topo da grade (Dia e Semana) para o primeiro horário não
       colar na linha do cabeçalho.
 - [x] **AJ10 Linha do tempo (faixa de dias)** ✅ (06/07, v0.12.19, sem migração)
-      — faixa de 14 dias de passado + 365 à frente; abre no dia de hoje; navega
-      com o **scroll do mouse**; mês só no 1º dia. Dia com agenda **toda fechada**
+      — faixa de 30 dias de passado + 365 à frente; abre no dia de hoje; navega
+      com o **scroll do mouse**; mês em **todos os dias** (v0.12.20). Dia com agenda **toda fechada**
       mostra **o motivo** (não "lotado"); **fechamento parcial** (sala/profissional/
       período) vira **alerta de atenção** (âmbar). Divide `DayStrip` (dados,
       servidor) + `DayStripView` (rolagem, cliente).
