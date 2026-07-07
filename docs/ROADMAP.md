@@ -179,10 +179,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 - [x] **AJ9 Primeiro horário não some** ✅ (06/07, v0.12.18, sem migração) —
       `TOP_PAD_PX` no topo da grade (Dia e Semana) para o primeiro horário não
       colar na linha do cabeçalho.
-- [ ] **AJ10 Linha do tempo (faixa de dias) [G]** — ver passado (histórico) +
-      ~1 ano à frente; navegar com o scroll do mouse; mês só no 1º dia + todos os
-      dias; dia com agenda fechada mostra **o motivo** (não "lotado"); fechamento
-      parcial (cadeira/profissional/período) vira **alerta de atenção**.
+- [x] **AJ10 Linha do tempo (faixa de dias)** ✅ (06/07, v0.12.19, sem migração)
+      — faixa de 14 dias de passado + 365 à frente; abre no dia de hoje; navega
+      com o **scroll do mouse**; mês só no 1º dia. Dia com agenda **toda fechada**
+      mostra **o motivo** (não "lotado"); **fechamento parcial** (sala/profissional/
+      período) vira **alerta de atenção** (âmbar). Divide `DayStrip` (dados,
+      servidor) + `DayStripView` (rolagem, cliente).
 - [x] **AJ11 Consultor recebe notificação** ✅ (06/07, v0.12.17, migração 0075) —
       `move_client_phase` agora avisa Consultor/Assistente via
       `providers_with_access` (inclui os da Franqueadora com escopo — antes o
