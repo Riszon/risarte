@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/07/2026 · Versão do sistema: **0.12.21** · Última migração: **0075**_
+_Atualizado em: 07/07/2026 · Versão do sistema: **0.13.0** · Última migração: **0076**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -520,8 +520,11 @@ backlog (H3.1 em diante).
    ~~AJ7~~ ✅ (v0.12.21, sem migração — "liberar dia avulso" também estende o
    horário de um dia normal: une com o normal, fim opcional, bloqueia o que já é
    normal; helper `effectiveDayHours` no servidor/seletor/faixa/visão Dia).
-   **AJUSTES 2 COMPLETOS (AJ6–AJ11).** Agora sim: **GRUPO 4** (módulos novos),
-   um a um com o dono
+   **AJUSTES 2 COMPLETOS (AJ6–AJ11).** Iniciado o **GRUPO 4**: **H4.1 Risartanos
+   Lote 1** ✅ (v0.13.0, migração 0076 — módulo base `/risartanos`: tabela
+   `staff_members`, código automático, cadastro completo, histórico, ativar/
+   inativar; acesso Admin+Gerente+Franqueadora). Próximo: H4.1 Lote 1b (foto),
+   Lote 2 (vínculo com cliente), Lote 3 (auditoria); depois H4.2+
    (módulos novos), um a um com o dono (`docs/ROADMAP.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

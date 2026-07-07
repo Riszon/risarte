@@ -18,6 +18,7 @@ import {
   Tags,
   Users,
   UserCog,
+  Contact,
   ChevronsUpDown,
 } from "lucide-react";
 import { NotificationNavItem } from "@/components/notification-nav-item";
@@ -55,6 +56,8 @@ type Props = {
   canViewReports: boolean;
   /** H4.4: gestão/planner podem ver a central de Planos de Tratamento. */
   canViewPlans: boolean;
+  /** H4.1: gestão/rede podem ver o cadastro de Risartanos (colaboradores). */
+  canViewStaff: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -84,10 +87,13 @@ const PLANS_ITEM = {
 
 const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart3 };
 
+// H4.1: cadastro de colaboradores (RH) — Admin, Gerente e Franqueadora.
+const RISARTANOS_ITEM = { href: "/risartanos", label: "Risartanos", icon: Contact };
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
-  // H2.2: colaboradores da rede são "Risartanos" (só o rótulo; rota mantida).
-  { href: "/admin/usuarios", label: "Risartanos", icon: UserCog },
+  // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
+  { href: "/admin/usuarios", label: "Usuários (acesso)", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
@@ -100,6 +106,7 @@ export function AppSidebar({
   isPlanner,
   canViewReports,
   canViewPlans,
+  canViewStaff,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -126,6 +133,9 @@ export function AppSidebar({
   }
   if (!dentistOnly && canViewReports) {
     navItems = [...navItems, REPORTS_ITEM];
+  }
+  if (!dentistOnly && canViewStaff) {
+    navItems = [...navItems, RISARTANOS_ITEM];
   }
 
   function switchClinic(clinicId: string) {

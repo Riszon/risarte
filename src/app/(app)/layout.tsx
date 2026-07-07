@@ -60,6 +60,13 @@ export default async function AppLayout({
   const canViewPlans =
     session.isAdminMaster || activeRoles.some((r) => planRoles.includes(r));
 
+  // H4.1: Risartanos (colaboradores) — Admin, Gerente, Franqueadora e Franqueado.
+  const canViewStaff =
+    session.isAdminMaster ||
+    Object.values(session.rolesByClinic)
+      .flat()
+      .some((r) => ["unit_manager", "franchisor_staff", "franchisee"].includes(r));
+
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar
@@ -69,6 +76,7 @@ export default async function AppLayout({
         isPlanner={isPlanner}
         canViewReports={canViewReports}
         canViewPlans={canViewPlans}
+        canViewStaff={canViewStaff}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

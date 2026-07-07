@@ -200,12 +200,20 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 
-- [ ] **H4.1 Risartanos [G] 🗄️** — cadastro completo do colaborador (código
-      automático, CPF, nascimento, gênero, estado civil + cônjuge, WhatsApp,
-      endereço, foto, "como quer ser chamado", regime CLT/PJ/Estagiário/
-      Autônomo); histórico de alterações; auditoria de acessos/ações; vínculo
-      com cadastro de cliente (autopreenche; prontuário destaca "é um
-      Risartano"). Dividir em 2–3 lotes.
+- [~] **H4.1 Risartanos [G] 🗄️** — cadastro do colaborador. Acesso: Admin +
+      Gerente + Franqueadora (RH).
+  - [x] **Lote 1 — módulo base** ✅ (07/07, v0.13.0, migração 0076) — tabela
+        `staff_members` (+ código automático `RIS-0000`, RLS), tela `/risartanos`
+        (lista + busca + filtros unidade/regime/situação), cadastro/edição com
+        todos os campos (dados pessoais, cônjuge, contato, endereço, regime
+        CLT/PJ/Estagiário/Autônomo, cargo, "como quer ser chamado"),
+        ativar/inativar e **histórico de alterações** (`staff_member_changes`).
+        Menu: `/admin/usuarios` relabelado "Usuários (acesso)"; novo "Risartanos".
+  - [ ] **Lote 1b — foto** do colaborador (Storage privado + upload).
+  - [ ] **Lote 2 — vínculo com cliente** (autopreenche; prontuário destaca "é um
+        Risartano"; inativo vai ao histórico do prontuário).
+  - [ ] **Lote 3 — auditoria** de acessos/logins e ações (por colaborador com
+        login vinculado).
 - [ ] **H4.2 Anamnese 2.0 [G] 🗄️** — múltiplas fichas (1 por tipo; atualizar
       não troca o tipo); perguntas obrigatórias; perguntas por gênero
       (pré-requisito: campo gênero no cliente — item adiado entra aqui);
