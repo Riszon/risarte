@@ -273,10 +273,16 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         pt-BR (`src/lib/audit-labels.ts`); **login passa a ser registrado**
         (`recordLogin` no formulário → ação `login`); atalho "Ver auditoria" no
         cadastro do Risartano. **H4.1 COMPLETO.**
-- [ ] **H4.2 Anamnese 2.0 [G] 🗄️** — múltiplas fichas (1 por tipo; atualizar
+- [~] **H4.2 Anamnese 2.0 [G] 🗄️** — múltiplas fichas (1 por tipo; atualizar
       não troca o tipo); perguntas obrigatórias; perguntas por gênero
       (pré-requisito: campo gênero no cliente — item adiado entra aqui);
       respostas com opções; campos condicionais; histórico.
+  - [x] **Lote 1 — gênero do cliente** ✅ (08/07, v0.16.0, migração 0082) —
+        campo **gênero** no cadastro/ficha do cliente (`clients.gender`,
+        `src/lib/gender.ts`) + autopreenchimento por CPF; base das perguntas por
+        gênero (Lote 3).
+  - [ ] **Lote 2 — uma ficha atual por tipo + obrigatórias + histórico por tipo.**
+  - [ ] **Lote 3 — perguntas por gênero + campos condicionais.**
 - [ ] **H4.3 Protocolo 2.0 + agendamento em série [G] 🗄️** — tempo mínimo
       entre sessões (rede → caso); médias reais do intervalo; previsão de
       conclusão; sugerir as datas de TODAS as sessões ao agendar; Planner

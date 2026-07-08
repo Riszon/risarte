@@ -5,6 +5,7 @@ import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { GENDERS } from "@/lib/gender";
 import {
   resolveAgendaSettings,
   type AgendaSettingRow,
@@ -34,6 +35,7 @@ export type ActionResult = {
 export type ClientAutofill = {
   fullName: string | null;
   birthDate: string | null;
+  gender: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -46,11 +48,12 @@ export type ClientAutofill = {
 };
 
 const CLIENT_AUTOFILL_COLUMNS =
-  "full_name, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code";
+  "full_name, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code";
 
 function toAutofill(row: {
   full_name?: string | null;
   birth_date?: string | null;
+  gender?: string | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;
@@ -64,6 +67,7 @@ function toAutofill(row: {
   return {
     fullName: row.full_name ?? null,
     birthDate: row.birth_date ?? null,
+    gender: row.gender ?? null,
     phone: row.phone ?? null,
     email: row.email ?? null,
     address: row.address ?? null,
@@ -165,6 +169,10 @@ function parseClientForm(formData: FormData) {
       full_name: fullName,
       cpf: cpf && !noCpf ? formatCpf(cpf) : null,
       birth_date: birthDate,
+      gender: (() => {
+        const g = field(formData, "gender");
+        return g && (GENDERS as readonly string[]).includes(g) ? g : null;
+      })(),
       phone: phone ? formatPhone(phone) : null,
       email: field(formData, "email"),
       address: field(formData, "address"),
@@ -301,6 +309,8 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
         autofill: {
           fullName: s.full_name ?? null,
           birthDate: s.birth_date ?? null,
+          // O gênero do Risartano não é retornado pelo lookup; fica p/ preencher.
+          gender: null,
           phone: s.phone ?? null,
           email: s.email ?? null,
           address: s.address ?? null,
@@ -447,6 +457,7 @@ const CLIENT_FIELD_LABELS: Record<string, string> = {
   full_name: "Nome",
   cpf: "CPF",
   birth_date: "Nascimento",
+  gender: "Gênero",
   phone: "Telefone",
   email: "E-mail",
   address: "Endereço",

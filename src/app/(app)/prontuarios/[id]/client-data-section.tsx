@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientForm, type ClientFormValues } from "../client-form";
 import type { GuardianInput } from "../actions";
+import { genderLabel } from "@/lib/gender";
 
 /**
  * Client data on the ficha. Opens read-only; when the viewer may edit
@@ -63,6 +64,10 @@ export function ClientDataSection({
                   ).toLocaleDateString("pt-BR")
                 : "—"}
             </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Gênero</dt>
+            <dd>{genderLabel(client.gender)}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Telefone</dt>

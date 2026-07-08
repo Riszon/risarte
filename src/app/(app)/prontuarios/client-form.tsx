@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { GENDERS, GENDER_LABELS } from "@/lib/gender";
 import {
   createClientRecord,
   lookupClientByCpf,
@@ -25,6 +26,7 @@ export type ClientFormValues = {
   full_name?: string;
   cpf?: string | null;
   birth_date?: string | null;
+  gender?: string | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;
@@ -76,6 +78,7 @@ export function ClientForm({
   const [consent, setConsent] = useState(false);
   const [fullName, setFullName] = useState(client?.full_name ?? "");
   const [birthDate, setBirthDate] = useState(client?.birth_date ?? "");
+  const [gender, setGender] = useState(client?.gender ?? "");
   const [phone, setPhone] = useState(client?.phone ?? "");
   // Campos de contato/endereço controlados para o autopreenchimento por CPF (H1.9).
   const [email, setEmail] = useState(client?.email ?? "");
@@ -95,6 +98,7 @@ export function ClientForm({
   function applyAutofill(a: {
     fullName: string | null;
     birthDate: string | null;
+    gender: string | null;
     phone: string | null;
     email: string | null;
     address: string | null;
@@ -107,6 +111,7 @@ export function ClientForm({
   }) {
     if (a.fullName) setFullName(a.fullName);
     if (a.birthDate) setBirthDate(a.birthDate);
+    if (a.gender) setGender(a.gender);
     if (a.phone) setPhone(a.phone);
     if (a.email) setEmail(a.email);
     if (a.address) setAddress(a.address);
@@ -455,6 +460,23 @@ export function ClientForm({
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gênero</Label>
+              <select
+                id="gender"
+                name="gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Selecione...</option>
+                {GENDERS.map((g) => (
+                  <option key={g} value={g}>
+                    {GENDER_LABELS[g]}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </CardContent>
