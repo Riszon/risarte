@@ -29,13 +29,14 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
   notificações; horários fora do expediente marcados + respiro no topo; linha do
   tempo (passado/1 ano, scroll, motivo do fechamento); liberar horário avulso
   (estender dia).
-- **GRUPO 4 iniciado — H4.1 Risartanos Lote 1**: módulo base `/risartanos`.
+- **GRUPO 4 — H4.1 Risartanos**: módulo base (Lote 1), foto (Lote 1b) e
+  **vínculo com o cliente por CPF (Lote 2)**.
 
 **FALTA (Grupo 4, ordem H4.1→H4.14):**
-- **H4.1** Lote 1b (foto), Lote 2 (vínculo com cliente), Lote 3 (auditoria).
+- **H4.1** Lote 3 (auditoria de acessos/ações por colaborador).
 - **H4.2–H4.14** — ver abaixo.
 
-**Pendências operacionais do dono:** aplicar as migrações **0072–0076** (se ainda
+**Pendências operacionais do dono:** aplicar as migrações **0072–0078** (se ainda
 não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
 lançamento** (manter login Admin + catálogo + fichas; backup antes).
 
@@ -233,8 +234,13 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
   - [x] **Lote 1b — foto** ✅ (07/07, v0.13.1, migração 0077) — bucket privado
         `staff-photos` (RLS por unidade), upload no navegador + URL assinada;
         avatar na lista e no cadastro; trocar/remover foto.
-  - [ ] **Lote 2 — vínculo com cliente** (autopreenche; prontuário destaca "é um
-        Risartano"; inativo vai ao histórico do prontuário).
+  - [x] **Lote 2 — vínculo com cliente** ✅ (07/07, v0.14.0, migração 0078) —
+        liga `clients` ao `staff_members` pelo CPF via gatilhos automáticos
+        (`staff_member_id`, `risartano_active`); cadastro de cliente autopreenche
+        com os dados de RH (`lookup_risartano_by_cpf`, escopo por unidade); a
+        ficha destaca **"★ É um Risartano"** / **"★ Ex-Risartano (inativo)"**; a
+        inativação/reativação do colaborador é registrada no histórico do
+        prontuário (`client_changes`).
   - [ ] **Lote 3 — auditoria** de acessos/logins e ações (por colaborador com
         login vinculado).
 - [ ] **H4.2 Anamnese 2.0 [G] 🗄️** — múltiplas fichas (1 por tipo; atualizar

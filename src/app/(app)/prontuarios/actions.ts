@@ -239,6 +239,13 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
   prospect?: { fullName: string; birthDate: string | null; phone: string | null };
   /** H1.9: todos os dados do cliente existente, para autopreencher o formulário. */
   autofill?: ClientAutofill;
+  /** H4.1 Lote 2: o CPF é de um Risartano (colaborador) — autopreenche do RH. */
+  risartano?: {
+    code: string | null;
+    roleTitle: string | null;
+    isActive: boolean;
+    autofill: ClientAutofill;
+  };
 }> {
   const session = await getSessionContext();
   const clinicId = session.activeClinic?.id ?? null;
@@ -279,7 +286,36 @@ export async function lookupCpfForRegistration(cpf: string): Promise<{
     };
   }
 
-  // 2) A prospect (registered as a guardian, not yet a client)?
+  // 2) É um Risartano (colaborador)? Autopreenche com os dados do cadastro de RH
+  //    (só para colaboradores das unidades a que o usuário tem acesso).
+  const { data: staff } = await supabase.rpc("lookup_risartano_by_cpf", {
+    p_cpf: formatted,
+  });
+  if (staff && staff.length > 0) {
+    const s = staff[0];
+    return {
+      risartano: {
+        code: s.code ?? null,
+        roleTitle: s.role_title ?? null,
+        isActive: s.is_active ?? true,
+        autofill: {
+          fullName: s.full_name ?? null,
+          birthDate: s.birth_date ?? null,
+          phone: s.phone ?? null,
+          email: s.email ?? null,
+          address: s.address ?? null,
+          addressNumber: s.address_number ?? null,
+          complement: s.complement ?? null,
+          neighborhood: s.neighborhood ?? null,
+          city: s.city ?? null,
+          state: s.state ?? null,
+          zipCode: s.zip_code ?? null,
+        },
+      },
+    };
+  }
+
+  // 3) A prospect (registered as a guardian, not yet a client)?
   const { data: prospect } = await supabase.rpc("find_prospect_by_cpf", {
     p_cpf: formatted,
   });

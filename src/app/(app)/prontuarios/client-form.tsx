@@ -133,6 +133,15 @@ export function ClientForm({
         // usuário ver de quem se trata — o card de duplicado guia abrir/transferir.
         if (result.autofill) applyAutofill(result.autofill);
         else if (result.duplicate.fullName) setFullName(result.duplicate.fullName);
+      } else if (result.risartano) {
+        // É um Risartano (colaborador): preenche a partir do cadastro de RH.
+        setDuplicate(null);
+        applyAutofill(result.risartano.autofill);
+        toast.success(
+          result.risartano.isActive
+            ? "É um Risartano — dados preenchidos."
+            : "É um Risartano (inativo) — dados preenchidos."
+        );
       } else if (result.prospect) {
         setDuplicate(null);
         setFullName(result.prospect.fullName ?? fullName);

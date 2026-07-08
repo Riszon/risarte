@@ -174,7 +174,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", id)
     .single();
@@ -1155,6 +1155,19 @@ export default async function ClientDetailPage(
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {client.staff_member_id &&
+            (client.risartano_active === false ? (
+              <Badge
+                variant="outline"
+                className="border-gold/50 text-muted-foreground"
+              >
+                ★ Ex-Risartano (inativo)
+              </Badge>
+            ) : (
+              <Badge className="bg-gold/20 text-gold-foreground">
+                ★ É um Risartano
+              </Badge>
+            ))}
           {viewerIsFormerClinicOnly && (
             <Badge variant="destructive">
               Transferido para {currentClinicEntry?.clinics?.name ?? "outra unidade"}
