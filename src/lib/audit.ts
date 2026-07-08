@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 type AuditEntry = {
-  action: "view" | "create" | "update" | "anonymize" | "export";
+  action: "view" | "create" | "update" | "anonymize" | "export" | "login";
   entityType: string;
   entityId?: string;
   clinicId?: string;

@@ -15,6 +15,7 @@ import {
   Home,
   LogOut,
   Route,
+  ScrollText,
   Tags,
   Users,
   UserCog,
@@ -97,6 +98,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
+  { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
 ];
 
 export function AppSidebar({

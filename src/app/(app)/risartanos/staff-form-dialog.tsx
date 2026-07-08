@@ -365,6 +365,22 @@ export function StaffFormDialog({
                     </Button>
                     <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href={{
+                            pathname: "/admin/auditoria",
+                            query: { colaborador: access.userId },
+                          }}
+                        />
+                      }
+                    >
+                      Ver auditoria
+                    </Button>
+                    <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       disabled={isPending}

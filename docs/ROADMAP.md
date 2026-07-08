@@ -29,13 +29,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
   notificações; horários fora do expediente marcados + respiro no topo; linha do
   tempo (passado/1 ano, scroll, motivo do fechamento); liberar horário avulso
   (estender dia).
-- **GRUPO 4 — H4.1 Risartanos**: módulo base (Lote 1), foto (Lote 1b),
-  **vínculo com o cliente por CPF (Lote 2)** e **vínculo com o usuário de
-  acesso por e-mail (Lote 2b)**.
+- **GRUPO 4 — H4.1 Risartanos COMPLETO**: módulo base (Lote 1), foto (Lote 1b),
+  vínculo com o cliente por CPF (Lote 2), vínculo com o usuário de acesso por
+  e-mail (Lote 2b), ajustes multi-unidade (0080) e **auditoria (Lote 3)**.
 
 **FALTA (Grupo 4, ordem H4.1→H4.14):**
-- **H4.1** Lote 3 (auditoria de acessos/ações por colaborador).
-- **H4.2–H4.14** — ver abaixo.
+- **H4.2–H4.14** — ver abaixo (próximo: H4.2 Anamnese 2.0).
 
 **Pendências operacionais do dono:** aplicar as migrações **0072–0080** (se ainda
 não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
@@ -260,8 +259,13 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         corrigida para "Usuários (acesso)" + coluna **Risartano** (código RIS
         com link) + aviso "colaborador inativo" no editor. Pré-requisito do
         Lote 3.
-  - [ ] **Lote 3 — auditoria** de acessos/logins e ações (por colaborador com
-        login vinculado).
+  - [x] **Lote 3 — auditoria** ✅ (08/07, v0.15.0, sem migração) — tela
+        `/admin/auditoria` (só Admin): **últimos acessos** (last_sign_in_at via
+        service role) + **registro de atividades** da trilha `audit_logs` com
+        filtros (colaborador / ação / tipo de registro / período) e rótulos
+        pt-BR (`src/lib/audit-labels.ts`); **login passa a ser registrado**
+        (`recordLogin` no formulário → ação `login`); atalho "Ver auditoria" no
+        cadastro do Risartano. **H4.1 COMPLETO.**
 - [ ] **H4.2 Anamnese 2.0 [G] 🗄️** — múltiplas fichas (1 por tipo; atualizar
       não troca o tipo); perguntas obrigatórias; perguntas por gênero
       (pré-requisito: campo gênero no cliente — item adiado entra aqui);

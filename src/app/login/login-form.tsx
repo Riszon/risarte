@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { recordLogin } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,13 @@ export function LoginForm() {
       setError("E-mail ou senha incorretos. Verifique e tente novamente.");
       setLoading(false);
       return;
+    }
+
+    // Registra o acesso na trilha de auditoria (best-effort, não bloqueia).
+    try {
+      await recordLogin();
+    } catch {
+      // ignora — o login não pode falhar por causa da auditoria.
     }
 
     router.push("/");
