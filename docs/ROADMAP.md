@@ -11,34 +11,31 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (07/07/2026) — versão 0.13.0 · migração 0076
+## Onde estamos (08/07/2026) — versão 0.18.0 · migração 0086
 
-**FEITO (LOTE H completo + ajustes + início do Grupo 4):**
+**FEITO (LOTE H + ajustes + Grupo 4 até H4.3):**
 - **H1.1–H1.10** (bugs/segurança) · **H2.1–H2.12** (ajustes rápidos) ·
+  **H3.1–H3.15 COMPLETO** (Grupo 3) · **AJ1–AJ11** (ajustes pré/pós-Grupo 4) ·
   **H4.4** (central de Planos de Tratamento).
-- **GRUPO 3 — H3.1–H3.15 COMPLETO** (agendamento reordenado; "ver agenda" rica;
-  faixa de dias; fluxo de atendimento/carry-forward; check-in; troca de
-  profissional; SDR vê clientes que tocou; aniversário WhatsApp; transferência
-  notifica destino; enviar ao Planejamento conclui atendimento; informações
-  complementares; mídias renomear/anotar/excluir; cockpit anamnese+filtros;
-  sessões com data/profissional clicável; comercial "prontos para apresentação").
-- **AJUSTES pré-Grupo 4 (AJ1–AJ5)**: excluir cadeira (soft delete); cadeiras numa
-  casa só; agendamento fora do horário com alerta; comercial sem plano pronto
-  (cronômetro); alerta clicável + pop-up recepção; vitrine "prontos p/ apresentar".
-- **AJUSTES 2 (AJ6–AJ11)**: pop-up recepção organizado; Consultor recebe
-  notificações; horários fora do expediente marcados + respiro no topo; linha do
-  tempo (passado/1 ano, scroll, motivo do fechamento); liberar horário avulso
-  (estender dia).
-- **GRUPO 4 — H4.1 Risartanos COMPLETO**: módulo base (Lote 1), foto (Lote 1b),
-  vínculo com o cliente por CPF (Lote 2), vínculo com o usuário de acesso por
-  e-mail (Lote 2b), ajustes multi-unidade (0080) e **auditoria (Lote 3)**.
+- **GRUPO 4:**
+  - **H4.1 Risartanos COMPLETO** — módulo base, foto (no cadastro), vínculo com
+    cliente por CPF, vínculo com login por e-mail, multi-unidade + status por
+    unidade, auditoria de acessos/ações. (migrações 0076–0081)
+  - **H4.2 Anamnese 2.0 COMPLETO** — gênero do cliente; uma ficha atual por tipo
+    + histórico por tipo; perguntas obrigatórias; perguntas por gênero + campos
+    condicionais. (migrações 0082–0083)
+  - **H4.3 Protocolo 2.0 + agendamento em série COMPLETO** — intervalo mínimo
+    entre sessões; sugerir as datas de toda a série ao agendar; intervalo médio
+    real + previsão de conclusão; Planner **propõe** mudança de protocolo
+    definitivo (Coordenador/Admin confirmam). (migrações 0084–0086)
 
-**FALTA (Grupo 4, ordem H4.1→H4.14):**
-- **H4.2–H4.14** — ver abaixo (próximo: H4.2 Anamnese 2.0).
+**FALTA (Grupo 4, ordem numérica):**
+- **H4.5–H4.14** — ver abaixo (próximo: **H4.5 Cockpit 2.0**).
 
-**Pendências operacionais do dono:** aplicar as migrações **0072–0081** (se ainda
-não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
-lançamento** (manter login Admin + catálogo + fichas; backup antes).
+**Pendências operacionais do dono:** aplicar as migrações **0072–0086** (se ainda
+não rodou alguma — em ordem, todas idempotentes); `GAMMA_API_KEY` na Vercel;
+**limpeza de dados de teste antes do lançamento** (manter login Admin + catálogo +
+fichas; backup antes).
 
 ## GRUPO 3 — próximo (H3.1 → H3.15)
 
