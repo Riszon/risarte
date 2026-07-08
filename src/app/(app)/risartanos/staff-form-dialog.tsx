@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ImagePlus, Plus } from "lucide-react";
@@ -49,63 +49,123 @@ export function StaffFormDialog({
   const [isPending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // No cadastro (sem id ainda) a foto fica guardada e sobe após salvar.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const displayUrl = preview ?? photoUrl;
 
-  async function onPickPhoto(file: File) {
-    if (!staff) return;
+  // Libera a prévia local da memória ao trocar/fechar.
+  useEffect(() => {
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview);
+  }, [preview]);
+
+  function resetPhoto() {
+    setPendingFile(null);
+    setPreview(null);
+  }
+
+  /** Sobe o arquivo ao Storage e devolve o caminho salvo (ou null se falhar). */
+  async function uploadPhoto(clinicId: string, staffId: string, file: File) {
     const supabase = createClient();
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${staff.clinicId}/${staff.id}/photo-${Date.now()}.${ext}`;
-    setUploading(true);
+    const path = `${clinicId}/${staffId}/photo-${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from(STAFF_PHOTO_BUCKET)
       .upload(path, file, { contentType: file.type });
-    if (error) {
-      setUploading(false);
-      toast.error("Não foi possível enviar a foto.");
-      return;
-    }
-    const result = await setStaffPhoto(staff.id, path);
-    setUploading(false);
-    if (result.ok) {
-      toast.success("Foto atualizada.");
-      router.refresh();
-    } else {
-      toast.error(result.error ?? "Algo deu errado.");
-    }
+    return error ? null : path;
   }
 
-  function removePhoto() {
-    if (!staff) return;
-    startTransition(async () => {
-      const result = await setStaffPhoto(staff.id, "");
-      if (result.ok) {
-        toast.success("Foto removida.");
-        router.refresh();
-      } else {
-        toast.error(result.error ?? "Algo deu errado.");
-      }
-    });
+  // Edição: sobe na hora. Cadastro: guarda + mostra prévia (sobe ao salvar).
+  function handlePick(file: File) {
+    if (isEdit && staff) {
+      setUploading(true);
+      startTransition(async () => {
+        const path = await uploadPhoto(staff.clinicId, staff.id, file);
+        if (!path) {
+          setUploading(false);
+          toast.error("Não foi possível enviar a foto.");
+          return;
+        }
+        const result = await setStaffPhoto(staff.id, path);
+        setUploading(false);
+        if (result.ok) {
+          toast.success("Foto atualizada.");
+          router.refresh();
+        } else {
+          toast.error(result.error ?? "Algo deu errado.");
+        }
+      });
+      return;
+    }
+    setPendingFile(file);
+    setPreview(URL.createObjectURL(file));
+  }
+
+  function handleRemove() {
+    if (isEdit && staff) {
+      startTransition(async () => {
+        const result = await setStaffPhoto(staff.id, "");
+        if (result.ok) {
+          toast.success("Foto removida.");
+          router.refresh();
+        } else {
+          toast.error(result.error ?? "Algo deu errado.");
+        }
+      });
+      return;
+    }
+    resetPhoto();
+  }
+
+  function onOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next && !isEdit) resetPhoto();
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      const result = isEdit
-        ? await updateStaffMember(staff!.id, formData)
-        : await createStaffMember(formData);
-      if (result.ok) {
-        toast.success(isEdit ? "Risartano atualizado." : "Risartano cadastrado.");
-        setOpen(false);
-        router.refresh();
-      } else {
-        toast.error(result.error ?? "Algo deu errado.");
+      if (isEdit) {
+        const result = await updateStaffMember(staff!.id, formData);
+        if (result.ok) {
+          toast.success("Risartano atualizado.");
+          setOpen(false);
+          router.refresh();
+        } else {
+          toast.error(result.error ?? "Algo deu errado.");
+        }
+        return;
       }
+      const result = await createStaffMember(formData);
+      if (!result.ok) {
+        toast.error(result.error ?? "Algo deu errado.");
+        return;
+      }
+      // Cadastrado: sobe a foto escolhida (se houver) e vincula ao novo id.
+      let photoFailed = false;
+      if (pendingFile && result.staffId && result.clinicId) {
+        const path = await uploadPhoto(
+          result.clinicId,
+          result.staffId,
+          pendingFile
+        );
+        if (path) await setStaffPhoto(result.staffId, path);
+        else photoFailed = true;
+      }
+      toast.success("Risartano cadastrado.");
+      if (photoFailed) {
+        toast.error("A foto não pôde ser enviada; adicione pela edição.");
+      }
+      resetPhoto();
+      setOpen(false);
+      router.refresh();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger
         render={
           isEdit ? (
@@ -129,20 +189,20 @@ export function StaffFormDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {isEdit && (
-          <div className="flex items-center gap-3">
-            {photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoUrl}
-                alt=""
-                className="size-16 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <ImagePlus className="size-6" />
-              </span>
-            )}
+        <div className="flex items-center gap-3">
+          {displayUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={displayUrl}
+              alt=""
+              className="size-16 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <ImagePlus className="size-6" />
+            </span>
+          )}
+          <div className="flex flex-col gap-1">
             <div className="flex flex-wrap gap-2">
               <input
                 ref={fileRef}
@@ -151,7 +211,7 @@ export function StaffFormDialog({
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) onPickPhoto(f);
+                  if (f) handlePick(f);
                   e.target.value = "";
                 }}
               />
@@ -162,22 +222,33 @@ export function StaffFormDialog({
                 disabled={uploading || isPending}
                 onClick={() => fileRef.current?.click()}
               >
-                {uploading ? "Enviando…" : photoUrl ? "Trocar foto" : "Adicionar foto"}
+                {uploading
+                  ? "Enviando…"
+                  : displayUrl
+                    ? "Trocar foto"
+                    : "Adicionar foto"}
               </Button>
-              {photoUrl && (
+              {displayUrl && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   disabled={uploading || isPending}
-                  onClick={removePhoto}
+                  onClick={handleRemove}
                 >
                   Remover
                 </Button>
               )}
             </div>
+            {!isEdit && (
+              <p className="text-xs text-muted-foreground">
+                {pendingFile
+                  ? "A foto será enviada ao salvar o cadastro."
+                  : "Opcional. Você também pode adicionar depois."}
+              </p>
+            )}
           </div>
-        )}
+        </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           {!isEdit && (

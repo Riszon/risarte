@@ -19,6 +19,12 @@ import {
 
 export type ActionResult = { ok: boolean; error?: string };
 
+/** Cadastro devolve o id/unidade do novo Risartano p/ subir a foto em seguida. */
+export type CreateStaffResult = ActionResult & {
+  staffId?: string;
+  clinicId?: string;
+};
+
 /** Admin Master, Gerente da unidade e Franqueadora (RH) com acesso à unidade. */
 async function canManage(
   session: SessionContext,
@@ -93,7 +99,7 @@ function parseStaffForm(formData: FormData):
 
 export async function createStaffMember(
   formData: FormData
-): Promise<ActionResult> {
+): Promise<CreateStaffResult> {
   const session = await getSessionContext();
   const clinicId = String(formData.get("clinic_id") ?? "");
   if (!clinicId) return { ok: false, error: "Escolha a unidade." };
@@ -121,7 +127,7 @@ export async function createStaffMember(
     clinicId,
   });
   revalidatePath("/risartanos");
-  return { ok: true };
+  return { ok: true, staffId: data.id, clinicId };
 }
 
 export async function updateStaffMember(
