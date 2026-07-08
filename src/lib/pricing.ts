@@ -36,6 +36,8 @@ export type ProcedureSession = {
   sessionIndex: number;
   name: string | null;
   estimatedMinutes: number;
+  /** H4.3: dias mínimos após a sessão anterior (null na 1ª sessão). */
+  minIntervalDays?: number | null;
 };
 
 /** Time options for the 15-minute selector (15 min … 4 h). */
@@ -58,14 +60,29 @@ export function formatSessions(n: number): string {
   return `${n} ${sessionsWord(n)}`;
 }
 
-/** Resumo de um protocolo: "3 sessões · 2h". */
+/** Resumo de um protocolo: "3 sessões · 2h" (+ intervalo, se houver). */
 export function protocolSummary(
-  sessions: { estimatedMinutes: number }[]
+  sessions: { estimatedMinutes: number; minIntervalDays?: number | null }[]
 ): string {
   const total = protocolTotalMinutes(
     sessions.map((s) => ({ minutes: s.estimatedMinutes }))
   );
-  return `${formatSessions(sessions.length)} · ${formatMinutes(total)}`;
+  const base = `${formatSessions(sessions.length)} · ${formatMinutes(total)}`;
+  const iv = intervalSummary(sessions);
+  return iv ? `${base} · ${iv}` : base;
+}
+
+/** Resumo dos intervalos: "" | "a cada 15 dias" | "intervalos 15–90 dias". */
+export function intervalSummary(
+  sessions: { minIntervalDays?: number | null }[]
+): string {
+  const vals = sessions
+    .map((s) => s.minIntervalDays ?? null)
+    .filter((v): v is number => v != null && v > 0);
+  if (vals.length === 0) return "";
+  const uniq = [...new Set(vals)];
+  if (uniq.length === 1) return `a cada ${uniq[0]} dias`;
+  return `intervalos ${Math.min(...uniq)}–${Math.max(...uniq)} dias`;
 }
 
 /** Human label for a minutes amount, e.g. 90 → "1h30". */

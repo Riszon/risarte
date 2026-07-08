@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import {
   formatBRL,
   formatMinutes,
+  intervalSummary,
   protocolSummary,
   protocolTotalMinutes,
   SESSION_TIME_OPTIONS,
@@ -197,16 +198,30 @@ function ProcedureFields({
   );
 }
 
-type SessionDraft = { name: string; minutes: number };
+type SessionDraft = {
+  name: string;
+  minutes: number;
+  intervalDays: number | null;
+};
 
 function initSessionDrafts(
   initial: ProcedureSession[],
   fallbackMinutes: number
 ): SessionDraft[] {
   if (initial.length > 0) {
-    return initial.map((s) => ({ name: s.name ?? "", minutes: s.estimatedMinutes }));
+    return initial.map((s) => ({
+      name: s.name ?? "",
+      minutes: s.estimatedMinutes,
+      intervalDays: s.minIntervalDays ?? null,
+    }));
   }
-  return [{ name: "", minutes: fallbackMinutes > 0 ? fallbackMinutes : 30 }];
+  return [
+    {
+      name: "",
+      minutes: fallbackMinutes > 0 ? fallbackMinutes : 30,
+      intervalDays: null,
+    },
+  ];
 }
 
 /** Painel do histórico de alterações (mostrado só ao clicar). */
@@ -298,7 +313,10 @@ function SessionProtocolPanel({
             setSessions((prev) =>
               prev.length > 1
                 ? prev
-                : [...prev, { name: "", minutes: prev[0]?.minutes || 30 }]
+                : [
+                    ...prev,
+                    { name: "", minutes: prev[0]?.minutes || 30, intervalDays: 7 },
+                  ]
             )
           }
         >
@@ -335,6 +353,25 @@ function SessionProtocolPanel({
                   </option>
                 ))}
               </select>
+              {multi && i > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  após
+                  <Input
+                    type="number"
+                    min={0}
+                    value={s.intervalDays ?? ""}
+                    onChange={(e) =>
+                      patch(i, {
+                        intervalDays:
+                          e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                    className="w-16"
+                    aria-label={`Intervalo mínimo (dias) antes da sessão ${i + 1}`}
+                  />
+                  dias
+                </span>
+              )}
               {multi && sessions.length > 1 && (
                 <Button
                   variant="ghost"
@@ -359,7 +396,11 @@ function SessionProtocolPanel({
           onClick={() =>
             setSessions((prev) => [
               ...prev,
-              { name: "", minutes: prev[prev.length - 1]?.minutes || 30 },
+              {
+                name: "",
+                minutes: prev[prev.length - 1]?.minutes || 30,
+                intervalDays: prev[prev.length - 1]?.intervalDays ?? 7,
+              },
             ])
           }
         >
@@ -372,6 +413,12 @@ function SessionProtocolPanel({
         <span className="text-sm">
           <strong>{sessions.length}</strong> sessão{sessions.length > 1 ? "ões" : ""} ·
           tempo total <strong>{formatMinutes(total)}</strong>
+          {(() => {
+            const iv = intervalSummary(
+              sessions.map((s) => ({ minIntervalDays: s.intervalDays }))
+            );
+            return iv ? <> · {iv}</> : null;
+          })()}
         </span>
         <div className="flex items-center gap-2">
           {isUnit && hasOverride && (
@@ -398,7 +445,11 @@ function SessionProtocolPanel({
                   setProcedureSessions(
                     procedureId,
                     clinicId,
-                    sessions.map((s) => ({ name: s.name, minutes: s.minutes }))
+                    sessions.map((s) => ({
+                      name: s.name,
+                      minutes: s.minutes,
+                      intervalDays: s.intervalDays,
+                    }))
                   ),
                 isUnit
                   ? "Protocolo da unidade salvo."

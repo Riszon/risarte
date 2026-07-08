@@ -295,11 +295,21 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         "Exibição"; preenchimento mostra/esconde as perguntas dinamicamente e só
         salva/valida as visíveis (`isQuestionVisible` em `src/lib/anamnesis.ts`;
         colunas `gender`/`condition_question_id`/`condition_values`).
-- [ ] **H4.3 Protocolo 2.0 + agendamento em série [G] 🗄️** — tempo mínimo
+- [~] **H4.3 Protocolo 2.0 + agendamento em série [G] 🗄️** — tempo mínimo
       entre sessões (rede → caso); médias reais do intervalo; previsão de
       conclusão; sugerir as datas de TODAS as sessões ao agendar; Planner
       propõe mudança de protocolo (unidade com confirmação + notificação ao
       coordenador; rede → notifica Admin).
+  - [x] **Lote 1 — intervalo mínimo entre sessões no protocolo** ✅ (08/07,
+        v0.17.1, migração 0084) — `procedure_sessions.min_interval_days` (dias
+        após a sessão anterior; null na 1ª), editável em Procedimentos por sessão
+        (rede/unidade, cascata); resumo do protocolo mostra "a cada X dias"
+        (`intervalSummary` em `src/lib/pricing.ts`). Base do Lote 2.
+  - [ ] **Lote 2 — sugerir as datas de TODAS as sessões ao agendar** (série;
+        `treatment_sessions.planned_date`).
+  - [ ] **Lote 3 — médias reais do intervalo + previsão de conclusão.**
+  - [ ] **Lote 4 — Planner propõe mudança de protocolo** (unidade → confirma +
+        notifica Coordenador; rede → notifica Admin).
 - [x] **H4.4 Tela de Planos de Tratamento** ✅ (v0.11.1).
 - [ ] **H4.5 Cockpit 2.0 [G] 🗄️** — redesign; etapas + sessões; sugerir
       profissional; juntar sessões; tempo por/entre sessões; previsão de

@@ -157,7 +157,7 @@ export default async function ProceduresPage(
     const { data: sessionRows } = await supabase
       .from("procedure_sessions")
       .select(
-        "id, procedure_id, clinic_id, session_index, name, estimated_minutes"
+        "id, procedure_id, clinic_id, session_index, name, estimated_minutes, min_interval_days"
       )
       .is("clinic_id", null)
       .in("procedure_id", ids)
@@ -170,6 +170,7 @@ export default async function ProceduresPage(
           session_index: number;
           name: string | null;
           estimated_minutes: number;
+          min_interval_days: number | null;
         }[]
       >();
     for (const r of sessionRows ?? []) {
@@ -180,6 +181,7 @@ export default async function ProceduresPage(
         sessionIndex: r.session_index,
         name: r.name,
         estimatedMinutes: r.estimated_minutes,
+        minIntervalDays: r.min_interval_days,
       });
     }
   }
@@ -190,7 +192,7 @@ export default async function ProceduresPage(
     const { data: unitSessionRows } = await supabase
       .from("procedure_sessions")
       .select(
-        "id, procedure_id, clinic_id, session_index, name, estimated_minutes"
+        "id, procedure_id, clinic_id, session_index, name, estimated_minutes, min_interval_days"
       )
       .eq("clinic_id", unitId)
       .in("procedure_id", ids)
@@ -203,6 +205,7 @@ export default async function ProceduresPage(
           session_index: number;
           name: string | null;
           estimated_minutes: number;
+          min_interval_days: number | null;
         }[]
       >();
     for (const r of unitSessionRows ?? []) {
@@ -213,6 +216,7 @@ export default async function ProceduresPage(
         sessionIndex: r.session_index,
         name: r.name,
         estimatedMinutes: r.estimated_minutes,
+        minIntervalDays: r.min_interval_days,
       });
     }
   }

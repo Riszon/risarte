@@ -478,7 +478,12 @@ export async function readjustPrices(input: {
 // (rede = clinicId null; unidade = clinicId) e, na rede, recalcula o total
 // (procedures.estimated_minutes).
 // ---------------------------------------------------------------------------
-export type SessionInput = { name: string; minutes: number };
+export type SessionInput = {
+  name: string;
+  minutes: number;
+  /** Dias mínimos após a sessão anterior (ignorado na 1ª sessão). */
+  intervalDays?: number | null;
+};
 
 export async function setProcedureSessions(
   procedureId: string,
@@ -504,6 +509,10 @@ export async function setProcedureSessions(
     .map((s, i) => ({
       name: s.name.trim() || `Sessão ${i + 1}`,
       minutes: Math.max(0, Math.round(Number(s.minutes) || 0)),
+      intervalDays:
+        s.intervalDays != null && Number.isFinite(Number(s.intervalDays))
+          ? Math.max(0, Math.round(Number(s.intervalDays)))
+          : null,
     }));
   if (clean.length === 0) {
     return { ok: false, error: "Defina ao menos uma sessão." };
@@ -523,6 +532,8 @@ export async function setProcedureSessions(
     session_index: i + 1,
     name: s.name,
     estimated_minutes: s.minutes,
+    // A 1ª sessão não tem intervalo (não há sessão anterior).
+    min_interval_days: i === 0 ? null : s.intervalDays,
     created_by: session.userId,
   }));
   const { error } = await supabase.from("procedure_sessions").insert(rows);
