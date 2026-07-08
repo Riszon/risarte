@@ -11,12 +11,33 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (04/07/2026)
+## Onde estamos (07/07/2026) — versão 0.13.0 · migração 0076
 
-- **Feitos:** H1.1–H1.10 (bugs/segurança), H2.1–H2.12 (ajustes rápidos),
-  H4.4 (tela Planos de Tratamento). Versão 0.11.1 · migração 0062.
-- **Pendências operacionais do dono:** aplicar a migração 0062 (se ainda não);
-  testar H1d–H2 e `/planos`; cadastrar `GAMMA_API_KEY` na Vercel.
+**FEITO (LOTE H completo + ajustes + início do Grupo 4):**
+- **H1.1–H1.10** (bugs/segurança) · **H2.1–H2.12** (ajustes rápidos) ·
+  **H4.4** (central de Planos de Tratamento).
+- **GRUPO 3 — H3.1–H3.15 COMPLETO** (agendamento reordenado; "ver agenda" rica;
+  faixa de dias; fluxo de atendimento/carry-forward; check-in; troca de
+  profissional; SDR vê clientes que tocou; aniversário WhatsApp; transferência
+  notifica destino; enviar ao Planejamento conclui atendimento; informações
+  complementares; mídias renomear/anotar/excluir; cockpit anamnese+filtros;
+  sessões com data/profissional clicável; comercial "prontos para apresentação").
+- **AJUSTES pré-Grupo 4 (AJ1–AJ5)**: excluir cadeira (soft delete); cadeiras numa
+  casa só; agendamento fora do horário com alerta; comercial sem plano pronto
+  (cronômetro); alerta clicável + pop-up recepção; vitrine "prontos p/ apresentar".
+- **AJUSTES 2 (AJ6–AJ11)**: pop-up recepção organizado; Consultor recebe
+  notificações; horários fora do expediente marcados + respiro no topo; linha do
+  tempo (passado/1 ano, scroll, motivo do fechamento); liberar horário avulso
+  (estender dia).
+- **GRUPO 4 iniciado — H4.1 Risartanos Lote 1**: módulo base `/risartanos`.
+
+**FALTA (Grupo 4, ordem H4.1→H4.14):**
+- **H4.1** Lote 1b (foto), Lote 2 (vínculo com cliente), Lote 3 (auditoria).
+- **H4.2–H4.14** — ver abaixo.
+
+**Pendências operacionais do dono:** aplicar as migrações **0072–0076** (se ainda
+não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
+lançamento** (manter login Admin + catálogo + fichas; backup antes).
 
 ## GRUPO 3 — próximo (H3.1 → H3.15)
 
