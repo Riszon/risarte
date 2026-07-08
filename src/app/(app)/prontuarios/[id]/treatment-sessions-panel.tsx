@@ -97,6 +97,34 @@ export function TreatmentSessionsPanel({
   const pending = sessions.filter((s) => s.status === "pending").length;
   const hasSuggestions = sessions.some((s) => s.plannedDate);
 
+  // H4.3 Lote 3: intervalo médio REAL entre as sessões já feitas (deste paciente).
+  const doneTimes = sessions
+    .filter((s) => s.status === "done" && s.appointment)
+    .map((s) => new Date(s.appointment!.starts_at).getTime())
+    .sort((a, b) => a - b);
+  let realAvgDays: number | null = null;
+  if (doneTimes.length >= 2) {
+    let sum = 0;
+    for (let i = 1; i < doneTimes.length; i++) {
+      sum += (doneTimes[i] - doneTimes[i - 1]) / 86_400_000;
+    }
+    realAvgDays = Math.round(sum / (doneTimes.length - 1));
+  }
+
+  // Previsão de conclusão: a última data entre as sessões ainda não concluídas
+  // (agendadas usam o agendamento; pendentes usam a data prevista).
+  const futureDates: string[] = [];
+  for (const s of sessions) {
+    if (s.status === "done") continue;
+    if (s.appointment) futureDates.push(s.appointment.starts_at.slice(0, 10));
+    else if (s.plannedDate) futureDates.push(s.plannedDate);
+  }
+  futureDates.sort();
+  const forecast = futureDates.length ? futureDates[futureDates.length - 1] : null;
+  const forecastPartial = sessions.some(
+    (s) => s.status !== "done" && !s.appointment && !s.plannedDate
+  );
+
   function suggest() {
     startTransition(async () => {
       const result = await suggestTreatmentSeries(clientId, startDate);
@@ -144,6 +172,32 @@ export function TreatmentSessionsPanel({
             <span className="text-xs text-muted-foreground">
               respeita o intervalo mínimo do protocolo e pula dias fechados.
             </span>
+          </div>
+        )}
+
+        {(realAvgDays !== null || forecast) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs">
+            {realAvgDays !== null && (
+              <span>
+                Intervalo médio real:{" "}
+                <strong>{realAvgDays} dias</strong>{" "}
+                <span className="text-muted-foreground">
+                  (entre as sessões já feitas)
+                </span>
+              </span>
+            )}
+            {forecast && (
+              <span>
+                Previsão de conclusão:{" "}
+                <strong>{formatPlanned(forecast)}</strong>
+                {forecastPartial && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    (parcial — sugira as datas restantes)
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         )}
         {groups.map((g) => (

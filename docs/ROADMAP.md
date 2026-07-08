@@ -311,7 +311,11 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         intervalo mínimo do protocolo, pulando dias fechados/feriados); painel
         de sessões mostra "prevista DD/MM" e o **Agendar** já abre na data
         sugerida (`initialDate`).
-  - [ ] **Lote 3 — médias reais do intervalo + previsão de conclusão.**
+  - [x] **Lote 3 — médias reais do intervalo + previsão de conclusão** ✅ (08/07,
+        v0.17.3, sem migração) — no painel de sessões: **intervalo médio real**
+        entre as sessões já feitas do paciente (datas dos agendamentos) e
+        **previsão de conclusão** (última data entre as sessões não concluídas —
+        agendadas + previstas; marca "parcial" se faltam datas).
   - [ ] **Lote 4 — Planner propõe mudança de protocolo** (unidade → confirma +
         notifica Coordenador; rede → notifica Admin).
 - [x] **H4.4 Tela de Planos de Tratamento** ✅ (v0.11.1).
