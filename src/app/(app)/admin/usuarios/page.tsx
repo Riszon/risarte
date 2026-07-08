@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 
-export const metadata: Metadata = { title: "Risartanos" };
+export const metadata: Metadata = { title: "Usuários (acesso)" };
 
 type ProfileRow = {
   id: string;
@@ -30,21 +30,36 @@ type RoleRow = {
   clinics: { name: string } | null;
 };
 
+type StaffLinkRow = {
+  id: string;
+  code: string | null;
+  is_active: boolean;
+  user_id: string;
+  clinics: { name: string } | null;
+};
+
 export default async function UsersPage() {
   await requireAdminMaster();
   const supabase = await createClient();
 
-  const [{ data: profiles }, { data: roles }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name, email, is_admin_master, is_active")
-      .order("full_name")
-      .returns<ProfileRow[]>(),
-    supabase
-      .from("user_clinic_roles")
-      .select("user_id, role, clinics ( name )")
-      .returns<RoleRow[]>(),
-  ]);
+  const [{ data: profiles }, { data: roles }, { data: staffLinks }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, full_name, email, is_admin_master, is_active")
+        .order("full_name")
+        .returns<ProfileRow[]>(),
+      supabase
+        .from("user_clinic_roles")
+        .select("user_id, role, clinics ( name )")
+        .returns<RoleRow[]>(),
+      // H4.1 Lote 2b: Risartano (RH) vinculado a cada login.
+      supabase
+        .from("staff_members")
+        .select("id, code, is_active, user_id, clinics ( name )")
+        .not("user_id", "is", null)
+        .returns<StaffLinkRow[]>(),
+    ]);
 
   const rolesByUser = new Map<string, RoleRow[]>();
   for (const row of roles ?? []) {
@@ -53,13 +68,27 @@ export default async function UsersPage() {
     rolesByUser.set(row.user_id, list);
   }
 
+  const staffByUser = new Map<string, StaffLinkRow[]>();
+  for (const row of staffLinks ?? []) {
+    const list = staffByUser.get(row.user_id) ?? [];
+    list.push(row);
+    staffByUser.set(row.user_id, list);
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Risartanos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Usuários (acesso)
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Os colaboradores da rede e suas funções por clínica.
+            Logins e permissões no sistema. O cadastro completo do colaborador
+            (RH) fica em{" "}
+            <Link href="/risartanos" className="underline underline-offset-2">
+              Risartanos
+            </Link>
+            .
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/admin/usuarios/novo" />}>
@@ -74,6 +103,7 @@ export default async function UsersPage() {
               <TableHead>Nome</TableHead>
               <TableHead>E-mail</TableHead>
               <TableHead>Funções</TableHead>
+              <TableHead>Risartano</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
@@ -81,6 +111,7 @@ export default async function UsersPage() {
           <TableBody>
             {(profiles ?? []).map((profile) => {
               const userRoles = rolesByUser.get(profile.id) ?? [];
+              const linkedStaff = staffByUser.get(profile.id) ?? [];
               return (
                 <TableRow key={profile.id}>
                   <TableCell className="font-medium">
@@ -101,6 +132,32 @@ export default async function UsersPage() {
                         </Badge>
                       ))}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {linkedStaff.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {linkedStaff.map((s) => (
+                          <Link
+                            key={s.id}
+                            href={{
+                              pathname: "/risartanos",
+                              query: s.code ? { busca: s.code } : undefined,
+                            }}
+                            title={s.clinics?.name ?? undefined}
+                            className="font-mono text-xs text-gold underline-offset-2 hover:underline"
+                          >
+                            {s.code ?? "RH"}
+                            {!s.is_active && (
+                              <span className="ml-1 text-muted-foreground">
+                                (inativo)
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     {profile.is_active ? (

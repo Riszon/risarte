@@ -26,6 +26,15 @@ import { UnitAccessControl } from "../unit-access-control";
 
 type ClinicOption = { id: string; name: string; type: ClinicType };
 
+/** H4.1 Lote 2b: Risartano de origem do "Criar acesso" (pré-preenche + vincula). */
+export type InitialStaff = {
+  id: string;
+  code: string | null;
+  fullName: string;
+  email: string | null;
+  clinicName: string | null;
+};
+
 /** Roles allowed for a given clinic, as Select items. */
 function roleItemsFor(type: ClinicType | undefined) {
   if (!type) return [];
@@ -35,7 +44,13 @@ function roleItemsFor(type: ClinicType | undefined) {
   }));
 }
 
-export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
+export function NewUserForm({
+  clinics,
+  initialStaff = null,
+}: {
+  clinics: ClinicOption[];
+  initialStaff?: InitialStaff | null;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assignments, setAssignments] = useState<RoleAssignment[]>([]);
@@ -111,6 +126,7 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("assignments", JSON.stringify(assignments));
+    if (initialStaff) formData.set("staff_member_id", initialStaff.id);
 
     startTransition(async () => {
       const result = await createUser(formData);
@@ -125,6 +141,19 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {initialStaff && (
+        <Card className="border-gold">
+          <CardContent className="pt-4 text-sm">
+            Criando acesso para o Risartano{" "}
+            <span className="font-mono font-medium text-gold">
+              {initialStaff.code ?? ""}
+            </span>{" "}
+            <span className="font-medium">{initialStaff.fullName}</span>
+            {initialStaff.clinicName && <> ({initialStaff.clinicName})</>}. Nome
+            e e-mail já vieram do cadastro de RH; o login será vinculado a ele.
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Dados de acesso</CardTitle>
@@ -132,12 +161,23 @@ export function NewUserForm({ clinics }: { clinics: ClinicOption[] }) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="full_name">Nome completo *</Label>
-            <Input id="full_name" name="full_name" required />
+            <Input
+              id="full_name"
+              name="full_name"
+              required
+              defaultValue={initialStaff?.fullName ?? ""}
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail *</Label>
-              <Input id="email" name="email" type="email" required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                defaultValue={initialStaff?.email ?? ""}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha provisória *</Label>

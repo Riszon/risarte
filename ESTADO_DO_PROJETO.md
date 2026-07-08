@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/07/2026 · Versão do sistema: **0.14.0** · Última migração: **0078**_
+_Atualizado em: 07/07/2026 · Versão do sistema: **0.14.1** · Última migração: **0079**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
@@ -530,7 +530,11 @@ backlog (H3.1 em diante).
    `staff_member_id`/`risartano_active` + gatilhos automáticos; cadastro
    autopreenche do RH (`lookup_risartano_by_cpf`); ficha destaca "★ É um
    Risartano"/"★ Ex-Risartano (inativo)"; inativação registrada no histórico do
-   prontuário). Próximo: H4.1 Lote 3 (auditoria); depois H4.2+
+   prontuário); ~~Lote 2b~~ ✅ (v0.14.1, migração 0079 — vínculo Risartano↔
+   usuário de acesso por e-mail: `staff_members.user_id` + gatilhos + nome
+   sincronizado; coluna Acesso em Risartanos, "Criar acesso" pré-preenchido,
+   vincular/desvincular manual; `/admin/usuarios` renomeado "Usuários (acesso)"
+   com coluna Risartano). Próximo: H4.1 Lote 3 (auditoria); depois H4.2+
    (módulos novos), um a um com o dono (`docs/ROADMAP.md`).
 2. Depois, **H4 restantes** (módulos novos) na ordem numérica (H4.4 já feito).
 3. **Rodada de refinamento visual** — tela por tela, guiada pelo dono.

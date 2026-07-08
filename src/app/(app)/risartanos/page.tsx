@@ -12,8 +12,10 @@ import {
   STAFF_PHOTO_BUCKET,
   staffDisplayName,
   type ContractType,
+  type StaffAccess,
   type StaffMember,
 } from "@/lib/staff";
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { StaffFormDialog } from "./staff-form-dialog";
 
 export const metadata: Metadata = { title: "Risartanos" };
@@ -44,6 +46,7 @@ type StaffRow = {
   photo_path: string | null;
   notes: string | null;
   is_active: boolean;
+  user_id: string | null;
   clinics: { name: string } | null;
 };
 
@@ -74,6 +77,7 @@ function toStaff(r: StaffRow): StaffMember {
     photoPath: r.photo_path,
     notes: r.notes,
     isActive: r.is_active,
+    userId: r.user_id,
   };
 }
 
@@ -116,7 +120,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   let staffQuery = supabase
     .from("staff_members")
     .select(
-      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, clinics ( name )"
+      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, user_id, clinics ( name )"
     )
     .order("full_name")
     .limit(2000);
@@ -156,6 +160,61 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
     for (const s of signed ?? []) {
       if (s.path && s.signedUrl) photoUrls.set(s.path, s.signedUrl);
     }
+  }
+
+  // H4.1 Lote 2b: resumo do acesso (login) dos colaboradores vinculados. O RLS
+  // pode esconder perfis de outras unidades — nesses casos mostramos só "com
+  // acesso", sem e-mail/funções.
+  const accessByUser = new Map<string, StaffAccess>();
+  const linkedUserIds = [
+    ...new Set(rows.filter((r) => r.user_id).map((r) => r.user_id as string)),
+  ];
+  if (linkedUserIds.length > 0) {
+    const [{ data: profs }, { data: roleRows }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, email, is_active, is_admin_master")
+        .in("id", linkedUserIds),
+      supabase
+        .from("user_clinic_roles")
+        .select("user_id, role, clinics ( name )")
+        .in("user_id", linkedUserIds)
+        .returns<
+          { user_id: string; role: UserRole; clinics: { name: string } | null }[]
+        >(),
+    ]);
+    const rolesByUser = new Map<string, string[]>();
+    for (const rr of roleRows ?? []) {
+      const list = rolesByUser.get(rr.user_id) ?? [];
+      list.push(
+        `${ROLE_LABELS[rr.role]}${rr.clinics ? ` · ${rr.clinics.name}` : ""}`
+      );
+      rolesByUser.set(rr.user_id, list);
+    }
+    for (const p of profs ?? []) {
+      const parts = rolesByUser.get(p.id) ?? [];
+      if (p.is_admin_master) parts.unshift("Admin Master");
+      accessByUser.set(p.id, {
+        userId: p.id,
+        email: p.email,
+        loginActive: p.is_active,
+        rolesText: parts.join(", "),
+      });
+    }
+  }
+
+  // Admin: usuários disponíveis para o vínculo manual (e-mails diferentes).
+  let linkableUsers: { id: string; label: string }[] = [];
+  if (session.isAdminMaster) {
+    const { data: allUsers } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("is_active", true)
+      .order("full_name");
+    linkableUsers = (allUsers ?? []).map((u) => ({
+      id: u.id,
+      label: `${u.full_name || u.email || "—"}${u.email ? ` (${u.email})` : ""}`,
+    }));
   }
 
   return (
@@ -237,6 +296,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                   <th className="px-2 py-1.5 font-medium">Cargo</th>
                   <th className="px-2 py-1.5 font-medium">Regime</th>
                   <th className="px-2 py-1.5 font-medium">Unidade</th>
+                  <th className="px-2 py-1.5 font-medium">Acesso</th>
                   <th className="px-2 py-1.5 font-medium">Situação</th>
                   {canManage && <th className="px-2 py-1.5 font-medium" />}
                 </tr>
@@ -244,6 +304,14 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
               <tbody>
                 {rows.map((r) => {
                   const s = toStaff(r);
+                  const access = r.user_id
+                    ? accessByUser.get(r.user_id) ?? {
+                        userId: r.user_id,
+                        email: null,
+                        loginActive: true,
+                        rolesText: "",
+                      }
+                    : null;
                   return (
                     <tr key={r.id} className="border-b last:border-0">
                       <td className="px-2 py-1.5 font-mono text-xs text-gold">
@@ -287,6 +355,32 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                         {r.clinics?.name ?? "—"}
                       </td>
                       <td className="px-2 py-1.5">
+                        {!access ? (
+                          <span
+                            className="text-xs text-muted-foreground"
+                            title="Sem acesso ao sistema"
+                          >
+                            Sem acesso
+                          </span>
+                        ) : !r.is_active && access.loginActive ? (
+                          <Badge
+                            variant="destructive"
+                            title="Colaborador inativo, mas o login ainda está ativo"
+                          >
+                            Login ainda ativo
+                          </Badge>
+                        ) : !access.loginActive ? (
+                          <Badge variant="outline">Acesso desativado</Badge>
+                        ) : (
+                          <Badge
+                            variant="secondary"
+                            title={access.rolesText || access.email || undefined}
+                          >
+                            ✓ Com acesso
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-2 py-1.5">
                         {r.is_active ? (
                           <Badge variant="secondary">Ativo</Badge>
                         ) : (
@@ -303,6 +397,9 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                                 ? photoUrls.get(r.photo_path)
                                 : undefined
                             }
+                            access={access}
+                            isAdmin={session.isAdminMaster}
+                            linkableUsers={linkableUsers}
                           />
                         </td>
                       )}

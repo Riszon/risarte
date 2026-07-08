@@ -191,12 +191,27 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // H4.1 Lote 2b: acesso criado a partir de um Risartano → vincula o cadastro
+  // de RH ao novo login (além do vínculo automático por e-mail no banco).
+  const staffMemberId = String(formData.get("staff_member_id") ?? "").trim();
+  if (staffMemberId) {
+    const { error: linkError } = await supabase
+      .from("staff_members")
+      .update({ user_id: created.user.id })
+      .eq("id", staffMemberId)
+      .is("user_id", null);
+    if (linkError) {
+      console.error("staff link on createUser failed:", linkError.message);
+    }
+  }
+
   await logAudit({
     action: "create",
     entityType: "user",
     entityId: created.user.id,
   });
   revalidatePath("/admin/usuarios");
+  revalidatePath("/risartanos");
   return { ok: true };
 }
 

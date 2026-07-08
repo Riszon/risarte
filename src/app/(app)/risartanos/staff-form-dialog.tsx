@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ImagePlus, Plus } from "lucide-react";
+import { ImagePlus, KeyRound, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { STAFF_PHOTO_BUCKET } from "@/lib/staff";
+import { STAFF_PHOTO_BUCKET, type StaffAccess } from "@/lib/staff";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,7 +28,9 @@ import {
 } from "@/lib/staff";
 import {
   createStaffMember,
+  linkStaffUser,
   setStaffPhoto,
+  unlinkStaffUser,
   updateStaffMember,
 } from "./actions";
 
@@ -38,10 +41,17 @@ export function StaffFormDialog({
   units,
   staff,
   photoUrl,
+  access,
+  isAdmin = false,
+  linkableUsers = [],
 }: {
   units: { id: string; name: string }[];
   staff?: StaffMember;
   photoUrl?: string;
+  /** Login vinculado (H4.1 Lote 2b) — null/undefined = sem acesso. */
+  access?: StaffAccess | null;
+  isAdmin?: boolean;
+  linkableUsers?: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const isEdit = Boolean(staff);
@@ -53,6 +63,9 @@ export function StaffFormDialog({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const displayUrl = preview ?? photoUrl;
+  // H4.1 Lote 2b: vínculo manual com um usuário de acesso (Admin).
+  const [showLinkPicker, setShowLinkPicker] = useState(false);
+  const [linkUserId, setLinkUserId] = useState("");
 
   // Libera a prévia local da memória ao trocar/fechar.
   useEffect(() => {
@@ -121,6 +134,38 @@ export function StaffFormDialog({
   function onOpenChange(next: boolean) {
     setOpen(next);
     if (!next && !isEdit) resetPhoto();
+    if (!next) {
+      setShowLinkPicker(false);
+      setLinkUserId("");
+    }
+  }
+
+  function handleLink() {
+    if (!staff || !linkUserId) return;
+    startTransition(async () => {
+      const result = await linkStaffUser(staff.id, linkUserId);
+      if (result.ok) {
+        toast.success("Usuário vinculado.");
+        setShowLinkPicker(false);
+        setLinkUserId("");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
+  function handleUnlink() {
+    if (!staff) return;
+    startTransition(async () => {
+      const result = await unlinkStaffUser(staff.id);
+      if (result.ok) {
+        toast.success("Vínculo desfeito (o login continua existindo).");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -249,6 +294,127 @@ export function StaffFormDialog({
             )}
           </div>
         </div>
+
+        {isEdit && (
+          <div className="space-y-2 rounded-lg border p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium uppercase text-muted-foreground">
+              <KeyRound className="size-3.5" />
+              Acesso ao sistema
+            </p>
+            {access ? (
+              <>
+                <p className="text-sm">
+                  Login: <span className="font-medium">{access.email ?? "vinculado"}</span>
+                  {!access.loginActive && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      (acesso desativado)
+                    </span>
+                  )}
+                </p>
+                {access.rolesText && (
+                  <p className="text-xs text-muted-foreground">
+                    {access.rolesText}
+                  </p>
+                )}
+                {staff && !staff.isActive && access.loginActive && (
+                  <p className="text-xs font-medium text-destructive">
+                    Atenção: o colaborador está inativo, mas o login ainda está
+                    ativo.
+                  </p>
+                )}
+                {isAdmin && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link href={`/admin/usuarios/${access.userId}`} />}
+                    >
+                      Gerenciar acesso
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={handleUnlink}
+                    >
+                      Desvincular
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Este Risartano não tem login no sistema.
+                  {!isAdmin && " Fale com o Admin para criar o acesso."}
+                </p>
+                {isAdmin && !showLinkPicker && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href={{
+                            pathname: "/admin/usuarios/novo",
+                            query: { risartano: staff!.id },
+                          }}
+                        />
+                      }
+                    >
+                      Criar acesso
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowLinkPicker(true)}
+                    >
+                      Vincular usuário existente
+                    </Button>
+                  </div>
+                )}
+                {isAdmin && showLinkPicker && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={linkUserId}
+                      onChange={(e) => setLinkUserId(e.target.value)}
+                      className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                    >
+                      <option value="">Escolha o usuário...</option>
+                      {linkableUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!linkUserId || isPending}
+                      onClick={handleLink}
+                    >
+                      Vincular
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowLinkPicker(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         <form onSubmit={onSubmit} className="space-y-4">
           {!isEdit && (

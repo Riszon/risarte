@@ -5,6 +5,7 @@ import {
   fullAccessClinicIds,
   getSessionContext,
   hasRoleInClinic,
+  requireAdminMaster,
   type SessionContext,
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -234,6 +235,75 @@ export async function setStaffPhoto(
     details: { photo: clean ? "set" : "removed" },
   });
   revalidatePath("/risartanos");
+  return { ok: true };
+}
+
+/**
+ * H4.1 Lote 2b: vincula o Risartano a um usuário de acesso (login). Só o Admin
+ * gere acesso; o vínculo automático por e-mail acontece no banco (gatilhos).
+ */
+export async function linkStaffUser(
+  staffId: string,
+  userId: string
+): Promise<ActionResult> {
+  await requireAdminMaster();
+  if (!userId) return { ok: false, error: "Escolha o usuário." };
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("staff_members")
+    .select("clinic_id")
+    .eq("id", staffId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: "Risartano não encontrado." };
+
+  const { error } = await supabase
+    .from("staff_members")
+    .update({ user_id: userId })
+    .eq("id", staffId);
+  if (error) {
+    console.error("linkStaffUser failed:", error.message);
+    return { ok: false, error: "Não foi possível vincular o usuário." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "staff_member",
+    entityId: staffId,
+    clinicId: existing.clinic_id,
+    details: { access: "linked" },
+  });
+  revalidatePath("/risartanos");
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
+
+/** H4.1 Lote 2b: desfaz o vínculo com o usuário de acesso (não apaga o login). */
+export async function unlinkStaffUser(staffId: string): Promise<ActionResult> {
+  await requireAdminMaster();
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("staff_members")
+    .select("clinic_id")
+    .eq("id", staffId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: "Risartano não encontrado." };
+
+  const { error } = await supabase
+    .from("staff_members")
+    .update({ user_id: null })
+    .eq("id", staffId);
+  if (error) {
+    console.error("unlinkStaffUser failed:", error.message);
+    return { ok: false, error: "Não foi possível desvincular." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "staff_member",
+    entityId: staffId,
+    clinicId: existing.clinic_id,
+    details: { access: "unlinked" },
+  });
+  revalidatePath("/risartanos");
+  revalidatePath("/admin/usuarios");
   return { ok: true };
 }
 

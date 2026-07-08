@@ -71,6 +71,18 @@ export type StaffMember = {
   photoPath: string | null;
   notes: string | null;
   isActive: boolean;
+  /** Usuário de acesso (login) vinculado — H4.1 Lote 2b. */
+  userId: string | null;
+};
+
+/** Resumo do acesso (login) vinculado, exibido na tela Risartanos. */
+export type StaffAccess = {
+  userId: string;
+  /** E-mail do login (null quando o RLS não deixa o visitante ler o perfil). */
+  email: string | null;
+  loginActive: boolean;
+  /** Funções por clínica, já com rótulo pt-BR ("Recepcionista · Cambé"). */
+  rolesText: string;
 };
 
 /** Nome de exibição: prefere "como quer ser chamado", cai para o nome completo. */

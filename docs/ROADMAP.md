@@ -29,14 +29,15 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
   notificações; horários fora do expediente marcados + respiro no topo; linha do
   tempo (passado/1 ano, scroll, motivo do fechamento); liberar horário avulso
   (estender dia).
-- **GRUPO 4 — H4.1 Risartanos**: módulo base (Lote 1), foto (Lote 1b) e
-  **vínculo com o cliente por CPF (Lote 2)**.
+- **GRUPO 4 — H4.1 Risartanos**: módulo base (Lote 1), foto (Lote 1b),
+  **vínculo com o cliente por CPF (Lote 2)** e **vínculo com o usuário de
+  acesso por e-mail (Lote 2b)**.
 
 **FALTA (Grupo 4, ordem H4.1→H4.14):**
 - **H4.1** Lote 3 (auditoria de acessos/ações por colaborador).
 - **H4.2–H4.14** — ver abaixo.
 
-**Pendências operacionais do dono:** aplicar as migrações **0072–0078** (se ainda
+**Pendências operacionais do dono:** aplicar as migrações **0072–0079** (se ainda
 não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
 lançamento** (manter login Admin + catálogo + fichas; backup antes).
 
@@ -241,6 +242,16 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         ficha destaca **"★ É um Risartano"** / **"★ Ex-Risartano (inativo)"**; a
         inativação/reativação do colaborador é registrada no histórico do
         prontuário (`client_changes`).
+  - [x] **Lote 2b — vínculo com o usuário de acesso** ✅ (07/07, v0.14.1,
+        migração 0079) — `staff_members.user_id` ligado a `profiles` por
+        **e-mail** (gatilhos + backfill; nome sincroniza nos dois sentidos);
+        tela Risartanos ganhou coluna **Acesso** (com/sem login, "Login ainda
+        ativo" quando o colaborador está inativo) e seção *Acesso ao sistema*
+        no cadastro (Admin: **Criar acesso** pré-preenchido, **Vincular usuário
+        existente**, Desvincular, Gerenciar acesso); tela `/admin/usuarios`
+        corrigida para "Usuários (acesso)" + coluna **Risartano** (código RIS
+        com link) + aviso "colaborador inativo" no editor. Pré-requisito do
+        Lote 3.
   - [ ] **Lote 3 — auditoria** de acessos/logins e ações (por colaborador com
         login vinculado).
 - [ ] **H4.2 Anamnese 2.0 [G] 🗄️** — múltiplas fichas (1 por tipo; atualizar

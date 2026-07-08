@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -23,7 +24,7 @@ export default async function EditUserPage(
   const { id } = await props.params;
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: roles }, { data: clinics }] =
+  const [{ data: profile }, { data: roles }, { data: clinics }, { data: staffLinks }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -42,6 +43,20 @@ export default async function EditUserPage(
         .select("id, name, type")
         .eq("is_active", true)
         .order("name"),
+      // H4.1 Lote 2b: cadastro(s) de RH vinculado(s) a este login.
+      supabase
+        .from("staff_members")
+        .select("id, code, full_name, is_active, clinics ( name )")
+        .eq("user_id", id)
+        .returns<
+          {
+            id: string;
+            code: string | null;
+            full_name: string;
+            is_active: boolean;
+            clinics: { name: string } | null;
+          }[]
+        >(),
     ]);
 
   if (!profile) notFound();
@@ -53,6 +68,31 @@ export default async function EditUserPage(
           {profile.full_name || profile.email}
         </h1>
         <p className="text-sm text-muted-foreground">{profile.email}</p>
+        {(staffLinks ?? []).map((s) => (
+          <p key={s.id} className="text-sm">
+            Risartano vinculado:{" "}
+            <Link
+              href={{
+                pathname: "/risartanos",
+                query: s.code ? { busca: s.code } : undefined,
+              }}
+              className="font-mono font-medium text-gold underline-offset-2 hover:underline"
+            >
+              {s.code ?? "RH"}
+            </Link>{" "}
+            · {s.clinics?.name ?? "—"}
+            {!s.is_active && (
+              <span className="ml-1 font-medium text-destructive">
+                (colaborador inativo — avalie desativar o acesso)
+              </span>
+            )}
+          </p>
+        ))}
+        {(staffLinks ?? []).length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            Sem cadastro de RH vinculado (Risartanos).
+          </p>
+        )}
       </div>
       <UserEditor
         profile={profile}
