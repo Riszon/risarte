@@ -32,10 +32,12 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 **FALTA (Grupo 4, ordem numérica):**
 - **H4.5–H4.14** — ver abaixo (próximo: **H4.5 Cockpit 2.0**).
 
-**Pendências operacionais do dono:** aplicar as migrações **0072–0086** (se ainda
-não rodou alguma — em ordem, todas idempotentes); `GAMMA_API_KEY` na Vercel;
-**limpeza de dados de teste antes do lançamento** (manter login Admin + catálogo +
-fichas; backup antes).
+**Migrações:** **0001–0086 aplicadas** (o dono confirmou em 08/07/2026). A
+próxima migração escrita será a 0087.
+
+**Pendências operacionais do dono:** `GAMMA_API_KEY` na Vercel; **limpeza de dados
+de teste antes do lançamento** (manter login Admin + catálogo + fichas; backup
+antes).
 
 ## GRUPO 3 — próximo (H3.1 → H3.15)
 
