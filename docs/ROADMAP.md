@@ -36,7 +36,7 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 **FALTA (Grupo 4, ordem H4.1→H4.14):**
 - **H4.2–H4.14** — ver abaixo (próximo: H4.2 Anamnese 2.0).
 
-**Pendências operacionais do dono:** aplicar as migrações **0072–0080** (se ainda
+**Pendências operacionais do dono:** aplicar as migrações **0072–0081** (se ainda
 não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
 lançamento** (manter login Admin + catálogo + fichas; backup antes).
 
@@ -249,6 +249,13 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         **não cria dois Risartanos** (bloqueio por CPF na rede); cadastro
         **visível às unidades vinculadas** com a lista Unidade→Cargo
         (`can_see_staff`/`can_manage_staff` na RLS).
+  - [x] **Ajuste multi-unidade (visibilidade + status por unidade)** ✅ (08/07,
+        v0.15.1, migração 0081) — corrigido o bug de a lista filtrar pela
+        "unidade de origem" (agora a RLS é que escopa → aparece para o Gerente de
+        TODA unidade onde o Risartano tem acesso); lista e cadastro mostram
+        **todas as unidades** (com "outra unidade" para as que o gestor não gere);
+        **status Ativo/Inativo por unidade** (`inactive_unit_ids` +
+        `setStaffUnitActive`) — inativar numa unidade não afeta as demais.
   - [x] **Lote 2b — vínculo com o usuário de acesso** ✅ (07/07, v0.14.1,
         migração 0079) — `staff_members.user_id` ligado a `profiles` por
         **e-mail** (gatilhos + backfill; nome sincroniza nos dois sentidos);

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ImagePlus, KeyRound, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { STAFF_PHOTO_BUCKET, type StaffAccess } from "@/lib/staff";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,6 +31,7 @@ import {
   createStaffMember,
   linkStaffUser,
   setStaffPhoto,
+  setStaffUnitActive,
   unlinkStaffUser,
   updateStaffMember,
 } from "./actions";
@@ -46,6 +48,7 @@ export function StaffFormDialog({
   linkableUsers = [],
   canPickUnit = false,
   activeClinicName = null,
+  manageClinicIds = [],
 }: {
   units: { id: string; name: string }[];
   staff?: StaffMember;
@@ -57,6 +60,8 @@ export function StaffFormDialog({
   /** Admin/RH escolhem a unidade; Gerente/Franqueado usam a unidade ativa. */
   canPickUnit?: boolean;
   activeClinicName?: string | null;
+  /** Unidades que o usuário atual gere (pode ativar/inativar o status ali). */
+  manageClinicIds?: string[];
 }) {
   const router = useRouter();
   const isEdit = Boolean(staff);
@@ -172,6 +177,21 @@ export function StaffFormDialog({
       const result = await unlinkStaffUser(staff.id);
       if (result.ok) {
         toast.success("Vínculo desfeito (o login continua existindo).");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
+
+  function handleUnitActive(clinicId: string, active: boolean) {
+    if (!staff) return;
+    startTransition(async () => {
+      const result = await setStaffUnitActive(staff.id, clinicId, active);
+      if (result.ok) {
+        toast.success(
+          active ? "Ativado nesta unidade." : "Inativado nesta unidade."
+        );
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
@@ -325,20 +345,53 @@ export function StaffFormDialog({
                 {access.units.length > 0 ? (
                   <div className="text-xs">
                     <p className="font-medium text-muted-foreground">
-                      Unidades e cargos:
+                      Unidades e cargos (status por unidade):
                     </p>
-                    <ul className="mt-0.5 space-y-0.5">
-                      {access.units.map((u, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center justify-between gap-3"
-                        >
-                          <span>{u.clinicName}</span>
-                          <span className="font-medium text-gold">
-                            {u.roleLabel}
-                          </span>
-                        </li>
-                      ))}
+                    <ul className="mt-1 space-y-1">
+                      {access.units.map((u) => {
+                        const managed =
+                          isAdmin || manageClinicIds.includes(u.clinicId);
+                        const unitInactive =
+                          staff?.inactiveUnitIds.includes(u.clinicId) ?? false;
+                        return (
+                          <li
+                            key={u.clinicId}
+                            className="flex flex-wrap items-center justify-between gap-2"
+                          >
+                            <span>
+                              {u.clinicName}
+                              <span className="ml-1 font-medium text-gold">
+                                {u.roleLabel}
+                              </span>
+                            </span>
+                            {managed ? (
+                              <span className="flex items-center gap-1.5">
+                                <Badge
+                                  variant={unitInactive ? "outline" : "secondary"}
+                                >
+                                  {unitInactive ? "Inativo" : "Ativo"}
+                                </Badge>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  disabled={isPending}
+                                  onClick={() =>
+                                    handleUnitActive(u.clinicId, unitInactive)
+                                  }
+                                >
+                                  {unitInactive ? "Reativar" : "Inativar"}
+                                </Button>
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {unitInactive ? "Inativo" : "Ativo"} · outra unidade
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 ) : (

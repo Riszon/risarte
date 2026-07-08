@@ -47,6 +47,7 @@ type StaffRow = {
   notes: string | null;
   is_active: boolean;
   user_id: string | null;
+  inactive_unit_ids: string[] | null;
   clinics: { name: string } | null;
 };
 
@@ -78,6 +79,7 @@ function toStaff(r: StaffRow): StaffMember {
     notes: r.notes,
     isActive: r.is_active,
     userId: r.user_id,
+    inactiveUnitIds: r.inactive_unit_ids ?? [],
   };
 }
 
@@ -138,15 +140,16 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
     .order("name");
   if (scopeIds) unitsQuery = unitsQuery.in("id", scopeIds);
 
+  // NÃO filtramos por clinic_id: a barreira é a RLS (`can_see_staff`), que já
+  // mostra o Risartano a quem gere QUALQUER unidade onde ele tem acesso. Filtrar
+  // pela "unidade de origem" aqui escondia os profissionais multi-unidade.
   let staffQuery = supabase
     .from("staff_members")
     .select(
-      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, user_id, clinics ( name )"
+      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, user_id, inactive_unit_ids, clinics ( name )"
     )
     .order("full_name")
     .limit(2000);
-  if (scopeIds) staffQuery = staffQuery.in("clinic_id", scopeIds);
-  if (unidade) staffQuery = staffQuery.eq("clinic_id", unidade);
   if (contrato) staffQuery = staffQuery.eq("contract_type", contrato);
   if (ativo === "ativos") staffQuery = staffQuery.eq("is_active", true);
   else if (ativo === "inativos") staffQuery = staffQuery.eq("is_active", false);
@@ -232,6 +235,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
         loginActive: p.is_active,
         rolesText: parts.join(", "),
         units: units.map((u) => ({
+          clinicId: u.clinicId,
           clinicName: u.clinicName,
           roleLabel: u.roleLabel,
         })),
@@ -253,6 +257,17 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
       label: `${u.full_name || u.email || "—"}${u.email ? ` (${u.email})` : ""}`,
     }));
   }
+
+  // Filtro por unidade escolhida no seletor: a unidade de origem OU uma unidade
+  // onde o Risartano tem acesso (multi-unidade).
+  const shownRows = unidade
+    ? rows.filter(
+        (r) =>
+          r.clinic_id === unidade ||
+          (r.user_id &&
+            (accessByUser.get(r.user_id)?.unitClinicIds ?? []).includes(unidade))
+      )
+    : rows;
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
@@ -322,11 +337,11 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Colaboradores ({rows.length})
+            Colaboradores ({shownRows.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          {rows.length === 0 ? (
+          {shownRows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               Nenhum Risartano encontrado.
             </p>
@@ -336,16 +351,14 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                 <tr>
                   <th className="px-2 py-1.5 font-medium">Código</th>
                   <th className="px-2 py-1.5 font-medium">Nome</th>
-                  <th className="px-2 py-1.5 font-medium">Cargo</th>
+                  <th className="px-2 py-1.5 font-medium">Unidades e situação</th>
                   <th className="px-2 py-1.5 font-medium">Regime</th>
-                  <th className="px-2 py-1.5 font-medium">Unidade</th>
                   <th className="px-2 py-1.5 font-medium">Acesso</th>
-                  <th className="px-2 py-1.5 font-medium">Situação</th>
                   {canManageAny && <th className="px-2 py-1.5 font-medium" />}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {shownRows.map((r) => {
                   const s = toStaff(r);
                   const access = r.user_id
                     ? accessByUser.get(r.user_id) ?? {
@@ -357,12 +370,8 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                         unitClinicIds: [],
                       }
                     : null;
-                  // Cargo = papel de acesso na unidade deste cadastro.
-                  const cargo =
-                    access?.units.find((u) => u.clinicName === r.clinics?.name)
-                      ?.roleLabel ??
-                    access?.units[0]?.roleLabel ??
-                    null;
+                  const accessUnits = access?.units ?? [];
+                  const inactiveSet = new Set(r.inactive_unit_ids ?? []);
                   const canManageRow =
                     session.isAdminMaster ||
                     manageClinicIds.has(r.clinic_id) ||
@@ -400,18 +409,61 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                           </span>
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-muted-foreground">
-                        {cargo ?? (
-                          <span className="text-xs italic">sem acesso</span>
+                      <td className="px-2 py-1.5">
+                        {accessUnits.length > 0 ? (
+                          <ul className="space-y-0.5">
+                            {accessUnits.map((u) => {
+                              const managed =
+                                session.isAdminMaster ||
+                                manageClinicIds.has(u.clinicId);
+                              const unitInactive = inactiveSet.has(u.clinicId);
+                              return (
+                                <li
+                                  key={u.clinicId}
+                                  className="flex flex-wrap items-center gap-1.5"
+                                >
+                                  <span
+                                    className={
+                                      managed
+                                        ? "font-medium"
+                                        : "text-muted-foreground"
+                                    }
+                                  >
+                                    {u.clinicName}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    · {u.roleLabel}
+                                  </span>
+                                  {managed ? (
+                                    unitInactive ? (
+                                      <Badge variant="outline">Inativo</Badge>
+                                    ) : (
+                                      <Badge variant="secondary">Ativo</Badge>
+                                    )
+                                  ) : (
+                                    <span className="text-xs italic text-muted-foreground">
+                                      (outra unidade{unitInactive ? " · inativo" : ""})
+                                    </span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span>{r.clinics?.name ?? "—"}</span>
+                            {r.is_active ? (
+                              <Badge variant="secondary">Ativo</Badge>
+                            ) : (
+                              <Badge variant="outline">Inativo</Badge>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">
                         {r.contract_type
                           ? CONTRACT_LABELS[r.contract_type as ContractType]
                           : "—"}
-                      </td>
-                      <td className="px-2 py-1.5 text-muted-foreground">
-                        {r.clinics?.name ?? "—"}
                       </td>
                       <td className="px-2 py-1.5">
                         {!access ? (
@@ -439,13 +491,6 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                           </Badge>
                         )}
                       </td>
-                      <td className="px-2 py-1.5">
-                        {r.is_active ? (
-                          <Badge variant="secondary">Ativo</Badge>
-                        ) : (
-                          <Badge variant="outline">Inativo</Badge>
-                        )}
-                      </td>
                       {canManageAny && (
                         <td className="px-2 py-1.5 text-right">
                           {canManageRow && (
@@ -460,6 +505,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                               access={access}
                               isAdmin={session.isAdminMaster}
                               linkableUsers={linkableUsers}
+                              manageClinicIds={Array.from(manageClinicIds)}
                             />
                           )}
                         </td>

@@ -73,6 +73,8 @@ export type StaffMember = {
   isActive: boolean;
   /** Usuário de acesso (login) vinculado — H4.1 Lote 2b. */
   userId: string | null;
+  /** Unidades onde o Risartano está INATIVO (status por unidade — H4.1). */
+  inactiveUnitIds: string[];
 };
 
 /** Resumo do acesso (login) vinculado, exibido na tela Risartanos. */
@@ -84,7 +86,7 @@ export type StaffAccess = {
   /** Funções por clínica, já com rótulo pt-BR ("Recepcionista · Cambé"). */
   rolesText: string;
   /** Unidades e cargos do Risartano (o cargo vem do acesso — H4.1). */
-  units: { clinicName: string; roleLabel: string }[];
+  units: { clinicId: string; clinicName: string; roleLabel: string }[];
   /** Ids das unidades onde o login tem papel (para checar gestão multi-unidade). */
   unitClinicIds: string[];
 };

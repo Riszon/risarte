@@ -389,6 +389,58 @@ export async function unlinkStaffUser(staffId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/**
+ * H4.1: ativa/inativa o Risartano em UMA unidade específica, sem afetar as
+ * outras. Só quem gere aquela unidade (Gerente/Franqueado/RH/Admin) altera.
+ */
+export async function setStaffUnitActive(
+  staffId: string,
+  clinicId: string,
+  active: boolean
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!clinicId) return { ok: false, error: "Unidade inválida." };
+  if (!(await canManage(session, clinicId))) {
+    return { ok: false, error: "Você só altera o status na sua unidade." };
+  }
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("staff_members")
+    .select("clinic_id, inactive_unit_ids")
+    .eq("id", staffId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: "Risartano não encontrado." };
+
+  const current: string[] = existing.inactive_unit_ids ?? [];
+  const next = active
+    ? current.filter((id) => id !== clinicId)
+    : current.includes(clinicId)
+      ? current
+      : [...current, clinicId];
+
+  const { error } = await supabase
+    .from("staff_members")
+    .update({
+      inactive_unit_ids: next,
+      updated_at: new Date().toISOString(),
+      updated_by: session.userId,
+    })
+    .eq("id", staffId);
+  if (error) {
+    console.error("setStaffUnitActive failed:", error.message);
+    return { ok: false, error: "Não foi possível atualizar o status." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "staff_member",
+    entityId: staffId,
+    clinicId,
+    details: { unit_active: active },
+  });
+  revalidatePath("/risartanos");
+  return { ok: true };
+}
+
 export async function setStaffActive(
   staffId: string,
   active: boolean
