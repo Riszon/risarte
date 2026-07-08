@@ -85,18 +85,39 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   const session = await getSessionContext();
 
   const allRoles = Object.values(session.rolesByClinic).flat();
-  const isManagerOrStaff = allRoles.some((r) =>
-    ["unit_manager", "franchisor_staff"].includes(r)
-  );
-  const isFranchisee = allRoles.includes("franchisee");
-  if (!session.isAdminMaster && !isManagerOrStaff && !isFranchisee) {
-    redirect("/");
-  }
-  // Quem só visualiza (franqueado): sem cadastrar/editar.
-  const canManage = session.isAdminMaster || isManagerOrStaff;
+  const isRH = allRoles.includes("franchisor_staff");
+  const canView =
+    session.isAdminMaster ||
+    isRH ||
+    allRoles.some((r) => ["unit_manager", "franchisee"].includes(r));
+  if (!canView) redirect("/");
 
   const scopeIds = session.isAdminMaster ? null : await fullAccessClinicIds();
   if (scopeIds !== null && scopeIds.length === 0) redirect("/");
+
+  // Onde este usuário pode CADASTRAR/EDITAR: Gerente/Franqueado na sua unidade +
+  // Franqueadora/RH nas unidades do escopo. Admin gere tudo.
+  const manageClinicIds = new Set<string>();
+  for (const [cid, rs] of Object.entries(session.rolesByClinic)) {
+    if (rs.some((r) => r === "unit_manager" || r === "franchisee")) {
+      manageClinicIds.add(cid);
+    }
+  }
+  if (isRH) for (const id of scopeIds ?? []) manageClinicIds.add(id);
+
+  // Admin e Franqueadora/RH escolhem a unidade ao cadastrar; Gerente/Franqueado
+  // cadastram só na unidade ativa (a que estão logados).
+  const canPickUnit = session.isAdminMaster || isRH;
+  const activeClinicId = session.activeClinic?.id ?? null;
+  const activeClinicName = session.activeClinic?.name ?? null;
+  const canCreate =
+    session.isAdminMaster ||
+    isRH ||
+    (activeClinicId != null &&
+      (session.rolesByClinic[activeClinicId] ?? []).some(
+        (r) => r === "unit_manager" || r === "franchisee"
+      ));
+  const canManageAny = session.isAdminMaster || manageClinicIds.size > 0;
 
   const searchParams = await props.searchParams;
   const busca = typeof searchParams.busca === "string" ? searchParams.busca : "";
@@ -177,28 +198,44 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
         .in("id", linkedUserIds),
       supabase
         .from("user_clinic_roles")
-        .select("user_id, role, clinics ( name )")
+        .select("user_id, role, clinic_id, clinics ( name )")
         .in("user_id", linkedUserIds)
         .returns<
-          { user_id: string; role: UserRole; clinics: { name: string } | null }[]
+          {
+            user_id: string;
+            role: UserRole;
+            clinic_id: string;
+            clinics: { name: string } | null;
+          }[]
         >(),
     ]);
-    const rolesByUser = new Map<string, string[]>();
+    const unitsByUser = new Map<
+      string,
+      { clinicName: string; roleLabel: string; clinicId: string }[]
+    >();
     for (const rr of roleRows ?? []) {
-      const list = rolesByUser.get(rr.user_id) ?? [];
-      list.push(
-        `${ROLE_LABELS[rr.role]}${rr.clinics ? ` · ${rr.clinics.name}` : ""}`
-      );
-      rolesByUser.set(rr.user_id, list);
+      const list = unitsByUser.get(rr.user_id) ?? [];
+      list.push({
+        clinicName: rr.clinics?.name ?? "—",
+        roleLabel: ROLE_LABELS[rr.role],
+        clinicId: rr.clinic_id,
+      });
+      unitsByUser.set(rr.user_id, list);
     }
     for (const p of profs ?? []) {
-      const parts = rolesByUser.get(p.id) ?? [];
+      const units = unitsByUser.get(p.id) ?? [];
+      const parts = units.map((u) => `${u.roleLabel} · ${u.clinicName}`);
       if (p.is_admin_master) parts.unshift("Admin Master");
       accessByUser.set(p.id, {
         userId: p.id,
         email: p.email,
         loginActive: p.is_active,
         rolesText: parts.join(", "),
+        units: units.map((u) => ({
+          clinicName: u.clinicName,
+          roleLabel: u.roleLabel,
+        })),
+        unitClinicIds: units.map((u) => u.clinicId),
       });
     }
   }
@@ -227,8 +264,14 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
             {scopeIds && scopeIds.length === 1 ? "unidade" : "rede"}.
           </p>
         </div>
-        {canManage && unitOptions.length > 0 && (
-          <StaffFormDialog units={unitOptions} />
+        {canCreate && (canPickUnit ? unitOptions.length > 0 : !!activeClinicId) && (
+          <StaffFormDialog
+            units={unitOptions}
+            canPickUnit={canPickUnit}
+            activeClinicName={activeClinicName}
+            isAdmin={session.isAdminMaster}
+            linkableUsers={linkableUsers}
+          />
         )}
       </div>
 
@@ -298,7 +341,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                   <th className="px-2 py-1.5 font-medium">Unidade</th>
                   <th className="px-2 py-1.5 font-medium">Acesso</th>
                   <th className="px-2 py-1.5 font-medium">Situação</th>
-                  {canManage && <th className="px-2 py-1.5 font-medium" />}
+                  {canManageAny && <th className="px-2 py-1.5 font-medium" />}
                 </tr>
               </thead>
               <tbody>
@@ -310,8 +353,22 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                         email: null,
                         loginActive: true,
                         rolesText: "",
+                        units: [],
+                        unitClinicIds: [],
                       }
                     : null;
+                  // Cargo = papel de acesso na unidade deste cadastro.
+                  const cargo =
+                    access?.units.find((u) => u.clinicName === r.clinics?.name)
+                      ?.roleLabel ??
+                    access?.units[0]?.roleLabel ??
+                    null;
+                  const canManageRow =
+                    session.isAdminMaster ||
+                    manageClinicIds.has(r.clinic_id) ||
+                    (access?.unitClinicIds ?? []).some((id) =>
+                      manageClinicIds.has(id)
+                    );
                   return (
                     <tr key={r.id} className="border-b last:border-0">
                       <td className="px-2 py-1.5 font-mono text-xs text-gold">
@@ -344,7 +401,9 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                         </span>
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">
-                        {r.role_title ?? "—"}
+                        {cargo ?? (
+                          <span className="text-xs italic">sem acesso</span>
+                        )}
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">
                         {r.contract_type
@@ -387,20 +446,22 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                           <Badge variant="outline">Inativo</Badge>
                         )}
                       </td>
-                      {canManage && (
+                      {canManageAny && (
                         <td className="px-2 py-1.5 text-right">
-                          <StaffFormDialog
-                            units={unitOptions}
-                            staff={s}
-                            photoUrl={
-                              r.photo_path
-                                ? photoUrls.get(r.photo_path)
-                                : undefined
-                            }
-                            access={access}
-                            isAdmin={session.isAdminMaster}
-                            linkableUsers={linkableUsers}
-                          />
+                          {canManageRow && (
+                            <StaffFormDialog
+                              units={unitOptions}
+                              staff={s}
+                              photoUrl={
+                                r.photo_path
+                                  ? photoUrls.get(r.photo_path)
+                                  : undefined
+                              }
+                              access={access}
+                              isAdmin={session.isAdminMaster}
+                              linkableUsers={linkableUsers}
+                            />
+                          )}
                         </td>
                       )}
                     </tr>

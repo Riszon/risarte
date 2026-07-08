@@ -44,6 +44,8 @@ export function StaffFormDialog({
   access,
   isAdmin = false,
   linkableUsers = [],
+  canPickUnit = false,
+  activeClinicName = null,
 }: {
   units: { id: string; name: string }[];
   staff?: StaffMember;
@@ -52,6 +54,9 @@ export function StaffFormDialog({
   access?: StaffAccess | null;
   isAdmin?: boolean;
   linkableUsers?: { id: string; label: string }[];
+  /** Admin/RH escolhem a unidade; Gerente/Franqueado usam a unidade ativa. */
+  canPickUnit?: boolean;
+  activeClinicName?: string | null;
 }) {
   const router = useRouter();
   const isEdit = Boolean(staff);
@@ -66,6 +71,12 @@ export function StaffFormDialog({
   // H4.1 Lote 2b: vínculo manual com um usuário de acesso (Admin).
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [linkUserId, setLinkUserId] = useState("");
+  // Cônjuge só quando casado(a)/união estável.
+  const [maritalStatus, setMaritalStatus] = useState(
+    staff?.maritalStatus ?? ""
+  );
+  const showSpouse =
+    maritalStatus === "married" || maritalStatus === "stable_union";
 
   // Libera a prévia local da memória ao trocar/fechar.
   useEffect(() => {
@@ -311,9 +322,28 @@ export function StaffFormDialog({
                     </span>
                   )}
                 </p>
-                {access.rolesText && (
+                {access.units.length > 0 ? (
+                  <div className="text-xs">
+                    <p className="font-medium text-muted-foreground">
+                      Unidades e cargos:
+                    </p>
+                    <ul className="mt-0.5 space-y-0.5">
+                      {access.units.map((u, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center justify-between gap-3"
+                        >
+                          <span>{u.clinicName}</span>
+                          <span className="font-medium text-gold">
+                            {u.roleLabel}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
                   <p className="text-xs text-muted-foreground">
-                    {access.rolesText}
+                    Login ainda sem função definida.
                   </p>
                 )}
                 {staff && !staff.isActive && access.loginActive && (
@@ -417,18 +447,29 @@ export function StaffFormDialog({
         )}
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {!isEdit && (
-            <div>
-              <Label htmlFor="clinic_id">Unidade *</Label>
-              <select id="clinic_id" name="clinic_id" required className={selectClass}>
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {!isEdit &&
+            (canPickUnit ? (
+              <div>
+                <Label htmlFor="clinic_id">Unidade *</Label>
+                <select
+                  id="clinic_id"
+                  name="clinic_id"
+                  required
+                  className={selectClass}
+                >
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-gold/40 bg-gold/5 px-3 py-2 text-xs">
+                Será cadastrado na sua unidade:{" "}
+                <span className="font-medium">{activeClinicName ?? "—"}</span>.
+              </p>
+            ))}
 
           <p className="text-xs font-medium uppercase text-muted-foreground">
             Dados pessoais
@@ -439,21 +480,21 @@ export function StaffFormDialog({
               <Input id="full_name" name="full_name" required defaultValue={staff?.fullName ?? ""} />
             </div>
             <div>
-              <Label htmlFor="preferred_name">Como quer ser chamado(a)</Label>
-              <Input id="preferred_name" name="preferred_name" defaultValue={staff?.preferredName ?? ""} />
+              <Label htmlFor="preferred_name">Como quer ser chamado(a) *</Label>
+              <Input id="preferred_name" name="preferred_name" required defaultValue={staff?.preferredName ?? ""} />
             </div>
             <div>
-              <Label htmlFor="cpf">CPF</Label>
-              <Input id="cpf" name="cpf" defaultValue={staff?.cpf ?? ""} />
+              <Label htmlFor="cpf">CPF *</Label>
+              <Input id="cpf" name="cpf" required placeholder="000.000.000-00" defaultValue={staff?.cpf ?? ""} />
             </div>
             <div>
-              <Label htmlFor="birth_date">Nascimento</Label>
-              <Input id="birth_date" name="birth_date" type="date" defaultValue={staff?.birthDate ?? ""} />
+              <Label htmlFor="birth_date">Nascimento *</Label>
+              <Input id="birth_date" name="birth_date" type="date" required defaultValue={staff?.birthDate ?? ""} />
             </div>
             <div>
-              <Label htmlFor="gender">Gênero</Label>
-              <select id="gender" name="gender" defaultValue={staff?.gender ?? ""} className={selectClass}>
-                <option value="">—</option>
+              <Label htmlFor="gender">Gênero *</Label>
+              <select id="gender" name="gender" required defaultValue={staff?.gender ?? ""} className={selectClass}>
+                <option value="">Selecione...</option>
                 {GENDERS.map((g) => (
                   <option key={g} value={g}>
                     {GENDER_LABELS[g]}
@@ -462,9 +503,16 @@ export function StaffFormDialog({
               </select>
             </div>
             <div>
-              <Label htmlFor="marital_status">Estado civil</Label>
-              <select id="marital_status" name="marital_status" defaultValue={staff?.maritalStatus ?? ""} className={selectClass}>
-                <option value="">—</option>
+              <Label htmlFor="marital_status">Estado civil *</Label>
+              <select
+                id="marital_status"
+                name="marital_status"
+                required
+                value={maritalStatus}
+                onChange={(e) => setMaritalStatus(e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Selecione...</option>
                 {MARITAL_STATUSES.map((m) => (
                   <option key={m} value={m}>
                     {MARITAL_LABELS[m]}
@@ -472,14 +520,18 @@ export function StaffFormDialog({
                 ))}
               </select>
             </div>
-            <div>
-              <Label htmlFor="spouse_name">Cônjuge — nome</Label>
-              <Input id="spouse_name" name="spouse_name" defaultValue={staff?.spouseName ?? ""} />
-            </div>
-            <div>
-              <Label htmlFor="spouse_phone">Cônjuge — telefone</Label>
-              <Input id="spouse_phone" name="spouse_phone" defaultValue={staff?.spousePhone ?? ""} />
-            </div>
+            {showSpouse && (
+              <>
+                <div>
+                  <Label htmlFor="spouse_name">Cônjuge — nome *</Label>
+                  <Input id="spouse_name" name="spouse_name" required defaultValue={staff?.spouseName ?? ""} />
+                </div>
+                <div>
+                  <Label htmlFor="spouse_phone">Cônjuge — telefone</Label>
+                  <Input id="spouse_phone" name="spouse_phone" defaultValue={staff?.spousePhone ?? ""} />
+                </div>
+              </>
+            )}
           </div>
 
           <p className="text-xs font-medium uppercase text-muted-foreground">
@@ -487,12 +539,12 @@ export function StaffFormDialog({
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input id="whatsapp" name="whatsapp" defaultValue={staff?.whatsapp ?? ""} />
+              <Label htmlFor="whatsapp">WhatsApp *</Label>
+              <Input id="whatsapp" name="whatsapp" required placeholder="(00) 00000-0000" defaultValue={staff?.whatsapp ?? ""} />
             </div>
             <div>
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" name="email" type="email" defaultValue={staff?.email ?? ""} />
+              <Label htmlFor="email">E-mail *</Label>
+              <Input id="email" name="email" type="email" required defaultValue={staff?.email ?? ""} />
             </div>
           </div>
 
@@ -501,32 +553,32 @@ export function StaffFormDialog({
           </p>
           <div className="grid gap-3 sm:grid-cols-6">
             <div className="sm:col-span-2">
-              <Label htmlFor="zip_code">CEP</Label>
-              <Input id="zip_code" name="zip_code" defaultValue={staff?.zipCode ?? ""} />
+              <Label htmlFor="zip_code">CEP *</Label>
+              <Input id="zip_code" name="zip_code" required placeholder="00000-000" defaultValue={staff?.zipCode ?? ""} />
             </div>
             <div className="sm:col-span-3">
-              <Label htmlFor="address">Logradouro</Label>
-              <Input id="address" name="address" defaultValue={staff?.address ?? ""} />
+              <Label htmlFor="address">Logradouro *</Label>
+              <Input id="address" name="address" required defaultValue={staff?.address ?? ""} />
             </div>
             <div>
-              <Label htmlFor="address_number">Número</Label>
-              <Input id="address_number" name="address_number" defaultValue={staff?.addressNumber ?? ""} />
+              <Label htmlFor="address_number">Número *</Label>
+              <Input id="address_number" name="address_number" required defaultValue={staff?.addressNumber ?? ""} />
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="complement">Complemento</Label>
               <Input id="complement" name="complement" defaultValue={staff?.complement ?? ""} />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="neighborhood">Bairro</Label>
-              <Input id="neighborhood" name="neighborhood" defaultValue={staff?.neighborhood ?? ""} />
+              <Label htmlFor="neighborhood">Bairro *</Label>
+              <Input id="neighborhood" name="neighborhood" required defaultValue={staff?.neighborhood ?? ""} />
             </div>
             <div>
-              <Label htmlFor="city">Cidade</Label>
-              <Input id="city" name="city" defaultValue={staff?.city ?? ""} />
+              <Label htmlFor="city">Cidade *</Label>
+              <Input id="city" name="city" required defaultValue={staff?.city ?? ""} />
             </div>
             <div>
-              <Label htmlFor="state">UF</Label>
-              <Input id="state" name="state" maxLength={2} defaultValue={staff?.state ?? ""} />
+              <Label htmlFor="state">UF *</Label>
+              <Input id="state" name="state" required maxLength={2} defaultValue={staff?.state ?? ""} />
             </div>
           </div>
 
@@ -535,9 +587,9 @@ export function StaffFormDialog({
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="contract_type">Regime</Label>
-              <select id="contract_type" name="contract_type" defaultValue={staff?.contractType ?? ""} className={selectClass}>
-                <option value="">—</option>
+              <Label htmlFor="contract_type">Regime *</Label>
+              <select id="contract_type" name="contract_type" required defaultValue={staff?.contractType ?? ""} className={selectClass}>
+                <option value="">Selecione...</option>
                 {CONTRACT_TYPES.map((c) => (
                   <option key={c} value={c}>
                     {CONTRACT_LABELS[c]}
@@ -545,9 +597,10 @@ export function StaffFormDialog({
                 ))}
               </select>
             </div>
-            <div>
-              <Label htmlFor="role_title">Cargo / função</Label>
-              <Input id="role_title" name="role_title" defaultValue={staff?.roleTitle ?? ""} />
+            <div className="flex items-end">
+              <p className="text-xs text-muted-foreground">
+                O cargo/função vem do <b>acesso</b> do Risartano (por unidade).
+              </p>
             </div>
           </div>
 

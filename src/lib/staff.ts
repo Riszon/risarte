@@ -83,6 +83,10 @@ export type StaffAccess = {
   loginActive: boolean;
   /** Funções por clínica, já com rótulo pt-BR ("Recepcionista · Cambé"). */
   rolesText: string;
+  /** Unidades e cargos do Risartano (o cargo vem do acesso — H4.1). */
+  units: { clinicName: string; roleLabel: string }[];
+  /** Ids das unidades onde o login tem papel (para checar gestão multi-unidade). */
+  unitClinicIds: string[];
 };
 
 /** Nome de exibição: prefere "como quer ser chamado", cai para o nome completo. */

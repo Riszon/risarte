@@ -37,7 +37,7 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 - **H4.1** Lote 3 (auditoria de acessos/ações por colaborador).
 - **H4.2–H4.14** — ver abaixo.
 
-**Pendências operacionais do dono:** aplicar as migrações **0072–0079** (se ainda
+**Pendências operacionais do dono:** aplicar as migrações **0072–0080** (se ainda
 não rodou alguma); `GAMMA_API_KEY` na Vercel; **limpeza de dados de teste antes do
 lançamento** (manter login Admin + catálogo + fichas; backup antes).
 
@@ -242,6 +242,14 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         ficha destaca **"★ É um Risartano"** / **"★ Ex-Risartano (inativo)"**; a
         inativação/reativação do colaborador é registrada no histórico do
         prontuário (`client_changes`).
+  - [x] **Ajustes multi-unidade** ✅ (08/07, v0.14.2, migração 0080) —
+        permissão corrigida (Gerente/Franqueado cadastram só na unidade ativa;
+        Admin e Franqueadora/RH escolhem a unidade; recepção bloqueada);
+        **cargo/função vem do acesso** (por unidade, não é mais campo); cônjuge
+        só quando casado(a)/união estável; **todos os campos obrigatórios**;
+        **não cria dois Risartanos** (bloqueio por CPF na rede); cadastro
+        **visível às unidades vinculadas** com a lista Unidade→Cargo
+        (`can_see_staff`/`can_manage_staff` na RLS).
   - [x] **Lote 2b — vínculo com o usuário de acesso** ✅ (07/07, v0.14.1,
         migração 0079) — `staff_members.user_id` ligado a `profiles` por
         **e-mail** (gatilhos + backfill; nome sincroniza nos dois sentidos);

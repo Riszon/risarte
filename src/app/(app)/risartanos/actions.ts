@@ -26,19 +26,41 @@ export type CreateStaffResult = ActionResult & {
   clinicId?: string;
 };
 
-/** Admin Master, Gerente da unidade e Franqueadora (RH) com acesso à unidade. */
+/**
+ * Pode cadastrar/editar Risartano NESTA unidade: Admin Master; Gerente ou
+ * Franqueado da unidade; ou Franqueadora/RH com acesso à unidade. (A edição de
+ * um cadastro já existente — inclusive multi-unidade — usa `canManageStaff`.)
+ */
 async function canManage(
   session: SessionContext,
   clinicId: string
 ): Promise<boolean> {
   if (session.isAdminMaster) return true;
-  if (hasRoleInClinic(session, clinicId, ["unit_manager"])) return true;
+  if (hasRoleInClinic(session, clinicId, ["unit_manager", "franchisee"])) {
+    return true;
+  }
   const isFranchisorStaff = Object.values(session.rolesByClinic)
     .flat()
     .includes("franchisor_staff");
   if (!isFranchisorStaff) return false;
   const ids = await fullAccessClinicIds();
   return ids.includes(clinicId);
+}
+
+/** É Franqueadora/RH da rede (papel em qualquer clínica)? Pode escolher unidade. */
+function isFranchisorStaff(session: SessionContext): boolean {
+  return Object.values(session.rolesByClinic).flat().includes("franchisor_staff");
+}
+
+/**
+ * Pode gerir ESTE cadastro (por id) — cobre o caso multi-unidade (Gerente de
+ * uma unidade onde a pessoa tem acesso, mesmo que o cadastro seja de outra).
+ * Espelha a função `can_manage_staff` da RLS.
+ */
+async function canManageStaff(staffId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("can_manage_staff", { p_staff_id: staffId });
+  return data === true;
 }
 
 function field(formData: FormData, key: string): string | null {
@@ -57,42 +79,73 @@ function oneOf<T extends readonly string[]>(
     : null;
 }
 
+// Campos de texto obrigatórios (cadastro completo — o dono exige). Complemento,
+// observações e cônjuge (condicional) ficam de fora. Cargo/função NÃO é mais
+// campo: vem do acesso do Risartano (user_clinic_roles).
+const REQUIRED_TEXT: [string, string][] = [
+  ["full_name", "Nome completo"],
+  ["preferred_name", "Como quer ser chamado(a)"],
+  ["birth_date", "Nascimento"],
+  ["whatsapp", "WhatsApp"],
+  ["email", "E-mail"],
+  ["zip_code", "CEP"],
+  ["address", "Logradouro"],
+  ["address_number", "Número"],
+  ["neighborhood", "Bairro"],
+  ["city", "Cidade"],
+  ["state", "UF"],
+];
+
 function parseStaffForm(formData: FormData):
   | { error: string }
   | { values: Record<string, unknown> } {
-  const fullName = field(formData, "full_name");
-  if (!fullName) return { error: "Informe o nome completo." };
+  for (const [name, label] of REQUIRED_TEXT) {
+    if (!field(formData, name)) {
+      return { error: `Preencha o campo obrigatório: ${label}.` };
+    }
+  }
+
   const cpf = field(formData, "cpf");
+  if (!cpf || cpf.replace(/\D/g, "").length !== 11) {
+    return { error: "Informe o CPF completo (11 dígitos)." };
+  }
+
+  const gender = oneOf(formData, "gender", GENDERS);
+  if (!gender) return { error: "Selecione o gênero." };
+  const maritalStatus = oneOf(formData, "marital_status", MARITAL_STATUSES);
+  if (!maritalStatus) return { error: "Selecione o estado civil." };
+  const contractType = oneOf(formData, "contract_type", CONTRACT_TYPES);
+  if (!contractType) return { error: "Selecione o regime de contrato." };
+
+  // Cônjuge só é exigido (e guardado) quando casado(a) ou união estável.
+  const married =
+    maritalStatus === "married" || maritalStatus === "stable_union";
+  const spouseNameRaw = field(formData, "spouse_name");
+  const spousePhoneRaw = field(formData, "spouse_phone");
+  if (married && !spouseNameRaw) {
+    return { error: "Informe o nome do cônjuge." };
+  }
+
   return {
     values: {
-      full_name: fullName,
+      full_name: field(formData, "full_name"),
       preferred_name: field(formData, "preferred_name"),
-      cpf: cpf ? formatCpf(cpf) : null,
+      cpf: formatCpf(cpf),
       birth_date: field(formData, "birth_date"),
-      gender: oneOf(formData, "gender", GENDERS),
-      marital_status: oneOf(formData, "marital_status", MARITAL_STATUSES),
-      spouse_name: field(formData, "spouse_name"),
-      spouse_phone: (() => {
-        const p = field(formData, "spouse_phone");
-        return p ? formatPhone(p) : null;
-      })(),
-      whatsapp: (() => {
-        const w = field(formData, "whatsapp");
-        return w ? formatPhone(w) : null;
-      })(),
+      gender,
+      marital_status: maritalStatus,
+      spouse_name: married ? spouseNameRaw : null,
+      spouse_phone: married && spousePhoneRaw ? formatPhone(spousePhoneRaw) : null,
+      whatsapp: formatPhone(field(formData, "whatsapp")!),
       email: field(formData, "email"),
-      zip_code: (() => {
-        const z = field(formData, "zip_code");
-        return z ? formatCep(z) : null;
-      })(),
+      zip_code: formatCep(field(formData, "zip_code")!),
       address: field(formData, "address"),
       address_number: field(formData, "address_number"),
       complement: field(formData, "complement"),
       neighborhood: field(formData, "neighborhood"),
       city: field(formData, "city"),
-      state: field(formData, "state")?.toUpperCase() ?? null,
-      contract_type: oneOf(formData, "contract_type", CONTRACT_TYPES),
-      role_title: field(formData, "role_title"),
+      state: field(formData, "state")!.toUpperCase(),
+      contract_type: contractType,
       notes: field(formData, "notes"),
     },
   };
@@ -102,15 +155,44 @@ export async function createStaffMember(
   formData: FormData
 ): Promise<CreateStaffResult> {
   const session = await getSessionContext();
-  const clinicId = String(formData.get("clinic_id") ?? "");
-  if (!clinicId) return { ok: false, error: "Escolha a unidade." };
-  if (!(await canManage(session, clinicId))) {
-    return { ok: false, error: "Você não tem permissão nesta unidade." };
+
+  // Admin e Franqueadora/RH escolhem a unidade; Gerente/Franqueado cadastram
+  // SÓ na unidade ativa (a que estão logados).
+  const canPickUnit = session.isAdminMaster || isFranchisorStaff(session);
+  let clinicId: string;
+  if (canPickUnit) {
+    clinicId = String(formData.get("clinic_id") ?? "");
+    if (!clinicId) return { ok: false, error: "Escolha a unidade." };
+  } else {
+    clinicId = session.activeClinic?.id ?? "";
+    if (!clinicId) {
+      return { ok: false, error: "Nenhuma unidade ativa selecionada." };
+    }
   }
+  if (!(await canManage(session, clinicId))) {
+    return {
+      ok: false,
+      error: "Você só pode cadastrar Risartanos na sua unidade (como Gerente/Franqueado).",
+    };
+  }
+
   const parsed = parseStaffForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
+
+  // Não criar dois Risartanos: se o CPF já existe na rede, bloqueia e aponta.
+  const { data: dup } = await supabase.rpc("find_staff_by_cpf", {
+    p_cpf: parsed.values.cpf as string,
+  });
+  if (dup && dup.length > 0) {
+    const d = dup[0];
+    return {
+      ok: false,
+      error: `Já existe um Risartano com este CPF: ${d.full_name} (unidade ${d.clinic_name}). Abra o cadastro dele em vez de criar outro.`,
+    };
+  }
+
   const { data, error } = await supabase
     .from("staff_members")
     .insert({ ...parsed.values, clinic_id: clinicId, created_by: session.userId })
@@ -143,7 +225,7 @@ export async function updateStaffMember(
     .eq("id", staffId)
     .maybeSingle();
   if (!existing) return { ok: false, error: "Risartano não encontrado." };
-  if (!(await canManage(session, existing.clinic_id))) {
+  if (!(await canManageStaff(staffId))) {
     return { ok: false, error: "Você não tem permissão nesta unidade." };
   }
   const parsed = parseStaffForm(formData);
@@ -199,7 +281,7 @@ export async function setStaffPhoto(
     .eq("id", staffId)
     .maybeSingle();
   if (!existing) return { ok: false, error: "Risartano não encontrado." };
-  if (!(await canManage(session, existing.clinic_id))) {
+  if (!(await canManageStaff(staffId))) {
     return { ok: false, error: "Você não tem permissão nesta unidade." };
   }
   // A foto tem de estar na pasta da unidade do colaborador (<clinic_id>/...).
@@ -319,7 +401,7 @@ export async function setStaffActive(
     .eq("id", staffId)
     .maybeSingle();
   if (!existing) return { ok: false, error: "Risartano não encontrado." };
-  if (!(await canManage(session, existing.clinic_id))) {
+  if (!(await canManageStaff(staffId))) {
     return { ok: false, error: "Você não tem permissão nesta unidade." };
   }
 
