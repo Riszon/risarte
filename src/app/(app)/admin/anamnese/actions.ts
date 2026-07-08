@@ -26,6 +26,12 @@ export type QuestionPayload = {
   alertValue: string;
   /** Opções que disparam o alerta (multi_choice). */
   alertOptions: string[];
+  /** "" = todos os gêneros; senão só aparece para clientes desse gênero. */
+  gender: string;
+  /** Pergunta gatilho (mesma ficha); "" = sempre visível. */
+  conditionQuestionId: string;
+  /** Valores da gatilho que fazem esta pergunta aparecer. */
+  conditionValues: string[];
 };
 
 async function requireAdmin(): Promise<{ userId: string } | { error: string }> {
@@ -76,6 +82,13 @@ function normalizeQuestion(p: QuestionPayload) {
       required: p.required,
       alert_when: alertWhen,
       alert_message: alertWhen ? p.alertMessage.trim() || null : null,
+      gender: p.gender || null,
+      condition_question_id: p.conditionQuestionId || null,
+      condition_values: p.conditionQuestionId
+        ? p.conditionValues.filter(Boolean).length > 0
+          ? p.conditionValues.filter(Boolean)
+          : null
+        : null,
     },
   };
 }
@@ -177,6 +190,9 @@ export async function updateQuestion(
 ): Promise<Result> {
   const guard = await requireAdmin();
   if ("error" in guard) return { ok: false, error: guard.error };
+  if (payload.conditionQuestionId === id) {
+    return { ok: false, error: "A pergunta não pode depender de si mesma." };
+  }
   const norm = normalizeQuestion(payload);
   if ("error" in norm) return { ok: false, error: norm.error };
 

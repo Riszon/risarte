@@ -753,7 +753,7 @@ export default async function ClientDetailPage(
         supabase
           .from("anamnesis_questions")
           .select(
-            "id, template_id, clinic_id, section, label, kind, options, detail_prompt, required, sort_order, alert_when, alert_message"
+            "id, template_id, clinic_id, section, label, kind, options, detail_prompt, required, sort_order, alert_when, alert_message, gender, condition_question_id, condition_values"
           )
           .or(`clinic_id.is.null,clinic_id.eq.${scheduleClinicId}`)
           .order("sort_order")
@@ -1339,6 +1339,7 @@ export default async function ClientDetailPage(
           hasConsent={Boolean(consentInfo)}
           templates={anamnesisTemplates}
           fills={anamnesisFills}
+          clientGender={client.gender}
         />
       )}
 

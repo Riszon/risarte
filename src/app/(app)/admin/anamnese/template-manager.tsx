@@ -14,9 +14,12 @@ import {
   kindSupportsDetail,
   kindUsesOptions,
   groupBySection,
+  YES_NO_OPTIONS,
+  YES_NO_UNKNOWN_OPTIONS,
   type AnamnesisQuestion,
   type QuestionKind,
 } from "@/lib/anamnesis";
+import { GENDERS, GENDER_LABELS } from "@/lib/gender";
 import {
   addNetworkQuestion,
   createTemplate,
@@ -51,6 +54,9 @@ type Draft = {
   alertMessage: string;
   alertValue: string;
   alertOptions: string[];
+  gender: string;
+  conditionQuestionId: string;
+  conditionValues: string[];
 };
 
 function emptyDraft(): Draft {
@@ -65,6 +71,9 @@ function emptyDraft(): Draft {
     alertMessage: "",
     alertValue: "sim",
     alertOptions: [],
+    gender: "",
+    conditionQuestionId: "",
+    conditionValues: [],
   };
 }
 
@@ -82,6 +91,9 @@ function questionToDraft(q: AnamnesisQuestion): Draft {
       q.alertWhen && "equals" in q.alertWhen ? q.alertWhen.equals : "sim",
     alertOptions:
       q.alertWhen && "any_of" in q.alertWhen ? q.alertWhen.any_of : [],
+    gender: q.gender ?? "",
+    conditionQuestionId: q.conditionQuestionId ?? "",
+    conditionValues: q.conditionValues ?? [],
   };
 }
 
@@ -100,7 +112,23 @@ function draftToPayload(d: Draft): QuestionPayload {
     alertMessage: d.alertMessage,
     alertValue: d.alertValue,
     alertOptions: d.alertOptions,
+    gender: d.gender,
+    conditionQuestionId: d.conditionQuestionId,
+    conditionValues: d.conditionValues,
   };
+}
+
+/** Valores possíveis da pergunta gatilho, para escolher a condição. */
+function triggerValueOptions(
+  q: AnamnesisQuestion | undefined
+): { value: string; label: string }[] | null {
+  if (!q) return null;
+  if (q.kind === "yes_no") return YES_NO_OPTIONS.map((o) => ({ ...o }));
+  if (q.kind === "yes_no_unknown")
+    return YES_NO_UNKNOWN_OPTIONS.map((o) => ({ ...o }));
+  if (kindUsesOptions(q.kind))
+    return (q.options ?? []).map((o) => ({ value: o, label: o }));
+  return null; // texto: sem lista de valores
 }
 
 // ---------------------------------------------------------------------------
@@ -109,11 +137,14 @@ function draftToPayload(d: Draft): QuestionPayload {
 function QuestionEditor({
   initial,
   busy,
+  siblings,
   onSave,
   onCancel,
 }: {
   initial: Draft;
   busy: boolean;
+  /** Outras perguntas da mesma ficha (para a condição "mostrar somente se"). */
+  siblings: AnamnesisQuestion[];
   onSave: (d: Draft) => void;
   onCancel: () => void;
 }) {
@@ -123,6 +154,8 @@ function QuestionEditor({
     .split("\n")
     .map((o) => o.trim())
     .filter(Boolean);
+  const triggerQ = siblings.find((s) => s.id === d.conditionQuestionId);
+  const trigVals = triggerValueOptions(triggerQ);
 
   return (
     <div className="space-y-3 rounded-md border bg-muted/30 p-3">
@@ -195,6 +228,88 @@ function QuestionEditor({
         />
         Resposta obrigatória
       </label>
+
+      {/* Exibição: por gênero e/ou condicional (H4.2 Lote 3) --------------- */}
+      <div className="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-2">
+        <p className="text-xs font-semibold uppercase text-muted-foreground">
+          Exibição
+        </p>
+        <div className="space-y-1">
+          <Label>Mostrar para o gênero</Label>
+          <select
+            value={d.gender}
+            onChange={(e) => set({ gender: e.target.value })}
+            className={`${selectClass} w-full`}
+          >
+            <option value="">Todos os gêneros</option>
+            {GENDERS.map((g) => (
+              <option key={g} value={g}>
+                {GENDER_LABELS[g]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {siblings.length > 0 && (
+          <div className="space-y-1">
+            <Label>Mostrar somente se (condição)</Label>
+            <select
+              value={d.conditionQuestionId}
+              onChange={(e) =>
+                set({ conditionQuestionId: e.target.value, conditionValues: [] })
+              }
+              className={`${selectClass} w-full`}
+            >
+              <option value="">Sempre mostrar</option>
+              {siblings.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {d.conditionQuestionId && trigVals && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              Aparecer quando a resposta for:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {trigVals.map((o) => (
+                <label
+                  key={o.value}
+                  className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs"
+                >
+                  <input
+                    type="checkbox"
+                    checked={d.conditionValues.includes(o.value)}
+                    onChange={(e) =>
+                      set({
+                        conditionValues: e.target.checked
+                          ? [...d.conditionValues, o.value]
+                          : d.conditionValues.filter((v) => v !== o.value),
+                      })
+                    }
+                    className="size-3.5 accent-primary"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        {d.conditionQuestionId && !trigVals && (
+          <div className="space-y-1">
+            <Label>Aparecer quando a resposta for</Label>
+            <Input
+              value={d.conditionValues[0] ?? ""}
+              onChange={(e) =>
+                set({ conditionValues: e.target.value ? [e.target.value] : [] })
+              }
+              placeholder="Valor esperado"
+            />
+          </div>
+        )}
+      </div>
 
       {d.kind !== "short_text" && d.kind !== "long_text" && (
         <div className="space-y-2 rounded-md border border-amber-300/60 bg-amber-50/40 p-2">
@@ -504,6 +619,9 @@ export function TemplateManager({
                         <QuestionEditor
                           initial={questionToDraft(q)}
                           busy={isPending}
+                          siblings={selected.questions.filter(
+                            (x) => x.id !== q.id
+                          )}
                           onSave={(d) => saveQuestion(d, q.id)}
                           onCancel={() => setQuestionEditor(null)}
                         />
@@ -519,6 +637,9 @@ export function TemplateManager({
                             {QUESTION_KIND_LABELS[q.kind]}
                             {q.required && " · obrigatória"}
                             {q.alertWhen && " · ⚠ alerta"}
+                            {q.gender &&
+                              ` · ${GENDER_LABELS[q.gender as keyof typeof GENDER_LABELS] ?? q.gender}`}
+                            {q.conditionQuestionId && " · condicional"}
                           </p>
                         </div>
                         <div className="flex shrink-0 gap-1">
@@ -562,6 +683,7 @@ export function TemplateManager({
               <QuestionEditor
                 initial={emptyDraft()}
                 busy={isPending}
+                siblings={selected.questions}
                 onSave={(d) => saveQuestion(d, null)}
                 onCancel={() => setQuestionEditor(null)}
               />

@@ -13,6 +13,7 @@ import {
   formatAnswer,
   groupBySection,
   isAnswerAlerting,
+  isQuestionVisible,
   kindSupportsDetail,
   YES_NO_OPTIONS,
   YES_NO_UNKNOWN_OPTIONS,
@@ -184,12 +185,14 @@ export function AnamnesisFill({
   hasConsent,
   templates,
   fills,
+  clientGender,
 }: {
   clientId: string;
   canEdit: boolean;
   hasConsent: boolean;
   templates: FillTemplate[];
   fills: AnamnesisTypeGroup[];
+  clientGender: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -262,8 +265,12 @@ export function AnamnesisFill({
       toast.error("Escolha uma ficha para preencher.");
       return;
     }
-    // Validação das obrigatórias.
-    const missing = template.questions.find((q) => {
+    // Só as perguntas que estão VISÍVEIS (gênero + condição) contam.
+    const visible = template.questions.filter((q) =>
+      isQuestionVisible(q, clientGender, (qid) => answers[qid]?.value ?? null)
+    );
+    // Validação das obrigatórias (apenas as visíveis).
+    const missing = visible.find((q) => {
       if (!q.required) return false;
       const v = answers[q.id]?.value;
       return v == null || v === "" || (Array.isArray(v) && v.length === 0);
@@ -273,7 +280,7 @@ export function AnamnesisFill({
       return;
     }
 
-    const payloadAnswers: FillAnswerInput[] = template.questions.map((q) => ({
+    const payloadAnswers: FillAnswerInput[] = visible.map((q) => ({
       questionId: q.id,
       section: q.section,
       label: q.label,
@@ -351,7 +358,15 @@ export function AnamnesisFill({
               )}
             </div>
 
-            {groupBySection(template.questions).map((g) => (
+            {groupBySection(
+              template.questions.filter((q) =>
+                isQuestionVisible(
+                  q,
+                  clientGender,
+                  (qid) => answers[qid]?.value ?? null
+                )
+              )
+            ).map((g) => (
               <div key={g.section} className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {g.section}
@@ -629,6 +644,9 @@ function ReadView({ current }: { current: CurrentFill }) {
           sortOrder: a.sortOrder,
           alertWhen: a.alertWhen,
           alertMessage: a.alertMessage,
+          gender: null,
+          conditionQuestionId: null,
+          conditionValues: null,
         }))
       ).map((g) => (
         <div key={g.section} className="space-y-1.5">

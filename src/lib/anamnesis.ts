@@ -62,6 +62,12 @@ export type AnamnesisQuestion = {
   sortOrder: number;
   alertWhen: AlertWhen | null;
   alertMessage: string | null;
+  /** null = todos os gêneros; senão só aparece para clientes desse gênero. */
+  gender: string | null;
+  /** Pergunta "gatilho" (mesma ficha): só aparece conforme a resposta dela. */
+  conditionQuestionId: string | null;
+  /** Valores da gatilho que fazem esta pergunta aparecer. */
+  conditionValues: string[] | null;
 };
 
 export type AnamnesisTemplate = {
@@ -86,6 +92,9 @@ export type AnamnesisQuestionRow = {
   sort_order: number;
   alert_when: AlertWhen | null;
   alert_message: string | null;
+  gender: string | null;
+  condition_question_id: string | null;
+  condition_values: string[] | null;
 };
 
 export type AnamnesisTemplateRow = {
@@ -111,6 +120,9 @@ export function mapQuestion(r: AnamnesisQuestionRow): AnamnesisQuestion {
     sortOrder: r.sort_order,
     alertWhen: r.alert_when,
     alertMessage: r.alert_message,
+    gender: r.gender ?? null,
+    conditionQuestionId: r.condition_question_id ?? null,
+    conditionValues: r.condition_values ?? null,
   };
 }
 
@@ -224,6 +236,37 @@ export function isAnswerAlerting(
     return Array.isArray(value) && value.some((v) => when.any_of.includes(v));
   }
   return false;
+}
+
+/**
+ * A pergunta deve aparecer para este cliente/respostas? (H4.2 Lote 3)
+ * Esconde por gênero (se direcionada) e por condição (resposta da gatilho).
+ */
+export function isQuestionVisible(
+  q: {
+    gender: string | null;
+    conditionQuestionId: string | null;
+    conditionValues: string[] | null;
+  },
+  clientGender: string | null,
+  getValue: (questionId: string) => AnswerValue
+): boolean {
+  if (q.gender && q.gender !== clientGender) return false;
+  if (q.conditionQuestionId) {
+    const v = getValue(q.conditionQuestionId);
+    const cond = q.conditionValues ?? [];
+    if (cond.length === 0) {
+      const answered = Array.isArray(v)
+        ? v.length > 0
+        : v != null && v !== "";
+      if (!answered) return false;
+    } else if (Array.isArray(v)) {
+      if (!v.some((x) => cond.includes(x))) return false;
+    } else if (v == null || !cond.includes(v)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Lista os alertas disparados pelas respostas (mensagem + pergunta). */

@@ -29,7 +29,7 @@ export default async function AnamnesisAdminPage() {
     supabase
       .from("anamnesis_questions")
       .select(
-        "id, template_id, clinic_id, section, label, kind, options, detail_prompt, required, sort_order, alert_when, alert_message"
+        "id, template_id, clinic_id, section, label, kind, options, detail_prompt, required, sort_order, alert_when, alert_message, gender, condition_question_id, condition_values"
       )
       .is("clinic_id", null)
       .order("sort_order")
