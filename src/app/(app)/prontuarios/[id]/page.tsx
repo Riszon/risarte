@@ -39,8 +39,7 @@ import {
 } from "./clinical-section";
 import {
   AnamnesisFill,
-  type CurrentFill,
-  type FillHistoryItem,
+  type AnamnesisTypeGroup,
   type FillTemplate,
 } from "./anamnesis-fill";
 import {
@@ -738,9 +737,8 @@ export default async function ClientDetailPage(
   const canViewAnamnesis =
     canViewClinical || hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
   let anamnesisTemplates: FillTemplate[] = [];
-  let anamnesisCurrent: CurrentFill | null = null;
-  let anamnesisHistory: FillHistoryItem[] = [];
-  let anamnesisAlerts: { label: string; message: string }[] = [];
+  let anamnesisFills: AnamnesisTypeGroup[] = [];
+  const anamnesisAlerts: { label: string; message: string }[] = [];
   if (canViewAnamnesis) {
     const [{ data: tplRows }, { data: qRows }, { data: fillRows }] =
       await Promise.all([
@@ -808,36 +806,67 @@ export default async function ClientDetailPage(
         .in("id", fillerIds);
       for (const p of people ?? []) fillerNames.set(p.id, p.full_name);
     }
-    anamnesisHistory = fills.map((f) => ({
-      id: f.id,
-      filledAt: f.filled_at,
-      filledByName: f.filled_by ? (fillerNames.get(f.filled_by) ?? null) : null,
-      templateName: f.template_name,
-      noChanges: f.no_changes,
-    }));
-
-    const latest = fills[0];
-    if (latest) {
+    // Agrupa por TIPO de ficha: a versão mais recente de cada tipo é a "atual"
+    // daquele tipo; as anteriores do mesmo tipo formam o histórico dele.
+    const byTemplate = new Map<string, typeof fills>();
+    for (const f of fills) {
+      const key = f.template_id ?? "__none__";
+      const arr = byTemplate.get(key) ?? [];
+      arr.push(f);
+      byTemplate.set(key, arr);
+    }
+    const groups = [...byTemplate.values()];
+    const latestIds = groups.map((g) => g[0].id);
+    const answersByFill = new Map<string, ReturnType<typeof mapAnswer>[]>();
+    if (latestIds.length > 0) {
       const { data: ansRows } = await supabase
         .from("anamnesis_answers")
         .select(
-          "id, question_id, section, label, kind, value, detail, is_adhoc, sort_order, alert_when, alert_message"
+          "id, fill_id, question_id, section, label, kind, value, detail, is_adhoc, sort_order, alert_when, alert_message"
         )
-        .eq("fill_id", latest.id)
+        .in("fill_id", latestIds)
         .order("sort_order")
-        .returns<AnamnesisAnswerRow[]>();
-      const answers = (ansRows ?? []).map(mapAnswer);
-      anamnesisCurrent = {
-        id: latest.id,
-        templateId: latest.template_id,
-        templateName: latest.template_name,
-        filledAt: latest.filled_at,
-        filledByName: latest.filled_by
-          ? (fillerNames.get(latest.filled_by) ?? null)
-          : null,
-        answers,
-      };
-      anamnesisAlerts = evaluateAlerts(answers);
+        .returns<(AnamnesisAnswerRow & { fill_id: string })[]>();
+      for (const r of ansRows ?? []) {
+        const list = answersByFill.get(r.fill_id) ?? [];
+        list.push(mapAnswer(r));
+        answersByFill.set(r.fill_id, list);
+      }
+    }
+    anamnesisFills = groups
+      .map((arr) => {
+        const latest = arr[0];
+        return {
+          templateId: latest.template_id,
+          templateName: latest.template_name,
+          current: {
+            id: latest.id,
+            templateId: latest.template_id,
+            templateName: latest.template_name,
+            filledAt: latest.filled_at,
+            filledByName: latest.filled_by
+              ? (fillerNames.get(latest.filled_by) ?? null)
+              : null,
+            answers: answersByFill.get(latest.id) ?? [],
+          },
+          history: arr.map((f) => ({
+            id: f.id,
+            filledAt: f.filled_at,
+            filledByName: f.filled_by
+              ? (fillerNames.get(f.filled_by) ?? null)
+              : null,
+            templateName: f.template_name,
+            noChanges: f.no_changes,
+          })),
+        };
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.current.filledAt).getTime() -
+          new Date(a.current.filledAt).getTime()
+      );
+    for (const g of anamnesisFills) {
+      anamnesisAlerts.push(...evaluateAlerts(g.current.answers));
     }
   }
 
@@ -845,10 +874,13 @@ export default async function ClientDetailPage(
   // atualização se a última versão tem mais de 12 meses.
   const anamnesisCutoff = new Date();
   anamnesisCutoff.setFullYear(anamnesisCutoff.getFullYear() - 1);
-  const anamnesisMissing = canViewAnamnesis && !anamnesisCurrent;
+  const anamnesisMissing = canViewAnamnesis && anamnesisFills.length === 0;
+  const latestAnamnesisAt = anamnesisFills.reduce(
+    (max, g) => Math.max(max, new Date(g.current.filledAt).getTime()),
+    0
+  );
   const anamnesisOutdated =
-    anamnesisCurrent != null &&
-    new Date(anamnesisCurrent.filledAt).getTime() < anamnesisCutoff.getTime();
+    anamnesisFills.length > 0 && latestAnamnesisAt < anamnesisCutoff.getTime();
   const isReeval = client.journey_phase === "reevaluation";
   const isFirstConsult = client.journey_phase === "clinical_conversion";
   const anamnesisBlocksPlanning =
@@ -1306,8 +1338,7 @@ export default async function ClientDetailPage(
           canEdit={canEditClinical}
           hasConsent={Boolean(consentInfo)}
           templates={anamnesisTemplates}
-          current={anamnesisCurrent}
-          history={anamnesisHistory}
+          fills={anamnesisFills}
         />
       )}
 

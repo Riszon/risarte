@@ -281,7 +281,13 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         campo **gênero** no cadastro/ficha do cliente (`clients.gender`,
         `src/lib/gender.ts`) + autopreenchimento por CPF; base das perguntas por
         gênero (Lote 3).
-  - [ ] **Lote 2 — uma ficha atual por tipo + obrigatórias + histórico por tipo.**
+  - [x] **Lote 2 — uma ficha atual por tipo + obrigatórias + histórico por
+        tipo** ✅ (08/07, v0.16.1, sem migração) — o prontuário mostra **uma
+        ficha atual por tipo** (Geral, Ortodôntica…), cada uma com seu próprio
+        histórico; **Atualizar** cria nova versão **no mesmo tipo** (o seletor de
+        tipo saiu do modo edição); **Preencher outra ficha** para tipos ainda não
+        preenchidos; perguntas obrigatórias já eram exigidas ao salvar; "sem
+        alterações" agora compara com a última versão do mesmo tipo.
   - [ ] **Lote 3 — perguntas por gênero + campos condicionais.**
 - [ ] **H4.3 Protocolo 2.0 + agendamento em série [G] 🗄️** — tempo mínimo
       entre sessões (rede → caso); médias reais do intervalo; previsão de

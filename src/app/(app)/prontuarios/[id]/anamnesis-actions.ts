@@ -153,16 +153,20 @@ export async function saveAnamnesisFill(
     }
   }
 
-  // "Atualizada sem alterações": compara com a última versão (A4).
+  // "Atualizada sem alterações": compara com a última versão DO MESMO TIPO
+  // (cada tipo de ficha tem seu próprio histórico — H4.2 Lote 2).
   let noChanges = false;
-  const { data: lastFill } = await supabase
+  let lastQuery = supabase
     .from("anamnesis_fills")
     .select("id")
     .eq("client_id", clientId)
     .eq("clinic_id", guard.clinicId)
     .order("filled_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+  lastQuery = payload.templateId
+    ? lastQuery.eq("template_id", payload.templateId)
+    : lastQuery.is("template_id", null);
+  const { data: lastFill } = await lastQuery.maybeSingle();
   if (lastFill) {
     const { data: oldAns } = await supabase
       .from("anamnesis_answers")

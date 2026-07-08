@@ -48,6 +48,14 @@ export type FillHistoryItem = {
   noChanges: boolean;
 };
 
+/** Uma ficha por TIPO: a versão atual daquele tipo + o histórico do mesmo tipo. */
+export type AnamnesisTypeGroup = {
+  templateId: string | null;
+  templateName: string | null;
+  current: CurrentFill;
+  history: FillHistoryItem[];
+};
+
 const inputClass =
   "w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm";
 
@@ -175,58 +183,65 @@ export function AnamnesisFill({
   canEdit,
   hasConsent,
   templates,
-  current,
-  history,
+  fills,
 }: {
   clientId: string;
   canEdit: boolean;
   hasConsent: boolean;
   templates: FillTemplate[];
-  current: CurrentFill | null;
-  history: FillHistoryItem[];
+  fills: AnamnesisTypeGroup[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [editing, setEditing] = useState(false);
-  const defaultTemplateId =
-    templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? null;
-  const [templateId, setTemplateId] = useState<string | null>(
-    current?.templateId ?? defaultTemplateId
-  );
+  // Qual TIPO está sendo preenchido/atualizado (null = ninguém em edição).
+  const [editing, setEditing] = useState<{ templateId: string } | null>(null);
   const [answers, setAnswers] = useState<
     Record<string, { value: AnswerValue; detail: string }>
   >({});
   const [adhoc, setAdhoc] = useState<AdhocDraft[]>([]);
+  const [newTemplateId, setNewTemplateId] = useState("");
 
-  const template = templates.find((t) => t.id === templateId) ?? null;
+  const template = editing
+    ? (templates.find((t) => t.id === editing.templateId) ?? null)
+    : null;
+  const filledIds = new Set(
+    fills.map((f) => f.templateId).filter((x): x is string => Boolean(x))
+  );
+  const unfilled = templates.filter((t) => !filledIds.has(t.id));
 
-  function startFill(fromCurrent: boolean) {
-    if (fromCurrent && current) {
-      setTemplateId(current.templateId ?? defaultTemplateId);
-      const map: Record<string, { value: AnswerValue; detail: string }> = {};
-      const ad: AdhocDraft[] = [];
-      for (const a of current.answers) {
-        if (a.questionId) {
-          map[a.questionId] = { value: a.value, detail: a.detail ?? "" };
-        } else {
-          ad.push({
-            tempId: a.id,
-            section: a.section ?? "",
-            label: a.label,
-            kind: a.kind,
-            value: a.value,
-            addToUnit: false,
-          });
-        }
-      }
-      setAnswers(map);
-      setAdhoc(ad);
-    } else {
-      setTemplateId(defaultTemplateId);
-      setAnswers({});
-      setAdhoc([]);
+  // Atualizar cria uma nova versão DENTRO do mesmo tipo (não troca o tipo).
+  function startUpdate(group: AnamnesisTypeGroup) {
+    const tpl = templates.find((t) => t.id === group.templateId);
+    if (!tpl) {
+      toast.error("Esta ficha não está mais disponível para atualizar.");
+      return;
     }
-    setEditing(true);
+    const map: Record<string, { value: AnswerValue; detail: string }> = {};
+    const ad: AdhocDraft[] = [];
+    for (const a of group.current.answers) {
+      if (a.questionId) {
+        map[a.questionId] = { value: a.value, detail: a.detail ?? "" };
+      } else {
+        ad.push({
+          tempId: a.id,
+          section: a.section ?? "",
+          label: a.label,
+          kind: a.kind,
+          value: a.value,
+          addToUnit: false,
+        });
+      }
+    }
+    setAnswers(map);
+    setAdhoc(ad);
+    setEditing({ templateId: tpl.id });
+  }
+
+  function startNew(templateId: string) {
+    if (!templateId) return;
+    setAnswers({});
+    setAdhoc([]);
+    setEditing({ templateId });
   }
 
   function setValue(qid: string, value: AnswerValue) {
@@ -299,7 +314,7 @@ export function AnamnesisFill({
             ? "Anamnese atualizada — sem alterações."
             : "Anamnese salva."
         );
-        setEditing(false);
+        setEditing(null);
         router.refresh();
       } else {
         toast.error(result.error ?? "Algo deu errado.");
@@ -310,17 +325,11 @@ export function AnamnesisFill({
   // ---- Render --------------------------------------------------------------
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Stethoscope className="size-4" />
           Anamnese
         </CardTitle>
-        {canEdit && hasConsent && !editing && current && (
-          <Button variant="outline" size="sm" onClick={() => startFill(true)}>
-            <Pencil className="mr-1 size-3.5" />
-            Atualizar
-          </Button>
-        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {canEdit && !hasConsent && (
@@ -333,23 +342,13 @@ export function AnamnesisFill({
 
         {editing && canEdit && hasConsent && template ? (
           <div className="space-y-4">
-            <div className="space-y-1">
-              <Label>Ficha de anamnese</Label>
-              <select
-                value={templateId ?? ""}
-                onChange={(e) => {
-                  setTemplateId(e.target.value);
-                  setAnswers({});
-                  setAdhoc([]);
-                }}
-                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-              >
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+              <p className="text-sm font-medium">{template.name}</p>
+              {template.description && (
+                <p className="text-xs text-muted-foreground">
+                  {template.description}
+                </p>
+              )}
             </div>
 
             {groupBySection(template.questions).map((g) => (
@@ -500,51 +499,105 @@ export function AnamnesisFill({
               <Button
                 variant="outline"
                 disabled={isPending}
-                onClick={() => setEditing(false)}
+                onClick={() => setEditing(null)}
               >
                 Cancelar
               </Button>
             </div>
           </div>
-        ) : current ? (
-          <ReadView current={current} />
         ) : (
-          !editing && (
-            <div className="space-y-2">
+          <div className="space-y-4">
+            {fills.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Anamnese ainda não preenchida.
               </p>
-              {canEdit && hasConsent && templates.length > 0 && (
-                <Button size="sm" onClick={() => startFill(false)}>
-                  Preencher anamnese
-                </Button>
-              )}
-              {canEdit && hasConsent && templates.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Nenhuma ficha de anamnese configurada. Peça ao Admin para criar
-                  uma em Administração → Fichas de Anamnese.
-                </p>
-              )}
-            </div>
-          )
-        )}
+            )}
 
-        {history.length > 1 && (
-          <details className="text-sm">
-            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-              Histórico de versões ({history.length})
-            </summary>
-            <ul className="mt-2 space-y-1">
-              {history.map((h) => (
-                <li key={h.id} className="text-xs text-muted-foreground">
-                  {fmtDateTime(h.filledAt)}
-                  {h.filledByName ? ` · ${h.filledByName}` : ""}
-                  {h.templateName ? ` · ${h.templateName}` : ""}
-                  {h.noChanges ? " · sem alterações" : ""}
-                </li>
-              ))}
-            </ul>
-          </details>
+            {fills.map((group) => {
+              const tpl = templates.find((t) => t.id === group.templateId);
+              return (
+                <div
+                  key={group.current.id}
+                  className="space-y-2 rounded-lg border p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold">
+                      {group.templateName ?? "Anamnese"}
+                    </h3>
+                    {canEdit && hasConsent && tpl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startUpdate(group)}
+                      >
+                        <Pencil className="mr-1 size-3.5" />
+                        Atualizar
+                      </Button>
+                    )}
+                  </div>
+                  <ReadView current={group.current} />
+                  {group.history.length > 1 && (
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                        Histórico de versões ({group.history.length})
+                      </summary>
+                      <ul className="mt-2 space-y-1">
+                        {group.history.map((h) => (
+                          <li
+                            key={h.id}
+                            className="text-xs text-muted-foreground"
+                          >
+                            {fmtDateTime(h.filledAt)}
+                            {h.filledByName ? ` · ${h.filledByName}` : ""}
+                            {h.noChanges ? " · sem alterações" : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              );
+            })}
+
+            {canEdit && hasConsent && unfilled.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed p-3">
+                <span className="text-sm text-muted-foreground">
+                  {fills.length === 0
+                    ? "Preencher anamnese:"
+                    : "Preencher outra ficha:"}
+                </span>
+                <select
+                  value={newTemplateId}
+                  onChange={(e) => setNewTemplateId(e.target.value)}
+                  className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                >
+                  <option value="">Escolha o tipo...</option>
+                  {unfilled.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  disabled={!newTemplateId}
+                  onClick={() => {
+                    startNew(newTemplateId);
+                    setNewTemplateId("");
+                  }}
+                >
+                  Preencher
+                </Button>
+              </div>
+            )}
+
+            {canEdit && hasConsent && templates.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma ficha de anamnese configurada. Peça ao Admin para criar
+                uma em Administração → Fichas de Anamnese.
+              </p>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

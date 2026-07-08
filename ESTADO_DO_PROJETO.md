@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 08/07/2026 · Versão do sistema: **0.16.0** · Última migração: **0082**_
+_Atualizado em: 08/07/2026 · Versão do sistema: **0.16.1** · Última migração: **0082**_
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em
