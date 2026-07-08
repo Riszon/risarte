@@ -30,6 +30,7 @@ import {
   clearProcedureSessions,
   deleteProcedure,
   editProcedure,
+  proposeProtocolChange,
   readjustPrices,
   setProcedureActive,
   setProcedureSessions,
@@ -259,6 +260,7 @@ function SessionProtocolPanel({
   initial,
   fallbackMinutes,
   hasOverride = false,
+  mode = "apply",
   isPending,
   run,
 }: {
@@ -268,6 +270,8 @@ function SessionProtocolPanel({
   fallbackMinutes: number;
   /** (Unidade) já existe protocolo próprio? Habilita "remover personalização". */
   hasOverride?: boolean;
+  /** "apply" = grava direto (Admin/Coordenador); "propose" = Planner propõe. */
+  mode?: "apply" | "propose";
   isPending: boolean;
   run: (
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -276,6 +280,8 @@ function SessionProtocolPanel({
   ) => void;
 }) {
   const isUnit = clinicId !== null;
+  const propose = mode === "propose";
+  const [note, setNote] = useState("");
   const [sessions, setSessions] = useState<SessionDraft[]>(() =>
     initSessionDrafts(initial, fallbackMinutes)
   );
@@ -409,8 +415,8 @@ function SessionProtocolPanel({
         </Button>
       )}
 
-      <div className="flex items-center justify-between gap-2 border-t pt-2">
-        <span className="text-sm">
+      <div className="border-t pt-2 text-sm">
+        <span>
           <strong>{sessions.length}</strong> sessão{sessions.length > 1 ? "ões" : ""} ·
           tempo total <strong>{formatMinutes(total)}</strong>
           {(() => {
@@ -420,22 +426,63 @@ function SessionProtocolPanel({
             return iv ? <> · {iv}</> : null;
           })()}
         </span>
-        <div className="flex items-center gap-2">
-          {isUnit && hasOverride && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isPending}
-              onClick={() =>
-                run(
-                  () => clearProcedureSessions(procedureId, clinicId!),
-                  "Personalização removida — voltou ao padrão da Rede."
-                )
-              }
-            >
-              Remover personalização
-            </Button>
-          )}
+      </div>
+
+      {propose && (
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground">
+            Justificativa (para o {isUnit ? "Coordenador" : "Admin"} avaliar):
+          </span>
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Por que mudar o protocolo?"
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {!propose && isUnit && hasOverride && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isPending}
+            onClick={() =>
+              run(
+                () => clearProcedureSessions(procedureId, clinicId!),
+                "Personalização removida — voltou ao padrão da Rede."
+              )
+            }
+          >
+            Remover personalização
+          </Button>
+        )}
+        {propose ? (
+          <Button
+            size="sm"
+            disabled={isPending}
+            onClick={() =>
+              run(
+                () =>
+                  proposeProtocolChange(
+                    procedureId,
+                    clinicId,
+                    sessions.map((s) => ({
+                      name: s.name,
+                      minutes: s.minutes,
+                      intervalDays: s.intervalDays,
+                    })),
+                    note
+                  ),
+                isUnit
+                  ? "Proposta enviada ao Coordenador da unidade."
+                  : "Proposta enviada ao Admin."
+              )
+            }
+          >
+            Propor alteração
+          </Button>
+        ) : (
           <Button
             size="sm"
             disabled={isPending}
@@ -459,7 +506,7 @@ function SessionProtocolPanel({
           >
             Salvar protocolo
           </Button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -475,6 +522,7 @@ export function ProceduresEditor({
   sessionsByProcedure,
   unitSessionsByProcedure,
   canManageCatalog,
+  isAdmin,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -485,6 +533,8 @@ export function ProceduresEditor({
   sessionsByProcedure: Record<string, ProcedureSession[]>;
   unitSessionsByProcedure: Record<string, ProcedureSession[]>;
   canManageCatalog: boolean;
+  /** Admin aplica protocolo direto; Planner (não-admin) apenas propõe. */
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -605,6 +655,7 @@ export function ProceduresEditor({
                   sessions={sessionsByProcedure[p.id] ?? []}
                   unitSessions={unitSessionsByProcedure[p.id] ?? []}
                   canManageCatalog={canManageCatalog}
+                  isAdmin={isAdmin}
                   isPending={isPending}
                   run={run}
                   selected={selected.has(p.id)}
@@ -769,6 +820,7 @@ function ProcedureRow({
   sessions,
   unitSessions,
   canManageCatalog,
+  isAdmin,
   isPending,
   run,
   selected,
@@ -782,6 +834,7 @@ function ProcedureRow({
   sessions: ProcedureSession[];
   unitSessions: ProcedureSession[];
   canManageCatalog: boolean;
+  isAdmin: boolean;
   isPending: boolean;
   run: (
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -798,6 +851,12 @@ function ProcedureRow({
   const [unitPrice, setUnitPriceValue] = useState(
     overrideCents != null ? centsToInput(overrideCents) : ""
   );
+
+  // H4.3 Lote 4: Admin aplica direto; Coordenador aplica a própria unidade;
+  // Planner (não-admin) só PROPÕE. (Coordenador = acessa unidade sem catálogo.)
+  const networkPanelMode: "apply" | "propose" = isAdmin ? "apply" : "propose";
+  const unitPanelMode: "apply" | "propose" =
+    isAdmin || !canManageCatalog ? "apply" : "propose";
 
   if (editing) {
     return (
@@ -845,6 +904,7 @@ function ProcedureRow({
             clinicId={null}
             initial={sessions}
             fallbackMinutes={p.estimatedMinutes ?? 0}
+            mode={networkPanelMode}
             isPending={isPending}
             run={run}
           />
@@ -1013,6 +1073,7 @@ function ProcedureRow({
             clinicId={null}
             initial={sessions}
             fallbackMinutes={p.estimatedMinutes ?? 0}
+            mode={networkPanelMode}
             isPending={isPending}
             run={run}
           />
@@ -1023,6 +1084,7 @@ function ProcedureRow({
             initial={unitSessions.length > 0 ? unitSessions : sessions}
             fallbackMinutes={p.estimatedMinutes ?? 0}
             hasOverride={unitSessions.length > 0}
+            mode={unitPanelMode}
             isPending={isPending}
             run={run}
           />

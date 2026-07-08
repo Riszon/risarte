@@ -12,6 +12,7 @@ import {
 import type { Procedure, ProcedureSession, UnitPrice } from "@/lib/pricing";
 import { ProceduresEditor, type ProcedureChange } from "./procedures-editor";
 import { ImportProcedures } from "./import-procedures";
+import { ProtocolProposals, type PendingProposal } from "./protocol-proposals";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
@@ -249,6 +250,45 @@ export default async function ProceduresPage(
     }
   }
 
+  // H4.3 Lote 4: propostas de protocolo pendentes visíveis a este usuário (a RLS
+  // já limita: Admin vê todas; Coordenador vê as da sua unidade; Planner as suas).
+  const { data: propRows } = await supabase
+    .from("protocol_change_proposals")
+    .select(
+      "id, clinic_id, note, sessions, procedures ( name ), proposer:profiles!protocol_change_proposals_proposed_by_fkey ( full_name ), clinics ( name )"
+    )
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        clinic_id: string | null;
+        note: string | null;
+        sessions: {
+          name?: string;
+          minutes?: number;
+          intervalDays?: number | null;
+        }[];
+        procedures: { name: string } | null;
+        proposer: { full_name: string } | { full_name: string }[] | null;
+        clinics: { name: string } | null;
+      }[]
+    >();
+  const pendingProposals: PendingProposal[] = (propRows ?? []).map((r) => {
+    const proposer = Array.isArray(r.proposer) ? r.proposer[0] : r.proposer;
+    return {
+      id: r.id,
+      procedureName: r.procedures?.name ?? "Procedimento",
+      scopeLabel: r.clinic_id ? `Unidade: ${r.clinics?.name ?? "—"}` : "Rede",
+      proposedByName: proposer?.full_name ?? null,
+      note: r.note,
+      sessions: Array.isArray(r.sessions) ? r.sessions : [],
+      canReview:
+        session.isAdminMaster ||
+        (r.clinic_id != null && coordinatorUnitIds.includes(r.clinic_id)),
+    };
+  });
+
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
       <div>
@@ -306,6 +346,8 @@ export default async function ProceduresPage(
         </select>
       </FilterForm>
 
+      <ProtocolProposals proposals={pendingProposals} />
+
       {!unitId && <ImportProcedures />}
 
       <ProceduresEditor
@@ -318,6 +360,7 @@ export default async function ProceduresPage(
         sessionsByProcedure={sessionsByProcedure}
         unitSessionsByProcedure={unitSessionsByProcedure}
         canManageCatalog={canManageCatalog}
+        isAdmin={session.isAdminMaster}
       />
     </div>
   );

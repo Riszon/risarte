@@ -295,7 +295,7 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         "Exibição"; preenchimento mostra/esconde as perguntas dinamicamente e só
         salva/valida as visíveis (`isQuestionVisible` em `src/lib/anamnesis.ts`;
         colunas `gender`/`condition_question_id`/`condition_values`).
-- [~] **H4.3 Protocolo 2.0 + agendamento em série [G] 🗄️** — tempo mínimo
+- [x] **H4.3 Protocolo 2.0 + agendamento em série [G] 🗄️ COMPLETO** — tempo mínimo
       entre sessões (rede → caso); médias reais do intervalo; previsão de
       conclusão; sugerir as datas de TODAS as sessões ao agendar; Planner
       propõe mudança de protocolo (unidade com confirmação + notificação ao
@@ -316,8 +316,13 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         entre as sessões já feitas do paciente (datas dos agendamentos) e
         **previsão de conclusão** (última data entre as sessões não concluídas —
         agendadas + previstas; marca "parcial" se faltam datas).
-  - [ ] **Lote 4 — Planner propõe mudança de protocolo** (unidade → confirma +
-        notifica Coordenador; rede → notifica Admin).
+  - [x] **Lote 4 — Planner propõe mudança de protocolo** ✅ (08/07, v0.18.0,
+        migração 0086) — o protocolo do **caso** segue direto no plano; o
+        protocolo **definitivo** o Planner só **propõe** (`protocol_change_proposals`):
+        unidade → notifica/confirma **Coordenador**; rede → **Admin** (RPCs de
+        notificação). Editor mostra "Propor alteração" (+ justificativa) ao
+        Planner; painel "Propostas pendentes" em `/procedimentos` com
+        Aprovar/Recusar; RLS tira do Planner a escrita direta do protocolo.
 - [x] **H4.4 Tela de Planos de Tratamento** ✅ (v0.11.1).
 - [ ] **H4.5 Cockpit 2.0 [G] 🗄️** — redesign; etapas + sessões; sugerir
       profissional; juntar sessões; tempo por/entre sessões; previsão de

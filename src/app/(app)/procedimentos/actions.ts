@@ -485,40 +485,28 @@ export type SessionInput = {
   intervalDays?: number | null;
 };
 
-export async function setProcedureSessions(
+type CleanSession = { name: string; minutes: number; intervalDays: number | null };
+
+function cleanSessions(sessions: SessionInput[]): CleanSession[] {
+  return sessions.slice(0, 30).map((s, i) => ({
+    name: s.name.trim() || `Sessão ${i + 1}`,
+    minutes: Math.max(0, Math.round(Number(s.minutes) || 0)),
+    intervalDays:
+      s.intervalDays != null && Number.isFinite(Number(s.intervalDays))
+        ? Math.max(0, Math.round(Number(s.intervalDays)))
+        : null,
+  }));
+}
+
+/** Substitui o protocolo do escopo (rede/unidade) — sem checagem de permissão. */
+async function writeProcedureSessions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   procedureId: string,
   clinicId: string | null,
-  sessions: SessionInput[]
-): Promise<ProcedureResult> {
-  const session = await getSessionContext();
+  clean: CleanSession[],
+  userId: string
+): Promise<{ error?: string; total: number }> {
   const isNetwork = clinicId === null;
-  const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
-    roles.includes("planner_dentist")
-  );
-  const allowed = isNetwork
-    ? session.isAdminMaster || isPlanner
-    : session.isAdminMaster ||
-      isPlanner ||
-      hasRoleInClinic(session, clinicId!, ["clinical_coordinator"]);
-  if (!allowed) {
-    return { ok: false, error: "Sem permissão para configurar as sessões." };
-  }
-
-  const clean = sessions
-    .slice(0, 30)
-    .map((s, i) => ({
-      name: s.name.trim() || `Sessão ${i + 1}`,
-      minutes: Math.max(0, Math.round(Number(s.minutes) || 0)),
-      intervalDays:
-        s.intervalDays != null && Number.isFinite(Number(s.intervalDays))
-          ? Math.max(0, Math.round(Number(s.intervalDays)))
-          : null,
-    }));
-  if (clean.length === 0) {
-    return { ok: false, error: "Defina ao menos uma sessão." };
-  }
-
-  const supabase = await createClient();
   let del = supabase
     .from("procedure_sessions")
     .delete()
@@ -534,14 +522,13 @@ export async function setProcedureSessions(
     estimated_minutes: s.minutes,
     // A 1ª sessão não tem intervalo (não há sessão anterior).
     min_interval_days: i === 0 ? null : s.intervalDays,
-    created_by: session.userId,
+    created_by: userId,
   }));
   const { error } = await supabase.from("procedure_sessions").insert(rows);
   if (error) {
-    console.error("setProcedureSessions failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar as sessões." };
+    console.error("writeProcedureSessions failed:", error.message);
+    return { error: "Não foi possível salvar as sessões.", total: 0 };
   }
-
   const total = clean.reduce((sum, s) => sum + s.minutes, 0);
   if (isNetwork) {
     await supabase
@@ -552,16 +539,172 @@ export async function setProcedureSessions(
       })
       .eq("id", procedureId);
   }
+  return { total };
+}
+
+export async function setProcedureSessions(
+  procedureId: string,
+  clinicId: string | null,
+  sessions: SessionInput[]
+): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  const isNetwork = clinicId === null;
+  // O Planner NÃO grava direto o protocolo definitivo — ele propõe (H4.3 Lote 4).
+  const allowed = isNetwork
+    ? session.isAdminMaster
+    : session.isAdminMaster ||
+      hasRoleInClinic(session, clinicId!, ["clinical_coordinator"]);
+  if (!allowed) {
+    return {
+      ok: false,
+      error: "Sem permissão para aplicar direto. Use 'Propor alteração'.",
+    };
+  }
+
+  const clean = cleanSessions(sessions);
+  if (clean.length === 0) {
+    return { ok: false, error: "Defina ao menos uma sessão." };
+  }
+
+  const supabase = await createClient();
+  const w = await writeProcedureSessions(
+    supabase,
+    procedureId,
+    clinicId,
+    clean,
+    session.userId
+  );
+  if (w.error) return { ok: false, error: w.error };
+
   await logChange(
     procedureId,
     session.userId,
-    `${isNetwork ? "Protocolo da rede" : "Protocolo da unidade"}: ${formatSessions(clean.length)}, ${total} min.`
+    `${isNetwork ? "Protocolo da rede" : "Protocolo da unidade"}: ${formatSessions(clean.length)}, ${w.total} min.`
   );
   await logAudit({
     action: "update",
     entityType: "procedure_sessions",
     entityId: procedureId,
-    details: { network: isNetwork, sessions: clean.length, total },
+    details: { network: isNetwork, sessions: clean.length, total: w.total },
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true };
+}
+
+/** H4.3 Lote 4: o Planner PROPÕE uma alteração definitiva (rede ou unidade). */
+export async function proposeProtocolChange(
+  procedureId: string,
+  clinicId: string | null,
+  sessions: SessionInput[],
+  note: string
+): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("planner_dentist")
+  );
+  if (!session.isAdminMaster && !isPlanner) {
+    return { ok: false, error: "Apenas o Dentista Planner pode propor." };
+  }
+  const clean = cleanSessions(sessions);
+  if (clean.length === 0) {
+    return { ok: false, error: "Defina ao menos uma sessão." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("protocol_change_proposals")
+    .insert({
+      procedure_id: procedureId,
+      clinic_id: clinicId,
+      proposed_by: session.userId,
+      note: note.trim() || null,
+      sessions: clean,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    console.error("proposeProtocolChange failed:", error?.message);
+    return { ok: false, error: "Não foi possível registrar a proposta." };
+  }
+  await supabase.rpc("notify_protocol_proposal", { p_proposal_id: data.id });
+  await logAudit({
+    action: "create",
+    entityType: "protocol_change_proposal",
+    entityId: data.id,
+    clinicId: clinicId ?? undefined,
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true };
+}
+
+/** H4.3 Lote 4: Admin (rede) ou Coordenador (unidade) aprova/recusa a proposta. */
+export async function reviewProtocolProposal(
+  proposalId: string,
+  approve: boolean,
+  reviewNotes: string
+): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: prop } = await supabase
+    .from("protocol_change_proposals")
+    .select("id, procedure_id, clinic_id, sessions, status")
+    .eq("id", proposalId)
+    .maybeSingle();
+  if (!prop) return { ok: false, error: "Proposta não encontrada." };
+  if (prop.status !== "pending") {
+    return { ok: false, error: "Esta proposta já foi revisada." };
+  }
+  const canReview =
+    session.isAdminMaster ||
+    (prop.clinic_id != null &&
+      hasRoleInClinic(session, prop.clinic_id, ["clinical_coordinator"]));
+  if (!canReview) {
+    return { ok: false, error: "Sem permissão para revisar esta proposta." };
+  }
+  if (!approve && !reviewNotes.trim()) {
+    return { ok: false, error: "Informe o motivo da recusa." };
+  }
+
+  if (approve) {
+    const clean = cleanSessions((prop.sessions ?? []) as SessionInput[]);
+    if (clean.length === 0) {
+      return { ok: false, error: "A proposta não tem sessões." };
+    }
+    const w = await writeProcedureSessions(
+      supabase,
+      prop.procedure_id,
+      prop.clinic_id,
+      clean,
+      session.userId
+    );
+    if (w.error) return { ok: false, error: w.error };
+    await logChange(
+      prop.procedure_id,
+      session.userId,
+      `Protocolo ${prop.clinic_id ? "da unidade" : "da rede"} aplicado por proposta: ${formatSessions(clean.length)}, ${w.total} min.`
+    );
+  }
+
+  const { error } = await supabase
+    .from("protocol_change_proposals")
+    .update({
+      status: approve ? "approved" : "rejected",
+      reviewed_by: session.userId,
+      reviewed_at: new Date().toISOString(),
+      review_notes: reviewNotes.trim() || null,
+    })
+    .eq("id", proposalId);
+  if (error) {
+    console.error("reviewProtocolProposal failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a decisão." };
+  }
+  await supabase.rpc("notify_protocol_decision", { p_proposal_id: proposalId });
+  await logAudit({
+    action: "update",
+    entityType: "protocol_change_proposal",
+    entityId: proposalId,
+    clinicId: prop.clinic_id ?? undefined,
+    details: { approved: approve },
   });
   revalidatePath("/procedimentos");
   return { ok: true };
@@ -573,12 +716,8 @@ export async function clearProcedureSessions(
   clinicId: string
 ): Promise<ProcedureResult> {
   const session = await getSessionContext();
-  const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
-    roles.includes("planner_dentist")
-  );
   const allowed =
     session.isAdminMaster ||
-    isPlanner ||
     hasRoleInClinic(session, clinicId, ["clinical_coordinator"]);
   if (!allowed) return { ok: false, error: "Sem permissão." };
 
