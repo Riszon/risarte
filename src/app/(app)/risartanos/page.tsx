@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   CONTRACT_LABELS,
   CONTRACT_TYPES,
+  STAFF_PHOTO_BUCKET,
   staffDisplayName,
   type ContractType,
   type StaffMember,
@@ -143,6 +144,20 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
 
   const unitOptions = (units ?? []).map((u) => ({ id: u.id, name: u.name }));
 
+  // H4.1 Lote 1b: URLs assinadas das fotos (bucket privado).
+  const photoUrls = new Map<string, string>();
+  const photoPaths = rows
+    .filter((r) => r.photo_path)
+    .map((r) => r.photo_path as string);
+  if (photoPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(STAFF_PHOTO_BUCKET)
+      .createSignedUrls(photoPaths, 3600);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) photoUrls.set(s.path, s.signedUrl);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -235,12 +250,30 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                         {r.code ?? "—"}
                       </td>
                       <td className="px-2 py-1.5">
-                        <span className="font-medium">{staffDisplayName(s)}</span>
-                        {r.preferred_name && (
-                          <span className="block text-xs text-muted-foreground">
-                            {r.full_name}
+                        <span className="flex items-center gap-2">
+                          {r.photo_path && photoUrls.get(r.photo_path) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photoUrls.get(r.photo_path)}
+                              alt=""
+                              className="size-8 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                              {staffDisplayName(s).slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="min-w-0">
+                            <span className="block font-medium">
+                              {staffDisplayName(s)}
+                            </span>
+                            {r.preferred_name && (
+                              <span className="block text-xs text-muted-foreground">
+                                {r.full_name}
+                              </span>
+                            )}
                           </span>
-                        )}
+                        </span>
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">
                         {r.role_title ?? "—"}
@@ -262,7 +295,15 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                       </td>
                       {canManage && (
                         <td className="px-2 py-1.5 text-right">
-                          <StaffFormDialog units={unitOptions} staff={s} />
+                          <StaffFormDialog
+                            units={unitOptions}
+                            staff={s}
+                            photoUrl={
+                              r.photo_path
+                                ? photoUrls.get(r.photo_path)
+                                : undefined
+                            }
+                          />
                         </td>
                       )}
                     </tr>

@@ -230,7 +230,9 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         CLT/PJ/Estagiário/Autônomo, cargo, "como quer ser chamado"),
         ativar/inativar e **histórico de alterações** (`staff_member_changes`).
         Menu: `/admin/usuarios` relabelado "Usuários (acesso)"; novo "Risartanos".
-  - [ ] **Lote 1b — foto** do colaborador (Storage privado + upload).
+  - [x] **Lote 1b — foto** ✅ (07/07, v0.13.1, migração 0077) — bucket privado
+        `staff-photos` (RLS por unidade), upload no navegador + URL assinada;
+        avatar na lista e no cadastro; trocar/remover foto.
   - [ ] **Lote 2 — vínculo com cliente** (autopreenche; prontuário destaca "é um
         Risartano"; inativo vai ao histórico do prontuário).
   - [ ] **Lote 3 — auditoria** de acessos/logins e ações (por colaborador com

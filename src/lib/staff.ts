@@ -1,6 +1,9 @@
 // Risartanos — colaboradores da unidade (H4.1). Tipos e rótulos compartilhados
 // entre a tela, as ações e a ficha. Identificadores em inglês; rótulos pt-BR.
 
+/** Bucket privado das fotos dos colaboradores (H4.1 Lote 1b). */
+export const STAFF_PHOTO_BUCKET = "staff-photos";
+
 export const GENDERS = ["female", "male", "other", "undisclosed"] as const;
 export type Gender = (typeof GENDERS)[number];
 export const GENDER_LABELS: Record<Gender, string> = {

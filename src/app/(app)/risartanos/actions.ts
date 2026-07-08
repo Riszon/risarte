@@ -14,6 +14,7 @@ import {
   CONTRACT_TYPES,
   GENDERS,
   MARITAL_STATUSES,
+  STAFF_PHOTO_BUCKET,
 } from "@/lib/staff";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -169,6 +170,62 @@ export async function updateStaffMember(
     entityType: "staff_member",
     entityId: staffId,
     clinicId: existing.clinic_id,
+  });
+  revalidatePath("/risartanos");
+  return { ok: true };
+}
+
+/**
+ * H4.1 Lote 1b: salva o caminho da foto (o upload em si é feito no navegador
+ * direto no Storage). Valida que o caminho pertence à unidade do colaborador e
+ * remove a foto anterior. `path` vazio = remover a foto.
+ */
+export async function setStaffPhoto(
+  staffId: string,
+  path: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("staff_members")
+    .select("clinic_id, photo_path")
+    .eq("id", staffId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: "Risartano não encontrado." };
+  if (!(await canManage(session, existing.clinic_id))) {
+    return { ok: false, error: "Você não tem permissão nesta unidade." };
+  }
+  // A foto tem de estar na pasta da unidade do colaborador (<clinic_id>/...).
+  const clean = path.trim();
+  if (clean && !clean.startsWith(`${existing.clinic_id}/`)) {
+    return { ok: false, error: "Caminho de foto inválido." };
+  }
+
+  const { error } = await supabase
+    .from("staff_members")
+    .update({
+      photo_path: clean || null,
+      updated_at: new Date().toISOString(),
+      updated_by: session.userId,
+    })
+    .eq("id", staffId);
+  if (error) {
+    console.error("setStaffPhoto failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a foto." };
+  }
+
+  // Remove a foto anterior (se trocou/removeu) — best-effort.
+  if (existing.photo_path && existing.photo_path !== clean) {
+    await supabase.storage
+      .from(STAFF_PHOTO_BUCKET)
+      .remove([existing.photo_path]);
+  }
+  await logAudit({
+    action: "update",
+    entityType: "staff_member",
+    entityId: staffId,
+    clinicId: existing.clinic_id,
+    details: { photo: clean ? "set" : "removed" },
   });
   revalidatePath("/risartanos");
   return { ok: true };

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { ImagePlus, Plus } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { STAFF_PHOTO_BUCKET } from "@/lib/staff";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +25,11 @@ import {
   MARITAL_STATUSES,
   type StaffMember,
 } from "@/lib/staff";
-import { createStaffMember, updateStaffMember } from "./actions";
+import {
+  createStaffMember,
+  setStaffPhoto,
+  updateStaffMember,
+} from "./actions";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -31,14 +37,55 @@ const selectClass =
 export function StaffFormDialog({
   units,
   staff,
+  photoUrl,
 }: {
   units: { id: string; name: string }[];
   staff?: StaffMember;
+  photoUrl?: string;
 }) {
   const router = useRouter();
   const isEdit = Boolean(staff);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function onPickPhoto(file: File) {
+    if (!staff) return;
+    const supabase = createClient();
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${staff.clinicId}/${staff.id}/photo-${Date.now()}.${ext}`;
+    setUploading(true);
+    const { error } = await supabase.storage
+      .from(STAFF_PHOTO_BUCKET)
+      .upload(path, file, { contentType: file.type });
+    if (error) {
+      setUploading(false);
+      toast.error("Não foi possível enviar a foto.");
+      return;
+    }
+    const result = await setStaffPhoto(staff.id, path);
+    setUploading(false);
+    if (result.ok) {
+      toast.success("Foto atualizada.");
+      router.refresh();
+    } else {
+      toast.error(result.error ?? "Algo deu errado.");
+    }
+  }
+
+  function removePhoto() {
+    if (!staff) return;
+    startTransition(async () => {
+      const result = await setStaffPhoto(staff.id, "");
+      if (result.ok) {
+        toast.success("Foto removida.");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Algo deu errado.");
+      }
+    });
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,6 +128,56 @@ export function StaffFormDialog({
               : "Novo Risartano"}
           </DialogTitle>
         </DialogHeader>
+
+        {isEdit && (
+          <div className="flex items-center gap-3">
+            {photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt=""
+                className="size-16 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <ImagePlus className="size-6" />
+              </span>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onPickPhoto(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading || isPending}
+                onClick={() => fileRef.current?.click()}
+              >
+                {uploading ? "Enviando…" : photoUrl ? "Trocar foto" : "Adicionar foto"}
+              </Button>
+              {photoUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={uploading || isPending}
+                  onClick={removePhoto}
+                >
+                  Remover
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={onSubmit} className="space-y-4">
           {!isEdit && (
