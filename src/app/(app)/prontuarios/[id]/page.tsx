@@ -527,7 +527,7 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("created_at")
@@ -541,6 +541,7 @@ export default async function ClientDetailPage(
           planned_minutes: number | null;
           actual_minutes: number | null;
           status: "pending" | "scheduled" | "done";
+          planned_date: string | null;
           appointment: {
             id: string;
             type: string;
@@ -566,6 +567,7 @@ export default async function ClientDetailPage(
       plannedMinutes: r.planned_minutes,
       actualMinutes: r.actual_minutes,
       status: r.status,
+      plannedDate: r.planned_date,
       // H3.14: agendamento vinculado (quando/quem) para exibir e abrir os detalhes.
       appointment: r.appointment
         ? {

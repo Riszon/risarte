@@ -305,8 +305,12 @@ lançamento** (manter login Admin + catálogo + fichas; backup antes).
         após a sessão anterior; null na 1ª), editável em Procedimentos por sessão
         (rede/unidade, cascata); resumo do protocolo mostra "a cada X dias"
         (`intervalSummary` em `src/lib/pricing.ts`). Base do Lote 2.
-  - [ ] **Lote 2 — sugerir as datas de TODAS as sessões ao agendar** (série;
-        `treatment_sessions.planned_date`).
+  - [x] **Lote 2 — sugerir as datas de TODAS as sessões ao agendar** ✅ (08/07,
+        v0.17.2, migração 0085) — `treatment_sessions.planned_date`; ação
+        `suggestTreatmentSeries` (data inicial → datas de toda a série pelo
+        intervalo mínimo do protocolo, pulando dias fechados/feriados); painel
+        de sessões mostra "prevista DD/MM" e o **Agendar** já abre na data
+        sugerida (`initialDate`).
   - [ ] **Lote 3 — médias reais do intervalo + previsão de conclusão.**
   - [ ] **Lote 4 — Planner propõe mudança de protocolo** (unidade → confirma +
         notifica Coordenador; rede → notifica Admin).
