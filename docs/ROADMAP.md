@@ -11,7 +11,7 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.21.0 · migração 0091
+## Onde estamos (09/07/2026) — versão 0.21.1 · migração 0091
 
 > **Conserto da transferência (0.20.2 · migração 0090):** um **gatilho** move o
 > plano (plano/opções/itens/etapas/sessões) para a unidade nova **sempre que a
@@ -66,11 +66,12 @@ previsão de conclusão, duração prevista) e intervalo entre sessões; o cockp
 Planner ganhou o card **"Resumo do tratamento"** (projeção por etapa). **Lote 3 —
 Sugerir profissional por sessão** ✅ (v0.21.0, migração 0091) — Risartano com
 **especialidades**; a ficha sugere o profissional por sessão (especialidade →
-continuidade → histórico) e pré-seleciona ao agendar. Falta: Lote 4 (juntar
-sessões), Lote 5 (alertas/lembretes).
+continuidade → histórico) e pré-seleciona ao agendar. **Lote 4 — Juntar sessões**
+✅ (v0.21.1, sem migração) — checkbox por sessão pendente na linha do tempo +
+"Agendar juntas no mesmo horário" (motor do H1.5). Falta: Lote 5 (alertas/lembretes).
 
 **FALTA (Grupo 4, ordem numérica):**
-- **H4.5** (Lotes 4–5) e **H4.6–H4.14** — ver abaixo.
+- **H4.5** (Lote 5) e **H4.6–H4.14** — ver abaixo.
 
 **Migrações:** **0001–0090 aplicadas** (o dono confirmou); **0091 pendente**
 (especialidades do Risartano).
@@ -386,7 +387,12 @@ antes).
         ficha (Fase 5) sugere, por sessão, o profissional (especialidade
         cadastrada → continuidade do tratamento → histórico de quem executou na
         unidade) e o **pré-seleciona** ao agendar (`initialProviderId`).
-  - [ ] **Lote 4 — Juntar sessões no mesmo horário**.
+  - [x] **Lote 4 — Juntar sessões no mesmo horário** ✅ (v0.21.1, sem migração) —
+        o motor já existia (H1.5: um agendamento vincula N sessões e a conclusão
+        rateia o tempo); agora a **linha do tempo** do tratamento tem **checkbox
+        por sessão pendente** e a barra **"Agendar juntas no mesmo horário"** que
+        abre o agendamento com as sessões pré-marcadas, a **duração somada** e o
+        profissional sugerido pré-selecionado (`AppointmentFormDialog.initialSessionIds`).
   - [ ] **Lote 5 — Alertas e lembretes (sessão e plano)** 🗄️.
 - [ ] **H4.6 Módulo do Dentista [G] 🗄️** — dashboard, execução/baixa,
       pendências; histórico do cliente; plano resumido SEM valores; sugestões

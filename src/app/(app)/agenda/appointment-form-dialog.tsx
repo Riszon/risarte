@@ -124,6 +124,7 @@ export function AppointmentFormDialog({
   initialDuration,
   initialProviderId,
   treatmentSessionId,
+  initialSessionIds,
   initialRoomId,
   defaultOpen = false,
   open,
@@ -152,6 +153,8 @@ export function AppointmentFormDialog({
   initialProviderId?: string;
   /** Vincula este agendamento a uma sessão planejada do tratamento (E4). */
   treatmentSessionId?: string;
+  /** Pré-marca VÁRIAS sessões para agendar juntas no mesmo horário (H4.5 Lote 4). */
+  initialSessionIds?: string[];
   initialRoomId?: string;
   defaultOpen?: boolean;
   /** Controlled open state (quick scheduling). */
@@ -247,7 +250,11 @@ export function AppointmentFormDialog({
   );
   const [notes, setNotes] = useState(appointment?.notes ?? "");
   const [sessionIds, setSessionIds] = useState<string[]>(
-    treatmentSessionId ? [treatmentSessionId] : []
+    initialSessionIds && initialSessionIds.length > 0
+      ? initialSessionIds
+      : treatmentSessionId
+        ? [treatmentSessionId]
+        : []
   );
   const [pendingSessions, setPendingSessions] = useState<PendingSession[]>([]);
   // Ao editar, só envia o campo de sessões depois de carregá-las (H1.5) —

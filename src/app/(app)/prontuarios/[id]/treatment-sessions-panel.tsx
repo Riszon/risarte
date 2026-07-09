@@ -133,6 +133,18 @@ export function TreatmentSessionsPanel({
   const [isPending, startTransition] = useTransition();
   const [startDate, setStartDate] = useState(todayIso());
 
+  // H4.5 Lote 4: selecionar 2+ sessões pendentes e agendá-las juntas.
+  const [joinSel, setJoinSel] = useState<Set<string>>(new Set());
+  const [joinOpen, setJoinOpen] = useState(false);
+  function toggleJoin(id: string) {
+    setJoinSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   // H4.5 Lote 2: agrupa por ETAPA (na ordem stage_order); dentro da etapa, as
   // sessões formam uma linha do tempo (ordenadas pela data efetiva).
   type StageGroup = {
@@ -171,6 +183,22 @@ export function TreatmentSessionsPanel({
     (sum, s) => sum + (s.plannedMinutes ?? 0),
     0
   );
+
+  // H4.5 Lote 4: sessões pendentes marcadas para agendar juntas.
+  const joinList = sessions.filter(
+    (s) => s.status === "pending" && joinSel.has(s.id)
+  );
+  const joinIds = joinList.map((s) => s.id);
+  const joinSumMin = joinList.reduce((a, s) => a + (s.plannedMinutes ?? 0), 0);
+  const joinMinutes =
+    joinSumMin > 0 ? Math.max(15, Math.round(joinSumMin / 15) * 15) : undefined;
+  const joinProviderId =
+    joinList.find((s) => s.suggestedProviderId)?.suggestedProviderId ?? undefined;
+  const joinDate =
+    joinList
+      .map((s) => s.plannedDate)
+      .filter((d): d is string => Boolean(d))
+      .sort()[0] ?? undefined;
 
   // Intervalo (dias) entre cada sessão datada e a anterior, na ordem do calendário.
   const dated = sessions
@@ -329,6 +357,32 @@ export function TreatmentSessionsPanel({
           </div>
         )}
 
+        {/* H4.5 Lote 4: agendar as sessões marcadas juntas no mesmo horário. */}
+        {canSchedule && joinList.length >= 1 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-2 text-sm">
+            <span className="font-medium">
+              {joinList.length}{" "}
+              {joinList.length === 1
+                ? "sessão selecionada"
+                : "sessões selecionadas"}
+              {joinMinutes ? ` · ${formatMinutes(joinMinutes)}` : ""}
+            </span>
+            <Button size="sm" onClick={() => setJoinOpen(true)}>
+              <CalendarPlus className="mr-1 size-3.5" />
+              {joinList.length > 1
+                ? "Agendar juntas no mesmo horário"
+                : "Agendar sessão"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setJoinSel(new Set())}
+            >
+              Limpar
+            </Button>
+          </div>
+        )}
+
         {stageGroups.map((sg) => {
           const stageMinutes = sg.sessions.reduce(
             (sum, s) => sum + (s.plannedMinutes ?? 0),
@@ -368,6 +422,18 @@ export function TreatmentSessionsPanel({
                   const interval = intervalById.get(s.id) ?? null;
                   return (
                     <li key={s.id} className="relative flex gap-3">
+                      {canSchedule && (
+                        <span className="flex w-4 shrink-0 items-start pt-1.5">
+                          {s.status === "pending" && (
+                            <input
+                              type="checkbox"
+                              checked={joinSel.has(s.id)}
+                              onChange={() => toggleJoin(s.id)}
+                              aria-label="Selecionar esta sessão para agendar junto"
+                            />
+                          )}
+                        </span>
+                      )}
                       {/* Marcador + linha da timeline. */}
                       <div className="flex flex-col items-center">
                         <span
@@ -482,6 +548,34 @@ export function TreatmentSessionsPanel({
             </div>
           );
         })}
+
+        {/* H4.5 Lote 4: formulário para agendar as sessões marcadas juntas. */}
+        {canSchedule && joinOpen && (
+          <AppointmentFormDialog
+            open={joinOpen}
+            onOpenChange={(o) => {
+              if (!o) {
+                setJoinOpen(false);
+                setJoinSel(new Set());
+              }
+            }}
+            clients={[
+              {
+                id: clientId,
+                full_name: clientName,
+                inactive: clientInactive,
+              },
+            ]}
+            staff={staff}
+            config={config}
+            initialClientId={clientId}
+            initialSessionIds={joinIds}
+            initialDuration={joinMinutes}
+            initialProviderId={joinProviderId}
+            initialDate={joinDate}
+            fixedClinicId={clinicId}
+          />
+        )}
       </CardContent>
     </Card>
   );
