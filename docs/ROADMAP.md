@@ -11,7 +11,7 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.20.2 · migração 0090
+## Onde estamos (09/07/2026) — versão 0.21.0 · migração 0091
 
 > **Conserto da transferência (0.20.2 · migração 0090):** um **gatilho** move o
 > plano (plano/opções/itens/etapas/sessões) para a unidade nova **sempre que a
@@ -63,14 +63,17 @@ procedimentos e sessões agrupados por etapa. **Lote 2 — Cockpit redesenhado +
 linha do tempo** ✅ (v0.19.1, sem migração) — o painel de sessões virou **linha do
 tempo por etapa** com **resumo** (sessões, tempo de cadeira, intervalo médio real,
 previsão de conclusão, duração prevista) e intervalo entre sessões; o cockpit do
-Planner ganhou o card **"Resumo do tratamento"** (projeção por etapa). Falta:
-Lote 3 (sugerir profissional), Lote 4 (juntar sessões), Lote 5 (alertas/lembretes).
+Planner ganhou o card **"Resumo do tratamento"** (projeção por etapa). **Lote 3 —
+Sugerir profissional por sessão** ✅ (v0.21.0, migração 0091) — Risartano com
+**especialidades**; a ficha sugere o profissional por sessão (especialidade →
+continuidade → histórico) e pré-seleciona ao agendar. Falta: Lote 4 (juntar
+sessões), Lote 5 (alertas/lembretes).
 
 **FALTA (Grupo 4, ordem numérica):**
-- **H4.5** (Lotes 3–5) e **H4.6–H4.14** — ver abaixo.
+- **H4.5** (Lotes 4–5) e **H4.6–H4.14** — ver abaixo.
 
-**Migrações:** **0001–0086 aplicadas** (o dono confirmou em 08/07/2026);
-**0087 pendente** (etapas do tratamento).
+**Migrações:** **0001–0090 aplicadas** (o dono confirmou); **0091 pendente**
+(especialidades do Risartano).
 
 **Pendências operacionais do dono:** `GAMMA_API_KEY` na Vercel; **limpeza de dados
 de teste antes do lançamento** (manter login Admin + catálogo + fichas; backup
@@ -377,7 +380,12 @@ antes).
         dias entre uma sessão e a anterior; o cockpit do Planner ganhou o card
         **"Resumo do tratamento"** (`treatment-summary.tsx`), projeção por etapa
         da opção principal (sessões + tempo de cadeira). Reaproveita a H4.3.
-  - [ ] **Lote 3 — Sugerir profissional por sessão** 🗄️.
+  - [x] **Lote 3 — Sugerir profissional por sessão** ✅ (v0.21.0, migração 0091) —
+        o Risartano ganhou **especialidades** (`staff_members.specialties`,
+        marcadas no cadastro a partir das especialidades dos procedimentos); a
+        ficha (Fase 5) sugere, por sessão, o profissional (especialidade
+        cadastrada → continuidade do tratamento → histórico de quem executou na
+        unidade) e o **pré-seleciona** ao agendar (`initialProviderId`).
   - [ ] **Lote 4 — Juntar sessões no mesmo horário**.
   - [ ] **Lote 5 — Alertas e lembretes (sessão e plano)** 🗄️.
 - [ ] **H4.6 Módulo do Dentista [G] 🗄️** — dashboard, execução/baixa,

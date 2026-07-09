@@ -75,6 +75,9 @@ export type StaffMember = {
   userId: string | null;
   /** Unidades onde o Risartano está INATIVO (status por unidade — H4.1). */
   inactiveUnitIds: string[];
+  /** Especialidades do profissional (H4.5 Lote 3) — alimentam a sugestão de
+   * profissional por sessão. */
+  specialties: string[];
 };
 
 /** Resumo do acesso (login) vinculado, exibido na tela Risartanos. */

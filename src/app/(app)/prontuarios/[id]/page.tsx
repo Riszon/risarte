@@ -528,13 +528,14 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, stage_name, stage_order, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+        "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, stage_name, stage_order, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("created_at")
       .returns<
         {
           id: string;
+          procedure_id: string | null;
           procedure_name: string;
           session_index: number;
           session_total: number;
@@ -563,6 +564,7 @@ export default async function ClientDetailPage(
       >();
     treatmentSessions = (tsRows ?? []).map((r) => ({
       id: r.id,
+      procedureId: r.procedure_id,
       procedureName: r.procedure_name,
       sessionIndex: r.session_index,
       sessionTotal: r.session_total,
@@ -573,6 +575,10 @@ export default async function ClientDetailPage(
       plannedDate: r.planned_date,
       stageName: r.stage_name,
       stageOrder: r.stage_order,
+      // H4.5 Lote 3: preenchido logo abaixo (sugestão de profissional).
+      suggestedProviderId: null as string | null,
+      suggestedProviderName: null as string | null,
+      suggestionReason: null as string | null,
       // H3.14: agendamento vinculado (quando/quem) para exibir e abrir os detalhes.
       appointment: r.appointment
         ? {
@@ -598,6 +604,135 @@ export default async function ClientDetailPage(
           }
         : null,
     }));
+
+    // -- H4.5 Lote 3: sugere o profissional de cada sessão pendente --
+    const pendingSessions = treatmentSessions.filter(
+      (s) => s.status === "pending"
+    );
+    if (
+      canScheduleFromFicha &&
+      fichaStaff.length > 0 &&
+      pendingSessions.length > 0
+    ) {
+      const staffIds = fichaStaff.map((s) => s.userId);
+      const nameOf = (uid: string) =>
+        fichaStaff.find((s) => s.userId === uid)?.name ?? null;
+
+      const procIds = [
+        ...new Set(
+          treatmentSessions
+            .map((s) => s.procedureId)
+            .filter((x): x is string => Boolean(x))
+        ),
+      ];
+
+      // Especialidade de cada procedimento.
+      const specByProc = new Map<string, string | null>();
+      // Especialidades de cada profissional da unidade (com login).
+      const specByUser = new Map<string, string[]>();
+      // Quem já executou cada procedimento na unidade (mais recente).
+      const historyByProc = new Map<string, string>();
+
+      const { data: staffSpecRows } = await supabase
+        .from("staff_members")
+        .select("user_id, specialties")
+        .eq("clinic_id", scheduleClinicId)
+        .in("user_id", staffIds);
+      for (const r of (staffSpecRows ?? []) as {
+        user_id: string | null;
+        specialties: string[] | null;
+      }[]) {
+        if (r.user_id) specByUser.set(r.user_id, r.specialties ?? []);
+      }
+
+      if (procIds.length > 0) {
+        const [{ data: procSpecRows }, { data: histRows }] = await Promise.all([
+          supabase.from("procedures").select("id, specialty").in("id", procIds),
+          supabase
+            .from("treatment_sessions")
+            .select(
+              "procedure_id, done_at, appointment:appointments!treatment_sessions_appointment_id_fkey ( provider_user_id )"
+            )
+            .eq("clinic_id", scheduleClinicId)
+            .eq("status", "done")
+            .in("procedure_id", procIds)
+            .order("done_at", { ascending: false })
+            .limit(500),
+        ]);
+        for (const p of (procSpecRows ?? []) as {
+          id: string;
+          specialty: string | null;
+        }[]) {
+          specByProc.set(p.id, p.specialty);
+        }
+        for (const r of (histRows ?? []) as {
+          procedure_id: string | null;
+          appointment:
+            | { provider_user_id: string | null }
+            | { provider_user_id: string | null }[]
+            | null;
+        }[]) {
+          const ap = Array.isArray(r.appointment)
+            ? r.appointment[0]
+            : r.appointment;
+          const prov = ap?.provider_user_id ?? null;
+          if (
+            r.procedure_id &&
+            prov &&
+            staffIds.includes(prov) &&
+            !historyByProc.has(r.procedure_id)
+          ) {
+            historyByProc.set(r.procedure_id, prov);
+          }
+        }
+      }
+
+      // Continuidade: dentista do agendamento mais recente deste cliente.
+      let treatmentDentist: string | null = null;
+      let bestTime = -1;
+      for (const s of treatmentSessions) {
+        const uid = s.appointment?.provider_user_id;
+        if (uid && s.appointment && staffIds.includes(uid)) {
+          const t = new Date(s.appointment.starts_at).getTime();
+          if (t > bestTime) {
+            bestTime = t;
+            treatmentDentist = uid;
+          }
+        }
+      }
+
+      for (const s of pendingSessions) {
+        const spec = s.procedureId
+          ? (specByProc.get(s.procedureId) ?? null)
+          : null;
+        const specialists = spec
+          ? staffIds.filter((uid) => (specByUser.get(uid) ?? []).includes(spec))
+          : [];
+        let pick: string | null = null;
+        let reason: string | null = null;
+        if (spec && treatmentDentist && specialists.includes(treatmentDentist)) {
+          pick = treatmentDentist;
+          reason = `especialista em ${spec} e já atende o cliente`;
+        } else if (!spec && treatmentDentist) {
+          pick = treatmentDentist;
+          reason = "já atende este cliente";
+        } else if (specialists.length > 0) {
+          pick = specialists[0];
+          reason = `especialista em ${spec}`;
+        } else if (treatmentDentist) {
+          pick = treatmentDentist;
+          reason = "já atende este cliente";
+        } else if (s.procedureId && historyByProc.has(s.procedureId)) {
+          pick = historyByProc.get(s.procedureId) ?? null;
+          reason = "já fez este procedimento na unidade";
+        }
+        if (pick) {
+          s.suggestedProviderId = pick;
+          s.suggestedProviderName = nameOf(pick);
+          s.suggestionReason = reason;
+        }
+      }
+    }
   }
 
   // -- Avaliação clínica (Etapa 4/E7): registra na unidade ATIVA quando ela é a

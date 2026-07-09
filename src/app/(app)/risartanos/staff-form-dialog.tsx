@@ -49,6 +49,7 @@ export function StaffFormDialog({
   canPickUnit = false,
   activeClinicName = null,
   manageClinicIds = [],
+  specialtyOptions = [],
 }: {
   units: { id: string; name: string }[];
   staff?: StaffMember;
@@ -62,6 +63,8 @@ export function StaffFormDialog({
   activeClinicName?: string | null;
   /** Unidades que o usuário atual gere (pode ativar/inativar o status ali). */
   manageClinicIds?: string[];
+  /** Especialidades disponíveis (dos procedimentos) — H4.5 Lote 3. */
+  specialtyOptions?: string[];
 }) {
   const router = useRouter();
   const isEdit = Boolean(staff);
@@ -671,6 +674,34 @@ export function StaffFormDialog({
                 O cargo/função vem do <b>acesso</b> do Risartano (por unidade).
               </p>
             </div>
+          </div>
+
+          {/* H4.5 Lote 3: especialidades do profissional (alimentam a sugestão
+              de profissional por sessão). Opcional. */}
+          <div>
+            <Label>Especialidades (para sugerir nas sessões)</Label>
+            {specialtyOptions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma especialidade cadastrada nos procedimentos ainda.
+              </p>
+            ) : (
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1.5">
+                {specialtyOptions.map((sp) => (
+                  <label
+                    key={sp}
+                    className="flex items-center gap-1.5 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      name="specialty"
+                      value={sp}
+                      defaultChecked={staff?.specialties?.includes(sp) ?? false}
+                    />
+                    {sp}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

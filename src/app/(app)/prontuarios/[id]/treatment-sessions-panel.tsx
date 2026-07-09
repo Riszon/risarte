@@ -18,6 +18,7 @@ import { suggestTreatmentSeries } from "./treatment-actions";
 
 export type TreatmentSession = {
   id: string;
+  procedureId: string | null;
   procedureName: string;
   sessionIndex: number;
   sessionTotal: number;
@@ -30,6 +31,11 @@ export type TreatmentSession = {
   /** H4.5: etapa do tratamento (denormalizada), ou null. */
   stageName: string | null;
   stageOrder: number | null;
+  /** H4.5 Lote 3: profissional sugerido para esta sessão (pré-seleciona ao
+   * agendar) + o motivo da sugestão. */
+  suggestedProviderId: string | null;
+  suggestedProviderName: string | null;
+  suggestionReason: string | null;
   /** H3.14: agendamento vinculado (quando/quem) — permite abrir os detalhes. */
   appointment: AgendaAppointment | null;
 };
@@ -380,9 +386,17 @@ export function TreatmentSessionsPanel({
                             </span>
                           </span>
                           {interval !== null && (
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="block text-[11px] text-muted-foreground">
                               {interval} {interval === 1 ? "dia" : "dias"} após a
                               anterior
+                            </span>
+                          )}
+                          {s.status === "pending" && s.suggestedProviderName && (
+                            <span className="block text-[11px] text-primary">
+                              Sugestão: {s.suggestedProviderName}
+                              {s.suggestionReason
+                                ? ` — ${s.suggestionReason}`
+                                : ""}
                             </span>
                           )}
                         </span>
@@ -445,6 +459,9 @@ export function TreatmentSessionsPanel({
                                       Math.round(s.plannedMinutes / 15) * 15
                                     )
                                   : undefined
+                              }
+                              initialProviderId={
+                                s.suggestedProviderId ?? undefined
                               }
                               treatmentSessionId={s.id}
                               fixedClinicId={clinicId}

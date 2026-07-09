@@ -122,6 +122,7 @@ export function AppointmentFormDialog({
   initialDate,
   initialTime,
   initialDuration,
+  initialProviderId,
   treatmentSessionId,
   initialRoomId,
   defaultOpen = false,
@@ -147,6 +148,8 @@ export function AppointmentFormDialog({
   initialTime?: string;
   /** Pré-preenche a duração (min) — ex.: ao agendar uma sessão planejada (E4). */
   initialDuration?: number;
+  /** Pré-seleciona o profissional sugerido para a sessão (H4.5 Lote 3). */
+  initialProviderId?: string;
   /** Vincula este agendamento a uma sessão planejada do tratamento (E4). */
   treatmentSessionId?: string;
   initialRoomId?: string;
@@ -218,7 +221,7 @@ export function AppointmentFormDialog({
     appointment?.type ?? "evaluation"
   );
   const [providerId, setProviderId] = useState(
-    appointment?.provider_user_id ?? ""
+    appointment?.provider_user_id ?? initialProviderId ?? ""
   );
   const [roomId, setRoomId] = useState(
     appointment?.room_id ?? initialRoomId ?? ""

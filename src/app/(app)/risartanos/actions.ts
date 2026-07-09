@@ -126,8 +126,20 @@ function parseStaffForm(formData: FormData):
     return { error: "Informe o nome do cônjuge." };
   }
 
+  // H4.5 Lote 3: especialidades marcadas (checkbox múltiplo). Sem obrigatório —
+  // sem especialidade, a sugestão cai na continuidade/histórico.
+  const specialties = [
+    ...new Set(
+      formData
+        .getAll("specialty")
+        .map((s) => String(s).trim())
+        .filter(Boolean)
+    ),
+  ];
+
   return {
     values: {
+      specialties,
       full_name: field(formData, "full_name"),
       preferred_name: field(formData, "preferred_name"),
       cpf: formatCpf(cpf),

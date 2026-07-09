@@ -48,6 +48,7 @@ type StaffRow = {
   is_active: boolean;
   user_id: string | null;
   inactive_unit_ids: string[] | null;
+  specialties: string[] | null;
   clinics: { name: string } | null;
 };
 
@@ -80,6 +81,7 @@ function toStaff(r: StaffRow): StaffMember {
     isActive: r.is_active,
     userId: r.user_id,
     inactiveUnitIds: r.inactive_unit_ids ?? [],
+    specialties: r.specialties ?? [],
   };
 }
 
@@ -146,7 +148,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   let staffQuery = supabase
     .from("staff_members")
     .select(
-      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, user_id, inactive_unit_ids, clinics ( name )"
+      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, user_id, inactive_unit_ids, specialties, clinics ( name )"
     )
     .order("full_name")
     .limit(2000);
@@ -154,10 +156,26 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   if (ativo === "ativos") staffQuery = staffQuery.eq("is_active", true);
   else if (ativo === "inativos") staffQuery = staffQuery.eq("is_active", false);
 
-  const [{ data: units }, { data: staffRows }] = await Promise.all([
-    unitsQuery,
-    staffQuery.returns<StaffRow[]>(),
-  ]);
+  const [{ data: units }, { data: staffRows }, { data: specRows }] =
+    await Promise.all([
+      unitsQuery,
+      staffQuery.returns<StaffRow[]>(),
+      // H4.5 Lote 3: lista de especialidades (dos procedimentos ativos) para
+      // marcar no cadastro do Risartano.
+      supabase
+        .from("procedures")
+        .select("specialty")
+        .eq("is_active", true)
+        .not("specialty", "is", null)
+        .returns<{ specialty: string | null }[]>(),
+    ]);
+  const specialtyOptions = [
+    ...new Set(
+      (specRows ?? [])
+        .map((s) => (s.specialty ?? "").trim())
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   const term = busca.trim().toLowerCase();
   const rows = (staffRows ?? []).filter((r) => {
@@ -286,6 +304,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
             activeClinicName={activeClinicName}
             isAdmin={session.isAdminMaster}
             linkableUsers={linkableUsers}
+            specialtyOptions={specialtyOptions}
           />
         )}
       </div>
@@ -506,6 +525,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                               isAdmin={session.isAdminMaster}
                               linkableUsers={linkableUsers}
                               manageClinicIds={Array.from(manageClinicIds)}
+                              specialtyOptions={specialtyOptions}
                             />
                           )}
                         </td>
