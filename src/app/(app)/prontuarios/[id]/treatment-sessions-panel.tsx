@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarCheck, CalendarPlus, CalendarRange } from "lucide-react";
+import { CalendarCheck, CalendarPlus, CalendarRange, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,9 @@ export type TreatmentSession = {
   status: "pending" | "scheduled" | "done";
   /** H4.3 Lote 2: data sugerida ("YYYY-MM-DD"), ou null. */
   plannedDate: string | null;
+  /** H4.5: etapa do tratamento (denormalizada), ou null. */
+  stageName: string | null;
+  stageOrder: number | null;
   /** H3.14: agendamento vinculado (quando/quem) — permite abrir os detalhes. */
   appointment: AgendaAppointment | null;
 };
@@ -83,16 +86,32 @@ export function TreatmentSessionsPanel({
   const [isPending, startTransition] = useTransition();
   const [startDate, setStartDate] = useState(todayIso());
 
-  // Agrupa por procedimento, preservando a ordem.
-  const groups: { name: string; sessions: TreatmentSession[] }[] = [];
+  // H4.5: agrupa por ETAPA (na ordem stage_order) e, dentro dela, por
+  // procedimento — preservando a ordem de criação das sessões.
+  type ProcGroup = { name: string; sessions: TreatmentSession[] };
+  type StageGroup = {
+    key: string;
+    label: string | null;
+    order: number;
+    procs: ProcGroup[];
+  };
+  const stageGroups: StageGroup[] = [];
   for (const s of sessions) {
-    let g = groups.find((x) => x.name === s.procedureName);
-    if (!g) {
-      g = { name: s.procedureName, sessions: [] };
-      groups.push(g);
+    const key = s.stageName ?? "__none__";
+    let sg = stageGroups.find((x) => x.key === key);
+    if (!sg) {
+      sg = { key, label: s.stageName, order: s.stageOrder ?? 9999, procs: [] };
+      stageGroups.push(sg);
     }
-    g.sessions.push(s);
+    let pg = sg.procs.find((p) => p.name === s.procedureName);
+    if (!pg) {
+      pg = { name: s.procedureName, sessions: [] };
+      sg.procs.push(pg);
+    }
+    pg.sessions.push(s);
   }
+  stageGroups.sort((a, b) => a.order - b.order);
+  const hasStages = sessions.some((s) => s.stageName);
 
   const pending = sessions.filter((s) => s.status === "pending").length;
   const hasSuggestions = sessions.some((s) => s.plannedDate);
@@ -200,10 +219,18 @@ export function TreatmentSessionsPanel({
             )}
           </div>
         )}
-        {groups.map((g) => (
-          <div key={g.name}>
-            <p className="text-sm font-medium">{g.name}</p>
-            <ul className="mt-1 space-y-1">
+        {stageGroups.map((sg) => (
+          <div key={sg.key} className="space-y-2">
+            {hasStages && (
+              <p className="flex items-center gap-1 text-sm font-semibold">
+                <Layers className="size-3.5 text-muted-foreground" />
+                {sg.label ?? "Sem etapa"}
+              </p>
+            )}
+            {sg.procs.map((g) => (
+              <div key={g.name} className={hasStages ? "border-l pl-2" : ""}>
+                <p className="text-sm font-medium">{g.name}</p>
+                <ul className="mt-1 space-y-1">
               {g.sessions.map((s) => (
                 <li
                   key={s.id}
@@ -289,7 +316,9 @@ export function TreatmentSessionsPanel({
                   </span>
                 </li>
               ))}
-            </ul>
+                </ul>
+              </div>
+            ))}
           </div>
         ))}
       </CardContent>

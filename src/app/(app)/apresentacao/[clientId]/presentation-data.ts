@@ -122,6 +122,8 @@ export async function loadPresentationData(
         unitPriceCents: it.unit_price_cents,
         plannedSessions: it.planned_sessions,
         plannedMinutes: it.planned_total_minutes,
+        // A apresentação não usa etapas — o campo existe só para o tipo.
+        stageId: null,
       }));
       const totalSessions = items.reduce(
         (s, it) => s + (it.plannedSessions ?? 0),

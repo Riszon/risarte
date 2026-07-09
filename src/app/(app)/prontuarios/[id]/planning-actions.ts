@@ -577,6 +577,7 @@ export async function addBudgetItem(
     price: string;
     plannedSessions?: number | null;
     plannedMinutes?: number | null;
+    stageId?: string | null;
   }
 ): Promise<PlanResult> {
   const description = input.description.trim();
@@ -605,6 +606,7 @@ export async function addBudgetItem(
     unit_price_cents: priceCents,
     planned_sessions: posIntOrNull(input.plannedSessions),
     planned_total_minutes: posIntOrNull(input.plannedMinutes),
+    stage_id: input.stageId ?? null,
     sort_order: count ?? 0,
   });
   if (error) {
@@ -624,6 +626,7 @@ export async function editBudgetItem(
     price: string;
     plannedSessions?: number | null;
     plannedMinutes?: number | null;
+    stageId?: string | null;
   }
 ): Promise<PlanResult> {
   const description = input.description.trim();
@@ -653,6 +656,7 @@ export async function editBudgetItem(
       unit_price_cents: priceCents,
       planned_sessions: posIntOrNull(input.plannedSessions),
       planned_total_minutes: posIntOrNull(input.plannedMinutes),
+      stage_id: input.stageId ?? null,
     })
     .eq("id", itemId);
   if (error) {
@@ -685,6 +689,176 @@ export async function removeBudgetItem(itemId: string): Promise<PlanResult> {
   if (error) {
     console.error("removeBudgetItem failed:", error.message);
     return { ok: false, error: "Não foi possível remover o item." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+// ---- Etapas do tratamento (H4.5 Lote 1) -----------------------------------
+
+/** Resolve a etapa → opção/plano/unidade/cliente, para escopo e revalidação. */
+async function loadStageContext(
+  stageId: string
+): Promise<
+  | { error: string }
+  | { optionId: string; planId: string; clinicId: string; clientId: string }
+> {
+  const supabase = await createClient();
+  const { data: stage } = await supabase
+    .from("treatment_plan_stages")
+    .select("option_id")
+    .eq("id", stageId)
+    .single();
+  if (!stage) return { error: "Etapa não encontrada." };
+  return loadOptionContext(stage.option_id);
+}
+
+/** Adiciona uma etapa à opção (fica no fim da ordem). */
+export async function addPlanStage(
+  optionId: string,
+  name: string
+): Promise<PlanResult> {
+  const stageName = name.trim();
+  if (!stageName) return { ok: false, error: "Dê um nome à etapa." };
+
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadOptionContext(optionId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("treatment_plan_stages")
+    .select("id", { count: "exact", head: true })
+    .eq("option_id", optionId);
+
+  const { error } = await supabase.from("treatment_plan_stages").insert({
+    option_id: optionId,
+    clinic_id: ctx.clinicId,
+    name: stageName,
+    sort_order: count ?? 0,
+  });
+  if (error) {
+    console.error("addPlanStage failed:", error.message);
+    return { ok: false, error: "Não foi possível adicionar a etapa." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/** Renomeia uma etapa. */
+export async function renamePlanStage(
+  stageId: string,
+  name: string
+): Promise<PlanResult> {
+  const stageName = name.trim();
+  if (!stageName) return { ok: false, error: "Dê um nome à etapa." };
+
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadStageContext(stageId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("treatment_plan_stages")
+    .update({ name: stageName })
+    .eq("id", stageId);
+  if (error) {
+    console.error("renamePlanStage failed:", error.message);
+    return { ok: false, error: "Não foi possível renomear a etapa." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/** Remove a etapa. Os itens dela ficam "sem etapa" (FK on delete set null). */
+export async function removePlanStage(stageId: string): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadStageContext(stageId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("treatment_plan_stages")
+    .delete()
+    .eq("id", stageId);
+  if (error) {
+    console.error("removePlanStage failed:", error.message);
+    return { ok: false, error: "Não foi possível remover a etapa." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/** Move a etapa uma posição para cima ou para baixo (troca a ordem com a vizinha). */
+export async function movePlanStage(
+  stageId: string,
+  direction: "up" | "down"
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadStageContext(stageId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { data: stages } = await supabase
+    .from("treatment_plan_stages")
+    .select("id, sort_order")
+    .eq("option_id", ctx.optionId)
+    .order("sort_order")
+    .returns<{ id: string; sort_order: number }[]>();
+  const list = stages ?? [];
+  const idx = list.findIndex((s) => s.id === stageId);
+  if (idx < 0) return { ok: false, error: "Etapa não encontrada." };
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= list.length) return { ok: true };
+
+  const a = list[idx];
+  const b = list[swapIdx];
+  await supabase
+    .from("treatment_plan_stages")
+    .update({ sort_order: b.sort_order })
+    .eq("id", a.id);
+  await supabase
+    .from("treatment_plan_stages")
+    .update({ sort_order: a.sort_order })
+    .eq("id", b.id);
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/** Move um item para uma etapa (ou tira dela, com stageId null). */
+export async function setItemStage(
+  itemId: string,
+  stageId: string | null
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { ok: false, error: "Item não encontrado." };
+  const ctx = await loadOptionContext(item.option_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase
+    .from("treatment_plan_option_items")
+    .update({ stage_id: stageId })
+    .eq("id", itemId);
+  if (error) {
+    console.error("setItemStage failed:", error.message);
+    return { ok: false, error: "Não foi possível mover o item de etapa." };
   }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);

@@ -36,6 +36,13 @@ export const OPTION_REVIEW_LABELS: Record<OptionReviewStatus, string> = {
   rejected: "Reprovada",
 };
 
+/** H4.5: uma etapa (fase) do tratamento dentro de uma opção do plano. */
+export type PlanStage = {
+  id: string;
+  name: string;
+  sortOrder: number;
+};
+
 export type PlanOption = {
   id: string;
   isPrimary: boolean;
@@ -44,6 +51,8 @@ export type PlanOption = {
   sortOrder: number;
   /** Budget lines for this option (Etapa 5.2). */
   items: BudgetItem[];
+  /** H4.5: etapas do tratamento desta opção (ordenadas). */
+  stages: PlanStage[];
   /** Coordenador's per-option decision (F4). */
   reviewStatus: OptionReviewStatus;
   reviewNotes: string | null;

@@ -24,6 +24,7 @@ import {
 } from "@/lib/journey";
 import {
   type PlanOption,
+  type PlanStage,
   type TreatmentPlan,
   type TreatmentPlanStatus,
 } from "@/lib/planning";
@@ -293,7 +294,7 @@ export default async function PlanningCockpitPage(
       const { data: itemRows } = await supabase
         .from("treatment_plan_option_items")
         .select(
-          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, sort_order"
+          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, sort_order"
         )
         .in("option_id", optionIds)
         .order("sort_order")
@@ -307,6 +308,7 @@ export default async function PlanningCockpitPage(
             unit_price_cents: number;
             planned_sessions: number | null;
             planned_total_minutes: number | null;
+            stage_id: string | null;
             sort_order: number;
           }[]
         >();
@@ -320,8 +322,26 @@ export default async function PlanningCockpitPage(
           unitPriceCents: it.unit_price_cents,
           plannedSessions: it.planned_sessions,
           plannedMinutes: it.planned_total_minutes,
+          stageId: it.stage_id,
         });
         itemsByOption.set(it.option_id, list);
+      }
+    }
+    // H4.5: etapas do tratamento por opção.
+    const stagesByOption = new Map<string, PlanStage[]>();
+    if (optionIds.length > 0) {
+      const { data: stageRows } = await supabase
+        .from("treatment_plan_stages")
+        .select("id, option_id, name, sort_order")
+        .in("option_id", optionIds)
+        .order("sort_order")
+        .returns<
+          { id: string; option_id: string; name: string; sort_order: number }[]
+        >();
+      for (const st of stageRows ?? []) {
+        const list = stagesByOption.get(st.option_id) ?? [];
+        list.push({ id: st.id, name: st.name, sortOrder: st.sort_order });
+        stagesByOption.set(st.option_id, list);
       }
     }
     const options: PlanOption[] = (optRows ?? []).map((o) => ({
@@ -331,6 +351,7 @@ export default async function PlanningCockpitPage(
       description: o.description,
       sortOrder: o.sort_order,
       items: itemsByOption.get(o.id) ?? [],
+      stages: stagesByOption.get(o.id) ?? [],
       reviewStatus: o.review_status,
       reviewNotes: o.review_notes,
     }));

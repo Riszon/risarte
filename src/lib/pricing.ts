@@ -106,6 +106,8 @@ export type BudgetItem = {
   /** Sessões/tempo planejados pelo Planner para este procedimento (E3). */
   plannedSessions: number | null;
   plannedMinutes: number | null;
+  /** H4.5: etapa do tratamento a que este item pertence (null = sem etapa). */
+  stageId: string | null;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

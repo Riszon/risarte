@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import {
   ArrowRight,
   Check,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
+  Layers,
   LayoutDashboard,
   Pencil,
   Plus,
@@ -28,6 +31,7 @@ import {
   OPTION_REVIEW_LABELS,
   PLAN_STATUS_LABELS,
   type PlanOption,
+  type PlanStage,
   type TreatmentPlan,
 } from "@/lib/planning";
 import {
@@ -50,15 +54,20 @@ import {
 import {
   addBudgetItem,
   addPlanOption,
+  addPlanStage,
   createTreatmentPlan,
   editBudgetItem,
   editPlanOption,
+  movePlanStage,
   removeBudgetItem,
   removePlanOption,
+  removePlanStage,
+  renamePlanStage,
   reopenTreatmentPlan,
   reviewPlanOption,
   saveDiagnosis,
   savePlanNarrative,
+  setItemStage,
   setPrimaryOption,
   submitTreatmentPlan,
 } from "./planning-actions";
@@ -587,6 +596,7 @@ export function PlanningSection({
                   <OptionBudget
                     optionId={o.id}
                     items={o.items}
+                    stages={o.stages}
                     catalog={catalog}
                     protocols={protocols}
                     realStats={realStats}
@@ -810,9 +820,31 @@ function plannedText(it: BudgetItem): string | null {
   return parts.join(" · ");
 }
 
+/**
+ * H4.5: agrupa os itens por etapa (na ordem das etapas), com um grupo final
+ * "Sem etapa" para os itens não classificados.
+ */
+function groupItemsByStage(
+  items: BudgetItem[],
+  stages: PlanStage[]
+): { stage: PlanStage | null; items: BudgetItem[] }[] {
+  const ordered = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
+  const stageIds = new Set(ordered.map((s) => s.id));
+  const groups = ordered.map((stage) => ({
+    stage: stage as PlanStage | null,
+    items: items.filter((i) => i.stageId === stage.id),
+  }));
+  groups.push({
+    stage: null,
+    items: items.filter((i) => !i.stageId || !stageIds.has(i.stageId)),
+  });
+  return groups;
+}
+
 function OptionBudget({
   optionId,
   items,
+  stages,
   catalog,
   protocols,
   realStats,
@@ -821,6 +853,8 @@ function OptionBudget({
 }: {
   optionId: string;
   items: BudgetItem[];
+  /** H4.5: etapas do tratamento desta opção (ordenadas). */
+  stages: PlanStage[];
   catalog: PricedProcedure[];
   protocols: Record<string, ProtocolRef>;
   realStats: Record<string, RealStat>;
@@ -839,16 +873,24 @@ function OptionBudget({
   // Base (por 1 unidade) do protocolo, para reescalar ao mudar a quantidade.
   const [baseSess, setBaseSess] = useState(0);
   const [baseMin, setBaseMin] = useState(0);
+  const [nStage, setNStage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [eDesc, setEDesc] = useState("");
   const [ePrice, setEPrice] = useState("");
   const [eQty, setEQty] = useState("1");
   const [ePSess, setEPSess] = useState("");
   const [ePMin, setEPMin] = useState("");
+  const [eStage, setEStage] = useState("");
+  // H4.5: gestão das etapas.
+  const [newStageName, setNewStageName] = useState("");
+  const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [stageNameEdit, setStageNameEdit] = useState("");
 
   const total = budgetTotalCents(items);
   const pickedRef = procId ? protocols[procId] : undefined;
   const pickedReal = procId ? realStats[procId] : undefined;
+  const orderedStages = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
+  const itemGroups = groupItemsByStage(items, stages);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -906,16 +948,31 @@ function OptionBudget({
           <span className="text-sm font-semibold">{formatBRL(total)}</span>
         </div>
         {items.length > 0 && (
-          <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-            {items.map((it) => (
-              <li key={it.id}>
-                {it.quantity}× {it.description}
-                {plannedText(it) && (
-                  <span className="text-xs"> — {plannedText(it)}</span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-1 space-y-1.5">
+            {itemGroups.map(
+              (g) =>
+                g.items.length > 0 && (
+                  <div key={g.stage?.id ?? "none"}>
+                    {(g.stage || stages.length > 0) && (
+                      <p className="flex items-center gap-1 text-xs font-medium">
+                        <Layers className="size-3 text-muted-foreground" />
+                        {g.stage ? g.stage.name : "Sem etapa"}
+                      </p>
+                    )}
+                    <ul className="space-y-0.5 text-sm text-muted-foreground">
+                      {g.items.map((it) => (
+                        <li key={it.id}>
+                          {it.quantity}× {it.description}
+                          {plannedText(it) && (
+                            <span className="text-xs"> — {plannedText(it)}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+            )}
+          </div>
         )}
       </div>
     );
@@ -930,149 +987,345 @@ function OptionBudget({
         <span className="text-sm font-semibold">{formatBRL(total)}</span>
       </div>
 
+      {canEdit && (
+        <div className="mt-2 space-y-1 rounded-md border border-dashed p-2">
+          <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <Layers className="size-3.5" />
+            Etapas do tratamento
+          </p>
+          {orderedStages.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nenhuma etapa criada. Crie etapas (ex.: “Adequação”,
+              “Reabilitação”) e organize os procedimentos abaixo por etapa.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {orderedStages.map((s, i) => (
+                <li key={s.id} className="flex items-center gap-1 text-sm">
+                  {editingStageId === s.id ? (
+                    <>
+                      <Input
+                        value={stageNameEdit}
+                        onChange={(e) => setStageNameEdit(e.target.value)}
+                        className="h-7 max-w-[200px]"
+                        aria-label="Nome da etapa"
+                      />
+                      <Button
+                        size="sm"
+                        disabled={isPending || !stageNameEdit.trim()}
+                        onClick={() =>
+                          run(
+                            () => renamePlanStage(s.id, stageNameEdit),
+                            "Etapa renomeada.",
+                            () => setEditingStageId(null)
+                          )
+                        }
+                      >
+                        Salvar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingStageId(null)}
+                      >
+                        Cancelar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {i + 1}.
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Subir etapa"
+                        disabled={isPending || i === 0}
+                        onClick={() =>
+                          run(
+                            () => movePlanStage(s.id, "up"),
+                            "Ordem das etapas atualizada."
+                          )
+                        }
+                      >
+                        <ChevronUp className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Descer etapa"
+                        disabled={isPending || i === orderedStages.length - 1}
+                        onClick={() =>
+                          run(
+                            () => movePlanStage(s.id, "down"),
+                            "Ordem das etapas atualizada."
+                          )
+                        }
+                      >
+                        <ChevronDown className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Renomear etapa"
+                        onClick={() => {
+                          setEditingStageId(s.id);
+                          setStageNameEdit(s.name);
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remover etapa"
+                        disabled={isPending}
+                        onClick={() =>
+                          run(() => removePlanStage(s.id), "Etapa removida.")
+                        }
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={newStageName}
+              onChange={(e) => setNewStageName(e.target.value)}
+              placeholder="Nova etapa (ex.: Adequação do meio)"
+              className="h-8 max-w-[240px]"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!newStageName.trim() || isPending}
+              onClick={() =>
+                run(
+                  () => addPlanStage(optionId, newStageName),
+                  "Etapa adicionada.",
+                  () => setNewStageName("")
+                )
+              }
+            >
+              <Plus className="mr-1 size-4" />
+              Etapa
+            </Button>
+          </div>
+        </div>
+      )}
+
       {items.length > 0 && (
-        <ul className="mt-1 space-y-1">
-          {items.map((it) => (
-            <li key={it.id} className="text-sm">
-              {editingId === it.id ? (
-                <div className="space-y-1.5">
-                  <Input
-                    value={eDesc}
-                    onChange={(e) => setEDesc(e.target.value)}
-                    placeholder="Descrição"
-                  />
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Input
-                      value={eQty}
-                      onChange={(e) => setEQty(e.target.value)}
-                      inputMode="numeric"
-                      className="w-16"
-                      aria-label="Quantidade"
-                    />
-                    <span className="text-xs text-muted-foreground">×</span>
-                    <span className="text-sm text-muted-foreground">R$</span>
-                    <Input
-                      value={ePrice}
-                      onChange={(e) => setEPrice(e.target.value)}
-                      inputMode="decimal"
-                      className="w-28"
-                      aria-label="Valor unitário"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                    <span>Sessões</span>
-                    <Input
-                      value={ePSess}
-                      onChange={(e) => setEPSess(e.target.value)}
-                      inputMode="numeric"
-                      className="w-14"
-                      aria-label="Sessões planejadas"
-                    />
-                    <span>· Tempo total (min)</span>
-                    <Input
-                      value={ePMin}
-                      onChange={(e) => setEPMin(e.target.value)}
-                      inputMode="numeric"
-                      className="w-16"
-                      aria-label="Tempo total planejado em minutos"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() =>
-                        run(
-                          () =>
-                            editBudgetItem(it.id, {
-                              description: eDesc,
-                              quantity: Number(eQty) || 1,
-                              price: ePrice,
-                              plannedSessions: Number(ePSess) || null,
-                              plannedMinutes: Number(ePMin) || null,
-                            }),
-                          "Item atualizado.",
-                          () => setEditingId(null)
-                        )
-                      }
-                    >
-                      Salvar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingId(null)}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
+        <div className="mt-1 space-y-2">
+          {itemGroups.map(
+            (g) =>
+              g.items.length > 0 && (
+                <div key={g.stage?.id ?? "none"}>
+                  {(g.stage || stages.length > 0) && (
+                    <p className="flex items-center gap-1 text-xs font-medium">
+                      <Layers className="size-3 text-muted-foreground" />
+                      {g.stage ? g.stage.name : "Sem etapa"}
+                    </p>
+                  )}
+                  <ul className="space-y-1">
+                    {g.items.map((it) => (
+                      <li key={it.id} className="text-sm">
+                        {editingId === it.id ? (
+                          <div className="space-y-1.5">
+                            <Input
+                              value={eDesc}
+                              onChange={(e) => setEDesc(e.target.value)}
+                              placeholder="Descrição"
+                            />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Input
+                                value={eQty}
+                                onChange={(e) => setEQty(e.target.value)}
+                                inputMode="numeric"
+                                className="w-16"
+                                aria-label="Quantidade"
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                ×
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                R$
+                              </span>
+                              <Input
+                                value={ePrice}
+                                onChange={(e) => setEPrice(e.target.value)}
+                                inputMode="decimal"
+                                className="w-28"
+                                aria-label="Valor unitário"
+                              />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                              <span>Sessões</span>
+                              <Input
+                                value={ePSess}
+                                onChange={(e) => setEPSess(e.target.value)}
+                                inputMode="numeric"
+                                className="w-14"
+                                aria-label="Sessões planejadas"
+                              />
+                              <span>· Tempo total (min)</span>
+                              <Input
+                                value={ePMin}
+                                onChange={(e) => setEPMin(e.target.value)}
+                                inputMode="numeric"
+                                className="w-16"
+                                aria-label="Tempo total planejado em minutos"
+                              />
+                            </div>
+                            {orderedStages.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                <span>Etapa</span>
+                                <select
+                                  value={eStage}
+                                  onChange={(e) => setEStage(e.target.value)}
+                                  className="h-8 rounded-md border border-input bg-transparent px-1 text-sm"
+                                  aria-label="Etapa do item"
+                                >
+                                  <option value="">Sem etapa</option>
+                                  {orderedStages.map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                      {s.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                size="sm"
+                                disabled={isPending}
+                                onClick={() =>
+                                  run(
+                                    () =>
+                                      editBudgetItem(it.id, {
+                                        description: eDesc,
+                                        quantity: Number(eQty) || 1,
+                                        price: ePrice,
+                                        plannedSessions: Number(ePSess) || null,
+                                        plannedMinutes: Number(ePMin) || null,
+                                        stageId: eStage || null,
+                                      }),
+                                    "Item atualizado.",
+                                    () => setEditingId(null)
+                                  )
+                                }
+                              >
+                                Salvar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingId(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="min-w-0">
+                              <span className="block">
+                                {it.description}{" "}
+                                <span className="text-xs text-muted-foreground">
+                                  {it.quantity} × {formatBRL(it.unitPriceCents)}
+                                </span>
+                              </span>
+                              {plannedText(it) && (
+                                <span className="block text-xs text-primary">
+                                  Planejado: {plannedText(it)}
+                                </span>
+                              )}
+                              {canEdit && orderedStages.length > 0 && (
+                                <select
+                                  value={it.stageId ?? ""}
+                                  disabled={isPending}
+                                  onChange={(e) =>
+                                    run(
+                                      () =>
+                                        setItemStage(
+                                          it.id,
+                                          e.target.value || null
+                                        ),
+                                      "Etapa do item atualizada."
+                                    )
+                                  }
+                                  className="mt-0.5 h-6 rounded border border-input bg-transparent px-1 text-[11px] text-muted-foreground"
+                                  aria-label="Etapa do item"
+                                >
+                                  <option value="">Sem etapa</option>
+                                  {orderedStages.map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                      {s.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </span>
+                            <span className="flex shrink-0 items-center gap-1">
+                              <span className="font-medium">
+                                {formatBRL(it.quantity * it.unitPriceCents)}
+                              </span>
+                              {canEdit && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Editar item"
+                                    onClick={() => {
+                                      setEditingId(it.id);
+                                      setEDesc(it.description);
+                                      setEPrice(centsToInput(it.unitPriceCents));
+                                      setEQty(String(it.quantity));
+                                      setEPSess(
+                                        it.plannedSessions != null
+                                          ? String(it.plannedSessions)
+                                          : ""
+                                      );
+                                      setEPMin(
+                                        it.plannedMinutes != null
+                                          ? String(it.plannedMinutes)
+                                          : ""
+                                      );
+                                      setEStage(it.stageId ?? "");
+                                    }}
+                                  >
+                                    <Pencil className="size-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Remover item"
+                                    disabled={isPending}
+                                    onClick={() =>
+                                      run(
+                                        () => removeBudgetItem(it.id),
+                                        "Item removido."
+                                      )
+                                    }
+                                  >
+                                    <X className="size-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="min-w-0">
-                    <span className="block">
-                      {it.description}{" "}
-                      <span className="text-xs text-muted-foreground">
-                        {it.quantity} × {formatBRL(it.unitPriceCents)}
-                      </span>
-                    </span>
-                    {plannedText(it) && (
-                      <span className="block text-xs text-primary">
-                        Planejado: {plannedText(it)}
-                      </span>
-                    )}
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1">
-                    <span className="font-medium">
-                      {formatBRL(it.quantity * it.unitPriceCents)}
-                    </span>
-                    {canEdit && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Editar item"
-                          onClick={() => {
-                            setEditingId(it.id);
-                            setEDesc(it.description);
-                            setEPrice(centsToInput(it.unitPriceCents));
-                            setEQty(String(it.quantity));
-                            setEPSess(
-                              it.plannedSessions != null
-                                ? String(it.plannedSessions)
-                                : ""
-                            );
-                            setEPMin(
-                              it.plannedMinutes != null
-                                ? String(it.plannedMinutes)
-                                : ""
-                            );
-                          }}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Remover item"
-                          disabled={isPending}
-                          onClick={() =>
-                            run(
-                              () => removeBudgetItem(it.id),
-                              "Item removido."
-                            )
-                          }
-                        >
-                          <X className="size-4" />
-                        </Button>
-                      </>
-                    )}
-                  </span>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              )
+          )}
+        </div>
       )}
 
       {canEdit && (
@@ -1130,6 +1383,24 @@ function OptionBudget({
               className="w-16"
               aria-label="Tempo total planejado em minutos"
             />
+            {orderedStages.length > 0 && (
+              <>
+                <span>· Etapa</span>
+                <select
+                  value={nStage}
+                  onChange={(e) => setNStage(e.target.value)}
+                  className="h-8 rounded-md border border-input bg-transparent px-1 text-sm"
+                  aria-label="Etapa do item"
+                >
+                  <option value="">Sem etapa</option>
+                  {orderedStages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -1144,6 +1415,7 @@ function OptionBudget({
                       price,
                       plannedSessions: Number(pSess) || null,
                       plannedMinutes: Number(pMin) || null,
+                      stageId: nStage || null,
                     }),
                   "Item adicionado.",
                   () => {
@@ -1153,6 +1425,7 @@ function OptionBudget({
                     setQty("1");
                     setPSess("");
                     setPMin("");
+                    setNStage("");
                   }
                 )
               }
