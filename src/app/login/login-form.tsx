@@ -40,15 +40,15 @@ export function LoginForm() {
       return;
     }
 
-    // Registra o acesso na trilha de auditoria (best-effort, não bloqueia).
-    try {
-      await recordLogin();
-    } catch {
+    // Registra o acesso na trilha de auditoria (best-effort) SEM bloquear a
+    // navegação: o fetch segue durante a navegação e o botão libera na hora.
+    void recordLogin().catch(() => {
       // ignora — o login não pode falhar por causa da auditoria.
-    }
+    });
 
-    router.push("/");
-    router.refresh();
+    // Vai direto para a home. O push já renderiza com a sessão nova; o refresh
+    // anterior renderizava a home uma 2ª vez e deixava o "Entrando..." preso.
+    router.replace("/");
   }
 
   return (

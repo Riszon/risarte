@@ -159,7 +159,6 @@ export function TreatmentSessionsPanel({
   const hasStages = sessions.some((s) => s.stageName);
 
   const pending = sessions.filter((s) => s.status === "pending").length;
-  const scheduled = sessions.filter((s) => s.status === "scheduled").length;
   const done = sessions.filter((s) => s.status === "done").length;
   const hasSuggestions = sessions.some((s) => s.plannedDate);
   const totalChairMinutes = sessions.reduce(
@@ -181,6 +180,21 @@ export function TreatmentSessionsPanel({
   const spanDays =
     firstDate && lastDate && firstDate !== lastDate
       ? daysBetween(firstDate, lastDate)
+      : null;
+
+  // Realizado: tempo de cadeira efetivo (sessões feitas) e duração já decorrida
+  // (da 1ª à última sessão concluída).
+  const realChairMinutes = sessions
+    .filter((s) => s.status === "done")
+    .reduce((sum, s) => sum + (s.actualMinutes ?? 0), 0);
+  const doneDates = sessions
+    .filter((s) => s.status === "done")
+    .map(effectiveDateIso)
+    .filter((d): d is string => d !== null)
+    .sort();
+  const doneSpanDays =
+    doneDates.length >= 2
+      ? daysBetween(doneDates[0], doneDates[doneDates.length - 1])
       : null;
 
   // H4.3 Lote 3: intervalo médio REAL entre as sessões já feitas (deste paciente).
@@ -236,17 +250,33 @@ export function TreatmentSessionsPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Resumo do tratamento (H4.5 Lote 2). */}
+        {/* Resumo do tratamento (H4.5 Lote 2) — previsto × realizado. */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <Stat
+          <StatPair
             label="Sessões"
-            value={String(sessions.length)}
-            hint={`${done} feitas · ${scheduled} agendadas · ${pending} a agendar`}
+            planned={String(sessions.length)}
+            actual={`${done} ${done === 1 ? "feita" : "feitas"}`}
           />
-          <Stat
+          <StatPair
             label="Tempo de cadeira"
-            value={formatMinutes(totalChairMinutes)}
-            hint="somando as sessões"
+            planned={formatMinutes(totalChairMinutes)}
+            actual={realChairMinutes > 0 ? formatMinutes(realChairMinutes) : "—"}
+          />
+          <StatPair
+            label="Duração"
+            planned={
+              spanDays !== null
+                ? humanSpan(spanDays)
+                : firstDate
+                  ? "—"
+                  : "sugira as datas"
+            }
+            actual={doneSpanDays !== null ? humanSpan(doneSpanDays) : "—"}
+            plannedHint={
+              firstDate && lastDate && spanDays !== null
+                ? `${formatShort(firstDate)} → ${formatShort(lastDate)}`
+                : undefined
+            }
           />
           <Stat
             label="Intervalo médio real"
@@ -264,15 +294,6 @@ export function TreatmentSessionsPanel({
                   ? "parcial — sugira as demais"
                   : "última sessão prevista"
                 : "sugira as datas"
-            }
-          />
-          <Stat
-            label="Duração prevista"
-            value={spanDays !== null ? humanSpan(spanDays) : "—"}
-            hint={
-              firstDate && lastDate && spanDays !== null
-                ? `${formatShort(firstDate)} → ${formatShort(lastDate)}`
-                : "início → término"
             }
           />
         </div>
@@ -449,7 +470,7 @@ export function TreatmentSessionsPanel({
   );
 }
 
-/** Um indicador do resumo do tratamento. */
+/** Um indicador do resumo do tratamento (valor único). */
 function Stat({
   label,
   value,
@@ -466,6 +487,38 @@ function Stat({
       </p>
       <p className="text-sm font-semibold">{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+/** Indicador com Previsto × Realizado. */
+function StatPair({
+  label,
+  planned,
+  actual,
+  plannedHint,
+}: {
+  label: string;
+  planned: string;
+  actual: string;
+  plannedHint?: string;
+}) {
+  return (
+    <div className="rounded-lg bg-muted/40 px-3 py-2">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-sm">
+        <span className="text-muted-foreground">Previsto </span>
+        <span className="font-semibold">{planned}</span>
+      </p>
+      <p className="text-sm">
+        <span className="text-muted-foreground">Realizado </span>
+        <span className="font-semibold">{actual}</span>
+      </p>
+      {plannedHint && (
+        <p className="text-[11px] text-muted-foreground">{plannedHint}</p>
+      )}
     </div>
   );
 }
