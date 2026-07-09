@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatMinutes } from "@/lib/pricing";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { AppointmentInfoDialog } from "../../agenda/appointment-info-dialog";
 import type { AgendaAppointment } from "../../agenda/week-grid";
@@ -39,6 +40,12 @@ function formatPlanned(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/** "YYYY-MM-DD" → "DD/MM". */
+function formatShort(iso: string): string {
+  const [, m, d] = iso.split("-");
+  return `${d}/${m}`;
+}
+
 function todayIso(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -57,10 +64,44 @@ function formatWhen(iso: string): string {
   return `${day} às ${time}`;
 }
 
+/** Data efetiva da sessão ("YYYY-MM-DD"): agendamento > data prevista. */
+function effectiveDateIso(s: TreatmentSession): string | null {
+  if (s.appointment) return s.appointment.starts_at.slice(0, 10);
+  if (s.plannedDate) return s.plannedDate;
+  return null;
+}
+
+function parseYmd(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Dias inteiros entre duas datas "YYYY-MM-DD". */
+function daysBetween(aIso: string, bIso: string): number {
+  return Math.round(
+    (parseYmd(bIso).getTime() - parseYmd(aIso).getTime()) / 86_400_000
+  );
+}
+
+/** Duração humana: "5 dias" | "3 semanas" | "4 meses". */
+function humanSpan(days: number): string {
+  if (days < 14) return `${days} ${days === 1 ? "dia" : "dias"}`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 9) return `${weeks} semanas`;
+  const months = Math.round(days / 30);
+  return `${months} ${months === 1 ? "mês" : "meses"}`;
+}
+
 const STATUS_LABEL: Record<TreatmentSession["status"], string> = {
   pending: "A agendar",
   scheduled: "Agendado",
   done: "Concluído",
+};
+
+const STATUS_DOT: Record<TreatmentSession["status"], string> = {
+  pending: "bg-muted-foreground/40",
+  scheduled: "bg-primary",
+  done: "bg-emerald-500",
 };
 
 export function TreatmentSessionsPanel({
@@ -86,35 +127,61 @@ export function TreatmentSessionsPanel({
   const [isPending, startTransition] = useTransition();
   const [startDate, setStartDate] = useState(todayIso());
 
-  // H4.5: agrupa por ETAPA (na ordem stage_order) e, dentro dela, por
-  // procedimento — preservando a ordem de criação das sessões.
-  type ProcGroup = { name: string; sessions: TreatmentSession[] };
+  // H4.5 Lote 2: agrupa por ETAPA (na ordem stage_order); dentro da etapa, as
+  // sessões formam uma linha do tempo (ordenadas pela data efetiva).
   type StageGroup = {
     key: string;
     label: string | null;
     order: number;
-    procs: ProcGroup[];
+    sessions: TreatmentSession[];
   };
-  const stageGroups: StageGroup[] = [];
+  const stageMap = new Map<string, StageGroup>();
   for (const s of sessions) {
     const key = s.stageName ?? "__none__";
-    let sg = stageGroups.find((x) => x.key === key);
+    let sg = stageMap.get(key);
     if (!sg) {
-      sg = { key, label: s.stageName, order: s.stageOrder ?? 9999, procs: [] };
-      stageGroups.push(sg);
+      sg = { key, label: s.stageName, order: s.stageOrder ?? 9999, sessions: [] };
+      stageMap.set(key, sg);
     }
-    let pg = sg.procs.find((p) => p.name === s.procedureName);
-    if (!pg) {
-      pg = { name: s.procedureName, sessions: [] };
-      sg.procs.push(pg);
-    }
-    pg.sessions.push(s);
+    sg.sessions.push(s);
   }
-  stageGroups.sort((a, b) => a.order - b.order);
+  const stageGroups = [...stageMap.values()].sort((a, b) => a.order - b.order);
+  for (const sg of stageGroups) {
+    sg.sessions.sort((a, b) => {
+      const da = effectiveDateIso(a) ?? "9999-99-99";
+      const db = effectiveDateIso(b) ?? "9999-99-99";
+      if (da !== db) return da.localeCompare(db);
+      if (a.procedureName !== b.procedureName)
+        return a.procedureName.localeCompare(b.procedureName);
+      return a.sessionIndex - b.sessionIndex;
+    });
+  }
   const hasStages = sessions.some((s) => s.stageName);
 
   const pending = sessions.filter((s) => s.status === "pending").length;
+  const scheduled = sessions.filter((s) => s.status === "scheduled").length;
+  const done = sessions.filter((s) => s.status === "done").length;
   const hasSuggestions = sessions.some((s) => s.plannedDate);
+  const totalChairMinutes = sessions.reduce(
+    (sum, s) => sum + (s.plannedMinutes ?? 0),
+    0
+  );
+
+  // Intervalo (dias) entre cada sessão datada e a anterior, na ordem do calendário.
+  const dated = sessions
+    .map((s) => ({ s, date: effectiveDateIso(s) }))
+    .filter((x): x is { s: TreatmentSession; date: string } => x.date !== null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const intervalById = new Map<string, number>();
+  for (let i = 1; i < dated.length; i++) {
+    intervalById.set(dated[i].s.id, daysBetween(dated[i - 1].date, dated[i].date));
+  }
+  const firstDate = dated.length ? dated[0].date : null;
+  const lastDate = dated.length ? dated[dated.length - 1].date : null;
+  const spanDays =
+    firstDate && lastDate && firstDate !== lastDate
+      ? daysBetween(firstDate, lastDate)
+      : null;
 
   // H4.3 Lote 3: intervalo médio REAL entre as sessões já feitas (deste paciente).
   const doneTimes = sessions
@@ -160,7 +227,7 @@ export function TreatmentSessionsPanel({
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          Sessões do tratamento a agendar{" "}
+          Linha do tempo do tratamento{" "}
           {pending > 0 && (
             <span className="text-sm font-normal text-muted-foreground">
               ({pending} a agendar)
@@ -169,6 +236,47 @@ export function TreatmentSessionsPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Resumo do tratamento (H4.5 Lote 2). */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <Stat
+            label="Sessões"
+            value={String(sessions.length)}
+            hint={`${done} feitas · ${scheduled} agendadas · ${pending} a agendar`}
+          />
+          <Stat
+            label="Tempo de cadeira"
+            value={formatMinutes(totalChairMinutes)}
+            hint="somando as sessões"
+          />
+          <Stat
+            label="Intervalo médio real"
+            value={realAvgDays !== null ? `${realAvgDays} dias` : "—"}
+            hint={
+              realAvgDays !== null ? "entre as feitas" : "após 2 sessões feitas"
+            }
+          />
+          <Stat
+            label="Previsão de conclusão"
+            value={forecast ? formatPlanned(forecast) : "—"}
+            hint={
+              forecast
+                ? forecastPartial
+                  ? "parcial — sugira as demais"
+                  : "última sessão prevista"
+                : "sugira as datas"
+            }
+          />
+          <Stat
+            label="Duração prevista"
+            value={spanDays !== null ? humanSpan(spanDays) : "—"}
+            hint={
+              firstDate && lastDate && spanDays !== null
+                ? `${formatShort(firstDate)} → ${formatShort(lastDate)}`
+                : "início → término"
+            }
+          />
+        </div>
+
         {canSchedule && pending > 0 && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed p-2 text-sm">
             <CalendarRange className="size-4 text-muted-foreground" />
@@ -194,134 +302,170 @@ export function TreatmentSessionsPanel({
           </div>
         )}
 
-        {(realAvgDays !== null || forecast) && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs">
-            {realAvgDays !== null && (
-              <span>
-                Intervalo médio real:{" "}
-                <strong>{realAvgDays} dias</strong>{" "}
-                <span className="text-muted-foreground">
-                  (entre as sessões já feitas)
-                </span>
-              </span>
-            )}
-            {forecast && (
-              <span>
-                Previsão de conclusão:{" "}
-                <strong>{formatPlanned(forecast)}</strong>
-                {forecastPartial && (
-                  <span className="text-muted-foreground">
-                    {" "}
-                    (parcial — sugira as datas restantes)
-                  </span>
-                )}
-              </span>
-            )}
-          </div>
-        )}
-        {stageGroups.map((sg) => (
-          <div key={sg.key} className="space-y-2">
-            {hasStages && (
-              <p className="flex items-center gap-1 text-sm font-semibold">
-                <Layers className="size-3.5 text-muted-foreground" />
-                {sg.label ?? "Sem etapa"}
-              </p>
-            )}
-            {sg.procs.map((g) => (
-              <div key={g.name} className={hasStages ? "border-l pl-2" : ""}>
-                <p className="text-sm font-medium">{g.name}</p>
-                <ul className="mt-1 space-y-1">
-              {g.sessions.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex flex-wrap items-center justify-between gap-2 text-sm"
-                >
-                  <span>
-                    {s.name ?? `Sessão ${s.sessionIndex} de ${s.sessionTotal}`}
-                    {s.plannedMinutes ? (
-                      <span className="text-xs text-muted-foreground">
-                        {" "}
-                        · {s.plannedMinutes} min
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {s.status === "scheduled" && s.appointment ? (
-                      // H3.14: mostra quando e com quem; clicável abre os detalhes.
-                      <AppointmentInfoDialog
-                        appointment={s.appointment}
-                        trigger={
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-auto max-w-[16rem] justify-start whitespace-normal py-1 text-left"
-                          >
-                            <CalendarCheck className="mr-1 size-3.5 shrink-0" />
-                            <span>
-                              {formatWhen(s.appointment.starts_at)}
-                              {s.appointment.provider?.full_name
-                                ? ` · ${s.appointment.provider.full_name}`
-                                : ""}
+        {stageGroups.map((sg) => {
+          const stageMinutes = sg.sessions.reduce(
+            (sum, s) => sum + (s.plannedMinutes ?? 0),
+            0
+          );
+          const stageDates = sg.sessions
+            .map(effectiveDateIso)
+            .filter((d): d is string => d !== null)
+            .sort();
+          const stageWindow =
+            stageDates.length > 0
+              ? stageDates.length > 1 &&
+                stageDates[0] !== stageDates[stageDates.length - 1]
+                ? `${formatShort(stageDates[0])} → ${formatShort(
+                    stageDates[stageDates.length - 1]
+                  )}`
+                : formatShort(stageDates[0])
+              : null;
+          return (
+            <div key={sg.key} className="space-y-1.5">
+              {hasStages && (
+                <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                  <p className="flex items-center gap-1 text-sm font-semibold">
+                    <Layers className="size-3.5 text-muted-foreground" />
+                    {sg.label ?? "Sem etapa"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {sg.sessions.length}{" "}
+                    {sg.sessions.length === 1 ? "sessão" : "sessões"} ·{" "}
+                    {formatMinutes(stageMinutes)}
+                    {stageWindow ? ` · ${stageWindow}` : ""}
+                  </p>
+                </div>
+              )}
+              <ul className={hasStages ? "space-y-0" : "space-y-0"}>
+                {sg.sessions.map((s) => {
+                  const interval = intervalById.get(s.id) ?? null;
+                  return (
+                    <li key={s.id} className="relative flex gap-3">
+                      {/* Marcador + linha da timeline. */}
+                      <div className="flex flex-col items-center">
+                        <span
+                          className={`mt-1.5 size-2.5 shrink-0 rounded-full ${STATUS_DOT[s.status]}`}
+                        />
+                        <span className="w-px flex-1 bg-border" />
+                      </div>
+                      <div className="flex flex-1 flex-wrap items-center justify-between gap-2 pb-3 text-sm">
+                        <span className="min-w-0">
+                          <span className="block">
+                            <span className="font-medium">{s.procedureName}</span>{" "}
+                            <span className="text-xs text-muted-foreground">
+                              {s.name ??
+                                `Sessão ${s.sessionIndex} de ${s.sessionTotal}`}
+                              {s.plannedMinutes ? ` · ${s.plannedMinutes} min` : ""}
                             </span>
-                          </Button>
-                        }
-                      />
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            s.status === "pending" ? "outline" : "secondary"
-                          }
-                        >
-                          {STATUS_LABEL[s.status]}
-                          {s.status === "done" && s.actualMinutes
-                            ? ` · durou ${s.actualMinutes} min`
-                            : ""}
-                        </Badge>
-                        {s.status === "pending" && s.plannedDate && (
-                          <span className="text-xs text-muted-foreground">
-                            prevista {formatPlanned(s.plannedDate)}
                           </span>
-                        )}
-                      </span>
-                    )}
-                    {canSchedule && s.status === "pending" && (
-                      <AppointmentFormDialog
-                        clients={[
-                          {
-                            id: clientId,
-                            full_name: clientName,
-                            inactive: clientInactive,
-                          },
-                        ]}
-                        staff={staff}
-                        config={config}
-                        initialClientId={clientId}
-                        initialDate={s.plannedDate ?? undefined}
-                        initialDuration={
-                          s.plannedMinutes
-                            ? Math.max(15, Math.round(s.plannedMinutes / 15) * 15)
-                            : undefined
-                        }
-                        treatmentSessionId={s.id}
-                        fixedClinicId={clinicId}
-                        trigger={
-                          <Button size="sm" variant="outline">
-                            <CalendarPlus className="mr-1 size-3.5" />
-                            Agendar
-                          </Button>
-                        }
-                      />
-                    )}
-                  </span>
-                </li>
-              ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ))}
+                          {interval !== null && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {interval} {interval === 1 ? "dia" : "dias"} após a
+                              anterior
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          {s.status === "scheduled" && s.appointment ? (
+                            <AppointmentInfoDialog
+                              appointment={s.appointment}
+                              trigger={
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-auto max-w-[16rem] justify-start whitespace-normal py-1 text-left"
+                                >
+                                  <CalendarCheck className="mr-1 size-3.5 shrink-0" />
+                                  <span>
+                                    {formatWhen(s.appointment.starts_at)}
+                                    {s.appointment.provider?.full_name
+                                      ? ` · ${s.appointment.provider.full_name}`
+                                      : ""}
+                                  </span>
+                                </Button>
+                              }
+                            />
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  s.status === "pending" ? "outline" : "secondary"
+                                }
+                              >
+                                {STATUS_LABEL[s.status]}
+                                {s.status === "done" && s.actualMinutes
+                                  ? ` · durou ${s.actualMinutes} min`
+                                  : ""}
+                              </Badge>
+                              {s.status === "pending" && s.plannedDate && (
+                                <span className="text-xs text-muted-foreground">
+                                  prevista {formatPlanned(s.plannedDate)}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          {canSchedule && s.status === "pending" && (
+                            <AppointmentFormDialog
+                              clients={[
+                                {
+                                  id: clientId,
+                                  full_name: clientName,
+                                  inactive: clientInactive,
+                                },
+                              ]}
+                              staff={staff}
+                              config={config}
+                              initialClientId={clientId}
+                              initialDate={s.plannedDate ?? undefined}
+                              initialDuration={
+                                s.plannedMinutes
+                                  ? Math.max(
+                                      15,
+                                      Math.round(s.plannedMinutes / 15) * 15
+                                    )
+                                  : undefined
+                              }
+                              treatmentSessionId={s.id}
+                              fixedClinicId={clinicId}
+                              trigger={
+                                <Button size="sm" variant="outline">
+                                  <CalendarPlus className="mr-1 size-3.5" />
+                                  Agendar
+                                </Button>
+                              }
+                            />
+                          )}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
+  );
+}
+
+/** Um indicador do resumo do tratamento. */
+function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-lg bg-muted/40 px-3 py-2">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-sm font-semibold">{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
   );
 }

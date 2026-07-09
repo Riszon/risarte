@@ -46,6 +46,7 @@ import {
 } from "@/lib/anamnesis";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanningSection } from "../../prontuarios/[id]/planning-section";
+import { TreatmentSummary } from "./treatment-summary";
 
 export const metadata: Metadata = { title: "Cockpit de Planejamento" };
 
@@ -496,6 +497,12 @@ export default async function PlanningCockpitPage(
     phase,
     client.methodology_pillar as MethodologyPillar | null
   );
+  // H4.5 Lote 2: projeção do tratamento — opção principal (ou a 1ª).
+  const summaryOption =
+    treatmentPlan && treatmentPlan.options.length > 0
+      ? (treatmentPlan.options.find((o) => o.isPrimary) ??
+        treatmentPlan.options[0])
+      : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
@@ -572,6 +579,9 @@ export default async function PlanningCockpitPage(
           <PresentationCountdown startsAt={presentationAt} alarm />
         </div>
       )}
+
+      {/* H4.5 Lote 2: projeção do tratamento (estrutura + esforço planejado). */}
+      {summaryOption && <TreatmentSummary option={summaryOption} />}
 
       {/* H3.13: colunas com rolagem independente (não rola a página inteira). */}
       <div className="grid gap-4 lg:grid-cols-2">

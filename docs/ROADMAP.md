@@ -11,7 +11,7 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.19.0 · migração 0087
+## Onde estamos (09/07/2026) — versão 0.19.1 · migração 0087
 
 **FEITO (LOTE H + ajustes + Grupo 4 até H4.3):**
 - **H1.1–H1.10** (bugs/segurança) · **H2.1–H2.12** (ajustes rápidos) ·
@@ -30,14 +30,16 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
     definitivo (Coordenador/Admin confirmam). (migrações 0084–0086)
 
 **EM ANDAMENTO — H4.5 Cockpit 2.0** (5 lotes): **Lote 1 — Etapas do tratamento**
-✅ (v0.19.0, migração 0087) — o Planner divide cada opção do plano em **etapas**
-(ex.: "Adequação", "Reabilitação"); os procedimentos ficam agrupados por etapa;
-as sessões geradas herdam a etapa e o painel de sessões / cockpit agrupam por
-etapa. Falta: Lote 2 (redesenho + linha do tempo), Lote 3 (sugerir profissional),
-Lote 4 (juntar sessões), Lote 5 (alertas/lembretes).
+✅ (v0.19.0, migração 0087) — o Planner divide cada opção do plano em **etapas**;
+procedimentos e sessões agrupados por etapa. **Lote 2 — Cockpit redesenhado +
+linha do tempo** ✅ (v0.19.1, sem migração) — o painel de sessões virou **linha do
+tempo por etapa** com **resumo** (sessões, tempo de cadeira, intervalo médio real,
+previsão de conclusão, duração prevista) e intervalo entre sessões; o cockpit do
+Planner ganhou o card **"Resumo do tratamento"** (projeção por etapa). Falta:
+Lote 3 (sugerir profissional), Lote 4 (juntar sessões), Lote 5 (alertas/lembretes).
 
 **FALTA (Grupo 4, ordem numérica):**
-- **H4.5** (Lotes 2–5) e **H4.6–H4.14** — ver abaixo.
+- **H4.5** (Lotes 3–5) e **H4.6–H4.14** — ver abaixo.
 
 **Migrações:** **0001–0086 aplicadas** (o dono confirmou em 08/07/2026);
 **0087 pendente** (etapas do tratamento).
@@ -339,8 +341,14 @@ antes).
         renomear/mover/remover; mover item de etapa); as sessões herdam a etapa
         (`treatment_sessions.stage_name/stage_order`, `ensure_treatment_sessions`)
         e o painel de sessões / cockpit agrupam por etapa.
-  - [ ] **Lote 2 — Cockpit redesenhado + linha do tempo** — tempo por/entre
-        sessões e previsão de término, na visão da etapa (reaproveita a H4.3).
+  - [x] **Lote 2 — Cockpit redesenhado + linha do tempo** ✅ (v0.19.1, sem
+        migração) — o painel do prontuário virou **linha do tempo por etapa**
+        (`treatment-sessions-panel`): resumo (sessões, tempo de cadeira, intervalo
+        médio real, previsão de conclusão, duração prevista início→término),
+        cabeçalho por etapa (sessões · tempo · janela de datas) e o intervalo em
+        dias entre uma sessão e a anterior; o cockpit do Planner ganhou o card
+        **"Resumo do tratamento"** (`treatment-summary.tsx`), projeção por etapa
+        da opção principal (sessões + tempo de cadeira). Reaproveita a H4.3.
   - [ ] **Lote 3 — Sugerir profissional por sessão** 🗄️.
   - [ ] **Lote 4 — Juntar sessões no mesmo horário**.
   - [ ] **Lote 5 — Alertas e lembretes (sessão e plano)** 🗄️.
