@@ -144,11 +144,12 @@ export default async function PlanningCockpitPage(
   let anamnesisAlerts: { label: string; message: string }[] = [];
   let anamnesisInfo: { filledAt: string; templateName: string | null } | null =
     null;
+  // Sem filtro por clínica: mostra a anamnese mais recente do cliente mesmo que
+  // tenha sido preenchida na unidade anterior (RLS libera via histórico/Planner).
   const { data: latestFill } = await supabase
     .from("anamnesis_fills")
     .select("id, template_name, filled_at")
     .eq("client_id", clientId)
-    .eq("clinic_id", client.clinic_id)
     .order("filled_at", { ascending: false })
     .limit(1)
     .maybeSingle();

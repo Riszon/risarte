@@ -11,7 +11,16 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.20.0 · migração 0088
+## Onde estamos (09/07/2026) — versão 0.20.1 · migração 0089
+
+> **Transferência A→B (0.20.1 · migração 0089):** o plano de tratamento
+> (plano/opções/itens/etapas/sessões) **acompanha o cliente** — `transfer_client`
+> move o plano para a unidade de destino, some da unidade A e o **Coordenador de
+> B** passa a ver e a **aprovar** (recebe notificação com origem/avaliador/data;
+> o Coordenador de A é avisado do handoff). A **avaliação clínica, a anamnese e
+> os arquivos** ficam legíveis para a unidade atual via o histórico do cliente
+> (`user_has_client_history_access`) — A mantém, B ganha; a ficha/cockpit
+> carregam a anamnese de todas as unidades do histórico.
 
 > **Perf (0.19.2):** login/troca de usuário mais rápidos — `getSessionContext`
 > agora roda 1×/request (React `cache()`) em vez de 2–3×, e o aviso de

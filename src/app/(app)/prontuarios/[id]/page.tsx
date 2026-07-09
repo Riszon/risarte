@@ -765,13 +765,14 @@ export default async function ClientDetailPage(
           .or(`clinic_id.is.null,clinic_id.eq.${scheduleClinicId}`)
           .order("sort_order")
           .returns<AnamnesisQuestionRow[]>(),
+        // Sem filtro por clínica: um cliente transferido enxerga a anamnese
+        // feita na unidade anterior (a RLS libera via histórico do cliente).
         supabase
           .from("anamnesis_fills")
           .select(
             "id, template_id, template_name, filled_at, filled_by, no_changes"
           )
           .eq("client_id", id)
-          .eq("clinic_id", scheduleClinicId)
           .order("filled_at", { ascending: false })
           .returns<
             {
