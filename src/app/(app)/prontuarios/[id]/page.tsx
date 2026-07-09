@@ -629,7 +629,9 @@ export default async function ClientDetailPage(
           .limit(1),
         supabase
           .from("clinical_notes")
-          .select("id, body, created_at, created_by, updated_at, updated_by")
+          .select(
+            "id, body, created_at, created_by, updated_at, updated_by, clinic:clinics ( name )"
+          )
           .eq("client_id", id)
           .order("created_at", { ascending: false }),
         supabase
@@ -668,14 +670,20 @@ export default async function ClientDetailPage(
           : null,
       };
     }
-    clinicalNotes = (noteRows ?? []).map((n) => ({
-      id: n.id,
-      body: n.body,
-      createdAt: n.created_at,
-      authorName: n.created_by ? (nameById.get(n.created_by) ?? null) : null,
-      updatedAt: n.updated_at ?? null,
-      editedByName: n.updated_by ? (nameById.get(n.updated_by) ?? null) : null,
-    }));
+    clinicalNotes = (noteRows ?? []).map((n) => {
+      const cRaw = (
+        n as { clinic?: { name: string } | { name: string }[] | null }
+      ).clinic;
+      return {
+        id: n.id,
+        body: n.body,
+        createdAt: n.created_at,
+        authorName: n.created_by ? (nameById.get(n.created_by) ?? null) : null,
+        updatedAt: n.updated_at ?? null,
+        editedByName: n.updated_by ? (nameById.get(n.updated_by) ?? null) : null,
+        clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+      };
+    });
     clinicalMedia = await Promise.all(
       (mediaRows ?? []).map(async (m) => {
         // Only Storage-backed items get a signed URL; links use external_url.

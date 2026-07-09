@@ -631,6 +631,7 @@ export function ClinicalSection({
                       <p className="mt-1 text-xs text-muted-foreground">
                         {fmtDateTime(n.createdAt)}
                         {n.authorName ? ` · ${n.authorName}` : ""}
+                        {n.clinicName ? ` · ${n.clinicName}` : ""}
                         {n.updatedAt
                           ? ` · editado em ${fmtDateTime(n.updatedAt)}${
                               n.editedByName ? ` por ${n.editedByName}` : ""

@@ -11,7 +11,14 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.20.1 · migração 0089
+## Onde estamos (09/07/2026) — versão 0.20.2 · migração 0090
+
+> **Conserto da transferência (0.20.2 · migração 0090):** um **gatilho** move o
+> plano (plano/opções/itens/etapas/sessões) para a unidade nova **sempre que a
+> unidade do cliente muda** (não só via `transfer_client`), e um **backfill**
+> conserta os planos de clientes **já transferidos** (que ficaram na unidade
+> errada). As **considerações clínicas** passam a mostrar **autor + unidade** —
+> a unidade de destino sabe que a avaliação/reavaliação foi feita na de origem.
 
 > **Transferência A→B (0.20.1 · migração 0089):** o plano de tratamento
 > (plano/opções/itens/etapas/sessões) **acompanha o cliente** — `transfer_client`

@@ -95,7 +95,9 @@ export default async function PlanningCockpitPage(
         .limit(1),
       supabase
         .from("clinical_notes")
-        .select("id, body, created_at, created_by, updated_at, updated_by")
+        .select(
+          "id, body, created_at, created_by, updated_at, updated_by, clinic:clinics ( name )"
+        )
         .eq("client_id", clientId)
         .order("created_at", { ascending: false }),
       supabase
@@ -197,12 +199,18 @@ export default async function PlanningCockpitPage(
       }
     : null;
 
-  const notes = (noteRows ?? []).map((n) => ({
-    id: n.id as string,
-    body: n.body as string,
-    createdAt: n.created_at as string,
-    authorName: n.created_by ? (nameById.get(n.created_by) ?? null) : null,
-  }));
+  const notes = (noteRows ?? []).map((n) => {
+    const cRaw = (
+      n as { clinic?: { name: string } | { name: string }[] | null }
+    ).clinic;
+    return {
+      id: n.id as string,
+      body: n.body as string,
+      createdAt: n.created_at as string,
+      authorName: n.created_by ? (nameById.get(n.created_by) ?? null) : null,
+      clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+    };
+  });
 
   const media: ClinicalMediaItem[] = await Promise.all(
     (mediaRows ?? []).map(async (m) => {
@@ -660,6 +668,7 @@ export default async function PlanningCockpitPage(
                       <p className="mt-1 text-xs text-muted-foreground">
                         {fmtDateTime(n.createdAt)}
                         {n.authorName ? ` · ${n.authorName}` : ""}
+                        {n.clinicName ? ` · ${n.clinicName}` : ""}
                       </p>
                     </li>
                   ))}

@@ -46,6 +46,9 @@ export type ClinicalNoteItem = {
   authorName: string | null;
   updatedAt: string | null;
   editedByName: string | null;
+  /** Unidade onde a consideração/avaliação foi registrada (mostra na ficha para
+   * a unidade de destino saber que foi feita na unidade de origem). */
+  clinicName: string | null;
 };
 
 export type ClinicalMediaItem = {
