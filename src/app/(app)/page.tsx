@@ -1,6 +1,6 @@
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { notifyUnitBirthdays } from "./prontuarios/actions";
+import { BirthdayNotifier } from "./birthday-notifier";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -27,21 +27,20 @@ export default async function HomePage() {
   const session = await getSessionContext();
   const supabase = await createClient();
 
-  // P2: ao abrir o sistema, a Recepção da unidade recebe (uma vez por dia) o
-  // aviso dos aniversariantes — antecipando fim de semana/feriado.
+  // P2: a Recepção da unidade recebe (uma vez por dia) o aviso dos
+  // aniversariantes — antecipando fim de semana/feriado. Perf: em vez de
+  // bloquear o render da home, o disparo vai para segundo plano
+  // (<BirthdayNotifier/>), mantendo o mesmo gate de papel abaixo.
   const homeClinic = session.activeClinic;
-  if (
-    homeClinic &&
+  const shouldNotifyBirthdays =
+    !!homeClinic &&
     homeClinic.type !== "franchisor" &&
     (session.isAdminMaster ||
       hasRoleInClinic(session, homeClinic.id, [
         "receptionist",
         "unit_manager",
         "clinical_coordinator",
-      ]))
-  ) {
-    await notifyUnitBirthdays(homeClinic.id);
-  }
+      ]));
 
   // For franchisor-role users: which units are under their responsibility?
   const { data: franchisorRoles } = await supabase
@@ -82,6 +81,9 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
+      {shouldNotifyBirthdays && homeClinic && (
+        <BirthdayNotifier clinicId={homeClinic.id} />
+      )}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Olá, {session.fullName.split(" ")[0] || "bem-vindo(a)"}!

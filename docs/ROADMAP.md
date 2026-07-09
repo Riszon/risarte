@@ -11,7 +11,11 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.19.1 · migração 0087
+## Onde estamos (09/07/2026) — versão 0.19.2 · migração 0087
+
+> **Perf (0.19.2):** login/troca de usuário mais rápidos — `getSessionContext`
+> agora roda 1×/request (React `cache()`) em vez de 2–3×, e o aviso de
+> aniversariantes saiu do render da home (roda em segundo plano). Sem migração.
 
 **FEITO (LOTE H + ajustes + Grupo 4 até H4.3):**
 - **H1.1–H1.10** (bugs/segurança) · **H2.1–H2.12** (ajustes rápidos) ·

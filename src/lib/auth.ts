@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -35,8 +36,13 @@ type RoleRow = {
 /**
  * Loads the logged-in user, their clinics/roles and the active clinic
  * (chosen via cookie). Redirects to /login when not authenticated.
+ *
+ * Wrapped in React `cache()` so it runs only ONCE per server request even when
+ * several components ask for it (o layout + a página + componentes filhos) —
+ * antes cada chamada refazia getUser() + as queries de perfil/funções, somando
+ * idas ao Supabase e deixando cada tela (e o login) lentos.
  */
-export async function getSessionContext(): Promise<SessionContext> {
+export const getSessionContext = cache(async function getSessionContext(): Promise<SessionContext> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -103,7 +109,7 @@ export async function getSessionContext(): Promise<SessionContext> {
     activeClinic,
     activeClinicExplicit: chosen !== null,
   };
-}
+});
 
 /** Guard for Admin Master-only pages and server actions. */
 export async function requireAdminMaster(): Promise<SessionContext> {
