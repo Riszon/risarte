@@ -1,14 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/07/2026 · Versão do sistema: **0.24.0** · Última migração: **0094**_
+_Atualizado em: 09/07/2026 · Versão do sistema: **0.25.0** · Última migração: **0095**_
 
-> **Em andamento — H4.5 Cockpit 2.0 (Grupo 4).** Lote 1 (Etapas do tratamento,
-> migração 0087) e **Lote 2 (Cockpit redesenhado + linha do tempo, sem migração)**
-> entregues: o painel de sessões virou **linha do tempo por etapa** com resumo
-> (sessões, tempo de cadeira, intervalo médio real, previsão, duração prevista) e
-> o cockpit do Planner ganhou o card **"Resumo do tratamento"**. Detalhe e ordem
-> dos lotes em `docs/ROADMAP.md` (fonte da verdade). Próximo: Lote 3 (sugerir
-> profissional por sessão).
+> **H4.5 Cockpit 2.0 — COMPLETO (Grupo 4).** Lotes 1–5: etapas; linha do tempo +
+> resumo (previsto×realizado); sugerir profissional por sessão; juntar sessões
+> (na Fase 5 e no planejamento, sessão a sessão, com tempo/sequência/profissional
+> editáveis no cockpit); alertas/lembretes (selos + notificações à Recepção).
+> Migrações 0087–0095. **Falta só o Pedido 3 do dono** (baixa parcial das sessões
+> pelo dentista executor), combinado para o **H4.6**. Detalhe em `docs/ROADMAP.md`
+> (fonte da verdade). Próximo: **H4.6 (Módulo do Dentista)**.
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em

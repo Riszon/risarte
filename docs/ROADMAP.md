@@ -11,7 +11,14 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.24.0 · migração 0094
+## Onde estamos (09/07/2026) — versão 0.25.0 · migração 0095
+
+> **H4.5 Cockpit 2.0 COMPLETO** com o **Lote 5 — Alertas e lembretes** (v0.25.0 ·
+> migração 0095): no painel da Fase 5, selos **"Atrasada"** (data prevista passou,
+> não agendada) e **"Em breve"** (≤3 dias) por sessão + faixa de aviso; a Recepção
+> recebe notificações (em 2º plano, deduplicadas/dia) de **sessão atrasada** e
+> **plano parado** (`notify_treatment_alerts`). Falta do H4.5 só o **Pedido 3**
+> (baixa parcial), que combinamos para o **H4.6**.
 
 > **Atendimentos 2.0 (ajustes do dono, v0.24.0 · migração 0094):** na área
 > "Atendimentos e sequência do tratamento" do cockpit o Planner agora (1) edita o
@@ -93,12 +100,17 @@ Sugerir profissional por sessão** ✅ (v0.21.0, migração 0091) — Risartano 
 **especialidades**; a ficha sugere o profissional por sessão (especialidade →
 continuidade → histórico) e pré-seleciona ao agendar. **Lote 4 — Juntar sessões**
 ✅ (v0.21.1, sem migração) — checkbox por sessão pendente na linha do tempo +
-"Agendar juntas no mesmo horário" (motor do H1.5). Falta: Lote 5 (alertas/lembretes).
+"Agendar juntas no mesmo horário" (motor do H1.5). **Lote 5 — Alertas e
+lembretes** ✅ (v0.25.0, migração 0095) — selos Atrasada/Em breve + notificações à
+Recepção (sessão atrasada / plano parado). **H4.5 COMPLETO.** Ajustes do dono no
+caminho: Planner indica profissional por item (0092); junta sessões no
+planejamento sessão a sessão + tempo/sequência/profissional editáveis (0093–0094);
+**Pedido 3** (baixa parcial) movido para o **H4.6**.
 
 **FALTA (Grupo 4, ordem numérica):**
-- **H4.5** (Lote 5) e **H4.6–H4.14** — ver abaixo.
+- **H4.6–H4.14** — ver abaixo.
 
-**Migrações:** **0001–0090 aplicadas** (o dono confirmou); **0091 pendente**
+**Migrações:** **0001–0090 aplicadas** (o dono confirmou); **0091–0095 pendentes**
 (especialidades do Risartano).
 
 **Pendências operacionais do dono:** `GAMMA_API_KEY` na Vercel; **limpeza de dados
@@ -418,7 +430,11 @@ antes).
         por sessão pendente** e a barra **"Agendar juntas no mesmo horário"** que
         abre o agendamento com as sessões pré-marcadas, a **duração somada** e o
         profissional sugerido pré-selecionado (`AppointmentFormDialog.initialSessionIds`).
-  - [ ] **Lote 5 — Alertas e lembretes (sessão e plano)** 🗄️.
+  - [x] **Lote 5 — Alertas e lembretes (sessão e plano)** ✅ (v0.25.0, migração
+        0095) — selos "Atrasada"/"Em breve" por sessão + faixa de aviso no painel;
+        notificações à Recepção (2º plano, deduplicadas/dia): sessão atrasada e
+        plano parado (`notify_treatment_alerts`, disparado no `BirthdayNotifier`).
+        **H4.5 COMPLETO** (falta só o Pedido 3 do dono, movido para o H4.6).
 - [ ] **H4.6 Módulo do Dentista [G] 🗄️** — dashboard, execução/baixa,
       pendências; histórico do cliente; plano resumido SEM valores; sugestões
       p/ reavaliação (visíveis ao coordenador); pedir revisão do planejamento

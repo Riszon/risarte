@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { notifyUnitBirthdays } from "./prontuarios/actions";
+import {
+  notifyTreatmentAlerts,
+  notifyUnitBirthdays,
+} from "./prontuarios/actions";
 
 /**
  * Perf: dispara o aviso de aniversariantes em SEGUNDO PLANO (depois que a tela
@@ -14,9 +17,10 @@ export function BirthdayNotifier({ clinicId }: { clinicId: string }) {
   useEffect(() => {
     if (done.current) return;
     done.current = true;
-    notifyUnitBirthdays(clinicId).catch(() => {
-      // best-effort — nunca interfere na navegação.
-    });
+    // best-effort — nunca interfere na navegação.
+    notifyUnitBirthdays(clinicId).catch(() => {});
+    // H4.5 Lote 5: alertas de tratamento (sessão atrasada / plano parado).
+    notifyTreatmentAlerts(clinicId).catch(() => {});
   }, [clinicId]);
   return null;
 }

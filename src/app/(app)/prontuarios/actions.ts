@@ -800,3 +800,17 @@ export async function notifyUnitBirthdays(clinicId: string): Promise<void> {
     console.error("notify_birthday_clients failed:", rpcError.message);
   }
 }
+
+/**
+ * H4.5 Lote 5: avisa a Recepção sobre sessões atrasadas e planos parados
+ * (deduplicado por dia no banco). Best-effort, disparado em segundo plano.
+ */
+export async function notifyTreatmentAlerts(clinicId: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("notify_treatment_alerts", {
+    p_clinic_id: clinicId,
+  });
+  if (error) {
+    console.error("notify_treatment_alerts failed:", error.message);
+  }
+}

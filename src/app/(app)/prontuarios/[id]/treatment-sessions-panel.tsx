@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   CalendarCheck,
   CalendarPlus,
   CalendarRange,
@@ -100,6 +101,14 @@ function daysBetween(aIso: string, bIso: string): number {
   return Math.round(
     (parseYmd(bIso).getTime() - parseYmd(aIso).getTime()) / 86_400_000
   );
+}
+
+/** H4.5 Lote 5: situação de uma sessão prevista ainda não agendada. */
+function plannedFlag(iso: string, todayStr: string): "overdue" | "soon" | null {
+  if (iso < todayStr) return "overdue";
+  const diff = daysBetween(todayStr, iso);
+  if (diff >= 0 && diff <= 3) return "soon";
+  return null;
 }
 
 /** Duração humana: "5 dias" | "3 semanas" | "4 meses". */
@@ -208,6 +217,15 @@ export function TreatmentSessionsPanel({
   const pending = sessions.filter((s) => s.status === "pending").length;
   const done = sessions.filter((s) => s.status === "done").length;
   const hasSuggestions = sessions.some((s) => s.plannedDate);
+  // H4.5 Lote 5: sessões previstas que já passaram da data e não foram agendadas.
+  const todayStr = todayIso();
+  const overdueCount = sessions.filter(
+    (s) =>
+      s.status === "pending" &&
+      !s.appointment &&
+      s.plannedDate != null &&
+      s.plannedDate < todayStr
+  ).length;
   const totalChairMinutes = sessions.reduce(
     (sum, s) => sum + (s.plannedMinutes ?? 0),
     0
@@ -313,6 +331,17 @@ export function TreatmentSessionsPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* H4.5 Lote 5: aviso de sessões atrasadas. */}
+        {overdueCount > 0 && (
+          <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+            <AlertTriangle className="size-4 shrink-0" />
+            {overdueCount === 1
+              ? "1 sessão atrasada"
+              : `${overdueCount} sessões atrasadas`}{" "}
+            — a data prevista passou e não foram agendadas. Reveja e reagende.
+          </div>
+        )}
+
         {/* Resumo do tratamento (H4.5 Lote 2) — previsto × realizado. */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <StatPair
@@ -538,6 +567,27 @@ export function TreatmentSessionsPanel({
                                   prevista {formatPlanned(s.plannedDate)}
                                 </span>
                               )}
+                              {s.status === "pending" &&
+                                !s.appointment &&
+                                s.plannedDate &&
+                                plannedFlag(s.plannedDate, todayStr) ===
+                                  "overdue" && (
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-[10px]"
+                                  >
+                                    Atrasada
+                                  </Badge>
+                                )}
+                              {s.status === "pending" &&
+                                !s.appointment &&
+                                s.plannedDate &&
+                                plannedFlag(s.plannedDate, todayStr) ===
+                                  "soon" && (
+                                  <Badge className="bg-amber-500 text-[10px] text-white">
+                                    Em breve
+                                  </Badge>
+                                )}
                             </span>
                           )}
                           {canSchedule && s.status === "pending" && (
