@@ -528,7 +528,7 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, stage_name, stage_order, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+        "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, stage_name, stage_order, planner_provider_id, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("created_at")
@@ -546,6 +546,7 @@ export default async function ClientDetailPage(
           planned_date: string | null;
           stage_name: string | null;
           stage_order: number | null;
+          planner_provider_id: string | null;
           appointment: {
             id: string;
             type: string;
@@ -575,6 +576,7 @@ export default async function ClientDetailPage(
       plannedDate: r.planned_date,
       stageName: r.stage_name,
       stageOrder: r.stage_order,
+      plannerProviderId: r.planner_provider_id,
       // H4.5 Lote 3: preenchido logo abaixo (sugestão de profissional).
       suggestedProviderId: null as string | null,
       suggestedProviderName: null as string | null,
@@ -710,7 +712,16 @@ export default async function ClientDetailPage(
           : [];
         let pick: string | null = null;
         let reason: string | null = null;
-        if (spec && treatmentDentist && specialists.includes(treatmentDentist)) {
+        if (s.plannerProviderId && staffIds.includes(s.plannerProviderId)) {
+          // Pedido 1: indicação do Planner tem prioridade — mas só vale se o
+          // profissional atende a unidade ATUAL do cliente (staffIds).
+          pick = s.plannerProviderId;
+          reason = "indicado pelo Planner";
+        } else if (
+          spec &&
+          treatmentDentist &&
+          specialists.includes(treatmentDentist)
+        ) {
           pick = treatmentDentist;
           reason = `especialista em ${spec} e já atende o cliente`;
         } else if (!spec && treatmentDentist) {
@@ -1113,7 +1124,7 @@ export default async function ClientDetailPage(
         const { data: itemRows } = await supabase
           .from("treatment_plan_option_items")
           .select(
-            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, sort_order"
+            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, sort_order"
           )
           .in("option_id", optionIds)
           .order("sort_order")
@@ -1128,6 +1139,7 @@ export default async function ClientDetailPage(
               planned_sessions: number | null;
               planned_total_minutes: number | null;
               stage_id: string | null;
+              suggested_provider_id: string | null;
               sort_order: number;
             }[]
           >();
@@ -1142,6 +1154,7 @@ export default async function ClientDetailPage(
             plannedSessions: it.planned_sessions,
             plannedMinutes: it.planned_total_minutes,
             stageId: it.stage_id,
+            suggestedProviderId: it.suggested_provider_id,
           });
           itemsByOption.set(it.option_id, list);
         }
@@ -1299,6 +1312,16 @@ export default async function ClientDetailPage(
       priceCents: r.price_cents,
     }));
     priceCatalog = resolveProcedurePrices(procedures, overrides);
+  }
+
+  // H4.5 Pedido 1: profissionais (dentistas) da unidade do cliente, para o
+  // Planner indicar quem realiza cada procedimento.
+  let planProviderOptions: { id: string; name: string }[] = [];
+  if (canEditPlanning) {
+    const sched = await getUnitSchedulingData(client.clinic_id);
+    planProviderOptions = sched.staff
+      .filter((s) => s.roles.includes("dentist"))
+      .map((s) => ({ id: s.userId, name: s.name }));
   }
 
   // -- Apresentação do plano (entrada): Planner monta, Comercial apresenta --
@@ -1531,6 +1554,7 @@ export default async function ClientDetailPage(
           cockpitHref={
             canEditPlanning ? `/planejamento/${client.id}` : undefined
           }
+          providerOptions={planProviderOptions}
         />
       )}
 

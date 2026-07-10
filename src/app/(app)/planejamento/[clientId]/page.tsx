@@ -44,6 +44,7 @@ import {
   type AnamnesisAnswerRow,
   type FilledAnswer,
 } from "@/lib/anamnesis";
+import { getUnitSchedulingData } from "../../agenda/actions";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanningSection } from "../../prontuarios/[id]/planning-section";
 import { TreatmentSummary } from "./treatment-summary";
@@ -304,7 +305,7 @@ export default async function PlanningCockpitPage(
       const { data: itemRows } = await supabase
         .from("treatment_plan_option_items")
         .select(
-          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, sort_order"
+          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, sort_order"
         )
         .in("option_id", optionIds)
         .order("sort_order")
@@ -319,6 +320,7 @@ export default async function PlanningCockpitPage(
             planned_sessions: number | null;
             planned_total_minutes: number | null;
             stage_id: string | null;
+            suggested_provider_id: string | null;
             sort_order: number;
           }[]
         >();
@@ -333,6 +335,7 @@ export default async function PlanningCockpitPage(
           plannedSessions: it.planned_sessions,
           plannedMinutes: it.planned_total_minutes,
           stageId: it.stage_id,
+          suggestedProviderId: it.suggested_provider_id,
         });
         itemsByOption.set(it.option_id, list);
       }
@@ -512,6 +515,12 @@ export default async function PlanningCockpitPage(
       ? (treatmentPlan.options.find((o) => o.isPrimary) ??
         treatmentPlan.options[0])
       : null;
+
+  // H4.5 Pedido 1: dentistas da unidade do cliente (o Planner indica por item).
+  const scheduling = await getUnitSchedulingData(client.clinic_id);
+  const providerOptions = scheduling.staff
+    .filter((s) => s.roles.includes("dentist"))
+    .map((s) => ({ id: s.userId, name: s.name }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
@@ -720,6 +729,7 @@ export default async function PlanningCockpitPage(
             currentPillar={
               client.methodology_pillar as MethodologyPillar | null
             }
+            providerOptions={providerOptions}
           />
         </div>
       </div>

@@ -108,6 +108,8 @@ export type BudgetItem = {
   plannedMinutes: number | null;
   /** H4.5: etapa do tratamento a que este item pertence (null = sem etapa). */
   stageId: string | null;
+  /** H4.5 Pedido 1: profissional indicado pelo Planner (user id), ou null. */
+  suggestedProviderId: string | null;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

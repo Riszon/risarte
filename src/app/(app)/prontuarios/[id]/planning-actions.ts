@@ -864,3 +864,38 @@ export async function setItemStage(
   revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }
+
+/**
+ * H4.5 Pedido 1: o Planner indica (ou tira) o profissional que deve realizar o
+ * procedimento deste item. É uma sugestão — a validade na hora de agendar
+ * depende de o profissional atender a unidade atual do cliente.
+ */
+export async function setItemProvider(
+  itemId: string,
+  providerId: string | null
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { ok: false, error: "Item não encontrado." };
+  const ctx = await loadOptionContext(item.option_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase
+    .from("treatment_plan_option_items")
+    .update({ suggested_provider_id: providerId })
+    .eq("id", itemId);
+  if (error) {
+    console.error("setItemProvider failed:", error.message);
+    return { ok: false, error: "Não foi possível indicar o profissional." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}

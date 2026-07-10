@@ -11,7 +11,15 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.21.1 · migração 0091
+## Onde estamos (09/07/2026) — versão 0.22.0 · migração 0092
+
+> **Cockpit — Planner indica o profissional (Pedido 1, v0.22.0 · migração 0092):**
+> no editor do plano, cada procedimento tem "Profissional indicado" (dentistas da
+> unidade do cliente). A sessão gerada herda a indicação; ao agendar, ela é
+> **priorizada** na sugestão — mas só vale se o indicado **atende a unidade atual**
+> do cliente (se ele mudou de unidade e o dentista não atende lá, cai na regra
+> automática do Lote 3). Pedidos 2 (juntar sessões no planejamento) e 3 (baixa
+> parcial, no H4.6) ainda por fazer.
 
 > **Conserto da transferência (0.20.2 · migração 0090):** um **gatilho** move o
 > plano (plano/opções/itens/etapas/sessões) para a unidade nova **sempre que a
@@ -398,6 +406,13 @@ antes).
       pendências; histórico do cliente; plano resumido SEM valores; sugestões
       p/ reavaliação (visíveis ao coordenador); pedir revisão do planejamento
       (alerta insistente até resolver).
+  - **Baixa PARCIAL das sessões (pedido do dono, 09/07):** ao concluir um
+        atendimento, o dentista **confirma quais sessões** daquele agendamento
+        foram realmente feitas. Se por imprevisto nem todas foram concluídas,
+        dá baixa só nas realizadas; as **não feitas ficam em aberto** (voltam a
+        "a agendar") e **geram alerta para a Recepção** revisar/reagendar os
+        atendimentos do cliente. (Hoje `settle_treatment_sessions` liquida TODAS
+        as sessões do agendamento — mudar para liquidar só as confirmadas.)
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
       limite = nº de cadeiras).

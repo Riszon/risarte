@@ -31,6 +31,8 @@ export type TreatmentSession = {
   /** H4.5: etapa do tratamento (denormalizada), ou null. */
   stageName: string | null;
   stageOrder: number | null;
+  /** H4.5 Pedido 1: profissional indicado pelo Planner para o procedimento. */
+  plannerProviderId: string | null;
   /** H4.5 Lote 3: profissional sugerido para esta sessão (pré-seleciona ao
    * agendar) + o motivo da sugestão. */
   suggestedProviderId: string | null;

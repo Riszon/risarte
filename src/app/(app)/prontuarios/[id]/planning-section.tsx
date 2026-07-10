@@ -67,6 +67,7 @@ import {
   reviewPlanOption,
   saveDiagnosis,
   savePlanNarrative,
+  setItemProvider,
   setItemStage,
   setPrimaryOption,
   submitTreatmentPlan,
@@ -133,6 +134,7 @@ export function PlanningSection({
   realStats,
   currentPillar,
   cockpitHref,
+  providerOptions = [],
 }: {
   clientId: string;
   clientName: string;
@@ -146,6 +148,8 @@ export function PlanningSection({
   currentPillar: MethodologyPillar | null;
   /** (Ficha) link para abrir o cockpit do Planner; ausente no próprio cockpit. */
   cockpitHref?: string;
+  /** H4.5 Pedido 1: profissionais da unidade do cliente (para o Planner indicar). */
+  providerOptions?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -600,6 +604,7 @@ export function PlanningSection({
                     catalog={catalog}
                     protocols={protocols}
                     realStats={realStats}
+                    providerOptions={providerOptions}
                     canEdit={canEditContent}
                     summaryOnly={!canSeePrices}
                   />
@@ -848,6 +853,7 @@ function OptionBudget({
   catalog,
   protocols,
   realStats,
+  providerOptions,
   canEdit,
   summaryOnly,
 }: {
@@ -858,6 +864,8 @@ function OptionBudget({
   catalog: PricedProcedure[];
   protocols: Record<string, ProtocolRef>;
   realStats: Record<string, RealStat>;
+  /** H4.5 Pedido 1: profissionais da unidade (para indicar por item). */
+  providerOptions: { id: string; name: string }[];
   canEdit: boolean;
   /** Coordenador view: show only the option TOTAL, not per-item prices (F4). */
   summaryOnly: boolean;
@@ -891,6 +899,8 @@ function OptionBudget({
   const pickedReal = procId ? realStats[procId] : undefined;
   const orderedStages = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
   const itemGroups = groupItemsByStage(items, stages);
+  const providerName = (id: string | null) =>
+    id ? (providerOptions.find((p) => p.id === id)?.name ?? null) : null;
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -1269,6 +1279,43 @@ function OptionBudget({
                                   ))}
                                 </select>
                               )}
+                              {canEdit && providerOptions.length > 0 && (
+                                <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                                  Profissional indicado:{" "}
+                                  <select
+                                    value={it.suggestedProviderId ?? ""}
+                                    disabled={isPending}
+                                    onChange={(e) =>
+                                      run(
+                                        () =>
+                                          setItemProvider(
+                                            it.id,
+                                            e.target.value || null
+                                          ),
+                                        "Profissional indicado atualizado."
+                                      )
+                                    }
+                                    className="h-6 rounded border border-input bg-transparent px-1 text-[11px]"
+                                    aria-label="Profissional indicado"
+                                  >
+                                    <option value="">
+                                      Automático (pela regra)
+                                    </option>
+                                    {providerOptions.map((p) => (
+                                      <option key={p.id} value={p.id}>
+                                        {p.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </span>
+                              )}
+                              {(!canEdit || providerOptions.length === 0) &&
+                                providerName(it.suggestedProviderId) && (
+                                  <span className="mt-0.5 block text-[11px] text-primary">
+                                    Profissional indicado:{" "}
+                                    {providerName(it.suggestedProviderId)}
+                                  </span>
+                                )}
                             </span>
                             <span className="flex shrink-0 items-center gap-1">
                               <span className="font-medium">
