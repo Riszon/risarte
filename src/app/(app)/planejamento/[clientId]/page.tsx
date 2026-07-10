@@ -610,9 +610,14 @@ export default async function PlanningCockpitPage(
       {/* H4.5 Lote 2: projeção do tratamento (estrutura + esforço planejado). */}
       {summaryOption && <TreatmentSummary option={summaryOption} />}
 
-      {/* H4.5 Pedido 2: montar os atendimentos (juntar sessões no planejamento). */}
-      {projectedSessions.length > 0 && (
-        <SessionJoinPlanner sessions={projectedSessions} canEdit />
+      {/* H4.5 Pedido 2: montar os atendimentos + sequência (juntar sessões). */}
+      {projectedSessions.length > 0 && summaryOption && (
+        <SessionJoinPlanner
+          sessions={projectedSessions}
+          optionId={summaryOption.id}
+          providerOptions={providerOptions}
+          canEdit
+        />
       )}
 
       {/* H3.13: colunas com rolagem independente (não rola a página inteira). */}

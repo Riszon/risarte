@@ -88,9 +88,12 @@ export async function suggestTreatmentSeries(
 
   const { data: sessions } = await supabase
     .from("treatment_sessions")
-    .select("id, procedure_id, session_index, status, created_at")
+    .select("id, procedure_id, session_index, status, created_at, plan_order")
     .eq("client_id", clientId)
     .neq("status", "done")
+    // H4.5: respeita a sequência definida pelo Planner (plan_order); depois a
+    // ordem de criação e o índice da sessão.
+    .order("plan_order", { nullsFirst: false })
     .order("created_at")
     .order("session_index")
     .returns<

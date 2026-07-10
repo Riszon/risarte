@@ -884,6 +884,8 @@ export async function projectOptionSessions(
     name: string;
     planned_minutes: number | null;
     group_no: number | null;
+    block_order: number | null;
+    provider_id: string | null;
   }[]).map((r) => ({
     itemId: r.item_id,
     sessionIndex: r.session_index,
@@ -891,7 +893,80 @@ export async function projectOptionSessions(
     name: r.name,
     plannedMinutes: r.planned_minutes,
     groupNo: r.group_no,
+    blockOrder: r.block_order,
+    providerId: r.provider_id,
   }));
+}
+
+/**
+ * H4.5: aplica uma alteração numa configuração da sessão planejada (item+índice)
+ * preservando as demais. Remove a linha quando todas ficam vazias.
+ */
+async function patchSessionSetting(
+  itemId: string,
+  sessionIndex: number,
+  clinicId: string,
+  patch: {
+    group_no?: number | null;
+    minutes_override?: number | null;
+    provider_override?: string | null;
+    block_order?: number | null;
+  }
+): Promise<void> {
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("plan_session_joins")
+    .select("group_no, minutes_override, provider_override, block_order")
+    .eq("item_id", itemId)
+    .eq("session_index", sessionIndex)
+    .maybeSingle();
+  const merged = {
+    group_no:
+      patch.group_no !== undefined ? patch.group_no : (existing?.group_no ?? null),
+    minutes_override:
+      patch.minutes_override !== undefined
+        ? patch.minutes_override
+        : (existing?.minutes_override ?? null),
+    provider_override:
+      patch.provider_override !== undefined
+        ? patch.provider_override
+        : (existing?.provider_override ?? null),
+    block_order:
+      patch.block_order !== undefined
+        ? patch.block_order
+        : (existing?.block_order ?? null),
+  };
+  const allNull =
+    merged.group_no === null &&
+    merged.minutes_override === null &&
+    merged.provider_override === null &&
+    merged.block_order === null;
+  if (allNull) {
+    if (existing) {
+      await supabase
+        .from("plan_session_joins")
+        .delete()
+        .eq("item_id", itemId)
+        .eq("session_index", sessionIndex);
+    }
+    return;
+  }
+  await supabase.from("plan_session_joins").upsert(
+    { item_id: itemId, clinic_id: clinicId, session_index: sessionIndex, ...merged },
+    { onConflict: "item_id,session_index" }
+  );
+}
+
+/** Resolve o contexto (opção/clínica/cliente/plano) de um item, para as ações. */
+async function itemCtx(itemId: string) {
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { error: "Item não encontrado." } as const;
+  return loadOptionContext(item.option_id);
 }
 
 /**
@@ -906,40 +981,122 @@ export async function setPlannedSessionGroup(
 ): Promise<PlanResult> {
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await itemCtx(itemId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  await patchSessionSetting(itemId, sessionIndex, ctx.clinicId, {
+    group_no: groupNo,
+  });
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  return { ok: true };
+}
 
-  const supabase = await createClient();
-  const { data: item } = await supabase
-    .from("treatment_plan_option_items")
-    .select("option_id")
-    .eq("id", itemId)
-    .single();
-  if (!item) return { ok: false, error: "Item não encontrado." };
-  const ctx = await loadOptionContext(item.option_id);
+/** H4.5: edita o tempo (min) de uma sessão planejada; null = volta ao padrão. */
+export async function setSessionMinutes(
+  itemId: string,
+  sessionIndex: number,
+  minutes: number | null
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await itemCtx(itemId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  const clean = minutes != null && minutes > 0 ? Math.floor(minutes) : null;
+  await patchSessionSetting(itemId, sessionIndex, ctx.clinicId, {
+    minutes_override: clean,
+  });
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/** H4.5: define o profissional de uma sessão (override do indicado no item). */
+export async function setSessionProvider(
+  itemId: string,
+  sessionIndex: number,
+  providerId: string | null
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await itemCtx(itemId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  await patchSessionSetting(itemId, sessionIndex, ctx.clinicId, {
+    provider_override: providerId,
+  });
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/**
+ * H4.5: grava a sequência dos atendimentos. Recebe os blocos já na ordem; cada
+ * bloco é uma lista de sessões (item + índice). Atribui block_order = posição.
+ */
+export async function reorderPlannedBlocks(
+  optionId: string,
+  blocks: { itemId: string; sessionIndex: number }[][]
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadOptionContext(optionId);
   if ("error" in ctx) return { ok: false, error: ctx.error };
 
-  if (groupNo === null) {
+  const supabase = await createClient();
+  const itemIds = [
+    ...new Set(blocks.flat().map((s) => s.itemId)),
+  ];
+  const existingByKey = new Map<
+    string,
+    {
+      group_no: number | null;
+      minutes_override: number | null;
+      provider_override: string | null;
+    }
+  >();
+  if (itemIds.length > 0) {
+    const { data } = await supabase
+      .from("plan_session_joins")
+      .select("item_id, session_index, group_no, minutes_override, provider_override")
+      .in("item_id", itemIds);
+    for (const r of (data ?? []) as {
+      item_id: string;
+      session_index: number;
+      group_no: number | null;
+      minutes_override: number | null;
+      provider_override: string | null;
+    }[]) {
+      existingByKey.set(`${r.item_id}:${r.session_index}`, {
+        group_no: r.group_no,
+        minutes_override: r.minutes_override,
+        provider_override: r.provider_override,
+      });
+    }
+  }
+
+  const rows = blocks.flatMap((block, i) =>
+    block.map((s) => {
+      const ex = existingByKey.get(`${s.itemId}:${s.sessionIndex}`);
+      return {
+        item_id: s.itemId,
+        clinic_id: ctx.clinicId,
+        session_index: s.sessionIndex,
+        group_no: ex?.group_no ?? null,
+        minutes_override: ex?.minutes_override ?? null,
+        provider_override: ex?.provider_override ?? null,
+        block_order: i,
+      };
+    })
+  );
+  if (rows.length > 0) {
     const { error } = await supabase
       .from("plan_session_joins")
-      .delete()
-      .eq("item_id", itemId)
-      .eq("session_index", sessionIndex);
+      .upsert(rows, { onConflict: "item_id,session_index" });
     if (error) {
-      console.error("setPlannedSessionGroup delete failed:", error.message);
-      return { ok: false, error: "Não foi possível atualizar o atendimento." };
-    }
-  } else {
-    const { error } = await supabase.from("plan_session_joins").upsert(
-      {
-        item_id: itemId,
-        clinic_id: ctx.clinicId,
-        session_index: sessionIndex,
-        group_no: groupNo,
-      },
-      { onConflict: "item_id,session_index" }
-    );
-    if (error) {
-      console.error("setPlannedSessionGroup upsert failed:", error.message);
-      return { ok: false, error: "Não foi possível salvar o atendimento." };
+      console.error("reorderPlannedBlocks failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar a sequência." };
     }
   }
   await touchPlan(ctx.planId);

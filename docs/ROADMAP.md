@@ -11,7 +11,15 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.23.0 · migração 0093
+## Onde estamos (09/07/2026) — versão 0.24.0 · migração 0094
+
+> **Atendimentos 2.0 (ajustes do dono, v0.24.0 · migração 0094):** na área
+> "Atendimentos e sequência do tratamento" do cockpit o Planner agora (1) edita o
+> **tempo** de cada sessão (`plan_session_joins.minutes_override`), (2) define a
+> **sequência** dos atendimentos por **arrastar + setas** (`block_order` →
+> `treatment_sessions.plan_order`, respeitado no painel e na sugestão de datas), e
+> (3) vê/troca o **profissional** por sessão (`provider_override`), com aviso
+> quando um atendimento tem profissionais divergentes.
 
 > **Cockpit — Planner junta sessões (Pedido 2, v0.23.0 · migração 0093):** no
 > cockpit, a área **"Atendimentos (juntar sessões)"** lista as sessões projetadas

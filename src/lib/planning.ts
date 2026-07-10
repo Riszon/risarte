@@ -55,6 +55,10 @@ export type ProjectedSession = {
   name: string;
   plannedMinutes: number | null;
   groupNo: number | null;
+  /** H4.5: ordem do bloco na sequência do tratamento (null = ainda sem ordem). */
+  blockOrder: number | null;
+  /** H4.5: profissional efetivo (override da sessão ou o indicado no item). */
+  providerId: string | null;
 };
 
 export type PlanOption = {

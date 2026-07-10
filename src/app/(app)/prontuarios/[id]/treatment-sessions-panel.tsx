@@ -40,6 +40,8 @@ export type TreatmentSession = {
   /** H4.5 Pedido 2: "atendimento conjunto" definido pelo Planner (sessões com
    * o mesmo join_key são feitas no mesmo horário), ou null. */
   joinKey: string | null;
+  /** H4.5: ordem na sequência do tratamento definida pelo Planner, ou null. */
+  planOrder: number | null;
   /** H4.5 Pedido 1: profissional indicado pelo Planner para o procedimento. */
   plannerProviderId: string | null;
   /** H4.5 Lote 3: profissional sugerido para esta sessão (pré-seleciona ao
@@ -189,6 +191,10 @@ export function TreatmentSessionsPanel({
   const stageGroups = [...stageMap.values()].sort((a, b) => a.order - b.order);
   for (const sg of stageGroups) {
     sg.sessions.sort((a, b) => {
+      // Sequência do Planner primeiro (quando definida); depois data efetiva.
+      const oa = a.planOrder ?? 9999;
+      const ob = b.planOrder ?? 9999;
+      if (oa !== ob) return oa - ob;
       const da = effectiveDateIso(a) ?? "9999-99-99";
       const db = effectiveDateIso(b) ?? "9999-99-99";
       if (da !== db) return da.localeCompare(db);

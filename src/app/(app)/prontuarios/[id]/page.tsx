@@ -528,7 +528,7 @@ export default async function ClientDetailPage(
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, stage_name, stage_order, planner_provider_id, join_key, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+        "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, actual_minutes, status, planned_date, stage_name, stage_order, planner_provider_id, join_key, plan_order, appointment:appointments!treatment_sessions_appointment_id_fkey ( id, type, status, starts_at, ends_at, notes, provider_user_id, room_id, is_online, needs_reschedule, room:clinic_rooms ( name, deleted_at ), provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("created_at")
@@ -548,6 +548,7 @@ export default async function ClientDetailPage(
           stage_order: number | null;
           planner_provider_id: string | null;
           join_key: string | null;
+          plan_order: number | null;
           appointment: {
             id: string;
             type: string;
@@ -579,6 +580,7 @@ export default async function ClientDetailPage(
       stageOrder: r.stage_order,
       plannerProviderId: r.planner_provider_id,
       joinKey: r.join_key,
+      planOrder: r.plan_order,
       // H4.5 Lote 3: preenchido logo abaixo (sugestão de profissional).
       suggestedProviderId: null as string | null,
       suggestedProviderName: null as string | null,
