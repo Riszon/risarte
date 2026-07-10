@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarCheck, CalendarPlus, CalendarRange, Layers } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarPlus,
+  CalendarRange,
+  Layers,
+  Link2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +37,9 @@ export type TreatmentSession = {
   /** H4.5: etapa do tratamento (denormalizada), ou null. */
   stageName: string | null;
   stageOrder: number | null;
+  /** H4.5 Pedido 2: "atendimento conjunto" definido pelo Planner (sessões com
+   * o mesmo join_key são feitas no mesmo horário), ou null. */
+  joinKey: string | null;
   /** H4.5 Pedido 1: profissional indicado pelo Planner para o procedimento. */
   plannerProviderId: string | null;
   /** H4.5 Lote 3: profissional sugerido para esta sessão (pré-seleciona ao
@@ -138,11 +147,23 @@ export function TreatmentSessionsPanel({
   // H4.5 Lote 4: selecionar 2+ sessões pendentes e agendá-las juntas.
   const [joinSel, setJoinSel] = useState<Set<string>>(new Set());
   const [joinOpen, setJoinOpen] = useState(false);
+  // Marca/desmarca uma sessão. Se o Planner já a agrupou (join_key), marca o
+  // atendimento conjunto inteiro de uma vez.
   function toggleJoin(id: string) {
+    const s = sessions.find((x) => x.id === id);
+    const groupIds =
+      s && s.joinKey != null
+        ? sessions
+            .filter((x) => x.status === "pending" && x.joinKey === s.joinKey)
+            .map((x) => x.id)
+        : [id];
     setJoinSel((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const adding = !next.has(id);
+      for (const gid of groupIds) {
+        if (adding) next.add(gid);
+        else next.delete(gid);
+      }
       return next;
     });
   }
@@ -465,6 +486,12 @@ export function TreatmentSessionsPanel({
                               {s.suggestionReason
                                 ? ` — ${s.suggestionReason}`
                                 : ""}
+                            </span>
+                          )}
+                          {s.status === "pending" && s.joinKey && (
+                            <span className="mt-0.5 flex items-center gap-1 text-[11px] text-primary">
+                              <Link2 className="size-3" /> Atendimento conjunto
+                              (planejado)
                             </span>
                           )}
                         </span>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import type { PlanResult } from "@/lib/planning";
+import type { PlanResult, ProjectedSession } from "@/lib/planning";
 import { parseBRLToCents } from "@/lib/pricing";
 
 /**
@@ -862,6 +862,89 @@ export async function setItemStage(
   }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/**
+ * H4.5 Pedido 2: projeta as sessões de uma opção (mesma lógica da geração) com o
+ * "atendimento conjunto" de cada uma, para a tela de agrupamento do cockpit.
+ */
+export async function projectOptionSessions(
+  optionId: string
+): Promise<ProjectedSession[]> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("project_option_sessions", {
+    p_option_id: optionId,
+  });
+  return ((data ?? []) as {
+    item_id: string;
+    session_index: number;
+    procedure_name: string;
+    name: string;
+    planned_minutes: number | null;
+    group_no: number | null;
+  }[]).map((r) => ({
+    itemId: r.item_id,
+    sessionIndex: r.session_index,
+    procedureName: r.procedure_name,
+    name: r.name,
+    plannedMinutes: r.planned_minutes,
+    groupNo: r.group_no,
+  }));
+}
+
+/**
+ * H4.5 Pedido 2: o Planner define (ou tira) o "atendimento conjunto" (group_no)
+ * de uma sessão projetada (item + índice). Sessões com o mesmo group_no serão
+ * feitas no mesmo horário quando o tratamento iniciar.
+ */
+export async function setPlannedSessionGroup(
+  itemId: string,
+  sessionIndex: number,
+  groupNo: number | null
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { ok: false, error: "Item não encontrado." };
+  const ctx = await loadOptionContext(item.option_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  if (groupNo === null) {
+    const { error } = await supabase
+      .from("plan_session_joins")
+      .delete()
+      .eq("item_id", itemId)
+      .eq("session_index", sessionIndex);
+    if (error) {
+      console.error("setPlannedSessionGroup delete failed:", error.message);
+      return { ok: false, error: "Não foi possível atualizar o atendimento." };
+    }
+  } else {
+    const { error } = await supabase.from("plan_session_joins").upsert(
+      {
+        item_id: itemId,
+        clinic_id: ctx.clinicId,
+        session_index: sessionIndex,
+        group_no: groupNo,
+      },
+      { onConflict: "item_id,session_index" }
+    );
+    if (error) {
+      console.error("setPlannedSessionGroup upsert failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar o atendimento." };
+    }
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
   return { ok: true };
 }
 

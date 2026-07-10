@@ -11,7 +11,16 @@ Legenda: **[P]** pequeno (horas) · **[M]** médio (1 lote) · **[G]** grande
 > marcar lá E atualizar este arquivo. Cada lote segue o ritual: plano curto →
 > OK do dono → código → build+lint → commit → roteiro de teste numerado.
 
-## Onde estamos (09/07/2026) — versão 0.22.0 · migração 0092
+## Onde estamos (09/07/2026) — versão 0.23.0 · migração 0093
+
+> **Cockpit — Planner junta sessões (Pedido 2, v0.23.0 · migração 0093):** no
+> cockpit, a área **"Atendimentos (juntar sessões)"** lista as sessões projetadas
+> (via `option_session_rows`/`project_option_sessions` — mesma lógica da geração)
+> e o Planner agrupa **sessão a sessão** dando o mesmo nº de atendimento
+> (`plan_session_joins`). Ao iniciar o tratamento, cada sessão herda o `join_key`
+> e, no painel da Fase 5, as sessões do mesmo atendimento já vêm marcadas
+> ("Atendimento conjunto") — o "Agendar juntas" seleciona o grupo inteiro.
+> Falta: **Lote 5** (alertas) e o **Pedido 3** (baixa parcial, no H4.6).
 
 > **Cockpit — Planner indica o profissional (Pedido 1, v0.22.0 · migração 0092):**
 > no editor do plano, cada procedimento tem "Profissional indicado" (dentistas da

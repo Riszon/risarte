@@ -47,7 +47,9 @@ import {
 import { getUnitSchedulingData } from "../../agenda/actions";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanningSection } from "../../prontuarios/[id]/planning-section";
+import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
 import { TreatmentSummary } from "./treatment-summary";
+import { SessionJoinPlanner } from "./session-join-planner";
 
 export const metadata: Metadata = { title: "Cockpit de Planejamento" };
 
@@ -522,6 +524,13 @@ export default async function PlanningCockpitPage(
     .filter((s) => s.roles.includes("dentist"))
     .map((s) => ({ id: s.userId, name: s.name }));
 
+  // H4.5 Pedido 2: sessões projetadas da opção principal, para o Planner agrupar
+  // em atendimentos (juntar sessões já no planejamento).
+  const projectedSessions =
+    summaryOption && summaryOption.items.length > 0
+      ? await projectOptionSessions(summaryOption.id)
+      : [];
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -600,6 +609,11 @@ export default async function PlanningCockpitPage(
 
       {/* H4.5 Lote 2: projeção do tratamento (estrutura + esforço planejado). */}
       {summaryOption && <TreatmentSummary option={summaryOption} />}
+
+      {/* H4.5 Pedido 2: montar os atendimentos (juntar sessões no planejamento). */}
+      {projectedSessions.length > 0 && (
+        <SessionJoinPlanner sessions={projectedSessions} canEdit />
+      )}
 
       {/* H3.13: colunas com rolagem independente (não rola a página inteira). */}
       <div className="grid gap-4 lg:grid-cols-2">

@@ -43,6 +43,20 @@ export type PlanStage = {
   sortOrder: number;
 };
 
+/**
+ * H4.5 Pedido 2: uma sessão PROJETADA de uma opção (antes de gerar de verdade),
+ * com o "atendimento conjunto" (groupNo) definido pelo Planner. Usada na tela de
+ * agrupamento do cockpit.
+ */
+export type ProjectedSession = {
+  itemId: string;
+  sessionIndex: number;
+  procedureName: string;
+  name: string;
+  plannedMinutes: number | null;
+  groupNo: number | null;
+};
+
 export type PlanOption = {
   id: string;
   isPrimary: boolean;
