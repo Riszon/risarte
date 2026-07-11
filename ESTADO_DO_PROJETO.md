@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/07/2026 · Versão do sistema: **0.39.0** · Última migração: **0107**_
+_Atualizado em: 11/07/2026 · Versão do sistema: **0.40.0** · Última migração: **0108**_
 
 > **MÓDULO RISARTE EMPRESARIAL — CONSTRUÍDO (Fases 0–8, aguardando teste do dono).**
 > Camada B2B (empresas parceiras → colaboradores viram clientes da Jornada), schema
@@ -62,8 +62,13 @@ _Atualizado em: 11/07/2026 · Versão do sistema: **0.39.0** · Última migraç�
 > (`plan-summary-section`). **B3 ✅ (v0.39.0, sem migração):** bloco "Minha
 > produção" na tela Meu Dia (filtro de período): concluídos, sessões finalizadas,
 > tempo em cadeira realizado × previsto, espera média, em aberto, futuros, NPS
-> ("ainda não disponível"). **Bloco B completo.** Próximo lote: **C —
-> Documentos (prescrição/atestado/orientações), começando simples (PDF)**.
+> ("ainda não disponível"). **Bloco B completo.** **Bloco C — Documentos ✅
+> (v0.40.0, migração 0108):** o Dentista/Coordenador emite prescrição, atestado,
+> declaração e orientações no prontuário (com modelos), e imprime/salva em PDF
+> (`/documentos/[id]/imprimir`); modelos da rede geridos em `/admin/documentos`
+> (franqueadora). Sem assinatura digital/envio (adiado). **Falta:** Bloco D
+> (sugerir reavaliação + pedir revisão do plano, com anexos) e o **teste geral
+> detalhado do H4.6**.
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em

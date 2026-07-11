@@ -50,6 +50,12 @@ import {
   PlanSummarySection,
   type PlanSummaryStage,
 } from "./plan-summary-section";
+import { DocumentsSection } from "./documents-section";
+import type {
+  ClinicalDocumentItem,
+  DocumentKind,
+  DocumentTemplate,
+} from "@/lib/documents";
 import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
@@ -1228,6 +1234,82 @@ export default async function ClientDetailPage(
     });
   }
 
+  // -- H4.6 C: documentos clínicos (prescrição/atestado/declaração/orientações) --
+  const canEmitDocuments =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, [
+      "dentist",
+      "clinical_coordinator",
+    ]);
+  const canViewDocuments = canEmitDocuments || canViewClinical;
+  let documentItems: ClinicalDocumentItem[] = [];
+  let documentTemplates: DocumentTemplate[] = [];
+  if (canViewDocuments) {
+    const { data: docRows } = await supabase
+      .from("clinical_documents")
+      .select("id, kind, title, created_at, author_id")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          kind: DocumentKind;
+          title: string;
+          created_at: string;
+          author_id: string;
+        }[]
+      >();
+    const docAuthorIds = [
+      ...new Set(
+        (docRows ?? [])
+          .map((r) => r.author_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const docAuthorNames = new Map<string, string>();
+    if (docAuthorIds.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", docAuthorIds);
+      for (const p of people ?? []) docAuthorNames.set(p.id, p.full_name);
+    }
+    documentItems = (docRows ?? []).map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      title: r.title,
+      createdAt: r.created_at,
+      authorName: r.author_id
+        ? (docAuthorNames.get(r.author_id) ?? null)
+        : null,
+    }));
+
+    if (canEmitDocuments) {
+      const { data: tplRows } = await supabase
+        .from("document_templates")
+        .select("id, kind, title, body, clinic_id")
+        .eq("is_active", true)
+        .order("kind")
+        .order("title")
+        .returns<
+          {
+            id: string;
+            kind: DocumentKind;
+            title: string;
+            body: string;
+            clinic_id: string | null;
+          }[]
+        >();
+      documentTemplates = (tplRows ?? []).map((t) => ({
+        id: t.id,
+        kind: t.kind,
+        title: t.title,
+        body: t.body,
+        clinicId: t.clinic_id,
+      }));
+    }
+  }
+
   // -- Anamnese A4: obrigatória na 1ª consulta; na reavaliação (Fase 6), exige
   // atualização se a última versão tem mais de 12 meses.
   const anamnesisCutoff = new Date();
@@ -1865,6 +1947,16 @@ export default async function ClientDetailPage(
           clinicId={scheduleClinicId}
           canWrite={canWriteProgress}
           notes={progressNotes}
+        />
+      )}
+
+      {canViewDocuments && (
+        <DocumentsSection
+          clientId={client.id}
+          clinicId={scheduleClinicId}
+          canEmit={canEmitDocuments}
+          documents={documentItems}
+          templates={documentTemplates}
         />
       )}
 

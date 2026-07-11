@@ -482,8 +482,17 @@ antes).
         tempo em cadeira (realizado × previsto pela rede = actual×planned),
         espera média do cliente (check-in→chamada), procedimentos em aberto,
         atendimentos futuros e NPS ("ainda não disponível" até a Fase 2).
-  - [ ] **C** Documentos: prescrição (texto/modelo + PDF), atestados/declarações,
-        orientações e cuidados (modelos da franqueadora, cascata).
+  - [x] **C — Documentos clínicos** ✅ (v0.40.0, migração 0108) — o Dentista/
+        Coordenador emite **prescrição, atestado, declaração e orientações** no
+        prontuário (seção "Documentos"): escolhe o tipo, um **modelo** (opcional)
+        e ajusta o texto; ao emitir, abre a versão para **impressão / salvar em
+        PDF** (rota `/documentos/[id]/imprimir`, fora do `(app)`, sem barra
+        lateral). Modelos em `document_templates` (cascata: rede/franqueadora +
+        unidade; seeds de orientações/atestado/declaração); documentos em
+        `clinical_documents` (append-only, RLS espelha os registros clínicos).
+        Tela **`/admin/documentos`** (Admin) para a franqueadora criar/editar/
+        (des)ativar os modelos da rede. **Simples de propósito:** sem assinatura
+        digital/Memed nem envio externo (adiado — [[risarte-h46-deferred-integrations]]).
   - [ ] **D** Sugerir reavaliação (avisa Coordenador) + pedir revisão do plano
         (alerta insistente ao Coordenador) — com anexos (foto/vídeo/áudio/RX).
   - [ ] **E** (item próprio depois) Agenda multi-unidade: dias prioritários por

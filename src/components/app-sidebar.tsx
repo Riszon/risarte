@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Clock,
   DoorOpen,
+  FileText,
   Home,
   LogOut,
   Route,
@@ -117,6 +118,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
+  { href: "/admin/documentos", label: "Modelos de Documentos", icon: FileText },
   { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
 ];
 
