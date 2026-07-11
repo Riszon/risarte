@@ -170,6 +170,32 @@ export function isSdrRestricted(session: SessionContext): boolean {
   return !allRoles.some((r) => BROAD_CLIENT_ROLES.includes(r));
 }
 
+// Papéis que dão visão ampla de clientes na unidade — se o dentista também tiver
+// algum, ele NÃO é restrito aos "seus pacientes".
+const DENTIST_BROAD_ROLES: UserRole[] = [
+  "receptionist",
+  "clinical_coordinator",
+  "unit_manager",
+  "planner_dentist",
+  "commercial_consultant",
+  "commercial_assistant",
+  "franchisor_staff",
+  "franchisee",
+];
+
+/**
+ * H4.6 B2: o usuário é um Dentista (executor) "puro" — tem o papel de dentista e
+ * nenhum outro que dê visão ampla de clientes. Nesse caso o prontuário fica
+ * limitado aos pacientes que ele atende (a RLS já impõe isso via agendamento;
+ * aqui é só para a mensagem amigável de acesso restrito).
+ */
+export function isDentistRestricted(session: SessionContext): boolean {
+  if (session.isAdminMaster) return false;
+  const allRoles = Object.values(session.rolesByClinic).flat();
+  if (!allRoles.includes("dentist")) return false;
+  return !allRoles.some((r) => DENTIST_BROAD_ROLES.includes(r));
+}
+
 /**
  * H3.7: ids dos clientes que a SDR pode ver (cadastrou/editou/agendou/
  * transferiu). Vazio = a SDR não tocou em ninguém ainda.

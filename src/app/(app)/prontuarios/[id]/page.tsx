@@ -6,6 +6,7 @@ import {
   getSessionContext,
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
+  isDentistRestricted,
   isSdrRestricted,
   sdrAccessibleClientIds,
 } from "@/lib/auth";
@@ -45,6 +46,10 @@ import {
   ClientProceduresSection,
   type ProcedureItem,
 } from "./client-procedures-section";
+import {
+  PlanSummarySection,
+  type PlanSummaryStage,
+} from "./plan-summary-section";
 import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
@@ -210,7 +215,35 @@ export default async function ClientDetailPage(
         }[]
       >();
     const es = endedShare?.[0];
-    if (!es) notFound();
+    if (!es) {
+      // H4.6 B2: o Dentista (executor) só acessa o prontuário dos pacientes que
+      // ele atende — a RLS bloqueou; mostra a mensagem amigável.
+      if (isDentistRestricted(session)) {
+        return (
+          <div className="mx-auto max-w-xl px-4 py-16">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Acesso restrito</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <p>
+                  Você só tem acesso ao prontuário dos pacientes que você atende.
+                  Este cliente não faz parte dos seus atendimentos.
+                </p>
+                <Button
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href="/meu-dia" />}
+                >
+                  Ir para Meu Dia
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+      notFound();
+    }
     const enderRaw = es.ender;
     const enderName = (Array.isArray(enderRaw) ? enderRaw[0] : enderRaw)
       ?.full_name;
@@ -1419,6 +1452,124 @@ export default async function ClientDetailPage(
     }
   }
 
+  // -- H4.6 B2: resumo do plano SEM valores para o Dentista (que não vê a
+  // PlanningSection com orçamento). Diagnóstico + procedimentos por etapa.
+  const showPlanSummary =
+    !canViewPlanning && hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
+  let planSummary: {
+    diagnosis: string | null;
+    objectives: string | null;
+    optionTitle: string | null;
+    stages: PlanSummaryStage[];
+  } | null = null;
+  if (showPlanSummary) {
+    const { data: planRows } = await supabase
+      .from("treatment_plans")
+      .select("id, diagnosis, objectives")
+      .eq("client_id", id)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .returns<{ id: string; diagnosis: string | null; objectives: string | null }[]>();
+    const plan = planRows?.[0];
+    if (plan) {
+      const { data: optRows } = await supabase
+        .from("treatment_plan_options")
+        .select("id, is_primary, title, review_status, sort_order")
+        .eq("plan_id", plan.id)
+        .order("is_primary", { ascending: false })
+        .order("sort_order")
+        .returns<
+          {
+            id: string;
+            is_primary: boolean;
+            title: string;
+            review_status: "pending" | "approved" | "rejected";
+            sort_order: number;
+          }[]
+        >();
+      const option =
+        (optRows ?? []).find((o) => o.review_status === "approved") ??
+        (optRows ?? [])[0];
+      if (option) {
+        const [{ data: sumItems }, { data: sumStages }] = await Promise.all([
+          supabase
+            .from("treatment_plan_option_items")
+            .select(
+              "id, description, quantity, planned_sessions, stage_id, suggested_provider_id, sort_order"
+            )
+            .eq("option_id", option.id)
+            .order("sort_order")
+            .returns<
+              {
+                id: string;
+                description: string;
+                quantity: number;
+                planned_sessions: number | null;
+                stage_id: string | null;
+                suggested_provider_id: string | null;
+                sort_order: number;
+              }[]
+            >(),
+          supabase
+            .from("treatment_plan_stages")
+            .select("id, name, sort_order")
+            .eq("option_id", option.id)
+            .order("sort_order")
+            .returns<{ id: string; name: string; sort_order: number }[]>(),
+        ]);
+        const provIds = [
+          ...new Set(
+            (sumItems ?? [])
+              .map((i) => i.suggested_provider_id)
+              .filter((x): x is string => Boolean(x))
+          ),
+        ];
+        const provNames = new Map<string, string>();
+        if (provIds.length > 0) {
+          const { data: people } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", provIds);
+          for (const p of people ?? []) provNames.set(p.id, p.full_name);
+        }
+        const stageMeta = new Map<string, { name: string; order: number }>();
+        for (const st of sumStages ?? [])
+          stageMeta.set(st.id, { name: st.name, order: st.sort_order });
+        const groups = new Map<
+          string,
+          { name: string; order: number; items: PlanSummaryStage["items"] }
+        >();
+        for (const it of sumItems ?? []) {
+          const key = it.stage_id ?? "__none__";
+          const meta = it.stage_id ? stageMeta.get(it.stage_id) : undefined;
+          const entry = groups.get(key) ?? {
+            name: meta?.name ?? "",
+            order: it.stage_id ? (meta?.order ?? 999) : 1000,
+            items: [],
+          };
+          entry.items.push({
+            description: it.description,
+            quantity: it.quantity,
+            sessions: it.planned_sessions,
+            providerName: it.suggested_provider_id
+              ? (provNames.get(it.suggested_provider_id) ?? null)
+              : null,
+          });
+          groups.set(key, entry);
+        }
+        planSummary = {
+          diagnosis: plan.diagnosis,
+          objectives: plan.objectives,
+          optionTitle: option.title,
+          stages: [...groups.values()]
+            .sort((a, b) => a.order - b.order)
+            .map((g) => ({ name: g.name, items: g.items })),
+        };
+      }
+    }
+  }
+
   // Catálogo de preços com o preço efetivo da unidade do cliente (para o Planner
   // montar o orçamento). Só carregado para quem edita o plano.
   let priceCatalog: PricedProcedure[] = [];
@@ -1737,6 +1888,15 @@ export default async function ClientDetailPage(
       )}
 
       <EmpresarialPanel summary={usage} />
+
+      {planSummary && (
+        <PlanSummarySection
+          diagnosis={planSummary.diagnosis}
+          objectives={planSummary.objectives}
+          optionTitle={planSummary.optionTitle}
+          stages={planSummary.stages}
+        />
+      )}
 
       {canViewPlanning && (
         <PlanningSection

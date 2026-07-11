@@ -17,6 +17,7 @@ import {
   LogOut,
   Route,
   ScrollText,
+  Stethoscope,
   Tags,
   Users,
   UserCog,
@@ -81,6 +82,9 @@ const NAV_ITEMS = [
   { href: "/prontuarios", label: "Prontuários", icon: Users },
 ];
 
+// H4.6 B1: painel do dia do Dentista (executor).
+const MEU_DIA_ITEM = { href: "/meu-dia", label: "Meu Dia", icon: Stethoscope };
+
 // Shown to the Dentista Planner and Admin Master (alongside the unit nav).
 const PLANNER_ITEMS = [
   { href: "/planejamento", label: "Centro de Planejamento", icon: ClipboardList },
@@ -143,6 +147,10 @@ export function AppSidebar({
   let navItems = dentistOnly
     ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
     : [...NAV_ITEMS];
+  // H4.6 B1: "Meu Dia" logo após Início para quem atende como dentista na unidade.
+  if (activeClinicRoles.includes("dentist")) {
+    navItems = [navItems[0], MEU_DIA_ITEM, ...navItems.slice(1)];
+  }
   if (!dentistOnly && canViewPlans) {
     navItems = [...navItems, PLANS_ITEM];
   }

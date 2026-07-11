@@ -466,8 +466,16 @@ antes).
         **"Solicitar agendamento à Recepção"** (`request_session_scheduling`,
         notifica a Recepção 1x/dia; `client-procedures-section`). Visível a
         dentista/coordenador/recepção/gestão/planner/admin.
-  - [ ] **B1/B2** Tela "Meu Dia" + prontuário do dentista (só seus pacientes) +
-        plano resumido SEM valores.
+  - [x] **B1/B2 — "Meu Dia" + prontuário do dentista + plano resumido** ✅
+        (v0.38.0, sem migração) — **B1:** rota `/meu-dia` (item no menu p/ quem é
+        dentista na unidade) com Hoje / Próximos (14 dias) / Procedimentos em
+        aberto destinados a ele (`planner_provider_id`). **B2:** prontuário do
+        dentista já é restrito aos pacientes que ele atende **pela RLS**
+        (`clients_select_member` libera pelo agendamento como profissional) —
+        adicionada a mensagem amigável "Acesso restrito" (`isDentistRestricted`);
+        e o **plano resumido SEM valores** (`plan-summary-section`: diagnóstico +
+        objetivos + procedimentos por etapa, profissional indicado) para o
+        dentista, que não vê a PlanningSection com orçamento.
   - [ ] **B3** Dashboard de produção (período; tempo × rede; espera; NPS quando
         existir; em aberto; agendamentos/atendimentos).
   - [ ] **C** Documentos: prescrição (texto/modelo + PDF), atestados/declarações,
