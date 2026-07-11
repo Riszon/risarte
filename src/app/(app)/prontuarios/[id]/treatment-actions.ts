@@ -28,6 +28,32 @@ export async function ensureTreatmentSessions(clientId: string): Promise<void> {
   }
 }
 
+/**
+ * H4.6 A3: o Dentista solicita à Recepção o agendamento das sessões pendentes do
+ * cliente (a RPC verifica o papel e notifica a Recepção da unidade, 1x/dia).
+ */
+export async function requestSessionScheduling(
+  clientId: string
+): Promise<Result> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_session_scheduling", {
+    p_client_id: clientId,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o dentista pode solicitar o agendamento.",
+      };
+    }
+    console.error("request_session_scheduling failed:", error.message);
+    return { ok: false, error: "Não foi possível enviar a solicitação." };
+  }
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
 // --- Datas em "YYYY-MM-DD" (sem fuso) ------------------------------------
 function parseYmd(s: string): Date {
   const [y, m, d] = s.split("-").map(Number);

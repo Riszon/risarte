@@ -459,8 +459,13 @@ antes).
         libera o dentista, que `user_full_access_clinic_ids` não cobre) +
         `saveProgressNote` + `clinical-progress-section`. Sem DELETE (registro
         clínico, append-only).
-  - [ ] **A3** Procedimentos do cliente (em aberto / agendados / finalizados;
-        solicitar agendamento à Recepção).
+  - [x] **A3 — Procedimentos do cliente** ✅ (v0.37.0, migração 0107) — seção
+        "Procedimentos" no prontuário agrupando as sessões do tratamento em **Em
+        aberto / Agendados / Finalizados** (agendados mostram data + profissional;
+        finalizados mostram quando + quem concluiu). O Dentista tem o botão
+        **"Solicitar agendamento à Recepção"** (`request_session_scheduling`,
+        notifica a Recepção 1x/dia; `client-procedures-section`). Visível a
+        dentista/coordenador/recepção/gestão/planner/admin.
   - [ ] **B1/B2** Tela "Meu Dia" + prontuário do dentista (só seus pacientes) +
         plano resumido SEM valores.
   - [ ] **B3** Dashboard de produção (período; tempo × rede; espera; NPS quando

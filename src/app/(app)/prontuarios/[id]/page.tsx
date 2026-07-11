@@ -42,6 +42,10 @@ import {
   type ProgressNoteItem,
 } from "./clinical-progress-section";
 import {
+  ClientProceduresSection,
+  type ProcedureItem,
+} from "./client-procedures-section";
+import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
   type FillTemplate,
@@ -1097,6 +1101,100 @@ export default async function ClientDetailPage(
     });
   }
 
+  // -- H4.6 A3: Procedimentos do cliente (em aberto / agendados / finalizados) --
+  const canViewProcedures =
+    session.isAdminMaster ||
+    isPlannerAnywhere ||
+    isSdr ||
+    hasRoleInClinic(session, scheduleClinicId, [
+      "dentist",
+      "clinical_coordinator",
+      "unit_manager",
+      "receptionist",
+    ]);
+  const canRequestScheduling =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
+  let procedureItems: ProcedureItem[] = [];
+  if (canViewProcedures) {
+    const { data: procSessRows } = await supabase
+      .from("treatment_sessions")
+      .select(
+        "id, procedure_name, name, status, planned_date, done_at, executed_by, plan_order, session_index, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status, provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+      )
+      .eq("client_id", id)
+      .order("plan_order", { nullsFirst: false })
+      .order("session_index")
+      .returns<
+        {
+          id: string;
+          procedure_name: string;
+          name: string | null;
+          status: "pending" | "scheduled" | "done";
+          planned_date: string | null;
+          done_at: string | null;
+          executed_by: string | null;
+          appointment:
+            | {
+                starts_at: string;
+                status: string;
+                provider:
+                  | { full_name: string }
+                  | { full_name: string }[]
+                  | null;
+              }
+            | {
+                starts_at: string;
+                status: string;
+                provider:
+                  | { full_name: string }
+                  | { full_name: string }[]
+                  | null;
+              }[]
+            | null;
+        }[]
+      >();
+    const execIds = [
+      ...new Set(
+        (procSessRows ?? [])
+          .map((r) => r.executed_by)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const execNames = new Map<string, string>();
+    if (execIds.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", execIds);
+      for (const p of people ?? []) execNames.set(p.id, p.full_name);
+    }
+    procedureItems = (procSessRows ?? []).map((r) => {
+      const ap = Array.isArray(r.appointment)
+        ? r.appointment[0]
+        : r.appointment;
+      const provRaw = ap?.provider ?? null;
+      const prov = Array.isArray(provRaw) ? provRaw[0] : provRaw;
+      const isScheduled =
+        ap != null && (ap.status === "scheduled" || ap.status === "confirmed");
+      const group: "open" | "scheduled" | "done" =
+        r.status === "done" ? "done" : isScheduled ? "scheduled" : "open";
+      return {
+        id: r.id,
+        procedureName: r.procedure_name,
+        name: r.name,
+        group,
+        plannedDate: r.planned_date,
+        appointmentAt: ap?.starts_at ?? null,
+        providerName: prov?.full_name ?? null,
+        doneAt: r.done_at,
+        executorName: r.executed_by
+          ? (execNames.get(r.executed_by) ?? null)
+          : null,
+      };
+    });
+  }
+
   // -- Anamnese A4: obrigatória na 1ª consulta; na reavaliação (Fase 6), exige
   // atualização se a última versão tem mais de 12 meses.
   const anamnesisCutoff = new Date();
@@ -1572,6 +1670,14 @@ export default async function ClientDetailPage(
           staff={fichaStaff}
           config={fichaConfig}
           clinicId={scheduleClinicId}
+        />
+      )}
+
+      {procedureItems.length > 0 && (
+        <ClientProceduresSection
+          clientId={client.id}
+          canRequest={canRequestScheduling}
+          items={procedureItems}
         />
       )}
 
