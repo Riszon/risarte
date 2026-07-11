@@ -28,7 +28,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
 import { cn } from "@/lib/utils";
-import { APP_VERSION, LATEST_MIGRATION } from "@/lib/version";
+import {
+  APP_VERSION,
+  LATEST_MIGRATION,
+  EMPRESARIAL_VERSION,
+  EMPRESARIAL_MIGRATION,
+} from "@/lib/version";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -281,6 +286,10 @@ export function AppSidebar({
         </Link>
         <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
           Versão {APP_VERSION} · migração {LATEST_MIGRATION}
+          <br />
+          <span className="opacity-80">
+            Empresarial {EMPRESARIAL_VERSION} · migr. {EMPRESARIAL_MIGRATION}
+          </span>
         </p>
         <Button
           variant="outline"

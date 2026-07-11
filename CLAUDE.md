@@ -8,6 +8,41 @@ pendências em `docs/BACKLOG.md` (ler antes de iniciar qualquer etapa nova).
 @AGENTS.md
 @docs/ARQUITETURA-TECNICA.md
 
+## 0. ⚠️ Trabalho em PARALELO — dois projetos, um repositório (LER PRIMEIRO)
+
+Este repositório é usado por **dois fluxos de trabalho em paralelo**, cada um com
+sua própria sessão/agente. Eles compartilham o mesmo repo, o mesmo banco Supabase
+e o mesmo deploy (Vercel), então **disciplina é obrigatória** para não misturar.
+
+- **MVP core (riSZon)** — Jornada, clínico, agenda, prontuário, dentista (H4.x).
+  Documentos de estado: `ESTADO_DO_PROJETO.md` + `docs/ROADMAP.md`.
+- **Risarte Empresarial (B2B)** — schema `empresarial`, rotas `/empresarial`,
+  `src/lib/empresarial`. Documentos de estado: `docs/risarte-empresarial/`.
+  (Vai integrar ao riSZon; por isso mesmo repo e mesmo banco.)
+
+**Regras que TODO agente segue (decisão do dono, 10/07/2026):**
+
+1. **Faixas de migração (nunca colidir):** core usa **0106+** (faixa 0–999);
+   Empresarial usa **1000+**. Antes de criar migração, use a faixa do SEU projeto
+   e o próximo número livre dentro dela. (Core já foi até 0105; Empresarial 0096–0104.)
+2. **Documentos de estado separados:** cada projeto atualiza só os SEUS documentos
+   (acima). Nunca mexer no documento de estado do outro projeto.
+3. **Versão separada** (`src/lib/version.ts`): o core edita `APP_VERSION`/
+   `LATEST_MIGRATION`; o Empresarial edita `EMPRESARIAL_VERSION`/
+   `EMPRESARIAL_MIGRATION`. Cada um mexe só nas SUAS duas linhas.
+4. **Sempre terminar com a árvore limpa:** commite os SEUS arquivos antes de
+   encerrar (foi a falta disso que misturou os dois projetos). Ao INICIAR, se achar
+   trabalho sem commit do OUTRO projeto, faça um commit próprio e rotulado
+   (`chore(empresarial): …` ou `chore(core): …`) ANTES de começar o seu — nunca
+   misture os dois num mesmo commit. Rotule os commits por projeto no assunto.
+5. **Arquivos de código compartilhados** (agenda, prontuários, `treatment_sessions`,
+   `app-sidebar.tsx`, `roles.ts`, `layout.tsx`): o core é o dono deles; mudanças do
+   Empresarial aí devem ser **mínimas e aditivas**. Prefira criar arquivos novos
+   dentro do seu módulo em vez de editar os compartilhados.
+6. **Publicação:** hoje tudo vive no `main` (deploy único) — publicar um projeto
+   publica os dois. Para separar o que vai ao ar, migrar o Empresarial para um
+   branch próprio (`feature/empresarial`); combinar com o dono antes.
+
 ## 1. Visão geral
 
 Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1
