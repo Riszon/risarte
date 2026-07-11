@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/07/2026 · Versão do sistema: **0.25.0** · Última migração: **0095**_
+_Atualizado em: 10/07/2026 · Versão do sistema: **0.35.0** · Última migração: **0105**_
+
+> **MÓDULO RISARTE EMPRESARIAL — CONSTRUÍDO (Fases 0–8, aguardando teste do dono).**
+> Camada B2B (empresas parceiras → colaboradores viram clientes da Jornada), schema
+> próprio `empresarial`. Plano aprovado 10/07/2026 (`docs/risarte-empresarial/`).
+> Migrações **0096–0103**. Roteiro de teste: `docs/risarte-empresarial/ROTEIRO-TESTE.md`.
+>
+> - **Fase 0** — fundação: schema + 11 tabelas + RLS + papel `rislife_consultant` (0096–0097).
+> - **Fase 1** — cadastros: menu Empresarial; empresas (KPIs/filtros); tela em abas;
+>   colaboradores + dependentes; **ponte colaborador→cliente** por CPF (`complete_employee`/
+>   `link_dependent`, copia `clinic_id`); **selo** na ficha (0098); import Excel; saída.
+> - **Fase 2** — benefícios/preços: config da rede (`/empresarial/configuracoes`) +
+>   override por empresa (aba Plano); **motor de benefícios** (cobertura/desconto/
+>   frequência/limite/carência/parcelamento); mensalidade + simulador.
+> - **Fase 3** — orçamento com benefício: `benefits.ts` (carência/frequência/limite);
+>   valor cheio × com programa na ficha; registro de uso ao concluir sessão (0099).
+> - **Fase 6** — comercial: funil kanban (`/empresarial/funil`) + linha do tempo +
+>   "Hoje do consultor" + fechar→cria empresa; papel RisLife com RLS (0100).
+> - **Fase 7** — dashboards: painel do cliente (uso/economia) na ficha; painel
+>   consolidado (`/empresarial/painel`); economia por empresa na aba Financeiro.
+> - **Fase 8** — Riso+ Social (aba, gatilhos, regra integral/parcial/nenhum) +
+>   retenção 5 anos/anonimização (`run_retention`, cron) (0101).
+> - **Fase 4** — financeiro/ASAAS: cobrança + split (`settle_billing`) + inadimplência
+>   (`mark_overdue_and_suspend`, suspende + bloqueia benefícios); webhook idempotente
+>   + Edge Function `asaas-webhook`; **pronto para plugar** `ASAAS_API_KEY` (0102).
+> - **Fase 5** — contratos/ZapSign + proposta Gamma: aba Contratos; `zapsign.ts` +
+>   Edge Function `zapsign-webhook`; proposta via Gamma (reusa a integração) (0103).
+>
+> **Pendências do dono:** aplicar **0096→0103** em ordem no SQL Editor + **Settings →
+> API → Exposed schemas → `empresarial`**. Para ligar ASAAS/ZapSign/Gamma: cadastrar
+> as chaves (`ASAAS_API_KEY`, `ZAPSIGN_API_TOKEN`, `GAMMA_API_KEY`) e fazer deploy das
+> Edge Functions. Detalhe do motor de benefícios em `ADENDO-01-motor-de-beneficios.md`.
 
 > **H4.5 Cockpit 2.0 — COMPLETO (Grupo 4).** Lotes 1–5: etapas; linha do tempo +
 > resumo (previsto×realizado); sugerir profissional por sessão; juntar sessões
@@ -9,6 +40,15 @@ _Atualizado em: 09/07/2026 · Versão do sistema: **0.25.0** · Última migraç�
 > Migrações 0087–0095. **Falta só o Pedido 3 do dono** (baixa parcial das sessões
 > pelo dentista executor), combinado para o **H4.6**. Detalhe em `docs/ROADMAP.md`
 > (fonte da verdade). Próximo: **H4.6 (Módulo do Dentista)**.
+
+> **H4.6 Módulo do Dentista — EM ANDAMENTO.** Plano detalhado aprovado (10/07):
+> a "casa" do dentista em blocos **A1 → A2 → A3 → B1/B2 → B3 → C → D → E** (E =
+> agenda multi-unidade, item próprio depois). **A1 — Baixa parcial das sessões
+> ✅ (v0.35.0, migração 0105):** ao concluir um atendimento COM sessões, abre "O
+> que foi feito hoje?"; só o Dentista/Admin confirma o que foi feito; as
+> confirmadas são liquidadas (tempo real rateado só entre elas), as não feitas
+> voltam para "a agendar" (motivo opcional) e a Recepção é avisada
+> (`conclude_attendance_partial`). Próximo lote: **A2 (Desenvolvimento Clínico)**.
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em

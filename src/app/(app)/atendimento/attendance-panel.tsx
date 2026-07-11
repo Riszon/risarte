@@ -50,6 +50,7 @@ import {
 import type { UserRole } from "@/lib/roles";
 import {
   checkInAppointment,
+  concludeAttendancePartial,
   swapAppointmentProvider,
   updateAppointmentStatus,
   updateAttendance,
@@ -79,6 +80,15 @@ export type PanelAppointment = {
   checkedInByName?: string | null;
   calledByName?: string | null;
   doneByName?: string | null;
+  /** H4.6 A1: sessões de tratamento em aberto ligadas a este atendimento. */
+  sessions?: PanelSession[];
+};
+
+/** Uma sessão de tratamento pendente ligada ao atendimento (baixa parcial). */
+export type PanelSession = {
+  id: string;
+  label: string;
+  plannedMinutes: number | null;
 };
 
 /** Equipe da unidade para a troca de profissional (H3.6). */
@@ -271,6 +281,7 @@ export function AttendancePanel({
   canCall,
   currentUserId,
   isAdmin,
+  isDentist,
   waitingAlertMinutes,
   canSwapProvider,
   swapStaff,
@@ -280,6 +291,8 @@ export function AttendancePanel({
   canCall: boolean;
   currentUserId: string;
   isAdmin: boolean;
+  /** H4.6 A1: usuário atua como Dentista na unidade (confirma a baixa). */
+  isDentist?: boolean;
   /** H3.4: minutos de espera que disparam o destaque "Espera longa". */
   waitingAlertMinutes?: number;
   /** H3.6: Recepção/Gerente pode trocar o profissional de última hora. */
@@ -296,6 +309,20 @@ export function AttendancePanel({
   const [swapFor, setSwapFor] = useState<PanelAppointment | null>(null);
   const [swapProviderId, setSwapProviderId] = useState("");
   const [swapReason, setSwapReason] = useState("");
+  // H4.6 A1: confirmação "O que foi feito hoje?" (baixa parcial das sessões).
+  const [concludeFor, setConcludeFor] = useState<PanelAppointment | null>(null);
+  const [doneChecks, setDoneChecks] = useState<Record<string, boolean>>({});
+  const [notDoneReasons, setNotDoneReasons] = useState<
+    Record<string, string>
+  >({});
+
+  function openConclude(a: PanelAppointment) {
+    const checks: Record<string, boolean> = {};
+    for (const s of a.sessions ?? []) checks[s.id] = true;
+    setDoneChecks(checks);
+    setNotDoneReasons({});
+    setConcludeFor(a);
+  }
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -599,6 +626,124 @@ export function AttendancePanel({
         </DialogContent>
       </Dialog>
 
+      {/* H4.6 A1: confirmação do que foi feito (baixa parcial das sessões). */}
+      <Dialog
+        open={concludeFor !== null}
+        onOpenChange={(o) => !o && setConcludeFor(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>O que foi feito hoje?</DialogTitle>
+            <DialogDescription>
+              Marque as sessões que você concluiu neste atendimento. As não
+              marcadas voltam para “a agendar” e a recepção é avisada para
+              reagendar.
+            </DialogDescription>
+          </DialogHeader>
+          {concludeFor && (
+            <div className="space-y-2 text-sm">
+              <p className="font-medium">{concludeFor.clientName}</p>
+              <ul className="space-y-2">
+                {(concludeFor.sessions ?? []).map((s) => {
+                  const done = doneChecks[s.id] ?? true;
+                  return (
+                    <li key={s.id} className="rounded-md border p-2">
+                      <label className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 size-4 accent-primary"
+                          checked={done}
+                          onChange={(e) =>
+                            setDoneChecks((prev) => ({
+                              ...prev,
+                              [s.id]: e.target.checked,
+                            }))
+                          }
+                        />
+                        <span className="flex-1">
+                          <span
+                            className={
+                              done
+                                ? ""
+                                : "text-muted-foreground line-through"
+                            }
+                          >
+                            {s.label}
+                          </span>
+                          {s.plannedMinutes ? (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              · {s.plannedMinutes} min
+                            </span>
+                          ) : null}
+                        </span>
+                      </label>
+                      {!done && (
+                        <Input
+                          className="mt-2"
+                          placeholder="Motivo (opcional)"
+                          value={notDoneReasons[s.id] ?? ""}
+                          onChange={(e) =>
+                            setNotDoneReasons((prev) => ({
+                              ...prev,
+                              [s.id]: e.target.value,
+                            }))
+                          }
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {(concludeFor.sessions ?? []).length > 0 &&
+                (concludeFor.sessions ?? []).every(
+                  (s) => !(doneChecks[s.id] ?? true)
+                ) && (
+                  <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">
+                    Nenhuma sessão marcada como feita — todas voltarão para “a
+                    agendar”.
+                  </p>
+                )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConcludeFor(null)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={isPending}
+              onClick={() => {
+                const a = concludeFor;
+                if (!a) return;
+                const sessions = a.sessions ?? [];
+                const doneIds = sessions
+                  .filter((s) => doneChecks[s.id] ?? true)
+                  .map((s) => s.id);
+                const reasons: Record<string, string> = {};
+                for (const s of sessions) {
+                  const done = doneChecks[s.id] ?? true;
+                  const reason = (notDoneReasons[s.id] ?? "").trim();
+                  if (!done && reason) reasons[s.id] = reason;
+                }
+                run(
+                  () => concludeAttendancePartial(a.id, doneIds, reasons),
+                  `Atendimento de ${a.clientName} concluído.`,
+                  () => {
+                    setConcludeFor(null);
+                    router.refresh();
+                  }
+                );
+              }}
+            >
+              Concluir atendimento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -798,7 +943,20 @@ export function AttendancePanel({
                 key={a.id}
                 a={a}
                 action={
-                  canConclude(a) ? (
+                  a.sessions && a.sessions.length > 0 ? (
+                    // H4.6 A1: atendimento com sessões — só o Dentista (ou Admin)
+                    // conclui, confirmando o que foi feito.
+                    canConclude(a) && (isDentist || isAdmin) ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isPending}
+                        onClick={() => openConclude(a)}
+                      >
+                        Concluir
+                      </Button>
+                    ) : null
+                  ) : canConclude(a) ? (
                     <Button
                       size="sm"
                       variant="outline"

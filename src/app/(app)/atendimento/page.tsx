@@ -266,6 +266,44 @@ export default async function AtendimentoPage(
     const d = new Date(iso);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
+
+  // H4.6 A1: sessões de tratamento ainda em aberto ligadas a cada atendimento
+  // mostrado — usadas na confirmação "O que foi feito hoje?" (baixa parcial).
+  const sessionsByAppt = new Map<
+    string,
+    { id: string; label: string; plannedMinutes: number | null }[]
+  >();
+  const shownIds = shown.map((a) => a.id);
+  if (shownIds.length > 0) {
+    const { data: sessRows } = await supabase
+      .from("treatment_sessions")
+      .select("id, appointment_id, procedure_name, name, planned_minutes, plan_order, session_index")
+      .in("appointment_id", shownIds)
+      .neq("status", "done")
+      .order("plan_order", { nullsFirst: false })
+      .order("session_index")
+      .returns<
+        {
+          id: string;
+          appointment_id: string;
+          procedure_name: string;
+          name: string | null;
+          planned_minutes: number | null;
+          plan_order: number | null;
+          session_index: number;
+        }[]
+      >();
+    for (const s of sessRows ?? []) {
+      const list = sessionsByAppt.get(s.appointment_id) ?? [];
+      list.push({
+        id: s.id,
+        label: s.name ? `${s.procedure_name} — ${s.name}` : s.procedure_name,
+        plannedMinutes: s.planned_minutes,
+      });
+      sessionsByAppt.set(s.appointment_id, list);
+    }
+  }
+
   const appointments: PanelAppointment[] = shown.map((a) => {
     const apptDate = localDate(a.starts_at);
     return {
@@ -289,6 +327,7 @@ export default async function AtendimentoPage(
       checkedInByName: nameOf(a.checked_in_by),
       calledByName: nameOf(a.called_by),
       doneByName: nameOf(a.done_by),
+      sessions: sessionsByAppt.get(a.id) ?? [],
     };
   });
 
@@ -303,6 +342,9 @@ export default async function AtendimentoPage(
       "dentist",
       "commercial_consultant",
     ]);
+  // H4.6 A1: só o Dentista (ou Admin) confirma a baixa das sessões.
+  const isDentist =
+    !consultantView && hasRoleInClinic(session, clinicId, ["dentist"]);
 
   // H3.6: Recepção ou Gerente troca o profissional de última hora. Carrega a
   // equipe da unidade para o seletor do novo profissional.
@@ -421,6 +463,7 @@ export default async function AtendimentoPage(
         canCall={canCall}
         currentUserId={session.userId}
         isAdmin={session.isAdminMaster}
+        isDentist={isDentist}
         waitingAlertMinutes={waitingAlertMinutes}
         canSwapProvider={canSwapProvider}
         swapStaff={swapStaff}

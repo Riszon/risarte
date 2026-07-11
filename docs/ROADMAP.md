@@ -435,17 +435,37 @@ antes).
         notificações à Recepção (2º plano, deduplicadas/dia): sessão atrasada e
         plano parado (`notify_treatment_alerts`, disparado no `BirthdayNotifier`).
         **H4.5 COMPLETO** (falta só o Pedido 3 do dono, movido para o H4.6).
-- [ ] **H4.6 Módulo do Dentista [G] 🗄️** — dashboard, execução/baixa,
-      pendências; histórico do cliente; plano resumido SEM valores; sugestões
-      p/ reavaliação (visíveis ao coordenador); pedir revisão do planejamento
-      (alerta insistente até resolver).
-  - **Baixa PARCIAL das sessões (pedido do dono, 09/07):** ao concluir um
-        atendimento, o dentista **confirma quais sessões** daquele agendamento
-        foram realmente feitas. Se por imprevisto nem todas foram concluídas,
-        dá baixa só nas realizadas; as **não feitas ficam em aberto** (voltam a
-        "a agendar") e **geram alerta para a Recepção** revisar/reagendar os
-        atendimentos do cliente. (Hoje `settle_treatment_sessions` liquida TODAS
-        as sessões do agendamento — mudar para liquidar só as confirmadas.)
+- [ ] **H4.6 Módulo do Dentista [G] 🗄️** — a "casa" do dentista executor.
+      Plano detalhado e aprovado (10/07). Ordem: **A1 → A2 → A3 → B1/B2 → B3 →
+      C → D → E** (E = agenda multi-unidade, vira item próprio depois). Decisões:
+      quadro "O que foi feito hoje?" sempre que houver sessões; só o Dentista
+      (ou Admin) confirma a baixa; motivo opcional; tela nova "Meu Dia";
+      prontuário só dos pacientes que ele atende; reavaliação só sugere/avisa o
+      Coordenador; revisão do plano avisa o Coordenador com alerta insistente.
+      Integrações adiadas (não esquecer): prescrição digital/Memed, base de
+      medicamentos, envio externo, NPS por dentista, push semanal.
+  - [x] **A1 — Baixa PARCIAL das sessões + alerta à Recepção** ✅ (v0.35.0,
+        migração 0105) — ao concluir um atendimento COM sessões, abre "O que foi
+        feito hoje?": só o Dentista/Admin confirma quais sessões foram feitas;
+        as confirmadas são liquidadas (tempo real rateado só entre elas), as não
+        feitas voltam para "a agendar" (motivo opcional) e a Recepção é avisada
+        (`conclude_attendance_partial`; `treatment_sessions.reopen_reason/
+        reopened_at/reopened_by`; diálogo no painel de Atendimento).
+  - [ ] **A2** Desenvolvimento Clínico (texto rico, salvamento automático, linha
+        do tempo visível a dentistas + Coordenador + Planner).
+  - [ ] **A3** Procedimentos do cliente (em aberto / agendados / finalizados;
+        solicitar agendamento à Recepção).
+  - [ ] **B1/B2** Tela "Meu Dia" + prontuário do dentista (só seus pacientes) +
+        plano resumido SEM valores.
+  - [ ] **B3** Dashboard de produção (período; tempo × rede; espera; NPS quando
+        existir; em aberto; agendamentos/atendimentos).
+  - [ ] **C** Documentos: prescrição (texto/modelo + PDF), atestados/declarações,
+        orientações e cuidados (modelos da franqueadora, cascata).
+  - [ ] **D** Sugerir reavaliação (avisa Coordenador) + pedir revisão do plano
+        (alerta insistente ao Coordenador) — com anexos (foto/vídeo/áudio/RX).
+  - [ ] **E** (item próprio depois) Agenda multi-unidade: dias prioritários por
+        unidade, aviso forte de conflito entre unidades, agenda consolidada,
+        previsão semanal.
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
       limite = nº de cadeiras).

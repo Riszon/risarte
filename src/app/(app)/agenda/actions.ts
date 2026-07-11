@@ -1052,6 +1052,38 @@ export async function updateAttendance(
   return { ok: true };
 }
 
+/** H4.6 A1: o Dentista conclui o atendimento confirmando QUAIS sessões foram
+ * feitas. As confirmadas são liquidadas (tempo real rateado só entre elas); as
+ * não feitas voltam para "a agendar" (com motivo opcional) e a Recepção é
+ * avisada. Só o Dentista (ou Admin) pode confirmar a baixa. */
+export async function concludeAttendancePartial(
+  appointmentId: string,
+  doneSessionIds: string[],
+  reasons: Record<string, string>
+): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("conclude_attendance_partial", {
+    p_appointment_id: appointmentId,
+    p_done_ids: doneSessionIds,
+    p_reasons: reasons,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o dentista que atendeu pode dar baixa nas sessões.",
+      };
+    }
+    console.error("conclude_attendance_partial failed:", error.message);
+    return { ok: false, error: "Não foi possível concluir o atendimento." };
+  }
+  revalidatePath("/atendimento");
+  revalidatePath("/agenda");
+  revalidatePath("/jornada");
+  return { ok: true };
+}
+
 /** H3.6: troca o profissional de um atendimento de última hora (check-in/espera).
  * Recepção ou Gerente da unidade (ou Admin). Notifica os envolvidos. */
 export async function swapAppointmentProvider(
