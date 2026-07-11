@@ -52,6 +52,8 @@ import {
 } from "@/lib/anamnesis";
 import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
 import { PlanningSection } from "./planning-section";
+import { EmpresarialPanel } from "./empresarial-panel";
+import { loadClientProgram, loadClientUsage } from "@/lib/empresarial/benefits";
 import type {
   PlanOption,
   PlanStage,
@@ -174,7 +176,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", id)
     .single();
@@ -1347,6 +1349,12 @@ export default async function ClientDetailPage(
     hasApprovedPlan = (count ?? 0) > 0;
   }
 
+  // Risarte Empresarial: benefícios do programa para o orçamento (economia).
+  const isProgramMember =
+    Boolean(client.empresarial_company_id) && client.empresarial_active !== false;
+  const program = isProgramMember ? await loadClientProgram(client.id) : null;
+  const usage = isProgramMember ? await loadClientUsage(client.id) : null;
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -1396,6 +1404,19 @@ export default async function ClientDetailPage(
             ) : (
               <Badge className="bg-gold/20 text-gold-foreground">
                 ★ É um Risartano
+              </Badge>
+            ))}
+          {client.empresarial_company_id &&
+            (client.empresarial_active === false ? (
+              <Badge
+                variant="outline"
+                className="border-gold/50 text-muted-foreground"
+              >
+                ★ Ex-Risarte Empresarial
+              </Badge>
+            ) : (
+              <Badge className="bg-gold/20 text-gold-foreground">
+                ★ Risarte Empresarial
               </Badge>
             ))}
           {viewerIsFormerClinicOnly && (
@@ -1541,6 +1562,8 @@ export default async function ClientDetailPage(
         />
       )}
 
+      <EmpresarialPanel summary={usage} />
+
       {canViewPlanning && (
         <PlanningSection
           clientId={client.id}
@@ -1559,6 +1582,9 @@ export default async function ClientDetailPage(
             canEditPlanning ? `/planejamento/${client.id}` : undefined
           }
           providerOptions={planProviderOptions}
+          programActive={program?.active ?? false}
+          programCompanyName={program?.companyName ?? null}
+          programBenefits={program?.byProcedure ?? {}}
         />
       )}
 

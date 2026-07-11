@@ -1,4 +1,5 @@
 import { getSessionContext } from "@/lib/auth";
+import { canViewEmpresarial } from "@/lib/empresarial/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -67,6 +68,9 @@ export default async function AppLayout({
       .flat()
       .some((r) => ["unit_manager", "franchisor_staff", "franchisee"].includes(r));
 
+  // Módulo Risarte Empresarial (B2B).
+  const canViewEmp = canViewEmpresarial(session);
+
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar
@@ -77,6 +81,7 @@ export default async function AppLayout({
         canViewReports={canViewReports}
         canViewPlans={canViewPlans}
         canViewStaff={canViewStaff}
+        canViewEmpresarial={canViewEmp}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

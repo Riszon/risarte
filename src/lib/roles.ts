@@ -13,6 +13,7 @@ export const USER_ROLES = [
   "franchisee",
   "tsb",
   "asb",
+  "rislife_consultant",
 ] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -30,6 +31,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   franchisee: "Franqueado",
   tsb: "TSB (Técnica em Saúde Bucal)",
   asb: "ASB (Auxiliar em Saúde Bucal)",
+  rislife_consultant: "Consultor Comercial Empresarial (RisLife)",
 };
 
 export const CLINIC_TYPES = ["franchisor", "franchise_unit"] as const;
@@ -49,6 +51,7 @@ export const FRANCHISOR_ROLES: UserRole[] = [
   "commercial_consultant",
   "commercial_assistant",
   "franchisor_staff",
+  "rislife_consultant",
 ];
 
 export const UNIT_ROLES: UserRole[] = [

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import {
   BarChart3,
+  Briefcase,
   Building2,
   Calendar,
   CalendarClock,
@@ -59,6 +60,8 @@ type Props = {
   canViewPlans: boolean;
   /** H4.1: gestão/rede podem ver o cadastro de Risartanos (colaboradores). */
   canViewStaff: boolean;
+  /** Módulo Risarte Empresarial (B2B). */
+  canViewEmpresarial: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -91,6 +94,13 @@ const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart
 // H4.1: cadastro de colaboradores (RH) — Admin, Gerente e Franqueadora.
 const RISARTANOS_ITEM = { href: "/risartanos", label: "Risartanos", icon: Contact };
 
+// Módulo Risarte Empresarial (B2B) — empresas parceiras.
+const EMPRESARIAL_ITEM = {
+  href: "/empresarial",
+  label: "Empresarial",
+  icon: Briefcase,
+};
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -109,6 +119,7 @@ export function AppSidebar({
   canViewReports,
   canViewPlans,
   canViewStaff,
+  canViewEmpresarial,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -138,6 +149,9 @@ export function AppSidebar({
   }
   if (!dentistOnly && canViewStaff) {
     navItems = [...navItems, RISARTANOS_ITEM];
+  }
+  if (!dentistOnly && canViewEmpresarial) {
+    navItems = [...navItems, EMPRESARIAL_ITEM];
   }
 
   function switchClinic(clinicId: string) {

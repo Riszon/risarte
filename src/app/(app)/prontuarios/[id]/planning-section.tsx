@@ -51,6 +51,8 @@ import {
   type ProtocolRef,
   type RealStat,
 } from "@/lib/pricing";
+import { applyBenefit } from "@/lib/empresarial/pricing";
+import type { ProgramBenefit } from "@/lib/empresarial/benefits";
 import {
   addBudgetItem,
   addPlanOption,
@@ -135,6 +137,9 @@ export function PlanningSection({
   currentPillar,
   cockpitHref,
   providerOptions = [],
+  programActive = false,
+  programCompanyName = null,
+  programBenefits = {},
 }: {
   clientId: string;
   clientName: string;
@@ -150,6 +155,10 @@ export function PlanningSection({
   cockpitHref?: string;
   /** H4.5 Pedido 1: profissionais da unidade do cliente (para o Planner indicar). */
   providerOptions?: { id: string; name: string }[];
+  /** Risarte Empresarial: cliente do programa → orçamento mostra a economia. */
+  programActive?: boolean;
+  programCompanyName?: string | null;
+  programBenefits?: Record<string, ProgramBenefit>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -460,6 +469,15 @@ export function PlanningSection({
           )}
         </div>
 
+        {programActive && (
+          <div className="rounded-lg border border-gold/40 bg-gold/5 px-3 py-2 text-sm">
+            <span className="font-medium text-gold">★ Risarte Empresarial</span>
+            {programCompanyName ? ` — ${programCompanyName}.` : "."} O orçamento
+            mostra o valor com o benefício do programa (a economia aparece em cada
+            opção).
+          </div>
+        )}
+
         {/* Opções do plano (principal + alternativos) */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Opções de tratamento</h3>
@@ -607,6 +625,7 @@ export function PlanningSection({
                     providerOptions={providerOptions}
                     canEdit={canEditContent}
                     summaryOnly={!canSeePrices}
+                    programBenefits={programActive ? programBenefits : undefined}
                   />
                   {o.reviewNotes && (
                     <p className="mt-1 rounded-md border bg-muted/30 p-2 text-xs">
@@ -846,6 +865,39 @@ function groupItemsByStage(
   return groups;
 }
 
+/** Total da opção com o benefício do programa aplicado (só benefícios disponíveis). */
+function computeProgramTotal(
+  items: BudgetItem[],
+  benefits?: Record<string, ProgramBenefit>
+): { chargedCents: number; savedCents: number } | null {
+  if (!benefits) return null;
+  let charged = 0;
+  let full = 0;
+  for (const it of items) {
+    const line = it.quantity * it.unitPriceCents;
+    full += line;
+    const b = it.procedureId ? benefits[it.procedureId] : undefined;
+    charged += b && b.available ? applyBenefit(b, line).chargedCents : line;
+  }
+  return { chargedCents: charged, savedCents: full - charged };
+}
+
+function ProgramSavings({
+  program,
+}: {
+  program: { chargedCents: number; savedCents: number } | null;
+}) {
+  if (!program || program.savedCents <= 0) return null;
+  return (
+    <div className="mt-1 flex items-center justify-between rounded bg-gold/10 px-1.5 py-1 text-xs text-gold">
+      <span>★ Com Risarte Empresarial</span>
+      <span className="font-semibold">
+        {formatBRL(program.chargedCents)} · economia {formatBRL(program.savedCents)}
+      </span>
+    </div>
+  );
+}
+
 function OptionBudget({
   optionId,
   items,
@@ -856,6 +908,7 @@ function OptionBudget({
   providerOptions,
   canEdit,
   summaryOnly,
+  programBenefits,
 }: {
   optionId: string;
   items: BudgetItem[];
@@ -869,6 +922,8 @@ function OptionBudget({
   canEdit: boolean;
   /** Coordenador view: show only the option TOTAL, not per-item prices (F4). */
   summaryOnly: boolean;
+  /** Risarte Empresarial: benefícios por procedimento (undefined = fora do programa). */
+  programBenefits?: Record<string, ProgramBenefit>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -895,6 +950,7 @@ function OptionBudget({
   const [stageNameEdit, setStageNameEdit] = useState("");
 
   const total = budgetTotalCents(items);
+  const program = computeProgramTotal(items, programBenefits);
   const pickedRef = procId ? protocols[procId] : undefined;
   const pickedReal = procId ? realStats[procId] : undefined;
   const orderedStages = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -957,6 +1013,7 @@ function OptionBudget({
           </span>
           <span className="text-sm font-semibold">{formatBRL(total)}</span>
         </div>
+        <ProgramSavings program={program} />
         {items.length > 0 && (
           <div className="mt-1 space-y-1.5">
             {itemGroups.map(
@@ -996,6 +1053,7 @@ function OptionBudget({
         </span>
         <span className="text-sm font-semibold">{formatBRL(total)}</span>
       </div>
+      <ProgramSavings program={program} />
 
       {canEdit && (
         <div className="mt-2 space-y-1 rounded-md border border-dashed p-2">

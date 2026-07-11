@@ -263,6 +263,19 @@ Adiados (em `docs/BACKLOG.md`, não esquecer): semana começando no domingo +
 esconder fim de semana sem agendamento; foto por webcam; gênero + rótulos;
 offline/sync (PWA + PowerSync/ElectricSQL).
 
+**Módulo Risarte Empresarial (B2B) — em construção.** Programa que conecta
+empresas parceiras à rede: o colaborador vira **cliente do riSZon** (mesmo banco),
+com selo "Risarte Empresarial", desconto no orçamento, mensalidade da empresa e
+split Risarte/RisLife. Schema próprio **`empresarial`** (1º schema separado do
+projeto — exige "Exposed schemas" no painel). Contexto e DDL em
+`docs/risarte-empresarial/` (briefing + `ADENDO-01-motor-de-beneficios.md`).
+Decisões: dinheiro em centavos; papel novo `rislife_consultant` (Franqueadora);
+benefícios personalizáveis por empresa (cobertura/desconto/frequência/limite/
+carência/pagamento) com acompanhamento de uso e painéis de economia.
+**Fases 0–8 construídas (migrações 0096–0103), aguardando teste do dono** —
+roteiro em `docs/risarte-empresarial/ROTEIRO-TESTE.md`. ASAAS/ZapSign/Gamma ficam
+"prontos para plugar" (chave + deploy das Edge Functions em `supabase/functions/`).
+
 Não avançar de etapa sem o OK do proprietário.
 
 ## 9. Convenções de trabalho com o proprietário (Jeferson)
