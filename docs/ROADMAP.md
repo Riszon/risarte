@@ -451,8 +451,14 @@ antes).
         feitas voltam para "a agendar" (motivo opcional) e a Recepção é avisada
         (`conclude_attendance_partial`; `treatment_sessions.reopen_reason/
         reopened_at/reopened_by`; diálogo no painel de Atendimento).
-  - [ ] **A2** Desenvolvimento Clínico (texto rico, salvamento automático, linha
-        do tempo visível a dentistas + Coordenador + Planner).
+  - [x] **A2 — Desenvolvimento Clínico** ✅ (v0.36.0, migração 0106) — no
+        prontuário, o Dentista escreve as anotações do atendimento com
+        **salvamento automático** (selo "Salvo às HH:MM"); as anotações formam
+        uma **linha do tempo** (autor + unidade + data) visível a dentistas,
+        Coordenador e Planner. `clinical_progress_notes` (RLS espelha a anamnese:
+        libera o dentista, que `user_full_access_clinic_ids` não cobre) +
+        `saveProgressNote` + `clinical-progress-section`. Sem DELETE (registro
+        clínico, append-only).
   - [ ] **A3** Procedimentos do cliente (em aberto / agendados / finalizados;
         solicitar agendamento à Recepção).
   - [ ] **B1/B2** Tela "Meu Dia" + prontuário do dentista (só seus pacientes) +

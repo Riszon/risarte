@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 10/07/2026 · Versão do sistema: **0.35.0** · Última migração: **0105**_
+_Atualizado em: 11/07/2026 · Versão do sistema: **0.36.0** · Última migração: **0106**_
 
 > **MÓDULO RISARTE EMPRESARIAL — CONSTRUÍDO (Fases 0–8, aguardando teste do dono).**
 > Camada B2B (empresas parceiras → colaboradores viram clientes da Jornada), schema
@@ -48,7 +48,12 @@ _Atualizado em: 10/07/2026 · Versão do sistema: **0.35.0** · Última migraç�
 > que foi feito hoje?"; só o Dentista/Admin confirma o que foi feito; as
 > confirmadas são liquidadas (tempo real rateado só entre elas), as não feitas
 > voltam para "a agendar" (motivo opcional) e a Recepção é avisada
-> (`conclude_attendance_partial`). Próximo lote: **A2 (Desenvolvimento Clínico)**.
+> (`conclude_attendance_partial`). **A2 — Desenvolvimento Clínico ✅ (v0.36.0,
+> migração 0106):** no prontuário, o Dentista escreve as anotações do atendimento
+> com salvamento automático ("Salvo às HH:MM"); as anotações viram uma linha do
+> tempo (autor + unidade + data) visível a dentistas/Coordenador/Planner
+> (`clinical_progress_notes`, append-only). Próximo lote: **A3 (Procedimentos do
+> cliente: em aberto / agendados / finalizados)**.
 
 > Documento de continuidade entre sessões. Regras de negócio detalhadas ficam em
 > `CLAUDE.md`; regras de código em `docs/ARQUITETURA-TECNICA.md`; jornada em

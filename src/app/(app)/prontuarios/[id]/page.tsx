@@ -38,6 +38,10 @@ import {
   type ConsentInfo,
 } from "./clinical-section";
 import {
+  ClinicalProgressSection,
+  type ProgressNoteItem,
+} from "./clinical-progress-section";
+import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
   type FillTemplate,
@@ -1038,6 +1042,61 @@ export default async function ClientDetailPage(
     }
   }
 
+  // -- H4.6 A2: Desenvolvimento Clínico (anotações do dentista) — visível aos
+  // dentistas/coordenadores/planner; o dentista escreve (salvamento automático).
+  const canWriteProgress =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
+  const canViewProgress = canViewAnamnesis;
+  let progressNotes: ProgressNoteItem[] = [];
+  if (canViewProgress) {
+    const { data: pnRows } = await supabase
+      .from("clinical_progress_notes")
+      .select(
+        "id, body, author_id, created_at, updated_at, clinic:clinics ( name )"
+      )
+      .eq("client_id", id)
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          body: string;
+          author_id: string;
+          created_at: string;
+          updated_at: string;
+          clinic: { name: string } | { name: string }[] | null;
+        }[]
+      >();
+    const progressAuthorIds = [
+      ...new Set(
+        (pnRows ?? [])
+          .map((r) => r.author_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const progressAuthorNames = new Map<string, string>();
+    if (progressAuthorIds.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", progressAuthorIds);
+      for (const p of people ?? []) progressAuthorNames.set(p.id, p.full_name);
+    }
+    progressNotes = (pnRows ?? []).map((r) => {
+      const cRaw = r.clinic;
+      return {
+        id: r.id,
+        body: r.body,
+        authorName: r.author_id
+          ? (progressAuthorNames.get(r.author_id) ?? null)
+          : null,
+        clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at ?? null,
+      };
+    });
+  }
+
   // -- Anamnese A4: obrigatória na 1ª consulta; na reavaliação (Fase 6), exige
   // atualização se a última versão tem mais de 12 meses.
   const anamnesisCutoff = new Date();
@@ -1540,6 +1599,15 @@ export default async function ClientDetailPage(
           scheduleStaff={fichaStaff}
           scheduleConfig={fichaConfig}
           scheduleClinicId={scheduleClinicId}
+        />
+      )}
+
+      {canViewProgress && (
+        <ClinicalProgressSection
+          clientId={client.id}
+          clinicId={scheduleClinicId}
+          canWrite={canWriteProgress}
+          notes={progressNotes}
         />
       )}
 
