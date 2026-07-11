@@ -476,8 +476,12 @@ antes).
         e o **plano resumido SEM valores** (`plan-summary-section`: diagnóstico +
         objetivos + procedimentos por etapa, profissional indicado) para o
         dentista, que não vê a PlanningSection com orçamento.
-  - [ ] **B3** Dashboard de produção (período; tempo × rede; espera; NPS quando
-        existir; em aberto; agendamentos/atendimentos).
+  - [x] **B3 — Dashboard de produção do dentista** ✅ (v0.39.0, sem migração) —
+        bloco "Minha produção" na tela Meu Dia com filtro de período (Hoje/
+        Semana/Mês/específico): atendimentos concluídos, sessões finalizadas,
+        tempo em cadeira (realizado × previsto pela rede = actual×planned),
+        espera média do cliente (check-in→chamada), procedimentos em aberto,
+        atendimentos futuros e NPS ("ainda não disponível" até a Fase 2).
   - [ ] **C** Documentos: prescrição (texto/modelo + PDF), atestados/declarações,
         orientações e cuidados (modelos da franqueadora, cascata).
   - [ ] **D** Sugerir reavaliação (avisa Coordenador) + pedir revisão do plano
