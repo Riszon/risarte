@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import {
+  notifyInsistentRequests,
   notifyTreatmentAlerts,
   notifyUnitBirthdays,
 } from "./prontuarios/actions";
@@ -21,6 +22,8 @@ export function BirthdayNotifier({ clinicId }: { clinicId: string }) {
     notifyUnitBirthdays(clinicId).catch(() => {});
     // H4.5 Lote 5: alertas de tratamento (sessão atrasada / plano parado).
     notifyTreatmentAlerts(clinicId).catch(() => {});
+    // H4.6 D: alerta insistente de revisão do plano em aberto (ao coordenador).
+    notifyInsistentRequests(clinicId).catch(() => {});
   }, [clinicId]);
   return null;
 }

@@ -814,3 +814,18 @@ export async function notifyTreatmentAlerts(clinicId: string): Promise<void> {
     console.error("notify_treatment_alerts failed:", error.message);
   }
 }
+
+/**
+ * H4.6 D: re-avisa (1x/dia) o Coordenador sobre pedidos de REVISÃO DO PLANO ainda
+ * em aberto — o "alerta insistente até resolver". A RPC só age se o usuário é
+ * coordenador/admin da unidade. Best-effort, em segundo plano.
+ */
+export async function notifyInsistentRequests(clinicId: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("notify_insistent_requests", {
+    p_clinic_id: clinicId,
+  });
+  if (error) {
+    console.error("notify_insistent_requests failed:", error.message);
+  }
+}

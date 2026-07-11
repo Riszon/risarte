@@ -493,8 +493,15 @@ antes).
         Tela **`/admin/documentos`** (Admin) para a franqueadora criar/editar/
         (des)ativar os modelos da rede. **Simples de propósito:** sem assinatura
         digital/Memed nem envio externo (adiado — [[risarte-h46-deferred-integrations]]).
-  - [ ] **D** Sugerir reavaliação (avisa Coordenador) + pedir revisão do plano
-        (alerta insistente ao Coordenador) — com anexos (foto/vídeo/áudio/RX).
+  - [x] **D — Falar com quem planeja** ✅ (v0.41.0, migração 0109) — seção
+        "Pedidos ao coordenador" no prontuário: o Dentista **sugere reavaliação**
+        (avisa o Coordenador; não move de fase) e **pede revisão do plano** com
+        **alerta insistente** (faixa fixa no cliente + re-aviso diário ao
+        Coordenador via `notify_insistent_requests` no `BirthdayNotifier`, até
+        ser resolvido). Ambos com **anexos** (foto/vídeo/áudio/RX) no bucket
+        `clinical-media` (storage liberado p/ o dentista). O Coordenador
+        **resolve** (avisa quem pediu). `clinical_requests` +
+        `clinical_request_media` + RPCs `create_/resolve_clinical_request`.
   - [ ] **E** (item próprio depois) Agenda multi-unidade: dias prioritários por
         unidade, aviso forte de conflito entre unidades, agenda consolidada,
         previsão semanal.

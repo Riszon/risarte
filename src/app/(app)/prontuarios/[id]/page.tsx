@@ -56,6 +56,12 @@ import type {
   DocumentKind,
   DocumentTemplate,
 } from "@/lib/documents";
+import { RequestsSection } from "./requests-section";
+import type {
+  ClinicalRequestItem,
+  ClinicalRequestKind,
+  RequestMediaItem,
+} from "@/lib/requests";
 import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
@@ -1310,6 +1316,97 @@ export default async function ClientDetailPage(
     }
   }
 
+  // -- H4.6 D: pedidos ao coordenador (reavaliação / revisão do plano) --
+  const canCreateRequest =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
+  const canResolveRequest =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, ["clinical_coordinator"]);
+  const canViewRequests =
+    canCreateRequest || canResolveRequest || isPlannerAnywhere || canViewClinical;
+  let clinicalRequests: ClinicalRequestItem[] = [];
+  if (canViewRequests) {
+    const { data: reqRows } = await supabase
+      .from("clinical_requests")
+      .select(
+        "id, kind, body, status, requested_by, resolved_by, resolved_at, resolution_note, created_at"
+      )
+      .eq("client_id", id)
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          kind: ClinicalRequestKind;
+          body: string;
+          status: "open" | "resolved";
+          requested_by: string;
+          resolved_by: string | null;
+          resolved_at: string | null;
+          resolution_note: string | null;
+          created_at: string;
+        }[]
+      >();
+    const reqIds = (reqRows ?? []).map((r) => r.id);
+    const mediaByReq = new Map<string, RequestMediaItem[]>();
+    if (reqIds.length > 0) {
+      const { data: rmRows } = await supabase
+        .from("clinical_request_media")
+        .select("id, request_id, storage_path, original_name")
+        .in("request_id", reqIds)
+        .order("created_at")
+        .returns<
+          {
+            id: string;
+            request_id: string;
+            storage_path: string;
+            original_name: string | null;
+          }[]
+        >();
+      for (const m of rmRows ?? []) {
+        let url: string | null = null;
+        if (m.storage_path) {
+          const { data: signed } = await supabase.storage
+            .from(CLINICAL_BUCKET)
+            .createSignedUrl(m.storage_path, 3600);
+          url = signed?.signedUrl ?? null;
+        }
+        const list = mediaByReq.get(m.request_id) ?? [];
+        list.push({ id: m.id, name: m.original_name ?? "arquivo", url });
+        mediaByReq.set(m.request_id, list);
+      }
+    }
+    const reqPersonIds = [
+      ...new Set(
+        (reqRows ?? [])
+          .flatMap((r) => [r.requested_by, r.resolved_by])
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const reqPersonNames = new Map<string, string>();
+    if (reqPersonIds.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", reqPersonIds);
+      for (const p of people ?? []) reqPersonNames.set(p.id, p.full_name);
+    }
+    clinicalRequests = (reqRows ?? []).map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      body: r.body,
+      status: r.status,
+      requesterName: reqPersonNames.get(r.requested_by) ?? null,
+      createdAt: r.created_at,
+      resolvedByName: r.resolved_by
+        ? (reqPersonNames.get(r.resolved_by) ?? null)
+        : null,
+      resolvedAt: r.resolved_at,
+      resolutionNote: r.resolution_note,
+      media: mediaByReq.get(r.id) ?? [],
+    }));
+  }
+
   // -- Anamnese A4: obrigatória na 1ª consulta; na reavaliação (Fase 6), exige
   // atualização se a última versão tem mais de 12 meses.
   const anamnesisCutoff = new Date();
@@ -1957,6 +2054,16 @@ export default async function ClientDetailPage(
           canEmit={canEmitDocuments}
           documents={documentItems}
           templates={documentTemplates}
+        />
+      )}
+
+      {canViewRequests && (
+        <RequestsSection
+          clientId={client.id}
+          clinicId={scheduleClinicId}
+          canCreate={canCreateRequest}
+          canResolve={canResolveRequest}
+          requests={clinicalRequests}
         />
       )}
 
