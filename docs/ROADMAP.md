@@ -523,8 +523,12 @@ antes).
 - [ ] **H4.11 Apresentação 2.0 + fotos no Gamma [M]** — layout mais rico e
       responsivo; testar fotos no Gamma via links assinados embutidos no texto;
       padrão visual dos decks.
-- [ ] **H4.12 Câmera intraoral [M]** — capturar da câmera conectada
-      (getUserMedia) e salvar direto no prontuário (bucket clínico).
+- [x] **H4.12 Câmera intraoral [M]** ✅ (v0.44.0, migração 0111) — na aba
+      Clínico, botão "Capturar da câmera": escolhe a câmera (getUserMedia +
+      enumerateDevices), tira a foto e salva direto no prontuário (bucket
+      clínico, link assinado). Coordenador E Dentista (0111 libera o dentista na
+      `clinical_media`: select+insert; storage já liberado na 0109). Exige
+      consentimento e HTTPS. `clinical-images-section` + `recordCameraCapture`.
 - [ ] **H4.13 Especialidades + comissionamento [M] 🗄️** — cadastro de
       especialidades (lista padronizada, como o pilar); reajuste em massa do
       comissionamento fixo; regra "comissão só com procedimento finalizado"

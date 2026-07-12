@@ -53,6 +53,88 @@ async function requireCoordinator(
   return { error: "Apenas o Coordenador Clínico pode registrar a avaliação." };
 }
 
+/**
+ * H4.12: quem pode capturar/salvar imagem da câmera — Coordenador OU Dentista
+ * (ou Admin) da unidade do cliente (ou de uma unidade compartilhada), preferindo
+ * a clínica ativa. Mesma lógica de escopo do requireCoordinator.
+ */
+async function requireClinicalCapturer(
+  clientId: string
+): Promise<{ error: string } | { clinicId: string; userId: string }> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: client } = await supabase
+    .from("clients")
+    .select("clinic_id")
+    .eq("id", clientId)
+    .single();
+  if (!client) return { error: "Cliente não encontrado." };
+  const { data: shares } = await supabase
+    .from("client_shares")
+    .select("clinic_id")
+    .eq("client_id", clientId)
+    .is("ended_at", null);
+  const sharedIds = (shares ?? []).map((s) => s.clinic_id as string);
+  const canActIn = (cid: string) =>
+    session.isAdminMaster ||
+    hasRoleInClinic(session, cid, ["clinical_coordinator", "dentist"]);
+  const active = session.activeClinic?.id ?? null;
+  const candidates = [client.clinic_id as string, ...sharedIds];
+  if (active && candidates.includes(active) && canActIn(active)) {
+    return { clinicId: active, userId: session.userId };
+  }
+  for (const cid of candidates) {
+    if (canActIn(cid)) return { clinicId: cid, userId: session.userId };
+  }
+  return {
+    error: "Apenas o coordenador ou o dentista podem salvar imagens.",
+  };
+}
+
+/** H4.12: registra a imagem capturada pela câmera (já enviada ao Storage). */
+export async function recordCameraCapture(
+  clientId: string,
+  input: ClinicalMediaInput
+): Promise<ClinicalResult> {
+  const guard = await requireClinicalCapturer(clientId);
+  if ("error" in guard) return { ok: false, error: guard.error };
+  if (!(await hasConsent(clientId))) {
+    return {
+      ok: false,
+      error: "Registre o consentimento do paciente antes de salvar imagens.",
+    };
+  }
+  if (!CLINICAL_MEDIA_KINDS.includes(input.kind)) {
+    return { ok: false, error: "Tipo de imagem inválido." };
+  }
+  if (!input.storagePath.startsWith(`${guard.clinicId}/`)) {
+    return { ok: false, error: "Caminho de arquivo inválido." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("clinical_media").insert({
+    client_id: clientId,
+    clinic_id: guard.clinicId,
+    kind: input.kind,
+    storage_path: input.storagePath,
+    original_name: input.originalName,
+    content_type: input.contentType,
+    size_bytes: input.sizeBytes,
+    uploaded_by: guard.userId,
+  });
+  if (error) {
+    console.error("recordCameraCapture failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a imagem." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "clinical_media",
+    entityId: clientId,
+    clinicId: guard.clinicId,
+  });
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
 async function hasConsent(clientId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase

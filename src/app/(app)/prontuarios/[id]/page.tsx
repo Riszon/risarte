@@ -64,6 +64,10 @@ import type {
 } from "@/lib/requests";
 import { ProntuarioTabs, TabPanel } from "./prontuario-tabs";
 import {
+  ClinicalImagesSection,
+  type ClinicalImageItem,
+} from "./clinical-images-section";
+import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
   type FillTemplate,
@@ -1408,6 +1412,64 @@ export default async function ClientDetailPage(
     }));
   }
 
+  // -- H4.12: câmera intraoral — captura de imagem (Coordenador e Dentista) --
+  const canCaptureImage =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, scheduleClinicId, [
+      "clinical_coordinator",
+      "dentist",
+    ]);
+  // O Coordenador já vê a galeria completa na aba Clínico (ClinicalSection); o
+  // Dentista não — então mostramos a galeria de imagens aqui só para ele.
+  const showImagesGallery =
+    !canViewClinical &&
+    hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
+  let captureConsent = consentInfo != null;
+  let clinicalImages: ClinicalImageItem[] = [];
+  if (canCaptureImage && !canViewClinical) {
+    const { data: consentRows } = await supabase
+      .from("client_consents")
+      .select("id")
+      .eq("client_id", id)
+      .is("revoked_at", null)
+      .limit(1);
+    captureConsent = (consentRows?.length ?? 0) > 0;
+  }
+  if (showImagesGallery) {
+    const { data: imgRows } = await supabase
+      .from("clinical_media")
+      .select("id, kind, original_name, display_name, storage_path")
+      .eq("client_id", id)
+      .in("kind", ["photo", "radiograph", "scan"])
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          kind: string;
+          original_name: string | null;
+          display_name: string | null;
+          storage_path: string | null;
+        }[]
+      >();
+    clinicalImages = await Promise.all(
+      (imgRows ?? []).map(async (m) => {
+        let url: string | null = null;
+        if (m.storage_path) {
+          const { data: signed } = await supabase.storage
+            .from(CLINICAL_BUCKET)
+            .createSignedUrl(m.storage_path, 3600);
+          url = signed?.signedUrl ?? null;
+        }
+        return {
+          id: m.id,
+          url,
+          kind: m.kind,
+          name: m.display_name ?? m.original_name ?? "Imagem",
+        };
+      })
+    );
+  }
+
   // -- Anamnese A4: obrigatória na 1ª consulta; na reavaliação (Fase 6), exige
   // atualização se a última versão tem mais de 12 meses.
   const anamnesisCutoff = new Date();
@@ -2089,6 +2151,16 @@ export default async function ClientDetailPage(
 
         {(canViewClinical || canViewProgress || canViewAnamnesis) && (
           <TabPanel id="clinico" label="Clínico">
+            {canCaptureImage && (
+              <ClinicalImagesSection
+                clientId={client.id}
+                clinicId={scheduleClinicId}
+                canCapture={canCaptureImage}
+                hasConsent={captureConsent}
+                showGallery={showImagesGallery}
+                images={clinicalImages}
+              />
+            )}
             {canViewClinical && (
               <ClinicalSection
                 clientId={client.id}

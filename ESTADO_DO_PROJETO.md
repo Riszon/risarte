@@ -1,6 +1,11 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/07/2026 · Versão do sistema: **0.43.0** · Última migração: **0110**_
+_Atualizado em: 11/07/2026 · Versão do sistema: **0.44.0** · Última migração: **0111**_
+
+> **H4.10 / H4.12 / H4.14 ✅ (paralelos ao teste do H4.6):** H4.14 (0110) status
+> "Em Tratamento" automático na 1ª baixa; H4.10 (0.43.0) ficha em abas + barra
+> lateral fixa; H4.12 (0111) câmera intraoral (captura → prontuário, Coordenador
+> e Dentista). Migrações a rodar: **0110 e 0111**.
 
 > **MÓDULO RISARTE EMPRESARIAL — CONSTRUÍDO (Fases 0–8, aguardando teste do dono).**
 > Camada B2B (empresas parceiras → colaboradores viram clientes da Jornada), schema
