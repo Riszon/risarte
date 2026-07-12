@@ -17,6 +17,10 @@ import {
 } from "@/lib/staff";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { StaffFormDialog } from "./staff-form-dialog";
+import {
+  StaffScheduleDialog,
+  type StaffScheduleData,
+} from "./staff-schedule-dialog";
 
 export const metadata: Metadata = { title: "Risartanos" };
 
@@ -189,6 +193,34 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   });
 
   const unitOptions = (units ?? []).map((u) => ({ id: u.id, name: u.name }));
+
+  // H4.6 E1: dias de atendimento por unidade (dos colaboradores mostrados).
+  const schedulesByStaff = new Map<string, Record<string, StaffScheduleData>>();
+  const shownStaffIds = rows.map((r) => r.id);
+  if (shownStaffIds.length > 0) {
+    const { data: schedRows } = await supabase
+      .from("staff_clinic_schedule")
+      .select("staff_member_id, clinic_id, weekdays, specific_dates, note")
+      .in("staff_member_id", shownStaffIds)
+      .returns<
+        {
+          staff_member_id: string;
+          clinic_id: string;
+          weekdays: number[] | null;
+          specific_dates: string[] | null;
+          note: string | null;
+        }[]
+      >();
+    for (const s of schedRows ?? []) {
+      const m = schedulesByStaff.get(s.staff_member_id) ?? {};
+      m[s.clinic_id] = {
+        weekdays: s.weekdays ?? [],
+        dates: s.specific_dates ?? [],
+        note: s.note ?? "",
+      };
+      schedulesByStaff.set(s.staff_member_id, m);
+    }
+  }
 
   // H4.1 Lote 1b: URLs assinadas das fotos (bucket privado).
   const photoUrls = new Map<string, string>();
@@ -397,6 +429,20 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                     (access?.unitClinicIds ?? []).some((id) =>
                       manageClinicIds.has(id)
                     );
+                  // H4.6 E1: dias de atendimento — só para dentistas, nas
+                  // unidades que este gestor administra.
+                  const isDentistStaff = accessUnits.some(
+                    (u) => u.roleLabel === ROLE_LABELS.dentist
+                  );
+                  const scheduleUnits = accessUnits
+                    .filter(
+                      (u) =>
+                        session.isAdminMaster || manageClinicIds.has(u.clinicId)
+                    )
+                    .map((u) => ({
+                      clinicId: u.clinicId,
+                      clinicName: u.clinicName,
+                    }));
                   return (
                     <tr key={r.id} className="border-b last:border-0">
                       <td className="px-2 py-1.5 font-mono text-xs text-gold">
@@ -512,22 +558,34 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                       </td>
                       {canManageAny && (
                         <td className="px-2 py-1.5 text-right">
-                          {canManageRow && (
-                            <StaffFormDialog
-                              units={unitOptions}
-                              staff={s}
-                              photoUrl={
-                                r.photo_path
-                                  ? photoUrls.get(r.photo_path)
-                                  : undefined
-                              }
-                              access={access}
-                              isAdmin={session.isAdminMaster}
-                              linkableUsers={linkableUsers}
-                              manageClinicIds={Array.from(manageClinicIds)}
-                              specialtyOptions={specialtyOptions}
-                            />
-                          )}
+                          <span className="inline-flex items-center gap-1">
+                            {canManageRow &&
+                              isDentistStaff &&
+                              scheduleUnits.length > 0 && (
+                                <StaffScheduleDialog
+                                  staffMemberId={r.id}
+                                  staffName={staffDisplayName(s)}
+                                  units={scheduleUnits}
+                                  schedules={schedulesByStaff.get(r.id) ?? {}}
+                                />
+                              )}
+                            {canManageRow && (
+                              <StaffFormDialog
+                                units={unitOptions}
+                                staff={s}
+                                photoUrl={
+                                  r.photo_path
+                                    ? photoUrls.get(r.photo_path)
+                                    : undefined
+                                }
+                                access={access}
+                                isAdmin={session.isAdminMaster}
+                                linkableUsers={linkableUsers}
+                                manageClinicIds={Array.from(manageClinicIds)}
+                                specialtyOptions={specialtyOptions}
+                              />
+                            )}
+                          </span>
                         </td>
                       )}
                     </tr>

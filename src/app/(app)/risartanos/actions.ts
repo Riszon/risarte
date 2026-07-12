@@ -18,6 +18,61 @@ import {
   STAFF_PHOTO_BUCKET,
 } from "@/lib/staff";
 
+/** H4.6 E1: salva os dias de atendimento do Risartano numa unidade (dias da
+ * semana + datas específicas + nota). Admin ou Gerente/Franqueado da unidade. */
+export async function saveStaffSchedule(input: {
+  staffMemberId: string;
+  clinicId: string;
+  weekdays: number[];
+  dates: string[];
+  note: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSessionContext();
+  const canManage =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, input.clinicId, ["unit_manager", "franchisee"]);
+  if (!canManage) {
+    return {
+      ok: false,
+      error: "Sem permissão para editar os dias de atendimento.",
+    };
+  }
+  const weekdays = [...new Set(input.weekdays)]
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+    .sort((a, b) => a - b);
+  const dates = [...new Set(input.dates)]
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
+  const note = input.note.trim() || null;
+  const supabase = await createClient();
+  const { error } = await supabase.from("staff_clinic_schedule").upsert(
+    {
+      staff_member_id: input.staffMemberId,
+      clinic_id: input.clinicId,
+      weekdays,
+      specific_dates: dates,
+      note,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "staff_member_id,clinic_id" }
+  );
+  if (error) {
+    console.error("saveStaffSchedule failed:", error.message);
+    return {
+      ok: false,
+      error: "Não foi possível salvar os dias de atendimento.",
+    };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "staff_clinic_schedule",
+    entityId: input.staffMemberId,
+    clinicId: input.clinicId,
+  });
+  revalidatePath("/risartanos");
+  return { ok: true };
+}
+
 export type ActionResult = { ok: boolean; error?: string };
 
 /** Cadastro devolve o id/unidade do novo Risartano p/ subir a foto em seguida. */

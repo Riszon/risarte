@@ -502,9 +502,17 @@ antes).
         `clinical-media` (storage liberado p/ o dentista). O Coordenador
         **resolve** (avisa quem pediu). `clinical_requests` +
         `clinical_request_media` + RPCs `create_/resolve_clinical_request`.
-  - [ ] **E** (item próprio depois) Agenda multi-unidade: dias prioritários por
-        unidade, aviso forte de conflito entre unidades, agenda consolidada,
-        previsão semanal.
+  - **E — Agenda multi-unidade do dentista** (4 partes; aviso forte de conflito,
+        não bloqueio):
+    - [x] **E1 — Dias prioritários por unidade** ✅ (v0.45.0, migração 0112) — no
+          cadastro do Risartano, botão "Dias" (por dentista) abre um diálogo para
+          definir, em cada unidade que ele atende, os **dias da semana** + **datas
+          específicas** + nota. `staff_clinic_schedule` (Admin/Gerente editam);
+          `saveStaffSchedule`; `staff-schedule-dialog`. (Quinzenal/X-por-mês via
+          nota por ora.)
+    - [ ] **E2** aviso de conflito entre unidades no agendamento (mesmo dia).
+    - [ ] **E3** agenda consolidada multi-unidade (cor por unidade).
+    - [ ] **E4** previsão semanal (painel + aviso de fim de semana).
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
       limite = nº de cadeiras).
