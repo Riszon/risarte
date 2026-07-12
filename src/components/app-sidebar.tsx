@@ -200,7 +200,7 @@ export function AppSidebar({
     );
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="px-4 py-5">
         <p className="text-lg font-semibold tracking-tight">Risarte</p>
         <p className="text-xs text-sidebar-foreground/60">Odontologia</p>

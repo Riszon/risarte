@@ -62,6 +62,7 @@ import type {
   ClinicalRequestKind,
   RequestMediaItem,
 } from "@/lib/requests";
+import { ProntuarioTabs, TabPanel } from "./prontuario-tabs";
 import {
   AnamnesisFill,
   type AnamnesisTypeGroup,
@@ -1976,152 +1977,19 @@ export default async function ClientDetailPage(
         </div>
       )}
 
-      <JourneySection
-        clientId={client.id}
-        clientName={client.full_name}
-        phase={client.journey_phase as JourneyPhase}
-        phaseEnteredAt={client.phase_entered_at}
-        pillar={client.methodology_pillar as MethodologyPillar | null}
-        status={client.journey_status as JourneyStatus | null}
-        history={historyEntries}
-        appointments={appointments ?? []}
-        isAdminMaster={session.isAdminMaster}
-        clinicRoles={clinicRoles}
-        isPlannerAnywhere={isPlannerAnywhere}
-      />
+      <ProntuarioTabs>
+        <TabPanel id="cadastro" label="Cadastro">
+          <ClientShares
+            clientId={client.id}
+            shares={activeShares}
+            units={shareUnits}
+            canShare={canManageShare}
+            canEnd={canEndShare}
+          />
 
-      {treatmentSessions.length > 0 && (
-        <TreatmentSessionsPanel
-          clientId={client.id}
-          clientName={client.full_name}
-          clientInactive={client.status !== "active"}
-          sessions={treatmentSessions}
-          canSchedule={canScheduleFromFicha}
-          staff={fichaStaff}
-          config={fichaConfig}
-          clinicId={scheduleClinicId}
-        />
-      )}
+          <EmpresarialPanel summary={usage} />
 
-      {procedureItems.length > 0 && (
-        <ClientProceduresSection
-          clientId={client.id}
-          canRequest={canRequestScheduling}
-          items={procedureItems}
-        />
-      )}
-
-      <ClientShares
-        clientId={client.id}
-        shares={activeShares}
-        units={shareUnits}
-        canShare={canManageShare}
-        canEnd={canEndShare}
-      />
-
-      {canViewClinical && (
-        <ClinicalSection
-          clientId={client.id}
-          clientName={client.full_name}
-          clinicId={scheduleClinicId}
-          canEdit={canEditClinical}
-          consent={consentInfo}
-          notes={clinicalNotes}
-          media={clinicalMedia}
-          canSendToPlanning={canSendToPlanning}
-          anamnesisBlocksPlanning={anamnesisBlocksPlanning}
-          anamnesisBlockMessage={anamnesisBlockMessage}
-          canSchedulePresentation={canScheduleFromFicha}
-          scheduleStaff={fichaStaff}
-          scheduleConfig={fichaConfig}
-          scheduleClinicId={scheduleClinicId}
-        />
-      )}
-
-      {canViewProgress && (
-        <ClinicalProgressSection
-          clientId={client.id}
-          clinicId={scheduleClinicId}
-          canWrite={canWriteProgress}
-          notes={progressNotes}
-        />
-      )}
-
-      {canViewDocuments && (
-        <DocumentsSection
-          clientId={client.id}
-          clinicId={scheduleClinicId}
-          canEmit={canEmitDocuments}
-          documents={documentItems}
-          templates={documentTemplates}
-        />
-      )}
-
-      {canViewRequests && (
-        <RequestsSection
-          clientId={client.id}
-          clinicId={scheduleClinicId}
-          canCreate={canCreateRequest}
-          canResolve={canResolveRequest}
-          requests={clinicalRequests}
-        />
-      )}
-
-      {canViewClinical && (
-        <PlanningSupplements
-          clientId={client.id}
-          canAdd={canAddSupplement}
-          supplements={planningSupplements}
-        />
-      )}
-
-      {canViewAnamnesis && (
-        <AnamnesisFill
-          clientId={client.id}
-          canEdit={canEditClinical}
-          hasConsent={Boolean(consentInfo)}
-          templates={anamnesisTemplates}
-          fills={anamnesisFills}
-          clientGender={client.gender}
-        />
-      )}
-
-      <EmpresarialPanel summary={usage} />
-
-      {planSummary && (
-        <PlanSummarySection
-          diagnosis={planSummary.diagnosis}
-          objectives={planSummary.objectives}
-          optionTitle={planSummary.optionTitle}
-          stages={planSummary.stages}
-        />
-      )}
-
-      {canViewPlanning && (
-        <PlanningSection
-          clientId={client.id}
-          clientName={client.full_name}
-          plan={treatmentPlan}
-          canEdit={canEditPlanning}
-          canReview={canReviewPlan}
-          inPlanningPhase={client.journey_phase === "planning_center"}
-          catalog={priceCatalog}
-          protocols={protocolByProcedure}
-          realStats={realStatsByProcedure}
-          currentPillar={
-            client.methodology_pillar as MethodologyPillar | null
-          }
-          cockpitHref={
-            canEditPlanning ? `/planejamento/${client.id}` : undefined
-          }
-          providerOptions={planProviderOptions}
-          programActive={program?.active ?? false}
-          programCompanyName={program?.companyName ?? null}
-          programBenefits={program?.byProcedure ?? {}}
-        />
-      )}
-
-      {(guardians ?? []).length > 0 && (
+          {(guardians ?? []).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Responsáveis</CardTitle>
@@ -2189,179 +2057,337 @@ export default async function ClientDetailPage(
         </Card>
       )}
 
-      {(shareHistoryRows ?? []).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Histórico de compartilhamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1.5">
-              {(shareHistoryRows ?? []).map((s) => (
-                <li key={s.id} className="text-sm">
-                  <span className="font-medium">
-                    {s.clinics?.name ?? "Unidade"}
-                  </span>{" "}
-                  <Badge
-                    variant={s.ended_at ? "outline" : "secondary"}
-                    className="text-[10px]"
-                  >
-                    {s.ended_at ? "Encerrado" : "Ativo"}
-                  </Badge>
-                  <div className="text-xs text-muted-foreground">
-                    Início:{" "}
-                    {new Date(s.started_at).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {s.ended_at
-                      ? ` · Encerrado: ${new Date(s.ended_at).toLocaleString(
-                          "pt-BR",
-                          {
+          <ClientDataSection
+            client={client}
+            canEdit={canEdit}
+            initialGuardians={(guardians ?? []).map((g) => ({
+              fullName: g.full_name,
+              cpf: g.cpf,
+              birthDate: g.birth_date,
+              relationship: g.relationship,
+              phone: g.phone,
+              guardianClientId: g.guardian_client_id,
+            }))}
+          />
+        </TabPanel>
+
+        <TabPanel id="jornada" label="Jornada">
+          <JourneySection
+            clientId={client.id}
+            clientName={client.full_name}
+            phase={client.journey_phase as JourneyPhase}
+            phaseEnteredAt={client.phase_entered_at}
+            pillar={client.methodology_pillar as MethodologyPillar | null}
+            status={client.journey_status as JourneyStatus | null}
+            history={historyEntries}
+            appointments={appointments ?? []}
+            isAdminMaster={session.isAdminMaster}
+            clinicRoles={clinicRoles}
+            isPlannerAnywhere={isPlannerAnywhere}
+          />
+        </TabPanel>
+
+        {(canViewClinical || canViewProgress || canViewAnamnesis) && (
+          <TabPanel id="clinico" label="Clínico">
+            {canViewClinical && (
+              <ClinicalSection
+                clientId={client.id}
+                clientName={client.full_name}
+                clinicId={scheduleClinicId}
+                canEdit={canEditClinical}
+                consent={consentInfo}
+                notes={clinicalNotes}
+                media={clinicalMedia}
+                canSendToPlanning={canSendToPlanning}
+                anamnesisBlocksPlanning={anamnesisBlocksPlanning}
+                anamnesisBlockMessage={anamnesisBlockMessage}
+                canSchedulePresentation={canScheduleFromFicha}
+                scheduleStaff={fichaStaff}
+                scheduleConfig={fichaConfig}
+                scheduleClinicId={scheduleClinicId}
+              />
+            )}
+            {canViewAnamnesis && (
+              <AnamnesisFill
+                clientId={client.id}
+                canEdit={canEditClinical}
+                hasConsent={Boolean(consentInfo)}
+                templates={anamnesisTemplates}
+                fills={anamnesisFills}
+                clientGender={client.gender}
+              />
+            )}
+            {canViewProgress && (
+              <ClinicalProgressSection
+                clientId={client.id}
+                clinicId={scheduleClinicId}
+                canWrite={canWriteProgress}
+                notes={progressNotes}
+              />
+            )}
+            {canViewClinical && (
+              <PlanningSupplements
+                clientId={client.id}
+                canAdd={canAddSupplement}
+                supplements={planningSupplements}
+              />
+            )}
+          </TabPanel>
+        )}
+
+        {(planSummary || canViewPlanning) && (
+          <TabPanel id="plano" label="Plano">
+            {planSummary && (
+              <PlanSummarySection
+                diagnosis={planSummary.diagnosis}
+                objectives={planSummary.objectives}
+                optionTitle={planSummary.optionTitle}
+                stages={planSummary.stages}
+              />
+            )}
+            {canViewPlanning && (
+              <PlanningSection
+                clientId={client.id}
+                clientName={client.full_name}
+                plan={treatmentPlan}
+                canEdit={canEditPlanning}
+                canReview={canReviewPlan}
+                inPlanningPhase={client.journey_phase === "planning_center"}
+                catalog={priceCatalog}
+                protocols={protocolByProcedure}
+                realStats={realStatsByProcedure}
+                currentPillar={
+                  client.methodology_pillar as MethodologyPillar | null
+                }
+                cockpitHref={
+                  canEditPlanning ? `/planejamento/${client.id}` : undefined
+                }
+                providerOptions={planProviderOptions}
+                programActive={program?.active ?? false}
+                programCompanyName={program?.companyName ?? null}
+                programBenefits={program?.byProcedure ?? {}}
+              />
+            )}
+          </TabPanel>
+        )}
+
+        {(treatmentSessions.length > 0 || procedureItems.length > 0) && (
+          <TabPanel id="sessoes" label="Sessões & Procedimentos">
+            {treatmentSessions.length > 0 && (
+              <TreatmentSessionsPanel
+                clientId={client.id}
+                clientName={client.full_name}
+                clientInactive={client.status !== "active"}
+                sessions={treatmentSessions}
+                canSchedule={canScheduleFromFicha}
+                staff={fichaStaff}
+                config={fichaConfig}
+                clinicId={scheduleClinicId}
+              />
+            )}
+            {procedureItems.length > 0 && (
+              <ClientProceduresSection
+                clientId={client.id}
+                canRequest={canRequestScheduling}
+                items={procedureItems}
+              />
+            )}
+          </TabPanel>
+        )}
+
+        {canViewDocuments && (
+          <TabPanel id="documentos" label="Documentos">
+            <DocumentsSection
+              clientId={client.id}
+              clinicId={scheduleClinicId}
+              canEmit={canEmitDocuments}
+              documents={documentItems}
+              templates={documentTemplates}
+            />
+          </TabPanel>
+        )}
+
+        {canViewRequests && (
+          <TabPanel id="pedidos" label="Pedidos">
+            <RequestsSection
+              clientId={client.id}
+              clinicId={scheduleClinicId}
+              canCreate={canCreateRequest}
+              canResolve={canResolveRequest}
+              requests={clinicalRequests}
+            />
+          </TabPanel>
+        )}
+
+        {((shareHistoryRows ?? []).length > 0 ||
+          (clinicHistory ?? []).length > 1 ||
+          (appointmentChanges ?? []).length > 0 ||
+          (clientChanges ?? []).length > 0) && (
+          <TabPanel id="historico" label="Histórico">
+            {(shareHistoryRows ?? []).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Histórico de compartilhamento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-1.5">
+                    {(shareHistoryRows ?? []).map((s) => (
+                      <li key={s.id} className="text-sm">
+                        <span className="font-medium">
+                          {s.clinics?.name ?? "Unidade"}
+                        </span>{" "}
+                        <Badge
+                          variant={s.ended_at ? "outline" : "secondary"}
+                          className="text-[10px]"
+                        >
+                          {s.ended_at ? "Encerrado" : "Ativo"}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground">
+                          Início:{" "}
+                          {new Date(s.started_at).toLocaleString("pt-BR", {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                          }
-                        )}`
-                      : ""}
-                    {s.profiles?.full_name
-                      ? ` · por ${s.profiles.full_name}`
-                      : ""}
-                    {s.reason ? ` · ${s.reason}` : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+                          })}
+                          {s.ended_at
+                            ? ` · Encerrado: ${new Date(
+                                s.ended_at
+                              ).toLocaleString("pt-BR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}`
+                            : ""}
+                          {s.profiles?.full_name
+                            ? ` · por ${s.profiles.full_name}`
+                            : ""}
+                          {s.reason ? ` · ${s.reason}` : ""}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-      {(clinicHistory ?? []).length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Histórico de unidades</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1.5">
-              {(clinicHistory ?? []).map((entry) => (
-                <li key={entry.id} className="text-sm">
-                  <span className="font-medium">
-                    {entry.clinics?.name ?? "Unidade"}
-                  </span>{" "}
-                  <span className="text-xs text-muted-foreground">
-                    — de{" "}
-                    {new Date(entry.started_at).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {entry.ended_at
-                      ? ` até ${new Date(entry.ended_at).toLocaleString(
-                          "pt-BR",
-                          {
+            {(clinicHistory ?? []).length > 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Histórico de unidades
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-1.5">
+                    {(clinicHistory ?? []).map((entry) => (
+                      <li key={entry.id} className="text-sm">
+                        <span className="font-medium">
+                          {entry.clinics?.name ?? "Unidade"}
+                        </span>{" "}
+                        <span className="text-xs text-muted-foreground">
+                          — de{" "}
+                          {new Date(entry.started_at).toLocaleString("pt-BR", {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                          }
-                        )}`
-                      : " até hoje (unidade atual)"}
-                    {entry.profiles?.full_name
-                      ? ` · registrado por ${entry.profiles.full_name}`
-                      : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+                          })}
+                          {entry.ended_at
+                            ? ` até ${new Date(entry.ended_at).toLocaleString(
+                                "pt-BR",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}`
+                            : " até hoje (unidade atual)"}
+                          {entry.profiles?.full_name
+                            ? ` · registrado por ${entry.profiles.full_name}`
+                            : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-      {(appointmentChanges ?? []).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Histórico de agendamentos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1.5">
-              {(appointmentChanges ?? []).map((change) => (
-                <li key={change.id} className="text-sm">
-                  <span>{change.description}</span>{" "}
-                  <span className="text-xs text-muted-foreground">
-                    —{" "}
-                    {new Date(change.changed_at).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {change.profiles?.full_name
-                      ? ` · por ${change.profiles.full_name}`
-                      : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+            {(appointmentChanges ?? []).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Histórico de agendamentos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-1.5">
+                    {(appointmentChanges ?? []).map((change) => (
+                      <li key={change.id} className="text-sm">
+                        <span>{change.description}</span>{" "}
+                        <span className="text-xs text-muted-foreground">
+                          —{" "}
+                          {new Date(change.changed_at).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          {change.profiles?.full_name
+                            ? ` · por ${change.profiles.full_name}`
+                            : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-      {(clientChanges ?? []).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Histórico de alterações cadastrais
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1.5">
-              {(clientChanges ?? []).map((change) => (
-                <li key={change.id} className="text-sm">
-                  <span>Alterou: {change.fields}</span>{" "}
-                  <span className="text-xs text-muted-foreground">
-                    —{" "}
-                    {new Date(change.changed_at).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {change.profiles?.full_name
-                      ? ` · por ${change.profiles.full_name}`
-                      : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      <ClientDataSection
-        client={client}
-        canEdit={canEdit}
-        initialGuardians={(guardians ?? []).map((g) => ({
-          fullName: g.full_name,
-          cpf: g.cpf,
-          birthDate: g.birth_date,
-          relationship: g.relationship,
-          phone: g.phone,
-          guardianClientId: g.guardian_client_id,
-        }))}
-      />
+            {(clientChanges ?? []).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Histórico de alterações cadastrais
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-1.5">
+                    {(clientChanges ?? []).map((change) => (
+                      <li key={change.id} className="text-sm">
+                        <span>Alterou: {change.fields}</span>{" "}
+                        <span className="text-xs text-muted-foreground">
+                          —{" "}
+                          {new Date(change.changed_at).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          {change.profiles?.full_name
+                            ? ` · por ${change.profiles.full_name}`
+                            : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </TabPanel>
+        )}
+      </ProntuarioTabs>
     </div>
   );
 }

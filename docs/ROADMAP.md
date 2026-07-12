@@ -515,8 +515,11 @@ antes).
       unidade conectadas; pop-up + som; áudio/arquivos; insiste até visualizar;
       recibo de leitura; histórico. Supabase Realtime; dividir em lotes
       (texto → arquivos → som/insistência).
-- [ ] **H4.10 Prontuário em abas + menu fixo [M]** — ficha em abas na sequência
-      do fluxo; barra lateral fixa em todas as telas.
+- [x] **H4.10 Prontuário em abas + menu fixo [M]** ✅ (v0.43.0, sem migração) —
+      barra lateral **fixa** (sticky, sempre visível ao rolar); ficha do cliente
+      em **abas** (`prontuario-tabs`: Cadastro · Jornada · Clínico · Plano ·
+      Sessões & Procedimentos · Documentos · Pedidos · Histórico), abas vazias
+      não aparecem, estado dos editores preservado (esconde em vez de desmontar).
 - [ ] **H4.11 Apresentação 2.0 + fotos no Gamma [M]** — layout mais rico e
       responsivo; testar fotos no Gamma via links assinados embutidos no texto;
       padrão visual dos decks.
