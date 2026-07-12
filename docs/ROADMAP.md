@@ -526,9 +526,12 @@ antes).
       especialidades (lista padronizada, como o pilar); reajuste em massa do
       comissionamento fixo; regra "comissão só com procedimento finalizado"
       documentada (aplicação = módulo financeiro, Fase 2).
-- [ ] **H4.14 Definições de status [P]** — "Início de Tratamento" = plano
-      aprovado e nada executado; "Sessão" = já iniciou (consistente em
-      agenda/jornada).
+- [x] **H4.14 Definições de status [P]** ✅ (v0.42.0, migração 0110) — na Fase 5,
+      "Início de Tratamento" = plano aprovado e nada executado; passa a "Em
+      Tratamento" **automaticamente** quando a 1ª sessão recebe baixa (gatilho
+      `mark_in_treatment` em treatment_sessions; o status já era definido como
+      "Aguardando Iniciar Tratamento" ao entrar na fase pela 0017). Consistente
+      em Jornada/Agenda/ficha, sem marcação manual.
 
 ## Fora do LOTE H (não esquecer)
 
