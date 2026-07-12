@@ -37,6 +37,7 @@ import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
   createAppointment,
+  checkProviderCrossUnit,
   getAppointmentSessionOptions,
   getClientPendingSessions,
   getClientSchedulingInfo,
@@ -413,6 +414,32 @@ export function AppointmentFormDialog({
     daySpecial.key === dayKey
       ? daySpecial.value
       : { openDay: null, holidayAttend: null };
+
+  // H4.6 E2: aviso de conflito entre unidades (o dentista já tem atendimento em
+  // outra unidade no mesmo dia) + se o dia é dia dele nesta unidade (config E1).
+  const EMPTY_CROSS = {
+    otherUnits: [] as { clinic: string; time: string }[],
+    scheduleKnown: false,
+    isPriorityDay: false,
+  };
+  const [crossUnit, setCrossUnit] = useState(EMPTY_CROSS);
+  const shouldCheckCross = Boolean(providerId && effectiveClinicId && date);
+  useEffect(() => {
+    if (!shouldCheckCross) return;
+    let cancelled = false;
+    checkProviderCrossUnit({
+      providerUserId: providerId,
+      clinicId: effectiveClinicId,
+      date,
+    }).then((r) => {
+      if (!cancelled) setCrossUnit(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldCheckCross, providerId, effectiveClinicId, date]);
+  // Ignora dados obsoletos quando os campos estão incompletos (derivado).
+  const effectiveCross = shouldCheckCross ? crossUnit : EMPTY_CROSS;
 
   const dayWeekday = date ? new Date(`${date}T00:00:00`).getDay() : null;
   const weekdayConfigured = Boolean(
@@ -1082,6 +1109,27 @@ export function AppointmentFormDialog({
               )}
             </div>
           )}
+
+          {effectiveCross.otherUnits.length > 0 && (
+            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+              <p className="font-semibold">⚠ Atenção — conflito entre unidades</p>
+              <p className="mt-0.5">
+                Este dentista já tem atendimento em outra unidade neste dia:{" "}
+                {effectiveCross.otherUnits
+                  .map((u) => `${u.clinic} (${u.time})`)
+                  .join(", ")}
+                . Confirme se ele consegue atender nas duas antes de agendar.
+              </p>
+            </div>
+          )}
+          {effectiveCross.scheduleKnown &&
+            !effectiveCross.isPriorityDay &&
+            effectiveCross.otherUnits.length === 0 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                Este não é um dia de atendimento configurado deste dentista nesta
+                unidade. Você pode agendar mesmo assim.
+              </div>
+            )}
 
           <DialogFooter>
             <Button

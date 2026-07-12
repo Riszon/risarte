@@ -510,7 +510,13 @@ antes).
           específicas** + nota. `staff_clinic_schedule` (Admin/Gerente editam);
           `saveStaffSchedule`; `staff-schedule-dialog`. (Quinzenal/X-por-mês via
           nota por ora.)
-    - [ ] **E2** aviso de conflito entre unidades no agendamento (mesmo dia).
+    - [x] **E2 — Aviso de conflito entre unidades** ✅ (v0.46.0, migração 0113) —
+          ao agendar um dentista, se ele já tem atendimento em OUTRA unidade no
+          mesmo dia, o formulário mostra um **aviso vermelho** à Recepção (não
+          bloqueia) e, ao agendar, o Dentista é **notificado**. Também avisa
+          (âmbar) se o dia não é dia dele nesta unidade (E1). RPCs SECURITY
+          DEFINER `provider_cross_unit_check` (formulário) e
+          `notify_provider_cross_unit` (chamado no `createAppointment`).
     - [ ] **E3** agenda consolidada multi-unidade (cor por unidade).
     - [ ] **E4** previsão semanal (painel + aviso de fim de semana).
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo

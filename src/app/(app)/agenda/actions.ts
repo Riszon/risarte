@@ -493,6 +493,13 @@ export async function createAppointment(
     if (presErr) console.error("notify_commercial_presentation:", presErr.message);
   }
 
+  // H4.6 E2: se o dentista ficou com atendimento em mais de uma unidade neste
+  // dia, avisa-o (aviso forte, não bloqueia). Fire-and-forget.
+  const { error: crossErr } = await supabase.rpc("notify_provider_cross_unit", {
+    p_appointment_id: data.id,
+  });
+  if (crossErr) console.error("notify_provider_cross_unit:", crossErr.message);
+
   await logAudit({
     action: "create",
     entityType: "appointment",
@@ -501,6 +508,48 @@ export async function createAppointment(
   });
   revalidatePath("/agenda");
   return { ok: true, warning: rule.warn };
+}
+
+/** H4.6 E2: na hora de agendar, checa se o dentista já tem atendimento em OUTRA
+ * unidade no mesmo dia (aviso à Recepção) + se o dia é dia dele nesta unidade. */
+export async function checkProviderCrossUnit(input: {
+  providerUserId: string;
+  clinicId: string;
+  date: string;
+}): Promise<{
+  otherUnits: { clinic: string; time: string }[];
+  scheduleKnown: boolean;
+  isPriorityDay: boolean;
+}> {
+  const empty = { otherUnits: [], scheduleKnown: false, isPriorityDay: false };
+  await getSessionContext();
+  if (
+    !input.providerUserId ||
+    !input.clinicId ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(input.date)
+  ) {
+    return empty;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("provider_cross_unit_check", {
+    p_provider: input.providerUserId,
+    p_clinic: input.clinicId,
+    p_date: input.date,
+  });
+  if (error) {
+    console.error("provider_cross_unit_check:", error.message);
+    return empty;
+  }
+  const r = (data ?? {}) as {
+    otherUnits?: { clinic: string; time: string }[];
+    scheduleKnown?: boolean;
+    isPriorityDay?: boolean;
+  };
+  return {
+    otherUnits: r.otherUnits ?? [],
+    scheduleKnown: Boolean(r.scheduleKnown),
+    isPriorityDay: Boolean(r.isPriorityDay),
+  };
 }
 
 export type PendingSession = {
