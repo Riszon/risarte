@@ -419,16 +419,18 @@ async function checkAgendaRules(
   // Annual plan items (GR6) block everyone (including encaixe). Unit-wide types
   // are overridden by a special open day; individual vacation blocks only the
   // chosen professionals.
+  // H4.8: inclui os itens da REDE (clinic_id NULL) além dos da unidade.
   const { data: planRows } = await supabase
     .from("agenda_plan_items")
     .select(
-      "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+      "id, clinic_id, type, locked, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
     )
-    .eq("clinic_id", clinicId)
+    .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
     .lte("starts_date", date)
     .gte("ends_date", date);
   for (const r of planRows ?? []) {
     const item = mapPlanItem(r as PlanItemRow);
+    if (item.type === "campaign") continue; // campanha é informativa, não fecha.
     if (item.type === "individual_vacation") {
       if (providerId && item.userIds.includes(providerId)) {
         return {
@@ -436,6 +438,11 @@ async function checkAgendaRules(
             "O profissional está de férias neste período (planejamento anual).",
         };
       }
+    } else if (item.isNetwork && item.locked) {
+      // Item da REDE travado: a unidade não pode abrir por cima (nem dia avulso).
+      return {
+        block: `Período de ${PLAN_ITEM_LABELS[item.type]} definido pela REDE — não pode ser aberto pela unidade.`,
+      };
     } else if (!openDay) {
       return {
         block: `Período de ${PLAN_ITEM_LABELS[item.type]} (planejamento anual). Libere um dia avulso em “Configurar agenda” para atender.`,

@@ -9,6 +9,7 @@ export const PLAN_ITEM_TYPES = [
   "event",
   "training",
   "maintenance",
+  "campaign",
 ] as const;
 export type PlanItemType = (typeof PLAN_ITEM_TYPES)[number];
 
@@ -19,15 +20,27 @@ export const PLAN_ITEM_LABELS: Record<PlanItemType, string> = {
   event: "Evento",
   training: "Treinamento",
   maintenance: "Manutenção",
+  campaign: "Campanha",
 };
 
-/** Types that close the whole unit (overridden only by a special open day). */
+/** Types that close the whole unit (overridden only by a special open day).
+ * "campaign" is informative only — never blocks. */
 export const UNIT_BLOCKING_TYPES: PlanItemType[] = [
   "recess",
   "collective_vacation",
   "event",
   "training",
   "maintenance",
+];
+
+/** H4.8: tipos que a REDE (franqueadora) pode lançar (sem férias individuais). */
+export const NETWORK_PLAN_ITEM_TYPES: PlanItemType[] = [
+  "recess",
+  "collective_vacation",
+  "event",
+  "training",
+  "maintenance",
+  "campaign",
 ];
 
 export const PLAN_ITEM_CLASS: Record<PlanItemType, string> = {
@@ -37,6 +50,7 @@ export const PLAN_ITEM_CLASS: Record<PlanItemType, string> = {
   event: "bg-amber-100 text-amber-800",
   training: "bg-emerald-100 text-emerald-800",
   maintenance: "bg-orange-100 text-orange-800",
+  campaign: "bg-pink-100 text-pink-800",
 };
 
 export type PlanItem = {
@@ -47,6 +61,9 @@ export type PlanItem = {
   title: string | null;
   note: string | null;
   userIds: string[];
+  /** H4.8: item da rede (clinic_id NULL) trava/decisão da unidade. */
+  isNetwork: boolean;
+  locked: boolean;
 };
 
 export type PlanItemRow = {
@@ -56,7 +73,10 @@ export type PlanItemRow = {
   ends_date: string;
   title: string | null;
   note: string | null;
-  agenda_plan_item_people: { user_id: string }[] | null;
+  /** Presente só nas consultas que pedem estas colunas (H4.8). */
+  clinic_id?: string | null;
+  locked?: boolean | null;
+  agenda_plan_item_people?: { user_id: string }[] | null;
 };
 
 export function mapPlanItem(row: PlanItemRow): PlanItem {
@@ -68,6 +88,9 @@ export function mapPlanItem(row: PlanItemRow): PlanItem {
     title: row.title,
     note: row.note,
     userIds: (row.agenda_plan_item_people ?? []).map((p) => p.user_id),
+    // clinic_id ausente na query = item de unidade (não é da rede).
+    isNetwork: row.clinic_id === null,
+    locked: row.locked ?? false,
   };
 }
 

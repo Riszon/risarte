@@ -24,6 +24,7 @@ import {
   type PlanItemType,
 } from "@/lib/annual-plan";
 import { AnnualPlanManager } from "./annual-plan-manager";
+import { NetworkPlanManager } from "./network-plan-manager";
 
 export const metadata: Metadata = { title: "Planejamento anual" };
 
@@ -36,20 +37,6 @@ export default async function AnnualPlanPage(
 ) {
   const session = await getSessionContext();
   const clinic = session.activeClinic;
-  if (!clinic || clinic.type === "franchisor") {
-    return (
-      <div className="mx-auto max-w-3xl space-y-3 px-4 py-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Planejamento anual de atendimento
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Selecione uma unidade no menu lateral.
-        </p>
-      </div>
-    );
-  }
-  const canManage = hasRoleInClinic(session, clinic.id, ["unit_manager"]);
-  if (!canManage) redirect("/agenda");
 
   const sp = await props.searchParams;
   const now = new Date();
@@ -61,38 +48,140 @@ export default async function AnnualPlanPage(
   const dec31 = `${year}-12-31`;
   const todayIso = ymd(now);
 
+  if (!clinic) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-3 px-4 py-8">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Planejamento anual de atendimento
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Selecione uma clínica no menu lateral.
+        </p>
+      </div>
+    );
+  }
+
+  // H4.8: na franqueadora, edita o CALENDÁRIO DA REDE (vale para todas).
+  if (clinic.type === "franchisor") {
+    const canManageNetwork =
+      session.isAdminMaster ||
+      hasRoleInClinic(session, clinic.id, ["unit_manager", "franchisee"]);
+    if (!canManageNetwork) redirect("/agenda");
+
+    const supabase = await createClient();
+    const { data: netRows } = await supabase
+      .from("agenda_plan_items")
+      .select("id, clinic_id, type, locked, starts_date, ends_date, title, note")
+      .is("clinic_id", null)
+      .lte("starts_date", dec31)
+      .gte("ends_date", jan1)
+      .order("starts_date");
+    const netItems = (netRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
+
+    return (
+      <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Calendário anual da rede
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Recessos, eventos, treinamentos, manutenções e campanhas que valem
+              para todas as unidades.
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link href={`/agenda/planejamento-anual?ano=${year - 1}`} />
+              }
+            >
+              ← {year - 1}
+            </Button>
+            <span className="px-2 text-lg font-semibold">{year}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link href={`/agenda/planejamento-anual?ano=${year + 1}`} />
+              }
+            >
+              {year + 1} →
+            </Button>
+          </div>
+        </div>
+
+        <NetworkPlanManager
+          year={year}
+          todayIso={todayIso}
+          items={netItems.map((i) => ({
+            id: i.id,
+            type: i.type,
+            startsDate: i.startsDate,
+            endsDate: i.endsDate,
+            title: i.title,
+            note: i.note,
+            locked: i.locked,
+            isPast: i.endsDate < todayIso,
+          }))}
+        />
+      </div>
+    );
+  }
+
+  const canManage = hasRoleInClinic(session, clinic.id, ["unit_manager"]);
+  if (!canManage) redirect("/agenda");
+
   const supabase = await createClient();
-  const [{ data: settingRows }, { data: planRows }, { data: staffRows }, { data: holidayRows }] =
-    await Promise.all([
-      supabase
-        .from("clinic_agenda_settings")
-        .select(
-          "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
-        )
-        .returns<AgendaSettingRow[]>(),
-      supabase
-        .from("agenda_plan_items")
-        .select(
-          "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
-        )
-        .eq("clinic_id", clinic.id)
-        .lte("starts_date", dec31)
-        .gte("ends_date", jan1)
-        .order("starts_date"),
-      supabase
-        .from("user_clinic_roles")
-        .select("user_id, profiles ( full_name )")
-        .eq("clinic_id", clinic.id),
-      supabase
-        .from("clinic_holiday_decisions")
-        .select("holiday_date, will_attend")
-        .eq("clinic_id", clinic.id)
-        .gte("holiday_date", jan1)
-        .lte("holiday_date", dec31),
-    ]);
+  const [
+    { data: settingRows },
+    { data: planRows },
+    { data: staffRows },
+    { data: holidayRows },
+    { data: netRows },
+  ] = await Promise.all([
+    supabase
+      .from("clinic_agenda_settings")
+      .select(
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+      )
+      .returns<AgendaSettingRow[]>(),
+    supabase
+      .from("agenda_plan_items")
+      .select(
+        "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+      )
+      .eq("clinic_id", clinic.id)
+      .lte("starts_date", dec31)
+      .gte("ends_date", jan1)
+      .order("starts_date"),
+    supabase
+      .from("user_clinic_roles")
+      .select("user_id, profiles ( full_name )")
+      .eq("clinic_id", clinic.id),
+    supabase
+      .from("clinic_holiday_decisions")
+      .select("holiday_date, will_attend")
+      .eq("clinic_id", clinic.id)
+      .gte("holiday_date", jan1)
+      .lte("holiday_date", dec31),
+    // H4.8: itens da REDE (clinic_id NULL) — leitura, para a unidade saber.
+    supabase
+      .from("agenda_plan_items")
+      .select("id, clinic_id, type, locked, starts_date, ends_date, title, note")
+      .is("clinic_id", null)
+      .lte("starts_date", dec31)
+      .gte("ends_date", jan1)
+      .order("starts_date"),
+  ]);
 
   const cfg = resolveAgendaSettings(settingRows ?? [], clinic.id);
   const items = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
+  const networkItems = (netRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
 
   const staffMap = new Map<string, string>();
   for (const r of (staffRows ?? []) as unknown as {
@@ -302,6 +391,65 @@ export default async function AnnualPlanPage(
           </div>
         </CardContent>
       </Card>
+
+      {/* H4.8: itens da rede (só leitura para a unidade) ------------------- */}
+      {networkItems.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Calendário da rede{" "}
+              <span className="font-normal text-muted-foreground">
+                (definido pela franqueadora)
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y rounded-lg border">
+              {networkItems.map((it) => (
+                <li
+                  key={it.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${PLAN_ITEM_CLASS[it.type]}`}
+                    >
+                      {PLAN_ITEM_LABELS[it.type]}
+                    </span>
+                    <span className="ml-1.5 font-medium">
+                      {new Date(`${it.startsDate}T00:00:00`).toLocaleDateString(
+                        "pt-BR",
+                        { day: "2-digit", month: "2-digit" }
+                      )}
+                      {it.endsDate !== it.startsDate
+                        ? ` – ${new Date(`${it.endsDate}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+                        : ""}
+                    </span>
+                    {it.title && (
+                      <span className="ml-1.5 text-muted-foreground">
+                        · {it.title}
+                      </span>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-xs">
+                    {it.type === "campaign" ? (
+                      <span className="text-pink-700">informativo</span>
+                    ) : it.locked ? (
+                      <span className="text-red-700">
+                        travado pela rede (não abre)
+                      </span>
+                    ) : (
+                      <span className="text-emerald-700">
+                        a unidade pode abrir
+                      </span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <AnnualPlanManager
         clinicId={clinic.id}

@@ -545,7 +545,16 @@ antes).
       profissional adicional já estiver ocupado no horário (`checkParticipantsBusy`).
 - [ ] **H4.8 Planejamento anual da rede [M/G] 🗄️** — feriados/eventos/
       campanhas da franqueadora com flag "decisão travada ou da unidade";
-      almoço padrão da rede (cascata).
+      almoço padrão da rede (cascata). **EM ANDAMENTO — Bloco 1 entregue**
+      (v0.51.0 · migração 0118): calendário da REDE (`agenda_plan_items` com
+      `clinic_id NULL` + coluna `locked` + tipo `campaign` informativo); a
+      franqueadora cria/edita em `/agenda/planejamento-anual` (RPCs
+      `create/update/delete_network_plan_item`, guarda `can_manage_network_plan`);
+      itens da rede aparecem na agenda de TODAS as unidades e bloqueiam conforme a
+      trava (travado = unidade não abre; decisão da unidade = pode abrir dia
+      avulso; campanha nunca fecha); a ficha de planejamento da unidade mostra o
+      calendário da rede em leitura. **Falta Bloco 2:** almoço padrão da rede
+      (cascata) — a rede define o padrão e a unidade personaliza o próprio.
 - [ ] **H4.9 Chat interno [G] 🗄️** — canal da unidade + 1:1; franqueadora ↔
       unidade conectadas; pop-up + som; áudio/arquivos; insiste até visualizar;
       recibo de leitura; histórico. Supabase Realtime; dividir em lotes

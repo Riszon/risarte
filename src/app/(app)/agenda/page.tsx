@@ -124,6 +124,13 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     const consultantOnly =
       isConsultant && !isPlanner && !session.isAdminMaster;
     const sdrOnly = isSdr && !isPlanner && !isConsultant && !session.isAdminMaster;
+    // H4.8: quem gerencia o calendário anual da rede (franqueadora).
+    const canManageNetworkPlan =
+      session.isAdminMaster ||
+      hasRoleInClinic(session, session.activeClinic!.id, [
+        "unit_manager",
+        "franchisee",
+      ]);
 
     const unitFilter =
       typeof searchParams.unidade === "string" ? searchParams.unidade : "";
@@ -258,6 +265,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               </select>
             </FilterForm>
             <AgendaToolbar view={view} range={range} unidade={unitFilter} />
+            {canManageNetworkPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/agenda/planejamento-anual" />}
+              >
+                Planejamento anual da rede
+              </Button>
+            )}
             {sdrOnly && sdrUnits.length > 0 && (
               <AppointmentFormDialog
                 clients={[]}
@@ -360,9 +377,9 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         supabase
           .from("agenda_plan_items")
           .select(
-            "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+            "id, clinic_id, type, locked, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
           )
-          .eq("clinic_id", clinicId)
+          .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
           .lte("starts_date", rangeLastIso)
           .gte("ends_date", rangeStartIso),
       ]);

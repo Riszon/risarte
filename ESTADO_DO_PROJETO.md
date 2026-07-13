@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/07/2026 · Versão do sistema: **0.50.0** · Última migração: **0117**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.51.0** · Última migração: **0118**_
+
+> **H4.8 Planejamento anual da REDE — Bloco 1 ✅ (v0.51.0 · migração 0118):** a
+> franqueadora define um calendário que vale para **todas** as unidades. Itens da
+> rede = `agenda_plan_items` com `clinic_id NULL` + coluna `locked` (trava) + novo
+> tipo `campaign` (informativo, não fecha). Em `/agenda/planejamento-anual` a
+> franqueadora cria/edita (RPCs `create/update/delete_network_plan_item`, guarda
+> `can_manage_network_plan` = Admin ou gestor da franqueadora). Cada item desce
+> para a agenda de todas as unidades e bloqueia conforme a trava: **travado** = a
+> unidade não abre por cima; **decisão da unidade** = pode liberar um dia avulso;
+> **campanha** = só aviso. A tela de planejamento da unidade mostra o calendário
+> da rede em leitura. `checkAgendaRules`/`day-strip`/agenda incluem os itens da
+> rede. **Falta o Bloco 2:** almoço padrão da rede (cascata) — a rede define o
+> padrão e a unidade personaliza o próprio. Migração a rodar: **0118**.
 
 > **H4.7 Atendimento conjunto — COMPLETO (Blocos 1 e 2).** Um atendimento pode
 > ter 2+ profissionais (cirurgia com auxiliar, 2 especialistas). **Bloco 1 (v0.49.0

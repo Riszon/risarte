@@ -104,9 +104,9 @@ export async function DayStrip({
     supabase
       .from("agenda_plan_items")
       .select(
-        "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+        "id, clinic_id, type, locked, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
       )
-      .eq("clinic_id", clinicId)
+      .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
       .lte("starts_date", toIsoDate(winEnd))
       .gte("ends_date", toIsoDate(winStart)),
   ]);
@@ -162,11 +162,16 @@ export async function DayStrip({
     const hd = holidayDecision.get(iso);
     const special = openDayHours.get(iso);
     const isWeekdayOpen = cfg.weekdays.includes(day.getDay());
-    const unitBlock = planItems.find(
-      (i) =>
-        i.type !== "individual_vacation" &&
-        i.startsDate <= iso &&
-        i.endsDate >= iso
+    // H4.8: campanha (informativa) nunca bloqueia; item da REDE travado bloqueia
+    // mesmo com dia avulso.
+    const blocks = (i: (typeof planItems)[number]) =>
+      i.type !== "individual_vacation" &&
+      i.type !== "campaign" &&
+      i.startsDate <= iso &&
+      i.endsDate >= iso;
+    const unitBlock = planItems.find(blocks);
+    const lockedNetBlock = planItems.find(
+      (i) => blocks(i) && i.isNetwork && i.locked
     );
 
     let state: StripDay["state"] = "normal";
@@ -174,6 +179,9 @@ export async function DayStrip({
     if (hd === false) {
       state = "holiday_closed";
       note = holiday?.name ?? "Feriado sem atendimento";
+    } else if (lockedNetBlock) {
+      state = "plan_block";
+      note = lockedNetBlock.title || PLAN_ITEM_LABELS[lockedNetBlock.type];
     } else if (unitBlock && !special) {
       state = "plan_block";
       note = unitBlock.title || PLAN_ITEM_LABELS[unitBlock.type];
