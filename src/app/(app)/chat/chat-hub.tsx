@@ -14,18 +14,30 @@ import {
   Check,
   CheckCheck,
   MessageSquarePlus,
+  Search,
   Send,
   User,
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getOnlineIds, subscribeOnline } from "@/lib/presence-store";
+import {
+  getPresence,
+  subscribePresence,
+  type PresenceStatus,
+} from "@/lib/presence-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   getChannelPeople,
   getChannelReads,
+  getLastSeen,
   getMessages,
   listChannels,
   markRead,
@@ -37,15 +49,21 @@ import {
   type ChatPerson,
 } from "./actions";
 
+function statusColor(s: PresenceStatus | undefined): string | null {
+  if (s === "online") return "bg-emerald-500";
+  if (s === "away") return "bg-amber-500";
+  return null;
+}
+
 function Avatar({
   person,
   name,
-  online,
+  status,
   className,
 }: {
   person?: ChatPerson;
   name: string;
-  online?: boolean;
+  status?: PresenceStatus;
   className?: string;
 }) {
   const initials =
@@ -56,6 +74,7 @@ function Avatar({
       .map((w) => w[0])
       .join("")
       .toUpperCase() || "?";
+  const dot = statusColor(status);
   return (
     <span className={cn("relative shrink-0", className)}>
       {person?.photoUrl ? (
@@ -69,10 +88,13 @@ function Avatar({
           {initials}
         </span>
       )}
-      {online && (
+      {dot && (
         <span
-          aria-label="online"
-          className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card bg-emerald-500"
+          aria-label={status}
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card",
+            dot
+          )}
         />
       )}
     </span>
@@ -96,27 +118,6 @@ function lastSeenLabel(iso: string): string {
   return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${hm}`;
 }
 
-function playBeep() {
-  try {
-    const Ctx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 660;
-    gain.gain.value = 0.05;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
-    osc.onended = () => ctx.close();
-  } catch {
-    /* som é bônus; ignora se o navegador bloquear */
-  }
-}
-
 function time(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-BR", {
     hour: "2-digit",
@@ -128,10 +129,14 @@ export function ChatHub({
   meId,
   initialChannels,
   colleagues,
+  isAdmin,
+  totalUsers,
 }: {
   meId: string;
   initialChannels: ChatChannel[];
   colleagues: ChatColleague[];
+  isAdmin: boolean;
+  totalUsers: number;
 }) {
   const [channels, setChannels] = useState<ChatChannel[]>(initialChannels);
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -139,10 +144,15 @@ export function ChatHub({
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [people, setPeople] = useState<Record<string, ChatPerson>>({});
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(getOnlineIds());
+  const [presence, setPresenceState] = useState<Map<string, PresenceStatus>>(
+    getPresence()
+  );
   const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [showNew, setShowNew] = useState(false);
+  const [newSearch, setNewSearch] = useState("");
+  const [listSearch, setListSearch] = useState("");
+  const [membersOpen, setMembersOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const selectedIdRef = useRef<string | null>(selectedId);
@@ -184,8 +194,10 @@ export function ChatHub({
     setSelectedId(channelId);
   }
 
-  // Carrega o thread quando muda o canal selecionado (inclui a 1ª carga). O
-  // setState fica adiado (microtask) para não disparar dentro do effect.
+  // Presença compartilhada (o menu gerencia o canal; aqui só lemos).
+  useEffect(() => subscribePresence(setPresenceState), []);
+
+  // Carrega o thread quando muda o canal (inclui a 1ª carga).
   useEffect(() => {
     if (!selectedId) return;
     let cancelled = false;
@@ -198,13 +210,11 @@ export function ChatHub({
     };
   }, [selectedId, loadThread]);
 
-  // Rola para o fim quando as mensagens mudam.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
-  // Tempo real: nova mensagem no canal aberto atualiza o thread; nos demais,
-  // toca o som + aviso e atualiza a lista.
+  // Tempo real: nova mensagem no canal aberto atualiza; nos demais, aviso.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -218,10 +228,6 @@ export function ChatHub({
             loadThread(m.channel_id);
           } else {
             refreshChannels();
-            if (m.sender_id !== meId) {
-              playBeep();
-              toast.message("Nova mensagem no Chat Hub");
-            }
           }
         }
       )
@@ -231,23 +237,31 @@ export function ChatHub({
     };
   }, [meId, loadThread, refreshChannels]);
 
-  // Atualiza o "visto" do outro a cada 12s no canal aberto.
+  // Atualiza leitura do outro + "visto por último" a cada 12s no canal aberto.
   useEffect(() => {
     if (!selectedId) return;
     const t = setInterval(async () => {
-      const reads = await getChannelReads(selectedId);
+      const [reads, seen] = await Promise.all([
+        getChannelReads(selectedId),
+        getLastSeen(Object.keys(people)),
+      ]);
       setOtherReadAt(
         reads.length > 0
           ? reads.reduce((a, b) => (a > b.lastReadAt ? a : b.lastReadAt), "")
           : null
       );
+      if (Object.keys(seen).length > 0) {
+        setPeople((prev) => {
+          const next: Record<string, ChatPerson> = {};
+          for (const [id, p] of Object.entries(prev)) {
+            next[id] = seen[id] ? { ...p, lastSeenAt: seen[id] } : p;
+          }
+          return next;
+        });
+      }
     }, 12_000);
     return () => clearInterval(t);
-  }, [selectedId]);
-
-  // Presença "online agora" — lê do store compartilhado (o canal é gerenciado
-  // pelo item do menu, sempre montado; evita colidir com o mesmo canal aqui).
-  useEffect(() => subscribeOnline(setOnlineIds), []);
+  }, [selectedId, people]);
 
   function submit() {
     const text = input.trim();
@@ -277,38 +291,73 @@ export function ChatHub({
     });
   }
 
-  // Numa conversa direta, o outro participante (para o cabeçalho).
   const headerPerson = useMemo(() => {
     if (!selected || selected.kind !== "direct") return undefined;
     return Object.values(people).find((p) => p.userId !== meId);
   }, [selected, people, meId]);
 
-  // Recibos: "entregue" = alguém online ou visto depois; "lida" = leu depois.
+  // Recibos: comparação por DATA (timestamps têm formatos diferentes como texto).
   const otherSeenAt = useMemo(() => {
-    let latest: string | null = null;
+    let latest = 0;
     for (const p of Object.values(people)) {
-      if (p.userId === meId) continue;
-      if (p.lastSeenAt && (!latest || p.lastSeenAt > latest)) latest = p.lastSeenAt;
+      if (p.userId === meId || !p.lastSeenAt) continue;
+      latest = Math.max(latest, new Date(p.lastSeenAt).getTime());
     }
     return latest;
   }, [people, meId]);
-  const anyOtherOnline = useMemo(
+  const anyOtherConnected = useMemo(
     () =>
       Object.values(people).some(
-        (p) => p.userId !== meId && onlineIds.has(p.userId)
+        (p) => p.userId !== meId && presence.has(p.userId)
       ),
-    [people, onlineIds, meId]
+    [people, presence, meId]
   );
+  const otherReadMs = otherReadAt ? new Date(otherReadAt).getTime() : 0;
   function receiptFor(createdAt: string): "sent" | "delivered" | "read" {
-    if (otherReadAt && otherReadAt >= createdAt) return "read";
-    if (anyOtherOnline || (otherSeenAt && otherSeenAt >= createdAt)) {
-      return "delivered";
-    }
+    const t = new Date(createdAt).getTime();
+    if (otherReadMs >= t && otherReadMs > 0) return "read";
+    if (anyOtherConnected || otherSeenAt >= t) return "delivered";
     return "sent";
   }
 
+  // Contagem do Admin.
+  const onlineCount = useMemo(
+    () => [...presence.values()].filter((s) => s === "online").length,
+    [presence]
+  );
+  const awayCount = useMemo(
+    () => [...presence.values()].filter((s) => s === "away").length,
+    [presence]
+  );
+
+  const visibleChannels = useMemo(() => {
+    const q = listSearch.trim().toLowerCase();
+    if (!q) return channels;
+    return channels.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        (c.lastMessage ?? "").toLowerCase().includes(q)
+    );
+  }, [channels, listSearch]);
+
+  const visibleColleagues = useMemo(() => {
+    const q = newSearch.trim().toLowerCase();
+    if (!q) return colleagues;
+    return colleagues.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.hint ?? "").toLowerCase().includes(q)
+    );
+  }, [colleagues, newSearch]);
+
+  const teamMembers = useMemo(
+    () =>
+      Object.values(people).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    [people]
+  );
+
   return (
-    <div className="flex h-[calc(100vh-12rem)] min-h-[26rem] overflow-hidden rounded-xl border bg-card">
+    <div className="flex h-[calc(100vh-13rem)] min-h-[26rem] overflow-hidden rounded-xl border bg-card">
       {/* Lista de conversas */}
       <aside
         className={cn(
@@ -329,17 +378,33 @@ export function ChatHub({
           </Button>
         </div>
 
+        {isAdmin && (
+          <div className="border-b bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+            <span className="text-emerald-600">● {onlineCount} online</span>
+            {" · "}
+            <span className="text-amber-600">{awayCount} ausentes</span>
+            {" · "}
+            {Math.max(0, totalUsers - presence.size)} offline
+          </div>
+        )}
+
         {showNew && (
-          <div className="max-h-56 overflow-y-auto border-b bg-muted/30 p-1.5">
-            <p className="px-1 pb-1 text-[11px] text-muted-foreground">
-              Iniciar conversa com:
-            </p>
-            {colleagues.length === 0 ? (
+          <div className="max-h-64 overflow-y-auto border-b bg-muted/30 p-1.5">
+            <div className="relative mb-1">
+              <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={newSearch}
+                onChange={(e) => setNewSearch(e.target.value)}
+                placeholder="Buscar pessoa ou unidade..."
+                className="h-8 pl-7 text-sm"
+              />
+            </div>
+            {visibleColleagues.length === 0 ? (
               <p className="px-1 text-xs text-muted-foreground">
-                Nenhum colega disponível.
+                Nenhum colega encontrado.
               </p>
             ) : (
-              colleagues.map((c) => (
+              visibleColleagues.map((c) => (
                 <button
                   key={c.userId}
                   type="button"
@@ -347,7 +412,17 @@ export function ChatHub({
                   onClick={() => startDirect(c.userId)}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
                 >
-                  <User className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="relative">
+                    <User className="size-4 shrink-0 text-muted-foreground" />
+                    {statusColor(presence.get(c.userId)) && (
+                      <span
+                        className={cn(
+                          "absolute -bottom-0.5 -right-0.5 size-2 rounded-full border border-card",
+                          statusColor(presence.get(c.userId))
+                        )}
+                      />
+                    )}
+                  </span>
                   <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   {c.hint && (
                     <span className="shrink-0 text-[10px] text-muted-foreground">
@@ -360,13 +435,25 @@ export function ChatHub({
           </div>
         )}
 
+        {channels.length > 4 && (
+          <div className="relative border-b p-1.5">
+            <Search className="absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={listSearch}
+              onChange={(e) => setListSearch(e.target.value)}
+              placeholder="Filtrar conversas..."
+              className="h-8 pl-7 text-sm"
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto">
-          {channels.length === 0 ? (
+          {visibleChannels.length === 0 ? (
             <p className="p-3 text-sm text-muted-foreground">
-              Nenhuma conversa ainda.
+              Nenhuma conversa.
             </p>
           ) : (
-            channels.map((c) => (
+            visibleChannels.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -427,15 +514,29 @@ export function ChatHub({
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10">
                     <Users className="size-4 text-primary" />
                   </span>
-                  <span className="font-medium">{selected.title}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{selected.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {teamMembers.length} membro
+                      {teamMembers.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setMembersOpen(true)}
+                  >
+                    Ver membros
+                  </Button>
                 </>
               ) : (
                 <>
                   <Avatar
                     person={headerPerson}
                     name={headerPerson?.name ?? selected.title}
-                    online={
-                      headerPerson ? onlineIds.has(headerPerson.userId) : false
+                    status={
+                      headerPerson ? presence.get(headerPerson.userId) : undefined
                     }
                   />
                   <div className="min-w-0">
@@ -443,21 +544,37 @@ export function ChatHub({
                       {headerPerson?.name ?? selected.title}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {headerPerson && onlineIds.has(headerPerson.userId) ? (
-                        <span className="font-medium text-emerald-600">
-                          online agora
-                        </span>
-                      ) : headerPerson?.lastSeenAt ? (
-                        `visto por último ${lastSeenLabel(headerPerson.lastSeenAt)}`
-                      ) : (
-                        (personSub(headerPerson) ?? "")
-                      )}
-                      {personSub(headerPerson) &&
-                        (headerPerson && onlineIds.has(headerPerson.userId)
-                          ? ` · ${personSub(headerPerson)}`
-                          : headerPerson?.lastSeenAt
-                            ? ` · ${personSub(headerPerson)}`
-                            : "")}
+                      {(() => {
+                        const st = headerPerson
+                          ? presence.get(headerPerson.userId)
+                          : undefined;
+                        const sub = personSub(headerPerson);
+                        const suffix = sub ? ` · ${sub}` : "";
+                        if (st === "online") {
+                          return (
+                            <>
+                              <span className="font-medium text-emerald-600">
+                                online agora
+                              </span>
+                              {suffix}
+                            </>
+                          );
+                        }
+                        if (st === "away") {
+                          return (
+                            <>
+                              <span className="font-medium text-amber-600">
+                                ausente
+                              </span>
+                              {suffix}
+                            </>
+                          );
+                        }
+                        if (headerPerson?.lastSeenAt) {
+                          return `visto por último ${lastSeenLabel(headerPerson.lastSeenAt)}${suffix}`;
+                        }
+                        return sub ?? "";
+                      })()}
                     </p>
                   </div>
                 </>
@@ -485,7 +602,7 @@ export function ChatHub({
                       <Avatar
                         person={p}
                         name={label}
-                        online={onlineIds.has(m.senderId)}
+                        status={presence.get(m.senderId)}
                       />
                       <div
                         className={cn(
@@ -557,7 +674,11 @@ export function ChatHub({
                 placeholder="Escreva uma mensagem..."
                 autoComplete="off"
               />
-              <Button type="submit" size="icon" disabled={isPending || !input.trim()}>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isPending || !input.trim()}
+              >
                 <Send className="size-4" />
               </Button>
             </form>
@@ -568,6 +689,45 @@ export function ChatHub({
           </div>
         )}
       </section>
+
+      {/* Membros da equipe */}
+      <Dialog open={membersOpen} onOpenChange={setMembersOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Membros — {selected?.title}</DialogTitle>
+          </DialogHeader>
+          <ul className="max-h-[60vh] space-y-1 overflow-y-auto">
+            {teamMembers.map((p) => (
+              <li key={p.userId} className="flex items-center gap-2 py-1">
+                <Avatar
+                  person={p}
+                  name={p.name}
+                  status={presence.get(p.userId)}
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">
+                    {p.userId === meId ? `${p.name} (você)` : p.name}
+                  </p>
+                  {personSub(p) && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {personSub(p)}
+                    </p>
+                  )}
+                </div>
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  {presence.get(p.userId) === "online"
+                    ? "online"
+                    : presence.get(p.userId) === "away"
+                      ? "ausente"
+                      : p.lastSeenAt
+                        ? lastSeenLabel(p.lastSeenAt)
+                        : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

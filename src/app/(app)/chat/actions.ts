@@ -59,10 +59,12 @@ export async function listChannels(): Promise<ChatChannel[]> {
       clinicNameById.set(c.id, c.name);
       if (c.type === "franchise_unit") unitIds.push(c.id);
     }
-    // Garante o canal de cada equipe (limite defensivo para não escalar demais).
-    for (const id of unitIds.slice(0, 40)) {
-      await supabase.rpc("ensure_unit_chat_channel", { p_clinic_id: id });
-    }
+    // Garante o canal de cada equipe (em paralelo; limite defensivo).
+    await Promise.all(
+      unitIds
+        .slice(0, 40)
+        .map((id) => supabase.rpc("ensure_unit_chat_channel", { p_clinic_id: id }))
+    );
   }
 
   // Conjunto autoritativo (idêntico ao do badge).
@@ -94,7 +96,8 @@ export async function listChannels(): Promise<ChatChannel[]> {
     for (const c of extra ?? []) clinicNameById.set(c.id, c.name);
   }
 
-  // Título das conversas diretas = o outro membro.
+  // Título das conversas diretas = o outro membro (nome via RPC, sem RLS
+  // barrando quem é da franqueadora → não vira mais "Colega").
   const directIds = (chanRows ?? [])
     .filter((c) => c.kind === "direct")
     .map((c) => c.id);
@@ -102,20 +105,29 @@ export async function listChannels(): Promise<ChatChannel[]> {
   if (directIds.length > 0) {
     const { data: memberRows } = await supabase
       .from("chat_channel_members")
-      .select(
-        "channel_id, user_id, profiles:profiles!chat_channel_members_user_id_fkey ( full_name )"
-      )
+      .select("channel_id, user_id")
       .in("channel_id", directIds)
-      .returns<
-        {
-          channel_id: string;
-          user_id: string;
-          profiles: { full_name: string } | null;
-        }[]
-      >();
+      .returns<{ channel_id: string; user_id: string }[]>();
+    const otherByChannel = new Map<string, string>();
+    const otherIds = new Set<string>();
     for (const r of memberRows ?? []) {
       if (r.user_id !== session.userId) {
-        directTitleById.set(r.channel_id, r.profiles?.full_name ?? "Colega");
+        otherByChannel.set(r.channel_id, r.user_id);
+        otherIds.add(r.user_id);
+      }
+    }
+    if (otherIds.size > 0) {
+      const { data: names } = await supabase.rpc("chat_display_names", {
+        p_user_ids: [...otherIds],
+      });
+      const nameById = new Map<string, string>();
+      for (const n of (names as
+        | { user_id: string; full_name: string | null }[]
+        | null) ?? []) {
+        nameById.set(n.user_id, n.full_name ?? "Colega");
+      }
+      for (const [ch, uid] of otherByChannel) {
+        directTitleById.set(ch, nameById.get(uid) ?? "Colega");
       }
     }
   }
@@ -129,37 +141,39 @@ export async function listChannels(): Promise<ChatChannel[]> {
     lastReadById.set(r.channel_id, r.last_read_at as string);
   }
 
-  const channels: ChatChannel[] = [];
-  for (const c of chanRows ?? []) {
-    const lastRead = lastReadById.get(c.id) ?? "1970-01-01T00:00:00Z";
-    const [{ data: lastMsg }, { count }] = await Promise.all([
-      supabase
-        .from("chat_messages")
-        .select("body, created_at")
-        .eq("channel_id", c.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("chat_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("channel_id", c.id)
-        .neq("sender_id", session.userId)
-        .gt("created_at", lastRead),
-    ]);
-    channels.push({
-      id: c.id,
-      kind: c.kind,
-      title:
-        c.kind === "unit"
-          ? `Equipe — ${c.clinic_id ? (clinicNameById.get(c.clinic_id) ?? "unidade") : "unidade"}`
-          : (directTitleById.get(c.id) ?? "Conversa"),
-      clinicId: c.clinic_id,
-      unread: count ?? 0,
-      lastMessage: (lastMsg?.body as string | undefined) ?? null,
-      lastAt: (lastMsg?.created_at as string | undefined) ?? null,
-    });
-  }
+  // Última mensagem + não lidas por canal — em paralelo (mais rápido).
+  const channels: ChatChannel[] = await Promise.all(
+    (chanRows ?? []).map(async (c) => {
+      const lastRead = lastReadById.get(c.id) ?? "1970-01-01T00:00:00Z";
+      const [{ data: lastMsg }, { count }] = await Promise.all([
+        supabase
+          .from("chat_messages")
+          .select("body, created_at")
+          .eq("channel_id", c.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("chat_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("channel_id", c.id)
+          .neq("sender_id", session.userId)
+          .gt("created_at", lastRead),
+      ]);
+      return {
+        id: c.id,
+        kind: c.kind,
+        title:
+          c.kind === "unit"
+            ? `Equipe — ${c.clinic_id ? (clinicNameById.get(c.clinic_id) ?? "unidade") : "unidade"}`
+            : (directTitleById.get(c.id) ?? "Conversa"),
+        clinicId: c.clinic_id,
+        unread: count ?? 0,
+        lastMessage: (lastMsg?.body as string | undefined) ?? null,
+        lastAt: (lastMsg?.created_at as string | undefined) ?? null,
+      };
+    })
+  );
 
   channels.sort((a, b) => {
     if (a.kind !== b.kind) return a.kind === "unit" ? -1 : 1;
@@ -252,6 +266,23 @@ export async function markRead(channelId: string): Promise<void> {
   );
 }
 
+/** "Visto por último" de um conjunto de usuários (atualização leve, sem fotos). */
+export async function getLastSeen(
+  userIds: string[]
+): Promise<Record<string, string>> {
+  if (userIds.length === 0) return {};
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_presence")
+    .select("user_id, last_seen_at")
+    .in("user_id", userIds)
+    .returns<{ user_id: string; last_seen_at: string }[]>();
+  const out: Record<string, string> = {};
+  for (const r of data ?? []) out[r.user_id] = r.last_seen_at;
+  return out;
+}
+
 /** Últimas leituras dos outros membros de um canal (para o "visto"). */
 export async function getChannelReads(
   channelId: string
@@ -340,119 +371,39 @@ async function attachPhotos(
   }
 }
 
-/** Pessoas de um canal, com nome, função, unidade e foto — para exibir no chat. */
+/** Pessoas de um canal, com nome, função, unidade e foto — para exibir no chat.
+ * Usa a RPC SECURITY DEFINER para resolver o nome de TODOS (inclusive quem é da
+ * franqueadora, cujo profile a RLS da unidade não leria → antes virava "colega"). */
 export async function getChannelPeople(
   channelId: string
 ): Promise<Record<string, ChatPerson>> {
   if (!channelId) return {};
   await getSessionContext();
   const supabase = await createClient();
-  const { data: ch } = await supabase
-    .from("chat_channels")
-    .select("kind, clinic_id")
-    .eq("id", channelId)
-    .maybeSingle();
-  if (!ch) return {};
+  const { data } = await supabase.rpc("chat_channel_people", {
+    p_channel_id: channelId,
+  });
+  const rows =
+    (data as
+      | {
+          user_id: string;
+          full_name: string | null;
+          role: string | null;
+          unit_name: string | null;
+        }[]
+      | null) ?? [];
 
   const people: Record<string, ChatPerson> = {};
-
-  if (ch.kind === "unit" && ch.clinic_id) {
-    const [{ data: clinicRow }, { data: roleRows }, { data: senderRows }] =
-      await Promise.all([
-        supabase
-          .from("clinics")
-          .select("name")
-          .eq("id", ch.clinic_id)
-          .maybeSingle(),
-        supabase
-          .from("user_clinic_roles")
-          .select("user_id, role, profiles ( full_name )")
-          .eq("clinic_id", ch.clinic_id)
-          .returns<
-            {
-              user_id: string;
-              role: UserRole;
-              profiles: { full_name: string } | null;
-            }[]
-          >(),
-        supabase
-          .from("chat_messages")
-          .select(
-            "sender_id, profiles:profiles!chat_messages_sender_id_fkey ( full_name )"
-          )
-          .eq("channel_id", channelId)
-          .returns<
-            { sender_id: string; profiles: { full_name: string } | null }[]
-          >(),
-      ]);
-    const unitName = clinicRow?.name ?? null;
-    for (const r of roleRows ?? []) {
-      if (!people[r.user_id]) {
-        people[r.user_id] = {
-          userId: r.user_id,
-          name: r.profiles?.full_name ?? "—",
-          roleLabel: ROLE_LABELS[r.role] ?? null,
-          unitLabel: unitName,
-          photoUrl: null,
-          lastSeenAt: null,
-        };
-      }
-    }
-    for (const s of senderRows ?? []) {
-      if (!people[s.sender_id]) {
-        people[s.sender_id] = {
-          userId: s.sender_id,
-          name: s.profiles?.full_name ?? "—",
-          roleLabel: null,
-          unitLabel: null,
-          photoUrl: null,
-          lastSeenAt: null,
-        };
-      }
-    }
-  } else {
-    // Direto: os dois membros; função/unidade = a 1ª função de cada.
-    const { data: memRows } = await supabase
-      .from("chat_channel_members")
-      .select(
-        "user_id, profiles:profiles!chat_channel_members_user_id_fkey ( full_name )"
-      )
-      .eq("channel_id", channelId)
-      .returns<
-        { user_id: string; profiles: { full_name: string } | null }[]
-      >();
-    for (const m of memRows ?? []) {
-      people[m.user_id] = {
-        userId: m.user_id,
-        name: m.profiles?.full_name ?? "—",
-        roleLabel: null,
-        unitLabel: null,
+  for (const r of rows) {
+    if (!people[r.user_id]) {
+      people[r.user_id] = {
+        userId: r.user_id,
+        name: r.full_name ?? "—",
+        roleLabel: r.role ? (ROLE_LABELS[r.role as UserRole] ?? null) : null,
+        unitLabel: r.unit_name ?? null,
         photoUrl: null,
         lastSeenAt: null,
       };
-    }
-    const uids = Object.keys(people);
-    if (uids.length > 0) {
-      const { data: roleRows } = await supabase
-        .from("user_clinic_roles")
-        .select(
-          "user_id, role, clinics!user_clinic_roles_clinic_id_fkey ( name )"
-        )
-        .in("user_id", uids)
-        .returns<
-          {
-            user_id: string;
-            role: UserRole;
-            clinics: { name: string } | null;
-          }[]
-        >();
-      for (const r of roleRows ?? []) {
-        const p = people[r.user_id];
-        if (p && !p.roleLabel) {
-          p.roleLabel = ROLE_LABELS[r.role] ?? null;
-          p.unitLabel = r.clinics?.name ?? null;
-        }
-      }
     }
   }
 

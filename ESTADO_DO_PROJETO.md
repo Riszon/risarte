@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.55.0** · Última migração: **0122**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.56.0** · Última migração: **0123**_
+
+> **H4.9 Chat Hub — Correções R2 ✅ (v0.56.0 · migração 0123):** (1) **recibos**
+> agora comparam **por data** (timestamp banco `+00:00` × JS `Z` quebrava a
+> comparação por texto) → **Lida** fica azul e **Entregue** não volta pra Enviada;
+> (2) **nomes**: mensagens de quem é da franqueadora (Admin/Planner) apareciam
+> como "colega"/sem nome porque a RLS de `profiles` barra → agora via RPC
+> `chat_channel_people`/`chat_display_names` (SECURITY DEFINER, só p/ membros do
+> canal); (3) **presença 3 estados**: online (verde) / **ausente** (âmbar, após 5
+> min parado) / offline (**"visto por último"**, `getLastSeen` atualiza a cada 12s);
+> (4) **carregamento mais rápido** (consultas por canal em paralelo); (5) dot de
+> presença **na lista de contatos**; (6) **"Ver membros"** da equipe; (7) **busca**
+> de pessoa/unidade e **filtro** de conversas; (8) **contagem online/ausente/offline
+> para o Admin**. **Faltam:** R3 (reagir + responder mensagem), R4 (Admin → unidade
+> específica + config de contato unidade↔franqueadora), depois **Lote 2** e **3**.
+> Migração a rodar: **0123**.
 
 > **H4.9 Chat Hub — Refinamentos R2 ✅ (v0.55.0 · migração 0122):** **presença** —
 > **online agora** (bolinha verde) via Supabase Realtime Presence (canal
