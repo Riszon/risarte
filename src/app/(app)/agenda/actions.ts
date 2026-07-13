@@ -177,6 +177,113 @@ function parseAppointmentForm(
   };
 }
 
+// -----------------------------------------------------------------------------
+// H4.7 — Atendimento conjunto (2+ profissionais no mesmo atendimento).
+// -----------------------------------------------------------------------------
+
+/** Profissionais adicionais desejados (campo participant_ids), sem duplicar o
+ * responsável principal nem incluir vazios. */
+function parseParticipantIds(
+  formData: FormData,
+  primaryId: string | null
+): string[] {
+  const set = new Set(
+    String(formData.get("participant_ids") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+  if (primaryId) set.delete(primaryId);
+  return [...set];
+}
+
+/** Nº de cadeiras configurado da unidade (cascata rede → unidade). */
+async function getClinicChairs(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId: string
+): Promise<number> {
+  const { data: rows } = await supabase
+    .from("clinic_agenda_settings")
+    .select(
+      "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+    )
+    .returns<AgendaSettingRow[]>();
+  return resolveAgendaSettings(rows ?? [], clinicId).chairs;
+}
+
+/** Valida o limite "nº de profissionais no atendimento ≤ nº de cadeiras". O
+ * total conta o responsável principal + os adicionais. */
+async function chairLimitError(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId: string,
+  participantCount: number
+): Promise<string | null> {
+  if (participantCount === 0) return null;
+  const chairs = await getClinicChairs(supabase, clinicId);
+  const total = 1 + participantCount;
+  if (total > chairs) {
+    return `Atendimento conjunto com ${total} profissionais, mas a unidade tem só ${chairs} cadeira${chairs === 1 ? "" : "s"}. Reduza os profissionais ou ajuste as cadeiras em “Configurar agenda”.`;
+  }
+  return null;
+}
+
+/** Sincroniza os participantes adicionais de um agendamento; devolve os que
+ * foram INCLUÍDOS agora (para notificar só esses). */
+async function syncAppointmentParticipants(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  appointmentId: string,
+  clinicId: string,
+  createdBy: string,
+  desired: string[]
+): Promise<string[]> {
+  const { data: currentRows } = await supabase
+    .from("appointment_participants")
+    .select("provider_user_id")
+    .eq("appointment_id", appointmentId);
+  const current = (currentRows ?? []).map((r) => r.provider_user_id as string);
+  const toAdd = desired.filter((id) => !current.includes(id));
+  const toRemove = current.filter((id) => !desired.includes(id));
+  if (toRemove.length > 0) {
+    await supabase
+      .from("appointment_participants")
+      .delete()
+      .eq("appointment_id", appointmentId)
+      .in("provider_user_id", toRemove);
+  }
+  if (toAdd.length > 0) {
+    await supabase.from("appointment_participants").insert(
+      toAdd.map((pid) => ({
+        appointment_id: appointmentId,
+        clinic_id: clinicId,
+        provider_user_id: pid,
+        created_by: createdBy,
+      }))
+    );
+  }
+  return toAdd;
+}
+
+/** Profissionais adicionais de um agendamento (para o detalhe e a edição). */
+export async function getAppointmentParticipants(
+  appointmentId: string
+): Promise<{ userId: string; name: string }[]> {
+  if (!appointmentId) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("appointment_participants")
+    .select(
+      "provider_user_id, profiles:profiles!appointment_participants_provider_user_id_fkey ( full_name )"
+    )
+    .eq("appointment_id", appointmentId)
+    .returns<
+      { provider_user_id: string; profiles: { full_name: string } | null }[]
+    >();
+  return (data ?? []).map((r) => ({
+    userId: r.provider_user_id,
+    name: r.profiles?.full_name ?? "—",
+  }));
+}
+
 /**
  * Per-unit agenda rules (G2): the slot must be within the unit's working hours
  * and on an open weekday; the chosen room must be free at that time (one client
@@ -426,6 +533,19 @@ export async function createAppointment(
   if (rule.block) return { ok: false, error: rule.block };
 
   const supabase = await createClient();
+
+  // H4.7: atendimento conjunto — valida o limite pelo nº de cadeiras.
+  const participantIds = parseParticipantIds(
+    formData,
+    parsed.values.provider_user_id
+  );
+  const chairErr = await chairLimitError(
+    supabase,
+    clinicId,
+    participantIds.length
+  );
+  if (chairErr) return { ok: false, error: chairErr };
+
   const { data, error } = await supabase
     .from("appointments")
     .insert({
@@ -473,6 +593,26 @@ export async function createAppointment(
       .from("treatment_sessions")
       .update({ status: "scheduled", appointment_id: data.id })
       .in("id", sessionIds);
+  }
+
+  // H4.7: registra os profissionais adicionais e avisa cada um (aviso forte).
+  if (participantIds.length > 0) {
+    const added = await syncAppointmentParticipants(
+      supabase,
+      data.id,
+      clinicId,
+      session.userId,
+      participantIds
+    );
+    if (added.length > 0) {
+      const { error: partErr } = await supabase.rpc(
+        "notify_appointment_participants",
+        { p_appointment_id: data.id, p_provider_ids: added }
+      );
+      if (partErr) {
+        console.error("notify_appointment_participants:", partErr.message);
+      }
+    }
   }
 
   // AJ2: atendimento que extrapola o horário — avisa o profissional (RPC
@@ -763,6 +903,39 @@ export async function updateAppointment(
   if (rule.block) return { ok: false, error: rule.block };
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
+
+  // H4.7: participantes adicionais — só sincroniza quando o campo veio (o
+  // formulário já carregou a lista). Valida o limite pelo nº de cadeiras e
+  // registra a mudança para não cair no early-return "sem alterações".
+  const rawParticipants = formData.get("participant_ids");
+  let participantSync: string[] | null = null;
+  if (rawParticipants !== null) {
+    const desired = parseParticipantIds(
+      formData,
+      parsed.values.provider_user_id
+    );
+    const chairErr = await chairLimitError(
+      supabase,
+      existing.clinic_id,
+      desired.length
+    );
+    if (chairErr) return { ok: false, error: chairErr };
+    const { data: currentPartRows } = await supabase
+      .from("appointment_participants")
+      .select("provider_user_id")
+      .eq("appointment_id", appointmentId);
+    const currentParts = (currentPartRows ?? []).map(
+      (r) => r.provider_user_id as string
+    );
+    const changed =
+      desired.length !== currentParts.length ||
+      desired.some((id) => !currentParts.includes(id));
+    if (changed) {
+      participantSync = desired;
+      changes["participants"] = { from: currentParts, to: desired };
+    }
+  }
+
   for (const key of [
     "type",
     "starts_at",
@@ -855,6 +1028,26 @@ export async function updateAppointment(
       .from("appointments")
       .update({ treatment_session_id: sessionSync.desired[0] ?? null })
       .eq("id", appointmentId);
+  }
+
+  // H4.7: sincroniza os profissionais adicionais e avisa os recém-incluídos.
+  if (participantSync !== null) {
+    const added = await syncAppointmentParticipants(
+      supabase,
+      appointmentId,
+      existing.clinic_id,
+      session.userId,
+      participantSync
+    );
+    if (added.length > 0) {
+      const { error: partErr } = await supabase.rpc(
+        "notify_appointment_participants",
+        { p_appointment_id: appointmentId, p_provider_ids: added }
+      );
+      if (partErr) {
+        console.error("notify_appointment_participants:", partErr.message);
+      }
+    }
   }
 
   // AJ2: se a alteração deixou o atendimento fora do horário, avisa o profissional.

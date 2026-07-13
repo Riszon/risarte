@@ -38,6 +38,7 @@ import { ROLE_LABELS } from "@/lib/roles";
 import {
   createAppointment,
   checkProviderCrossUnit,
+  getAppointmentParticipants,
   getAppointmentSessionOptions,
   getClientPendingSessions,
   getClientSchedulingInfo,
@@ -205,6 +206,7 @@ export function AppointmentFormDialog({
     setClientId("");
     setProviderId("");
     setRoomId("");
+    setParticipantIds([]);
     setSchedulingInfo(null);
     setUnitClients([]);
     setUnitStaff([]);
@@ -264,6 +266,9 @@ export function AppointmentFormDialog({
   const [providerStats, setProviderStats] = useState<
     Record<string, { avgMinutes: number; sample: number }>
   >({});
+  // H4.7: profissionais adicionais do atendimento conjunto.
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [participantsLoaded, setParticipantsLoaded] = useState(!isEdit);
 
   const clientItems = effectiveClients.map((c) => ({
     value: c.id,
@@ -295,6 +300,11 @@ export function AppointmentFormDialog({
       setSessionIds(r.linked.map((s) => s.id));
       setSessionsLoaded(true);
     });
+    getAppointmentParticipants(editAppointmentId).then((r) => {
+      if (cancelled) return;
+      setParticipantIds(r.map((p) => p.userId));
+      setParticipantsLoaded(true);
+    });
     return () => {
       cancelled = true;
     };
@@ -325,6 +335,34 @@ export function AppointmentFormDialog({
   // Apresentação comercial = ONLINE (no physical room).
   const isOnline = type === "commercial_presentation";
   const isEncaixe = type === "urgency" || type === "emergency";
+
+  // H4.7: candidatos a profissional adicional — dentistas/coordenadores da
+  // unidade, exceto o responsável principal já escolhido.
+  const participantCandidates = useMemo(
+    () =>
+      effectiveStaff
+        .filter(
+          (s) =>
+            s.userId !== providerId &&
+            s.roles.some(
+              (r) => r === "dentist" || r === "clinical_coordinator"
+            )
+        )
+        .map((s) => ({ userId: s.userId, name: s.name })),
+    [effectiveStaff, providerId]
+  );
+  // Nunca conta o responsável principal como "adicional".
+  const validParticipantIds = useMemo(
+    () => participantIds.filter((id) => id !== providerId),
+    [participantIds, providerId]
+  );
+  function toggleParticipant(userId: string) {
+    setParticipantIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((x) => x !== userId)
+        : [...prev, userId]
+    );
+  }
 
   // Default room: coordinator's room for avaliação/reavaliação, else first room.
   const prefersCoordRoom = type === "evaluation" || type === "reevaluation";
@@ -658,6 +696,11 @@ export function AppointmentFormDialog({
     if (isEdit ? sessionsLoaded : sessionIds.length > 0) {
       formData.set("treatment_session_ids", sessionIds.join(","));
     }
+    // H4.7: participantes adicionais — ONLINE não usa. Na edição só envia
+    // depois de carregar a lista (para permitir remover todos).
+    if (!isOnline && (isEdit ? participantsLoaded : true)) {
+      formData.set("participant_ids", validParticipantIds.join(","));
+    }
 
     startTransition(async () => {
       const result = isEdit
@@ -882,6 +925,45 @@ export function AppointmentFormDialog({
               </p>
             )}
           </div>
+
+          {/* H4.7: atendimento conjunto — profissionais adicionais. */}
+          {!isOnline &&
+            (participantCandidates.length > 0 ||
+              validParticipantIds.length > 0) && (
+              <div className="space-y-1.5 rounded-md border p-2">
+                <Label>Outros profissionais neste atendimento</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Atendimento conjunto: marque outros dentistas/coordenadores
+                  que atuam no mesmo horário e sala. Cada um recebe um aviso e
+                  passa a ver na própria agenda.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {participantCandidates.map((p) => (
+                    <Button
+                      key={p.userId}
+                      type="button"
+                      size="sm"
+                      variant={
+                        participantIds.includes(p.userId)
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => toggleParticipant(p.userId)}
+                    >
+                      {p.name}
+                    </Button>
+                  ))}
+                </div>
+                {validParticipantIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {validParticipantIds.length + 1} profissionais no
+                    atendimento (1 responsável principal +{" "}
+                    {validParticipantIds.length} adicional
+                    {validParticipantIds.length === 1 ? "" : "is"}).
+                  </p>
+                )}
+              </div>
+            )}
 
           {pendingSessions.length > 0 && (
             <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">

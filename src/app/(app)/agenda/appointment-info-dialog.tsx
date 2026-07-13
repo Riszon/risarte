@@ -19,6 +19,7 @@ import {
 } from "@/lib/appointments";
 import { PHASE_LABELS, PILLAR_LABELS, displayedPillar } from "@/lib/journey";
 import {
+  getAppointmentParticipants,
   getAppointmentSessionOptions,
   updateAppointmentStatus,
   type PendingSession,
@@ -53,6 +54,10 @@ export function AppointmentInfoDialog({
   // H1.5/H2.12: sessões do tratamento vinculadas — carregadas ao abrir.
   const [open, setOpen] = useState(false);
   const [sessions, setSessions] = useState<PendingSession[] | null>(null);
+  // H4.7: profissionais adicionais (atendimento conjunto).
+  const [participants, setParticipants] = useState<
+    { userId: string; name: string }[] | null
+  >(null);
 
   function changeStatus(status: AppointmentStatus) {
     startTransition(async () => {
@@ -73,6 +78,9 @@ export function AppointmentInfoDialog({
     let cancelled = false;
     getAppointmentSessionOptions(appointment.id).then((r) => {
       if (!cancelled) setSessions(r.linked);
+    });
+    getAppointmentParticipants(appointment.id).then((r) => {
+      if (!cancelled) setParticipants(r);
     });
     return () => {
       cancelled = true;
@@ -118,9 +126,23 @@ export function AppointmentInfoDialog({
           <Row label="Tipo" value={APPOINTMENT_TYPE_LABELS[appointment.type]} />
           <Row label="Local" value={local} />
           <Row
-            label="Profissional"
+            label={
+              participants && participants.length > 0
+                ? "Responsável principal"
+                : "Profissional"
+            }
             value={appointment.provider?.full_name ?? "—"}
           />
+          {participants && participants.length > 0 && (
+            <Row
+              label="Atendimento conjunto"
+              value={
+                <span className="text-right">
+                  {participants.map((p) => p.name).join(", ")}
+                </span>
+              }
+            />
+          )}
           <Row
             label="Situação"
             value={APPOINTMENT_STATUS_LABELS[appointment.status]}

@@ -532,7 +532,14 @@ antes).
           → H4.6 (Módulo do Dentista) COMPLETO.**
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
-      limite = nº de cadeiras).
+      limite = nº de cadeiras). **EM ANDAMENTO — Bloco 1 entregue** (v0.49.0 ·
+      migração 0116): tabela `appointment_participants` + RLS; no agendamento,
+      campo "Outros profissionais neste atendimento" (dentistas/coordenadores da
+      unidade, exceto o responsável principal); limite validado pelo nº de
+      cadeiras; cada incluído recebe aviso (`notify_appointment_participants`);
+      detalhe do agendamento mostra o "Atendimento conjunto". **Falta Bloco 2:**
+      aparecer na agenda de TODOS os participantes (agenda principal +
+      Minha Agenda) + aviso de choque de horário do participante.
 - [ ] **H4.8 Planejamento anual da rede [M/G] 🗄️** — feriados/eventos/
       campanhas da franqueadora com flag "decisão travada ou da unidade";
       almoço padrão da rede (cascata).

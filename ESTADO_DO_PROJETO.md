@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/07/2026 · Versão do sistema: **0.48.0** · Última migração: **0115**_
+_Atualizado em: 12/07/2026 · Versão do sistema: **0.49.0** · Última migração: **0116**_
+
+> **H4.7 Atendimento conjunto — Bloco 1 ✅ (v0.49.0 · migração 0116):** um
+> atendimento pode ter 2+ profissionais (cirurgia com auxiliar, 2 especialistas).
+> Continua o **responsável principal** (pelo tipo); no agendamento há o campo
+> **"Outros profissionais neste atendimento"** (dentistas/coordenadores da unidade,
+> menos o principal). Uma sala só; o **limite** de profissionais = **nº de cadeiras**
+> da unidade. Cada incluído recebe **aviso** (`notify_appointment_participants`) e o
+> detalhe do agendamento mostra o "Atendimento conjunto". Tabela
+> `appointment_participants` + RLS. **Falta o Bloco 2:** o atendimento conjunto
+> aparecer na agenda de TODOS os participantes (agenda principal + Minha Agenda) +
+> aviso de choque de horário do participante.
 
 > **H4.6 Bloco E — agenda multi-unidade (em andamento):** **E1 ✅ (v0.45.0,
 > migração 0112)** — dias de atendimento do dentista por unidade (dias da semana
