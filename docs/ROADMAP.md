@@ -435,7 +435,7 @@ antes).
         notificações à Recepção (2º plano, deduplicadas/dia): sessão atrasada e
         plano parado (`notify_treatment_alerts`, disparado no `BirthdayNotifier`).
         **H4.5 COMPLETO** (falta só o Pedido 3 do dono, movido para o H4.6).
-- [ ] **H4.6 Módulo do Dentista [G] 🗄️** — a "casa" do dentista executor.
+- [x] **H4.6 Módulo do Dentista [G] 🗄️ COMPLETO** — a "casa" do dentista executor.
       Plano detalhado e aprovado (10/07). Ordem: **A1 → A2 → A3 → B1/B2 → B3 →
       C → D → E** (E = agenda multi-unidade, vira item próprio depois). Decisões:
       quadro "O que foi feito hoje?" sempre que houver sessões; só o Dentista
@@ -523,7 +523,13 @@ antes).
           unidade + navegação de semana. RPC SECURITY DEFINER
           `provider_multi_unit_agenda` (traz só os atendimentos do próprio
           dentista em todas as unidades).
-    - [ ] **E4** previsão semanal (painel + aviso de fim de semana).
+    - [x] **E4 — Previsão semanal** ✅ (v0.48.0, migração 0115) — o informativo
+          dos próximos atendimentos é a tela "Minha Agenda" (E3); o E4 acrescenta
+          o **aviso proativo no fim de semana** (sáb/dom) com a **próxima semana**
+          (nº de atendimentos + unidades), disparado ao abrir o Meu Dia (2º plano),
+          deduplicado por semana, apontando para Minha Agenda. `notify_weekly_forecast`
+          + `WeeklyForecastNotifier`. Sem envio externo (adiado). **Bloco E COMPLETO
+          → H4.6 (Módulo do Dentista) COMPLETO.**
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
       limite = nº de cadeiras).

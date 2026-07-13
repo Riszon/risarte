@@ -16,6 +16,7 @@ import {
   type AppointmentType,
   type AttendanceStatus,
 } from "@/lib/appointments";
+import { WeeklyForecastNotifier } from "./weekly-forecast-notifier";
 
 export const metadata: Metadata = { title: "Meu Dia" };
 
@@ -353,6 +354,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+      <WeeklyForecastNotifier />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Meu Dia — {session.fullName.split(" ")[0]}

@@ -552,6 +552,15 @@ export async function checkProviderCrossUnit(input: {
   };
 }
 
+/** H4.6 E4: no fim de semana, gera o aviso da próxima semana para o dentista
+ * (a RPC só age no sáb/dom e deduplica por semana). Fire-and-forget. */
+export async function notifyWeeklyForecast(): Promise<void> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("notify_weekly_forecast");
+  if (error) console.error("notify_weekly_forecast:", error.message);
+}
+
 export type PendingSession = {
   id: string;
   label: string;

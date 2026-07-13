@@ -1,13 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/07/2026 · Versão do sistema: **0.47.0** · Última migração: **0114**_
+_Atualizado em: 11/07/2026 · Versão do sistema: **0.48.0** · Última migração: **0115**_
 
 > **H4.6 Bloco E — agenda multi-unidade (em andamento):** **E1 ✅ (v0.45.0,
 > migração 0112)** — dias de atendimento do dentista por unidade (dias da semana
 > + datas), no cadastro do Risartano (`staff_clinic_schedule`). **E2 ✅ (0113):**
 > aviso de conflito entre unidades no agendamento (Recepção vê aviso vermelho;
 > dentista é notificado). **E3 ✅ (0114):** agenda consolidada multi-unidade do
-> dentista (`/minha-agenda`, cor por unidade). Falta **E4** (previsão semanal).
+> dentista (`/minha-agenda`, cor por unidade). **E4 ✅ (0115):** aviso da próxima
+> semana no fim de semana (aponta p/ Minha Agenda). **Bloco E e o H4.6 (Módulo do
+> Dentista) COMPLETOS.**
 
 > **H4.10 / H4.12 / H4.14 ✅ (paralelos ao teste do H4.6):** H4.14 (0110) status
 > "Em Tratamento" automático na 1ª baixa; H4.10 (0.43.0) ficha em abas + barra
