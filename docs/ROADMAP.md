@@ -530,16 +530,19 @@ antes).
           deduplicado por semana, apontando para Minha Agenda. `notify_weekly_forecast`
           + `WeeklyForecastNotifier`. Sem envio externo (adiado). **Bloco E COMPLETO
           → H4.6 (Módulo do Dentista) COMPLETO.**
-- [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
+- [x] **H4.7 Atendimento conjunto [G] 🗄️** ✅ — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
-      limite = nº de cadeiras). **EM ANDAMENTO — Bloco 1 entregue** (v0.49.0 ·
-      migração 0116): tabela `appointment_participants` + RLS; no agendamento,
-      campo "Outros profissionais neste atendimento" (dentistas/coordenadores da
-      unidade, exceto o responsável principal); limite validado pelo nº de
-      cadeiras; cada incluído recebe aviso (`notify_appointment_participants`);
-      detalhe do agendamento mostra o "Atendimento conjunto". **Falta Bloco 2:**
-      aparecer na agenda de TODOS os participantes (agenda principal +
-      Minha Agenda) + aviso de choque de horário do participante.
+      limite = nº de cadeiras). **Bloco 1** (v0.49.0 · migração 0116): tabela
+      `appointment_participants` + RLS; no agendamento, campo "Outros
+      profissionais neste atendimento" (dentistas/coordenadores da unidade, exceto
+      o responsável principal); limite validado pelo nº de cadeiras; cada incluído
+      recebe aviso (`notify_appointment_participants`); detalhe mostra o
+      "Atendimento conjunto". **Bloco 2** (v0.50.0 · migração 0117): o atendimento
+      conjunto aparece na agenda de TODOS os participantes — na **Minha Agenda**
+      (`provider_multi_unit_agenda` reescrita: inclui onde o dentista é
+      participante, com papel principal/adicional + selo) e nos **cards da agenda**
+      (selo "Conjunto +N", `JointBadge` em week/day/network); **aviso suave** se um
+      profissional adicional já estiver ocupado no horário (`checkParticipantsBusy`).
 - [ ] **H4.8 Planejamento anual da rede [M/G] 🗄️** — feriados/eventos/
       campanhas da franqueadora com flag "decisão travada ou da unidade";
       almoço padrão da rede (cascata).

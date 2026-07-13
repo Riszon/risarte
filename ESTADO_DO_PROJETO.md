@@ -1,17 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/07/2026 · Versão do sistema: **0.49.0** · Última migração: **0116**_
+_Atualizado em: 12/07/2026 · Versão do sistema: **0.50.0** · Última migração: **0117**_
 
-> **H4.7 Atendimento conjunto — Bloco 1 ✅ (v0.49.0 · migração 0116):** um
-> atendimento pode ter 2+ profissionais (cirurgia com auxiliar, 2 especialistas).
-> Continua o **responsável principal** (pelo tipo); no agendamento há o campo
-> **"Outros profissionais neste atendimento"** (dentistas/coordenadores da unidade,
-> menos o principal). Uma sala só; o **limite** de profissionais = **nº de cadeiras**
-> da unidade. Cada incluído recebe **aviso** (`notify_appointment_participants`) e o
-> detalhe do agendamento mostra o "Atendimento conjunto". Tabela
-> `appointment_participants` + RLS. **Falta o Bloco 2:** o atendimento conjunto
-> aparecer na agenda de TODOS os participantes (agenda principal + Minha Agenda) +
-> aviso de choque de horário do participante.
+> **H4.7 Atendimento conjunto — COMPLETO (Blocos 1 e 2).** Um atendimento pode
+> ter 2+ profissionais (cirurgia com auxiliar, 2 especialistas). **Bloco 1 (v0.49.0
+> · migração 0116):** continua o **responsável principal** (pelo tipo); no
+> agendamento há o campo **"Outros profissionais neste atendimento"**
+> (dentistas/coordenadores da unidade, menos o principal); uma sala só; o **limite**
+> de profissionais = **nº de cadeiras** da unidade; cada incluído recebe **aviso**
+> (`notify_appointment_participants`); o detalhe do agendamento mostra o
+> "Atendimento conjunto". Tabela `appointment_participants` + RLS. **Bloco 2 (v0.50.0
+> · migração 0117):** o conjunto aparece na agenda de **TODOS** os participantes —
+> na **Minha Agenda** do dentista (`provider_multi_unit_agenda` reescrita: traz
+> também onde ele é adicional, com selo e papel) e nos **cards da agenda** (selo
+> "Conjunto +N"); **aviso suave** se um profissional adicional já estiver ocupado no
+> horário (`checkParticipantsBusy`, mesma unidade). Migrações a rodar: **0116 e 0117**.
 
 > **H4.6 Bloco E — agenda multi-unidade (em andamento):** **E1 ✅ (v0.45.0,
 > migração 0112)** — dias de atendimento do dentista por unidade (dias da semana

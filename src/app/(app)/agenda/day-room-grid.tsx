@@ -38,6 +38,7 @@ import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
 import { ClosureControls } from "./closure-controls";
 import {
+  JointBadge,
   STATUS_STYLES,
   STATUS_DOT,
   displayedStatus,
@@ -569,6 +570,9 @@ export function DayRoomGrid({
                 <UserRound className="size-3 shrink-0" />
                 {appointment.provider.full_name}
               </p>
+            )}
+            {height >= 54 && (
+              <JointBadge names={appointment.participantNames} />
             )}
             <div className="mt-0.5 flex items-center justify-between gap-1">
               <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">

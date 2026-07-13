@@ -284,6 +284,64 @@ export async function getAppointmentParticipants(
   }));
 }
 
+/** H4.7 Bloco 2: quais dos profissionais adicionais já estão ocupados no
+ * horário escolhido (na mesma unidade), como responsável OU participante de
+ * outro atendimento. Aviso suave (não bloqueia). Devolve os userIds ocupados. */
+export async function checkParticipantsBusy(params: {
+  clinicId: string;
+  date: string;
+  time: string;
+  durationMin: number;
+  participantIds: string[];
+  excludeId?: string;
+}): Promise<string[]> {
+  await getSessionContext();
+  const { clinicId, date, time, durationMin, participantIds, excludeId } = params;
+  if (participantIds.length === 0 || !clinicId || !date || !time) return [];
+  const start = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(start.getTime())) return [];
+  const end = new Date(start.getTime() + durationMin * 60_000);
+  const supabase = await createClient();
+  const dayStart = new Date(`${date}T00:00:00`);
+  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+  const active = (s: string) => s !== "cancelled" && s !== "no_show";
+  const overlaps = (s: string, e: string) =>
+    new Date(s).getTime() < end.getTime() &&
+    new Date(e).getTime() > start.getTime();
+
+  const { data: appts } = await supabase
+    .from("appointments")
+    .select("id, starts_at, ends_at, status, provider_user_id")
+    .eq("clinic_id", clinicId)
+    .gte("starts_at", dayStart.toISOString())
+    .lt("starts_at", dayEnd.toISOString());
+  const dayAppts = (appts ?? []).filter(
+    (a) =>
+      a.id !== excludeId && active(a.status) && overlaps(a.starts_at, a.ends_at)
+  );
+  const overlappingIds = dayAppts.map((a) => a.id);
+
+  let partRows: { provider_user_id: string }[] = [];
+  if (overlappingIds.length > 0) {
+    const { data: parts } = await supabase
+      .from("appointment_participants")
+      .select("provider_user_id")
+      .in("appointment_id", overlappingIds);
+    partRows = parts ?? [];
+  }
+
+  const busy = new Set<string>();
+  for (const pid of participantIds) {
+    if (
+      dayAppts.some((a) => a.provider_user_id === pid) ||
+      partRows.some((p) => p.provider_user_id === pid)
+    ) {
+      busy.add(pid);
+    }
+  }
+  return [...busy];
+}
+
 /**
  * Per-unit agenda rules (G2): the slot must be within the unit's working hours
  * and on an open weekday; the chosen room must be free at that time (one client

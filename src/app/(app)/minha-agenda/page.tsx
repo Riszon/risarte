@@ -30,6 +30,8 @@ type AgendaRow = {
   attendance: AttendanceStatus | null;
   client_id: string | null;
   client_name: string | null;
+  role: "principal" | "participante";
+  is_joint: boolean;
 };
 
 const UNIT_COLORS = [
@@ -279,6 +281,16 @@ export default async function MinhaAgendaPage(props: PageProps<"/minha-agenda">)
                           <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
                             · {APPOINTMENT_TYPE_LABELS[r.type]}
                           </span>
+                          {r.is_joint && (
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 border-amber-300 bg-amber-50 text-amber-700"
+                            >
+                              {r.role === "participante"
+                                ? "Conjunto · você é adicional"
+                                : "Atendimento conjunto"}
+                            </Badge>
+                          )}
                         </div>
                         {r.attendance && (
                           <Badge variant="secondary" className="shrink-0">

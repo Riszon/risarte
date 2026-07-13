@@ -37,6 +37,7 @@ import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
   createAppointment,
+  checkParticipantsBusy,
   checkProviderCrossUnit,
   getAppointmentParticipants,
   getAppointmentSessionOptions,
@@ -574,6 +575,49 @@ export function AppointmentFormDialog({
   // The chosen time, but only while it's still an available slot.
   const effectiveTime =
     time && timeItems.some((t) => t.value === time) ? time : "";
+
+  // H4.7 Bloco 2: aviso suave se algum profissional adicional já está ocupado
+  // no horário escolhido (na mesma unidade). Não bloqueia o agendamento.
+  const [busyParts, setBusyParts] = useState<{ key: string; ids: string[] }>({
+    key: "",
+    ids: [],
+  });
+  const partClashKey =
+    !isOnline &&
+    effectiveClinicId &&
+    date &&
+    effectiveTime &&
+    validParticipantIds.length > 0
+      ? `${effectiveClinicId}|${date}|${effectiveTime}|${durationMin}|${validParticipantIds.join(",")}`
+      : "";
+  useEffect(() => {
+    if (!partClashKey) return;
+    let cancelled = false;
+    checkParticipantsBusy({
+      clinicId: effectiveClinicId,
+      date,
+      time: effectiveTime,
+      durationMin,
+      participantIds: validParticipantIds,
+      excludeId: appointment?.id,
+    }).then((ids) => {
+      if (!cancelled) setBusyParts({ key: partClashKey, ids });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    partClashKey,
+    effectiveClinicId,
+    date,
+    effectiveTime,
+    durationMin,
+    validParticipantIds,
+    appointment?.id,
+  ]);
+  const busyPartNames = (busyParts.key === partClashKey ? busyParts.ids : [])
+    .map((id) => effectiveStaff.find((s) => s.userId === id)?.name)
+    .filter((n): n is string => Boolean(n));
 
   const lastWasMissed =
     schedulingInfo?.lastAppointment &&
@@ -1212,6 +1256,18 @@ export function AppointmentFormDialog({
                 unidade. Você pode agendar mesmo assim.
               </div>
             )}
+
+          {busyPartNames.length > 0 && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+              <p className="font-semibold">⚠ Profissional já ocupado</p>
+              <p className="mt-0.5">
+                No horário escolhido, {busyPartNames.join(", ")}{" "}
+                {busyPartNames.length === 1 ? "já tem" : "já têm"} outro
+                atendimento nesta unidade. Você pode agendar mesmo assim, mas
+                confirme se dá para atender junto.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

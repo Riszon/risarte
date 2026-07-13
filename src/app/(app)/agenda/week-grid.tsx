@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, DoorOpen, Info, Pencil, UserRound, Wifi } from "lucide-react";
+import {
+  AlertTriangle,
+  DoorOpen,
+  Info,
+  Pencil,
+  UserRound,
+  Users,
+  Wifi,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +66,8 @@ export type AgendaAppointment = {
   clinic_name?: string | null;
   /** H3.7: false quando a SDR não pode abrir o prontuário deste cliente. */
   clientLinkable?: boolean;
+  /** H4.7: nomes dos profissionais adicionais (atendimento conjunto). */
+  participantNames?: string[];
   clients: {
     id: string;
     full_name: string;
@@ -103,6 +113,21 @@ export function displayedStatus(a: AgendaAppointment): {
     label: APPOINTMENT_STATUS_LABELS[a.status],
     dot: STATUS_DOT[a.status],
   };
+}
+
+/** H4.7: selo "Atendimento conjunto" nos cards da agenda, com a lista de
+ * profissionais adicionais no title. Compartilhado por todas as visões. */
+export function JointBadge({ names }: { names?: string[] }) {
+  if (!names || names.length === 0) return null;
+  return (
+    <p
+      className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-medium text-amber-700"
+      title={`Atendimento conjunto — também: ${names.join(", ")}`}
+    >
+      <Users className="size-3 shrink-0" />
+      Conjunto +{names.length}
+    </p>
+  );
 }
 
 export function WeekGrid({
@@ -268,6 +293,7 @@ export function WeekGrid({
                 {appointment.provider.full_name}
               </p>
             )}
+            <JointBadge names={appointment.participantNames} />
             {appointment.is_online ? (
               <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-medium text-sky-700">
                 <Wifi className="size-3 shrink-0" />

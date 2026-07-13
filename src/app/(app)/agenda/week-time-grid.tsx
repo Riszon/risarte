@@ -15,6 +15,7 @@ import { type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
 import {
+  JointBadge,
   STATUS_STYLES,
   displayedStatus,
   type AgendaAppointment,
@@ -281,6 +282,7 @@ export function WeekTimeGrid({
             <p className="truncate text-muted-foreground">
               {APPOINTMENT_TYPE_LABELS[a.type]}
             </p>
+            <JointBadge names={a.participantNames} />
             <span className="inline-flex items-center gap-1 text-muted-foreground">
               <span className={cn("size-1.5 rounded-full", ds.dot)} />
               {ds.label}

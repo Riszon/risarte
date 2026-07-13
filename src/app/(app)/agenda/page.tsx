@@ -178,6 +178,29 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         ? new Set(await sdrAccessibleClientIds())
         : null;
 
+    // H4.7: profissionais adicionais (atendimento conjunto) na visão da rede.
+    const netParticipantsByAppt = new Map<string, string[]>();
+    const netApptIds = (netAppts ?? []).map((a) => a.id);
+    if (netApptIds.length > 0) {
+      const { data: partRows } = await supabase
+        .from("appointment_participants")
+        .select(
+          "appointment_id, profiles:profiles!appointment_participants_provider_user_id_fkey ( full_name )"
+        )
+        .in("appointment_id", netApptIds)
+        .returns<
+          {
+            appointment_id: string;
+            profiles: { full_name: string } | null;
+          }[]
+        >();
+      for (const r of partRows ?? []) {
+        const arr = netParticipantsByAppt.get(r.appointment_id) ?? [];
+        arr.push(r.profiles?.full_name ?? "—");
+        netParticipantsByAppt.set(r.appointment_id, arr);
+      }
+    }
+
     const networkAppointments: AgendaAppointment[] = (netAppts ?? []).map(
       (a) => ({
         id: a.id,
@@ -193,6 +216,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         room_name: roomLabel(a.room),
         is_online: a.is_online ?? false,
         clinic_name: a.clinics?.name ?? null,
+        participantNames: netParticipantsByAppt.get(a.id),
         clientLinkable: sdrClientIds
           ? a.clients
             ? sdrClientIds.has(a.clients.id)
@@ -271,6 +295,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   // Unit agenda.
   // -------------------------------------------------------------------------
   let appointments: AppointmentRow[] = [];
+  // H4.7: nomes dos profissionais adicionais por agendamento (atendimento conjunto).
+  const participantsByAppt = new Map<string, string[]>();
   let clients: { id: string; full_name: string; inactive: boolean }[] = [];
   let staff: StaffOption[] = [];
   let preselectClientId: string | undefined;
@@ -407,6 +433,29 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
           : Promise.resolve({ data: [] as StaffRow[] }),
       ]);
     appointments = appts ?? [];
+
+    // H4.7: carrega os profissionais adicionais dos agendamentos do período.
+    const apptIds = appointments.map((a) => a.id);
+    if (apptIds.length > 0) {
+      const { data: partRows } = await supabase
+        .from("appointment_participants")
+        .select(
+          "appointment_id, profiles:profiles!appointment_participants_provider_user_id_fkey ( full_name )"
+        )
+        .in("appointment_id", apptIds)
+        .returns<
+          {
+            appointment_id: string;
+            profiles: { full_name: string } | null;
+          }[]
+        >();
+      for (const r of partRows ?? []) {
+        const arr = participantsByAppt.get(r.appointment_id) ?? [];
+        arr.push(r.profiles?.full_name ?? "—");
+        participantsByAppt.set(r.appointment_id, arr);
+      }
+    }
+
     clients = (clientRows ?? []).map((c) => ({
       id: c.id,
       full_name: c.full_name,
@@ -473,6 +522,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     room_name: roomLabel(a.room),
     is_online: a.is_online ?? false,
     needs_reschedule: a.needs_reschedule ?? false,
+    participantNames: participantsByAppt.get(a.id),
     clients: a.clients,
   }));
 
