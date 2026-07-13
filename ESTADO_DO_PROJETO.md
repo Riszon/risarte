@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.52.0** · Última migração: **0119**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.53.0** · Última migração: **0120**_
+
+> **H4.9 Chat interno ("Chat Hub") — Lote 1 (texto) ✅ (v0.53.0 · migração 0120):**
+> conversas internas da equipe em **/chat**. **Canal da unidade** (todos com acesso
+> à unidade ativa) + **mensagens diretas 1:1**; a franqueadora fica conectada às
+> unidades (vê/participa dos canais das unidades pelo escopo pleno). **Tempo real**
+> via Supabase Realtime (a publicação é ligada na própria migração). **Badge de não
+> lidas** no menu + **pop-up + som** quando chega mensagem (na tela do chat, o
+> próprio Chat Hub cuida; fora dela, o item do menu). **Recibo de leitura** (visto)
+> e **histórico**. Tabelas `chat_channels`/`chat_channel_members`/`chat_messages`/
+> `chat_reads`; RLS por `can_access_chat_channel`; criação por RPC
+> (`ensure_unit_chat_channel`/`ensure_direct_chat_channel`); badge por
+> `chat_unread_total`. **Falta Lote 2** (áudio/arquivos) e **Lote 3** (insistência
+> até visualizar). Migração a rodar: **0120**.
 
 > **H4.8 Planejamento anual da REDE — COMPLETO (Blocos 1 e 2).** **Bloco 1
 > (v0.51.0 · migração 0118):** a franqueadora define um calendário que vale para

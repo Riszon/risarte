@@ -558,10 +558,20 @@ antes).
       `saveNetworkLunch`; policy de escrita ampliada para `can_manage_network_plan`
       na linha NULL); a unidade herda por cascata e pode personalizar o seu (o
       editor da unidade mostra o padrão da rede como referência).
-- [ ] **H4.9 Chat interno [G] 🗄️** — canal da unidade + 1:1; franqueadora ↔
-      unidade conectadas; pop-up + som; áudio/arquivos; insiste até visualizar;
-      recibo de leitura; histórico. Supabase Realtime; dividir em lotes
-      (texto → arquivos → som/insistência).
+- [ ] **H4.9 Chat interno ("Chat Hub") [G] 🗄️** — canal da unidade + 1:1;
+      franqueadora ↔ unidade conectadas; pop-up + som; áudio/arquivos; insiste até
+      visualizar; recibo de leitura; histórico. Supabase Realtime; dividir em lotes
+      (texto → arquivos → som/insistência). **EM ANDAMENTO — Lote 1 (texto)
+      entregue** (v0.53.0 · migração 0120): tela **/chat** "Chat Hub" (lista +
+      thread), **canal da unidade** (todos com acesso) + **1:1**; tempo real via
+      Supabase Realtime (publicação ligada na migração); **badge de não lidas** no
+      menu + **pop-up + som** ao chegar mensagem; **recibo de leitura** (visto);
+      histórico. Tabelas `chat_channels`/`chat_channel_members`/`chat_messages`/
+      `chat_reads` + RLS via `can_access_chat_channel`; RPCs
+      `ensure_unit_chat_channel`/`ensure_direct_chat_channel`/`chat_unread_total`.
+      Franqueadora↔unidade: pelo canal da unidade (escopo pleno) + DM iniciada pela
+      franqueadora. **Falta Lote 2** (áudio/arquivos) e **Lote 3** (insistência
+      até visualizar).
 - [x] **H4.10 Prontuário em abas + menu fixo [M]** ✅ (v0.43.0, sem migração) —
       barra lateral **fixa** (sticky, sempre visível ao rolar); ficha do cliente
       em **abas** (`prontuario-tabs`: Cadastro · Jornada · Clínico · Plano ·

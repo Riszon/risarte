@@ -27,6 +27,7 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { NotificationNavItem } from "@/components/notification-nav-item";
+import { ChatNavItem } from "@/components/chat-nav-item";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
@@ -275,6 +276,7 @@ export function AppSidebar({
             {label}
           </Link>
         ))}
+        <ChatNavItem linkClass={linkClass("/chat")} />
         <NotificationNavItem linkClass={linkClass("/notificacoes")} />
 
         {isAdminMaster && (
