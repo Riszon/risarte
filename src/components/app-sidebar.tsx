@@ -9,6 +9,7 @@ import {
   Building2,
   Calendar,
   CalendarClock,
+  CalendarRange,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -85,6 +86,12 @@ const NAV_ITEMS = [
 
 // H4.6 B1: painel do dia do Dentista (executor).
 const MEU_DIA_ITEM = { href: "/meu-dia", label: "Meu Dia", icon: Stethoscope };
+// H4.6 E3: agenda consolidada de todas as unidades do dentista.
+const MINHA_AGENDA_ITEM = {
+  href: "/minha-agenda",
+  label: "Minha Agenda",
+  icon: CalendarRange,
+};
 
 // Shown to the Dentista Planner and Admin Master (alongside the unit nav).
 const PLANNER_ITEMS = [
@@ -149,9 +156,9 @@ export function AppSidebar({
   let navItems = dentistOnly
     ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
     : [...NAV_ITEMS];
-  // H4.6 B1: "Meu Dia" logo após Início para quem atende como dentista na unidade.
+  // H4.6 B1/E3: "Meu Dia" e "Minha Agenda" logo após Início para o dentista.
   if (activeClinicRoles.includes("dentist")) {
-    navItems = [navItems[0], MEU_DIA_ITEM, ...navItems.slice(1)];
+    navItems = [navItems[0], MEU_DIA_ITEM, MINHA_AGENDA_ITEM, ...navItems.slice(1)];
   }
   if (!dentistOnly && canViewPlans) {
     navItems = [...navItems, PLANS_ITEM];

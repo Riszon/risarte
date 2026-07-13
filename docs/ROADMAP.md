@@ -517,7 +517,12 @@ antes).
           (âmbar) se o dia não é dia dele nesta unidade (E1). RPCs SECURITY
           DEFINER `provider_cross_unit_check` (formulário) e
           `notify_provider_cross_unit` (chamado no `createAppointment`).
-    - [ ] **E3** agenda consolidada multi-unidade (cor por unidade).
+    - [x] **E3 — Agenda consolidada multi-unidade** ✅ (v0.47.0, migração 0114) —
+          rota `/minha-agenda` (menu do dentista): a semana com os atendimentos
+          de TODAS as unidades numa só tela, **cor por unidade** + filtro por
+          unidade + navegação de semana. RPC SECURITY DEFINER
+          `provider_multi_unit_agenda` (traz só os atendimentos do próprio
+          dentista em todas as unidades).
     - [ ] **E4** previsão semanal (painel + aviso de fim de semana).
 - [ ] **H4.7 Atendimento conjunto [G] 🗄️** — 2+ profissionais no mesmo
       atendimento (agenda de todos, 1 sala, responsável principal por tipo,
