@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+  getChannelPeople,
   getChannelReads,
   getMessages,
   listChannels,
@@ -30,7 +31,55 @@ import {
   type ChatChannel,
   type ChatColleague,
   type ChatMessage,
+  type ChatPerson,
 } from "./actions";
+
+function Avatar({
+  person,
+  name,
+  className,
+}: {
+  person?: ChatPerson;
+  name: string;
+  className?: string;
+}) {
+  const initials =
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "?";
+  if (person?.photoUrl) {
+    return (
+      <span
+        aria-label={name}
+        className={cn(
+          "size-8 shrink-0 rounded-full bg-muted bg-cover bg-center",
+          className
+        )}
+        style={{ backgroundImage: `url(${person.photoUrl})` }}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "grid size-8 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground",
+        className
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+function personSub(p?: ChatPerson): string | null {
+  if (!p) return null;
+  const parts = [p.roleLabel, p.unitLabel].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
 
 function playBeep() {
   try {
@@ -74,6 +123,7 @@ export function ChatHub({
     initialChannels[0]?.id ?? null
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [people, setPeople] = useState<Record<string, ChatPerson>>({});
   const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -95,10 +145,12 @@ export function ChatHub({
   }, []);
 
   const loadThread = useCallback(async (channelId: string) => {
-    const [msgs, reads] = await Promise.all([
+    const [msgs, reads, ppl] = await Promise.all([
       getMessages(channelId),
       getChannelReads(channelId),
+      getChannelPeople(channelId),
     ]);
+    setPeople(ppl);
     setMessages(msgs);
     setOtherReadAt(
       reads.length > 0
@@ -212,6 +264,12 @@ export function ChatHub({
     }
     return null;
   }, [messages]);
+
+  // Numa conversa direta, o outro participante (para o cabeçalho).
+  const headerPerson = useMemo(() => {
+    if (!selected || selected.kind !== "direct") return undefined;
+    return Object.values(people).find((p) => p.userId !== meId);
+  }, [selected, people, meId]);
 
   return (
     <div className="flex h-[calc(100vh-12rem)] min-h-[26rem] overflow-hidden rounded-xl border bg-card">
@@ -329,11 +387,30 @@ export function ChatHub({
                 <ArrowLeft className="size-4" />
               </Button>
               {selected.kind === "unit" ? (
-                <Users className="size-4 text-primary" />
+                <>
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10">
+                    <Users className="size-4 text-primary" />
+                  </span>
+                  <span className="font-medium">{selected.title}</span>
+                </>
               ) : (
-                <User className="size-4 text-muted-foreground" />
+                <>
+                  <Avatar
+                    person={headerPerson}
+                    name={headerPerson?.name ?? selected.title}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">
+                      {headerPerson?.name ?? selected.title}
+                    </p>
+                    {personSub(headerPerson) && (
+                      <p className="truncate text-xs text-muted-foreground">
+                        {personSub(headerPerson)}
+                      </p>
+                    )}
+                  </div>
+                </>
               )}
-              <span className="font-medium">{selected.title}</span>
             </div>
 
             <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-3">
@@ -342,40 +419,54 @@ export function ChatHub({
                   Nenhuma mensagem ainda. Escreva a primeira.
                 </p>
               ) : (
-                messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={cn(
-                      "flex flex-col",
-                      m.mine ? "items-end" : "items-start"
-                    )}
-                  >
+                messages.map((m) => {
+                  const p = people[m.senderId];
+                  const label = m.mine ? "Você" : (p?.name ?? m.senderName);
+                  const sub = personSub(p);
+                  return (
                     <div
+                      key={m.id}
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-3 py-1.5 text-sm",
-                        m.mine
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                        "flex items-end gap-2",
+                        m.mine ? "flex-row-reverse" : "flex-row"
                       )}
                     >
-                      {!m.mine && selected.kind === "unit" && (
-                        <span className="mb-0.5 block text-[11px] font-medium opacity-70">
-                          {m.senderName}
+                      <Avatar person={p} name={label} />
+                      <div
+                        className={cn(
+                          "flex min-w-0 max-w-[80%] flex-col",
+                          m.mine ? "items-end" : "items-start"
+                        )}
+                      >
+                        <span className="px-1 text-[11px] leading-tight text-muted-foreground">
+                          <span className="font-medium text-foreground">
+                            {label}
+                          </span>
+                          {sub && ` · ${sub}`}
                         </span>
-                      )}
-                      <span className="whitespace-pre-wrap break-words">
-                        {m.body}
-                      </span>
+                        <div
+                          className={cn(
+                            "rounded-2xl px-3 py-1.5 text-sm",
+                            m.mine
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          )}
+                        >
+                          <span className="whitespace-pre-wrap break-words">
+                            {m.body}
+                          </span>
+                        </div>
+                        <span className="px-1 pt-0.5 text-[10px] text-muted-foreground">
+                          {time(m.createdAt)}
+                          {m.id === lastMineId &&
+                            otherReadAt &&
+                            otherReadAt >= m.createdAt &&
+                            " · Visto"}
+                        </span>
+                      </div>
                     </div>
-                    <span className="px-1 pt-0.5 text-[10px] text-muted-foreground">
-                      {time(m.createdAt)}
-                      {m.id === lastMineId &&
-                        otherReadAt &&
-                        otherReadAt >= m.createdAt &&
-                        " · Visto"}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

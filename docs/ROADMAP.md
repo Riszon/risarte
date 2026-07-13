@@ -570,8 +570,14 @@ antes).
       `chat_reads` + RLS via `can_access_chat_channel`; RPCs
       `ensure_unit_chat_channel`/`ensure_direct_chat_channel`/`chat_unread_total`.
       Franqueadora↔unidade: pelo canal da unidade (escopo pleno) + DM iniciada pela
-      franqueadora. **Falta Lote 2** (áudio/arquivos) e **Lote 3** (insistência
-      até visualizar).
+      franqueadora. **Refinamentos R1 (v0.54.0 · migração 0121):** corrigido o
+      contador fantasma (badge = lista via `chat_my_channel_ids`); todas as equipes
+      aparecem mesmo logado em outra unidade; nome + **"Você"** + função + unidade +
+      **foto** por pessoa (`getChannelPeople`; leitura de staff-photos liberada a
+      autenticados). **Faltam:** R2 (presença online + visto por último +
+      entregue/lida), R3 (reagir + responder mensagem), R4 (Admin → unidade
+      específica + config de contato unidade↔franqueadora), e depois **Lote 2**
+      (áudio/arquivos) e **Lote 3** (insistência até visualizar).
 - [x] **H4.10 Prontuário em abas + menu fixo [M]** ✅ (v0.43.0, sem migração) —
       barra lateral **fixa** (sticky, sempre visível ao rolar); ficha do cliente
       em **abas** (`prontuario-tabs`: Cadastro · Jornada · Clínico · Plano ·

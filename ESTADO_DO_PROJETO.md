@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.53.0** · Última migração: **0120**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.54.0** · Última migração: **0121**_
+
+> **H4.9 Chat Hub — Refinamentos R1 ✅ (v0.54.0 · migração 0121):** corrigido o
+> **contador fantasma** (Admin/franqueadora mostravam dezenas de "não lidas" sem
+> mensagens) — badge e lista agora usam o MESMO conjunto (`chat_my_channel_ids`):
+> minhas equipes (todas as unidades onde tenho função) + escopo da franqueadora
+> (exceto Admin) + diretos + já abertos. **Todas as equipes aparecem** mesmo logado
+> em outra unidade. Cada mensagem/cabeçalho mostra **nome** (**"Você"** nas minhas),
+> **função + unidade** e **foto** (bucket staff-photos; leitura liberada a
+> autenticados). `getChannelPeople` (nome/função/unidade/foto assinada). **Faltam:**
+> R2 (presença online + "visto por último" + entregue/lida), R3 (reagir + responder
+> mensagem), R4 (Admin → unidade específica + config de contato unidade↔
+> franqueadora). Migração a rodar: **0121**.
 
 > **H4.9 Chat interno ("Chat Hub") — Lote 1 (texto) ✅ (v0.53.0 · migração 0120):**
 > conversas internas da equipe em **/chat**. **Canal da unidade** (todos com acesso
