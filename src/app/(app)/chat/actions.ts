@@ -286,7 +286,25 @@ export type ChatPerson = {
   roleLabel: string | null;
   unitLabel: string | null;
   photoUrl: string | null;
+  lastSeenAt: string | null;
 };
+
+/** Anexa o "visto por último" (user_presence) a cada pessoa. */
+async function attachPresence(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  people: Record<string, ChatPerson>
+): Promise<void> {
+  const userIds = Object.keys(people);
+  if (userIds.length === 0) return;
+  const { data } = await supabase
+    .from("user_presence")
+    .select("user_id, last_seen_at")
+    .in("user_id", userIds)
+    .returns<{ user_id: string; last_seen_at: string }[]>();
+  for (const r of data ?? []) {
+    if (people[r.user_id]) people[r.user_id].lastSeenAt = r.last_seen_at;
+  }
+}
 
 /** Anexa a foto (bucket staff-photos, link assinado) a cada pessoa. */
 async function attachPhotos(
@@ -376,6 +394,7 @@ export async function getChannelPeople(
           roleLabel: ROLE_LABELS[r.role] ?? null,
           unitLabel: unitName,
           photoUrl: null,
+          lastSeenAt: null,
         };
       }
     }
@@ -387,6 +406,7 @@ export async function getChannelPeople(
           roleLabel: null,
           unitLabel: null,
           photoUrl: null,
+          lastSeenAt: null,
         };
       }
     }
@@ -408,6 +428,7 @@ export async function getChannelPeople(
         roleLabel: null,
         unitLabel: null,
         photoUrl: null,
+        lastSeenAt: null,
       };
     }
     const uids = Object.keys(people);
@@ -436,6 +457,7 @@ export async function getChannelPeople(
   }
 
   await attachPhotos(supabase, people);
+  await attachPresence(supabase, people);
   return people;
 }
 

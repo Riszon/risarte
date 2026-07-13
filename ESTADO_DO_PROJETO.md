@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.54.0** · Última migração: **0121**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.55.0** · Última migração: **0122**_
+
+> **H4.9 Chat Hub — Refinamentos R2 ✅ (v0.55.0 · migração 0122):** **presença** —
+> **online agora** (bolinha verde) via Supabase Realtime Presence (canal
+> "online-users"; o item do menu marca o usuário e faz ping) + **"visto por
+> último"** persistido em `user_presence` (`touch_presence` a cada 60s). **Recibos**
+> nas minhas mensagens: **✓ Enviada** → **✓✓ Entregue** (o outro está online ou foi
+> visto após) → **✓✓ Lida** (azul, leu após). Cabeçalho da conversa direta mostra
+> "online agora"/"visto por último…". `getChannelPeople` traz `lastSeenAt`. **Faltam:**
+> R3 (reagir + responder mensagem), R4 (Admin → unidade específica + config de
+> contato unidade↔franqueadora), depois **Lote 2** (áudio/arquivos) e **Lote 3**.
+> Migração a rodar: **0122**.
 
 > **H4.9 Chat Hub — Refinamentos R1 ✅ (v0.54.0 · migração 0121):** corrigido o
 > **contador fantasma** (Admin/franqueadora mostravam dezenas de "não lidas" sem

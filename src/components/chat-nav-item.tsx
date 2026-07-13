@@ -48,9 +48,23 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
       if (!cancelled) setUnread(typeof data === "number" ? data : 0);
     }
 
+    // Presença: marca-se online (Realtime) + atualiza "visto por último".
+    let presence: ReturnType<typeof supabase.channel> | null = null;
     supabase.auth.getUser().then(({ data }) => {
-      meRef.current = data.user?.id ?? null;
+      const uid = data.user?.id ?? null;
+      meRef.current = uid;
+      if (!uid) return;
+      supabase.rpc("touch_presence");
+      presence = supabase.channel("online-users", {
+        config: { presence: { key: uid } },
+      });
+      presence.subscribe((status) => {
+        if (status === "SUBSCRIBED") presence?.track({ user_id: uid });
+      });
     });
+    const presenceTick = setInterval(() => {
+      supabase.rpc("touch_presence");
+    }, 60_000);
     refresh();
     const interval = setInterval(refresh, 45_000);
 
@@ -76,7 +90,9 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      clearInterval(presenceTick);
       supabase.removeChannel(channel);
+      if (presence) supabase.removeChannel(presence);
     };
   }, []);
 

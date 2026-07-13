@@ -574,8 +574,10 @@ antes).
       contador fantasma (badge = lista via `chat_my_channel_ids`); todas as equipes
       aparecem mesmo logado em outra unidade; nome + **"Você"** + função + unidade +
       **foto** por pessoa (`getChannelPeople`; leitura de staff-photos liberada a
-      autenticados). **Faltam:** R2 (presença online + visto por último +
-      entregue/lida), R3 (reagir + responder mensagem), R4 (Admin → unidade
+      autenticados). **R2 (v0.55.0 · migração 0122):** presença **online** (bolinha
+      verde, Realtime Presence) + **"visto por último"** (`user_presence`/
+      `touch_presence`); recibos **✓ Enviada / ✓✓ Entregue / ✓✓ Lida** nas minhas
+      mensagens. **Faltam:** R3 (reagir + responder mensagem), R4 (Admin → unidade
       específica + config de contato unidade↔franqueadora), e depois **Lote 2**
       (áudio/arquivos) e **Lote 3** (insistência até visualizar).
 - [x] **H4.10 Prontuário em abas + menu fixo [M]** ✅ (v0.43.0, sem migração) —

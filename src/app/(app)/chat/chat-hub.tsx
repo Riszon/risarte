@@ -11,6 +11,8 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  Check,
+  CheckCheck,
   MessageSquarePlus,
   Send,
   User,
@@ -37,10 +39,12 @@ import {
 function Avatar({
   person,
   name,
+  online,
   className,
 }: {
   person?: ChatPerson;
   name: string;
+  online?: boolean;
   className?: string;
 }) {
   const initials =
@@ -51,26 +55,25 @@ function Avatar({
       .map((w) => w[0])
       .join("")
       .toUpperCase() || "?";
-  if (person?.photoUrl) {
-    return (
-      <span
-        aria-label={name}
-        className={cn(
-          "size-8 shrink-0 rounded-full bg-muted bg-cover bg-center",
-          className
-        )}
-        style={{ backgroundImage: `url(${person.photoUrl})` }}
-      />
-    );
-  }
   return (
-    <span
-      className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground",
-        className
+    <span className={cn("relative shrink-0", className)}>
+      {person?.photoUrl ? (
+        <span
+          aria-label={name}
+          className="block size-8 rounded-full bg-muted bg-cover bg-center"
+          style={{ backgroundImage: `url(${person.photoUrl})` }}
+        />
+      ) : (
+        <span className="grid size-8 place-items-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+          {initials}
+        </span>
       )}
-    >
-      {initials}
+      {online && (
+        <span
+          aria-label="online"
+          className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card bg-emerald-500"
+        />
+      )}
     </span>
   );
 }
@@ -79,6 +82,17 @@ function personSub(p?: ChatPerson): string | null {
   if (!p) return null;
   const parts = [p.roleLabel, p.unitLabel].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+function lastSeenLabel(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const hm = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === now.toDateString()) return `hoje às ${hm}`;
+  const yst = new Date(now);
+  yst.setDate(now.getDate() - 1);
+  if (d.toDateString() === yst.toDateString()) return `ontem às ${hm}`;
+  return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${hm}`;
 }
 
 function playBeep() {
@@ -124,6 +138,7 @@ export function ChatHub({
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [people, setPeople] = useState<Record<string, ChatPerson>>({});
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -229,6 +244,20 @@ export function ChatHub({
     return () => clearInterval(t);
   }, [selectedId]);
 
+  // Presença "online agora" via Realtime Presence (bolinha verde).
+  useEffect(() => {
+    const supabase = createClient();
+    const ch = supabase.channel("online-users");
+    const sync = () => setOnlineIds(new Set(Object.keys(ch.presenceState())));
+    ch.on("presence", { event: "sync" }, sync)
+      .on("presence", { event: "join" }, sync)
+      .on("presence", { event: "leave" }, sync)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, []);
+
   function submit() {
     const text = input.trim();
     if (!text || !selectedId) return;
@@ -257,19 +286,35 @@ export function ChatHub({
     });
   }
 
-  // Último "meu" balão, para mostrar o recibo de leitura.
-  const lastMineId = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].mine) return messages[i].id;
-    }
-    return null;
-  }, [messages]);
-
   // Numa conversa direta, o outro participante (para o cabeçalho).
   const headerPerson = useMemo(() => {
     if (!selected || selected.kind !== "direct") return undefined;
     return Object.values(people).find((p) => p.userId !== meId);
   }, [selected, people, meId]);
+
+  // Recibos: "entregue" = alguém online ou visto depois; "lida" = leu depois.
+  const otherSeenAt = useMemo(() => {
+    let latest: string | null = null;
+    for (const p of Object.values(people)) {
+      if (p.userId === meId) continue;
+      if (p.lastSeenAt && (!latest || p.lastSeenAt > latest)) latest = p.lastSeenAt;
+    }
+    return latest;
+  }, [people, meId]);
+  const anyOtherOnline = useMemo(
+    () =>
+      Object.values(people).some(
+        (p) => p.userId !== meId && onlineIds.has(p.userId)
+      ),
+    [people, onlineIds, meId]
+  );
+  function receiptFor(createdAt: string): "sent" | "delivered" | "read" {
+    if (otherReadAt && otherReadAt >= createdAt) return "read";
+    if (anyOtherOnline || (otherSeenAt && otherSeenAt >= createdAt)) {
+      return "delivered";
+    }
+    return "sent";
+  }
 
   return (
     <div className="flex h-[calc(100vh-12rem)] min-h-[26rem] overflow-hidden rounded-xl border bg-card">
@@ -398,16 +443,31 @@ export function ChatHub({
                   <Avatar
                     person={headerPerson}
                     name={headerPerson?.name ?? selected.title}
+                    online={
+                      headerPerson ? onlineIds.has(headerPerson.userId) : false
+                    }
                   />
                   <div className="min-w-0">
                     <p className="truncate font-medium">
                       {headerPerson?.name ?? selected.title}
                     </p>
-                    {personSub(headerPerson) && (
-                      <p className="truncate text-xs text-muted-foreground">
-                        {personSub(headerPerson)}
-                      </p>
-                    )}
+                    <p className="truncate text-xs text-muted-foreground">
+                      {headerPerson && onlineIds.has(headerPerson.userId) ? (
+                        <span className="font-medium text-emerald-600">
+                          online agora
+                        </span>
+                      ) : headerPerson?.lastSeenAt ? (
+                        `visto por último ${lastSeenLabel(headerPerson.lastSeenAt)}`
+                      ) : (
+                        (personSub(headerPerson) ?? "")
+                      )}
+                      {personSub(headerPerson) &&
+                        (headerPerson && onlineIds.has(headerPerson.userId)
+                          ? ` · ${personSub(headerPerson)}`
+                          : headerPerson?.lastSeenAt
+                            ? ` · ${personSub(headerPerson)}`
+                            : "")}
+                    </p>
                   </div>
                 </>
               )}
@@ -431,7 +491,11 @@ export function ChatHub({
                         m.mine ? "flex-row-reverse" : "flex-row"
                       )}
                     >
-                      <Avatar person={p} name={label} />
+                      <Avatar
+                        person={p}
+                        name={label}
+                        online={onlineIds.has(m.senderId)}
+                      />
                       <div
                         className={cn(
                           "flex min-w-0 max-w-[80%] flex-col",
@@ -456,12 +520,31 @@ export function ChatHub({
                             {m.body}
                           </span>
                         </div>
-                        <span className="px-1 pt-0.5 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1 px-1 pt-0.5 text-[10px] text-muted-foreground">
                           {time(m.createdAt)}
-                          {m.id === lastMineId &&
-                            otherReadAt &&
-                            otherReadAt >= m.createdAt &&
-                            " · Visto"}
+                          {m.mine &&
+                            (() => {
+                              const r = receiptFor(m.createdAt);
+                              if (r === "read") {
+                                return (
+                                  <span className="flex items-center gap-0.5 text-sky-500">
+                                    <CheckCheck className="size-3" /> Lida
+                                  </span>
+                                );
+                              }
+                              if (r === "delivered") {
+                                return (
+                                  <span className="flex items-center gap-0.5">
+                                    <CheckCheck className="size-3" /> Entregue
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="flex items-center gap-0.5">
+                                  <Check className="size-3" /> Enviada
+                                </span>
+                              );
+                            })()}
                         </span>
                       </div>
                     </div>
