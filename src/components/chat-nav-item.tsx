@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { setOnlineIds } from "@/lib/presence-store";
 import { cn } from "@/lib/utils";
 
 function beep() {
@@ -58,9 +59,15 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
       presence = supabase.channel("online-users", {
         config: { presence: { key: uid } },
       });
-      presence.subscribe((status) => {
-        if (status === "SUBSCRIBED") presence?.track({ user_id: uid });
-      });
+      const syncOnline = () =>
+        setOnlineIds(new Set(Object.keys(presence?.presenceState() ?? {})));
+      presence
+        .on("presence", { event: "sync" }, syncOnline)
+        .on("presence", { event: "join" }, syncOnline)
+        .on("presence", { event: "leave" }, syncOnline)
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") presence?.track({ user_id: uid });
+        });
     });
     const presenceTick = setInterval(() => {
       supabase.rpc("touch_presence");

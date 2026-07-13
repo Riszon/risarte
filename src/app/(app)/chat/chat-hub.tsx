@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getOnlineIds, subscribeOnline } from "@/lib/presence-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -138,7 +139,7 @@ export function ChatHub({
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [people, setPeople] = useState<Record<string, ChatPerson>>({});
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(getOnlineIds());
   const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -244,19 +245,9 @@ export function ChatHub({
     return () => clearInterval(t);
   }, [selectedId]);
 
-  // Presença "online agora" via Realtime Presence (bolinha verde).
-  useEffect(() => {
-    const supabase = createClient();
-    const ch = supabase.channel("online-users");
-    const sync = () => setOnlineIds(new Set(Object.keys(ch.presenceState())));
-    ch.on("presence", { event: "sync" }, sync)
-      .on("presence", { event: "join" }, sync)
-      .on("presence", { event: "leave" }, sync)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, []);
+  // Presença "online agora" — lê do store compartilhado (o canal é gerenciado
+  // pelo item do menu, sempre montado; evita colidir com o mesmo canal aqui).
+  useEffect(() => subscribeOnline(setOnlineIds), []);
 
   function submit() {
     const text = input.trim();
