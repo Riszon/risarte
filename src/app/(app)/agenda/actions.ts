@@ -1912,6 +1912,60 @@ export async function saveLunchBreak(
   return { ok: true };
 }
 
+/** H4.8 Bloco 2: almoço padrão da REDE (linha clinic_id NULL). Só a franqueadora
+ * (Admin ou gestor da franqueadora) define; as unidades herdam por cascata. */
+export async function saveNetworkLunch(input: {
+  enabled: boolean;
+  start: string;
+  end: string;
+}): Promise<ActionResult> {
+  const session = await getSessionContext();
+  const canNetwork =
+    session.isAdminMaster ||
+    session.clinics.some(
+      (c) =>
+        c.type === "franchisor" &&
+        (session.rolesByClinic[c.id] ?? []).some(
+          (r) => r === "unit_manager" || r === "franchisee"
+        )
+    );
+  if (!canNetwork) {
+    return {
+      ok: false,
+      error: "Apenas a franqueadora (ou Admin) define o padrão da rede.",
+    };
+  }
+  if (input.enabled && timeToMinutes(input.end) <= timeToMinutes(input.start)) {
+    return { ok: false, error: "O fim do almoço deve ser depois do início." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("clinic_agenda_settings").upsert(
+    {
+      clinic_id: null,
+      lunch_enabled: input.enabled,
+      lunch_start: input.start,
+      lunch_end: input.end,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "clinic_id" }
+  );
+  if (error) {
+    console.error("saveNetworkLunch failed:", error.message);
+    return {
+      ok: false,
+      error: "Não foi possível salvar o almoço padrão da rede.",
+    };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "agenda_settings_network",
+    entityId: "network",
+  });
+  revalidatePath("/agenda");
+  revalidatePath("/agenda/configuracao");
+  return { ok: true };
+}
+
 export async function removeSpecialDay(openDayId: string): Promise<ActionResult> {
   await getSessionContext();
   const supabase = await createClient();

@@ -543,18 +543,21 @@ antes).
       participante, com papel principal/adicional + selo) e nos **cards da agenda**
       (selo "Conjunto +N", `JointBadge` em week/day/network); **aviso suave** se um
       profissional adicional já estiver ocupado no horário (`checkParticipantsBusy`).
-- [ ] **H4.8 Planejamento anual da rede [M/G] 🗄️** — feriados/eventos/
+- [x] **H4.8 Planejamento anual da rede [M/G] 🗄️** ✅ — feriados/eventos/
       campanhas da franqueadora com flag "decisão travada ou da unidade";
-      almoço padrão da rede (cascata). **EM ANDAMENTO — Bloco 1 entregue**
-      (v0.51.0 · migração 0118): calendário da REDE (`agenda_plan_items` com
-      `clinic_id NULL` + coluna `locked` + tipo `campaign` informativo); a
-      franqueadora cria/edita em `/agenda/planejamento-anual` (RPCs
-      `create/update/delete_network_plan_item`, guarda `can_manage_network_plan`);
-      itens da rede aparecem na agenda de TODAS as unidades e bloqueiam conforme a
-      trava (travado = unidade não abre; decisão da unidade = pode abrir dia
-      avulso; campanha nunca fecha); a ficha de planejamento da unidade mostra o
-      calendário da rede em leitura. **Falta Bloco 2:** almoço padrão da rede
-      (cascata) — a rede define o padrão e a unidade personaliza o próprio.
+      almoço padrão da rede (cascata). **Bloco 1** (v0.51.0 · migração 0118):
+      calendário da REDE (`agenda_plan_items` com `clinic_id NULL` + coluna
+      `locked` + tipo `campaign` informativo); a franqueadora cria/edita em
+      `/agenda/planejamento-anual` (RPCs `create/update/delete_network_plan_item`,
+      guarda `can_manage_network_plan`); itens da rede aparecem na agenda de TODAS
+      as unidades e bloqueiam conforme a trava (travado = unidade não abre;
+      decisão da unidade = pode abrir dia avulso; campanha nunca fecha); a ficha
+      da unidade mostra o calendário da rede em leitura. **Bloco 2** (v0.52.0 ·
+      migração 0119): **almoço padrão da rede** — a franqueadora define em
+      `/agenda/configuracao` (linha `clinic_id NULL` de `clinic_agenda_settings`,
+      `saveNetworkLunch`; policy de escrita ampliada para `can_manage_network_plan`
+      na linha NULL); a unidade herda por cascata e pode personalizar o seu (o
+      editor da unidade mostra o padrão da rede como referência).
 - [ ] **H4.9 Chat interno [G] 🗄️** — canal da unidade + 1:1; franqueadora ↔
       unidade conectadas; pop-up + som; áudio/arquivos; insiste até visualizar;
       recibo de leitura; histórico. Supabase Realtime; dividir em lotes

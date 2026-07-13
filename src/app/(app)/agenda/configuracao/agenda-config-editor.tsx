@@ -44,6 +44,7 @@ export function AgendaConfigEditor({
   staff,
   openDays,
   lunch,
+  networkLunch,
 }: {
   clinicId: string;
   /** Ajuste #1: só o Admin vê o botão de EXCLUIR cadeira. */
@@ -71,6 +72,8 @@ export function AgendaConfigEditor({
     isPast: boolean;
   }[];
   lunch: { enabled: boolean; start: string; end: string };
+  /** H4.8: padrão de almoço da rede (herdado quando a unidade não personaliza). */
+  networkLunch?: { enabled: boolean; start: string; end: string };
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -775,6 +778,18 @@ export function AgendaConfigEditor({
             No almoço a agenda fica fechada para agendamentos normais; encaixes,
             urgências e emergências continuam permitidos.
           </p>
+          {networkLunch && (
+            <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs text-muted-foreground">
+              Padrão da rede:{" "}
+              <span className="font-medium text-primary">
+                {networkLunch.enabled
+                  ? `almoço ${networkLunch.start}–${networkLunch.end}`
+                  : "sem horário de almoço"}
+              </span>
+              . A configuração acima vale só para esta unidade (personaliza o
+              padrão da rede).
+            </p>
+          )}
           <Button
             size="sm"
             disabled={isPending}

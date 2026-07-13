@@ -10,6 +10,7 @@ import {
 } from "@/lib/agenda-settings";
 import { mapRoom, sortRooms, type RoomRow } from "@/lib/rooms";
 import { AgendaConfigEditor } from "./agenda-config-editor";
+import { NetworkLunchEditor } from "./network-lunch-editor";
 
 export const metadata: Metadata = { title: "Configurar agenda" };
 
@@ -17,16 +18,65 @@ export default async function AgendaConfigPage() {
   const session = await getSessionContext();
   const clinic = session.activeClinic;
 
-  // Config is per unit; the network default stays on /admin/agenda.
-  if (!clinic || clinic.type === "franchisor") {
+  if (!clinic) {
     return (
       <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
         <h1 className="text-2xl font-semibold tracking-tight">
           Configurar agenda
         </h1>
         <p className="text-sm text-muted-foreground">
-          Selecione uma unidade no menu lateral para configurar a agenda dela.
+          Selecione uma clínica no menu lateral.
         </p>
+      </div>
+    );
+  }
+
+  // H4.8 Bloco 2: na franqueadora, define o ALMOÇO PADRÃO DA REDE (cascata).
+  if (clinic.type === "franchisor") {
+    const canManageNetwork =
+      session.isAdminMaster ||
+      hasRoleInClinic(session, clinic.id, ["unit_manager", "franchisee"]);
+    if (!canManageNetwork) redirect("/agenda");
+
+    const supabase = await createClient();
+    const { data: netRows } = await supabase
+      .from("clinic_agenda_settings")
+      .select(
+        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
+      )
+      .is("clinic_id", null)
+      .returns<AgendaSettingRow[]>();
+    const net = resolveAgendaSettings(netRows ?? [], null);
+
+    return (
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Padrão da rede
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Configurações que valem para todas as unidades por padrão (cada
+              unidade pode personalizar a sua).
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/agenda" />}
+          >
+            Voltar à agenda
+          </Button>
+        </div>
+
+        <NetworkLunchEditor
+          lunch={{
+            enabled: net.lunchEnabled,
+            start: net.lunchStart,
+            end: net.lunchEnd,
+          }}
+        />
       </div>
     );
   }
@@ -96,6 +146,8 @@ export default async function AgendaConfigPage() {
   ]);
 
   const values = resolveAgendaSettings(settingRows ?? [], clinic.id);
+  // H4.8: padrão da rede (linha clinic_id NULL) — para mostrar o que é herdado.
+  const networkDefault = resolveAgendaSettings(settingRows ?? [], null);
   const rooms = sortRooms((roomRows ?? []).map(mapRoom));
   const maxRooms =
     (clinicMeta as { max_rooms: number | null } | null)?.max_rooms ?? 4;
@@ -165,6 +217,11 @@ export default async function AgendaConfigPage() {
           enabled: values.lunchEnabled,
           start: values.lunchStart,
           end: values.lunchEnd,
+        }}
+        networkLunch={{
+          enabled: networkDefault.lunchEnabled,
+          start: networkDefault.lunchStart,
+          end: networkDefault.lunchEnd,
         }}
       />
     </div>

@@ -275,6 +275,16 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
                 Planejamento anual da rede
               </Button>
             )}
+            {canManageNetworkPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/agenda/configuracao" />}
+              >
+                Padrão da rede
+              </Button>
+            )}
             {sdrOnly && sdrUnits.length > 0 && (
               <AppointmentFormDialog
                 clients={[]}
