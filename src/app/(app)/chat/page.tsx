@@ -23,6 +23,11 @@ export default async function ChatPage() {
     totalUsers = count ?? 0;
   }
 
+  // R4: Admin/franqueadora pode enviar para uma unidade específica.
+  const canMessageUnits =
+    session.isAdminMaster ||
+    session.clinics.some((c) => c.type === "franchisor");
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-4">
@@ -37,6 +42,7 @@ export default async function ChatPage() {
         colleagues={colleagues}
         isAdmin={session.isAdminMaster}
         totalUsers={totalUsers}
+        canMessageUnits={canMessageUnits}
       />
     </div>
   );

@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.57.0** · Última migração: **0125**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.58.0** · Última migração: **0125**_
+
+> **H4.9 Chat Hub — R4a ✅ (v0.58.0, sem migração nova):** **Admin/franqueadora →
+> unidade específica.** No painel "Nova", quem tem escopo de rede vê a seção
+> **"Enviar para uma unidade"** (Admin = todas as unidades; franqueadora = as do
+> seu escopo — `listReachableUnits`). Por unidade: **"Chat da equipe"** (abre o
+> canal da equipe — `openUnitChannel`) ou **"Individual"** (a mesma mensagem vai
+> como conversa direta para **cada membro** — `broadcastToUnitMembers`, via
+> `chat_channel_people` + `ensure_direct_chat_channel`). **Falta o R4b:** configurar
+> **quem conversa com quem** entre unidade ↔ franqueadora (por função). Depois:
+> **Lote 2** (áudio/arquivos) e **Lote 3** (insistência até visualizar).
 
 > **H4.9 Chat Hub — R3 ✅ (v0.57.0 · migração 0125):** **reagir** a uma mensagem
 > (emoji — `chat_reactions`, chips com contagem, tempo real) e **responder** uma

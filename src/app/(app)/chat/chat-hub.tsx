@@ -38,13 +38,16 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
+  broadcastToUnitMembers,
   getChannelPeople,
   getChannelReads,
   getLastSeen,
   getMessages,
   listChannels,
+  listReachableUnits,
   markRead,
   openDirectChannel,
+  openUnitChannel,
   sendMessage,
   toggleReaction,
   type ChatChannel,
@@ -137,12 +140,14 @@ export function ChatHub({
   colleagues,
   isAdmin,
   totalUsers,
+  canMessageUnits,
 }: {
   meId: string;
   initialChannels: ChatChannel[];
   colleagues: ChatColleague[];
   isAdmin: boolean;
   totalUsers: number;
+  canMessageUnits: boolean;
 }) {
   const [channels, setChannels] = useState<ChatChannel[]>(initialChannels);
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -161,6 +166,14 @@ export function ChatHub({
   const [newSearch, setNewSearch] = useState("");
   const [listSearch, setListSearch] = useState("");
   const [membersOpen, setMembersOpen] = useState(false);
+  // R4: envio para unidade específica (Admin/franqueadora).
+  const [units, setUnits] = useState<{ id: string; name: string }[]>([]);
+  const [unitsLoaded, setUnitsLoaded] = useState(false);
+  const [broadcastFor, setBroadcastFor] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [broadcastText, setBroadcastText] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const selectedIdRef = useRef<string | null>(selectedId);
@@ -338,6 +351,49 @@ export function ChatHub({
     });
   }
 
+  // R4: carrega as unidades alcançáveis quando o painel "Nova" abre.
+  useEffect(() => {
+    if (showNew && canMessageUnits && !unitsLoaded) {
+      listReachableUnits().then((u) => {
+        setUnits(u);
+        setUnitsLoaded(true);
+      });
+    }
+  }, [showNew, canMessageUnits, unitsLoaded]);
+
+  function openUnit(clinicId: string) {
+    startTransition(async () => {
+      const r = await openUnitChannel(clinicId);
+      if (r.ok && r.channelId) {
+        await refreshChannels();
+        openChannel(r.channelId);
+        setShowNew(false);
+      } else {
+        toast.error(r.error ?? "Não foi possível abrir o chat da equipe.");
+      }
+    });
+  }
+
+  function sendBroadcast() {
+    if (!broadcastFor) return;
+    const text = broadcastText.trim();
+    if (!text) return;
+    startTransition(async () => {
+      const r = await broadcastToUnitMembers(broadcastFor.id, text);
+      if (r.ok) {
+        toast.success(
+          `Mensagem enviada individualmente a ${r.sent ?? 0} membro(s).`
+        );
+        setBroadcastFor(null);
+        setBroadcastText("");
+        setShowNew(false);
+        refreshChannels();
+      } else {
+        toast.error(r.error ?? "Não foi possível enviar.");
+      }
+    });
+  }
+
   const headerPerson = useMemo(() => {
     if (!selected || selected.kind !== "direct") return undefined;
     return Object.values(people).find((p) => p.userId !== meId);
@@ -396,6 +452,11 @@ export function ChatHub({
         (c.hint ?? "").toLowerCase().includes(q)
     );
   }, [colleagues, newSearch]);
+
+  const visibleUnits = useMemo(() => {
+    const q = newSearch.trim().toLowerCase();
+    return q ? units.filter((u) => u.name.toLowerCase().includes(q)) : units;
+  }, [units, newSearch]);
 
   const teamMembers = useMemo(
     () =>
@@ -479,6 +540,91 @@ export function ChatHub({
                 </button>
               ))
             )}
+
+            {canMessageUnits &&
+              (broadcastFor ? (
+                <div className="mt-1.5 rounded-md border bg-card p-2">
+                  <p className="text-xs font-medium">
+                    Mensagem individual — {broadcastFor.name}
+                  </p>
+                  <p className="mb-1 text-[11px] text-muted-foreground">
+                    A mesma mensagem vai como conversa direta para cada membro da
+                    equipe.
+                  </p>
+                  <textarea
+                    value={broadcastText}
+                    onChange={(e) => setBroadcastText(e.target.value)}
+                    rows={3}
+                    placeholder="Escreva a mensagem..."
+                    className="w-full rounded-md border border-input bg-transparent p-2 text-sm"
+                  />
+                  <div className="mt-1 flex justify-end gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setBroadcastFor(null);
+                        setBroadcastText("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={isPending || !broadcastText.trim()}
+                      onClick={sendBroadcast}
+                    >
+                      Enviar a todos
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-1.5 border-t pt-1.5">
+                  <p className="px-1 pb-1 text-[11px] font-medium text-muted-foreground">
+                    Enviar para uma unidade
+                  </p>
+                  {!unitsLoaded ? (
+                    <p className="px-1 text-xs text-muted-foreground">
+                      Carregando…
+                    </p>
+                  ) : visibleUnits.length === 0 ? (
+                    <p className="px-1 text-xs text-muted-foreground">
+                      Nenhuma unidade.
+                    </p>
+                  ) : (
+                    visibleUnits.map((u) => (
+                      <div
+                        key={u.id}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-accent"
+                      >
+                        <Users className="size-4 shrink-0 text-primary" />
+                        <span className="min-w-0 flex-1 truncate">{u.name}</span>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => openUnit(u.id)}
+                          className="shrink-0 rounded border px-1.5 py-0.5 text-[10px] hover:border-primary"
+                        >
+                          Chat da equipe
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => {
+                            setBroadcastFor(u);
+                            setBroadcastText("");
+                          }}
+                          className="shrink-0 rounded border px-1.5 py-0.5 text-[10px] hover:border-primary"
+                        >
+                          Individual
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ))}
           </div>
         )}
 

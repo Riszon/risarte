@@ -600,3 +600,107 @@ export async function openDirectChannel(
   revalidatePath("/chat");
   return { ok: true, channelId: data as string };
 }
+
+// ---------------------------------------------------------------------------
+// R4 — Admin/franqueadora envia para uma UNIDADE específica.
+// ---------------------------------------------------------------------------
+
+/** Unidades que posso alcançar para enviar mensagem (Admin = todas; franqueadora
+ * = as do seu escopo). */
+export async function listReachableUnits(): Promise<
+  { id: string; name: string }[]
+> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  if (session.isAdminMaster) {
+    const { data } = await supabase
+      .from("clinics")
+      .select("id, name")
+      .eq("type", "franchise_unit")
+      .eq("is_active", true)
+      .order("name")
+      .returns<{ id: string; name: string }[]>();
+    return data ?? [];
+  }
+  const { data: accessIds } = await supabase.rpc("user_full_access_clinic_ids");
+  const ids = [
+    ...new Set(
+      ((accessIds as { clinic_id?: string }[] | string[] | null) ?? [])
+        .map((x) => (typeof x === "string" ? x : (x.clinic_id ?? "")))
+        .filter(Boolean)
+    ),
+  ];
+  if (ids.length === 0) return [];
+  const { data } = await supabase
+    .from("clinics")
+    .select("id, name")
+    .in("id", ids)
+    .eq("type", "franchise_unit")
+    .eq("is_active", true)
+    .order("name")
+    .returns<{ id: string; name: string }[]>();
+  return data ?? [];
+}
+
+/** Abre (garante) o chat da equipe de uma unidade e devolve o id do canal. */
+export async function openUnitChannel(
+  clinicId: string
+): Promise<{ ok: boolean; channelId?: string; error?: string }> {
+  await getSessionContext();
+  if (!clinicId) return { ok: false, error: "Unidade inválida." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ensure_unit_chat_channel", {
+    p_clinic_id: clinicId,
+  });
+  if (error) {
+    console.error("openUnitChannel failed:", error.message);
+    return { ok: false, error: "Não foi possível abrir o chat da equipe." };
+  }
+  revalidatePath("/chat");
+  return { ok: true, channelId: data as string };
+}
+
+/** Envia a MESMA mensagem, individualmente (conversa direta), a cada membro da
+ * unidade. Retorna quantas foram enviadas. */
+export async function broadcastToUnitMembers(
+  clinicId: string,
+  body: string
+): Promise<{ ok: boolean; sent?: number; error?: string }> {
+  const session = await getSessionContext();
+  const text = body.trim();
+  if (!clinicId || !text) {
+    return { ok: false, error: "Escolha a unidade e escreva a mensagem." };
+  }
+  const supabase = await createClient();
+
+  // Garante o canal da unidade e pega os membros (RPC SECURITY DEFINER).
+  const { data: chId } = await supabase.rpc("ensure_unit_chat_channel", {
+    p_clinic_id: clinicId,
+  });
+  if (!chId) return { ok: false, error: "Sem permissão para esta unidade." };
+  const { data: ppl } = await supabase.rpc("chat_channel_people", {
+    p_channel_id: chId,
+  });
+  const memberIds = [
+    ...new Set(
+      ((ppl as { user_id: string }[] | null) ?? []).map((p) => p.user_id)
+    ),
+  ].filter((id) => id !== session.userId);
+
+  let sent = 0;
+  for (const uid of memberIds) {
+    const { data: dmId, error: chErr } = await supabase.rpc(
+      "ensure_direct_chat_channel",
+      { p_other: uid }
+    );
+    if (chErr || !dmId) continue;
+    const { error: msgErr } = await supabase.from("chat_messages").insert({
+      channel_id: dmId as string,
+      sender_id: session.userId,
+      body: text,
+    });
+    if (!msgErr) sent += 1;
+  }
+  revalidatePath("/chat");
+  return { ok: true, sent };
+}
