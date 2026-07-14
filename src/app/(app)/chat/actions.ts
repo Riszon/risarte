@@ -132,9 +132,11 @@ export async function listChannels(): Promise<ChatChannel[]> {
     }
   }
 
+  // Só a MINHA marca de leitura (após a 0124 dá para ler a de outros também).
   const { data: readRows } = await supabase
     .from("chat_reads")
     .select("channel_id, last_read_at")
+    .eq("user_id", session.userId)
     .in("channel_id", ids);
   const lastReadById = new Map<string, string>();
   for (const r of readRows ?? []) {

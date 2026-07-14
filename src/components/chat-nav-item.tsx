@@ -98,7 +98,7 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
       const uid = data.user?.id ?? null;
       meRef.current = uid;
       if (!uid) return;
-      supabase.rpc("touch_presence");
+      supabase.rpc("touch_presence").then(() => {});
       presence = supabase.channel("online-users", {
         config: { presence: { key: uid } },
       });
@@ -118,7 +118,7 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
     });
 
     const presenceTick = setInterval(() => {
-      supabase.rpc("touch_presence");
+      supabase.rpc("touch_presence").then(() => {});
     }, 60_000);
     refresh();
     const interval = setInterval(refresh, 45_000);
