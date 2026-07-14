@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.58.0** · Última migração: **0125**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.59.0** · Última migração: **0126**_
+
+> **H4.9 Chat Hub — R4b ✅ (v0.59.0 · migração 0126) — H4.9 COMPLETO até o Lote 1.**
+> **Configurar quem conversa com quem** (unidade ↔ franqueadora) por função:
+> tabela `chat_contact_rules` (par franqueadora×unidade, ausência = permitido);
+> tela do Admin **`/admin/chat`** (matriz de funções, salva automático). A trava
+> entra em `ensure_direct_chat_channel` (via `chat_can_dm`) e o seletor "Nova"
+> respeita a config (`chat_contacts` — inclui contatos cross-nível permitidos;
+> mesma unidade sempre; Admin fala com todos). **H4.9 restante:** **Lote 2**
+> (áudio/arquivos) e **Lote 3** (insistência até visualizar). Migração a rodar:
+> **0126** (todas do Chat Hub: 0120–0126).
 
 > **H4.9 Chat Hub — R4a ✅ (v0.58.0, sem migração nova):** **Admin/franqueadora →
 > unidade específica.** No painel "Nova", quem tem escopo de rede vê a seção

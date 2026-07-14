@@ -17,6 +17,7 @@ import {
   FileText,
   Home,
   LogOut,
+  MessagesSquare,
   Route,
   ScrollText,
   Stethoscope,
@@ -127,6 +128,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
   { href: "/admin/documentos", label: "Modelos de Documentos", icon: FileText },
+  { href: "/admin/chat", label: "Chat (contatos)", icon: MessagesSquare },
   { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
 ];
 

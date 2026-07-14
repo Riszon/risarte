@@ -537,47 +537,28 @@ export async function getChannelPeople(
 
 /** Colegas com quem posso iniciar uma conversa direta. */
 export async function listColleagues(): Promise<ChatColleague[]> {
-  const session = await getSessionContext();
+  await getSessionContext();
   const supabase = await createClient();
-
-  const { data: accessIds } = await supabase.rpc("user_full_access_clinic_ids");
-  const clinicIds = new Set<string>(session.clinics.map((c) => c.id));
-  for (const x of (accessIds as { clinic_id?: string }[] | string[] | null) ??
-    []) {
-    clinicIds.add(typeof x === "string" ? x : (x.clinic_id ?? ""));
-  }
-  clinicIds.delete("");
-  if (clinicIds.size === 0) return [];
-
-  const { data: rows } = await supabase
-    .from("user_clinic_roles")
-    .select(
-      "user_id, clinic_id, profiles ( full_name ), clinics!user_clinic_roles_clinic_id_fkey ( name )"
-    )
-    .in("clinic_id", [...clinicIds])
-    .returns<
-      {
-        user_id: string;
-        clinic_id: string;
-        profiles: { full_name: string } | null;
-        clinics: { name: string } | null;
-      }[]
-    >();
-
-  const byUser = new Map<string, ChatColleague>();
-  for (const r of rows ?? []) {
-    if (r.user_id === session.userId) continue;
-    if (!byUser.has(r.user_id)) {
-      byUser.set(r.user_id, {
-        userId: r.user_id,
-        name: r.profiles?.full_name ?? "—",
-        hint: r.clinics?.name ?? null,
-      });
-    }
-  }
-  return [...byUser.values()].sort((a, b) =>
-    a.name.localeCompare(b.name, "pt-BR")
-  );
+  // R4b: respeita a config de contato unidade↔franqueadora (chat_contacts RPC).
+  const { data } = await supabase.rpc("chat_contacts");
+  const rows =
+    (data as
+      | {
+          user_id: string;
+          full_name: string | null;
+          role: string | null;
+          unit_name: string | null;
+        }[]
+      | null) ?? [];
+  return rows
+    .map((r) => ({
+      userId: r.user_id,
+      name: r.full_name ?? "—",
+      hint:
+        r.unit_name ??
+        (r.role ? (ROLE_LABELS[r.role as UserRole] ?? null) : null),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** Abre (ou cria) uma conversa direta com um colega; devolve o id do canal. */
