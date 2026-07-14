@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.56.0** · Última migração: **0123**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.57.0** · Última migração: **0125**_
+
+> **H4.9 Chat Hub — R3 ✅ (v0.57.0 · migração 0125):** **reagir** a uma mensagem
+> (emoji — `chat_reactions`, chips com contagem, tempo real) e **responder** uma
+> mensagem específica (`chat_messages.reply_to` — citação com autor + trecho acima
+> da resposta). Ações no hover de cada balão (reagir/responder); prévia de
+> "respondendo" no compositor. `getMessages` agora traz reações + citação + nomes
+> por RPC. **Correções pós-R2 (0124 + código):** RLS de `chat_reads` liberada p/
+> ler a marca do outro (recibo **Lida** azul funciona) + realtime; `touch_presence`
+> passou a disparar (`.then`) → "visto por último" funciona; unread conta a MINHA
+> marca (fim do "2" fantasma). **Faltam:** R4 (Admin → unidade específica + config
+> de contato unidade↔franqueadora), depois **Lote 2** (áudio/arquivos) e **Lote 3**
+> (insistência até visualizar). Migrações a rodar: **0121–0125**.
 
 > **H4.9 Chat Hub — Correções R2 ✅ (v0.56.0 · migração 0123):** (1) **recibos**
 > agora comparam **por data** (timestamp banco `+00:00` × JS `Z` quebrava a

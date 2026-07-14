@@ -14,10 +14,13 @@ import {
   Check,
   CheckCheck,
   MessageSquarePlus,
+  Reply,
   Search,
   Send,
+  Smile,
   User,
   Users,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -43,11 +46,14 @@ import {
   markRead,
   openDirectChannel,
   sendMessage,
+  toggleReaction,
   type ChatChannel,
   type ChatColleague,
   type ChatMessage,
   type ChatPerson,
 } from "./actions";
+
+const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "✅", "🔥"];
 
 function statusColor(s: PresenceStatus | undefined): string | null {
   if (s === "online") return "bg-emerald-500";
@@ -149,6 +155,8 @@ export function ChatHub({
   );
   const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [reactingId, setReactingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [newSearch, setNewSearch] = useState("");
   const [listSearch, setListSearch] = useState("");
@@ -253,6 +261,13 @@ export function ChatHub({
           }
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chat_reactions" },
+        () => {
+          if (selectedIdRef.current) loadThread(selectedIdRef.current);
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -288,9 +303,11 @@ export function ChatHub({
   function submit() {
     const text = input.trim();
     if (!text || !selectedId) return;
+    const replyId = replyingTo?.id;
     setInput("");
+    setReplyingTo(null);
     startTransition(async () => {
-      const r = await sendMessage(selectedId, text);
+      const r = await sendMessage(selectedId, text, replyId);
       if (r.ok) {
         await loadThread(selectedId);
         refreshChannels();
@@ -298,6 +315,14 @@ export function ChatHub({
         toast.error(r.error ?? "Não foi possível enviar.");
         setInput(text);
       }
+    });
+  }
+
+  function react(messageId: string, emoji: string) {
+    setReactingId(null);
+    startTransition(async () => {
+      await toggleReaction(messageId, emoji);
+      if (selectedId) loadThread(selectedId);
     });
   }
 
@@ -617,7 +642,7 @@ export function ChatHub({
                     <div
                       key={m.id}
                       className={cn(
-                        "flex items-end gap-2",
+                        "group flex items-end gap-2",
                         m.mine ? "flex-row-reverse" : "flex-row"
                       )}
                     >
@@ -638,18 +663,87 @@ export function ChatHub({
                           </span>
                           {sub && ` · ${sub}`}
                         </span>
+                        {m.replyTo && (
+                          <div className="mb-0.5 max-w-full rounded-md border-l-2 border-primary/50 bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                            <span className="font-medium">
+                              {m.replyTo.senderName}
+                            </span>
+                            {": "}
+                            <span className="line-clamp-1">{m.replyTo.body}</span>
+                          </div>
+                        )}
                         <div
                           className={cn(
-                            "rounded-2xl px-3 py-1.5 text-sm",
-                            m.mine
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
+                            "flex items-center gap-1",
+                            m.mine ? "flex-row-reverse" : "flex-row"
                           )}
                         >
-                          <span className="whitespace-pre-wrap break-words">
-                            {m.body}
+                          <div
+                            className={cn(
+                              "rounded-2xl px-3 py-1.5 text-sm",
+                              m.mine
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
+                            )}
+                          >
+                            <span className="whitespace-pre-wrap break-words">
+                              {m.body}
+                            </span>
+                          </div>
+                          <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+                            <button
+                              type="button"
+                              title="Reagir"
+                              onClick={() =>
+                                setReactingId((v) => (v === m.id ? null : m.id))
+                              }
+                              className="rounded p-1 text-muted-foreground hover:bg-accent"
+                            >
+                              <Smile className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Responder"
+                              onClick={() => setReplyingTo(m)}
+                              className="rounded p-1 text-muted-foreground hover:bg-accent"
+                            >
+                              <Reply className="size-3.5" />
+                            </button>
                           </span>
                         </div>
+                        {reactingId === m.id && (
+                          <div className="mt-0.5 flex gap-0.5 rounded-full border bg-card p-0.5 shadow-sm">
+                            {EMOJIS.map((e) => (
+                              <button
+                                key={e}
+                                type="button"
+                                onClick={() => react(m.id, e)}
+                                className="rounded-full px-1 text-base hover:bg-accent"
+                              >
+                                {e}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {m.reactions.length > 0 && (
+                          <div className="mt-0.5 flex flex-wrap gap-1">
+                            {m.reactions.map((r) => (
+                              <button
+                                key={r.emoji}
+                                type="button"
+                                onClick={() => react(m.id, r.emoji)}
+                                className={cn(
+                                  "rounded-full border px-1.5 text-[11px] leading-5",
+                                  r.mine
+                                    ? "border-primary bg-primary/10"
+                                    : "bg-background"
+                                )}
+                              >
+                                {r.emoji} {r.count}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <span className="flex items-center gap-1 px-1 pt-0.5 text-[10px] text-muted-foreground">
                           {time(m.createdAt)}
                           {m.mine &&
@@ -683,6 +777,25 @@ export function ChatHub({
               )}
             </div>
 
+            {replyingTo && (
+              <div className="flex items-center gap-2 border-t bg-muted/40 px-2 py-1 text-xs">
+                <Reply className="size-3.5 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1 truncate">
+                  Respondendo{" "}
+                  <span className="font-medium">
+                    {replyingTo.mine ? "você" : replyingTo.senderName}
+                  </span>
+                  : {replyingTo.body}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReplyingTo(null)}
+                  className="shrink-0 rounded p-0.5 hover:bg-accent"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            )}
             <form
               className="flex items-center gap-2 border-t p-2"
               onSubmit={(e) => {

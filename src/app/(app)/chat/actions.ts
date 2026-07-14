@@ -15,6 +15,8 @@ export type ChatChannel = {
   lastAt: string | null;
 };
 
+export type ChatReaction = { emoji: string; count: number; mine: boolean };
+
 export type ChatMessage = {
   id: string;
   senderId: string;
@@ -22,6 +24,8 @@ export type ChatMessage = {
   body: string;
   createdAt: string;
   mine: boolean;
+  reactions: ChatReaction[];
+  replyTo: { id: string; senderName: string; body: string } | null;
 };
 
 export type ChatColleague = { userId: string; name: string; hint: string | null };
@@ -184,7 +188,8 @@ export async function listChannels(): Promise<ChatChannel[]> {
   return channels;
 }
 
-/** Mensagens de um canal (ordem cronológica). A RLS garante o acesso. */
+/** Mensagens de um canal (ordem cronológica) com reações e citação. A RLS
+ * garante o acesso; nomes vêm por RPC (não barra quem é da franqueadora). */
 export async function getMessages(
   channelId: string,
   limit = 80
@@ -194,9 +199,7 @@ export async function getMessages(
   const supabase = await createClient();
   const { data } = await supabase
     .from("chat_messages")
-    .select(
-      "id, sender_id, body, created_at, profiles:profiles!chat_messages_sender_id_fkey ( full_name )"
-    )
+    .select("id, sender_id, body, created_at, reply_to")
     .eq("channel_id", channelId)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -206,25 +209,106 @@ export async function getMessages(
         sender_id: string;
         body: string;
         created_at: string;
-        profiles: { full_name: string } | null;
+        reply_to: string | null;
       }[]
     >();
-  return (data ?? [])
-    .reverse()
-    .map((r) => ({
+  const rows = (data ?? []).reverse();
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+
+  // Mensagens citadas (podem estar fora da janela carregada).
+  const replyIds = [
+    ...new Set(rows.map((r) => r.reply_to).filter(Boolean) as string[]),
+  ];
+  const replyById = new Map<string, { senderId: string; body: string }>();
+  if (replyIds.length > 0) {
+    const { data: reps } = await supabase
+      .from("chat_messages")
+      .select("id, sender_id, body")
+      .in("id", replyIds)
+      .returns<{ id: string; sender_id: string; body: string }[]>();
+    for (const r of reps ?? [])
+      replyById.set(r.id, { senderId: r.sender_id, body: r.body });
+  }
+
+  // Nomes de todos os remetentes (inclusive dos citados) por RPC.
+  const senderIds = new Set<string>();
+  for (const r of rows) senderIds.add(r.sender_id);
+  for (const v of replyById.values()) senderIds.add(v.senderId);
+  const nameById = new Map<string, string>();
+  if (senderIds.size > 0) {
+    const { data: names } = await supabase.rpc("chat_display_names", {
+      p_user_ids: [...senderIds],
+    });
+    for (const n of (names as
+      | { user_id: string; full_name: string | null }[]
+      | null) ?? []) {
+      nameById.set(n.user_id, n.full_name ?? "—");
+    }
+  }
+
+  // Reações agregadas por mensagem.
+  const reactionsByMsg = new Map<string, ChatReaction[]>();
+  {
+    const { data: reacts } = await supabase
+      .from("chat_reactions")
+      .select("message_id, user_id, emoji")
+      .in("message_id", ids)
+      .returns<{ message_id: string; user_id: string; emoji: string }[]>();
+    const agg = new Map<string, Map<string, { count: number; mine: boolean }>>();
+    for (const r of reacts ?? []) {
+      let m = agg.get(r.message_id);
+      if (!m) {
+        m = new Map();
+        agg.set(r.message_id, m);
+      }
+      let e = m.get(r.emoji);
+      if (!e) {
+        e = { count: 0, mine: false };
+        m.set(r.emoji, e);
+      }
+      e.count += 1;
+      if (r.user_id === session.userId) e.mine = true;
+    }
+    for (const [mid, emap] of agg) {
+      reactionsByMsg.set(
+        mid,
+        [...emap.entries()].map(([emoji, v]) => ({
+          emoji,
+          count: v.count,
+          mine: v.mine,
+        }))
+      );
+    }
+  }
+
+  return rows.map((r) => {
+    const rep = r.reply_to ? replyById.get(r.reply_to) : undefined;
+    return {
       id: r.id,
       senderId: r.sender_id,
-      senderName: r.profiles?.full_name ?? "—",
+      senderName: nameById.get(r.sender_id) ?? "—",
       body: r.body,
       createdAt: r.created_at,
       mine: r.sender_id === session.userId,
-    }));
+      reactions: reactionsByMsg.get(r.id) ?? [],
+      replyTo:
+        r.reply_to && rep
+          ? {
+              id: r.reply_to,
+              senderName: nameById.get(rep.senderId) ?? "—",
+              body: rep.body,
+            }
+          : null,
+    };
+  });
 }
 
-/** Envia uma mensagem de texto para um canal. */
+/** Envia uma mensagem de texto (opcionalmente respondendo outra). */
 export async function sendMessage(
   channelId: string,
-  body: string
+  body: string,
+  replyToId?: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   const text = body.trim();
@@ -236,6 +320,7 @@ export async function sendMessage(
     channel_id: channelId,
     sender_id: session.userId,
     body: text,
+    reply_to: replyToId || null,
   });
   if (error) {
     console.error("sendMessage failed:", error.message);
@@ -250,6 +335,42 @@ export async function sendMessage(
     },
     { onConflict: "channel_id,user_id" }
   );
+  return { ok: true };
+}
+
+/** Adiciona/remove uma reação (emoji) minha numa mensagem. */
+export async function toggleReaction(
+  messageId: string,
+  emoji: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!messageId || !emoji) return { ok: false, error: "Reação inválida." };
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("chat_reactions")
+    .select("message_id")
+    .eq("message_id", messageId)
+    .eq("user_id", session.userId)
+    .eq("emoji", emoji)
+    .maybeSingle();
+  if (existing) {
+    await supabase
+      .from("chat_reactions")
+      .delete()
+      .eq("message_id", messageId)
+      .eq("user_id", session.userId)
+      .eq("emoji", emoji);
+  } else {
+    const { error } = await supabase.from("chat_reactions").insert({
+      message_id: messageId,
+      user_id: session.userId,
+      emoji,
+    });
+    if (error) {
+      console.error("toggleReaction failed:", error.message);
+      return { ok: false, error: "Não foi possível reagir." };
+    }
+  }
   return { ok: true };
 }
 
