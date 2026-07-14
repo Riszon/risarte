@@ -231,6 +231,28 @@ export function ChatHub({
           }
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chat_reads" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as {
+            channel_id?: string;
+          } | null;
+          const ch = row?.channel_id;
+          if (ch && ch === selectedIdRef.current) {
+            getChannelReads(ch).then((reads) =>
+              setOtherReadAt(
+                reads.length > 0
+                  ? reads.reduce(
+                      (a, b) => (a > b.lastReadAt ? a : b.lastReadAt),
+                      ""
+                    )
+                  : null
+              )
+            );
+          }
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
