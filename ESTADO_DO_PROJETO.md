@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.63.0** · Última migração: **0128**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.63.1** · Última migração: **0128**_
+
+> **H4.11 — Ajustes do Modo apresentação ✅ (v0.63.1, sem migração):** (1) **tela
+> cheia de verdade** (Fullscreen do navegador; sai no Esc/botão, e sair da tela
+> cheia fecha o modo); (2) **não corta mais** — cada bloco rola dentro do slide
+> (altura fixa + rolagem interna) e **cada foto vira um slide** só dela (imagem
+> grande, sem cortar); (3) **seletor de fotos antes de apresentar** (todas/algumas,
+> com atalhos "Todas"/"Nenhuma"). `buildSlides("scroll"|"present")` +
+> `PhotoPicker` reaproveitado (Gamma e apresentação).
 
 > **H4.11 Apresentação 2.0 — Bloco 2: layout 2.0 + Modo apresentação ✅ (v0.63.0,
 > sem migração) — H4.11 COMPLETO.** A apresentação (`/apresentacao/[clientId]`) virou

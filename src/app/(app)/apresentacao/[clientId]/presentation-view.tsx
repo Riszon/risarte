@@ -89,7 +89,7 @@ function CoverSlide({
     <section
       className={cn(
         "slide relative flex flex-col justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground shadow-sm",
-        present ? "min-h-[72vh] p-10 sm:p-16" : "p-8 sm:p-12"
+        present ? "h-full p-10 sm:p-16" : "p-8 sm:p-12"
       )}
     >
       <div className="absolute inset-x-0 top-0 h-1.5 bg-gold" />
@@ -124,7 +124,8 @@ function CoverSlide({
 }
 
 // Moldura padrão de cada slide: título com acento dourado + rodapé com marca,
-// paciente e numeração (aparece também no PDF).
+// paciente e numeração. Em modo apresentação ocupa a altura toda e o conteúdo
+// ROLA dentro do slide (não corta blocos longos).
 function SlideShell({
   index,
   total,
@@ -144,10 +145,10 @@ function SlideShell({
     <section
       className={cn(
         "slide relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm",
-        present && "min-h-[72vh]"
+        present && "h-full"
       )}
     >
-      <div className="flex items-center gap-2 border-b px-6 pb-3 pt-5">
+      <div className="flex shrink-0 items-center gap-2 border-b px-6 pb-3 pt-5">
         <span className="h-5 w-1 shrink-0 rounded bg-gold" />
         <h2
           className={cn(
@@ -160,13 +161,13 @@ function SlideShell({
       </div>
       <div
         className={cn(
-          "flex-1 px-6 py-4",
-          present && "flex flex-col justify-center text-base sm:text-lg"
+          "px-6 py-4",
+          present && "min-h-0 flex-1 overflow-auto text-base sm:text-lg"
         )}
       >
         {children}
       </div>
-      <div className="flex items-center justify-between gap-2 border-t px-6 py-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t px-6 py-2 text-[10px] uppercase tracking-wide text-muted-foreground">
         <span className="font-semibold text-primary/70">
           Risarte Odontologia
         </span>
@@ -193,6 +194,50 @@ type SlideDef = {
   body?: React.ReactNode;
 };
 
+// Grade de miniaturas com seleção (usada para escolher fotos do Gamma e da
+// apresentação).
+function PhotoPicker({
+  photos,
+  selected,
+  onToggle,
+}: {
+  photos: PresentationData["photos"];
+  selected: string[];
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+      {photos.map((p) => {
+        const on = selected.includes(p.id);
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onToggle(p.id)}
+            aria-pressed={on}
+            className={cn(
+              "relative overflow-hidden rounded border-2 transition",
+              on ? "border-primary" : "border-transparent opacity-40 grayscale"
+            )}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.url}
+              alt={p.name ?? "imagem clínica"}
+              className="aspect-square w-full object-cover"
+            />
+            {on && (
+              <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Check className="size-3" />
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PresentationView({
   data,
   clientId,
@@ -210,7 +255,12 @@ export function PresentationView({
   );
   // Modo apresentação (tela cheia, um slide por vez).
   const [presenting, setPresenting] = useState(false);
+  const [presentSetup, setPresentSetup] = useState(false);
   const [current, setCurrent] = useState(0);
+  // Fotos que aparecem na apresentação (padrão: todas; uma por slide).
+  const [presentPhotoIds, setPresentPhotoIds] = useState<string[]>(() =>
+    data.photos.map((p) => p.id)
+  );
 
   // Polling do status da geração no Gamma (até completar).
   useEffect(() => {
@@ -263,182 +313,221 @@ export function PresentationView({
     );
   }
 
-  // Bloco de fotos reutilizado na tela e no modo apresentação.
-  function photosGrid() {
-    return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {data.photos.map((p, i) => (
-          <figure key={p.id} className="min-w-0">
-            <button
-              type="button"
-              onClick={() => setZoom(i)}
-              className="block w-full overflow-hidden rounded-lg border transition hover:border-primary"
-            >
+  function togglePresentPhoto(id: string) {
+    setPresentPhotoIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  // Monta os slides. `mode` decide as fotos: "present" = uma foto por slide
+  // (só as escolhidas); "scroll" = uma grade com todas (tela e PDF).
+  function buildSlides(mode: "scroll" | "present"): SlideDef[] {
+    const list: SlideDef[] = [{ key: "cover", title: "Capa", cover: true }];
+
+    if (data.diagnosis || data.considerations.length > 0) {
+      list.push({
+        key: "diag",
+        title: "Diagnóstico e condição",
+        body: (
+          <>
+            {data.diagnosis && (
+              <p className="whitespace-pre-wrap">{data.diagnosis}</p>
+            )}
+            {data.considerations.length > 0 && (
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {data.considerations.map((c, i) => (
+                  <li key={i} className="whitespace-pre-wrap">
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ),
+      });
+    }
+
+    if (data.objectives) {
+      list.push({
+        key: "obj",
+        title: "Objetivos do tratamento",
+        body: <p className="whitespace-pre-wrap">{data.objectives}</p>,
+      });
+    }
+
+    if (mode === "present") {
+      // Uma foto por slide (só as escolhidas), imagem grande sem cortar.
+      const chosen = data.photos.filter((p) => presentPhotoIds.includes(p.id));
+      chosen.forEach((p, i) => {
+        list.push({
+          key: `foto-${p.id}`,
+          title:
+            chosen.length > 1
+              ? `Imagens e exames (${i + 1}/${chosen.length})`
+              : "Imagens e exames",
+          body: (
+            <div className="flex h-full flex-col items-center justify-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={p.url}
                 alt={p.name ?? "imagem clínica"}
-                className="aspect-[4/3] w-full object-cover"
+                className="max-h-full max-w-full rounded-lg object-contain"
               />
-            </button>
-            {p.name && (
-              <figcaption className="mt-1 truncate text-xs text-muted-foreground">
-                {p.name}
-              </figcaption>
-            )}
-          </figure>
-        ))}
-      </div>
-    );
-  }
-
-  // Monta a lista de slides (a capa é o slide 0).
-  const slides: SlideDef[] = [{ key: "cover", title: "Capa", cover: true }];
-
-  if (data.diagnosis || data.considerations.length > 0) {
-    slides.push({
-      key: "diag",
-      title: "Diagnóstico e condição",
-      body: (
-        <>
-          {data.diagnosis && (
-            <p className="whitespace-pre-wrap">{data.diagnosis}</p>
-          )}
-          {data.considerations.length > 0 && (
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {data.considerations.map((c, i) => (
-                <li key={i} className="whitespace-pre-wrap">
-                  {c}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      ),
-    });
-  }
-
-  if (data.objectives) {
-    slides.push({
-      key: "obj",
-      title: "Objetivos do tratamento",
-      body: <p className="whitespace-pre-wrap">{data.objectives}</p>,
-    });
-  }
-
-  if (data.photos.length > 0) {
-    slides.push({ key: "fotos", title: "Imagens e exames", body: photosGrid() });
-  }
-
-  if (data.sessionGroups.length > 0) {
-    slides.push({
-      key: "sessoes",
-      title: "Plano de tratamento — sessão por sessão",
-      body: (
-        <div className="space-y-3">
-          {data.sessionGroups.map((g, gi) => (
-            <div key={gi}>
-              <p className="font-semibold">
-                {g.quantity > 1 ? `${g.quantity}× ` : ""}
-                {g.procedure}
-              </p>
-              {g.repeatNote && (
-                <p className="text-xs text-muted-foreground">{g.repeatNote}</p>
+              {p.name && (
+                <p className="shrink-0 text-center text-sm text-muted-foreground">
+                  {p.name}
+                </p>
               )}
-              <ol className="mt-1 list-decimal space-y-0.5 pl-5">
-                {g.sessions.map((s, si) => (
-                  <li key={si}>
-                    {s.label}
-                    {s.minutesLabel && (
-                      <span className="text-xs text-muted-foreground">
-                        {" "}
-                        · {s.minutesLabel}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
             </div>
-          ))}
-        </div>
-      ),
-    });
-  }
-
-  slides.push({
-    key: "proposta",
-    title: "Proposta e investimento",
-    body: data.option ? (
-      <div>
-        <ul className="space-y-2">
-          {data.option.items.map((it, i) => (
-            <li
-              key={i}
-              className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 last:border-0"
-            >
-              <span className="font-medium">
-                {it.quantity > 1 ? `${it.quantity}× ` : ""}
-                {it.description}
-                {(it.sessionsLabel || it.minutesLabel) && (
-                  <span className="ml-1 text-xs font-normal text-muted-foreground">
-                    (
-                    {[it.sessionsLabel, it.minutesLabel]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    )
-                  </span>
+          ),
+        });
+      });
+    } else if (data.photos.length > 0) {
+      list.push({
+        key: "fotos",
+        title: "Imagens e exames",
+        body: (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {data.photos.map((p, i) => (
+              <figure key={p.id} className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setZoom(i)}
+                  className="block w-full overflow-hidden rounded-lg border transition hover:border-primary"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.url}
+                    alt={p.name ?? "imagem clínica"}
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                </button>
+                {p.name && (
+                  <figcaption className="mt-1 truncate text-xs text-muted-foreground">
+                    {p.name}
+                  </figcaption>
                 )}
-              </span>
-              {it.priceLabel && (
-                <span className="tabular-nums">{it.priceLabel}</span>
+              </figure>
+            ))}
+          </div>
+        ),
+      });
+    }
+
+    if (data.sessionGroups.length > 0) {
+      list.push({
+        key: "sessoes",
+        title: "Plano de tratamento — sessão por sessão",
+        body: (
+          <div className="space-y-3">
+            {data.sessionGroups.map((g, gi) => (
+              <div key={gi}>
+                <p className="font-semibold">
+                  {g.quantity > 1 ? `${g.quantity}× ` : ""}
+                  {g.procedure}
+                </p>
+                {g.repeatNote && (
+                  <p className="text-xs text-muted-foreground">{g.repeatNote}</p>
+                )}
+                <ol className="mt-1 list-decimal space-y-0.5 pl-5">
+                  {g.sessions.map((s, si) => (
+                    <li key={si}>
+                      {s.label}
+                      {s.minutesLabel && (
+                        <span className="text-xs text-muted-foreground">
+                          {" "}
+                          · {s.minutesLabel}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+        ),
+      });
+    }
+
+    list.push({
+      key: "proposta",
+      title: "Proposta e investimento",
+      body: data.option ? (
+        <div>
+          <ul className="space-y-2">
+            {data.option.items.map((it, i) => (
+              <li
+                key={i}
+                className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 last:border-0"
+              >
+                <span className="font-medium">
+                  {it.quantity > 1 ? `${it.quantity}× ` : ""}
+                  {it.description}
+                  {(it.sessionsLabel || it.minutesLabel) && (
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">
+                      (
+                      {[it.sessionsLabel, it.minutesLabel]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      )
+                    </span>
+                  )}
+                </span>
+                {it.priceLabel && (
+                  <span className="tabular-nums">{it.priceLabel}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wide opacity-80">
+                Investimento total
+              </p>
+              {data.option.summaryLabel && (
+                <p className="text-xs opacity-80">{data.option.summaryLabel}</p>
               )}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide opacity-80">
-              Investimento total
-            </p>
-            {data.option.summaryLabel && (
-              <p className="text-xs opacity-80">{data.option.summaryLabel}</p>
+            </div>
+            {data.option.totalLabel && (
+              <p className="text-2xl font-bold tabular-nums">
+                {data.option.totalLabel}
+              </p>
             )}
           </div>
-          {data.option.totalLabel && (
-            <p className="text-2xl font-bold tabular-nums">
-              {data.option.totalLabel}
-            </p>
-          )}
         </div>
-      </div>
-    ) : (
-      <p className="text-muted-foreground">
-        O plano ainda não tem uma opção aprovada para apresentar.
-      </p>
-    ),
-  });
-
-  if (data.planningNotes) {
-    slides.push({
-      key: "consid",
-      title: "Considerações do planejamento",
-      body: <p className="whitespace-pre-wrap">{data.planningNotes}</p>,
+      ) : (
+        <p className="text-muted-foreground">
+          O plano ainda não tem uma opção aprovada para apresentar.
+        </p>
+      ),
     });
+
+    if (data.planningNotes) {
+      list.push({
+        key: "consid",
+        title: "Considerações do planejamento",
+        body: <p className="whitespace-pre-wrap">{data.planningNotes}</p>,
+      });
+    }
+
+    list.push({
+      key: "proximas",
+      title: "Próximas etapas",
+      body: (
+        <ol className="list-decimal space-y-1 pl-5">
+          {NEXT_STEPS.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ol>
+      ),
+    });
+
+    return list;
   }
 
-  slides.push({
-    key: "proximas",
-    title: "Próximas etapas",
-    body: (
-      <ol className="list-decimal space-y-1 pl-5">
-        {NEXT_STEPS.map((s, i) => (
-          <li key={i}>{s}</li>
-        ))}
-      </ol>
-    ),
-  });
-
-  const total = slides.length;
+  const scrollSlides = buildSlides("scroll");
+  const presentSlides = buildSlides("present");
+  const presentTotal = presentSlides.length;
 
   // Teclado no modo apresentação: setas / espaço avançam, Esc sai.
   useEffect(() => {
@@ -446,19 +535,35 @@ export function PresentationView({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
         e.preventDefault();
-        setCurrent((c) => Math.min(c + 1, total - 1));
+        setCurrent((c) => Math.min(c + 1, presentTotal - 1));
       } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         setCurrent((c) => Math.max(c - 1, 0));
       } else if (e.key === "Escape") {
-        setPresenting(false);
+        exitPresenting();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [presenting, total]);
+  }, [presenting, presentTotal]);
 
-  function renderSlide(def: SlideDef, index: number, present: boolean) {
+  // Se o usuário sair da tela cheia (Esc/navegador), fecha o modo apresentação.
+  useEffect(() => {
+    const onFsChange = () => {
+      if (typeof document !== "undefined" && !document.fullscreenElement) {
+        setPresenting(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  function renderSlide(
+    def: SlideDef,
+    index: number,
+    total: number,
+    present: boolean
+  ) {
     if (def.cover) return <CoverSlide data={data} present={present} />;
     return (
       <SlideShell
@@ -473,10 +578,30 @@ export function PresentationView({
     );
   }
 
-  function startPresenting() {
+  function onPresentClick() {
+    // Com fotos, abre o seletor de fotos; sem fotos, inicia direto.
+    if (data.photos.length > 0) setPresentSetup(true);
+    else beginPresenting();
+  }
+
+  function beginPresenting() {
+    setPresentSetup(false);
     setCurrent(0);
     setPresenting(true);
+    // Tela cheia de verdade (best-effort; precisa do clique do usuário).
+    if (typeof document !== "undefined") {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    }
   }
+
+  function exitPresenting() {
+    setPresenting(false);
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }
+
+  const currentIndex = Math.min(current, presentTotal - 1);
 
   return (
     <>
@@ -488,7 +613,7 @@ export function PresentationView({
           Voltar
         </Button>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={startPresenting}>
+          <Button size="sm" onClick={onPresentClick} disabled={presentSetup}>
             <Play className="mr-1 size-4" />
             Apresentar
           </Button>
@@ -512,6 +637,55 @@ export function PresentationView({
         </div>
       </div>
 
+      {/* Seletor de fotos da apresentação (antes de entrar em tela cheia). */}
+      {presentSetup && (
+        <div className="no-print mb-4 space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
+          <p className="font-medium text-primary">
+            Fotos na apresentação (uma por slide)
+          </p>
+          <p className="text-muted-foreground">
+            Escolha quais fotos serão apresentadas. Cada foto marcada vira um
+            slide.
+          </p>
+          <PhotoPicker
+            photos={data.photos}
+            selected={presentPhotoIds}
+            onToggle={togglePresentPhoto}
+          />
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPresentPhotoIds(data.photos.map((p) => p.id))}
+                className="rounded border px-2 py-0.5 hover:border-primary"
+              >
+                Todas
+              </button>
+              <button
+                type="button"
+                onClick={() => setPresentPhotoIds([])}
+                className="rounded border px-2 py-0.5 hover:border-primary"
+              >
+                Nenhuma
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPresentSetup(false)}
+              >
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={beginPresenting}>
+                <Play className="mr-1 size-4" />
+                Iniciar apresentação
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {gamma.phase !== "idle" && (
         <div className="no-print mb-4 rounded-md border border-gold/40 bg-gold/5 p-3 text-xs">
           {gamma.phase === "choosing" && (
@@ -523,37 +697,11 @@ export function PresentationView({
                 As fotos vão automáticas para o deck. Desmarque as que não quiser
                 incluir.
               </p>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {data.photos.map((p) => {
-                  const on = gammaPhotoIds.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => toggleGammaPhoto(p.id)}
-                      aria-pressed={on}
-                      className={cn(
-                        "relative overflow-hidden rounded border-2 transition",
-                        on
-                          ? "border-primary"
-                          : "border-transparent opacity-40 grayscale"
-                      )}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={p.url}
-                        alt={p.name ?? "imagem clínica"}
-                        className="aspect-square w-full object-cover"
-                      />
-                      {on && (
-                        <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="size-3" />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <PhotoPicker
+                photos={data.photos}
+                selected={gammaPhotoIds}
+                onToggle={toggleGammaPhoto}
+              />
               <div className="flex items-center justify-end gap-2 pt-1">
                 <Button
                   variant="ghost"
@@ -610,46 +758,56 @@ export function PresentationView({
       </div>
 
       <div id="apresentacao" className="space-y-4">
-        {slides.map((def, i) => (
-          <div key={def.key}>{renderSlide(def, i, false)}</div>
+        {scrollSlides.map((def, i) => (
+          <div key={def.key}>
+            {renderSlide(def, i, scrollSlides.length, false)}
+          </div>
         ))}
       </div>
 
       {/* Modo apresentação — tela cheia, um slide por vez */}
       {presenting && (
         <div className="no-print fixed inset-0 z-40 flex flex-col bg-neutral-950">
-          <div className="flex items-center justify-between px-4 py-2 text-white/80">
+          <div className="flex shrink-0 items-center justify-between px-4 py-2 text-white/80">
             <span className="text-sm font-medium">Modo apresentação</span>
             <button
               type="button"
-              onClick={() => setPresenting(false)}
+              onClick={exitPresenting}
               className="flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-white/10"
             >
               <X className="size-4" /> Sair (Esc)
             </button>
           </div>
-          <div className="flex flex-1 items-center justify-center overflow-auto px-4">
-            <div className="w-full max-w-4xl">
-              {renderSlide(slides[current], current, true)}
+          <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+            <div className="h-full w-full max-w-4xl">
+              {presentSlides[currentIndex] &&
+                renderSlide(
+                  presentSlides[currentIndex],
+                  currentIndex,
+                  presentTotal,
+                  true
+                )}
             </div>
           </div>
-          <div className="flex items-center justify-center gap-6 px-4 py-3 text-white">
+          <div className="flex shrink-0 items-center justify-center gap-6 px-4 py-3 text-white">
             <button
               type="button"
               onClick={() => setCurrent((c) => Math.max(c - 1, 0))}
-              disabled={current === 0}
+              disabled={currentIndex === 0}
               className="rounded-full p-2 hover:bg-white/10 disabled:opacity-30"
               aria-label="Slide anterior"
             >
               <ChevronLeft className="size-6" />
             </button>
             <span className="text-sm tabular-nums">
-              {current + 1} / {total}
+              {currentIndex + 1} / {presentTotal}
             </span>
             <button
               type="button"
-              onClick={() => setCurrent((c) => Math.min(c + 1, total - 1))}
-              disabled={current === total - 1}
+              onClick={() =>
+                setCurrent((c) => Math.min(c + 1, presentTotal - 1))
+              }
+              disabled={currentIndex === presentTotal - 1}
               className="rounded-full p-2 hover:bg-white/10 disabled:opacity-30"
               aria-label="Próximo slide"
             >
