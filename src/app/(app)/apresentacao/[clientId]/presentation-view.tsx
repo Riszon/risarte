@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Loader2,
+  Play,
   Printer,
   Sparkles,
   X,
@@ -59,31 +62,119 @@ const NEXT_STEPS = [
   "Execução das sessões e acompanhamento.",
 ];
 
+// PDF: um slide por página, sem bordas/sombras de tela.
 const PRINT_CSS = `
 @media print {
   body * { visibility: hidden !important; }
   #apresentacao, #apresentacao * { visibility: visible !important; }
   #apresentacao { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
   .no-print { display: none !important; }
-  .slide { break-inside: avoid; page-break-inside: avoid; }
+  .slide {
+    break-inside: avoid; page-break-inside: avoid; page-break-after: always;
+    border: none !important; box-shadow: none !important;
+  }
+  .slide:last-child { page-break-after: auto; }
 }
 `;
 
-function Slide({
+// Capa 2.0 — bloco navy com faixa dourada da marca.
+function CoverSlide({
+  data,
+  present,
+}: {
+  data: PresentationData;
+  present?: boolean;
+}) {
+  return (
+    <section
+      className={cn(
+        "slide relative flex flex-col justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground shadow-sm",
+        present ? "min-h-[72vh] p-10 sm:p-16" : "p-8 sm:p-12"
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-gold" />
+      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">
+        Risarte Odontologia
+      </p>
+      <p className="mt-6 text-sm uppercase tracking-wide opacity-70">
+        Plano de Tratamento
+      </p>
+      <h1
+        className={cn(
+          "mt-1 font-bold",
+          present ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl"
+        )}
+      >
+        {data.clientName}
+      </h1>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm opacity-90">
+        {data.clientCode && (
+          <span className="font-mono">{data.clientCode}</span>
+        )}
+        {data.clinicName && <span>· {data.clinicName}</span>}
+        <span>· {data.dateLabel}</span>
+      </div>
+      {data.pillarLabel && (
+        <span className="mt-6 inline-block w-fit rounded-full bg-gold px-3 py-1 text-sm font-semibold text-primary">
+          Pilar da Metodologia · {data.pillarLabel}
+        </span>
+      )}
+    </section>
+  );
+}
+
+// Moldura padrão de cada slide: título com acento dourado + rodapé com marca,
+// paciente e numeração (aparece também no PDF).
+function SlideShell({
+  index,
+  total,
   title,
+  clientName,
+  present,
   children,
 }: {
-  title?: string;
+  index: number;
+  total: number;
+  title: string;
+  clientName: string;
+  present?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section className="slide rounded-lg border bg-card p-6 shadow-sm">
-      {title && (
-        <h2 className="mb-3 border-b pb-2 text-lg font-semibold text-primary">
+    <section
+      className={cn(
+        "slide relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm",
+        present && "min-h-[72vh]"
+      )}
+    >
+      <div className="flex items-center gap-2 border-b px-6 pb-3 pt-5">
+        <span className="h-5 w-1 shrink-0 rounded bg-gold" />
+        <h2
+          className={cn(
+            "font-semibold text-primary",
+            present ? "text-2xl" : "text-lg"
+          )}
+        >
           {title}
         </h2>
-      )}
-      {children}
+      </div>
+      <div
+        className={cn(
+          "flex-1 px-6 py-4",
+          present && "flex flex-col justify-center text-base sm:text-lg"
+        )}
+      >
+        {children}
+      </div>
+      <div className="flex items-center justify-between gap-2 border-t px-6 py-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="font-semibold text-primary/70">
+          Risarte Odontologia
+        </span>
+        <span className="min-w-0 truncate">{clientName}</span>
+        <span className="tabular-nums">
+          {index + 1} / {total}
+        </span>
+      </div>
     </section>
   );
 }
@@ -94,6 +185,13 @@ type GammaState =
   | { phase: "generating" }
   | { phase: "ready"; url: string }
   | { phase: "error"; error: string };
+
+type SlideDef = {
+  key: string;
+  title: string;
+  cover?: boolean;
+  body?: React.ReactNode;
+};
 
 export function PresentationView({
   data,
@@ -110,6 +208,9 @@ export function PresentationView({
   const [gammaPhotoIds, setGammaPhotoIds] = useState<string[]>(() =>
     data.photos.map((p) => p.id)
   );
+  // Modo apresentação (tela cheia, um slide por vez).
+  const [presenting, setPresenting] = useState(false);
+  const [current, setCurrent] = useState(0);
 
   // Polling do status da geração no Gamma (até completar).
   useEffect(() => {
@@ -162,6 +263,221 @@ export function PresentationView({
     );
   }
 
+  // Bloco de fotos reutilizado na tela e no modo apresentação.
+  function photosGrid() {
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {data.photos.map((p, i) => (
+          <figure key={p.id} className="min-w-0">
+            <button
+              type="button"
+              onClick={() => setZoom(i)}
+              className="block w-full overflow-hidden rounded-lg border transition hover:border-primary"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.url}
+                alt={p.name ?? "imagem clínica"}
+                className="aspect-[4/3] w-full object-cover"
+              />
+            </button>
+            {p.name && (
+              <figcaption className="mt-1 truncate text-xs text-muted-foreground">
+                {p.name}
+              </figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    );
+  }
+
+  // Monta a lista de slides (a capa é o slide 0).
+  const slides: SlideDef[] = [{ key: "cover", title: "Capa", cover: true }];
+
+  if (data.diagnosis || data.considerations.length > 0) {
+    slides.push({
+      key: "diag",
+      title: "Diagnóstico e condição",
+      body: (
+        <>
+          {data.diagnosis && (
+            <p className="whitespace-pre-wrap">{data.diagnosis}</p>
+          )}
+          {data.considerations.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {data.considerations.map((c, i) => (
+                <li key={i} className="whitespace-pre-wrap">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ),
+    });
+  }
+
+  if (data.objectives) {
+    slides.push({
+      key: "obj",
+      title: "Objetivos do tratamento",
+      body: <p className="whitespace-pre-wrap">{data.objectives}</p>,
+    });
+  }
+
+  if (data.photos.length > 0) {
+    slides.push({ key: "fotos", title: "Imagens e exames", body: photosGrid() });
+  }
+
+  if (data.sessionGroups.length > 0) {
+    slides.push({
+      key: "sessoes",
+      title: "Plano de tratamento — sessão por sessão",
+      body: (
+        <div className="space-y-3">
+          {data.sessionGroups.map((g, gi) => (
+            <div key={gi}>
+              <p className="font-semibold">
+                {g.quantity > 1 ? `${g.quantity}× ` : ""}
+                {g.procedure}
+              </p>
+              {g.repeatNote && (
+                <p className="text-xs text-muted-foreground">{g.repeatNote}</p>
+              )}
+              <ol className="mt-1 list-decimal space-y-0.5 pl-5">
+                {g.sessions.map((s, si) => (
+                  <li key={si}>
+                    {s.label}
+                    {s.minutesLabel && (
+                      <span className="text-xs text-muted-foreground">
+                        {" "}
+                        · {s.minutesLabel}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      ),
+    });
+  }
+
+  slides.push({
+    key: "proposta",
+    title: "Proposta e investimento",
+    body: data.option ? (
+      <div>
+        <ul className="space-y-2">
+          {data.option.items.map((it, i) => (
+            <li
+              key={i}
+              className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 last:border-0"
+            >
+              <span className="font-medium">
+                {it.quantity > 1 ? `${it.quantity}× ` : ""}
+                {it.description}
+                {(it.sessionsLabel || it.minutesLabel) && (
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    (
+                    {[it.sessionsLabel, it.minutesLabel]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    )
+                  </span>
+                )}
+              </span>
+              {it.priceLabel && (
+                <span className="tabular-nums">{it.priceLabel}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wide opacity-80">
+              Investimento total
+            </p>
+            {data.option.summaryLabel && (
+              <p className="text-xs opacity-80">{data.option.summaryLabel}</p>
+            )}
+          </div>
+          {data.option.totalLabel && (
+            <p className="text-2xl font-bold tabular-nums">
+              {data.option.totalLabel}
+            </p>
+          )}
+        </div>
+      </div>
+    ) : (
+      <p className="text-muted-foreground">
+        O plano ainda não tem uma opção aprovada para apresentar.
+      </p>
+    ),
+  });
+
+  if (data.planningNotes) {
+    slides.push({
+      key: "consid",
+      title: "Considerações do planejamento",
+      body: <p className="whitespace-pre-wrap">{data.planningNotes}</p>,
+    });
+  }
+
+  slides.push({
+    key: "proximas",
+    title: "Próximas etapas",
+    body: (
+      <ol className="list-decimal space-y-1 pl-5">
+        {NEXT_STEPS.map((s, i) => (
+          <li key={i}>{s}</li>
+        ))}
+      </ol>
+    ),
+  });
+
+  const total = slides.length;
+
+  // Teclado no modo apresentação: setas / espaço avançam, Esc sai.
+  useEffect(() => {
+    if (!presenting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+        e.preventDefault();
+        setCurrent((c) => Math.min(c + 1, total - 1));
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        setCurrent((c) => Math.max(c - 1, 0));
+      } else if (e.key === "Escape") {
+        setPresenting(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [presenting, total]);
+
+  function renderSlide(def: SlideDef, index: number, present: boolean) {
+    if (def.cover) return <CoverSlide data={data} present={present} />;
+    return (
+      <SlideShell
+        index={index}
+        total={total}
+        title={def.title}
+        clientName={data.clientName}
+        present={present}
+      >
+        {def.body}
+      </SlideShell>
+    );
+  }
+
+  function startPresenting() {
+    setCurrent(0);
+    setPresenting(true);
+  }
+
   return (
     <>
       <style>{PRINT_CSS}</style>
@@ -172,6 +488,10 @@ export function PresentationView({
           Voltar
         </Button>
         <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={startPresenting}>
+            <Play className="mr-1 size-4" />
+            Apresentar
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -185,7 +505,7 @@ export function PresentationView({
             )}
             Gerar no Gamma
           </Button>
-          <Button size="sm" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="mr-1 size-4" />
             Baixar PDF
           </Button>
@@ -285,178 +605,59 @@ export function PresentationView({
           Apresentação ao cliente.
         </span>{" "}
         O plano foi montado pelo Dentista Planner. Você, Consultor Comercial,
-        apresenta esta proposta ao cliente — use “Baixar PDF” para enviar ou
-        projetar.
+        apresenta esta proposta ao cliente — use “Apresentar” para projetar em
+        tela cheia ou “Baixar PDF” para enviar.
       </div>
 
       <div id="apresentacao" className="space-y-4">
-        {/* Capa */}
-        <section className="slide rounded-lg border bg-primary p-8 text-primary-foreground shadow-sm">
-          <p className="text-sm uppercase tracking-wide opacity-80">
-            Plano de Tratamento · Risarte Odontologia
-          </p>
-          <h1 className="mt-2 text-3xl font-bold">{data.clientName}</h1>
-          <p className="mt-1 text-sm opacity-90">
-            {data.clientCode && (
-              <span className="font-mono">{data.clientCode}</span>
-            )}
-            {data.clinicName && <> · {data.clinicName}</>}
-            <> · {data.dateLabel}</>
-          </p>
-          {data.pillarLabel && (
-            <span className="mt-3 inline-block rounded-full bg-gold px-3 py-1 text-sm font-semibold text-primary">
-              Pilar: {data.pillarLabel}
-            </span>
-          )}
-        </section>
-
-        {/* Diagnóstico e condição clínica */}
-        {(data.diagnosis || data.considerations.length > 0) && (
-          <Slide title="Diagnóstico e condição">
-            {data.diagnosis && (
-              <p className="whitespace-pre-wrap text-sm">{data.diagnosis}</p>
-            )}
-            {data.considerations.length > 0 && (
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                {data.considerations.map((c, i) => (
-                  <li key={i} className="whitespace-pre-wrap">
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Slide>
-        )}
-
-        {/* Objetivos do tratamento */}
-        {data.objectives && (
-          <Slide title="Objetivos do tratamento">
-            <p className="whitespace-pre-wrap text-sm">{data.objectives}</p>
-          </Slide>
-        )}
-
-        {/* Fotos e exames */}
-        {data.photos.length > 0 && (
-          <Slide title="Imagens e exames">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {data.photos.map((p, i) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setZoom(i)}
-                  className="overflow-hidden rounded border"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.url}
-                    alt={p.name ?? "imagem clínica"}
-                    className="aspect-square w-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </Slide>
-        )}
-
-        {/* Plano sessão por sessão */}
-        {data.sessionGroups.length > 0 && (
-          <Slide title="Plano de tratamento — sessão por sessão">
-            <div className="space-y-3">
-              {data.sessionGroups.map((g, gi) => (
-                <div key={gi}>
-                  <p className="text-sm font-semibold">
-                    {g.quantity > 1 ? `${g.quantity}× ` : ""}
-                    {g.procedure}
-                  </p>
-                  {g.repeatNote && (
-                    <p className="text-xs text-muted-foreground">
-                      {g.repeatNote}
-                    </p>
-                  )}
-                  <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm">
-                    {g.sessions.map((s, si) => (
-                      <li key={si}>
-                        {s.label}
-                        {s.minutesLabel && (
-                          <span className="text-xs text-muted-foreground">
-                            {" "}
-                            · {s.minutesLabel}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ))}
-            </div>
-          </Slide>
-        )}
-
-        {/* Proposta e investimento */}
-        {data.option ? (
-          <Slide title="Proposta e investimento">
-            <ul className="space-y-2">
-              {data.option.items.map((it, i) => (
-                <li
-                  key={i}
-                  className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 text-sm last:border-0"
-                >
-                  <span className="font-medium">
-                    {it.quantity > 1 ? `${it.quantity}× ` : ""}
-                    {it.description}
-                    {(it.sessionsLabel || it.minutesLabel) && (
-                      <span className="ml-1 text-xs font-normal text-muted-foreground">
-                        (
-                        {[it.sessionsLabel, it.minutesLabel]
-                          .filter(Boolean)
-                          .join(" · ")}
-                        )
-                      </span>
-                    )}
-                  </span>
-                  {it.priceLabel && (
-                    <span className="tabular-nums">{it.priceLabel}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
-              {data.option.summaryLabel && (
-                <span className="text-sm text-muted-foreground">
-                  {data.option.summaryLabel}
-                </span>
-              )}
-              {data.option.totalLabel && (
-                <span className="text-lg font-bold text-primary">
-                  Total: {data.option.totalLabel}
-                </span>
-              )}
-            </div>
-          </Slide>
-        ) : (
-          <Slide title="Proposta e investimento">
-            <p className="text-sm text-muted-foreground">
-              O plano ainda não tem uma opção aprovada para apresentar.
-            </p>
-          </Slide>
-        )}
-
-        {/* Considerações do planejamento */}
-        {data.planningNotes && (
-          <Slide title="Considerações do planejamento">
-            <p className="whitespace-pre-wrap text-sm">{data.planningNotes}</p>
-          </Slide>
-        )}
-
-        {/* Próximas etapas */}
-        <Slide title="Próximas etapas">
-          <ol className="list-decimal space-y-1 pl-5 text-sm">
-            {NEXT_STEPS.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </Slide>
+        {slides.map((def, i) => (
+          <div key={def.key}>{renderSlide(def, i, false)}</div>
+        ))}
       </div>
+
+      {/* Modo apresentação — tela cheia, um slide por vez */}
+      {presenting && (
+        <div className="no-print fixed inset-0 z-40 flex flex-col bg-neutral-950">
+          <div className="flex items-center justify-between px-4 py-2 text-white/80">
+            <span className="text-sm font-medium">Modo apresentação</span>
+            <button
+              type="button"
+              onClick={() => setPresenting(false)}
+              className="flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-white/10"
+            >
+              <X className="size-4" /> Sair (Esc)
+            </button>
+          </div>
+          <div className="flex flex-1 items-center justify-center overflow-auto px-4">
+            <div className="w-full max-w-4xl">
+              {renderSlide(slides[current], current, true)}
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-6 px-4 py-3 text-white">
+            <button
+              type="button"
+              onClick={() => setCurrent((c) => Math.max(c - 1, 0))}
+              disabled={current === 0}
+              className="rounded-full p-2 hover:bg-white/10 disabled:opacity-30"
+              aria-label="Slide anterior"
+            >
+              <ChevronLeft className="size-6" />
+            </button>
+            <span className="text-sm tabular-nums">
+              {current + 1} / {total}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrent((c) => Math.min(c + 1, total - 1))}
+              disabled={current === total - 1}
+              className="rounded-full p-2 hover:bg-white/10 disabled:opacity-30"
+              aria-label="Próximo slide"
+            >
+              <ChevronRight className="size-6" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Ampliar foto (somente na tela) */}
       {zoom !== null && data.photos[zoom] && (

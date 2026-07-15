@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.62.0** · Última migração: **0128**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.63.0** · Última migração: **0128**_
+
+> **H4.11 Apresentação 2.0 — Bloco 2: layout 2.0 + Modo apresentação ✅ (v0.63.0,
+> sem migração) — H4.11 COMPLETO.** A apresentação (`/apresentacao/[clientId]`) virou
+> um **deck de verdade**: **capa 2.0** (marca Risarte + faixa dourada, nome grande,
+> código · unidade · data, pilar em selo); cada bloco vira **slide com moldura**
+> (título com acento dourado + **rodapé** com marca, paciente e numeração — também
+> no PDF); **proposta com o total num cartão** navy em destaque; **fotos com
+> legenda** em grade responsiva (lightbox mantido). **PDF** agora sai **um slide por
+> página** + numeração. **Modo apresentação** (botão **"Apresentar"**): tela cheia,
+> **um slide por vez**, navega pelas **setas do teclado** (→/espaço avança, ← volta,
+> **Esc** sai) e por botões, com contador. Tudo em `presentation-view.tsx`
+> (`CoverSlide`/`SlideShell` + array `slides`); **sem migração e sem mexer no Gamma**.
 
 > **H4.11 Apresentação 2.0 — Bloco 1: Fotos no Gamma ✅ (v0.62.0, sem migração):**
 > as **fotos/exames do paciente agora vão automáticas pro deck do Gamma**. Antes o

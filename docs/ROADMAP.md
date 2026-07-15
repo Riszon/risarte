@@ -593,16 +593,18 @@ antes).
       em **abas** (`prontuario-tabs`: Cadastro · Jornada · Clínico · Plano ·
       Sessões & Procedimentos · Documentos · Pedidos · Histórico), abas vazias
       não aparecem, estado dos editores preservado (esconde em vez de desmontar).
-- [ ] **H4.11 Apresentação 2.0 + fotos no Gamma [M]** — layout mais rico e
-      responsivo; testar fotos no Gamma via links assinados embutidos no texto;
-      padrão visual dos decks. **Bloco 1 — Fotos no Gamma entregue** (v0.62.0,
-      sem migração): as fotos/exames do paciente agora vão automáticas pro deck
-      (era `noImages`, que apagava as embutidas — confirmado por teste real na API
-      do Gamma; agora `webAllImages` + instrução "só as fornecidas", e o Gamma
-      copia cada foto pro CDN dele na geração → link assinado 1h basta, LGPD ok);
-      card "Imagens e exames" em `buildInputText`; seletor de fotos na tela +
-      `generateGammaDeck(clientId, photoIds?)`. **Falta Bloco 2** (layout 2.0
-      mais rico/responsivo da tela + PDF).
+- [x] **H4.11 Apresentação 2.0 + fotos no Gamma [M]** ✅ **COMPLETO (v0.63.0,
+      sem migração).** **Bloco 1 — Fotos no Gamma** (v0.62.0): as fotos/exames do
+      paciente vão automáticas pro deck (era `noImages`, que apagava as embutidas —
+      confirmado por teste real na API do Gamma; agora `webAllImages` + instrução
+      "só as fornecidas", e o Gamma copia cada foto pro CDN dele na geração → link
+      assinado 1h basta, LGPD ok); card "Imagens e exames" em `buildInputText`;
+      seletor de fotos na tela + `generateGammaDeck(clientId, photoIds?)`. **Bloco 2
+      — Apresentação 2.0** (v0.63.0): deck de verdade — capa 2.0 (marca + faixa
+      dourada), slides com moldura + rodapé (marca/paciente/numeração, também no
+      PDF), proposta com total em cartão, fotos com legenda; **PDF um slide por
+      página**; **Modo apresentação** (tela cheia, um slide por vez, setas do
+      teclado + Esc). Tudo em `presentation-view.tsx` (`CoverSlide`/`SlideShell`).
 - [x] **H4.12 Câmera intraoral [M]** ✅ (v0.44.0, migração 0111) — na aba
       Clínico, botão "Capturar da câmera": escolhe a câmera (getUserMedia +
       enumerateDevices), tira a foto e salva direto no prontuário (bucket
