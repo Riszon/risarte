@@ -595,7 +595,14 @@ antes).
       não aparecem, estado dos editores preservado (esconde em vez de desmontar).
 - [ ] **H4.11 Apresentação 2.0 + fotos no Gamma [M]** — layout mais rico e
       responsivo; testar fotos no Gamma via links assinados embutidos no texto;
-      padrão visual dos decks.
+      padrão visual dos decks. **Bloco 1 — Fotos no Gamma entregue** (v0.62.0,
+      sem migração): as fotos/exames do paciente agora vão automáticas pro deck
+      (era `noImages`, que apagava as embutidas — confirmado por teste real na API
+      do Gamma; agora `webAllImages` + instrução "só as fornecidas", e o Gamma
+      copia cada foto pro CDN dele na geração → link assinado 1h basta, LGPD ok);
+      card "Imagens e exames" em `buildInputText`; seletor de fotos na tela +
+      `generateGammaDeck(clientId, photoIds?)`. **Falta Bloco 2** (layout 2.0
+      mais rico/responsivo da tela + PDF).
 - [x] **H4.12 Câmera intraoral [M]** ✅ (v0.44.0, migração 0111) — na aba
       Clínico, botão "Capturar da câmera": escolhe a câmera (getUserMedia +
       enumerateDevices), tira a foto e salva direto no prontuário (bucket

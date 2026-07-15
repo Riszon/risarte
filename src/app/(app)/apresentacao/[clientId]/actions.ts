@@ -17,8 +17,14 @@ export type GammaStatusResult = {
   gammaUrl: string | null;
 };
 
-/** Monta o texto (markdown) enviado ao Gamma, um card por bloco (--- separa). */
-function buildInputText(d: PresentationData): string {
+/** Monta o texto (markdown) enviado ao Gamma, um card por bloco (--- separa).
+ * As fotos entram embutidas como `![](url)`; o Gamma baixa cada imagem no
+ * momento da geração e a hospeda no próprio CDN — por isso o link assinado
+ * (validade curta) é suficiente e nada de paciente fica exposto depois. */
+function buildInputText(
+  d: PresentationData,
+  photos: PresentationData["photos"]
+): string {
   const cards: string[] = [];
 
   const capaSub = [
@@ -41,6 +47,16 @@ function buildInputText(d: PresentationData): string {
 
   if (d.objectives) {
     cards.push(`## Objetivos do tratamento\n\n${d.objectives}`);
+  }
+
+  // Fotos e exames do paciente, embutidas para o Gamma usar como imagens.
+  if (photos.length > 0) {
+    let s = "## Imagens e exames\n";
+    for (const p of photos) {
+      const alt = (p.name ?? "Imagem clínica").replace(/[[\]()]/g, " ").trim();
+      s += `\n![${alt || "Imagem clínica"}](${p.url})`;
+    }
+    cards.push(s);
   }
 
   if (d.sessionGroups.length > 0) {
@@ -83,9 +99,11 @@ function buildInputText(d: PresentationData): string {
   return cards.join("\n\n---\n\n");
 }
 
-/** Gera o deck no Gamma a partir do plano aprovado. Retorna o generationId. */
+/** Gera o deck no Gamma a partir do plano aprovado. Retorna o generationId.
+ * `photoIds` limita quais fotos entram no deck (padrão: todas). */
 export async function generateGammaDeck(
-  clientId: string
+  clientId: string,
+  photoIds?: string[]
 ): Promise<GammaGenerateResult> {
   const apiKey = process.env.GAMMA_API_KEY;
   if (!apiKey) {
@@ -110,18 +128,34 @@ export async function generateGammaDeck(
     return { ok: false, error: "O plano precisa estar aprovado." };
   }
 
+  // Fotos escolhidas (padrão: todas). Preserva a ordem original.
+  const includedPhotos = photoIds
+    ? loaded.data.photos.filter((p) => photoIds.includes(p.id))
+    : loaded.data.photos;
+  const withPhotos = includedPhotos.length > 0;
+
   let res: Response;
   try {
     res = await fetch(`${GAMMA_BASE}/generations`, {
       method: "POST",
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
-        inputText: buildInputText(loaded.data),
+        inputText: buildInputText(loaded.data, includedPhotos),
         format: "presentation",
         textMode: "preserve",
         cardSplit: "inputTextBreaks",
-        imageOptions: { source: "noImages" },
-        textOptions: { language: "pt-br", tone: "profissional e acolhedor" },
+        // Com fotos: 'webAllImages' + instrução mantém SÓ as nossas imagens
+        // (o 'noImages' apagava as fotos embutidas). Sem fotos: 'noImages'.
+        imageOptions: { source: withPhotos ? "webAllImages" : "noImages" },
+        ...(withPhotos
+          ? {
+              additionalInstructions:
+                "Use SOMENTE as imagens fornecidas via markdown no texto. " +
+                "Não gere nem busque outras imagens; cards sem imagem devem " +
+                "permanecer sem imagem.",
+            }
+          : {}),
+        textOptions: { language: "pt-br" },
       }),
     });
   } catch (e) {
@@ -150,7 +184,7 @@ export async function generateGammaDeck(
     entityType: "presentation",
     entityId: clientId,
     clinicId: loaded.clinicId,
-    details: { gamma: true },
+    details: { gamma: true, photos: includedPhotos.length },
   });
 
   return { ok: true, generationId: json.generationId };

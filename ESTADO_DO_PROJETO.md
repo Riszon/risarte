@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.61.0** · Última migração: **0128**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.62.0** · Última migração: **0128**_
+
+> **H4.11 Apresentação 2.0 — Bloco 1: Fotos no Gamma ✅ (v0.62.0, sem migração):**
+> as **fotos/exames do paciente agora vão automáticas pro deck do Gamma**. Antes o
+> app enviava `imageOptions: noImages`, que **apagava** as imagens embutidas —
+> confirmado em teste real na API do Gamma. Agora, quando há fotos, usa
+> `webAllImages` + instrução "usar só as imagens fornecidas": o Gamma **preserva só
+> as nossas fotos** (sem imagem genérica) e **copia cada uma pro CDN dele** no
+> momento da geração — por isso o link assinado (1h) basta e nada de paciente fica
+> exposto depois (LGPD ok). Card **"Imagens e exames"** embutido em `buildInputText`.
+> Na tela, ao clicar **"Gerar no Gamma"** aparece um **seletor de fotos** (todas
+> marcadas por padrão; dá pra desmarcar) e depois **"Gerar deck (N fotos)"**.
+> `generateGammaDeck(clientId, photoIds?)`. **Falta o Bloco 2** (layout 2.0 mais
+> rico/responsivo da tela + PDF). Requer a `GAMMA_API_KEY` na Vercel pra usar o botão.
 
 > **H4.9 Chat Hub — Lote 3 ✅ (v0.61.0 · migração 0128) — H4.9 COMPLETO.**
 > **Insistência até visualizar:** quem envia pode marcar a mensagem como

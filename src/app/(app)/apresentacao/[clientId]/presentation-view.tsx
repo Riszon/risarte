@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ExternalLink, Loader2, Printer, Sparkles, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ExternalLink,
+  Loader2,
+  Printer,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { generateGammaDeck, getGammaStatus } from "./actions";
 
 export type PresentationOptionItem = {
@@ -81,6 +90,7 @@ function Slide({
 
 type GammaState =
   | { phase: "idle" }
+  | { phase: "choosing" }
   | { phase: "generating" }
   | { phase: "ready"; url: string }
   | { phase: "error"; error: string };
@@ -96,6 +106,10 @@ export function PresentationView({
   const [zoom, setZoom] = useState<number | null>(null);
   const [gamma, setGamma] = useState<GammaState>({ phase: "idle" });
   const [generationId, setGenerationId] = useState<string | null>(null);
+  // Fotos que entram no deck do Gamma (padrão: todas).
+  const [gammaPhotoIds, setGammaPhotoIds] = useState<string[]>(() =>
+    data.photos.map((p) => p.id)
+  );
 
   // Polling do status da geração no Gamma (até completar).
   useEffect(() => {
@@ -124,16 +138,28 @@ export function PresentationView({
     };
   }, [generationId]);
 
-  async function startGamma() {
+  async function startGamma(photoIds: string[]) {
     setGamma({ phase: "generating" });
     setGenerationId(null);
-    const res = await generateGammaDeck(clientId);
+    const res = await generateGammaDeck(clientId, photoIds);
     if (res.ok) {
       setGenerationId(res.generationId);
     } else {
       setGamma({ phase: "error", error: res.error });
       toast.error(res.error);
     }
+  }
+
+  function onGammaClick() {
+    // Com fotos, abre o seletor; sem fotos, gera direto.
+    if (data.photos.length > 0) setGamma({ phase: "choosing" });
+    else startGamma([]);
+  }
+
+  function toggleGammaPhoto(id: string) {
+    setGammaPhotoIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   return (
@@ -149,8 +175,8 @@ export function PresentationView({
           <Button
             variant="outline"
             size="sm"
-            onClick={startGamma}
-            disabled={gamma.phase === "generating"}
+            onClick={onGammaClick}
+            disabled={gamma.phase === "generating" || gamma.phase === "choosing"}
           >
             {gamma.phase === "generating" ? (
               <Loader2 className="mr-1 size-4 animate-spin" />
@@ -168,6 +194,62 @@ export function PresentationView({
 
       {gamma.phase !== "idle" && (
         <div className="no-print mb-4 rounded-md border border-gold/40 bg-gold/5 p-3 text-xs">
+          {gamma.phase === "choosing" && (
+            <div className="space-y-2">
+              <p className="font-medium text-primary">
+                Fotos que entram no deck do Gamma
+              </p>
+              <p className="text-muted-foreground">
+                As fotos vão automáticas para o deck. Desmarque as que não quiser
+                incluir.
+              </p>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {data.photos.map((p) => {
+                  const on = gammaPhotoIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => toggleGammaPhoto(p.id)}
+                      aria-pressed={on}
+                      className={cn(
+                        "relative overflow-hidden rounded border-2 transition",
+                        on
+                          ? "border-primary"
+                          : "border-transparent opacity-40 grayscale"
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.url}
+                        alt={p.name ?? "imagem clínica"}
+                        className="aspect-square w-full object-cover"
+                      />
+                      {on && (
+                        <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="size-3" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGamma({ phase: "idle" })}
+                >
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={() => startGamma(gammaPhotoIds)}>
+                  <Sparkles className="mr-1 size-4" />
+                  Gerar deck ({gammaPhotoIds.length}{" "}
+                  {gammaPhotoIds.length === 1 ? "foto" : "fotos"})
+                </Button>
+              </div>
+            </div>
+          )}
           {gamma.phase === "generating" && (
             <p className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
@@ -186,9 +268,9 @@ export function PresentationView({
                 Abrir o deck no Gamma
               </a>
               <p className="text-muted-foreground">
-                No Gamma você pode <strong>adicionar as fotos do paciente</strong>{" "}
-                onde quiser e depois <strong>exportar em PPTX ou PDF</strong>. (As
-                fotos com qualidade também estão no “Baixar PDF” acima.)
+                As <strong>fotos do paciente já vão no deck</strong>. No Gamma
+                você pode ajustar o layout e depois{" "}
+                <strong>exportar em PPTX ou PDF</strong>.
               </p>
             </div>
           )}
