@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Tag } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
@@ -88,6 +90,7 @@ export default async function ProceduresPage(
   const [
     { data: procRows },
     { data: specialtyRows },
+    { data: specialtyTableRows },
     { data: nameRows },
     { data: units },
   ] = await Promise.all([
@@ -97,6 +100,12 @@ export default async function ProceduresPage(
       .select("specialty")
       .not("specialty", "is", null)
       .returns<{ specialty: string }[]>(),
+    supabase
+      .from("specialties")
+      .select("name")
+      .eq("is_active", true)
+      .order("sort_order")
+      .returns<{ name: string }[]>(),
     supabase
       .from("procedures")
       .select("name")
@@ -133,9 +142,15 @@ export default async function ProceduresPage(
     isActive: p.is_active,
   }));
 
-  const specialties = [
+  // Lista gerenciável (ativa, na ordem definida) para os seletores; o filtro
+  // também mostra especialidades antigas ainda presentes em procedimentos.
+  const activeSpecialties = (specialtyTableRows ?? []).map((s) => s.name);
+  const legacyExtras = [
     ...new Set((specialtyRows ?? []).map((s) => s.specialty).filter(Boolean)),
-  ].sort((a, b) => a.localeCompare(b));
+  ]
+    .filter((s) => !activeSpecialties.includes(s))
+    .sort((a, b) => a.localeCompare(b));
+  const specialtyFilterOptions = [...activeSpecialties, ...legacyExtras];
 
   // Unit price overrides (when a unit is selected).
   let overrides: UnitPrice[] = [];
@@ -291,13 +306,24 @@ export default async function ProceduresPage(
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Procedimentos</h1>
-        <p className="text-sm text-muted-foreground">
-          {canManageCatalog
-            ? `Catálogo de procedimentos da rede (${procedures.length}). Preço padrão da rede com ajuste por unidade; código interno gerado automaticamente.`
-            : "Protocolo de sessões da sua unidade. Clique no relógio de um procedimento para personalizar os tempos/sessões (a base é o padrão da Rede)."}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Procedimentos</h1>
+          <p className="text-sm text-muted-foreground">
+            {canManageCatalog
+              ? `Catálogo de procedimentos da rede (${procedures.length}). Preço padrão da rede com ajuste por unidade; código interno gerado automaticamente.`
+              : "Protocolo de sessões da sua unidade. Clique no relógio de um procedimento para personalizar os tempos/sessões (a base é o padrão da Rede)."}
+          </p>
+        </div>
+        {canManageCatalog && (
+          <Link
+            href="/procedimentos/especialidades"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
+          >
+            <Tag className="size-4" />
+            Especialidades
+          </Link>
+        )}
       </div>
 
       <FilterForm className="flex flex-wrap items-center gap-2">
@@ -317,7 +343,7 @@ export default async function ProceduresPage(
         </datalist>
         <select name="especialidade" defaultValue={specialtyFilter} className={selectClass}>
           <option value="">Todas as especialidades</option>
-          {specialties.map((s) => (
+          {specialtyFilterOptions.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
@@ -352,7 +378,7 @@ export default async function ProceduresPage(
 
       <ProceduresEditor
         procedures={procedures}
-        specialties={specialties}
+        specialties={activeSpecialties}
         selectedUnitId={unitId}
         unitName={(units ?? []).find((u) => u.id === unitId)?.name ?? null}
         overrides={overrides}

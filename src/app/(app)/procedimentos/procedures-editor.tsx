@@ -105,10 +105,17 @@ function fmtDate(iso: string): string {
 function ProcedureFields({
   value,
   onChange,
+  specialties,
 }: {
   value: ProcedureInput;
   onChange: (patch: Partial<ProcedureInput>) => void;
+  specialties: string[];
 }) {
+  // Inclui o valor atual (mesmo que seja antigo/desativado) para não se perder.
+  const specialtyOptions =
+    value.specialty && !specialties.includes(value.specialty)
+      ? [value.specialty, ...specialties]
+      : specialties;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -129,11 +136,18 @@ function ProcedureFields({
       </div>
       <div>
         <Label>Especialidade</Label>
-        <Input
+        <select
           value={value.specialty}
           onChange={(e) => onChange({ specialty: e.target.value })}
-          placeholder="Ex.: Dentística"
-        />
+          className={selectClass}
+        >
+          <option value="">Sem especialidade</option>
+          {specialtyOptions.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <Label>Pilar da Metodologia</Label>
@@ -600,6 +614,7 @@ export function ProceduresEditor({
               <ProcedureFields
                 value={newProc}
                 onChange={(patch) => setNewProc((prev) => ({ ...prev, ...patch }))}
+                specialties={specialties}
               />
               <Button
                 size="sm"
@@ -648,6 +663,7 @@ export function ProceduresEditor({
                 <ProcedureRow
                   key={p.id}
                   procedure={p}
+                  specialties={specialties}
                   networkMode={networkMode}
                   selectedUnitId={selectedUnitId}
                   overrideCents={overrideByProc.get(p.id) ?? null}
@@ -813,6 +829,7 @@ function ReadjustPanel({
 
 function ProcedureRow({
   procedure: p,
+  specialties,
   networkMode,
   selectedUnitId,
   overrideCents,
@@ -827,6 +844,7 @@ function ProcedureRow({
   onToggleSelect,
 }: {
   procedure: Procedure;
+  specialties: string[];
   networkMode: boolean;
   selectedUnitId: string;
   overrideCents: number | null;
@@ -864,6 +882,7 @@ function ProcedureRow({
         <ProcedureFields
           value={form}
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+          specialties={specialties}
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button

@@ -164,22 +164,29 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
     await Promise.all([
       unitsQuery,
       staffQuery.returns<StaffRow[]>(),
-      // H4.5 Lote 3: lista de especialidades (dos procedimentos ativos) para
-      // marcar no cadastro do Risartano.
+      // H4.13: lista PADRÃO (gerenciável) de especialidades, na ordem definida.
       supabase
-        .from("procedures")
-        .select("specialty")
+        .from("specialties")
+        .select("name")
         .eq("is_active", true)
-        .not("specialty", "is", null)
-        .returns<{ specialty: string | null }[]>(),
+        .order("sort_order")
+        .returns<{ name: string }[]>(),
     ]);
+  // Opções = lista ativa + qualquer especialidade já marcada num Risartano (para
+  // não perder marcações de itens que porventura foram desativados).
+  const activeSpecs = (specRows ?? []).map((s) => s.name);
+  const staffSpecs = new Set<string>();
+  for (const r of staffRows ?? []) {
+    for (const s of r.specialties ?? []) {
+      if (s?.trim()) staffSpecs.add(s.trim());
+    }
+  }
   const specialtyOptions = [
-    ...new Set(
-      (specRows ?? [])
-        .map((s) => (s.specialty ?? "").trim())
-        .filter(Boolean)
-    ),
-  ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    ...activeSpecs,
+    ...[...staffSpecs]
+      .filter((s) => !activeSpecs.includes(s))
+      .sort((a, b) => a.localeCompare(b, "pt-BR")),
+  ];
 
   const term = busca.trim().toLowerCase();
   const rows = (staffRows ?? []).filter((r) => {

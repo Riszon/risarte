@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.63.1** · Última migração: **0128**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.64.0** · Última migração: **0129**_
+
+> **H4.13 — Bloco 1: Especialidades gerenciáveis ✅ (v0.64.0 · migração 0129):**
+> a especialidade deixou de ser texto livre e virou uma **lista padrão gerenciável**
+> (tabela `specialties`, nível da rede, já populada + backfill do que existia). Tela
+> nova **"Especialidades"** (a partir de *Procedimentos*, `/procedimentos/especialidades`,
+> Admin Master + Dentista Planner): **adicionar · renomear · ativar/desativar ·
+> reordenar**. **Renomear cascateia** (RPC `rename_specialty`) para os procedimentos
+> e Risartanos que usavam o nome antigo. No **procedimento** a especialidade virou
+> **lista suspensa** (mantém valor antigo se houver); no **Risartano** as opções vêm
+> da lista ativa; **filtros** usam a lista. **Falta o Bloco 2** (comissionamento em
+> massa + regra "comissão só com procedimento finalizado"). Migração a rodar: **0129**.
 
 > **H4.11 — Ajustes do Modo apresentação ✅ (v0.63.1, sem migração):** (1) **tela
 > cheia de verdade** (Fullscreen do navegador; sai no Esc/botão, e sair da tela

@@ -682,7 +682,7 @@ export function StaffFormDialog({
             <Label>Especialidades (para sugerir nas sessões)</Label>
             {specialtyOptions.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Nenhuma especialidade cadastrada nos procedimentos ainda.
+                Nenhuma especialidade cadastrada ainda.
               </p>
             ) : (
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1.5">
