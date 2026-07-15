@@ -611,10 +611,16 @@ antes).
       clínico, link assinado). Coordenador E Dentista (0111 libera o dentista na
       `clinical_media`: select+insert; storage já liberado na 0109). Exige
       consentimento e HTTPS. `clinical-images-section` + `recordCameraCapture`.
-- [ ] **H4.13 Especialidades + comissionamento [M] 🗄️** — cadastro de
-      especialidades (lista padronizada, como o pilar); reajuste em massa do
-      comissionamento fixo; regra "comissão só com procedimento finalizado"
-      documentada (aplicação = módulo financeiro, Fase 2).
+- [x] **H4.13 Especialidades + comissionamento [M] 🗄️** ✅ **COMPLETO (v0.65.0 ·
+      migração 0129).** **Bloco 1** — especialidades viraram **lista padrão
+      gerenciável** (tabela `specialties` no nível da rede, seed + backfill; tela
+      `/procedimentos/especialidades` para Admin/Planner: adicionar/renomear/ativar-
+      desativar/reordenar; renomear cascateia via RPC `rename_specialty` para
+      procedimentos e Risartanos; procedimento/Risartano/filtros usam a lista).
+      **Bloco 2** — painel **"Comissão em massa"** (`setCommissionBulk`): define
+      **% e/ou R$ fixo** por Todos/Especialidade/Pilar/Selecionados; **regra**
+      "comissão só com procedimento finalizado" documentada na tela (pagamento =
+      módulo financeiro, Fase 2).
 - [x] **H4.14 Definições de status [P]** ✅ (v0.42.0, migração 0110) — na Fase 5,
       "Início de Tratamento" = plano aprovado e nada executado; passa a "Em
       Tratamento" **automaticamente** quando a 1ª sessão recebe baixa (gatilho

@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { formatSessions, parseBRLToCents } from "@/lib/pricing";
+import { formatBRL, formatSessions, parseBRLToCents } from "@/lib/pricing";
 import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
 
 export type ProcedureResult = { ok: boolean; error?: string };
@@ -471,6 +471,98 @@ export async function readjustPrices(input: {
   });
   revalidatePath("/procedimentos");
   return { ok: true, adjusted };
+}
+
+/**
+ * H4.13: define a comissão (%, R$ fixo, ou ambos) em massa, por escopo. Campos
+ * em branco não são alterados. A comissão só é REALIZADA com o procedimento
+ * finalizado — o pagamento é feito no módulo financeiro (Fase 2); aqui é só o
+ * cadastro da regra por procedimento.
+ */
+export async function setCommissionBulk(input: {
+  percent?: string;
+  fixed?: string;
+  scope: "all" | "specialty" | "pillar" | "selected";
+  specialty?: string;
+  pillar?: string;
+  ids?: string[];
+}): Promise<ProcedureResult & { adjusted?: number }> {
+  const session = await getSessionContext();
+  if (!canEdit(session)) {
+    return { ok: false, error: "Sem permissão para editar procedimentos." };
+  }
+
+  const percentStr = (input.percent ?? "").trim();
+  const fixedStr = (input.fixed ?? "").trim();
+  let percent: number | null = null;
+  if (percentStr) {
+    const n = Number(percentStr.replace(",", "."));
+    if (!Number.isFinite(n) || n < 0) {
+      return { ok: false, error: "Comissão (%) inválida." };
+    }
+    percent = n;
+  }
+  let fixedCents: number | null = null;
+  if (fixedStr) {
+    const c = parseBRLToCents(fixedStr);
+    if (c === null) return { ok: false, error: "Comissão (R$) inválida." };
+    fixedCents = c;
+  }
+  if (percent === null && fixedCents === null) {
+    return { ok: false, error: "Informe a comissão (% e/ou R$) a aplicar." };
+  }
+
+  const supabase = await createClient();
+  let query = supabase.from("procedures").select("id");
+  if (input.scope === "specialty") {
+    if (!input.specialty) return { ok: false, error: "Escolha a especialidade." };
+    query = query.eq("specialty", input.specialty);
+  } else if (input.scope === "pillar") {
+    if (!input.pillar) return { ok: false, error: "Escolha o pilar." };
+    query = query.eq("pillar", input.pillar);
+  } else if (input.scope === "selected") {
+    if (!input.ids || input.ids.length === 0) {
+      return { ok: false, error: "Selecione ao menos um procedimento." };
+    }
+    query = query.in("id", input.ids);
+  }
+  const { data: procs } = await query.returns<{ id: string }[]>();
+  if (!procs || procs.length === 0) {
+    return { ok: false, error: "Nenhum procedimento no escopo selecionado." };
+  }
+
+  const patch: Record<string, number | string> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (percent !== null) patch.commission_percent = percent;
+  if (fixedCents !== null) patch.commission_fixed_cents = fixedCents;
+
+  const ids = procs.map((p) => p.id);
+  const { error } = await supabase.from("procedures").update(patch).in("id", ids);
+  if (error) {
+    console.error("setCommissionBulk failed:", error.message);
+    return { ok: false, error: "Não foi possível aplicar a comissão." };
+  }
+
+  const parts: string[] = [];
+  if (percent !== null) parts.push(`${input.percent!.trim()}%`);
+  if (fixedCents !== null) parts.push(formatBRL(fixedCents));
+  const label = `Comissão definida em massa: ${parts.join(" + ")}.`;
+  await supabase.from("procedure_changes").insert(
+    ids.map((id) => ({
+      procedure_id: id,
+      changed_by: session.userId,
+      description: label,
+    }))
+  );
+  await logAudit({
+    action: "update",
+    entityType: "procedure",
+    entityId: "commission-bulk",
+    details: { scope: input.scope, count: ids.length },
+  });
+  revalidatePath("/procedimentos");
+  return { ok: true, adjusted: ids.length };
 }
 
 // ---------------------------------------------------------------------------

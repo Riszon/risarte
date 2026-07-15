@@ -32,6 +32,7 @@ import {
   editProcedure,
   proposeProtocolChange,
   readjustPrices,
+  setCommissionBulk,
   setProcedureActive,
   setProcedureSessions,
   setUnitPrice,
@@ -644,6 +645,17 @@ export function ProceduresEditor({
         />
       )}
 
+      {networkMode && canManageCatalog && (
+        <CommissionPanel
+          specialties={specialties}
+          selectedCount={selected.size}
+          isPending={isPending}
+          run={run}
+          getSelectedIds={() => [...selected]}
+          onDone={() => setSelected(new Set())}
+        />
+      )}
+
       {!networkMode && (
         <p className="rounded-md border bg-muted/30 p-2 text-sm text-muted-foreground">
           Editando os preços da unidade <strong>{unitName}</strong>. Deixe em
@@ -820,6 +832,155 @@ function ReadjustPanel({
           <p className="text-xs text-muted-foreground">
             Use “Selecionados” marcando os procedimentos na lista abaixo. O
             reajuste fica registrado no histórico de cada procedimento.
+          </p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+/** H4.13: definir a comissão (%, R$ fixo, ou ambos) em massa, por escopo. */
+function CommissionPanel({
+  specialties,
+  selectedCount,
+  isPending,
+  run,
+  getSelectedIds,
+  onDone,
+}: {
+  specialties: string[];
+  selectedCount: number;
+  isPending: boolean;
+  run: (
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) => void;
+  getSelectedIds: () => string[];
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [percent, setPercent] = useState("");
+  const [fixed, setFixed] = useState("");
+  const [scope, setScope] = useState<"all" | "specialty" | "pillar" | "selected">(
+    "all"
+  );
+  const [specialty, setSpecialty] = useState("");
+  const [pillar, setPillar] = useState("");
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Comissão em massa</CardTitle>
+        <Button size="sm" variant={open ? "outline" : "default"} onClick={() => setOpen((s) => !s)}>
+          {open ? "Fechar" : "Abrir"}
+        </Button>
+      </CardHeader>
+      {open && (
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label>Comissão (%)</Label>
+              <Input
+                value={percent}
+                onChange={(e) => setPercent(e.target.value)}
+                inputMode="decimal"
+                placeholder="Ex.: 10"
+                className="w-24"
+              />
+            </div>
+            <div>
+              <Label>Comissão fixa (R$)</Label>
+              <Input
+                value={fixed}
+                onChange={(e) => setFixed(e.target.value)}
+                inputMode="decimal"
+                placeholder="Ex.: 5,00"
+                className="w-28"
+              />
+            </div>
+            <div>
+              <Label>Aplicar a</Label>
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value as typeof scope)}
+                className={selectClass.replace("w-full", "w-48")}
+              >
+                <option value="all">Todos os procedimentos</option>
+                <option value="specialty">Por especialidade</option>
+                <option value="pillar">Por pilar</option>
+                <option value="selected">Selecionados ({selectedCount})</option>
+              </select>
+            </div>
+            {scope === "specialty" && (
+              <div>
+                <Label>Especialidade</Label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className={selectClass.replace("w-full", "w-44")}
+                >
+                  <option value="">Selecione...</option>
+                  {specialties.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {scope === "pillar" && (
+              <div>
+                <Label>Pilar</Label>
+                <select
+                  value={pillar}
+                  onChange={(e) => setPillar(e.target.value)}
+                  className={selectClass.replace("w-full", "w-44")}
+                >
+                  <option value="">Selecione...</option>
+                  {METHODOLOGY_PILLARS.map((p) => (
+                    <option key={p} value={p}>
+                      {PILLAR_LABELS[p as MethodologyPillar]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Deixe um dos campos em branco para não alterá-lo. Ex.: só o “%” muda a
+            comissão percentual e mantém a fixa.
+          </p>
+          <Button
+            size="sm"
+            disabled={(!percent.trim() && !fixed.trim()) || isPending}
+            onClick={() =>
+              run(
+                () =>
+                  setCommissionBulk({
+                    percent: percent || undefined,
+                    fixed: fixed || undefined,
+                    scope,
+                    specialty: specialty || undefined,
+                    pillar: pillar || undefined,
+                    ids: scope === "selected" ? getSelectedIds() : undefined,
+                  }),
+                "Comissão aplicada.",
+                () => {
+                  setPercent("");
+                  setFixed("");
+                  onDone();
+                }
+              )
+            }
+          >
+            Aplicar comissão
+          </Button>
+          <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+            <strong>Regra:</strong> a comissão só é contabilizada quando o
+            procedimento é <strong>finalizado</strong>. O pagamento é feito no{" "}
+            <strong>módulo financeiro</strong> (Fase 2); aqui você só cadastra a
+            regra de cada procedimento.
           </p>
         </CardContent>
       )}

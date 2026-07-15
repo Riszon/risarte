@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.64.0** · Última migração: **0129**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.65.0** · Última migração: **0129**_
+
+> **H4.13 — Bloco 2: Comissionamento em massa + regra ✅ (v0.65.0, sem migração) —
+> H4.13 COMPLETO.** Novo painel **"Comissão em massa"** nos Procedimentos (Admin/
+> Planner, modo rede): define **% e/ou R$ fixo** por **Todos / Especialidade / Pilar /
+> Selecionados** (campo em branco não altera). Cada mudança fica no histórico do
+> procedimento (`setCommissionBulk`). **Regra documentada na tela**: a comissão só é
+> contabilizada com o procedimento **finalizado**; o **pagamento** é do **módulo
+> financeiro (Fase 2)** — aqui é só o cadastro da regra.
 
 > **H4.13 — Bloco 1: Especialidades gerenciáveis ✅ (v0.64.0 · migração 0129):**
 > a especialidade deixou de ser texto livre e virou uma **lista padrão gerenciável**
