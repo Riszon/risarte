@@ -10,6 +10,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   ArrowLeft,
   Check,
   CheckCheck,
@@ -52,6 +53,7 @@ import {
   broadcastToUnitMembers,
   getChannelPeople,
   getChannelReads,
+  getImportantUnread,
   getLastSeen,
   getMessages,
   listChannels,
@@ -172,6 +174,10 @@ export function ChatHub({
   );
   const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [important, setImportant] = useState(false);
+  const [importantUnread, setImportantUnread] = useState<
+    { channelId: string; count: number; lastAt: string }[]
+  >([]);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [reactingId, setReactingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -230,6 +236,8 @@ export function ChatHub({
     setChannels((prev) =>
       prev.map((c) => (c.id === channelId ? { ...c, unread: 0 } : c))
     );
+    // Abrir a conversa marca como lida → some da insistência de importantes.
+    setImportantUnread(await getImportantUnread());
   }, []);
 
   function openChannel(channelId: string) {
@@ -239,6 +247,11 @@ export function ChatHub({
 
   // Presença compartilhada (o menu gerencia o canal; aqui só lemos).
   useEffect(() => subscribePresence(setPresenceState), []);
+
+  // Carga inicial das mensagens importantes não lidas (faixa fixa).
+  useEffect(() => {
+    getImportantUnread().then(setImportantUnread);
+  }, []);
 
   // Carrega o thread quando muda o canal (inclui a 1ª carga).
   useEffect(() => {
@@ -271,6 +284,7 @@ export function ChatHub({
             loadThread(m.channel_id);
           } else {
             refreshChannels();
+            getImportantUnread().then(setImportantUnread);
           }
         }
       )
@@ -339,16 +353,19 @@ export function ChatHub({
     const text = input.trim();
     if (!text || !selectedId) return;
     const replyId = replyingTo?.id;
+    const imp = important;
     setInput("");
     setReplyingTo(null);
+    setImportant(false);
     startTransition(async () => {
-      const r = await sendMessage(selectedId, text, replyId);
+      const r = await sendMessage(selectedId, text, replyId, imp);
       if (r.ok) {
         await loadThread(selectedId);
         refreshChannels();
       } else {
         toast.error(r.error ?? "Não foi possível enviar.");
         setInput(text);
+        setImportant(imp);
       }
     });
   }
@@ -594,8 +611,50 @@ export function ChatHub({
     [people]
   );
 
+  // Lote 3: mensagens importantes não lidas → faixa fixa + marcador na lista.
+  const importantByChannel = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of importantUnread) m.set(r.channelId, r.count);
+    return m;
+  }, [importantUnread]);
+  const importantTotal = useMemo(
+    () => importantUnread.reduce((a, r) => a + r.count, 0),
+    [importantUnread]
+  );
+  const importantJumpTo = useMemo(() => {
+    let best: { channelId: string; lastAt: string } | null = null;
+    for (const r of importantUnread) {
+      if (!best || new Date(r.lastAt).getTime() > new Date(best.lastAt).getTime()) {
+        best = { channelId: r.channelId, lastAt: r.lastAt };
+      }
+    }
+    return best?.channelId ?? null;
+  }, [importantUnread]);
+
   return (
-    <div className="flex h-[calc(100vh-13rem)] min-h-[26rem] overflow-hidden rounded-xl border bg-card">
+    <div className="space-y-2">
+      {importantTotal > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span className="min-w-0 flex-1">
+            Você tem <b>{importantTotal}</b>{" "}
+            {importantTotal === 1
+              ? "mensagem importante não lida"
+              : "mensagens importantes não lidas"}
+            .
+          </span>
+          {importantJumpTo && (
+            <Button
+              size="sm"
+              className="h-7 shrink-0 px-2 text-xs"
+              onClick={() => openChannel(importantJumpTo)}
+            >
+              Ver
+            </Button>
+          )}
+        </div>
+      )}
+      <div className="flex h-[calc(100vh-13rem)] min-h-[26rem] overflow-hidden rounded-xl border bg-card">
       {/* Lista de conversas */}
       <aside
         className={cn(
@@ -796,11 +855,22 @@ export function ChatHub({
                     <span className="truncate text-sm font-medium">
                       {c.title}
                     </span>
-                    {c.unread > 0 && (
-                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-xs font-medium text-gold-foreground">
-                        {c.unread > 99 ? "99+" : c.unread}
-                      </span>
-                    )}
+                    <span className="flex shrink-0 items-center gap-1">
+                      {importantByChannel.has(c.id) && (
+                        <span
+                          title="Mensagem importante não lida"
+                          className="inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white"
+                        >
+                          <AlertTriangle className="size-3" />
+                          {importantByChannel.get(c.id)}
+                        </span>
+                      )}
+                      {c.unread > 0 && (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-xs font-medium text-gold-foreground">
+                          {c.unread > 99 ? "99+" : c.unread}
+                        </span>
+                      )}
+                    </span>
                   </span>
                   {c.lastMessage && (
                     <span className="block truncate text-xs text-muted-foreground">
@@ -939,6 +1009,12 @@ export function ChatHub({
                           </span>
                           {sub && ` · ${sub}`}
                         </span>
+                        {m.important && (
+                          <span className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                            <AlertTriangle className="size-3" />
+                            Importante
+                          </span>
+                        )}
                         {m.replyTo && (
                           <div className="mb-0.5 max-w-full rounded-md border-l-2 border-primary/50 bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
                             <span className="font-medium">
@@ -1151,6 +1227,24 @@ export function ChatHub({
                     size="icon"
                     variant="ghost"
                     disabled={uploading}
+                    onClick={() => setImportant((v) => !v)}
+                    title={
+                      important
+                        ? "Importante ativado — clique para desativar"
+                        : "Marcar como importante (reavisa até o destinatário abrir)"
+                    }
+                    className={cn(
+                      important &&
+                        "bg-amber-500 text-white hover:bg-amber-600 hover:text-white"
+                    )}
+                  >
+                    <AlertTriangle className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    disabled={uploading}
                     onClick={() => fileInputRef.current?.click()}
                     title="Anexar arquivo"
                   >
@@ -1172,7 +1266,9 @@ export function ChatHub({
                     placeholder={
                       uploading
                         ? "Enviando anexo..."
-                        : "Escreva uma mensagem..."
+                        : important
+                          ? "Mensagem importante — reavisa até abrir…"
+                          : "Escreva uma mensagem..."
                     }
                     disabled={uploading}
                     autoComplete="off"
@@ -1237,6 +1333,7 @@ export function ChatHub({
           </ul>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

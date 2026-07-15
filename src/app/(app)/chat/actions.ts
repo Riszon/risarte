@@ -32,6 +32,7 @@ export type ChatMessage = {
   body: string;
   createdAt: string;
   mine: boolean;
+  important: boolean;
   reactions: ChatReaction[];
   replyTo: { id: string; senderName: string; body: string } | null;
   attachment: ChatAttachment | null;
@@ -209,7 +210,7 @@ export async function getMessages(
   const { data } = await supabase
     .from("chat_messages")
     .select(
-      "id, sender_id, body, created_at, reply_to, attachment_path, attachment_name, attachment_type, attachment_kind"
+      "id, sender_id, body, created_at, important, reply_to, attachment_path, attachment_name, attachment_type, attachment_kind"
     )
     .eq("channel_id", channelId)
     .order("created_at", { ascending: false })
@@ -220,6 +221,7 @@ export async function getMessages(
         sender_id: string;
         body: string | null;
         created_at: string;
+        important: boolean | null;
         reply_to: string | null;
         attachment_path: string | null;
         attachment_name: string | null;
@@ -323,6 +325,7 @@ export async function getMessages(
       body: r.body ?? "",
       createdAt: r.created_at,
       mine: r.sender_id === session.userId,
+      important: r.important ?? false,
       reactions: reactionsByMsg.get(r.id) ?? [],
       replyTo:
         r.reply_to && rep
@@ -345,11 +348,13 @@ export async function getMessages(
   });
 }
 
-/** Envia uma mensagem de texto (opcionalmente respondendo outra). */
+/** Envia uma mensagem de texto (opcionalmente respondendo outra; a marca de
+ * "importante" faz o destinatário ser reavisado até abrir a conversa). */
 export async function sendMessage(
   channelId: string,
   body: string,
-  replyToId?: string
+  replyToId?: string,
+  important?: boolean
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   const text = body.trim();
@@ -362,6 +367,7 @@ export async function sendMessage(
     sender_id: session.userId,
     body: text,
     reply_to: replyToId || null,
+    important: important ?? false,
   });
   if (error) {
     console.error("sendMessage failed:", error.message);
@@ -464,6 +470,21 @@ export async function markRead(channelId: string): Promise<void> {
     },
     { onConflict: "channel_id,user_id" }
   );
+}
+
+/** Mensagens importantes ainda não lidas, por canal (faixa fixa + marcador na
+ * lista de conversas). Some assim que o canal é aberto (marcado como lido). */
+export async function getImportantUnread(): Promise<
+  { channelId: string; count: number; lastAt: string }[]
+> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("chat_important_unread");
+  return (
+    (data as
+      | { channel_id: string; cnt: number; last_at: string }[]
+      | null) ?? []
+  ).map((r) => ({ channelId: r.channel_id, count: r.cnt, lastAt: r.last_at }));
 }
 
 /** "Visto por último" de um conjunto de usuários (atualização leve, sem fotos). */

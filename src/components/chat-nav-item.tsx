@@ -33,6 +33,12 @@ function beep() {
   }
 }
 
+// Aviso de mensagem importante: dois toques (mais insistente que o normal).
+function beepUrgent() {
+  beep();
+  setTimeout(beep, 220);
+}
+
 /**
  * H4.9 Chat Hub: item do menu com contador de não lidas em tempo real +
  * gerência da presença (online/ausente) do usuário para todo o app.
@@ -123,20 +129,44 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
     refresh();
     const interval = setInterval(refresh, 45_000);
 
+    // Lote 3: reaviso insistente — enquanto houver mensagem importante não lida,
+    // repete som + pop-up a cada 60s (fora da tela do Chat, onde a faixa avisa).
+    const importantTick = setInterval(() => {
+      supabase.rpc("chat_important_unread_total").then(({ data }) => {
+        const n = typeof data === "number" ? data : 0;
+        if (n > 0 && window.location.pathname !== "/chat") {
+          beepUrgent();
+          toast.warning(
+            n === 1
+              ? "1 mensagem importante não lida"
+              : `${n} mensagens importantes não lidas`,
+            { id: "chat-important" }
+          );
+        }
+      });
+    }, 60_000);
+
     const channel = supabase
       .channel("chat-hub-nav")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
-          const m = payload.new as { sender_id: string };
+          const m = payload.new as { sender_id: string; important?: boolean };
           refresh();
           if (
             m.sender_id !== meRef.current &&
             window.location.pathname !== "/chat"
           ) {
-            beep();
-            toast.message("Nova mensagem no Chat Hub");
+            if (m.important) {
+              beepUrgent();
+              toast.warning("Mensagem importante no Chat Hub", {
+                id: "chat-important",
+              });
+            } else {
+              beep();
+              toast.message("Nova mensagem no Chat Hub");
+            }
           }
         }
       )
@@ -146,6 +176,7 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
       cancelled = true;
       clearInterval(interval);
       clearInterval(presenceTick);
+      clearInterval(importantTick);
       if (idleTimer) clearTimeout(idleTimer);
       for (const ev of activityEvents) {
         window.removeEventListener(ev, onActivity);

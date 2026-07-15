@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.60.0** · Última migração: **0127**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.61.0** · Última migração: **0128**_
+
+> **H4.9 Chat Hub — Lote 3 ✅ (v0.61.0 · migração 0128) — H4.9 COMPLETO.**
+> **Insistência até visualizar:** quem envia pode marcar a mensagem como
+> **importante** (botão ⚠️ no compositor → a bolha ganha o selo "Importante").
+> Enquanto o destinatário não abrir a conversa: (1) **faixa fixa** no topo do
+> Chat ("Você tem N importantes não lidas — Ver" pula pra conversa) + **marcador
+> âmbar** no canal na lista; (2) **reaviso insistente** em qualquer tela — som
+> duplo + pop-up **a cada 60s** (fora do /chat, onde a faixa avisa). Para na hora
+> que ele abre a conversa (marca como lida). Coluna `chat_messages.important` +
+> RPCs `chat_important_unread()` / `chat_important_unread_total()`. Migração a
+> rodar: **0128**. **H4.9 fechado (Lote 1 + R1–R4 + Lote 2 + Lote 3; 0120–0128).**
 
 > **H4.9 Chat Hub — Lote 2 ✅ (v0.60.0 · migração 0127):** **anexos** no chat —
 > **arquivo** (clipe → escolhe o arquivo) e **gravar áudio** (microfone). Bucket

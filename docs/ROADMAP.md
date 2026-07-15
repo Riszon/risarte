@@ -558,10 +558,11 @@ antes).
       `saveNetworkLunch`; policy de escrita ampliada para `can_manage_network_plan`
       na linha NULL); a unidade herda por cascata e pode personalizar o seu (o
       editor da unidade mostra o padrão da rede como referência).
-- [ ] **H4.9 Chat interno ("Chat Hub") [G] 🗄️** — canal da unidade + 1:1;
-      franqueadora ↔ unidade conectadas; pop-up + som; áudio/arquivos; insiste até
-      visualizar; recibo de leitura; histórico. Supabase Realtime; dividir em lotes
-      (texto → arquivos → som/insistência). **EM ANDAMENTO — Lote 1 (texto)
+- [x] **H4.9 Chat interno ("Chat Hub") [G] 🗄️** ✅ **COMPLETO (v0.61.0 ·
+      migrações 0120–0128)** — canal da unidade + 1:1; franqueadora ↔ unidade
+      conectadas; pop-up + som; áudio/arquivos; insiste até visualizar; recibo de
+      leitura; histórico. Supabase Realtime; dividido em lotes
+      (texto → arquivos → som/insistência). **Lote 1 (texto)
       entregue** (v0.53.0 · migração 0120): tela **/chat** "Chat Hub" (lista +
       thread), **canal da unidade** (todos com acesso) + **1:1**; tempo real via
       Supabase Realtime (publicação ligada na migração); **badge de não lidas** no
@@ -577,9 +578,16 @@ antes).
       autenticados). **R2 (v0.55.0 · migração 0122):** presença **online** (bolinha
       verde, Realtime Presence) + **"visto por último"** (`user_presence`/
       `touch_presence`); recibos **✓ Enviada / ✓✓ Entregue / ✓✓ Lida** nas minhas
-      mensagens. **Faltam:** R3 (reagir + responder mensagem), R4 (Admin → unidade
-      específica + config de contato unidade↔franqueadora), e depois **Lote 2**
-      (áudio/arquivos) e **Lote 3** (insistência até visualizar).
+      mensagens. **R3 (v0.57.0 · migração 0125):** reagir (emoji) + responder
+      (citar) mensagem. **R4 (v0.58.0–0.59.0 · migração 0126):** Admin/franqueadora
+      envia para uma unidade específica (chat da equipe ou individual) + matriz de
+      contato unidade↔franqueadora em `/admin/chat`. **Lote 2 (v0.60.0 · migração
+      0127):** anexos — arquivo + gravar áudio (bucket `chat-media`, links
+      assinados, máx. 25 MB). **Lote 3 (v0.61.0 · migração 0128):** insistência até
+      visualizar — mensagem **importante** (botão ⚠️ + selo), **faixa fixa** +
+      marcador na lista, **reaviso** (som duplo + pop-up a cada 60s) até o
+      destinatário abrir a conversa. RPCs `chat_important_unread()` /
+      `chat_important_unread_total()`, coluna `chat_messages.important`.
 - [x] **H4.10 Prontuário em abas + menu fixo [M]** ✅ (v0.43.0, sem migração) —
       barra lateral **fixa** (sticky, sempre visível ao rolar); ficha do cliente
       em **abas** (`prontuario-tabs`: Cadastro · Jornada · Clínico · Plano ·
