@@ -13,11 +13,17 @@ import {
   ArrowLeft,
   Check,
   CheckCheck,
+  Download,
+  FileText,
+  Loader2,
   MessageSquarePlus,
+  Mic,
+  Paperclip,
   Reply,
   Search,
   Send,
   Smile,
+  Square,
   User,
   Users,
   X,
@@ -28,6 +34,11 @@ import {
   subscribePresence,
   type PresenceStatus,
 } from "@/lib/presence-store";
+import {
+  CHAT_BUCKET,
+  CHAT_MAX_BYTES,
+  attachmentKindFor,
+} from "@/lib/chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,6 +59,7 @@ import {
   markRead,
   openDirectChannel,
   openUnitChannel,
+  sendAttachment,
   sendMessage,
   toggleReaction,
   type ChatChannel,
@@ -174,6 +186,16 @@ export function ChatHub({
     name: string;
   } | null>(null);
   const [broadcastText, setBroadcastText] = useState("");
+  // Lote 2: anexos (arquivo/áudio).
+  const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recSeconds, setRecSeconds] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const mimeRef = useRef<string>("audio/webm");
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const selectedIdRef = useRef<string | null>(selectedId);
@@ -337,6 +359,114 @@ export function ChatHub({
       await toggleReaction(messageId, emoji);
       if (selectedId) loadThread(selectedId);
     });
+  }
+
+  // --- Lote 2: anexos -------------------------------------------------------
+  async function uploadAndSend(file: Blob, name: string, type: string) {
+    if (!selectedId) return;
+    if (file.size === 0) {
+      toast.error("Arquivo vazio.");
+      return;
+    }
+    if (file.size > CHAT_MAX_BYTES) {
+      toast.error("Arquivo muito grande (máximo 25 MB).");
+      return;
+    }
+    setUploading(true);
+    const supabase = createClient();
+    const safe = (name.replace(/[^\w.\-]+/g, "_") || "arquivo").slice(-80);
+    const path = `${selectedId}/${crypto.randomUUID()}-${safe}`;
+    const { error } = await supabase.storage
+      .from(CHAT_BUCKET)
+      .upload(path, file, { contentType: type });
+    if (error) {
+      setUploading(false);
+      toast.error("Falha ao enviar o arquivo.");
+      return;
+    }
+    const r = await sendAttachment(selectedId, {
+      path,
+      name,
+      type,
+      kind: attachmentKindFor(type),
+    });
+    if (r.ok) {
+      await loadThread(selectedId);
+      refreshChannels();
+    } else {
+      toast.error(r.error ?? "Não foi possível enviar.");
+      await supabase.storage.from(CHAT_BUCKET).remove([path]);
+    }
+    setUploading(false);
+  }
+
+  function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f) uploadAndSend(f, f.name, f.type || "application/octet-stream");
+  }
+
+  function pickAudioMime(): string {
+    if (typeof MediaRecorder === "undefined") return "audio/webm";
+    for (const c of [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/ogg",
+    ]) {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    }
+    return "audio/webm";
+  }
+
+  async function startRecording() {
+    if (
+      !selectedId ||
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      toast.error("Seu navegador não permite gravar áudio aqui.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mime = pickAudioMime();
+      mimeRef.current = mime;
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      chunksRef.current = [];
+      rec.ondataavailable = (ev) => {
+        if (ev.data.size > 0) chunksRef.current.push(ev.data);
+      };
+      rec.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeRef.current });
+        const ext = mimeRef.current.includes("mp4")
+          ? "m4a"
+          : mimeRef.current.includes("ogg")
+            ? "ogg"
+            : "webm";
+        const stamp = new Date()
+          .toISOString()
+          .slice(0, 19)
+          .replace(/[:T]/g, "-");
+        uploadAndSend(blob, `audio-${stamp}.${ext}`, mimeRef.current);
+      };
+      recorderRef.current = rec;
+      rec.start();
+      setRecording(true);
+      setRecSeconds(0);
+      recTimerRef.current = setInterval(() => setRecSeconds((s) => s + 1), 1000);
+    } catch {
+      toast.error("Não foi possível acessar o microfone.");
+    }
+  }
+
+  function stopRecording() {
+    recorderRef.current?.stop();
+    if (recTimerRef.current) clearInterval(recTimerRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setRecording(false);
   }
 
   function startDirect(userId: string) {
@@ -818,24 +948,64 @@ export function ChatHub({
                             <span className="line-clamp-1">{m.replyTo.body}</span>
                           </div>
                         )}
+                        {m.attachment && (
+                          <div className="mb-0.5 max-w-full">
+                            {m.attachment.kind === "image" ? (
+                              <a
+                                href={m.attachment.url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={m.attachment.url}
+                                  alt={m.attachment.name}
+                                  className="max-h-56 max-w-full rounded-lg border object-cover"
+                                />
+                              </a>
+                            ) : m.attachment.kind === "audio" ? (
+                              <audio
+                                controls
+                                src={m.attachment.url}
+                                className="h-9 max-w-[16rem]"
+                              />
+                            ) : (
+                              <a
+                                href={m.attachment.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={m.attachment.name}
+                                className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm hover:border-primary"
+                              >
+                                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                                <span className="min-w-0 flex-1 truncate">
+                                  {m.attachment.name}
+                                </span>
+                                <Download className="size-3.5 shrink-0 text-muted-foreground" />
+                              </a>
+                            )}
+                          </div>
+                        )}
                         <div
                           className={cn(
                             "flex items-center gap-1",
                             m.mine ? "flex-row-reverse" : "flex-row"
                           )}
                         >
-                          <div
-                            className={cn(
-                              "rounded-2xl px-3 py-1.5 text-sm",
-                              m.mine
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            )}
-                          >
-                            <span className="whitespace-pre-wrap break-words">
-                              {m.body}
-                            </span>
-                          </div>
+                          {m.body && (
+                            <div
+                              className={cn(
+                                "rounded-2xl px-3 py-1.5 text-sm",
+                                m.mine
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              )}
+                            >
+                              <span className="whitespace-pre-wrap break-words">
+                                {m.body}
+                              </span>
+                            </div>
+                          )}
                           <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
                             <button
                               type="button"
@@ -943,25 +1113,83 @@ export function ChatHub({
               </div>
             )}
             <form
-              className="flex items-center gap-2 border-t p-2"
+              className="flex items-center gap-1.5 border-t p-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 submit();
               }}
             >
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Escreva uma mensagem..."
-                autoComplete="off"
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={onFilePicked}
               />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={isPending || !input.trim()}
-              >
-                <Send className="size-4" />
-              </Button>
+              {recording ? (
+                <>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    onClick={stopRecording}
+                    title="Parar gravação"
+                  >
+                    <Square className="size-4" />
+                  </Button>
+                  <span className="flex-1 text-sm text-destructive">
+                    <span className="mr-1 inline-block size-2 animate-pulse rounded-full bg-destructive align-middle" />
+                    Gravando…{" "}
+                    {`${String(Math.floor(recSeconds / 60)).padStart(2, "0")}:${String(
+                      recSeconds % 60
+                    ).padStart(2, "0")}`}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Anexar arquivo"
+                  >
+                    <Paperclip className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    disabled={uploading}
+                    onClick={startRecording}
+                    title="Gravar áudio"
+                  >
+                    <Mic className="size-4" />
+                  </Button>
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={
+                      uploading
+                        ? "Enviando anexo..."
+                        : "Escreva uma mensagem..."
+                    }
+                    disabled={uploading}
+                    autoComplete="off"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={isPending || uploading || !input.trim()}
+                  >
+                    {uploading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Send className="size-4" />
+                    )}
+                  </Button>
+                </>
+              )}
             </form>
           </>
         ) : (

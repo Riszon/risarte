@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/07/2026 · Versão do sistema: **0.59.0** · Última migração: **0126**_
+_Atualizado em: 13/07/2026 · Versão do sistema: **0.60.0** · Última migração: **0127**_
+
+> **H4.9 Chat Hub — Lote 2 ✅ (v0.60.0 · migração 0127):** **anexos** no chat —
+> **arquivo** (clipe → escolhe o arquivo) e **gravar áudio** (microfone). Bucket
+> privado `chat-media` (caminho `<channel_id>/<uuid>-nome`, link assinado 1h,
+> policies por acesso ao canal); coluna de anexo em `chat_messages` (path/name/
+> type/kind); `body` deixou de ser obrigatório (mensagem só com anexo). Render por
+> tipo: **imagem** (miniatura clicável), **áudio** (player) e **arquivo** (link com
+> baixar). `sendAttachment` + `getMessages` assina os links. Máx. 25 MB. **Falta o
+> Lote 3** (insistência até visualizar) — e o H4.9 fecha. Migração a rodar: **0127**.
 
 > **H4.9 Chat Hub — R4b ✅ (v0.59.0 · migração 0126) — H4.9 COMPLETO até o Lote 1.**
 > **Configurar quem conversa com quem** (unidade ↔ franqueadora) por função:

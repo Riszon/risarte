@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+import { CHAT_BUCKET } from "@/lib/chat";
 
 export type ChatChannel = {
   id: string;
@@ -17,6 +18,13 @@ export type ChatChannel = {
 
 export type ChatReaction = { emoji: string; count: number; mine: boolean };
 
+export type ChatAttachment = {
+  url: string;
+  name: string;
+  type: string;
+  kind: string;
+};
+
 export type ChatMessage = {
   id: string;
   senderId: string;
@@ -26,6 +34,7 @@ export type ChatMessage = {
   mine: boolean;
   reactions: ChatReaction[];
   replyTo: { id: string; senderName: string; body: string } | null;
+  attachment: ChatAttachment | null;
 };
 
 export type ChatColleague = { userId: string; name: string; hint: string | null };
@@ -199,7 +208,9 @@ export async function getMessages(
   const supabase = await createClient();
   const { data } = await supabase
     .from("chat_messages")
-    .select("id, sender_id, body, created_at, reply_to")
+    .select(
+      "id, sender_id, body, created_at, reply_to, attachment_path, attachment_name, attachment_type, attachment_kind"
+    )
     .eq("channel_id", channelId)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -207,14 +218,32 @@ export async function getMessages(
       {
         id: string;
         sender_id: string;
-        body: string;
+        body: string | null;
         created_at: string;
         reply_to: string | null;
+        attachment_path: string | null;
+        attachment_name: string | null;
+        attachment_type: string | null;
+        attachment_kind: string | null;
       }[]
     >();
   const rows = (data ?? []).reverse();
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
+
+  // Links assinados dos anexos (1h).
+  const attachPaths = rows
+    .map((r) => r.attachment_path)
+    .filter(Boolean) as string[];
+  const urlByPath = new Map<string, string>();
+  if (attachPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(CHAT_BUCKET)
+      .createSignedUrls(attachPaths, 3600);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) urlByPath.set(s.path, s.signedUrl);
+    }
+  }
 
   // Mensagens citadas (podem estar fora da janela carregada).
   const replyIds = [
@@ -284,11 +313,14 @@ export async function getMessages(
 
   return rows.map((r) => {
     const rep = r.reply_to ? replyById.get(r.reply_to) : undefined;
+    const url = r.attachment_path
+      ? (urlByPath.get(r.attachment_path) ?? null)
+      : null;
     return {
       id: r.id,
       senderId: r.sender_id,
       senderName: nameById.get(r.sender_id) ?? "—",
-      body: r.body,
+      body: r.body ?? "",
       createdAt: r.created_at,
       mine: r.sender_id === session.userId,
       reactions: reactionsByMsg.get(r.id) ?? [],
@@ -297,7 +329,16 @@ export async function getMessages(
           ? {
               id: r.reply_to,
               senderName: nameById.get(rep.senderId) ?? "—",
-              body: rep.body,
+              body: rep.body ?? "",
+            }
+          : null,
+      attachment:
+        r.attachment_path && url
+          ? {
+              url,
+              name: r.attachment_name ?? "arquivo",
+              type: r.attachment_type ?? "",
+              kind: r.attachment_kind ?? "file",
             }
           : null,
     };
@@ -327,6 +368,42 @@ export async function sendMessage(
     return { ok: false, error: "Não foi possível enviar a mensagem." };
   }
   // Marca como lido para mim (a leitura acompanha o meu envio).
+  await supabase.from("chat_reads").upsert(
+    {
+      channel_id: channelId,
+      user_id: session.userId,
+      last_read_at: new Date().toISOString(),
+    },
+    { onConflict: "channel_id,user_id" }
+  );
+  return { ok: true };
+}
+
+/** Registra uma mensagem com anexo (o arquivo já foi enviado ao bucket pelo
+ * navegador). Pode ter legenda opcional. */
+export async function sendAttachment(
+  channelId: string,
+  attachment: { path: string; name: string; type: string; kind: string },
+  caption?: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!channelId || !attachment.path) {
+    return { ok: false, error: "Anexo inválido." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("chat_messages").insert({
+    channel_id: channelId,
+    sender_id: session.userId,
+    body: (caption ?? "").trim() || null,
+    attachment_path: attachment.path,
+    attachment_name: attachment.name,
+    attachment_type: attachment.type,
+    attachment_kind: attachment.kind,
+  });
+  if (error) {
+    console.error("sendAttachment failed:", error.message);
+    return { ok: false, error: "Não foi possível enviar o anexo." };
+  }
   await supabase.from("chat_reads").upsert(
     {
       channel_id: channelId,
