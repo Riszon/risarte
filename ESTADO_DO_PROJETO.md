@@ -1,6 +1,12 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.65.0** · Última migração: **0129**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.65.1** · Última migração: **0130**_
+
+> **H4.13 — Excluir especialidade ✅ (v0.65.1 · migração 0130):** na tela de
+> Especialidades, além de editar/desativar, agora dá para **excluir**. Ao excluir,
+> escolhe-se **mover os procedimentos/Risartanos para outra especialidade** OU
+> deixá-los **sem especialidade** (RPC `delete_specialty` cascateia com segurança;
+> dedup no array do staff). Migração a rodar: **0130**.
 
 > **H4.13 — Bloco 2: Comissionamento em massa + regra ✅ (v0.65.0, sem migração) —
 > H4.13 COMPLETO.** Novo painel **"Comissão em massa"** nos Procedimentos (Admin/

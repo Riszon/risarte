@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Pencil, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,10 +11,14 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   addSpecialty,
+  deleteSpecialty,
   moveSpecialty,
   renameSpecialty,
   setSpecialtyActive,
 } from "./actions";
+
+const selectClass =
+  "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 export type SpecialtyItem = {
   id: string;
@@ -29,6 +33,9 @@ export function SpecialtiesEditor({ items }: { items: SpecialtyItem[] }) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  // Exclusão: qual está sendo excluída e para onde mover os procedimentos.
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reassignTo, setReassignTo] = useState("");
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -90,11 +97,9 @@ export function SpecialtiesEditor({ items }: { items: SpecialtyItem[] }) {
               {items.map((sp, i) => (
                 <li
                   key={sp.id}
-                  className={cn(
-                    "flex flex-wrap items-center gap-2 p-3",
-                    !sp.isActive && "opacity-60"
-                  )}
+                  className={cn("p-3", !sp.isActive && "opacity-60")}
                 >
+                  <div className="flex flex-wrap items-center gap-2">
                   <div className="flex shrink-0 flex-col">
                     <button
                       type="button"
@@ -198,7 +203,65 @@ export function SpecialtiesEditor({ items }: { items: SpecialtyItem[] }) {
                       >
                         {sp.isActive ? "Desativar" : "Reativar"}
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Excluir"
+                        disabled={isPending}
+                        onClick={() => {
+                          setDeletingId(sp.id);
+                          setReassignTo("");
+                        }}
+                      >
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
                     </>
+                  )}
+                  </div>
+                  {deletingId === sp.id && (
+                    <div className="mt-2 space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+                      <p>
+                        Excluir <strong>{sp.name}</strong>? Os procedimentos e
+                        Risartanos que a usam vão para:
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={reassignTo}
+                          onChange={(e) => setReassignTo(e.target.value)}
+                          className={selectClass}
+                        >
+                          <option value="">Sem especialidade</option>
+                          {items
+                            .filter((x) => x.id !== sp.id)
+                            .map((x) => (
+                              <option key={x.id} value={x.name}>
+                                Mover para: {x.name}
+                              </option>
+                            ))}
+                        </select>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={isPending}
+                          onClick={() =>
+                            run(
+                              () => deleteSpecialty(sp.id, reassignTo || null),
+                              "Especialidade excluída.",
+                              () => setDeletingId(null)
+                            )
+                          }
+                        >
+                          Excluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setDeletingId(null)}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </li>
               ))}

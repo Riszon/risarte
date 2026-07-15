@@ -113,6 +113,38 @@ export async function setSpecialtyActive(
   return { ok: true };
 }
 
+/** Exclui uma especialidade. `reassignTo` (nome) move os procedimentos/Risartanos
+ * para outra especialidade; null/"" deixa-os sem especialidade. Cascata via RPC. */
+export async function deleteSpecialty(
+  id: string,
+  reassignTo: string | null
+): Promise<SpecialtyResult> {
+  const session = await getSessionContext();
+  if (!canManage(session)) {
+    return { ok: false, error: "Sem permissão para gerenciar especialidades." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_specialty", {
+    p_id: id,
+    p_reassign_to: reassignTo ?? "",
+  });
+  if (error) {
+    if (error.message.includes("TARGET_NOT_FOUND")) {
+      return { ok: false, error: "Especialidade de destino inválida." };
+    }
+    console.error("deleteSpecialty failed:", error.message);
+    return { ok: false, error: "Não foi possível excluir a especialidade." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "specialty",
+    entityId: id,
+    details: { removed: true },
+  });
+  revalidate();
+  return { ok: true };
+}
+
 /** Reordena trocando a posição com a especialidade vizinha (cima/baixo). */
 export async function moveSpecialty(
   id: string,
