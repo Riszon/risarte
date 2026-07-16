@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ChatNavItem } from "@/components/chat-nav-item";
-import { RisarteWordmark } from "@/components/risarte-logo";
+import { RisarteMark } from "@/components/risarte-logo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
@@ -220,8 +220,14 @@ export function AppSidebar({
 
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="px-4 py-5">
-        <RisarteWordmark className="h-7 text-sidebar-foreground" />
+      <div className="flex items-center gap-2.5 px-4 py-5">
+        <RisarteMark className="h-8 shrink-0 text-gold" />
+        <div className="min-w-0 leading-tight">
+          <p className="text-base font-semibold tracking-tight">Risarte</p>
+          <p className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50">
+            Odontologia
+          </p>
+        </div>
       </div>
 
       {clinics.length > 0 && (

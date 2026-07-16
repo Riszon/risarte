@@ -1,6 +1,11 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.68.0** · Última migração: **0130**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.68.1** · Última migração: **0130**_
+
+> **Ajuste (v0.68.1):** a logomarca completa (texto grande branco) ficou "escrita
+> demais"; login e sidebar voltaram ao formato **compacto** — **símbolo em dourado**
+> (`RisarteMark` com `text-gold`) + "Risarte Odontologia" ao lado. `RisarteWordmark`
+> segue disponível para uso futuro.
 
 > **Rodada de refinamento visual (em andamento, guiada pelo dono):** (5) **Menu
 > lateral + Logomarca Risarte** ✅ (v0.68.0) — a **logomarca/símbolo reais** da
