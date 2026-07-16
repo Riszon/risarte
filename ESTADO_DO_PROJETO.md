@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.65.1** · Última migração: **0130**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.66.1** · Última migração: **0130**_
+
+> **Rodada de refinamento visual (em andamento, guiada pelo dono):** (1) **Login**
+> ✅ (v0.66.0) — painel de marca navy + dourado à esquerda (monograma R + tagline),
+> cartão de acesso à direita, rodapé com versão; no celular vira coluna única.
+> (2) **Base — fonte Geist** ✅ (v0.66.1) — corrigido o mapeamento em `globals.css`
+> (`--font-sans`/`--font-heading` apontavam para si mesmos → app usava a fonte padrão
+> do navegador); agora usa a **Geist** em todas as telas. Próximas telas a combinar
+> com o dono.
 
 > **H4.13 — Excluir especialidade ✅ (v0.65.1 · migração 0130):** na tela de
 > Especialidades, além de editar/desativar, agora dá para **excluir**. Ao excluir,
