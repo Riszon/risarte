@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.70.0** · Última migração: **0131**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.70.1** · Última migração: **0131**_
+
+> **Barras de rolagem refinadas ✅ (v0.70.1, sem migração):** em `globals.css`,
+> scrollbars finas, arredondadas e discretas em **todas as telas** (Firefox via
+> `scrollbar-width/color`; Chromium/Safari via `::-webkit-scrollbar`), com a cor
+> derivada de `--muted-foreground`. **Agenda (cores dos blocos, legibilidade,
+> cabeçalho):** pendente — feito com o dono olhando ao vivo (grade densa que não
+> renderiza na prévia).
 
 > **Sidebar minimizar/expandir ✅ (v0.70.0, sem migração):** botão de alternar no
 > topo da sidebar; minimizada = só ícones (`w-16`), rótulos escondidos com tooltip
