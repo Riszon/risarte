@@ -29,6 +29,11 @@ export function startOfWeek(date: Date): Date {
   return d;
 }
 
+/** Total de semanas ISO no ano (52 ou 53). 28/dez está sempre na última semana. */
+export function isoWeeksInYear(year: number): number {
+  return isoWeek(new Date(year, 11, 28));
+}
+
 /** ISO 8601 week number (1–53). */
 export function isoWeek(date: Date): number {
   const d = new Date(

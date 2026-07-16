@@ -121,11 +121,13 @@ export function JointBadge({ names }: { names?: string[] }) {
   if (!names || names.length === 0) return null;
   return (
     <p
-      className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-medium text-amber-700"
+      className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-amber-700"
       title={`Atendimento conjunto — também: ${names.join(", ")}`}
     >
       <Users className="size-3 shrink-0" />
-      Conjunto +{names.length}
+      <span className="truncate">
+        Conjunto: {names.join(", ")}
+      </span>
     </p>
   );
 }

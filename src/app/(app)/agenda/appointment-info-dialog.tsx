@@ -18,13 +18,23 @@ import {
   type AppointmentStatus,
 } from "@/lib/appointments";
 import { PHASE_LABELS, PILLAR_LABELS, displayedPillar } from "@/lib/journey";
+import { cn } from "@/lib/utils";
 import {
   getAppointmentParticipants,
   getAppointmentSessionOptions,
   updateAppointmentStatus,
   type PendingSession,
 } from "./actions";
-import type { AgendaAppointment } from "./week-grid";
+import { STATUS_DOT, type AgendaAppointment } from "./week-grid";
+
+// Cada situação com sua cor (borda + texto), consistente com os blocos da agenda.
+const STATUS_BTN: Record<AppointmentStatus, string> = {
+  scheduled: "border-sky-300 text-sky-700 hover:bg-sky-50",
+  confirmed: "border-emerald-300 text-emerald-700 hover:bg-emerald-50",
+  completed: "border-zinc-300 text-zinc-700 hover:bg-zinc-100",
+  cancelled: "border-red-300 text-red-700 hover:bg-red-50",
+  no_show: "border-orange-300 text-orange-700 hover:bg-orange-50",
+};
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -145,7 +155,17 @@ export function AppointmentInfoDialog({
           )}
           <Row
             label="Situação"
-            value={APPOINTMENT_STATUS_LABELS[appointment.status]}
+            value={
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    STATUS_DOT[appointment.status]
+                  )}
+                />
+                {APPOINTMENT_STATUS_LABELS[appointment.status]}
+              </span>
+            }
           />
           {appointment.clients && (
             <Row
@@ -199,10 +219,13 @@ export function AppointmentInfoDialog({
                     key={st}
                     size="sm"
                     variant="outline"
-                    className="h-7 px-2 text-xs"
+                    className={cn("h-7 gap-1.5 px-2 text-xs", STATUS_BTN[st])}
                     disabled={isPending}
                     onClick={() => changeStatus(st)}
                   >
+                    <span
+                      className={cn("size-2 rounded-full", STATUS_DOT[st])}
+                    />
                     {APPOINTMENT_STATUS_LABELS[st]}
                   </Button>
                 ))}

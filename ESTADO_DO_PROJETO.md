@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.70.1** · Última migração: **0131**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.71.0** · Última migração: **0131**_
+
+> **Agenda — refino visual Bloco 1 ✅ (v0.71.0, sem migração):** (1) **atendimento
+> conjunto** agora mostra os **nomes** dos profissionais no bloco (era só "Conjunto
+> +N"); `JointBadge` compartilhado. (2) **Situações com cor** no popup do
+> agendamento (botões + selo da situação atual: azul/verde/cinza/vermelho/laranja).
+> (3) **Barras de rolagem** ainda mais discretas (8px, mais transparentes). (4)
+> **Cabeçalho da Agenda** redesenhado: cada info numa "pílula" com ícone (unidade ·
+> período · **Semana X/total** · nº salas). **Bloco 2 pendente:** nome do feriado na
+> linha do tempo (aguardando print do ponto exato), **filtro por profissional**, e
+> agrupar/diferenciar os botões (dropdown "Mais ações").
 
 > **Barras de rolagem refinadas ✅ (v0.70.1, sem migração):** em `globals.css`,
 > scrollbars finas, arredondadas e discretas em **todas as telas** (Firefox via

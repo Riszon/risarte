@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Building2, CalendarDays, CalendarRange, DoorOpen } from "lucide-react";
 import {
   getSessionContext,
   hasRoleInClinic,
@@ -12,6 +13,7 @@ import { FilterForm } from "@/components/filter-form";
 import {
   agendaRange,
   isAgendaView,
+  isoWeeksInYear,
   toIsoDate,
   type AgendaView,
 } from "@/lib/agenda-view";
@@ -642,17 +644,37 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   return (
     <div className="space-y-4 px-4 py-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
-        <div>
+        <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
-          <p className="text-sm text-muted-foreground">
-            {session.activeClinic
-              ? `${session.activeClinic.name} — ${periodLabel}${
-                  roomCount > 0
-                    ? ` · ${roomCount} sala${roomCount === 1 ? "" : "s"}`
-                    : ""
-                }`
-              : "Selecione uma clínica no menu lateral."}
-          </p>
+          {session.activeClinic ? (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
+                <Building2 className="size-3.5" />
+                {session.activeClinic.name}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-muted-foreground">
+                <CalendarRange className="size-3.5" />
+                {range.label}
+              </span>
+              {range.weekNumber !== null && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 font-medium text-foreground">
+                  <CalendarDays className="size-3.5 text-gold" />
+                  Semana {range.weekNumber}/
+                  {isoWeeksInYear(range.start.getFullYear())}
+                </span>
+              )}
+              {roomCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-muted-foreground">
+                  <DoorOpen className="size-3.5" />
+                  {roomCount} sala{roomCount === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Selecione uma clínica no menu lateral.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <AgendaToolbar view={view} range={range} salas={salasRaw || undefined} />
