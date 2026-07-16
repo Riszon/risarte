@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.71.0** · Última migração: **0131**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.72.0** · Última migração: **0131**_
+
+> **Agenda — refino visual Bloco 2 ✅ (v0.72.0, sem migração):** (1) **filtro por
+> profissional** (`ProviderFilter`, `?profissional=userId`; filtra por profissional
+> responsável; opções = staff com papel clínico/consultor/dentista). (2) botões
+> secundários agrupados no menu **"Mais ações"** (`AgendaActionsMenu`: Configurar
+> agenda / Planejamento anual / Retornos), deixando **Novo agendamento** em destaque
+> e Fechar agenda à parte. (3) **nome do feriado** mais visível na semana (chip
+> vermelho no cabeçalho do dia, sem truncar).
 
 > **Agenda — refino visual Bloco 1 ✅ (v0.71.0, sem migração):** (1) **atendimento
 > conjunto** agora mostra os **nomes** dos profissionais no bloco (era só "Conjunto

@@ -49,6 +49,8 @@ import { MonthView } from "./month-grid";
 import { DayRoomGrid } from "./day-room-grid";
 import { DayStrip } from "./day-strip";
 import { RoomFilter } from "./room-filter";
+import { ProviderFilter } from "./provider-filter";
+import { AgendaActionsMenu } from "./agenda-actions-menu";
 import { CloseAgendaDialog } from "./close-agenda-dialog";
 import { AgendaToolbar } from "./agenda-toolbar";
 import {
@@ -566,13 +568,31 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     .map((s) => s.trim())
     .filter(Boolean);
   const hasSalaFilter = selectedSalas.length > 0;
-  const filteredUnitAppointments = hasSalaFilter
+  // Filtro por profissional (?profissional=userId) — só o profissional responsável.
+  const provFilter =
+    typeof searchParams.profissional === "string"
+      ? searchParams.profissional
+      : "";
+  const PROVIDER_ROLES: UserRole[] = [
+    "clinical_coordinator",
+    "dentist",
+    "commercial_consultant",
+  ];
+  const providerOptions = staff
+    .filter((s) => s.roles.some((r) => PROVIDER_ROLES.includes(r)))
+    .map((s) => ({ userId: s.userId, name: s.name }));
+  let filteredUnitAppointments = hasSalaFilter
     ? unitAppointments.filter(
         (a) =>
           (a.is_online && selectedSalas.includes("online")) ||
           (a.room_id != null && selectedSalas.includes(a.room_id))
       )
     : unitAppointments;
+  if (provFilter) {
+    filteredUnitAppointments = filteredUnitAppointments.filter(
+      (a) => a.provider_user_id === provFilter
+    );
+  }
   const allRooms = (formConfig?.rooms ?? []).map((r) => ({
     id: r.id,
     name: r.name,
@@ -678,25 +698,31 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <AgendaToolbar view={view} range={range} salas={salasRaw || undefined} />
-          {canConfig && clinicId && (
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/agenda/configuracao" />}
-            >
-              Configurar agenda
-            </Button>
-          )}
-          {canConfig && clinicId && (
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/agenda/planejamento-anual" />}
-            >
-              Planejamento anual
-            </Button>
+          {clinicId && (
+            <AgendaActionsMenu
+              items={[
+                ...(canConfig
+                  ? [
+                      {
+                        label: "Configurar agenda",
+                        href: "/agenda/configuracao",
+                      },
+                      {
+                        label: "Planejamento anual",
+                        href: "/agenda/planejamento-anual",
+                      },
+                    ]
+                  : []),
+                ...(canSchedule || canCloseAgenda
+                  ? [
+                      {
+                        label: "Retornos e controles",
+                        href: "/agenda/retornos",
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           )}
           {canCloseAgenda && clinicId && (
             <CloseAgendaDialog
@@ -704,16 +730,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               rooms={allRooms}
               staff={staff}
             />
-          )}
-          {(canSchedule || canCloseAgenda) && clinicId && (
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/agenda/retornos" />}
-            >
-              Retornos e controles
-            </Button>
           )}
           {canSchedule && clinicId && (
             <AppointmentFormDialog
@@ -743,6 +759,12 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       {clinicId && allRooms.length > 0 && (
         <div className="mx-auto max-w-7xl">
           <RoomFilter rooms={allRooms} selected={selectedSalas} />
+        </div>
+      )}
+
+      {clinicId && providerOptions.length > 0 && (
+        <div className="mx-auto max-w-7xl">
+          <ProviderFilter providers={providerOptions} selected={provFilter} />
         </div>
       )}
 

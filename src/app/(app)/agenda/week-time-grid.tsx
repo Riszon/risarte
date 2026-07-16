@@ -390,7 +390,7 @@ export function WeekTimeGrid({
               </Link>
               {holidayName && (
                 <span
-                  className="block truncate text-[10px] text-red-700"
+                  className="mt-0.5 block rounded bg-red-100 px-1 py-0.5 text-[10px] font-medium leading-tight text-red-700"
                   title={holidayName}
                 >
                   🎌 {holidayName}
