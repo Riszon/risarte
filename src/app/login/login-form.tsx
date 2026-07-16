@@ -52,9 +52,9 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Entrar</CardTitle>
+    <Card className="rounded-2xl border-border/60 shadow-lg">
+      <CardHeader className="space-y-1.5">
+        <CardTitle className="text-xl">Entrar</CardTitle>
         <CardDescription>
           Acesse com o e-mail e a senha cadastrados pelo administrador.
         </CardDescription>

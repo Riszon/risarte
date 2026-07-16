@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
+import { APP_VERSION } from "@/lib/version";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -13,17 +14,56 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-primary">
+    <main className="flex flex-1">
+      {/* Painel da marca (aparece em telas médias/grandes) */}
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground md:flex md:w-1/2 lg:w-3/5">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gold" />
+        <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-gold/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-20 size-96 rounded-full bg-white/5 blur-3xl" />
+
+        <div className="relative flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-xl bg-gold text-xl font-bold text-primary">
+            R
+          </span>
+          <span className="text-lg font-semibold tracking-tight">
             Risarte Odontologia
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sistema de gestão da jornada do cliente
+          </span>
+        </div>
+
+        <div className="relative max-w-md space-y-4">
+          <h2 className="text-3xl font-semibold leading-tight lg:text-4xl">
+            Gestão da Jornada do Cliente
+          </h2>
+          <p className="text-sm leading-relaxed text-primary-foreground/70">
+            Do primeiro contato ao acompanhamento — planejamento, agenda,
+            prontuário e comercial, tudo numa rede só.
           </p>
         </div>
-        <LoginForm />
+
+        <p className="relative text-xs text-primary-foreground/50">
+          © Risarte Odontologia
+        </p>
+      </aside>
+
+      {/* Painel do formulário */}
+      <div className="flex w-full flex-col items-center justify-center bg-background p-6 md:w-1/2 lg:w-2/5">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex flex-col items-center gap-2 text-center md:hidden">
+            <span className="grid size-12 place-items-center rounded-xl bg-primary text-xl font-bold text-primary-foreground">
+              R
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-primary">
+              Risarte Odontologia
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Sistema de gestão da jornada do cliente
+            </p>
+          </div>
+          <LoginForm />
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Sistema Risarte · v{APP_VERSION}
+          </p>
+        </div>
       </div>
     </main>
   );
