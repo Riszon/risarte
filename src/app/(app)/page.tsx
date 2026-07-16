@@ -1,4 +1,5 @@
 import { BadgeCheck, Building2 } from "lucide-react";
+import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
@@ -128,6 +129,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">
         <div className="absolute inset-x-0 top-0 h-1 bg-gold" />
         <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-gold/10 blur-3xl" />
+        <RisarteMark className="pointer-events-none absolute -bottom-6 right-6 hidden h-36 text-primary-foreground/10 sm:block" />
         <div className="relative flex flex-wrap items-center gap-4">
           <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gold text-lg font-bold text-primary">
             {initialsOf(session.fullName)}

@@ -1,8 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.67.0** · Última migração: **0130**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.68.0** · Última migração: **0130**_
 
-> **Rodada de refinamento visual (em andamento, guiada pelo dono):** (3) **Página
+> **Rodada de refinamento visual (em andamento, guiada pelo dono):** (5) **Menu
+> lateral + Logomarca Risarte** ✅ (v0.68.0) — a **logomarca/símbolo reais** da
+> Risarte entraram (arquivos brancos em `public/`: `risarte-logo-branca.png` e
+> `risarte-simbolo-branco.png`). Componente `RisarteWordmark`/`RisarteMark` usa a
+> arte como **máscara** e pinta na cor atual (`bg-current` ← `text-*`), então a mesma
+> arte vira branca (fundo navy), navy ou dourada (fundo claro) sem novo arquivo.
+> Aplicado: **login** (logomarca branca no painel; navy no cabeçalho do celular),
+> **sidebar** (logomarca branca no topo) e **hero da página inicial** (símbolo como
+> marca d'água). Sidebar também ganhou **barra dourada** no item ativo + **avatar**
+> do usuário no rodapé. Ver [[risarte-logo-usage]].
+> (3) **Página
 > inicial** ✅ (v0.67.0) — cabeçalho de boas-vindas (faixa navy + dourado): saudação
 > pela hora (fuso SP), data por extenso, monograma do usuário, unidade ativa e selo
 > Admin Master; cartões com ícones. Login: rodapé passou de "Sistema Risarte" para

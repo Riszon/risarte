@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ChatNavItem } from "@/components/chat-nav-item";
+import { RisarteWordmark } from "@/components/risarte-logo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
@@ -150,6 +151,14 @@ export function AppSidebar({
   const [isPending, startTransition] = useTransition();
 
   const activeClinic = clinics.find((c) => c.id === activeClinicId) ?? null;
+  const initials =
+    fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "?";
 
   // The Dentista (executor) does not have the Jornada screen (owner rule).
   const dentistOnly =
@@ -205,15 +214,14 @@ export function AppSidebar({
     cn(
       "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
       isActive(href)
-        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-[inset_2px_0_0_var(--gold)]"
         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     );
 
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="px-4 py-5">
-        <p className="text-lg font-semibold tracking-tight">Risarte</p>
-        <p className="text-xs text-sidebar-foreground/60">Odontologia</p>
+        <RisarteWordmark className="h-7 text-sidebar-foreground" />
       </div>
 
       {clinics.length > 0 && (
@@ -299,11 +307,16 @@ export function AppSidebar({
       <div className="border-t border-sidebar-border p-3">
         <Link
           href="/perfil"
-          className="mb-2 block rounded-md px-2 py-1 hover:bg-sidebar-accent"
+          className="mb-2 flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-sidebar-accent"
           title="Meu perfil"
         >
-          <p className="truncate text-sm font-medium">{fullName}</p>
-          <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-gold">
+            {initials}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{fullName}</p>
+            <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
+          </div>
         </Link>
         <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
           Versão {APP_VERSION} · migração {LATEST_MIGRATION}

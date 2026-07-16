@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
+import { RisarteWordmark } from "@/components/risarte-logo";
 import { APP_VERSION } from "@/lib/version";
 import { LoginForm } from "./login-form";
 
@@ -21,13 +22,8 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-gold/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 size-96 rounded-full bg-white/5 blur-3xl" />
 
-        <div className="relative flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-xl bg-gold text-xl font-bold text-primary">
-            R
-          </span>
-          <span className="text-lg font-semibold tracking-tight">
-            Risarte Odontologia
-          </span>
+        <div className="relative">
+          <RisarteWordmark className="h-10 text-primary-foreground" />
         </div>
 
         <div className="relative max-w-md space-y-4">
@@ -48,13 +44,8 @@ export default function LoginPage() {
       {/* Painel do formulário */}
       <div className="flex w-full flex-col items-center justify-center bg-background p-6 md:w-1/2 lg:w-2/5">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-center gap-2 text-center md:hidden">
-            <span className="grid size-12 place-items-center rounded-xl bg-primary text-xl font-bold text-primary-foreground">
-              R
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-primary">
-              Risarte Odontologia
-            </h1>
+          <div className="mb-8 flex flex-col items-center gap-3 text-center md:hidden">
+            <RisarteWordmark className="h-8 text-primary" />
             <p className="text-sm text-muted-foreground">
               Sistema de gestão da jornada do cliente
             </p>
