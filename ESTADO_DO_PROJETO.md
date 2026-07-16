@@ -1,13 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.72.1** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.73.0** · Última migração: **0131**_
+
+> **Agenda — arrastar o card p/ reagendar (H4.14) ✅ (v0.73.0, sem migração):**
+> arrastar-para-remarcar **suave** (baseado em ponteiro: mouse E toque) nas grades
+> **Semana por hora** (arrasta p/ outro dia/horário — antes não tinha) e **Dia por
+> sala** (substitui o drag nativo, antes duro e sem confirmação). Um clique curto
+> continua abrindo a ficha/informações (só vira arrasto após mover ~5px); o card
+> segue o cursor com uma **prévia** e o alvo (dia/sala + horário, encaixe de 15 min)
+> aparece com uma linha. Ao soltar, **confirmação rápida** (decisão do dono): mostra
+> "de → para" e só grava no **Confirmar** — reusa `updateAppointment`, que valida
+> fora do horário / dia fechado / cadeira lotada / conflito e recusa com o motivo.
+> Módulo novo `agenda-drag.tsx` (`useCardDrag` + `DragPreview` +
+> `RescheduleConfirmDialog`). Só card **futuro** arrasta.
 
 > **Agenda — refino visual Bloco 3 ✅ (v0.72.1, sem migração):** (1) **feriado na
 > régua de dias** (DayStrip) agora marca "Feriado" com ícone (antes só mudava de
 > cor quando a unidade atendia). (2) ícone do feriado: emoji 🎌 trocado por **ícone
 > Flag** (semana + dia). (3) filtros **Salas + Profissional** juntos num **bloco
-> compacto** (menos espaço). **Adiado (novo recurso):** arrastar o card p/ reagendar
-> (drag-and-drop) — não existe hoje; é feature nova, a planejar à parte.
+> compacto** (menos espaço). ~~Adiado: arrastar o card p/ reagendar~~ → **feito na
+> v0.73.0** (ver nota do H4.14 acima).
 
 > **Agenda — refino visual Bloco 2 ✅ (v0.72.0, sem migração):** (1) **filtro por
 > profissional** (`ProviderFilter`, `?profissional=userId`; filtra por profissional

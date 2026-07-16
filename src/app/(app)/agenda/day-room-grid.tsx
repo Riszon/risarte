@@ -52,6 +52,13 @@ import {
   displayedStatus,
   type AgendaAppointment,
 } from "./week-grid";
+import {
+  DragPreview,
+  RescheduleConfirmDialog,
+  isSlotInPast,
+  useCardDrag,
+  type DropTarget,
+} from "./agenda-drag";
 
 const SLOT_MIN = 15; // 15-minute granularity (ticks).
 const SLOT_PX = 18; // height of one 15-min slot.
@@ -186,12 +193,15 @@ export function DayRoomGrid({
   } | null>(null);
   const canQuickCreate = canManage && Boolean(clients);
 
-  // Drag-to-reschedule (G3.3): a future card can be dragged to a new slot/room.
-  const [dragAppt, setDragAppt] = useState<AgendaAppointment | null>(null);
-  // Where the dragged card would land (GR2: clear visual feedback).
-  const [dragOver, setDragOver] = useState<{ col: string; time: string } | null>(
-    null
-  );
+  // Arrastar-para-remarcar (H4.14): card futuro é arrastado para outro
+  // horário/sala e, ao soltar, pede confirmação (decisão do dono) antes de gravar.
+  const [pending, setPending] = useState<{
+    appt: AgendaAppointment;
+    target: DropTarget;
+    isPast: boolean;
+  } | null>(null);
+  const [dragError, setDragError] = useState<string | null>(null);
+  const [isSaving, startSaving] = useTransition();
 
   function setStatus(appointment: AgendaAppointment, status: AppointmentStatus) {
     startTransition(async () => {
@@ -205,29 +215,36 @@ export function DayRoomGrid({
     });
   }
 
-  function reschedule(
-    appointment: AgendaAppointment,
-    roomId: string,
-    time: string
-  ) {
-    const startMs = new Date(appointment.starts_at).getTime();
-    const endMs = new Date(appointment.ends_at).getTime();
+  function placeLabel(a: AgendaAppointment): string {
+    if (a.is_online) return "Online";
+    if (a.room_id && roomNameById.get(a.room_id))
+      return roomNameById.get(a.room_id)!;
+    return "Sem sala";
+  }
+
+  function confirmReschedule() {
+    if (!pending) return;
+    const { appt, target } = pending;
+    const startMs = new Date(appt.starts_at).getTime();
+    const endMs = new Date(appt.ends_at).getTime();
     const durationMin = Math.max(15, Math.round((endMs - startMs) / 60_000));
     const fd = new FormData();
-    fd.set("type", appointment.type);
+    fd.set("type", appt.type);
     fd.set("date", dayIso);
-    fd.set("time", time);
+    fd.set("time", target.time);
     fd.set("duration", String(durationMin));
-    fd.set("provider_user_id", appointment.provider_user_id ?? "");
-    fd.set("notes", appointment.notes ?? "");
-    fd.set("room_id", roomId);
-    startTransition(async () => {
-      const result = await updateAppointment(appointment.id, fd);
+    fd.set("provider_user_id", appt.provider_user_id ?? "");
+    fd.set("notes", appt.notes ?? "");
+    fd.set("room_id", target.colKey);
+    startSaving(async () => {
+      const result = await updateAppointment(appt.id, fd);
       if (result.ok) {
         toast.success("Agendamento remarcado.");
+        setPending(null);
+        setDragError(null);
         router.refresh();
       } else {
-        toast.error(result.error ?? "Não foi possível remarcar.");
+        setDragError(result.error ?? "Não foi possível remarcar.");
       }
     });
   }
@@ -333,6 +350,37 @@ export function DayRoomGrid({
   if (winEnd <= winStart) winEnd = winStart + 60;
   const totalMin = winEnd - winStart;
   const totalPx = totalMin * PX_PER_MIN;
+
+  // Mapeia a posição do ponteiro para a coluna de sala + horário encaixado.
+  const drag = useCardDrag({
+    resolve: (clientX, clientY): DropTarget | null => {
+      if (typeof document === "undefined") return null;
+      const el = document
+        .elementsFromPoint(clientX, clientY)
+        .find(
+          (n): n is HTMLElement =>
+            n instanceof HTMLElement && !!n.dataset.colKey
+        );
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      let minute = winStart + (clientY - rect.top - TOP_PAD_PX) / PX_PER_MIN;
+      minute = Math.round(minute / SLOT_MIN) * SLOT_MIN;
+      minute = clamp(minute, winStart, winEnd - SLOT_MIN);
+      return {
+        colKey: el.dataset.colKey ?? "",
+        colLabel: el.dataset.colLabel ?? "",
+        dateIso: dayIso,
+        time: minutesToHHMM(minute),
+      };
+    },
+    onDrop: (appt, target) => {
+      const curCol = columnKeyFor(appt);
+      const curTime = minutesToHHMM(localMinutes(appt.starts_at));
+      if (target.colKey === curCol && target.time === curTime) return;
+      setDragError(null);
+      setPending({ appt, target, isPast: isSlotInPast(dayIso, target.time) });
+    },
+  });
 
   const hourLines: number[] = [];
   for (let h = winStart; h <= winEnd; h += 60) hourLines.push(h);
@@ -456,24 +504,15 @@ export function DayRoomGrid({
     const compact = height < 40;
 
     const draggable = canManage && isFuture;
+    const isDragging = drag.dragAppt?.id === appointment.id;
     return (
       <div
         key={appointment.id}
         onClick={(e) => e.stopPropagation()}
-        draggable={draggable}
-        onDragStart={
-          draggable
-            ? (e) => {
-                setDragAppt(appointment);
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", appointment.id);
-              }
-            : undefined
+        onPointerDown={
+          draggable ? (e) => drag.startDrag(appointment, e) : undefined
         }
-        onDragEnd={() => {
-          setDragAppt(null);
-          setDragOver(null);
-        }}
+        onDragStart={(e) => e.preventDefault()}
         className={cn(
           "absolute overflow-hidden rounded-md border shadow-sm",
           compact
@@ -481,6 +520,7 @@ export function DayRoomGrid({
             : "px-1.5 py-1 text-[11px]",
           STATUS_STYLES[appointment.status],
           draggable && "cursor-grab active:cursor-grabbing",
+          isDragging && "opacity-40",
           appointment.needs_reschedule && "ring-2 ring-red-500",
           appointment.type === "urgency" && "ring-1 ring-amber-400",
           appointment.type === "emergency" && "ring-1 ring-red-500"
@@ -490,6 +530,7 @@ export function DayRoomGrid({
           height,
           left: `calc(${laneIndex * widthPct}% + 1px)`,
           width: `calc(${widthPct}% - 2px)`,
+          touchAction: draggable ? "none" : undefined,
         }}
       >
         <div
@@ -797,10 +838,12 @@ export function DayRoomGrid({
             const isRoomColumn = !c.isOnline && !c.isNoRoom;
             const clickable = canQuickCreate && isRoomColumn;
             const droppable = canManage && isRoomColumn;
-            const isDropTarget = droppable && dragAppt !== null;
+            const isDropTarget = droppable && drag.dragging;
             return (
               <div
                 key={c.key}
+                data-col-key={droppable ? c.key : undefined}
+                data-col-label={c.label}
                 className={cn(
                   "relative border-l",
                   clickable && "cursor-pointer",
@@ -848,43 +891,19 @@ export function DayRoomGrid({
                       }
                     : undefined
                 }
-                onDragOver={
-                  droppable
-                    ? (e) => {
-                        if (!dragAppt) return;
-                        e.preventDefault();
-                        const t = slotTimeFromEvent(e);
-                        if (dragOver?.col !== c.key || dragOver?.time !== t) {
-                          setDragOver({ col: c.key, time: t });
-                        }
-                      }
-                    : undefined
-                }
-                onDrop={
-                  droppable
-                    ? (e) => {
-                        e.preventDefault();
-                        if (dragAppt) {
-                          reschedule(dragAppt, c.key, slotTimeFromEvent(e));
-                          setDragAppt(null);
-                          setDragOver(null);
-                        }
-                      }
-                    : undefined
-                }
               >
-                {dragOver?.col === c.key && (
+                {drag.target?.colKey === c.key && (
                   <div
                     className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
                     style={{
                       top:
                         TOP_PAD_PX +
-                        (timeToMin(dragOver.time) - winStart) * PX_PER_MIN,
+                        (timeToMin(drag.target.time) - winStart) * PX_PER_MIN,
                     }}
                   >
                     <div className="h-0.5 w-full bg-primary" />
                     <span className="absolute -top-2 left-1 rounded bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-                      {dragOver.time}
+                      {drag.target.time}
                     </span>
                   </div>
                 )}
@@ -906,7 +925,8 @@ export function DayRoomGrid({
       {canManage && (
         <p className="text-xs text-muted-foreground">
           Dica: clique num espaço vazio de uma sala para agendar rapidamente; ou
-          arraste um card futuro para remarcá-lo em outro horário/sala.
+          arraste um card futuro para remarcá-lo em outro horário/sala — o
+          sistema confirma antes de gravar.
         </p>
       )}
 
@@ -926,6 +946,35 @@ export function DayRoomGrid({
           initialRoomId={quick.roomId}
         />
       )}
+
+      <DragPreview appt={drag.dragAppt} pointer={drag.pointer} />
+
+      <RescheduleConfirmDialog
+        data={
+          pending
+            ? {
+                clientName: pending.appt.clients?.full_name ?? "Cliente",
+                fromLabel: `${new Date(
+                  pending.appt.starts_at
+                ).toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })} · ${placeLabel(pending.appt)}`,
+                toLabel: `${pending.target.time} · ${
+                  pending.appt.is_online ? "Online" : pending.target.colLabel
+                }`,
+                isPast: pending.isPast,
+              }
+            : null
+        }
+        error={dragError}
+        pending={isSaving}
+        onConfirm={confirmReschedule}
+        onCancel={() => {
+          setPending(null);
+          setDragError(null);
+        }}
+      />
     </div>
   );
 }

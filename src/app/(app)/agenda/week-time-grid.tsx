@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Flag, Info, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,7 +12,7 @@ import {
   type StaffOption,
 } from "@/lib/appointments";
 import { CLOSURE_REASON_LABELS, type AgendaClosure } from "@/lib/closures";
-import { type AgendaFormConfig } from "./actions";
+import { updateAppointment, type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
 import {
@@ -20,6 +21,13 @@ import {
   displayedStatus,
   type AgendaAppointment,
 } from "./week-grid";
+import {
+  DragPreview,
+  RescheduleConfirmDialog,
+  isSlotInPast,
+  useCardDrag,
+  type DropTarget,
+} from "./agenda-drag";
 
 const SLOT_MIN = 15;
 const SLOT_PX = 16;
@@ -47,6 +55,14 @@ function clamp(v: number, lo: number, hi: number): number {
 }
 function isoOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+/** Rótulo "Ter 12/07 14:00" para a confirmação de remarcação. */
+function dayTimeLabel(iso: string): string {
+  const d = new Date(iso);
+  return `${WEEKDAY_LABELS[(d.getDay() + 6) % 7]} ${d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  })} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function assignLanes(appts: AgendaAppointment[]) {
@@ -116,6 +132,17 @@ export function WeekTimeGrid({
   const [quick, setQuick] = useState<{ date: string; time: string } | null>(null);
   const canQuickCreate = canManage && Boolean(clients);
 
+  // Arrastar-para-remarcar (H4.14): card futuro arrasta para outro dia/horário
+  // e, ao soltar, pede confirmação antes de gravar.
+  const router = useRouter();
+  const [pending, setPending] = useState<{
+    appt: AgendaAppointment;
+    target: DropTarget;
+    isPast: boolean;
+  } | null>(null);
+  const [dragError, setDragError] = useState<string | null>(null);
+  const [isSaving, startSaving] = useTransition();
+
   const openDaySet = new Set(openDayDates);
   const holidayClosedSet = new Set(holidayClosedDates);
   const holidayOpenSet = new Set(holidayOpenDates);
@@ -167,6 +194,64 @@ export function WeekTimeGrid({
   if (winEnd <= winStart) winEnd = winStart + 60;
   const totalPx = (winEnd - winStart) * PX_PER_MIN;
 
+  // Mapeia a posição do ponteiro para a coluna do dia + horário encaixado.
+  const drag = useCardDrag({
+    resolve: (clientX, clientY): DropTarget | null => {
+      if (typeof document === "undefined") return null;
+      const el = document
+        .elementsFromPoint(clientX, clientY)
+        .find(
+          (n): n is HTMLElement =>
+            n instanceof HTMLElement && !!n.dataset.colKey
+        );
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      let minute = winStart + (clientY - rect.top - TOP_PAD_PX) / PX_PER_MIN;
+      minute = Math.round(minute / SLOT_MIN) * SLOT_MIN;
+      minute = clamp(minute, winStart, winEnd - SLOT_MIN);
+      return {
+        colKey: el.dataset.colKey ?? "",
+        colLabel: el.dataset.colLabel ?? "",
+        dateIso: el.dataset.colKey ?? "",
+        time: minutesToHHMM(minute),
+      };
+    },
+    onDrop: (appt, target) => {
+      const curIso = isoOf(new Date(appt.starts_at));
+      const curTime = minutesToHHMM(localMinutes(appt.starts_at));
+      if (target.dateIso === curIso && target.time === curTime) return;
+      setDragError(null);
+      setPending({ appt, target, isPast: isSlotInPast(target.dateIso, target.time) });
+    },
+  });
+
+  function confirmReschedule() {
+    if (!pending) return;
+    const { appt, target } = pending;
+    const startMs = new Date(appt.starts_at).getTime();
+    const endMs = new Date(appt.ends_at).getTime();
+    const durationMin = Math.max(15, Math.round((endMs - startMs) / 60_000));
+    const fd = new FormData();
+    fd.set("type", appt.type);
+    fd.set("date", target.dateIso);
+    fd.set("time", target.time);
+    fd.set("duration", String(durationMin));
+    fd.set("provider_user_id", appt.provider_user_id ?? "");
+    fd.set("notes", appt.notes ?? "");
+    fd.set("room_id", appt.room_id ?? "");
+    startSaving(async () => {
+      const result = await updateAppointment(appt.id, fd);
+      if (result.ok) {
+        toast.success("Agendamento remarcado.");
+        setPending(null);
+        setDragError(null);
+        router.refresh();
+      } else {
+        setDragError(result.error ?? "Não foi possível remarcar.");
+      }
+    });
+  }
+
   const hourLines: number[] = [];
   for (let h = winStart; h <= winEnd; h += 60) hourLines.push(h);
 
@@ -187,14 +272,20 @@ export function WeekTimeGrid({
     // H2.8: agendamento curto (15 min) vira um card compacto de UMA linha,
     // com o nome do cliente visível (antes ficava uma faixa vazia).
     const compact = height < 40;
+    const draggable = canManage && isFuture;
+    const isDragging = drag.dragAppt?.id === a.id;
     return (
       <div
         key={a.id}
         onClick={(ev) => ev.stopPropagation()}
+        onPointerDown={draggable ? (ev) => drag.startDrag(a, ev) : undefined}
+        onDragStart={(ev) => ev.preventDefault()}
         className={cn(
           "absolute overflow-hidden rounded border px-1 shadow-sm",
           compact ? "flex items-center gap-1 text-[9px]" : "py-0.5 text-[10px]",
           STATUS_STYLES[a.status],
+          draggable && "cursor-grab active:cursor-grabbing",
+          isDragging && "opacity-40",
           a.needs_reschedule && "ring-2 ring-red-500"
         )}
         style={{
@@ -202,6 +293,7 @@ export function WeekTimeGrid({
           height,
           left: `calc(${lane * w}% + 1px)`,
           width: `calc(${w}% - 2px)`,
+          touchAction: draggable ? "none" : undefined,
         }}
       >
         <div
@@ -438,10 +530,23 @@ export function WeekTimeGrid({
             (a) => new Date(a.starts_at).toDateString() === date.toDateString()
           );
           const { laneOf, laneCount } = assignLanes(dayAppts);
+          const droppable = canManage;
+          const dayLabel = `${WEEKDAY_LABELS[(date.getDay() + 6) % 7]} ${date.toLocaleDateString(
+            "pt-BR",
+            { day: "2-digit", month: "2-digit" }
+          )}`;
           return (
             <div
               key={iso}
-              className={cn("relative border-l", canQuickCreate && "cursor-pointer")}
+              data-col-key={droppable ? iso : undefined}
+              data-col-label={dayLabel}
+              className={cn(
+                "relative border-l",
+                canQuickCreate && "cursor-pointer",
+                droppable &&
+                  drag.dragging &&
+                  "bg-primary/5 ring-1 ring-inset ring-primary/40"
+              )}
               style={{
                 height: totalPx + TOP_PAD_PX,
                 backgroundPositionY: `${TOP_PAD_PX}px`,
@@ -489,6 +594,21 @@ export function WeekTimeGrid({
                   : undefined
               }
             >
+              {drag.target?.colKey === iso && (
+                <div
+                  className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
+                  style={{
+                    top:
+                      TOP_PAD_PX +
+                      (timeToMin(drag.target.time) - winStart) * PX_PER_MIN,
+                  }}
+                >
+                  <div className="h-0.5 w-full bg-primary" />
+                  <span className="absolute -top-2 left-1 rounded bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                    {drag.target.time}
+                  </span>
+                </div>
+              )}
               {renderOutsideBands()}
               {renderLunchBand()}
               {dayAppts.map((a) =>
@@ -514,6 +634,28 @@ export function WeekTimeGrid({
           initialTime={quick.time}
         />
       )}
+
+      <DragPreview appt={drag.dragAppt} pointer={drag.pointer} />
+
+      <RescheduleConfirmDialog
+        data={
+          pending
+            ? {
+                clientName: pending.appt.clients?.full_name ?? "Cliente",
+                fromLabel: dayTimeLabel(pending.appt.starts_at),
+                toLabel: `${pending.target.colLabel} ${pending.target.time}`,
+                isPast: pending.isPast,
+              }
+            : null
+        }
+        error={dragError}
+        pending={isSaving}
+        onConfirm={confirmReschedule}
+        onCancel={() => {
+          setPending(null);
+          setDragError(null);
+        }}
+      />
     </div>
   );
 }
