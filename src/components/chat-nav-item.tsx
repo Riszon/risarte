@@ -43,7 +43,13 @@ function beepUrgent() {
  * H4.9 Chat Hub: item do menu com contador de não lidas em tempo real +
  * gerência da presença (online/ausente) do usuário para todo o app.
  */
-export function ChatNavItem({ linkClass }: { linkClass: string }) {
+export function ChatNavItem({
+  linkClass,
+  collapsed,
+}: {
+  linkClass: string;
+  collapsed?: boolean;
+}) {
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
   const meRef = useRef<string | null>(null);
@@ -195,18 +201,25 @@ export function ChatNavItem({ linkClass }: { linkClass: string }) {
   }, [pathname]);
 
   return (
-    <Link href="/chat" className={linkClass}>
-      <MessagesSquare className="size-4" />
-      <span className="flex-1">Chat Hub</span>
-      {unread > 0 && (
-        <span
-          className={cn(
-            "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-xs font-medium text-gold-foreground"
-          )}
-        >
-          {unread > 99 ? "99+" : unread}
-        </span>
-      )}
+    <Link
+      href="/chat"
+      className={linkClass}
+      title={collapsed ? "Chat Hub" : undefined}
+    >
+      <MessagesSquare className="size-4 shrink-0" />
+      {!collapsed && <span className="flex-1">Chat Hub</span>}
+      {unread > 0 &&
+        (collapsed ? (
+          <span className="absolute right-1 top-1 size-2 rounded-full bg-gold" />
+        ) : (
+          <span
+            className={cn(
+              "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-xs font-medium text-gold-foreground"
+            )}
+          >
+            {unread > 99 ? "99+" : unread}
+          </span>
+        ))}
     </Link>
   );
 }

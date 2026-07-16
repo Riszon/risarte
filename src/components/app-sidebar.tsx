@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   BarChart3,
   Briefcase,
@@ -10,6 +10,8 @@ import {
   Calendar,
   CalendarClock,
   CalendarRange,
+  ChevronsLeft,
+  ChevronsRight,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -77,6 +79,8 @@ type Props = {
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
   activeClinicRoles: UserRole[];
+  /** Sidebar minimizada? Vem do cookie (server) para não "piscar" ao carregar. */
+  initialCollapsed: boolean;
 };
 
 const NAV_ITEMS = [
@@ -145,10 +149,12 @@ export function AppSidebar({
   clinics,
   activeClinicId,
   activeClinicRoles,
+  initialCollapsed,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   const activeClinic = clinics.find((c) => c.id === activeClinicId) ?? null;
   const initials =
@@ -159,6 +165,14 @@ export function AppSidebar({
       .map((w) => w[0])
       .join("")
       .toUpperCase() || "?";
+
+  function toggleCollapsed() {
+    setCollapsed((v) => {
+      const next = !v;
+      document.cookie = `risarte_sidebar_collapsed=${next ? "1" : "0"};path=/;max-age=31536000`;
+      return next;
+    });
+  }
 
   // The Dentista (executor) does not have the Jornada screen (owner rule).
   const dentistOnly =
@@ -212,25 +226,55 @@ export function AppSidebar({
 
   const linkClass = (href: string) =>
     cn(
-      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+      "relative flex items-center rounded-md text-sm transition-colors",
+      collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2",
       isActive(href)
         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-[inset_2px_0_0_var(--gold)]"
         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     );
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2.5 px-4 py-5">
-        <RisarteMark className="h-8 shrink-0 text-gold" />
-        <div className="min-w-0 leading-tight">
-          <p className="text-base font-semibold tracking-tight">Risarte</p>
-          <p className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50">
-            Odontologia
-          </p>
+    <aside
+      className={cn(
+        "sticky top-0 flex h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      {collapsed ? (
+        <div className="flex flex-col items-center gap-3 px-2 py-4">
+          <RisarteMark className="h-7 text-gold" />
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            title="Expandir menu"
+            aria-label="Expandir menu"
+            className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <ChevronsRight className="size-4" />
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-2.5 px-4 py-5">
+          <RisarteMark className="h-8 shrink-0 text-gold" />
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="text-base font-semibold tracking-tight">Risarte</p>
+            <p className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50">
+              Odontologia
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            title="Minimizar menu"
+            aria-label="Minimizar menu"
+            className="rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <ChevronsLeft className="size-4" />
+          </button>
+        </div>
+      )}
 
-      {clinics.length > 0 && (
+      {clinics.length > 0 && !collapsed && (
         <div className="px-3 pb-3">
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -287,23 +331,40 @@ export function AppSidebar({
 
       <nav className="flex-1 space-y-1 px-3">
         {navItems.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} className={linkClass(href)}>
-            <Icon className="size-4" />
-            {label}
+          <Link
+            key={href}
+            href={href}
+            className={linkClass(href)}
+            title={collapsed ? label : undefined}
+          >
+            <Icon className="size-4 shrink-0" />
+            {!collapsed && <span className="truncate">{label}</span>}
           </Link>
         ))}
-        <ChatNavItem linkClass={linkClass("/chat")} />
-        <NotificationNavItem linkClass={linkClass("/notificacoes")} />
+        <ChatNavItem linkClass={linkClass("/chat")} collapsed={collapsed} />
+        <NotificationNavItem
+          linkClass={linkClass("/notificacoes")}
+          collapsed={collapsed}
+        />
 
         {isAdminMaster && (
           <>
-            <p className="px-3 pb-1 pt-5 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
-              Administração
-            </p>
+            {collapsed ? (
+              <div className="my-2 border-t border-sidebar-border/60" />
+            ) : (
+              <p className="px-3 pb-1 pt-5 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
+                Administração
+              </p>
+            )}
             {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className={linkClass(href)}>
-                <Icon className="size-4" />
-                {label}
+              <Link
+                key={href}
+                href={href}
+                className={linkClass(href)}
+                title={collapsed ? label : undefined}
+              >
+                <Icon className="size-4 shrink-0" />
+                {!collapsed && <span className="truncate">{label}</span>}
               </Link>
             ))}
           </>
@@ -313,32 +374,42 @@ export function AppSidebar({
       <div className="border-t border-sidebar-border p-3">
         <Link
           href="/perfil"
-          className="mb-2 flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-sidebar-accent"
-          title="Meu perfil"
+          className={cn(
+            "mb-2 flex items-center rounded-md hover:bg-sidebar-accent",
+            collapsed ? "justify-center p-1.5" : "gap-2.5 px-2 py-1.5"
+          )}
+          title={collapsed ? `${fullName} — Meu perfil` : "Meu perfil"}
         >
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-gold">
             {initials}
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{fullName}</p>
-            <p className="truncate text-xs text-sidebar-foreground/60">{email}</p>
-          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{fullName}</p>
+              <p className="truncate text-xs text-sidebar-foreground/60">
+                {email}
+              </p>
+            </div>
+          )}
         </Link>
-        <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
-          Versão {APP_VERSION} · migração {LATEST_MIGRATION}
-          <br />
-          <span className="opacity-80">
-            Empresarial {EMPRESARIAL_VERSION} · migr. {EMPRESARIAL_MIGRATION}
-          </span>
-        </p>
+        {!collapsed && (
+          <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
+            Versão {APP_VERSION} · migração {LATEST_MIGRATION}
+            <br />
+            <span className="opacity-80">
+              Empresarial {EMPRESARIAL_VERSION} · migr. {EMPRESARIAL_MIGRATION}
+            </span>
+          </p>
+        )}
         <Button
           variant="outline"
           size="sm"
           onClick={handleLogout}
-          className="w-full border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          title="Sair"
+          className="w-full justify-center border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
-          <LogOut className="mr-2 size-4" />
-          Sair
+          <LogOut className={cn("size-4", !collapsed && "mr-2")} />
+          {!collapsed && "Sair"}
         </Button>
       </div>
     </aside>

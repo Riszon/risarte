@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { getSessionContext } from "@/lib/auth";
 import { canViewEmpresarial } from "@/lib/empresarial/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -71,6 +72,11 @@ export default async function AppLayout({
   // Módulo Risarte Empresarial (B2B).
   const canViewEmp = canViewEmpresarial(session);
 
+  // Estado da sidebar (minimizada?) vem do cookie para não "piscar" no load.
+  const cookieStore = await cookies();
+  const sidebarCollapsed =
+    cookieStore.get("risarte_sidebar_collapsed")?.value === "1";
+
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar
@@ -93,6 +99,7 @@ export default async function AppLayout({
             ? (session.rolesByClinic[session.activeClinic.id] ?? [])
             : []
         }
+        initialCollapsed={sidebarCollapsed}
       />
       <main className="flex-1 overflow-x-auto bg-background">{children}</main>
       {/* AJ4: pop-up da recepção para pedidos de agendamento de apresentação. */}

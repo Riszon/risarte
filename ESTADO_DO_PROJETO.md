@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.69.0** · Última migração: **0131**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.70.0** · Última migração: **0131**_
+
+> **Sidebar minimizar/expandir ✅ (v0.70.0, sem migração):** botão de alternar no
+> topo da sidebar; minimizada = só ícones (`w-16`), rótulos escondidos com tooltip
+> (`title`), badges viram pontinho, trocador de clínica/versão ocultos, avatar/Sair
+> compactos. Estado salvo em **cookie** (`risarte_sidebar_collapsed`), lido no layout
+> (server) para não "piscar". `ChatNavItem`/`NotificationNavItem` ganharam prop
+> `collapsed`.
 
 > **Correção ativo/inativo + refino visual da Jornada ✅ (v0.69.0 · migração 0131):**
 > **Bug:** o status ativo/inativo (regra da 0020) só era recalculado pelo cron diário
