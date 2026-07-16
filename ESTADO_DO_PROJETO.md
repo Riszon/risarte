@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.68.1** · Última migração: **0130**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.69.0** · Última migração: **0131**_
+
+> **Correção ativo/inativo + refino visual da Jornada ✅ (v0.69.0 · migração 0131):**
+> **Bug:** o status ativo/inativo (regra da 0020) só era recalculado pelo cron diário
+> (3h) — que pode não estar ligado; mover fase/agendar não atualizava na hora.
+> **Fix (0131):** `recompute_client_activity_one(client)` + **gatilhos** — recalcula o
+> cliente ao **mudar de fase** (trigger em `clients` OF journey_phase/phase_entered_at)
+> e ao **criar/alterar/remover atendimento** (trigger em `appointments`); recálculo
+> geral uma vez ao aplicar. **Visual da Jornada:** nº da fase na coluna; cartões com
+> cantos suaves + hover + fundo vermelho suave no SLA estourado; **sub-status da
+> Fase 5** em badge colorida (âmbar = aguardando iniciar, verde = em tratamento);
+> **inativo** com borda tracejada + fundo acinzentado; **quadro com altura fixa** e
+> colunas que rolam por dentro (barra horizontal sempre visível). Migração a rodar: **0131**.
 
 > **Ajuste (v0.68.1):** a logomarca completa (texto grande branco) ficou "escrita
 > demais"; login e sidebar voltaram ao formato **compacto** — **símbolo em dourado**

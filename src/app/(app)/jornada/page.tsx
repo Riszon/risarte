@@ -225,7 +225,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
           )}
         </div>
       </div>
-      <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
+      <div className="mx-auto h-[calc(100vh-13rem)] min-h-[24rem] max-w-7xl overflow-x-auto pb-2">
         <KanbanBoard
           clients={(clients ?? []).map((c) => ({
             id: c.id,

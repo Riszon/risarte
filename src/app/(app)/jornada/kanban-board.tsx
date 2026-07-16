@@ -56,6 +56,18 @@ type Props = {
   canRegister: boolean;
 };
 
+// Cores dos sub-status (destaque especial da Fase 5): âmbar = aguardando iniciar,
+// verde = em tratamento; os demais ficam neutros (navy).
+const STATUS_BADGE: Partial<Record<JourneyStatus, string>> = {
+  awaiting_treatment_start:
+    "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  in_treatment:
+    "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+};
+function statusBadgeClass(status: JourneyStatus): string {
+  return STATUS_BADGE[status] ?? "border-primary/20 bg-primary/10 text-primary";
+}
+
 export function KanbanBoard({
   clients,
   sla,
@@ -82,8 +94,8 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="flex min-w-max gap-3">
-      {JOURNEY_PHASES.map((phase) => {
+    <div className="flex h-full min-w-max gap-3">
+      {JOURNEY_PHASES.map((phase, phaseIndex) => {
         const phaseClients = clients.filter((c) => c.journey_phase === phase);
         const slaKey = PHASE_SLA_KEY[phase];
         const slaHours = slaKey ? sla[slaKey] : null;
@@ -96,11 +108,18 @@ export function KanbanBoard({
         return (
           <div
             key={phase}
-            className="flex w-64 shrink-0 flex-col rounded-lg border bg-muted/40"
+            className="flex h-full w-64 shrink-0 flex-col rounded-xl border bg-muted/40"
           >
-            <div className="flex items-center justify-between border-b px-3 py-2">
-              <h2 className="text-sm font-medium">{PHASE_LABELS[phase]}</h2>
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="grid size-5 shrink-0 place-items-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
+                  {phaseIndex + 1}
+                </span>
+                <h2 className="truncate text-sm font-semibold">
+                  {PHASE_LABELS[phase]}
+                </h2>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
                 {phase === "acquisition" && canRegister && (
                   <Button
                     variant="ghost"
@@ -116,7 +135,7 @@ export function KanbanBoard({
                 <Badge variant="secondary">{phaseClients.length}</Badge>
               </div>
             </div>
-            <div className="flex flex-col gap-2 p-2">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
               {phaseClients.map((client) => {
                 const exceeded = isSlaExceeded(
                   client.phase_entered_at,
@@ -130,9 +149,10 @@ export function KanbanBoard({
                   <div
                     key={client.id}
                     className={cn(
-                      "rounded-md border bg-card p-3 shadow-sm",
-                      exceeded && "border-destructive",
-                      client.status === "inactive" && "opacity-75"
+                      "rounded-lg border bg-card p-3 shadow-sm transition-colors hover:border-primary/40",
+                      exceeded && "border-destructive bg-destructive/5",
+                      client.status === "inactive" &&
+                        "border-dashed border-muted-foreground/40 bg-muted/60 opacity-75 shadow-none"
                     )}
                   >
                     <div className="flex items-start justify-between gap-1">
@@ -144,9 +164,10 @@ export function KanbanBoard({
                       </Link>
                       {client.status === "inactive" && (
                         <Badge
-                          variant="outline"
-                          className="shrink-0 text-[10px] text-muted-foreground"
+                          variant="secondary"
+                          className="shrink-0 gap-1 text-[10px] text-muted-foreground"
                         >
+                          <span className="size-1.5 rounded-full bg-muted-foreground" />
                           Inativo
                         </Badge>
                       )}
@@ -157,9 +178,15 @@ export function KanbanBoard({
                       </p>
                     )}
                     {client.journey_status && (
-                      <p className="mt-0.5 text-[10px] font-medium text-primary">
+                      <span
+                        className={cn(
+                          "mt-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                          statusBadgeClass(client.journey_status)
+                        )}
+                      >
+                        <span className="size-1.5 rounded-full bg-current" />
                         {STATUS_LABELS[client.journey_status]}
-                      </p>
+                      </span>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <span
