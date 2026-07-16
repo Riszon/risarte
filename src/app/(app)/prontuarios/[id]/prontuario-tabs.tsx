@@ -7,16 +7,40 @@ import {
   type ReactNode,
   type ReactElement,
 } from "react";
+import {
+  ClipboardList,
+  FileText,
+  History,
+  Inbox,
+  ListChecks,
+  Route,
+  Stethoscope,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type PanelProps = { id: string; label: string; children: ReactNode };
+
+/** Ícone por aba (identidade visual). Aba sem ícone mapeado mostra só o rótulo. */
+const TAB_ICONS: Record<string, LucideIcon> = {
+  cadastro: User,
+  jornada: Route,
+  clinico: Stethoscope,
+  plano: ClipboardList,
+  sessoes: ListChecks,
+  documentos: FileText,
+  pedidos: Inbox,
+  historico: History,
+};
 
 /** Marcador de aba — não renderiza sozinho; o ProntuarioTabs lê id/label/filhos.
  * Uso: <ProntuarioTabs><TabPanel id="x" label="X">…</TabPanel>…</ProntuarioTabs> */
 export const TabPanel: (props: PanelProps) => ReactNode = () => null;
 
 /** H4.10: a ficha do cliente em abas (na sequência do fluxo). Mantém todas as
- * abas montadas (esconde as inativas) para não perder o estado dos editores. */
+ * abas montadas (esconde as inativas) para não perder o estado dos editores.
+ * Refino visual: aba ativa com acento dourado (sublinhado) + ícone. */
 export function ProntuarioTabs({ children }: { children: ReactNode }) {
   const panels = Children.toArray(children).filter(
     (c): c is ReactElement<PanelProps> =>
@@ -28,24 +52,36 @@ export function ProntuarioTabs({ children }: { children: ReactNode }) {
   return (
     <div>
       <div className="sticky top-0 z-10 -mx-4 mb-4 overflow-x-auto border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div role="tablist" className="flex gap-1 py-1.5">
-          {panels.map((p) => (
-            <button
-              key={p.props.id}
-              type="button"
-              role="tab"
-              aria-selected={active === p.props.id}
-              onClick={() => setActive(p.props.id)}
-              className={cn(
-                "whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                active === p.props.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              {p.props.label}
-            </button>
-          ))}
+        <div role="tablist" className="flex gap-1">
+          {panels.map((p) => {
+            const Icon = TAB_ICONS[p.props.id];
+            const isActive = active === p.props.id;
+            return (
+              <button
+                key={p.props.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActive(p.props.id)}
+                className={cn(
+                  "-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isActive
+                    ? "border-gold text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {Icon && (
+                  <Icon
+                    className={cn(
+                      "size-4 shrink-0",
+                      isActive ? "text-gold" : "text-muted-foreground"
+                    )}
+                  />
+                )}
+                {p.props.label}
+              </button>
+            );
+          })}
         </div>
       </div>
       {panels.map((p) => (

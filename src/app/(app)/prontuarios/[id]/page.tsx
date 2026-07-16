@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Building2, Cake, Route } from "lucide-react";
+import { RisarteMark } from "@/components/risarte-logo";
+import { cn } from "@/lib/utils";
 import {
   getSessionContext,
   hasRoleInClinic,
@@ -116,7 +118,7 @@ import type {
   StaffOption,
 } from "@/lib/appointments";
 import { roomLabel } from "@/lib/rooms";
-import { allowedNextPhases } from "@/lib/journey";
+import { allowedNextPhases, PHASE_LABELS } from "@/lib/journey";
 import type {
   DecisionKind,
   JourneyPhase,
@@ -171,6 +173,15 @@ const STATUS_LABELS = {
   inactive: "Inativo",
   anonymized: "Anonimizado",
 } as const;
+
+/** Iniciais do cliente para o avatar do cabeçalho (1ª + última palavra). */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0][0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "";
+  return (first + last).toUpperCase();
+}
 
 /** Detailed age, e.g. "22 anos, 3 meses e 15 dias". */
 function formatDetailedAge(birthIso: string): string {
@@ -1906,103 +1917,138 @@ export default async function ClientDetailPage(
   const usage = isProgramMember ? await loadClientUsage(client.id) : null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {client.full_name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {client.code && (
-              <span className="mr-2 font-mono font-medium text-gold">
-                {client.code}
-              </span>
-            )}
-            Cliente desde{" "}
-            {new Date(client.created_at).toLocaleDateString("pt-BR")}
-            {creatorName && <> · cadastrado por {creatorName}</>}
-          </p>
-          {clinicName && (
-            <p className="text-sm font-medium text-primary">
-              Unidade: {clinicName}
-            </p>
-          )}
-          {ageText && (
-            <p className="text-sm text-muted-foreground">Idade: {ageText}</p>
-          )}
-          {isBirthdayToday && (
-            <div className="mt-1 flex items-center gap-2">
-              <Badge className="bg-gold/20 text-gold-foreground">
-                🎉 Aniversário hoje
-              </Badge>
-              <BirthdayWhatsAppButton
-                fullName={client.full_name}
-                phone={client.phone}
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {client.staff_member_id &&
-            (client.risartano_active === false ? (
-              <Badge
-                variant="outline"
-                className="border-gold/50 text-muted-foreground"
-              >
-                ★ Ex-Risartano (inativo)
-              </Badge>
-            ) : (
-              <Badge className="bg-gold/20 text-gold-foreground">
-                ★ É um Risartano
-              </Badge>
-            ))}
-          {client.empresarial_company_id &&
-            (client.empresarial_active === false ? (
-              <Badge
-                variant="outline"
-                className="border-gold/50 text-muted-foreground"
-              >
-                ★ Ex-Risarte Empresarial
-              </Badge>
-            ) : (
-              <Badge className="bg-gold/20 text-gold-foreground">
-                ★ Risarte Empresarial
-              </Badge>
-            ))}
-          {viewerIsFormerClinicOnly && (
-            <Badge variant="destructive">
-              Transferido para {currentClinicEntry?.clinics?.name ?? "outra unidade"}
-            </Badge>
-          )}
-          <Badge variant={client.status === "active" ? "secondary" : "outline"}>
-            {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
-          </Badge>
-          {canScheduleFromFicha && (
-            <AppointmentFormDialog
-              clients={[
-                {
-                  id: client.id,
-                  full_name: client.full_name,
-                  inactive: client.status !== "active",
-                },
-              ]}
-              staff={fichaStaff}
-              config={fichaConfig}
-              initialClientId={client.id}
-              fixedClinicId={scheduleClinicId}
-              trigger={<Button size="sm">Novo agendamento</Button>}
-            />
-          )}
-          {hasApprovedPlan && canPresent && (
-            <Button
-              size="sm"
-              variant="outline"
-              nativeButton={false}
-              render={<Link href={`/apresentacao/${client.id}`} />}
+    <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+      <div className="relative overflow-hidden rounded-xl border bg-card p-4 sm:p-5">
+        <RisarteMark className="pointer-events-none absolute -top-6 -right-4 h-28 text-gold/10" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <div
+              className={cn(
+                "flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold",
+                isBirthdayToday &&
+                  "ring-2 ring-gold ring-offset-2 ring-offset-card"
+              )}
+              aria-hidden
             >
-              Apresentação
-            </Button>
-          )}
+              {initialsOf(client.full_name)}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  {client.full_name}
+                </h1>
+                {client.code && (
+                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
+                    {client.code}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Cliente desde{" "}
+                {new Date(client.created_at).toLocaleDateString("pt-BR")}
+                {creatorName && <> · cadastrado por {creatorName}</>}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {clinicName && (
+                  <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+                    <Building2 className="size-3.5 shrink-0" /> {clinicName}
+                  </span>
+                )}
+                {ageText && (
+                  <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+                    <Cake className="size-3.5 shrink-0" /> {ageText}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary">
+                  <Route className="size-3.5 shrink-0" />{" "}
+                  {PHASE_LABELS[client.journey_phase as JourneyPhase]}
+                </span>
+              </div>
+              {isBirthdayToday && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge className="bg-gold/20 text-gold-foreground">
+                    🎉 Aniversário hoje
+                  </Badge>
+                  <BirthdayWhatsAppButton
+                    fullName={client.full_name}
+                    phone={client.phone}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {client.staff_member_id &&
+                (client.risartano_active === false ? (
+                  <Badge
+                    variant="outline"
+                    className="border-gold/50 text-muted-foreground"
+                  >
+                    ★ Ex-Risartano (inativo)
+                  </Badge>
+                ) : (
+                  <Badge className="bg-gold/20 text-gold-foreground">
+                    ★ É um Risartano
+                  </Badge>
+                ))}
+              {client.empresarial_company_id &&
+                (client.empresarial_active === false ? (
+                  <Badge
+                    variant="outline"
+                    className="border-gold/50 text-muted-foreground"
+                  >
+                    ★ Ex-Risarte Empresarial
+                  </Badge>
+                ) : (
+                  <Badge className="bg-gold/20 text-gold-foreground">
+                    ★ Risarte Empresarial
+                  </Badge>
+                ))}
+              {viewerIsFormerClinicOnly && (
+                <Badge variant="destructive">
+                  Transferido para{" "}
+                  {currentClinicEntry?.clinics?.name ?? "outra unidade"}
+                </Badge>
+              )}
+              <Badge
+                variant={client.status === "active" ? "secondary" : "outline"}
+              >
+                {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
+              </Badge>
+            </div>
+            {(canScheduleFromFicha || (hasApprovedPlan && canPresent)) && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {canScheduleFromFicha && (
+                  <AppointmentFormDialog
+                    clients={[
+                      {
+                        id: client.id,
+                        full_name: client.full_name,
+                        inactive: client.status !== "active",
+                      },
+                    ]}
+                    staff={fichaStaff}
+                    config={fichaConfig}
+                    initialClientId={client.id}
+                    fixedClinicId={scheduleClinicId}
+                    trigger={<Button size="sm">Novo agendamento</Button>}
+                  />
+                )}
+                {hasApprovedPlan && canPresent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    nativeButton={false}
+                    render={<Link href={`/apresentacao/${client.id}`} />}
+                  >
+                    Apresentação
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

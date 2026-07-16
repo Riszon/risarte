@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.73.1** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.0** · Última migração: **0131**_
+
+> **Refino visual — Ficha do cliente/prontuário ✅ (v0.74.0, sem migração):**
+> (1) **Cabeçalho vira cartão de identidade**: avatar com iniciais (navy + inicial
+> dourada; anel dourado no aniversário), nome + **código** em chip dourado, e
+> **unidade / idade / fase da jornada** como **pílulas com ícone** (antes eram
+> linhas soltas); selos e botões agrupados (Novo agendamento em destaque);
+> **símbolo Risarte** como marca d'água discreta. (2) **Abas com acento dourado**:
+> aba ativa com sublinhado dourado + ícone por aba (`prontuario-tabs.tsx`), em vez
+> do bloco navy cheio. (3) Ficha **um pouco mais larga** (`max-w-3xl`). Helpers
+> `initialsOf` + `PHASE_LABELS` no cabeçalho.
 
 > **Agenda — arrastar: aviso de fim fora do horário ✅ (v0.73.1, sem migração):**
 > ao arrastar para um horário que **começa dentro do expediente mas termina no
