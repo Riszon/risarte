@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.0** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.1** · Última migração: **0131**_
+
+> **Ficha — ajustes do cabeçalho (feedback do dono) ✅ (v0.74.1, sem migração):**
+> (1) **barra de rolagem das abas escondida** (continua rolável). (2) ficha **bem
+> mais larga** (`max-w-6xl`). (3) **cabeçalho reequilibrado**: identidade + selos
+> à esquerda, **ações no topo-direito**, e as **pílulas numa faixa própria** de
+> largura total (antes tudo empilhava de um lado). (4) pílulas de **nascimento**
+> (`Nasc. dd/mm/aaaa`) e **idade** (`64 anos`, idade detalhada no title). (5)
+> **tempo de cliente** entre parênteses na data (ex.: "Cliente desde 10/07/2026
+> (há 6 dias)"). Helpers `shortAge` + `clientDuration`.
 
 > **Refino visual — Ficha do cliente/prontuário ✅ (v0.74.0, sem migração):**
 > (1) **Cabeçalho vira cartão de identidade**: avatar com iniciais (navy + inicial

@@ -51,7 +51,7 @@ export function ProntuarioTabs({ children }: { children: ReactNode }) {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 -mx-4 mb-4 overflow-x-auto border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="sticky top-0 z-10 -mx-4 mb-4 overflow-x-auto border-b border-border bg-background/95 px-4 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] supports-[backdrop-filter]:bg-background/80 [&::-webkit-scrollbar]:hidden">
         <div role="tablist" className="flex gap-1">
           {panels.map((p) => {
             const Icon = TAB_ICONS[p.props.id];

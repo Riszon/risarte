@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, Building2, Cake, Route } from "lucide-react";
+import { AlertTriangle, Building2, CalendarDays, Cake, Route } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { cn } from "@/lib/utils";
 import {
@@ -181,6 +181,40 @@ function initialsOf(name: string): string {
   const first = parts[0][0] ?? "";
   const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "";
   return (first + last).toUpperCase();
+}
+
+/** Idade curta em anos para a pílula, ex.: "34 anos". */
+function shortAge(birthIso: string): string {
+  const birth = new Date(`${birthIso}T00:00:00`);
+  const now = new Date();
+  if (Number.isNaN(birth.getTime()) || birth > now) return "";
+  let years = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) years -= 1;
+  return `${years} ${years === 1 ? "ano" : "anos"}`;
+}
+
+/** Há quanto tempo é cliente, ex.: "há 6 meses", "há 1 ano e 2 meses". */
+function clientDuration(createdIso: string): string {
+  const start = new Date(createdIso);
+  const now = new Date();
+  if (Number.isNaN(start.getTime()) || start > now) return "";
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  if (now.getDate() < start.getDate()) months -= 1;
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  const y = (n: number) => `${n} ${n === 1 ? "ano" : "anos"}`;
+  const mo = (n: number) => `${n} ${n === 1 ? "mês" : "meses"}`;
+  if (years > 0) {
+    return months > 0 ? `há ${y(years)} e ${mo(months)}` : `há ${y(years)}`;
+  }
+  if (months > 0) return `há ${mo(months)}`;
+  const days = Math.floor((now.getTime() - start.getTime()) / 86_400_000);
+  if (days <= 0) return "hoje";
+  return `há ${days} ${days === 1 ? "dia" : "dias"}`;
 }
 
 /** Detailed age, e.g. "22 anos, 3 meses e 15 dias". */
@@ -480,6 +514,11 @@ export default async function ClientDetailPage(
   const ageText = client.birth_date
     ? formatDetailedAge(client.birth_date)
     : "";
+  const shortAgeText = client.birth_date ? shortAge(client.birth_date) : "";
+  const birthText = client.birth_date
+    ? new Date(`${client.birth_date}T00:00:00`).toLocaleDateString("pt-BR")
+    : "";
+  const clientTime = clientDuration(client.created_at);
   // H3.8: aniversário HOJE (compara mês/dia, sem fuso).
   const isBirthdayToday = (() => {
     if (!client.birth_date) return false;
@@ -1917,109 +1956,86 @@ export default async function ClientDetailPage(
   const usage = isProgramMember ? await loadClientUsage(client.id) : null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="relative overflow-hidden rounded-xl border bg-card p-4 sm:p-5">
         <RisarteMark className="pointer-events-none absolute -top-6 -right-4 h-28 text-gold/10" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-            <div
-              className={cn(
-                "flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold",
-                isBirthdayToday &&
-                  "ring-2 ring-gold ring-offset-2 ring-offset-card"
-              )}
-              aria-hidden
-            >
-              {initialsOf(client.full_name)}
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                  {client.full_name}
-                </h1>
-                {client.code && (
-                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
-                    {client.code}
-                  </span>
+        <div className="relative flex flex-col gap-4">
+          {/* Linha 1: identidade à esquerda, ações à direita. */}
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+              <div
+                className={cn(
+                  "flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold",
+                  isBirthdayToday &&
+                    "ring-2 ring-gold ring-offset-2 ring-offset-card"
                 )}
-              </div>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Cliente desde{" "}
-                {new Date(client.created_at).toLocaleDateString("pt-BR")}
-                {creatorName && <> · cadastrado por {creatorName}</>}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {clinicName && (
-                  <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
-                    <Building2 className="size-3.5 shrink-0" /> {clinicName}
-                  </span>
-                )}
-                {ageText && (
-                  <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
-                    <Cake className="size-3.5 shrink-0" /> {ageText}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary">
-                  <Route className="size-3.5 shrink-0" />{" "}
-                  {PHASE_LABELS[client.journey_phase as JourneyPhase]}
-                </span>
-              </div>
-              {isBirthdayToday && (
-                <div className="mt-2 flex items-center gap-2">
-                  <Badge className="bg-gold/20 text-gold-foreground">
-                    🎉 Aniversário hoje
-                  </Badge>
-                  <BirthdayWhatsAppButton
-                    fullName={client.full_name}
-                    phone={client.phone}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {client.staff_member_id &&
-                (client.risartano_active === false ? (
-                  <Badge
-                    variant="outline"
-                    className="border-gold/50 text-muted-foreground"
-                  >
-                    ★ Ex-Risartano (inativo)
-                  </Badge>
-                ) : (
-                  <Badge className="bg-gold/20 text-gold-foreground">
-                    ★ É um Risartano
-                  </Badge>
-                ))}
-              {client.empresarial_company_id &&
-                (client.empresarial_active === false ? (
-                  <Badge
-                    variant="outline"
-                    className="border-gold/50 text-muted-foreground"
-                  >
-                    ★ Ex-Risarte Empresarial
-                  </Badge>
-                ) : (
-                  <Badge className="bg-gold/20 text-gold-foreground">
-                    ★ Risarte Empresarial
-                  </Badge>
-                ))}
-              {viewerIsFormerClinicOnly && (
-                <Badge variant="destructive">
-                  Transferido para{" "}
-                  {currentClinicEntry?.clinics?.name ?? "outra unidade"}
-                </Badge>
-              )}
-              <Badge
-                variant={client.status === "active" ? "secondary" : "outline"}
+                aria-hidden
               >
-                {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
-              </Badge>
+                {initialsOf(client.full_name)}
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                    {client.full_name}
+                  </h1>
+                  {client.code && (
+                    <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
+                      {client.code}
+                    </span>
+                  )}
+                  <Badge
+                    variant={
+                      client.status === "active" ? "secondary" : "outline"
+                    }
+                  >
+                    {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
+                  </Badge>
+                  {client.staff_member_id &&
+                    (client.risartano_active === false ? (
+                      <Badge
+                        variant="outline"
+                        className="border-gold/50 text-muted-foreground"
+                      >
+                        ★ Ex-Risartano (inativo)
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-gold/20 text-gold-foreground">
+                        ★ É um Risartano
+                      </Badge>
+                    ))}
+                  {client.empresarial_company_id &&
+                    (client.empresarial_active === false ? (
+                      <Badge
+                        variant="outline"
+                        className="border-gold/50 text-muted-foreground"
+                      >
+                        ★ Ex-Risarte Empresarial
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-gold/20 text-gold-foreground">
+                        ★ Risarte Empresarial
+                      </Badge>
+                    ))}
+                  {viewerIsFormerClinicOnly && (
+                    <Badge variant="destructive">
+                      Transferido para{" "}
+                      {currentClinicEntry?.clinics?.name ?? "outra unidade"}
+                    </Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Cliente desde{" "}
+                  {new Date(client.created_at).toLocaleDateString("pt-BR")}
+                  {clientTime && (
+                    <span className="text-foreground/70"> ({clientTime})</span>
+                  )}
+                  {creatorName && <> · cadastrado por {creatorName}</>}
+                </p>
+              </div>
             </div>
+
             {(canScheduleFromFicha || (hasApprovedPlan && canPresent)) && (
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {canScheduleFromFicha && (
                   <AppointmentFormDialog
                     clients={[
@@ -2049,6 +2065,44 @@ export default async function ClientDetailPage(
               </div>
             )}
           </div>
+
+          {/* Linha 2: pílulas ocupam a largura toda. */}
+          <div className="flex flex-wrap gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary">
+              <Route className="size-3.5 shrink-0" />{" "}
+              {PHASE_LABELS[client.journey_phase as JourneyPhase]}
+            </span>
+            {clinicName && (
+              <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+                <Building2 className="size-3.5 shrink-0" /> {clinicName}
+              </span>
+            )}
+            {birthText && (
+              <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+                <CalendarDays className="size-3.5 shrink-0" /> Nasc. {birthText}
+              </span>
+            )}
+            {shortAgeText && (
+              <span
+                title={ageText || undefined}
+                className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground"
+              >
+                <Cake className="size-3.5 shrink-0" /> {shortAgeText}
+              </span>
+            )}
+          </div>
+
+          {isBirthdayToday && (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-gold/20 text-gold-foreground">
+                🎉 Aniversário hoje
+              </Badge>
+              <BirthdayWhatsAppButton
+                fullName={client.full_name}
+                phone={client.phone}
+              />
+            </div>
+          )}
         </div>
       </div>
 
