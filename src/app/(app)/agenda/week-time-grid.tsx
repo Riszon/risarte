@@ -25,6 +25,7 @@ import {
   DragPreview,
   RescheduleConfirmDialog,
   isSlotInPast,
+  overrunWarning,
   useCardDrag,
   type DropTarget,
 } from "./agenda-drag";
@@ -139,6 +140,7 @@ export function WeekTimeGrid({
     appt: AgendaAppointment;
     target: DropTarget;
     isPast: boolean;
+    warn: string | null;
   } | null>(null);
   const [dragError, setDragError] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
@@ -220,8 +222,29 @@ export function WeekTimeGrid({
       const curIso = isoOf(new Date(appt.starts_at));
       const curTime = minutesToHHMM(localMinutes(appt.starts_at));
       if (target.dateIso === curIso && target.time === curTime) return;
+      const durationMin = Math.max(
+        15,
+        Math.round(
+          (new Date(appt.ends_at).getTime() -
+            new Date(appt.starts_at).getTime()) /
+            60_000
+        )
+      );
       setDragError(null);
-      setPending({ appt, target, isPast: isSlotInPast(target.dateIso, target.time) });
+      setPending({
+        appt,
+        target,
+        isPast: isSlotInPast(target.dateIso, target.time),
+        warn: overrunWarning({
+          time: target.time,
+          durationMin,
+          closeTime: config?.closeTime,
+          lunchEnabled: config?.lunchEnabled,
+          lunchStart: config?.lunchStart,
+          lunchEnd: config?.lunchEnd,
+          isOnline: appt.is_online,
+        }),
+      });
     },
   });
 
@@ -243,6 +266,12 @@ export function WeekTimeGrid({
       const result = await updateAppointment(appt.id, fd);
       if (result.ok) {
         toast.success("Agendamento remarcado.");
+        if (result.warning) {
+          toast.warning(result.warning, {
+            description: "O profissional foi avisado.",
+            duration: 8000,
+          });
+        }
         setPending(null);
         setDragError(null);
         router.refresh();
@@ -645,6 +674,7 @@ export function WeekTimeGrid({
                 fromLabel: dayTimeLabel(pending.appt.starts_at),
                 toLabel: `${pending.target.colLabel} ${pending.target.time}`,
                 isPast: pending.isPast,
+                warn: pending.warn,
               }
             : null
         }

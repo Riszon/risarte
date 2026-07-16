@@ -56,6 +56,7 @@ import {
   DragPreview,
   RescheduleConfirmDialog,
   isSlotInPast,
+  overrunWarning,
   useCardDrag,
   type DropTarget,
 } from "./agenda-drag";
@@ -199,6 +200,7 @@ export function DayRoomGrid({
     appt: AgendaAppointment;
     target: DropTarget;
     isPast: boolean;
+    warn: string | null;
   } | null>(null);
   const [dragError, setDragError] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
@@ -240,6 +242,12 @@ export function DayRoomGrid({
       const result = await updateAppointment(appt.id, fd);
       if (result.ok) {
         toast.success("Agendamento remarcado.");
+        if (result.warning) {
+          toast.warning(result.warning, {
+            description: "O profissional foi avisado.",
+            duration: 8000,
+          });
+        }
         setPending(null);
         setDragError(null);
         router.refresh();
@@ -377,8 +385,29 @@ export function DayRoomGrid({
       const curCol = columnKeyFor(appt);
       const curTime = minutesToHHMM(localMinutes(appt.starts_at));
       if (target.colKey === curCol && target.time === curTime) return;
+      const durationMin = Math.max(
+        15,
+        Math.round(
+          (new Date(appt.ends_at).getTime() -
+            new Date(appt.starts_at).getTime()) /
+            60_000
+        )
+      );
       setDragError(null);
-      setPending({ appt, target, isPast: isSlotInPast(dayIso, target.time) });
+      setPending({
+        appt,
+        target,
+        isPast: isSlotInPast(dayIso, target.time),
+        warn: overrunWarning({
+          time: target.time,
+          durationMin,
+          closeTime,
+          lunchEnabled: config?.lunchEnabled,
+          lunchStart: config?.lunchStart,
+          lunchEnd: config?.lunchEnd,
+          isOnline: appt.is_online,
+        }),
+      });
     },
   });
 
@@ -964,6 +993,7 @@ export function DayRoomGrid({
                   pending.appt.is_online ? "Online" : pending.target.colLabel
                 }`,
                 isPast: pending.isPast,
+                warn: pending.warn,
               }
             : null
         }

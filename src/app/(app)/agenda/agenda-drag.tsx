@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarClock, MoveRight } from "lucide-react";
+import { AlertTriangle, CalendarClock, MoveRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +27,48 @@ export type DropTarget = {
  */
 export function isSlotInPast(dateIso: string, time: string): boolean {
   return new Date(`${dateIso}T${time}:00`).getTime() < Date.now();
+}
+
+function toMin(t?: string | null): number {
+  const [h, m] = (t ?? "").slice(0, 5).split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+/**
+ * Aviso (não bloqueio) quando o atendimento COMEÇA no horário normal mas TERMINA
+ * depois do fechamento ou avança sobre o almoço — espelha o `warn` do servidor
+ * (`checkAgendaRules`) para mostrar no diálogo antes de confirmar. Retorna null
+ * quando está tudo dentro do horário.
+ */
+export function overrunWarning(opts: {
+  time: string;
+  durationMin: number;
+  closeTime?: string | null;
+  lunchEnabled?: boolean;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
+  isOnline?: boolean;
+}): string | null {
+  const startMin = toMin(opts.time);
+  const endMin = startMin + opts.durationMin;
+  const parts: string[] = [];
+  if (opts.closeTime && endMin > toMin(opts.closeTime)) {
+    parts.push(`termina após o fechamento (${opts.closeTime.slice(0, 5)})`);
+  }
+  if (
+    opts.lunchEnabled &&
+    !opts.isOnline &&
+    opts.lunchStart &&
+    opts.lunchEnd &&
+    startMin < toMin(opts.lunchStart) &&
+    endMin > toMin(opts.lunchStart)
+  ) {
+    parts.push(
+      `avança sobre o almoço (${opts.lunchStart.slice(0, 5)}–${opts.lunchEnd.slice(0, 5)})`
+    );
+  }
+  if (parts.length === 0) return null;
+  return `Este atendimento ${parts.join(" e ")}.`;
 }
 
 /**
@@ -168,6 +210,7 @@ export function RescheduleConfirmDialog({
     fromLabel: string;
     toLabel: string;
     isPast: boolean;
+    warn?: string | null;
   } | null;
   error: string | null;
   pending: boolean;
@@ -198,6 +241,12 @@ export function RescheduleConfirmDialog({
             {data.isPast && (
               <p className="rounded-md bg-red-50 px-2 py-1.5 text-xs font-medium text-red-700">
                 Esse horário já passou — escolha um horário futuro.
+              </p>
+            )}
+            {!data.isPast && data.warn && (
+              <p className="flex items-start gap-1.5 rounded-md bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-800">
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                <span>{data.warn}</span>
               </p>
             )}
             {error && (

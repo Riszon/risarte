@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.73.0** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.73.1** · Última migração: **0131**_
+
+> **Agenda — arrastar: aviso de fim fora do horário ✅ (v0.73.1, sem migração):**
+> ao arrastar para um horário que **começa dentro do expediente mas termina no
+> almoço ou após o fechamento**, o diálogo de confirmação agora mostra um **aviso
+> âmbar** (ex.: "termina após o fechamento (18:00)") — antes o `warn` do servidor
+> era descartado no arrastar. Confirmar continua liberado (é aviso, não bloqueio);
+> após gravar, o mesmo aviso vai num toast e o profissional é notificado (igual ao
+> formulário). Helper `overrunWarning` em `agenda-drag.tsx`.
 
 > **Agenda — arrastar o card p/ reagendar (H4.14) ✅ (v0.73.0, sem migração):**
 > arrastar-para-remarcar **suave** (baseado em ponteiro: mouse E toque) nas grades
