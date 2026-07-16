@@ -61,7 +61,7 @@ export default function LoginPage() {
           </div>
           <LoginForm />
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Sistema Risarte · v{APP_VERSION}
+            riSZon · v{APP_VERSION}
           </p>
         </div>
       </div>

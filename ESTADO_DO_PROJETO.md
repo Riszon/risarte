@@ -1,8 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.66.1** · Última migração: **0130**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.67.0** · Última migração: **0130**_
 
-> **Rodada de refinamento visual (em andamento, guiada pelo dono):** (1) **Login**
+> **Rodada de refinamento visual (em andamento, guiada pelo dono):** (3) **Página
+> inicial** ✅ (v0.67.0) — cabeçalho de boas-vindas (faixa navy + dourado): saudação
+> pela hora (fuso SP), data por extenso, monograma do usuário, unidade ativa e selo
+> Admin Master; cartões com ícones. Login: rodapé passou de "Sistema Risarte" para
+> **"riSZon"**.
+> (1) **Login**
 > ✅ (v0.66.0) — painel de marca navy + dourado à esquerda (monograma R + tagline),
 > cartão de acesso à direita, rodapé com versão; no celular vira coluna única.
 > (2) **Base — fonte Geist** ✅ (v0.66.1) — corrigido o mapeamento em `globals.css`
