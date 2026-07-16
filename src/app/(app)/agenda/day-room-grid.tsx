@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, Info, Lock, Pencil, UserRound, Wifi } from "lucide-react";
+import {
+  AlertTriangle,
+  Flag,
+  Info,
+  Lock,
+  Pencil,
+  UserRound,
+  Wifi,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -636,7 +644,10 @@ export function DayRoomGrid({
 
       {holidayName && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-sm">
-          <span className="font-medium text-amber-800">🎌 Feriado: {holidayName}</span>
+          <span className="flex items-center gap-1.5 font-medium text-amber-800">
+            <Flag className="size-4 shrink-0" />
+            Feriado: {holidayName}
+          </span>
           {holidayDecision === true && (
             <span className="text-emerald-700">· Haverá atendimento</span>
           )}

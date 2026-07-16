@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { agendaHref } from "@/lib/agenda-view";
 
@@ -137,31 +137,44 @@ export function DayStripView({
                 {date.toLocaleDateString("pt-BR", { month: "short" })}
               </span>
               {blocked ? (
-                <span className="mt-0.5 max-w-[3.2rem] truncate text-[9px] font-medium leading-tight">
+                <span className="mt-0.5 flex max-w-[3.2rem] items-center gap-0.5 truncate text-[9px] font-medium leading-tight">
+                  {d.state === "holiday_closed" && (
+                    <Flag className="size-2.5 shrink-0" />
+                  )}
                   {d.closedReason
                     ? d.closedReason
-                    : d.state === "closed"
-                      ? "Fechado"
-                      : "Sem atend."}
+                    : d.state === "holiday_closed"
+                      ? "Feriado"
+                      : d.state === "closed"
+                        ? "Fechado"
+                        : "Sem atend."}
                 </span>
               ) : (
-                <span className="mt-0.5 flex items-center gap-0.5 text-[9px] leading-tight">
-                  {d.attention ? (
-                    <AlertTriangle className="size-2.5 text-amber-600" />
-                  ) : (
-                    d.hasFree !== null && (
-                      <span
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          d.hasFree ? "bg-emerald-500" : "bg-red-500"
-                        )}
-                      />
-                    )
+                <>
+                  <span className="mt-0.5 flex items-center gap-0.5 text-[9px] leading-tight">
+                    {d.attention ? (
+                      <AlertTriangle className="size-2.5 text-amber-600" />
+                    ) : (
+                      d.hasFree !== null && (
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            d.hasFree ? "bg-emerald-500" : "bg-red-500"
+                          )}
+                        />
+                      )
+                    )}
+                    {d.count > 0 && (
+                      <span className="text-muted-foreground">{d.count}</span>
+                    )}
+                  </span>
+                  {(d.state === "holiday_open" ||
+                    d.state === "holiday_pending") && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-medium leading-tight text-red-700">
+                      <Flag className="size-2.5 shrink-0" /> Feriado
+                    </span>
                   )}
-                  {d.count > 0 && (
-                    <span className="text-muted-foreground">{d.count}</span>
-                  )}
-                </span>
+                </>
               )}
             </Link>
           );

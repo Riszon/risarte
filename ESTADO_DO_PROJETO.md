@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/07/2026 · Versão do sistema: **0.72.0** · Última migração: **0131**_
+_Atualizado em: 15/07/2026 · Versão do sistema: **0.72.1** · Última migração: **0131**_
+
+> **Agenda — refino visual Bloco 3 ✅ (v0.72.1, sem migração):** (1) **feriado na
+> régua de dias** (DayStrip) agora marca "Feriado" com ícone (antes só mudava de
+> cor quando a unidade atendia). (2) ícone do feriado: emoji 🎌 trocado por **ícone
+> Flag** (semana + dia). (3) filtros **Salas + Profissional** juntos num **bloco
+> compacto** (menos espaço). **Adiado (novo recurso):** arrastar o card p/ reagendar
+> (drag-and-drop) — não existe hoje; é feature nova, a planejar à parte.
 
 > **Agenda — refino visual Bloco 2 ✅ (v0.72.0, sem migração):** (1) **filtro por
 > profissional** (`ProviderFilter`, `?profissional=userId`; filtra por profissional

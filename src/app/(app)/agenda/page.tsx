@@ -756,15 +756,14 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         </div>
       )}
 
-      {clinicId && allRooms.length > 0 && (
-        <div className="mx-auto max-w-7xl">
-          <RoomFilter rooms={allRooms} selected={selectedSalas} />
-        </div>
-      )}
-
-      {clinicId && providerOptions.length > 0 && (
-        <div className="mx-auto max-w-7xl">
-          <ProviderFilter providers={providerOptions} selected={provFilter} />
+      {clinicId && (allRooms.length > 0 || providerOptions.length > 0) && (
+        <div className="mx-auto max-w-7xl space-y-1.5 rounded-lg border bg-muted/20 px-3 py-2">
+          {allRooms.length > 0 && (
+            <RoomFilter rooms={allRooms} selected={selectedSalas} />
+          )}
+          {providerOptions.length > 0 && (
+            <ProviderFilter providers={providerOptions} selected={provFilter} />
+          )}
         </div>
       )}
 

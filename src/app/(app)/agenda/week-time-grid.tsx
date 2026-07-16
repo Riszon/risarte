@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Info, Lock, Pencil } from "lucide-react";
+import { Flag, Info, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -390,11 +390,14 @@ export function WeekTimeGrid({
               </Link>
               {holidayName && (
                 <span
-                  className="mt-0.5 block rounded bg-red-100 px-1 py-0.5 text-[10px] font-medium leading-tight text-red-700"
+                  className="mt-0.5 flex items-center justify-center gap-1 rounded bg-red-100 px-1 py-0.5 text-[10px] font-medium leading-tight text-red-700"
                   title={holidayName}
                 >
-                  🎌 {holidayName}
-                  {holidayClosed ? " (fechado)" : ""}
+                  <Flag className="size-2.5 shrink-0" />
+                  <span className="truncate">
+                    {holidayName}
+                    {holidayClosed ? " (fechado)" : ""}
+                  </span>
                 </span>
               )}
               {isSpecialOpen && !holidayName && (
