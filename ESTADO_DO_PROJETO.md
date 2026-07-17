@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.2** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.3** · Última migração: **0131**_
+
+> **Indicadores — filtro de profissional + rótulo de escopo (feedback) ✅
+> (v0.76.3, sem migração):** (1) o filtro **por profissional** do cabeçalho agora
+> também **filtra os indicadores** (antes só filtrava o painel): comparecimento,
+> conclusão, tempos, produtividade e as ocorrências/trocas passam a respeitar o
+> profissional escolhido (`scopeProviderId`). (2) o popup mostra o **escopo**: "Todos
+> os profissionais da unidade" / "Profissional: Fulano" / "Somente os seus
+> atendimentos" (dentista). Confirmado: dentista "puro" vê só os **seus**
+> atendimentos (por `provider_user_id`); gestão vê todos.
 
 > **Indicadores — visual do popup (feedback) ✅ (v0.76.2, sem migração):** cards
 > eram muito parecidos e sobrava um sozinho. Reorganizado em **3 seções**: (1)

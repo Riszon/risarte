@@ -418,10 +418,22 @@ export default async function AtendimentoPage(
         "unit_manager",
       ]));
   const canViewMetrics = canSeeAllMetrics || isDentist;
+  // Escopo dos indicadores: dentista = só os SEUS; gestão = todos os profissionais
+  // ou o profissional escolhido no filtro acima (quando houver).
+  const scopeProviderId = !canSeeAllMetrics
+    ? session.userId
+    : providerFilter || null;
+  const metricsScopeNote = !canSeeAllMetrics
+    ? "Somente os seus atendimentos."
+    : providerFilter
+      ? `Profissional: ${
+          providerOptions.find((p) => p.id === providerFilter)?.name ?? "—"
+        }`
+      : "Todos os profissionais da unidade.";
   let metrics: AttendanceMetrics | null = null;
   if (canViewMetrics && clinicId) {
     const periodRows = (data ?? []).filter((r) =>
-      canSeeAllMetrics ? true : r.provider_user_id === session.userId
+      scopeProviderId ? r.provider_user_id === scopeProviderId : true
     );
     const person = (r: Row): MetricPerson => ({
       id: r.clients?.id ?? null,
@@ -475,8 +487,8 @@ export default async function AtendimentoPage(
       .eq("status", "done")
       .gte("done_at", start.toISOString())
       .lt("done_at", end.toISOString());
-    if (!canSeeAllMetrics)
-      productivityQ = productivityQ.eq("executed_by", session.userId);
+    if (scopeProviderId)
+      productivityQ = productivityQ.eq("executed_by", scopeProviderId);
     const { count: productivity } = await productivityQ;
 
     // Trocas de profissional no período (de → para).
@@ -487,9 +499,9 @@ export default async function AtendimentoPage(
       .gte("created_at", start.toISOString())
       .lt("created_at", end.toISOString())
       .order("created_at", { ascending: false });
-    if (!canSeeAllMetrics)
+    if (scopeProviderId)
       swapsQ = swapsQ.or(
-        `from_provider.eq.${session.userId},to_provider.eq.${session.userId}`
+        `from_provider.eq.${scopeProviderId},to_provider.eq.${scopeProviderId}`
       );
     const { data: swapRows } = await swapsQ.returns<
       {
@@ -584,11 +596,7 @@ export default async function AtendimentoPage(
             <AttendanceIndicators
               metrics={metrics}
               periodLabel={periodLabel}
-              scopeNote={
-                canSeeAllMetrics
-                  ? undefined
-                  : "Mostrando somente os seus atendimentos."
-              }
+              scopeNote={metricsScopeNote}
             />
           )}
           <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
