@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -107,37 +108,192 @@ function periodRange(period: Period): { start: Date; end: Date; label: string } 
   return { start, end, label: `hoje, ${start.toLocaleDateString("pt-BR")}` };
 }
 
+type MetricsRow = {
+  id: string;
+  status: AppointmentStatus;
+  starts_at: string;
+  attendance: AttendanceStatus | null;
+  checked_in_at: string | null;
+  called_at: string | null;
+  done_at: string | null;
+  provider_user_id: string | null;
+  clients: { id: string; full_name: string } | null;
+};
+
+/** Calcula os indicadores do Atendimento para uma ou VÁRIAS unidades (consolidado).
+ * scopeProviderId != null limita a um profissional (dentista ou filtro). */
+async function computeAttendanceMetrics(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicIds: string[],
+  scopeProviderId: string | null,
+  start: Date,
+  end: Date
+): Promise<AttendanceMetrics> {
+  const empty: AttendanceMetrics = {
+    scheduled: 0,
+    attended: 0,
+    completed: 0,
+    attendanceRate: null,
+    completionRate: null,
+    productivity: 0,
+    avgWaitMin: null,
+    avgServiceMin: null,
+    noShows: [],
+    cancellations: [],
+    giveUps: [],
+    swaps: [],
+  };
+  if (clinicIds.length === 0) return empty;
+
+  let apptQ = supabase
+    .from("appointments")
+    .select(
+      "id, status, starts_at, attendance, checked_in_at, called_at, done_at, provider_user_id, clients ( id, full_name )"
+    )
+    .in("clinic_id", clinicIds)
+    .gte("starts_at", start.toISOString())
+    .lt("starts_at", end.toISOString());
+  if (scopeProviderId) apptQ = apptQ.eq("provider_user_id", scopeProviderId);
+  const { data } = await apptQ.returns<MetricsRow[]>();
+  const rows = data ?? [];
+
+  const person = (r: MetricsRow): MetricPerson => ({
+    id: r.clients?.id ?? null,
+    name: r.clients?.full_name ?? "—",
+    detail: new Date(r.starts_at).toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  });
+  const completed = rows.filter((r) => r.attendance === "done");
+  const noShows = rows.filter((r) => r.status === "no_show");
+  const cancellations = rows.filter(
+    (r) => r.status === "cancelled" && r.attendance !== "gave_up"
+  );
+  const giveUps = rows.filter((r) => r.attendance === "gave_up");
+  const attended = rows.filter((r) => r.checked_in_at).length;
+  const avg = (a: number[]) =>
+    a.length > 0 ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
+  const waitVals = rows
+    .filter((r) => r.checked_in_at && r.called_at)
+    .map(
+      (r) =>
+        (new Date(r.called_at as string).getTime() -
+          new Date(r.checked_in_at as string).getTime()) /
+        60000
+    )
+    .filter((m) => m >= 0);
+  const svcVals = rows
+    .filter((r) => r.called_at && r.done_at)
+    .map(
+      (r) =>
+        (new Date(r.done_at as string).getTime() -
+          new Date(r.called_at as string).getTime()) /
+        60000
+    )
+    .filter((m) => m >= 0);
+
+  let prodQ = supabase
+    .from("treatment_sessions")
+    .select("id", { count: "exact", head: true })
+    .in("clinic_id", clinicIds)
+    .eq("status", "done")
+    .gte("done_at", start.toISOString())
+    .lt("done_at", end.toISOString());
+  if (scopeProviderId) prodQ = prodQ.eq("executed_by", scopeProviderId);
+  const { count: productivity } = await prodQ;
+
+  let swapQ = supabase
+    .from("appointment_provider_swaps")
+    .select("id, appointment_id, from_provider, to_provider, created_at")
+    .in("clinic_id", clinicIds)
+    .gte("created_at", start.toISOString())
+    .lt("created_at", end.toISOString())
+    .order("created_at", { ascending: false });
+  if (scopeProviderId)
+    swapQ = swapQ.or(
+      `from_provider.eq.${scopeProviderId},to_provider.eq.${scopeProviderId}`
+    );
+  const { data: swapRows } = await swapQ.returns<
+    {
+      id: string;
+      appointment_id: string;
+      from_provider: string | null;
+      to_provider: string;
+    }[]
+  >();
+  const swapList = swapRows ?? [];
+  const apptIds = [...new Set(swapList.map((s) => s.appointment_id))];
+  const clientByAppt = new Map<string, { id: string; name: string }>();
+  if (apptIds.length > 0) {
+    const { data: apps } = await supabase
+      .from("appointments")
+      .select("id, clients ( id, full_name )")
+      .in("id", apptIds)
+      .returns<
+        { id: string; clients: { id: string; full_name: string } | null }[]
+      >();
+    for (const a of apps ?? []) {
+      if (a.clients)
+        clientByAppt.set(a.id, { id: a.clients.id, name: a.clients.full_name });
+    }
+  }
+  const provIds = [
+    ...new Set(
+      swapList
+        .flatMap((s) => [s.from_provider, s.to_provider])
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const provName = new Map<string, string>();
+  if (provIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", provIds);
+    for (const p of people ?? []) provName.set(p.id, p.full_name);
+  }
+  const swaps: MetricPerson[] = swapList.map((s) => {
+    const c = clientByAppt.get(s.appointment_id);
+    const from = s.from_provider ? (provName.get(s.from_provider) ?? "—") : "—";
+    const to = provName.get(s.to_provider) ?? "—";
+    return { id: c?.id ?? null, name: c?.name ?? "Cliente", detail: `${from} → ${to}` };
+  });
+
+  return {
+    scheduled: rows.length,
+    attended,
+    completed: completed.length,
+    attendanceRate:
+      rows.length > 0 ? Math.round((attended / rows.length) * 100) : null,
+    completionRate:
+      rows.length > 0
+        ? Math.round((completed.length / rows.length) * 100)
+        : null,
+    productivity: productivity ?? 0,
+    avgWaitMin: avg(waitVals),
+    avgServiceMin: avg(svcVals),
+    noShows: noShows.map(person),
+    cancellations: cancellations.map(person),
+    giveUps: giveUps.map(person),
+    swaps,
+  };
+}
+
 export default async function AtendimentoPage(
   props: PageProps<"/atendimento">
 ) {
   const session = await getSessionContext();
   const searchParams = await props.searchParams;
-  const clinicId = session.activeClinic?.id;
-  const isUnit = session.activeClinic?.type === "franchise_unit";
+  const supabase = await createClient();
 
   // A Consultor Comercial (franchisor context) sees only their own scheduled
   // clients across the units they cover.
+  const activeIsUnit = session.activeClinic?.type === "franchise_unit";
   const isConsultant = Object.values(session.rolesByClinic).some((r) =>
     r.includes("commercial_consultant")
   );
-  const consultantView = !isUnit && isConsultant;
-
-  if (!consultantView && (!clinicId || !isUnit)) {
-    return (
-      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Atendimento</h1>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Selecione uma unidade</CardTitle>
-            <CardDescription>
-              O painel de atendimento (sala de espera) é por unidade. Use o
-              seletor no menu lateral para entrar em uma unidade.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const consultantView = !activeIsUnit && isConsultant;
 
   const period: Period =
     searchParams.periodo === "semana" || searchParams.periodo === "mes"
@@ -147,14 +303,147 @@ export default async function AtendimentoPage(
     typeof searchParams.profissional === "string"
       ? searchParams.profissional
       : "";
-  const unitFilter =
+  const unitParam =
     typeof searchParams.unidade === "string" ? searchParams.unidade : "";
   const { start, end, label: periodLabel } = periodRange(period);
+
+  // #4/#5: Admin (e quem acessa >1 unidade) escolhe a unidade NA TELA (?unidade)
+  // e pode ver o consolidado ("todas"). Quem só tem 1 unidade segue igual.
+  let accessibleUnits: { id: string; name: string }[] = [];
+  if (!consultantView) {
+    if (session.isAdminMaster) {
+      const { data: us } = await supabase
+        .from("clinics")
+        .select("id, name")
+        .eq("type", "franchise_unit")
+        .eq("is_active", true)
+        .order("name")
+        .returns<{ id: string; name: string }[]>();
+      accessibleUnits = us ?? [];
+    } else {
+      accessibleUnits = session.clinics
+        .filter((c) => c.type === "franchise_unit")
+        .map((c) => ({ id: c.id, name: c.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }
+  const isMultiUnit = accessibleUnits.length > 1;
+  const consolidated = !consultantView && isMultiUnit && unitParam === "todas";
+  const pickedUnitId = accessibleUnits.find((u) => u.id === unitParam)?.id;
+  // Unidade-alvo (modo por unidade): escolhida no seletor, senão a ativa, senão
+  // a única acessível.
+  const clinicId = consolidated
+    ? undefined
+    : (pickedUnitId ??
+      (activeIsUnit ? session.activeClinic?.id : undefined) ??
+      (accessibleUnits.length === 1 ? accessibleUnits[0].id : undefined));
+  // Filtro de unidade do Consultor (mantém o comportamento antigo do ?unidade).
+  const unitFilter = consultantView ? unitParam : "";
+
+  // Seletor de unidade (Admin/multi-unidade) — reaproveitado nos cabeçalhos.
+  const unitPicker = isMultiUnit ? (
+    <select
+      name="unidade"
+      defaultValue={consolidated ? "todas" : (clinicId ?? "")}
+      className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+    >
+      <option value="todas">Todas as unidades</option>
+      {accessibleUnits.map((u) => (
+        <option key={u.id} value={u.id}>
+          {u.name}
+        </option>
+      ))}
+    </select>
+  ) : null;
+
+  // Sem unidade resolvida (não é consolidado nem consultor): pede pra escolher.
+  if (!consultantView && !consolidated && !clinicId) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+        <h1 className="text-2xl font-semibold tracking-tight">Atendimento</h1>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Selecione uma unidade</CardTitle>
+            <CardDescription>
+              O painel de atendimento (sala de espera) é por unidade.
+              {isMultiUnit
+                ? " Escolha a unidade abaixo."
+                : " Use o seletor no menu lateral para entrar em uma unidade."}
+            </CardDescription>
+          </CardHeader>
+          {isMultiUnit && (
+            <CardContent>
+              <FilterForm className="flex flex-wrap items-center gap-2">
+                {unitPicker}
+              </FilterForm>
+            </CardContent>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
+  // Modo consolidado: só os indicadores de TODAS as unidades (painel é por unidade).
+  if (consolidated) {
+    const metrics = await computeAttendanceMetrics(
+      supabase,
+      accessibleUnits.map((u) => u.id),
+      null,
+      start,
+      end
+    );
+    return (
+      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Atendimento
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Indicadores consolidados — todas as unidades — {periodLabel}.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <AttendanceIndicators
+              metrics={metrics}
+              periodLabel={periodLabel}
+              scopeNote="Consolidado — todas as unidades."
+            />
+            <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
+              {unitPicker}
+              <select
+                name="periodo"
+                defaultValue={period}
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                  <option key={p} value={p}>
+                    {PERIOD_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+            </FilterForm>
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Sala de espera por unidade
+            </CardTitle>
+            <CardDescription>
+              A sala de espera é operacional de uma unidade. Escolha uma unidade
+              no seletor acima para acompanhar a fila; aqui você vê os
+              indicadores consolidados de todas as unidades.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const SELECT =
     "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, is_online, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), room:clinic_rooms ( name ), clients ( id, full_name, journey_phase )";
 
-  const supabase = await createClient();
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -600,6 +889,7 @@ export default async function AtendimentoPage(
             />
           )}
           <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
+          {unitPicker}
           <select
             name="periodo"
             defaultValue={period}

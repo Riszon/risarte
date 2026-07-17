@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.3** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.77.0** · Última migração: **0131**_
+
+> **Atendimento — seletor de unidade + indicadores consolidados (H4.16) ✅
+> (v0.77.0, sem migração):** (#4) **Admin** (e quem acessa >1 unidade) escolhe a
+> unidade **na própria tela** (seletor `?unidade` no cabeçalho e na tela de
+> "selecione uma unidade"), sem depender do menu lateral. (#5) opção **"Todas as
+> unidades"** → mostra os **indicadores consolidados** de todas as unidades (o
+> painel/sala de espera continua por unidade, com aviso para escolher uma).
+> Helper `computeAttendanceMetrics(clinicIds[], scopeProvider, período)` reaproveitado
+> para 1 unidade ou o consolidado. Quem tem só 1 unidade (recepção/gerente) segue
+> exatamente igual (sem seletor).
 
 > **Indicadores — filtro de profissional + rótulo de escopo (feedback) ✅
 > (v0.76.3, sem migração):** (1) o filtro **por profissional** do cabeçalho agora
