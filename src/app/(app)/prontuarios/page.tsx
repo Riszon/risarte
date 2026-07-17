@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { PhaseBadge } from "@/components/phase-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
@@ -587,9 +588,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                       <TableCell>{client.clinics?.name ?? "—"}</TableCell>
                     )}
                     <TableCell>
-                      <Badge variant="secondary">
-                        {PHASE_LABELS[client.journey_phase]}
-                      </Badge>
+                      <PhaseBadge phase={client.journey_phase} />
                     </TableCell>
                     <TableCell>{client.phone ?? "—"}</TableCell>
                     <TableCell>

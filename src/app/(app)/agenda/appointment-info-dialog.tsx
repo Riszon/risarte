@@ -17,7 +17,8 @@ import {
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
 } from "@/lib/appointments";
-import { PHASE_LABELS, PILLAR_LABELS, displayedPillar } from "@/lib/journey";
+import { PILLAR_LABELS, displayedPillar } from "@/lib/journey";
+import { PhaseBadge } from "@/components/phase-badge";
 import { cn } from "@/lib/utils";
 import {
   getAppointmentParticipants,
@@ -170,9 +171,16 @@ export function AppointmentInfoDialog({
           {appointment.clients && (
             <Row
               label="Fase / Pilar"
-              value={`${PHASE_LABELS[appointment.clients.journey_phase]}${
-                pillar ? ` · ${PILLAR_LABELS[pillar]}` : ""
-              }`}
+              value={
+                <span className="inline-flex flex-wrap items-center justify-end gap-1">
+                  <PhaseBadge phase={appointment.clients.journey_phase} />
+                  {pillar && (
+                    <span className="text-muted-foreground">
+                      · {PILLAR_LABELS[pillar]}
+                    </span>
+                  )}
+                </span>
+              }
             />
           )}
           {appointment.needs_reschedule && (

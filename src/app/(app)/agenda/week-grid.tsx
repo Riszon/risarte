@@ -41,6 +41,7 @@ import {
   type JourneyPhase,
   type MethodologyPillar,
 } from "@/lib/journey";
+import { phaseTintStyle } from "@/components/phase-badge";
 import { updateAppointmentStatus, type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
@@ -317,9 +318,14 @@ export function WeekGrid({
                 );
                 return (
                   <div className="mt-1 flex flex-wrap gap-1">
-                    <Badge variant="secondary" className="text-[10px]">
+                    <span
+                      className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                      style={phaseTintStyle(
+                        appointment.clients.journey_phase
+                      )}
+                    >
                       {PHASE_LABELS[appointment.clients.journey_phase]}
-                    </Badge>
+                    </span>
                     <Badge
                       className={cn(
                         "text-[10px]",

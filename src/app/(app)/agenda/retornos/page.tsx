@@ -6,13 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import { AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PhaseBadge } from "@/components/phase-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
   type AppointmentType,
 } from "@/lib/appointments";
-import { PHASE_LABELS, type JourneyPhase } from "@/lib/journey";
+import { type JourneyPhase } from "@/lib/journey";
 import {
   resolveInactivity,
   type InactivitySettingRow,
@@ -343,8 +344,8 @@ export default async function ReturnsPage(
                           · {timeLabel}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {PHASE_LABELS[c.journey_phase]}
+                      <p className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+                        <PhaseBadge phase={c.journey_phase} />
                         {c.lastVisit ? ` · última visita ${fmtDate(c.lastVisit)}` : ""}
                         {c.lastProvider ? ` · atendeu: ${c.lastProvider}` : ""}
                         {c.severity === "alert" && c.threshold

@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.79.0** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.79.1** · Última migração: **0131**_
+
+> **Cor da fase em todo o sistema ✅ (v0.79.1, sem migração):** componente
+> reutilizável **`PhaseBadge`** + helper `phaseTintStyle` (`src/components/
+> phase-badge.tsx`) que mostram a fase na **cor oficial suavizada** (fundo levinho
+> + texto escurecido da própria cor — menos vivo). Aplicado onde a fase aparece:
+> **Ficha** (pílula do cabeçalho + seção Jornada), **Agenda** (card + popup de
+> informações), **Retornos**, **Prontuários** (lista), **Planejamento** (cockpit),
+> **Planos**, e **Relatórios** (selos numerados + mapa de calor por cor da fase).
+> O **kanban** ficou como estava (pedido do dono).
 
 > **Refino visual — Jornada/Kanban ✅ (v0.79.0, sem migração):** cada coluna
 > (fase) ganhou o **acento de cor oficial da fase** (definido pelo dono): faixa no

@@ -8,11 +8,11 @@ import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
 import { Badge } from "@/components/ui/badge";
+import { PhaseBadge } from "@/components/phase-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  PHASE_LABELS,
   STATUS_LABELS,
   type JourneyPhase,
   type JourneyStatus,
@@ -621,9 +621,13 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                         ) : null;
                       })()}
                     </td>
-                    <td className="px-2 py-1.5 text-xs text-muted-foreground">
-                      {PHASE_LABELS[e.phase]}
-                      {e.jStatus ? ` · ${STATUS_LABELS[e.jStatus]}` : ""}
+                    <td className="px-2 py-1.5 text-xs">
+                      <PhaseBadge phase={e.phase} />
+                      {e.jStatus ? (
+                        <span className="ml-1 text-muted-foreground">
+                          · {STATUS_LABELS[e.jStatus]}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-2 py-1.5 text-xs text-muted-foreground">
                       {fmtDate(e.createdAt)}

@@ -6,6 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PresentationCountdown } from "@/components/presentation-countdown";
 import { Badge } from "@/components/ui/badge";
+import { PhaseBadge } from "@/components/phase-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,7 +15,6 @@ import {
   type ClinicalMediaKind,
 } from "@/lib/clinical";
 import {
-  PHASE_LABELS,
   PILLAR_LABELS,
   STATUS_LABELS,
   displayedPillar,
@@ -548,7 +548,7 @@ export default async function PlanningCockpitPage(
             {clinicName && (
               <span className="text-xs text-muted-foreground">{clinicName}</span>
             )}
-            <Badge variant="secondary">{PHASE_LABELS[phase]}</Badge>
+            <PhaseBadge phase={phase} showNumber />
             {client.journey_status && (
               <Badge variant="outline" className="border-primary text-primary">
                 {STATUS_LABELS[client.journey_status as JourneyStatus]}

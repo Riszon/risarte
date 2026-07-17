@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PhaseBadge } from "@/components/phase-badge";
 import {
   Card,
   CardContent,
@@ -171,7 +172,7 @@ export function JourneySection({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{PHASE_LABELS[phase]}</Badge>
+          <PhaseBadge phase={phase} showNumber />
           <span className="text-xs text-muted-foreground">
             há {formatTimeInPhase(phaseEnteredAt)}
           </span>

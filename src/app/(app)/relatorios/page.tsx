@@ -24,9 +24,11 @@ import {
 } from "@/lib/appointments";
 import {
   JOURNEY_PHASES,
+  PHASE_COLORS,
   PHASE_LABELS,
   type JourneyPhase,
 } from "@/lib/journey";
+import { phaseTintStyle } from "@/components/phase-badge";
 import type { TreatmentPlanStatus } from "@/lib/planning";
 
 export const metadata: Metadata = { title: "Relatórios" };
@@ -470,7 +472,10 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
                 {JOURNEY_PHASES.map((p, i) => (
                   <th key={p} className="px-1.5 py-2 text-center font-medium">
                     <span className="flex flex-col items-center gap-1">
-                      <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      <span
+                        className="inline-flex size-6 items-center justify-center rounded-full border text-xs font-semibold"
+                        style={phaseTintStyle(p)}
+                      >
                         {i + 1}
                       </span>
                       <span className="max-w-20 leading-tight text-muted-foreground">
@@ -499,8 +504,10 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
                         style={
                           n > 0
                             ? {
-                                backgroundColor: `color-mix(in oklab, var(--primary) ${Math.round(
-                                  8 + (n / maxCell) * 42
+                                backgroundColor: `color-mix(in oklab, ${
+                                  PHASE_COLORS[p]
+                                } ${Math.round(
+                                  10 + (n / maxCell) * 45
                                 )}%, transparent)`,
                               }
                             : undefined

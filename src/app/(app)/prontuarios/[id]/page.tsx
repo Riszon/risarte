@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
+import { phaseTintStyle } from "@/components/phase-badge";
 import { cn } from "@/lib/utils";
 import {
   getSessionContext,
@@ -2076,7 +2077,10 @@ export default async function ClientDetailPage(
           {/* Linha 2: pílulas. Fase e Pilar (jornada) em destaque com cor; os
               dados pessoais ficam neutros mas com ícone colorido para diferenciar. */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+              style={phaseTintStyle(client.journey_phase as JourneyPhase)}
+            >
               <Route className="size-3.5 shrink-0" />
               Fase: {PHASE_LABELS[client.journey_phase as JourneyPhase]}
             </span>
