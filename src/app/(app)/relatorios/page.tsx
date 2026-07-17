@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import {
+  CircleCheck,
+  Clock,
+  FilePlus2,
+  Send,
+  Undo2,
+  type LucideIcon,
+} from "lucide-react";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +74,62 @@ function inRange(iso: string | null, from: string | null, to: string | null) {
   if (to && iso > to) return false;
   return true;
 }
+
+/** Pontinho de cor por situação (mesma paleta da Agenda/Atendimento). */
+const STATUS_DOT: Record<AppointmentStatus, string> = {
+  scheduled: "bg-sky-500",
+  confirmed: "bg-emerald-500",
+  completed: "bg-zinc-400",
+  cancelled: "bg-red-500",
+  no_show: "bg-orange-500",
+};
+
+/** Linha com barra de proporção (peso relativo ao maior valor da lista). */
+function BarRow({
+  name,
+  count,
+  max,
+}: {
+  name: string;
+  count: number;
+  max: number;
+}) {
+  const pct = max > 0 ? Math.round((count / max) * 100) : 0;
+  return (
+    <li>
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="truncate text-muted-foreground">{name}</span>
+        <span className="font-medium tabular-nums">{count}</span>
+      </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/5">
+        <div
+          className="h-full rounded-full bg-primary"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </li>
+  );
+}
+
+const METRIC_TONE = {
+  neutral: { card: "border bg-muted/20", icon: "text-muted-foreground", val: "" },
+  blue: { card: "border bg-muted/20", icon: "text-sky-700", val: "" },
+  green: {
+    card: "border-emerald-200 bg-emerald-50/60",
+    icon: "text-emerald-700",
+    val: "text-emerald-800",
+  },
+  amber: {
+    card: "border-amber-200 bg-amber-50/60",
+    icon: "text-amber-700",
+    val: "text-amber-800",
+  },
+  navy: {
+    card: "border-primary/20 bg-primary/5",
+    icon: "text-primary",
+    val: "text-primary",
+  },
+} as const;
 
 export default async function ReportsPage(props: PageProps<"/relatorios">) {
   const session = await getSessionContext();
@@ -204,6 +269,11 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
     byUnit.set(a.clinic_id, ue);
   }
   const totalAppts = (appts ?? []).length;
+  const typeMax = Math.max(1, ...APPOINTMENT_TYPES.map((t) => byType[t]));
+  const provList = [...byProvider.values()].sort((a, b) => b.count - a.count);
+  const unitList = [...byUnit.values()].sort((a, b) => b.count - a.count);
+  const provMax = Math.max(1, ...provList.map((p) => p.count));
+  const unitMax = Math.max(1, ...unitList.map((u) => u.count));
 
   // ---- B5: rede por unidade/fase (contagens, sem nomes) ----
   const phaseByUnit = new Map<string, { name: string; counts: Record<string, number> }>();
@@ -246,16 +316,16 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
       : null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
-        <p className="text-sm text-muted-foreground">
-          Quadros-resumo de agendamentos, visão da rede por fase (sem nomes de
-          pacientes) e produtividade do Centro de Planejamento.
-        </p>
-      </div>
-
-      <FilterForm className="flex flex-wrap items-center gap-2">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
+          <p className="text-sm text-muted-foreground">
+            Quadros-resumo de agendamentos, visão da rede por fase (sem nomes de
+            pacientes) e produtividade do Centro de Planejamento.
+          </p>
+        </div>
+        <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
         <label className="text-sm text-muted-foreground">Período:</label>
         <select name="periodo" defaultValue={periodo} className={selectClass}>
           <option value="dia">Hoje</option>
@@ -279,7 +349,8 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
             </option>
           ))}
         </select>
-      </FilterForm>
+        </FilterForm>
+      </div>
 
       {/* B4 — agendamentos */}
       <Card>
@@ -288,57 +359,70 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
             Agendamentos no período ({totalAppts})
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
+        <CardContent className="grid gap-5 sm:grid-cols-2">
           <div>
-            <h3 className="mb-1 text-sm font-medium">Por situação</h3>
-            <ul className="space-y-0.5 text-sm">
+            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+              Por situação
+            </h3>
+            <ul className="space-y-1 text-sm">
               {APPOINTMENT_STATUSES.map((s) => (
-                <li key={s} className="flex justify-between">
-                  <span className="text-muted-foreground">
+                <li key={s} className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span
+                      className={cn(
+                        "size-2 shrink-0 rounded-full",
+                        STATUS_DOT[s]
+                      )}
+                    />
                     {APPOINTMENT_STATUS_LABELS[s]}
                   </span>
-                  <span className="font-medium">{byStatus[s]}</span>
+                  <span className="font-medium tabular-nums">{byStatus[s]}</span>
                 </li>
               ))}
             </ul>
           </div>
           <div>
-            <h3 className="mb-1 text-sm font-medium">Por tipo</h3>
-            <ul className="space-y-0.5 text-sm">
+            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+              Por tipo
+            </h3>
+            <ul className="space-y-2">
               {APPOINTMENT_TYPES.filter((t) => byType[t] > 0).map((t) => (
-                <li key={t} className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {APPOINTMENT_TYPE_LABELS[t]}
-                  </span>
-                  <span className="font-medium">{byType[t]}</span>
-                </li>
+                <BarRow
+                  key={t}
+                  name={APPOINTMENT_TYPE_LABELS[t]}
+                  count={byType[t]}
+                  max={typeMax}
+                />
               ))}
+              {APPOINTMENT_TYPES.every((t) => byType[t] === 0) && (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
             </ul>
           </div>
           <div>
-            <h3 className="mb-1 text-sm font-medium">Por profissional</h3>
-            <ul className="space-y-0.5 text-sm">
-              {[...byProvider.values()]
-                .sort((a, b) => b.count - a.count)
-                .map((p, i) => (
-                  <li key={i} className="flex justify-between">
-                    <span className="truncate text-muted-foreground">{p.name}</span>
-                    <span className="font-medium">{p.count}</span>
-                  </li>
-                ))}
+            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+              Por profissional
+            </h3>
+            <ul className="space-y-2">
+              {provList.map((p, i) => (
+                <BarRow key={i} name={p.name} count={p.count} max={provMax} />
+              ))}
+              {provList.length === 0 && (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
             </ul>
           </div>
           <div>
-            <h3 className="mb-1 text-sm font-medium">Por unidade</h3>
-            <ul className="space-y-0.5 text-sm">
-              {[...byUnit.values()]
-                .sort((a, b) => b.count - a.count)
-                .map((u, i) => (
-                  <li key={i} className="flex justify-between">
-                    <span className="truncate text-muted-foreground">{u.name}</span>
-                    <span className="font-medium">{u.count}</span>
-                  </li>
-                ))}
+            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+              Por unidade
+            </h3>
+            <ul className="space-y-2">
+              {unitList.map((u, i) => (
+                <BarRow key={i} name={u.name} count={u.count} max={unitMax} />
+              ))}
+              {unitList.length === 0 && (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
             </ul>
           </div>
         </CardContent>
@@ -353,12 +437,21 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-2 py-1 font-medium">Unidade</th>
-                {JOURNEY_PHASES.map((p) => (
-                  <th key={p} className="px-2 py-1 text-center font-medium">
-                    {PHASE_LABELS[p]}
+            <thead>
+              <tr className="border-b text-left text-xs">
+                <th className="px-2 py-2 font-medium text-muted-foreground">
+                  Unidade
+                </th>
+                {JOURNEY_PHASES.map((p, i) => (
+                  <th key={p} className="px-2 py-2 text-center font-medium">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                        {i + 1}
+                      </span>
+                      <span className="whitespace-nowrap text-muted-foreground">
+                        {PHASE_LABELS[p]}
+                      </span>
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -367,19 +460,38 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
               {[...phaseByUnit.values()]
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((u, i) => (
-                  <tr key={i} className="border-b">
-                    <td className="px-2 py-1 font-medium">{u.name}</td>
-                    {JOURNEY_PHASES.map((p) => (
-                      <td key={p} className="px-2 py-1 text-center">
-                        {u.counts[p] ?? 0}
-                      </td>
-                    ))}
+                  <tr key={i} className="border-b even:bg-muted/20">
+                    <td className="px-2 py-1.5 font-medium">{u.name}</td>
+                    {JOURNEY_PHASES.map((p) => {
+                      const n = u.counts[p] ?? 0;
+                      return (
+                        <td
+                          key={p}
+                          className={cn(
+                            "px-2 py-1.5 text-center tabular-nums",
+                            n === 0 && "text-muted-foreground/50"
+                          )}
+                        >
+                          {n}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
-              <tr className="font-medium">
-                <td className="px-2 py-1">Total</td>
+              {phaseByUnit.size === 0 && (
+                <tr>
+                  <td
+                    colSpan={JOURNEY_PHASES.length + 1}
+                    className="px-2 py-3 text-center text-sm text-muted-foreground"
+                  >
+                    Sem clientes no escopo.
+                  </td>
+                </tr>
+              )}
+              <tr className="border-t-2 bg-muted/40 font-medium">
+                <td className="px-2 py-1.5">Total</td>
                 {JOURNEY_PHASES.map((p) => (
-                  <td key={p} className="px-2 py-1 text-center">
+                  <td key={p} className="px-2 py-1.5 text-center tabular-nums">
                     {phaseTotals[p] ?? 0}
                   </td>
                 ))}
@@ -396,14 +508,36 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
             Produtividade do Centro de Planejamento (no período)
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-          <Metric label="Planos criados" value={plansCreated} />
-          <Metric label="Enviados para aprovação" value={plansSubmitted} />
-          <Metric label="Aprovados" value={plansApproved.length} />
-          <Metric label="Devolvidos" value={plansReturned} />
+        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Metric
+            label="Planos criados"
+            value={plansCreated}
+            icon={FilePlus2}
+            tone="neutral"
+          />
+          <Metric
+            label="Enviados para aprovação"
+            value={plansSubmitted}
+            icon={Send}
+            tone="blue"
+          />
+          <Metric
+            label="Aprovados"
+            value={plansApproved.length}
+            icon={CircleCheck}
+            tone="green"
+          />
+          <Metric
+            label="Devolvidos"
+            value={plansReturned}
+            icon={Undo2}
+            tone="amber"
+          />
           <Metric
             label="Tempo médio (criação → aprovação)"
             value={avgDays === null ? "—" : `${avgDays.toFixed(1)} dias`}
+            icon={Clock}
+            tone="navy"
           />
         </CardContent>
       </Card>
@@ -411,10 +545,24 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number | string }) {
+function Metric({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: number | string;
+  icon: LucideIcon;
+  tone: keyof typeof METRIC_TONE;
+}) {
+  const t = METRIC_TONE[tone];
   return (
-    <div className="rounded-md border p-3">
-      <p className="text-2xl font-semibold">{value}</p>
+    <div className={cn("rounded-lg p-3", t.card)}>
+      <Icon className={cn("size-4", t.icon)} />
+      <p className={cn("mt-1 text-2xl font-semibold tabular-nums", t.val)}>
+        {value}
+      </p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );

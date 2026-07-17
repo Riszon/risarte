@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.77.0** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.78.0** · Última migração: **0131**_
+
+> **Refino visual — Relatórios ✅ (v0.78.0, sem migração):** (1) filtros num
+> **bloco compacto** e página em `max-w-6xl`. (2) **Agendamentos**: "por situação"
+> com **pontinhos de cor** (paleta da Agenda) e "por tipo/profissional/unidade"
+> com **barra de proporção** (`BarRow`) + número. (3) **Rede por fase**: cabeçalho
+> com **selo numerado** da fase, zebra, célula 0 esmaecida e **linha Total
+> destacada**. (4) **Produtividade**: os 5 números viram **cartões com ícone e cor**
+> (aprovados=verde, devolvidos=âmbar, tempo médio=navy; `METRIC_TONE`). Só visual.
 
 > **Atendimento — seletor de unidade + indicadores consolidados (H4.16) ✅
 > (v0.77.0, sem migração):** (#4) **Admin** (e quem acessa >1 unidade) escolhe a
