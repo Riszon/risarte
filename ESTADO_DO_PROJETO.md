@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.1** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.2** · Última migração: **0131**_
+
+> **Indicadores — visual do popup (feedback) ✅ (v0.76.2, sem migração):** cards
+> eram muito parecidos e sobrava um sozinho. Reorganizado em **3 seções**: (1)
+> **métricas principais** — Comparecimento (verde) e Taxa de conclusão (navy) com
+> **barra de progresso** na cor; (2) **indicadores rápidos** — Espera média /
+> Atendimento médio / Produtividade em 3 colunas com ícone; (3) **Ocorrências no
+> período** num bloco 2×2 (Faltas/Cancelamentos/Desistências/Trocas) — preenche
+> sem card órfão. Diálogo um pouco mais largo (`sm:max-w-xl`). `RateCard` +
+> `MiniStat` no lugar do `StatCard`.
 
 > **Indicadores — tirar repetição + 2 métricas (feedback) ✅ (v0.76.1, sem
 > migração):** o card "Comparecimento" (% de concluídos) e "Concluídos" (nº)
