@@ -1,7 +1,30 @@
-import { Layers } from "lucide-react";
+import { CalendarClock, Clock, Layers, ListChecks } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMinutes, formatSessions, type BudgetItem } from "@/lib/pricing";
 import type { PlanOption, PlanStage } from "@/lib/planning";
+
+/** Mini-cartão de número (sessões / cadeira / etapas) no topo do resumo. */
+function StatCard({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg border bg-muted/30 px-3 py-2">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-foreground">
+        {icon}
+      </span>
+      <div className="leading-tight">
+        <p className="text-lg font-semibold tabular-nums">{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+      </div>
+    </div>
+  );
+}
 
 /** "3 sessões · 2h" a partir do que o Planner planejou no item. */
 function itemPlanned(it: BudgetItem): string | null {
@@ -50,22 +73,27 @@ export function TreatmentSummary({ option }: { option: PlanOption }) {
         <CardTitle className="text-base">Resumo do tratamento</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-2 text-sm">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {totalSessions > 0 && (
-            <span className="rounded-md bg-muted/50 px-2 py-1">
-              <strong>{formatSessions(totalSessions)}</strong> no total
-            </span>
+            <StatCard
+              icon={<CalendarClock className="size-4" />}
+              value={formatSessions(totalSessions)}
+              label="no total"
+            />
           )}
           {totalMinutes > 0 && (
-            <span className="rounded-md bg-muted/50 px-2 py-1">
-              <strong>{formatMinutes(totalMinutes)}</strong> de cadeira
-            </span>
+            <StatCard
+              icon={<Clock className="size-4" />}
+              value={formatMinutes(totalMinutes)}
+              label="de cadeira"
+            />
           )}
           {stages.length > 0 && (
-            <span className="rounded-md bg-muted/50 px-2 py-1">
-              <strong>{stages.length}</strong>{" "}
-              {stages.length === 1 ? "etapa" : "etapas"}
-            </span>
+            <StatCard
+              icon={<ListChecks className="size-4" />}
+              value={String(stages.length)}
+              label={stages.length === 1 ? "etapa" : "etapas"}
+            />
           )}
         </div>
         <p className="text-xs text-muted-foreground">

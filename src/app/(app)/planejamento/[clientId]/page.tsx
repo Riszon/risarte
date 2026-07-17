@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock } from "lucide-react";
+import {
+  AlarmClock,
+  ClipboardList,
+  FileImage,
+  MessageSquareText,
+  TriangleAlert,
+} from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PresentationCountdown } from "@/components/presentation-countdown";
+import { RisarteMark } from "@/components/risarte-logo";
 import { Badge } from "@/components/ui/badge";
 import { PhaseBadge } from "@/components/phase-badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +22,7 @@ import {
   type ClinicalMediaKind,
 } from "@/lib/clinical";
 import {
+  PHASE_COLORS,
   PILLAR_LABELS,
   STATUS_LABELS,
   displayedPillar,
@@ -61,6 +69,15 @@ function fmtDateTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/** Iniciais do cliente para o avatar do cartão de identidade. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0][0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "";
+  return (first + last).toUpperCase();
 }
 
 export default async function PlanningCockpitPage(
@@ -533,76 +550,106 @@ export default async function PlanningCockpitPage(
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-xs text-muted-foreground">
-            Cockpit de Planejamento
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {client.full_name}
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {client.code && (
-              <span className="font-mono text-xs text-gold">{client.code}</span>
-            )}
-            {clinicName && (
-              <span className="text-xs text-muted-foreground">{clinicName}</span>
-            )}
-            <PhaseBadge phase={phase} showNumber />
-            {client.journey_status && (
-              <Badge variant="outline" className="border-primary text-primary">
-                {STATUS_LABELS[client.journey_status as JourneyStatus]}
-              </Badge>
-            )}
-            <Badge className="bg-gold text-gold-foreground">
-              {shownPillar ? PILLAR_LABELS[shownPillar] : "Pilar a definir"}
-            </Badge>
+      {/* Cartão de identidade — faixa fina na cor da Fase, igual ao resto do app. */}
+      <div className="relative overflow-hidden rounded-xl border bg-card">
+        <div
+          className="h-1 w-full"
+          style={{ backgroundColor: PHASE_COLORS[phase] }}
+          aria-hidden
+        />
+        <RisarteMark className="pointer-events-none absolute top-2 -right-4 h-24 text-gold/10" />
+        <div className="relative flex flex-wrap items-start justify-between gap-x-4 gap-y-3 p-4 sm:p-5">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <div
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold"
+              aria-hidden
+            >
+              {initialsOf(client.full_name)}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">
+                Cockpit de Planejamento
+              </p>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                {client.full_name}
+              </h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                {client.code && (
+                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
+                    {client.code}
+                  </span>
+                )}
+                {clinicName && (
+                  <span className="text-xs text-muted-foreground">
+                    {clinicName}
+                  </span>
+                )}
+                <PhaseBadge phase={phase} showNumber />
+                {client.journey_status && (
+                  <Badge
+                    variant="outline"
+                    className="border-primary text-primary"
+                  >
+                    {STATUS_LABELS[client.journey_status as JourneyStatus]}
+                  </Badge>
+                )}
+                <Badge className="bg-gold text-gold-foreground">
+                  {shownPillar ? PILLAR_LABELS[shownPillar] : "Pilar a definir"}
+                </Badge>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/planejamento" />}
-          >
-            ← Voltar à fila
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/prontuarios/${client.id}`} />}
-          >
-            Ver ficha completa
-          </Button>
-          {treatmentPlan?.status === "approved" && (
+          <div className="flex shrink-0 flex-wrap gap-2">
             <Button
+              variant="outline"
               size="sm"
               nativeButton={false}
-              render={<Link href={`/apresentacao/${client.id}`} />}
+              render={<Link href="/planejamento" />}
             >
-              Apresentação
+              ← Voltar à fila
             </Button>
-          )}
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href={`/prontuarios/${client.id}`} />}
+            >
+              Ver ficha completa
+            </Button>
+            {treatmentPlan?.status === "approved" && (
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={<Link href={`/apresentacao/${client.id}`} />}
+              >
+                Apresentação
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* AJ3: apresentação marcada mas plano ainda não pronto — destaque +
           cronômetro para pressionar o Centro de Planejamento. */}
       {presentationAt && treatmentPlan?.status !== "approved" && (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-          <AlarmClock className="size-4 shrink-0" />
-          <span className="font-medium">
-            Apresentação comercial marcada para{" "}
-            {new Date(presentationAt).toLocaleString("pt-BR", {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}{" "}
-            — e o plano ainda não está pronto.
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
+            <AlarmClock className="size-5" />
           </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-red-800">
+              Apresentação comercial marcada — plano ainda não está pronto
+            </p>
+            <p className="text-xs text-red-700/90">
+              {new Date(presentationAt).toLocaleString("pt-BR", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
           <PresentationCountdown startsAt={presentationAt} alarm />
         </div>
       )}
@@ -626,7 +673,10 @@ export default async function PlanningCockpitPage(
         <div className="space-y-4 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Evidências do cliente</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileImage className="size-4 text-gold" />
+                Evidências do cliente
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground">
@@ -643,7 +693,10 @@ export default async function PlanningCockpitPage(
           {/* H3.13: anamnese do cliente (leitura). */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Anamnese</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ClipboardList className="size-4 text-gold" />
+                Anamnese
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {anamnesisInfo == null ? (
@@ -657,9 +710,12 @@ export default async function PlanningCockpitPage(
                     {fmtDateTime(anamnesisInfo.filledAt)}
                   </p>
                   {anamnesisAlerts.length > 0 && (
-                    <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                    <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
                       {anamnesisAlerts.map((a, i) => (
-                        <p key={i}>⚠ {a.message}</p>
+                        <p key={i} className="flex items-start gap-1.5">
+                          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                          <span className="font-medium">{a.message}</span>
+                        </p>
                       ))}
                     </div>
                   )}
@@ -681,7 +737,10 @@ export default async function PlanningCockpitPage(
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Considerações clínicas</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MessageSquareText className="size-4 text-gold" />
+                Considerações clínicas
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {notes.length === 0 ? (

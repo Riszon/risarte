@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.79.1** · Última migração: **0131**_
+_Atualizado em: 17/07/2026 · Versão do sistema: **0.79.2** · Última migração: **0131**_
+
+> **Refino visual — Cockpit de Planejamento ✅ (v0.79.2, sem migração):**
+> cabeçalho virou **cartão de identidade** (avatar com iniciais + faixa fina na
+> **cor da fase** no topo + código/unidade/Fase/Situação/Pilar em uma linha e ações
+> à direita), o alerta de **apresentação marcada** virou cartão de urgência (ícone
+> em bolha + data por extenso + cronômetro), o **Resumo do tratamento** trocou as
+> tags cinzas por **mini-cards com ícone** (sessões / cadeira / etapas), e as seções
+> **Evidências / Anamnese / Considerações** ganharam ícone dourado no título; os
+> **alertas da anamnese** ficaram com ícone de atenção. Só camada visual.
 
 > **Cor da fase em todo o sistema ✅ (v0.79.1, sem migração):** componente
 > reutilizável **`PhaseBadge`** + helper `phaseTintStyle` (`src/components/
