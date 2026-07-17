@@ -395,7 +395,7 @@ export default async function AtendimentoPage(
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Atendimento</h1>
@@ -405,7 +405,7 @@ export default async function AtendimentoPage(
               : `Sala de espera de ${session.activeClinic?.name} — ${periodLabel}.`}
           </p>
         </div>
-        <FilterForm className="flex flex-wrap items-center gap-2">
+        <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
           <select
             name="periodo"
             defaultValue={period}

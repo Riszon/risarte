@@ -6,11 +6,17 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   AlarmClock,
+  CircleCheck,
   Clock,
   DoorClosed,
+  DoorOpen,
+  Hourglass,
   MoreHorizontal,
+  Stethoscope,
   UserRound,
+  type LucideIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -275,6 +281,86 @@ function AttendanceTimers({
   );
 }
 
+/** Cores/ícone de cada etapa do fluxo (chegar → espera → atendimento → concluído). */
+type StageKey = "arrive" | "waiting" | "service" | "done";
+const STAGE: Record<
+  StageKey,
+  {
+    label: string;
+    icon: LucideIcon;
+    border: string;
+    tint: string;
+    badge: string;
+    row: string;
+  }
+> = {
+  arrive: {
+    label: "A chegar",
+    icon: DoorOpen,
+    border: "border-t-sky-400",
+    tint: "text-sky-700",
+    badge: "bg-sky-100 text-sky-800",
+    row: "border-l-sky-300",
+  },
+  waiting: {
+    label: "Em espera",
+    icon: Hourglass,
+    border: "border-t-amber-400",
+    tint: "text-amber-700",
+    badge: "bg-amber-100 text-amber-800",
+    row: "border-l-amber-300",
+  },
+  service: {
+    label: "Em atendimento",
+    icon: Stethoscope,
+    border: "border-t-violet-400",
+    tint: "text-violet-700",
+    badge: "bg-violet-100 text-violet-800",
+    row: "border-l-violet-300",
+  },
+  done: {
+    label: "Concluídos",
+    icon: CircleCheck,
+    border: "border-t-emerald-400",
+    tint: "text-emerald-700",
+    badge: "bg-emerald-100 text-emerald-800",
+    row: "border-l-emerald-300",
+  },
+};
+
+/** Coluna do quadro de fluxo: cartão com acento e contador na cor da etapa. */
+function ColumnCard({
+  stage,
+  count,
+  children,
+}: {
+  stage: StageKey;
+  count: number;
+  children: React.ReactNode;
+}) {
+  const s = STAGE[stage];
+  const Icon = s.icon;
+  return (
+    <Card className={cn("border-t-4", s.border)}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Icon className={cn("size-4 shrink-0", s.tint)} />
+          {s.label}
+          <span
+            className={cn(
+              "ml-auto rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+              s.badge
+            )}
+          >
+            {count}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
 export function AttendancePanel({
   appointments,
   canCheckIn,
@@ -403,9 +489,11 @@ export function AttendancePanel({
   function Row({
     a,
     action,
+    accent,
   }: {
     a: PanelAppointment;
     action?: React.ReactNode;
+    accent?: string;
   }) {
     const pendingSince = a.pendingSinceIso
       ? new Date(`${a.pendingSinceIso}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -415,9 +503,14 @@ export function AttendancePanel({
       : null;
     return (
       <li
-        className={`flex items-center justify-between gap-2 rounded-md border p-3 ${
-          pendingSince ? "border-red-300 bg-red-50" : "bg-card"
-        }`}
+        className={cn(
+          "flex items-center justify-between gap-2 rounded-md border p-3",
+          pendingSince
+            ? "border-red-300 bg-red-50"
+            : accent
+              ? cn("border-l-2 bg-card", accent)
+              : "bg-card"
+        )}
       >
         <div className="min-w-0">
           {a.clientId ? (
@@ -744,20 +837,14 @@ export function AttendancePanel({
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              A chegar{" "}
-            <Badge variant="secondary">{toArrive.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <ColumnCard stage="arrive" count={toArrive.length}>
           <ul className="space-y-2">
             {toArrive.map((a) => (
               <Row
                 key={a.id}
                 a={a}
+                accent={STAGE.arrive.row}
                 action={
                   canCheckIn ? (
                     <span className="flex items-center gap-1">
@@ -833,21 +920,15 @@ export function AttendancePanel({
               </p>
             )}
           </ul>
-        </CardContent>
-      </Card>
+        </ColumnCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Em espera <Badge variant="secondary">{waiting.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <ColumnCard stage="waiting" count={waiting.length}>
           <ul className="space-y-2">
             {waiting.map((a) => (
               <Row
                 key={a.id}
                 a={a}
+                accent={STAGE.waiting.row}
                 action={
                   <span className="flex items-center gap-1">
                     {a.clientId && busyClientIds.has(a.clientId) ? (
@@ -926,22 +1007,15 @@ export function AttendancePanel({
               </p>
             )}
           </ul>
-        </CardContent>
-      </Card>
+        </ColumnCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Em atendimento{" "}
-            <Badge variant="secondary">{inService.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <ColumnCard stage="service" count={inService.length}>
           <ul className="space-y-2">
             {inService.map((a) => (
               <Row
                 key={a.id}
                 a={a}
+                accent={STAGE.service.row}
                 action={
                   a.sessions && a.sessions.length > 0 ? (
                     // H4.6 A1: atendimento com sessões — só o Dentista (ou Admin)
@@ -980,19 +1054,12 @@ export function AttendancePanel({
               </p>
             )}
           </ul>
-        </CardContent>
-      </Card>
+        </ColumnCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Concluídos <Badge variant="secondary">{done.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <ColumnCard stage="done" count={done.length}>
           <ul className="space-y-2">
             {done.map((a) => (
-              <Row key={a.id} a={a} />
+              <Row key={a.id} a={a} accent={STAGE.done.row} />
             ))}
             {done.length === 0 && (
               <p className="py-3 text-center text-sm text-muted-foreground">
@@ -1000,8 +1067,7 @@ export function AttendancePanel({
               </p>
             )}
           </ul>
-        </CardContent>
-      </Card>
+        </ColumnCard>
       </div>
     </>
   );

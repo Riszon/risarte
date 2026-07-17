@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.3** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.75.0** · Última migração: **0131**_
+
+> **Refino visual — Atendimento (sala de espera) ✅ (v0.75.0, sem migração):**
+> (1) as 4 etapas viraram um **quadro de fluxo em 4 colunas** (chegar → espera →
+> atendimento → concluídos), lendo da esquerda pra direita (`lg:grid-cols-4`,
+> empilha em telas menores). (2) cada coluna com a **cor da etapa**: azul (chegar),
+> âmbar (espera), violeta (atendimento), verde (concluídos) — acento no topo do
+> cartão, ícone e contador coloridos (`ColumnCard` + config `STAGE`). (3) cartões
+> dos clientes ganham **acento lateral** na cor da etapa (pendentes seguem em
+> vermelho). (4) filtros num **bloco compacto** e página em `max-w-6xl`.
 
 > **Fix — "pulo" da tela ao trocar de aba (de verdade) ✅ (v0.74.3, sem migração):**
 > o `scrollbar-gutter: stable` estava no `html`, mas quem rola é o **`<main>`**
