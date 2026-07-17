@@ -189,17 +189,25 @@ export default async function AtendimentoPage(
   // caçar em que dia ficaram. (Só na visão da unidade.)
   let carriedCount = 0;
   if (!consultantView && clinicId) {
+    // Pendências de dias anteriores: as que continuam EM ABERTO
+    // (scheduled/confirmed) + as CONCLUÍDAS HOJE (done_at de hoje) — estas para
+    // o card não "sumir" da coluna Concluídos logo após concluir/resolver.
     const { data: carried } = await supabase
       .from("appointments")
       .select(SELECT)
       .eq("clinic_id", clinicId)
-      .in("status", ["scheduled", "confirmed"])
       .lt("starts_at", todayStart.toISOString())
+      .or(
+        `status.in.(scheduled,confirmed),done_at.gte.${todayStart.toISOString()}`
+      )
       .order("starts_at")
       .returns<Row[]>();
     const seen = new Set(rows.map((r) => r.id));
     const extra = (carried ?? []).filter((r) => !seen.has(r.id));
-    carriedCount = extra.length;
+    // O aviso conta só as que ainda estão EM ABERTO (não as já resolvidas hoje).
+    carriedCount = extra.filter(
+      (r) => r.status === "scheduled" || r.status === "confirmed"
+    ).length;
     rows = [...extra, ...rows];
   }
 
@@ -448,13 +456,11 @@ export default async function AtendimentoPage(
         </FilterForm>
       </div>
       {carriedCount > 0 && (
-        <p className="rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700">
-          ⚠ {carriedCount} atendimento{carriedCount === 1 ? "" : "s"} de dias
-          anteriores continua{carriedCount === 1 ? "" : "m"} em aberto e
-          {carriedCount === 1 ? " foi trazido" : " foram trazidos"} para o
-          painel de hoje (marcados como <strong>“Pendente desde…”</strong>).
-          Conclua o atendimento ou registre falta/desistência para liberar a
-          cadeira e o profissional.
+        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+          ⚠ <strong>{carriedCount}</strong> pendência
+          {carriedCount === 1 ? "" : "s"} de dias anteriores (marcada
+          {carriedCount === 1 ? "" : "s"} <strong>“Pendente desde…”</strong>).
+          Conclua ou registre falta/desistência para liberar a cadeira.
         </p>
       )}
       <AttendancePanel

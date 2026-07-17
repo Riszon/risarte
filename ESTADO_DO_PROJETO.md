@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.75.0** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.75.1** · Última migração: **0131**_
+
+> **Atendimento — correções do teste (feedback) ✅ (v0.75.1, sem migração):**
+> (1) **card na vertical**: dados em cima, botões numa faixa embaixo (o botão não
+> fica mais em cima do texto; texto deixa de ficar amontoado nas colunas estreitas).
+> (2) **cada coluna rola sozinha** (`max-h` + `overflow-y-auto` no conteúdo), não
+> rola a tela toda. (3) **alerta** dos pendentes bem mais curto. (4) **bug do
+> concluir**: ao concluir um atendimento de **dia anterior** (pendente), o card
+> sumia — o filtro dos pendentes só pegava `scheduled/confirmed`; agora também
+> puxa os **concluídos hoje** (`done_at` de hoje), então ficam na coluna
+> Concluídos. O aviso "X pendências" conta só as ainda em aberto.
+> **Adiado (recurso novo, a planejar):** botão **Indicadores** (popup com taxa de
+> comparecimento, produtividade, tempo médio de espera, faltas/cancelamentos/
+> desistências/trocas com lista ao clicar; dentista vê só os seus, recepção/
+> coordenador/gerente veem todos).
 
 > **Refino visual — Atendimento (sala de espera) ✅ (v0.75.0, sem migração):**
 > (1) as 4 etapas viraram um **quadro de fluxo em 4 colunas** (chegar → espera →

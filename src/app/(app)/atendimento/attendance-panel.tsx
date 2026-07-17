@@ -341,7 +341,7 @@ function ColumnCard({
   const s = STAGE[stage];
   const Icon = s.icon;
   return (
-    <Card className={cn("border-t-4", s.border)}>
+    <Card className={cn("flex flex-col border-t-4", s.border)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Icon className={cn("size-4 shrink-0", s.tint)} />
@@ -356,7 +356,10 @@ function ColumnCard({
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      {/* Cada coluna rola sozinha (não rola a tela inteira). */}
+      <CardContent className="max-h-[calc(100vh-16rem)] overflow-y-auto">
+        {children}
+      </CardContent>
     </Card>
   );
 }
@@ -504,7 +507,7 @@ export function AttendancePanel({
     return (
       <li
         className={cn(
-          "flex items-center justify-between gap-2 rounded-md border p-3",
+          "flex flex-col gap-2 rounded-md border p-3",
           pendingSince
             ? "border-red-300 bg-red-50"
             : accent
@@ -512,46 +515,50 @@ export function AttendancePanel({
               : "bg-card"
         )}
       >
-        <div className="min-w-0">
-          {a.clientId ? (
-            <Link
-              href={`/prontuarios/${a.clientId}`}
-              className="text-sm font-medium hover:underline"
-            >
-              {a.clientName}
-            </Link>
-          ) : (
-            <span className="text-sm font-medium">{a.clientName}</span>
-          )}
-          {pendingSince && (
-            <Badge
-              variant="outline"
-              className="ml-1 border-red-300 bg-red-100 text-[10px] text-red-700"
-            >
-              Pendente desde {pendingSince}
-            </Badge>
-          )}
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {a.clientId ? (
+              <Link
+                href={`/prontuarios/${a.clientId}`}
+                className="text-sm font-medium hover:underline"
+              >
+                {a.clientName}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium">{a.clientName}</span>
+            )}
+            {pendingSince && (
+              <Badge
+                variant="outline"
+                className="border-red-300 bg-red-100 text-[10px] text-red-700"
+              >
+                Pendente desde {pendingSince}
+              </Badge>
+            )}
+          </div>
           {a.clinicName && (
             <p className="text-[11px] font-medium text-primary">
               {a.clinicName}
             </p>
           )}
-          <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
-              <Clock className="size-3" />
+              <Clock className="size-3 shrink-0" />
               {time(a.starts_at)}
             </span>
             <span>{APPOINTMENT_TYPE_LABELS[a.type]}</span>
             {a.providerName && (
               <span className="inline-flex items-center gap-1">
-                <UserRound className="size-3" />
+                <UserRound className="size-3 shrink-0" />
                 {a.providerName}
               </span>
             )}
-          </p>
+          </div>
           <AttendanceTimers a={a} waitingAlertMinutes={waitingAlertMinutes} />
         </div>
-        {action}
+        {action && (
+          <div className="flex flex-wrap items-center gap-1">{action}</div>
+        )}
       </li>
     );
   }
