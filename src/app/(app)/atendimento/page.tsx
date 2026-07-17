@@ -450,6 +450,22 @@ export default async function AtendimentoPage(
       waits.length > 0
         ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length)
         : null;
+    // Compareceram = quem fez check-in (apareceu na clínica).
+    const attended = periodRows.filter((r) => r.checked_in_at).length;
+    // Tempo de atendimento = do "chamar" ao "concluir".
+    const services = periodRows
+      .filter((r) => r.called_at && r.done_at)
+      .map(
+        (r) =>
+          (new Date(r.done_at as string).getTime() -
+            new Date(r.called_at as string).getTime()) /
+          60000
+      )
+      .filter((m) => m >= 0);
+    const avgServiceMin =
+      services.length > 0
+        ? Math.round(services.reduce((a, b) => a + b, 0) / services.length)
+        : null;
 
     // Produtividade: sessões finalizadas no período (dentista = só as dele).
     let productivityQ = supabase
@@ -532,13 +548,19 @@ export default async function AtendimentoPage(
 
     metrics = {
       scheduled: periodRows.length,
+      attended,
       completed: completed.length,
       attendanceRate:
+        periodRows.length > 0
+          ? Math.round((attended / periodRows.length) * 100)
+          : null,
+      completionRate:
         periodRows.length > 0
           ? Math.round((completed.length / periodRows.length) * 100)
           : null,
       productivity: productivity ?? 0,
       avgWaitMin,
+      avgServiceMin,
       noShows: noShows.map(person),
       cancellations: cancellations.map(person),
       giveUps: giveUps.map(person),

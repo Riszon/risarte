@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.0** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.1** · Última migração: **0131**_
+
+> **Indicadores — tirar repetição + 2 métricas (feedback) ✅ (v0.76.1, sem
+> migração):** o card "Comparecimento" (% de concluídos) e "Concluídos" (nº)
+> diziam o mesmo. Agora: **Comparecimento** = quem **apareceu** (check-in) ÷
+> agendados, e **Taxa de conclusão** = **concluídos** ÷ agendados — a diferença
+> mostra quem veio mas não concluiu. Adicionado **Tempo médio de atendimento**
+> (do "chamar" ao "concluir"), fazendo par com o tempo médio de espera. Removido
+> o card "Concluídos" repetido.
 
 > **Atendimento — Indicadores (H4.15) ✅ (v0.76.0, sem migração):** botão
 > **"Indicadores"** no cabeçalho abre um popup com os números do **período** (dia/

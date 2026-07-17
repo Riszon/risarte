@@ -28,13 +28,19 @@ export type MetricPerson = {
 
 export type AttendanceMetrics = {
   scheduled: number;
+  /** Quem apareceu na clínica (fez check-in) no período. */
+  attended: number;
   completed: number;
-  /** % de comparecimento (concluídos ÷ agendados) ou null se sem agendados. */
+  /** % de comparecimento (apareceram ÷ agendados) ou null se sem agendados. */
   attendanceRate: number | null;
+  /** % de conclusão (concluídos ÷ agendados) ou null se sem agendados. */
+  completionRate: number | null;
   /** Sessões/procedimentos finalizados no período. */
   productivity: number;
-  /** Tempo médio de espera (min) ou null se ninguém esperou/foi atendido. */
+  /** Tempo médio de espera (min) ou null se ninguém esperou. */
   avgWaitMin: number | null;
+  /** Tempo médio de atendimento (min) ou null se ninguém foi atendido. */
+  avgServiceMin: number | null;
   noShows: MetricPerson[];
   cancellations: MetricPerson[];
   giveUps: MetricPerson[];
@@ -153,14 +159,18 @@ export function AttendanceIndicators({
     null
   );
 
-  const rate =
-    metrics.attendanceRate === null ? "—" : `${metrics.attendanceRate}%`;
-  const wait =
-    metrics.avgWaitMin === null
+  const fmtMin = (m: number | null) =>
+    m === null
       ? "—"
-      : metrics.avgWaitMin < 60
-        ? `${metrics.avgWaitMin} min`
-        : `${Math.floor(metrics.avgWaitMin / 60)}h ${metrics.avgWaitMin % 60}min`;
+      : m < 60
+        ? `${m} min`
+        : `${Math.floor(m / 60)}h ${m % 60}min`;
+  const attRate =
+    metrics.attendanceRate === null ? "—" : `${metrics.attendanceRate}%`;
+  const compRate =
+    metrics.completionRate === null ? "—" : `${metrics.completionRate}%`;
+  const wait = fmtMin(metrics.avgWaitMin);
+  const service = fmtMin(metrics.avgServiceMin);
 
   return (
     <>
@@ -200,19 +210,20 @@ export function AttendanceIndicators({
             <div className="grid grid-cols-2 gap-2">
               <StatCard
                 label="Comparecimento"
-                value={rate}
-                sub="concluídos ÷ agendados"
+                value={attRate}
+                sub={`${metrics.attended} de ${metrics.scheduled} apareceram`}
               />
+              <StatCard
+                label="Taxa de conclusão"
+                value={compRate}
+                sub={`${metrics.completed} de ${metrics.scheduled} concluídos`}
+              />
+              <StatCard label="Tempo médio de espera" value={wait} />
+              <StatCard label="Tempo médio de atendimento" value={service} />
               <StatCard
                 label="Produtividade"
                 value={String(metrics.productivity)}
                 sub="sessões finalizadas"
-              />
-              <StatCard label="Tempo médio de espera" value={wait} />
-              <StatCard
-                label="Concluídos"
-                value={String(metrics.completed)}
-                sub={`de ${metrics.scheduled} agendados`}
               />
               <ClickStat
                 label="Faltas"
