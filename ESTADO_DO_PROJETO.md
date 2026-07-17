@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.1** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.2** · Última migração: **0131**_
+
+> **Ficha + largura geral (feedback do dono) ✅ (v0.74.2, sem migração):**
+> (1) **pílulas diferenciadas**: Fase (navy) e **Pilar da metodologia** (dourado,
+> NOVO) em destaque; unidade/nascimento/idade neutras mas com **ícone colorido**
+> (evita ficarem "todas iguais"). (2) **"pulo" da tela ao trocar de aba/tela**
+> resolvido com `scrollbar-gutter: stable` no `html` (reserva sempre o espaço da
+> barra). (3) **largura padronizada**: telas de conteúdo/lista que estavam
+> estreitas (3xl/4xl) foram para **`max-w-6xl`** (a dimensão da ficha) — admin/
+> documentos, admin/sla, agenda/planejamento-anual, agenda/retornos, atendimento,
+> meu-dia, minha-agenda, notificacoes. **Formulários focados** (2xl: cadastro,
+> usuário, perfil, config da agenda, especialidades) e telas já largas (5xl+)
+> ficam como estão; arquivos do **Empresarial** não foram tocados (projeto à parte).
 
 > **Ficha — ajustes do cabeçalho (feedback do dono) ✅ (v0.74.1, sem migração):**
 > (1) **barra de rolagem das abas escondida** (continua rolável). (2) ficha **bem

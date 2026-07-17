@@ -166,7 +166,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
 
   if (!clinicId || !isDentistHere) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
         <h1 className="text-2xl font-semibold tracking-tight">Meu Dia</h1>
         <Card>
           <CardHeader>
@@ -353,7 +353,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <WeeklyForecastNotifier />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">

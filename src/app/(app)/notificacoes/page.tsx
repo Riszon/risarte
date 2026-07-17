@@ -106,7 +106,7 @@ export default async function NotificationsPage(
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

@@ -35,7 +35,7 @@ export default async function AdminDocumentosPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Modelos de Documentos

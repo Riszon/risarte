@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, Building2, CalendarDays, Cake, Route } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  CalendarDays,
+  Cake,
+  Route,
+  Sparkles,
+} from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { cn } from "@/lib/utils";
 import {
@@ -118,7 +125,7 @@ import type {
   StaffOption,
 } from "@/lib/appointments";
 import { roomLabel } from "@/lib/rooms";
-import { allowedNextPhases, PHASE_LABELS } from "@/lib/journey";
+import { allowedNextPhases, PHASE_LABELS, PILLAR_LABELS } from "@/lib/journey";
 import type {
   DecisionKind,
   JourneyPhase,
@@ -2066,28 +2073,40 @@ export default async function ClientDetailPage(
             )}
           </div>
 
-          {/* Linha 2: pílulas ocupam a largura toda. */}
-          <div className="flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary">
-              <Route className="size-3.5 shrink-0" />{" "}
-              {PHASE_LABELS[client.journey_phase as JourneyPhase]}
+          {/* Linha 2: pílulas. Fase e Pilar (jornada) em destaque com cor; os
+              dados pessoais ficam neutros mas com ícone colorido para diferenciar. */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              <Route className="size-3.5 shrink-0" />
+              Fase: {PHASE_LABELS[client.journey_phase as JourneyPhase]}
             </span>
+            {client.methodology_pillar && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold-foreground">
+                <Sparkles className="size-3.5 shrink-0 text-gold" />
+                Pilar:{" "}
+                {PILLAR_LABELS[client.methodology_pillar as MethodologyPillar]}
+              </span>
+            )}
+            <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
             {clinicName && (
-              <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
-                <Building2 className="size-3.5 shrink-0" /> {clinicName}
+              <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-2.5 py-1 text-xs text-foreground/80">
+                <Building2 className="size-3.5 shrink-0 text-sky-600" />
+                {clinicName}
               </span>
             )}
             {birthText && (
-              <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
-                <CalendarDays className="size-3.5 shrink-0" /> Nasc. {birthText}
+              <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-2.5 py-1 text-xs text-foreground/80">
+                <CalendarDays className="size-3.5 shrink-0 text-rose-500" />
+                Nasc. {birthText}
               </span>
             )}
             {shortAgeText && (
               <span
                 title={ageText || undefined}
-                className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground"
+                className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-2.5 py-1 text-xs text-foreground/80"
               >
-                <Cake className="size-3.5 shrink-0" /> {shortAgeText}
+                <Cake className="size-3.5 shrink-0 text-emerald-600" />
+                {shortAgeText}
               </span>
             )}
           </div>

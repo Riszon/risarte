@@ -133,6 +133,9 @@
   }
   html {
     @apply font-sans;
+    /* Reserva sempre o espaço da barra de rolagem para o conteúdo não "pular"
+       na horizontal quando a barra aparece/some (ex.: ao trocar de aba). */
+    scrollbar-gutter: stable;
   }
 
   /* Barras de rolagem discretas e arredondadas (Firefox). */

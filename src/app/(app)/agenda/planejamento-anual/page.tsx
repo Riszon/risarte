@@ -50,7 +50,7 @@ export default async function AnnualPlanPage(
 
   if (!clinic) {
     return (
-      <div className="mx-auto max-w-3xl space-y-3 px-4 py-8">
+      <div className="mx-auto max-w-6xl space-y-3 px-4 py-8">
         <h1 className="text-2xl font-semibold tracking-tight">
           Planejamento anual de atendimento
         </h1>
@@ -79,7 +79,7 @@ export default async function AnnualPlanPage(
     const netItems = (netRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
 
     return (
-      <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -272,7 +272,7 @@ export default async function AnnualPlanPage(
   });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

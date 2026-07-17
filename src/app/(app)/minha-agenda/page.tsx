@@ -74,7 +74,7 @@ export default async function MinhaAgendaPage(props: PageProps<"/minha-agenda">)
 
   if (!isDentistAnywhere) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+      <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
         <h1 className="text-2xl font-semibold tracking-tight">Minha Agenda</h1>
         <Card>
           <CardHeader>
@@ -163,7 +163,7 @@ export default async function MinhaAgendaPage(props: PageProps<"/minha-agenda">)
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Minha Agenda</h1>
