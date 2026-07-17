@@ -289,6 +289,17 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
     phaseByUnit.set(c.clinic_id, e);
     phaseTotals[c.journey_phase] = (phaseTotals[c.journey_phase] ?? 0) + 1;
   }
+  const phaseUnitList = [...phaseByUnit.values()].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+  const rowTotal = (u: { counts: Record<string, number> }) =>
+    JOURNEY_PHASES.reduce((s, p) => s + (u.counts[p] ?? 0), 0);
+  const grandTotal = JOURNEY_PHASES.reduce((s, p) => s + (phaseTotals[p] ?? 0), 0);
+  // Mapa de calor: intensidade da célula pelo maior valor da tabela.
+  const maxCell = Math.max(
+    1,
+    ...phaseUnitList.flatMap((u) => JOURNEY_PHASES.map((p) => u.counts[p] ?? 0))
+  );
 
   // ---- B6: contadores do Planner ----
   const plans = planRows ?? [];
@@ -355,75 +366,89 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
       {/* B4 — agendamentos */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            Agendamentos no período ({totalAppts})
-          </CardTitle>
+          <CardTitle className="text-base">Agendamentos no período</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-5 sm:grid-cols-2">
+        <CardContent className="space-y-5">
+          {/* Situação: total + barra segmentada colorida + legenda. */}
           <div>
-            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-              Por situação
-            </h3>
-            <ul className="space-y-1 text-sm">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-semibold tabular-nums">
+                {totalAppts}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                agendamentos no período
+              </span>
+            </div>
+            <div className="mt-2 flex h-3 w-full overflow-hidden rounded-full bg-muted">
+              {totalAppts > 0 &&
+                APPOINTMENT_STATUSES.filter((s) => byStatus[s] > 0).map((s) => (
+                  <div
+                    key={s}
+                    className={STATUS_DOT[s]}
+                    style={{ width: `${(byStatus[s] / totalAppts) * 100}%` }}
+                    title={`${APPOINTMENT_STATUS_LABELS[s]}: ${byStatus[s]}`}
+                  />
+                ))}
+            </div>
+            <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
               {APPOINTMENT_STATUSES.map((s) => (
-                <li key={s} className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <span
-                      className={cn(
-                        "size-2 shrink-0 rounded-full",
-                        STATUS_DOT[s]
-                      )}
-                    />
+                <span key={s} className="inline-flex items-center gap-1.5">
+                  <span className={cn("size-2 rounded-full", STATUS_DOT[s])} />
+                  <span className="text-muted-foreground">
                     {APPOINTMENT_STATUS_LABELS[s]}
                   </span>
                   <span className="font-medium tabular-nums">{byStatus[s]}</span>
-                </li>
+                </span>
               ))}
-            </ul>
+            </div>
           </div>
-          <div>
-            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-              Por tipo
-            </h3>
-            <ul className="space-y-2">
-              {APPOINTMENT_TYPES.filter((t) => byType[t] > 0).map((t) => (
-                <BarRow
-                  key={t}
-                  name={APPOINTMENT_TYPE_LABELS[t]}
-                  count={byType[t]}
-                  max={typeMax}
-                />
-              ))}
-              {APPOINTMENT_TYPES.every((t) => byType[t] === 0) && (
-                <p className="text-sm text-muted-foreground">—</p>
-              )}
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-              Por profissional
-            </h3>
-            <ul className="space-y-2">
-              {provList.map((p, i) => (
-                <BarRow key={i} name={p.name} count={p.count} max={provMax} />
-              ))}
-              {provList.length === 0 && (
-                <p className="text-sm text-muted-foreground">—</p>
-              )}
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-              Por unidade
-            </h3>
-            <ul className="space-y-2">
-              {unitList.map((u, i) => (
-                <BarRow key={i} name={u.name} count={u.count} max={unitMax} />
-              ))}
-              {unitList.length === 0 && (
-                <p className="text-sm text-muted-foreground">—</p>
-              )}
-            </ul>
+
+          {/* Tipo / profissional / unidade em barras (peso relativo). */}
+          <div className="grid gap-5 border-t pt-4 sm:grid-cols-3">
+            <div>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                Por tipo
+              </h3>
+              <ul className="space-y-2">
+                {APPOINTMENT_TYPES.filter((t) => byType[t] > 0).map((t) => (
+                  <BarRow
+                    key={t}
+                    name={APPOINTMENT_TYPE_LABELS[t]}
+                    count={byType[t]}
+                    max={typeMax}
+                  />
+                ))}
+                {APPOINTMENT_TYPES.every((t) => byType[t] === 0) && (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                Por profissional
+              </h3>
+              <ul className="space-y-2">
+                {provList.map((p, i) => (
+                  <BarRow key={i} name={p.name} count={p.count} max={provMax} />
+                ))}
+                {provList.length === 0 && (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                Por unidade
+              </h3>
+              <ul className="space-y-2">
+                {unitList.map((u, i) => (
+                  <BarRow key={i} name={u.name} count={u.count} max={unitMax} />
+                ))}
+                {unitList.length === 0 && (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -435,69 +460,90 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
             Rede por fase da jornada (clientes, sem nomes)
           </CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="space-y-2 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-xs">
-                <th className="px-2 py-2 font-medium text-muted-foreground">
+              <tr className="text-xs">
+                <th className="px-2 py-2 text-left font-medium text-muted-foreground">
                   Unidade
                 </th>
                 {JOURNEY_PHASES.map((p, i) => (
-                  <th key={p} className="px-2 py-2 text-center font-medium">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                  <th key={p} className="px-1.5 py-2 text-center font-medium">
+                    <span className="flex flex-col items-center gap-1">
+                      <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                         {i + 1}
                       </span>
-                      <span className="whitespace-nowrap text-muted-foreground">
+                      <span className="max-w-20 leading-tight text-muted-foreground">
                         {PHASE_LABELS[p]}
                       </span>
                     </span>
                   </th>
                 ))}
+                <th className="px-2 py-2 text-center font-medium text-muted-foreground">
+                  Total
+                </th>
               </tr>
             </thead>
             <tbody>
-              {[...phaseByUnit.values()]
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((u, i) => (
-                  <tr key={i} className="border-b even:bg-muted/20">
-                    <td className="px-2 py-1.5 font-medium">{u.name}</td>
-                    {JOURNEY_PHASES.map((p) => {
-                      const n = u.counts[p] ?? 0;
-                      return (
-                        <td
-                          key={p}
-                          className={cn(
-                            "px-2 py-1.5 text-center tabular-nums",
-                            n === 0 && "text-muted-foreground/50"
-                          )}
-                        >
+              {phaseUnitList.map((u, i) => (
+                <tr key={i} className="border-t">
+                  <td className="px-2 py-1.5 font-medium whitespace-nowrap">
+                    {u.name}
+                  </td>
+                  {JOURNEY_PHASES.map((p) => {
+                    const n = u.counts[p] ?? 0;
+                    return (
+                      <td
+                        key={p}
+                        className="px-1.5 py-1.5 text-center tabular-nums"
+                        style={
+                          n > 0
+                            ? {
+                                backgroundColor: `color-mix(in oklab, var(--primary) ${Math.round(
+                                  8 + (n / maxCell) * 42
+                                )}%, transparent)`,
+                              }
+                            : undefined
+                        }
+                      >
+                        <span className={n === 0 ? "text-muted-foreground/40" : ""}>
                           {n}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              {phaseByUnit.size === 0 && (
+                        </span>
+                      </td>
+                    );
+                  })}
+                  <td className="px-2 py-1.5 text-center font-semibold tabular-nums">
+                    {rowTotal(u)}
+                  </td>
+                </tr>
+              ))}
+              {phaseUnitList.length === 0 && (
                 <tr>
                   <td
-                    colSpan={JOURNEY_PHASES.length + 1}
+                    colSpan={JOURNEY_PHASES.length + 2}
                     className="px-2 py-3 text-center text-sm text-muted-foreground"
                   >
                     Sem clientes no escopo.
                   </td>
                 </tr>
               )}
-              <tr className="border-t-2 bg-muted/40 font-medium">
+              <tr className="border-t-2 bg-muted/40 font-semibold">
                 <td className="px-2 py-1.5">Total</td>
                 {JOURNEY_PHASES.map((p) => (
-                  <td key={p} className="px-2 py-1.5 text-center tabular-nums">
+                  <td key={p} className="px-1.5 py-1.5 text-center tabular-nums">
                     {phaseTotals[p] ?? 0}
                   </td>
                 ))}
+                <td className="px-2 py-1.5 text-center tabular-nums">
+                  {grandTotal}
+                </td>
               </tr>
             </tbody>
           </table>
+          <p className="text-[11px] text-muted-foreground">
+            Célula mais escura = mais clientes naquela fase. Número na bolinha = a
+            fase da jornada.
+          </p>
         </CardContent>
       </Card>
 
@@ -558,12 +604,19 @@ function Metric({
 }) {
   const t = METRIC_TONE[tone];
   return (
-    <div className={cn("rounded-lg p-3", t.card)}>
-      <Icon className={cn("size-4", t.icon)} />
-      <p className={cn("mt-1 text-2xl font-semibold tabular-nums", t.val)}>
-        {value}
-      </p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className={cn("rounded-lg p-3.5", t.card)}>
+      <div className="flex items-center gap-2">
+        <Icon className={cn("size-5 shrink-0", t.icon)} />
+        <span
+          className={cn(
+            "text-3xl leading-none font-semibold tabular-nums",
+            t.val
+          )}
+        >
+          {value}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
