@@ -101,7 +101,12 @@ export default async function AppLayout({
         }
         initialCollapsed={sidebarCollapsed}
       />
-      <main className="flex-1 overflow-x-auto bg-background">{children}</main>
+      {/* overflow-x-auto força overflow-y:auto → o <main> é quem rola na
+          vertical; scrollbar-gutter:stable reserva o espaço da barra para o
+          conteúdo não "pular" na horizontal ao trocar de aba/tela. */}
+      <main className="flex-1 overflow-x-auto bg-background [scrollbar-gutter:stable]">
+        {children}
+      </main>
       {/* AJ4: pop-up da recepção para pedidos de agendamento de apresentação. */}
       <UrgentSchedulingPopup />
     </div>

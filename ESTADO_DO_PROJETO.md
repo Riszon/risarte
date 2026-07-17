@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.2** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.74.3** · Última migração: **0131**_
+
+> **Fix — "pulo" da tela ao trocar de aba (de verdade) ✅ (v0.74.3, sem migração):**
+> o `scrollbar-gutter: stable` estava no `html`, mas quem rola é o **`<main>`**
+> (o `overflow-x-auto` do main força `overflow-y: auto`, então o main é o
+> container de rolagem). Movido o `scrollbar-gutter: stable` para o `<main>` no
+> layout — a barra vertical passa a ter espaço reservado sempre e o conteúdo não
+> desloca ao trocar de aba (altura diferente entre abas fazia a barra aparecer/
+> sumir e empurrar o cartão centralizado). Vale para todas as telas.
 
 > **Ficha + largura geral (feedback do dono) ✅ (v0.74.2, sem migração):**
 > (1) **pílulas diferenciadas**: Fase (navy) e **Pilar da metodologia** (dourado,
