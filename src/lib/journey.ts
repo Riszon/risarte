@@ -24,6 +24,18 @@ export const PHASE_LABELS: Record<JourneyPhase, string> = {
   follow_up: "Acompanhamento",
 };
 
+/** Cor oficial de cada fase da jornada (definida pelo dono) — usada como acento
+ * no kanban e demais telas que mostram a fase. */
+export const PHASE_COLORS: Record<JourneyPhase, string> = {
+  acquisition: "#ff5050",
+  clinical_conversion: "#ff914d",
+  planning_center: "#ffde59",
+  commercial_conversion: "#74cc00",
+  treatment_start: "#00bf63",
+  reevaluation: "#0cc0df",
+  follow_up: "#e2a9f1",
+};
+
 /** Which configured SLA applies to time spent in each phase (null = no SLA). */
 export const PHASE_SLA_KEY: Record<JourneyPhase, SlaKey | null> = {
   acquisition: null,

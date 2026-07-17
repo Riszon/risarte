@@ -21,6 +21,7 @@ import type { SlaKey } from "@/lib/sla";
 import type { UserRole } from "@/lib/roles";
 import {
   JOURNEY_PHASES,
+  PHASE_COLORS,
   PHASE_LABELS,
   PHASE_SLA_KEY,
   PILLAR_LABELS,
@@ -99,20 +100,35 @@ export function KanbanBoard({
         const phaseClients = clients.filter((c) => c.journey_phase === phase);
         const slaKey = PHASE_SLA_KEY[phase];
         const slaHours = slaKey ? sla[slaKey] : null;
+        const exceededCount = phaseClients.filter((c) =>
+          isSlaExceeded(c.phase_entered_at, slaHours)
+        ).length;
         const nextOptions = allowedNextPhases(phase, {
           isAdminMaster,
           clinicRoles,
           isPlannerAnywhere,
         });
+        const color = PHASE_COLORS[phase];
 
         return (
           <div
             key={phase}
-            className="flex h-full w-64 shrink-0 flex-col rounded-xl border bg-muted/40"
+            className="flex h-full w-64 shrink-0 flex-col overflow-hidden rounded-xl border bg-muted/40"
           >
-            <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5">
+            {/* Acento de cor da fase (padrão do dono). */}
+            <div
+              className="h-1 w-full shrink-0"
+              style={{ backgroundColor: color }}
+            />
+            <div className="flex items-center justify-between gap-2 border-b bg-background/50 px-3 py-2.5">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="grid size-5 shrink-0 place-items-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
+                <span
+                  className="grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-bold"
+                  style={{
+                    backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)`,
+                    color: `color-mix(in oklab, ${color} 62%, black)`,
+                  }}
+                >
                   {phaseIndex + 1}
                 </span>
                 <h2 className="truncate text-sm font-semibold">
@@ -132,7 +148,17 @@ export function KanbanBoard({
                     <Plus className="size-4" />
                   </Button>
                 )}
-                <Badge variant="secondary">{phaseClients.length}</Badge>
+                {exceededCount > 0 ? (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive"
+                    title={`${exceededCount} com SLA estourado`}
+                  >
+                    {phaseClients.length}
+                    <span className="text-[10px]">· {exceededCount} ⚠</span>
+                  </span>
+                ) : (
+                  <Badge variant="secondary">{phaseClients.length}</Badge>
+                )}
               </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">

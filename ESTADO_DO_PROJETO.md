@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.78.1** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.79.0** · Última migração: **0131**_
+
+> **Refino visual — Jornada/Kanban ✅ (v0.79.0, sem migração):** cada coluna
+> (fase) ganhou o **acento de cor oficial da fase** (definido pelo dono): faixa no
+> topo + número tingido na cor. Cores em `PHASE_COLORS` (`src/lib/journey.ts`,
+> reutilizável): Aquisição #ff5050, Conversão Clínica #ff914d, Centro de
+> Planejamento #ffde59, Conversão Comercial #74cc00, Início de Tratamento #00bf63,
+> Reavaliação #0cc0df, Acompanhamento #e2a9f1. O **contador da coluna** fica
+> **vermelho com N ⚠** quando há SLA estourado. Filtros (unidade/pilar/status) num
+> **bloco compacto**. Cards mantidos.
 
 > **Relatórios — ajustes do feedback ✅ (v0.78.1, sem migração):** (1)
 > **Agendamentos** menos "tudo igual": situação vira **barra segmentada** colorida

@@ -167,7 +167,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <FilterForm className="flex items-center gap-2">
+          <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
             {isFranchisor && (
               <select
                 name="unidade"
