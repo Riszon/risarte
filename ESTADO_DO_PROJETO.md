@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/07/2026 · Versão do sistema: **0.75.1** · Última migração: **0131**_
+_Atualizado em: 16/07/2026 · Versão do sistema: **0.76.0** · Última migração: **0131**_
+
+> **Atendimento — Indicadores (H4.15) ✅ (v0.76.0, sem migração):** botão
+> **"Indicadores"** no cabeçalho abre um popup com os números do **período** (dia/
+> semana/mês). **Permissão**: dentista vê só os **seus** atendimentos; Recepção/
+> Coordenador/Gerente/Admin veem **todos** (aviso de escopo no popup). Cartões:
+> **Comparecimento** (concluídos ÷ agendados), **Produtividade** (sessões
+> finalizadas — `treatment_sessions` done no período), **Tempo médio de espera**
+> (`called_at − checked_in_at`), **Concluídos/agendados**, e **Faltas /
+> Cancelamentos / Desistiu de esperar / Troca de profissional** com **lista de
+> clientes ao clicar** (troca mostra de→para, da tabela `appointment_provider_swaps`).
+> Componente `attendance-indicators.tsx`; cálculo no `page.tsx`.
 
 > **Atendimento — correções do teste (feedback) ✅ (v0.75.1, sem migração):**
 > (1) **card na vertical**: dados em cima, botões numa faixa embaixo (o botão não

@@ -23,6 +23,11 @@ import {
   type PanelAppointment,
   type SwapStaff,
 } from "./attendance-panel";
+import {
+  AttendanceIndicators,
+  type AttendanceMetrics,
+  type MetricPerson,
+} from "./attendance-indicators";
 
 export const metadata: Metadata = { title: "Atendimento" };
 
@@ -402,6 +407,145 @@ export default async function AtendimentoPage(
     swapStaff = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  // -- H4.15: indicadores do Atendimento (popup). Dentista vê só os seus; a
+  // Recepção/Coordenador/Gerente (e Admin) veem todos. Sempre no PERÍODO acima.
+  const canSeeAllMetrics =
+    !consultantView &&
+    (session.isAdminMaster ||
+      hasRoleInClinic(session, clinicId, [
+        "receptionist",
+        "clinical_coordinator",
+        "unit_manager",
+      ]));
+  const canViewMetrics = canSeeAllMetrics || isDentist;
+  let metrics: AttendanceMetrics | null = null;
+  if (canViewMetrics && clinicId) {
+    const periodRows = (data ?? []).filter((r) =>
+      canSeeAllMetrics ? true : r.provider_user_id === session.userId
+    );
+    const person = (r: Row): MetricPerson => ({
+      id: r.clients?.id ?? null,
+      name: r.clients?.full_name ?? "—",
+      detail: new Date(r.starts_at).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+    const completed = periodRows.filter((r) => r.attendance === "done");
+    const noShows = periodRows.filter((r) => r.status === "no_show");
+    const cancellations = periodRows.filter(
+      (r) => r.status === "cancelled" && r.attendance !== "gave_up"
+    );
+    const giveUps = periodRows.filter((r) => r.attendance === "gave_up");
+    const waits = periodRows
+      .filter((r) => r.checked_in_at && r.called_at)
+      .map(
+        (r) =>
+          (new Date(r.called_at as string).getTime() -
+            new Date(r.checked_in_at as string).getTime()) /
+          60000
+      )
+      .filter((m) => m >= 0);
+    const avgWaitMin =
+      waits.length > 0
+        ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length)
+        : null;
+
+    // Produtividade: sessões finalizadas no período (dentista = só as dele).
+    let productivityQ = supabase
+      .from("treatment_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("status", "done")
+      .gte("done_at", start.toISOString())
+      .lt("done_at", end.toISOString());
+    if (!canSeeAllMetrics)
+      productivityQ = productivityQ.eq("executed_by", session.userId);
+    const { count: productivity } = await productivityQ;
+
+    // Trocas de profissional no período (de → para).
+    let swapsQ = supabase
+      .from("appointment_provider_swaps")
+      .select("id, appointment_id, from_provider, to_provider, created_at")
+      .eq("clinic_id", clinicId)
+      .gte("created_at", start.toISOString())
+      .lt("created_at", end.toISOString())
+      .order("created_at", { ascending: false });
+    if (!canSeeAllMetrics)
+      swapsQ = swapsQ.or(
+        `from_provider.eq.${session.userId},to_provider.eq.${session.userId}`
+      );
+    const { data: swapRows } = await swapsQ.returns<
+      {
+        id: string;
+        appointment_id: string;
+        from_provider: string | null;
+        to_provider: string;
+      }[]
+    >();
+    const swapList = swapRows ?? [];
+    const swapApptIds = [...new Set(swapList.map((s) => s.appointment_id))];
+    const clientByAppt = new Map<string, { id: string; name: string }>();
+    if (swapApptIds.length > 0) {
+      const { data: apps } = await supabase
+        .from("appointments")
+        .select("id, clients ( id, full_name )")
+        .in("id", swapApptIds)
+        .returns<
+          { id: string; clients: { id: string; full_name: string } | null }[]
+        >();
+      for (const a of apps ?? []) {
+        if (a.clients)
+          clientByAppt.set(a.id, { id: a.clients.id, name: a.clients.full_name });
+      }
+    }
+    const swapProvIds = [
+      ...new Set(
+        swapList
+          .flatMap((s) => [s.from_provider, s.to_provider])
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const provName = new Map<string, string>();
+    for (const id of swapProvIds) {
+      const n = nameById.get(id);
+      if (n) provName.set(id, n);
+    }
+    const missingProv = swapProvIds.filter((id) => !provName.has(id));
+    if (missingProv.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", missingProv);
+      for (const p of people ?? []) provName.set(p.id, p.full_name);
+    }
+    const swaps: MetricPerson[] = swapList.map((s) => {
+      const c = clientByAppt.get(s.appointment_id);
+      const from = s.from_provider ? (provName.get(s.from_provider) ?? "—") : "—";
+      const to = provName.get(s.to_provider) ?? "—";
+      return {
+        id: c?.id ?? null,
+        name: c?.name ?? "Cliente",
+        detail: `${from} → ${to}`,
+      };
+    });
+
+    metrics = {
+      scheduled: periodRows.length,
+      completed: completed.length,
+      attendanceRate:
+        periodRows.length > 0
+          ? Math.round((completed.length / periodRows.length) * 100)
+          : null,
+      productivity: productivity ?? 0,
+      avgWaitMin,
+      noShows: noShows.map(person),
+      cancellations: cancellations.map(person),
+      giveUps: giveUps.map(person),
+      swaps,
+    };
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -413,7 +557,19 @@ export default async function AtendimentoPage(
               : `Sala de espera de ${session.activeClinic?.name} — ${periodLabel}.`}
           </p>
         </div>
-        <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {metrics && (
+            <AttendanceIndicators
+              metrics={metrics}
+              periodLabel={periodLabel}
+              scopeNote={
+                canSeeAllMetrics
+                  ? undefined
+                  : "Mostrando somente os seus atendimentos."
+              }
+            />
+          )}
+          <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
           <select
             name="periodo"
             defaultValue={period}
@@ -453,7 +609,8 @@ export default async function AtendimentoPage(
               ))}
             </select>
           )}
-        </FilterForm>
+          </FilterForm>
+        </div>
       </div>
       {carriedCount > 0 && (
         <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
