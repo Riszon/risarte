@@ -12,12 +12,14 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowLeft,
+  Ban,
   Check,
   CheckCheck,
   Download,
   FileText,
   Loader2,
   MessageSquarePlus,
+  MessagesSquare,
   Mic,
   Paperclip,
   Reply,
@@ -56,6 +58,7 @@ import {
   getImportantUnread,
   getLastSeen,
   getMessages,
+  listBlockedChatDetails,
   listChannels,
   listReachableUnits,
   markRead,
@@ -63,7 +66,9 @@ import {
   openUnitChannel,
   sendAttachment,
   sendMessage,
+  setChatBlocked,
   toggleReaction,
+  type BlockedChatUser,
   type ChatChannel,
   type ChatColleague,
   type ChatMessage,
@@ -148,6 +153,51 @@ function time(iso: string): string {
   });
 }
 
+const SP_TZ = "America/Sao_Paulo";
+/** Dia do aviso (YYYY-MM-DD) no fuso de SP — determinístico entre servidor e
+ * navegador (evita divergência de hidratação na lista renderizada no SSR). */
+function spDayKey(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: SP_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+/** Hora curta da última mensagem para a lista: hoje → HH:MM, ontem → "ontem",
+ * senão → DD/MM. */
+function listTime(iso: string | null): string {
+  if (!iso) return "";
+  const day = spDayKey(iso);
+  if (day === spDayKey(new Date().toISOString())) {
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: SP_TZ,
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  }
+  if (day === spDayKey(new Date(Date.now() - 86_400_000).toISOString())) {
+    return "ontem";
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: SP_TZ,
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(iso));
+}
+/** Iniciais (até 2) do nome para o avatar da lista de conversas. */
+function initialsOf(name: string): string {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
+
 export function ChatHub({
   meId,
   initialChannels,
@@ -155,6 +205,7 @@ export function ChatHub({
   isAdmin,
   totalUsers,
   canMessageUnits,
+  initialBlockedIds = [],
 }: {
   meId: string;
   initialChannels: ChatChannel[];
@@ -162,8 +213,19 @@ export function ChatHub({
   isAdmin: boolean;
   totalUsers: number;
   canMessageUnits: boolean;
+  /** Ids bloqueados no chat (só o Admin recebe a lista, para gerenciar). */
+  initialBlockedIds?: string[];
 }) {
   const [channels, setChannels] = useState<ChatChannel[]>(initialChannels);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(
+    () => new Set(initialBlockedIds)
+  );
+  // Painel do Admin com todos os bloqueados no chat.
+  const [blockedOpen, setBlockedOpen] = useState(false);
+  const [blockedList, setBlockedList] = useState<BlockedChatUser[] | null>(null);
+  // Rolar/destacar a mensagem original ao clicar numa citação.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(
     initialChannels[0]?.id ?? null
   );
@@ -375,6 +437,67 @@ export function ChatHub({
     startTransition(async () => {
       await toggleReaction(messageId, emoji);
       if (selectedId) loadThread(selectedId);
+    });
+  }
+
+  // Citação: rola até a mensagem original e a destaca por ~1,6s.
+  function jumpToMessage(id: string) {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) {
+      toast.info("A mensagem original não está carregada nesta conversa.");
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(id);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightId(null), 1600);
+  }
+
+  // Abre o painel de bloqueados e carrega a lista (com nomes) na hora.
+  function openBlocked() {
+    setBlockedOpen(true);
+    setBlockedList(null);
+    listBlockedChatDetails().then(setBlockedList);
+  }
+
+  // Desbloqueia direto do painel de bloqueados.
+  function unblockFromList(userId: string, name: string) {
+    startTransition(async () => {
+      const r = await setChatBlocked(userId, false);
+      if (r.ok) {
+        setBlockedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(userId);
+          return next;
+        });
+        setBlockedList((prev) =>
+          prev ? prev.filter((b) => b.userId !== userId) : prev
+        );
+        toast.success(`${name} desbloqueado.`);
+      } else {
+        toast.error(r.error ?? "Não foi possível desbloquear.");
+      }
+    });
+  }
+
+  // Bloqueio no chat (só Admin) — a partir do popup de membros.
+  function toggleBlock(userId: string, name: string) {
+    const willBlock = !blockedIds.has(userId);
+    startTransition(async () => {
+      const r = await setChatBlocked(userId, willBlock);
+      if (r.ok) {
+        setBlockedIds((prev) => {
+          const next = new Set(prev);
+          if (willBlock) next.add(userId);
+          else next.delete(userId);
+          return next;
+        });
+        toast.success(
+          willBlock ? `${name} bloqueado no chat.` : `${name} desbloqueado.`
+        );
+      } else {
+        toast.error(r.error ?? "Não foi possível atualizar o bloqueio.");
+      }
     });
   }
 
@@ -658,21 +781,36 @@ export function ChatHub({
       {/* Lista de conversas */}
       <aside
         className={cn(
-          "w-full flex-col border-r sm:flex sm:w-72",
+          "w-full flex-col border-r bg-muted sm:flex sm:w-72",
           selectedId ? "hidden sm:flex" : "flex"
         )}
       >
         <div className="flex items-center justify-between gap-2 border-b p-2">
           <span className="text-sm font-medium">Conversas</span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            onClick={() => setShowNew((v) => !v)}
-          >
-            <MessageSquarePlus className="mr-1 size-3.5" />
-            Nova
-          </Button>
+          <div className="flex items-center gap-1">
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                onClick={openBlocked}
+                title="Usuários bloqueados no chat"
+              >
+                <Ban className="mr-1 size-3.5" />
+                Bloqueados
+                {blockedIds.size > 0 ? ` (${blockedIds.size})` : ""}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={() => setShowNew((v) => !v)}
+            >
+              <MessageSquarePlus className="mr-1 size-3.5" />
+              Nova
+            </Button>
+          </div>
         </div>
 
         {isAdmin && (
@@ -841,19 +979,47 @@ export function ChatHub({
                 type="button"
                 onClick={() => openChannel(c.id)}
                 className={cn(
-                  "flex w-full items-center gap-2 border-b px-3 py-2 text-left hover:bg-accent",
-                  selectedId === c.id && "bg-accent"
+                  "flex w-full items-center gap-3 border-b border-l-2 px-3 py-2.5 text-left transition-colors hover:bg-accent",
+                  c.kind === "unit"
+                    ? "border-l-primary"
+                    : "border-l-transparent",
+                  selectedId === c.id
+                    ? "bg-accent"
+                    : c.kind === "unit"
+                      ? "bg-primary/[0.07]"
+                      : "bg-card"
                 )}
               >
                 {c.kind === "unit" ? (
-                  <Users className="size-4 shrink-0 text-primary" />
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                    <Users className="size-4" />
+                  </span>
                 ) : (
-                  <User className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full border bg-card text-[11px] font-medium text-muted-foreground">
+                    {initialsOf(c.title)}
+                  </span>
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium">
-                      {c.title}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">
+                        {c.title}
+                      </span>
+                      {c.kind === "unit" && (
+                        <span className="shrink-0 rounded bg-primary/10 px-1 text-[9px] font-medium tracking-wide text-primary uppercase">
+                          Equipe
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                      {listTime(c.lastAt)}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 flex items-center justify-between gap-2">
+                    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      {c.lastMessage ?? (
+                        <span className="italic">Sem mensagens ainda</span>
+                      )}
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
                       {importantByChannel.has(c.id) && (
@@ -872,11 +1038,6 @@ export function ChatHub({
                       )}
                     </span>
                   </span>
-                  {c.lastMessage && (
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {c.lastMessage}
-                    </span>
-                  )}
                 </span>
               </button>
             ))
@@ -887,13 +1048,18 @@ export function ChatHub({
       {/* Thread */}
       <section
         className={cn(
-          "min-w-0 flex-1 flex-col",
+          "min-w-0 flex-1 flex-col bg-card",
           selectedId ? "flex" : "hidden sm:flex"
         )}
       >
         {selected ? (
           <>
-            <div className="flex items-center gap-2 border-b p-2.5">
+            <div
+              className={cn(
+                "flex items-center gap-2 border-b p-2.5",
+                selected.kind === "unit" && "bg-primary/5"
+              )}
+            >
               <Button
                 size="icon"
                 variant="ghost"
@@ -908,10 +1074,15 @@ export function ChatHub({
                     <Users className="size-4 text-primary" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{selected.title}</p>
+                    <p className="flex items-center gap-1.5 truncate font-medium">
+                      {selected.title}
+                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase">
+                        Equipe
+                      </span>
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {teamMembers.length} membro
-                      {teamMembers.length === 1 ? "" : "s"}
+                      {teamMembers.length === 1 ? "" : "s"} veem as mensagens
                     </p>
                   </div>
                   <Button
@@ -987,9 +1158,11 @@ export function ChatHub({
                   return (
                     <div
                       key={m.id}
+                      id={`msg-${m.id}`}
                       className={cn(
-                        "group flex items-end gap-2",
-                        m.mine ? "flex-row-reverse" : "flex-row"
+                        "group flex items-end gap-2 rounded-lg p-1 transition-colors",
+                        m.mine ? "flex-row-reverse" : "flex-row",
+                        highlightId === m.id && "bg-gold/15"
                       )}
                     >
                       <Avatar
@@ -1016,13 +1189,18 @@ export function ChatHub({
                           </span>
                         )}
                         {m.replyTo && (
-                          <div className="mb-0.5 max-w-full rounded-md border-l-2 border-primary/50 bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                          <button
+                            type="button"
+                            onClick={() => jumpToMessage(m.replyTo!.id)}
+                            title="Ir para a mensagem original"
+                            className="mb-0.5 block max-w-full rounded-md border-l-2 border-primary/50 bg-muted/60 px-2 py-0.5 text-left text-[11px] text-muted-foreground transition-colors hover:bg-muted"
+                          >
                             <span className="font-medium">
                               {m.replyTo.senderName}
                             </span>
                             {": "}
                             <span className="line-clamp-1">{m.replyTo.body}</span>
-                          </div>
+                          </button>
                         )}
                         {m.attachment && (
                           <div className="mb-0.5 max-w-full">
@@ -1188,6 +1366,14 @@ export function ChatHub({
                 </button>
               </div>
             )}
+            {selected.kind === "unit" && (
+              <div className="flex items-center gap-1.5 border-t bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary">
+                <Users className="size-3.5 shrink-0" />
+                Esta mensagem vai para TODA a equipe (
+                {teamMembers.length}{" "}
+                {teamMembers.length === 1 ? "pessoa" : "pessoas"}).
+              </div>
+            )}
             <form
               className="flex items-center gap-1.5 border-t p-2"
               onSubmit={(e) => {
@@ -1289,8 +1475,18 @@ export function ChatHub({
             </form>
           </>
         ) : (
-          <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-            Escolha uma conversa à esquerda.
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-muted-foreground">
+            <span className="grid size-14 place-items-center rounded-full bg-muted">
+              <MessagesSquare className="size-7" />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Suas conversas
+              </p>
+              <p className="text-sm">
+                Escolha uma conversa à esquerda ou toque em “Nova”.
+              </p>
+            </div>
           </div>
         )}
       </section>
@@ -1309,7 +1505,7 @@ export function ChatHub({
                   name={p.name}
                   status={presence.get(p.userId)}
                 />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
                     {p.userId === meId ? `${p.name} (você)` : p.name}
                   </p>
@@ -1318,19 +1514,99 @@ export function ChatHub({
                       {personSub(p)}
                     </p>
                   )}
+                  {blockedIds.has(p.userId) && (
+                    <p className="text-[11px] font-medium text-destructive">
+                      Bloqueado no chat
+                    </p>
+                  )}
                 </div>
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  {presence.get(p.userId) === "online"
-                    ? "online"
-                    : presence.get(p.userId) === "away"
-                      ? "ausente"
-                      : p.lastSeenAt
-                        ? lastSeenLabel(p.lastSeenAt)
-                        : ""}
-                </span>
+                {p.userId !== meId && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      disabled={isPending}
+                      onClick={() => {
+                        setMembersOpen(false);
+                        startDirect(p.userId);
+                      }}
+                    >
+                      <MessageSquarePlus className="mr-1 size-3.5" />
+                      Conversar
+                    </Button>
+                    {isAdmin && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7"
+                        disabled={isPending}
+                        title={
+                          blockedIds.has(p.userId)
+                            ? "Desbloquear no chat"
+                            : "Bloquear no chat"
+                        }
+                        onClick={() => toggleBlock(p.userId, p.name)}
+                      >
+                        <Ban
+                          className={cn(
+                            "size-4",
+                            blockedIds.has(p.userId)
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                          )}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin: todos os usuários bloqueados no chat. */}
+      <Dialog open={blockedOpen} onOpenChange={setBlockedOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Usuários bloqueados no chat</DialogTitle>
+          </DialogHeader>
+          {blockedList === null ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Carregando…
+            </p>
+          ) : blockedList.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Ninguém está bloqueado no chat.
+            </p>
+          ) : (
+            <ul className="max-h-[60vh] space-y-1 overflow-y-auto">
+              {blockedList.map((b) => (
+                <li key={b.userId} className="flex items-center gap-2 py-1">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive">
+                    <Ban className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{b.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Bloqueado em{" "}
+                      {new Date(b.blockedAt).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-xs"
+                    disabled={isPending}
+                    onClick={() => unblockFromList(b.userId, b.name)}
+                  >
+                    Desbloquear
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </DialogContent>
       </Dialog>
       </div>

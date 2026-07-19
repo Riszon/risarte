@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionContext } from "@/lib/auth";
+import { getSessionContext, requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { CHAT_BUCKET } from "@/lib/chat";
@@ -429,21 +429,26 @@ export async function toggleReaction(
   const session = await getSessionContext();
   if (!messageId || !emoji) return { ok: false, error: "Reação inválida." };
   const supabase = await createClient();
-  const { data: existing } = await supabase
+  // Uma reação por usuário por mensagem: se já reagiu com o MESMO emoji, remove
+  // (toggle off); se reagiu com OUTRO, troca; senão, insere.
+  const { data: mine } = await supabase
     .from("chat_reactions")
-    .select("message_id")
+    .select("emoji")
     .eq("message_id", messageId)
     .eq("user_id", session.userId)
-    .eq("emoji", emoji)
-    .maybeSingle();
-  if (existing) {
+    .returns<{ emoji: string }[]>();
+  const current = mine ?? [];
+  // Remove sempre a(s) reação(ões) anterior(es) do usuário nesta mensagem.
+  if (current.length > 0) {
     await supabase
       .from("chat_reactions")
       .delete()
       .eq("message_id", messageId)
-      .eq("user_id", session.userId)
-      .eq("emoji", emoji);
-  } else {
+      .eq("user_id", session.userId);
+  }
+  // Clicar no mesmo emoji que já estava = só remover (não reinsere).
+  const hadSame = current.some((r) => r.emoji === emoji);
+  if (!hadSame) {
     const { error } = await supabase.from("chat_reactions").insert({
       message_id: messageId,
       user_id: session.userId,
@@ -454,6 +459,99 @@ export async function toggleReaction(
       return { ok: false, error: "Não foi possível reagir." };
     }
   }
+  return { ok: true };
+}
+
+/** Ids dos usuários bloqueados no chat (só o Admin Master consulta a lista). */
+export async function listBlockedChatUsers(): Promise<string[]> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chat_blocked_users")
+    .select("user_id")
+    .returns<{ user_id: string }[]>();
+  return (data ?? []).map((r) => r.user_id);
+}
+
+export type BlockedChatUser = {
+  userId: string;
+  name: string;
+  blockedAt: string;
+};
+
+/** Lista os usuários bloqueados no chat com o nome (só Admin Master), para a
+ * tela de gestão de bloqueios. */
+export async function listBlockedChatDetails(): Promise<BlockedChatUser[]> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return [];
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("chat_blocked_users")
+    .select("user_id, created_at")
+    .order("created_at", { ascending: false })
+    .returns<{ user_id: string; created_at: string }[]>();
+  const ids = (rows ?? []).map((r) => r.user_id);
+  if (ids.length === 0) return [];
+  const { data: profs } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", ids)
+    .returns<{ id: string; full_name: string }[]>();
+  const nameById = new Map((profs ?? []).map((p) => [p.id, p.full_name]));
+  return (rows ?? []).map((r) => ({
+    userId: r.user_id,
+    name: nameById.get(r.user_id) ?? "—",
+    blockedAt: r.created_at,
+  }));
+}
+
+/** O próprio usuário está bloqueado no chat? (a tela trava o acesso com isso). */
+export async function amIChatBlocked(): Promise<boolean> {
+  const session = await getSessionContext();
+  if (session.isAdminMaster) return false;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chat_blocked_users")
+    .select("user_id")
+    .eq("user_id", session.userId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/** Bloqueia/desbloqueia um usuário no chat (decisão do dono: só Admin Master). */
+export async function setChatBlocked(
+  userId: string,
+  blocked: boolean
+): Promise<ActionResult> {
+  const admin = await requireAdminMaster();
+  if (!userId) return { ok: false, error: "Usuário inválido." };
+  if (userId === admin.userId) {
+    return { ok: false, error: "Você não pode se bloquear." };
+  }
+  const supabase = await createClient();
+  if (blocked) {
+    const { error } = await supabase
+      .from("chat_blocked_users")
+      .upsert(
+        { user_id: userId, blocked_by: admin.userId },
+        { onConflict: "user_id" }
+      );
+    if (error) {
+      console.error("setChatBlocked(block) failed:", error.message);
+      return { ok: false, error: "Não foi possível bloquear." };
+    }
+  } else {
+    const { error } = await supabase
+      .from("chat_blocked_users")
+      .delete()
+      .eq("user_id", userId);
+    if (error) {
+      console.error("setChatBlocked(unblock) failed:", error.message);
+      return { ok: false, error: "Não foi possível desbloquear." };
+    }
+  }
+  revalidatePath("/chat");
   return { ok: true };
 }
 

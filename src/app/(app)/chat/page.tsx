@@ -1,16 +1,42 @@
 import type { Metadata } from "next";
+import { Ban, MessagesSquare } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { listChannels, listColleagues } from "./actions";
+import {
+  amIChatBlocked,
+  listBlockedChatUsers,
+  listChannels,
+  listColleagues,
+} from "./actions";
 import { ChatHub } from "./chat-hub";
 
 export const metadata: Metadata = { title: "Chat Hub" };
 
 export default async function ChatPage() {
   const session = await getSessionContext();
-  const [channels, colleagues] = await Promise.all([
+
+  // Bloqueio (0133): o usuário bloqueado perde o acesso à tela inteira.
+  if (await amIChatBlocked()) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16">
+        <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <Ban className="size-6" />
+          </span>
+          <h1 className="text-lg font-semibold">Chat indisponível</h1>
+          <p className="text-sm text-muted-foreground">
+            Seu acesso ao chat foi bloqueado pela administração. Fale com o
+            Admin Master se precisar reativá-lo.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const [channels, colleagues, blockedUserIds] = await Promise.all([
     listChannels(),
     listColleagues(),
+    listBlockedChatUsers(),
   ]);
 
   // Total de usuários (só para a contagem online/offline do Admin).
@@ -30,11 +56,16 @@ export default async function ChatPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Chat Hub</h1>
-        <p className="text-sm text-muted-foreground">
-          Conversas internas da equipe — canal da unidade e mensagens diretas.
-        </p>
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <MessagesSquare className="size-5" />
+        </span>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Chat Hub</h1>
+          <p className="text-sm text-muted-foreground">
+            Conversas internas da equipe — canal da unidade e mensagens diretas.
+          </p>
+        </div>
       </div>
       <ChatHub
         meId={session.userId}
@@ -43,6 +74,7 @@ export default async function ChatPage() {
         isAdmin={session.isAdminMaster}
         totalUsers={totalUsers}
         canMessageUnits={canMessageUnits}
+        initialBlockedIds={blockedUserIds}
       />
     </div>
   );

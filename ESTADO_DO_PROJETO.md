@@ -1,6 +1,35 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.5** · Última migração: **0132**_
+_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.9** · Última migração: **0133**_
+
+> **Chat Hub — painel de bloqueados ✅ (v0.80.9, sem migração):** o Admin tem um
+> botão **"Bloqueados (N)"** no topo da coluna que abre um diálogo com **todos os
+> usuários bloqueados** (nome + data) e **Desbloquear** por linha (action
+> `listBlockedChatDetails`).
+
+> **Chat Hub — coluna + grupo/individual ✅ (v0.80.8, sem migração):** a **coluna
+> de conversas** ganhou fundo `bg-muted` (nítido, não confunde mais com o fundo da
+> tela) e a área de leitura ficou `bg-card` (contraste claro). Na lista, **grupo ×
+> individual** ficou evidente: equipe = **avatar navy sólido** + **faixa lateral +
+> leve tinta azul** na linha + selo "EQUIPE"; individual = **iniciais em círculo
+> branco com borda**.
+
+> **Chat Hub — ajustes ✅ (v0.80.7, migração 0133):** (1) **reação única** por
+> usuário/mensagem (clicar em outro emoji troca, não soma). (2) **citação clicável**
+> — clicar na mensagem citada rola até a original e a destaca. (3) **Bloqueio no
+> chat** (migração 0133 `chat_blocked_users`): só o **Admin Master** bloqueia/
+> desbloqueia (no popup de membros); o bloqueado **perde o acesso à tela de Chat**.
+> (4) **popup de membros** com botão **"Conversar"** por membro (abre conversa
+> direta). (5) **coluna de conversas** com fundo distinto da área de leitura. (6)
+> **conversa de equipe** com cor/selo "EQUIPE" (lista, cabeçalho e aviso acima do
+> campo "vai para TODA a equipe") — reduz risco de mandar no grupo por engano.
+
+> **Refino visual — Chat Hub ✅ (v0.80.6, sem migração):** cabeçalho com ícone de
+> balão; **lista de conversas** repaginada estilo WhatsApp — **avatar em círculo**
+> (equipe = ícone de grupo; direta = iniciais), **hora da última mensagem** à
+> direita (fuso de São Paulo), prévia + selos de não lidas/importante numa 2ª
+> linha; **estado vazio** com ícone e texto amigável. Só camada visual — tempo
+> real, envio, anexos, reações e recibos intocados.
 
 > **Refino visual — Notificações ✅ (v0.80.5, sem migração):** cabeçalho com
 > **sino** + selo de **não lidas**; chips de categoria com **bolinha de cor** (as
