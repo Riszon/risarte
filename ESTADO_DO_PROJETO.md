@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.3** · Última migração: **0132**_
+_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.4** · Última migração: **0132**_
+
+> **Editor — nova opção por botão + carência ✅ (v0.80.4, sem migração):** o
+> formulário de **nova opção de tratamento** virou um **botão "Adicionar opção"**
+> (abre só ao clicar). O selo **★ Risarte Empresarial** passou a aparecer na
+> **identificação do cliente** (cabeçalho do cockpit). Para o Planner: cada
+> procedimento com benefício **em carência** (ou bloqueado) mostra um aviso âmbar
+> ("Em carência até DD/MM") e a opção recolhida mostra **"N em carência"**.
 
 > **Editor — opções recolhíveis + Resumo navegável ✅ (v0.80.3, sem migração):**
 > cada **opção de tratamento recolhe/expande** (seta no cabeçalho; principal abre,

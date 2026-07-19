@@ -11,6 +11,7 @@ import {
   ChevronUp,
   ClipboardList,
   Flag,
+  Hourglass,
   Layers,
   LayoutDashboard,
   ListChecks,
@@ -362,6 +363,8 @@ export function PlanningSection({
   const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
   const toggleOption = (id: string, fallback: boolean) =>
     setOpenOptions((prev) => ({ ...prev, [id]: !(prev[id] ?? fallback) }));
+  // O formulário de nova opção começa fechado (abre pelo botão).
+  const [addingOption, setAddingOption] = useState(false);
 
   const currentTreatment: TreatmentPillar | "" =
     currentPillar && TREATMENT_PILLARS.includes(currentPillar as TreatmentPillar)
@@ -548,6 +551,7 @@ export function PlanningSection({
         setOptTitle("");
         setOptDesc("");
         setOptPrimary(false);
+        setAddingOption(false);
       }
     );
   }
@@ -934,9 +938,32 @@ export function PlanningSection({
             </ul>
           )}
 
-          {/* Adicionar opção */}
-          {canEditContent && (
+          {/* Adicionar opção — escondida atrás de um botão para economizar espaço. */}
+          {canEditContent && !addingOption && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAddingOption(true)}
+            >
+              <Plus className="mr-1 size-4" />
+              Adicionar opção de tratamento
+            </Button>
+          )}
+          {canEditContent && addingOption && (
             <div className="space-y-2 rounded-md border border-dashed p-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Nova opção de tratamento
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setAddingOption(false)}
+                >
+                  Fechar
+                </Button>
+              </div>
               <Input
                 value={optTitle}
                 onChange={(e) => setOptTitle(e.target.value)}
@@ -1193,6 +1220,18 @@ function ProgramSavings({
   );
 }
 
+/** Aviso do benefício Risarte Empresarial bloqueado (carência/limite) para o
+ * Planner — ex.: "Em carência até 12/09/2026." */
+function BenefitBlockNote({ benefit }: { benefit?: ProgramBenefit }) {
+  if (!benefit || benefit.available || !benefit.blockedReason) return null;
+  return (
+    <p className="mt-1 flex items-start gap-1 text-[11px] font-medium text-amber-700">
+      <Hourglass className="mt-0.5 size-3 shrink-0" />
+      <span>Risarte Empresarial: {benefit.blockedReason}</span>
+    </p>
+  );
+}
+
 /** Resumo compacto de uma opção quando ela está recolhida (nº procedimentos,
  * etapas, sessões, tempo, valor total e economia do programa). */
 function OptionSummaryChips({
@@ -1211,6 +1250,16 @@ function OptionSummaryChips({
   const program = programActive
     ? computeProgramTotal(items, programBenefits)
     : null;
+  const carenciaCount = programActive
+    ? items.filter((i) => {
+        const b = i.procedureId ? programBenefits?.[i.procedureId] : undefined;
+        return (
+          b &&
+          !b.available &&
+          b.blockedReason?.toLowerCase().includes("carência")
+        );
+      }).length
+    : 0;
   const chip = (node: React.ReactNode, key: string) => (
     <span key={key} className="rounded-md bg-muted px-2 py-0.5 text-muted-foreground">
       {node}
@@ -1248,6 +1297,11 @@ function OptionSummaryChips({
       {program && program.savedCents > 0 && (
         <span className="rounded-md bg-gold/10 px-2 py-0.5 font-medium text-gold">
           economia {formatBRL(program.savedCents)}
+        </span>
+      )}
+      {carenciaCount > 0 && (
+        <span className="rounded-md bg-amber-100 px-2 py-0.5 font-medium text-amber-700">
+          {carenciaCount} em carência
         </span>
       )}
     </div>
@@ -1863,6 +1917,11 @@ function OptionBudget({
                                   {providerName(it.suggestedProviderId)}
                                 </p>
                               )}
+                            {it.procedureId && (
+                              <BenefitBlockNote
+                                benefit={programBenefits?.[it.procedureId]}
+                              />
+                            )}
                           </>
                         )}
                       </li>

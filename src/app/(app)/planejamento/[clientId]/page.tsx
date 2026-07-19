@@ -620,6 +620,11 @@ export default async function PlanningCockpitPage(
                 <Badge className="bg-gold text-gold-foreground">
                   {shownPillar ? PILLAR_LABELS[shownPillar] : "Pilar a definir"}
                 </Badge>
+                {isProgramMember && (
+                  <Badge className="bg-gold/20 text-gold-foreground">
+                    ★ Risarte Empresarial
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
