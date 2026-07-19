@@ -22,7 +22,7 @@ export const NOTIFICATION_CATEGORY_LABELS = Object.fromEntries(
   NOTIFICATION_CATEGORIES.map((c) => [c.key, c.label])
 ) as Record<NotificationCategory, string>;
 
-/** Color classes for a category chip/badge. */
+/** Color classes for a category chip/badge (tinted bg + readable text). */
 export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> = {
   plano: "bg-primary/10 text-primary",
   comercial: "bg-violet-100 text-violet-800",
@@ -32,6 +32,18 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   aniversario: "bg-pink-100 text-pink-800",
   transferencia: "bg-amber-100 text-amber-800",
   outras: "bg-muted text-muted-foreground",
+};
+
+/** Solid dot color for a category (used in the filter chips). */
+export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
+  plano: "bg-primary",
+  comercial: "bg-violet-500",
+  compartilhamento: "bg-emerald-500",
+  inicio_tratamento: "bg-gold",
+  agenda: "bg-red-500",
+  aniversario: "bg-pink-500",
+  transferencia: "bg-amber-500",
+  outras: "bg-muted-foreground",
 };
 
 export function categorizeNotification(title: string): NotificationCategory {

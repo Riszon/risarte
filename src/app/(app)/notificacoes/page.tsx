@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
+import { cn } from "@/lib/utils";
 import {
   NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CATEGORY_DOT,
   categorizeNotification,
   type NotificationCategory,
 } from "@/lib/notifications";
@@ -93,14 +96,19 @@ export default async function NotificationsPage(
   };
   for (const n of all) counts[categorizeNotification(n.title)] += 1;
 
-  const notifications = categoria
+  const unreadCount = all.filter((n) => !n.read_at).length;
+  const onlyUnread = searchParams.naolidas === "1";
+
+  let notifications = categoria
     ? all.filter((n) => categorizeNotification(n.title) === categoria)
     : all;
+  if (onlyUnread) notifications = notifications.filter((n) => !n.read_at);
 
-  function chipHref(cat: string | null): string {
+  function chipHref(cat: string | null, unread = onlyUnread): string {
     const p = new URLSearchParams();
     if (cat) p.set("categoria", cat);
     if (requested) p.set("unidade", requested);
+    if (unread) p.set("naolidas", "1");
     const qs = p.toString();
     return qs ? `/notificacoes?${qs}` : "/notificacoes";
   }
@@ -108,13 +116,25 @@ export default async function NotificationsPage(
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Notificações
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Avisos automáticos da jornada dos clientes.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="relative flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Bell className="size-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-gold-foreground tabular-nums">
+                {unreadCount}
+              </span>
+            )}
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Notificações
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {unreadCount > 0
+                ? `${unreadCount} não ${unreadCount === 1 ? "lida" : "lidas"} · avisos da jornada dos clientes.`
+                : "Tudo em dia — avisos da jornada dos clientes."}
+            </p>
+          </div>
         </div>
         {clinicTags.length > 1 && (
           <FilterForm className="flex items-center gap-2">
@@ -137,27 +157,52 @@ export default async function NotificationsPage(
         )}
       </div>
 
-      {/* Categorias (clicáveis) com contadores. */}
+      {/* Categorias (clicáveis) com bolinha de cor + contadores. As sem itens
+          ficam escondidas para reduzir ruído. */}
       <div className="flex flex-wrap gap-2">
         <Link
           href={chipHref(null)}
-          className={`rounded-full border px-3 py-1 text-sm ${
-            categoria === "" ? "border-primary bg-primary/10 text-primary" : ""
-          }`}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors hover:bg-muted/60",
+            categoria === "" && "border-primary bg-primary/10 text-primary"
+          )}
         >
-          Todas ({all.length})
+          Todas{" "}
+          <span className="tabular-nums text-muted-foreground">
+            {all.length}
+          </span>
         </Link>
-        {NOTIFICATION_CATEGORIES.map((c) => (
+        {unreadCount > 0 && (
+          <Link
+            href={chipHref(categoria || null, !onlyUnread)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors hover:bg-muted/60",
+              onlyUnread && "border-gold bg-gold/10 text-gold-foreground"
+            )}
+          >
+            <span className="size-2 rounded-full bg-gold" />
+            Não lidas <span className="tabular-nums">{unreadCount}</span>
+          </Link>
+        )}
+        {NOTIFICATION_CATEGORIES.filter((c) => counts[c.key] > 0).map((c) => (
           <Link
             key={c.key}
             href={chipHref(c.key)}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              categoria === c.key
-                ? "border-primary bg-primary/10 text-primary"
-                : ""
-            }`}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors hover:bg-muted/60",
+              categoria === c.key && "border-primary bg-primary/10 text-primary"
+            )}
           >
-            {c.label} ({counts[c.key]})
+            <span
+              className={cn(
+                "size-2 rounded-full",
+                NOTIFICATION_CATEGORY_DOT[c.key]
+              )}
+            />
+            {c.label}{" "}
+            <span className="tabular-nums text-muted-foreground">
+              {counts[c.key]}
+            </span>
           </Link>
         ))}
       </div>

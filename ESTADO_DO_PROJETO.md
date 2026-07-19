@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.4** · Última migração: **0132**_
+_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.5** · Última migração: **0132**_
+
+> **Refino visual — Notificações ✅ (v0.80.5, sem migração):** cabeçalho com
+> **sino** + selo de **não lidas**; chips de categoria com **bolinha de cor** (as
+> sem itens ficam escondidas) + chip **"Não lidas"** (filtra o que falta ler, via
+> `?naolidas=1`); lista com **ícone da categoria em círculo colorido**, não lidos
+> com **bolinha dourada**, e **agrupada por data** (Hoje / Ontem / Esta semana /
+> Mais antigas) com hora no fuso de São Paulo (determinístico, sem divergência de
+> hidratação). Novo mapa `NOTIFICATION_CATEGORY_DOT` em `src/lib/notifications.ts`.
 
 > **Editor — nova opção por botão + carência ✅ (v0.80.4, sem migração):** o
 > formulário de **nova opção de tratamento** virou um **botão "Adicionar opção"**
