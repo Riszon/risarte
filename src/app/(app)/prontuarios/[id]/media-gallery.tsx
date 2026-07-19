@@ -10,6 +10,7 @@ import {
   Eye,
   ImageOff,
   Link2,
+  Maximize2,
   Pencil,
   StickyNote,
   Trash2,
@@ -97,6 +98,7 @@ function Lightbox({
   const [erredSrc, setErredSrc] = useState<string | null>(null);
   const m = items[index];
   const failed = erredSrc !== null && erredSrc === (m?.url ?? "");
+  const pv = m ? mediaPreviewType(m) : null;
 
   const prev = () => onIndex((index - 1 + items.length) % items.length);
   const next = () => onIndex((index + 1) % items.length);
@@ -172,15 +174,49 @@ function Lightbox({
             </a>
           )}
         </div>
-      ) : (
+      ) : pv === "video" ? (
+        <video
+          src={m.url ?? ""}
+          controls
+          autoPlay
+          className="max-h-[90vh] max-w-full rounded"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : pv === "pdf" ? (
+        <iframe
+          src={m.url ?? ""}
+          title={mediaDisplayName(m)}
+          className="h-[90vh] w-full max-w-5xl rounded bg-white"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : pv === "image" ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={m.url ?? ""}
           alt={m.originalName ?? "imagem"}
-          className="max-h-[80vh] max-w-full object-contain"
+          className="max-h-[90vh] max-w-full object-contain"
           onClick={(e) => e.stopPropagation()}
           onError={() => setErredSrc(m.url ?? "")}
         />
+      ) : (
+        <div
+          className="flex flex-col items-center gap-2 rounded-md bg-white/10 p-6 text-center text-white"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-sm">
+            Este tipo de arquivo abre em uma nova aba.
+          </p>
+          {m.url && (
+            <a
+              href={m.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm underline"
+            >
+              Abrir / baixar o arquivo
+            </a>
+          )}
+        </div>
       )}
       {items.length > 1 && (
         <button
@@ -340,6 +376,16 @@ export function MediaGallery({
           </div>
           <div className="flex shrink-0 items-center">
             {renderEditButton(m)}
+            {m.url && pv !== "audio" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Ampliar em tela cheia"
+                onClick={() => setLightbox({ items: [m], index: 0 })}
+              >
+                <Maximize2 className="size-4" />
+              </Button>
+            )}
             {m.url && pv === "pdf" && (
               <Button
                 variant="ghost"

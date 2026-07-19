@@ -110,6 +110,10 @@ export type BudgetItem = {
   stageId: string | null;
   /** H4.5 Pedido 1: profissional indicado pelo Planner (user id), ou null. */
   suggestedProviderId: string | null;
+  /** Prioridade GUT (1..5 cada) definida pelo Planner; null = sem prioridade. */
+  gutGravity?: number | null;
+  gutUrgency?: number | null;
+  gutTendency?: number | null;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

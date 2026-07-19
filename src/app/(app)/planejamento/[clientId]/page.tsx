@@ -5,6 +5,7 @@ import {
   AlarmClock,
   ClipboardList,
   FileImage,
+  Link2,
   MessageSquareText,
   TriangleAlert,
 } from "lucide-react";
@@ -15,7 +16,7 @@ import { RisarteMark } from "@/components/risarte-logo";
 import { Badge } from "@/components/ui/badge";
 import { PhaseBadge } from "@/components/phase-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PopupCard } from "@/components/popup-card";
 import {
   CLINICAL_BUCKET,
   type ClinicalMediaItem,
@@ -52,6 +53,7 @@ import {
   type AnamnesisAnswerRow,
   type FilledAnswer,
 } from "@/lib/anamnesis";
+import { loadClientProgram } from "@/lib/empresarial/benefits";
 import { getUnitSchedulingData } from "../../agenda/actions";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanningSection } from "../../prontuarios/[id]/planning-section";
@@ -69,6 +71,15 @@ function fmtDateTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/** Contador pequeno mostrado no cabeçalho de um bloco recolhível. */
+function CountChip({ n }: { n: number }) {
+  return (
+    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+      {n}
+    </span>
+  );
 }
 
 /** Iniciais do cliente para o avatar do cartão de identidade. */
@@ -97,7 +108,7 @@ export default async function PlanningCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -324,7 +335,7 @@ export default async function PlanningCockpitPage(
       const { data: itemRows } = await supabase
         .from("treatment_plan_option_items")
         .select(
-          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, sort_order"
+          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
         )
         .in("option_id", optionIds)
         .order("sort_order")
@@ -340,6 +351,9 @@ export default async function PlanningCockpitPage(
             planned_total_minutes: number | null;
             stage_id: string | null;
             suggested_provider_id: string | null;
+            gut_gravity: number | null;
+            gut_urgency: number | null;
+            gut_tendency: number | null;
             sort_order: number;
           }[]
         >();
@@ -355,6 +369,9 @@ export default async function PlanningCockpitPage(
           plannedMinutes: it.planned_total_minutes,
           stageId: it.stage_id,
           suggestedProviderId: it.suggested_provider_id,
+          gutGravity: it.gut_gravity,
+          gutUrgency: it.gut_urgency,
+          gutTendency: it.gut_tendency,
         });
         itemsByOption.set(it.option_id, list);
       }
@@ -548,6 +565,13 @@ export default async function PlanningCockpitPage(
       ? await projectOptionSessions(summaryOption.id)
       : [];
 
+  // Risarte Empresarial: mostrar ao Planner o selo do programa + economia por
+  // opção também no cockpit (igual à ficha).
+  const isProgramMember =
+    Boolean(client.empresarial_company_id) &&
+    client.empresarial_active !== false;
+  const program = isProgramMember ? await loadClientProgram(client.id) : null;
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
       {/* Cartão de identidade — faixa fina na cor da Fase, igual ao resto do app. */}
@@ -654,163 +678,170 @@ export default async function PlanningCockpitPage(
         </div>
       )}
 
-      {/* H4.5 Lote 2: projeção do tratamento (estrutura + esforço planejado). */}
-      {summaryOption && <TreatmentSummary option={summaryOption} />}
-
-      {/* H4.5 Pedido 2: montar os atendimentos + sequência (juntar sessões). */}
-      {projectedSessions.length > 0 && summaryOption && (
-        <SessionJoinPlanner
-          sessions={projectedSessions}
-          optionId={summaryOption.id}
-          providerOptions={providerOptions}
-          canEdit
-        />
-      )}
-
-      {/* H3.13: colunas com rolagem independente (não rola a página inteira). */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Evidências do cliente (abrem em pop-up, sem trocar de tela). */}
-        <div className="space-y-4 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FileImage className="size-4 text-gold" />
-                Evidências do cliente
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                {consent
-                  ? `Consentimento registrado em ${fmtDateTime(consent.grantedAt)}${
-                      consent.recordedByName ? ` por ${consent.recordedByName}` : ""
-                    }.`
-                  : "Sem consentimento registrado."}
+      {/* Barra de apoio: cada material do caso vira um botão que abre um pop-up.
+          Libera a tela e deixa o editor de plano como área principal. */}
+      <div className="flex flex-wrap gap-2">
+        {summaryOption && (
+          <PopupCard
+            label="Resumo do tratamento"
+            icon={<ClipboardList className="size-4" />}
+            wide
+          >
+            <TreatmentSummary options={treatmentPlan?.options ?? []} />
+          </PopupCard>
+        )}
+        {projectedSessions.length > 0 && summaryOption && (
+          <PopupCard
+            label="Atendimentos e sequência"
+            icon={<Link2 className="size-4" />}
+            wide
+          >
+            <SessionJoinPlanner
+              sessions={projectedSessions}
+              optionId={summaryOption.id}
+              providerOptions={providerOptions}
+              items={summaryOption.items}
+              canEdit
+            />
+          </PopupCard>
+        )}
+        <PopupCard
+          label="Evidências"
+          icon={<FileImage className="size-4" />}
+          badge={<CountChip n={media.length} />}
+          dialogTitle="Evidências do cliente"
+          wide
+        >
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {consent
+                ? `Consentimento registrado em ${fmtDateTime(consent.grantedAt)}${
+                    consent.recordedByName ? ` por ${consent.recordedByName}` : ""
+                  }.`
+                : "Sem consentimento registrado."}
+            </p>
+            {media.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum arquivo enviado.
               </p>
+            ) : (
               <MediaGallery media={media} canEdit={false} />
-            </CardContent>
-          </Card>
-
-          {/* H3.13: anamnese do cliente (leitura). */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ClipboardList className="size-4 text-gold" />
-                Anamnese
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {anamnesisInfo == null ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma anamnese preenchida.
-                </p>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    {anamnesisInfo.templateName ?? "Ficha"} · atualizada em{" "}
-                    {fmtDateTime(anamnesisInfo.filledAt)}
-                  </p>
-                  {anamnesisAlerts.length > 0 && (
-                    <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-                      {anamnesisAlerts.map((a, i) => (
-                        <p key={i} className="flex items-start gap-1.5">
-                          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-                          <span className="font-medium">{a.message}</span>
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  <ul className="space-y-1 text-sm">
-                    {anamnesisAnswers.map((a) => (
-                      <li key={a.id} className="flex flex-wrap gap-x-2">
-                        <span className="text-muted-foreground">{a.label}:</span>
-                        <span className="font-medium">
-                          {formatAnswer(a.value, a.kind)}
-                          {a.detail ? ` — ${a.detail}` : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <MessageSquareText className="size-4 text-gold" />
-                Considerações clínicas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {notes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma consideração registrada pelo Coordenador.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {notes.map((n) => (
-                    <li key={n.id} className="rounded-md border p-2 text-sm">
-                      <p className="whitespace-pre-wrap">{n.body}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {fmtDateTime(n.createdAt)}
-                        {n.authorName ? ` · ${n.authorName}` : ""}
-                        {n.clinicName ? ` · ${n.clinicName}` : ""}
-                      </p>
-                    </li>
+            )}
+          </div>
+        </PopupCard>
+        <PopupCard
+          label="Anamnese"
+          icon={<ClipboardList className="size-4" />}
+          badge={
+            anamnesisAlerts.length > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 text-xs font-medium text-destructive">
+                <TriangleAlert className="size-3" />
+                {anamnesisAlerts.length}
+              </span>
+            ) : undefined
+          }
+        >
+          {anamnesisInfo == null ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma anamnese preenchida.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {anamnesisInfo.templateName ?? "Ficha"} · atualizada em{" "}
+                {fmtDateTime(anamnesisInfo.filledAt)}
+              </p>
+              {anamnesisAlerts.length > 0 && (
+                <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                  {anamnesisAlerts.map((a, i) => (
+                    <p key={i} className="flex items-start gap-1.5">
+                      <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                      <span className="font-medium">{a.message}</span>
+                    </p>
                   ))}
-                </ul>
+                </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* H3.11: informações complementares enviadas pelo Coordenador. */}
-          {supplements.length > 0 && (
-            <Card className="border-primary/40">
-              <CardHeader>
-                <CardTitle className="text-base text-primary">
-                  Informações complementares do Coordenador
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {supplements.map((s) => (
-                    <li
-                      key={s.id}
-                      className="rounded-md border border-primary/30 bg-primary/5 p-2 text-sm"
-                    >
-                      <p className="whitespace-pre-wrap">{s.body}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {fmtDateTime(s.createdAt)}
-                        {s.authorName ? ` · ${s.authorName}` : ""}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+              <ul className="space-y-1 text-sm">
+                {anamnesisAnswers.map((a) => (
+                  <li key={a.id} className="flex flex-wrap gap-x-2">
+                    <span className="text-muted-foreground">{a.label}:</span>
+                    <span className="font-medium">
+                      {formatAnswer(a.value, a.kind)}
+                      {a.detail ? ` — ${a.detail}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-        </div>
-
-        {/* Editor do plano (mesma tela) — rolagem independente. */}
-        <div className="lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pl-1">
-          <PlanningSection
-            clientId={client.id}
-            clientName={client.full_name}
-            plan={treatmentPlan}
-            canEdit
-            canReview={false}
-            inPlanningPhase={phase === "planning_center"}
-            catalog={catalog}
-            protocols={protocolByProcedure}
-            realStats={realStatsByProcedure}
-            currentPillar={
-              client.methodology_pillar as MethodologyPillar | null
-            }
-            providerOptions={providerOptions}
-          />
-        </div>
+        </PopupCard>
+        <PopupCard
+          label="Considerações"
+          icon={<MessageSquareText className="size-4" />}
+          badge={notes.length > 0 ? <CountChip n={notes.length} /> : undefined}
+          dialogTitle="Considerações clínicas"
+        >
+          {notes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma consideração registrada pelo Coordenador.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {notes.map((n) => (
+                <li key={n.id} className="rounded-md border p-2 text-sm">
+                  <p className="whitespace-pre-wrap">{n.body}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {fmtDateTime(n.createdAt)}
+                    {n.authorName ? ` · ${n.authorName}` : ""}
+                    {n.clinicName ? ` · ${n.clinicName}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </PopupCard>
+        {supplements.length > 0 && (
+          <PopupCard
+            label="Do Coordenador"
+            icon={<MessageSquareText className="size-4" />}
+            badge={<CountChip n={supplements.length} />}
+            dialogTitle="Informações complementares do Coordenador"
+          >
+            <ul className="space-y-2">
+              {supplements.map((s) => (
+                <li
+                  key={s.id}
+                  className="rounded-md border border-primary/30 bg-primary/5 p-2 text-sm"
+                >
+                  <p className="whitespace-pre-wrap">{s.body}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {fmtDateTime(s.createdAt)}
+                    {s.authorName ? ` · ${s.authorName}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </PopupCard>
+        )}
       </div>
+
+      {/* Editor do plano — a área principal do cockpit, em largura total. */}
+      <PlanningSection
+        clientId={client.id}
+        clientName={client.full_name}
+        plan={treatmentPlan}
+        canEdit
+        canReview={false}
+        inPlanningPhase={phase === "planning_center"}
+        catalog={catalog}
+        protocols={protocolByProcedure}
+        realStats={realStatsByProcedure}
+        currentPillar={client.methodology_pillar as MethodologyPillar | null}
+        providerOptions={providerOptions}
+        programActive={program?.active ?? false}
+        programCompanyName={program?.companyName ?? null}
+        programBenefits={program?.byProcedure ?? {}}
+      />
     </div>
   );
 }

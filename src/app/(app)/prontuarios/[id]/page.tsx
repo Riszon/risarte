@@ -1620,7 +1620,7 @@ export default async function ClientDetailPage(
         const { data: itemRows } = await supabase
           .from("treatment_plan_option_items")
           .select(
-            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, sort_order"
+            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
           )
           .in("option_id", optionIds)
           .order("sort_order")
@@ -1636,6 +1636,9 @@ export default async function ClientDetailPage(
               planned_total_minutes: number | null;
               stage_id: string | null;
               suggested_provider_id: string | null;
+              gut_gravity: number | null;
+              gut_urgency: number | null;
+              gut_tendency: number | null;
               sort_order: number;
             }[]
           >();
@@ -1651,6 +1654,9 @@ export default async function ClientDetailPage(
             plannedMinutes: it.planned_total_minutes,
             stageId: it.stage_id,
             suggestedProviderId: it.suggested_provider_id,
+            gutGravity: it.gut_gravity,
+            gutUrgency: it.gut_urgency,
+            gutTendency: it.gut_tendency,
           });
           itemsByOption.set(it.option_id, list);
         }

@@ -568,6 +568,13 @@ function posIntOrNull(value: number | null | undefined): number | null {
   return value != null && value > 0 ? Math.floor(value) : null;
 }
 
+/** Nota GUT válida (1..5) ou null (fora da faixa = sem prioridade). */
+function gutNote(value: number | null | undefined): number | null {
+  if (value == null) return null;
+  const n = Math.floor(value);
+  return n >= 1 && n <= 5 ? n : null;
+}
+
 export async function addBudgetItem(
   optionId: string,
   input: {
@@ -578,6 +585,9 @@ export async function addBudgetItem(
     plannedSessions?: number | null;
     plannedMinutes?: number | null;
     stageId?: string | null;
+    gutGravity?: number | null;
+    gutUrgency?: number | null;
+    gutTendency?: number | null;
   }
 ): Promise<PlanResult> {
   const description = input.description.trim();
@@ -607,6 +617,9 @@ export async function addBudgetItem(
     planned_sessions: posIntOrNull(input.plannedSessions),
     planned_total_minutes: posIntOrNull(input.plannedMinutes),
     stage_id: input.stageId ?? null,
+    gut_gravity: gutNote(input.gutGravity),
+    gut_urgency: gutNote(input.gutUrgency),
+    gut_tendency: gutNote(input.gutTendency),
     sort_order: count ?? 0,
   });
   if (error) {
@@ -1134,6 +1147,48 @@ export async function setItemProvider(
   if (error) {
     console.error("setItemProvider failed:", error.message);
     return { ok: false, error: "Não foi possível indicar o profissional." };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/**
+ * Prioridade GUT do item: três notas de 1 a 5 (gravidade, urgência, tendência).
+ * Qualquer nota fora da faixa vira null (item "sem prioridade" naquela dimensão).
+ */
+export async function setItemGut(
+  itemId: string,
+  gut: {
+    gravity: number | null;
+    urgency: number | null;
+    tendency: number | null;
+  }
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: item } = await supabase
+    .from("treatment_plan_option_items")
+    .select("option_id")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { ok: false, error: "Item não encontrado." };
+  const ctx = await loadOptionContext(item.option_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase
+    .from("treatment_plan_option_items")
+    .update({
+      gut_gravity: gutNote(gut.gravity),
+      gut_urgency: gutNote(gut.urgency),
+      gut_tendency: gutNote(gut.tendency),
+    })
+    .eq("id", itemId);
+  if (error) {
+    console.error("setItemGut failed:", error.message);
+    return { ok: false, error: "Não foi possível definir a prioridade." };
   }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);

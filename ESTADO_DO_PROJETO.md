@@ -1,6 +1,60 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/07/2026 · Versão do sistema: **0.79.2** · Última migração: **0131**_
+_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.3** · Última migração: **0132**_
+
+> **Editor — opções recolhíveis + Resumo navegável ✅ (v0.80.3, sem migração):**
+> cada **opção de tratamento recolhe/expande** (seta no cabeçalho; principal abre,
+> alternativas recolhem por padrão). Recolhida, mostra um **resumo**: "Plano
+> principal" (se for), **prioridade média**, nº de **procedimentos**, **etapas**,
+> **sessões**, **tempo de cadeira**, **valor total** e **economia** (Risarte
+> Empresarial). O **Resumo do tratamento** virou **navegável entre todos os planos**
+> (setas ‹ ›) e ganhou **nº de procedimentos** + **prioridade média** por plano.
+
+> **Editor — cartões de procedimento + etapas ✅ (v0.80.2, sem migração):** cada
+> procedimento virou um **cartão nítido** (borda + fundo) com **faixa lateral
+> colorida pela prioridade** (vermelho/âmbar/verde) e layout em linhas (nome+valor /
+> prioridade / etapa+profissional). A **criação de etapas** virou uma seção
+> **recolhível própria** ("Etapas do tratamento (opcional)"), separada do orçamento;
+> os cabeçalhos de etapa nos grupos ficaram em **maiúsculas com ícone dourado**.
+
+> **Cockpit + Editor — reformulação ✅ (v0.80.1, sem nova migração):** (1) **Editor
+> de plano vira a área principal** em largura total; Resumo, Atendimentos,
+> Evidências, Anamnese e Considerações viram uma **barra de botões que abrem
+> pop-up** (`PopupCard`). Anamnese marca alerta no botão. (2) **Diagnóstico e
+> objetivos** ficam num bloco **recolher/expandir**. (3) **Adicionar procedimento**
+> some atrás de um botão **"+ Procedimento"**. (4) **Confirmação antes de excluir**
+> opção/procedimento/etapa (`ConfirmDialog`). (5) **Selo Empresarial** virou linha
+> discreta. (6) **GUT**: procedimentos **reordenam por prioridade** (maior no topo);
+> cada opção mostra a **prioridade média** (`GutAverageBadge` — soma÷qtd →
+> Alta/Média/Baixa + média); o selo aparece também em **Atendimentos e sequência**.
+> (7) **Arquivos** (foto/raio-x/PDF/vídeo) **ampliam em tela cheia** (lightbox
+> estendido + botão "Ampliar"). Prioridades são só para a equipe (nunca ao cliente).
+
+> **Editor de Plano — GUT + auto-save + hierarquia ✅ (v0.80.0, migração 0132):**
+> (A) **Hierarquia visual**: cada seção (Diagnóstico, Objetivos, Considerações,
+> Opções) com título de ícone dourado; em leitura o texto do Planner vai num
+> **painel próprio** (rótulo em cima), separando "campo" de "conteúdo escrito".
+> (B) **Auto-salvamento**: Diagnóstico, Objetivos e Considerações **salvam sozinhos**
+> (~1s após parar de digitar) com aviso "Salvando…/Salvo ✓"; sumiram os botões de
+> salvar. (C) **Prioridade GUT por procedimento** (migração 0132: colunas
+> `gut_gravity/urgency/tendency` em `treatment_plan_option_items`, 1..5, opcionais):
+> o Planner define G/U/T por item; o sistema calcula **G×U×T** e mostra um **selo
+> Alta/Média/Baixa + número** (cortes Alta≥45, Média 18–44, Baixa 1–17 em
+> `src/lib/gut.ts`); selo aparece no editor, no resumo do Coordenador e no Resumo do
+> tratamento. Ajuda o Comercial a priorizar numa negociação. (D) **Selo Risarte
+> Empresarial no cockpit** (antes só na ficha): mostra o selo do programa + economia
+> por opção também para o Planner. Apresentação do Comercial recebe o GUT numa
+> rodada futura.
+
+> **Cockpit — blocos recolher/expandir ✅ (v0.79.3, sem migração):** para a tela
+> não ficar tão longa, cada bloco vira **recolhível** (clique no cabeçalho: seta
+> gira, corpo some). Componente reutilizável `CollapsibleBlock`
+> (`src/components/collapsible-block.tsx`). Aplicado em **Resumo do tratamento**,
+> **Atendimentos**, **Evidências**, **Anamnese** e **Considerações**. Defaults que
+> encurtam a tela: Evidências e Considerações **começam recolhidas** (com contador
+> ao lado do título); a **Anamnese abre sozinha só quando há alerta de risco**
+> (mostra o nº de alertas); Resumo/Atendimentos/Informações do Coordenador abrem
+> normalmente. O **Editor do plano** fica sempre visível (é o trabalho principal).
 
 > **Refino visual — Cockpit de Planejamento ✅ (v0.79.2, sem migração):**
 > cabeçalho virou **cartão de identidade** (avatar com iniciais + faixa fina na

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -10,13 +10,19 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  Flag,
   Layers,
   LayoutDashboard,
+  ListChecks,
+  Loader2,
+  NotebookPen,
   Pencil,
   Plus,
   Send,
   Sparkles,
   Star,
+  Stethoscope,
+  Target,
   ThumbsDown,
   ThumbsUp,
   X,
@@ -24,9 +30,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { GutBadge, GutAverageBadge } from "@/components/gut-badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { GUT_DIMENSION_LABELS, gutTierOf, sortByGutDesc } from "@/lib/gut";
 import {
   OPTION_REVIEW_LABELS,
   PLAN_STATUS_LABELS,
@@ -69,6 +78,7 @@ import {
   reviewPlanOption,
   saveDiagnosis,
   savePlanNarrative,
+  setItemGut,
   setItemProvider,
   setItemStage,
   setPrimaryOption,
@@ -90,6 +100,180 @@ function fmtDateTime(iso: string): string {
 function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
+
+type SaveState = "idle" | "saving" | "saved";
+
+/** Aviso discreto de auto-salvamento ao lado do rótulo do campo. */
+function SaveStatus({ state }: { state: SaveState }) {
+  if (state === "saving")
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Loader2 className="size-3 animate-spin" /> Salvando…
+      </span>
+    );
+  if (state === "saved")
+    return (
+      <span className="flex items-center gap-1 text-xs text-emerald-600">
+        <Check className="size-3" /> Salvo
+      </span>
+    );
+  return null;
+}
+
+/** Rótulo de seção do editor: ícone dourado + título + status à direita. */
+function FieldHead({
+  icon,
+  label,
+  htmlFor,
+  status,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  htmlFor?: string;
+  status?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Label
+        htmlFor={htmlFor}
+        className="flex items-center gap-1.5 text-sm font-medium"
+      >
+        <span className="text-gold">{icon}</span>
+        {label}
+      </Label>
+      {status}
+    </div>
+  );
+}
+
+/** Texto salvo do Planner em modo leitura, dentro de um painel próprio (separa
+ * o "campo" do "conteúdo escrito"). */
+function ReadBlock({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3">
+      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+        <span className="text-gold">{icon}</span>
+        {label}
+      </p>
+      <div className="text-sm whitespace-pre-wrap">{children}</div>
+    </div>
+  );
+}
+
+/** Seletor inline da prioridade GUT (3 notas 1..5) + prévia do selo. */
+function GutPicker({
+  gravity,
+  urgency,
+  tendency,
+  disabled,
+  onChange,
+}: {
+  gravity: number | null;
+  urgency: number | null;
+  tendency: number | null;
+  disabled?: boolean;
+  onChange: (g: number | null, u: number | null, t: number | null) => void;
+}) {
+  const one = (
+    label: string,
+    short: string,
+    cur: number | null,
+    set: (n: number | null) => void
+  ) => (
+    <label className="flex items-center gap-0.5" title={label}>
+      <span className="text-[10px] text-muted-foreground">{short}</span>
+      <select
+        value={cur ?? ""}
+        disabled={disabled}
+        onChange={(e) => set(e.target.value ? Number(e.target.value) : null)}
+        className="h-6 rounded border border-input bg-transparent px-0.5 text-[11px]"
+        aria-label={label}
+      >
+        <option value="">–</option>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <Flag className="size-3" /> Prioridade
+      </span>
+      {one(GUT_DIMENSION_LABELS.gravity, "G", gravity, (n) =>
+        onChange(n, urgency, tendency)
+      )}
+      {one(GUT_DIMENSION_LABELS.urgency, "U", urgency, (n) =>
+        onChange(gravity, n, tendency)
+      )}
+      {one(GUT_DIMENSION_LABELS.tendency, "T", tendency, (n) =>
+        onChange(gravity, urgency, n)
+      )}
+      <GutBadge
+        item={{ gutGravity: gravity, gutUrgency: urgency, gutTendency: tendency }}
+      />
+    </span>
+  );
+}
+
+/** Colapsável leve (sem cartão) para seções internas do editor de plano. */
+function EditorCollapse({
+  title,
+  icon,
+  aside,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  aside?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-lg border">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium"
+      >
+        <span className="text-gold">{icon}</span>
+        {title}
+        <span className="ml-auto flex items-center gap-2">
+          {aside}
+          <ChevronDown
+            className={cn(
+              "size-4 text-muted-foreground transition-transform",
+              open && "rotate-180"
+            )}
+            aria-hidden
+          />
+        </span>
+      </button>
+      {open && <div className="space-y-3 border-t px-3 py-3">{children}</div>}
+    </div>
+  );
+}
+
+/** Cor da faixa lateral do cartão de procedimento, pela prioridade GUT. */
+const GUT_ACCENT: Record<string, string> = {
+  high: "border-l-red-400",
+  medium: "border-l-amber-400",
+  low: "border-l-emerald-400",
+};
 
 /**
  * Pilar sugerido automaticamente: soma o valor dos procedimentos por pilar
@@ -173,6 +357,11 @@ export function PlanningSection({
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPrimary, setEditPrimary] = useState(false);
+  // Recolher/expandir cada opção do plano (default: principal aberta, demais
+  // recolhidas — facilita a navegação com vários planos).
+  const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
+  const toggleOption = (id: string, fallback: boolean) =>
+    setOpenOptions((prev) => ({ ...prev, [id]: !(prev[id] ?? fallback) }));
 
   const currentTreatment: TreatmentPillar | "" =
     currentPillar && TREATMENT_PILLARS.includes(currentPillar as TreatmentPillar)
@@ -181,6 +370,63 @@ export function PlanningSection({
   const [pillarChoice, setPillarChoice] = useState<TreatmentPillar | "">(
     currentTreatment
   );
+
+  // Auto-salvamento dos textos do Planner (sem botão) — status por campo.
+  const [diagState, setDiagState] = useState<SaveState>("idle");
+  const [narrState, setNarrState] = useState<SaveState>("idle");
+  const savedDiag = useRef(plan?.diagnosis ?? "");
+  const savedObjectives = useRef(plan?.objectives ?? "");
+  const savedNotes = useRef(plan?.planningNotes ?? "");
+
+  // O plano só é editável em rascunho/devolvido (senão é leitura). Calculado
+  // aqui em cima porque o auto-salvamento (efeitos) depende dele.
+  const canEditContent =
+    plan != null &&
+    canEdit &&
+    (plan.status === "draft" || plan.status === "returned");
+
+  // Diagnóstico: salva ~1s depois de parar de digitar.
+  useEffect(() => {
+    if (!plan || !canEditContent) return;
+    if (diagnosis === savedDiag.current) return;
+    setDiagState("saving");
+    const t = setTimeout(() => {
+      saveDiagnosis(plan.id, diagnosis).then((r) => {
+        if (r.ok) {
+          savedDiag.current = diagnosis;
+          setDiagState("saved");
+        } else {
+          setDiagState("idle");
+          toast.error(r.error ?? "Não foi possível salvar o diagnóstico.");
+        }
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [diagnosis, canEditContent, plan]);
+
+  // Objetivos + Considerações: salvos juntos, ~1s depois de parar de digitar.
+  useEffect(() => {
+    if (!plan || !canEditContent) return;
+    if (
+      objectives === savedObjectives.current &&
+      planningNotes === savedNotes.current
+    )
+      return;
+    setNarrState("saving");
+    const t = setTimeout(() => {
+      savePlanNarrative(plan.id, objectives, planningNotes).then((r) => {
+        if (r.ok) {
+          savedObjectives.current = objectives;
+          savedNotes.current = planningNotes;
+          setNarrState("saved");
+        } else {
+          setNarrState("idle");
+          toast.error(r.error ?? "Não foi possível salvar os objetivos.");
+        }
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [objectives, planningNotes, canEditContent, plan]);
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -245,10 +491,8 @@ export function PlanningSection({
   const suggestedPillar = canEdit
     ? suggestTreatmentPillar(options, catalog)
     : null;
-  // After approval (or while awaiting it), the plan is locked for editing — the
-  // Planner must "Reabrir para edição", which sends it back for re-approval.
-  const canEditContent =
-    canEdit && (plan.status === "draft" || plan.status === "returned");
+  // (canEditContent é calculado no topo do componente — o auto-salvamento
+  // depende dele. Depois de enviado/aprovado, o plano fica em leitura.)
   // H2.4: depois de enviado ao Comercial (cliente saiu da Fase 3), o botão de
   // reabrir some — só volta se o caso retornar ao Centro de Planejamento.
   const canReopen =
@@ -263,17 +507,6 @@ export function PlanningSection({
     diagnosis.trim().length > 0 &&
     options.length > 0 &&
     allOptionsHaveItems;
-
-  function saveDiag() {
-    run(() => saveDiagnosis(plan!.id, diagnosis), "Diagnóstico salvo.");
-  }
-
-  function saveNarrative() {
-    run(
-      () => savePlanNarrative(plan!.id, objectives, planningNotes),
-      "Objetivos e considerações salvos."
-    );
-  }
 
   // H2.3: envio direto — sem etapa de confirmação; só exige o pilar definido.
   function submitPlan() {
@@ -343,7 +576,10 @@ export function PlanningSection({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">Plano de Tratamento</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardList className="size-4 text-gold" />
+            Plano de Tratamento
+          </CardTitle>
           <div className="flex items-center gap-2">
             {cockpitHref && canEdit && (
               <Button
@@ -381,106 +617,117 @@ export function PlanningSection({
           </p>
         )}
 
+        {/* Diagnóstico + objetivos — bloco recolhível para encurtar a tela. */}
+        <EditorCollapse
+          title="Diagnóstico e objetivos"
+          icon={<Stethoscope className="size-4" />}
+        >
         {/* Diagnóstico */}
-        <div className="space-y-2">
-          <Label htmlFor="plan-diagnosis">Diagnóstico</Label>
+        <div className="space-y-1.5">
+          <FieldHead
+            icon={<Stethoscope className="size-4" />}
+            label="Diagnóstico"
+            htmlFor="plan-diagnosis"
+            status={canEditContent ? <SaveStatus state={diagState} /> : null}
+          />
           {canEditContent ? (
-            <>
-              <textarea
-                id="plan-diagnosis"
-                value={diagnosis}
-                onChange={(e) => setDiagnosis(e.target.value)}
-                rows={4}
-                placeholder="Resumo do diagnóstico do caso..."
-                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isPending || diagnosis === (plan.diagnosis ?? "")}
-                onClick={saveDiag}
-              >
-                Salvar diagnóstico
-              </Button>
-            </>
+            <textarea
+              id="plan-diagnosis"
+              value={diagnosis}
+              onChange={(e) => setDiagnosis(e.target.value)}
+              rows={4}
+              placeholder="Resumo do diagnóstico do caso..."
+              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+            />
+          ) : plan.diagnosis ? (
+            <ReadBlock
+              icon={<Stethoscope className="size-3" />}
+              label="Diagnóstico"
+            >
+              {plan.diagnosis}
+            </ReadBlock>
           ) : (
-            <p className="whitespace-pre-wrap text-sm">
-              {plan.diagnosis || (
-                <span className="text-muted-foreground">
-                  Diagnóstico ainda não preenchido.
-                </span>
-              )}
+            <p className="text-sm text-muted-foreground">
+              Diagnóstico ainda não preenchido.
             </p>
           )}
         </div>
 
         {/* Objetivos do tratamento + Considerações do planejamento (apresentação) */}
-        <div className="space-y-2">
-          <Label htmlFor="plan-objectives">Objetivos do tratamento</Label>
-          {canEditContent ? (
-            <>
-              <textarea
-                id="plan-objectives"
-                value={objectives}
-                onChange={(e) => setObjectives(e.target.value)}
-                rows={3}
-                placeholder="O que este tratamento busca alcançar (ex.: devolver a mastigação, harmonizar o sorriso)..."
-                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-              />
-              <Label htmlFor="plan-notes">Considerações do planejamento</Label>
-              <textarea
-                id="plan-notes"
-                value={planningNotes}
-                onChange={(e) => setPlanningNotes(e.target.value)}
-                rows={3}
-                placeholder="Observações para a apresentação ao cliente (sequência, cuidados, alternativas)..."
-                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={
-                  isPending ||
-                  (objectives === (plan.objectives ?? "") &&
-                    planningNotes === (plan.planningNotes ?? ""))
-                }
-                onClick={saveNarrative}
-              >
-                Salvar objetivos e considerações
-              </Button>
-            </>
-          ) : (
-            (plan.objectives || plan.planningNotes) && (
-              <div className="space-y-1 text-sm">
-                {plan.objectives && (
-                  <p className="whitespace-pre-wrap">
-                    <span className="font-medium">Objetivos:</span>{" "}
-                    {plan.objectives}
-                  </p>
-                )}
-                {plan.planningNotes && (
-                  <p className="whitespace-pre-wrap">
-                    <span className="font-medium">Considerações:</span>{" "}
-                    {plan.planningNotes}
-                  </p>
-                )}
-              </div>
-            )
-          )}
-        </div>
+        {canEditContent ? (
+          <div className="space-y-1.5">
+            <FieldHead
+              icon={<Target className="size-4" />}
+              label="Objetivos do tratamento"
+              htmlFor="plan-objectives"
+              status={<SaveStatus state={narrState} />}
+            />
+            <textarea
+              id="plan-objectives"
+              value={objectives}
+              onChange={(e) => setObjectives(e.target.value)}
+              rows={3}
+              placeholder="O que este tratamento busca alcançar (ex.: devolver a mastigação, harmonizar o sorriso)..."
+              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+            />
+            <FieldHead
+              icon={<NotebookPen className="size-4" />}
+              label="Considerações do planejamento"
+              htmlFor="plan-notes"
+            />
+            <textarea
+              id="plan-notes"
+              value={planningNotes}
+              onChange={(e) => setPlanningNotes(e.target.value)}
+              rows={3}
+              placeholder="Observações para a apresentação ao cliente (sequência, cuidados, alternativas)..."
+              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+            />
+          </div>
+        ) : (
+          (plan.objectives || plan.planningNotes) && (
+            <div className="space-y-2">
+              {plan.objectives && (
+                <ReadBlock
+                  icon={<Target className="size-3" />}
+                  label="Objetivos do tratamento"
+                >
+                  {plan.objectives}
+                </ReadBlock>
+              )}
+              {plan.planningNotes && (
+                <ReadBlock
+                  icon={<NotebookPen className="size-3" />}
+                  label="Considerações do planejamento"
+                >
+                  {plan.planningNotes}
+                </ReadBlock>
+              )}
+            </div>
+          )
+        )}
+        </EditorCollapse>
 
+        {/* Risarte Empresarial: selo discreto (só quando o cliente é do programa). */}
         {programActive && (
-          <div className="rounded-lg border border-gold/40 bg-gold/5 px-3 py-2 text-sm">
-            <span className="font-medium text-gold">★ Risarte Empresarial</span>
-            {programCompanyName ? ` — ${programCompanyName}.` : "."} O orçamento
-            mostra o valor com o benefício do programa (a economia aparece em cada
-            opção).
+          <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-gold/5 px-2.5 py-1.5 text-xs">
+            <Star className="size-3.5 shrink-0 fill-gold text-gold" />
+            <span className="font-medium text-gold">Risarte Empresarial</span>
+            {programCompanyName && (
+              <span className="text-muted-foreground">· {programCompanyName}</span>
+            )}
+            <span className="text-muted-foreground">
+              · economia do programa aplicada em cada opção
+            </span>
           </div>
         )}
 
         {/* Opções do plano (principal + alternativos) */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Opções de tratamento</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-medium">
+            <ListChecks className="size-4 text-gold" />
+            Opções de tratamento
+          </h3>
           {options.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma opção cadastrada. Adicione o plano principal e, se houver,
@@ -488,7 +735,9 @@ export function PlanningSection({
             </p>
           ) : (
             <ul className="space-y-2">
-              {options.map((o) => (
+              {options.map((o) => {
+                const optOpen = openOptions[o.id] ?? o.isPrimary;
+                return (
                 <li
                   key={o.id}
                   className={cn(
@@ -537,7 +786,21 @@ export function PlanningSection({
                     </div>
                   ) : (
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleOption(o.id, o.isPrimary)}
+                        aria-expanded={optOpen}
+                        aria-label={optOpen ? "Recolher opção" : "Expandir opção"}
+                        className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "size-4 transition-transform",
+                            !optOpen && "-rotate-90"
+                          )}
+                        />
+                      </button>
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium">
                           {o.isPrimary && (
                             <Star className="mr-1 inline size-3.5 fill-gold text-gold" />
@@ -564,11 +827,19 @@ export function PlanningSection({
                               {OPTION_REVIEW_LABELS[o.reviewStatus]}
                             </Badge>
                           )}
+                          <GutAverageBadge items={o.items} />
                         </div>
-                        {o.description && (
+                        {optOpen && o.description && (
                           <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                             {o.description}
                           </p>
+                        )}
+                        {!optOpen && (
+                          <OptionSummaryChips
+                            option={o}
+                            programActive={programActive}
+                            programBenefits={programBenefits}
+                          />
                         )}
                       </div>
                       {canEditContent && (
@@ -597,49 +868,69 @@ export function PlanningSection({
                           >
                             <Pencil className="size-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Remover opção"
-                            disabled={isPending}
-                            onClick={() =>
-                              run(
-                                () => removePlanOption(o.id),
-                                "Opção removida."
-                              )
+                          <ConfirmDialog
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Remover opção"
+                                disabled={isPending}
+                              >
+                                <X className="size-4" />
+                              </Button>
                             }
-                          >
-                            <X className="size-4" />
-                          </Button>
+                            title="Remover esta opção do plano?"
+                            description={
+                              <>
+                                A opção{" "}
+                                <span className="font-medium">
+                                  “{o.title}”
+                                </span>{" "}
+                                e todos os seus procedimentos serão excluídos.
+                                Esta ação não pode ser desfeita.
+                              </>
+                            }
+                            confirmLabel="Remover opção"
+                            successMessage="Opção removida."
+                            destructive
+                            onConfirm={() => removePlanOption(o.id)}
+                          />
                         </div>
                       )}
                     </div>
                   )}
-                  <OptionBudget
-                    optionId={o.id}
-                    items={o.items}
-                    stages={o.stages}
-                    catalog={catalog}
-                    protocols={protocols}
-                    realStats={realStats}
-                    providerOptions={providerOptions}
-                    canEdit={canEditContent}
-                    summaryOnly={!canSeePrices}
-                    programBenefits={programActive ? programBenefits : undefined}
-                  />
-                  {o.reviewNotes && (
-                    <p className="mt-1 rounded-md border bg-muted/30 p-2 text-xs">
-                      <span className="font-medium">
-                        Considerações do Coordenador:
-                      </span>{" "}
-                      {o.reviewNotes}
-                    </p>
-                  )}
-                  {canReview && plan.status === "submitted" && (
-                    <OptionReview optionId={o.id} optionTitle={o.title} />
+                  {optOpen && (
+                    <>
+                      <OptionBudget
+                        optionId={o.id}
+                        items={o.items}
+                        stages={o.stages}
+                        catalog={catalog}
+                        protocols={protocols}
+                        realStats={realStats}
+                        providerOptions={providerOptions}
+                        canEdit={canEditContent}
+                        summaryOnly={!canSeePrices}
+                        programBenefits={
+                          programActive ? programBenefits : undefined
+                        }
+                      />
+                      {o.reviewNotes && (
+                        <p className="mt-1 rounded-md border bg-muted/30 p-2 text-xs">
+                          <span className="font-medium">
+                            Considerações do Coordenador:
+                          </span>{" "}
+                          {o.reviewNotes}
+                        </p>
+                      )}
+                      {canReview && plan.status === "submitted" && (
+                        <OptionReview optionId={o.id} optionTitle={o.title} />
+                      )}
+                    </>
                   )}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
 
@@ -854,13 +1145,17 @@ function groupItemsByStage(
 ): { stage: PlanStage | null; items: BudgetItem[] }[] {
   const ordered = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
   const stageIds = new Set(ordered.map((s) => s.id));
+  // Dentro de cada etapa, os procedimentos ficam em ordem de prioridade GUT
+  // (maior no topo). Sem prioridade vão para o fim.
   const groups = ordered.map((stage) => ({
     stage: stage as PlanStage | null,
-    items: items.filter((i) => i.stageId === stage.id),
+    items: sortByGutDesc(items.filter((i) => i.stageId === stage.id)),
   }));
   groups.push({
     stage: null,
-    items: items.filter((i) => !i.stageId || !stageIds.has(i.stageId)),
+    items: sortByGutDesc(
+      items.filter((i) => !i.stageId || !stageIds.has(i.stageId))
+    ),
   });
   return groups;
 }
@@ -894,6 +1189,67 @@ function ProgramSavings({
       <span className="font-semibold">
         {formatBRL(program.chargedCents)} · economia {formatBRL(program.savedCents)}
       </span>
+    </div>
+  );
+}
+
+/** Resumo compacto de uma opção quando ela está recolhida (nº procedimentos,
+ * etapas, sessões, tempo, valor total e economia do programa). */
+function OptionSummaryChips({
+  option,
+  programActive,
+  programBenefits,
+}: {
+  option: PlanOption;
+  programActive: boolean;
+  programBenefits?: Record<string, ProgramBenefit>;
+}) {
+  const items = option.items;
+  const sessions = items.reduce((s, i) => s + (i.plannedSessions ?? 0), 0);
+  const minutes = items.reduce((s, i) => s + (i.plannedMinutes ?? 0), 0);
+  const total = budgetTotalCents(items);
+  const program = programActive
+    ? computeProgramTotal(items, programBenefits)
+    : null;
+  const chip = (node: React.ReactNode, key: string) => (
+    <span key={key} className="rounded-md bg-muted px-2 py-0.5 text-muted-foreground">
+      {node}
+    </span>
+  );
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+      {chip(
+        <>
+          <b className="text-foreground">{items.length}</b>{" "}
+          {items.length === 1 ? "procedimento" : "procedimentos"}
+        </>,
+        "proc"
+      )}
+      {option.stages.length > 0 &&
+        chip(
+          <>
+            <b className="text-foreground">{option.stages.length}</b>{" "}
+            {option.stages.length === 1 ? "etapa" : "etapas"}
+          </>,
+          "stages"
+        )}
+      {sessions > 0 &&
+        chip(<b className="text-foreground">{formatSessions(sessions)}</b>, "sess")}
+      {minutes > 0 &&
+        chip(
+          <>
+            <b className="text-foreground">{formatMinutes(minutes)}</b> de cadeira
+          </>,
+          "min"
+        )}
+      <span className="rounded-md bg-muted px-2 py-0.5 font-medium text-foreground">
+        {formatBRL(total)}
+      </span>
+      {program && program.savedCents > 0 && (
+        <span className="rounded-md bg-gold/10 px-2 py-0.5 font-medium text-gold">
+          economia {formatBRL(program.savedCents)}
+        </span>
+      )}
     </div>
   );
 }
@@ -937,6 +1293,10 @@ function OptionBudget({
   const [baseSess, setBaseSess] = useState(0);
   const [baseMin, setBaseMin] = useState(0);
   const [nStage, setNStage] = useState("");
+  // Prioridade GUT do novo item (1..5 cada, ou null).
+  const [nG, setNG] = useState<number | null>(null);
+  const [nU, setNU] = useState<number | null>(null);
+  const [nT, setNT] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [eDesc, setEDesc] = useState("");
   const [ePrice, setEPrice] = useState("");
@@ -948,6 +1308,9 @@ function OptionBudget({
   const [newStageName, setNewStageName] = useState("");
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [stageNameEdit, setStageNameEdit] = useState("");
+  // O formulário de novo procedimento começa fechado (abre pelo botão) para não
+  // ocupar espaço à toa.
+  const [adding, setAdding] = useState(false);
 
   const total = budgetTotalCents(items);
   const program = computeProgramTotal(items, programBenefits);
@@ -1021,18 +1384,24 @@ function OptionBudget({
                 g.items.length > 0 && (
                   <div key={g.stage?.id ?? "none"}>
                     {(g.stage || stages.length > 0) && (
-                      <p className="flex items-center gap-1 text-xs font-medium">
-                        <Layers className="size-3 text-muted-foreground" />
+                      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        <Layers className="size-3.5 text-gold" />
                         {g.stage ? g.stage.name : "Sem etapa"}
                       </p>
                     )}
                     <ul className="space-y-0.5 text-sm text-muted-foreground">
                       {g.items.map((it) => (
-                        <li key={it.id}>
-                          {it.quantity}× {it.description}
-                          {plannedText(it) && (
-                            <span className="text-xs"> — {plannedText(it)}</span>
-                          )}
+                        <li
+                          key={it.id}
+                          className="flex flex-wrap items-center gap-x-1.5"
+                        >
+                          <span>
+                            {it.quantity}× {it.description}
+                            {plannedText(it) && (
+                              <span className="text-xs"> — {plannedText(it)}</span>
+                            )}
+                          </span>
+                          <GutBadge item={it} />
                         </li>
                       ))}
                     </ul>
@@ -1056,11 +1425,12 @@ function OptionBudget({
       <ProgramSavings program={program} />
 
       {canEdit && (
-        <div className="mt-2 space-y-1 rounded-md border border-dashed p-2">
-          <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            <Layers className="size-3.5" />
-            Etapas do tratamento
-          </p>
+        <div className="mt-2">
+          <EditorCollapse
+            title="Etapas do tratamento (opcional)"
+            icon={<Layers className="size-4" />}
+            defaultOpen={orderedStages.length > 0}
+          >
           {orderedStages.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               Nenhuma etapa criada. Crie etapas (ex.: “Adequação”,
@@ -1144,17 +1514,30 @@ function OptionBudget({
                       >
                         <Pencil className="size-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remover etapa"
-                        disabled={isPending}
-                        onClick={() =>
-                          run(() => removePlanStage(s.id), "Etapa removida.")
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Remover etapa"
+                            disabled={isPending}
+                          >
+                            <X className="size-4" />
+                          </Button>
                         }
-                      >
-                        <X className="size-4" />
-                      </Button>
+                        title="Remover esta etapa?"
+                        description={
+                          <>
+                            A etapa{" "}
+                            <span className="font-medium">“{s.name}”</span> será
+                            removida. Os procedimentos dela ficam “sem etapa”.
+                          </>
+                        }
+                        confirmLabel="Remover etapa"
+                        successMessage="Etapa removida."
+                        destructive
+                        onConfirm={() => removePlanStage(s.id)}
+                      />
                     </>
                   )}
                 </li>
@@ -1184,6 +1567,7 @@ function OptionBudget({
               Etapa
             </Button>
           </div>
+          </EditorCollapse>
         </div>
       )}
 
@@ -1194,14 +1578,21 @@ function OptionBudget({
               g.items.length > 0 && (
                 <div key={g.stage?.id ?? "none"}>
                   {(g.stage || stages.length > 0) && (
-                    <p className="flex items-center gap-1 text-xs font-medium">
-                      <Layers className="size-3 text-muted-foreground" />
+                    <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                      <Layers className="size-3.5 text-gold" />
                       {g.stage ? g.stage.name : "Sem etapa"}
                     </p>
                   )}
-                  <ul className="space-y-1">
+                  <ul className="space-y-1.5">
                     {g.items.map((it) => (
-                      <li key={it.id} className="text-sm">
+                      <li
+                        key={it.id}
+                        className={cn(
+                          "rounded-lg border border-l-4 bg-card p-2.5 text-sm",
+                          GUT_ACCENT[gutTierOf(it) ?? ""] ??
+                            "border-l-muted-foreground/20"
+                        )}
+                      >
                         {editingId === it.id ? (
                           <div className="space-y-1.5">
                             <Input
@@ -1299,130 +1690,180 @@ function OptionBudget({
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="min-w-0">
-                              <span className="block">
-                                {it.description}{" "}
-                                <span className="text-xs text-muted-foreground">
+                          <>
+                            {/* Linha 1: nome + valor + ações. */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="font-medium leading-snug">
+                                  {it.description}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
                                   {it.quantity} × {formatBRL(it.unitPriceCents)}
+                                  {plannedText(it) && (
+                                    <> · Planejado: {plannedText(it)}</>
+                                  )}
+                                </p>
+                              </div>
+                              <div className="flex shrink-0 items-center gap-1">
+                                <span className="font-semibold">
+                                  {formatBRL(it.quantity * it.unitPriceCents)}
                                 </span>
-                              </span>
-                              {plannedText(it) && (
-                                <span className="block text-xs text-primary">
-                                  Planejado: {plannedText(it)}
-                                </span>
-                              )}
-                              {canEdit && orderedStages.length > 0 && (
-                                <select
-                                  value={it.stageId ?? ""}
+                                {canEdit && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label="Editar item"
+                                      onClick={() => {
+                                        setEditingId(it.id);
+                                        setEDesc(it.description);
+                                        setEPrice(
+                                          centsToInput(it.unitPriceCents)
+                                        );
+                                        setEQty(String(it.quantity));
+                                        setEPSess(
+                                          it.plannedSessions != null
+                                            ? String(it.plannedSessions)
+                                            : ""
+                                        );
+                                        setEPMin(
+                                          it.plannedMinutes != null
+                                            ? String(it.plannedMinutes)
+                                            : ""
+                                        );
+                                        setEStage(it.stageId ?? "");
+                                      }}
+                                    >
+                                      <Pencil className="size-3.5" />
+                                    </Button>
+                                    <ConfirmDialog
+                                      trigger={
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          aria-label="Remover item"
+                                          disabled={isPending}
+                                        >
+                                          <X className="size-4" />
+                                        </Button>
+                                      }
+                                      title="Remover este procedimento?"
+                                      description={
+                                        <>
+                                          <span className="font-medium">
+                                            {it.description}
+                                          </span>{" "}
+                                          será excluído do orçamento.
+                                        </>
+                                      }
+                                      confirmLabel="Remover"
+                                      successMessage="Item removido."
+                                      destructive
+                                      onConfirm={() => removeBudgetItem(it.id)}
+                                    />
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Linha 2: prioridade GUT em destaque. */}
+                            <div className="mt-1.5">
+                              {canEdit ? (
+                                <GutPicker
+                                  gravity={it.gutGravity ?? null}
+                                  urgency={it.gutUrgency ?? null}
+                                  tendency={it.gutTendency ?? null}
                                   disabled={isPending}
-                                  onChange={(e) =>
+                                  onChange={(g, u, t) =>
                                     run(
                                       () =>
-                                        setItemStage(
-                                          it.id,
-                                          e.target.value || null
-                                        ),
-                                      "Etapa do item atualizada."
+                                        setItemGut(it.id, {
+                                          gravity: g,
+                                          urgency: u,
+                                          tendency: t,
+                                        }),
+                                      "Prioridade atualizada."
                                     )
                                   }
-                                  className="mt-0.5 h-6 rounded border border-input bg-transparent px-1 text-[11px] text-muted-foreground"
-                                  aria-label="Etapa do item"
-                                >
-                                  <option value="">Sem etapa</option>
-                                  {orderedStages.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                      {s.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                />
+                              ) : (
+                                <GutBadge item={it} />
                               )}
-                              {canEdit && providerOptions.length > 0 && (
-                                <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            </div>
+
+                            {/* Linha 3: etapa + profissional, numa sub-linha à parte. */}
+                            {canEdit &&
+                              (orderedStages.length > 0 ||
+                                providerOptions.length > 0) && (
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t pt-1.5 text-[11px] text-muted-foreground">
+                                  {orderedStages.length > 0 && (
+                                    <label className="flex items-center gap-1">
+                                      Etapa
+                                      <select
+                                        value={it.stageId ?? ""}
+                                        disabled={isPending}
+                                        onChange={(e) =>
+                                          run(
+                                            () =>
+                                              setItemStage(
+                                                it.id,
+                                                e.target.value || null
+                                              ),
+                                            "Etapa do item atualizada."
+                                          )
+                                        }
+                                        className="h-6 rounded border border-input bg-transparent px-1 text-[11px]"
+                                        aria-label="Etapa do item"
+                                      >
+                                        <option value="">Sem etapa</option>
+                                        {orderedStages.map((s) => (
+                                          <option key={s.id} value={s.id}>
+                                            {s.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  )}
+                                  {providerOptions.length > 0 && (
+                                    <label className="flex items-center gap-1">
+                                      Profissional
+                                      <select
+                                        value={it.suggestedProviderId ?? ""}
+                                        disabled={isPending}
+                                        onChange={(e) =>
+                                          run(
+                                            () =>
+                                              setItemProvider(
+                                                it.id,
+                                                e.target.value || null
+                                              ),
+                                            "Profissional indicado atualizado."
+                                          )
+                                        }
+                                        className="h-6 rounded border border-input bg-transparent px-1 text-[11px]"
+                                        aria-label="Profissional indicado"
+                                      >
+                                        <option value="">
+                                          Automático (pela regra)
+                                        </option>
+                                        {providerOptions.map((p) => (
+                                          <option key={p.id} value={p.id}>
+                                            {p.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  )}
+                                </div>
+                              )}
+                            {(!canEdit || providerOptions.length === 0) &&
+                              providerName(it.suggestedProviderId) && (
+                                <p className="mt-1 text-[11px] text-primary">
                                   Profissional indicado:{" "}
-                                  <select
-                                    value={it.suggestedProviderId ?? ""}
-                                    disabled={isPending}
-                                    onChange={(e) =>
-                                      run(
-                                        () =>
-                                          setItemProvider(
-                                            it.id,
-                                            e.target.value || null
-                                          ),
-                                        "Profissional indicado atualizado."
-                                      )
-                                    }
-                                    className="h-6 rounded border border-input bg-transparent px-1 text-[11px]"
-                                    aria-label="Profissional indicado"
-                                  >
-                                    <option value="">
-                                      Automático (pela regra)
-                                    </option>
-                                    {providerOptions.map((p) => (
-                                      <option key={p.id} value={p.id}>
-                                        {p.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </span>
+                                  {providerName(it.suggestedProviderId)}
+                                </p>
                               )}
-                              {(!canEdit || providerOptions.length === 0) &&
-                                providerName(it.suggestedProviderId) && (
-                                  <span className="mt-0.5 block text-[11px] text-primary">
-                                    Profissional indicado:{" "}
-                                    {providerName(it.suggestedProviderId)}
-                                  </span>
-                                )}
-                            </span>
-                            <span className="flex shrink-0 items-center gap-1">
-                              <span className="font-medium">
-                                {formatBRL(it.quantity * it.unitPriceCents)}
-                              </span>
-                              {canEdit && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label="Editar item"
-                                    onClick={() => {
-                                      setEditingId(it.id);
-                                      setEDesc(it.description);
-                                      setEPrice(centsToInput(it.unitPriceCents));
-                                      setEQty(String(it.quantity));
-                                      setEPSess(
-                                        it.plannedSessions != null
-                                          ? String(it.plannedSessions)
-                                          : ""
-                                      );
-                                      setEPMin(
-                                        it.plannedMinutes != null
-                                          ? String(it.plannedMinutes)
-                                          : ""
-                                      );
-                                      setEStage(it.stageId ?? "");
-                                    }}
-                                  >
-                                    <Pencil className="size-3.5" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label="Remover item"
-                                    disabled={isPending}
-                                    onClick={() =>
-                                      run(
-                                        () => removeBudgetItem(it.id),
-                                        "Item removido."
-                                      )
-                                    }
-                                  >
-                                    <X className="size-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </span>
-                          </div>
+                          </>
                         )}
                       </li>
                     ))}
@@ -1433,8 +1874,34 @@ function OptionBudget({
         </div>
       )}
 
-      {canEdit && (
+      {canEdit && !adding && (
+        <div className="mt-2 border-t pt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAdding(true)}
+          >
+            <Plus className="mr-1 size-4" />
+            Procedimento
+          </Button>
+        </div>
+      )}
+
+      {canEdit && adding && (
         <div className="mt-2 space-y-1.5 border-t pt-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground">
+              Novo procedimento
+            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => setAdding(false)}
+            >
+              Fechar
+            </Button>
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <select
               value={procId}
@@ -1506,6 +1973,18 @@ function OptionBudget({
                 </select>
               </>
             )}
+            <div className="flex w-full items-center">
+              <GutPicker
+                gravity={nG}
+                urgency={nU}
+                tendency={nT}
+                onChange={(g, u, t) => {
+                  setNG(g);
+                  setNU(u);
+                  setNT(t);
+                }}
+              />
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -1521,6 +2000,9 @@ function OptionBudget({
                       plannedSessions: Number(pSess) || null,
                       plannedMinutes: Number(pMin) || null,
                       stageId: nStage || null,
+                      gutGravity: nG,
+                      gutUrgency: nU,
+                      gutTendency: nT,
                     }),
                   "Item adicionado.",
                   () => {
@@ -1531,6 +2013,9 @@ function OptionBudget({
                     setPSess("");
                     setPMin("");
                     setNStage("");
+                    setNG(null);
+                    setNU(null);
+                    setNT(null);
                   }
                 )
               }

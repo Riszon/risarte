@@ -8,12 +8,11 @@ import {
   ChevronDown,
   ChevronUp,
   GripVertical,
-  Link2,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GutBadge } from "@/components/gut-badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { formatMinutes } from "@/lib/pricing";
+import { formatMinutes, type BudgetItem } from "@/lib/pricing";
 import type { ProjectedSession } from "@/lib/planning";
 import {
   reorderPlannedBlocks,
@@ -38,11 +37,14 @@ export function SessionJoinPlanner({
   sessions,
   optionId,
   providerOptions,
+  items = [],
   canEdit,
 }: {
   sessions: ProjectedSession[];
   optionId: string;
   providerOptions: { id: string; name: string }[];
+  /** Itens do orçamento (para mostrar a prioridade GUT de cada procedimento). */
+  items?: BudgetItem[];
   canEdit: boolean;
 }) {
   const router = useRouter();
@@ -50,6 +52,8 @@ export function SessionJoinPlanner({
   const [dragKey, setDragKey] = useState<string | null>(null);
 
   if (sessions.length === 0) return null;
+
+  const gutById = new Map(items.map((i) => [i.id, i]));
 
   const providerName = (id: string | null) =>
     id ? (providerOptions.find((p) => p.id === id)?.name ?? "profissional") : null;
@@ -122,14 +126,7 @@ export function SessionJoinPlanner({
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-1.5 text-base">
-          <Link2 className="size-4 text-muted-foreground" />
-          Atendimentos e sequência do tratamento
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className="space-y-3">
         <p className="text-xs text-muted-foreground">
           Cada cartão é um <strong>atendimento</strong> (o que é feito no mesmo
           horário). Ajuste o <strong>tempo</strong> de cada sessão, o{" "}
@@ -216,13 +213,16 @@ export function SessionJoinPlanner({
                       key={`${s.itemId}-${s.sessionIndex}`}
                       className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
                     >
-                      <span className="min-w-0 flex-1">
-                        {b.groupNo != null && (
-                          <span className="text-muted-foreground">
-                            {s.procedureName} —{" "}
-                          </span>
-                        )}
-                        {s.name}
+                      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                        <span>
+                          {b.groupNo != null && (
+                            <span className="text-muted-foreground">
+                              {s.procedureName} —{" "}
+                            </span>
+                          )}
+                          {s.name}
+                        </span>
+                        <GutBadge item={gutById.get(s.itemId) ?? {}} />
                       </span>
                       {canEdit ? (
                         <>
@@ -300,7 +300,6 @@ export function SessionJoinPlanner({
             );
           })}
         </ol>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
