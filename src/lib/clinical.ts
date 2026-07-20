@@ -27,6 +27,44 @@ export const CLINICAL_MEDIA_LABELS: Record<ClinicalMediaKind, string> = {
 
 export type ClinicalResult = { ok: boolean; error?: string };
 
+// ---- Avaliações versionadas (rodadas) — Fase 3 ----------------------------
+
+export const EVALUATION_KINDS = ["avaliacao", "reavaliacao"] as const;
+export type EvaluationKind = (typeof EVALUATION_KINDS)[number];
+
+/** Uma rodada de avaliação/reavaliação (grupo datado de considerações + mídia). */
+export type EvaluationRound = {
+  id: string;
+  kind: EvaluationKind;
+  seq: number;
+  status: "open" | "closed";
+  title: string | null;
+  openedAt: string;
+  closedAt: string | null;
+  openedByName: string | null;
+  clinicName: string | null;
+};
+
+/** Rótulo curto da rodada: "Avaliação 1", "Reavaliação 2" (+ título, se houver). */
+export function evaluationLabel(round: {
+  kind: EvaluationKind;
+  seq: number;
+  title?: string | null;
+}): string {
+  const base =
+    round.kind === "avaliacao" ? "Avaliação" : "Reavaliação";
+  const label = `${base} ${round.seq}`;
+  return round.title?.trim() ? `${label} · ${round.title.trim()}` : label;
+}
+
+/** Rótulo bem curto (para etiquetas): "Aval. 1" / "Reaval. 2". */
+export function evaluationShortLabel(round: {
+  kind: EvaluationKind;
+  seq: number;
+}): string {
+  return `${round.kind === "avaliacao" ? "Aval." : "Reaval."} ${round.seq}`;
+}
+
 export type ClinicalMediaInput = {
   kind: ClinicalMediaKind;
   storagePath: string;
@@ -46,6 +84,8 @@ export type ClinicalNoteItem = {
   authorName: string | null;
   updatedAt: string | null;
   editedByName: string | null;
+  /** Rodada (avaliação) a que pertence — Fase 3. */
+  evaluationId?: string | null;
   /** Unidade onde a consideração/avaliação foi registrada (mostra na ficha para
    * a unidade de destino saber que foi feita na unidade de origem). */
   clinicName: string | null;
@@ -64,6 +104,8 @@ export type ClinicalMediaItem = {
   createdAt: string;
   uploaderName: string | null;
   sizeBytes: number | null;
+  /** Rodada (avaliação) a que pertence — Fase 3. */
+  evaluationId?: string | null;
 };
 
 /** Nome a exibir para a mídia: o renomeado, senão o original. */

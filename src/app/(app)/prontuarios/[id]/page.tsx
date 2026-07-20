@@ -92,7 +92,11 @@ import {
   type AnamnesisQuestionRow,
   type AnamnesisTemplateRow,
 } from "@/lib/anamnesis";
-import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
+import {
+  CLINICAL_BUCKET,
+  type ClinicalMediaKind,
+  type EvaluationRound,
+} from "@/lib/clinical";
 import { PlanEditorSwitcher } from "./plan-editor-switcher";
 import { loadClientPlans } from "./plan-loader";
 import { EmpresarialPanel } from "./empresarial-panel";
@@ -895,14 +899,14 @@ export default async function ClientDetailPage(
         supabase
           .from("clinical_notes")
           .select(
-            "id, body, created_at, created_by, updated_at, updated_by, clinic:clinics ( name )"
+            "id, body, created_at, created_by, updated_at, updated_by, evaluation_id, clinic:clinics ( name )"
           )
           .eq("client_id", id)
           .order("created_at", { ascending: false }),
         supabase
           .from("clinical_media")
           .select(
-            "id, kind, original_name, display_name, note, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by"
+            "id, kind, original_name, display_name, note, storage_path, external_url, content_type, size_bytes, created_at, uploaded_by, evaluation_id"
           )
           .eq("client_id", id)
           .order("created_at", { ascending: false }),
@@ -947,6 +951,8 @@ export default async function ClientDetailPage(
         updatedAt: n.updated_at ?? null,
         editedByName: n.updated_by ? (nameById.get(n.updated_by) ?? null) : null,
         clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+        evaluationId:
+          (n as { evaluation_id?: string | null }).evaluation_id ?? null,
       };
     });
     clinicalMedia = await Promise.all(
@@ -974,9 +980,56 @@ export default async function ClientDetailPage(
             ? (nameById.get(m.uploaded_by) ?? null)
             : null,
           sizeBytes: m.size_bytes,
+          evaluationId:
+            (m as { evaluation_id?: string | null }).evaluation_id ?? null,
         };
       })
     );
+  }
+
+  // Fase 3 — rodadas de avaliação/reavaliação do cliente (mais nova primeiro).
+  let evaluations: EvaluationRound[] = [];
+  if (canViewClinical) {
+    const { data: evalRows } = await supabase
+      .from("clinical_evaluations")
+      .select(
+        "id, kind, seq, status, title, opened_at, closed_at, opened_by, clinic:clinics ( name )"
+      )
+      .eq("client_id", id)
+      .order("opened_at", { ascending: false });
+    const openerIds = [
+      ...new Set(
+        (evalRows ?? [])
+          .map((e) => e.opened_by)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const openerName = new Map<string, string>();
+    if (openerIds.length > 0) {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", openerIds);
+      for (const p of people ?? []) openerName.set(p.id, p.full_name);
+    }
+    evaluations = (evalRows ?? []).map((e) => {
+      const cRaw = (
+        e as { clinic?: { name: string } | { name: string }[] | null }
+      ).clinic;
+      return {
+        id: e.id,
+        kind: e.kind as EvaluationRound["kind"],
+        seq: e.seq,
+        status: e.status as "open" | "closed",
+        title: e.title ?? null,
+        openedAt: e.opened_at,
+        closedAt: e.closed_at ?? null,
+        openedByName: e.opened_by
+          ? (openerName.get(e.opened_by) ?? null)
+          : null,
+        clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+      };
+    });
   }
 
   // H3.11: informações complementares ao Centro de Planejamento.
@@ -2207,6 +2260,7 @@ export default async function ClientDetailPage(
                 consent={consentInfo}
                 notes={clinicalNotes}
                 media={clinicalMedia}
+                evaluations={evaluations}
                 canSendToPlanning={canSendToPlanning}
                 anamnesisBlocksPlanning={anamnesisBlocksPlanning}
                 anamnesisBlockMessage={anamnesisBlockMessage}

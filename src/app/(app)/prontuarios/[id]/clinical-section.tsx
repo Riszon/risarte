@@ -6,8 +6,10 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowRight,
+  FolderClock,
   Paperclip,
   Pencil,
+  Plus,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -20,15 +22,19 @@ import {
   CLINICAL_BUCKET,
   CLINICAL_MEDIA_KINDS,
   CLINICAL_MEDIA_LABELS,
+  evaluationLabel,
+  evaluationShortLabel,
   type ClinicalMediaItem,
   type ClinicalMediaKind,
   type ClinicalNoteItem,
   type ConsentInfo,
+  type EvaluationRound,
 } from "@/lib/clinical";
 import {
   addClinicalNote,
   addExternalMedia,
   editClinicalNote,
+  openNewEvaluation,
   recordClinicalMedia,
   recordConsent,
 } from "./clinical-actions";
@@ -139,6 +145,7 @@ export function ClinicalSection({
   consent,
   notes,
   media,
+  evaluations = [],
   canSendToPlanning,
   anamnesisBlocksPlanning = false,
   anamnesisBlockMessage = "",
@@ -154,6 +161,8 @@ export function ClinicalSection({
   consent: ConsentInfo | null;
   notes: ClinicalNoteItem[];
   media: ClinicalMediaItem[];
+  /** Fase 3: rodadas de avaliação/reavaliação (mais nova primeiro). */
+  evaluations?: EvaluationRound[];
   canSendToPlanning: boolean;
   /** A4: bloqueia o envio ao Planejamento até a anamnese estar preenchida/atualizada. */
   anamnesisBlocksPlanning?: boolean;
@@ -178,6 +187,32 @@ export function ClinicalSection({
   // H3.10: pop-up para agendar a apresentação após enviar ao Planejamento.
   const [showSchedulePrompt, setShowSchedulePrompt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fase 3 — filtro por rodada de avaliação (null = todas).
+  const [roundFilter, setRoundFilter] = useState<string | null>(null);
+  const evalById = new Map(evaluations.map((e) => [e.id, e]));
+  const openRound = evaluations.find((e) => e.status === "open") ?? null;
+  const shownNotes =
+    roundFilter === null
+      ? notes
+      : notes.filter((n) => n.evaluationId === roundFilter);
+  const shownMedia =
+    roundFilter === null
+      ? media
+      : media.filter((m) => m.evaluationId === roundFilter);
+
+  function startReevaluation() {
+    startTransition(async () => {
+      const r = await openNewEvaluation(clientId, "reavaliacao");
+      if (r.ok) {
+        toast.success("Nova reavaliação iniciada. A coleta agora entra nela.");
+        setRoundFilter(null);
+        router.refresh();
+      } else {
+        toast.error(r.error ?? "Não foi possível iniciar a reavaliação.");
+      }
+    });
+  }
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -575,15 +610,80 @@ export function ClinicalSection({
           </DialogContent>
         </Dialog>
 
+        {/* Fase 3 — rodadas de avaliação: cabeçalho + filtro por rodada. */}
+        {evaluations.length > 0 && (
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <FolderClock className="size-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {openRound
+                  ? `Rodada atual: ${evaluationLabel(openRound)}`
+                  : "Avaliações"}
+              </span>
+              {openRound && (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                  aberta
+                </span>
+              )}
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto"
+                  disabled={isPending}
+                  onClick={startReevaluation}
+                >
+                  <Plus className="mr-1 size-4" />
+                  Iniciar reavaliação
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setRoundFilter(null)}
+                className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                  roundFilter === null
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "hover:bg-muted"
+                }`}
+              >
+                Todas ({notes.length + media.length})
+              </button>
+              {evaluations.map((e) => {
+                const count =
+                  notes.filter((n) => n.evaluationId === e.id).length +
+                  media.filter((m) => m.evaluationId === e.id).length;
+                return (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => setRoundFilter(e.id)}
+                    title={evaluationLabel(e)}
+                    className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                      roundFilter === e.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    {evaluationShortLabel(e)} ({count})
+                    {e.status === "open" ? " · aberta" : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Media gallery: grouped by category, photo lightbox, inline previews. */}
-        <MediaGallery media={media} canEdit={canEdit} />
+        <MediaGallery media={shownMedia} canEdit={canEdit} />
 
         {/* Considerations list (editable). */}
-        {notes.length > 0 && (
+        {shownNotes.length > 0 && (
           <div className="space-y-1.5">
             <h3 className="text-sm font-medium">Considerações</h3>
             <ul className="space-y-1.5">
-              {notes.map((n) => (
+              {shownNotes.map((n) => (
                 <li key={n.id} className="rounded-md border p-2 text-sm">
                   {editingId === n.id ? (
                     <div className="space-y-2">
@@ -628,15 +728,22 @@ export function ClinicalSection({
                           </Button>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {fmtDateTime(n.createdAt)}
-                        {n.authorName ? ` · ${n.authorName}` : ""}
-                        {n.clinicName ? ` · ${n.clinicName}` : ""}
-                        {n.updatedAt
-                          ? ` · editado em ${fmtDateTime(n.updatedAt)}${
-                              n.editedByName ? ` por ${n.editedByName}` : ""
-                            }`
-                          : ""}
+                      <p className="mt-1 flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+                        {n.evaluationId && evalById.has(n.evaluationId) && (
+                          <span className="mr-1 rounded-full border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                            {evaluationShortLabel(evalById.get(n.evaluationId)!)}
+                          </span>
+                        )}
+                        <span>
+                          {fmtDateTime(n.createdAt)}
+                          {n.authorName ? ` · ${n.authorName}` : ""}
+                          {n.clinicName ? ` · ${n.clinicName}` : ""}
+                          {n.updatedAt
+                            ? ` · editado em ${fmtDateTime(n.updatedAt)}${
+                                n.editedByName ? ` por ${n.editedByName}` : ""
+                              }`
+                            : ""}
+                        </span>
                       </p>
                     </>
                   )}

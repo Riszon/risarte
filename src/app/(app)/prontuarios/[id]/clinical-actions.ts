@@ -9,7 +9,28 @@ import {
   CLINICAL_MEDIA_KINDS,
   type ClinicalMediaInput,
   type ClinicalResult,
+  type EvaluationKind,
 } from "@/lib/clinical";
+
+/**
+ * Fase 3 — resolve a rodada de avaliação ABERTA do cliente na unidade (cria a
+ * "Avaliação 1" se ainda não houver). Toda consideração/mídia entra nesta rodada.
+ */
+async function openEvaluationId(
+  clientId: string,
+  clinicId: string
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ensure_open_evaluation", {
+    p_client: clientId,
+    p_clinic: clinicId,
+  });
+  if (error) {
+    console.error("ensure_open_evaluation failed:", error.message);
+    return null;
+  }
+  return (data as string | null) ?? null;
+}
 
 /**
  * Only the Coordenador Clínico (or Admin) may record the evaluation. The clinic
@@ -120,6 +141,7 @@ export async function recordCameraCapture(
     content_type: input.contentType,
     size_bytes: input.sizeBytes,
     uploaded_by: guard.userId,
+    evaluation_id: await openEvaluationId(clientId, guard.clinicId),
   });
   if (error) {
     console.error("recordCameraCapture failed:", error.message);
@@ -195,6 +217,7 @@ export async function addClinicalNote(
     clinic_id: guard.clinicId,
     body: text,
     created_by: guard.userId,
+    evaluation_id: await openEvaluationId(clientId, guard.clinicId),
   });
   if (error) {
     console.error("addClinicalNote failed:", error.message);
@@ -241,6 +264,7 @@ export async function recordClinicalMedia(
     content_type: input.contentType,
     size_bytes: input.sizeBytes,
     uploaded_by: guard.userId,
+    evaluation_id: await openEvaluationId(clientId, guard.clinicId),
   });
   if (error) {
     console.error("recordClinicalMedia failed:", error.message);
@@ -514,6 +538,47 @@ export async function saveAnamnesis(
   return { ok: true };
 }
 
+/**
+ * Fase 3 — inicia uma NOVA rodada de avaliação/reavaliação. Fecha a rodada
+ * aberta (que fica congelada) e abre a próxima; a coleta seguinte entra nela.
+ * Só o Coordenador Clínico (ou Admin) da unidade.
+ */
+export async function openNewEvaluation(
+  clientId: string,
+  kind: EvaluationKind = "reavaliacao",
+  title?: string
+): Promise<ClinicalResult> {
+  const guard = await requireCoordinator(clientId);
+  if ("error" in guard) return { ok: false, error: guard.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("open_new_evaluation", {
+    p_client: clientId,
+    p_clinic: guard.clinicId,
+    p_kind: kind,
+    p_title: title?.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Apenas o Coordenador Clínico pode iniciar uma reavaliação.",
+      };
+    }
+    console.error("open_new_evaluation failed:", error.message);
+    return { ok: false, error: "Não foi possível iniciar a nova avaliação." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "clinical_evaluation",
+    entityId: clientId,
+    clinicId: guard.clinicId,
+    details: { kind },
+  });
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
 /** Add a clinical media item that is a LINK (e.g. a 3D scan), not a file. */
 export async function addExternalMedia(
   clientId: string,
@@ -547,6 +612,7 @@ export async function addExternalMedia(
     external_url: url,
     original_name: input.label.trim() || url,
     uploaded_by: guard.userId,
+    evaluation_id: await openEvaluationId(clientId, guard.clinicId),
   });
   if (error) {
     console.error("addExternalMedia failed:", error.message);

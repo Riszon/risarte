@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.82.0** · Última migração: **0134**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.83.0** · Última migração: **0135**_
+
+> **LOTE Avaliações & Planos — Entrega 3 ✅ (v0.83.0, migração 0135):**
+> **avaliações/reavaliações versionadas** (rodadas). Antes, a coleta clínica
+> (considerações + fotos/exames) se empilhava no cliente sem separar "quando".
+> Agora cada avaliação é uma **rodada datada**: **Avaliação 1**, depois
+> **Reavaliação 2**, **3**… Cada consideração e cada mídia entra na **rodada
+> aberta**. Um botão **"Iniciar reavaliação"** (Coordenador) fecha a rodada atual
+> — que fica **congelada e intacta** — e abre a próxima. Na aba **Clínico** há um
+> cabeçalho "Rodada atual", **chips de filtro** por rodada (Todas · Aval. 1 ·
+> Reaval. 2…) e uma **etiqueta** da rodada em cada consideração. **Backfill
+> seguro:** tudo que já existe virou automaticamente a "Avaliação 1" — nada se
+> perde. **Consentimento e anamnese continuam contínuos** (não repetem por
+> rodada). _Adiado: agrupar a galeria de mídia por rodada (hoje é filtro) e a
+> decisão "reavaliação × novo planejamento" ao fim da Fase 5._
 
 > **LOTE Avaliações & Planos — Entrega 2 ✅ (v0.82.0, migração 0134):** o plano
 > agora tem uma **linha do tempo única** (situação). Os 4 status internos
