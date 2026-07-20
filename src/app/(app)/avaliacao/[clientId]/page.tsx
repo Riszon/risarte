@@ -19,10 +19,15 @@ import {
 } from "@/lib/journey";
 import type { UserRole } from "@/lib/roles";
 import { loadClientProgram } from "@/lib/empresarial/benefits";
+import {
+  TOOLS_ANCHOR,
+  type EvaluationFlowKind,
+} from "@/lib/evaluation-steps";
 import { ClinicalSection } from "../../prontuarios/[id]/clinical-section";
 import { loadEvaluationWorkspace } from "../../prontuarios/[id]/evaluation-loader";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
+import { StepGuide } from "./step-guide";
 
 export const metadata: Metadata = { title: "Cockpit de Avaliação" };
 
@@ -77,6 +82,13 @@ export default async function EvaluationCockpitPage(
   const clinicId = actClinicId;
 
   const phase = client.journey_phase as JourneyPhase;
+  // Fase 2 = Avaliação; Fase 6 = Reavaliação; nas demais, sem roteiro guiado.
+  const flowKind: EvaluationFlowKind | null =
+    phase === "clinical_conversion"
+      ? "avaliacao"
+      : phase === "reevaluation"
+        ? "reavaliacao"
+        : null;
   const clinicRaw = (
     client as unknown as { clinic?: { name: string } | { name: string }[] | null }
   ).clinic;
@@ -209,9 +221,19 @@ export default async function EvaluationCockpitPage(
         </div>
       </div>
 
+      {/* Bloco B — roteiro guiado da avaliação/reavaliação (só nas Fases 2/6). */}
+      {flowKind && (
+        <div className="shrink-0">
+          <StepGuide kind={flowKind} />
+        </div>
+      )}
+
       {/* Duas colunas com rolagem INDEPENDENTE (cada uma rola por dentro). */}
       <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
-        <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+        <div
+          id={TOOLS_ANCHOR}
+          className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
+        >
           <ClinicalSection
             clientId={client.id}
             clientName={client.full_name}
