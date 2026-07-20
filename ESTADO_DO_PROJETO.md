@@ -1,16 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.86.0** · Última migração: **0135**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.87.0** · Última migração: **0136**_
 
-> **Cockpit do Coordenador — reformulação, Bloco B ✅ (v0.86.0, sem migração):**
-> **roteiro guiado** da avaliação/reavaliação. O cockpit detecta se o cliente está
-> na **Fase 2 (Avaliação)** ou **Fase 6 (Reavaliação)** e mostra a **sequência de 8
-> passos** correspondente, em blocos **encolhe/expande**, com **barra de progresso**,
-> marcação de "concluído" por passo e um botão **"Ir para as ferramentas"** que rola
-> até a área de coleta (fotos, considerações, envio). É a espinha do cockpit — os
-> próximos blocos (painel de status, gravação+roteiro, checklist de qualidade da
-> reavaliação) penduram nela. _Adiados por dependência: situação financeira/
-> inadimplência (aguarda módulo financeiro) e resumo automático por IA._
+> **Cockpit do Coordenador — reformulação, Bloco B ✅ (v0.86.0→0.87.0, migração
+> 0136):** **roteiro guiado** da avaliação/reavaliação. O cockpit detecta se o
+> cliente está na **Fase 2 (Avaliação)** ou **Fase 6 (Reavaliação)** e mostra a
+> **sequência de 8 passos** correspondente, em blocos **encolhe/expande**, com um
+> botão **"Ir para as ferramentas"** que rola até a área de coleta. O roteiro é a
+> **estrutura informativa** do fluxo — o coordenador **não preenche nada** nele
+> (alguns passos, como o quebra-gelo, só orientam). Há uma **"Orientação da rede"**
+> sobre a avaliação/reavaliação, **editável pelo Admin Master** (migração 0136,
+> `clinical_guidance`), para o coordenador consultar rápido. Os próximos blocos
+> (painel de status, gravação+roteiro, checklist de qualidade) penduram nesta
+> espinha. _Adiados por dependência: situação financeira/inadimplência (aguarda
+> módulo financeiro) e resumo automático por IA._
 
 > **LOTE Avaliações & Planos — Entrega 4 (parte 4B) ✅ (v0.85.0, sem migração):**
 > nova aba **"Desenvolvimento Clínico"** no prontuário, para o **dentista

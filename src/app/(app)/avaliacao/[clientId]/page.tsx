@@ -101,6 +101,17 @@ export default async function EvaluationCockpitPage(
     loadClientPlans(clientId),
   ]);
 
+  // Orientação da rede (editável pelo Admin) sobre este momento do fluxo.
+  let guidance: string | null = null;
+  if (flowKind) {
+    const { data: g } = await supabase
+      .from("clinical_guidance")
+      .select("content")
+      .eq("kind", flowKind)
+      .maybeSingle();
+    guidance = (g?.content as string | null) ?? null;
+  }
+
   // -- Envio ao Centro de Planejamento (mesma regra da ficha). ----------------
   const clinicRoles = (session.rolesByClinic[client.clinic_id as string] ??
     []) as UserRole[];
@@ -224,7 +235,11 @@ export default async function EvaluationCockpitPage(
       {/* Bloco B — roteiro guiado da avaliação/reavaliação (só nas Fases 2/6). */}
       {flowKind && (
         <div className="shrink-0">
-          <StepGuide kind={flowKind} />
+          <StepGuide
+            kind={flowKind}
+            guidance={guidance}
+            canEditGuidance={session.isAdminMaster}
+          />
         </div>
       )}
 

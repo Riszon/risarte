@@ -1,55 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Check,
-  ChevronDown,
-  ClipboardList,
-  MapPin,
-  RotateCcw,
-} from "lucide-react";
+import { ChevronDown, ClipboardList, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FLOW_LABELS,
   stepsForFlow,
   type EvaluationFlowKind,
 } from "@/lib/evaluation-steps";
+import { GuidanceDialog } from "./guidance-dialog";
 
 /**
- * Espinha do Cockpit do Coordenador (Bloco B): o roteiro passo a passo da
- * avaliação (Fase 2) ou reavaliação (Fase 6). O coordenador segue a sequência e
- * marca cada passo como concluído para acompanhar o progresso da consulta.
- * (O progresso vive na sessão da tela; persistência durável no servidor entra
- * num refino.)
+ * Espinha do Cockpit do Coordenador (Bloco B): o roteiro da avaliação (Fase 2)
+ * ou reavaliação (Fase 6). É a ESTRUTURA informativa do fluxo — o coordenador
+ * NÃO preenche nada aqui. Alguns passos existem só para orientar (ex.: quebra-
+ * gelo); os que têm coleta trazem um atalho para as ferramentas abaixo. A
+ * "Orientação da rede" (editável pelo Admin) fica a um clique para consulta.
  */
-export function StepGuide({ kind }: { kind: EvaluationFlowKind }) {
+export function StepGuide({
+  kind,
+  guidance,
+  canEditGuidance,
+}: {
+  kind: EvaluationFlowKind;
+  guidance: string | null;
+  canEditGuidance: boolean;
+}) {
   const steps = stepsForFlow(kind);
-
-  const [done, setDone] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<number | null>(null);
   const [guideOpen, setGuideOpen] = useState(true);
-
-  function toggleDone(n: number) {
-    setDone((prev) => {
-      const next = new Set(prev);
-      if (next.has(n)) next.delete(n);
-      else next.add(n);
-      return next;
-    });
-  }
-
-  function reset() {
-    setDone(new Set());
-  }
 
   function goTo(anchor: string) {
     document
       .getElementById(anchor)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-
-  const doneCount = done.size;
-  const pct = Math.round((doneCount / steps.length) * 100);
 
   return (
     <div className="rounded-xl border bg-card">
@@ -58,27 +43,15 @@ export function StepGuide({ kind }: { kind: EvaluationFlowKind }) {
         <span className="text-sm font-semibold">
           Roteiro da {FLOW_LABELS[kind]}
         </span>
-        <span className="text-xs text-muted-foreground">
-          {doneCount} de {steps.length} passos
+        <span className="hidden text-xs text-muted-foreground sm:inline">
+          {steps.length} momentos da consulta
         </span>
-        {/* Barra de progresso */}
-        <div className="ml-1 hidden h-1.5 w-32 overflow-hidden rounded-full bg-muted sm:block">
-          <div
-            className="h-full rounded-full bg-gold transition-all"
-            style={{ width: `${pct}%` }}
+        <div className="ml-auto flex items-center gap-1.5">
+          <GuidanceDialog
+            kind={kind}
+            content={guidance}
+            canEdit={canEditGuidance}
           />
-        </div>
-        <div className="ml-auto flex items-center gap-1">
-          {doneCount > 0 && (
-            <button
-              type="button"
-              onClick={reset}
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
-            >
-              <RotateCcw className="size-3.5" />
-              Reiniciar
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setGuideOpen((v) => !v)}
@@ -98,42 +71,23 @@ export function StepGuide({ kind }: { kind: EvaluationFlowKind }) {
       {guideOpen && (
         <ol className="divide-y">
           {steps.map((step) => {
-            const isDone = done.has(step.n);
             const isOpen = expanded === step.n;
             return (
               <li key={step.n}>
                 <div className="flex items-start gap-2 p-2.5">
-                  {/* Marcar concluído */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDone(step.n)}
-                    aria-label={
-                      isDone ? "Desmarcar passo" : "Marcar passo como concluído"
-                    }
-                    className={cn(
-                      "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
-                      isDone
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-muted-foreground/30 text-muted-foreground hover:border-gold"
-                    )}
+                  <span
+                    className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold-foreground"
+                    aria-hidden
                   >
-                    {isDone ? <Check className="size-3.5" /> : step.n}
-                  </button>
-                  {/* Título + descrição (encolhe/expande) */}
+                    {step.n}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <button
                       type="button"
                       onClick={() => setExpanded(isOpen ? null : step.n)}
                       className="flex w-full items-center justify-between gap-2 text-left"
                     >
-                      <span
-                        className={cn(
-                          "text-sm font-medium",
-                          isDone && "text-muted-foreground line-through"
-                        )}
-                      >
-                        {step.title}
-                      </span>
+                      <span className="text-sm font-medium">{step.title}</span>
                       <ChevronDown
                         className={cn(
                           "size-4 shrink-0 text-muted-foreground transition-transform",
