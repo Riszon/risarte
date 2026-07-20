@@ -99,7 +99,16 @@ async function loadPlanContext(
  * Starts a treatment plan for a client (or returns the current one). Only one
  * open plan at a time: if the latest plan is not yet approved, reuse it.
  */
-export async function createTreatmentPlan(clientId: string): Promise<PlanResult> {
+/**
+ * Cria SEMPRE um plano NOVO para o cliente (nunca mexe nos existentes). Opcional:
+ * `copyFromPlanId` duplica um plano existente (diagnóstico, objetivos, opções,
+ * procedimentos e etapas) como ponto de partida — útil para revisar um plano já
+ * aprovado sem desfazê-lo. Retorna o id do novo plano.
+ */
+export async function createTreatmentPlan(
+  clientId: string,
+  copyFromPlanId?: string | null
+): Promise<PlanResult & { planId?: string }> {
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
 
@@ -113,38 +122,151 @@ export async function createTreatmentPlan(clientId: string): Promise<PlanResult>
   if (client.journey_phase !== "planning_center") {
     return {
       ok: false,
-      error: "O plano só pode ser iniciado no Centro de Planejamento (Fase 3).",
+      error: "O plano só pode ser criado no Centro de Planejamento (Fase 3).",
     };
   }
 
-  const { data: existing } = await supabase
+  const { data: created, error } = await supabase
     .from("treatment_plans")
-    .select("id, status")
-    .eq("client_id", clientId)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  if (existing?.[0] && existing[0].status !== "approved") {
-    return { ok: true };
-  }
-
-  const { error } = await supabase.from("treatment_plans").insert({
-    client_id: clientId,
-    clinic_id: client.clinic_id,
-    created_by: guard.userId,
-  });
-  if (error) {
-    console.error("createTreatmentPlan failed:", error.message);
+    .insert({
+      client_id: clientId,
+      clinic_id: client.clinic_id,
+      created_by: guard.userId,
+    })
+    .select("id")
+    .single();
+  if (error || !created) {
+    console.error("createTreatmentPlan failed:", error?.message);
     return { ok: false, error: "Não foi possível iniciar o plano." };
   }
+  const newPlanId = created.id as string;
+
+  // Duplicação (opcional) de um plano existente do MESMO cliente.
+  if (copyFromPlanId) {
+    const { data: src } = await supabase
+      .from("treatment_plans")
+      .select("id, client_id, diagnosis, objectives, planning_notes")
+      .eq("id", copyFromPlanId)
+      .maybeSingle();
+    if (src && src.client_id === clientId) {
+      await supabase
+        .from("treatment_plans")
+        .update({
+          diagnosis: src.diagnosis,
+          objectives: src.objectives,
+          planning_notes: src.planning_notes,
+        })
+        .eq("id", newPlanId);
+
+      const { data: srcOpts } = await supabase
+        .from("treatment_plan_options")
+        .select("id, is_primary, title, description, sort_order")
+        .eq("plan_id", copyFromPlanId)
+        .order("sort_order")
+        .returns<
+          {
+            id: string;
+            is_primary: boolean;
+            title: string;
+            description: string | null;
+            sort_order: number;
+          }[]
+        >();
+      const optionMap = new Map<string, string>();
+      for (const o of srcOpts ?? []) {
+        const { data: newOpt } = await supabase
+          .from("treatment_plan_options")
+          .insert({
+            plan_id: newPlanId,
+            clinic_id: client.clinic_id,
+            is_primary: o.is_primary,
+            title: o.title,
+            description: o.description,
+            sort_order: o.sort_order,
+          })
+          .select("id")
+          .single();
+        if (newOpt) optionMap.set(o.id, newOpt.id as string);
+      }
+      const srcOptionIds = [...optionMap.keys()];
+      const stageMap = new Map<string, string>();
+      if (srcOptionIds.length > 0) {
+        const { data: srcStages } = await supabase
+          .from("treatment_plan_stages")
+          .select("id, option_id, name, sort_order")
+          .in("option_id", srcOptionIds)
+          .returns<
+            {
+              id: string;
+              option_id: string;
+              name: string;
+              sort_order: number;
+            }[]
+          >();
+        for (const s of srcStages ?? []) {
+          const newOptionId = optionMap.get(s.option_id);
+          if (!newOptionId) continue;
+          const { data: newStage } = await supabase
+            .from("treatment_plan_stages")
+            .insert({
+              option_id: newOptionId,
+              clinic_id: client.clinic_id,
+              name: s.name,
+              sort_order: s.sort_order,
+            })
+            .select("id")
+            .single();
+          if (newStage) stageMap.set(s.id, newStage.id as string);
+        }
+
+        const { data: srcItems } = await supabase
+          .from("treatment_plan_option_items")
+          .select(
+            "option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
+          )
+          .in("option_id", srcOptionIds)
+          .order("sort_order");
+        const rows = (srcItems ?? [])
+          .map((it) => {
+            const newOptionId = optionMap.get(it.option_id as string);
+            if (!newOptionId) return null;
+            return {
+              option_id: newOptionId,
+              clinic_id: client.clinic_id,
+              procedure_id: it.procedure_id,
+              description: it.description,
+              quantity: it.quantity,
+              unit_price_cents: it.unit_price_cents,
+              planned_sessions: it.planned_sessions,
+              planned_total_minutes: it.planned_total_minutes,
+              stage_id: it.stage_id
+                ? (stageMap.get(it.stage_id as string) ?? null)
+                : null,
+              suggested_provider_id: it.suggested_provider_id,
+              gut_gravity: it.gut_gravity,
+              gut_urgency: it.gut_urgency,
+              gut_tendency: it.gut_tendency,
+              sort_order: it.sort_order,
+            };
+          })
+          .filter((r): r is NonNullable<typeof r> => r !== null);
+        if (rows.length > 0) {
+          await supabase.from("treatment_plan_option_items").insert(rows);
+        }
+      }
+    }
+  }
+
   await logAudit({
     action: "create",
     entityType: "treatment_plan",
     entityId: clientId,
     clinicId: client.clinic_id,
+    details: copyFromPlanId ? { copied: true } : undefined,
   });
   revalidatePath(`/prontuarios/${clientId}`);
   revalidatePath("/planejamento");
-  return { ok: true };
+  return { ok: true, planId: newPlanId };
 }
 
 export async function saveDiagnosis(

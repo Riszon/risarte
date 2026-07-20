@@ -3,11 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   AlertTriangle,
+  Baby,
   Building2,
   CalendarDays,
   Cake,
   Route,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { phaseTintStyle } from "@/components/phase-badge";
@@ -91,18 +93,13 @@ import {
   type AnamnesisTemplateRow,
 } from "@/lib/anamnesis";
 import { CLINICAL_BUCKET, type ClinicalMediaKind } from "@/lib/clinical";
-import { PlanningSection } from "./planning-section";
+import { PlanEditorSwitcher } from "./plan-editor-switcher";
+import { loadClientPlans } from "./plan-loader";
 import { EmpresarialPanel } from "./empresarial-panel";
 import { loadClientProgram, loadClientUsage } from "@/lib/empresarial/benefits";
-import type {
-  PlanOption,
-  PlanStage,
-  TreatmentPlan,
-  TreatmentPlanStatus,
-} from "@/lib/planning";
+import type { TreatmentPlan } from "@/lib/planning";
 import {
   resolveProcedurePrices,
-  type BudgetItem,
   type PricedProcedure,
   type Procedure,
   type ProtocolRef,
@@ -1568,140 +1565,12 @@ export default async function ClientDetailPage(
   const canReviewPlan =
     session.isAdminMaster ||
     hasRoleInClinic(session, client.clinic_id, ["clinical_coordinator"]);
-  let treatmentPlan: TreatmentPlan | null = null;
+  let plans: TreatmentPlan[] = [];
   const protocolByProcedure: Record<string, ProtocolRef> = {};
   const realStatsByProcedure: Record<string, RealStat> = {};
   if (canViewPlanning) {
-    const { data: planRows } = await supabase
-      .from("treatment_plans")
-      .select(
-        "id, status, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes"
-      )
-      .eq("client_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .returns<
-        {
-          id: string;
-          status: TreatmentPlanStatus;
-          diagnosis: string | null;
-          objectives: string | null;
-          planning_notes: string | null;
-          created_at: string;
-          submitted_at: string | null;
-          reviewed_at: string | null;
-          review_notes: string | null;
-        }[]
-      >();
-    const planRow = planRows?.[0];
-    if (planRow) {
-      const { data: optRows } = await supabase
-        .from("treatment_plan_options")
-        .select(
-          "id, is_primary, title, description, sort_order, review_status, review_notes"
-        )
-        .eq("plan_id", planRow.id)
-        .order("is_primary", { ascending: false })
-        .order("sort_order")
-        .returns<
-          {
-            id: string;
-            is_primary: boolean;
-            title: string;
-            description: string | null;
-            sort_order: number;
-            review_status: "pending" | "approved" | "rejected";
-            review_notes: string | null;
-          }[]
-        >();
-      const optionIds = (optRows ?? []).map((o) => o.id);
-      const itemsByOption = new Map<string, BudgetItem[]>();
-      if (optionIds.length > 0) {
-        const { data: itemRows } = await supabase
-          .from("treatment_plan_option_items")
-          .select(
-            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
-          )
-          .in("option_id", optionIds)
-          .order("sort_order")
-          .returns<
-            {
-              id: string;
-              option_id: string;
-              procedure_id: string | null;
-              description: string;
-              quantity: number;
-              unit_price_cents: number;
-              planned_sessions: number | null;
-              planned_total_minutes: number | null;
-              stage_id: string | null;
-              suggested_provider_id: string | null;
-              gut_gravity: number | null;
-              gut_urgency: number | null;
-              gut_tendency: number | null;
-              sort_order: number;
-            }[]
-          >();
-        for (const it of itemRows ?? []) {
-          const list = itemsByOption.get(it.option_id) ?? [];
-          list.push({
-            id: it.id,
-            procedureId: it.procedure_id,
-            description: it.description,
-            quantity: it.quantity,
-            unitPriceCents: it.unit_price_cents,
-            plannedSessions: it.planned_sessions,
-            plannedMinutes: it.planned_total_minutes,
-            stageId: it.stage_id,
-            suggestedProviderId: it.suggested_provider_id,
-            gutGravity: it.gut_gravity,
-            gutUrgency: it.gut_urgency,
-            gutTendency: it.gut_tendency,
-          });
-          itemsByOption.set(it.option_id, list);
-        }
-      }
-      // H4.5: etapas do tratamento por opção.
-      const stagesByOption = new Map<string, PlanStage[]>();
-      if (optionIds.length > 0) {
-        const { data: stageRows } = await supabase
-          .from("treatment_plan_stages")
-          .select("id, option_id, name, sort_order")
-          .in("option_id", optionIds)
-          .order("sort_order")
-          .returns<
-            { id: string; option_id: string; name: string; sort_order: number }[]
-          >();
-        for (const st of stageRows ?? []) {
-          const list = stagesByOption.get(st.option_id) ?? [];
-          list.push({ id: st.id, name: st.name, sortOrder: st.sort_order });
-          stagesByOption.set(st.option_id, list);
-        }
-      }
-      const options: PlanOption[] = (optRows ?? []).map((o) => ({
-        id: o.id,
-        isPrimary: o.is_primary,
-        title: o.title,
-        description: o.description,
-        sortOrder: o.sort_order,
-        items: itemsByOption.get(o.id) ?? [],
-        stages: stagesByOption.get(o.id) ?? [],
-        reviewStatus: o.review_status,
-        reviewNotes: o.review_notes,
-      }));
-      treatmentPlan = {
-        id: planRow.id,
-        status: planRow.status,
-        diagnosis: planRow.diagnosis,
-        objectives: planRow.objectives,
-        planningNotes: planRow.planning_notes,
-        createdAt: planRow.created_at,
-        submittedAt: planRow.submitted_at,
-        reviewedAt: planRow.reviewed_at,
-        reviewNotes: planRow.review_notes,
-        options,
-      };
-    }
+    // Carrega TODOS os planos do cliente (nenhum é escondido/apagado).
+    plans = await loadClientPlans(id);
 
     // Protocolos (Rede + unidade do cliente) — base de sessões/tempo (E3).
     const { data: protoRows } = await supabase
@@ -1953,8 +1822,8 @@ export default async function ClientDetailPage(
       "clinical_coordinator",
       "unit_manager",
     ]));
-  let hasApprovedPlan = treatmentPlan?.status === "approved";
-  if (treatmentPlan === null && canPresent) {
+  let hasApprovedPlan = plans.some((p) => p.status === "approved");
+  if (plans.length === 0 && canPresent) {
     const { count } = await supabase
       .from("treatment_plans")
       .select("id", { count: "exact", head: true })
@@ -2170,84 +2039,7 @@ export default async function ClientDetailPage(
 
       <ProntuarioTabs>
         <TabPanel id="cadastro" label="Cadastro">
-          <ClientShares
-            clientId={client.id}
-            shares={activeShares}
-            units={shareUnits}
-            canShare={canManageShare}
-            canEnd={canEndShare}
-          />
-
-          <EmpresarialPanel summary={usage} />
-
-          {(guardians ?? []).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Responsáveis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {(guardians ?? []).map((guardian) => (
-                <li key={guardian.id} className="rounded-md border p-3 text-sm">
-                  <p className="font-medium">
-                    {guardian.guardian_client_id ? (
-                      <a
-                        href={`/prontuarios/${guardian.guardian_client_id}`}
-                        className="hover:underline"
-                      >
-                        {guardian.full_name}
-                      </a>
-                    ) : (
-                      guardian.full_name
-                    )}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      ({guardian.relationship})
-                    </span>
-                    {guardian.guardian_client_id && (
-                      <Badge className="ml-2 bg-gold text-gold-foreground text-[10px]">
-                        Cliente Risarte
-                      </Badge>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {[guardian.cpf, guardian.phone].filter(Boolean).join(" · ") ||
-                      "—"}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      {(dependents ?? []).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Dependentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1.5">
-              {(dependents ?? []).map(
-                (dependent) =>
-                  dependent.clients && (
-                    <li key={dependent.id} className="text-sm">
-                      <a
-                        href={`/prontuarios/${dependent.clients.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {dependent.clients.full_name}
-                      </a>{" "}
-                      <span className="text-xs text-muted-foreground">
-                        (este cliente é {dependent.relationship} do dependente)
-                      </span>
-                    </li>
-                  )
-              )}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
+          {/* Dados do cliente primeiro (o principal da aba). */}
           <ClientDataSection
             client={client}
             canEdit={canEdit}
@@ -2260,6 +2052,107 @@ export default async function ClientDetailPage(
               guardianClientId: g.guardian_client_id,
             }))}
           />
+
+          {/* Complementos abaixo. */}
+          <ClientShares
+            clientId={client.id}
+            shares={activeShares}
+            units={shareUnits}
+            canShare={canManageShare}
+            canEnd={canEndShare}
+          />
+
+          <EmpresarialPanel summary={usage} />
+
+          {(guardians ?? []).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Users className="size-4 text-gold" />
+                  Responsáveis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {(guardians ?? []).map((guardian) => (
+                    <li
+                      key={guardian.id}
+                      className="flex items-start gap-3 rounded-lg border p-3 text-sm"
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                        {guardian.full_name
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")
+                          .toUpperCase() || "?"}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-x-1.5 font-medium">
+                          {guardian.guardian_client_id ? (
+                            <a
+                              href={`/prontuarios/${guardian.guardian_client_id}`}
+                              className="hover:underline"
+                            >
+                              {guardian.full_name}
+                            </a>
+                          ) : (
+                            guardian.full_name
+                          )}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {guardian.relationship}
+                          </span>
+                          {guardian.guardian_client_id && (
+                            <Badge className="bg-gold text-gold-foreground text-[10px]">
+                              Cliente Risarte
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {[guardian.cpf, guardian.phone]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {(dependents ?? []).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Baby className="size-4 text-gold" />
+                  Dependentes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5">
+                  {(dependents ?? []).map(
+                    (dependent) =>
+                      dependent.clients && (
+                        <li key={dependent.id} className="text-sm">
+                          <a
+                            href={`/prontuarios/${dependent.clients.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {dependent.clients.full_name}
+                          </a>{" "}
+                          <span className="text-xs text-muted-foreground">
+                            (este cliente é {dependent.relationship} do
+                            dependente)
+                          </span>
+                        </li>
+                      )
+                  )}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </TabPanel>
 
         <TabPanel id="jornada" label="Jornada">
@@ -2347,10 +2240,10 @@ export default async function ClientDetailPage(
               />
             )}
             {canViewPlanning && (
-              <PlanningSection
+              <PlanEditorSwitcher
                 clientId={client.id}
                 clientName={client.full_name}
-                plan={treatmentPlan}
+                plans={plans}
                 canEdit={canEditPlanning}
                 canReview={canReviewPlan}
                 inPlanningPhase={client.journey_phase === "planning_center"}

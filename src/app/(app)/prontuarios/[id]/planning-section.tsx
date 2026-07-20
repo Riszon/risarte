@@ -67,7 +67,6 @@ import {
   addBudgetItem,
   addPlanOption,
   addPlanStage,
-  createTreatmentPlan,
   editBudgetItem,
   editPlanOption,
   movePlanStage,
@@ -75,7 +74,6 @@ import {
   removePlanOption,
   removePlanStage,
   renamePlanStage,
-  reopenTreatmentPlan,
   reviewPlanOption,
   saveDiagnosis,
   savePlanNarrative,
@@ -325,9 +323,11 @@ export function PlanningSection({
   programActive = false,
   programCompanyName = null,
   programBenefits = {},
+  onNewPlan,
 }: {
   clientId: string;
   clientName: string;
+  /** O plano exibido/editado. O switcher remonta este componente ao trocar. */
   plan: TreatmentPlan | null;
   canEdit: boolean;
   canReview: boolean;
@@ -344,6 +344,8 @@ export function PlanningSection({
   programActive?: boolean;
   programCompanyName?: string | null;
   programBenefits?: Record<string, ProgramBenefit>;
+  /** Cria um plano novo (em branco ou copiando `copyFromId`) — o switcher trata. */
+  onNewPlan?: (copyFromId?: string) => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -465,12 +467,7 @@ export function PlanningSection({
               <Button
                 size="sm"
                 disabled={isPending}
-                onClick={() =>
-                  run(
-                    () => createTreatmentPlan(clientId),
-                    "Plano iniciado."
-                  )
-                }
+                onClick={() => onNewPlan?.()}
               >
                 <ClipboardList className="mr-1 size-4" />
                 Iniciar plano de tratamento
@@ -498,7 +495,7 @@ export function PlanningSection({
   // depende dele. Depois de enviado/aprovado, o plano fica em leitura.)
   // H2.4: depois de enviado ao Comercial (cliente saiu da Fase 3), o botão de
   // reabrir some — só volta se o caso retornar ao Centro de Planejamento.
-  const canReopen =
+  const canRevise =
     canEdit &&
     inPlanningPhase &&
     (plan.status === "submitted" || plan.status === "approved");
@@ -556,6 +553,7 @@ export function PlanningSection({
     );
   }
 
+
   function startEdit(o: PlanOption) {
     setEditingId(o.id);
     setEditTitle(o.title);
@@ -585,6 +583,17 @@ export function PlanningSection({
             Plano de Tratamento
           </CardTitle>
           <div className="flex items-center gap-2">
+            {canEdit && inPlanningPhase && onNewPlan && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onNewPlan()}
+              >
+                <Plus className="mr-1 size-4" />
+                Novo plano
+              </Button>
+            )}
             {cockpitHref && canEdit && (
               <Button
                 size="sm"
@@ -1081,40 +1090,37 @@ export function PlanningSection({
           </div>
         )}
 
-        {/* Plano travado (enviado/aprovado): o Planner pode reabrir para editar,
-            mas a alteração volta para nova aprovação do Coordenador. */}
-        {canReopen && (
+        {/* Plano travado (enviado/aprovado): para alterar, cria-se uma CÓPIA num
+            plano novo — o plano atual NUNCA é desfeito nem sai do prontuário. */}
+        {canRevise && onNewPlan && (
           <div className="space-y-2 border-t pt-3">
             <p className="text-xs text-muted-foreground">
-              {plan.status === "approved"
-                ? "Plano aprovado — para alterar, reabra; a alteração precisará de nova aprovação do Coordenador antes de ir ao Comercial."
-                : "Plano enviado para aprovação — para alterar, reabra (cancela o envio atual)."}
+              Este plano está{" "}
+              {plan.status === "approved" ? "aprovado" : "enviado para aprovação"}{" "}
+              e não pode ser alterado diretamente. Para revisar, crie uma{" "}
+              <strong>cópia</strong> num plano novo — o plano atual continua
+              registrado e intacto.
             </p>
             <Button
               variant="outline"
               size="sm"
               disabled={isPending}
-              onClick={() =>
-                run(
-                  () => reopenTreatmentPlan(plan.id),
-                  "Plano reaberto para edição."
-                )
-              }
+              onClick={() => onNewPlan(plan.id)}
             >
               <Pencil className="mr-1 size-4" />
-              Reabrir para edição
+              Criar cópia para revisar
             </Button>
           </div>
         )}
 
-        {/* H2.4: já foi ao Comercial — edição bloqueada (sem botão de reabrir). */}
+        {/* Já foi ao Comercial — edição bloqueada; revisão vira um plano novo. */}
         {canEdit &&
           plan.status === "approved" &&
           !inPlanningPhase && (
             <p className="border-t pt-3 text-xs text-muted-foreground">
-              Plano enviado ao Comercial — a edição fica bloqueada. Se o caso
-              voltar ao Centro de Planejamento (revisão), o plano poderá ser
-              reaberto.
+              Plano enviado ao Comercial — a edição fica bloqueada. Para uma nova
+              conduta, crie um <strong>novo plano</strong> (o cliente precisa
+              estar no Centro de Planejamento).
             </p>
           )}
 

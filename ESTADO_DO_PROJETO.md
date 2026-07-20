@@ -1,6 +1,26 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/07/2026 · Versão do sistema: **0.80.9** · Última migração: **0133**_
+_Atualizado em: 17/07/2026 · Versão do sistema: **0.81.0** · Última migração: **0133**_
+
+> **LOTE Avaliações & Planos — Entrega 1 ✅ (v0.81.0, sem migração):** fim do bug
+> destrutivo + base de vários planos. (1) O prontuário/cockpit **listam TODOS os
+> planos** do cliente (`loadClientPlans` + `PlanEditorSwitcher`); nenhum é
+> escondido. (2) **Editar plano aprovado deixou de destruir**: saiu o "Reabrir"
+> (que rebaixava pra rascunho); no lugar, **"Criar cópia para revisar"** gera um
+> plano NOVO copiando o aprovado, que continua intacto. (3) **"Novo plano"** cria
+> um plano adicional em branco. (4) `createTreatmentPlan(clientId, copyFromId?)`
+> sempre cria novo (com duplicação opcional de opções/itens/etapas). O editor
+> **remonta por `key`** ao trocar de plano (sem arrastar texto/auto-save entre
+> planos). Próximas fases: status ricos, cockpit do coordenador, avaliações
+> versionadas, cancelar/suspender, histórico e KPI.
+
+> **Prontuário — aba Cadastro ✅ (v0.80.10, sem migração):** **Dados do cliente**
+> reorganizados em seções (Identificação / Contato / Endereço / Observações) com
+> ícone dourado + rótulo pequeno e valor em destaque; **ordem dos blocos** com os
+> Dados do cliente **primeiro** e os complementos abaixo (Compartilhamento,
+> Empresarial, Responsáveis, Dependentes); **Responsáveis** com avatar de iniciais
+> e linha mais limpa; cabeçalhos com ícone. Só visual. (1ª aba da rodada do
+> prontuário — vamos aba a aba.)
 
 > **Chat Hub — painel de bloqueados ✅ (v0.80.9, sem migração):** o Admin tem um
 > botão **"Bloqueados (N)"** no topo da coluna que abre um diálogo com **todos os

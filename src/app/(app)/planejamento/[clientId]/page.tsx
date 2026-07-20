@@ -32,14 +32,7 @@ import {
   type MethodologyPillar,
 } from "@/lib/journey";
 import {
-  type PlanOption,
-  type PlanStage,
-  type TreatmentPlan,
-  type TreatmentPlanStatus,
-} from "@/lib/planning";
-import {
   resolveProcedurePrices,
-  type BudgetItem,
   type PricedProcedure,
   type Procedure,
   type ProtocolRef,
@@ -56,8 +49,9 @@ import {
 import { loadClientProgram } from "@/lib/empresarial/benefits";
 import { getUnitSchedulingData } from "../../agenda/actions";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
-import { PlanningSection } from "../../prontuarios/[id]/planning-section";
+import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
 import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
+import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { TreatmentSummary } from "./treatment-summary";
 import { SessionJoinPlanner } from "./session-join-planner";
 
@@ -271,30 +265,14 @@ export default async function PlanningCockpitPage(
     })
   );
 
-  // -- Plano de tratamento (editor) --
-  let treatmentPlan: TreatmentPlan | null = null;
-  const { data: planRows } = await supabase
-    .from("treatment_plans")
-    .select(
-      "id, status, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes"
-    )
-    .eq("client_id", clientId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .returns<
-      {
-        id: string;
-        status: TreatmentPlanStatus;
-        diagnosis: string | null;
-        objectives: string | null;
-        planning_notes: string | null;
-        created_at: string;
-        submitted_at: string | null;
-        reviewed_at: string | null;
-        review_notes: string | null;
-      }[]
-    >();
-  const planRow = planRows?.[0];
+  // -- Planos de tratamento (editor) --
+  // Carrega TODOS os planos do cliente (nenhum é escondido). O cockpit trabalha
+  // no plano "ativo" (o editável mais recente; senão o mais novo).
+  const plans = await loadClientPlans(clientId);
+  const treatmentPlan =
+    plans.find((p) => p.status === "draft" || p.status === "returned") ??
+    plans[0] ??
+    null;
 
   // AJ3: próxima apresentação comercial futura — alimenta o cronômetro no topo.
   const { data: presRows } = await supabase
@@ -308,115 +286,6 @@ export default async function PlanningCockpitPage(
     .limit(1)
     .returns<{ starts_at: string }[]>();
   const presentationAt = presRows?.[0]?.starts_at ?? null;
-
-  if (planRow) {
-    const { data: optRows } = await supabase
-      .from("treatment_plan_options")
-      .select(
-        "id, is_primary, title, description, sort_order, review_status, review_notes"
-      )
-      .eq("plan_id", planRow.id)
-      .order("is_primary", { ascending: false })
-      .order("sort_order")
-      .returns<
-        {
-          id: string;
-          is_primary: boolean;
-          title: string;
-          description: string | null;
-          sort_order: number;
-          review_status: "pending" | "approved" | "rejected";
-          review_notes: string | null;
-        }[]
-      >();
-    const optionIds = (optRows ?? []).map((o) => o.id);
-    const itemsByOption = new Map<string, BudgetItem[]>();
-    if (optionIds.length > 0) {
-      const { data: itemRows } = await supabase
-        .from("treatment_plan_option_items")
-        .select(
-          "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
-        )
-        .in("option_id", optionIds)
-        .order("sort_order")
-        .returns<
-          {
-            id: string;
-            option_id: string;
-            procedure_id: string | null;
-            description: string;
-            quantity: number;
-            unit_price_cents: number;
-            planned_sessions: number | null;
-            planned_total_minutes: number | null;
-            stage_id: string | null;
-            suggested_provider_id: string | null;
-            gut_gravity: number | null;
-            gut_urgency: number | null;
-            gut_tendency: number | null;
-            sort_order: number;
-          }[]
-        >();
-      for (const it of itemRows ?? []) {
-        const list = itemsByOption.get(it.option_id) ?? [];
-        list.push({
-          id: it.id,
-          procedureId: it.procedure_id,
-          description: it.description,
-          quantity: it.quantity,
-          unitPriceCents: it.unit_price_cents,
-          plannedSessions: it.planned_sessions,
-          plannedMinutes: it.planned_total_minutes,
-          stageId: it.stage_id,
-          suggestedProviderId: it.suggested_provider_id,
-          gutGravity: it.gut_gravity,
-          gutUrgency: it.gut_urgency,
-          gutTendency: it.gut_tendency,
-        });
-        itemsByOption.set(it.option_id, list);
-      }
-    }
-    // H4.5: etapas do tratamento por opção.
-    const stagesByOption = new Map<string, PlanStage[]>();
-    if (optionIds.length > 0) {
-      const { data: stageRows } = await supabase
-        .from("treatment_plan_stages")
-        .select("id, option_id, name, sort_order")
-        .in("option_id", optionIds)
-        .order("sort_order")
-        .returns<
-          { id: string; option_id: string; name: string; sort_order: number }[]
-        >();
-      for (const st of stageRows ?? []) {
-        const list = stagesByOption.get(st.option_id) ?? [];
-        list.push({ id: st.id, name: st.name, sortOrder: st.sort_order });
-        stagesByOption.set(st.option_id, list);
-      }
-    }
-    const options: PlanOption[] = (optRows ?? []).map((o) => ({
-      id: o.id,
-      isPrimary: o.is_primary,
-      title: o.title,
-      description: o.description,
-      sortOrder: o.sort_order,
-      items: itemsByOption.get(o.id) ?? [],
-      stages: stagesByOption.get(o.id) ?? [],
-      reviewStatus: o.review_status,
-      reviewNotes: o.review_notes,
-    }));
-    treatmentPlan = {
-      id: planRow.id,
-      status: planRow.status,
-      diagnosis: planRow.diagnosis,
-      objectives: planRow.objectives,
-      planningNotes: planRow.planning_notes,
-      createdAt: planRow.created_at,
-      submittedAt: planRow.submitted_at,
-      reviewedAt: planRow.reviewed_at,
-      reviewNotes: planRow.review_notes,
-      options,
-    };
-  }
 
   // -- Protocolos (Rede + unidade do cliente) — base de sessões/tempo (E3) --
   const protocolByProcedure: Record<string, ProtocolRef> = {};
@@ -831,10 +700,10 @@ export default async function PlanningCockpitPage(
       </div>
 
       {/* Editor do plano — a área principal do cockpit, em largura total. */}
-      <PlanningSection
+      <PlanEditorSwitcher
         clientId={client.id}
         clientName={client.full_name}
-        plan={treatmentPlan}
+        plans={plans}
         canEdit
         canReview={false}
         inPlanningPhase={phase === "planning_center"}
