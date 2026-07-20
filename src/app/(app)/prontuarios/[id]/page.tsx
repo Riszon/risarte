@@ -2295,14 +2295,6 @@ export default async function ClientDetailPage(
                 clientGender={client.gender}
               />
             )}
-            {canViewProgress && (
-              <ClinicalProgressSection
-                clientId={client.id}
-                clinicId={scheduleClinicId}
-                canWrite={canWriteProgress}
-                notes={progressNotes}
-              />
-            )}
             {canViewClinical && (
               <PlanningSupplements
                 clientId={client.id}
@@ -2310,6 +2302,33 @@ export default async function ClientDetailPage(
                 supplements={planningSupplements}
               />
             )}
+          </TabPanel>
+        )}
+
+        {/* Desenvolvimento Clínico (dentista executor) — Fase 4B: a execução do
+            plano aprovado (referência) + a evolução clínica, separada da
+            avaliação do Coordenador (aba Clínico). */}
+        {canViewProgress && (
+          <TabPanel id="desenvolvimento" label="Desenvolvimento Clínico">
+            {planSummary ? (
+              <PlanSummarySection
+                diagnosis={planSummary.diagnosis}
+                objectives={planSummary.objectives}
+                optionTitle={planSummary.optionTitle}
+                stages={planSummary.stages}
+              />
+            ) : (
+              <p className="mb-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                Nenhum plano aprovado para executar ainda. Assim que houver um
+                plano aprovado, ele aparece aqui como referência da execução.
+              </p>
+            )}
+            <ClinicalProgressSection
+              clientId={client.id}
+              clinicId={scheduleClinicId}
+              canWrite={canWriteProgress}
+              notes={progressNotes}
+            />
           </TabPanel>
         )}
 

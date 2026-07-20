@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.84.0** · Última migração: **0135**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.85.0** · Última migração: **0135**_
+
+> **LOTE Avaliações & Planos — Entrega 4 (parte 4B) ✅ (v0.85.0, sem migração):**
+> nova aba **"Desenvolvimento Clínico"** no prontuário, para o **dentista
+> executor**: mostra o **plano aprovado** (referência da execução) + a **evolução
+> clínica** (anotações do dentista), agora **separada** da aba Clínico (que passa
+> a ser só a avaliação do Coordenador). Também: cockpit de avaliação com **rolagem
+> independente** das colunas, editor de plano sem repetição de "Diagnóstico", e
+> blocos do plano **recolhidos por padrão** na visualização (v0.84.1). _A pedido
+> do dono, o refino visual de 4A+4B vem em seguida._
 
 > **LOTE Avaliações & Planos — Entrega 4 (parte 4A) ✅ (v0.84.0, sem migração):**
 > **Cockpit do Coordenador Clínico** — tela dedicada `/avaliacao/[cliente]` nos
