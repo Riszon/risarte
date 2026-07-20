@@ -176,6 +176,25 @@ export async function moveClientPhase(
     return { ok: false, error: "Não foi possível mover o cliente de fase." };
   }
 
+  // Fase 2: ao enviar ao Comercial (3→4), os planos aprovados que ainda não
+  // entraram no ciclo de vida passam a "Aguardando apresentação" (automático).
+  if (newPhase === "commercial_conversion") {
+    const { data: approvedPlans } = await supabase
+      .from("treatment_plans")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("status", "approved")
+      .is("lifecycle", null)
+      .returns<{ id: string }[]>();
+    for (const p of approvedPlans ?? []) {
+      await supabase.rpc("set_plan_lifecycle", {
+        p_plan_id: p.id,
+        p_to: "aguardando_apresentacao",
+        p_note: "Enviado ao Comercial",
+      });
+    }
+  }
+
   revalidatePath("/jornada");
   revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };

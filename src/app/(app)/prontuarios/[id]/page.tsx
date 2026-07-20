@@ -1565,6 +1565,21 @@ export default async function ClientDetailPage(
   const canReviewPlan =
     session.isAdminMaster ||
     hasRoleInClinic(session, client.clinic_id, ["clinical_coordinator"]);
+  // Fase 2 — quem pode mover cada situação do ciclo de vida do plano.
+  const lifecycleCaps = {
+    presentation: canEditPlanning,
+    commercial:
+      session.isAdminMaster ||
+      hasRoleInClinic(session, client.clinic_id, ["commercial_consultant"]),
+    treatment:
+      session.isAdminMaster ||
+      hasRoleInClinic(session, client.clinic_id, [
+        "dentist",
+        "clinical_coordinator",
+        "receptionist",
+        "unit_manager",
+      ]),
+  };
   let plans: TreatmentPlan[] = [];
   const protocolByProcedure: Record<string, ProtocolRef> = {};
   const realStatsByProcedure: Record<string, RealStat> = {};
@@ -2260,6 +2275,7 @@ export default async function ClientDetailPage(
                 programActive={program?.active ?? false}
                 programCompanyName={program?.companyName ?? null}
                 programBenefits={program?.byProcedure ?? {}}
+                lifecycleCaps={lifecycleCaps}
               />
             )}
           </TabPanel>

@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { BudgetItem } from "@/lib/pricing";
 import type {
+  PlanLifecycle,
   PlanOption,
   PlanStage,
   TreatmentPlan,
@@ -22,7 +23,7 @@ export async function loadClientPlans(
   const { data: planRows } = await supabase
     .from("treatment_plans")
     .select(
-      "id, status, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes"
+      "id, status, lifecycle, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes"
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
@@ -30,6 +31,7 @@ export async function loadClientPlans(
       {
         id: string;
         status: TreatmentPlanStatus;
+        lifecycle: PlanLifecycle | null;
         diagnosis: string | null;
         objectives: string | null;
         planning_notes: string | null;
@@ -148,6 +150,7 @@ export async function loadClientPlans(
   return plans.map((p) => ({
     id: p.id,
     status: p.status,
+    lifecycle: p.lifecycle,
     diagnosis: p.diagnosis,
     objectives: p.objectives,
     planningNotes: p.planning_notes,

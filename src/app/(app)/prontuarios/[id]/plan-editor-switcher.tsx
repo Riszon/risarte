@@ -4,7 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { PLAN_STATUS_LABELS, type TreatmentPlan } from "@/lib/planning";
+import {
+  PLAN_STAGE_LABELS,
+  PLAN_STAGE_STYLES,
+  planStage,
+  type TreatmentPlan,
+} from "@/lib/planning";
 import type {
   PricedProcedure,
   ProtocolRef,
@@ -13,6 +18,7 @@ import type {
 import type { MethodologyPillar } from "@/lib/journey";
 import type { ProgramBenefit } from "@/lib/empresarial/benefits";
 import { PlanningSection } from "./planning-section";
+import { PlanLifecycleBar, type LifecycleCaps } from "./plan-lifecycle-bar";
 import { createTreatmentPlan } from "./planning-actions";
 
 /**
@@ -37,6 +43,7 @@ export function PlanEditorSwitcher({
   programActive = false,
   programCompanyName = null,
   programBenefits = {},
+  lifecycleCaps = { presentation: false, commercial: false, treatment: false },
 }: {
   clientId: string;
   clientName: string;
@@ -53,6 +60,7 @@ export function PlanEditorSwitcher({
   programActive?: boolean;
   programCompanyName?: string | null;
   programBenefits?: Record<string, ProgramBenefit>;
+  lifecycleCaps?: LifecycleCaps;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -89,24 +97,43 @@ export function PlanEditorSwitcher({
           <span className="mr-1 text-xs font-medium text-muted-foreground">
             Planos deste cliente:
           </span>
-          {plans.map((pl, i) => (
-            <button
-              key={pl.id}
-              type="button"
-              disabled={isPending}
-              onClick={() => setSelectedPlanId(pl.id)}
-              className={cn(
-                "rounded-full border px-2.5 py-1 text-xs transition-colors",
-                pl.id === selected?.id
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "hover:bg-muted"
-              )}
-            >
-              Plano {plans.length - i} · {PLAN_STATUS_LABELS[pl.status]} ·{" "}
-              {new Date(pl.createdAt).toLocaleDateString("pt-BR")}
-            </button>
-          ))}
+          {plans.map((pl, i) => {
+            const st = planStage(pl);
+            return (
+              <button
+                key={pl.id}
+                type="button"
+                disabled={isPending}
+                onClick={() => setSelectedPlanId(pl.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                  pl.id === selected?.id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "hover:bg-muted"
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-block size-2 rounded-full border",
+                    PLAN_STAGE_STYLES[st]
+                  )}
+                  aria-hidden
+                />
+                Plano {plans.length - i} · {PLAN_STAGE_LABELS[st]} ·{" "}
+                {new Date(pl.createdAt).toLocaleDateString("pt-BR")}
+              </button>
+            );
+          })}
         </div>
+      )}
+
+      {/* Situação (linha do tempo única) do plano selecionado, quando já aprovado. */}
+      {selected && selected.status === "approved" && (
+        <PlanLifecycleBar
+          planId={selected.id}
+          stage={planStage(selected)}
+          caps={lifecycleCaps}
+        />
       )}
 
       <PlanningSection

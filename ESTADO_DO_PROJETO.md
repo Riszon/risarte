@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/07/2026 · Versão do sistema: **0.81.0** · Última migração: **0133**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.82.0** · Última migração: **0134**_
+
+> **LOTE Avaliações & Planos — Entrega 2 ✅ (v0.82.0, migração 0134):** o plano
+> agora tem uma **linha do tempo única** (situação). Os 4 status internos
+> (planejamento / aguardando aprovação / em revisão / aprovado pelo Coordenador)
+> são os **primeiros passos** e um campo novo (`lifecycle`) **continua** depois de
+> aprovado: **Aguardando apresentação → Apresentado → Aceito/Reprovado pelo cliente
+> → Em tratamento → Concluído** (Cancelado/Suspenso ficam **reservados** — telas nas
+> Fases 6/7). O `status` antigo **não muda** (segue guiando a fila e a trava 3→4).
+> Cada plano mostra **etiqueta colorida** da situação (na ficha, no cockpit e nos
+> chips de seleção); há **botões para avançar** a situação, liberados por papel
+> (Planner → apresentação; Comercial → apresentado/aceito/reprovado; Dentista/
+> Coordenador/Recepção/Gerente → em tratamento/concluído). Ao **enviar ao Comercial
+> (3→4)**, os planos aprovados viram "Aguardando apresentação" **automaticamente**.
+> Todo movimento fica registrado (`treatment_plan_status_events`) e o Planner é
+> avisado quando o cliente aceita/reprova. _Adiado p/ Fase 5: refletir a nova
+> situação também na tela `/planos` (hoje ela deriva da jornada)._
 
 > **LOTE Avaliações & Planos — Entrega 1 ✅ (v0.81.0, sem migração):** fim do bug
 > destrutivo + base de vários planos. (1) O prontuário/cockpit **listam TODOS os

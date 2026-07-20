@@ -9,7 +9,7 @@ import {
   MessageSquareText,
   TriangleAlert,
 } from "lucide-react";
-import { getSessionContext } from "@/lib/auth";
+import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PresentationCountdown } from "@/components/presentation-countdown";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -421,6 +421,23 @@ export default async function PlanningCockpitPage(
         treatmentPlan.options[0])
       : null;
 
+  // Fase 2 — quem pode mover a situação do plano (aqui é o Planner, mas o
+  // usuário pode acumular papéis na unidade).
+  const lifecycleCaps = {
+    presentation: true,
+    commercial:
+      session.isAdminMaster ||
+      hasRoleInClinic(session, client.clinic_id, ["commercial_consultant"]),
+    treatment:
+      session.isAdminMaster ||
+      hasRoleInClinic(session, client.clinic_id, [
+        "dentist",
+        "clinical_coordinator",
+        "receptionist",
+        "unit_manager",
+      ]),
+  };
+
   // H4.5 Pedido 1: dentistas da unidade do cliente (o Planner indica por item).
   const scheduling = await getUnitSchedulingData(client.clinic_id);
   const providerOptions = scheduling.staff
@@ -715,6 +732,7 @@ export default async function PlanningCockpitPage(
         programActive={program?.active ?? false}
         programCompanyName={program?.companyName ?? null}
         programBenefits={program?.byProcedure ?? {}}
+        lifecycleCaps={lifecycleCaps}
       />
     </div>
   );

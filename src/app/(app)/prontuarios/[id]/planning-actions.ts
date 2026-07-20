@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import type { PlanResult, ProjectedSession } from "@/lib/planning";
+import type { PlanLifecycle, PlanResult, ProjectedSession } from "@/lib/planning";
 import { parseBRLToCents } from "@/lib/pricing";
 
 /**
@@ -601,6 +601,56 @@ export async function reopenTreatmentPlan(planId: string): Promise<PlanResult> {
   }
   revalidatePath(`/prontuarios/${ctx.clientId}`);
   revalidatePath("/planejamento");
+  return { ok: true };
+}
+
+/**
+ * Fase 2 — avança (ou ajusta) o CICLO DE VIDA do plano depois de aprovado:
+ * aguardando apresentação → apresentado → aceito/reprovado pelo cliente → em
+ * tratamento → concluído. Quem pode marcar cada situação é conferido na RPC
+ * `set_plan_lifecycle` (matriz de funções). Cancelar/Suspender NÃO passam aqui
+ * (terão ação própria nas Fases 6/7).
+ */
+export async function setPlanLifecycle(
+  planId: string,
+  to: PlanLifecycle,
+  note?: string
+): Promise<PlanResult> {
+  await getSessionContext();
+  const ctx = await loadPlanContext(planId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_plan_lifecycle", {
+    p_plan_id: planId,
+    p_to: to,
+    p_note: note?.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite marcar esta situação." };
+    }
+    if (error.message.includes("NOT_APPROVED")) {
+      return {
+        ok: false,
+        error:
+          "O plano precisa estar aprovado pelo Coordenador antes de avançar a situação.",
+      };
+    }
+    if (error.message.includes("RESERVED")) {
+      return {
+        ok: false,
+        error: "Cancelar/suspender terá uma ação própria (em breve).",
+      };
+    }
+    console.error("set_plan_lifecycle failed:", error.message);
+    return { ok: false, error: "Não foi possível mudar a situação do plano." };
+  }
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  revalidatePath("/planejamento");
+  revalidatePath("/planos");
+  revalidatePath("/notificacoes");
   return { ok: true };
 }
 
