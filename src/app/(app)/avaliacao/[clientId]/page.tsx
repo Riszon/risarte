@@ -22,7 +22,9 @@ import { loadClientProgram } from "@/lib/empresarial/benefits";
 import type { ReactNode } from "react";
 import { type EvaluationFlowKind } from "@/lib/evaluation-steps";
 import { ClinicalSection } from "../../prontuarios/[id]/clinical-section";
+import { AnamnesisFill } from "../../prontuarios/[id]/anamnesis-fill";
 import { loadEvaluationWorkspace } from "../../prontuarios/[id]/evaluation-loader";
+import { loadAnamnesisWorkspace } from "../../prontuarios/[id]/anamnesis-loader";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
 import { StepGuide } from "./step-guide";
@@ -52,7 +54,7 @@ export default async function EvaluationCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, gender, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -118,6 +120,11 @@ export default async function EvaluationCockpitPage(
     guidance = (g?.content as string | null) ?? null;
   }
 
+  // Anamnese embutida no passo 2 (só nas Fases 2/6).
+  const anamnesis = flowKind
+    ? await loadAnamnesisWorkspace(clientId, clinicId)
+    : { templates: [], fills: [] };
+
   // -- Envio ao Centro de Planejamento (mesma regra da ficha). ----------------
   const clinicRoles = (session.rolesByClinic[client.clinic_id as string] ??
     []) as UserRole[];
@@ -179,12 +186,22 @@ export default async function EvaluationCockpitPage(
   const toolsByStep: Record<number, ReactNode> = flowKind
     ? {
         2: (
-          <ConsiderationsBlock
-            clientId={client.id}
-            notes={notes}
-            canEdit
-            evalById={evalById}
-          />
+          <div className="space-y-4">
+            <AnamnesisFill
+              clientId={client.id}
+              canEdit
+              hasConsent={hasConsent}
+              templates={anamnesis.templates}
+              fills={anamnesis.fills}
+              clientGender={client.gender as string | null}
+            />
+            <ConsiderationsBlock
+              clientId={client.id}
+              notes={notes}
+              canEdit
+              evalById={evalById}
+            />
+          </div>
         ),
         3: (
           <MediaCollectionBlock
@@ -192,13 +209,6 @@ export default async function EvaluationCockpitPage(
             clinicId={clinicId}
             media={media}
             canEdit
-            hasConsent={hasConsent}
-          />
-        ),
-        7: (
-          <AudioBlock
-            clientId={client.id}
-            clinicId={clinicId}
             hasConsent={hasConsent}
           />
         ),
@@ -286,8 +296,19 @@ export default async function EvaluationCockpitPage(
         <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {flowKind ? (
             <>
-              {/* Contexto sempre visível: consentimento (LGPD) + rodada atual. */}
+              {/* 1º) Consentimento (LGPD) — pré-requisito de tudo. */}
               <ConsentGate clientId={client.id} consent={consent} canEdit />
+              {/* 2º) Gravação da consulta — a primeira coisa a fazer ao iniciar. */}
+              <div className="rounded-xl border border-gold/40 bg-gold/5 p-3">
+                <p className="mb-2 text-sm font-semibold">
+                  Gravação da consulta — inicie antes de começar
+                </p>
+                <AudioBlock
+                  clientId={client.id}
+                  clinicId={clinicId}
+                  hasConsent={hasConsent}
+                />
+              </div>
               {flowKind === "reavaliacao" && (
                 <RoundsBlock
                   clientId={client.id}
@@ -299,7 +320,6 @@ export default async function EvaluationCockpitPage(
               <StepGuide
                 kind={flowKind}
                 guidance={guidance}
-                canEditGuidance={session.isAdminMaster}
                 toolsByStep={toolsByStep}
               />
             </>

@@ -20,12 +20,10 @@ import { GuidanceDialog } from "./guidance-dialog";
 export function StepGuide({
   kind,
   guidance,
-  canEditGuidance,
   toolsByStep = {},
 }: {
   kind: EvaluationFlowKind;
   guidance: string | null;
-  canEditGuidance: boolean;
   toolsByStep?: Record<number, ReactNode>;
 }) {
   const steps = stepsForFlow(kind);
@@ -40,7 +38,7 @@ export function StepGuide({
           {steps.length} momentos da consulta
         </span>
         <div className="ml-auto">
-          <GuidanceDialog kind={kind} content={guidance} canEdit={canEditGuidance} />
+          <GuidanceDialog kind={kind} content={guidance} />
         </div>
       </div>
 

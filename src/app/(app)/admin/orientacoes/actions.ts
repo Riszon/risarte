@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 
 /**
- * Admin Master salva a orientação da rede sobre Avaliação/Reavaliação, que o
- * Coordenador consulta no cockpit. Conteúdo geral (sem clinic_id).
+ * Admin Master salva a orientação da rede sobre Avaliação/Reavaliação (e, no
+ * futuro, sobre outras funções). Conteúdo geral (sem clinic_id), consultado
+ * pelos coordenadores no cockpit.
  */
 export async function saveClinicalGuidance(
   kind: "avaliacao" | "reavaliacao",
@@ -15,10 +16,7 @@ export async function saveClinicalGuidance(
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await getSessionContext();
   if (!session.isAdminMaster) {
-    return {
-      ok: false,
-      error: "Apenas o Admin Master pode editar a orientação.",
-    };
+    return { ok: false, error: "Apenas o Admin Master pode editar as orientações." };
   }
   if (kind !== "avaliacao" && kind !== "reavaliacao") {
     return { ok: false, error: "Tipo inválido." };
@@ -43,6 +41,7 @@ export async function saveClinicalGuidance(
     entityType: "clinical_guidance",
     entityId: kind,
   });
+  revalidatePath("/admin/orientacoes");
   revalidatePath("/avaliacao", "layout");
   return { ok: true };
 }

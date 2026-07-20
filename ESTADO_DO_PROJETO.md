@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.88.0** · Última migração: **0136**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.89.0** · Última migração: **0136**_
+
+> **Cockpit do Coordenador — anamnese + gravação + Orientações (Admin) ✅ (v0.89.0,
+> sem migração):** (1) a **anamnese** agora fica **embutida no passo 2** do roteiro,
+> sem sair do cockpit. (2) a **gravação da consulta** virou a **primeira ação**: um
+> card no topo ("inicie antes de começar"), logo após o consentimento. (3) nova tela
+> **Admin › Orientações** (`/admin/orientacoes`) onde o Admin escreve, **com
+> formatação**, as orientações de cada função — começando pelo Coordenador Clínico
+> (Avaliação/Reavaliação); o texto aparece para o coordenador no cockpit (botão
+> "Orientações", só leitura) e vale para **todas** as avaliações da rede. _Próximo:
+> checklist de qualidade da reavaliação (Bloco D) e painel de status (Bloco A)._
 
 > **Cockpit do Coordenador — ferramentas embutidas por passo ✅ (v0.88.0, sem
 > migração):** cada passo do roteiro agora abre com a **ferramenta daquele momento

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   BarChart3,
+  BookOpen,
   Briefcase,
   Building2,
   Calendar,
@@ -132,6 +133,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
+  { href: "/admin/orientacoes", label: "Orientações", icon: BookOpen },
   { href: "/admin/documentos", label: "Modelos de Documentos", icon: FileText },
   { href: "/admin/chat", label: "Chat (contatos)", icon: MessagesSquare },
   { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
