@@ -2241,6 +2241,21 @@ export default async function ClientDetailPage(
 
         {(canViewClinical || canViewProgress || canViewAnamnesis) && (
           <TabPanel id="clinico" label="Clínico">
+            {canEditClinical && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <p className="text-sm text-muted-foreground">
+                  Faça a avaliação numa tela dedicada, com as evidências e os
+                  planos lado a lado.
+                </p>
+                <Button
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href={`/avaliacao/${client.id}`} />}
+                >
+                  Abrir cockpit de avaliação →
+                </Button>
+              </div>
+            )}
             {canCaptureImage && (
               <ClinicalImagesSection
                 clientId={client.id}

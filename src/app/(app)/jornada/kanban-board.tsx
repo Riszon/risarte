@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Clock, Plus } from "lucide-react";
+import { ArrowRight, Clock, Plus, Stethoscope } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +79,9 @@ export function KanbanBoard({
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // Coordenador (ou Admin) pode abrir o cockpit de avaliação a partir do cartão.
+  const canCoordinate =
+    isAdminMaster || clinicRoles.includes("clinical_coordinator");
 
   function move(client: KanbanClient, phase: JourneyPhase) {
     startTransition(async () => {
@@ -239,6 +242,17 @@ export function KanbanBoard({
                         </Badge>
                       )}
                     </div>
+                    {canCoordinate &&
+                      (phase === "clinical_conversion" ||
+                        phase === "reevaluation") && (
+                        <Link
+                          href={`/avaliacao/${client.id}`}
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          <Stethoscope className="size-3" />
+                          Cockpit de avaliação
+                        </Link>
+                      )}
                     {nextOptions.length > 0 && (
                       <div className="mt-2">
                         <DropdownMenu>

@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.83.0** · Última migração: **0135**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.84.0** · Última migração: **0135**_
+
+> **LOTE Avaliações & Planos — Entrega 4 (parte 4A) ✅ (v0.84.0, sem migração):**
+> **Cockpit do Coordenador Clínico** — tela dedicada `/avaliacao/[cliente]` nos
+> moldes do cockpit do Planner, em **2 colunas**: à esquerda o **espaço de
+> avaliação** (consentimento, rodadas de avaliação com filtro, galeria de mídia,
+> considerações, "Iniciar reavaliação", "Enviar ao Centro de Planejamento"); à
+> direita os **planos** para **revisão/aprovação** (aprovar/reprovar por opção),
+> em leitura. O Coordenador abre pelo **banner na aba Clínico** e pelo link
+> **"Cockpit de avaliação"** no **cartão da Jornada** (Fases Conversão Clínica /
+> Reavaliação). _Falta a parte 4B: aba "Desenvolvimento Clínico" do dentista
+> executor (execução do plano aprovado)._
 
 > **LOTE Avaliações & Planos — Entrega 3 ✅ (v0.83.0, migração 0135):**
 > **avaliações/reavaliações versionadas** (rodadas). Antes, a coleta clínica
