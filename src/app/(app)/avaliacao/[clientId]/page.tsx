@@ -143,9 +143,9 @@ export default async function EvaluationCockpitPage(
   const pillar = client.methodology_pillar as MethodologyPillar | null;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
+    <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 lg:flex lg:h-[100dvh] lg:flex-col lg:gap-4 lg:space-y-0 lg:overflow-hidden">
       {/* Cartão de identidade — faixa fina na cor da Fase. */}
-      <div className="relative overflow-hidden rounded-xl border bg-card">
+      <div className="relative shrink-0 overflow-hidden rounded-xl border bg-card">
         <div
           className="h-1 w-full"
           style={{ backgroundColor: PHASE_COLORS[phase] }}
@@ -209,9 +209,9 @@ export default async function EvaluationCockpitPage(
         </div>
       </div>
 
-      {/* Duas colunas: Avaliação à esquerda, Planos à direita. */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-4">
+      {/* Duas colunas com rolagem INDEPENDENTE (cada uma rola por dentro). */}
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
+        <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <ClinicalSection
             clientId={client.id}
             clientName={client.full_name}
@@ -226,7 +226,7 @@ export default async function EvaluationCockpitPage(
             anamnesisBlockMessage={anamnesisBlockMessage}
           />
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <PlanEditorSwitcher
             clientId={client.id}
             clientName={client.full_name}

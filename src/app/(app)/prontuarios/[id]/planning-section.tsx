@@ -634,24 +634,27 @@ export function PlanningSection({
         <EditorCollapse
           title="Diagnóstico e objetivos"
           icon={<Stethoscope className="size-4" />}
+          defaultOpen={canEditContent}
         >
         {/* Diagnóstico */}
         <div className="space-y-1.5">
-          <FieldHead
-            icon={<Stethoscope className="size-4" />}
-            label="Diagnóstico"
-            htmlFor="plan-diagnosis"
-            status={canEditContent ? <SaveStatus state={diagState} /> : null}
-          />
           {canEditContent ? (
-            <textarea
-              id="plan-diagnosis"
-              value={diagnosis}
-              onChange={(e) => setDiagnosis(e.target.value)}
-              rows={4}
-              placeholder="Resumo do diagnóstico do caso..."
-              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-            />
+            <>
+              <FieldHead
+                icon={<Stethoscope className="size-4" />}
+                label="Diagnóstico"
+                htmlFor="plan-diagnosis"
+                status={<SaveStatus state={diagState} />}
+              />
+              <textarea
+                id="plan-diagnosis"
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
+                rows={4}
+                placeholder="Resumo do diagnóstico do caso..."
+                className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
+              />
+            </>
           ) : plan.diagnosis ? (
             <ReadBlock
               icon={<Stethoscope className="size-3" />}
@@ -749,7 +752,9 @@ export function PlanningSection({
           ) : (
             <ul className="space-y-2">
               {options.map((o) => {
-                const optOpen = openOptions[o.id] ?? o.isPrimary;
+                // Padrão: recolhido na visualização; ao editar, o principal abre.
+                const optOpen =
+                  openOptions[o.id] ?? (canEditContent ? o.isPrimary : false);
                 return (
                 <li
                   key={o.id}
