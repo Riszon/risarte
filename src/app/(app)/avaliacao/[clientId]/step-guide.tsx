@@ -28,7 +28,8 @@ export function StepGuide({
 }) {
   const steps = stepsForFlow(kind);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [guideOpen, setGuideOpen] = useState(true);
+  // O roteiro começa recolhido (é referência do fluxo; abre quando precisar).
+  const [guideOpen, setGuideOpen] = useState(false);
 
   function goTo(anchor: string) {
     document
