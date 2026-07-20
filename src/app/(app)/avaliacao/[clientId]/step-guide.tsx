@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ClipboardList, MapPin } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ChevronDown, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FLOW_LABELS,
@@ -12,114 +12,85 @@ import { GuidanceDialog } from "./guidance-dialog";
 
 /**
  * Espinha do Cockpit do Coordenador (Bloco B): o roteiro da avaliação (Fase 2)
- * ou reavaliação (Fase 6). É a ESTRUTURA informativa do fluxo — o coordenador
- * NÃO preenche nada aqui. Alguns passos existem só para orientar (ex.: quebra-
- * gelo); os que têm coleta trazem um atalho para as ferramentas abaixo. A
- * "Orientação da rede" (editável pelo Admin) fica a um clique para consulta.
+ * ou reavaliação (Fase 6). É a ESTRUTURA do fluxo — cada passo traz DENTRO dele
+ * as ferramentas daquele momento (fotos, considerações, gravação, envio). Os
+ * passos começam recolhidos; o coordenador abre o passo em que está trabalhando.
+ * A "Orientações" (editável pelo Admin) fica a um clique para consulta.
  */
 export function StepGuide({
   kind,
   guidance,
   canEditGuidance,
+  toolsByStep = {},
 }: {
   kind: EvaluationFlowKind;
   guidance: string | null;
   canEditGuidance: boolean;
+  toolsByStep?: Record<number, ReactNode>;
 }) {
   const steps = stepsForFlow(kind);
   const [expanded, setExpanded] = useState<number | null>(null);
-  // O roteiro começa recolhido (é referência do fluxo; abre quando precisar).
-  const [guideOpen, setGuideOpen] = useState(false);
-
-  function goTo(anchor: string) {
-    document
-      .getElementById(anchor)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
   return (
     <div className="rounded-xl border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <ClipboardList className="size-4 text-gold" />
-        <span className="text-sm font-semibold">
-          Roteiro da {FLOW_LABELS[kind]}
-        </span>
+        <span className="text-sm font-semibold">Roteiro da {FLOW_LABELS[kind]}</span>
         <span className="hidden text-xs text-muted-foreground sm:inline">
           {steps.length} momentos da consulta
         </span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <GuidanceDialog
-            kind={kind}
-            content={guidance}
-            canEdit={canEditGuidance}
-          />
-          <button
-            type="button"
-            onClick={() => setGuideOpen((v) => !v)}
-            aria-label={guideOpen ? "Recolher roteiro" : "Expandir roteiro"}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted"
-          >
-            <ChevronDown
-              className={cn(
-                "size-4 transition-transform",
-                !guideOpen && "-rotate-90"
-              )}
-            />
-          </button>
+        <div className="ml-auto">
+          <GuidanceDialog kind={kind} content={guidance} canEdit={canEditGuidance} />
         </div>
       </div>
 
-      {guideOpen && (
-        <ol className="divide-y">
-          {steps.map((step) => {
-            const isOpen = expanded === step.n;
-            return (
-              <li key={step.n}>
-                <div className="flex items-start gap-2 p-2.5">
-                  <span
-                    className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold-foreground"
-                    aria-hidden
-                  >
-                    {step.n}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <button
-                      type="button"
-                      onClick={() => setExpanded(isOpen ? null : step.n)}
-                      className="flex w-full items-center justify-between gap-2 text-left"
-                    >
-                      <span className="text-sm font-medium">{step.title}</span>
+      <ol className="divide-y">
+        {steps.map((step) => {
+          const isOpen = expanded === step.n;
+          const tools = toolsByStep[step.n];
+          return (
+            <li key={step.n}>
+              <button
+                type="button"
+                onClick={() => setExpanded(isOpen ? null : step.n)}
+                className="flex w-full items-start gap-2 p-2.5 text-left"
+              >
+                <span
+                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold-foreground"
+                  aria-hidden
+                >
+                  {step.n}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{step.title}</span>
+                    <span className="flex items-center gap-1.5">
+                      {tools != null && (
+                        <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-medium text-gold-foreground">
+                          ferramentas
+                        </span>
+                      )}
                       <ChevronDown
                         className={cn(
                           "size-4 shrink-0 text-muted-foreground transition-transform",
                           !isOpen && "-rotate-90"
                         )}
                       />
-                    </button>
-                    {isOpen && (
-                      <div className="mt-1 space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          {step.description}
-                        </p>
-                        {step.anchor && (
-                          <button
-                            type="button"
-                            onClick={() => goTo(step.anchor!)}
-                            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                          >
-                            <MapPin className="size-3.5" />
-                            Ir para as ferramentas
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                    </span>
+                  </span>
+                </span>
+              </button>
+
+              {isOpen && (
+                <div className="space-y-3 px-2.5 pb-3 pl-10">
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                  {tools != null && <div>{tools}</div>}
                 </div>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

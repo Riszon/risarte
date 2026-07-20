@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.87.0** · Última migração: **0136**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.88.0** · Última migração: **0136**_
+
+> **Cockpit do Coordenador — ferramentas embutidas por passo ✅ (v0.88.0, sem
+> migração):** cada passo do roteiro agora abre com a **ferramenta daquele momento
+> embutida** — passo 2 = considerações, passo 3 = coleta de fotos/exames/link +
+> galeria, passo 7 = gravação, passo 8 = enviar ao planejamento; os demais passos
+> são só orientação. No topo da coluna ficam o **consentimento (LGPD)** e, na
+> reavaliação, a **rodada atual + "Iniciar reavaliação"**. As peças foram extraídas
+> em componentes reutilizáveis (`clinical-tools.tsx` + `clinical-upload.ts`), **sem
+> alterar a área Clínico da ficha** (que segue usando a ClinicalSection). _Pendente:
+> embutir a anamnese no passo 2 e o checklist de qualidade na reavaliação._
 
 > **Cockpit do Coordenador — reformulação, Bloco B ✅ (v0.86.0→0.87.0, migração
 > 0136):** **roteiro guiado** da avaliação/reavaliação. O cockpit detecta se o

@@ -19,15 +19,21 @@ import {
 } from "@/lib/journey";
 import type { UserRole } from "@/lib/roles";
 import { loadClientProgram } from "@/lib/empresarial/benefits";
-import {
-  TOOLS_ANCHOR,
-  type EvaluationFlowKind,
-} from "@/lib/evaluation-steps";
+import type { ReactNode } from "react";
+import { type EvaluationFlowKind } from "@/lib/evaluation-steps";
 import { ClinicalSection } from "../../prontuarios/[id]/clinical-section";
 import { loadEvaluationWorkspace } from "../../prontuarios/[id]/evaluation-loader";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
 import { StepGuide } from "./step-guide";
+import {
+  AudioBlock,
+  ConsentGate,
+  ConsiderationsBlock,
+  MediaCollectionBlock,
+  RoundsBlock,
+  SendToPlanningBlock,
+} from "./clinical-tools";
 
 export const metadata: Metadata = { title: "Cockpit de Avaliação" };
 
@@ -165,6 +171,49 @@ export default async function EvaluationCockpitPage(
   const program = isProgramMember ? await loadClientProgram(client.id) : null;
   const pillar = client.methodology_pillar as MethodologyPillar | null;
 
+  // Ferramentas embutidas em cada passo do roteiro (Fases 2/6): cada momento da
+  // consulta traz a ferramenta certa — considerações, coleta de mídia, gravação
+  // e envio ao planejamento. Os demais passos são só orientação.
+  const evalById = new Map(evaluations.map((e) => [e.id, e]));
+  const hasConsent = Boolean(consent);
+  const toolsByStep: Record<number, ReactNode> = flowKind
+    ? {
+        2: (
+          <ConsiderationsBlock
+            clientId={client.id}
+            notes={notes}
+            canEdit
+            evalById={evalById}
+          />
+        ),
+        3: (
+          <MediaCollectionBlock
+            clientId={client.id}
+            clinicId={clinicId}
+            media={media}
+            canEdit
+            hasConsent={hasConsent}
+          />
+        ),
+        7: (
+          <AudioBlock
+            clientId={client.id}
+            clinicId={clinicId}
+            hasConsent={hasConsent}
+          />
+        ),
+        8: (
+          <SendToPlanningBlock
+            clientId={client.id}
+            clientName={client.full_name}
+            canSend={canSendToPlanning}
+            blocked={anamnesisBlocksPlanning}
+            blockMessage={anamnesisBlockMessage}
+          />
+        ),
+      }
+    : {};
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 lg:flex lg:h-[100dvh] lg:flex-col lg:gap-4 lg:space-y-0 lg:overflow-hidden">
       {/* Cartão de identidade — faixa fina na cor da Fase. */}
@@ -232,36 +281,43 @@ export default async function EvaluationCockpitPage(
         </div>
       </div>
 
-      {/* Bloco B — roteiro guiado da avaliação/reavaliação (só nas Fases 2/6). */}
-      {flowKind && (
-        <div className="shrink-0">
-          <StepGuide
-            kind={flowKind}
-            guidance={guidance}
-            canEditGuidance={session.isAdminMaster}
-          />
-        </div>
-      )}
-
       {/* Duas colunas com rolagem INDEPENDENTE (cada uma rola por dentro). */}
       <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
-        <div
-          id={TOOLS_ANCHOR}
-          className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
-        >
-          <ClinicalSection
-            clientId={client.id}
-            clientName={client.full_name}
-            clinicId={clinicId}
-            canEdit
-            consent={consent}
-            notes={notes}
-            media={media}
-            evaluations={evaluations}
-            canSendToPlanning={canSendToPlanning}
-            anamnesisBlocksPlanning={anamnesisBlocksPlanning}
-            anamnesisBlockMessage={anamnesisBlockMessage}
-          />
+        <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+          {flowKind ? (
+            <>
+              {/* Contexto sempre visível: consentimento (LGPD) + rodada atual. */}
+              <ConsentGate clientId={client.id} consent={consent} canEdit />
+              {flowKind === "reavaliacao" && (
+                <RoundsBlock
+                  clientId={client.id}
+                  evaluations={evaluations}
+                  canEdit
+                />
+              )}
+              {/* Roteiro do fluxo com as ferramentas embutidas em cada passo. */}
+              <StepGuide
+                kind={flowKind}
+                guidance={guidance}
+                canEditGuidance={session.isAdminMaster}
+                toolsByStep={toolsByStep}
+              />
+            </>
+          ) : (
+            <ClinicalSection
+              clientId={client.id}
+              clientName={client.full_name}
+              clinicId={clinicId}
+              canEdit
+              consent={consent}
+              notes={notes}
+              media={media}
+              evaluations={evaluations}
+              canSendToPlanning={canSendToPlanning}
+              anamnesisBlocksPlanning={anamnesisBlocksPlanning}
+              anamnesisBlockMessage={anamnesisBlockMessage}
+            />
+          )}
         </div>
         <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <PlanEditorSwitcher
