@@ -36,6 +36,7 @@ import {
   RoundsBlock,
   SendToPlanningBlock,
 } from "./clinical-tools";
+import { QualityChecklist, type QualityItem } from "./quality-checklist";
 
 export const metadata: Metadata = { title: "Cockpit de Avaliação" };
 
@@ -125,6 +126,45 @@ export default async function EvaluationCockpitPage(
     ? await loadAnamnesisWorkspace(clientId, clinicId)
     : { templates: [], fills: [] };
 
+  // Bloco D — checklist de qualidade do último plano CONCLUÍDO (só reavaliação).
+  let qualityChecklist: {
+    planTitle: string;
+    locked: boolean;
+    items: QualityItem[];
+  } | null = null;
+  if (flowKind === "reavaliacao") {
+    const concluded = plans.find((p) => p.lifecycle === "concluido");
+    const primary =
+      concluded?.options.find((o) => o.isPrimary) ?? concluded?.options[0] ?? null;
+    if (concluded && primary && primary.items.length > 0) {
+      const itemIds = primary.items.map((i) => i.id);
+      const [{ data: reviews }, { data: planRow }] = await Promise.all([
+        supabase
+          .from("plan_quality_reviews")
+          .select("item_id, status, note")
+          .in("item_id", itemIds)
+          .returns<{ item_id: string; status: string; note: string | null }[]>(),
+        supabase
+          .from("treatment_plans")
+          .select("quality_locked")
+          .eq("id", concluded.id)
+          .maybeSingle(),
+      ]);
+      const byItem = new Map((reviews ?? []).map((r) => [r.item_id, r]));
+      qualityChecklist = {
+        planTitle: primary.title,
+        locked: Boolean(planRow?.quality_locked),
+        items: primary.items.map((i) => ({
+          id: i.id,
+          description: i.description,
+          status:
+            (byItem.get(i.id)?.status as QualityItem["status"]) ?? null,
+          note: byItem.get(i.id)?.note ?? null,
+        })),
+      };
+    }
+  }
+
   // -- Envio ao Centro de Planejamento (mesma regra da ficha). ----------------
   const clinicRoles = (session.rolesByClinic[client.clinic_id as string] ??
     []) as UserRole[];
@@ -204,13 +244,23 @@ export default async function EvaluationCockpitPage(
           </div>
         ),
         3: (
-          <MediaCollectionBlock
-            clientId={client.id}
-            clinicId={clinicId}
-            media={media}
-            canEdit
-            hasConsent={hasConsent}
-          />
+          <div className="space-y-4">
+            {qualityChecklist && (
+              <QualityChecklist
+                clientId={client.id}
+                planTitle={qualityChecklist.planTitle}
+                items={qualityChecklist.items}
+                locked={qualityChecklist.locked}
+              />
+            )}
+            <MediaCollectionBlock
+              clientId={client.id}
+              clinicId={clinicId}
+              media={media}
+              canEdit
+              hasConsent={hasConsent}
+            />
+          </div>
         ),
         8: (
           <SendToPlanningBlock

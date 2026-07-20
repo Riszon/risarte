@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.89.0** · Última migração: **0136**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.90.0** · Última migração: **0137**_
+
+> **Cockpit do Coordenador — Bloco D: checklist de qualidade ✅ (v0.90.0, migração
+> 0137):** na **reavaliação**, o passo 3 (Controle de qualidade) mostra o **último
+> plano concluído** procedimento a procedimento; o Coordenador marca cada um como
+> **Aprovado / Revisão / Reprovado** (com motivo). Quando o plano fica **100%
+> aprovado**, ele é **travado** e não pede mais revisão (fica registrado no plano).
+> As revisões/reprovações ficam registradas. _Próximo: painel de status do cliente
+> (Bloco A)._
 
 > **Cockpit do Coordenador — anamnese + gravação + Orientações (Admin) ✅ (v0.89.0,
 > sem migração):** (1) a **anamnese** agora fica **embutida no passo 2** do roteiro,
