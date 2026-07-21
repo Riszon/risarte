@@ -126,6 +126,7 @@ export function AppointmentFormDialog({
   initialTime,
   initialDuration,
   initialProviderId,
+  initialType,
   treatmentSessionId,
   initialSessionIds,
   initialRoomId,
@@ -154,6 +155,9 @@ export function AppointmentFormDialog({
   initialDuration?: number;
   /** Pré-seleciona o profissional sugerido para a sessão (H4.5 Lote 3). */
   initialProviderId?: string;
+  /** Pré-seleciona o tipo do agendamento (ex.: recepção agendando REVISÃO/REFAÇÃO
+   * do controle de qualidade a partir da notificação). */
+  initialType?: AppointmentType;
   /** Vincula este agendamento a uma sessão planejada do tratamento (E4). */
   treatmentSessionId?: string;
   /** Pré-marca VÁRIAS sessões para agendar juntas no mesmo horário (H4.5 Lote 4). */
@@ -225,7 +229,7 @@ export function AppointmentFormDialog({
     null
   );
   const [type, setType] = useState<AppointmentType>(
-    appointment?.type ?? "evaluation"
+    appointment?.type ?? initialType ?? "evaluation"
   );
   const [providerId, setProviderId] = useState(
     appointment?.provider_user_id ?? initialProviderId ?? ""
@@ -282,7 +286,8 @@ export function AppointmentFormDialog({
     if (!isEdit && initialClientId) {
       getClientSchedulingInfo(initialClientId).then((info) => {
         setSchedulingInfo(info);
-        if (info) setType(defaultTypeFor(info));
+        // Respeita o tipo pré-selecionado (ex.: REVISÃO/REFAÇÃO vindo da recepção).
+        if (info && !initialType) setType(defaultTypeFor(info));
       });
       getClientPendingSessions(initialClientId).then(setPendingSessions);
     }

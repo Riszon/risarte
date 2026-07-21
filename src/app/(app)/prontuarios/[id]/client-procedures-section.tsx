@@ -97,17 +97,28 @@ export function ClientProceduresSection({
   clientId,
   canRequest,
   rows,
+  bare = false,
+  filter,
 }: {
   clientId: string;
   canRequest: boolean;
   rows: ProcedureRow[];
+  /** Renderiza sem Card próprio (dentro do bloco unificado). */
+  bare?: boolean;
+  /** Filtro compartilhado (do bloco unificado); quando presente, esconde a barra
+   * de filtros interna e usa estes valores. */
+  filter?: { planId: string; proc: string; dentist: string };
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showSessions, setShowSessions] = useState(false);
-  const [planFilter, setPlanFilter] = useState<string>("");
-  const [procFilter, setProcFilter] = useState<string>("");
-  const [dentistFilter, setDentistFilter] = useState<string>("");
+  const [planFilterState, setPlanFilter] = useState<string>("");
+  const [procFilterState, setProcFilter] = useState<string>("");
+  const [dentistFilterState, setDentistFilter] = useState<string>("");
+  // Filtro efetivo: o compartilhado (bloco unificado) tem prioridade.
+  const planFilter = filter ? filter.planId : planFilterState;
+  const procFilter = filter ? filter.proc : procFilterState;
+  const dentistFilter = filter ? filter.dentist : dentistFilterState;
   // Procedimentos cujas sessões o usuário recolheu (no modo "Com sessões",
   // todas começam abertas).
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -162,92 +173,90 @@ export function ClientProceduresSection({
 
   const anyOpen = rows.some((r) => r.state === "open" || r.state === "none");
 
-  return (
-    <Card>
-      <CardHeader className="gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">Procedimentos</CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Toggle: só procedimentos × com as sessões. */}
-            <div className="flex rounded-lg border p-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => setShowSessions(false)}
-                className={cn(
-                  "rounded-md px-2 py-1 font-medium",
-                  !showSessions ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                )}
-              >
-                Procedimentos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowSessions(true);
-                  setCollapsed(new Set()); // abre todas as sessões
-                }}
-                className={cn(
-                  "rounded-md px-2 py-1 font-medium",
-                  showSessions ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                )}
-              >
-                Com sessões
-              </button>
-            </div>
-            {canRequest && anyOpen && (
-              <Button size="sm" variant="outline" disabled={isPending} onClick={request}>
-                <Send className="mr-1 size-3" />
-                Solicitar agendamento à Recepção
-              </Button>
-            )}
-          </div>
-        </div>
-        {/* Filtros: plano / procedimento / dentista. */}
-        <div className="flex flex-wrap items-center gap-2">
-          {plans.length > 1 && (
-            <select
-              value={planFilter}
-              onChange={(e) => setPlanFilter(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">Todos os planos</option>
-              {plans.map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
+  // Controles (toggle "Procedimentos × Com sessões" + solicitar agendamento).
+  const controls = (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex rounded-lg border p-0.5 text-xs">
+        <button
+          type="button"
+          onClick={() => setShowSessions(false)}
+          className={cn(
+            "rounded-md px-2 py-1 font-medium",
+            !showSessions ? "bg-primary text-primary-foreground" : "text-muted-foreground"
           )}
-          <input
-            value={procFilter}
-            onChange={(e) => setProcFilter(e.target.value)}
-            placeholder="Filtrar procedimento..."
-            className={`${selectClass} min-w-[180px]`}
-          />
-          {dentists.length > 0 && (
-            <select
-              value={dentistFilter}
-              onChange={(e) => setDentistFilter(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">Todos os dentistas</option>
-              {dentists.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+        >
+          Procedimentos
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowSessions(true);
+            setCollapsed(new Set()); // abre todas as sessões
+          }}
+          className={cn(
+            "rounded-md px-2 py-1 font-medium",
+            showSessions ? "bg-primary text-primary-foreground" : "text-muted-foreground"
           )}
-        </div>
-      </CardHeader>
+        >
+          Com sessões
+        </button>
+      </div>
+      {canRequest && anyOpen && (
+        <Button size="sm" variant="outline" disabled={isPending} onClick={request}>
+          <Send className="mr-1 size-3" />
+          Solicitar agendamento à Recepção
+        </Button>
+      )}
+    </div>
+  );
 
-      <CardContent className="space-y-2 text-sm">
-        {filtered.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Nenhum procedimento com esse filtro.
-          </p>
-        ) : (
-          <ul className="space-y-2">
+  // Barra de filtros interna (só quando NÃO está no bloco unificado).
+  const filtersBar = (
+    <div className="flex flex-wrap items-center gap-2">
+      {plans.length > 1 && (
+        <select
+          value={planFilter}
+          onChange={(e) => setPlanFilter(e.target.value)}
+          className={selectClass}
+        >
+          <option value="">Todos os planos</option>
+          {plans.map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      )}
+      <input
+        value={procFilter}
+        onChange={(e) => setProcFilter(e.target.value)}
+        placeholder="Filtrar procedimento..."
+        className={`${selectClass} min-w-[180px]`}
+      />
+      {dentists.length > 0 && (
+        <select
+          value={dentistFilter}
+          onChange={(e) => setDentistFilter(e.target.value)}
+          className={selectClass}
+        >
+          <option value="">Todos os dentistas</option>
+          {dentists.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+
+  const list =
+    filtered.length === 0 ? (
+      <p className="text-xs text-muted-foreground">
+        Nenhum procedimento com esse filtro.
+      </p>
+    ) : (
+      <ul className="space-y-2">
             {filtered.map((r) => {
               const meta = STATE_META[r.state];
               const Icon = meta.icon;
@@ -330,9 +339,29 @@ export function ClientProceduresSection({
                 </li>
               );
             })}
-          </ul>
-        )}
-      </CardContent>
+      </ul>
+    );
+
+  // No bloco unificado (bare): sem Card/título/filtros próprios.
+  if (bare) {
+    return (
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-end">{controls}</div>
+        {list}
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">Procedimentos</CardTitle>
+          {controls}
+        </div>
+        {filtersBar}
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">{list}</CardContent>
     </Card>
   );
 }

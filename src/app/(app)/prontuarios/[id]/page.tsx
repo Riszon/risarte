@@ -7,7 +7,6 @@ import {
   Building2,
   CalendarDays,
   Cake,
-  CircleCheckBig,
   Route,
   Sparkles,
   Users,
@@ -56,7 +55,6 @@ import {
   type ProgressNoteItem,
 } from "./clinical-progress-section";
 import {
-  ClientProceduresSection,
   type ProcedureRow,
   type ProcedureSession,
 } from "./client-procedures-section";
@@ -122,10 +120,8 @@ import {
   ensureTreatmentSessions,
   topupTreatmentSessions,
 } from "./treatment-actions";
-import {
-  TreatmentSessionsPanel,
-  type TreatmentSession,
-} from "./treatment-sessions-panel";
+import { type TreatmentSession } from "./treatment-sessions-panel";
+import { TreatmentSection } from "./treatment-section";
 import type {
   AppointmentStatus,
   AppointmentType,
@@ -2523,52 +2519,19 @@ export default async function ClientDetailPage(
           procedureRows.length > 0 ||
           finishedTreatments.length > 0) && (
           <TabPanel id="sessoes" label="Sessões & Procedimentos">
-            {treatmentSessions.length > 0 && (
-              <TreatmentSessionsPanel
-                clientId={client.id}
-                clientName={client.full_name}
-                clientInactive={client.status !== "active"}
-                sessions={treatmentSessions}
-                canSchedule={canScheduleFromFicha}
-                staff={fichaStaff}
-                config={fichaConfig}
-                clinicId={scheduleClinicId}
-              />
-            )}
-            {procedureRows.length > 0 && (
-              <ClientProceduresSection
-                clientId={client.id}
-                canRequest={canRequestScheduling}
-                rows={procedureRows}
-              />
-            )}
-            {finishedTreatments.length > 0 && (
-              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
-                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800">
-                  <CircleCheckBig className="size-4" />
-                  Tratamentos finalizados
-                </h3>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Planos 100% concluídos e aprovados no controle de qualidade.
-                </p>
-                <ul className="space-y-1.5">
-                  {finishedTreatments.map((t, i) => (
-                    <li
-                      key={i}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-1.5 text-sm"
-                    >
-                      <span className="font-medium">{t.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {t.count} procedimento(s)
-                        {t.at
-                          ? ` · aprovado em ${new Date(t.at).toLocaleDateString("pt-BR")}`
-                          : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <TreatmentSection
+              clientId={client.id}
+              clientName={client.full_name}
+              clientInactive={client.status !== "active"}
+              canSchedule={canScheduleFromFicha}
+              staff={fichaStaff}
+              config={fichaConfig}
+              clinicId={scheduleClinicId}
+              canRequest={canRequestScheduling}
+              sessions={treatmentSessions}
+              rows={procedureRows}
+              finished={finishedTreatments}
+            />
           </TabPanel>
         )}
 

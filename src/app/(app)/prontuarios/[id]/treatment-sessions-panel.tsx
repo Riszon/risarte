@@ -141,6 +141,10 @@ export function TreatmentSessionsPanel({
   staff,
   config,
   clinicId,
+  bare = false,
+  filter,
+  planLabelById,
+  planIdById,
 }: {
   clientId: string;
   clientName: string;
@@ -150,6 +154,14 @@ export function TreatmentSessionsPanel({
   staff: StaffOption[];
   config?: AgendaFormConfig;
   clinicId: string;
+  /** Renderiza sem o Card próprio (o bloco unificado fornece o cartão/cabeçalho). */
+  bare?: boolean;
+  /** Filtro compartilhado do bloco unificado (afeta só a lista, não o resumo). */
+  filter?: { planId: string; proc: string; dentist: string };
+  /** Mapa sessão → rótulo do plano (para o selo do plano na linha do tempo). */
+  planLabelById?: Map<string, string>;
+  /** Mapa sessão → id do plano (para filtrar por plano). */
+  planIdById?: Map<string, string>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -187,8 +199,27 @@ export function TreatmentSessionsPanel({
     order: number;
     sessions: TreatmentSession[];
   };
+  // Filtro do bloco unificado: afeta só a lista renderizada (o resumo abaixo
+  // continua refletindo TODAS as sessões do tratamento).
+  const shownSessions = filter
+    ? sessions.filter((s) => {
+        if (filter.planId && planIdById?.get(s.id) !== filter.planId) return false;
+        if (
+          filter.proc &&
+          !s.procedureName.toLowerCase().includes(filter.proc.toLowerCase())
+        )
+          return false;
+        if (filter.dentist) {
+          const prov =
+            s.appointment?.provider?.full_name ?? s.suggestedProviderName ?? null;
+          if (prov !== filter.dentist) return false;
+        }
+        return true;
+      })
+    : sessions;
+
   const stageMap = new Map<string, StageGroup>();
-  for (const s of sessions) {
+  for (const s of shownSessions) {
     const key = s.stageName ?? "__none__";
     let sg = stageMap.get(key);
     if (!sg) {
@@ -318,19 +349,8 @@ export function TreatmentSessionsPanel({
     });
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">
-          Linha do tempo do tratamento{" "}
-          {pending > 0 && (
-            <span className="text-sm font-normal text-muted-foreground">
-              ({pending} a agendar)
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+  const body = (
+    <div className="space-y-3">
         {/* H4.5 Lote 5: aviso de sessões atrasadas. */}
         {overdueCount > 0 && (
           <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -503,6 +523,14 @@ export function TreatmentSessionsPanel({
                         <span className="min-w-0">
                           <span className="block">
                             <span className="font-medium">{s.procedureName}</span>{" "}
+                            {planLabelById?.get(s.id) && (
+                              <Badge
+                                variant="secondary"
+                                className="align-middle text-[10px]"
+                              >
+                                {planLabelById.get(s.id)}
+                              </Badge>
+                            )}{" "}
                             <span className="text-xs text-muted-foreground">
                               {s.name ??
                                 `Sessão ${s.sessionIndex} de ${s.sessionTotal}`}
@@ -661,7 +689,23 @@ export function TreatmentSessionsPanel({
             fixedClinicId={clinicId}
           />
         )}
-      </CardContent>
+    </div>
+  );
+
+  if (bare) return body;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          Linha do tempo do tratamento{" "}
+          {pending > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">
+              ({pending} a agendar)
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 }

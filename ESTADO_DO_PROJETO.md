@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/07/2026 · Versão do sistema: **0.99.0** · Última migração: **0145**_
+_Atualizado em: 21/07/2026 · Versão do sistema: **0.100.0** · Última migração: **0146**_
+
+> **Bloco único "Sessões & Procedimentos" + agenda pré-carregada ✅ (v0.100.0,
+> migração 0146):** (1) **refino da recepção** — a notificação para agendar a
+> revisão/refação agora abre a **agenda já com o cliente e o tipo REVISÃO/REFAÇÃO
+> selecionados** (link `/agenda?cliente=…&tipo=…`), em vez do prontuário. (2)
+> **reformulação estética** da aba: os dois blocos separados (linha do tempo +
+> procedimentos) viraram **um único cartão** "Sessões & Procedimentos" com
+> **filtros compartilhados** (plano / procedimento / dentista) e uma chave para
+> alternar **Linha do tempo × Procedimentos**. Na **linha do tempo** cada sessão
+> mostra agora **de qual plano** faz parte (selo) e pode ser **filtrada**. Os
+> "Tratamentos finalizados" entram no mesmo cartão. Nada de funcionalidade perdida
+> (agendar, sugerir datas, agendar juntas, controle de qualidade continuam).
 
 > **Dentista enxerga a ficha + refino do Coordenador + Planner (replan) ✅ (v0.99.0,
 > migração 0145):** (A) **BUG corrigido** — o dentista designado para **revisar/

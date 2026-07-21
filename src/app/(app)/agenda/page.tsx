@@ -17,11 +17,12 @@ import {
   toIsoDate,
   type AgendaView,
 } from "@/lib/agenda-view";
-import type {
-  AppointmentStatus,
-  AppointmentType,
-  AttendanceStatus,
-  StaffOption,
+import {
+  APPOINTMENT_TYPES,
+  type AppointmentStatus,
+  type AppointmentType,
+  type AttendanceStatus,
+  type StaffOption,
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
 import { roomLabel } from "@/lib/rooms";
@@ -333,6 +334,13 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   let preselectClientId: string | undefined;
   const clienteParam =
     typeof searchParams.cliente === "string" ? searchParams.cliente : "";
+  // Tipo pré-selecionado ao abrir a agenda de uma notificação (ex.: recepção
+  // agendando REVISÃO/REFAÇÃO do controle de qualidade).
+  const preselectType: AppointmentType | undefined =
+    typeof searchParams.tipo === "string" &&
+    (APPOINTMENT_TYPES as readonly string[]).includes(searchParams.tipo)
+      ? (searchParams.tipo as AppointmentType)
+      : undefined;
   const canSchedule = hasRoleInClinic(session, clinicId, [
     "receptionist",
     "sdr",
@@ -739,6 +747,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               activeClinicId={clinicId}
               trigger={<Button size="sm">Novo agendamento</Button>}
               initialClientId={preselectClientId}
+              initialType={preselectClientId ? preselectType : undefined}
               defaultOpen={Boolean(preselectClientId)}
             />
           )}
