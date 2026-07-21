@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.93.0** · Última migração: **0139**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.94.0** · Última migração: **0139**_
+
+> **Sessões & Procedimentos — centrada em procedimentos ✅ (v0.94.0, sem
+> migração):** a aba agora lista **todos os procedimentos** dos planos aprovados
+> (inclui os **sem sessão gerada** — corrige o "aparecia 4 de 5"). Cada procedimento
+> mostra **de qual plano** faz parte, o **estado** (a agendar / em aberto / agendado
+> / finalizado), o **status do controle de qualidade** + motivo, e o **dentista
+> executor**. Um **toggle** "Procedimentos × Com sessões" abre as sessões de cada
+> procedimento; e há **filtros** por **plano**, **procedimento** (busca) e
+> **dentista**. _(Entrega 3 de 5 do lote checklist ↔ Sessões & Procedimentos.)_
 
 > **Checklist — fix "aparecia em aberto" + status na aba Sessões ✅ (v0.93.0, sem
 > migração):** (fix) a consulta das sessões no cockpit não desambiguava a FK

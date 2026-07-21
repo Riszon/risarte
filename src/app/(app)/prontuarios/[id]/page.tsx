@@ -56,7 +56,8 @@ import {
 } from "./clinical-progress-section";
 import {
   ClientProceduresSection,
-  type ProcedureItem,
+  type ProcedureRow,
+  type ProcedureSession,
 } from "./client-procedures-section";
 import {
   PlanSummarySection,
@@ -1273,7 +1274,7 @@ export default async function ClientDetailPage(
   const canRequestScheduling =
     session.isAdminMaster ||
     hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
-  let procedureItems: ProcedureItem[] = [];
+  const procedureRows: ProcedureRow[] = [];
   if (canViewProcedures) {
     const { data: procSessRows } = await supabase
       .from("treatment_sessions")
@@ -1346,21 +1347,22 @@ export default async function ClientDetailPage(
       for (const q of qrows ?? [])
         qualityByItem.set(q.item_id, { status: q.status, note: q.note });
     }
-    procedureItems = (procSessRows ?? []).map((r) => {
-      const ap = Array.isArray(r.appointment)
-        ? r.appointment[0]
-        : r.appointment;
+    // Agrupa as sessões por procedimento (item do plano).
+    const sessionsByItem = new Map<string, ProcedureSession[]>();
+    for (const r of procSessRows ?? []) {
+      if (!r.item_id) continue;
+      const ap = Array.isArray(r.appointment) ? r.appointment[0] : r.appointment;
       const provRaw = ap?.provider ?? null;
       const prov = Array.isArray(provRaw) ? provRaw[0] : provRaw;
       const isScheduled =
         ap != null && (ap.status === "scheduled" || ap.status === "confirmed");
-      const group: "open" | "scheduled" | "done" =
+      const state: "open" | "scheduled" | "done" =
         r.status === "done" ? "done" : isScheduled ? "scheduled" : "open";
-      return {
+      const list = sessionsByItem.get(r.item_id) ?? [];
+      list.push({
         id: r.id,
-        procedureName: r.procedure_name,
         name: r.name,
-        group,
+        state,
         plannedDate: r.planned_date,
         appointmentAt: ap?.starts_at ?? null,
         providerName: prov?.full_name ?? null,
@@ -1368,18 +1370,76 @@ export default async function ClientDetailPage(
         executorName: r.executed_by
           ? (execNames.get(r.executed_by) ?? null)
           : null,
-        qualityStatus:
-          (r.item_id
-            ? (qualityByItem.get(r.item_id)?.status as
-                | "aprovado"
-                | "revisao"
-                | "reprovado"
-                | undefined)
-            : undefined) ?? null,
-        qualityNote: r.item_id
-          ? (qualityByItem.get(r.item_id)?.note ?? null)
-          : null,
-      };
+      });
+      sessionsByItem.set(r.item_id, list);
+    }
+
+    // Procedimentos = itens dos planos APROVADOS (inclui os sem sessão gerada).
+    const { data: planOptRows } = await supabase
+      .from("treatment_plans")
+      .select(
+        "id, created_at, treatment_plan_options ( id, is_primary, sort_order, title, treatment_plan_option_items ( id, description, sort_order ) )"
+      )
+      .eq("client_id", id)
+      .eq("status", "approved")
+      .order("created_at", { ascending: true })
+      .returns<
+        {
+          id: string;
+          created_at: string;
+          treatment_plan_options: {
+            id: string;
+            is_primary: boolean;
+            sort_order: number;
+            title: string;
+            treatment_plan_option_items: {
+              id: string;
+              description: string;
+              sort_order: number;
+            }[];
+          }[];
+        }[]
+      >();
+
+    (planOptRows ?? []).forEach((pl, idx) => {
+      const opts = pl.treatment_plan_options ?? [];
+      // Opção executada: a que tem sessões; senão a principal; senão a primeira.
+      const chosen =
+        opts.find((o) =>
+          (o.treatment_plan_option_items ?? []).some((i) =>
+            sessionsByItem.has(i.id)
+          )
+        ) ??
+        opts.find((o) => o.is_primary) ??
+        [...opts].sort((a, b) => a.sort_order - b.sort_order)[0];
+      if (!chosen) return;
+      const planLabel = `Plano ${idx + 1}${chosen.title ? ` · ${chosen.title}` : ""}`;
+      const items = [...(chosen.treatment_plan_option_items ?? [])].sort(
+        (a, b) => a.sort_order - b.sort_order
+      );
+      for (const it of items) {
+        const sessions = sessionsByItem.get(it.id) ?? [];
+        const state: ProcedureRow["state"] =
+          sessions.length === 0
+            ? "none"
+            : sessions.every((s) => s.state === "done")
+              ? "done"
+              : sessions.some((s) => s.state === "scheduled")
+                ? "scheduled"
+                : "open";
+        const q = qualityByItem.get(it.id);
+        procedureRows.push({
+          itemId: it.id,
+          procedureName: it.description,
+          planId: pl.id,
+          planLabel,
+          state,
+          qualityStatus: (q?.status as ProcedureRow["qualityStatus"]) ?? null,
+          qualityNote: q?.note ?? null,
+          sessions,
+          executorName: sessions.find((s) => s.executorName)?.executorName ?? null,
+        });
+      }
     });
   }
 
@@ -2399,7 +2459,7 @@ export default async function ClientDetailPage(
           </TabPanel>
         )}
 
-        {(treatmentSessions.length > 0 || procedureItems.length > 0) && (
+        {(treatmentSessions.length > 0 || procedureRows.length > 0) && (
           <TabPanel id="sessoes" label="Sessões & Procedimentos">
             {treatmentSessions.length > 0 && (
               <TreatmentSessionsPanel
@@ -2413,11 +2473,11 @@ export default async function ClientDetailPage(
                 clinicId={scheduleClinicId}
               />
             )}
-            {procedureItems.length > 0 && (
+            {procedureRows.length > 0 && (
               <ClientProceduresSection
                 clientId={client.id}
                 canRequest={canRequestScheduling}
-                items={procedureItems}
+                rows={procedureRows}
               />
             )}
           </TabPanel>
