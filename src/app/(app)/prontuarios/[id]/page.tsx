@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   Cake,
+  CircleCheckBig,
   Route,
   Sparkles,
   Users,
@@ -117,7 +118,10 @@ import {
   PlanningSupplements,
   type PlanningSupplement,
 } from "./planning-supplements";
-import { ensureTreatmentSessions } from "./treatment-actions";
+import {
+  ensureTreatmentSessions,
+  topupTreatmentSessions,
+} from "./treatment-actions";
 import {
   TreatmentSessionsPanel,
   type TreatmentSession,
@@ -1275,7 +1279,12 @@ export default async function ClientDetailPage(
     session.isAdminMaster ||
     hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
   const procedureRows: ProcedureRow[] = [];
+  // Entrega 4: planos 100% finalizados e aprovados (controle de qualidade).
+  const finishedTreatments: { label: string; at: string | null; count: number }[] =
+    [];
   if (canViewProcedures) {
+    // Complementa as sessões de procedimentos incluídos após o início (idempotente).
+    await topupTreatmentSessions(id);
     const { data: procSessRows } = await supabase
       .from("treatment_sessions")
       .select(
@@ -1378,7 +1387,7 @@ export default async function ClientDetailPage(
     const { data: planOptRows } = await supabase
       .from("treatment_plans")
       .select(
-        "id, created_at, treatment_plan_options ( id, is_primary, sort_order, title, treatment_plan_option_items ( id, description, sort_order ) )"
+        "id, created_at, quality_locked, quality_locked_at, treatment_plan_options ( id, is_primary, sort_order, title, treatment_plan_option_items ( id, description, sort_order ) )"
       )
       .eq("client_id", id)
       .eq("status", "approved")
@@ -1387,6 +1396,8 @@ export default async function ClientDetailPage(
         {
           id: string;
           created_at: string;
+          quality_locked: boolean;
+          quality_locked_at: string | null;
           treatment_plan_options: {
             id: string;
             is_primary: boolean;
@@ -1402,6 +1413,7 @@ export default async function ClientDetailPage(
       >();
 
     (planOptRows ?? []).forEach((pl, idx) => {
+      const planNo = idx + 1;
       const opts = pl.treatment_plan_options ?? [];
       // Opção executada: a que tem sessões; senão a principal; senão a primeira.
       const chosen =
@@ -1413,10 +1425,17 @@ export default async function ClientDetailPage(
         opts.find((o) => o.is_primary) ??
         [...opts].sort((a, b) => a.sort_order - b.sort_order)[0];
       if (!chosen) return;
-      const planLabel = `Plano ${idx + 1}${chosen.title ? ` · ${chosen.title}` : ""}`;
+      const planLabel = `Plano ${planNo}${chosen.title ? ` · ${chosen.title}` : ""}`;
       const items = [...(chosen.treatment_plan_option_items ?? [])].sort(
         (a, b) => a.sort_order - b.sort_order
       );
+      if (pl.quality_locked) {
+        finishedTreatments.push({
+          label: planLabel,
+          at: pl.quality_locked_at,
+          count: items.length,
+        });
+      }
       for (const it of items) {
         const sessions = sessionsByItem.get(it.id) ?? [];
         const state: ProcedureRow["state"] =
@@ -2459,7 +2478,9 @@ export default async function ClientDetailPage(
           </TabPanel>
         )}
 
-        {(treatmentSessions.length > 0 || procedureRows.length > 0) && (
+        {(treatmentSessions.length > 0 ||
+          procedureRows.length > 0 ||
+          finishedTreatments.length > 0) && (
           <TabPanel id="sessoes" label="Sessões & Procedimentos">
             {treatmentSessions.length > 0 && (
               <TreatmentSessionsPanel
@@ -2479,6 +2500,33 @@ export default async function ClientDetailPage(
                 canRequest={canRequestScheduling}
                 rows={procedureRows}
               />
+            )}
+            {finishedTreatments.length > 0 && (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800">
+                  <CircleCheckBig className="size-4" />
+                  Tratamentos finalizados
+                </h3>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Planos 100% concluídos e aprovados no controle de qualidade.
+                </p>
+                <ul className="space-y-1.5">
+                  {finishedTreatments.map((t, i) => (
+                    <li
+                      key={i}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-1.5 text-sm"
+                    >
+                      <span className="font-medium">{t.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t.count} procedimento(s)
+                        {t.at
+                          ? ` · aprovado em ${new Date(t.at).toLocaleDateString("pt-BR")}`
+                          : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </TabPanel>
         )}

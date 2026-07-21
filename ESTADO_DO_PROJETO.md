@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.94.0** · Última migração: **0139**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.95.0** · Última migração: **0140**_
+
+> **Sessões: complemento + "com sessões" + Tratamentos finalizados ✅ (v0.95.0,
+> migração 0140):** (1) **complemento de sessões** — procedimentos incluídos no
+> plano DEPOIS do início do tratamento não geravam sessões (função rodava uma vez);
+> a `topup_treatment_sessions` gera só as que faltam ao abrir a ficha, então o
+> procedimento passa a mostrar suas sessões. (2) o botão **"Com sessões"** agora
+> **abre todas** as sessões automaticamente, com colapso individual. (3) **Entrega
+> 4 — "Tratamentos finalizados":** quando um plano fica **100% aprovado** no
+> controle de qualidade, aparece num card de histórico (nº de procedimentos + data
+> da aprovação). _Falta a Entrega 5 (reprovado + outro dentista vê o prontuário
+> como tarefa)._
 
 > **Sessões & Procedimentos — centrada em procedimentos ✅ (v0.94.0, sem
 > migração):** a aba agora lista **todos os procedimentos** dos planos aprovados

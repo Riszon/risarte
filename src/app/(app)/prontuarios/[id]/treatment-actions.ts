@@ -29,6 +29,22 @@ export async function ensureTreatmentSessions(clientId: string): Promise<void> {
 }
 
 /**
+ * Complementa (idempotente) as sessões de procedimentos incluídos no plano
+ * DEPOIS que o tratamento começou — gera só as sessões dos itens que não têm
+ * nenhuma. Chamado ao abrir a ficha (aba Sessões & Procedimentos).
+ */
+export async function topupTreatmentSessions(clientId: string): Promise<void> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("topup_treatment_sessions", {
+    p_client_id: clientId,
+  });
+  if (error) {
+    console.error("topup_treatment_sessions failed:", error.message);
+  }
+}
+
+/**
  * H4.6 A3: o Dentista solicita à Recepção o agendamento das sessões pendentes do
  * cliente (a RPC verifica o papel e notifica a Recepção da unidade, 1x/dia).
  */

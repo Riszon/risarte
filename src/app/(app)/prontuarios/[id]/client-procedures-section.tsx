@@ -108,7 +108,18 @@ export function ClientProceduresSection({
   const [planFilter, setPlanFilter] = useState<string>("");
   const [procFilter, setProcFilter] = useState<string>("");
   const [dentistFilter, setDentistFilter] = useState<string>("");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Procedimentos cujas sessões o usuário recolheu (no modo "Com sessões",
+  // todas começam abertas).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCollapsed(itemId: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
 
   // Opções de filtro.
   const plans = useMemo(
@@ -171,7 +182,10 @@ export function ClientProceduresSection({
               </button>
               <button
                 type="button"
-                onClick={() => setShowSessions(true)}
+                onClick={() => {
+                  setShowSessions(true);
+                  setCollapsed(new Set()); // abre todas as sessões
+                }}
                 className={cn(
                   "rounded-md px-2 py-1 font-medium",
                   showSessions ? "bg-primary text-primary-foreground" : "text-muted-foreground"
@@ -237,7 +251,7 @@ export function ClientProceduresSection({
             {filtered.map((r) => {
               const meta = STATE_META[r.state];
               const Icon = meta.icon;
-              const isOpen = expanded === r.itemId;
+              const sessionsOpen = showSessions && !collapsed.has(r.itemId);
               return (
                 <li key={r.itemId} className="rounded-md border p-2.5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -268,19 +282,22 @@ export function ClientProceduresSection({
                     {showSessions && r.sessions.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => setExpanded(isOpen ? null : r.itemId)}
-                        aria-label={isOpen ? "Recolher sessões" : "Ver sessões"}
+                        onClick={() => toggleCollapsed(r.itemId)}
+                        aria-label={sessionsOpen ? "Recolher sessões" : "Ver sessões"}
                         className="rounded-md p-1 text-muted-foreground hover:bg-muted"
                       >
                         <ChevronDown
-                          className={cn("size-4 transition-transform", !isOpen && "-rotate-90")}
+                          className={cn(
+                            "size-4 transition-transform",
+                            !sessionsOpen && "-rotate-90"
+                          )}
                         />
                       </button>
                     )}
                   </div>
 
-                  {/* Sessões do procedimento (modo "Com sessões" + expandido). */}
-                  {showSessions && isOpen && r.sessions.length > 0 && (
+                  {/* Sessões do procedimento (modo "Com sessões", aberto). */}
+                  {sessionsOpen && r.sessions.length > 0 && (
                     <ul className="mt-2 space-y-1 border-t pt-2">
                       {r.sessions.map((s, i) => (
                         <li
