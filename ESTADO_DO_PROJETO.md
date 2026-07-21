@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.97.0** · Última migração: **0143**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.98.0** · Última migração: **0144**_
+
+> **Reabrir procedimento (backfill) + indicador insistente ✅ (v0.98.0, migração
+> 0144):** (fix) os procedimentos marcados como revisão/reprovado-refazer ANTES da
+> lógica de reabertura continuavam "finalizados" — a 0144 **reabre** os já marcados
+> (revisão cria a sessão de Revisão; reprovado-refazer reabre as sessões). (Entrega
+> 3) **indicador insistente** no topo do prontuário quando há procedimento para
+> revisar/refazer — só desaparece quando 100% finalizado e aprovado. O **dentista**
+> já vê a aba **Sessões & Procedimentos** (mesmo em Fase 6) para finalizar. _Refino
+> pendente: avisar o Coordenador automaticamente ao refinalizar + agenda pré-
+> carregada REVISÃO/REFAÇÃO na recepção._
 
 > **Reabrir procedimento na revisão/refação ✅ (v0.97.0, migração 0143):** ao
 > marcar **Revisão**, o procedimento volta a **"aberto"** (as sessões antigas ficam

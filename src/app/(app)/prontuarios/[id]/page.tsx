@@ -1279,6 +1279,8 @@ export default async function ClientDetailPage(
     session.isAdminMaster ||
     hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
   const procedureRows: ProcedureRow[] = [];
+  // Entrega 3: há procedimentos para revisar/refazer pendentes? (indicador insistente)
+  let qcRedoPending = false;
   // Entrega 4: planos 100% finalizados e aprovados (controle de qualidade).
   const finishedTreatments: { label: string; at: string | null; count: number }[] =
     [];
@@ -1346,15 +1348,39 @@ export default async function ClientDetailPage(
           .filter((x): x is string => Boolean(x))
       ),
     ];
-    const qualityByItem = new Map<string, { status: string; note: string | null }>();
+    const qualityByItem = new Map<
+      string,
+      { status: string; note: string | null; resolution: string | null }
+    >();
     if (procItemIds.length > 0) {
       const { data: qrows } = await supabase
         .from("plan_quality_reviews")
-        .select("item_id, status, note")
+        .select("item_id, status, note, resolution")
         .in("item_id", procItemIds)
-        .returns<{ item_id: string; status: string; note: string | null }[]>();
+        .returns<
+          {
+            item_id: string;
+            status: string;
+            note: string | null;
+            resolution: string | null;
+          }[]
+        >();
       for (const q of qrows ?? [])
-        qualityByItem.set(q.item_id, { status: q.status, note: q.note });
+        qualityByItem.set(q.item_id, {
+          status: q.status,
+          note: q.note,
+          resolution: q.resolution,
+        });
+    }
+    // Entrega 3: pendência de revisão/refação (não some até 100% aprovado).
+    for (const q of qualityByItem.values()) {
+      if (
+        q.status === "revisao" ||
+        (q.status === "reprovado" &&
+          (q.resolution === "redo_same" || q.resolution === "redo_other"))
+      ) {
+        qcRedoPending = true;
+      }
     }
     // Agrupa as sessões por procedimento (item do plano).
     const sessionsByItem = new Map<string, ProcedureSession[]>();
@@ -2211,6 +2237,21 @@ export default async function ClientDetailPage(
         <div className="flex items-center gap-2 rounded-md border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900">
           <AlertTriangle className="size-4 shrink-0 text-amber-600" />
           {anamnesisNudge}
+        </div>
+      )}
+
+      {/* Entrega 3: indicador insistente do controle de qualidade — não some até
+          todos os procedimentos serem refeitos/revistos e reaprovados. */}
+      {qcRedoPending && (
+        <div className="flex items-start gap-2 rounded-md border border-rose-400/70 bg-rose-50 p-3 text-sm text-rose-900">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-rose-600" />
+          <span>
+            <strong>Controle de qualidade pendente.</strong> Há procedimento(s)
+            para <strong>revisar/refazer</strong> — abra a aba{" "}
+            <strong>Sessões &amp; Procedimentos</strong>, finalize-os e solicite ao
+            Coordenador uma nova avaliação. Este aviso só desaparece quando 100%
+            dos procedimentos estiverem finalizados e aprovados.
+          </span>
         </div>
       )}
 
