@@ -18,6 +18,7 @@ import {
   requestQualityScheduling,
   setItemQuality,
   type QualityResolution,
+  type ReplanReason,
 } from "./quality-actions";
 
 type QStatus = "aprovado" | "revisao" | "reprovado";
@@ -67,6 +68,7 @@ export function QualityChecklist({
   const [executorId, setExecutorId] = useState("");
   const [resolution, setResolution] = useState<QualityResolution>("redo_same");
   const [assignedId, setAssignedId] = useState("");
+  const [replanReason, setReplanReason] = useState<ReplanReason | "">("");
 
   const dentistName = (id: string | null) =>
     id ? (dentists.find((d) => d.id === id)?.name ?? "—") : "—";
@@ -117,6 +119,7 @@ export function QualityChecklist({
     setExecutorId(item.executorId ?? item.suggestedExecutorId ?? "");
     setResolution((item.resolution as QualityResolution) ?? "redo_same");
     setAssignedId(item.assignedId ?? "");
+    setReplanReason("");
     setReproveItem(item.id);
   }
 
@@ -144,6 +147,7 @@ export function QualityChecklist({
           executorId: executorId || null,
           resolution,
           assignedId: resolution === "redo_other" ? assignedId || null : null,
+          replanReason: resolution === "replan" ? (replanReason || null) : null,
         }),
       () => setReproveItem(null),
       "Reprovação registrada."
@@ -414,10 +418,33 @@ export function QualityChecklist({
               </div>
             )}
             {resolution === "replan" && (
-              <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs">
-                O procedimento e os dados desta reavaliação seguirão ao Centro de
-                Planejamento quando você enviar — o Planner troca por outro.
-              </p>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Motivo da troca:
+                </p>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="replan-reason"
+                    checked={replanReason === "inviabilidade"}
+                    onChange={() => setReplanReason("inviabilidade")}
+                  />
+                  Inviabilidade clínica (não é falha do profissional)
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="replan-reason"
+                    checked={replanReason === "falha"}
+                    onChange={() => setReplanReason("falha")}
+                  />
+                  Falha profissional
+                </label>
+                <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs">
+                  O procedimento e os dados desta reavaliação seguirão ao Centro de
+                  Planejamento quando você enviar — o Planner troca por outro.
+                </p>
+              </div>
             )}
           </div>
           <DialogFooter className="gap-2">
@@ -428,7 +455,8 @@ export function QualityChecklist({
               disabled={
                 isPending ||
                 !note.trim() ||
-                (resolution === "redo_other" && !assignedId)
+                (resolution === "redo_other" && !assignedId) ||
+                (resolution === "replan" && !replanReason)
               }
               onClick={() => reproveItem && confirmReprove(reproveItem)}
             >

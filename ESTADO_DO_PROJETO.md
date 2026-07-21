@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.98.0** · Última migração: **0144**_
+_Atualizado em: 21/07/2026 · Versão do sistema: **0.99.0** · Última migração: **0145**_
+
+> **Dentista enxerga a ficha + refino do Coordenador + Planner (replan) ✅ (v0.99.0,
+> migração 0145):** (A) **BUG corrigido** — o dentista designado para **revisar/
+> refazer** um procedimento (controle de qualidade, Fase 6) não conseguia abrir a
+> ficha quando ainda não havia agendamento com ele (caso "indicar outro dentista").
+> A RLS agora libera o **dentista executor/indicado** de uma revisão/reprovação —
+> a aba **Sessões & Procedimentos** aparece. (B) **Refino** — quando o procedimento
+> reaberto é **refinalizado**, o **Coordenador é avisado** para refazer o controle
+> de qualidade. (C) **Entrega 4 (Planner)** — procedimento **reprovado → "incluir no
+> próximo plano"** agora pede o **motivo da troca** (inviabilidade clínica ×
+> falha profissional) e, ao **enviar ao Centro de Planejamento**, leva ao **Planner**
+> a lista dos procedimentos + motivo como informação complementar (não duplica).
+> _Refino ainda pendente: notificação da recepção abrir a agenda já carregada com o
+> tipo REVISÃO/REFAÇÃO automático._
 
 > **Reabrir procedimento (backfill) + indicador insistente ✅ (v0.98.0, migração
 > 0144):** (fix) os procedimentos marcados como revisão/reprovado-refazer ANTES da

@@ -5,6 +5,8 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export type QualityResolution = "redo_same" | "redo_other" | "replan";
+/** Motivo da troca no replan (Entrega 4): falha profissional × inviabilidade clínica. */
+export type ReplanReason = "falha" | "inviabilidade";
 
 /**
  * Bloco D — o Coordenador marca a qualidade de um procedimento do plano
@@ -21,6 +23,7 @@ export async function setItemQuality(
     executorId?: string | null;
     resolution?: QualityResolution | null;
     assignedId?: string | null;
+    replanReason?: ReplanReason | null;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   await getSessionContext();
@@ -32,6 +35,7 @@ export async function setItemQuality(
     p_executor: input.executorId ?? null,
     p_resolution: input.resolution ?? null,
     p_assigned: input.assignedId ?? null,
+    p_replan_reason: input.replanReason ?? null,
   });
   if (error) {
     const m = error.message;
@@ -45,6 +49,11 @@ export async function setItemQuality(
       return { ok: false, error: "Escolha o que fazer com o procedimento reprovado." };
     if (m.includes("ASSIGNED_REQUIRED"))
       return { ok: false, error: "Indique o dentista que vai refazer o procedimento." };
+    if (m.includes("REPLAN_REASON_REQUIRED"))
+      return {
+        ok: false,
+        error: "Informe o motivo da troca: falha profissional ou inviabilidade clínica.",
+      };
     if (m.includes("NOT_FINALIZED"))
       return {
         ok: false,
