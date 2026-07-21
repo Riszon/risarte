@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
+  requestItemScheduling,
   requestQualityScheduling,
   setItemQuality,
   type QualityResolution,
@@ -30,6 +31,8 @@ export type QualityItem = {
   resolution: string | null;
   assignedId: string | null;
   suggestedExecutorId: string | null;
+  /** Estado das sessões: só "done" (finalizado) pode ser avaliado. */
+  procState: "open" | "scheduled" | "done";
 };
 
 const selectClass =
@@ -90,6 +93,14 @@ export function QualityChecklist({
       () => setItemQuality(clientId, { itemId: item.id, status: "aprovado" }),
       () => {},
       "Procedimento aprovado."
+    );
+  }
+
+  function scheduleItem(itemId: string) {
+    run(
+      () => requestItemScheduling(clientId, itemId),
+      () => {},
+      "Recepção avisada para agendar."
     );
   }
 
@@ -173,7 +184,7 @@ export function QualityChecklist({
                 )}
                 {item.description}
               </span>
-              {!locked && (
+              {!locked && item.procState === "done" && (
                 <div className="flex gap-1">
                   <button
                     type="button"
@@ -214,6 +225,25 @@ export function QualityChecklist({
                   >
                     Reprovado
                   </button>
+                </div>
+              )}
+              {!locked && item.procState !== "done" && (
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {item.procState === "scheduled"
+                      ? "Agendado — aguardando realização"
+                      : "Em aberto — ainda não realizado"}
+                  </span>
+                  {item.procState === "open" && (
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => scheduleItem(item.id)}
+                      className={cn(btn, "hover:bg-muted")}
+                    >
+                      Solicitar agendamento
+                    </button>
+                  )}
                 </div>
               )}
             </div>

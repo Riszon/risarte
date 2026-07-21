@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.91.0** · Última migração: **0138**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.92.0** · Última migração: **0139**_
+
+> **Checklist de qualidade — só avalia finalizados ✅ (v0.92.0, migração 0139):**
+> no checklist da reavaliação, **todos** os procedimentos do plano aparecem, mas
+> só os **finalizados** (todas as sessões realizadas) podem ser avaliados
+> (Aprovado/Revisão/Reprovado). Os **agendados** aparecem como "aguardando
+> realização"; os **em aberto** ganham um botão **"Solicitar agendamento"** por
+> procedimento (avisa a recepção). O RPC também bloqueia avaliar procedimento não
+> finalizado. _(Entrega 1 de 5 do lote de ajustes do checklist ↔ Sessões &
+> Procedimentos.)_
 
 > **Checklist de qualidade — resolução de Revisão/Reprovação ✅ (v0.91.0, migração
 > 0138):** ao marcar um procedimento como **Revisão** ou **Reprovado**, o motivo é

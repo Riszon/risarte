@@ -45,11 +45,36 @@ export async function setItemQuality(
       return { ok: false, error: "Escolha o que fazer com o procedimento reprovado." };
     if (m.includes("ASSIGNED_REQUIRED"))
       return { ok: false, error: "Indique o dentista que vai refazer o procedimento." };
+    if (m.includes("NOT_FINALIZED"))
+      return {
+        ok: false,
+        error: "Só é possível avaliar procedimentos finalizados (todas as sessões realizadas).",
+      };
     console.error("set_plan_item_quality failed:", m);
     return { ok: false, error: "Não foi possível registrar a conferência." };
   }
   revalidatePath(`/avaliacao/${clientId}`);
   revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
+/** Coordenador pede à recepção o agendamento de UM procedimento em aberto. */
+export async function requestItemScheduling(
+  clientId: string,
+  itemId: string
+): Promise<{ ok: boolean; error?: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_item_scheduling", {
+    p_item_id: itemId,
+  });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED"))
+      return { ok: false, error: "Apenas o Coordenador Clínico pode solicitar." };
+    console.error("request_item_scheduling failed:", error.message);
+    return { ok: false, error: "Não foi possível solicitar o agendamento." };
+  }
+  revalidatePath(`/avaliacao/${clientId}`);
   return { ok: true };
 }
 

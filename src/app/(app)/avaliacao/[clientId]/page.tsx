@@ -164,26 +164,43 @@ export default async function EvaluationCockpitPage(
             .select("quality_locked")
             .eq("id", concluded.id)
             .maybeSingle(),
-          // Sugestão do dentista executor: profissional das sessões já realizadas.
+          // Sessões dos procedimentos: estado (aberto/agendado/finalizado) +
+          // sugestão do dentista executor (profissional das sessões realizadas).
           supabase
             .from("treatment_sessions")
-            .select("item_id, done_at, appointment:appointments ( provider_user_id )")
+            .select(
+              "item_id, status, done_at, appointment:appointments ( provider_user_id )"
+            )
             .in("item_id", itemIds)
-            .eq("status", "done")
-            .order("done_at", { ascending: false }),
+            .order("done_at", { ascending: false, nullsFirst: false }),
           getUnitSchedulingData(clinicId),
         ]);
 
       const byItem = new Map((reviews ?? []).map((r) => [r.item_id, r]));
       const suggestedByItem = new Map<string, string>();
+      // Agrega o estado das sessões por procedimento.
+      const agg = new Map<string, { total: number; open: number; scheduled: number }>();
       for (const s of (sessRows ?? []) as {
         item_id: string;
+        status: string;
         appointment: { provider_user_id: string | null } | { provider_user_id: string | null }[] | null;
       }[]) {
-        if (suggestedByItem.has(s.item_id)) continue; // mais recente primeiro
-        const appt = Array.isArray(s.appointment) ? s.appointment[0] : s.appointment;
-        if (appt?.provider_user_id) suggestedByItem.set(s.item_id, appt.provider_user_id);
+        const a = agg.get(s.item_id) ?? { total: 0, open: 0, scheduled: 0 };
+        a.total += 1;
+        if (s.status !== "done") a.open += 1;
+        if (s.status === "scheduled") a.scheduled += 1;
+        agg.set(s.item_id, a);
+        if (s.status === "done" && !suggestedByItem.has(s.item_id)) {
+          const appt = Array.isArray(s.appointment) ? s.appointment[0] : s.appointment;
+          if (appt?.provider_user_id) suggestedByItem.set(s.item_id, appt.provider_user_id);
+        }
       }
+      const procStateOf = (itemId: string): "open" | "scheduled" | "done" => {
+        const a = agg.get(itemId);
+        if (a && a.total > 0 && a.open === 0) return "done";
+        if (a && a.scheduled > 0) return "scheduled";
+        return "open";
+      };
       const dentists = scheduling.staff
         .filter((s) => s.roles.includes("dentist"))
         .map((s) => ({ id: s.userId, name: s.name }));
@@ -204,6 +221,7 @@ export default async function EvaluationCockpitPage(
             resolution: r?.resolution ?? null,
             assignedId: r?.assigned_dentist_id ?? null,
             suggestedExecutorId: suggestedByItem.get(i.id) ?? null,
+            procState: procStateOf(i.id),
           };
         }),
       };
