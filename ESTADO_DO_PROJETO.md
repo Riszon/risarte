@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.90.0** · Última migração: **0137**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.91.0** · Última migração: **0138**_
+
+> **Checklist de qualidade — resolução de Revisão/Reprovação ✅ (v0.91.0, migração
+> 0138):** ao marcar um procedimento como **Revisão** ou **Reprovado**, o motivo é
+> **obrigatório**. **Revisão** → volta ao **dentista que executou** (sugerido pelas
+> sessões, o Coordenador confirma), que recebe **aviso**; a recepção é chamada para
+> agendar. **Reprovado** abre um **popup com 3 opções**: (1) o mesmo dentista refaz,
+> (2) indicar outro dentista para refazer, (3) incluir no próximo plano (o Planner
+> troca o procedimento). Cada opção dispara os **avisos** certos (executor e/ou
+> indicado). No fim do checklist, o botão **"Solicitar agendamento à recepção"**
+> avisa a recepção (uma vez). _Falta: levar o item marcado p/ replanejar + dados ao
+> Planner no envio ao planejamento._
 
 > **Cockpit do Coordenador — Bloco D: checklist de qualidade ✅ (v0.90.0, migração
 > 0137):** na **reavaliação**, o passo 3 (Controle de qualidade) mostra o **último

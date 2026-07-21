@@ -19,6 +19,7 @@ import {
 } from "@/lib/journey";
 import type { UserRole } from "@/lib/roles";
 import { loadClientProgram } from "@/lib/empresarial/benefits";
+import { getUnitSchedulingData } from "../../agenda/actions";
 import type { ReactNode } from "react";
 import { type EvaluationFlowKind } from "@/lib/evaluation-steps";
 import { ClinicalSection } from "../../prontuarios/[id]/clinical-section";
@@ -128,9 +129,11 @@ export default async function EvaluationCockpitPage(
 
   // Bloco D — checklist de qualidade do último plano CONCLUÍDO (só reavaliação).
   let qualityChecklist: {
+    planId: string;
     planTitle: string;
     locked: boolean;
     items: QualityItem[];
+    dentists: { id: string; name: string }[];
   } | null = null;
   if (flowKind === "reavaliacao") {
     const concluded = plans.find((p) => p.lifecycle === "concluido");
@@ -138,29 +141,71 @@ export default async function EvaluationCockpitPage(
       concluded?.options.find((o) => o.isPrimary) ?? concluded?.options[0] ?? null;
     if (concluded && primary && primary.items.length > 0) {
       const itemIds = primary.items.map((i) => i.id);
-      const [{ data: reviews }, { data: planRow }] = await Promise.all([
-        supabase
-          .from("plan_quality_reviews")
-          .select("item_id, status, note")
-          .in("item_id", itemIds)
-          .returns<{ item_id: string; status: string; note: string | null }[]>(),
-        supabase
-          .from("treatment_plans")
-          .select("quality_locked")
-          .eq("id", concluded.id)
-          .maybeSingle(),
-      ]);
+      const [{ data: reviews }, { data: planRow }, { data: sessRows }, scheduling] =
+        await Promise.all([
+          supabase
+            .from("plan_quality_reviews")
+            .select(
+              "item_id, status, note, executor_dentist_id, resolution, assigned_dentist_id"
+            )
+            .in("item_id", itemIds)
+            .returns<
+              {
+                item_id: string;
+                status: string;
+                note: string | null;
+                executor_dentist_id: string | null;
+                resolution: string | null;
+                assigned_dentist_id: string | null;
+              }[]
+            >(),
+          supabase
+            .from("treatment_plans")
+            .select("quality_locked")
+            .eq("id", concluded.id)
+            .maybeSingle(),
+          // Sugestão do dentista executor: profissional das sessões já realizadas.
+          supabase
+            .from("treatment_sessions")
+            .select("item_id, done_at, appointment:appointments ( provider_user_id )")
+            .in("item_id", itemIds)
+            .eq("status", "done")
+            .order("done_at", { ascending: false }),
+          getUnitSchedulingData(clinicId),
+        ]);
+
       const byItem = new Map((reviews ?? []).map((r) => [r.item_id, r]));
+      const suggestedByItem = new Map<string, string>();
+      for (const s of (sessRows ?? []) as {
+        item_id: string;
+        appointment: { provider_user_id: string | null } | { provider_user_id: string | null }[] | null;
+      }[]) {
+        if (suggestedByItem.has(s.item_id)) continue; // mais recente primeiro
+        const appt = Array.isArray(s.appointment) ? s.appointment[0] : s.appointment;
+        if (appt?.provider_user_id) suggestedByItem.set(s.item_id, appt.provider_user_id);
+      }
+      const dentists = scheduling.staff
+        .filter((s) => s.roles.includes("dentist"))
+        .map((s) => ({ id: s.userId, name: s.name }));
+
       qualityChecklist = {
+        planId: concluded.id,
         planTitle: primary.title,
         locked: Boolean(planRow?.quality_locked),
-        items: primary.items.map((i) => ({
-          id: i.id,
-          description: i.description,
-          status:
-            (byItem.get(i.id)?.status as QualityItem["status"]) ?? null,
-          note: byItem.get(i.id)?.note ?? null,
-        })),
+        dentists,
+        items: primary.items.map((i) => {
+          const r = byItem.get(i.id);
+          return {
+            id: i.id,
+            description: i.description,
+            status: (r?.status as QualityItem["status"]) ?? null,
+            note: r?.note ?? null,
+            executorId: r?.executor_dentist_id ?? null,
+            resolution: r?.resolution ?? null,
+            assignedId: r?.assigned_dentist_id ?? null,
+            suggestedExecutorId: suggestedByItem.get(i.id) ?? null,
+          };
+        }),
       };
     }
   }
@@ -248,9 +293,11 @@ export default async function EvaluationCockpitPage(
             {qualityChecklist && (
               <QualityChecklist
                 clientId={client.id}
+                planId={qualityChecklist.planId}
                 planTitle={qualityChecklist.planTitle}
                 items={qualityChecklist.items}
                 locked={qualityChecklist.locked}
+                dentists={qualityChecklist.dentists}
               />
             )}
             <MediaCollectionBlock
