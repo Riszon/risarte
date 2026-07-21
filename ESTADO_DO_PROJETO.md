@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.96.0** · Última migração: **0141**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.96.1** · Última migração: **0142**_
+
+> **Controle de qualidade não trava mais a jornada ✅ (v0.96.1, migração 0142):**
+> reformulação — revisão/reprovação **não movem** a fase do cliente e **não
+> bloqueiam** o envio ao planejamento (reverte a 0141). O cliente segue a jornada
+> como o Coordenador definir, levando as pendências. O botão de qualidade só
+> **avisa a recepção**. _Próximas entregas do lote: reabrir procedimento +
+> agendamento REVISÃO/REFAÇÃO; aba liberada ao dentista + indicador insistente;
+> pendência do Planner (replan). Financeiro adiado (regras registradas)._
 
 > **Refação move para a Fase 5 ✅ (v0.96.0, migração 0141) — Entrega 5:** quando
 > há procedimentos para **revisar** ou **reprovados para refazer** (mesmo dentista

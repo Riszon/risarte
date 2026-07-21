@@ -317,7 +317,7 @@ export function QualityChecklist({
         ))}
       </ul>
 
-      {/* Botão de agendamento (se há revisão/reprovação). Refação → Fase 5. */}
+      {/* Botão de agendamento (se há revisão/reprovação). */}
       {!locked && pending > 0 && (
         <div className="space-y-1">
           <Button
@@ -328,21 +328,17 @@ export function QualityChecklist({
               run(
                 () => requestQualityScheduling(clientId, planId),
                 () => {},
-                redoCount > 0
-                  ? "Enviado para refação — cliente movido para a Fase 5 e recepção avisada."
-                  : "Recepção avisada para agendar."
+                "Recepção avisada para agendar a revisão/refação."
               )
             }
           >
             <CalendarClock className="mr-1 size-4" />
-            {redoCount > 0
-              ? "Enviar para refação (agendar na Recepção)"
-              : "Solicitar agendamento à recepção"}
+            Solicitar agendamento à recepção
           </Button>
           {redoCount > 0 && (
             <p className="text-xs text-muted-foreground">
-              {redoCount} procedimento(s) para refazer — o cliente volta para a
-              Fase 5 (Início de Tratamento) para reagendar com o profissional.
+              {redoCount} procedimento(s) para refazer — a recepção agenda a
+              revisão/refação com o profissional.
             </p>
           )}
         </div>
