@@ -154,6 +154,13 @@ export function QualityChecklist({
   const pending = items.filter(
     (i) => i.status === "revisao" || i.status === "reprovado"
   ).length;
+  // Refação = revisão ou reprovado-refazer → move o cliente para a Fase 5.
+  const redoCount = items.filter(
+    (i) =>
+      i.status === "revisao" ||
+      (i.status === "reprovado" &&
+        (i.resolution === "redo_same" || i.resolution === "redo_other"))
+  ).length;
 
   const btn =
     "rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50";
@@ -310,23 +317,35 @@ export function QualityChecklist({
         ))}
       </ul>
 
-      {/* Botão de agendamento (se há revisão/reprovação). */}
+      {/* Botão de agendamento (se há revisão/reprovação). Refação → Fase 5. */}
       {!locked && pending > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() =>
-            run(
-              () => requestQualityScheduling(clientId, planId),
-              () => {},
-              "Recepção avisada para agendar."
-            )
-          }
-        >
-          <CalendarClock className="mr-1 size-4" />
-          Solicitar agendamento à recepção
-        </Button>
+        <div className="space-y-1">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={() =>
+              run(
+                () => requestQualityScheduling(clientId, planId),
+                () => {},
+                redoCount > 0
+                  ? "Enviado para refação — cliente movido para a Fase 5 e recepção avisada."
+                  : "Recepção avisada para agendar."
+              )
+            }
+          >
+            <CalendarClock className="mr-1 size-4" />
+            {redoCount > 0
+              ? "Enviar para refação (agendar na Recepção)"
+              : "Solicitar agendamento à recepção"}
+          </Button>
+          {redoCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {redoCount} procedimento(s) para refazer — o cliente volta para a
+              Fase 5 (Início de Tratamento) para reagendar com o profissional.
+            </p>
+          )}
+        </div>
       )}
 
       {/* Popup de Reprovação. */}

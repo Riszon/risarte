@@ -98,5 +98,8 @@ export async function requestQualityScheduling(
     return { ok: false, error: "Não foi possível solicitar o agendamento." };
   }
   revalidatePath(`/avaliacao/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath("/jornada");
+  revalidatePath("/notificacoes");
   return { ok: true };
 }

@@ -286,6 +286,14 @@ export default async function EvaluationCockpitPage(
   // e envio ao planejamento. Os demais passos são só orientação.
   const evalById = new Map(evaluations.map((e) => [e.id, e]));
   const hasConsent = Boolean(consent);
+  // Entrega 5: há procedimentos para REFAZER (revisão/reprovado-refazer)? Se sim,
+  // a refação (Fase 5) tem prioridade — bloqueia o envio ao planejamento.
+  const redoPending = (qualityChecklist?.items ?? []).some(
+    (i) =>
+      i.status === "revisao" ||
+      (i.status === "reprovado" &&
+        (i.resolution === "redo_same" || i.resolution === "redo_other"))
+  );
   const toolsByStep: Record<number, ReactNode> = flowKind
     ? {
         2: (
@@ -332,8 +340,12 @@ export default async function EvaluationCockpitPage(
             clientId={client.id}
             clientName={client.full_name}
             canSend={canSendToPlanning}
-            blocked={anamnesisBlocksPlanning}
-            blockMessage={anamnesisBlockMessage}
+            blocked={anamnesisBlocksPlanning || redoPending}
+            blockMessage={
+              redoPending
+                ? "Há procedimentos para refazer — envie primeiro para refação (Fase 5) pelo botão do controle de qualidade."
+                : anamnesisBlockMessage
+            }
           />
         ),
       }

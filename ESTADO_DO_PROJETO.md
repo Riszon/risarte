@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.95.0** · Última migração: **0140**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.96.0** · Última migração: **0141**_
+
+> **Refação move para a Fase 5 ✅ (v0.96.0, migração 0141) — Entrega 5:** quando
+> há procedimentos para **revisar** ou **reprovados para refazer** (mesmo dentista
+> ou outro), o botão do controle de qualidade **"Enviar para refação"** avisa a
+> recepção **e move o cliente para a Fase 5 (Início de Tratamento)** para reagendar
+> a refação com o profissional escolhido. Se o reprovado for **"incluir no próximo
+> plano"**, o cliente **fica na Fase 6** e só vai à Fase 3 quando o Coordenador
+> enviar ao Centro de Planejamento. **Prioridade:** havendo refação, o **envio ao
+> planejamento fica bloqueado** ("envie primeiro para refação"). O dentista
+> indicado recebe a notificação com o prontuário. _Falta: o Planner consumir o item
+> marcado p/ replanejar + os dados no envio (marca já existe)._
 
 > **Sessões: complemento + "com sessões" + Tratamentos finalizados ✅ (v0.95.0,
 > migração 0140):** (1) **complemento de sessões** — procedimentos incluídos no
