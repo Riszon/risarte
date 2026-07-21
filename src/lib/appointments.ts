@@ -12,6 +12,8 @@ export const APPOINTMENT_TYPES = [
   "return_visit",
   "urgency",
   "emergency",
+  "revision",
+  "redo",
 ] as const;
 
 export type AppointmentType = (typeof APPOINTMENT_TYPES)[number];
@@ -25,6 +27,8 @@ export const APPOINTMENT_TYPE_LABELS: Record<AppointmentType, string> = {
   return_visit: "Retorno",
   urgency: "Urgência",
   emergency: "Emergência",
+  revision: "Revisão",
+  redo: "Refação",
 };
 
 export const APPOINTMENT_STATUSES = [
@@ -55,6 +59,9 @@ export const TYPE_PROVIDER_ROLES: Record<AppointmentType, UserRole[]> = {
   return_visit: ["clinical_coordinator", "dentist"],
   urgency: ["clinical_coordinator", "dentist"],
   emergency: ["clinical_coordinator", "dentist"],
+  // Revisão/refação do controle de qualidade — feita por dentista.
+  revision: ["dentist"],
+  redo: ["dentist"],
 };
 
 export type StaffOption = {
@@ -99,6 +106,9 @@ export const EXCEPTIONAL_TYPES: AppointmentType[] = [
   "return_visit",
   "urgency",
   "emergency",
+  // Revisão/refação de procedimentos reprovados/em revisão no controle de qualidade.
+  "revision",
+  "redo",
 ];
 
 /** Options offered in the scheduling dialog for a client in a given phase. */

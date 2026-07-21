@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.96.1** · Última migração: **0142**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.97.0** · Última migração: **0143**_
+
+> **Reabrir procedimento na revisão/refação ✅ (v0.97.0, migração 0143):** ao
+> marcar **Revisão**, o procedimento volta a **"aberto"** (as sessões antigas ficam
+> finalizadas; cria uma **sessão de Revisão** a agendar). Ao marcar **Reprovado →
+> refazer**, **todas as sessões + o procedimento** voltam a **"aberto"**. Assim o
+> procedimento reaparece como pendente na aba Sessões & Procedimentos e no checklist
+> (só volta a avaliar quando refinalizado). Novos **tipos de agendamento REVISÃO e
+> REFAÇÃO** (a recepção escolhe ao agendar). _Refino: a notificação abrir a agenda
+> já carregada + o tipo automático virão em seguida._
 
 > **Controle de qualidade não trava mais a jornada ✅ (v0.96.1, migração 0142):**
 > reformulação — revisão/reprovação **não movem** a fase do cliente e **não
