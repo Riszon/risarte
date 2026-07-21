@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/07/2026 · Versão do sistema: **0.100.0** · Última migração: **0146**_
+_Atualizado em: 21/07/2026 · Versão do sistema: **0.101.0** · Última migração: **0146**_
+
+> **Aba "Sessões & Procedimentos" redesenhada ✅ (v0.101.0, sem migração):** a aba
+> virou uma **única lista centrada em procedimentos** (fim da divisão em duas
+> visões que confundia). No topo: **resumo compacto** (procedimentos concluídos,
+> sessões feitas, qualidade, tempo/previsão) + **chips de status com contagem**
+> (Em aberto / Agendados / Sem agendamento / Concluídos / Aprovados / Em revisão /
+> Reprovados) que **filtram** a lista, além dos filtros de plano/procedimento/
+> dentista. Cada procedimento é um cartão com **selo de estado + selo do controle
+> de qualidade**, plano, dentista e progresso; ao expandir, mostra as sessões com
+> data/profissional e os botões de **agendar** (por sessão ou várias juntas) e
+> **sugerir datas da série** — tudo no mesmo lugar.
 
 > **Bloco único "Sessões & Procedimentos" + agenda pré-carregada ✅ (v0.100.0,
 > migração 0146):** (1) **refino da recepção** — a notificação para agendar a
