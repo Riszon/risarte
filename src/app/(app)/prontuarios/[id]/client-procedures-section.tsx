@@ -24,7 +24,33 @@ export type ProcedureItem = {
   providerName: string | null;
   doneAt: string | null;
   executorName: string | null;
+  /** Controle de qualidade do Coordenador (Bloco D). */
+  qualityStatus: "aprovado" | "revisao" | "reprovado" | null;
+  qualityNote: string | null;
 };
+
+/** Selo do controle de qualidade + motivo (revisão/reprovado). */
+function QcBadge({ it }: { it: ProcedureItem }) {
+  if (!it.qualityStatus) return null;
+  const map = {
+    aprovado: { label: "Aprovado", cls: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+    revisao: { label: "Em revisão", cls: "border-amber-300 bg-amber-50 text-amber-800" },
+    reprovado: { label: "Reprovado", cls: "border-rose-300 bg-rose-50 text-rose-800" },
+  }[it.qualityStatus];
+  return (
+    <div className="mt-1">
+      <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium ${map.cls}`}>
+        Controle de qualidade: {map.label}
+      </span>
+      {(it.qualityStatus === "revisao" || it.qualityStatus === "reprovado") &&
+        it.qualityNote && (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Motivo: {it.qualityNote}
+          </p>
+        )}
+    </div>
+  );
+}
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
@@ -115,6 +141,7 @@ export function ClientProceduresSection({
                       ? `prevista para ${fmtYmd(it.plannedDate)} · aguardando agendamento`
                       : "aguardando agendamento"}
                   </span>
+                  <QcBadge it={it} />
                 </li>
               ))}
             </ul>
@@ -140,6 +167,7 @@ export function ClientProceduresSection({
                     {it.appointmentAt && fmtDateTime(it.appointmentAt)}
                     {it.providerName ? ` · ${it.providerName}` : ""}
                   </span>
+                  <QcBadge it={it} />
                 </li>
               ))}
             </ul>
@@ -165,6 +193,7 @@ export function ClientProceduresSection({
                     {it.doneAt ? `concluído em ${fmtDate(it.doneAt)}` : "concluído"}
                     {it.executorName ? ` · por ${it.executorName}` : ""}
                   </span>
+                  <QcBadge it={it} />
                 </li>
               ))}
             </ul>

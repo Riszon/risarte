@@ -1278,7 +1278,7 @@ export default async function ClientDetailPage(
     const { data: procSessRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, name, status, planned_date, done_at, executed_by, plan_order, session_index, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status, provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
+        "id, item_id, procedure_name, name, status, planned_date, done_at, executed_by, plan_order, session_index, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status, provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", id)
       .order("plan_order", { nullsFirst: false })
@@ -1286,6 +1286,7 @@ export default async function ClientDetailPage(
       .returns<
         {
           id: string;
+          item_id: string | null;
           procedure_name: string;
           name: string | null;
           status: "pending" | "scheduled" | "done";
@@ -1327,6 +1328,24 @@ export default async function ClientDetailPage(
         .in("id", execIds);
       for (const p of people ?? []) execNames.set(p.id, p.full_name);
     }
+    // Entrega 2: status do controle de qualidade (Coordenador) por procedimento.
+    const procItemIds = [
+      ...new Set(
+        (procSessRows ?? [])
+          .map((r) => r.item_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const qualityByItem = new Map<string, { status: string; note: string | null }>();
+    if (procItemIds.length > 0) {
+      const { data: qrows } = await supabase
+        .from("plan_quality_reviews")
+        .select("item_id, status, note")
+        .in("item_id", procItemIds)
+        .returns<{ item_id: string; status: string; note: string | null }[]>();
+      for (const q of qrows ?? [])
+        qualityByItem.set(q.item_id, { status: q.status, note: q.note });
+    }
     procedureItems = (procSessRows ?? []).map((r) => {
       const ap = Array.isArray(r.appointment)
         ? r.appointment[0]
@@ -1348,6 +1367,17 @@ export default async function ClientDetailPage(
         doneAt: r.done_at,
         executorName: r.executed_by
           ? (execNames.get(r.executed_by) ?? null)
+          : null,
+        qualityStatus:
+          (r.item_id
+            ? (qualityByItem.get(r.item_id)?.status as
+                | "aprovado"
+                | "revisao"
+                | "reprovado"
+                | undefined)
+            : undefined) ?? null,
+        qualityNote: r.item_id
+          ? (qualityByItem.get(r.item_id)?.note ?? null)
           : null,
       };
     });

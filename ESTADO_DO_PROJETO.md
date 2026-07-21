@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 19/07/2026 · Versão do sistema: **0.92.0** · Última migração: **0139**_
+_Atualizado em: 19/07/2026 · Versão do sistema: **0.93.0** · Última migração: **0139**_
+
+> **Checklist — fix "aparecia em aberto" + status na aba Sessões ✅ (v0.93.0, sem
+> migração):** (fix) a consulta das sessões no cockpit não desambiguava a FK
+> `treatment_sessions ↔ appointments` (PGRST201) e voltava vazia — por isso todo
+> procedimento aparecia "em aberto"; corrigido com o nome explícito da FK. **Entrega
+> 2:** na aba **Sessões & Procedimentos**, cada procedimento mostra o **status do
+> controle de qualidade** (Aprovado / Em revisão / Reprovado) definido pelo
+> Coordenador, com o **motivo** (revisão/reprovado) — para o dentista que vai
+> revisar/refazer ler.
 
 > **Checklist de qualidade — só avalia finalizados ✅ (v0.92.0, migração 0139):**
 > no checklist da reavaliação, **todos** os procedimentos do plano aparecem, mas

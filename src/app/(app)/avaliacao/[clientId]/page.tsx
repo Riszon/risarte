@@ -169,7 +169,7 @@ export default async function EvaluationCockpitPage(
           supabase
             .from("treatment_sessions")
             .select(
-              "item_id, status, done_at, appointment:appointments ( provider_user_id )"
+              "item_id, status, done_at, appointment:appointments!treatment_sessions_appointment_id_fkey ( provider_user_id )"
             )
             .in("item_id", itemIds)
             .order("done_at", { ascending: false, nullsFirst: false }),
