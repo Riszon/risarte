@@ -1,0 +1,37 @@
+# CI do riSZon — roda na nuvem do GitHub a cada push/PR no main:
+# 1) testes unitários das regras de negócio (npm test / Vitest);
+# 2) build completo com checagem de tipos (npm run build).
+# O build usa valores fictícios de Supabase: ele só compila, não toca o banco.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Testes + Build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Build (compila + checa tipos)
+        run: npm run build

@@ -64,12 +64,19 @@ multi-tenant. Projeto Supabase `hvhbijctanrrkxhemlza`.
 
 ```powershell
 npm run dev     # servidor dev em http://localhost:3000 (Turbopack, hot reload)
-npm run build   # o portão de verificação: compila + checa tipos. Rodar antes de cada commit.
-npm run lint    # eslint
+npm run build   # portão de verificação: compila + checa tipos. Rodar antes de cada commit.
+npm run test    # testes unitários (Vitest) das regras de negócio em src/lib. Rodar antes de cada commit.
+npm run lint    # eslint (baseline: 3 problemas pré-existentes; não adicionar nenhum novo)
 ```
 
-Não há testes automatizados; `npm run build` (TypeScript strict) é a única
-checagem. **Particularidades da máquina (Windows 10, repo só existe aqui):**
+**Portão de cada entrega = `npm run build` + `npm test`.** Os testes unitários
+(`src/lib/__tests__/`) travam as regras puras (matriz da jornada, máscaras,
+preços em centavos, cascata de SLA, categorias de notificação, estágio do
+plano); ao mudar uma dessas regras de propósito, atualizar o teste junto. Há CI
+no GitHub Actions (`.github/workflows/ci.yml`): a cada push no `main` roda
+testes + build na nuvem (aba Actions mostra ✅/❌). E2E (Playwright + banco de
+teste) fica para a preparação de lançamento.
+**Particularidades da máquina (Windows 10, repo só existe aqui):**
 
 - Node não está no PATH dos shells. Prefixar comandos PowerShell com:
   `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`

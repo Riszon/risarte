@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/07/2026 · Versão do sistema: **0.103.0** · Última migração: **0146**_
+_Atualizado em: 21/07/2026 · Versão do sistema: **0.104.0** · Última migração: **0146**_
+
+> **Testes automatizados — camadas 1 + 2 ✅ (v0.104.0, sem migração):** primeiro
+> conjunto de **testes unitários** (Vitest, `npm test`, 55 testes em ~3s) travando
+> as regras de negócio puras: matriz "quem move a jornada" (`allowedNextPhases`),
+> pilar exibido por fase, SLA estourado, tipos de agendamento por fase (inclui
+> REVISÃO/REFAÇÃO sempre disponíveis), máscaras CPF/CNPJ/telefone/CEP, dinheiro em
+> centavos (formatar/parsear BRL, total do orçamento, preço em cascata), estágio
+> do plano (lifecycle > status), categorias de notificação e cascata de SLA/
+> inatividade. **CI no GitHub Actions**: a cada push no `main`, roda testes +
+> build na nuvem (aba **Actions** do GitHub mostra ✅/❌). O portão de cada entrega
+> agora é `npm run build` + `npm test`. E2E (Playwright + banco de teste) fica
+> para a preparação de lançamento.
 
 > **Cockpit — Bloco F: histórico completo em pop-ups ✅ (v0.103.0, sem migração):**
 > abaixo do painel de status, uma barra "Histórico:" com 3 botões que abrem
