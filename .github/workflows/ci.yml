@@ -19,10 +19,10 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
     steps:
       - name: Baixar o código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
