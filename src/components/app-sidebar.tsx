@@ -13,6 +13,7 @@ import {
   CalendarRange,
   ChevronsLeft,
   ChevronsRight,
+  BadgePercent,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -131,6 +132,7 @@ const ADMIN_ITEMS = [
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
   { href: "/admin/usuarios", label: "Usuários (acesso)", icon: UserCog },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
+  { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
   { href: "/admin/orientacoes", label: "Orientações", icon: BookOpen },

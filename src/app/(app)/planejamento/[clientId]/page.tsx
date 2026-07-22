@@ -287,6 +287,46 @@ export default async function PlanningCockpitPage(
     .returns<{ starts_at: string }[]>();
   const presentationAt = presRows?.[0]?.starts_at ?? null;
 
+  // -- COM1: procedimentos NÃO aprovados pelo cliente em negociações passadas
+  // (aprovação parcial) — alerta para o Planner decidir se inclui no novo plano.
+  const { data: pastNegRows } = await supabase
+    .from("plan_negotiations")
+    .select(
+      "id, status, is_partial, partial_reason, updated_at, plan_negotiation_items ( included, item:treatment_plan_option_items ( description ) )"
+    )
+    .eq("client_id", clientId)
+    .eq("status", "aceita")
+    .eq("is_partial", true)
+    .order("updated_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        status: string;
+        is_partial: boolean;
+        partial_reason: string | null;
+        updated_at: string;
+        plan_negotiation_items: {
+          included: boolean;
+          item: { description: string } | { description: string }[] | null;
+        }[];
+      }[]
+    >();
+  const rejectedPastItems: { description: string; when: string; reason: string | null }[] =
+    [];
+  for (const neg of pastNegRows ?? []) {
+    for (const it of neg.plan_negotiation_items ?? []) {
+      if (it.included) continue;
+      const item = Array.isArray(it.item) ? it.item[0] : it.item;
+      if (item?.description) {
+        rejectedPastItems.push({
+          description: item.description,
+          when: neg.updated_at,
+          reason: neg.partial_reason,
+        });
+      }
+    }
+  }
+
   // -- Protocolos (Rede + unidade do cliente) — base de sessões/tempo (E3) --
   const protocolByProcedure: Record<string, ProtocolRef> = {};
   {
@@ -566,6 +606,32 @@ export default async function PlanningCockpitPage(
             </p>
           </div>
           <PresentationCountdown startsAt={presentationAt} alarm />
+        </div>
+      )}
+
+      {/* COM1: procedimentos não aprovados pelo cliente em negociação passada —
+          o Planner decide se inclui (ou não) no novo plano. */}
+      {rejectedPastItems.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+            <TriangleAlert className="size-4" />
+            Procedimentos NÃO aprovados pelo cliente em negociação anterior
+          </p>
+          <p className="mb-1.5 text-xs text-amber-800/90">
+            O cliente fechou parcialmente um plano passado. Avalie se estes
+            procedimentos entram no novo planejamento:
+          </p>
+          <ul className="space-y-0.5 text-sm text-amber-900">
+            {rejectedPastItems.map((it, i) => (
+              <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-medium">• {it.description}</span>
+                <span className="text-xs text-amber-800/80">
+                  ({new Date(it.when).toLocaleDateString("pt-BR")}
+                  {it.reason ? ` — motivo: ${it.reason}` : ""})
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/07/2026 · Versão do sistema: **0.104.0** · Última migração: **0146**_
+_Atualizado em: 22/07/2026 · Versão do sistema: **0.105.0** · Última migração: **0147**_
+
+> **MÓDULO COMERCIAL — COM1: Negociação + Regras comerciais ✅ (v0.105.0,
+> migração 0147):** início do módulo Comercial (briefing em `docs/COMERCIAL.md`).
+> (1) **Regras comerciais em cascata** (`/admin/regras-comerciais`, só Admin):
+> desconto máx (%), parcelas máx e meios de pagamento — padrão da rede + ajuste
+> por unidade. (2) **Painel de negociação** na tela de apresentação: o Consultor
+> escolhe o plano (principal ★ ou secundário aprovado = carta na manga), desmarca
+> procedimentos que o cliente não aprovou (**aprovação parcial**, guiada pela
+> prioridade **GUT**, com **motivo obrigatório**), aplica desconto/acréscimo,
+> define pagamento/parcelas e registra o **principal decisor**. Totais ao vivo.
+> (3) **Fora da regra → autorização**: a negociação trava em "aguardando
+> autorização", o **Gerente da unidade** é notificado e autoriza/nega na própria
+> tela. (4) **"Cliente aceitou"** → notifica o Assistente Comercial (fechamento =
+> COM4). (5) **Devolver ao planejamento (4→3)** com considerações obrigatórias
+> que chegam ao Planner (nova transição na `move_client_phase`; a 4→5 também
+> passou a aceitar o consultor da Franqueadora com escopo). (6) **Alerta ao
+> Planner** no cockpit da Fase 3 com os procedimentos não aprovados em negociação
+> passada. +12 testes unitários (regras comerciais) — total 67.
 
 > **Testes automatizados — camadas 1 + 2 ✅ (v0.104.0, sem migração):** primeiro
 > conjunto de **testes unitários** (Vitest, `npm test`, 55 testes em ~3s) travando

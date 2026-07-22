@@ -136,6 +136,26 @@ Deve mostrar/permitir:
 - **ZapSign** (contrato + plano assinados) — edge function pronta p/ plugar.
 - **ASAAS** (link de pagamento, boleto, PIX, split) — edge function pronta
   p/ plugar.
+- **Transcrição por IA** da gravação da apresentação (entra no lote de
+  integrações; manual-primeiro = consultor revisa/edita o resumo).
+
+## 10b. Gravação da apresentação (adição do dono, 22/07/2026)
+
+- **Toda apresentação é gravada do início ao fim** (mesma infraestrutura
+  segura das consultas clínicas — bucket privado, links assinados).
+- Ao final: **transcrição + resumo**. Manual-primeiro: o consultor escreve/
+  revisa o resumo; a transcrição automática por IA vem no lote de integrações.
+- O **resumo é inserido no documento que o cliente assina** (contrato, COM4),
+  junto das condições negociadas e da aprovação parcial.
+
+## 10c. Honorário do Consultor Comercial (adição do dono, 22/07/2026)
+
+- Composição: **parte fixa + variável** (a variável sobre as apresentações
+  realizadas OU sobre as unidades sob responsabilidade — regra exata será
+  definida no briefing do Financeiro).
+- **Momento:** o cálculo/pagamento vive no **módulo Financeiro** (junto da
+  remuneração dos dentistas). O Comercial registra desde o COM1 os
+  dados-fonte (apresentações, fechamentos, valores, consultor e unidade).
 
 ## 11. Decisões do dono (22/07/2026)
 
