@@ -137,11 +137,17 @@ Deve mostrar/permitir:
 - **ASAAS** (link de pagamento, boleto, PIX, split) — edge function pronta
   p/ plugar.
 
-## 11. Decisões pendentes (fechar com o dono antes de cada lote)
+## 11. Decisões do dono (22/07/2026)
 
-- Ordem dos lotes de construção e o que entra em cada um.
-- Estratégia de integração: começar com registro manual (link colado /
-  pagamento confirmado à mão pelo Assistente) e plugar Meet/ZapSign/ASAAS na
-  sequência, ou já integrar de cara.
+- **Ordem dos lotes:** COM1 Negociação+regras → COM2 Cockpit do Consultor →
+  COM3 Kanban+Follow-up → COM4 Fechamento → COM5 Venda direta → COM6 Dashboard.
+- **Integrações manual-primeiro:** Assistente marca "contrato assinado" e
+  "pagamento confirmado" à mão; link do Meet colado. A regra de ouro já vale.
+  ZapSign/ASAAS/Meet reais entram em lotes próprios quando houver contas/chaves.
+- **Split de pagamento fica no módulo Financeiro** (o Comercial registra a
+  venda; o rateio nasce com o módulo de dinheiro).
+
+### Ainda pendentes
 - Detalhe da política de cancelamento/reembolso.
-- Campo "principal decisor" no cadastro do cliente (quem preenche, onde).
+- "Principal decisor": registrado pelo Consultor na própria negociação
+  (proposta — confirmar no COM1/COM2).
