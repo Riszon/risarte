@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/07/2026 · Versão do sistema: **0.101.0** · Última migração: **0146**_
+_Atualizado em: 21/07/2026 · Versão do sistema: **0.102.0** · Última migração: **0146**_
+
+> **Cockpit — Bloco A: painel de status do cliente ✅ (v0.102.0, sem migração):**
+> no topo do cockpit do Coordenador (`/avaliacao/[clientId]`), abaixo do cartão de
+> identidade, um painel de status que fica visível durante toda a consulta:
+> **andamento do tratamento (%) com barra**, **procedimentos finalizados × em
+> aberto**, **último atendimento**, **próximos agendamentos** (contagem + data do
+> próximo), **planos em andamento** e **financeiro** (placeholder "Em breve —
+> integração ASAAS", até o módulo financeiro existir).
 
 > **Aba "Sessões & Procedimentos" redesenhada ✅ (v0.101.0, sem migração):** a aba
 > virou uma **única lista centrada em procedimentos** (fim da divisão em duas

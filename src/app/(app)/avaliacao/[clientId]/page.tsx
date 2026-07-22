@@ -38,6 +38,7 @@ import {
   SendToPlanningBlock,
 } from "./clinical-tools";
 import { QualityChecklist, type QualityItem } from "./quality-checklist";
+import { ClientStatusPanel } from "./client-status-panel";
 
 export const metadata: Metadata = { title: "Cockpit de Avaliação" };
 
@@ -110,6 +111,68 @@ export default async function EvaluationCockpitPage(
     loadEvaluationWorkspace(clientId),
     loadClientPlans(clientId),
   ]);
+
+  // -- Bloco A: painel de status do cliente (topo do cockpit). ----------------
+  const nowIso = new Date().toISOString();
+  const [{ data: statusSessions }, { data: statusAppts }, { data: statusPlans }] =
+    await Promise.all([
+      supabase
+        .from("treatment_sessions")
+        .select("item_id, status")
+        .eq("client_id", clientId)
+        .returns<{ item_id: string | null; status: string }[]>(),
+      supabase
+        .from("appointments")
+        .select("starts_at, status")
+        .eq("client_id", clientId)
+        .returns<{ starts_at: string; status: string }[]>(),
+      supabase
+        .from("treatment_plans")
+        .select("lifecycle")
+        .eq("client_id", clientId)
+        .returns<{ lifecycle: string | null }[]>(),
+    ]);
+  const sess = statusSessions ?? [];
+  const sessTotal = sess.length;
+  const sessDone = sess.filter((s) => s.status === "done").length;
+  // Procedimentos (item do plano): finalizado = todas as sessões concluídas.
+  const byItem = new Map<string, { total: number; done: number }>();
+  for (const s of sess) {
+    if (!s.item_id) continue;
+    const a = byItem.get(s.item_id) ?? { total: 0, done: 0 };
+    a.total += 1;
+    if (s.status === "done") a.done += 1;
+    byItem.set(s.item_id, a);
+  }
+  let procDone = 0;
+  let procOpen = 0;
+  for (const a of byItem.values()) {
+    if (a.total > 0 && a.done === a.total) procDone += 1;
+    else procOpen += 1;
+  }
+  const appts = statusAppts ?? [];
+  const completedPast = appts
+    .filter((a) => a.status === "completed")
+    .map((a) => a.starts_at)
+    .sort();
+  const upcoming = appts
+    .filter(
+      (a) =>
+        a.starts_at >= nowIso &&
+        (a.status === "scheduled" || a.status === "confirmed")
+    )
+    .map((a) => a.starts_at)
+    .sort();
+  const clientStatus = {
+    treatmentPct: sessTotal > 0 ? Math.round((sessDone / sessTotal) * 100) : null,
+    procDone,
+    procOpen,
+    lastVisit: completedPast.length ? completedPast[completedPast.length - 1] : null,
+    nextVisit: upcoming.length ? upcoming[0] : null,
+    upcomingCount: upcoming.length,
+    plansOngoing: (statusPlans ?? []).filter((p) => p.lifecycle === "em_tratamento")
+      .length,
+  };
 
   // Orientação da rede (editável pelo Admin) sobre este momento do fluxo.
   let guidance: string | null = null;
@@ -405,6 +468,9 @@ export default async function EvaluationCockpitPage(
           </div>
         </div>
       </div>
+
+      {/* Bloco A — painel de status do cliente. */}
+      <ClientStatusPanel status={clientStatus} />
 
       {/* Duas colunas com rolagem INDEPENDENTE (cada uma rola por dentro). */}
       <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
