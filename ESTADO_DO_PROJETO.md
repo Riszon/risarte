@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/07/2026 · Versão do sistema: **0.102.0** · Última migração: **0146**_
+_Atualizado em: 21/07/2026 · Versão do sistema: **0.103.0** · Última migração: **0146**_
+
+> **Cockpit — Bloco F: histórico completo em pop-ups ✅ (v0.103.0, sem migração):**
+> abaixo do painel de status, uma barra "Histórico:" com 3 botões que abrem
+> pop-ups sem sair do cockpit: **Desenvolvimento clínico** (anotações de evolução
+> dos dentistas), **Atendimentos** (todos os agendamentos, mais recentes primeiro,
+> com tipo/data/profissional/situação) e **Planos** (todos os planos com a situação
+> de cada um). Cada botão mostra a contagem. Fecha o Bloco F do cockpit.
 
 > **Cockpit — Bloco A: painel de status do cliente ✅ (v0.102.0, sem migração):**
 > no topo do cockpit do Coordenador (`/avaliacao/[clientId]`), abaixo do cartão de

@@ -39,6 +39,19 @@ import {
 } from "./clinical-tools";
 import { QualityChecklist, type QualityItem } from "./quality-checklist";
 import { ClientStatusPanel } from "./client-status-panel";
+import {
+  HistoryDialogs,
+  type ApptHistory,
+  type PlanHistory,
+  type ProgressHistory,
+} from "./history-dialogs";
+import {
+  APPOINTMENT_STATUS_LABELS,
+  APPOINTMENT_TYPE_LABELS,
+  type AppointmentStatus,
+  type AppointmentType,
+} from "@/lib/appointments";
+import { PLAN_STAGE_LABELS, planStage } from "@/lib/planning";
 
 export const metadata: Metadata = { title: "Cockpit de Avaliação" };
 
@@ -114,24 +127,53 @@ export default async function EvaluationCockpitPage(
 
   // -- Bloco A: painel de status do cliente (topo do cockpit). ----------------
   const nowIso = new Date().toISOString();
-  const [{ data: statusSessions }, { data: statusAppts }, { data: statusPlans }] =
-    await Promise.all([
-      supabase
-        .from("treatment_sessions")
-        .select("item_id, status")
-        .eq("client_id", clientId)
-        .returns<{ item_id: string | null; status: string }[]>(),
-      supabase
-        .from("appointments")
-        .select("starts_at, status")
-        .eq("client_id", clientId)
-        .returns<{ starts_at: string; status: string }[]>(),
-      supabase
-        .from("treatment_plans")
-        .select("lifecycle")
-        .eq("client_id", clientId)
-        .returns<{ lifecycle: string | null }[]>(),
-    ]);
+  const [
+    { data: statusSessions },
+    { data: statusAppts },
+    { data: statusPlans },
+    { data: progressRows },
+  ] = await Promise.all([
+    supabase
+      .from("treatment_sessions")
+      .select("item_id, status")
+      .eq("client_id", clientId)
+      .returns<{ item_id: string | null; status: string }[]>(),
+    supabase
+      .from("appointments")
+      .select(
+        "id, starts_at, status, type, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+      )
+      .eq("client_id", clientId)
+      .order("starts_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          starts_at: string;
+          status: string;
+          type: string;
+          provider: { full_name: string } | { full_name: string }[] | null;
+        }[]
+      >(),
+    supabase
+      .from("treatment_plans")
+      .select("lifecycle")
+      .eq("client_id", clientId)
+      .returns<{ lifecycle: string | null }[]>(),
+    supabase
+      .from("clinical_progress_notes")
+      .select("id, body, author_id, created_at, clinic:clinics ( name )")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          body: string;
+          author_id: string | null;
+          created_at: string;
+          clinic: { name: string } | { name: string }[] | null;
+        }[]
+      >(),
+  ]);
   const sess = statusSessions ?? [];
   const sessTotal = sess.length;
   const sessDone = sess.filter((s) => s.status === "done").length;
@@ -173,6 +215,67 @@ export default async function EvaluationCockpitPage(
     plansOngoing: (statusPlans ?? []).filter((p) => p.lifecycle === "em_tratamento")
       .length,
   };
+
+  // -- Bloco F: histórico completo em pop-ups (desenvolvimento, atendimentos, planos).
+  const progress = progressRows ?? [];
+  const progAuthorIds = [
+    ...new Set(
+      progress.map((p) => p.author_id).filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const progAuthorNames = new Map<string, string>();
+  if (progAuthorIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", progAuthorIds);
+    for (const p of people ?? []) progAuthorNames.set(p.id, p.full_name);
+  }
+  const progressHistory: ProgressHistory[] = progress.map((p) => {
+    const cRaw = p.clinic;
+    return {
+      id: p.id,
+      body: p.body,
+      authorName: p.author_id ? (progAuthorNames.get(p.author_id) ?? null) : null,
+      clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+      createdAt: p.created_at,
+    };
+  });
+  const apptStatusKind = (
+    s: string,
+    startsAt: string
+  ): ApptHistory["statusKind"] => {
+    if (s === "completed") return "done";
+    if (s === "cancelled" || s === "no_show") return "cancelled";
+    if ((s === "scheduled" || s === "confirmed") && startsAt >= nowIso)
+      return "future";
+    return "other";
+  };
+  const apptHistory: ApptHistory[] = (statusAppts ?? []).map((a) => {
+    const provRaw = a.provider;
+    return {
+      id: a.id,
+      startsAt: a.starts_at,
+      typeLabel:
+        APPOINTMENT_TYPE_LABELS[a.type as AppointmentType] ?? a.type,
+      statusLabel:
+        APPOINTMENT_STATUS_LABELS[a.status as AppointmentStatus] ?? a.status,
+      statusKind: apptStatusKind(a.status, a.starts_at),
+      providerName:
+        (Array.isArray(provRaw) ? provRaw[0] : provRaw)?.full_name ?? null,
+    };
+  });
+  const planHistory: PlanHistory[] = plans.map((p) => {
+    const primary = p.options.find((o) => o.isPrimary) ?? p.options[0] ?? null;
+    return {
+      id: p.id,
+      label: p.diagnosis?.trim() || "Plano de tratamento",
+      stageLabel: PLAN_STAGE_LABELS[planStage(p)],
+      createdAt: p.createdAt,
+      optionTitle: primary?.title ?? null,
+      itemCount: primary?.items.length ?? 0,
+    };
+  });
 
   // Orientação da rede (editável pelo Admin) sobre este momento do fluxo.
   let guidance: string | null = null;
@@ -471,6 +574,15 @@ export default async function EvaluationCockpitPage(
 
       {/* Bloco A — painel de status do cliente. */}
       <ClientStatusPanel status={clientStatus} />
+
+      {/* Bloco F — histórico completo em pop-ups. */}
+      <div className="shrink-0">
+        <HistoryDialogs
+          progress={progressHistory}
+          appointments={apptHistory}
+          plans={planHistory}
+        />
+      </div>
 
       {/* Duas colunas com rolagem INDEPENDENTE (cada uma rola por dentro). */}
       <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
