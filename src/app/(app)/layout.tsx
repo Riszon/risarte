@@ -6,6 +6,7 @@ import { SetupNotice } from "@/components/setup-notice";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChooseClinicWelcome } from "@/components/choose-clinic-welcome";
 import { UrgentSchedulingPopup } from "@/components/urgent-scheduling-popup";
+import { TreatmentStartPopup } from "@/components/treatment-start-popup";
 
 export default async function AppLayout({
   children,
@@ -121,6 +122,8 @@ export default async function AppLayout({
       </main>
       {/* AJ4: pop-up da recepção para pedidos de agendamento de apresentação. */}
       <UrgentSchedulingPopup />
+      {/* COM4: pop-up forte da recepção quando uma venda é fechada. */}
+      <TreatmentStartPopup />
     </div>
   );
 }

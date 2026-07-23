@@ -13,6 +13,7 @@ import { PresentationView } from "./presentation-view";
 import { loadPresentationData } from "./presentation-data";
 import { loadNegotiationBlock } from "./negotiation-loader";
 import { NegotiationPanel } from "./negotiation-panel";
+import { ClosingPanel } from "./closing-panel";
 
 export const metadata: Metadata = { title: "Apresentação do plano" };
 
@@ -84,6 +85,24 @@ export default async function PresentationPage(
           planEvents={negotiationBlock.planEvents}
           canEdit={canNegotiate}
           canAuthorize={canAuthorize}
+        />
+      )}
+      {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}
+      {negotiationBlock?.negotiation?.status === "aceita" && (
+        <ClosingPanel
+          clientId={clientId}
+          negotiationId={negotiationBlock.negotiation.id}
+          sale={negotiationBlock.sale}
+          canClose={isCommercialTeam || canAuthorize}
+          summary={{
+            finalCents: negotiationBlock.negotiation.finalCents,
+            adjustmentCents: negotiationBlock.negotiation.adjustmentCents,
+            paymentMethod: negotiationBlock.negotiation.paymentMethod,
+            installments: negotiationBlock.negotiation.installments,
+            partialReason: negotiationBlock.negotiation.partialReason,
+            excludedDescriptions: negotiationBlock.excludedDescriptions,
+            presentationSummary: negotiationBlock.presentationSummary,
+          }}
         />
       )}
     </div>

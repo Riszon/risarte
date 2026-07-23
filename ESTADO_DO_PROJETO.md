@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.111.0** · Última migração: **0153**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.112.0** · Última migração: **0154**_
+
+> **MÓDULO COMERCIAL — COM4: Fechamento (regra de ouro) ✅ (v0.112.0, migração
+> 0154):** quando o cliente aceita, aparece o **painel de Fechamento** (na
+> apresentação e no cockpit) com o **resumo que vai no contrato** (valor,
+> desconto/acréscimo, pagamento/parcelas, **aprovação parcial** = itens não
+> aprovados + motivo, e o **resumo da apresentação** do COM2). Marcação
+> **manual-primeiro** de **Contrato assinado** (ZapSign depois) e **Pagamento
+> confirmado** (ASAAS depois). **Regra de ouro:** só quando os DOIS estão
+> marcados a venda é concluída → o cliente vai à **Fase 5** (Aguardando iniciar
+> tratamento) e disparam os avisos: **pop-up FORTE à recepção** (novo
+> `TreatmentStartPopup` — falar com o cliente e agendar), **Coordenador**
+> (acompanhar o tratamento) e **Gerente** (com o **VALOR** da venda). Quando a
+> **1ª sessão** é concluída, o cliente vira **"Em Tratamento"** (já existia) e
+> agora o **Consultor é avisado** (sai da sua lista ativa) + Gerente. Tabela
+> `commercial_sales`; RPC `commercial_close_step`.
 
 > **MÓDULO COMERCIAL — COM3: Kanban + Follow-up ✅ (v0.111.0, migração 0153):**
 > a tela **`/comercial`** virou o **kanban do funil comercial** (10 colunas:

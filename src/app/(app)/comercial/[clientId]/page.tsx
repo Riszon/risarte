@@ -39,6 +39,7 @@ import {
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { loadNegotiationBlock } from "../../apresentacao/[clientId]/negotiation-loader";
 import { NegotiationPanel } from "../../apresentacao/[clientId]/negotiation-panel";
+import { ClosingPanel } from "../../apresentacao/[clientId]/closing-panel";
 import {
   PresentationWorkspace,
   type PresentationData,
@@ -96,6 +97,9 @@ export default async function CommercialCockpitPage(
   const canAuthorize =
     session.isAdminMaster ||
     hasRoleInClinic(session, clinicId, ["unit_manager"]);
+  // COM4: quem registra o fechamento = mesmo conjunto que enxerga o cockpit
+  // (Admin, Consultor/Assistente com escopo, Gerente).
+  const canClose = canView;
 
   const [presentationRow, plans, negotiationBlock, qcRows, sessRows] =
     await Promise.all([
@@ -373,19 +377,39 @@ export default async function CommercialCockpitPage(
           </div>
         </div>
 
-        {/* Coluna direita: negociação (só na Fase 4). */}
+        {/* Coluna direita: negociação (só na Fase 4) + fechamento. */}
         <div className="space-y-4">
           {negotiationBlock ? (
-            <NegotiationPanel
-              clientId={clientId}
-              planId={negotiationBlock.planId}
-              options={negotiationBlock.options}
-              negotiation={negotiationBlock.negotiation}
-              rule={negotiationBlock.rule}
-              planEvents={negotiationBlock.planEvents}
-              canEdit={canNegotiate}
-              canAuthorize={canAuthorize}
-            />
+            <>
+              <NegotiationPanel
+                clientId={clientId}
+                planId={negotiationBlock.planId}
+                options={negotiationBlock.options}
+                negotiation={negotiationBlock.negotiation}
+                rule={negotiationBlock.rule}
+                planEvents={negotiationBlock.planEvents}
+                canEdit={canNegotiate}
+                canAuthorize={canAuthorize}
+              />
+              {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}
+              {negotiationBlock.negotiation?.status === "aceita" && (
+                <ClosingPanel
+                  clientId={clientId}
+                  negotiationId={negotiationBlock.negotiation.id}
+                  sale={negotiationBlock.sale}
+                  canClose={canClose}
+                  summary={{
+                    finalCents: negotiationBlock.negotiation.finalCents,
+                    adjustmentCents: negotiationBlock.negotiation.adjustmentCents,
+                    paymentMethod: negotiationBlock.negotiation.paymentMethod,
+                    installments: negotiationBlock.negotiation.installments,
+                    partialReason: negotiationBlock.negotiation.partialReason,
+                    excludedDescriptions: negotiationBlock.excludedDescriptions,
+                    presentationSummary: negotiationBlock.presentationSummary,
+                  }}
+                />
+              )}
+            </>
           ) : (
             inCommercialPhase && (
               <Card>

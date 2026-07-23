@@ -11,6 +11,12 @@ import type {
   NegotiationOption,
 } from "./negotiation-panel";
 
+export type SaleData = {
+  contractSigned: boolean;
+  paymentConfirmed: boolean;
+  closedAt: string | null;
+};
+
 export type NegotiationBlock = {
   planId: string;
   options: NegotiationOption[];
@@ -18,6 +24,12 @@ export type NegotiationBlock = {
   rule: CommercialRule;
   /** Histórico do plano em negociação (para o Consultor e o Gerente). */
   planEvents: PlanEvent[];
+  /** Fechamento (COM4) — existe quando a negociação foi aceita. */
+  sale: SaleData | null;
+  /** Descrições dos itens não aprovados pelo cliente (aprovação parcial). */
+  excludedDescriptions: string[];
+  /** Resumo da apresentação (vai no contrato do fechamento). */
+  presentationSummary: string | null;
 };
 
 /**
@@ -179,11 +191,45 @@ export async function loadNegotiationBlock(
       }
     : null;
 
+  // Fechamento (COM4): existe quando a negociação foi aceita.
+  let sale: SaleData | null = null;
+  if (n) {
+    const { data: saleRow } = await supabase
+      .from("commercial_sales")
+      .select("contract_signed, payment_confirmed, closed_at")
+      .eq("negotiation_id", n.id)
+      .maybeSingle();
+    if (saleRow) {
+      sale = {
+        contractSigned: saleRow.contract_signed as boolean,
+        paymentConfirmed: saleRow.payment_confirmed as boolean,
+        closedAt: (saleRow.closed_at as string | null) ?? null,
+      };
+    }
+  }
+
+  // Itens não aprovados pelo cliente (aprovação parcial) — vão no contrato.
+  const excludedSet = new Set(negotiation?.excludedItemIds ?? []);
+  const excludedDescriptions = options
+    .flatMap((o) => o.items)
+    .filter((i) => excludedSet.has(i.id))
+    .map((i) => i.description);
+
+  // Resumo da apresentação (COM2) — embutido no contrato do fechamento.
+  const { data: presRow } = await supabase
+    .from("commercial_presentations")
+    .select("summary")
+    .eq("client_id", clientId)
+    .maybeSingle();
+
   return {
     planId,
     options,
     negotiation,
     rule: resolveCommercialRule(ruleRows ?? [], clinicId),
     planEvents,
+    sale,
+    excludedDescriptions,
+    presentationSummary: (presRow?.summary as string | null) ?? null,
   };
 }
