@@ -93,7 +93,7 @@ export default async function PresentationPage(
           clientId={clientId}
           negotiationId={negotiationBlock.negotiation.id}
           sale={negotiationBlock.sale}
-          canClose={isCommercialTeam || canAuthorize}
+          canClose={isCommercialTeam}
           summary={{
             finalCents: negotiationBlock.negotiation.finalCents,
             adjustmentCents: negotiationBlock.negotiation.adjustmentCents,

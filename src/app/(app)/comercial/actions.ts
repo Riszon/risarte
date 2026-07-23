@@ -48,6 +48,25 @@ export async function setCardStage(
   return { ok: true };
 }
 
+/** Libera (ou retoma) o follow-up para a clínica — decisão do Comercial. */
+export async function transferFollowup(
+  clientId: string,
+  toClinic: boolean
+): Promise<CardActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("commercial_transfer_followup", {
+    p_client_id: clientId,
+    p_to_clinic: toClinic,
+  });
+  if (error) {
+    console.error("commercial_transfer_followup failed:", error.message);
+    return { ok: false, error: mapError(error.message) };
+  }
+  revalidate(clientId);
+  return { ok: true };
+}
+
 /** Abre o follow-up do cliente (cadência configurada da unidade). */
 export async function startFollowup(
   clientId: string

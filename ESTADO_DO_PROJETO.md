@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.112.0** · Última migração: **0154**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.113.0** · Última migração: **0155**_
+
+> **MÓDULO COMERCIAL — Ajustes do funil ✅ (v0.113.0, migração 0155):**
+> (1) **Escopo por unidade** — o funil `/comercial` agora mostra por padrão só a
+> **unidade logada** (corrige o Gerente ver todas as unidades). O time comercial
+> e o Admin têm **filtro** (Todas / unidade específica). (2) **Permissões** —
+> Gerente/Franqueado da unidade só **VISUALIZAM** o funil (sem cockpit, sem
+> botões); o cartão leva à **ficha**. Só quando o Consultor **libera o follow-up
+> para a clínica** é que a unidade ganha a ação de **registrar tentativa** (ajuda
+> nos contatos); o **fechamento continua sendo do Consultor**. (3) **Funil** — a
+> coluna "Follow-up na clínica" saiu; virou um **indicador** ("Conduzido pela
+> clínica") na coluna **Follow-up**. **Cancelados** e **Perdidos** viraram
+> **botões** com a lista/detalhe. Sequência: A apresentar → Acontecendo agora →
+> Apresentados → Follow-up → Fechamentos → Aguardando iniciar → Tratamento
+> iniciado. (4) **Cronômetro** ao vivo em "Acontecendo agora". (5) **Histórico do
+> funil** por cliente (`commercial_card_events`) — botão no cockpit. Tabela +
+> colunas novas no cartão; RPC `commercial_transfer_followup`; guards
+> `commercial_is_team`/`commercial_is_unit`.
 
 > **MÓDULO COMERCIAL — COM4: Fechamento (regra de ouro) ✅ (v0.112.0, migração
 > 0154):** quando o cliente aceita, aparece o **painel de Fechamento** (na

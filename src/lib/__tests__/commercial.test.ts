@@ -198,10 +198,13 @@ describe("commercialColumnOf", () => {
       "follow_up"
     );
     expect(
-      commercialColumnOf({ ...base, cardStage: "follow_up_clinica" })
-    ).toBe("follow_up_clinica");
-    expect(
       commercialColumnOf({ ...base, cardStage: "acontecendo_agora" })
     ).toBe("acontecendo_agora");
+  });
+
+  it("follow_up_clinica (legado) é absorvido pela coluna Follow-up", () => {
+    expect(
+      commercialColumnOf({ ...base, cardStage: "follow_up_clinica" })
+    ).toBe("follow_up");
   });
 });

@@ -40,6 +40,7 @@ import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { loadNegotiationBlock } from "../../apresentacao/[clientId]/negotiation-loader";
 import { NegotiationPanel } from "../../apresentacao/[clientId]/negotiation-panel";
 import { ClosingPanel } from "../../apresentacao/[clientId]/closing-panel";
+import { FunnelHistoryDialog, type FunnelEvent } from "./funnel-history";
 import {
   PresentationWorkspace,
   type PresentationData,
@@ -76,9 +77,10 @@ export default async function CommercialCockpitPage(
     (await hasRoleWithScopeForClinic(session, clinicId, [
       "commercial_consultant",
     ]));
+  // Cockpit é do time comercial (Consultor/Assistente com escopo, ou Admin). O
+  // Gerente/Franqueado NÃO acessam o cockpit — só o funil (leitura) e a ficha.
   const canView =
     canNegotiate ||
-    hasRoleInClinic(session, clinicId, ["unit_manager"]) ||
     (await hasRoleWithScopeForClinic(session, clinicId, [
       "commercial_assistant",
     ]));
@@ -97,11 +99,11 @@ export default async function CommercialCockpitPage(
   const canAuthorize =
     session.isAdminMaster ||
     hasRoleInClinic(session, clinicId, ["unit_manager"]);
-  // COM4: quem registra o fechamento = mesmo conjunto que enxerga o cockpit
-  // (Admin, Consultor/Assistente com escopo, Gerente).
+  // COM4: quem registra o fechamento = o time comercial que enxerga o cockpit
+  // (Admin, Consultor/Assistente com escopo). O Gerente não fecha.
   const canClose = canView;
 
-  const [presentationRow, plans, negotiationBlock, qcRows, sessRows] =
+  const [presentationRow, plans, negotiationBlock, qcRows, sessRows, cardEvents] =
     await Promise.all([
       supabase
         .from("commercial_presentations")
@@ -133,6 +135,13 @@ export default async function CommercialCockpitPage(
         .select("item_id, status")
         .eq("client_id", clientId)
         .then((r) => r.data ?? []),
+      // Histórico do cliente no funil comercial (linha do tempo).
+      supabase
+        .from("commercial_card_events")
+        .select("id, event_type, description, actor_id, created_at")
+        .eq("client_id", clientId)
+        .order("created_at")
+        .then((r) => r.data ?? []),
     ]);
 
   const presentation: PresentationData | null = presentationRow
@@ -154,6 +163,33 @@ export default async function CommercialCockpitPage(
       .maybeSingle();
     consultantName = prof?.full_name ?? null;
   }
+
+  // Histórico do funil: resolve os nomes dos autores dos eventos.
+  const evtRows = cardEvents as {
+    id: string;
+    event_type: string;
+    description: string | null;
+    actor_id: string | null;
+    created_at: string;
+  }[];
+  const evtActorIds = [
+    ...new Set(evtRows.map((e) => e.actor_id).filter((x): x is string => Boolean(x))),
+  ];
+  const evtActorNames = new Map<string, string>();
+  if (evtActorIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", evtActorIds);
+    for (const p of people ?? []) evtActorNames.set(p.id, p.full_name as string);
+  }
+  const funnelEvents: FunnelEvent[] = evtRows.map((e) => ({
+    id: e.id,
+    type: e.event_type,
+    description: e.description,
+    actorName: e.actor_id ? (evtActorNames.get(e.actor_id) ?? null) : null,
+    at: e.created_at,
+  }));
 
   // Pendências do cliente (controle de qualidade + procedimentos em aberto).
   const qcRevisao = qcRows.filter((r) => r.status === "revisao").length;
@@ -267,6 +303,7 @@ export default async function CommercialCockpitPage(
               <FileText className="mr-1 size-3.5" />
               Ficha completa
             </Button>
+            <FunnelHistoryDialog events={funnelEvents} />
           </div>
         </div>
       </div>

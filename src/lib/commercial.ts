@@ -148,11 +148,23 @@ export const CARD_STAGES = [
 export type CardStage = (typeof CARD_STAGES)[number];
 
 /**
- * Colunas do kanban comercial, na ordem do funil. "fechamento",
- * "aguardando_iniciar" e "tratamento_iniciado" são derivadas (negociação
- * aceita / Fase 5), não ficam gravadas no cartão.
+ * Todas as situações possíveis de um cliente no funil. As COLUNAS renderizadas
+ * são só as 7 de BOARD_COLUMNS; "cancelado"/"perdido" viram botões de detalhe e
+ * "follow_up_clinica" foi absorvido pela coluna Follow-up (indicador na clínica).
  */
-export const COMMERCIAL_COLUMNS = [
+export type CommercialColumn =
+  | "a_apresentar"
+  | "acontecendo_agora"
+  | "apresentado"
+  | "follow_up"
+  | "fechamento"
+  | "aguardando_iniciar"
+  | "tratamento_iniciado"
+  | "cancelado"
+  | "perdido";
+
+/** Colunas efetivamente renderizadas no kanban, na ordem do funil. */
+export const BOARD_COLUMNS = [
   "a_apresentar",
   "acontecendo_agora",
   "apresentado",
@@ -160,11 +172,8 @@ export const COMMERCIAL_COLUMNS = [
   "fechamento",
   "aguardando_iniciar",
   "tratamento_iniciado",
-  "follow_up_clinica",
-  "cancelado",
-  "perdido",
 ] as const;
-export type CommercialColumn = (typeof COMMERCIAL_COLUMNS)[number];
+export type BoardColumn = (typeof BOARD_COLUMNS)[number];
 
 export const COMMERCIAL_COLUMN_LABELS: Record<CommercialColumn, string> = {
   a_apresentar: "A apresentar",
@@ -174,7 +183,6 @@ export const COMMERCIAL_COLUMN_LABELS: Record<CommercialColumn, string> = {
   fechamento: "Fechamentos",
   aguardando_iniciar: "Aguardando iniciar tratamento",
   tratamento_iniciado: "Tratamento iniciado",
-  follow_up_clinica: "Follow-up na clínica",
   cancelado: "Cancelado",
   perdido: "Perdido",
 };
@@ -188,7 +196,6 @@ export const COMMERCIAL_COLUMN_COLORS: Record<CommercialColumn, string> = {
   fechamento: "#10b981",
   aguardando_iniciar: "#f59e0b",
   tratamento_iniciado: "#00bf63",
-  follow_up_clinica: "#e11d48",
   cancelado: "#94a3b8",
   perdido: "#ef4444",
 };
@@ -245,13 +252,15 @@ export function commercialColumnOf(input: {
       ? "tratamento_iniciado"
       : "aguardando_iniciar";
   }
-  // Encerramentos manuais vêm primeiro.
+  // Encerramentos manuais vêm primeiro (viram botões de detalhe, não colunas).
   if (input.cardStage === "cancelado") return "cancelado";
   if (input.cardStage === "perdido") return "perdido";
   // Negociação aceita = pronto para o fechamento (Assistente).
   if (input.negotiationAccepted) return "fechamento";
-  if (input.cardStage === "follow_up_clinica") return "follow_up_clinica";
-  if (input.cardStage === "follow_up") return "follow_up";
+  // "follow_up_clinica" (legado) foi absorvido pela coluna Follow-up — o reforço
+  // da clínica agora é um INDICADOR no cartão (followup_by_clinic), não coluna.
+  if (input.cardStage === "follow_up" || input.cardStage === "follow_up_clinica")
+    return "follow_up";
   if (input.cardStage === "acontecendo_agora") return "acontecendo_agora";
   if (input.cardStage === "apresentado") return "apresentado";
   return "a_apresentar";

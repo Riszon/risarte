@@ -70,15 +70,20 @@ export default async function AppLayout({
       .flat()
       .some((r) => ["unit_manager", "franchisor_staff", "franchisee"].includes(r));
 
-  // COM2: acesso rápido do time comercial (lista → cockpit em 1 clique; vira
-  // o kanban no COM3). Consultor/Assistente vivem na Franqueadora com escopo,
-  // então o papel é procurado em TODAS as clínicas (não só na ativa).
+  // COM2/COM3: funil do Comercial. O time comercial AGE; Gerente/Franqueado da
+  // unidade VISUALIZAM (e ajudam no follow-up liberado). Papel procurado em
+  // TODAS as clínicas (consultor/assistente vivem na Franqueadora com escopo).
   const canViewComercial =
     session.isAdminMaster ||
     Object.values(session.rolesByClinic)
       .flat()
       .some((r) =>
-        ["commercial_consultant", "commercial_assistant"].includes(r)
+        [
+          "commercial_consultant",
+          "commercial_assistant",
+          "unit_manager",
+          "franchisee",
+        ].includes(r)
       );
 
   // Módulo Risarte Empresarial (B2B).
