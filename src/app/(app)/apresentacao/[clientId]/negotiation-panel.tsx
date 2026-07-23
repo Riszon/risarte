@@ -269,6 +269,30 @@ export function NegotiationPanel({
 
   function doReturn() {
     startTransition(async () => {
+      // 1º) Salva a negociação como está (os procedimentos assinalados/excluídos
+      // acompanham o plano — não se perdem na devolução).
+      if (canEdit && option && status !== "aceita") {
+        const saved = await savePlanNegotiation(clientId, {
+          planId,
+          optionId: option.id,
+          allItemIds: option.items.map((i) => i.id),
+          excludedItemIds: option.items
+            .filter((i) => excluded.has(i.id))
+            .map((i) => i.id),
+          adjustmentCents,
+          paymentMethod: paymentMethod || null,
+          installments: installmentsNum,
+          partialReason,
+          clientIsDecider: decider === "" ? null : decider === "sim",
+          deciderNotes,
+          notes,
+        });
+        if (!saved.ok) {
+          toast.error(saved.error ?? "Não foi possível salvar a negociação.");
+          return;
+        }
+      }
+      // 2º) Devolve com as considerações obrigatórias.
       const r = await returnToPlanning(clientId, considerations);
       if (r.ok) {
         toast.success("Devolvido ao Centro de Planejamento com suas considerações.");

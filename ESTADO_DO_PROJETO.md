@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.107.0** · Última migração: **0149**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.107.1** · Última migração: **0149**_
+
+> **Fix: Replanejamento visível + selo dos excluídos ✅ (v0.107.1, sem
+> migração):** dois furos do teste — (1) a situação do plano só aparecia na lista
+> de chips quando havia 2+ planos; agora a **"Situação do plano"** aparece SEMPRE
+> acima do editor (chip colorido, ex.: "Replanejamento (devolvido pelo
+> Comercial)") e a tela **/planos ganhou o chip/contador "Replanejamento
+> (Comercial)"**. (2) o selo "Não aprovado pelo cliente" dependia de o Consultor
+> clicar "Salvar negociação" antes de devolver; agora **"Devolver ao
+> planejamento" salva a negociação automaticamente antes** — os procedimentos
+> assinalados acompanham o plano sempre.
 
 > **Ajustes pós-teste da devolução ✅ (v0.107.0, migração 0149):** (1) **BUG
 > corrigido** — negociação só existe com o cliente **na Fase 4**: fora dela o

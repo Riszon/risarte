@@ -24,6 +24,7 @@ export const metadata: Metadata = { title: "Planos de Tratamento" };
 // H4.4: situações da central de planos, na ordem do funil.
 const SITUATIONS = [
   "em_planejamento",
+  "replanejamento",
   "aguardando_aprovacao",
   "aprovado",
   "fase_comercial",
@@ -35,6 +36,7 @@ type Situation = (typeof SITUATIONS)[number];
 
 const SITUATION_LABELS: Record<Situation, string> = {
   em_planejamento: "Em planejamento",
+  replanejamento: "Replanejamento (Comercial)",
   aguardando_aprovacao: "Aguardando aprovação",
   aprovado: "Aprovado — no Centro",
   fase_comercial: "Fase comercial",
@@ -48,6 +50,10 @@ const SITUATION_STYLES: Record<Situation, { chip: string; dot: string }> = {
   em_planejamento: {
     chip: "border-sky-300 bg-sky-50 text-sky-800",
     dot: "bg-sky-500",
+  },
+  replanejamento: {
+    chip: "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800",
+    dot: "bg-fuchsia-500",
   },
   aguardando_aprovacao: {
     chip: "border-amber-300 bg-amber-50 text-amber-800",
@@ -79,10 +85,12 @@ const SITUATION_STYLES: Record<Situation, { chip: string; dot: string }> = {
 function classify(
   planStatus: TreatmentPlanStatus,
   phase: JourneyPhase | null,
-  jStatus: JourneyStatus | null
+  jStatus: JourneyStatus | null,
+  commercialReturnNote: string | null
 ): Situation {
   if (planStatus === "draft" || planStatus === "returned") {
-    return "em_planejamento";
+    // Devolvido pelo Comercial (nota pendente) = Replanejamento.
+    return commercialReturnNote ? "replanejamento" : "em_planejamento";
   }
   if (planStatus === "submitted") return "aguardando_aprovacao";
   // Aprovado: a situação segue a jornada do cliente.
@@ -106,6 +114,7 @@ type PlanRow = {
   client_id: string;
   clinic_id: string;
   status: TreatmentPlanStatus;
+  commercial_return_note: string | null;
   created_at: string;
   updated_at: string | null;
   submitted_at: string | null;
@@ -182,7 +191,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
   let planQuery = supabase
     .from("treatment_plans")
     .select(
-      "id, client_id, clinic_id, status, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
+      "id, client_id, clinic_id, status, commercial_return_note, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
     )
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -215,7 +224,8 @@ export default async function PlansPage(props: PageProps<"/planos">) {
       situation: classify(
         p.status,
         p.clients!.journey_phase,
-        p.clients!.journey_status
+        p.clients!.journey_status,
+        p.commercial_return_note
       ),
       createdAt: p.created_at,
       lastAt: p.reviewed_at ?? p.submitted_at ?? p.updated_at ?? p.created_at,

@@ -137,6 +137,21 @@ export function PlanEditorSwitcher({
         </div>
       )}
 
+      {/* Situação SEMPRE visível do plano selecionado (mesmo com um plano só). */}
+      {selected && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Situação do plano:</span>
+          <span
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 font-medium",
+              PLAN_STAGE_STYLES[planStage(selected)]
+            )}
+          >
+            {PLAN_STAGE_LABELS[planStage(selected)]}
+          </span>
+        </div>
+      )}
+
       {/* COM: plano DEVOLVIDO pelo Comercial — considerações em destaque até o
           plano ser reaprovado pelo Coordenador. */}
       {selected &&
