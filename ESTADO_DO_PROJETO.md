@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/07/2026 · Versão do sistema: **0.105.0** · Última migração: **0147**_
+_Atualizado em: 22/07/2026 · Versão do sistema: **0.106.0** · Última migração: **0148**_
+
+> **Devolução ao planejamento completa + HISTÓRICO por plano ✅ (v0.106.0,
+> migração 0148):** correção do feedback do dono — as informações da devolução
+> não se perdem mais. (1) Ao devolver (Fase 4→3), o plano aprovado é **reaberto
+> automaticamente** (mesmo plano, não um novo) e as **considerações do Consultor
+> ficam gravadas NO PLANO**, exibidas num **destaque vermelho** no topo do editor
+> (cockpit do Planner / ficha) até o plano ser reaprovado. (2) O Planner recebe
+> notificação **"Plano DEVOLVIDO pelo Comercial"** que abre **direto o cockpit**
+> (o aviso "Novo caso no Centro de Planejamento" também passou a abrir o
+> cockpit). (3) **Histórico próprio por plano** (`treatment_plan_events` +
+> gatilho automático): criado → enviado ao Coordenador → aprovado/devolvido →
+> enviado ao Comercial → apresentado → aceito → em tratamento → concluído →
+> devolvido pelo Comercial (com as considerações) → reaberto — com data e autor,
+> visível no botão **"Histórico do plano"** junto ao editor (todas as telas).
+> Backfill leve dos planos existentes.
 
 > **MÓDULO COMERCIAL — COM1: Negociação + Regras comerciais ✅ (v0.105.0,
 > migração 0147):** início do módulo Comercial (briefing em `docs/COMERCIAL.md`).

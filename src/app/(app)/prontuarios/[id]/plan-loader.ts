@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { BudgetItem } from "@/lib/pricing";
 import type {
+  PlanEvent,
   PlanLifecycle,
   PlanOption,
   PlanStage,
@@ -23,7 +24,7 @@ export async function loadClientPlans(
   const { data: planRows } = await supabase
     .from("treatment_plans")
     .select(
-      "id, status, lifecycle, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes"
+      "id, status, lifecycle, diagnosis, objectives, planning_notes, created_at, submitted_at, reviewed_at, review_notes, commercial_return_note, commercial_returned_at"
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
@@ -39,11 +40,57 @@ export async function loadClientPlans(
         submitted_at: string | null;
         reviewed_at: string | null;
         review_notes: string | null;
+        commercial_return_note: string | null;
+        commercial_returned_at: string | null;
       }[]
     >();
   const plans = planRows ?? [];
   if (plans.length === 0) return [];
   const planIds = plans.map((p) => p.id);
+
+  // Histórico próprio de cada plano (mais antigo primeiro) + nomes dos autores.
+  const { data: eventRows } = await supabase
+    .from("treatment_plan_events")
+    .select("id, plan_id, event_type, description, actor_id, created_at")
+    .in("plan_id", planIds)
+    .order("created_at")
+    .returns<
+      {
+        id: string;
+        plan_id: string;
+        event_type: string;
+        description: string | null;
+        actor_id: string | null;
+        created_at: string;
+      }[]
+    >();
+  const actorIds = [
+    ...new Set(
+      (eventRows ?? [])
+        .map((e) => e.actor_id)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const actorNames = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", actorIds);
+    for (const p of people ?? []) actorNames.set(p.id, p.full_name);
+  }
+  const eventsByPlan = new Map<string, PlanEvent[]>();
+  for (const e of eventRows ?? []) {
+    const list = eventsByPlan.get(e.plan_id) ?? [];
+    list.push({
+      id: e.id,
+      type: e.event_type,
+      description: e.description,
+      actorName: e.actor_id ? (actorNames.get(e.actor_id) ?? null) : null,
+      at: e.created_at,
+    });
+    eventsByPlan.set(e.plan_id, list);
+  }
 
   const { data: optRows } = await supabase
     .from("treatment_plan_options")
@@ -158,6 +205,9 @@ export async function loadClientPlans(
     submittedAt: p.submitted_at,
     reviewedAt: p.reviewed_at,
     reviewNotes: p.review_notes,
+    commercialReturnNote: p.commercial_return_note,
+    commercialReturnedAt: p.commercial_returned_at,
+    events: eventsByPlan.get(p.id) ?? [],
     options: optionsByPlan.get(p.id) ?? [],
   }));
 }

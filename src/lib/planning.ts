@@ -163,6 +163,16 @@ export type PlanOption = {
   reviewNotes: string | null;
 };
 
+/** Um evento do HISTÓRICO próprio do plano (COM: cada plano tem sua linha do
+ * tempo — criado → aprovação → comercial → apresentado → ... → devolvido). */
+export type PlanEvent = {
+  id: string;
+  type: string;
+  description: string | null;
+  actorName: string | null;
+  at: string;
+};
+
 export type TreatmentPlan = {
   id: string;
   status: TreatmentPlanStatus;
@@ -175,5 +185,10 @@ export type TreatmentPlan = {
   submittedAt: string | null;
   reviewedAt: string | null;
   reviewNotes: string | null;
+  /** Devolução pelo Comercial (COM1): considerações do Consultor em destaque. */
+  commercialReturnNote: string | null;
+  commercialReturnedAt: string | null;
+  /** Histórico detalhado deste plano (mais antigo primeiro). */
+  events: PlanEvent[];
   options: PlanOption[];
 };

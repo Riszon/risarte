@@ -3,6 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { CornerUpLeft, History } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   PLAN_STAGE_LABELS,
@@ -124,6 +134,105 @@ export function PlanEditorSwitcher({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* COM: plano DEVOLVIDO pelo Comercial — considerações em destaque até o
+          plano ser reaprovado pelo Coordenador. */}
+      {selected &&
+        selected.commercialReturnNote &&
+        selected.status !== "approved" && (
+          <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-rose-900">
+              <CornerUpLeft className="size-4" />
+              DEVOLVIDO PELO COMERCIAL
+              {selected.commercialReturnedAt && (
+                <span className="font-normal text-rose-700">
+                  em{" "}
+                  {new Date(selected.commercialReturnedAt).toLocaleDateString(
+                    "pt-BR"
+                  )}
+                </span>
+              )}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-rose-900">
+              {selected.commercialReturnNote}
+            </p>
+            <p className="mt-1.5 text-xs text-rose-700/90">
+              Ajuste este plano (o mesmo plano — não crie um novo) e envie de
+              novo para a aprovação do Coordenador. Todo o caminho fica no
+              histórico do plano.
+            </p>
+          </div>
+        )}
+
+      {/* Histórico próprio do plano selecionado (linha do tempo completa). */}
+      {selected && selected.events.length > 0 && (
+        <div className="flex justify-end">
+          <Dialog>
+            <DialogTrigger
+              render={
+                <Button type="button" variant="outline" size="sm">
+                  <History className="mr-1 size-3.5" />
+                  Histórico do plano
+                  <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px] tabular-nums text-muted-foreground">
+                    {selected.events.length}
+                  </span>
+                </Button>
+              }
+            />
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Histórico do plano</DialogTitle>
+                <DialogDescription>
+                  Tudo o que aconteceu com este plano, do rascunho ao fim.
+                </DialogDescription>
+              </DialogHeader>
+              <ul className="space-y-0">
+                {selected.events.map((e) => (
+                  <li key={e.id} className="relative flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <span
+                        className={cn(
+                          "mt-1.5 size-2.5 shrink-0 rounded-full",
+                          e.type === "devolvido_comercial" ||
+                            e.type === "devolvido_coordenador"
+                            ? "bg-rose-500"
+                            : e.type === "aprovado_coordenador" ||
+                                e.type === "lifecycle_aceito" ||
+                                e.type === "lifecycle_concluido"
+                              ? "bg-emerald-500"
+                              : "bg-primary"
+                        )}
+                      />
+                      <span className="w-px flex-1 bg-border" />
+                    </div>
+                    <div className="min-w-0 flex-1 pb-3 text-sm">
+                      <p
+                        className={cn(
+                          "whitespace-pre-wrap",
+                          e.type === "devolvido_comercial" &&
+                            "font-medium text-rose-800"
+                        )}
+                      >
+                        {e.description ?? e.type}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(e.at).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {e.actorName ? ` · ${e.actorName}` : ""}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
