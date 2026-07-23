@@ -240,7 +240,7 @@ export function PlanEditorSwitcher({
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                        {e.actorName ? ` · ${e.actorName}` : ""}
+                        {e.actorName ? ` · por ${e.actorName}` : ""}
                       </p>
                     </div>
                   </li>

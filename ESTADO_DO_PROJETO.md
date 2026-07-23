@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.107.1** · Última migração: **0149**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.108.0** · Última migração: **0150**_
+
+> **Negociação multi-plano + GUT colorida + histórico detalhado ✅ (v0.108.0,
+> migração 0150):** (1) no painel de negociação os procedimentos ficam em **ordem
+> de prioridade GUT** com as **pílulas oficiais coloridas** (Alta vermelho /
+> Média amarelo / Baixa verde — mesmas faixas do Planner). (2) **Marcações por
+> plano preservadas**: trocar entre plano principal e secundários não perde o que
+> foi assinalado — todas as marcações acompanham a devolução; os **totais** da
+> negociação contam só o plano selecionado. (3) **Histórico do plano mais
+> detalhado**: registra também **"Plano editado"** (diagnóstico/opções/orçamento)
+> com o usuário (no máx. 1 evento por autor a cada 30 min) e a linha mostra
+> "por Fulano" em todos os eventos.
 
 > **Fix: Replanejamento visível + selo dos excluídos ✅ (v0.107.1, sem
 > migração):** dois furos do teste — (1) a situação do plano só aparecia na lista

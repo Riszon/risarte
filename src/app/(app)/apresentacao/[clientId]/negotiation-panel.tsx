@@ -11,8 +11,9 @@ import {
   Handshake,
   ShieldAlert,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GutBadge } from "@/components/gut-badge";
+import { sortByGutDesc } from "@/lib/gut";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -48,7 +49,9 @@ export type NegotiationOption = {
     description: string;
     quantity: number;
     unitPriceCents: number;
-    gut: number | null;
+    gutGravity: number | null;
+    gutUrgency: number | null;
+    gutTendency: number | null;
   }[];
 };
 
@@ -111,8 +114,21 @@ export function NegotiationPanel({
   );
   const option = options.find((o) => o.id === optionId) ?? primary;
 
-  const [excluded, setExcluded] = useState<Set<string>>(
-    new Set(negotiation?.excludedItemIds ?? [])
+  // Marcações POR PLANO (opção): trocar de plano não perde o que foi assinalado
+  // nos outros — tudo acompanha o plano na devolução ao planejamento.
+  const [excludedByOption, setExcludedByOption] = useState<
+    Record<string, string[]>
+  >(() => {
+    const saved = new Set(negotiation?.excludedItemIds ?? []);
+    const map: Record<string, string[]> = {};
+    for (const o of options) {
+      map[o.id] = o.items.filter((i) => saved.has(i.id)).map((i) => i.id);
+    }
+    return map;
+  });
+  const excluded = useMemo(
+    () => new Set(excludedByOption[optionId] ?? []),
+    [excludedByOption, optionId]
   );
   const initialMode: AdjustMode = !negotiation
     ? "none"
@@ -156,13 +172,23 @@ export function NegotiationPanel({
 
   function toggleItem(id: string) {
     if (locked) return;
-    setExcluded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+    setExcludedByOption((prev) => {
+      const cur = new Set(prev[optionId] ?? []);
+      if (cur.has(id)) cur.delete(id);
+      else cur.add(id);
+      return { ...prev, [optionId]: [...cur] };
     });
   }
+
+  // Todos os itens/exclusões de TODAS as opções (vão juntos ao salvar/devolver).
+  const allItemIds = useMemo(
+    () => options.flatMap((o) => o.items.map((i) => i.id)),
+    [options]
+  );
+  const allExcludedIds = useMemo(
+    () => Object.values(excludedByOption).flat(),
+    [excludedByOption]
+  );
 
   // Totais ao vivo.
   const subtotalCents = useMemo(() => {
@@ -210,10 +236,8 @@ export function NegotiationPanel({
       const r = await savePlanNegotiation(clientId, {
         planId,
         optionId: option.id,
-        allItemIds: option.items.map((i) => i.id),
-        excludedItemIds: option.items
-          .filter((i) => excluded.has(i.id))
-          .map((i) => i.id),
+        allItemIds,
+        excludedItemIds: allExcludedIds,
         adjustmentCents,
         paymentMethod: paymentMethod || null,
         installments: installmentsNum,
@@ -275,10 +299,8 @@ export function NegotiationPanel({
         const saved = await savePlanNegotiation(clientId, {
           planId,
           optionId: option.id,
-          allItemIds: option.items.map((i) => i.id),
-          excludedItemIds: option.items
-            .filter((i) => excluded.has(i.id))
-            .map((i) => i.id),
+          allItemIds,
+          excludedItemIds: allExcludedIds,
           adjustmentCents,
           paymentMethod: paymentMethod || null,
           installments: installmentsNum,
@@ -398,10 +420,7 @@ export function NegotiationPanel({
             </span>
             <select
               value={optionId}
-              onChange={(e) => {
-                setOptionId(e.target.value);
-                setExcluded(new Set());
-              }}
+              onChange={(e) => setOptionId(e.target.value)}
               disabled={locked}
               className={cn(selectClass, "w-full")}
             >
@@ -418,11 +437,12 @@ export function NegotiationPanel({
         {/* Procedimentos: desmarcar = cliente NÃO aprovou (aprovação parcial). */}
         <div>
           <p className="mb-1 text-xs text-muted-foreground">
-            Procedimentos — desmarque o que o cliente NÃO aprovou (a prioridade
-            GUT ajuda a decidir o que pode sair):
+            Procedimentos em ordem de prioridade (matriz GUT) — desmarque o que
+            o cliente NÃO aprovou. As marcações feitas em outros planos deste
+            cliente são preservadas ao trocar de plano.
           </p>
           <ul className="space-y-1">
-            {option.items.map((i) => {
+            {sortByGutDesc(option.items).map((i) => {
               const out = excluded.has(i.id);
               return (
                 <li
@@ -443,11 +463,7 @@ export function NegotiationPanel({
                     {i.description}
                     {i.quantity > 1 ? ` ×${i.quantity}` : ""}
                   </span>
-                  {i.gut != null && (
-                    <Badge variant="outline" className="text-[10px]">
-                      GUT {i.gut}
-                    </Badge>
-                  )}
+                  <GutBadge item={i} />
                   <span className="text-xs tabular-nums text-muted-foreground">
                     {formatBRL(i.quantity * i.unitPriceCents)}
                   </span>

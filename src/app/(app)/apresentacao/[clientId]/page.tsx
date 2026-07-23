@@ -7,7 +7,6 @@ import {
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
-  gutScore,
   resolveCommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
@@ -144,7 +143,9 @@ export default async function PresentationPage(
             description: i.description,
             quantity: i.quantity,
             unitPriceCents: i.unit_price_cents,
-            gut: gutScore(i.gut_gravity, i.gut_urgency, i.gut_tendency),
+            gutGravity: i.gut_gravity,
+            gutUrgency: i.gut_urgency,
+            gutTendency: i.gut_tendency,
           })),
       }));
 
