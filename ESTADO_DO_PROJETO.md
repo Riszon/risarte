@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.108.0** · Última migração: **0150**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.109.0** · Última migração: **0151**_
+
+> **MÓDULO COMERCIAL — COM2: Cockpit do Consultor ✅ (v0.109.0, migração 0151):**
+> nova tela **`/comercial/[clientId]`** — a mesa de trabalho do Consultor durante
+> a apresentação: cabeçalho com cliente/unidade/fase/pilar/selo Empresarial +
+> consultor responsável; botões rápidos **WhatsApp** (conversa pré-preenchida),
+> **Apresentação do plano** e **Ficha completa**; painel **Apresentação** com
+> link do Meet (abrir em 1 clique), **link da gravação do início ao fim**
+> (manual-primeiro: o Meet grava e o consultor cola o link; a transcrição por IA
+> pluga aqui depois), **Resumo da apresentação** (vai no contrato do fechamento —
+> COM4) e considerações; **Planos do cliente** com a situação de cada um;
+> **Pendências** (procedimentos em aberto + revisão/reprovados do controle de
+> qualidade); **Situação financeira** (placeholder ASAAS); e o **painel de
+> negociação** (o mesmo do COM1) na coluna direita — só na Fase 4. A tela de
+> apresentação ganhou o atalho "Cockpit do Consultor". Tabela
+> `commercial_presentations` (uma mesa por cliente).
 
 > **Negociação multi-plano + GUT colorida + histórico detalhado ✅ (v0.108.0,
 > migração 0150):** (1) no painel de negociação os procedimentos ficam em **ordem
