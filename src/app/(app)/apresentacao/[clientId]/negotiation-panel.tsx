@@ -168,7 +168,9 @@ export function NegotiationPanel({
   const [authNote, setAuthNote] = useState("");
 
   const status = negotiation?.status ?? null;
-  const locked = status === "aceita" || status === "devolvida" || !canEdit;
+  // "devolvida" NÃO trava: se o painel está aberto, o cliente voltou à Fase 4
+  // (replanejamento concluído) — o Consultor edita e salva a NOVA rodada.
+  const locked = status === "aceita" || !canEdit;
 
   function toggleItem(id: string) {
     if (locked) return;
@@ -405,6 +407,19 @@ export function NegotiationPanel({
           </div>
         )}
 
+        {/* Nova rodada após a devolução (replanejamento concluído). */}
+        {status === "devolvida" && canEdit && (
+          <p className="flex items-start gap-1.5 rounded-md border border-primary/30 bg-primary/5 p-2 text-xs">
+            <CornerUpLeft className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <span>
+              <strong>Nova rodada de negociação:</strong> a anterior foi
+              devolvida ao Centro de Planejamento e o plano foi reaprovado.
+              Revise os procedimentos e as condições e <strong>salve</strong> —
+              o aceite só fica disponível depois de salvar.
+            </span>
+          </p>
+        )}
+
         {/* Resposta do Gerente (última decisão). */}
         {status === "em_negociacao" && negotiation?.authorizationNote && (
           <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
@@ -632,8 +647,7 @@ export function NegotiationPanel({
             (contrato + pagamento).
           </p>
         ) : (
-          canEdit &&
-          status !== "devolvida" && (
+          canEdit && (
             <div className="flex flex-wrap gap-2">
               <Button disabled={isPending} onClick={save}>
                 Salvar negociação
@@ -641,7 +655,11 @@ export function NegotiationPanel({
               {negotiation && (
                 <Button
                   variant="outline"
-                  disabled={isPending || status === "aguardando_autorizacao"}
+                  disabled={
+                    isPending ||
+                    status === "aguardando_autorizacao" ||
+                    status === "devolvida"
+                  }
                   onClick={accept}
                 >
                   <CheckCircle2 className="mr-1 size-4" />

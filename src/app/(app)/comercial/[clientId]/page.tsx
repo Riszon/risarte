@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { RisarteMark } from "@/components/risarte-logo";
 import { PhaseBadge } from "@/components/phase-badge";
+import { PlanHistoryDialog } from "@/components/plan-history-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -313,13 +314,21 @@ export default async function CommercialCockpitPage(
                           procedimento(s)
                         </span>
                       </span>
-                      <span
-                        className={cn(
-                          "rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                          PLAN_STAGE_STYLES[planStage(p)]
-                        )}
-                      >
-                        {PLAN_STAGE_LABELS[planStage(p)]}
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                            PLAN_STAGE_STYLES[planStage(p)]
+                          )}
+                        >
+                          {PLAN_STAGE_LABELS[planStage(p)]}
+                        </span>
+                        {/* O Consultor vê a linha do tempo completa do plano
+                            que vai apresentar (quem criou/aprovou/devolveu). */}
+                        <PlanHistoryDialog
+                          events={p.events}
+                          triggerLabel="Histórico"
+                        />
                       </span>
                     </li>
                   ))}

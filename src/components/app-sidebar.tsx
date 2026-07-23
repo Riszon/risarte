@@ -19,6 +19,7 @@ import {
   Clock,
   DoorOpen,
   FileText,
+  Handshake,
   Home,
   LogOut,
   MessagesSquare,
@@ -73,6 +74,8 @@ type Props = {
   canViewReports: boolean;
   /** H4.4: gestão/planner podem ver a central de Planos de Tratamento. */
   canViewPlans: boolean;
+  /** COM2: time comercial vê o acesso rápido /comercial (kanban no COM3). */
+  canViewComercial: boolean;
   /** H4.1: gestão/rede podem ver o cadastro de Risartanos (colaboradores). */
   canViewStaff: boolean;
   /** Módulo Risarte Empresarial (B2B). */
@@ -115,6 +118,14 @@ const PLANS_ITEM = {
   icon: ClipboardCheck,
 };
 
+// COM2: acesso rápido do time comercial — lista da Fase 4 → cockpit em
+// 1 clique (no COM3 esta tela vira o kanban completo com follow-up).
+const COMERCIAL_ITEM = {
+  href: "/comercial",
+  label: "Comercial",
+  icon: Handshake,
+};
+
 const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart3 };
 
 // H4.1: cadastro de colaboradores (RH) — Admin, Gerente e Franqueadora.
@@ -148,6 +159,7 @@ export function AppSidebar({
   isPlanner,
   canViewReports,
   canViewPlans,
+  canViewComercial,
   canViewStaff,
   canViewEmpresarial,
   clinics,
@@ -189,6 +201,9 @@ export function AppSidebar({
   // H4.6 B1/E3: "Meu Dia" e "Minha Agenda" logo após Início para o dentista.
   if (activeClinicRoles.includes("dentist")) {
     navItems = [navItems[0], MEU_DIA_ITEM, MINHA_AGENDA_ITEM, ...navItems.slice(1)];
+  }
+  if (!dentistOnly && canViewComercial) {
+    navItems = [...navItems, COMERCIAL_ITEM];
   }
   if (!dentistOnly && canViewPlans) {
     navItems = [...navItems, PLANS_ITEM];

@@ -128,6 +128,7 @@ export async function savePlanNegotiation(
   }
 
   revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
   revalidatePath("/notificacoes");
   return { ok: true, violations: (violations as string[] | null) ?? [] };
 }
@@ -152,6 +153,12 @@ export async function acceptNegotiation(
       return { ok: false, error: "Informe o motivo da aprovação parcial." };
     if (m.includes("PAYMENT_REQUIRED"))
       return { ok: false, error: "Defina o meio de pagamento antes de aceitar." };
+    if (m.includes("ROUND_CLOSED"))
+      return {
+        ok: false,
+        error:
+          "Esta rodada foi devolvida ao planejamento — salve a negociação (nova rodada) antes de registrar o aceite.",
+      };
     if (m.includes("WRONG_PHASE"))
       return { ok: false, error: "O cliente não está na Conversão Comercial." };
     if (m.includes("NOT_ALLOWED"))
@@ -160,6 +167,7 @@ export async function acceptNegotiation(
     return { ok: false, error: "Não foi possível registrar o aceite." };
   }
   revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
   revalidatePath("/notificacoes");
   return { ok: true };
 }
@@ -190,6 +198,7 @@ export async function reviewNegotiationAction(
     return { ok: false, error: "Não foi possível registrar a decisão." };
   }
   revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
   revalidatePath("/notificacoes");
   return { ok: true };
 }
@@ -217,6 +226,7 @@ export async function returnToPlanning(
     return { ok: false, error: "Não foi possível devolver ao planejamento." };
   }
   revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
   revalidatePath(`/prontuarios/${clientId}`);
   revalidatePath("/jornada");
   revalidatePath("/planejamento");

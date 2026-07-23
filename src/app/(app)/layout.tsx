@@ -69,6 +69,17 @@ export default async function AppLayout({
       .flat()
       .some((r) => ["unit_manager", "franchisor_staff", "franchisee"].includes(r));
 
+  // COM2: acesso rápido do time comercial (lista → cockpit em 1 clique; vira
+  // o kanban no COM3). Consultor/Assistente vivem na Franqueadora com escopo,
+  // então o papel é procurado em TODAS as clínicas (não só na ativa).
+  const canViewComercial =
+    session.isAdminMaster ||
+    Object.values(session.rolesByClinic)
+      .flat()
+      .some((r) =>
+        ["commercial_consultant", "commercial_assistant"].includes(r)
+      );
+
   // Módulo Risarte Empresarial (B2B).
   const canViewEmp = canViewEmpresarial(session);
 
@@ -86,6 +97,7 @@ export default async function AppLayout({
         isPlanner={isPlanner}
         canViewReports={canViewReports}
         canViewPlans={canViewPlans}
+        canViewComercial={canViewComercial}
         canViewStaff={canViewStaff}
         canViewEmpresarial={canViewEmp}
         clinics={session.clinics.map(({ id, name, type }) => ({
