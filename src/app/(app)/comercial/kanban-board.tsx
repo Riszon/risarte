@@ -66,6 +66,8 @@ export type BoardCard = {
   followupByClinic: boolean;
   presentingSince: string | null;
   outcomeReason: string | null;
+  outcomeAt: string | null;
+  outcomeByName: string | null;
 };
 
 /** Como o usuário enxerga o funil: comercial (age) × unidade (visualiza). */
@@ -369,6 +371,20 @@ export function CommercialKanban({
                   {c.outcomeReason && (
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {c.outcomeReason}
+                    </p>
+                  )}
+                  {(c.outcomeAt || c.outcomeByName) && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {c.outcomeAt
+                        ? new Date(c.outcomeAt).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                      {c.outcomeByName ? ` · por ${c.outcomeByName}` : ""}
                     </p>
                   )}
                 </li>

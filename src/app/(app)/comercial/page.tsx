@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Eye, Handshake } from "lucide-react";
+import { Eye, Handshake, Store } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -45,6 +46,9 @@ export default async function ComercialKanbanPage(
   // (todas as unidades ou uma específica).
   const unidadeParam = (await props.searchParams).unidade;
   const unidade = Array.isArray(unidadeParam) ? unidadeParam[0] : unidadeParam;
+  // A clínica ativa do Consultor costuma ser a Franqueadora (sem clientes) —
+  // nesse caso o padrão é "Todas" para ele já ver o funil de todas as unidades.
+  const activeIsUnit = session.activeClinic?.type === "franchise_unit";
   let clinicFilter: string | null;
   if (!canSeeAllUnits) {
     clinicFilter = activeClinicId; // unidade travada na clínica logada
@@ -53,7 +57,8 @@ export default async function ComercialKanbanPage(
   } else if (unidade) {
     clinicFilter = unidade;
   } else {
-    clinicFilter = activeClinicId;
+    // Sem filtro escolhido: unidade logada se for uma unidade; senão, Todas.
+    clinicFilter = activeIsUnit ? activeClinicId : null;
   }
 
   await logAudit({
@@ -98,6 +103,8 @@ export default async function ComercialKanbanPage(
       reason: string | null;
       byClinic: boolean;
       presentingSince: string | null;
+      outcomeAt: string | null;
+      outcomeBy: string | null;
     }
   >();
   const negByClient = new Map<
@@ -110,7 +117,7 @@ export default async function ComercialKanbanPage(
       supabase
         .from("commercial_cards")
         .select(
-          "client_id, stage, followup_attempts, next_attempt_at, outcome_reason, followup_by_clinic, presenting_since"
+          "client_id, stage, followup_attempts, next_attempt_at, outcome_reason, followup_by_clinic, presenting_since, outcome_at, outcome_by"
         )
         .in("client_id", ids),
       supabase
@@ -127,6 +134,8 @@ export default async function ComercialKanbanPage(
       outcome_reason: string | null;
       followup_by_clinic: boolean;
       presenting_since: string | null;
+      outcome_at: string | null;
+      outcome_by: string | null;
     }[]) {
       cardByClient.set(c.client_id, {
         stage: c.stage,
@@ -135,6 +144,8 @@ export default async function ComercialKanbanPage(
         reason: c.outcome_reason,
         byClinic: c.followup_by_clinic,
         presentingSince: c.presenting_since,
+        outcomeAt: c.outcome_at,
+        outcomeBy: c.outcome_by,
       });
     }
     for (const n of (negs ?? []) as {
@@ -149,6 +160,23 @@ export default async function ComercialKanbanPage(
         });
       }
     }
+  }
+
+  // Nomes de quem marcou perdido/cancelado (detalhe nos botões).
+  const outcomeByIds = [
+    ...new Set(
+      [...cardByClient.values()]
+        .map((c) => c.outcomeBy)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const outcomeNames = new Map<string, string>();
+  if (outcomeByIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", outcomeByIds);
+    for (const p of people ?? []) outcomeNames.set(p.id, p.full_name as string);
   }
 
   const allCards: BoardCard[] = clients.map((c) => {
@@ -174,6 +202,8 @@ export default async function ComercialKanbanPage(
       followupByClinic: card?.byClinic ?? false,
       presentingSince: card?.presentingSince ?? null,
       outcomeReason: card?.reason ?? null,
+      outcomeAt: card?.outcomeAt ?? null,
+      outcomeByName: card?.outcomeBy ? (outcomeNames.get(card.outcomeBy) ?? null) : null,
     };
   });
 
@@ -203,10 +233,21 @@ export default async function ComercialKanbanPage(
   return (
     <div className="flex h-[calc(100vh-1px)] flex-col px-4 py-4">
       <div className="mb-3 shrink-0">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <Handshake className="size-6 text-gold" />
-          Comercial
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <Handshake className="size-6 text-gold" />
+            Comercial
+          </h1>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/comercial/venda-direta" />}
+          >
+            <Store className="mr-1 size-3.5" />
+            Venda direta
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           Funil de conversão — da apresentação ao início do tratamento.
           {viewer === "unit"
@@ -219,7 +260,7 @@ export default async function ComercialKanbanPage(
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-muted-foreground">Unidade:</span>
             <FilterChip label="Todas" href="/comercial?unidade=all" active={clinicFilter === null} />
-            {activeClinicId && (
+            {activeClinicId && activeIsUnit && (
               <FilterChip
                 label={session.activeClinic?.name ?? "Minha unidade"}
                 href="/comercial"

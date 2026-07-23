@@ -357,6 +357,17 @@ export default async function PlansPage(props: PageProps<"/planos">) {
       r.includes("planner_dentist")
     );
 
+  // Time comercial pode ir direto ao Cockpit do Consultor de clientes na Fase 4/5.
+  const isCommercialUser =
+    session.isAdminMaster ||
+    Object.values(session.rolesByClinic)
+      .flat()
+      .some((r) =>
+        ["commercial_consultant", "commercial_assistant"].includes(r)
+      );
+  const inCommercialFunnel = (phase: JourneyPhase) =>
+    phase === "commercial_conversion" || phase === "treatment_start";
+
   const chipHref = (s: Situation | "") => {
     const p = new URLSearchParams();
     if (busca) p.set("busca", busca);
@@ -660,6 +671,17 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                             className="text-primary hover:underline"
                           >
                             Cockpit
+                          </Link>
+                        </>
+                      )}
+                      {isCommercialUser && inCommercialFunnel(e.phase) && (
+                        <>
+                          {" · "}
+                          <Link
+                            href={`/comercial/${e.clientId}`}
+                            className="text-primary hover:underline"
+                          >
+                            Cockpit do Consultor
                           </Link>
                         </>
                       )}

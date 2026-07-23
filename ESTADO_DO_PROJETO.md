@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.113.0** · Última migração: **0155**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.114.0** · Última migração: **0156**_
+
+> **MÓDULO COMERCIAL — COM5: Venda direta + ajustes ✅ (v0.114.0, migração
+> 0156):** (1) **Venda direta na unidade** (`/comercial/venda-direta`): fluxo
+> excepcional (urgência, consulta avulsa, limpeza) — **lista configurável** de
+> procedimentos vendáveis (flag `procedures.direct_sale`, Admin configura na
+> própria tela); a **Recepção fecha** (pagamento), o **Coordenador lança**
+> (procedimento), o **Gerente faz os dois** — nada trava; tudo registrado
+> (tabela `direct_sales`, entra nos números). Botão "Venda direta" no funil.
+> (2) **Perdido/Cancelado** agora mostram **data e quem** marcou. (3) Na tela
+> **Planos de Tratamento**, clientes em **Fase 4/5** ganharam o atalho **"Cockpit
+> do Consultor"** (time comercial). (4) O funil abre com o filtro **"Todas"** por
+> padrão quando a clínica ativa do Consultor é a Franqueadora.
 
 > **MÓDULO COMERCIAL — Ajustes do funil ✅ (v0.113.0, migração 0155):**
 > (1) **Escopo por unidade** — o funil `/comercial` agora mostra por padrão só a
