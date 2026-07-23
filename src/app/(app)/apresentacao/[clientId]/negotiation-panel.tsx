@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GutBadge } from "@/components/gut-badge";
+import { PlanHistoryDialog } from "@/components/plan-history-dialog";
+import type { PlanEvent } from "@/lib/planning";
 import { sortByGutDesc } from "@/lib/gut";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -94,6 +96,7 @@ export function NegotiationPanel({
   options,
   negotiation,
   rule,
+  planEvents = [],
   canEdit,
   canAuthorize,
 }: {
@@ -102,6 +105,7 @@ export function NegotiationPanel({
   options: NegotiationOption[];
   negotiation: NegotiationData | null;
   rule: CommercialRule;
+  planEvents?: PlanEvent[];
   canEdit: boolean;
   canAuthorize: boolean;
 }) {
@@ -336,16 +340,21 @@ export function NegotiationPanel({
             <Handshake className="size-4" />
             Negociação
           </CardTitle>
-          {status && (
-            <span
-              className={cn(
-                "rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                STATUS_PILL[status]
-              )}
-            >
-              {NEGOTIATION_STATUS_LABELS[status]}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {/* Histórico do plano — o Consultor e o Gerente entendem o caminho
+                do plano (quem criou/aprovou/devolveu) antes de decidir. */}
+            <PlanHistoryDialog events={planEvents} />
+            {status && (
+              <span
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                  STATUS_PILL[status]
+                )}
+              >
+                {NEGOTIATION_STATUS_LABELS[status]}
+              </span>
+            )}
+          </div>
         </div>
         {/* Regra comercial vigente. */}
         <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">

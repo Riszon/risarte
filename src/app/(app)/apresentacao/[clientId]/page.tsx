@@ -81,6 +81,7 @@ export default async function PresentationPage(
           options={negotiationBlock.options}
           negotiation={negotiationBlock.negotiation}
           rule={negotiationBlock.rule}
+          planEvents={negotiationBlock.planEvents}
           canEdit={canNegotiate}
           canAuthorize={canAuthorize}
         />

@@ -70,6 +70,88 @@ export async function saveCommercialRule(
   return { ok: true };
 }
 
+/** Salva a cadência do follow-up de um escopo (rede vazio; ou unidade). */
+export async function saveFollowupSettings(
+  formData: FormData
+): Promise<RuleResult> {
+  await requireAdminMaster();
+  const supabase = await createClient();
+
+  const clinicIdRaw = String(formData.get("clinicId") ?? "").trim();
+  const clinicId = clinicIdRaw === "" ? null : clinicIdRaw;
+
+  const maxAttempts = Number.parseInt(
+    String(formData.get("maxAttempts") ?? "").trim(),
+    10
+  );
+  const intervalDays = Number.parseInt(
+    String(formData.get("intervalDays") ?? "").trim(),
+    10
+  );
+  const maxDays = Number.parseInt(
+    String(formData.get("maxDays") ?? "").trim(),
+    10
+  );
+  if (
+    !Number.isFinite(maxAttempts) || maxAttempts < 1 ||
+    !Number.isFinite(intervalDays) || intervalDays < 1 ||
+    !Number.isFinite(maxDays) || maxDays < 1
+  ) {
+    return {
+      ok: false,
+      error: "Preencha tentativas, intervalo e prazo com números ≥ 1.",
+    };
+  }
+
+  const { error } = await supabase.from("commercial_followup_settings").upsert(
+    {
+      clinic_id: clinicId,
+      max_attempts: maxAttempts,
+      interval_days: intervalDays,
+      max_days: maxDays,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "clinic_id" }
+  );
+  if (error) {
+    console.error("saveFollowupSettings failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a cadência." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "commercial_followup_settings",
+    entityId: clinicId ?? "network",
+    clinicId: clinicId ?? undefined,
+  });
+  revalidatePath("/admin/regras-comerciais");
+  return { ok: true };
+}
+
+/** Remove a cadência de uma unidade (volta a valer o padrão da rede). */
+export async function deleteFollowupSettings(
+  settingsId: string
+): Promise<RuleResult> {
+  await requireAdminMaster();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("commercial_followup_settings")
+    .delete()
+    .eq("id", settingsId)
+    .not("clinic_id", "is", null);
+  if (error) {
+    console.error("deleteFollowupSettings failed:", error.message);
+    return { ok: false, error: "Não foi possível remover a cadência." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "commercial_followup_settings_removed",
+    entityId: settingsId,
+  });
+  revalidatePath("/admin/regras-comerciais");
+  return { ok: true };
+}
+
 /** Remove o ajuste de uma unidade (volta a valer o padrão da rede). */
 export async function deleteCommercialRule(ruleId: string): Promise<RuleResult> {
   await requireAdminMaster();

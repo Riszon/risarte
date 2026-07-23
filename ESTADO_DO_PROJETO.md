@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.109.0** · Última migração: **0151**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.111.0** · Última migração: **0153**_
+
+> **MÓDULO COMERCIAL — COM3: Kanban + Follow-up ✅ (v0.111.0, migração 0153):**
+> a tela **`/comercial`** virou o **kanban do funil comercial** (10 colunas:
+> A apresentar → Acontecendo agora → Apresentados → Follow-up → Fechamentos →
+> Aguardando iniciar tratamento → Tratamento iniciado + Follow-up na clínica,
+> Cancelado, Perdido). As colunas de fechamento e da Fase 5 são derivadas
+> (negociação aceita/jornada); as demais vêm do **cartão** (`commercial_cards`).
+> Cada cartão tem menu de ações (iniciar apresentação, marcar apresentado,
+> iniciar/registrar follow-up, perder/cancelar com motivo), WhatsApp e atalho ao
+> cockpit. **Follow-up com cadência configurável** pelo Admin em
+> `/admin/regras-comerciais` (nº de tentativas, intervalo, prazo máximo — cascata
+> rede→unidade, `commercial_followup_settings`); cada tentativa é **registrada**
+> (`commercial_followup_attempts`, canal + resultado + observações) e, ao esgotar
+> as tentativas/prazo, o cliente é **encaminhado à Gerente** (coluna "Follow-up na
+> clínica" + notificação). O **histórico do plano** passou a aparecer também no
+> painel de negociação (Consultor **e Gerente**, útil ao autorizar). Item
+> **"Comercial"** no menu para o time comercial + Gerente.
 
 > **MÓDULO COMERCIAL — COM2: Cockpit do Consultor ✅ (v0.109.0, migração 0151):**
 > nova tela **`/comercial/[clientId]`** — a mesa de trabalho do Consultor durante

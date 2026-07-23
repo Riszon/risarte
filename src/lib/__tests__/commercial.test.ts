@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  commercialColumnOf,
   discountPercentOf,
   gutScore,
   negotiationViolations,
@@ -143,5 +144,64 @@ describe("gutScore", () => {
   it("faltando qualquer um = null", () => {
     expect(gutScore(5, null, 3)).toBeNull();
     expect(gutScore(undefined, 4, 3)).toBeNull();
+  });
+});
+
+// COM3 — coluna do kanban derivada do cartão + fase + negociação.
+describe("commercialColumnOf", () => {
+  const base = {
+    journeyPhase: "commercial_conversion",
+    journeyStatus: null as string | null,
+    cardStage: null,
+    negotiationAccepted: false,
+  };
+
+  it("Fase 5 aguardando/tratando tem colunas próprias", () => {
+    expect(
+      commercialColumnOf({
+        ...base,
+        journeyPhase: "treatment_start",
+        journeyStatus: "awaiting_treatment_start",
+      })
+    ).toBe("aguardando_iniciar");
+    expect(
+      commercialColumnOf({
+        ...base,
+        journeyPhase: "treatment_start",
+        journeyStatus: "in_treatment",
+      })
+    ).toBe("tratamento_iniciado");
+  });
+
+  it("negociação aceita = fechamento (vence o estágio do cartão)", () => {
+    expect(
+      commercialColumnOf({
+        ...base,
+        cardStage: "apresentado",
+        negotiationAccepted: true,
+      })
+    ).toBe("fechamento");
+  });
+
+  it("perdido/cancelado vêm antes do fechamento derivado", () => {
+    expect(commercialColumnOf({ ...base, cardStage: "perdido" })).toBe(
+      "perdido"
+    );
+    expect(commercialColumnOf({ ...base, cardStage: "cancelado" })).toBe(
+      "cancelado"
+    );
+  });
+
+  it("sem cartão = A apresentar; estágios manuais mapeiam direto", () => {
+    expect(commercialColumnOf(base)).toBe("a_apresentar");
+    expect(commercialColumnOf({ ...base, cardStage: "follow_up" })).toBe(
+      "follow_up"
+    );
+    expect(
+      commercialColumnOf({ ...base, cardStage: "follow_up_clinica" })
+    ).toBe("follow_up_clinica");
+    expect(
+      commercialColumnOf({ ...base, cardStage: "acontecendo_agora" })
+    ).toBe("acontecendo_agora");
   });
 });

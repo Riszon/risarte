@@ -5,6 +5,7 @@ import {
   type CommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
+import type { PlanEvent } from "@/lib/planning";
 import type {
   NegotiationData,
   NegotiationOption,
@@ -15,6 +16,8 @@ export type NegotiationBlock = {
   options: NegotiationOption[];
   negotiation: NegotiationData | null;
   rule: CommercialRule;
+  /** Histórico do plano em negociação (para o Consultor e o Gerente). */
+  planEvents: PlanEvent[];
 };
 
 /**
@@ -122,6 +125,36 @@ export async function loadNegotiationBlock(
   }));
   if (options.length === 0) return null;
 
+  // Histórico do plano em negociação (linha do tempo com autores) — o Gerente
+  // usa para entender o plano ao autorizar uma negociação fora da regra.
+  const { data: eventRows } = await supabase
+    .from("treatment_plan_events")
+    .select("id, event_type, description, actor_id, created_at")
+    .eq("plan_id", planId)
+    .order("created_at");
+  const actorIds = [
+    ...new Set(
+      (eventRows ?? [])
+        .map((e) => e.actor_id as string | null)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const actorNames = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", actorIds);
+    for (const p of people ?? []) actorNames.set(p.id, p.full_name as string);
+  }
+  const planEvents: PlanEvent[] = (eventRows ?? []).map((e) => ({
+    id: e.id as string,
+    type: e.event_type as string,
+    description: (e.description as string | null) ?? null,
+    actorName: e.actor_id ? (actorNames.get(e.actor_id as string) ?? null) : null,
+    at: e.created_at as string,
+  }));
+
   const n = negRows?.[0];
   const negotiation: NegotiationData | null = n
     ? {
@@ -151,5 +184,6 @@ export async function loadNegotiationBlock(
     options,
     negotiation,
     rule: resolveCommercialRule(ruleRows ?? [], clinicId),
+    planEvents,
   };
 }
