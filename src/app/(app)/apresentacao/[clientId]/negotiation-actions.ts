@@ -38,10 +38,17 @@ export async function savePlanNegotiation(
 
   const { data: client } = await supabase
     .from("clients")
-    .select("id, clinic_id")
+    .select("id, clinic_id, journey_phase")
     .eq("id", clientId)
     .single();
   if (!client) return { ok: false, error: "Cliente não encontrado." };
+  // Negociação só acontece com o cliente na Fase 4 (Conversão Comercial).
+  if (client.journey_phase !== "commercial_conversion") {
+    return {
+      ok: false,
+      error: "O cliente não está na Conversão Comercial — negociação indisponível.",
+    };
+  }
 
   const allowed =
     session.isAdminMaster ||
@@ -145,6 +152,8 @@ export async function acceptNegotiation(
       return { ok: false, error: "Informe o motivo da aprovação parcial." };
     if (m.includes("PAYMENT_REQUIRED"))
       return { ok: false, error: "Defina o meio de pagamento antes de aceitar." };
+    if (m.includes("WRONG_PHASE"))
+      return { ok: false, error: "O cliente não está na Conversão Comercial." };
     if (m.includes("NOT_ALLOWED"))
       return { ok: false, error: "Apenas o Consultor Comercial pode aceitar." };
     console.error("accept_negotiation failed:", m);

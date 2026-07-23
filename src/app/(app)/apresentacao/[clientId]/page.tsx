@@ -32,9 +32,17 @@ export default async function PresentationPage(
   }
 
   // -- COM1: painel de negociação (Consultor Comercial / Gerente / Admin) ------
+  // Negociação SÓ com o cliente na Fase 4 (Conversão Comercial) — fora dela o
+  // painel não aparece (e as RPCs também bloqueiam no banco).
   const session = await getSessionContext();
   const supabase = await createClient();
   const clinicId = loaded.clinicId;
+  const { data: phaseRow } = await supabase
+    .from("clients")
+    .select("journey_phase")
+    .eq("id", clientId)
+    .single();
+  const inCommercialPhase = phaseRow?.journey_phase === "commercial_conversion";
   const canNegotiate =
     session.isAdminMaster ||
     (await hasRoleWithScopeForClinic(session, clinicId, [
@@ -51,7 +59,7 @@ export default async function PresentationPage(
     rule: ReturnType<typeof resolveCommercialRule>;
   } | null = null;
 
-  if ((canNegotiate || canAuthorize) && loaded.hasApprovedPlan) {
+  if ((canNegotiate || canAuthorize) && loaded.hasApprovedPlan && inCommercialPhase) {
     const { data: planRows } = await supabase
       .from("treatment_plans")
       .select("id")

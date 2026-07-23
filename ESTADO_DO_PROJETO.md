@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/07/2026 · Versão do sistema: **0.106.0** · Última migração: **0148**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.107.0** · Última migração: **0149**_
+
+> **Ajustes pós-teste da devolução ✅ (v0.107.0, migração 0149):** (1) **BUG
+> corrigido** — negociação só existe com o cliente **na Fase 4**: fora dela o
+> painel some e o banco bloqueia (WRONG_PHASE). (2) Procedimento excluído pelo
+> cliente na negociação ganha o selo **"Não aprovado pelo cliente (Comercial)"**
+> no próprio item do plano (editor e resumo). (3) Nova situação de plano:
+> **"Replanejamento (devolvido pelo Comercial)"** — o plano devolvido nunca fica
+> "aprovado"; refaz todo o ciclo (elaboração → aprovação do Coordenador →
+> Comercial), e ao ser **reaprovado** a nota da devolução é limpa (a história
+> fica no histórico do plano). (4) As considerações do Consultor **saíram** das
+> "informações complementares do Coordenador" e ganharam **pop-up próprio
+> "Devoluções do Comercial"** no cockpit do Planner. 68 testes.
 
 > **Devolução ao planejamento completa + HISTÓRICO por plano ✅ (v0.106.0,
 > migração 0148):** correção do feedback do dono — as informações da devolução

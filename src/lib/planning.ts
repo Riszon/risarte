@@ -41,6 +41,7 @@ export type PlanLifecycle = (typeof PLAN_LIFECYCLES)[number];
  */
 export const PLAN_STAGES = [
   "em_planejamento",
+  "replanejamento",
   "aguardando_aprovacao",
   "em_revisao",
   "aprovado_coordenador",
@@ -57,6 +58,7 @@ export type PlanTimelineStage = (typeof PLAN_STAGES)[number];
 
 export const PLAN_STAGE_LABELS: Record<PlanTimelineStage, string> = {
   em_planejamento: "Em planejamento",
+  replanejamento: "Replanejamento (devolvido pelo Comercial)",
   aguardando_aprovacao: "Aguardando aprovação do Coordenador",
   em_revisao: "Em revisão",
   aprovado_coordenador: "Aprovado pelo Coordenador",
@@ -73,6 +75,7 @@ export const PLAN_STAGE_LABELS: Record<PlanTimelineStage, string> = {
 /** Cores da etiqueta por estágio (classes Tailwind: fundo/texto/borda). */
 export const PLAN_STAGE_STYLES: Record<PlanTimelineStage, string> = {
   em_planejamento: "bg-slate-100 text-slate-700 border-slate-200",
+  replanejamento: "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
   aguardando_aprovacao: "bg-amber-100 text-amber-800 border-amber-200",
   em_revisao: "bg-orange-100 text-orange-800 border-orange-200",
   aprovado_coordenador: "bg-sky-100 text-sky-800 border-sky-200",
@@ -93,11 +96,13 @@ export const PLAN_STAGE_STYLES: Record<PlanTimelineStage, string> = {
 export function planStage(plan: {
   status: TreatmentPlanStatus;
   lifecycle: PlanLifecycle | null;
+  /** Devolução pelo Comercial pendente (limpa ao reaprovar) → "Replanejamento". */
+  commercialReturnNote?: string | null;
 }): PlanTimelineStage {
   if (plan.lifecycle) return plan.lifecycle;
   switch (plan.status) {
     case "draft":
-      return "em_planejamento";
+      return plan.commercialReturnNote ? "replanejamento" : "em_planejamento";
     case "submitted":
       return "aguardando_aprovacao";
     case "returned":

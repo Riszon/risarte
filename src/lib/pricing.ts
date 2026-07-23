@@ -114,6 +114,8 @@ export type BudgetItem = {
   gutGravity?: number | null;
   gutUrgency?: number | null;
   gutTendency?: number | null;
+  /** COM: o cliente NÃO aprovou este procedimento na negociação comercial. */
+  clientRejected?: boolean;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

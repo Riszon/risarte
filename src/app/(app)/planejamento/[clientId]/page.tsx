@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   AlarmClock,
   ClipboardList,
+  CornerUpLeft,
   FileImage,
   Link2,
   MessageSquareText,
@@ -273,6 +274,11 @@ export default async function PlanningCockpitPage(
     plans.find((p) => p.status === "draft" || p.status === "returned") ??
     plans[0] ??
     null;
+
+  // COM: devoluções do Comercial (todas, mais recente primeiro) — pop-up próprio.
+  const commercialReturns = plans
+    .flatMap((p) => p.events.filter((e) => e.type === "devolvido_comercial"))
+    .sort((a, b) => b.at.localeCompare(a.at));
 
   // AJ3: próxima apresentação comercial futura — alimenta o cronômetro no topo.
   const { data: presRows } = await supabase
@@ -638,6 +644,36 @@ export default async function PlanningCockpitPage(
       {/* Barra de apoio: cada material do caso vira um botão que abre um pop-up.
           Libera a tela e deixa o editor de plano como área principal. */}
       <div className="flex flex-wrap gap-2">
+        {/* COM: lugar próprio das considerações do Comercial (devoluções). */}
+        {commercialReturns.length > 0 && (
+          <PopupCard
+            label="Devoluções do Comercial"
+            icon={<CornerUpLeft className="size-4 text-rose-600" />}
+            badge={<CountChip n={commercialReturns.length} />}
+            dialogTitle="Considerações do Consultor Comercial (devoluções)"
+            wide
+          >
+            <ul className="space-y-2">
+              {commercialReturns.map((e) => (
+                <li key={e.id} className="rounded-lg border border-rose-200 bg-rose-50/60 p-3 text-sm">
+                  <p className="whitespace-pre-wrap text-rose-900">
+                    {e.description}
+                  </p>
+                  <p className="mt-1 text-xs text-rose-700/80">
+                    {new Date(e.at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {e.actorName ? ` · ${e.actorName}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </PopupCard>
+        )}
         {summaryOption && (
           <PopupCard
             label="Resumo do tratamento"

@@ -20,6 +20,20 @@ describe("planStage", () => {
     );
   });
 
+  it("rascunho com devolução do Comercial pendente = Replanejamento", () => {
+    expect(
+      planStage({
+        status: "draft",
+        lifecycle: null,
+        commercialReturnNote: "cliente não aprovou os valores",
+      })
+    ).toBe("replanejamento");
+    // Nota limpa (reaprovado e reaberto depois) → volta ao normal.
+    expect(
+      planStage({ status: "draft", lifecycle: null, commercialReturnNote: null })
+    ).toBe("em_planejamento");
+  });
+
   it("o ciclo de vida tem prioridade sobre o status", () => {
     expect(planStage({ status: "approved", lifecycle: "em_tratamento" })).toBe(
       "em_tratamento"

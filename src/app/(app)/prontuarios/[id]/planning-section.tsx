@@ -1467,6 +1467,11 @@ function OptionBudget({
                             )}
                           </span>
                           <GutBadge item={it} />
+                          {it.clientRejected && (
+                            <span className="inline-block rounded-full border border-rose-300 bg-rose-50 px-1.5 py-0.5 text-[10px] font-medium text-rose-800">
+                              Não aprovado pelo cliente (Comercial)
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -1761,6 +1766,11 @@ function OptionBudget({
                               <div className="min-w-0">
                                 <p className="font-medium leading-snug">
                                   {it.description}
+                                  {it.clientRejected && (
+                                    <span className="ml-1.5 inline-block rounded-full border border-rose-300 bg-rose-50 px-1.5 py-0.5 align-middle text-[10px] font-medium text-rose-800">
+                                      Não aprovado pelo cliente (Comercial)
+                                    </span>
+                                  )}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {it.quantity} × {formatBRL(it.unitPriceCents)}

@@ -143,6 +143,33 @@ export async function loadClientPlans(
           sort_order: number;
         }[]
       >();
+    // COM: procedimentos que o cliente NÃO aprovou na negociação comercial
+    // (aprovação parcial ou devolução) — marcados no item do plano.
+    const rejectedItemIds = new Set<string>();
+    {
+      const { data: negItemRows } = await supabase
+        .from("plan_negotiation_items")
+        .select("item_id, included, negotiation:plan_negotiations ( plan_id, status )")
+        .eq("included", false)
+        .returns<
+          {
+            item_id: string;
+            included: boolean;
+            negotiation:
+              | { plan_id: string; status: string }
+              | { plan_id: string; status: string }[]
+              | null;
+          }[]
+        >();
+      for (const r of negItemRows ?? []) {
+        const neg = Array.isArray(r.negotiation) ? r.negotiation[0] : r.negotiation;
+        if (neg && planIds.includes(neg.plan_id) &&
+            (neg.status === "aceita" || neg.status === "devolvida")) {
+          rejectedItemIds.add(r.item_id);
+        }
+      }
+    }
+
     for (const it of itemRows ?? []) {
       const list = itemsByOption.get(it.option_id) ?? [];
       list.push({
@@ -158,6 +185,7 @@ export async function loadClientPlans(
         gutGravity: it.gut_gravity,
         gutUrgency: it.gut_urgency,
         gutTendency: it.gut_tendency,
+        clientRejected: rejectedItemIds.has(it.id),
       });
       itemsByOption.set(it.option_id, list);
     }
