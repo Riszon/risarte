@@ -105,7 +105,7 @@ export function DirectSaleDialog({
       });
       if (r.ok) {
         toast.success(
-          "Venda direta lançada! Os procedimentos entraram em aberto no prontuário."
+          "Venda direta lançada! Faça o fechamento na aba “Sessões & Procedimentos”, aqui mesmo."
         );
         setOpen(false);
         setAppointmentId("");

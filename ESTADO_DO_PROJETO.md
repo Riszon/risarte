@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.117.0** · Última migração: **0158**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.118.0** · Última migração: **0159**_
+
+> **VENDA DIRETA v2 — ajustes de fluxo e bugs ✅ (v0.118.0, migração 0159):**
+> (1) **Fluxo mais rápido:** o **fechamento** agora acontece **no próprio
+> prontuário** — na aba **"Sessões & Procedimentos"** aparece o bloco **"Vendas
+> diretas deste cliente"** com o pagamento + fechamento inline (não precisa mais
+> ir até Comercial → Venda direta). (2) **Bug do desconto acumulado corrigido:**
+> o desconto de **programa** (Empresarial) e o **manual** viraram colunas
+> separadas; salvar as condições **substitui** o desconto manual (não soma) e o
+> limite (%) é sempre sobre o **preço cheio** (subtotal − programa), nunca sobre
+> o valor já descontado. (3) **Procedimentos aparecem na aba Sessões:** cada
+> procedimento da venda direta vira uma sessão com estado **Em aberto / Agendado
+> / Concluído**. (4) **Baixa automática:** venda de atendimento **já realizado**
+> nasce **Concluída**, com a baixa no nome do **dentista do atendimento**.
 
 > **VENDA DIRETA v2 — VD3: tela Comercial + fechamento + notificações ✅
 > (v0.117.0, sem migração nova — usa a 0158):** a tela **Comercial → Vendas

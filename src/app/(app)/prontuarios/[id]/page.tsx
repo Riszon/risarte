@@ -40,8 +40,9 @@ import {
 } from "./journey-section";
 import { PendingDecision } from "./pending-decision";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
-import { loadDirectSaleContext } from "./direct-sale-loader";
+import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
 import { DirectSaleDialog } from "./direct-sale-dialog";
+import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
 import {
   getUnitSchedulingData,
   type AgendaFormConfig,
@@ -646,6 +647,12 @@ export default async function ClientDetailPage(
   // VD2: contexto da VENDA DIRETA (procedimentos que ESTE usuário pode lançar,
   // atendimentos para vincular e o desconto do programa já calculado).
   const directSale = await loadDirectSaleContext(client.id, scheduleClinicId);
+  // VD (ajuste de fluxo): vendas diretas deste cliente para FECHAR no próprio
+  // prontuário + os procedimentos avulsos (aberto/concluído).
+  const clientDirectSales = await loadClientDirectSales(
+    client.id,
+    scheduleClinicId
+  );
 
   // Sessões do tratamento a agendar (E4): gera na Fase 5 e carrega.
   let treatmentSessions: TreatmentSession[] = [];
@@ -2540,8 +2547,60 @@ export default async function ClientDetailPage(
 
         {(treatmentSessions.length > 0 ||
           procedureRows.length > 0 ||
-          finishedTreatments.length > 0) && (
+          finishedTreatments.length > 0 ||
+          clientDirectSales.sales.length > 0) && (
           <TabPanel id="sessoes" label="Sessões & Procedimentos">
+            {/* VD: procedimentos avulsos (venda direta) + fechamento aqui mesmo,
+                sem precisar ir até a tela Comercial. */}
+            {clientDirectSales.sales.length > 0 && (
+              <div className="mb-4 space-y-2 rounded-xl border bg-muted/20 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold">
+                  <span className="text-gold">●</span> Vendas diretas deste cliente
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Procedimentos vendidos direto na clínica. A recepção/gerente
+                  define o pagamento e faz o fechamento aqui mesmo. Cada
+                  procedimento vira uma sessão (em aberto ou já concluído, quando
+                  o atendimento já foi realizado).
+                </p>
+                {clientDirectSales.sessions.length > 0 && (
+                  <ul className="space-y-1 rounded-lg border bg-background p-2 text-xs">
+                    {clientDirectSales.sessions.map((s) => (
+                      <li
+                        key={s.id}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <span>{s.procedureName}</span>
+                        <span
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                            s.state === "done"
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                              : s.state === "scheduled"
+                                ? "border-sky-300 bg-sky-50 text-sky-700"
+                                : "border-amber-300 bg-amber-50 text-amber-700"
+                          )}
+                        >
+                          {s.state === "done"
+                            ? "Concluído"
+                            : s.state === "scheduled"
+                              ? "Agendado"
+                              : "Em aberto"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {clientDirectSales.sales.map((s) => (
+                  <SaleItem
+                    key={s.id}
+                    sale={s}
+                    showClientLink={false}
+                    defaultExpanded={s.status !== "concluida" && !s.cancelled}
+                  />
+                ))}
+              </div>
+            )}
             <TreatmentSection
               clientId={client.id}
               clientName={client.full_name}

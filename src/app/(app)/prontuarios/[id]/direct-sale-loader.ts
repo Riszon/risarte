@@ -7,11 +7,14 @@ import {
   resolveCommercialRule,
   type CommercialRule,
   type CommercialRuleRow,
+  type PaymentMethod,
 } from "@/lib/commercial";
 import {
   canLaunchDirectSaleProcedure,
+  directSaleStatusOf,
   type DirectSaleFlags,
 } from "@/lib/direct-sale";
+import type { DirectSaleRow } from "../../comercial/venda-direta/direct-sale-item";
 import type { UserRole } from "@/lib/roles";
 
 /** Um procedimento que ESTE usuário pode lançar, já com o benefício aplicado. */
@@ -179,4 +182,144 @@ export async function loadDirectSaleContext(
     programActive: program.active,
     programName: program.companyName,
   };
+}
+
+/** Procedimento avulso (venda direta) no prontuário: em aberto ou concluído. */
+export type DirectSaleSession = {
+  id: string;
+  procedureName: string;
+  state: "open" | "scheduled" | "done";
+  doneAt: string | null;
+  executorName: string | null;
+  appointmentAt: string | null;
+};
+
+/**
+ * Vendas diretas DESTE cliente (para fechar no próprio prontuário) + os
+ * procedimentos avulsos (sessões sem plano) com o estado (aberto/concluído).
+ */
+export async function loadClientDirectSales(
+  clientId: string,
+  clinicId: string
+): Promise<{ sales: DirectSaleRow[]; sessions: DirectSaleSession[] }> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+
+  const [{ data: saleRows }, { data: sessRows }, { data: ruleRows }] =
+    await Promise.all([
+      supabase
+        .from("direct_sales")
+        .select(
+          "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_confirmed, cancelled, status, attendance_done_before, created_by, created_at, closed_at, items:direct_sale_items ( id, description, quantity, final_cents )"
+        )
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("treatment_sessions")
+        .select(
+          "id, procedure_name, status, done_at, executed_by, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status )"
+        )
+        .eq("client_id", clientId)
+        .is("plan_id", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("commercial_rules")
+        .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+        .returns<CommercialRuleRow[]>(),
+    ]);
+
+  const canClose =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager", "sdr"]);
+  const isManager =
+    session.isAdminMaster || hasRoleInClinic(session, clinicId, ["unit_manager"]);
+  const rule = resolveCommercialRule(ruleRows ?? [], clinicId);
+
+  const idsForNames = [
+    ...new Set(
+      (saleRows ?? [])
+        .map((s) => s.created_by as string | null)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const names = new Map<string, string>();
+  if (idsForNames.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", idsForNames);
+    for (const p of people ?? []) names.set(p.id, p.full_name as string);
+  }
+
+  const sales: DirectSaleRow[] = (saleRows ?? []).map((s) => ({
+    id: s.id as string,
+    clinicId: s.clinic_id as string,
+    clinicName: null,
+    clientId: s.client_id as string | null,
+    clientName: s.client_name as string | null,
+    subtotalCents: s.subtotal_cents as number,
+    discountCents: s.discount_cents as number,
+    surchargeCents: s.surcharge_cents as number,
+    finalCents: s.final_cents as number,
+    installments: s.installments as number,
+    paymentMethod: (s.payment_method as PaymentMethod | null) ?? null,
+    contractSigned: s.contract_signed as boolean,
+    paymentIssued: s.payment_issued as boolean,
+    paymentConfirmed: s.payment_confirmed as boolean,
+    cancelled: s.cancelled as boolean,
+    status: s.cancelled
+      ? "cancelada"
+      : directSaleStatusOf({
+          contractSigned: s.contract_signed as boolean,
+          paymentIssued: s.payment_issued as boolean,
+          paymentConfirmed: s.payment_confirmed as boolean,
+        }),
+    attendanceDoneBefore: s.attendance_done_before as boolean,
+    createdByName: s.created_by
+      ? (names.get(s.created_by as string) ?? null)
+      : null,
+    createdAt: s.created_at as string,
+    items: (
+      (s.items ?? []) as {
+        description: string;
+        quantity: number;
+        final_cents: number;
+      }[]
+    ).map((i) => ({
+      description: i.description,
+      quantity: i.quantity,
+      finalCents: i.final_cents,
+    })),
+    rule,
+    canClose,
+    isManager,
+  }));
+
+  const sessions: DirectSaleSession[] = (
+    (sessRows ?? []) as {
+      id: string;
+      procedure_name: string;
+      status: "pending" | "scheduled" | "done";
+      done_at: string | null;
+      executed_by: string | null;
+      appointment:
+        | { starts_at: string; status: string }
+        | { starts_at: string; status: string }[]
+        | null;
+    }[]
+  ).map((r) => {
+    const ap = Array.isArray(r.appointment) ? r.appointment[0] : r.appointment;
+    const isScheduled =
+      ap != null && (ap.status === "scheduled" || ap.status === "confirmed");
+    return {
+      id: r.id,
+      procedureName: r.procedure_name,
+      state: r.status === "done" ? "done" : isScheduled ? "scheduled" : "open",
+      doneAt: r.done_at,
+      executorName: null,
+      appointmentAt: ap?.starts_at ?? null,
+    };
+  });
+
+  return { sales, sessions };
 }

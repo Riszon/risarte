@@ -155,6 +155,27 @@ describe("directSaleViolations", () => {
     ).toEqual([]);
   });
 
+  it("desconto é % do preço cheio (após programa), não do já descontado", () => {
+    // R$600 sem programa, 10% máx = R$60. Um desconto de R$60 passa; R$61 não.
+    const base = {
+      subtotalCents: 60000,
+      programDiscountCents: 0,
+      surchargeCents: 0,
+      installments: 1,
+      paymentMethod: "pix" as const,
+    };
+    expect(
+      directSaleViolations({ ...base, discountCents: 6000 }, rule, {
+        isManager: false,
+      })
+    ).toEqual([]);
+    expect(
+      directSaleViolations({ ...base, discountCents: 6100 }, rule, {
+        isManager: false,
+      })
+    ).toHaveLength(1);
+  });
+
   it("acréscimo só o Gerente", () => {
     expect(
       directSaleViolations({ ...base, surchargeCents: 5000 }, rule, {

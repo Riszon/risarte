@@ -23,15 +23,16 @@ async function saleClinic(saleId: string): Promise<{
   const supabase = await createClient();
   const { data } = await supabase
     .from("direct_sales")
-    .select("clinic_id, subtotal_cents, discount_cents")
+    .select("clinic_id, subtotal_cents, program_discount_cents")
     .eq("id", saleId)
     .single();
   if (!data) return null;
   return {
     clinicId: data.clinic_id as string,
     subtotalCents: data.subtotal_cents as number,
-    // Nesta etapa discount_cents guarda só o desconto de PROGRAMA (0158).
-    programDiscountCents: data.discount_cents as number,
+    // Desconto de PROGRAMA (Empresarial/riso+) tem coluna própria a partir da
+    // 0159; o desconto manual é validado sobre (subtotal − programa).
+    programDiscountCents: data.program_discount_cents as number,
   };
 }
 
