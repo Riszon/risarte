@@ -20,6 +20,15 @@ describe("categorizeNotification", () => {
     );
   });
 
+  it("venda direta na unidade (VD)", () => {
+    expect(categorizeNotification("Venda direta na unidade — R$ 150,00")).toBe(
+      "vendas_diretas"
+    );
+    expect(
+      categorizeNotification("ATENÇÃO: venda direta lançada APÓS o atendimento")
+    ).toBe("vendas_diretas");
+  });
+
   it("compartilhamento entre unidades", () => {
     expect(
       categorizeNotification("Cliente compartilhado com a sua unidade")

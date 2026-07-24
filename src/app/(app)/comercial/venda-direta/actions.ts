@@ -1,148 +1,191 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  getSessionContext,
-  hasRoleInClinic,
-  requireAdminMaster,
-} from "@/lib/auth";
+import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { parseBRLToCents } from "@/lib/pricing";
-import { PAYMENT_METHODS } from "@/lib/commercial";
+import {
+  resolveCommercialRule,
+  type CommercialRuleRow,
+} from "@/lib/commercial";
+import { directSaleViolations } from "@/lib/direct-sale";
 
-export type DirectSaleResult = { ok: boolean; error?: string };
+export type DirectSaleResult = { ok: boolean; error?: string; closed?: boolean };
 
-const SALE_ROLES = ["receptionist", "clinical_coordinator", "unit_manager"] as const;
+const CLOSE_ROLES = ["receptionist", "unit_manager", "sdr"] as const;
 
-/** Registra uma venda direta na unidade (recepção/coordenador/gerente). */
-export async function createDirectSale(input: {
-  clientName: string;
-  procedureId: string;
-  description: string;
-  value: string;
-  paymentMethod: string;
-  notes: string;
-}): Promise<DirectSaleResult> {
-  const session = await getSessionContext();
-  const clinicId = session.activeClinic?.id;
-  if (!clinicId) return { ok: false, error: "Escolha uma unidade ativa." };
-  if (
-    !session.isAdminMaster &&
-    !hasRoleInClinic(session, clinicId, [...SALE_ROLES])
-  ) {
-    return { ok: false, error: "Você não pode registrar venda direta aqui." };
-  }
-
-  const description = input.description.trim();
-  if (!description) return { ok: false, error: "Descreva o procedimento." };
-  const valueCents = parseBRLToCents(input.value) ?? 0;
-  if (valueCents <= 0) return { ok: false, error: "Informe o valor da venda." };
-  const method =
-    input.paymentMethod &&
-    (PAYMENT_METHODS as readonly string[]).includes(input.paymentMethod)
-      ? input.paymentMethod
-      : null;
-
+async function saleClinic(saleId: string): Promise<{
+  clinicId: string;
+  subtotalCents: number;
+  programDiscountCents: number;
+} | null> {
   const supabase = await createClient();
-  const { error } = await supabase.from("direct_sales").insert({
-    clinic_id: clinicId,
-    client_name: input.clientName.trim() || null,
-    procedure_id: input.procedureId || null,
-    description,
-    value_cents: valueCents,
-    payment_method: method,
-    notes: input.notes.trim() || null,
-    created_by: session.userId,
-  });
-  if (error) {
-    console.error("createDirectSale failed:", error.message);
-    return { ok: false, error: "Não foi possível registrar a venda." };
-  }
-  await logAudit({
-    action: "create",
-    entityType: "direct_sale",
-    entityId: description,
-    clinicId,
-  });
-  revalidatePath("/comercial/venda-direta");
-  return { ok: true };
-}
-
-/** Marca pagamento (recepção), lançamento (coordenador) ou cancela a venda. */
-export async function markDirectSale(
-  saleId: string,
-  field: "paid" | "launched" | "cancelled",
-  value: boolean
-): Promise<DirectSaleResult> {
-  const session = await getSessionContext();
-  const supabase = await createClient();
-
-  const { data: sale } = await supabase
+  const { data } = await supabase
     .from("direct_sales")
-    .select("clinic_id")
+    .select("clinic_id, subtotal_cents, discount_cents")
     .eq("id", saleId)
     .single();
-  if (!sale) return { ok: false, error: "Venda não encontrada." };
-  const clinicId = sale.clinic_id as string;
+  if (!data) return null;
+  return {
+    clinicId: data.clinic_id as string,
+    subtotalCents: data.subtotal_cents as number,
+    // Nesta etapa discount_cents guarda só o desconto de PROGRAMA (0158).
+    programDiscountCents: data.discount_cents as number,
+  };
+}
+
+/** Define as condições de pagamento (só quem FECHA). Bloqueia fora da regra. */
+export async function setDirectSaleConditions(
+  saleId: string,
+  input: {
+    paymentMethod: string;
+    installments: number;
+    discountReais: string;
+    surchargeReais: string;
+  }
+): Promise<DirectSaleResult> {
+  const session = await getSessionContext();
+  const info = await saleClinic(saleId);
+  if (!info) return { ok: false, error: "Venda não encontrada." };
+  const isManager =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, info.clinicId, ["unit_manager"]);
   if (
     !session.isAdminMaster &&
-    !hasRoleInClinic(session, clinicId, [...SALE_ROLES])
+    !hasRoleInClinic(session, info.clinicId, [...CLOSE_ROLES])
   ) {
-    return { ok: false, error: "Você não pode alterar esta venda." };
+    return { ok: false, error: "Você não pode fechar esta venda direta." };
   }
 
-  const now = new Date().toISOString();
-  const patch: Record<string, unknown> = { updated_at: now };
-  if (field === "paid") {
-    patch.paid = value;
-    patch.paid_by = value ? session.userId : null;
-    patch.paid_at = value ? now : null;
-  } else if (field === "launched") {
-    patch.launched = value;
-    patch.launched_by = value ? session.userId : null;
-    patch.launched_at = value ? now : null;
-  } else {
-    patch.cancelled = value;
+  const discountCents = input.discountReais.trim()
+    ? (parseBRLToCents(input.discountReais) ?? 0)
+    : 0;
+  const surchargeCents = input.surchargeReais.trim()
+    ? (parseBRLToCents(input.surchargeReais) ?? 0)
+    : 0;
+  const installments = Math.max(1, Math.floor(input.installments) || 1);
+
+  const supabase = await createClient();
+  const { data: ruleRows } = await supabase
+    .from("commercial_rules")
+    .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+    .returns<CommercialRuleRow[]>();
+  const rule = resolveCommercialRule(ruleRows ?? [], info.clinicId);
+
+  // A regra comercial BLOQUEIA o fechamento fora do padrão (§7.5).
+  const violations = directSaleViolations(
+    {
+      subtotalCents: info.subtotalCents,
+      programDiscountCents: info.programDiscountCents,
+      discountCents,
+      surchargeCents,
+      installments,
+      paymentMethod: input.paymentMethod
+        ? (input.paymentMethod as never)
+        : null,
+    },
+    rule,
+    { isManager }
+  );
+  if (violations.length > 0) {
+    return { ok: false, error: violations.join("; ") };
   }
 
-  const { error } = await supabase
-    .from("direct_sales")
-    .update(patch)
-    .eq("id", saleId);
+  const { error } = await supabase.rpc("direct_sale_set_conditions", {
+    p_sale_id: saleId,
+    p_payment_method: input.paymentMethod || null,
+    p_installments: installments,
+    p_discount_cents: discountCents,
+    p_surcharge_cents: surchargeCents,
+  });
   if (error) {
-    console.error("markDirectSale failed:", error.message);
-    return { ok: false, error: "Não foi possível atualizar a venda." };
+    const m = error.message;
+    if (m.includes("SURCHARGE_MANAGER_ONLY"))
+      return { ok: false, error: "Só o Gerente pode aplicar acréscimo." };
+    if (m.includes("ALREADY_CLOSED"))
+      return { ok: false, error: "Venda já concluída." };
+    console.error("direct_sale_set_conditions failed:", m);
+    return { ok: false, error: "Não foi possível salvar as condições." };
   }
   await logAudit({
     action: "update",
-    entityType: "direct_sale",
+    entityType: "direct_sale_conditions",
     entityId: saleId,
-    clinicId,
+    clinicId: info.clinicId,
   });
   revalidatePath("/comercial/venda-direta");
   return { ok: true };
 }
 
-/** Admin liga/desliga um procedimento na lista de venda direta. */
-export async function setProcedureDirectSale(
-  procedureId: string,
+/** Passo do fechamento: contrato / cobrança emitida / pagamento confirmado. */
+export async function closeDirectSaleStep(
+  saleId: string,
+  step: "contract" | "payment_issued" | "payment_confirmed",
   value: boolean
 ): Promise<DirectSaleResult> {
-  await requireAdminMaster();
+  const session = await getSessionContext();
+  const info = await saleClinic(saleId);
+  if (!info) return { ok: false, error: "Venda não encontrada." };
+  if (
+    !session.isAdminMaster &&
+    !hasRoleInClinic(session, info.clinicId, [...CLOSE_ROLES])
+  ) {
+    return { ok: false, error: "Você não pode fechar esta venda direta." };
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("procedures")
-    .update({ direct_sale: value, updated_at: new Date().toISOString() })
-    .eq("id", procedureId);
+  const { data, error } = await supabase.rpc("direct_sale_close_step", {
+    p_sale_id: saleId,
+    p_step: step,
+    p_value: value,
+  });
   if (error) {
-    console.error("setProcedureDirectSale failed:", error.message);
-    return { ok: false, error: "Não foi possível atualizar o procedimento." };
+    const m = error.message;
+    if (m.includes("ALREADY_CLOSED"))
+      return { ok: false, error: "Venda já concluída." };
+    console.error("direct_sale_close_step failed:", m);
+    return { ok: false, error: "Não foi possível atualizar o fechamento." };
   }
   await logAudit({
     action: "update",
-    entityType: "procedure_direct_sale",
-    entityId: procedureId,
+    entityType: "direct_sale_close",
+    entityId: saleId,
+    clinicId: info.clinicId,
+  });
+  revalidatePath("/comercial/venda-direta");
+  revalidatePath("/comercial");
+  return { ok: true, closed: Boolean((data as { closed?: boolean } | null)?.closed) };
+}
+
+/** Cancela a venda direta (recepção/gerente/admin). */
+export async function cancelDirectSale(
+  saleId: string
+): Promise<DirectSaleResult> {
+  const session = await getSessionContext();
+  const info = await saleClinic(saleId);
+  if (!info) return { ok: false, error: "Venda não encontrada." };
+  if (
+    !session.isAdminMaster &&
+    !hasRoleInClinic(session, info.clinicId, ["receptionist", "unit_manager"])
+  ) {
+    return { ok: false, error: "Você não pode cancelar esta venda direta." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("direct_sales")
+    .update({ cancelled: true, status: "cancelada", updated_at: new Date().toISOString() })
+    .eq("id", saleId)
+    .is("closed_at", null);
+  if (error) {
+    console.error("cancelDirectSale failed:", error.message);
+    return { ok: false, error: "Não foi possível cancelar a venda." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "direct_sale_cancel",
+    entityId: saleId,
+    clinicId: info.clinicId,
   });
   revalidatePath("/comercial/venda-direta");
   return { ok: true };

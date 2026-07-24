@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Presentation,
   Share2,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,7 @@ const SP = "America/Sao_Paulo";
 const CATEGORY_ICON: Record<NotificationCategory, React.ComponentType<{ className?: string }>> = {
   plano: ClipboardList,
   comercial: Presentation,
+  vendas_diretas: Store,
   compartilhamento: Share2,
   inicio_tratamento: CalendarCheck,
   agenda: CalendarClock,

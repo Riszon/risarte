@@ -132,15 +132,19 @@ export async function loadDirectSaleContext(
   }
 
   // Atendimentos do cliente para VINCULAR (obrigatório — decisão §7.8).
-  const { data: apptRows } = await supabase
+  // Cancelados/faltas são descartados no JS (evita comparar o enum com um
+  // rótulo inválido, que derrubaria a query e deixaria a lista vazia).
+  const { data: apptRows, error: apptError } = await supabase
     .from("appointments")
     .select(
       "id, starts_at, type, status, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
     )
     .eq("client_id", clientId)
-    .not("status", "in", '("cancelled","canceled")')
     .order("starts_at", { ascending: false })
-    .limit(30);
+    .limit(50);
+  if (apptError) {
+    console.error("loadDirectSaleContext appointments failed:", apptError.message);
+  }
 
   const now = Date.now();
   const appointments: ChartAppointment[] = (
@@ -151,7 +155,9 @@ export async function loadDirectSaleContext(
       status: string;
       provider: { full_name: string } | { full_name: string }[] | null;
     }[]
-  ).map((a) => {
+  )
+    .filter((a) => a.status !== "cancelled" && a.status !== "no_show")
+    .map((a) => {
     const prov = Array.isArray(a.provider) ? a.provider[0] : a.provider;
     return {
       id: a.id,

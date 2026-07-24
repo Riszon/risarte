@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.116.0** · Última migração: **0158**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.117.0** · Última migração: **0158**_
+
+> **VENDA DIRETA v2 — VD3: tela Comercial + fechamento + notificações ✅
+> (v0.117.0, sem migração nova — usa a 0158):** a tela **Comercial → Vendas
+> diretas** foi reescrita para o v2: **filtros de unidade** (todas × específica)
+> e **período** (hoje/semana/mês/tudo), **resumo** (pendências / concluídas /
+> total concluído / canceladas), e a **lista** separada em pendentes, concluídas
+> e canceladas. Cada venda expande e mostra os itens + o **fechamento**: a
+> **recepção/gerente** define as **condições de pagamento** (forma/parcelas
+> **limitadas pela regra comercial**; **desconto** só dentro do configurado;
+> **acréscimo só o Gerente** — bloqueio real na action) e faz o **fechamento em
+> dois passos** (contrato assinado + cobrança emitida → pagamento confirmado;
+> **R$ 0,00** = cobrança já conta como paga). **Painel de exceções** ("atendeu
+> antes de vender") para gestão. As notificações ganharam a categoria/filtro
+> **"Vendas Diretas"**. **Bug corrigido (VD2):** o seletor de atendimento no
+> pop-up ficava vazio porque a query comparava o enum de status com o rótulo
+> inválido `"canceled"` — agora os cancelados/faltas são filtrados no app.
 
 > **VENDA DIRETA v2 — VD2: pop-up no prontuário ✅ (v0.116.0, migração 0158):**
 > botão **"Venda Direta"** no prontuário, ao lado de "Novo agendamento", abrindo
