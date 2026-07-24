@@ -205,28 +205,59 @@ export async function loadClientDirectSales(
   const session = await getSessionContext();
   const supabase = await createClient();
 
-  const [{ data: saleRows }, { data: sessRows }, { data: ruleRows }] =
-    await Promise.all([
-      supabase
-        .from("direct_sales")
-        .select(
-          "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_confirmed, cancelled, status, attendance_done_before, created_by, created_at, closed_at, items:direct_sale_items ( id, description, quantity, final_cents )"
-        )
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("treatment_sessions")
-        .select(
-          "id, procedure_name, status, done_at, executed_by, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status )"
-        )
-        .eq("client_id", clientId)
-        .is("plan_id", null)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("commercial_rules")
-        .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
-        .returns<CommercialRuleRow[]>(),
-    ]);
+  const [saleRes, itemRes, sessRes, ruleRes, program] = await Promise.all([
+    supabase
+      .from("direct_sales")
+      .select(
+        "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, payment_issued, payment_confirmed, cancelled, status, attendance_done_before, created_by, created_at, closed_at"
+      )
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("direct_sale_items")
+      .select("id, sale_id, description, quantity, final_cents"),
+    supabase
+      .from("treatment_sessions")
+      .select(
+        "id, procedure_name, status, done_at, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status )"
+      )
+      .eq("client_id", clientId)
+      .is("plan_id", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("commercial_rules")
+      .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+      .returns<CommercialRuleRow[]>(),
+    loadClientProgram(clientId),
+  ]);
+  if (saleRes.error)
+    console.error("loadClientDirectSales sales failed:", saleRes.error.message);
+  if (sessRes.error)
+    console.error("loadClientDirectSales sessions failed:", sessRes.error.message);
+  const saleRows = saleRes.data;
+  const sessRows = sessRes.data;
+  const ruleRows = ruleRes.data;
+
+  // Itens agrupados por venda (busca separada — embeds são o ponto frágil).
+  const itemsBySale = new Map<
+    string,
+    { description: string; quantity: number; final_cents: number }[]
+  >();
+  for (const it of (itemRes.data ?? []) as {
+    sale_id: string;
+    description: string;
+    quantity: number;
+    final_cents: number;
+  }[]) {
+    const list = itemsBySale.get(it.sale_id) ?? [];
+    list.push({
+      description: it.description,
+      quantity: it.quantity,
+      final_cents: it.final_cents,
+    });
+    itemsBySale.set(it.sale_id, list);
+  }
+  const isProgramMember = program.active;
 
   const canClose =
     session.isAdminMaster ||
@@ -259,6 +290,7 @@ export async function loadClientDirectSales(
     clientName: s.client_name as string | null,
     subtotalCents: s.subtotal_cents as number,
     discountCents: s.discount_cents as number,
+    programDiscountCents: (s.program_discount_cents as number) ?? 0,
     surchargeCents: s.surcharge_cents as number,
     finalCents: s.final_cents as number,
     installments: s.installments as number,
@@ -279,13 +311,7 @@ export async function loadClientDirectSales(
       ? (names.get(s.created_by as string) ?? null)
       : null,
     createdAt: s.created_at as string,
-    items: (
-      (s.items ?? []) as {
-        description: string;
-        quantity: number;
-        final_cents: number;
-      }[]
-    ).map((i) => ({
+    items: (itemsBySale.get(s.id as string) ?? []).map((i) => ({
       description: i.description,
       quantity: i.quantity,
       finalCents: i.final_cents,
@@ -293,6 +319,7 @@ export async function loadClientDirectSales(
     rule,
     canClose,
     isManager,
+    isProgramMember,
   }));
 
   const sessions: DirectSaleSession[] = (

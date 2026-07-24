@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.118.0** · Última migração: **0159**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.119.0** · Última migração: **0160**_
+
+> **VENDA DIRETA v2 — ajustes 2 ✅ (v0.119.0, migração 0160):** (1) **Bug do
+> procedimento que não aparecia:** o carregamento das vendas do cliente engolia
+> um erro de consulta e escondia junto os procedimentos — agora os **itens são
+> buscados em separado** (sem embed), os **procedimentos avulsos aparecem
+> independentemente** da venda (com logs de erro), e o bloco na aba **"Sessões &
+> Procedimentos"** mostra cada um com **Em aberto / Agendado / Concluído** (e a
+> data de conclusão). (2) **Sem desconto para cliente de programa:** quem é do
+> **Risarte Empresarial** (ou outro programa com desconto automático) **não
+> recebe desconto manual** — bloqueado na RPC, na action e escondido na tela;
+> quem **não** é de programa segue podendo receber desconto (dentro da regra).
+> (3) **Campo de desconto/acréscimo reformulado:** virou **um único seletor**
+> (Sem ajuste / Desconto R$ / Desconto % / Acréscimo R$) com **prévia do novo
+> total** ao vivo, mostrando o **desconto máximo** permitido, e refletindo o que
+> já está aplicado.
 
 > **VENDA DIRETA v2 — ajustes de fluxo e bugs ✅ (v0.118.0, migração 0159):**
 > (1) **Fluxo mais rápido:** o **fechamento** agora acontece **no próprio

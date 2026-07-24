@@ -118,7 +118,7 @@ export default async function VendasDiretasPage(
   let salesQuery = supabase
     .from("direct_sales")
     .select(
-      "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_issued_by, payment_confirmed, payment_confirmed_by, cancelled, status, attendance_done_before, created_by, created_at, closed_at, clinic:clinics!direct_sales_clinic_id_fkey ( name ), items:direct_sale_items ( id, description, quantity, unit_price_cents, program_discount_cents, final_cents )"
+      "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_issued_by, payment_confirmed, payment_confirmed_by, cancelled, status, attendance_done_before, created_by, created_at, closed_at, clinic:clinics!direct_sales_clinic_id_fkey ( name ), items:direct_sale_items ( id, description, quantity, unit_price_cents, program_discount_cents, final_cents )"
     )
     .order("created_at", { ascending: false })
     .limit(300);
@@ -200,9 +200,12 @@ export default async function VendasDiretasPage(
         quantity: i.quantity,
         finalCents: i.final_cents,
       })),
+      programDiscountCents: s.program_discount_cents ?? 0,
       rule: ruleFor(s.clinic_id),
       canClose,
       isManager,
+      // Proxy na lista: se a venda teve desconto de programa, é membro.
+      isProgramMember: (s.program_discount_cents ?? 0) > 0,
     };
   });
 
@@ -290,6 +293,7 @@ type SaleQueryRow = {
   client_name: string | null;
   subtotal_cents: number;
   discount_cents: number;
+  program_discount_cents: number;
   surcharge_cents: number;
   final_cents: number;
   installments: number;

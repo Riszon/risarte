@@ -19,20 +19,27 @@ async function saleClinic(saleId: string): Promise<{
   clinicId: string;
   subtotalCents: number;
   programDiscountCents: number;
+  isProgramMember: boolean;
 } | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("direct_sales")
-    .select("clinic_id, subtotal_cents, program_discount_cents")
+    .select(
+      "clinic_id, subtotal_cents, program_discount_cents, client:clients!direct_sales_client_id_fkey ( empresarial_company_id, empresarial_active )"
+    )
     .eq("id", saleId)
     .single();
   if (!data) return null;
+  const client = Array.isArray(data.client) ? data.client[0] : data.client;
   return {
     clinicId: data.clinic_id as string,
     subtotalCents: data.subtotal_cents as number,
     // Desconto de PROGRAMA (Empresarial/riso+) tem coluna própria a partir da
     // 0159; o desconto manual é validado sobre (subtotal − programa).
     programDiscountCents: data.program_discount_cents as number,
+    isProgramMember: Boolean(
+      client?.empresarial_company_id && client?.empresarial_active !== false
+    ),
   };
 }
 
@@ -66,6 +73,15 @@ export async function setDirectSaleConditions(
     ? (parseBRLToCents(input.surchargeReais) ?? 0)
     : 0;
   const installments = Math.max(1, Math.floor(input.installments) || 1);
+
+  // Cliente de programa (desconto automático) não recebe desconto manual.
+  if (info.isProgramMember && discountCents > 0) {
+    return {
+      ok: false,
+      error:
+        "Cliente de programa (desconto automático) — não é permitido desconto manual.",
+    };
+  }
 
   const supabase = await createClient();
   const { data: ruleRows } = await supabase
@@ -104,6 +120,12 @@ export async function setDirectSaleConditions(
     const m = error.message;
     if (m.includes("SURCHARGE_MANAGER_ONLY"))
       return { ok: false, error: "Só o Gerente pode aplicar acréscimo." };
+    if (m.includes("PROGRAM_NO_DISCOUNT"))
+      return {
+        ok: false,
+        error:
+          "Cliente de programa (desconto automático) — não é permitido desconto manual.",
+      };
     if (m.includes("ALREADY_CLOSED"))
       return { ok: false, error: "Venda já concluída." };
     console.error("direct_sale_set_conditions failed:", m);

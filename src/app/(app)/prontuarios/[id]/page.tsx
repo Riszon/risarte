@@ -2548,11 +2548,14 @@ export default async function ClientDetailPage(
         {(treatmentSessions.length > 0 ||
           procedureRows.length > 0 ||
           finishedTreatments.length > 0 ||
+          clientDirectSales.sessions.length > 0 ||
           clientDirectSales.sales.length > 0) && (
           <TabPanel id="sessoes" label="Sessões & Procedimentos">
             {/* VD: procedimentos avulsos (venda direta) + fechamento aqui mesmo,
-                sem precisar ir até a tela Comercial. */}
-            {clientDirectSales.sales.length > 0 && (
+                sem precisar ir até a tela Comercial. Os procedimentos aparecem
+                mesmo que a venda ainda não tenha sido carregada. */}
+            {(clientDirectSales.sessions.length > 0 ||
+              clientDirectSales.sales.length > 0) && (
               <div className="mb-4 space-y-2 rounded-xl border bg-muted/20 p-3">
                 <p className="flex items-center gap-1.5 text-sm font-semibold">
                   <span className="text-gold">●</span> Vendas diretas deste cliente
@@ -2570,10 +2573,18 @@ export default async function ClientDetailPage(
                         key={s.id}
                         className="flex items-center justify-between gap-2"
                       >
-                        <span>{s.procedureName}</span>
+                        <span>
+                          {s.procedureName}
+                          {s.state === "done" && s.doneAt && (
+                            <span className="ml-1 text-muted-foreground">
+                              · concluído em{" "}
+                              {new Date(s.doneAt).toLocaleDateString("pt-BR")}
+                            </span>
+                          )}
+                        </span>
                         <span
                           className={cn(
-                            "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
                             s.state === "done"
                               ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                               : s.state === "scheduled"
