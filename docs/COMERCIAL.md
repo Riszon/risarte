@@ -127,7 +127,7 @@ entregue no COM5 v1).
 | Papel | Lançar | Fechar (assinatura + pagamento) |
 |---|---|---|
 | **Gerente** | todos os liberados p/ venda direta | **todos** |
-| **Coordenador Clínico** | todos os liberados p/ venda direta | **nenhum** |
+| **Coordenador Clínico** | todos os liberados p/ venda direta | **nenhum** — e **nem define** pagamento/parcelamento |
 | **Recepcionista** | só os liberados **para recepcionista** | **todos** |
 | **SDR** | só os liberados **para SDR** | só os **liberados p/ SDR** |
 
@@ -165,9 +165,12 @@ entregue no COM5 v1).
   **confirmado**" (só aí a venda é **concluída**, junto com o contrato assinado).
 - **Atendimento obrigatório no lançamento:** o pop-up **exige escolher ou criar**
   o agendamento na hora — não existe venda direta sem atendimento vinculado.
-- **Coordenador Clínico:** lança os procedimentos e a venda fica **"aguardando
-  fechamento"**; a **recepção** (ou gerente) faz assinatura e pagamento — e é
-  **notificada**.
+- **Coordenador Clínico (corrigido pelo dono):** ele **APENAS lança os
+  procedimentos** — é o profissional com o conhecimento técnico, o **responsável
+  técnico**, e precisa estar alinhado com o que foi/será realizado no cliente.
+  Ele **não vê nem define** forma de pagamento e parcelamento. Quem define as
+  condições e faz o **fechamento** é a **Recepcionista ou o Gerente** (a venda
+  fica "aguardando fechamento" e a recepção é **notificada**).
 - Ordem de construção: **VD1** (configuração dos procedimentos + base/permissões)
   → **VD2** (pop-up no prontuário + fechamento + procedimentos em aberto) →
   **VD3** (tela Comercial + notificações + painel de exceções) → números no COM6.

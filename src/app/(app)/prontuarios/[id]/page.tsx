@@ -40,6 +40,8 @@ import {
 } from "./journey-section";
 import { PendingDecision } from "./pending-decision";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
+import { loadDirectSaleContext } from "./direct-sale-loader";
+import { DirectSaleDialog } from "./direct-sale-dialog";
 import {
   getUnitSchedulingData,
   type AgendaFormConfig,
@@ -641,10 +643,19 @@ export default async function ClientDetailPage(
     fichaConfig = schedulingData.config;
   }
 
+  // VD2: contexto da VENDA DIRETA (procedimentos que ESTE usuário pode lançar,
+  // atendimentos para vincular e o desconto do programa já calculado).
+  const directSale = await loadDirectSaleContext(client.id, scheduleClinicId);
+
   // Sessões do tratamento a agendar (E4): gera na Fase 5 e carrega.
   let treatmentSessions: TreatmentSession[] = [];
-  if (client.journey_phase === "treatment_start") {
-    await ensureTreatmentSessions(id);
+  {
+    // As sessões do PLANO só são geradas na Fase 5; mas a VENDA DIRETA cria
+    // procedimentos em aberto em qualquer fase (urgência, consulta avulsa),
+    // então a leitura das sessões acontece sempre.
+    if (client.journey_phase === "treatment_start") {
+      await ensureTreatmentSessions(id);
+    }
     const { data: tsRows } = await supabase
       .from("treatment_sessions")
       .select(
@@ -2116,8 +2127,20 @@ export default async function ClientDetailPage(
               </div>
             </div>
 
-            {(canScheduleFromFicha || (hasApprovedPlan && canPresent)) && (
+            {(canScheduleFromFicha ||
+              (hasApprovedPlan && canPresent) ||
+              directSale.canLaunch) && (
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {/* VD2: venda direta ao lado de "Novo agendamento". */}
+                {directSale.canLaunch && (
+                  <DirectSaleDialog
+                    clientId={client.id}
+                    procedures={directSale.procedures}
+                    appointments={directSale.appointments}
+                    programActive={directSale.programActive}
+                    programName={directSale.programName}
+                  />
+                )}
                 {canScheduleFromFicha && (
                   <AppointmentFormDialog
                     clients={[

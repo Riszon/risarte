@@ -1,6 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.115.0** · Última migração: **0157**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.116.0** · Última migração: **0158**_
+
+> **VENDA DIRETA v2 — VD2: pop-up no prontuário ✅ (v0.116.0, migração 0158):**
+> botão **"Venda Direta"** no prontuário, ao lado de "Novo agendamento", abrindo
+> o **pop-up de lançamento**: vínculo **obrigatório** com um **atendimento** do
+> cliente (se o atendimento já passou, o sistema marca sozinho e mostra o
+> **alerta de fluxo invertido** — o Gerente e o Franqueado são avisados); lança
+> **vários procedimentos** (só os que **aquele usuário** pode lançar, pela
+> configuração do VD1); aplica o **desconto do programa** (Risarte Empresarial)
+> mostrando **valor normal → desconto → valor final**, e avisa quando o total
+> fica **R$ 0,00**. Ao lançar, cria os **procedimentos EM ABERTO** na aba
+> **"Sessões & Procedimentos"** (que agora aparece em **qualquer fase**, não só
+> na Fase 5) para o **dentista dar baixa**; notifica o **Consultor da unidade
+> com o valor** e, quando quem lançou não pode fechar (Coordenador), aciona a
+> **recepção**. Preços e descontos são **recalculados no servidor** (o navegador
+> nunca define valor). RPCs: `create_direct_sale_v2`,
+> `direct_sale_set_conditions`, `direct_sale_close_step`.
+> **Correção do dono:** o Coordenador Clínico **apenas lança** (responsável
+> técnico) — não define pagamento/parcelamento nem fecha; quem fecha é a
+> **Recepcionista ou o Gerente**.
 
 > **VENDA DIRETA v2 — VD1: configuração + base ✅ (v0.115.0, migração 0157):**
 > a spec completa da Venda Direta (passada pelo dono em 23/07) está em
