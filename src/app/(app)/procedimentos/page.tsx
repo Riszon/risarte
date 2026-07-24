@@ -32,6 +32,9 @@ type ProcedureRow = {
   pillar: MethodologyPillar | null;
   estimated_minutes: number | null;
   is_active: boolean;
+  direct_sale: boolean | null;
+  direct_sale_reception: boolean | null;
+  direct_sale_sdr: boolean | null;
 };
 
 const selectClass =
@@ -68,7 +71,7 @@ export default async function ProceduresPage(
   let query = supabase
     .from("procedures")
     .select(
-      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, estimated_minutes, is_active"
+      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, estimated_minutes, is_active, direct_sale, direct_sale_reception, direct_sale_sdr"
     )
     .order("specialty", { nullsFirst: true })
     .order("name")
@@ -140,6 +143,9 @@ export default async function ProceduresPage(
     pillar: p.pillar,
     estimatedMinutes: p.estimated_minutes,
     isActive: p.is_active,
+    directSale: Boolean(p.direct_sale),
+    directSaleReception: Boolean(p.direct_sale_reception),
+    directSaleSdr: Boolean(p.direct_sale_sdr),
   }));
 
   // Lista gerenciável (ativa, na ordem definida) para os seletores; o filtro

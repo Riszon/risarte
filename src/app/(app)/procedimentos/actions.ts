@@ -24,6 +24,10 @@ export type ProcedureInput = {
   commissionPercent: string;
   commissionFixed: string;
   estimatedMinutes: string;
+  /** Venda direta (§7.3): autorizado + quem pode lançar. */
+  directSale: boolean;
+  directSaleReception: boolean;
+  directSaleSdr: boolean;
 };
 
 /** Admin Master and Dentista Planner may manage the procedures catalog. */
@@ -59,6 +63,9 @@ type ParsedProcedure = {
   commission_percent: number;
   commission_fixed_cents: number;
   estimated_minutes: number | null;
+  direct_sale: boolean;
+  direct_sale_reception: boolean;
+  direct_sale_sdr: boolean;
 };
 
 function parseProcedure(
@@ -109,6 +116,10 @@ function parseProcedure(
       commission_percent: percent,
       commission_fixed_cents: fixed,
       estimated_minutes,
+      // Só faz sentido liberar recepção/SDR se o procedimento é de venda direta.
+      direct_sale: input.directSale,
+      direct_sale_reception: input.directSale && input.directSaleReception,
+      direct_sale_sdr: input.directSale && input.directSaleSdr,
     },
   };
 }
@@ -167,6 +178,9 @@ const FIELD_LABELS: Record<keyof ParsedProcedure, string> = {
   commission_percent: "Comissão (%)",
   commission_fixed_cents: "Comissão (R$)",
   estimated_minutes: "Tempo estimado (min)",
+  direct_sale: "Venda direta",
+  direct_sale_reception: "Venda direta — Recepção",
+  direct_sale_sdr: "Venda direta — SDR",
 };
 
 export async function editProcedure(
@@ -184,7 +198,7 @@ export async function editProcedure(
   const { data: old } = await supabase
     .from("procedures")
     .select(
-      "name, tuss_code, specialty, pillar, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, estimated_minutes"
+      "name, tuss_code, specialty, pillar, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, estimated_minutes, direct_sale, direct_sale_reception, direct_sale_sdr"
     )
     .eq("id", id)
     .single();

@@ -37,12 +37,22 @@ const TEMPLATE_HEADERS = [
   "Preço Máximo",
   "Comissão (%)",
   "Comissão (R$)",
+  "Venda Direta",
+  "Venda Direta - Recepção",
+  "Venda Direta - SDR",
 ];
 
 const TEMPLATE_EXAMPLES = [
-  ["Restauração em resina", "85100201", "Dentística", "Função", "40", "250,00", "200,00", "350,00", "10", "0"],
-  ["Clareamento dental", "", "Estética", "Estética", "60", "800,00", "", "", "15", "50,00"],
+  ["Restauração em resina", "85100201", "Dentística", "Função", "40", "250,00", "200,00", "350,00", "10", "0", "Não", "Não", "Não"],
+  ["Clareamento dental", "", "Estética", "Estética", "60", "800,00", "", "", "15", "50,00", "Não", "Não", "Não"],
+  ["Consulta de urgência", "", "Clínica Geral", "Saúde", "30", "150,00", "", "", "0", "0", "Sim", "Sim", "Sim"],
 ];
+
+/** "Sim/S/1/X/true" → true (colunas de Sim/Não da planilha). */
+function parseYesNo(value: string): boolean {
+  const v = norm(value);
+  return v === "sim" || v === "s" || v === "1" || v === "x" || v === "true";
+}
 
 function mapRow(obj: Record<string, unknown>): ProcedureInput {
   const m: Record<string, string> = {};
@@ -70,6 +80,13 @@ function mapRow(obj: Record<string, unknown>): ProcedureInput {
     maxPrice: get("preco maximo"),
     commissionPercent: get("comissao (%)", "comissao %", "comissao percentual"),
     commissionFixed: get("comissao (r$)", "comissao r$", "comissao fixa", "comissao valor"),
+    directSale: parseYesNo(get("venda direta")),
+    directSaleReception: parseYesNo(
+      get("venda direta - recepcao", "venda direta recepcao", "recepcao")
+    ),
+    directSaleSdr: parseYesNo(
+      get("venda direta - sdr", "venda direta sdr", "sdr")
+    ),
   };
 }
 
@@ -106,6 +123,18 @@ export function ImportProcedures() {
         ["Preço Padrão / Mínimo / Máximo", "Em reais (ex.: 250,00)."],
         ["Comissão (%)", "Só o número (ex.: 10)."],
         ["Comissão (R$)", "Em reais (ex.: 50,00)."],
+        [
+          "Venda Direta",
+          'Sim/Não. "Sim" autoriza vender este procedimento direto na clínica (urgência, consulta avulsa, limpeza...), sem passar pelo Centro de Planejamento.',
+        ],
+        [
+          "Venda Direta - Recepção",
+          'Sim/Não. "Sim" permite que a Recepcionista lance este procedimento na venda direta. (Gerente e Coordenador já lançam todos.)',
+        ],
+        [
+          "Venda Direta - SDR",
+          'Sim/Não. "Sim" permite que a SDR lance este procedimento na venda direta (ex.: cobrar a consulta antes de o cliente vir).',
+        ],
       ]);
       help["!cols"] = [{ wch: 30 }, { wch: 70 }];
       XLSX.utils.book_append_sheet(wb, help, "Instruções");

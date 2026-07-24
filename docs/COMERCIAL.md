@@ -101,12 +101,85 @@ própria unidade.
 
 Para casos que não passam por avaliação/planejamento/comercial:
 urgência/emergência, consulta avulsa paga, limpeza, restauração quebrada etc.
+**Spec completa passada pelo dono em 23/07/2026** (substitui a versão simples
+entregue no COM5 v1).
 
-- **Lista configurável** de procedimentos "vendáveis" direto na clínica.
-- **Recepcionista** faz o fechamento; **Coordenador Clínico** lança o
-  procedimento; **Gerente** pode fazer os dois. Ausência de um deles **não
-  trava o fluxo**.
-- **Tudo registrado no módulo comercial** (entra nos números).
+### 7.1 Onde se lança
+- Botão **"VENDA DIRETA"** no **prontuário**, ao lado de "Novo agendamento",
+  abrindo um **pop-up** de lançamento.
+
+### 7.2 Vínculo obrigatório com um ATENDIMENTO
+- Toda venda direta é associada a um **atendimento** (já realizado ou a realizar).
+- Se o procedimento **ainda não foi realizado / está sendo realizado**: indicar
+  **qual atendimento/agendamento** está relacionado.
+- Se **já foi realizado** (urgência/emergência: o profissional atende e depois
+  lança): é **EXCEÇÃO** → **alerta a quem está lançando** + os dados vão para
+  **franqueado, gerente e admin** (por unidade), para a equipe corrigir o fluxo.
+
+### 7.3 Configuração dos procedimentos (Admin, na seção Procedimentos)
+- Cada procedimento tem um **seletor "autorizado para venda direta"**, com
+  **indicador visível** na lista de todos os procedimentos autorizados.
+- Cada procedimento define também **quem pode lançar**: **Recepção** e/ou **SDR**.
+- O **modelo de planilha de importação** precisa ser atualizado com todos os
+  campos já configurados (incluindo os de venda direta).
+
+### 7.4 Autorização por papel
+| Papel | Lançar | Fechar (assinatura + pagamento) |
+|---|---|---|
+| **Gerente** | todos os liberados p/ venda direta | **todos** |
+| **Coordenador Clínico** | todos os liberados p/ venda direta | **nenhum** |
+| **Recepcionista** | só os liberados **para recepcionista** | **todos** |
+| **SDR** | só os liberados **para SDR** | só os **liberados p/ SDR** |
+
+### 7.5 Fechamento (mesma regra de ouro)
+- **Contrato assinado + pagamento realizado/emitido** — igual à venda do Consultor.
+- Quem **solicita a assinatura** e **envia o link de pagamento**: **recepcionista
+  ou SDR**. (A SDR precisa cobrar a consulta **antes** de o cliente vir à clínica
+  — por isso ela tem venda direta.)
+- **Regras comerciais** (rede ou personalizadas da unidade) **valem também aqui**:
+  não permite fechar fora do padrão. **Desconto fora do configurado não é
+  permitido**; **só o Gerente** pode definir **acréscimo** no valor.
+- **Programas** (Risarte Empresarial e, no futuro, o **riso+** de prevenção):
+  obedecem às regras de **descontos, condições de pagamento, prazos e carências**.
+
+### 7.6 Pop-up de lançamento (o que a tela mostra)
+- Lançar **um ou vários procedimentos**; mostra o **total**.
+- Se houver programa com desconto: mostra **preço normal → desconto → valor final**.
+- Mostra as **formas de pagamento e parcelamento permitidos** (seletor já com as
+  parcelas liberadas).
+- Definida a condição de pagamento, **libera emitir o documento para assinatura**
+  e **realizar o pagamento**.
+- Se o **total ficar R$ 0,00** (desconto de programa), o botão de pagamento já
+  marca **pagamento realizado**.
+
+### 7.7 Efeitos no prontuário e no comercial
+- A venda direta **cria procedimentos EM ABERTO** no prontuário, na aba
+  **"Sessões e Procedimentos"**. Quando o procedimento foi lançado **após** o
+  atendimento, o **dentista pode "dar baixa"** (concluído/finalizado).
+- O **Consultor Comercial responsável pela unidade** recebe **notificação** de
+  cada venda direta **com o valor total**; as notificações ganham um **filtro
+  específico de vendas diretas**.
+
+### 7.8 Decisões do dono (23/07/2026)
+- **Pagamento em DOIS passos:** "cobrança emitida" (fica **pendente**) → "pagamento
+  **confirmado**" (só aí a venda é **concluída**, junto com o contrato assinado).
+- **Atendimento obrigatório no lançamento:** o pop-up **exige escolher ou criar**
+  o agendamento na hora — não existe venda direta sem atendimento vinculado.
+- **Coordenador Clínico:** lança os procedimentos e a venda fica **"aguardando
+  fechamento"**; a **recepção** (ou gerente) faz assinatura e pagamento — e é
+  **notificada**.
+- Ordem de construção: **VD1** (configuração dos procedimentos + base/permissões)
+  → **VD2** (pop-up no prontuário + fechamento + procedimentos em aberto) →
+  **VD3** (tela Comercial + notificações + painel de exceções) → números no COM6.
+
+### 7.9 Tela Comercial e Dashboard
+- Na tela **Comercial**: detalhamento de **todas as vendas diretas por unidade**,
+  com filtro **unidade específica × todas** e **período**; mostrar se o
+  **fechamento saiu correto** (assinatura + pagamento), **sinalizando pendências**
+  e o que foi **finalizado/concluído**.
+- No **Dashboard do Comercial**: **quantidade** de vendas diretas, **ticket
+  médio**, **valor total**, **quantidade de procedimentos** e **ranking dos
+  procedimentos mais vendidos**. Consolidado **e** por unidade.
 
 ## 8. Split de pagamento (ponte com o Financeiro)
 

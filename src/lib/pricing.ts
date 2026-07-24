@@ -21,6 +21,14 @@ export type Procedure = {
   /** Estimated execution time in minutes (null = not set). */
   estimatedMinutes: number | null;
   isActive: boolean;
+  /**
+   * Venda direta (docs/COMERCIAL.md §7.3): autorizado + quem pode lançar.
+   * Opcionais porque só o catálogo (/procedimentos) e a venda direta carregam
+   * esses campos — as telas de plano/orçamento não precisam deles.
+   */
+  directSale?: boolean;
+  directSaleReception?: boolean;
+  directSaleSdr?: boolean;
 };
 
 export type UnitPrice = {

@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.114.0** · Última migração: **0156**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.115.0** · Última migração: **0157**_
+
+> **VENDA DIRETA v2 — VD1: configuração + base ✅ (v0.115.0, migração 0157):**
+> a spec completa da Venda Direta (passada pelo dono em 23/07) está em
+> **`docs/COMERCIAL.md` §7** — o COM5 v1 era uma versão simples e será
+> substituída em 3 lotes (VD1 config/base → VD2 pop-up no prontuário + fechamento
+> → VD3 tela Comercial + notificações + exceções). **VD1 entregue:** em
+> **Procedimentos**, cada procedimento ganhou o seletor **"Autorizado para VENDA
+> DIRETA"** + **quem pode lançar (Recepção / SDR)**, com **selo verde indicador**
+> na lista; o **modelo de planilha** de importação ganhou as 3 colunas novas
+> (Sim/Não) e as instruções. Base no banco: `direct_sale_items` (venda com
+> **vários procedimentos**), vínculo com o **atendimento** (`appointment_id`),
+> marca de **exceção** (atendeu antes de vender) e fechamento em **dois passos**
+> (cobrança emitida → pagamento confirmado). Regras puras em
+> `src/lib/direct-sale.ts` (quem lança, quem fecha, e a regra comercial que
+> **bloqueia** o fechamento: desconto só dentro do configurado, **acréscimo só o
+> Gerente**) — **19 testes novos** (91 no total).
 
 > **MÓDULO COMERCIAL — COM5: Venda direta + ajustes ✅ (v0.114.0, migração
 > 0156):** (1) **Venda direta na unidade** (`/comercial/venda-direta`): fluxo

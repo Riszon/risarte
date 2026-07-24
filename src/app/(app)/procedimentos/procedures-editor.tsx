@@ -3,7 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clock, History, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Clock,
+  History,
+  Pencil,
+  Plus,
+  ShoppingCart,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +78,9 @@ const EMPTY: ProcedureInput = {
   commissionPercent: "",
   commissionFixed: "",
   estimatedMinutes: "",
+  directSale: false,
+  directSaleReception: false,
+  directSaleSdr: false,
 };
 
 function toInput(p: Procedure): ProcedureInput {
@@ -89,6 +99,9 @@ function toInput(p: Procedure): ProcedureInput {
       ? centsToInput(p.commissionFixedCents)
       : "",
     estimatedMinutes: p.estimatedMinutes != null ? String(p.estimatedMinutes) : "",
+    directSale: p.directSale ?? false,
+    directSaleReception: p.directSaleReception ?? false,
+    directSaleSdr: p.directSaleSdr ?? false,
   };
 }
 
@@ -209,6 +222,51 @@ function ProcedureFields({
           inputMode="decimal"
           placeholder="(opcional)"
         />
+      </div>
+
+      {/* Venda direta na unidade (docs/COMERCIAL.md §7.3). */}
+      <div className="rounded-lg border bg-muted/30 p-3 sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={value.directSale}
+            onChange={(e) => onChange({ directSale: e.target.checked })}
+          />
+          <ShoppingCart className="size-4" />
+          Autorizado para VENDA DIRETA na unidade
+        </label>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Pode ser vendido direto na clínica (urgência, consulta avulsa,
+          limpeza...), sem passar pelo Centro de Planejamento.
+        </p>
+        {value.directSale && (
+          <div className="mt-2 border-t pt-2">
+            <p className="text-xs text-muted-foreground">
+              Quem pode <strong>lançar</strong> este procedimento? (Gerente e
+              Coordenador Clínico já podem lançar todos.)
+            </p>
+            <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={value.directSaleReception}
+                  onChange={(e) =>
+                    onChange({ directSaleReception: e.target.checked })
+                  }
+                />
+                Recepção
+              </label>
+              <label className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={value.directSaleSdr}
+                  onChange={(e) => onChange({ directSaleSdr: e.target.checked })}
+                />
+                SDR
+              </label>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1117,6 +1175,28 @@ function ProcedureRow({
             {p.pillar && (
               <Badge className="ml-2 bg-gold text-gold-foreground text-[10px]">
                 {PILLAR_LABELS[p.pillar]}
+              </Badge>
+            )}
+            {/* Indicador de venda direta + quem pode lançar (§7.3). */}
+            {p.directSale && (
+              <Badge
+                variant="outline"
+                className="ml-2 gap-1 border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800"
+                title="Autorizado para venda direta na unidade"
+              >
+                <ShoppingCart className="size-3" />
+                Venda direta
+                {(p.directSaleReception || p.directSaleSdr) && (
+                  <span className="opacity-80">
+                    ·{" "}
+                    {[
+                      p.directSaleReception && "Recepção",
+                      p.directSaleSdr && "SDR",
+                    ]
+                      .filter(Boolean)
+                      .join(" + ")}
+                  </span>
+                )}
               </Badge>
             )}
           </p>
