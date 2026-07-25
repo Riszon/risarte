@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.125.0** · Última migração: **0160**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.126.0** · Última migração: **0160**_
+
+> **Dashboard — Total Geral + composição + período específico ✅ (v0.126.0, sem
+> migração):** o topo agora abre com o **TOTAL GERAL de vendas** (quantidade e
+> R$, somando **fluxo comercial + venda direta**, com ticket médio geral). A
+> antiga seção separada de vendas diretas virou **"Composição das vendas"**: uma
+> **barra proporcional** + **tabela comparativa** (qtd, **% da quantidade**,
+> valor, **% do valor** e ticket médio de cada origem, com a linha TOTAL GERAL),
+> e dois cartões clicáveis — **Vendas do fluxo comercial** e **Vendas diretas
+> concluídas** — que abrem a lista de quem comprou. **Aguardando fechamento** e
+> **Valor aguardando** passaram a **incluir as vendas diretas pendentes**, e na
+> lista cada uma aparece com o selo **"Venda direta"** + o que falta (contrato/
+> pagamento). O filtro de período ganhou **período específico (de/até)**. Regra:
+> venda direta só conta como realizada com **contrato assinado + pagamento
+> confirmado**.
 
 > **Dashboard comercial — cartões que abrem a lista ✅ (v0.124.0/0.125.0, sem
 > migração):** clicar no cartão abre um **pop-up com os clientes por trás do

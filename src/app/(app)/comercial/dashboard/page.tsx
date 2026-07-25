@@ -37,16 +37,21 @@ import {
 
 export const metadata: Metadata = { title: "Dashboard comercial" };
 
-const PERIODS = ["hoje", "semana", "mes", "tudo"] as const;
+const PERIODS = ["hoje", "semana", "mes", "tudo", "custom"] as const;
 type Period = (typeof PERIODS)[number];
 const PERIOD_LABELS: Record<Period, string> = {
   hoje: "Hoje",
   semana: "Esta semana",
   mes: "Este mês",
   tudo: "Tudo",
+  custom: "Período escolhido",
 };
-function periodStart(p: Period): string | null {
+/** Chips do topo (o período específico tem controle próprio). */
+const QUICK_PERIODS = ["hoje", "semana", "mes", "tudo"] as const;
+
+function periodStart(p: Period, de?: string): string | null {
   const now = new Date();
+  if (p === "custom") return de ? new Date(`${de}T00:00:00`).toISOString() : null;
   if (p === "hoje")
     return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   if (p === "semana") {
@@ -56,6 +61,15 @@ function periodStart(p: Period): string | null {
   }
   if (p === "mes") return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   return null;
+}
+/** Fim do período (só no período escolhido) — inclui o dia inteiro do "até". */
+function periodEnd(p: Period, ate?: string): string | null {
+  if (p !== "custom" || !ate) return null;
+  return new Date(`${ate}T23:59:59.999`).toISOString();
+}
+function fmtBr(d: string): string {
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y}`;
 }
 
 export default async function DashboardComercialPage(
@@ -87,9 +101,15 @@ export default async function DashboardComercialPage(
   const sp = await props.searchParams;
   const unidadeParam = Array.isArray(sp.unidade) ? sp.unidade[0] : sp.unidade;
   const periodParam = Array.isArray(sp.periodo) ? sp.periodo[0] : sp.periodo;
-  const period: Period = PERIODS.includes(periodParam as Period)
-    ? (periodParam as Period)
-    : "mes";
+  const deParam = Array.isArray(sp.de) ? sp.de[0] : sp.de;
+  const ateParam = Array.isArray(sp.ate) ? sp.ate[0] : sp.ate;
+  const period: Period =
+    // "Período escolhido" só vale com as duas datas preenchidas.
+    periodParam === "custom" && deParam && ateParam
+      ? "custom"
+      : PERIODS.includes(periodParam as Period) && periodParam !== "custom"
+        ? (periodParam as Period)
+        : "mes";
 
   let clinicFilter: string | null;
   if (!canSeeAllUnits) clinicFilter = activeClinicId;
@@ -97,7 +117,8 @@ export default async function DashboardComercialPage(
   else if (unidadeParam) clinicFilter = unidadeParam;
   else clinicFilter = activeIsUnit ? activeClinicId : null;
 
-  const start = periodStart(period);
+  const start = periodStart(period, deParam);
+  const end = periodEnd(period, ateParam);
   await logAudit({
     action: "view",
     entityType: "commercial_dashboard",
@@ -126,6 +147,7 @@ export default async function DashboardComercialPage(
     );
   if (clinicFilter) negQuery = negQuery.eq("clinic_id", clinicFilter);
   if (start) negQuery = negQuery.gte("created_at", start);
+  if (end) negQuery = negQuery.lte("created_at", end);
   const { data: negRows } = await negQuery;
   const negs = (negRows ?? []) as {
     client_id: string;
@@ -186,8 +208,10 @@ export default async function DashboardComercialPage(
       n.status === "aguardando_autorizacao" ||
       (n.status === "aceita" && !closedClientIds.has(n.client_id))
   );
-  const awaitingCount = openNegs.length;
-  const awaitingTotal = openNegs.reduce((s, n) => s + n.final_cents, 0);
+  // Aguardando fechamento do COMERCIAL (as vendas diretas pendentes entram
+  // logo abaixo, depois que a consulta delas roda).
+  const awaitingNegCount = openNegs.length;
+  const awaitingNegTotal = openNegs.reduce((s, n) => s + n.final_cents, 0);
 
   // -- Listas por trás dos cartões (pop-up ao clicar) -------------------------
   // Follow-up, perdidos e cancelados vêm do cartão do funil; as vendas e o
@@ -204,6 +228,7 @@ export default async function DashboardComercialPage(
     .in("stage", ["perdido", "cancelado"]);
   if (clinicFilter) closedCardsQuery = closedCardsQuery.eq("clinic_id", clinicFilter);
   if (start) closedCardsQuery = closedCardsQuery.gte("updated_at", start);
+  if (end) closedCardsQuery = closedCardsQuery.lte("updated_at", end);
 
   const [{ data: followDetailRows }, { data: closedCardRows }] = await Promise.all([
     followQueryRows,
@@ -297,14 +322,13 @@ export default async function DashboardComercialPage(
       aceita: { label: "Aceita — falta assinar/pagar", tone: "emerald" },
     };
 
-  const awaitingItems: DrillItem[] = openNegs
-    .map((n) => ({
-      ...base(n.client_id),
-      badge: NEG_BADGE[n.status]?.label ?? n.status,
-      badgeTone: NEG_BADGE[n.status]?.tone ?? "muted",
-      valueCents: n.final_cents,
-    }))
-    .sort((a, b) => (b.valueCents ?? 0) - (a.valueCents ?? 0));
+  const awaitingNegItems: DrillItem[] = openNegs.map((n) => ({
+    ...base(n.client_id),
+    badge: NEG_BADGE[n.status]?.label ?? n.status,
+    badgeTone: NEG_BADGE[n.status]?.tone ?? "muted",
+    valueCents: n.final_cents,
+    note: "Fluxo comercial",
+  }));
 
   const soldItemsList: DrillItem[] = accepted
     .map((n) => ({
@@ -478,17 +502,25 @@ export default async function DashboardComercialPage(
   let dsQuery = supabase
     .from("direct_sales")
     .select(
-      "id, final_cents, status, cancelled, items:direct_sale_items ( description, quantity, final_cents, procedure_id )"
+      "id, client_id, client_name, clinic_id, final_cents, status, cancelled, contract_signed, payment_confirmed, closed_at, created_at, items:direct_sale_items ( description, quantity, final_cents, procedure_id )"
     )
     .neq("cancelled", true);
   if (clinicFilter) dsQuery = dsQuery.eq("clinic_id", clinicFilter);
   if (start) dsQuery = dsQuery.gte("created_at", start);
+  if (end) dsQuery = dsQuery.lte("created_at", end);
   const { data: dsRows } = await dsQuery;
   const ds = (dsRows ?? []) as {
     id: string;
+    client_id: string | null;
+    client_name: string | null;
+    clinic_id: string;
     final_cents: number;
     status: string;
     cancelled: boolean;
+    contract_signed: boolean;
+    payment_confirmed: boolean;
+    closed_at: string | null;
+    created_at: string;
     items:
       | {
           description: string;
@@ -498,13 +530,69 @@ export default async function DashboardComercialPage(
         }[]
       | null;
   }[];
-  const dsCount = ds.length;
-  const dsTotal = ds.reduce((s, d) => s + d.final_cents, 0);
+  // Venda direta CONCLUÍDA = contrato assinado + pagamento confirmado (regra de
+  // ouro). As demais entram no "aguardando fechamento", junto com o comercial.
+  const dsClosed = ds.filter((d) => d.closed_at != null);
+  const dsPending = ds.filter((d) => d.closed_at == null);
+  const dsCount = dsClosed.length;
+  const dsTotal = dsClosed.reduce((s, d) => s + d.final_cents, 0);
   const dsTicket = dsCount > 0 ? Math.round(dsTotal / dsCount) : 0;
-  const dsProcCount = ds.reduce(
+  const dsProcCount = dsClosed.reduce(
     (s, d) => s + (d.items ?? []).reduce((a, i) => a + i.quantity, 0),
     0
   );
+  const dsPendingCount = dsPending.length;
+  const dsPendingTotal = dsPending.reduce((s, d) => s + d.final_cents, 0);
+
+  // -- TOTAL GERAL (comercial + venda direta) --------------------------------
+  const grandCount = salesCount + dsCount;
+  const grandTotal = salesTotal + dsTotal;
+  const grandTicket = grandCount > 0 ? Math.round(grandTotal / grandCount) : 0;
+  const pct = (part: number, whole: number) =>
+    whole > 0 ? (part / whole) * 100 : 0;
+  const share = {
+    comercialValue: pct(salesTotal, grandTotal),
+    comercialCount: pct(salesCount, grandCount),
+    diretaValue: pct(dsTotal, grandTotal),
+    diretaCount: pct(dsCount, grandCount),
+  };
+
+  // -- Aguardando fechamento: COMERCIAL + VENDAS DIRETAS ----------------------
+  const dsAwaitingItems: DrillItem[] = dsPending.map((d) => ({
+    clientId: d.client_id ?? "",
+    clientName: d.client_name ?? "Cliente avulso",
+    code: null,
+    clinicName:
+      unitOptions.find((u) => u.id === d.clinic_id)?.name ??
+      (clinicFilter ? null : null),
+    badge: "Venda direta",
+    badgeTone: "rose" as const,
+    valueCents: d.final_cents,
+    note: [
+      d.contract_signed ? "contrato assinado" : "falta contrato",
+      d.payment_confirmed ? "pago" : "falta pagamento",
+    ].join(" · "),
+  }));
+  const awaitingItems: DrillItem[] = [...awaitingNegItems, ...dsAwaitingItems]
+    .filter((i) => i.clientId !== "")
+    .sort((a, b) => (b.valueCents ?? 0) - (a.valueCents ?? 0));
+  const awaitingCount = awaitingNegCount + dsPendingCount;
+  const awaitingTotal = awaitingNegTotal + dsPendingTotal;
+
+  // Lista das vendas diretas concluídas (drill do cartão).
+  const dsSoldItems: DrillItem[] = dsClosed
+    .map((d) => ({
+      clientId: d.client_id ?? "",
+      clientName: d.client_name ?? "Cliente avulso",
+      code: null,
+      clinicName: unitOptions.find((u) => u.id === d.clinic_id)?.name ?? null,
+      badge: "Venda direta",
+      badgeTone: "rose" as const,
+      valueCents: d.final_cents,
+      note: `${(d.items ?? []).reduce((a, i) => a + i.quantity, 0)} procedimento(s)`,
+    }))
+    .filter((i) => i.clientId !== "")
+    .sort((a, b) => (b.valueCents ?? 0) - (a.valueCents ?? 0));
   // -- Ranking de procedimentos + vendas por especialidade --------------------
   // Origem: "direta" (venda direta), "comercial" (planos vendidos) ou "todos".
   const origemParam = Array.isArray(sp.origem) ? sp.origem[0] : sp.origem;
@@ -530,6 +618,7 @@ export default async function DashboardComercialPage(
       .eq("status", "aceita");
     if (clinicFilter) negItemsQuery = negItemsQuery.eq("clinic_id", clinicFilter);
     if (start) negItemsQuery = negItemsQuery.gte("created_at", start);
+    if (end) negItemsQuery = negItemsQuery.lte("created_at", end);
     const { data: negItemRows } = await negItemsQuery;
     type NegItem = {
       description: string;
@@ -621,6 +710,10 @@ export default async function DashboardComercialPage(
     const p = new URLSearchParams();
     p.set("unidade", unidade ?? "all");
     p.set("periodo", pd);
+    if (pd === "custom") {
+      if (deParam) p.set("de", deParam);
+      if (ateParam) p.set("ate", ateParam);
+    }
     return `/comercial/dashboard?${p.toString()}`;
   };
   /** Mantém a unidade escolhida ao trocar só o período. */
@@ -631,9 +724,17 @@ export default async function DashboardComercialPage(
     const p = new URLSearchParams();
     p.set("unidade", clinicFilter ?? "all");
     p.set("periodo", period);
+    if (period === "custom") {
+      if (deParam) p.set("de", deParam);
+      if (ateParam) p.set("ate", ateParam);
+    }
     p.set("origem", o);
     return `/comercial/dashboard?${p.toString()}`;
   };
+  const periodDescription =
+    period === "custom" && deParam && ateParam
+      ? `${fmtBr(deParam)} a ${fmtBr(ateParam)}`
+      : PERIOD_LABELS[period];
 
 
   const maxPay = Math.max(1, ...[...byPayment.values()].map((v) => v.total));
@@ -663,7 +764,7 @@ export default async function DashboardComercialPage(
                 Dashboard
               </h1>
               <p className="mt-0.5 text-sm text-primary-foreground/70">
-                {unitLabel} · {PERIOD_LABELS[period]}
+                {unitLabel} · {periodDescription}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -715,7 +816,7 @@ export default async function DashboardComercialPage(
               <span className="w-16 shrink-0 text-primary-foreground/60">
                 Período
               </span>
-              {PERIODS.map((pd) => (
+              {QUICK_PERIODS.map((pd) => (
                 <DarkChip
                   key={pd}
                   label={PERIOD_LABELS[pd]}
@@ -723,6 +824,51 @@ export default async function DashboardComercialPage(
                   active={period === pd}
                 />
               ))}
+              {/* Período específico (de/até) — aplica ao enviar. */}
+              <form
+                method="get"
+                action="/comercial/dashboard"
+                className="flex flex-wrap items-center gap-1.5"
+              >
+                <input type="hidden" name="unidade" value={clinicFilter ?? "all"} />
+                <input type="hidden" name="periodo" value="custom" />
+                <input
+                  type="date"
+                  name="de"
+                  defaultValue={deParam ?? ""}
+                  aria-label="Data inicial"
+                  className={cn(
+                    "h-7 rounded-full border bg-transparent px-2 text-xs",
+                    period === "custom"
+                      ? "border-gold text-primary-foreground"
+                      : "border-primary-foreground/25 text-primary-foreground/80"
+                  )}
+                />
+                <span className="text-primary-foreground/50">a</span>
+                <input
+                  type="date"
+                  name="ate"
+                  defaultValue={ateParam ?? ""}
+                  aria-label="Data final"
+                  className={cn(
+                    "h-7 rounded-full border bg-transparent px-2 text-xs",
+                    period === "custom"
+                      ? "border-gold text-primary-foreground"
+                      : "border-primary-foreground/25 text-primary-foreground/80"
+                  )}
+                />
+                <button
+                  type="submit"
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 transition-colors",
+                    period === "custom"
+                      ? "border-gold bg-gold font-medium text-gold-foreground"
+                      : "border-primary-foreground/25 text-primary-foreground/80 hover:bg-primary-foreground/10"
+                  )}
+                >
+                  Aplicar
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -735,22 +881,19 @@ export default async function DashboardComercialPage(
           title="Resultado do período"
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <DrillCard
+          <Kpi
             tone="emerald"
-            icon="check"
-            label="Vendas fechadas"
-            value={String(salesCount)}
-            hint={`${totalOpp} oportunidade(s) no período`}
-            items={soldItemsList}
-            dialogTitle="Vendas fechadas"
-            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            icon={<Trophy className="size-4" />}
+            label="TOTAL GERAL de vendas"
+            value={String(grandCount)}
+            hint={`comercial ${salesCount} + direta ${dsCount}`}
           />
           <Kpi
             tone="gold"
             icon={<Wallet className="size-4" />}
-            label="Valor total vendido"
-            value={formatBRL(salesTotal)}
-            hint={`ticket médio ${formatBRL(ticket)}`}
+            label="TOTAL GERAL em R$"
+            value={formatBRL(grandTotal)}
+            hint={`ticket médio geral ${formatBRL(grandTicket)}`}
           />
           <Kpi
             tone="sky"
@@ -787,7 +930,7 @@ export default async function DashboardComercialPage(
             hint="negociações sem contrato/pagamento"
             items={awaitingItems}
             dialogTitle="Aguardando fechamento"
-            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            scopeLabel={`${unitLabel} · ${periodDescription}`}
           />
           <DrillCard
             tone="amber"
@@ -797,7 +940,7 @@ export default async function DashboardComercialPage(
             hint="potencial a fechar"
             items={awaitingItems}
             dialogTitle="Aguardando fechamento"
-            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            scopeLabel={`${unitLabel} · ${periodDescription}`}
           />
           <DrillCard
             tone="amber"
@@ -835,7 +978,7 @@ export default async function DashboardComercialPage(
             hint="clientes que não fecharam"
             items={lostItems}
             dialogTitle="Clientes perdidos"
-            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            scopeLabel={`${unitLabel} · ${periodDescription}`}
             emptyValueLabel="Total de perdidos"
           />
           <DrillCard
@@ -846,7 +989,7 @@ export default async function DashboardComercialPage(
             hint="negociações canceladas"
             items={cancelledItems}
             dialogTitle="Clientes cancelados"
-            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            scopeLabel={`${unitLabel} · ${periodDescription}`}
             emptyValueLabel="Total de cancelados"
           />
         </div>
@@ -986,46 +1129,167 @@ export default async function DashboardComercialPage(
         </Card>
       </section>
 
-      {/* -- Vendas diretas -------------------------------------------------- */}
+      {/* -- Composição das vendas: comercial × direta ----------------------- */}
       <section className="space-y-3">
         <SectionTitle
-          icon={<Store className="size-4 text-gold" />}
-          title="Vendas diretas na unidade"
+          icon={<Layers className="size-4" />}
+          title="Composição das vendas"
           action={
             <Link
               href="/comercial/venda-direta"
               className="text-xs text-primary hover:underline"
             >
-              ver todas →
+              ver vendas diretas →
             </Link>
           }
         />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Kpi
-            tone="gold"
-            icon={<Store className="size-4" />}
-            label="Vendas"
-            value={String(dsCount)}
-          />
-          <Kpi
-            tone="gold"
-            icon={<Wallet className="size-4" />}
-            label="Valor total"
-            value={formatBRL(dsTotal)}
-          />
-          <Kpi
-            tone="gold"
-            icon={<TicketPercent className="size-4" />}
-            label="Ticket médio"
-            value={formatBRL(dsTicket)}
-          />
-          <Kpi
-            tone="gold"
-            icon={<Stethoscope className="size-4" />}
-            label="Procedimentos"
-            value={String(dsProcCount)}
-          />
-        </div>
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            {/* Barra única mostrando a divisão do faturamento. */}
+            <div>
+              <div className="flex h-3 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="bg-sky-500"
+                  style={{ width: `${share.comercialValue}%` }}
+                  title={`Comercial ${share.comercialValue.toFixed(0)}%`}
+                />
+                <div
+                  className="bg-gold"
+                  style={{ width: `${share.diretaValue}%` }}
+                  title={`Venda direta ${share.diretaValue.toFixed(0)}%`}
+                />
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-sky-500" />
+                  Fluxo comercial (consultor)
+                  <span className="size-2 rounded-full bg-gold" />
+                  Venda direta (clínica)
+                </span>
+                <span>
+                  Total geral: <strong>{formatBRL(grandTotal)}</strong> ·{" "}
+                  <strong>{grandCount}</strong> venda(s)
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="py-1.5 font-medium">Origem</th>
+                    <th className="py-1.5 text-right font-medium">Qtd.</th>
+                    <th className="py-1.5 text-right font-medium">% qtd.</th>
+                    <th className="py-1.5 text-right font-medium">Valor</th>
+                    <th className="py-1.5 text-right font-medium">% valor</th>
+                    <th className="py-1.5 text-right font-medium">Ticket médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-sky-500" />
+                        Fluxo comercial
+                      </span>
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">{salesCount}</td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                      {share.comercialCount.toFixed(0)}%
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatBRL(salesTotal)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                      {share.comercialValue.toFixed(0)}%
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatBRL(ticket)}
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-gold" />
+                        Venda direta
+                        <span className="text-xs text-muted-foreground">
+                          ({dsProcCount} proc.)
+                        </span>
+                      </span>
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">{dsCount}</td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                      {share.diretaCount.toFixed(0)}%
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatBRL(dsTotal)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                      {share.diretaValue.toFixed(0)}%
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatBRL(dsTicket)}
+                    </td>
+                  </tr>
+                  <tr className="font-semibold">
+                    <td className="py-1.5">TOTAL GERAL</td>
+                    <td className="py-1.5 text-right tabular-nums">{grandCount}</td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                      100%
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatBRL(grandTotal)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                      100%
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatBRL(grandTicket)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Ver quem comprou em cada origem. */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <DrillCard
+                tone="sky"
+                icon="check"
+                label="Vendas do fluxo comercial"
+                value={String(salesCount)}
+                hint={`${formatBRL(salesTotal)} · ${share.comercialValue.toFixed(0)}% do total`}
+                items={soldItemsList}
+                dialogTitle="Vendas do fluxo comercial"
+                scopeLabel={`${unitLabel} · ${periodDescription}`}
+              />
+              <DrillCard
+                tone="gold"
+                icon="check"
+                label="Vendas diretas concluídas"
+                value={String(dsCount)}
+                hint={`${formatBRL(dsTotal)} · ${share.diretaValue.toFixed(0)}% do total`}
+                items={dsSoldItems}
+                dialogTitle="Vendas diretas concluídas"
+                scopeLabel={`${unitLabel} · ${periodDescription}`}
+              />
+            </div>
+
+            <p className="border-t pt-2 text-xs text-muted-foreground">
+              Venda direta conta como realizada quando o{" "}
+              <strong>contrato está assinado e o pagamento confirmado</strong>; as
+              pendentes aparecem em &quot;Aguardando fechamento&quot;
+              {dsPendingCount > 0 && (
+                <>
+                  {" "}
+                  (<strong>{dsPendingCount}</strong> agora,{" "}
+                  {formatBRL(dsPendingTotal)})
+                </>
+              )}
+              .
+            </p>
+          </CardContent>
+        </Card>
       </section>
 
       {/* -- Especialidade + ranking ---------------------------------------- */}
