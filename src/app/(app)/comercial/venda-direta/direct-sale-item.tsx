@@ -52,12 +52,21 @@ export type DirectSaleRow = {
   attendanceDoneBefore: boolean;
   createdByName: string | null;
   createdAt: string;
-  items: { description: string; quantity: number; finalCents: number }[];
+  items: {
+    description: string;
+    quantity: number;
+    unitPriceCents: number;
+    programDiscountCents: number;
+    finalCents: number;
+  }[];
   rule: CommercialRule;
   canClose: boolean;
   isManager: boolean;
   /** Cliente de programa com desconto automático → sem desconto manual (§7.5). */
   isProgramMember: boolean;
+  /** Quem fez cada passo do fechamento (para o detalhe). */
+  contractSignedByName: string | null;
+  paymentConfirmedByName: string | null;
 };
 
 type AdjustMode = "none" | "desc_reais" | "desc_pct" | "acresc";
@@ -229,17 +238,89 @@ export function SaleItem({
 
       {expanded && (
         <div className="mt-3 space-y-3 border-t pt-3">
+          {/* Itens: valor normal → desconto do programa → final. */}
           <ul className="space-y-0.5 text-xs">
-            {sale.items.map((i, idx) => (
-              <li key={idx} className="flex justify-between">
-                <span>
-                  {i.description}
-                  {i.quantity > 1 ? ` ×${i.quantity}` : ""}
-                </span>
-                <span className="tabular-nums">{formatBRL(i.finalCents)}</span>
-              </li>
-            ))}
+            {sale.items.map((i, idx) => {
+              const full = i.unitPriceCents * i.quantity;
+              const hasProg = i.programDiscountCents > 0;
+              return (
+                <li key={idx} className="flex justify-between gap-2">
+                  <span className="min-w-0">
+                    {i.description}
+                    {i.quantity > 1 ? ` ×${i.quantity}` : ""}
+                    {hasProg && (
+                      <span className="ml-1 text-gold">
+                        ★ −{formatBRL(i.programDiscountCents)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 tabular-nums">
+                    {hasProg && (
+                      <span className="mr-1 text-muted-foreground line-through">
+                        {formatBRL(full)}
+                      </span>
+                    )}
+                    {formatBRL(i.finalCents)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
+
+          {/* Resumo: programa + parcela. */}
+          <div className="space-y-0.5 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+            {sale.programDiscountCents > 0 && (
+              <div className="flex justify-between text-gold">
+                <span>★ Desconto do programa</span>
+                <span className="tabular-nums">
+                  − {formatBRL(sale.programDiscountCents)}
+                </span>
+              </div>
+            )}
+            {sale.discountCents > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Desconto</span>
+                <span className="tabular-nums">
+                  − {formatBRL(sale.discountCents)}
+                </span>
+              </div>
+            )}
+            {sale.surchargeCents > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Acréscimo</span>
+                <span className="tabular-nums">
+                  + {formatBRL(sale.surchargeCents)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between font-medium">
+              <span>Total</span>
+              <span className="tabular-nums">{formatBRL(sale.finalCents)}</span>
+            </div>
+            {sale.installments > 1 && sale.finalCents > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Parcelamento</span>
+                <span className="tabular-nums">
+                  {sale.installments}× de{" "}
+                  {formatBRL(Math.round(sale.finalCents / sale.installments))}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Quem fez o fechamento (discreto). */}
+          {(sale.contractSignedByName || sale.paymentConfirmedByName) && (
+            <p className="text-[11px] text-muted-foreground">
+              {sale.contractSignedByName &&
+                `Contrato: ${sale.contractSignedByName}`}
+              {sale.contractSignedByName && sale.paymentConfirmedByName
+                ? " · "
+                : ""}
+              {sale.paymentConfirmedByName &&
+                `Pagamento: ${sale.paymentConfirmedByName}`}
+            </p>
+          )}
+
           {showClientLink && sale.clientId && (
             <Link
               href={`/prontuarios/${sale.clientId}`}

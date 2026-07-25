@@ -42,6 +42,7 @@ import { PendingDecision } from "./pending-decision";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
 import { DirectSaleDialog } from "./direct-sale-dialog";
+import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
 import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
 import {
   getUnitSchedulingData,
@@ -2566,42 +2567,7 @@ export default async function ClientDetailPage(
                   procedimento vira uma sessão (em aberto ou já concluído, quando
                   o atendimento já foi realizado).
                 </p>
-                {clientDirectSales.sessions.length > 0 && (
-                  <ul className="space-y-1 rounded-lg border bg-background p-2 text-xs">
-                    {clientDirectSales.sessions.map((s) => (
-                      <li
-                        key={s.id}
-                        className="flex items-center justify-between gap-2"
-                      >
-                        <span>
-                          {s.procedureName}
-                          {s.state === "done" && s.doneAt && (
-                            <span className="ml-1 text-muted-foreground">
-                              · concluído em{" "}
-                              {new Date(s.doneAt).toLocaleDateString("pt-BR")}
-                            </span>
-                          )}
-                        </span>
-                        <span
-                          className={cn(
-                            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                            s.state === "done"
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                              : s.state === "scheduled"
-                                ? "border-sky-300 bg-sky-50 text-sky-700"
-                                : "border-amber-300 bg-amber-50 text-amber-700"
-                          )}
-                        >
-                          {s.state === "done"
-                            ? "Concluído"
-                            : s.state === "scheduled"
-                              ? "Agendado"
-                              : "Em aberto"}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <DirectSaleSessionsList sessions={clientDirectSales.sessions} />
                 {clientDirectSales.sales.map((s) => (
                   <SaleItem
                     key={s.id}

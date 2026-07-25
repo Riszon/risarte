@@ -198,6 +198,8 @@ export default async function VendasDiretasPage(
       items: (s.items ?? []).map((i) => ({
         description: i.description,
         quantity: i.quantity,
+        unitPriceCents: i.unit_price_cents,
+        programDiscountCents: i.program_discount_cents,
         finalCents: i.final_cents,
       })),
       programDiscountCents: s.program_discount_cents ?? 0,
@@ -206,6 +208,12 @@ export default async function VendasDiretasPage(
       isManager,
       // Proxy na lista: se a venda teve desconto de programa, é membro.
       isProgramMember: (s.program_discount_cents ?? 0) > 0,
+      contractSignedByName: s.contract_signed_by
+        ? (names.get(s.contract_signed_by) ?? null)
+        : null,
+      paymentConfirmedByName: s.payment_confirmed_by
+        ? (names.get(s.payment_confirmed_by) ?? null)
+        : null,
     };
   });
 

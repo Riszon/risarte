@@ -191,6 +191,7 @@ export type DirectSaleSession = {
   state: "open" | "scheduled" | "done";
   doneAt: string | null;
   executorName: string | null;
+  providerName: string | null;
   appointmentAt: string | null;
 };
 
@@ -209,17 +210,19 @@ export async function loadClientDirectSales(
     supabase
       .from("direct_sales")
       .select(
-        "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, payment_issued, payment_confirmed, cancelled, status, attendance_done_before, created_by, created_at, closed_at"
+        "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_confirmed, payment_confirmed_by, cancelled, status, attendance_done_before, created_by, created_at, closed_at"
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
     supabase
       .from("direct_sale_items")
-      .select("id, sale_id, description, quantity, final_cents"),
+      .select(
+        "id, sale_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
+      ),
     supabase
       .from("treatment_sessions")
       .select(
-        "id, procedure_name, status, done_at, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status )"
+        "id, procedure_name, status, done_at, executed_by, appointment:appointments!treatment_sessions_appointment_id_fkey ( starts_at, status, provider:profiles!appointments_provider_user_id_fkey ( full_name ) )"
       )
       .eq("client_id", clientId)
       .is("plan_id", null)
@@ -241,18 +244,28 @@ export async function loadClientDirectSales(
   // Itens agrupados por venda (busca separada — embeds são o ponto frágil).
   const itemsBySale = new Map<
     string,
-    { description: string; quantity: number; final_cents: number }[]
+    {
+      description: string;
+      quantity: number;
+      unit_price_cents: number;
+      program_discount_cents: number;
+      final_cents: number;
+    }[]
   >();
   for (const it of (itemRes.data ?? []) as {
     sale_id: string;
     description: string;
     quantity: number;
+    unit_price_cents: number;
+    program_discount_cents: number;
     final_cents: number;
   }[]) {
     const list = itemsBySale.get(it.sale_id) ?? [];
     list.push({
       description: it.description,
       quantity: it.quantity,
+      unit_price_cents: it.unit_price_cents,
+      program_discount_cents: it.program_discount_cents,
       final_cents: it.final_cents,
     });
     itemsBySale.set(it.sale_id, list);
@@ -268,9 +281,16 @@ export async function loadClientDirectSales(
 
   const idsForNames = [
     ...new Set(
-      (saleRows ?? [])
-        .map((s) => s.created_by as string | null)
-        .filter((x): x is string => Boolean(x))
+      [
+        ...(saleRows ?? []).flatMap((s) => [
+          s.created_by as string | null,
+          s.contract_signed_by as string | null,
+          s.payment_confirmed_by as string | null,
+        ]),
+        ...(sessRows ?? []).map(
+          (r) => (r as { executed_by: string | null }).executed_by
+        ),
+      ].filter((x): x is string => Boolean(x))
     ),
   ];
   const names = new Map<string, string>();
@@ -314,14 +334,23 @@ export async function loadClientDirectSales(
     items: (itemsBySale.get(s.id as string) ?? []).map((i) => ({
       description: i.description,
       quantity: i.quantity,
+      unitPriceCents: i.unit_price_cents,
+      programDiscountCents: i.program_discount_cents,
       finalCents: i.final_cents,
     })),
     rule,
     canClose,
     isManager,
     isProgramMember,
+    contractSignedByName: s.contract_signed_by
+      ? (names.get(s.contract_signed_by as string) ?? null)
+      : null,
+    paymentConfirmedByName: s.payment_confirmed_by
+      ? (names.get(s.payment_confirmed_by as string) ?? null)
+      : null,
   }));
 
+  type SessProvider = { full_name: string } | { full_name: string }[] | null;
   const sessions: DirectSaleSession[] = (
     (sessRows ?? []) as {
       id: string;
@@ -330,12 +359,14 @@ export async function loadClientDirectSales(
       done_at: string | null;
       executed_by: string | null;
       appointment:
-        | { starts_at: string; status: string }
-        | { starts_at: string; status: string }[]
+        | { starts_at: string; status: string; provider: SessProvider }
+        | { starts_at: string; status: string; provider: SessProvider }[]
         | null;
     }[]
   ).map((r) => {
     const ap = Array.isArray(r.appointment) ? r.appointment[0] : r.appointment;
+    const provRaw = ap?.provider ?? null;
+    const prov = Array.isArray(provRaw) ? provRaw[0] : provRaw;
     const isScheduled =
       ap != null && (ap.status === "scheduled" || ap.status === "confirmed");
     return {
@@ -343,7 +374,8 @@ export async function loadClientDirectSales(
       procedureName: r.procedure_name,
       state: r.status === "done" ? "done" : isScheduled ? "scheduled" : "open",
       doneAt: r.done_at,
-      executorName: null,
+      executorName: r.executed_by ? (names.get(r.executed_by) ?? null) : null,
+      providerName: prov?.full_name ?? null,
       appointmentAt: ap?.starts_at ?? null,
     };
   });

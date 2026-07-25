@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.119.0** · Última migração: **0160**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.120.0** · Última migração: **0160**_
+
+> **VENDA DIRETA v2 — detalhes e discrição ✅ (v0.120.0, sem migração):** (1)
+> **valor da parcela** aparece no fechamento e no detalhe ("Nx de R$ Y"). (2)
+> Cliente do **Risarte Empresarial** mostra **valor original → desconto do
+> programa → final** por item e no total. (3) A lista de procedimentos da venda
+> direta ganhou **detalhes** (concluído por quem/quando, agendado com quem e
+> para quando) + **quem fez o fechamento** (contrato/pagamento). (4) Tudo com
+> **"Ver detalhes / Ocultar detalhes"** — some por padrão para não ocupar espaço,
+> sem perder a informação; vendas concluídas já vêm recolhidas.
 
 > **VENDA DIRETA v2 — ajustes 2 ✅ (v0.119.0, migração 0160):** (1) **Bug do
 > procedimento que não aparecia:** o carregamento das vendas do cliente engolia
