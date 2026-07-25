@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.127.1** · Última migração: **0161**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.128.0** · Última migração: **0162**_
+
+> **PPR+ — PPR1: fundação ✅ (v0.128.0, migração 0162):** começou o **Programa
+> de Prevenção Riso+**, o módulo que antecede o Financeiro. Especificação
+> completa em **`docs/PPR.md`** (o que é o programa, os 4 planos, o que é
+> configurável, venda, situações, prontuário, motor de benefícios, cartão,
+> dashboard, ranking, Riso+ Social e as **12 decisões do dono**). A migração
+> 0162 cria toda a base: `ppr_plans` (+ vantagens, faixas de desconto por
+> parcelamento e benefícios por procedimento), `ppr_settings` (inadimplência em
+> cascata), `ppr_memberships`, `ppr_beneficiaries`, `ppr_charges`,
+> `ppr_benefit_usages`, `ppr_events`, `ppr_social_points`, os campos
+> `ppr_membership_id`/`ppr_active`/`referred_by_client_id` no cliente, a RLS de
+> todas elas, os **4 planos já cadastrados** com valores e vantagens, e os
+> gatilhos que mantêm o **selo PPR+ do prontuário** em dia (cancelou → sai do
+> selo e fica só no histórico). As regras puras ficam em `src/lib/ppr/`
+> (mensalidade, dependentes, parcela mínima, tabela de desconto, carência,
+> frequência, inadimplência 30/90, pontos sociais e "melhor benefício" entre
+> PPR+ e Empresarial), com **36 testes novos** (129 no total).
+> **Próximo: PPR2** — seção `/ppr` com "Sobre o programa" + configuração.
 
 > **Dashboard — quebra por origem nos 4 cartões do topo ✅ (v0.127.1, sem
 > migração):** **TOTAL GERAL de vendas**, **TOTAL GERAL em R$**, **Aguardando

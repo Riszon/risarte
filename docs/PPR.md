@@ -68,8 +68,9 @@ São **4 planos iniciais**, mas o módulo permite **criar novos planos** e
 
 ## 3. O que é configurável (tela de configuração do PPR+)
 
-Tudo abaixo é editável pelo Admin, no padrão **cascata** já usado na rede
-(padrão da rede + ajuste por unidade):
+Tudo abaixo é editável pelo Admin. **Os valores dos planos são da rede** — só a
+Franqueadora define, a unidade não ajusta (decisão 9). As regras de
+inadimplência seguem o padrão cascata (rede + ajuste por unidade):
 
 - **Planos:** criar, renomear, ativar/desativar, ordenar; descrição comercial.
 - **Valor** de cada plano (mensalidade) e **valor do dependente extra**.
@@ -95,6 +96,9 @@ Tudo abaixo é editável pelo Admin, no padrão **cascata** já usado na rede
 
 - É vendido para o **cliente Risarte**, pela **própria unidade (venda direta)**
   ou pelo **comercial**.
+- **Quem vende:** **Consultor Comercial** no fluxo comercial; **Recepcionista,
+  Gerente de Unidade e Coordenador Clínico** na venda direta. A **SDR não
+  vende**. **Cancelar/suspender:** Gerente de Unidade e Admin Master.
 - Em ambos os fluxos existe o botão **"Oferecer PPR+"**, que abre a venda do
   programa (escolha do plano, titular, dependentes e grau de parentesco, forma
   de pagamento recorrente e dia da cobrança).
@@ -239,6 +243,34 @@ o selo do prontuário e as consultas ficarem baratas.
 
 ---
 
-## 14. Decisões confirmadas pelo dono
+## 14. Decisões confirmadas pelo dono (25/07/2026)
 
-_(preenchido conforme as respostas chegarem)_
+1. **Valor do plano = mensalidade.** Não existe taxa de adesão única; o cliente
+   entra pagando o primeiro mês.
+2. **Parcela mínima = valor mínimo da parcela** (ex.: nenhuma parcela abaixo de
+   R$ X). O sistema reduz o número de parcelas até respeitar esse piso.
+3. **Desconto no parcelado = tabela por número de parcelas** (ex.: até 6× =
+   15%, até 12× = 10%, até 18× = 5%), configurável por plano. O sistema aplica
+   sozinho — ninguém negocia dentro da faixa.
+4. **Cliente em dois programas (PPR+ e Empresarial):** vale o **melhor
+   benefício para o cliente**, procedimento a procedimento. **Nunca soma.**
+5. **Ativação:** só com **contrato assinado + primeira mensalidade confirmada**
+   (regra de ouro). **A carência conta a partir da ativação.**
+6. **Inadimplência:** **30 dias** de atraso **suspende** (perde os benefícios);
+   **90 dias** (3 mensalidades) **cancela**. Configurável.
+7. **Indicações:** criar o campo **"Indicado por"** no cadastro do cliente; os
+   benefícios do indicado (consulta sem custo e 5% no 1º tratamento) passam a
+   ser aplicados automaticamente.
+8. **Dependentes:** cadastrados na hora da venda (nome, nascimento, grau de
+   parentesco); **CPF opcional** para menor de idade; pertencem à **mesma
+   unidade do titular**.
+9. **Preço igual em toda a rede.** Só a Franqueadora define o valor dos planos;
+   a unidade não ajusta (sem cascata nos valores do PPR+).
+10. **Quem vende:** **Consultor Comercial** (pelo fluxo comercial);
+    **Recepcionista, Gerente e Coordenador Clínico** (pelo fluxo de venda
+    direta). A **SDR não vende** o PPR+. **Cancelar/suspender: Gerente de
+    Unidade e Admin Master.**
+11. **Escova a cada limpeza:** o sistema **controla a entrega** ("escova
+    entregue" no atendimento da limpeza).
+12. **Riso+ Social:** pontos **proporcionais ao valor pago**, configuráveis por
+    plano; o **Light não pontua**.
