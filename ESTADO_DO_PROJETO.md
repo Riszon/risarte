@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.122.0** · Última migração: **0160**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.123.0** · Última migração: **0160**_
+
+> **Dashboard comercial — redesenho visual ✅ (v0.123.0, sem migração):** a tela
+> foi reorganizada em **seções com título** (Resultado do período · Em aberto ·
+> Ciclo de vendas · Pagamento/Pilar · Vendas diretas · Especialidade/Ranking).
+> **Cabeçalho navy** com a marca, o contexto ("Todas as unidades · Este mês") e
+> os **filtros embutidos** (chips dourados quando ativos). Os números viraram
+> **cartões com ícone colorido, faixa de cor no topo e uma linha de contexto**
+> (ex.: "ticket médio R$ X"), com **barra de progresso** na taxa de conversão.
+> As listas (pagamento, pilar, especialidade, ranking) ganharam **barras
+> proporcionais**, medalha nos 3 primeiros e "média" ao lado; o ciclo de vendas
+> e o ticket por tipo de cliente ficaram em **caixas comparativas**. Sem mudança
+> nos números — só apresentação.
 
 > **Dashboard comercial v2 + preço da unidade visível ✅ (v0.122.0, sem
 > migração):** (1) **Procedimentos:** no modo REDE a lista agora avisa quando

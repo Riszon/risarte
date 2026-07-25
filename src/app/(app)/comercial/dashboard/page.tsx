@@ -1,11 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, BarChart3, Store } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  CreditCard,
+  Hourglass,
+  Layers,
+  Percent,
+  PhoneCall,
+  Stethoscope,
+  Store,
+  TicketPercent,
+  Timer,
+  Trophy,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
+import { RisarteMark } from "@/components/risarte-logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
@@ -458,390 +475,676 @@ export default async function DashboardComercialPage(
     return `/comercial/dashboard?${p.toString()}`;
   };
 
+
+  const maxPay = Math.max(1, ...[...byPayment.values()].map((v) => v.total));
+  const maxPillar = Math.max(1, ...[...byPillar.values()].map((v) => v.total));
+  const maxSpec = Math.max(1, ...specialtyTop.map(([, v]) => v.total));
+  const maxRank = Math.max(1, ...rankingTop.map(([, v]) => v.qty));
+  const unitLabel =
+    clinicFilter === null
+      ? "Todas as unidades"
+      : (unitOptions.find((u) => u.id === clinicFilter)?.name ??
+        session.activeClinic?.name ??
+        "Unidade");
+
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-4 py-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <BarChart3 className="size-6 text-gold" />
-            Dashboard comercial
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Conversão, ticket médio, descontos, formas de pagamento, por pilar e
-            as vendas diretas — consolidado e por unidade.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/comercial/venda-direta" />}
-          >
-            <Store className="mr-1 size-3.5" />
-            Vendas diretas
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/comercial" />}
-          >
-            <ArrowLeft className="mr-1 size-3.5" />
-            Funil
-          </Button>
-        </div>
-      </div>
-
-      {/* Filtros. */}
-      <div className="space-y-2 text-xs">
-        {canSeeAllUnits && unitOptions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground">Unidade:</span>
-            <Chip label="Todas" href={chipHref(null, period)} active={clinicFilter === null} />
-            {unitOptions.map((u) => (
-              <Chip
-                key={u.id}
-                label={u.name}
-                href={chipHref(u.id, period)}
-                active={clinicFilter === u.id}
-              />
-            ))}
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+      {/* -- Cabeçalho + filtros num painel só ----------------------------- */}
+      <div className="relative overflow-hidden rounded-2xl border bg-primary text-primary-foreground">
+        <RisarteMark className="pointer-events-none absolute -top-4 -right-6 h-40 text-gold/10" />
+        <div className="relative space-y-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-primary-foreground/60">
+                <BarChart3 className="size-3.5" />
+                Comercial
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Dashboard
+              </h1>
+              <p className="mt-0.5 text-sm text-primary-foreground/70">
+                {unitLabel} · {PERIOD_LABELS[period]}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+                nativeButton={false}
+                render={<Link href="/comercial/venda-direta" />}
+              >
+                <Store className="mr-1 size-3.5" />
+                Vendas diretas
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+                nativeButton={false}
+                render={<Link href="/comercial" />}
+              >
+                <ArrowLeft className="mr-1 size-3.5" />
+                Funil
+              </Button>
+            </div>
           </div>
-        )}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-muted-foreground">Período:</span>
-          {PERIODS.map((pd) => (
-            <Chip
-              key={pd}
-              label={PERIOD_LABELS[pd]}
-              href={periodHref(pd)}
-              active={period === pd}
-            />
-          ))}
+
+          <div className="space-y-2 border-t border-primary-foreground/15 pt-3 text-xs">
+            {canSeeAllUnits && unitOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="w-16 shrink-0 text-primary-foreground/60">
+                  Unidade
+                </span>
+                <DarkChip
+                  label="Todas"
+                  href={chipHref(null, period)}
+                  active={clinicFilter === null}
+                />
+                {unitOptions.map((u) => (
+                  <DarkChip
+                    key={u.id}
+                    label={u.name}
+                    href={chipHref(u.id, period)}
+                    active={clinicFilter === u.id}
+                  />
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="w-16 shrink-0 text-primary-foreground/60">
+                Período
+              </span>
+              {PERIODS.map((pd) => (
+                <DarkChip
+                  key={pd}
+                  label={PERIOD_LABELS[pd]}
+                  href={periodHref(pd)}
+                  active={period === pd}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Indicadores principais. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Vendas (fechadas)" value={String(salesCount)} />
-        <Stat label="Valor total" value={formatBRL(salesTotal)} />
-        <Stat label="Ticket médio" value={formatBRL(ticket)} />
-        <Stat label="Taxa de conversão" value={`${conversion.toFixed(0)}%`} />
-        <Stat label="Oportunidades" value={String(totalOpp)} />
-        <Stat label="Perdas" value={String(lost)} />
-        <Stat label="Em follow-up" value={String(inFollowup)} amber={inFollowup > 0} />
-        <Stat
-          label="Parcelamento médio"
-          value={avgInstallments > 0 ? `${avgInstallments.toFixed(1)}×` : "—"}
+      {/* -- Resultado do período ------------------------------------------ */}
+      <section className="space-y-3">
+        <SectionTitle
+          icon={<Trophy className="size-4" />}
+          title="Resultado do período"
         />
-      </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi
+            tone="emerald"
+            icon={<CheckCircle2 className="size-4" />}
+            label="Vendas fechadas"
+            value={String(salesCount)}
+            hint={`${totalOpp} oportunidade(s) no período`}
+          />
+          <Kpi
+            tone="gold"
+            icon={<Wallet className="size-4" />}
+            label="Valor total vendido"
+            value={formatBRL(salesTotal)}
+            hint={`ticket médio ${formatBRL(ticket)}`}
+          />
+          <Kpi
+            tone="sky"
+            icon={<Percent className="size-4" />}
+            label="Taxa de conversão"
+            value={`${conversion.toFixed(0)}%`}
+            hint={`${lost} perda(s)`}
+            progress={conversion}
+          />
+          <Kpi
+            tone="violet"
+            icon={<CreditCard className="size-4" />}
+            label="Ticket médio da parcela"
+            value={avgInstallmentTicket > 0 ? formatBRL(avgInstallmentTicket) : "—"}
+            hint={
+              avgInstallments > 0
+                ? `parcelamento médio ${avgInstallments.toFixed(1)}×`
+                : "sem parcelamento no período"
+            }
+          />
+        </div>
+      </section>
 
-      {/* Aguardando fechamento + ticket do parcelamento + ciclo de vendas. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat
-          label="Aguardando fechamento"
-          value={String(awaitingCount)}
-          amber={awaitingCount > 0}
-        />
-        <Stat
-          label="Valor aguardando"
-          value={formatBRL(awaitingTotal)}
-          amber={awaitingCount > 0}
-        />
-        <Stat
-          label="Ticket médio da parcela"
-          value={avgInstallmentTicket > 0 ? formatBRL(avgInstallmentTicket) : "—"}
-        />
-        <Stat
-          label="Desconto concedido"
-          value={formatBRL(discountTotal)}
-        />
-      </div>
+      {/* -- Em aberto ------------------------------------------------------ */}
+      <section className="space-y-3">
+        <SectionTitle icon={<Hourglass className="size-4" />} title="Em aberto" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi
+            tone={awaitingCount > 0 ? "amber" : "muted"}
+            icon={<Hourglass className="size-4" />}
+            label="Aguardando fechamento"
+            value={String(awaitingCount)}
+            hint="negociações sem contrato/pagamento"
+          />
+          <Kpi
+            tone={awaitingTotal > 0 ? "amber" : "muted"}
+            icon={<Wallet className="size-4" />}
+            label="Valor aguardando"
+            value={formatBRL(awaitingTotal)}
+            hint="potencial a fechar"
+          />
+          <Kpi
+            tone={inFollowup > 0 ? "amber" : "muted"}
+            icon={<PhoneCall className="size-4" />}
+            label="Em follow-up"
+            value={String(inFollowup)}
+            hint="clientes em contato ativo"
+          />
+          <Kpi
+            tone="muted"
+            icon={<TicketPercent className="size-4" />}
+            label="Desconto concedido"
+            value={formatBRL(discountTotal)}
+            hint="nas vendas fechadas"
+          />
+        </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Ciclo de vendas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>
-                Clientes novos{" "}
-                <span className="text-xs text-muted-foreground">
-                  (cadastro → início do tratamento)
-                </span>
-              </span>
-              <span className="font-medium tabular-nums">
-                {cycleNewDays.length > 0 ? `${cycleNew} dias` : "—"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>
-                Clientes Risarte{" "}
-                <span className="text-xs text-muted-foreground">
-                  (reavaliação → novo tratamento)
-                </span>
-              </span>
-              <span className="font-medium tabular-nums">
-                {cycleReturnDays.length > 0 ? `${cycleReturn} dias` : "—"}
-              </span>
-            </div>
-            <p className="border-t pt-2 text-xs text-muted-foreground">
-              Média de dias das vendas fechadas no período ({cycleNewDays.length}{" "}
-              novo(s) · {cycleReturnDays.length} Risarte).
+      {/* -- Ciclo de vendas + ticket por tipo de cliente ------------------- */}
+      <section className="grid gap-4 md:grid-cols-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <Timer className="size-4 text-primary" />
+              Ciclo de vendas
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Tempo médio até o tratamento começar.
             </p>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3">
+            <CycleBox
+              label="Clientes novos"
+              caption="cadastro → início"
+              days={cycleNewDays.length > 0 ? cycleNew : null}
+              count={cycleNewDays.length}
+              tone="sky"
+            />
+            <CycleBox
+              label="Clientes Risarte"
+              caption="reavaliação → novo tratamento"
+              days={cycleReturnDays.length > 0 ? cycleReturn : null}
+              count={cycleReturnDays.length}
+              tone="gold"
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
+        <Card className="overflow-hidden">
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <Users className="size-4 text-primary" />
               Ticket médio por tipo de cliente
             </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Quanto vale, em média, cada venda fechada.
+            </p>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>
-                Clientes novos{" "}
-                <span className="text-xs text-muted-foreground">
-                  ({newSales.length})
-                </span>
-              </span>
-              <span className="font-medium tabular-nums">
-                {newSales.length > 0 ? formatBRL(ticketNew) : "—"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>
-                Clientes Risarte{" "}
-                <span className="text-xs text-muted-foreground">
-                  ({returnSales.length})
-                </span>
-              </span>
-              <span className="font-medium tabular-nums">
-                {returnSales.length > 0 ? formatBRL(ticketReturn) : "—"}
-              </span>
-            </div>
+          <CardContent className="space-y-3">
+            <CompareRow
+              label="Clientes novos"
+              count={newSales.length}
+              valueCents={newSales.length > 0 ? ticketNew : null}
+              max={Math.max(ticketNew, ticketReturn, 1)}
+              tone="sky"
+            />
+            <CompareRow
+              label="Clientes Risarte"
+              count={returnSales.length}
+              valueCents={returnSales.length > 0 ? ticketReturn : null}
+              max={Math.max(ticketNew, ticketReturn, 1)}
+              tone="gold"
+            />
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Por tipo de pagamento. */}
+      {/* -- Pagamento + pilar ---------------------------------------------- */}
+      <section className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Por tipo de pagamento</CardTitle>
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <CreditCard className="size-4 text-primary" />
+              Por tipo de pagamento
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Como os clientes pagaram no período.
+            </p>
           </CardHeader>
           <CardContent>
             {byPayment.size === 0 ? (
               <Empty />
             ) : (
-              <ul className="space-y-1 text-sm">
+              <ul className="space-y-2.5">
                 {[...byPayment.entries()]
                   .sort((a, b) => b[1].total - a[1].total)
                   .map(([k, v]) => (
-                    <li key={k} className="flex justify-between">
-                      <span>
-                        {k === "—"
+                    <BarRow
+                      key={k}
+                      label={
+                        k === "—"
                           ? "Não informado"
-                          : PAYMENT_METHOD_LABELS[k as PaymentMethod] ?? k}{" "}
-                        <span className="text-xs text-muted-foreground">
-                          ({v.count})
-                        </span>
-                      </span>
-                      <span className="tabular-nums">{formatBRL(v.total)}</span>
-                    </li>
+                          : (PAYMENT_METHOD_LABELS[k as PaymentMethod] ?? k)
+                      }
+                      count={v.count}
+                      valueCents={v.total}
+                      pct={(v.total / maxPay) * 100}
+                      tone="violet"
+                    />
                   ))}
               </ul>
             )}
-            <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-              Desconto total concedido:{" "}
-              <strong>{formatBRL(discountTotal)}</strong>
-            </p>
           </CardContent>
         </Card>
 
-        {/* Por pilar. */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Por pilar da metodologia</CardTitle>
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <Layers className="size-4 text-primary" />
+              Por pilar da metodologia
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Onde está o valor vendido.
+            </p>
           </CardHeader>
           <CardContent>
             {byPillar.size === 0 ? (
               <Empty />
             ) : (
-              <ul className="space-y-1 text-sm">
+              <ul className="space-y-2.5">
                 {[...byPillar.entries()]
                   .sort((a, b) => b[1].total - a[1].total)
                   .map(([k, v]) => (
-                    <li key={k} className="flex justify-between">
-                      <span>
-                        {k === "sem_pilar"
+                    <BarRow
+                      key={k}
+                      label={
+                        k === "sem_pilar"
                           ? "Sem pilar"
-                          : PILLAR_LABELS[k as MethodologyPillar]}{" "}
-                        <span className="text-xs text-muted-foreground">
-                          ({v.count})
-                        </span>
-                      </span>
-                      <span className="tabular-nums">{formatBRL(v.total)}</span>
-                    </li>
+                          : PILLAR_LABELS[k as MethodologyPillar]
+                      }
+                      count={v.count}
+                      valueCents={v.total}
+                      pct={(v.total / maxPillar) * 100}
+                      tone="gold"
+                    />
                   ))}
               </ul>
             )}
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      {/* Vendas diretas. */}
-      <Card className="border-gold/40">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-1.5 text-base">
-            <Store className="size-4 text-gold" />
-            Vendas diretas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Vendas" value={String(dsCount)} />
-            <Stat label="Valor total" value={formatBRL(dsTotal)} />
-            <Stat label="Ticket médio" value={formatBRL(dsTicket)} />
-            <Stat label="Procedimentos" value={String(dsProcCount)} />
-          </div>
-        </CardContent>
-      </Card>
+      {/* -- Vendas diretas -------------------------------------------------- */}
+      <section className="space-y-3">
+        <SectionTitle
+          icon={<Store className="size-4 text-gold" />}
+          title="Vendas diretas na unidade"
+          action={
+            <Link
+              href="/comercial/venda-direta"
+              className="text-xs text-primary hover:underline"
+            >
+              ver todas →
+            </Link>
+          }
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi
+            tone="gold"
+            icon={<Store className="size-4" />}
+            label="Vendas"
+            value={String(dsCount)}
+          />
+          <Kpi
+            tone="gold"
+            icon={<Wallet className="size-4" />}
+            label="Valor total"
+            value={formatBRL(dsTotal)}
+          />
+          <Kpi
+            tone="gold"
+            icon={<TicketPercent className="size-4" />}
+            label="Ticket médio"
+            value={formatBRL(dsTicket)}
+          />
+          <Kpi
+            tone="gold"
+            icon={<Stethoscope className="size-4" />}
+            label="Procedimentos"
+            value={String(dsProcCount)}
+          />
+        </div>
+      </section>
 
-      {/* Vendas por especialidade. */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Vendas por especialidade</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {specialtyTop.length === 0 ? (
-            <Empty />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b text-left text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="py-1 font-medium">Especialidade</th>
-                    <th className="py-1 text-right font-medium">Proc.</th>
-                    <th className="py-1 text-right font-medium">Valor total</th>
-                    <th className="py-1 text-right font-medium">Ticket médio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {specialtyTop.map(([name, v]) => (
-                    <tr key={name} className="border-b last:border-0">
-                      <td className="py-1">{name}</td>
-                      <td className="py-1 text-right tabular-nums">{v.qty}</td>
-                      <td className="py-1 text-right tabular-nums">
-                        {formatBRL(v.total)}
-                      </td>
-                      <td className="py-1 text-right tabular-nums">
-                        {formatBRL(Math.round(v.total / Math.max(1, v.qty)))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* -- Especialidade + ranking ---------------------------------------- */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <Stethoscope className="size-4 text-primary" />
+              Vendas por especialidade
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Valor vendido e ticket médio de cada área.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {specialtyTop.length === 0 ? (
+              <Empty />
+            ) : (
+              <ul className="space-y-2.5">
+                {specialtyTop.map(([name, v]) => (
+                  <BarRow
+                    key={name}
+                    label={name}
+                    count={v.qty}
+                    valueCents={v.total}
+                    ticketCents={Math.round(v.total / Math.max(1, v.qty))}
+                    pct={(v.total / maxSpec) * 100}
+                    tone="emerald"
+                  />
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-1.5 text-base">
+                <Trophy className="size-4 text-gold" />
+                Procedimentos mais vendidos
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Quantidade, valor total e ticket médio.
+              </p>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Ranking de procedimentos mais vendidos (com filtro de origem). */}
-      <Card>
-        <CardHeader className="gap-2">
-          <CardTitle className="text-base">
-            Procedimentos mais vendidos
-          </CardTitle>
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">Origem:</span>
-            <Chip
-              label="Todos"
-              href={rankingHref("todos")}
-              active={origem === "todos"}
-            />
-            <Chip
-              label="Fluxo comercial"
-              href={rankingHref("comercial")}
-              active={origem === "comercial"}
-            />
-            <Chip
-              label="Vendas diretas"
-              href={rankingHref("direta")}
-              active={origem === "direta"}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {rankingTop.length === 0 ? (
-            <Empty />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b text-left text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="py-1 font-medium">Procedimento</th>
-                    <th className="py-1 text-right font-medium">Qtd.</th>
-                    <th className="py-1 text-right font-medium">Valor total</th>
-                    <th className="py-1 text-right font-medium">Ticket médio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rankingTop.map(([name, v], i) => (
-                    <tr key={name} className="border-b last:border-0">
-                      <td className="py-1">
-                        <span className="mr-1 text-xs text-muted-foreground">
-                          {i + 1}.
-                        </span>
-                        {name}
-                      </td>
-                      <td className="py-1 text-right tabular-nums">{v.qty}×</td>
-                      <td className="py-1 text-right tabular-nums">
-                        {formatBRL(v.total)}
-                      </td>
-                      <td className="py-1 text-right tabular-nums">
-                        {formatBRL(Math.round(v.total / Math.max(1, v.qty)))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">Origem:</span>
+              <Chip
+                label="Todos"
+                href={rankingHref("todos")}
+                active={origem === "todos"}
+              />
+              <Chip
+                label="Fluxo comercial"
+                href={rankingHref("comercial")}
+                active={origem === "comercial"}
+              />
+              <Chip
+                label="Vendas diretas"
+                href={rankingHref("direta")}
+                active={origem === "direta"}
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {rankingTop.length === 0 ? (
+              <Empty />
+            ) : (
+              <ul className="space-y-2.5">
+                {rankingTop.map(([name, v], i) => (
+                  <BarRow
+                    key={name}
+                    rank={i + 1}
+                    label={name}
+                    count={v.qty}
+                    countSuffix="×"
+                    valueCents={v.total}
+                    ticketCents={Math.round(v.total / Math.max(1, v.qty))}
+                    pct={(v.qty / maxRank) * 100}
+                    tone="sky"
+                  />
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  amber,
+// ---------------------------------------------------------------------------
+// Peças visuais do dashboard
+// ---------------------------------------------------------------------------
+
+type Tone = "gold" | "emerald" | "sky" | "violet" | "amber" | "muted";
+
+const TONE_ACCENT: Record<Tone, string> = {
+  gold: "bg-gold",
+  emerald: "bg-emerald-500",
+  sky: "bg-sky-500",
+  violet: "bg-violet-500",
+  amber: "bg-amber-500",
+  muted: "bg-muted-foreground/40",
+};
+const TONE_ICON: Record<Tone, string> = {
+  gold: "bg-gold/15 text-gold-foreground",
+  emerald: "bg-emerald-500/10 text-emerald-700",
+  sky: "bg-sky-500/10 text-sky-700",
+  violet: "bg-violet-500/10 text-violet-700",
+  amber: "bg-amber-500/15 text-amber-700",
+  muted: "bg-muted text-muted-foreground",
+};
+
+function SectionTitle({
+  icon,
+  title,
+  action,
 }: {
-  label: string;
-  value: string;
-  amber?: boolean;
+  icon: React.ReactNode;
+  title: string;
+  action?: React.ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "rounded-lg border p-3",
-        amber && "border-amber-300 bg-amber-50"
+    <div className="flex items-center justify-between gap-2">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon}
+        {title}
+      </h2>
+      {action}
+    </div>
+  );
+}
+
+/** Cartão de indicador: ícone colorido, número grande e uma linha de contexto. */
+function Kpi({
+  tone,
+  icon,
+  label,
+  value,
+  hint,
+  progress,
+}: {
+  tone: Tone;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint?: string;
+  /** 0–100: desenha uma barrinha embaixo (ex.: taxa de conversão). */
+  progress?: number;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+      <span
+        className={cn("absolute inset-x-0 top-0 h-1", TONE_ACCENT[tone])}
+        aria-hidden
+      />
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <span
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-lg",
+            TONE_ICON[tone]
+          )}
+          aria-hidden
+        >
+          {icon}
+        </span>
+      </div>
+      <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+        {value}
+      </p>
+      {progress != null && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn("h-full rounded-full", TONE_ACCENT[tone])}
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
+        </div>
       )}
-    >
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      {hint && <p className="mt-1.5 text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+/** Linha com barra proporcional — usada nas listas (pagamento, pilar, ranking). */
+function BarRow({
+  rank,
+  label,
+  count,
+  countSuffix = "",
+  valueCents,
+  ticketCents,
+  pct,
+  tone,
+}: {
+  rank?: number;
+  label: string;
+  count: number;
+  countSuffix?: string;
+  valueCents: number;
+  ticketCents?: number;
+  pct: number;
+  tone: Tone;
+}) {
+  return (
+    <li>
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          {rank != null && (
+            <span
+              className={cn(
+                "grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-semibold",
+                rank <= 3
+                  ? "bg-gold/20 text-gold-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {rank}
+            </span>
+          )}
+          <span className="truncate">{label}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {count}
+            {countSuffix}
+          </span>
+        </span>
+        <span className="shrink-0 text-sm font-medium tabular-nums">
+          {formatBRL(valueCents)}
+        </span>
+      </div>
+      <div className="mt-1 flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn("h-full rounded-full", TONE_ACCENT[tone])}
+            style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}
+          />
+        </div>
+        {ticketCents != null && (
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+            média {formatBRL(ticketCents)}
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/** Caixa do ciclo de vendas (número de dias em destaque). */
+function CycleBox({
+  label,
+  caption,
+  days,
+  count,
+  tone,
+}: {
+  label: string;
+  caption: string;
+  days: number | null;
+  count: number;
+  tone: Tone;
+}) {
+  return (
+    <div className="rounded-xl border p-3">
+      <span
+        className={cn("mb-2 block h-1 w-8 rounded-full", TONE_ACCENT[tone])}
+        aria-hidden
+      />
+      <p className="text-sm font-medium">{label}</p>
+      <p className="text-[11px] text-muted-foreground">{caption}</p>
+      <p className="mt-1.5 text-2xl font-semibold tabular-nums">
+        {days != null ? days : "—"}
+        {days != null && (
+          <span className="ml-1 text-xs font-normal text-muted-foreground">
+            dias
+          </span>
+        )}
+      </p>
+      <p className="text-[11px] text-muted-foreground">
+        {count} venda(s) no período
+      </p>
+    </div>
+  );
+}
+
+/** Linha comparativa (ticket novo × Risarte) com barra proporcional. */
+function CompareRow({
+  label,
+  count,
+  valueCents,
+  max,
+  tone,
+}: {
+  label: string;
+  count: number;
+  valueCents: number | null;
+  max: number;
+  tone: Tone;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span>
+          {label} <span className="text-xs text-muted-foreground">({count})</span>
+        </span>
+        <span className="font-semibold tabular-nums">
+          {valueCents != null ? formatBRL(valueCents) : "—"}
+        </span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn("h-full rounded-full", TONE_ACCENT[tone])}
+          style={{
+            width: `${valueCents != null ? Math.min(100, Math.max(3, (valueCents / max) * 100)) : 0}%`,
+          }}
+        />
+      </div>
     </div>
   );
 }
 
 function Empty() {
   return (
-    <p className="py-2 text-center text-sm text-muted-foreground">
+    <p className="py-4 text-center text-sm text-muted-foreground">
       Nada no período.
     </p>
   );
@@ -860,8 +1163,35 @@ function Chip({
     <Link
       href={href}
       className={cn(
-        "rounded-full border px-2 py-0.5 transition-colors",
-        active ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"
+        "rounded-full border px-2.5 py-0.5 transition-colors",
+        active
+          ? "border-primary bg-primary/10 font-medium text-primary"
+          : "hover:bg-muted"
+      )}
+    >
+      {label}
+    </Link>
+  );
+}
+
+/** Chip para o cabeçalho escuro (navy). */
+function DarkChip({
+  label,
+  href,
+  active,
+}: {
+  label: string;
+  href: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "rounded-full border px-2.5 py-0.5 transition-colors",
+        active
+          ? "border-gold bg-gold font-medium text-gold-foreground"
+          : "border-primary-foreground/25 text-primary-foreground/80 hover:bg-primary-foreground/10"
       )}
     >
       {label}
