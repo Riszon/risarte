@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { RisarteMark } from "@/components/risarte-logo";
+import { AwaitingDialog, type AwaitingItem } from "./awaiting-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
@@ -188,6 +189,45 @@ export default async function DashboardComercialPage(
   );
   const awaitingCount = openNegs.length;
   const awaitingTotal = openNegs.reduce((s, n) => s + n.final_cents, 0);
+
+  // Detalhe do "aguardando fechamento" (pop-up ao clicar no cartão): quem são
+  // os clientes e quanto vale cada um. Respeita o filtro de unidade/período.
+  const awaitingItems: AwaitingItem[] = [];
+  if (openNegs.length > 0) {
+    const ids = [...new Set(openNegs.map((n) => n.client_id))];
+    const { data: cliRows } = await supabase
+      .from("clients")
+      .select(
+        "id, full_name, code, clinic:clinics!clients_clinic_id_fkey ( name )"
+      )
+      .in("id", ids);
+    const infoById = new Map<string, { name: string; code: string | null; clinic: string | null }>();
+    for (const c of (cliRows ?? []) as {
+      id: string;
+      full_name: string;
+      code: string | null;
+      clinic: { name: string } | { name: string }[] | null;
+    }[]) {
+      const cl = Array.isArray(c.clinic) ? c.clinic[0] : c.clinic;
+      infoById.set(c.id, {
+        name: c.full_name,
+        code: c.code,
+        clinic: cl?.name ?? null,
+      });
+    }
+    for (const n of openNegs) {
+      const info = infoById.get(n.client_id);
+      awaitingItems.push({
+        clientId: n.client_id,
+        clientName: info?.name ?? "Cliente",
+        code: info?.code ?? null,
+        clinicName: info?.clinic ?? null,
+        status: n.status,
+        valueCents: n.final_cents,
+      });
+    }
+    awaitingItems.sort((a, b) => b.valueCents - a.valueCents);
+  }
 
   // Por tipo de pagamento (vendas aceitas).
   const byPayment = new Map<string, { count: number; total: number }>();
@@ -615,19 +655,24 @@ export default async function DashboardComercialPage(
       <section className="space-y-3">
         <SectionTitle icon={<Hourglass className="size-4" />} title="Em aberto" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Kpi
-            tone={awaitingCount > 0 ? "amber" : "muted"}
-            icon={<Hourglass className="size-4" />}
+          {/* Clicáveis: abrem a lista dos clientes em aberto (com valores). */}
+          <AwaitingDialog
             label="Aguardando fechamento"
             value={String(awaitingCount)}
             hint="negociações sem contrato/pagamento"
+            icon="hourglass"
+            items={awaitingItems}
+            periodLabel={PERIOD_LABELS[period]}
+            unitLabel={unitLabel}
           />
-          <Kpi
-            tone={awaitingTotal > 0 ? "amber" : "muted"}
-            icon={<Wallet className="size-4" />}
+          <AwaitingDialog
             label="Valor aguardando"
             value={formatBRL(awaitingTotal)}
             hint="potencial a fechar"
+            icon="wallet"
+            items={awaitingItems}
+            periodLabel={PERIOD_LABELS[period]}
+            unitLabel={unitLabel}
           />
           <Kpi
             tone={inFollowup > 0 ? "amber" : "muted"}
