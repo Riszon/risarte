@@ -1001,19 +1001,47 @@ export default async function DashboardComercialPage(
           title="Resultado do período"
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Kpi
+          <SplitKpi
             tone="emerald"
             icon={<Trophy className="size-4" />}
             label="TOTAL GERAL de vendas"
             value={String(grandCount)}
-            hint={`comercial ${salesCount} + direta ${dsCount}`}
+            hint="vendas concluídas no período"
+            parts={[
+              {
+                label: "Comercial",
+                dot: "bg-sky-500",
+                value: String(salesCount),
+                sub: `${share.comercialCount.toFixed(0)}% do total`,
+              },
+              {
+                label: "Venda direta",
+                dot: "bg-gold",
+                value: String(dsCount),
+                sub: `${share.diretaCount.toFixed(0)}% do total`,
+              },
+            ]}
           />
-          <Kpi
+          <SplitKpi
             tone="gold"
             icon={<Wallet className="size-4" />}
             label="TOTAL GERAL em R$"
             value={formatBRL(grandTotal)}
             hint={`ticket médio geral ${formatBRL(grandTicket)}`}
+            parts={[
+              {
+                label: "Comercial",
+                dot: "bg-sky-500",
+                value: formatBRL(salesTotal),
+                sub: `${share.comercialValue.toFixed(0)}% · ticket ${formatBRL(ticket)}`,
+              },
+              {
+                label: "Venda direta",
+                dot: "bg-gold",
+                value: formatBRL(dsTotal),
+                sub: `${share.diretaValue.toFixed(0)}% · ticket ${formatBRL(dsTicket)}`,
+              },
+            ]}
           />
           <Kpi
             tone="sky"
@@ -1061,10 +1089,24 @@ export default async function DashboardComercialPage(
             icon="hourglass"
             label="Aguardando fechamento"
             value={String(awaitingCount)}
-            hint="negociações sem contrato/pagamento"
+            hint="sem contrato/pagamento"
             items={awaitingItems}
             dialogTitle="Aguardando fechamento"
             scopeLabel={`${unitLabel} · ${periodDescription}`}
+            parts={[
+              {
+                label: "Comercial",
+                dot: "bg-sky-500",
+                value: String(awaitingNegCount),
+                sub: formatBRL(awaitingNegTotal),
+              },
+              {
+                label: "Venda direta",
+                dot: "bg-gold",
+                value: String(dsPendingCount),
+                sub: formatBRL(dsPendingTotal),
+              },
+            ]}
           />
           <DrillCard
             tone="amber"
@@ -1075,6 +1117,20 @@ export default async function DashboardComercialPage(
             items={awaitingItems}
             dialogTitle="Aguardando fechamento"
             scopeLabel={`${unitLabel} · ${periodDescription}`}
+            parts={[
+              {
+                label: "Comercial",
+                dot: "bg-sky-500",
+                value: formatBRL(awaitingNegTotal),
+                sub: `${awaitingNegCount} negociação(ões)`,
+              },
+              {
+                label: "Venda direta",
+                dot: "bg-gold",
+                value: formatBRL(dsPendingTotal),
+                sub: `${dsPendingCount} venda(s)`,
+              },
+            ]}
           />
           <DrillCard
             tone="amber"

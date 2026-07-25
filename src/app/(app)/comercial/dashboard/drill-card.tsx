@@ -100,6 +100,7 @@ export function DrillCard({
   scopeLabel,
   emptyValueLabel,
   showTotal = true,
+  parts,
 }: {
   tone: Tone;
   icon: DrillIcon;
@@ -113,6 +114,8 @@ export function DrillCard({
   /** Texto do rodapé quando a lista não é de dinheiro. */
   emptyValueLabel?: string;
   showTotal?: boolean;
+  /** Quebra por origem (comercial × venda direta) no pé do cartão. */
+  parts?: { label: string; dot: string; value: string; sub?: string }[];
 }) {
   const active = items.length > 0;
   const Icon = ICONS[icon];
@@ -157,6 +160,26 @@ export function DrillCard({
           </span>
         )}
       </p>
+      {parts && (
+        <div className="mt-2 grid grid-cols-2 gap-2 border-t pt-2">
+          {parts.map((p) => (
+            <div key={p.label} className="min-w-0">
+              <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span className={cn("size-1.5 rounded-full", p.dot)} aria-hidden />
+                {p.label}
+              </p>
+              <p className="truncate text-sm font-medium tabular-nums">
+                {p.value}
+              </p>
+              {p.sub && (
+                <p className="truncate text-[10px] text-muted-foreground">
+                  {p.sub}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </button>
   );
 

@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.127.0** · Última migração: **0161**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.127.1** · Última migração: **0161**_
+
+> **Dashboard — quebra por origem nos 4 cartões do topo ✅ (v0.127.1, sem
+> migração):** **TOTAL GERAL de vendas**, **TOTAL GERAL em R$**, **Aguardando
+> fechamento** e **Valor aguardando** ganharam o mesmo pé de cartão dos
+> indicadores consolidados: comercial × venda direta com % do total / ticket /
+> valor. Os dois cartões "aguardando" continuam clicáveis (`DrillCard` aceita
+> `parts`).
 
 > **Dashboard — indicadores consolidados (comercial + venda direta) ✅
 > (v0.127.0, migração 0161):** cinco indicadores que só olhavam o fluxo comercial
