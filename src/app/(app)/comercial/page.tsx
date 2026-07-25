@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Eye, Handshake, Store } from "lucide-react";
+import { BarChart3, Eye, Handshake, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -238,15 +238,26 @@ export default async function ComercialKanbanPage(
             <Handshake className="size-6 text-gold" />
             Comercial
           </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/comercial/venda-direta" />}
-          >
-            <Store className="mr-1 size-3.5" />
-            Venda direta
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/comercial/dashboard" />}
+            >
+              <BarChart3 className="mr-1 size-3.5" />
+              Dashboard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/comercial/venda-direta" />}
+            >
+              <Store className="mr-1 size-3.5" />
+              Venda direta
+            </Button>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           Funil de conversão — da apresentação ao início do tratamento.

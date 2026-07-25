@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.120.0** · Última migração: **0160**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.121.0** · Última migração: **0160**_
+
+> **MÓDULO COMERCIAL — COM6: Dashboard comercial ✅ (v0.121.0, sem migração) —
+> MÓDULO COMPLETO:** nova tela **`/comercial/dashboard`** (botão "Dashboard" no
+> funil) com **filtros de unidade** (todas × específica) e **período**
+> (hoje/semana/mês/tudo): indicadores de **vendas fechadas, valor total, ticket
+> médio, taxa de conversão, oportunidades, perdas, em follow-up, parcelamento
+> médio**; quadros **por tipo de pagamento** (com desconto total concedido) e
+> **por pilar da metodologia**; e a seção **Vendas Diretas** (quantidade, valor
+> total, ticket médio, nº de procedimentos e **ranking dos mais vendidos**).
+> Consolidado (Admin/Franqueadora) ou por unidade (Gerente/Franqueado). Com isso
+> o **Módulo Comercial (COM1–COM6) + Venda Direta v2 (VD1–VD3) estão completos**;
+> falta apenas plugar as integrações reais (ZapSign/ASAAS/Meet/IA) e o módulo
+> Financeiro (split + honorário do consultor).
+
+> **VENDA DIRETA v2 — transparência do preço ✅ (v0.120.1):** o preço da venda
+> direta usa o **preço da unidade** (`clinic_procedure_prices`) quando existe —
+> o pop-up agora mostra "(preço da unidade) · padrão da rede R$ X" para não
+> confundir com desconto.
 
 > **VENDA DIRETA v2 — detalhes e discrição ✅ (v0.120.0, sem migração):** (1)
 > **valor da parcela** aparece no fechamento e no detalhe ("Nx de R$ Y"). (2)
