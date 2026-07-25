@@ -137,6 +137,41 @@ export default async function DashboardComercialPage(
       ? accepted.reduce((s, n) => s + (n.installments || 1), 0) / salesCount
       : 0;
 
+  // Ticket médio DO PARCELAMENTO = valor médio de cada parcela nas vendas
+  // parceladas (quanto o cliente paga por mês, em média).
+  const installmentSales = accepted.filter((n) => (n.installments || 1) > 1);
+  const avgInstallmentTicket =
+    installmentSales.length > 0
+      ? Math.round(
+          installmentSales.reduce(
+            (s, n) => s + n.final_cents / (n.installments || 1),
+            0
+          ) / installmentSales.length
+        )
+      : 0;
+
+  // Oportunidades AGUARDANDO FECHAMENTO (aceitas ainda não concluídas + em
+  // negociação/autorização) — quantidade e valor.
+  const awaitingSaleIds = accepted.map((n) => n.client_id);
+  const closedClientIds = new Set<string>();
+  if (awaitingSaleIds.length > 0) {
+    const { data: closedRows } = await supabase
+      .from("commercial_sales")
+      .select("client_id")
+      .not("closed_at", "is", null)
+      .in("client_id", awaitingSaleIds);
+    for (const r of closedRows ?? [])
+      closedClientIds.add(r.client_id as string);
+  }
+  const openNegs = negs.filter(
+    (n) =>
+      n.status === "em_negociacao" ||
+      n.status === "aguardando_autorizacao" ||
+      (n.status === "aceita" && !closedClientIds.has(n.client_id))
+  );
+  const awaitingCount = openNegs.length;
+  const awaitingTotal = openNegs.reduce((s, n) => s + n.final_cents, 0);
+
   // Por tipo de pagamento (vendas aceitas).
   const byPayment = new Map<string, { count: number; total: number }>();
   for (const n of accepted) {
@@ -149,6 +184,7 @@ export default async function DashboardComercialPage(
 
   // Por pilar — precisa do pilar do cliente das vendas aceitas.
   const acceptedClientIds = [...new Set(accepted.map((n) => n.client_id))];
+  const acceptedClientIdsForCycle = acceptedClientIds;
   const pillarByClient = new Map<string, MethodologyPillar | null>();
   if (acceptedClientIds.length > 0) {
     const { data: cli } = await supabase
@@ -171,6 +207,87 @@ export default async function DashboardComercialPage(
     byPillar.set(k, a);
   }
 
+  // -- Ciclo de vendas + ticket por tipo de cliente ---------------------------
+  // NOVO: da 1ª entrada (Aquisição/Fase 1) até chegar ao Início de Tratamento.
+  // RISARTE (recompra): estava na Reavaliação/Acompanhamento (6/7), voltou ao
+  // Planejamento (3) e chegou de novo ao Início de Tratamento (5).
+  const cycleNewDays: number[] = [];
+  const cycleReturnDays: number[] = [];
+  const newClientIds = new Set<string>();
+  const returningClientIds = new Set<string>();
+  if (acceptedClientIdsForCycle.length > 0) {
+    const { data: histRows } = await supabase
+      .from("journey_phase_history")
+      .select("client_id, phase, entered_at")
+      .in("client_id", acceptedClientIdsForCycle)
+      .order("entered_at");
+    const byClient = new Map<string, { phase: string; at: string }[]>();
+    for (const h of (histRows ?? []) as {
+      client_id: string;
+      phase: string;
+      entered_at: string;
+    }[]) {
+      const list = byClient.get(h.client_id) ?? [];
+      list.push({ phase: h.phase, at: h.entered_at });
+      byClient.set(h.client_id, list);
+    }
+    const days = (a: string, b: string) =>
+      Math.max(
+        0,
+        Math.round(
+          (new Date(b).getTime() - new Date(a).getTime()) / 86_400_000
+        )
+      );
+    for (const [clientId, list] of byClient) {
+      // Último "treatment_start" alcançado.
+      const lastStartIdx = list
+        .map((e, i) => ({ e, i }))
+        .filter((x) => x.e.phase === "treatment_start")
+        .map((x) => x.i)
+        .pop();
+      if (lastStartIdx == null) continue;
+      const startAt = list[lastStartIdx].at;
+      // Houve reavaliação/acompanhamento ANTES desse início? → recompra.
+      const beforeReturn = list
+        .slice(0, lastStartIdx)
+        .some((e) => e.phase === "reevaluation" || e.phase === "follow_up");
+      if (beforeReturn) {
+        // Conta do retorno ao Centro de Planejamento até o início.
+        const planIdx = list
+          .slice(0, lastStartIdx)
+          .map((e, i) => ({ e, i }))
+          .filter((x) => x.e.phase === "planning_center")
+          .map((x) => x.i)
+          .pop();
+        if (planIdx != null) {
+          cycleReturnDays.push(days(list[planIdx].at, startAt));
+          returningClientIds.add(clientId);
+        }
+      } else {
+        // Cliente novo: da primeira fase registrada até o início.
+        cycleNewDays.push(days(list[0].at, startAt));
+        newClientIds.add(clientId);
+      }
+    }
+  }
+  const avg = (arr: number[]) =>
+    arr.length > 0 ? Math.round(arr.reduce((s, n) => s + n, 0) / arr.length) : 0;
+  const cycleNew = avg(cycleNewDays);
+  const cycleReturn = avg(cycleReturnDays);
+
+  const newSales = accepted.filter((n) => newClientIds.has(n.client_id));
+  const returnSales = accepted.filter((n) => returningClientIds.has(n.client_id));
+  const ticketNew =
+    newSales.length > 0
+      ? Math.round(newSales.reduce((s, n) => s + n.final_cents, 0) / newSales.length)
+      : 0;
+  const ticketReturn =
+    returnSales.length > 0
+      ? Math.round(
+          returnSales.reduce((s, n) => s + n.final_cents, 0) / returnSales.length
+        )
+      : 0;
+
   // Clientes em follow-up (estado atual, não do período).
   let followQuery = supabase
     .from("commercial_cards")
@@ -184,7 +301,7 @@ export default async function DashboardComercialPage(
   let dsQuery = supabase
     .from("direct_sales")
     .select(
-      "id, final_cents, status, cancelled, items:direct_sale_items ( description, quantity )"
+      "id, final_cents, status, cancelled, items:direct_sale_items ( description, quantity, procedure_id )"
     )
     .neq("cancelled", true);
   if (clinicFilter) dsQuery = dsQuery.eq("clinic_id", clinicFilter);
@@ -195,7 +312,9 @@ export default async function DashboardComercialPage(
     final_cents: number;
     status: string;
     cancelled: boolean;
-    items: { description: string; quantity: number }[] | null;
+    items:
+      | { description: string; quantity: number; procedure_id: string | null }[]
+      | null;
   }[];
   const dsCount = ds.length;
   const dsTotal = ds.reduce((s, d) => s + d.final_cents, 0);
@@ -204,18 +323,115 @@ export default async function DashboardComercialPage(
     (s, d) => s + (d.items ?? []).reduce((a, i) => a + i.quantity, 0),
     0
   );
-  const dsRanking = new Map<string, number>();
-  for (const d of ds)
-    for (const i of d.items ?? [])
-      dsRanking.set(i.description, (dsRanking.get(i.description) ?? 0) + i.quantity);
-  const dsTop = [...dsRanking.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
+  // -- Ranking de procedimentos + vendas por especialidade --------------------
+  // Origem: "direta" (venda direta), "comercial" (planos vendidos) ou "todos".
+  const origemParam = Array.isArray(sp.origem) ? sp.origem[0] : sp.origem;
+  const origem: "todos" | "direta" | "comercial" =
+    origemParam === "direta" || origemParam === "comercial"
+      ? origemParam
+      : "todos";
 
+  // Itens dos PLANOS vendidos (negociações aceitas, itens incluídos).
+  type SoldItem = { name: string; qty: number; procedureId: string | null };
+  const commercialItems: SoldItem[] = [];
+  if (accepted.length > 0) {
+    let negItemsQuery = supabase
+      .from("plan_negotiations")
+      .select(
+        "id, status, plan_negotiation_items ( included, item:treatment_plan_option_items ( description, quantity, procedure_id ) )"
+      )
+      .eq("status", "aceita");
+    if (clinicFilter) negItemsQuery = negItemsQuery.eq("clinic_id", clinicFilter);
+    if (start) negItemsQuery = negItemsQuery.gte("created_at", start);
+    const { data: negItemRows } = await negItemsQuery;
+    for (const n of (negItemRows ?? []) as {
+      plan_negotiation_items:
+        | {
+            included: boolean;
+            item:
+              | { description: string; quantity: number; procedure_id: string | null }
+              | { description: string; quantity: number; procedure_id: string | null }[]
+              | null;
+          }[]
+        | null;
+    }[]) {
+      for (const ni of n.plan_negotiation_items ?? []) {
+        if (!ni.included) continue;
+        const it = Array.isArray(ni.item) ? ni.item[0] : ni.item;
+        if (!it) continue;
+        commercialItems.push({
+          name: it.description,
+          qty: it.quantity,
+          procedureId: it.procedure_id,
+        });
+      }
+    }
+  }
+
+  const directItems: SoldItem[] = ds.flatMap((d) =>
+    (d.items ?? []).map((i) => ({
+      name: i.description,
+      qty: i.quantity,
+      procedureId: i.procedure_id ?? null,
+    }))
+  );
+
+  const rankingSource =
+    origem === "direta"
+      ? directItems
+      : origem === "comercial"
+        ? commercialItems
+        : [...directItems, ...commercialItems];
+
+  const ranking = new Map<string, number>();
+  for (const i of rankingSource)
+    ranking.set(i.name, (ranking.get(i.name) ?? 0) + i.qty);
+  const rankingTop = [...ranking.entries()].sort((a, b) => b[1] - a[1]);
+
+  // Vendas por ESPECIALIDADE (do catálogo de procedimentos).
+  const procIds = [
+    ...new Set(
+      [...directItems, ...commercialItems]
+        .map((i) => i.procedureId)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const specialtyByProc = new Map<string, string>();
+  if (procIds.length > 0) {
+    const { data: procRows } = await supabase
+      .from("procedures")
+      .select("id, specialty")
+      .in("id", procIds);
+    for (const p of procRows ?? [])
+      specialtyByProc.set(p.id as string, (p.specialty as string) ?? "Sem especialidade");
+  }
+  const bySpecialty = new Map<string, number>();
+  for (const i of [...directItems, ...commercialItems]) {
+    const key = i.procedureId
+      ? (specialtyByProc.get(i.procedureId) ?? "Sem especialidade")
+      : "Sem especialidade";
+    bySpecialty.set(key, (bySpecialty.get(key) ?? 0) + i.qty);
+  }
+  const specialtyTop = [...bySpecialty.entries()].sort((a, b) => b[1] - a[1]);
+
+
+  // "Todas" precisa ir explícito como unidade=all (sem isso o padrão volta a
+  // ser a unidade ativa e o filtro parecia não funcionar).
   const chipHref = (unidade: string | null, pd: Period) => {
     const p = new URLSearchParams();
-    if (unidade) p.set("unidade", unidade);
+    p.set("unidade", unidade ?? "all");
     p.set("periodo", pd);
+    return `/comercial/dashboard?${p.toString()}`;
+  };
+  /** Mantém a unidade escolhida ao trocar só o período. */
+  const periodHref = (pd: Period) =>
+    chipHref(clinicFilter === null ? null : clinicFilter, pd);
+  /** Troca só a origem do ranking, preservando unidade + período. */
+  const rankingHref = (o: "todos" | "direta" | "comercial") => {
+    const p = new URLSearchParams();
+    p.set("unidade", clinicFilter ?? "all");
+    p.set("periodo", period);
+    p.set("origem", o);
     return `/comercial/dashboard?${p.toString()}`;
   };
 
@@ -276,7 +492,7 @@ export default async function DashboardComercialPage(
             <Chip
               key={pd}
               label={PERIOD_LABELS[pd]}
-              href={chipHref(clinicFilter && !canSeeAllUnits ? null : unidadeParam ?? null, pd)}
+              href={periodHref(pd)}
               active={period === pd}
             />
           ))}
@@ -296,6 +512,96 @@ export default async function DashboardComercialPage(
           label="Parcelamento médio"
           value={avgInstallments > 0 ? `${avgInstallments.toFixed(1)}×` : "—"}
         />
+      </div>
+
+      {/* Aguardando fechamento + ticket do parcelamento + ciclo de vendas. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          label="Aguardando fechamento"
+          value={String(awaitingCount)}
+          amber={awaitingCount > 0}
+        />
+        <Stat
+          label="Valor aguardando"
+          value={formatBRL(awaitingTotal)}
+          amber={awaitingCount > 0}
+        />
+        <Stat
+          label="Ticket médio da parcela"
+          value={avgInstallmentTicket > 0 ? formatBRL(avgInstallmentTicket) : "—"}
+        />
+        <Stat
+          label="Desconto concedido"
+          value={formatBRL(discountTotal)}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ciclo de vendas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>
+                Clientes novos{" "}
+                <span className="text-xs text-muted-foreground">
+                  (cadastro → início do tratamento)
+                </span>
+              </span>
+              <span className="font-medium tabular-nums">
+                {cycleNewDays.length > 0 ? `${cycleNew} dias` : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>
+                Clientes Risarte{" "}
+                <span className="text-xs text-muted-foreground">
+                  (reavaliação → novo tratamento)
+                </span>
+              </span>
+              <span className="font-medium tabular-nums">
+                {cycleReturnDays.length > 0 ? `${cycleReturn} dias` : "—"}
+              </span>
+            </div>
+            <p className="border-t pt-2 text-xs text-muted-foreground">
+              Média de dias das vendas fechadas no período ({cycleNewDays.length}{" "}
+              novo(s) · {cycleReturnDays.length} Risarte).
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Ticket médio por tipo de cliente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>
+                Clientes novos{" "}
+                <span className="text-xs text-muted-foreground">
+                  ({newSales.length})
+                </span>
+              </span>
+              <span className="font-medium tabular-nums">
+                {newSales.length > 0 ? formatBRL(ticketNew) : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>
+                Clientes Risarte{" "}
+                <span className="text-xs text-muted-foreground">
+                  ({returnSales.length})
+                </span>
+              </span>
+              <span className="font-medium tabular-nums">
+                {returnSales.length > 0 ? formatBRL(ticketReturn) : "—"}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -379,26 +685,75 @@ export default async function DashboardComercialPage(
             <Stat label="Ticket médio" value={formatBRL(dsTicket)} />
             <Stat label="Procedimentos" value={String(dsProcCount)} />
           </div>
-          <div>
-            <p className="mb-1 text-sm font-medium">Mais vendidos</p>
-            {dsTop.length === 0 ? (
-              <Empty />
-            ) : (
-              <ul className="space-y-0.5 text-sm">
-                {dsTop.map(([name, qty], i) => (
-                  <li key={name} className="flex justify-between">
-                    <span>
-                      <span className="mr-1 text-xs text-muted-foreground">
-                        {i + 1}.
-                      </span>
-                      {name}
-                    </span>
-                    <span className="tabular-nums">{qty}×</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+        </CardContent>
+      </Card>
+
+      {/* Vendas por especialidade. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Vendas por especialidade</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {specialtyTop.length === 0 ? (
+            <Empty />
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {specialtyTop.map(([name, qty]) => (
+                <li key={name} className="flex justify-between">
+                  <span>{name}</span>
+                  <span className="tabular-nums">
+                    {qty} procedimento{qty > 1 ? "s" : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Ranking de procedimentos mais vendidos (com filtro de origem). */}
+      <Card>
+        <CardHeader className="gap-2">
+          <CardTitle className="text-base">
+            Procedimentos mais vendidos
+          </CardTitle>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground">Origem:</span>
+            <Chip
+              label="Todos"
+              href={rankingHref("todos")}
+              active={origem === "todos"}
+            />
+            <Chip
+              label="Fluxo comercial"
+              href={rankingHref("comercial")}
+              active={origem === "comercial"}
+            />
+            <Chip
+              label="Vendas diretas"
+              href={rankingHref("direta")}
+              active={origem === "direta"}
+            />
           </div>
+        </CardHeader>
+        <CardContent>
+          {rankingTop.length === 0 ? (
+            <Empty />
+          ) : (
+            <ul className="space-y-0.5 text-sm">
+              {rankingTop.map(([name, qty], i) => (
+                <li key={name} className="flex justify-between">
+                  <span>
+                    <span className="mr-1 text-xs text-muted-foreground">
+                      {i + 1}.
+                    </span>
+                    {name}
+                  </span>
+                  <span className="tabular-nums">{qty}×</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

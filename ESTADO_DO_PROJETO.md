@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.121.0** · Última migração: **0160**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.122.0** · Última migração: **0160**_
+
+> **Dashboard comercial v2 + preço da unidade visível ✅ (v0.122.0, sem
+> migração):** (1) **Procedimentos:** no modo REDE a lista agora avisa quando
+> alguma unidade tem **preço próprio** (selo azul "ajustado: Unidade R$ X" /
+> "ajustado em N unidades", com o detalhe no tooltip) — antes o ajuste parecia
+> ter sumido. (2) **Filtro "Todas" do dashboard corrigido** (ia explícito como
+> `unidade=all`; trocar o período mantém a unidade). (3) Indicadores novos:
+> **ticket médio da parcela**, **oportunidades aguardando fechamento**
+> (quantidade **e** valor), **ciclo de vendas** (clientes novos: cadastro →
+> início do tratamento; clientes Risarte: reavaliação/acompanhamento → novo
+> tratamento, via `journey_phase_history`), **ticket médio por tipo de cliente**
+> (novos × Risarte), **vendas por especialidade** e o **ranking completo de
+> procedimentos mais vendidos** com filtro de origem (**Todos / Fluxo comercial /
+> Vendas diretas**).
 
 > **MÓDULO COMERCIAL — COM6: Dashboard comercial ✅ (v0.121.0, sem migração) —
 > MÓDULO COMPLETO:** nova tela **`/comercial/dashboard`** (botão "Dashboard" no

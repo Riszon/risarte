@@ -591,6 +591,7 @@ export function ProceduresEditor({
   selectedUnitId,
   unitName,
   overrides,
+  adjustedByProcedure = {},
   changesByProcedure,
   sessionsByProcedure,
   unitSessionsByProcedure,
@@ -602,6 +603,11 @@ export function ProceduresEditor({
   selectedUnitId: string;
   unitName: string | null;
   overrides: UnitPrice[];
+  /** No modo REDE: unidades que têm preço próprio, por procedimento. */
+  adjustedByProcedure?: Record<
+    string,
+    { unitName: string; priceCents: number }[]
+  >;
   changesByProcedure: Record<string, ProcedureChange[]>;
   sessionsByProcedure: Record<string, ProcedureSession[]>;
   unitSessionsByProcedure: Record<string, ProcedureSession[]>;
@@ -737,6 +743,7 @@ export function ProceduresEditor({
                   networkMode={networkMode}
                   selectedUnitId={selectedUnitId}
                   overrideCents={overrideByProc.get(p.id) ?? null}
+                  adjustedUnits={adjustedByProcedure[p.id] ?? []}
                   changes={changesByProcedure[p.id] ?? []}
                   sessions={sessionsByProcedure[p.id] ?? []}
                   unitSessions={unitSessionsByProcedure[p.id] ?? []}
@@ -1052,6 +1059,7 @@ function ProcedureRow({
   networkMode,
   selectedUnitId,
   overrideCents,
+  adjustedUnits = [],
   changes,
   sessions,
   unitSessions,
@@ -1067,6 +1075,8 @@ function ProcedureRow({
   networkMode: boolean;
   selectedUnitId: string;
   overrideCents: number | null;
+  /** Modo rede: unidades com preço próprio (para avisar que existe ajuste). */
+  adjustedUnits?: { unitName: string; priceCents: number }[];
   changes: ProcedureChange[];
   sessions: ProcedureSession[];
   unitSessions: ProcedureSession[];
@@ -1205,6 +1215,20 @@ function ProcedureRow({
             {p.tussCode && <span>TUSS {p.tussCode}</span>}
             {p.specialty && <span>{p.specialty}</span>}
             <span>Padrão: {formatBRL(p.defaultPriceCents)}</span>
+            {/* Modo rede: avisa que alguma unidade tem preço próprio, senão
+                parece que o ajuste da unidade se perdeu. */}
+            {networkMode && adjustedUnits.length > 0 && (
+              <span
+                className="rounded-full border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-800"
+                title={adjustedUnits
+                  .map((u) => `${u.unitName}: ${formatBRL(u.priceCents)}`)
+                  .join(" · ")}
+              >
+                {adjustedUnits.length === 1
+                  ? `ajustado: ${adjustedUnits[0].unitName} ${formatBRL(adjustedUnits[0].priceCents)}`
+                  : `ajustado em ${adjustedUnits.length} unidades`}
+              </span>
+            )}
             {(p.minPriceCents != null || p.maxPriceCents != null) && (
               <span>
                 Faixa: {p.minPriceCents != null ? formatBRL(p.minPriceCents) : "—"}

@@ -172,6 +172,30 @@ export default async function ProceduresPage(
     }));
   }
 
+  // No modo REDE a lista mostra o preço padrão — mas precisa AVISAR quando
+  // alguma unidade tem preço próprio (senão parece que o ajuste se perdeu).
+  const adjustedByProcedure: Record<string, { unitName: string; priceCents: number }[]> =
+    {};
+  if (!unitId) {
+    const { data: allPrices } = await supabase
+      .from("clinic_procedure_prices")
+      .select("procedure_id, clinic_id, price_cents")
+      .returns<
+        { procedure_id: string; clinic_id: string; price_cents: number }[]
+      >();
+    const unitNameById = new Map(
+      (units ?? []).map((u) => [u.id as string, u.name as string])
+    );
+    for (const r of allPrices ?? []) {
+      const list = adjustedByProcedure[r.procedure_id] ?? [];
+      list.push({
+        unitName: unitNameById.get(r.clinic_id) ?? "Unidade",
+        priceCents: r.price_cents,
+      });
+      adjustedByProcedure[r.procedure_id] = list;
+    }
+  }
+
   // Network session protocols for the listed procedures (E1).
   const ids = procedures.map((p) => p.id);
   const sessionsByProcedure: Record<string, ProcedureSession[]> = {};
@@ -388,6 +412,7 @@ export default async function ProceduresPage(
         selectedUnitId={unitId}
         unitName={(units ?? []).find((u) => u.id === unitId)?.name ?? null}
         overrides={overrides}
+        adjustedByProcedure={adjustedByProcedure}
         changesByProcedure={changesByProcedure}
         sessionsByProcedure={sessionsByProcedure}
         unitSessionsByProcedure={unitSessionsByProcedure}
