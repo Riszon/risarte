@@ -301,7 +301,7 @@ export default async function DashboardComercialPage(
   let dsQuery = supabase
     .from("direct_sales")
     .select(
-      "id, final_cents, status, cancelled, items:direct_sale_items ( description, quantity, procedure_id )"
+      "id, final_cents, status, cancelled, items:direct_sale_items ( description, quantity, final_cents, procedure_id )"
     )
     .neq("cancelled", true);
   if (clinicFilter) dsQuery = dsQuery.eq("clinic_id", clinicFilter);
@@ -313,7 +313,12 @@ export default async function DashboardComercialPage(
     status: string;
     cancelled: boolean;
     items:
-      | { description: string; quantity: number; procedure_id: string | null }[]
+      | {
+          description: string;
+          quantity: number;
+          final_cents: number;
+          procedure_id: string | null;
+        }[]
       | null;
   }[];
   const dsCount = ds.length;
@@ -332,27 +337,32 @@ export default async function DashboardComercialPage(
       : "todos";
 
   // Itens dos PLANOS vendidos (negociações aceitas, itens incluídos).
-  type SoldItem = { name: string; qty: number; procedureId: string | null };
+  type SoldItem = {
+    name: string;
+    qty: number;
+    valueCents: number;
+    procedureId: string | null;
+  };
   const commercialItems: SoldItem[] = [];
   if (accepted.length > 0) {
     let negItemsQuery = supabase
       .from("plan_negotiations")
       .select(
-        "id, status, plan_negotiation_items ( included, item:treatment_plan_option_items ( description, quantity, procedure_id ) )"
+        "id, status, plan_negotiation_items ( included, item:treatment_plan_option_items ( description, quantity, unit_price_cents, procedure_id ) )"
       )
       .eq("status", "aceita");
     if (clinicFilter) negItemsQuery = negItemsQuery.eq("clinic_id", clinicFilter);
     if (start) negItemsQuery = negItemsQuery.gte("created_at", start);
     const { data: negItemRows } = await negItemsQuery;
+    type NegItem = {
+      description: string;
+      quantity: number;
+      unit_price_cents: number;
+      procedure_id: string | null;
+    };
     for (const n of (negItemRows ?? []) as {
       plan_negotiation_items:
-        | {
-            included: boolean;
-            item:
-              | { description: string; quantity: number; procedure_id: string | null }
-              | { description: string; quantity: number; procedure_id: string | null }[]
-              | null;
-          }[]
+        | { included: boolean; item: NegItem | NegItem[] | null }[]
         | null;
     }[]) {
       for (const ni of n.plan_negotiation_items ?? []) {
@@ -362,6 +372,7 @@ export default async function DashboardComercialPage(
         commercialItems.push({
           name: it.description,
           qty: it.quantity,
+          valueCents: (it.unit_price_cents ?? 0) * it.quantity,
           procedureId: it.procedure_id,
         });
       }
@@ -372,6 +383,7 @@ export default async function DashboardComercialPage(
     (d.items ?? []).map((i) => ({
       name: i.description,
       qty: i.quantity,
+      valueCents: i.final_cents ?? 0,
       procedureId: i.procedure_id ?? null,
     }))
   );
@@ -383,10 +395,16 @@ export default async function DashboardComercialPage(
         ? commercialItems
         : [...directItems, ...commercialItems];
 
-  const ranking = new Map<string, number>();
-  for (const i of rankingSource)
-    ranking.set(i.name, (ranking.get(i.name) ?? 0) + i.qty);
-  const rankingTop = [...ranking.entries()].sort((a, b) => b[1] - a[1]);
+  const ranking = new Map<string, { qty: number; total: number }>();
+  for (const i of rankingSource) {
+    const a = ranking.get(i.name) ?? { qty: 0, total: 0 };
+    a.qty += i.qty;
+    a.total += i.valueCents;
+    ranking.set(i.name, a);
+  }
+  const rankingTop = [...ranking.entries()].sort(
+    (a, b) => b[1].qty - a[1].qty || b[1].total - a[1].total
+  );
 
   // Vendas por ESPECIALIDADE (do catálogo de procedimentos).
   const procIds = [
@@ -405,14 +423,19 @@ export default async function DashboardComercialPage(
     for (const p of procRows ?? [])
       specialtyByProc.set(p.id as string, (p.specialty as string) ?? "Sem especialidade");
   }
-  const bySpecialty = new Map<string, number>();
+  const bySpecialty = new Map<string, { qty: number; total: number }>();
   for (const i of [...directItems, ...commercialItems]) {
     const key = i.procedureId
       ? (specialtyByProc.get(i.procedureId) ?? "Sem especialidade")
       : "Sem especialidade";
-    bySpecialty.set(key, (bySpecialty.get(key) ?? 0) + i.qty);
+    const a = bySpecialty.get(key) ?? { qty: 0, total: 0 };
+    a.qty += i.qty;
+    a.total += i.valueCents;
+    bySpecialty.set(key, a);
   }
-  const specialtyTop = [...bySpecialty.entries()].sort((a, b) => b[1] - a[1]);
+  const specialtyTop = [...bySpecialty.entries()].sort(
+    (a, b) => b[1].total - a[1].total
+  );
 
 
   // "Todas" precisa ir explícito como unidade=all (sem isso o padrão volta a
@@ -697,16 +720,32 @@ export default async function DashboardComercialPage(
           {specialtyTop.length === 0 ? (
             <Empty />
           ) : (
-            <ul className="space-y-1 text-sm">
-              {specialtyTop.map(([name, qty]) => (
-                <li key={name} className="flex justify-between">
-                  <span>{name}</span>
-                  <span className="tabular-nums">
-                    {qty} procedimento{qty > 1 ? "s" : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="py-1 font-medium">Especialidade</th>
+                    <th className="py-1 text-right font-medium">Proc.</th>
+                    <th className="py-1 text-right font-medium">Valor total</th>
+                    <th className="py-1 text-right font-medium">Ticket médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {specialtyTop.map(([name, v]) => (
+                    <tr key={name} className="border-b last:border-0">
+                      <td className="py-1">{name}</td>
+                      <td className="py-1 text-right tabular-nums">{v.qty}</td>
+                      <td className="py-1 text-right tabular-nums">
+                        {formatBRL(v.total)}
+                      </td>
+                      <td className="py-1 text-right tabular-nums">
+                        {formatBRL(Math.round(v.total / Math.max(1, v.qty)))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -740,19 +779,37 @@ export default async function DashboardComercialPage(
           {rankingTop.length === 0 ? (
             <Empty />
           ) : (
-            <ul className="space-y-0.5 text-sm">
-              {rankingTop.map(([name, qty], i) => (
-                <li key={name} className="flex justify-between">
-                  <span>
-                    <span className="mr-1 text-xs text-muted-foreground">
-                      {i + 1}.
-                    </span>
-                    {name}
-                  </span>
-                  <span className="tabular-nums">{qty}×</span>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="py-1 font-medium">Procedimento</th>
+                    <th className="py-1 text-right font-medium">Qtd.</th>
+                    <th className="py-1 text-right font-medium">Valor total</th>
+                    <th className="py-1 text-right font-medium">Ticket médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankingTop.map(([name, v], i) => (
+                    <tr key={name} className="border-b last:border-0">
+                      <td className="py-1">
+                        <span className="mr-1 text-xs text-muted-foreground">
+                          {i + 1}.
+                        </span>
+                        {name}
+                      </td>
+                      <td className="py-1 text-right tabular-nums">{v.qty}×</td>
+                      <td className="py-1 text-right tabular-nums">
+                        {formatBRL(v.total)}
+                      </td>
+                      <td className="py-1 text-right tabular-nums">
+                        {formatBRL(Math.round(v.total / Math.max(1, v.qty)))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
