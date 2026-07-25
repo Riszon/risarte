@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.123.0** · Última migração: **0160**_
+_Atualizado em: 23/07/2026 · Versão do sistema: **0.125.0** · Última migração: **0160**_
+
+> **Dashboard comercial — cartões que abrem a lista ✅ (v0.124.0/0.125.0, sem
+> migração):** clicar no cartão abre um **pop-up com os clientes por trás do
+> número** (nome, código, unidade, situação e valor de cada um, com o total no
+> rodapé; cada linha abre o Cockpit do Consultor). Vale para **Vendas fechadas**
+> (mostra "Concluída"/"Falta fechar" e o parcelamento), **Aguardando fechamento**
+> e **Valor aguardando**, **Em follow-up** (tentativas + próxima data, marcando
+> "Follow-up na clínica") e a **nova seção "Perdas e cancelamentos"** —
+> **Perdidos** e **Cancelados** com **motivo, data e quem marcou**. Tudo respeita
+> os filtros de unidade e período; cartão sem itens fica cinza e não clicável.
+> Componente reutilizável `drill-card.tsx`.
 
 > **Dashboard comercial — redesenho visual ✅ (v0.123.0, sem migração):** a tela
 > foi reorganizada em **seções com título** (Resultado do período · Em aberto ·

@@ -4,14 +4,13 @@ import { redirect } from "next/navigation";
 import {
   ArrowLeft,
   BarChart3,
-  CheckCircle2,
   CreditCard,
   Hourglass,
   Layers,
   Percent,
-  PhoneCall,
   Stethoscope,
   Store,
+  ThumbsDown,
   TicketPercent,
   Timer,
   Trophy,
@@ -23,7 +22,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { RisarteMark } from "@/components/risarte-logo";
-import { AwaitingDialog, type AwaitingItem } from "./awaiting-dialog";
+import { DrillCard, type DrillItem } from "./drill-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
@@ -190,18 +189,61 @@ export default async function DashboardComercialPage(
   const awaitingCount = openNegs.length;
   const awaitingTotal = openNegs.reduce((s, n) => s + n.final_cents, 0);
 
-  // Detalhe do "aguardando fechamento" (pop-up ao clicar no cartão): quem são
-  // os clientes e quanto vale cada um. Respeita o filtro de unidade/período.
-  const awaitingItems: AwaitingItem[] = [];
-  if (openNegs.length > 0) {
-    const ids = [...new Set(openNegs.map((n) => n.client_id))];
+  // -- Listas por trás dos cartões (pop-up ao clicar) -------------------------
+  // Follow-up, perdidos e cancelados vêm do cartão do funil; as vendas e o
+  // "aguardando fechamento" vêm das negociações. Tudo já filtrado por unidade.
+  let followQueryRows = supabase
+    .from("commercial_cards")
+    .select("client_id, stage, followup_attempts, next_attempt_at")
+    .in("stage", ["follow_up", "follow_up_clinica"]);
+  if (clinicFilter) followQueryRows = followQueryRows.eq("clinic_id", clinicFilter);
+
+  let closedCardsQuery = supabase
+    .from("commercial_cards")
+    .select("client_id, stage, outcome_reason, outcome_at, outcome_by")
+    .in("stage", ["perdido", "cancelado"]);
+  if (clinicFilter) closedCardsQuery = closedCardsQuery.eq("clinic_id", clinicFilter);
+  if (start) closedCardsQuery = closedCardsQuery.gte("updated_at", start);
+
+  const [{ data: followDetailRows }, { data: closedCardRows }] = await Promise.all([
+    followQueryRows,
+    closedCardsQuery,
+  ]);
+
+  type CardRow = {
+    client_id: string;
+    stage: string;
+    outcome_reason?: string | null;
+    outcome_at?: string | null;
+    outcome_by?: string | null;
+    followup_attempts?: number;
+    next_attempt_at?: string | null;
+  };
+  const followDetail = (followDetailRows ?? []) as CardRow[];
+  const closedCards = (closedCardRows ?? []) as CardRow[];
+  const lostCards = closedCards.filter((c) => c.stage === "perdido");
+  const cancelledCards = closedCards.filter((c) => c.stage === "cancelado");
+
+  // Nomes dos clientes e de quem marcou perdido/cancelado (uma busca só).
+  const drillClientIds = [
+    ...new Set([
+      ...openNegs.map((n) => n.client_id),
+      ...accepted.map((n) => n.client_id),
+      ...followDetail.map((c) => c.client_id),
+      ...closedCards.map((c) => c.client_id),
+    ]),
+  ];
+  const clientInfo = new Map<
+    string,
+    { name: string; code: string | null; clinic: string | null }
+  >();
+  if (drillClientIds.length > 0) {
     const { data: cliRows } = await supabase
       .from("clients")
       .select(
         "id, full_name, code, clinic:clinics!clients_clinic_id_fkey ( name )"
       )
-      .in("id", ids);
-    const infoById = new Map<string, { name: string; code: string | null; clinic: string | null }>();
+      .in("id", drillClientIds);
     for (const c of (cliRows ?? []) as {
       id: string;
       full_name: string;
@@ -209,25 +251,103 @@ export default async function DashboardComercialPage(
       clinic: { name: string } | { name: string }[] | null;
     }[]) {
       const cl = Array.isArray(c.clinic) ? c.clinic[0] : c.clinic;
-      infoById.set(c.id, {
+      clientInfo.set(c.id, {
         name: c.full_name,
         code: c.code,
         clinic: cl?.name ?? null,
       });
     }
-    for (const n of openNegs) {
-      const info = infoById.get(n.client_id);
-      awaitingItems.push({
-        clientId: n.client_id,
-        clientName: info?.name ?? "Cliente",
-        code: info?.code ?? null,
-        clinicName: info?.clinic ?? null,
-        status: n.status,
-        valueCents: n.final_cents,
-      });
-    }
-    awaitingItems.sort((a, b) => b.valueCents - a.valueCents);
   }
+  const outcomeAuthorIds = [
+    ...new Set(
+      closedCards
+        .map((c) => c.outcome_by)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const authorNames = new Map<string, string>();
+  if (outcomeAuthorIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", outcomeAuthorIds);
+    for (const p of people ?? [])
+      authorNames.set(p.id as string, p.full_name as string);
+  }
+
+  const base = (clientId: string) => {
+    const info = clientInfo.get(clientId);
+    return {
+      clientId,
+      clientName: info?.name ?? "Cliente",
+      code: info?.code ?? null,
+      clinicName: info?.clinic ?? null,
+    };
+  };
+  const fmtDay = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleDateString("pt-BR") : null;
+
+  const NEG_BADGE: Record<string, { label: string; tone: DrillItem["badgeTone"] }> =
+    {
+      em_negociacao: { label: "Em negociação", tone: "primary" },
+      aguardando_autorizacao: {
+        label: "Aguardando autorização",
+        tone: "amber",
+      },
+      aceita: { label: "Aceita — falta assinar/pagar", tone: "emerald" },
+    };
+
+  const awaitingItems: DrillItem[] = openNegs
+    .map((n) => ({
+      ...base(n.client_id),
+      badge: NEG_BADGE[n.status]?.label ?? n.status,
+      badgeTone: NEG_BADGE[n.status]?.tone ?? "muted",
+      valueCents: n.final_cents,
+    }))
+    .sort((a, b) => (b.valueCents ?? 0) - (a.valueCents ?? 0));
+
+  const soldItemsList: DrillItem[] = accepted
+    .map((n) => ({
+      ...base(n.client_id),
+      badge: closedClientIds.has(n.client_id) ? "Concluída" : "Falta fechar",
+      badgeTone: closedClientIds.has(n.client_id)
+        ? ("emerald" as const)
+        : ("amber" as const),
+      valueCents: n.final_cents,
+      note:
+        n.installments > 1
+          ? `${n.installments}× de ${formatBRL(Math.round(n.final_cents / n.installments))}`
+          : null,
+    }))
+    .sort((a, b) => (b.valueCents ?? 0) - (a.valueCents ?? 0));
+
+  const followupItems: DrillItem[] = followDetail.map((c) => ({
+    ...base(c.client_id),
+    badge: c.stage === "follow_up_clinica" ? "Follow-up na clínica" : "Follow-up",
+    badgeTone: c.stage === "follow_up_clinica" ? ("rose" as const) : ("amber" as const),
+    note: [
+      `${c.followup_attempts ?? 0} tentativa(s)`,
+      c.next_attempt_at && c.stage === "follow_up"
+        ? `próxima em ${fmtDay(c.next_attempt_at)}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  }));
+
+  const outcomeItem = (c: CardRow): DrillItem => ({
+    ...base(c.client_id),
+    badge: fmtDay(c.outcome_at) ?? null,
+    badgeTone: "muted" as const,
+    note: [
+      c.outcome_reason ?? "Sem motivo registrado",
+      c.outcome_by ? `por ${authorNames.get(c.outcome_by) ?? "—"}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  });
+  const lostItems: DrillItem[] = lostCards.map(outcomeItem);
+  const cancelledItems: DrillItem[] = cancelledCards.map(outcomeItem);
 
   // Por tipo de pagamento (vendas aceitas).
   const byPayment = new Map<string, { count: number; total: number }>();
@@ -615,12 +735,15 @@ export default async function DashboardComercialPage(
           title="Resultado do período"
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Kpi
+          <DrillCard
             tone="emerald"
-            icon={<CheckCircle2 className="size-4" />}
+            icon="check"
             label="Vendas fechadas"
             value={String(salesCount)}
             hint={`${totalOpp} oportunidade(s) no período`}
+            items={soldItemsList}
+            dialogTitle="Vendas fechadas"
+            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
           />
           <Kpi
             tone="gold"
@@ -655,31 +778,37 @@ export default async function DashboardComercialPage(
       <section className="space-y-3">
         <SectionTitle icon={<Hourglass className="size-4" />} title="Em aberto" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Clicáveis: abrem a lista dos clientes em aberto (com valores). */}
-          <AwaitingDialog
+          {/* Clicáveis: abrem a lista dos clientes (com valores). */}
+          <DrillCard
+            tone="amber"
+            icon="hourglass"
             label="Aguardando fechamento"
             value={String(awaitingCount)}
             hint="negociações sem contrato/pagamento"
-            icon="hourglass"
             items={awaitingItems}
-            periodLabel={PERIOD_LABELS[period]}
-            unitLabel={unitLabel}
+            dialogTitle="Aguardando fechamento"
+            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
           />
-          <AwaitingDialog
+          <DrillCard
+            tone="amber"
+            icon="wallet"
             label="Valor aguardando"
             value={formatBRL(awaitingTotal)}
             hint="potencial a fechar"
-            icon="wallet"
             items={awaitingItems}
-            periodLabel={PERIOD_LABELS[period]}
-            unitLabel={unitLabel}
+            dialogTitle="Aguardando fechamento"
+            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
           />
-          <Kpi
-            tone={inFollowup > 0 ? "amber" : "muted"}
-            icon={<PhoneCall className="size-4" />}
+          <DrillCard
+            tone="amber"
+            icon="phone"
             label="Em follow-up"
             value={String(inFollowup)}
             hint="clientes em contato ativo"
+            items={followupItems}
+            dialogTitle="Clientes em follow-up"
+            scopeLabel={unitLabel}
+            emptyValueLabel="Clientes em follow-up"
           />
           <Kpi
             tone="muted"
@@ -687,6 +816,38 @@ export default async function DashboardComercialPage(
             label="Desconto concedido"
             value={formatBRL(discountTotal)}
             hint="nas vendas fechadas"
+          />
+        </div>
+      </section>
+
+      {/* -- Perdas e cancelamentos ---------------------------------------- */}
+      <section className="space-y-3">
+        <SectionTitle
+          icon={<ThumbsDown className="size-4" />}
+          title="Perdas e cancelamentos"
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DrillCard
+            tone="rose"
+            icon="lost"
+            label="Perdidos"
+            value={String(lostItems.length)}
+            hint="clientes que não fecharam"
+            items={lostItems}
+            dialogTitle="Clientes perdidos"
+            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            emptyValueLabel="Total de perdidos"
+          />
+          <DrillCard
+            tone="muted"
+            icon="cancelled"
+            label="Cancelados"
+            value={String(cancelledItems.length)}
+            hint="negociações canceladas"
+            items={cancelledItems}
+            dialogTitle="Clientes cancelados"
+            scopeLabel={`${unitLabel} · ${PERIOD_LABELS[period]}`}
+            emptyValueLabel="Total de cancelados"
           />
         </div>
       </section>
