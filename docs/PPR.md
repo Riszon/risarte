@@ -233,8 +233,8 @@ o selo do prontuário e as consultas ficarem baratas.
 
 | Fase | Entrega |
 |---|---|
-| **PPR1** | Fundação: migração (tabelas + RLS), `src/lib/ppr/` com as regras puras + testes, seed dos 4 planos. |
-| **PPR2** | Seção dedicada `/ppr` no menu: "Sobre o programa" + **configuração completa** (planos, valores, benefícios, dependentes, carências, descontos por procedimento, parcelamento, formas de pagamento). |
+| **PPR1** ✅ | Fundação: migração 0162 (tabelas + RLS), `src/lib/ppr/` com as regras puras + testes, seed dos 4 planos. |
+| **PPR2** ✅ | Seção dedicada `/ppr` no menu: "Sobre o programa" + **configuração completa** (`/ppr/configuracao`): planos, valores, vantagens, dependentes, carências, benefícios por procedimento/especialidade, faixas de parcelamento, formas de pagamento e prazos de inadimplência. |
 | **PPR3** | **Venda:** botão "Oferecer PPR+" no cockpit do comercial e na venda direta; adesão com titular + dependentes; contrato de adesão; ativação pela regra de ouro. |
 | **PPR4** | **Prontuário:** selo PPR+, titular/dependentes clicáveis, histórico; **cartão do beneficiário** (impressão/digital + validação pelo código). |
 | **PPR5** | **Motor de benefícios ligado** à negociação comercial e à venda direta (acima da regra da rede/unidade), com registro de uso e liberação por frequência. |

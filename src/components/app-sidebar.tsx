@@ -20,6 +20,7 @@ import {
   DoorOpen,
   FileText,
   Handshake,
+  HeartPulse,
   Home,
   LogOut,
   MessagesSquare,
@@ -80,6 +81,8 @@ type Props = {
   canViewStaff: boolean;
   /** Módulo Risarte Empresarial (B2B). */
   canViewEmpresarial: boolean;
+  /** PPR2: seção do Programa de Prevenção Riso+ (PPR+). */
+  canViewPpr: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -138,6 +141,13 @@ const EMPRESARIAL_ITEM = {
   icon: Briefcase,
 };
 
+// PPR2: Programa de Prevenção Riso+ (PPR+) — prevenção e recorrência.
+const PPR_ITEM = {
+  href: "/ppr",
+  label: "PPR+ (Prevenção)",
+  icon: HeartPulse,
+};
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -162,6 +172,7 @@ export function AppSidebar({
   canViewComercial,
   canViewStaff,
   canViewEmpresarial,
+  canViewPpr,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -219,6 +230,9 @@ export function AppSidebar({
   }
   if (!dentistOnly && canViewEmpresarial) {
     navItems = [...navItems, EMPRESARIAL_ITEM];
+  }
+  if (canViewPpr) {
+    navItems = [...navItems, PPR_ITEM];
   }
 
   function switchClinic(clinicId: string) {

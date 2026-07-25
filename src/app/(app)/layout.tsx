@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getSessionContext } from "@/lib/auth";
 import { canViewEmpresarial } from "@/lib/empresarial/access";
+import { canViewPpr } from "@/lib/ppr/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -89,6 +90,9 @@ export default async function AppLayout({
   // Módulo Risarte Empresarial (B2B).
   const canViewEmp = canViewEmpresarial(session);
 
+  // PPR2: seção do Programa de Prevenção Riso+ (toda a operação enxerga).
+  const canSeePpr = canViewPpr(session);
+
   // Estado da sidebar (minimizada?) vem do cookie para não "piscar" no load.
   const cookieStore = await cookies();
   const sidebarCollapsed =
@@ -106,6 +110,7 @@ export default async function AppLayout({
         canViewComercial={canViewComercial}
         canViewStaff={canViewStaff}
         canViewEmpresarial={canViewEmp}
+        canViewPpr={canSeePpr}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

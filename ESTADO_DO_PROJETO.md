@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.128.0** · Última migração: **0162**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.129.0** · Última migração: **0162**_
+
+> **PPR+ — PPR2: seção dedicada + configuração ✅ (v0.129.0, sem migração):** o
+> menu ganhou **PPR+ (Prevenção)**. A tela `/ppr` explica **o que é o programa**
+> (descrição + os 6 objetivos) e mostra os **planos ativos** em cartões, com
+> mensalidade, dependentes, vantagens e as condições de pagamento. Em
+> `/ppr/configuracao` (Admin Master) dá para **criar/renomear/ativar planos**,
+> editar **tudo** de cada um em `/ppr/configuracao/[planId]`: mensalidade,
+> dependentes incluídos/extras e limite, desconto à vista, máximo de parcelas,
+> **valor mínimo da parcela**, carência, formas de pagamento do tratamento e da
+> mensalidade, Riso+ Social (com a régua de pontos), **vantagens** (texto da
+> venda/contrato), **faixas de desconto por parcelamento** e **benefícios por
+> procedimento ou especialidade** (isento/%, carência, "libera a cada N meses",
+> limite de usos e brinde — a escova da limpeza). A tela também traz os prazos
+> de **inadimplência** (suspende/cancela) no padrão cascata rede + unidade.
+> **Próximo: PPR3** — botão "Oferecer PPR+", adesão com dependentes e contrato.
 
 > **PPR+ — PPR1: fundação ✅ (v0.128.0, migração 0162):** começou o **Programa
 > de Prevenção Riso+**, o módulo que antecede o Financeiro. Especificação
