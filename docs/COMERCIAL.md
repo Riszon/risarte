@@ -183,6 +183,21 @@ entregue no COM5 v1).
 - No **Dashboard do Comercial**: **quantidade** de vendas diretas, **ticket
   médio**, **valor total**, **quantidade de procedimentos** e **ranking dos
   procedimentos mais vendidos**. Consolidado **e** por unidade.
+- **Indicadores consolidados (decisão do dono, 25/07/2026).** Estes indicadores
+  somam **fluxo comercial + venda direta**, sempre exibindo o **Geral** e a
+  quebra por origem:
+  - **Ticket médio da parcela** — média do valor da parcela nas vendas
+    parceladas (2× ou mais) das duas origens;
+  - **Desconto concedido** — no comercial é o ajuste negativo da negociação; na
+    venda direta é o **desconto manual + o desconto do programa** (Empresarial);
+  - **Cancelados** — cartões cancelados do funil + **vendas diretas canceladas**
+    (a lista mostra data e quem cancelou);
+  - **Por tipo de pagamento** — cada forma mostra quanto veio de cada origem;
+  - **Ticket médio por tipo de cliente** — na venda direta o tipo vem da **fase
+    atual** do cliente: **Fase 1 (Aquisição) ou Fase 2 (Conversão Clínica) =
+    cliente novo**; **qualquer outra fase = cliente Risarte**.
+  Só entram as vendas diretas **concluídas** (contrato assinado + pagamento
+  confirmado); as pendentes ficam em "Aguardando fechamento".
 
 ## 8. Split de pagamento (ponte com o Financeiro)
 

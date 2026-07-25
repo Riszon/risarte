@@ -171,23 +171,6 @@ export default async function DashboardComercialPage(
     (s, n) => s + (n.adjustment_cents < 0 ? -n.adjustment_cents : 0),
     0
   );
-  const avgInstallments =
-    salesCount > 0
-      ? accepted.reduce((s, n) => s + (n.installments || 1), 0) / salesCount
-      : 0;
-
-  // Ticket médio DO PARCELAMENTO = valor médio de cada parcela nas vendas
-  // parceladas (quanto o cliente paga por mês, em média).
-  const installmentSales = accepted.filter((n) => (n.installments || 1) > 1);
-  const avgInstallmentTicket =
-    installmentSales.length > 0
-      ? Math.round(
-          installmentSales.reduce(
-            (s, n) => s + n.final_cents / (n.installments || 1),
-            0
-          ) / installmentSales.length
-        )
-      : 0;
 
   // Oportunidades AGUARDANDO FECHAMENTO (aceitas ainda não concluídas + em
   // negociação/autorização) — quantidade e valor.
@@ -212,6 +195,120 @@ export default async function DashboardComercialPage(
   // logo abaixo, depois que a consulta delas roda).
   const awaitingNegCount = openNegs.length;
   const awaitingNegTotal = openNegs.reduce((s, n) => s + n.final_cents, 0);
+
+  // -- Vendas diretas ---------------------------------------------------------
+  // Vêm antes dos indicadores porque quase todos são consolidados (comercial +
+  // direta): parcela, desconto, cancelados, pagamento e tipo de cliente.
+  let dsQuery = supabase
+    .from("direct_sales")
+    .select(
+      "id, client_id, client_name, clinic_id, final_cents, discount_cents, program_discount_cents, installments, payment_method, status, cancelled, contract_signed, payment_confirmed, closed_at, created_at, items:direct_sale_items ( description, quantity, final_cents, procedure_id )"
+    )
+    .neq("cancelled", true);
+  if (clinicFilter) dsQuery = dsQuery.eq("clinic_id", clinicFilter);
+  if (start) dsQuery = dsQuery.gte("created_at", start);
+  if (end) dsQuery = dsQuery.lte("created_at", end);
+
+  // Canceladas entram pela DATA DO CANCELAMENTO (como o cartão do funil, que
+  // usa a data em que foi marcado).
+  let dsCancelQuery = supabase
+    .from("direct_sales")
+    .select(
+      "id, client_id, client_name, clinic_id, final_cents, cancelled_at, cancelled_by"
+    )
+    .eq("cancelled", true);
+  if (clinicFilter) dsCancelQuery = dsCancelQuery.eq("clinic_id", clinicFilter);
+  if (start) dsCancelQuery = dsCancelQuery.gte("cancelled_at", start);
+  if (end) dsCancelQuery = dsCancelQuery.lte("cancelled_at", end);
+
+  const [{ data: dsRows }, { data: dsCancelRows }] = await Promise.all([
+    dsQuery,
+    dsCancelQuery,
+  ]);
+  const ds = (dsRows ?? []) as {
+    id: string;
+    client_id: string | null;
+    client_name: string | null;
+    clinic_id: string;
+    final_cents: number;
+    discount_cents: number;
+    program_discount_cents: number;
+    installments: number;
+    payment_method: string | null;
+    status: string;
+    cancelled: boolean;
+    contract_signed: boolean;
+    payment_confirmed: boolean;
+    closed_at: string | null;
+    created_at: string;
+    items:
+      | {
+          description: string;
+          quantity: number;
+          final_cents: number;
+          procedure_id: string | null;
+        }[]
+      | null;
+  }[];
+  const dsCancelled = (dsCancelRows ?? []) as {
+    id: string;
+    client_id: string | null;
+    client_name: string | null;
+    clinic_id: string;
+    final_cents: number;
+    cancelled_at: string | null;
+    cancelled_by: string | null;
+  }[];
+
+  // Venda direta CONCLUÍDA = contrato assinado + pagamento confirmado (regra de
+  // ouro). As demais entram no "aguardando fechamento", junto com o comercial.
+  const dsClosed = ds.filter((d) => d.closed_at != null);
+  const dsPending = ds.filter((d) => d.closed_at == null);
+  const dsCount = dsClosed.length;
+  const dsTotal = dsClosed.reduce((s, d) => s + d.final_cents, 0);
+  const dsTicket = dsCount > 0 ? Math.round(dsTotal / dsCount) : 0;
+  const dsProcCount = dsClosed.reduce(
+    (s, d) => s + (d.items ?? []).reduce((a, i) => a + i.quantity, 0),
+    0
+  );
+  const dsPendingCount = dsPending.length;
+  const dsPendingTotal = dsPending.reduce((s, d) => s + d.final_cents, 0);
+
+  // Ticket médio da PARCELA — só as vendas parceladas (2× ou mais), nas duas
+  // origens. O "geral" é a média das parcelas de todas elas juntas.
+  type InstRow = { finalCents: number; installments: number };
+  const instAvg = (rows: InstRow[]) =>
+    rows.length > 0
+      ? Math.round(
+          rows.reduce((s, r) => s + r.finalCents / r.installments, 0) /
+            rows.length
+        )
+      : 0;
+  const comInstRows: InstRow[] = accepted
+    .filter((n) => (n.installments || 1) > 1)
+    .map((n) => ({ finalCents: n.final_cents, installments: n.installments }));
+  const dirInstRows: InstRow[] = dsClosed
+    .filter((d) => (d.installments || 1) > 1)
+    .map((d) => ({ finalCents: d.final_cents, installments: d.installments }));
+  const allInstRows = [...comInstRows, ...dirInstRows];
+  const instTicket = {
+    geral: instAvg(allInstRows),
+    comercial: instAvg(comInstRows),
+    direta: instAvg(dirInstRows),
+  };
+  const avgInstallments =
+    allInstRows.length > 0
+      ? allInstRows.reduce((s, r) => s + r.installments, 0) / allInstRows.length
+      : 0;
+
+  // Descontos concedidos — no comercial é o ajuste negativo da negociação; na
+  // venda direta é o desconto manual + o desconto do programa (Empresarial).
+  const dsDiscountManual = dsClosed.reduce((s, d) => s + (d.discount_cents ?? 0), 0);
+  const dsDiscountProgram = dsClosed.reduce(
+    (s, d) => s + (d.program_discount_cents ?? 0),
+    0
+  );
+  const dsDiscountTotal = dsDiscountManual + dsDiscountProgram;
 
   // -- Listas por trás dos cartões (pop-up ao clicar) -------------------------
   // Follow-up, perdidos e cancelados vêm do cartão do funil; as vendas e o
@@ -285,9 +382,10 @@ export default async function DashboardComercialPage(
   }
   const outcomeAuthorIds = [
     ...new Set(
-      closedCards
-        .map((c) => c.outcome_by)
-        .filter((x): x is string => Boolean(x))
+      [
+        ...closedCards.map((c) => c.outcome_by),
+        ...dsCancelled.map((d) => d.cancelled_by),
+      ].filter((x): x is string => Boolean(x))
     ),
   ];
   const authorNames = new Map<string, string>();
@@ -371,16 +469,59 @@ export default async function DashboardComercialPage(
       .join(" · "),
   });
   const lostItems: DrillItem[] = lostCards.map(outcomeItem);
-  const cancelledItems: DrillItem[] = cancelledCards.map(outcomeItem);
+  // Cancelados = funil comercial + vendas diretas canceladas (consolidado).
+  const cancelledComItems: DrillItem[] = cancelledCards.map(outcomeItem);
+  const cancelledDirectItems: DrillItem[] = dsCancelled.map((d) => ({
+    clientId: d.client_id ?? "",
+    clientName: d.client_name ?? "Cliente avulso",
+    code: null,
+    clinicName: unitOptions.find((u) => u.id === d.clinic_id)?.name ?? null,
+    badge: "Venda direta",
+    badgeTone: "rose" as const,
+    valueCents: d.final_cents,
+    note: [
+      fmtDay(d.cancelled_at) ?? "sem data",
+      d.cancelled_by ? `por ${authorNames.get(d.cancelled_by) ?? "—"}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  }));
+  const cancelledItems: DrillItem[] = [
+    ...cancelledComItems,
+    ...cancelledDirectItems,
+  ];
 
-  // Por tipo de pagamento (vendas aceitas).
-  const byPayment = new Map<string, { count: number; total: number }>();
+  // Por tipo de pagamento — consolidado: vendas aceitas do comercial + vendas
+  // diretas concluídas, mantendo a quebra por origem em cada forma.
+  type PayAgg = {
+    count: number;
+    total: number;
+    comCount: number;
+    comTotal: number;
+    dirCount: number;
+    dirTotal: number;
+  };
+  const byPayment = new Map<string, PayAgg>();
+  const payAgg = (k: string): PayAgg => {
+    const a =
+      byPayment.get(k) ??
+      { count: 0, total: 0, comCount: 0, comTotal: 0, dirCount: 0, dirTotal: 0 };
+    byPayment.set(k, a);
+    return a;
+  };
   for (const n of accepted) {
-    const k = n.payment_method ?? "—";
-    const a = byPayment.get(k) ?? { count: 0, total: 0 };
+    const a = payAgg(n.payment_method ?? "—");
     a.count += 1;
     a.total += n.final_cents;
-    byPayment.set(k, a);
+    a.comCount += 1;
+    a.comTotal += n.final_cents;
+  }
+  for (const d of dsClosed) {
+    const a = payAgg(d.payment_method ?? "—");
+    a.count += 1;
+    a.total += d.final_cents;
+    a.dirCount += 1;
+    a.dirTotal += d.final_cents;
   }
 
   // Por pilar — precisa do pilar do cliente das vendas aceitas.
@@ -478,16 +619,41 @@ export default async function DashboardComercialPage(
 
   const newSales = accepted.filter((n) => newClientIds.has(n.client_id));
   const returnSales = accepted.filter((n) => returningClientIds.has(n.client_id));
-  const ticketNew =
-    newSales.length > 0
-      ? Math.round(newSales.reduce((s, n) => s + n.final_cents, 0) / newSales.length)
+
+  // Venda direta: a regra do dono é pela FASE ATUAL do cliente —
+  // Fase 1 (Aquisição) ou Fase 2 (Conversão Clínica) = cliente NOVO;
+  // qualquer outra fase = cliente Risarte (já é da casa).
+  const dsClientIds = [
+    ...new Set(
+      dsClosed.map((d) => d.client_id).filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const phaseByClient = new Map<string, string>();
+  if (dsClientIds.length > 0) {
+    const { data: phaseRows } = await supabase
+      .from("clients")
+      .select("id, journey_phase")
+      .in("id", dsClientIds);
+    for (const c of phaseRows ?? [])
+      phaseByClient.set(c.id as string, c.journey_phase as string);
+  }
+  const NEW_PHASES = new Set(["acquisition", "clinical_conversion"]);
+  // Venda sem cliente cadastrado (avulsa) conta como cliente novo.
+  const dsIsNew = (d: { client_id: string | null }) =>
+    !d.client_id || NEW_PHASES.has(phaseByClient.get(d.client_id) ?? "acquisition");
+  const dsNewSales = dsClosed.filter(dsIsNew);
+  const dsReturnSales = dsClosed.filter((d) => !dsIsNew(d));
+
+  const ticketOf = (rows: { final_cents: number }[]) =>
+    rows.length > 0
+      ? Math.round(rows.reduce((s, r) => s + r.final_cents, 0) / rows.length)
       : 0;
-  const ticketReturn =
-    returnSales.length > 0
-      ? Math.round(
-          returnSales.reduce((s, n) => s + n.final_cents, 0) / returnSales.length
-        )
-      : 0;
+  const ticketNew = ticketOf(newSales);
+  const ticketReturn = ticketOf(returnSales);
+  const ticketNewDirect = ticketOf(dsNewSales);
+  const ticketReturnDirect = ticketOf(dsReturnSales);
+  const ticketNewAll = ticketOf([...newSales, ...dsNewSales]);
+  const ticketReturnAll = ticketOf([...returnSales, ...dsReturnSales]);
 
   // Clientes em follow-up (estado atual, não do período).
   let followQuery = supabase
@@ -497,52 +663,6 @@ export default async function DashboardComercialPage(
   if (clinicFilter) followQuery = followQuery.eq("clinic_id", clinicFilter);
   const { data: followRows } = await followQuery;
   const inFollowup = (followRows ?? []).length;
-
-  // -- Vendas diretas ---------------------------------------------------------
-  let dsQuery = supabase
-    .from("direct_sales")
-    .select(
-      "id, client_id, client_name, clinic_id, final_cents, status, cancelled, contract_signed, payment_confirmed, closed_at, created_at, items:direct_sale_items ( description, quantity, final_cents, procedure_id )"
-    )
-    .neq("cancelled", true);
-  if (clinicFilter) dsQuery = dsQuery.eq("clinic_id", clinicFilter);
-  if (start) dsQuery = dsQuery.gte("created_at", start);
-  if (end) dsQuery = dsQuery.lte("created_at", end);
-  const { data: dsRows } = await dsQuery;
-  const ds = (dsRows ?? []) as {
-    id: string;
-    client_id: string | null;
-    client_name: string | null;
-    clinic_id: string;
-    final_cents: number;
-    status: string;
-    cancelled: boolean;
-    contract_signed: boolean;
-    payment_confirmed: boolean;
-    closed_at: string | null;
-    created_at: string;
-    items:
-      | {
-          description: string;
-          quantity: number;
-          final_cents: number;
-          procedure_id: string | null;
-        }[]
-      | null;
-  }[];
-  // Venda direta CONCLUÍDA = contrato assinado + pagamento confirmado (regra de
-  // ouro). As demais entram no "aguardando fechamento", junto com o comercial.
-  const dsClosed = ds.filter((d) => d.closed_at != null);
-  const dsPending = ds.filter((d) => d.closed_at == null);
-  const dsCount = dsClosed.length;
-  const dsTotal = dsClosed.reduce((s, d) => s + d.final_cents, 0);
-  const dsTicket = dsCount > 0 ? Math.round(dsTotal / dsCount) : 0;
-  const dsProcCount = dsClosed.reduce(
-    (s, d) => s + (d.items ?? []).reduce((a, i) => a + i.quantity, 0),
-    0
-  );
-  const dsPendingCount = dsPending.length;
-  const dsPendingTotal = dsPending.reduce((s, d) => s + d.final_cents, 0);
 
   // -- TOTAL GERAL (comercial + venda direta) --------------------------------
   const grandCount = salesCount + dsCount;
@@ -903,16 +1023,30 @@ export default async function DashboardComercialPage(
             hint={`${lost} perda(s)`}
             progress={conversion}
           />
-          <Kpi
+          <SplitKpi
             tone="violet"
             icon={<CreditCard className="size-4" />}
             label="Ticket médio da parcela"
-            value={avgInstallmentTicket > 0 ? formatBRL(avgInstallmentTicket) : "—"}
+            value={instTicket.geral > 0 ? formatBRL(instTicket.geral) : "—"}
             hint={
-              avgInstallments > 0
-                ? `parcelamento médio ${avgInstallments.toFixed(1)}×`
+              allInstRows.length > 0
+                ? `${allInstRows.length} venda(s) parcelada(s) · média ${avgInstallments.toFixed(1)}×`
                 : "sem parcelamento no período"
             }
+            parts={[
+              {
+                label: "Comercial",
+                dot: "bg-sky-500",
+                value: comInstRows.length > 0 ? formatBRL(instTicket.comercial) : "—",
+                sub: `${comInstRows.length} parcelada(s)`,
+              },
+              {
+                label: "Venda direta",
+                dot: "bg-gold",
+                value: dirInstRows.length > 0 ? formatBRL(instTicket.direta) : "—",
+                sub: `${dirInstRows.length} parcelada(s)`,
+              },
+            ]}
           />
         </div>
       </section>
@@ -953,12 +1087,29 @@ export default async function DashboardComercialPage(
             scopeLabel={unitLabel}
             emptyValueLabel="Clientes em follow-up"
           />
-          <Kpi
+          <SplitKpi
             tone="muted"
             icon={<TicketPercent className="size-4" />}
             label="Desconto concedido"
-            value={formatBRL(discountTotal)}
+            value={formatBRL(discountTotal + dsDiscountTotal)}
             hint="nas vendas fechadas"
+            parts={[
+              {
+                label: "Comercial",
+                dot: "bg-sky-500",
+                value: formatBRL(discountTotal),
+                sub: "negociação",
+              },
+              {
+                label: "Venda direta",
+                dot: "bg-gold",
+                value: formatBRL(dsDiscountTotal),
+                sub:
+                  dsDiscountProgram > 0
+                    ? `programa ${formatBRL(dsDiscountProgram)}`
+                    : "manual",
+              },
+            ]}
           />
         </div>
       </section>
@@ -986,7 +1137,7 @@ export default async function DashboardComercialPage(
             icon="cancelled"
             label="Cancelados"
             value={String(cancelledItems.length)}
-            hint="negociações canceladas"
+            hint={`comercial ${cancelledComItems.length} + direta ${cancelledDirectItems.length}`}
             items={cancelledItems}
             dialogTitle="Clientes cancelados"
             scopeLabel={`${unitLabel} · ${periodDescription}`}
@@ -1032,24 +1183,64 @@ export default async function DashboardComercialPage(
               Ticket médio por tipo de cliente
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Quanto vale, em média, cada venda fechada.
+              Quanto vale, em média, cada venda fechada (comercial + direta).
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <CompareRow
               label="Clientes novos"
-              count={newSales.length}
-              valueCents={newSales.length > 0 ? ticketNew : null}
-              max={Math.max(ticketNew, ticketReturn, 1)}
+              count={newSales.length + dsNewSales.length}
+              valueCents={
+                newSales.length + dsNewSales.length > 0 ? ticketNewAll : null
+              }
+              max={Math.max(ticketNewAll, ticketReturnAll, 1)}
               tone="sky"
+              split={[
+                {
+                  label: "comercial",
+                  dot: "bg-sky-500",
+                  count: newSales.length,
+                  valueCents: newSales.length > 0 ? ticketNew : null,
+                },
+                {
+                  label: "direta",
+                  dot: "bg-gold",
+                  count: dsNewSales.length,
+                  valueCents: dsNewSales.length > 0 ? ticketNewDirect : null,
+                },
+              ]}
             />
             <CompareRow
               label="Clientes Risarte"
-              count={returnSales.length}
-              valueCents={returnSales.length > 0 ? ticketReturn : null}
-              max={Math.max(ticketNew, ticketReturn, 1)}
+              count={returnSales.length + dsReturnSales.length}
+              valueCents={
+                returnSales.length + dsReturnSales.length > 0
+                  ? ticketReturnAll
+                  : null
+              }
+              max={Math.max(ticketNewAll, ticketReturnAll, 1)}
               tone="gold"
+              split={[
+                {
+                  label: "comercial",
+                  dot: "bg-sky-500",
+                  count: returnSales.length,
+                  valueCents: returnSales.length > 0 ? ticketReturn : null,
+                },
+                {
+                  label: "direta",
+                  dot: "bg-gold",
+                  count: dsReturnSales.length,
+                  valueCents:
+                    dsReturnSales.length > 0 ? ticketReturnDirect : null,
+                },
+              ]}
             />
+            <p className="border-t pt-2 text-[11px] text-muted-foreground">
+              Na venda direta, o cliente é <strong>novo</strong> quando está na
+              Fase 1 (Aquisição) ou Fase 2 (Conversão Clínica); nas demais fases
+              já é <strong>cliente Risarte</strong>.
+            </p>
           </CardContent>
         </Card>
       </section>
@@ -1063,7 +1254,7 @@ export default async function DashboardComercialPage(
               Por tipo de pagamento
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Como os clientes pagaram no período.
+              Comercial + venda direta, com a quebra por origem.
             </p>
           </CardHeader>
           <CardContent>
@@ -1085,6 +1276,20 @@ export default async function DashboardComercialPage(
                       valueCents={v.total}
                       pct={(v.total / maxPay) * 100}
                       tone="violet"
+                      split={[
+                        {
+                          label: "comercial",
+                          dot: "bg-sky-500",
+                          count: v.comCount,
+                          valueCents: v.comTotal,
+                        },
+                        {
+                          label: "direta",
+                          dot: "bg-gold",
+                          count: v.dirCount,
+                          valueCents: v.dirTotal,
+                        },
+                      ]}
                     />
                   ))}
               </ul>
@@ -1476,6 +1681,73 @@ function Kpi({
   );
 }
 
+/** Quebra por origem (comercial × venda direta) usada nas linhas e cartões. */
+type OriginSplit = {
+  label: string;
+  dot: string;
+  count: number;
+  valueCents?: number | null;
+};
+
+/**
+ * Cartão de indicador com o número GERAL em destaque e, embaixo, quanto vem do
+ * fluxo comercial e quanto vem da venda direta.
+ */
+function SplitKpi({
+  tone,
+  icon,
+  label,
+  value,
+  hint,
+  parts,
+}: {
+  tone: Tone;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint?: string;
+  parts: { label: string; dot: string; value: string; sub?: string }[];
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+      <span
+        className={cn("absolute inset-x-0 top-0 h-1", TONE_ACCENT[tone])}
+        aria-hidden
+      />
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <span
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-lg",
+            TONE_ICON[tone]
+          )}
+          aria-hidden
+        >
+          {icon}
+        </span>
+      </div>
+      <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+        {value}
+      </p>
+      {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
+      <div className="mt-2 grid grid-cols-2 gap-2 border-t pt-2">
+        {parts.map((p) => (
+          <div key={p.label} className="min-w-0">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className={cn("size-1.5 rounded-full", p.dot)} aria-hidden />
+              {p.label}
+            </p>
+            <p className="truncate text-sm font-medium tabular-nums">{p.value}</p>
+            {p.sub && (
+              <p className="truncate text-[10px] text-muted-foreground">{p.sub}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Linha com barra proporcional — usada nas listas (pagamento, pilar, ranking). */
 function BarRow({
   rank,
@@ -1486,6 +1758,7 @@ function BarRow({
   ticketCents,
   pct,
   tone,
+  split,
 }: {
   rank?: number;
   label: string;
@@ -1495,6 +1768,8 @@ function BarRow({
   ticketCents?: number;
   pct: number;
   tone: Tone;
+  /** Quebra comercial × direta mostrada abaixo da barra. */
+  split?: OriginSplit[];
 }) {
   return (
     <li>
@@ -1535,6 +1810,17 @@ function BarRow({
           </span>
         )}
       </div>
+      {split && (
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+          {split.map((s) => (
+            <span key={s.label} className="flex items-center gap-1">
+              <span className={cn("size-1.5 rounded-full", s.dot)} aria-hidden />
+              {s.label} {s.count} ·{" "}
+              <span className="tabular-nums">{formatBRL(s.valueCents ?? 0)}</span>
+            </span>
+          ))}
+        </p>
+      )}
     </li>
   );
 }
@@ -1583,12 +1869,15 @@ function CompareRow({
   valueCents,
   max,
   tone,
+  split,
 }: {
   label: string;
   count: number;
   valueCents: number | null;
   max: number;
   tone: Tone;
+  /** Quebra comercial × direta mostrada abaixo da barra. */
+  split?: OriginSplit[];
 }) {
   return (
     <div>
@@ -1608,6 +1897,19 @@ function CompareRow({
           }}
         />
       </div>
+      {split && (
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+          {split.map((s) => (
+            <span key={s.label} className="flex items-center gap-1">
+              <span className={cn("size-1.5 rounded-full", s.dot)} aria-hidden />
+              {s.label} ({s.count}) ·{" "}
+              <span className="tabular-nums">
+                {s.valueCents != null ? formatBRL(s.valueCents) : "—"}
+              </span>
+            </span>
+          ))}
+        </p>
+      )}
     </div>
   );
 }

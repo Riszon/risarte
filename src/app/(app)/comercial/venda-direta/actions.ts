@@ -197,7 +197,15 @@ export async function cancelDirectSale(
   const supabase = await createClient();
   const { error } = await supabase
     .from("direct_sales")
-    .update({ cancelled: true, status: "cancelada", updated_at: new Date().toISOString() })
+    .update({
+      cancelled: true,
+      status: "cancelada",
+      // Data/autor ficam registrados para o dashboard mostrar na lista de
+      // cancelados (migração 0161).
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: session.userId,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", saleId)
     .is("closed_at", null);
   if (error) {

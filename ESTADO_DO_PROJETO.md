@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/07/2026 · Versão do sistema: **0.126.0** · Última migração: **0160**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.127.0** · Última migração: **0161**_
+
+> **Dashboard — indicadores consolidados (comercial + venda direta) ✅
+> (v0.127.0, migração 0161):** cinco indicadores que só olhavam o fluxo comercial
+> passaram a somar as **vendas diretas**, sempre mostrando o **Geral** em
+> destaque e, embaixo, quanto vem de cada origem: **Ticket médio da parcela**
+> (agora inclui as vendas diretas parceladas), **Desconto concedido** (na venda
+> direta soma o desconto manual + o do programa Empresarial), **Cancelados**
+> (funil + vendas diretas canceladas, com data e quem cancelou na lista),
+> **Por tipo de pagamento** (cada forma mostra a quebra comercial × direta) e
+> **Ticket médio por tipo de cliente**. Regra da venda direta para o tipo de
+> cliente (definida pelo dono): **Fase 1 ou Fase 2 = cliente novo**; qualquer
+> outra fase = **cliente Risarte**. A migração 0161 grava **quem e quando**
+> cancelou uma venda direta.
 
 > **Dashboard — Total Geral + composição + período específico ✅ (v0.126.0, sem
 > migração):** o topo agora abre com o **TOTAL GERAL de vendas** (quantidade e
