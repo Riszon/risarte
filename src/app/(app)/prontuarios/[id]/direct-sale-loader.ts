@@ -21,8 +21,12 @@ import type { UserRole } from "@/lib/roles";
 export type SellableProcedure = {
   id: string;
   name: string;
-  /** Preço cheio da unidade (com o ajuste da unidade, se houver). */
+  /** Preço que a venda vai usar (preço da unidade, se houver; senão o padrão). */
   unitPriceCents: number;
+  /** Preço padrão da REDE (para transparência quando a unidade tem outro). */
+  defaultPriceCents: number;
+  /** Verdadeiro quando a unidade tem preço próprio (diferente do padrão). */
+  isUnitPrice: boolean;
   /** Quanto o programa desconta neste procedimento (0 = sem benefício). */
   programDiscountCents: number;
   /** Motivo de o benefício estar indisponível (carência/limite), se houver. */
@@ -114,8 +118,9 @@ export async function loadDirectSaleContext(
     if (!canLaunchDirectSaleProcedure(roles, session.isAdminMaster, flags)) {
       continue;
     }
-    const unitPriceCents =
-      priceByProcedure.get(p.id) ?? p.default_price_cents ?? 0;
+    const defaultPriceCents = p.default_price_cents ?? 0;
+    const override = priceByProcedure.get(p.id);
+    const unitPriceCents = override ?? defaultPriceCents;
     const benefit = program.byProcedure[p.id];
     const applied =
       benefit && benefit.available
@@ -128,6 +133,8 @@ export async function loadDirectSaleContext(
       id: p.id,
       name: p.name,
       unitPriceCents,
+      defaultPriceCents,
+      isUnitPrice: override != null && override !== defaultPriceCents,
       programDiscountCents: applied.savedCents,
       benefitBlockedReason:
         benefit && !benefit.available ? benefit.blockedReason : null,

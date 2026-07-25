@@ -212,6 +212,7 @@ export function DirectSaleDialog({
                 {procedures.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} — {formatBRL(p.unitPriceCents)}
+                    {p.isUnitPrice ? " (preço da unidade)" : ""}
                   </option>
                 ))}
               </select>
@@ -229,7 +230,15 @@ export function DirectSaleDialog({
                       key={l.procedureId}
                       className="flex flex-wrap items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm"
                     >
-                      <span className="min-w-0 flex-1">{p.name}</span>
+                      <span className="min-w-0 flex-1">
+                        {p.name}
+                        {p.isUnitPrice && (
+                          <span className="block text-[11px] text-muted-foreground">
+                            preço desta unidade · padrão da rede{" "}
+                            {formatBRL(p.defaultPriceCents)}
+                          </span>
+                        )}
+                      </span>
                       <input
                         type="number"
                         min={1}
