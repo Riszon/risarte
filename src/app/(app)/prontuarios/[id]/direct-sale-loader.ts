@@ -1,7 +1,7 @@
 import "server-only";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { loadClientProgram } from "@/lib/empresarial/benefits";
+import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import {
   resolveCommercialRule,
@@ -93,7 +93,7 @@ export async function loadDirectSaleContext(
         .from("commercial_rules")
         .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
         .returns<CommercialRuleRow[]>(),
-      loadClientProgram(clientId),
+      loadClientPrograms(clientId),
     ]);
 
   const priceByProcedure = new Map<string, number>();
@@ -187,7 +187,8 @@ export async function loadDirectSaleContext(
     appointments,
     rule: resolveCommercialRule(ruleRows ?? [], clinicId),
     programActive: program.active,
-    programName: program.companyName,
+    // Mostra de qual programa veio o benefício (PPR+ ou Empresarial).
+    programName: program.label ?? program.companyName,
   };
 }
 
@@ -238,7 +239,7 @@ export async function loadClientDirectSales(
       .from("commercial_rules")
       .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
       .returns<CommercialRuleRow[]>(),
-    loadClientProgram(clientId),
+    loadClientPrograms(clientId),
   ]);
   if (saleRes.error)
     console.error("loadClientDirectSales sales failed:", saleRes.error.message);

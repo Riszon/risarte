@@ -18,7 +18,7 @@ import {
   type MethodologyPillar,
 } from "@/lib/journey";
 import type { UserRole } from "@/lib/roles";
-import { loadClientProgram } from "@/lib/empresarial/benefits";
+import { loadClientPrograms } from "@/lib/programs";
 import { getUnitSchedulingData } from "../../agenda/actions";
 import type { ReactNode } from "react";
 import { type EvaluationFlowKind } from "@/lib/evaluation-steps";
@@ -70,7 +70,7 @@ export default async function EvaluationCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, gender, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, gender, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -441,10 +441,12 @@ export default async function EvaluationCockpitPage(
       ]),
   };
 
+  // PPR5: o painel do programa vale para o Empresarial E para o PPR+.
   const isProgramMember =
-    Boolean(client.empresarial_company_id) &&
-    client.empresarial_active !== false;
-  const program = isProgramMember ? await loadClientProgram(client.id) : null;
+    (Boolean(client.empresarial_company_id) &&
+      client.empresarial_active !== false) ||
+    Boolean(client.ppr_membership_id);
+  const program = isProgramMember ? await loadClientPrograms(client.id) : null;
   const pillar = client.methodology_pillar as MethodologyPillar | null;
 
   // Ferramentas embutidas em cada passo do roteiro (Fases 2/6): cada momento da

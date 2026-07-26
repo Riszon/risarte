@@ -11,8 +11,55 @@ import {
   addPprDependent,
   cancelPprMembership,
   pprCloseStep,
+  setPprBeneficiaryClinic,
   setPprStatus,
 } from "../../actions";
+
+/**
+ * Unidade do dependente (PPR5): ele pode pertencer a uma unidade diferente da
+ * do titular; mudar aqui só atualiza a informação — o plano segue o mesmo.
+ */
+export function PprBeneficiaryClinicSelect({
+  beneficiaryId,
+  clinicId,
+  units,
+}: {
+  beneficiaryId: string;
+  clinicId: string;
+  units: { id: string; name: string }[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      Mudar de unidade:
+      <select
+        value={clinicId}
+        disabled={isPending}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (next === clinicId) return;
+          startTransition(async () => {
+            const r = await setPprBeneficiaryClinic(beneficiaryId, next);
+            if (!r.ok) toast.error(r.error ?? "Não foi possível alterar.");
+            else {
+              toast.success("Unidade do dependente atualizada.");
+              router.refresh();
+            }
+          });
+        }}
+        className="h-7 rounded-md border border-input bg-transparent px-1.5 text-[11px]"
+      >
+        {units.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 const selectClass =
   "mt-0.5 h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -28,6 +75,8 @@ export function PprMembershipActions({
   allowsDependents,
   dependentCount,
   maxDependents,
+  units,
+  clinicId,
 }: {
   membershipId: string;
   status: PprStatus;
@@ -38,6 +87,9 @@ export function PprMembershipActions({
   allowsDependents: boolean;
   dependentCount: number;
   maxDependents: number | null;
+  units: { id: string; name: string }[];
+  /** Unidade do plano — padrão para o novo dependente. */
+  clinicId: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -91,6 +143,7 @@ export function PprMembershipActions({
         cpf: String(form.get("cpf") ?? ""),
         birthDate: String(form.get("birthDate") ?? ""),
         relationship: String(form.get("relationship") ?? ""),
+        clinicId: String(form.get("clinicId") ?? "") || clinicId,
       });
       if (!r.ok) toast.error(r.error ?? "Não foi possível incluir.");
       else {
@@ -196,6 +249,16 @@ export function PprMembershipActions({
               {PPR_RELATIONSHIPS.map((r) => (
                 <option key={r} value={r}>
                   {r}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs">
+            <span className="text-muted-foreground">Unidade do dependente</span>
+            <select name="clinicId" defaultValue={clinicId} className={selectClass}>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
                 </option>
               ))}
             </select>

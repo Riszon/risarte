@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { loadClientProgram } from "@/lib/empresarial/benefits";
+import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import { canLaunchDirectSaleProcedure } from "@/lib/direct-sale";
 import type { UserRole } from "@/lib/roles";
@@ -86,7 +86,7 @@ export async function createDirectSaleFromChart(
       .from("clinic_procedure_prices")
       .select("procedure_id, price_cents")
       .eq("clinic_id", clinicId),
-    loadClientProgram(clientId),
+    loadClientPrograms(clientId),
   ]);
 
   const priceByProcedure = new Map<string, number>();
@@ -160,8 +160,52 @@ export async function createDirectSaleFromChart(
     return { ok: false, error: mapError(error.message) };
   }
 
+  const saleId = (data as string | null) ?? null;
+
+  // PPR5: procedimento coberto pelo PPR+ = benefício USADO. Isso é o que
+  // controla a frequência (ex.: limpeza libera de novo daqui a 4 meses).
+  if (saleId && program.ppr?.membershipId && program.ppr.beneficiaryId) {
+    const usages = payload
+      .filter(
+        (line) =>
+          program.sourceByProcedure[line.procedure_id] === "ppr" &&
+          line.program_discount_cents > 0
+      )
+      .map((line) => {
+        const b = program.ppr!.byProcedure[line.procedure_id];
+        const now = new Date();
+        const next =
+          b?.frequencyMonths && b.frequencyMonths > 0
+            ? new Date(
+                new Date(now).setMonth(now.getMonth() + b.frequencyMonths)
+              ).toISOString()
+            : null;
+        return {
+          membership_id: program.ppr!.membershipId,
+          beneficiary_id: program.ppr!.beneficiaryId,
+          clinic_id: clinicId,
+          client_id: clientId,
+          procedure_id: line.procedure_id,
+          benefit_id: b?.benefitId ?? null,
+          appointment_id: input.appointmentId,
+          direct_sale_id: saleId,
+          used_at: now.toISOString(),
+          next_available_at: next,
+          gift_delivered: false,
+          registered_by: session.userId,
+        };
+      });
+    if (usages.length > 0) {
+      const { error: uErr } = await supabase
+        .from("ppr_benefit_usages")
+        .insert(usages);
+      // Não derruba a venda: o registro de uso é controle interno.
+      if (uErr) console.error("ppr_benefit_usages insert failed:", uErr.message);
+    }
+  }
+
   revalidatePath(`/prontuarios/${clientId}`);
   revalidatePath("/comercial/venda-direta");
   revalidatePath("/notificacoes");
-  return { ok: true, saleId: (data as string | null) ?? undefined };
+  return { ok: true, saleId: saleId ?? undefined };
 }

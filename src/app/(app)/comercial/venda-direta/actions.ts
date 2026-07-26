@@ -212,6 +212,9 @@ export async function cancelDirectSale(
     console.error("cancelDirectSale failed:", error.message);
     return { ok: false, error: "Não foi possível cancelar a venda." };
   }
+  // PPR5: venda cancelada devolve o benefício usado (a limpeza volta a estar
+  // liberada, por exemplo).
+  await supabase.from("ppr_benefit_usages").delete().eq("direct_sale_id", saleId);
   await logAudit({
     action: "update",
     entityType: "direct_sale_cancel",

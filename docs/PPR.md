@@ -237,7 +237,7 @@ o selo do prontuário e as consultas ficarem baratas.
 | **PPR2** ✅ | Seção dedicada `/ppr` no menu: "Sobre o programa" + **configuração completa** (`/ppr/configuracao`): planos, valores, vantagens, dependentes, carências, benefícios por procedimento/especialidade, faixas de parcelamento, formas de pagamento e prazos de inadimplência. |
 | **PPR3** ✅ | **Venda:** botão "Oferecer PPR+" no cockpit do comercial e no prontuário; adesão com titular + dependentes; lista `/ppr/adesoes` + tela da adesão; contrato de adesão para imprimir; ativação pela regra de ouro; suspender/reativar/cancelar. |
 | **PPR4** ✅ | **Prontuário:** selo PPR+ na linha de pílulas + bloco do programa com titular/dependentes clicáveis, situação e histórico; **cartão do beneficiário** (`/ppr/cartao/[id]`, imprimir ou PDF) e **validação pelo código** (`/ppr/validar`). |
-| **PPR5** | **Motor de benefícios ligado** à negociação comercial e à venda direta (acima da regra da rede/unidade), com registro de uso e liberação por frequência. |
+| **PPR5** ⏳ | **Motor de benefícios ligado**: camada única de programas (`src/lib/programs.ts`) escolhendo o melhor entre PPR+ e Empresarial; cobertura aplicada no orçamento e na venda direta; registro de uso com liberação por frequência; unidades, transferência e uso na rede (§15). **Falta (PPR5b):** aplicar as condições de pagamento do plano (desconto à vista e faixas do parcelado) na **negociação comercial**, acima da regra da rede/unidade. |
 | **PPR6** | **Mensalidades e situação:** cobranças, suspensão por inadimplência, cancelamento e reativação (+ pontos do Riso+ Social). |
 | **PPR7** | **Dashboard do PPR+** + **ranking das unidades** para a Franqueadora. |
 
@@ -262,8 +262,8 @@ o selo do prontuário e as consultas ficarem baratas.
    benefícios do indicado (consulta sem custo e 5% no 1º tratamento) passam a
    ser aplicados automaticamente.
 8. **Dependentes:** cadastrados na hora da venda (nome, nascimento, grau de
-   parentesco); **CPF opcional** para menor de idade; pertencem à **mesma
-   unidade do titular**.
+   parentesco); **CPF opcional** para menor de idade. _(Revisto em 25/07/2026 —
+   ver §15: o dependente **pode ficar em outra unidade**.)_
 9. **Preço igual em toda a rede.** Só a Franqueadora define o valor dos planos;
    a unidade não ajusta (sem cascata nos valores do PPR+).
 10. **Quem vende:** **Consultor Comercial** (pelo fluxo comercial);
@@ -274,3 +274,23 @@ o selo do prontuário e as consultas ficarem baratas.
     entregue" no atendimento da limpeza).
 12. **Riso+ Social:** pontos **proporcionais ao valor pago**, configuráveis por
     plano; o **Light não pontua**.
+
+---
+
+## 15. Unidades, transferência e uso na rede (decisões de 25/07/2026)
+
+1. **O plano é da unidade.** Cada beneficiário fica **vinculado a uma unidade**,
+   e essa informação **aparece no cartão**. A unidade do **titular** é a unidade
+   do plano (é dela a receita da mensalidade).
+2. **Titular transferido de unidade → o plano vai junto.** O caminho é
+   **cancelar** o plano na unidade A e fazer uma **nova adesão** na unidade B. A
+   unidade B tem o botão **"Continuar o PPR+"**, que **puxa o plano anterior e
+   os dependentes** — é só conferir e registrar. As duas adesões ficam ligadas
+   no histórico (`transferred_from_id`).
+3. **Dependente pode estar em outra unidade.** Na venda (e depois, na tela da
+   adesão) escolhe-se a **unidade de cada dependente**. Se ele mudar de unidade,
+   **só muda essa informação** — o plano não é recriado. O **titular continua
+   responsável pelo contrato e pelo pagamento**.
+4. **Os benefícios valem em toda a rede.** Mesmo atendido em outra unidade
+   (compartilhamento), o beneficiário tem os mesmos benefícios do seu plano — a
+   leitura do plano deixou de ser exclusiva da unidade dona (migração 0164).

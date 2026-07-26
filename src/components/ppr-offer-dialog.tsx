@@ -25,17 +25,25 @@ import {
   type PprRecurringMethod,
   type PprSaleOrigin,
 } from "@/lib/ppr/constants";
-import type { PprOfferContext, PprOfferPlan } from "@/lib/ppr/offer-loader";
+import type {
+  PprOfferContext,
+  PprOfferPlan,
+  PprPreviousMembership,
+} from "@/lib/ppr/offer-loader";
 import { createPprMembership } from "@/app/(app)/ppr/actions";
 
 const selectClass =
   "mt-0.5 h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 type DependentDraft = {
+  /** Preenchido quando o dependente já é cliente (continuidade do plano). */
+  clientId?: string;
   fullName: string;
   cpf: string;
   birthDate: string;
   relationship: string;
+  /** Unidade do dependente — pode ser diferente da do titular (PPR5). */
+  clinicId: string;
 };
 
 /**
@@ -82,6 +90,8 @@ export function PprOfferButton({
       clinicId={clinicId}
       origin={origin}
       plans={plans}
+      units={context.units}
+      previous={context.previous}
       size={size}
     />
   );
@@ -93,6 +103,8 @@ function PprOfferDialog({
   clinicId,
   origin,
   plans,
+  units,
+  previous,
   size,
 }: {
   clientId: string;
@@ -100,6 +112,8 @@ function PprOfferDialog({
   clinicId: string;
   origin: PprSaleOrigin;
   plans: PprOfferPlan[];
+  units: { id: string; name: string }[];
+  previous: PprPreviousMembership | null;
   size: "sm" | "default";
 }) {
   const router = useRouter();
@@ -109,6 +123,25 @@ function PprOfferDialog({
   const [dependents, setDependents] = useState<DependentDraft[]>([]);
   const [method, setMethod] = useState<PprRecurringMethod>("credito_recorrente");
   const [billingDay, setBillingDay] = useState("10");
+  const [continuing, setContinuing] = useState(false);
+
+  /** Continuidade: puxa o plano e os dependentes da adesão da outra unidade. */
+  function pullPrevious() {
+    if (!previous) return;
+    if (plans.some((p) => p.id === previous.planId)) setPlanId(previous.planId);
+    setDependents(
+      previous.dependents.map((d) => ({
+        clientId: d.clientId,
+        fullName: d.name,
+        cpf: "",
+        birthDate: "",
+        relationship: d.relationship ?? "Outro",
+        // O dependente segue na unidade dele até alguém mudar.
+        clinicId: d.clinicId || clinicId,
+      }))
+    );
+    setContinuing(true);
+  }
 
   const plan = plans.find((p) => p.id === planId) ?? plans[0];
   const maxDeps = plan?.allowsDependents
@@ -132,7 +165,13 @@ function PprOfferDialog({
   function addDependent() {
     setDependents((d) => [
       ...d,
-      { fullName: "", cpf: "", birthDate: "", relationship: "Filho(a)" },
+      {
+        fullName: "",
+        cpf: "",
+        birthDate: "",
+        relationship: "Filho(a)",
+        clinicId,
+      },
     ]);
   }
   function setDep(i: number, patch: Partial<DependentDraft>) {
@@ -155,11 +194,14 @@ function PprOfferDialog({
         paymentMethod: method,
         billingDay: Number.parseInt(billingDay, 10) || 10,
         dependents: filled.map((d) => ({
+          clientId: d.clientId,
           fullName: d.fullName.trim(),
           cpf: d.cpf,
           birthDate: d.birthDate,
           relationship: d.relationship,
+          clinicId: d.clinicId,
         })),
+        transferredFromId: continuing ? (previous?.id ?? undefined) : undefined,
       });
       if (!r.ok) {
         toast.error(r.error ?? "Não foi possível registrar a adesão.");
@@ -192,6 +234,28 @@ function PprOfferDialog({
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto">
+          {/* Continuidade de outra unidade (transferência do titular) ------ */}
+          {previous && !continuing && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/40 bg-gold/5 p-3">
+              <p className="min-w-0 text-xs">
+                Este cliente já teve o <strong>{previous.planName}</strong>
+                {previous.clinicName && ` na unidade ${previous.clinicName}`}
+                {previous.dependents.length > 0 &&
+                  ` com ${previous.dependents.length} dependente(s)`}
+                . Continue o plano aqui sem redigitar nada.
+              </p>
+              <Button type="button" size="sm" variant="outline" onClick={pullPrevious}>
+                Continuar o PPR+
+              </Button>
+            </div>
+          )}
+          {continuing && (
+            <p className="rounded-xl border border-gold/40 bg-gold/5 p-2 text-xs">
+              <strong>Continuidade</strong> do plano anterior — a nova adesão
+              fica ligada à antiga no histórico.
+            </p>
+          )}
+
           {/* Planos ------------------------------------------------------- */}
           <div className="grid gap-2 sm:grid-cols-2">
             {plans.map((p) => (
@@ -272,31 +336,41 @@ function PprOfferDialog({
                   {dependents.map((d, i) => (
                     <li key={i} className="grid gap-2 rounded-lg border p-2 sm:grid-cols-2">
                       <label className="text-xs sm:col-span-2">
-                        <span className="text-muted-foreground">Nome completo</span>
+                        <span className="text-muted-foreground">
+                          Nome completo
+                          {d.clientId && " (já cadastrado)"}
+                        </span>
                         <Input
                           value={d.fullName}
                           onChange={(e) => setDep(i, { fullName: e.target.value })}
                           placeholder="Nome do dependente"
+                          readOnly={Boolean(d.clientId)}
                         />
                       </label>
-                      <label className="text-xs">
-                        <span className="text-muted-foreground">
-                          CPF (opcional para menor)
-                        </span>
-                        <Input
-                          value={d.cpf}
-                          onChange={(e) => setDep(i, { cpf: e.target.value })}
-                          inputMode="numeric"
-                        />
-                      </label>
-                      <label className="text-xs">
-                        <span className="text-muted-foreground">Nascimento</span>
-                        <Input
-                          type="date"
-                          value={d.birthDate}
-                          onChange={(e) => setDep(i, { birthDate: e.target.value })}
-                        />
-                      </label>
+                      {!d.clientId && (
+                        <>
+                          <label className="text-xs">
+                            <span className="text-muted-foreground">
+                              CPF (opcional para menor)
+                            </span>
+                            <Input
+                              value={d.cpf}
+                              onChange={(e) => setDep(i, { cpf: e.target.value })}
+                              inputMode="numeric"
+                            />
+                          </label>
+                          <label className="text-xs">
+                            <span className="text-muted-foreground">Nascimento</span>
+                            <Input
+                              type="date"
+                              value={d.birthDate}
+                              onChange={(e) =>
+                                setDep(i, { birthDate: e.target.value })
+                              }
+                            />
+                          </label>
+                        </>
+                      )}
                       <label className="text-xs">
                         <span className="text-muted-foreground">Parentesco</span>
                         <select
@@ -309,6 +383,22 @@ function PprOfferDialog({
                           {PPR_RELATIONSHIPS.map((r) => (
                             <option key={r} value={r}>
                               {r}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-xs">
+                        <span className="text-muted-foreground">
+                          Unidade do dependente
+                        </span>
+                        <select
+                          value={d.clinicId}
+                          onChange={(e) => setDep(i, { clinicId: e.target.value })}
+                          className={selectClass}
+                        >
+                          {units.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name}
                             </option>
                           ))}
                         </select>
@@ -332,8 +422,10 @@ function PprOfferDialog({
                 </ul>
               )}
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Cada dependente ganha prontuário próprio nesta unidade. Se o CPF
-                já for de um cliente da rede, o sistema usa o cadastro existente.
+                Cada dependente ganha prontuário próprio e{" "}
+                <strong>pode ficar em outra unidade</strong> — o titular continua
+                responsável pelo contrato e pelo pagamento. Se o CPF já for de um
+                cliente da rede, o sistema usa o cadastro existente.
               </p>
             </div>
           )}

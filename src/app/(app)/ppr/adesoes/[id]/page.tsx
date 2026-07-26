@@ -24,7 +24,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
-import { PprMembershipActions } from "./membership-actions";
+import {
+  PprBeneficiaryClinicSelect,
+  PprMembershipActions,
+} from "./membership-actions";
 
 export const metadata: Metadata = { title: "Adesão do PPR+" };
 
@@ -56,7 +59,7 @@ export default async function PprMembershipPage(
     supabase
       .from("ppr_beneficiaries")
       .select(
-        "id, role, relationship, card_code, is_extra, left_at, client:clients!ppr_beneficiaries_client_id_fkey ( id, full_name, code, birth_date )"
+        "id, role, relationship, card_code, is_extra, left_at, clinic_id, client:clients!ppr_beneficiaries_client_id_fkey ( id, full_name, code, birth_date ), clinic:clinics!ppr_beneficiaries_clinic_id_fkey ( name )"
       )
       .eq("membership_id", id)
       .order("role"),
@@ -91,6 +94,12 @@ export default async function PprMembershipPage(
   );
   const status = m.status as PprStatus;
 
+  type ClientEmbed = {
+    id: string;
+    full_name: string;
+    code: string | null;
+    birth_date: string | null;
+  };
   type BenRow = {
     id: string;
     role: string;
@@ -98,12 +107,20 @@ export default async function PprMembershipPage(
     card_code: string | null;
     is_extra: boolean;
     left_at: string | null;
-    client:
-      | { id: string; full_name: string; code: string | null; birth_date: string | null }
-      | { id: string; full_name: string; code: string | null; birth_date: string | null }[]
-      | null;
+    clinic_id: string;
+    client: ClientEmbed | ClientEmbed[] | null;
+    clinic: { name: string } | { name: string }[] | null;
   };
-  const beneficiaries = (benRows ?? []) as BenRow[];
+  const beneficiaries = (benRows ?? []) as unknown as BenRow[];
+
+  // Unidades da rede — o dependente pode pertencer a outra unidade (PPR5).
+  const { data: unitRows } = await supabase
+    .from("clinics")
+    .select("id, name")
+    .eq("type", "franchise_unit")
+    .eq("is_active", true)
+    .order("name");
+  const units = (unitRows ?? []) as { id: string; name: string }[];
   const holder = beneficiaries.find((b) => b.role === "titular");
   const dependents = beneficiaries.filter(
     (b) => b.role === "dependente" && !b.left_at
@@ -212,6 +229,8 @@ export default async function PprMembershipPage(
                   : plan.included_dependents
                 : 0
             }
+            units={units}
+            clinicId={m.clinic_id as string}
           />
 
           <dl className="grid gap-x-6 gap-y-1 border-t pt-3 text-xs sm:grid-cols-2">
@@ -269,10 +288,22 @@ export default async function PprMembershipPage(
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                     {c?.code && <span className="font-mono">{c.code}</span>}
-                    {b.card_code && <span className="ml-2">Cartão {b.card_code}</span>}
+                    {b.card_code && <span>Cartão {b.card_code}</span>}
+                    <span>
+                      Unidade: {one(b.clinic)?.name ?? "—"}
+                    </span>
                   </p>
+                  {b.role === "dependente" && canEdit && (
+                    <div className="mt-1.5">
+                      <PprBeneficiaryClinicSelect
+                        beneficiaryId={b.id}
+                        clinicId={b.clinic_id}
+                        units={units}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Button

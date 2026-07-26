@@ -47,7 +47,7 @@ import {
   type AnamnesisAnswerRow,
   type FilledAnswer,
 } from "@/lib/anamnesis";
-import { loadClientProgram } from "@/lib/empresarial/benefits";
+import { loadClientPrograms } from "@/lib/programs";
 import { getUnitSchedulingData } from "../../agenda/actions";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
@@ -103,7 +103,7 @@ export default async function PlanningCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -499,10 +499,12 @@ export default async function PlanningCockpitPage(
 
   // Risarte Empresarial: mostrar ao Planner o selo do programa + economia por
   // opção também no cockpit (igual à ficha).
+  // PPR5: o painel do programa vale para o Empresarial E para o PPR+.
   const isProgramMember =
-    Boolean(client.empresarial_company_id) &&
-    client.empresarial_active !== false;
-  const program = isProgramMember ? await loadClientProgram(client.id) : null;
+    (Boolean(client.empresarial_company_id) &&
+      client.empresarial_active !== false) ||
+    Boolean(client.ppr_membership_id);
+  const program = isProgramMember ? await loadClientPrograms(client.id) : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">

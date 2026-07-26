@@ -102,6 +102,12 @@ export default async function PprCardPage(
                   : (b.relationship ?? "Dependente")}
               </p>
             </div>
+            <div className="col-span-2">
+              <p className="text-[10px] uppercase tracking-wider text-white/50">
+                Unidade
+              </p>
+              <p className="truncate text-xs">{clinic?.name ?? "Rede Risarte"}</p>
+            </div>
           </div>
 
           <div className="mt-3 border-t border-white/15 pt-2">
@@ -114,10 +120,10 @@ export default async function PprCardPage(
           </div>
 
           <p className="mt-2 text-[9px] leading-tight text-white/50">
-            {clinic?.name ?? "Rede Risarte"} ·{" "}
             {membership?.activated_at
-              ? `desde ${new Date(membership.activated_at).toLocaleDateString("pt-BR")}`
-              : "aguardando ativação"}
+              ? `Beneficiário desde ${new Date(membership.activated_at).toLocaleDateString("pt-BR")}`
+              : "Aguardando ativação"}{" "}
+            · benefícios válidos em toda a rede Risarte
           </p>
         </div>
       </div>

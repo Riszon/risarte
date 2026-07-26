@@ -30,6 +30,8 @@ export type PprDependentInput = {
   birthDate?: string;
   phone?: string;
   relationship: string;
+  /** Unidade do dependente — pode ser diferente da do titular (PPR5). */
+  clinicId?: string;
 };
 
 type PlanRow = {
@@ -127,6 +129,8 @@ export async function createPprMembership(input: {
   billingDay: number;
   dependents: PprDependentInput[];
   notes?: string;
+  /** Continuidade de um plano de outra unidade (transferência do titular). */
+  transferredFromId?: string;
 }): Promise<PprActionResult> {
   const session = await getSessionContext();
   if (
@@ -187,6 +191,7 @@ export async function createPprMembership(input: {
       payment_method: input.paymentMethod,
       billing_day: input.billingDay,
       sale_origin: input.origin,
+      transferred_from_id: input.transferredFromId ?? null,
       sold_by: session.userId,
       notes: input.notes?.trim() || null,
       created_by: session.userId,
@@ -229,13 +234,14 @@ export async function createPprMembership(input: {
         if (dup && dup.length > 0) clientId = dup[0].client_id as string;
       }
       if (!clientId) {
+        const depClinic = d.clinicId || input.clinicId;
         const { data: codeData } = await supabase.rpc("next_client_code", {
-          p_clinic_id: input.clinicId,
+          p_clinic_id: depClinic,
         });
         const { data: newClient, error: cErr } = await supabase
           .from("clients")
           .insert({
-            clinic_id: input.clinicId,
+            clinic_id: depClinic,
             full_name: (d.fullName ?? "").trim(),
             cpf: cpf || null,
             birth_date: d.birthDate || null,
@@ -257,7 +263,9 @@ export async function createPprMembership(input: {
     }
     rows.push({
       membership_id: membershipId,
-      clinic_id: input.clinicId,
+      // O dependente pode pertencer a OUTRA unidade (decisão PPR5); o plano e o
+      // pagamento continuam com o titular.
+      clinic_id: d.clinicId || input.clinicId,
       client_id: clientId,
       role: "dependente",
       relationship: d.relationship?.trim() || null,
@@ -576,7 +584,7 @@ export async function addPprDependent(
 
   const { error } = await supabase.from("ppr_beneficiaries").insert({
     membership_id: membershipId,
-    clinic_id: m.clinic_id,
+    clinic_id: dependent.clinicId || m.clinic_id,
     client_id: clientId,
     role: "dependente",
     relationship: dependent.relationship?.trim() || null,
@@ -596,6 +604,61 @@ export async function addPprDependent(
     `Dependente incluído (${dependent.relationship ?? "—"})`
   );
   refresh(membershipId, m.holder_client_id as string);
+  return { ok: true };
+}
+
+/**
+ * Muda a UNIDADE de um beneficiário (PPR5). Dependente que troca de unidade só
+ * atualiza a informação — o plano e o pagamento continuam com o titular. Para o
+ * titular, mudar a unidade significa transferir o plano: o caminho é cancelar
+ * na unidade A e fazer a nova adesão na B (que puxa este plano).
+ */
+export async function setPprBeneficiaryClinic(
+  beneficiaryId: string,
+  clinicId: string
+): Promise<PprActionResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: b } = await supabase
+    .from("ppr_beneficiaries")
+    .select("id, membership_id, clinic_id, client_id, role")
+    .eq("id", beneficiaryId)
+    .maybeSingle();
+  if (!b) return { ok: false, error: "Beneficiário não encontrado." };
+  if (b.role === "titular")
+    return {
+      ok: false,
+      error:
+        "A unidade do titular define a unidade do plano — use a transferência (cancelar e refazer a adesão na nova unidade).",
+    };
+
+  const rolesHere = rolesAt(session, b.clinic_id as string);
+  const rolesThere = rolesAt(session, clinicId);
+  const allowed =
+    session.isAdminMaster ||
+    canSellPpr(rolesHere, "venda_direta") ||
+    canManagePpr(rolesHere) ||
+    canSellPpr(rolesThere, "venda_direta") ||
+    canManagePpr(rolesThere);
+  if (!allowed)
+    return { ok: false, error: "Você não pode alterar a unidade deste beneficiário." };
+
+  const { error } = await supabase
+    .from("ppr_beneficiaries")
+    .update({ clinic_id: clinicId })
+    .eq("id", beneficiaryId);
+  if (error) {
+    console.error("setPprBeneficiaryClinic failed:", error.message);
+    return { ok: false, error: "Não foi possível alterar a unidade." };
+  }
+
+  await logEvent(
+    b.membership_id as string,
+    b.clinic_id as string,
+    "dependente_unidade",
+    "Dependente passou a pertencer a outra unidade"
+  );
+  refresh(b.membership_id as string, b.client_id as string);
   return { ok: true };
 }
 

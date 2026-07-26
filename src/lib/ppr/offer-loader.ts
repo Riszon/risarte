@@ -17,6 +17,21 @@ export type PprOfferPlan = {
   perks: string[];
 };
 
+/** Plano anterior do cliente em OUTRA unidade — base da continuidade (PPR5). */
+export type PprPreviousMembership = {
+  id: string;
+  planId: string;
+  planName: string;
+  clinicName: string | null;
+  cancelledAt: string | null;
+  dependents: {
+    clientId: string;
+    name: string;
+    relationship: string | null;
+    clinicId: string;
+  }[];
+};
+
 export type PprOfferContext = {
   /** O usuário pode vender o PPR+ por este fluxo? */
   canSell: boolean;
@@ -28,6 +43,10 @@ export type PprOfferContext = {
     planName: string;
     role: "titular" | "dependente";
   } | null;
+  /** Unidades da rede (o dependente pode ficar em outra unidade). */
+  units: { id: string; name: string }[];
+  /** Último plano cancelado do cliente — para sugerir a continuidade. */
+  previous: PprPreviousMembership | null;
 };
 
 /**
@@ -115,5 +134,74 @@ export async function loadPprOffer(
     break;
   }
 
-  return { canSell, plans, membership };
+  // Unidades da rede — o dependente pode ficar em outra unidade (PPR5).
+  const { data: unitRows } = await supabase
+    .from("clinics")
+    .select("id, name")
+    .eq("type", "franchise_unit")
+    .eq("is_active", true)
+    .order("name");
+  const units = (unitRows ?? []) as { id: string; name: string }[];
+
+  // Continuidade: se o cliente já teve um plano (cancelado, normalmente por
+  // transferência de unidade), a nova unidade puxa plano e dependentes.
+  let previous: PprPreviousMembership | null = null;
+  if (!membership) {
+    const { data: prevRows } = await supabase
+      .from("ppr_memberships")
+      .select(
+        "id, plan_id, cancelled_at, clinic_id, plan:ppr_plans ( name ), clinic:clinics!ppr_memberships_clinic_id_fkey ( name )"
+      )
+      .eq("holder_client_id", clientId)
+      .eq("status", "cancelado")
+      .order("cancelled_at", { ascending: false })
+      .limit(1);
+    const prev = (prevRows ?? [])[0] as
+      | {
+          id: string;
+          plan_id: string;
+          cancelled_at: string | null;
+          clinic_id: string;
+          plan: { name: string } | { name: string }[] | null;
+          clinic: { name: string } | { name: string }[] | null;
+        }
+      | undefined;
+    if (prev) {
+      const { data: depRows } = await supabase
+        .from("ppr_beneficiaries")
+        .select(
+          "client_id, relationship, clinic_id, client:clients!ppr_beneficiaries_client_id_fkey ( full_name )"
+        )
+        .eq("membership_id", prev.id)
+        .eq("role", "dependente")
+        .is("left_at", null);
+      const planEmbed = Array.isArray(prev.plan) ? prev.plan[0] : prev.plan;
+      const clinicEmbed = Array.isArray(prev.clinic) ? prev.clinic[0] : prev.clinic;
+      previous = {
+        id: prev.id,
+        planId: prev.plan_id,
+        planName: planEmbed?.name ?? "Plano",
+        clinicName: clinicEmbed?.name ?? null,
+        cancelledAt: prev.cancelled_at,
+        dependents: (
+          (depRows ?? []) as {
+            client_id: string;
+            relationship: string | null;
+            clinic_id: string;
+            client: { full_name: string } | { full_name: string }[] | null;
+          }[]
+        ).map((d) => {
+          const c = Array.isArray(d.client) ? d.client[0] : d.client;
+          return {
+            clientId: d.client_id,
+            name: c?.full_name ?? "Dependente",
+            relationship: d.relationship,
+            clinicId: d.clinic_id,
+          };
+        }),
+      };
+    }
+  }
+
+  return { canSell, plans, membership, units, previous };
 }

@@ -108,7 +108,8 @@ import {
 import { PlanEditorSwitcher } from "./plan-editor-switcher";
 import { loadClientPlans } from "./plan-loader";
 import { EmpresarialPanel } from "./empresarial-panel";
-import { loadClientProgram, loadClientUsage } from "@/lib/empresarial/benefits";
+import { loadClientUsage } from "@/lib/empresarial/benefits";
+import { loadClientPrograms } from "@/lib/programs";
 import type { TreatmentPlan } from "@/lib/planning";
 import {
   resolveProcedurePrices,
@@ -2058,10 +2059,13 @@ export default async function ClientDetailPage(
     hasApprovedPlan = (count ?? 0) > 0;
   }
 
-  // Risarte Empresarial: benefícios do programa para o orçamento (economia).
+  // Programas do cliente (Empresarial + PPR+): benefícios que entram no
+  // orçamento. Vale o melhor dos dois, procedimento a procedimento.
   const isProgramMember =
-    Boolean(client.empresarial_company_id) && client.empresarial_active !== false;
-  const program = isProgramMember ? await loadClientProgram(client.id) : null;
+    (Boolean(client.empresarial_company_id) &&
+      client.empresarial_active !== false) ||
+    Boolean(ppr.current);
+  const program = isProgramMember ? await loadClientPrograms(client.id) : null;
   const usage = isProgramMember ? await loadClientUsage(client.id) : null;
 
   return (

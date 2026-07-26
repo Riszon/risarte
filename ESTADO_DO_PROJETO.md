@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.131.0** · Última migração: **0163**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.132.0** · Última migração: **0164**_
+
+> **PPR+ — PPR5: motor de benefícios + unidades ✅ (v0.132.0, migração 0164):**
+> nasceu a **camada única de programas** (`src/lib/programs.ts`): o orçamento e a
+> venda direta perguntam uma vez só e recebem o **melhor benefício** entre PPR+ e
+> Risarte Empresarial, procedimento a procedimento (nunca soma). O PPR+ resolve
+> cobertura (isento/%), **carência a partir da ativação** e **frequência** (a
+> limpeza só libera de novo depois de N meses), e plano suspenso/aguardando
+> **bloqueia** com o motivo na tela. Cada procedimento coberto vendido **registra
+> o uso** (`ppr_benefit_usages`) e agenda a próxima liberação; cancelar a venda
+> devolve o benefício. **Regras de unidade (migração 0164):** o beneficiário fica
+> vinculado a uma **unidade** (aparece no cartão); o **dependente pode ficar em
+> outra unidade** (muda só a informação — o titular segue responsável pelo
+> contrato e pagamento); na **transferência do titular** a nova unidade tem o
+> botão **"Continuar o PPR+"**, que puxa plano e dependentes da adesão anterior e
+> deixa as duas ligadas no histórico; e os **benefícios valem em toda a rede**
+> (mesmo em atendimento compartilhado). **Falta o PPR5b:** aplicar o desconto à
+> vista e as faixas do parcelado do plano dentro da **negociação comercial**.
 
 > **PPR+ — PPR4: prontuário e cartão ✅ (v0.131.0, sem migração):** o prontuário
 > ganhou o **selo PPR+** (plano + situação) na linha de pílulas e um **bloco do
