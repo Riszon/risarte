@@ -2,6 +2,7 @@ import "server-only";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadClientPrograms } from "@/lib/programs";
+import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import {
   resolveCommercialRule,
@@ -195,7 +196,18 @@ export async function loadDirectSaleContext(
     isManager,
     procedures,
     appointments,
-    rule: resolveCommercialRule(ruleRows ?? [], clinicId),
+    // O PPR+ é superior à regra da rede/unidade: amplia parcelas e formas.
+    rule: effectiveRuleWithPpr(
+      resolveCommercialRule(ruleRows ?? [], clinicId),
+      program.ppr
+        ? {
+            cashDiscountPercent: program.ppr.cashDiscountPercent,
+            maxInstallments: program.ppr.maxInstallments,
+            allowedMethods: program.ppr.allowedMethods,
+            tiers: program.ppr.tiers,
+          }
+        : null
+    ) as CommercialRule,
     programActive: program.active,
     // Mostra de qual programa veio o benefício (PPR+ ou Empresarial).
     programName: program.label ?? program.companyName,
@@ -298,7 +310,18 @@ export async function loadClientDirectSales(
     hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager", "sdr"]);
   const isManager =
     session.isAdminMaster || hasRoleInClinic(session, clinicId, ["unit_manager"]);
-  const rule = resolveCommercialRule(ruleRows ?? [], clinicId);
+  // Regra do fechamento: a da unidade AMPLIADA pelo plano do cliente (PPR+).
+  const rule = effectiveRuleWithPpr(
+    resolveCommercialRule(ruleRows ?? [], clinicId),
+    program.ppr
+      ? {
+          cashDiscountPercent: program.ppr.cashDiscountPercent,
+          maxInstallments: program.ppr.maxInstallments,
+          allowedMethods: program.ppr.allowedMethods,
+          tiers: program.ppr.tiers,
+        }
+      : null
+  ) as CommercialRule;
 
   const idsForNames = [
     ...new Set(

@@ -135,8 +135,14 @@ export function SaleItem({
     [sale.rule.allowedMethods]
   );
   const maxInstallments = sale.rule.maxInstallments ?? 12;
-  // Base do desconto = preço cheio já sem o benefício do programa.
-  const baseCents = Math.max(0, sale.subtotalCents - sale.programDiscountCents);
+  // Total a pagar antes do ajuste manual (já sem o benefício do programa).
+  const payableCents = Math.max(0, sale.subtotalCents - sale.programDiscountCents);
+  // Base do DESCONTO: procedimento que já tem benefício do plano não recebe
+  // desconto de novo (decisão do dono, 25/07/2026).
+  const coveredCents = sale.items
+    .filter((i) => i.programDiscountCents > 0)
+    .reduce((s, i) => s + i.finalCents, 0);
+  const baseCents = Math.max(0, payableCents - coveredCents);
   const maxDiscountCents =
     sale.rule.maxDiscountPercent != null
       ? Math.round((baseCents * sale.rule.maxDiscountPercent) / 100)
@@ -151,9 +157,11 @@ export function SaleItem({
     else if (adjustMode === "desc_pct")
       discountCents = Math.round((baseCents * num) / 100);
     else if (adjustMode === "acresc") surchargeCents = Math.round(num * 100);
-    const final = Math.max(0, baseCents - discountCents + surchargeCents);
+    // O desconto sai do TOTAL a pagar, mas o percentual é calculado só sobre a
+    // parte que ainda não tem benefício do plano.
+    const final = Math.max(0, payableCents - discountCents + surchargeCents);
     return { discountCents, surchargeCents, final };
-  }, [adjustMode, adjustValue, baseCents]);
+  }, [adjustMode, adjustValue, baseCents, payableCents]);
 
   // Condições definidas = forma de pagamento JÁ SALVA na venda. Sem isso não se
   // assina contrato nem se emite cobrança (regra do dono, 25/07/2026).
@@ -442,6 +450,14 @@ export function SaleItem({
                           Desconto máximo: {formatBRL(maxDiscountCents)} (
                           {sale.rule.maxDiscountPercent}% de{" "}
                           {formatBRL(baseCents)})
+                          {coveredCents > 0 && (
+                            <>
+                              {" "}
+                              — os procedimentos já cobertos pelo plano (
+                              {formatBRL(coveredCents)}){" "}
+                              <strong>não recebem desconto de novo</strong>.
+                            </>
+                          )}
                         </p>
                       )}
                     {(adjustMode === "desc_reais" ||

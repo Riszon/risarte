@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
+import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
 import {
   resolveCommercialRule,
   type CommercialRule,
@@ -156,8 +158,15 @@ export default async function VendasDiretasPage(
     .from("commercial_rules")
     .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
     .returns<CommercialRuleRow[]>();
-  const ruleFor = (clinicId: string): CommercialRule =>
-    resolveCommercialRule(ruleRows ?? [], clinicId);
+  // PPR+ é superior à regra da unidade: amplia parcelas e formas de pagamento.
+  const pprConditions = await loadPprConditionsForClients(
+    rows.map((s) => s.client_id).filter((x): x is string => Boolean(x))
+  );
+  const ruleFor = (clinicId: string, clientId: string | null): CommercialRule =>
+    effectiveRuleWithPpr(
+      resolveCommercialRule(ruleRows ?? [], clinicId),
+      (clientId ? pprConditions.get(clientId) : null) ?? null
+    ) as CommercialRule;
 
   const sales: DirectSaleRow[] = rows.map((s) => {
     const clinicName =
@@ -203,7 +212,7 @@ export default async function VendasDiretasPage(
         finalCents: i.final_cents,
       })),
       programDiscountCents: s.program_discount_cents ?? 0,
-      rule: ruleFor(s.clinic_id),
+      rule: ruleFor(s.clinic_id, s.client_id),
       canClose,
       isManager,
       // Proxy na lista: se a venda teve desconto de programa, é membro.

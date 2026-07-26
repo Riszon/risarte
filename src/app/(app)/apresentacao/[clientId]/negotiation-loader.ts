@@ -41,6 +41,8 @@ export type NegotiationBlock = {
     maxInstallments: number;
     minInstallmentCents: number;
     tiers: { upToInstallments: number; discountPercent: number }[];
+    /** Procedimentos já cobertos pelo plano (sem desconto adicional). */
+    coveredProcedureIds: string[];
   } | null;
 };
 
@@ -73,7 +75,7 @@ export async function loadNegotiationBlock(
       supabase
         .from("treatment_plan_options")
         .select(
-          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, sort_order, gut_gravity, gut_urgency, gut_tendency )"
+          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency )"
         )
         .eq("plan_id", planId)
         .eq("review_status", "approved")
@@ -90,6 +92,7 @@ export async function loadNegotiationBlock(
               description: string;
               quantity: number;
               unit_price_cents: number;
+              procedure_id: string | null;
               sort_order: number;
               gut_gravity: number | null;
               gut_urgency: number | null;
@@ -142,6 +145,7 @@ export async function loadNegotiationBlock(
         description: i.description,
         quantity: i.quantity,
         unitPriceCents: i.unit_price_cents,
+        procedureId: i.procedure_id ?? null,
         gutGravity: i.gut_gravity,
         gutUrgency: i.gut_urgency,
         gutTendency: i.gut_tendency,
@@ -248,6 +252,10 @@ export async function loadNegotiationBlock(
             upToInstallments: t.upToInstallments,
             discountPercent: t.discountPercent,
           })),
+          // Procedimentos que o plano JÁ cobre — não recebem desconto de novo.
+          coveredProcedureIds: Object.values(ppr.byProcedure)
+            .filter((b) => b.available)
+            .map((b) => b.procedureId),
         }
       : null;
 

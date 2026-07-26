@@ -51,6 +51,8 @@ export type NegotiationOption = {
     description: string;
     quantity: number;
     unitPriceCents: number;
+    /** Procedimento do catálogo — usado para saber se o plano já cobre. */
+    procedureId?: string | null;
     gutGravity: number | null;
     gutUrgency: number | null;
     gutTendency: number | null;
@@ -116,6 +118,7 @@ export function NegotiationPanel({
     maxInstallments: number;
     minInstallmentCents: number;
     tiers: { upToInstallments: number; discountPercent: number }[];
+    coveredProcedureIds?: string[];
   } | null;
 }) {
   const router = useRouter();
@@ -213,16 +216,28 @@ export function NegotiationPanel({
       .reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
   }, [option, excluded]);
 
+  // Base do DESCONTO: procedimento que o plano já cobre não recebe desconto de
+  // novo (decisão do dono, 25/07/2026).
+  const coveredCents = useMemo(() => {
+    if (!option || !programConditions?.coveredProcedureIds?.length) return 0;
+    const covered = new Set(programConditions.coveredProcedureIds);
+    return option.items
+      .filter((i) => !excluded.has(i.id))
+      .filter((i) => i.procedureId && covered.has(i.procedureId))
+      .reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
+  }, [option, excluded, programConditions]);
+  const discountBaseCents = Math.max(0, subtotalCents - coveredCents);
+
   const adjustmentCents = useMemo(() => {
     if (adjustMode === "none") return 0;
     if (adjustMode === "discount_percent") {
       const pct = Number(adjustValue.replace(",", "."));
       if (!Number.isFinite(pct) || pct <= 0) return 0;
-      return -Math.round((subtotalCents * pct) / 100);
+      return -Math.round((discountBaseCents * pct) / 100);
     }
     const cents = parseBRLToCents(adjustValue) ?? 0;
     return adjustMode === "discount_amount" ? -cents : cents;
-  }, [adjustMode, adjustValue, subtotalCents]);
+  }, [adjustMode, adjustValue, discountBaseCents]);
 
   const finalCents = subtotalCents + adjustmentCents;
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
@@ -562,7 +577,16 @@ export function NegotiationPanel({
             <p className="mt-1 flex flex-wrap items-center gap-2">
               <span>
                 Para <strong>{installmentsNum}×</strong> o cliente tem direito a{" "}
-                <strong>{programDiscountPercent}%</strong> de desconto.
+                <strong>{programDiscountPercent}%</strong> de desconto
+                {coveredCents > 0 && (
+                  <>
+                    {" "}
+                    sobre <strong>{formatBRL(discountBaseCents)}</strong> — os
+                    procedimentos já cobertos pelo plano (
+                    {formatBRL(coveredCents)}) não recebem desconto de novo
+                  </>
+                )}
+                .
               </span>
               {!locked && programDiscountPercent > 0 && (
                 <button

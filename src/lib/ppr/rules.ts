@@ -221,6 +221,71 @@ export function pprPriceFor(opts: {
 }
 
 // ---------------------------------------------------------------------------
+// O plano vence a regra comercial da rede/unidade
+// ---------------------------------------------------------------------------
+
+/** Regra comercial no formato usado pela rede/unidade (src/lib/commercial). */
+export type PlainCommercialRule = {
+  maxDiscountPercent: number | null;
+  maxInstallments: number | null;
+  /** null = todas as formas liberadas. */
+  allowedMethods: string[] | null;
+};
+
+/** Condições do plano que entram na regra (subconjunto de PprPlan + faixas). */
+export type PprPlanConditions = {
+  cashDiscountPercent: number;
+  maxInstallments: number;
+  allowedMethods: string[] | null;
+  tiers: PprInstallmentTier[];
+};
+
+/**
+ * Junta a regra da unidade/rede com as condições do plano do cliente. O PPR+
+ * é SUPERIOR (decisão do dono, 25/07/2026): ele só amplia — mais parcelas,
+ * mais formas de pagamento e um teto de desconto maior. Nunca reduz.
+ */
+export function effectiveRuleWithPpr(
+  rule: PlainCommercialRule,
+  plan: PprPlanConditions | null
+): PlainCommercialRule {
+  if (!plan) return rule;
+
+  const maxInstallments = Math.max(rule.maxInstallments ?? 1, plan.maxInstallments);
+
+  // null em qualquer um dos lados = "todas as formas"; senão, a união.
+  const allowedMethods =
+    rule.allowedMethods == null || plan.allowedMethods == null
+      ? null
+      : [...new Set([...rule.allowedMethods, ...plan.allowedMethods])];
+
+  const planTop = Math.max(
+    plan.cashDiscountPercent,
+    ...plan.tiers.map((t) => t.discountPercent),
+    0
+  );
+  const maxDiscountPercent =
+    rule.maxDiscountPercent == null
+      ? null
+      : Math.max(rule.maxDiscountPercent, planTop);
+
+  return { maxDiscountPercent, maxInstallments, allowedMethods };
+}
+
+/**
+ * Base do desconto de pagamento: procedimento que JÁ recebe benefício do plano
+ * não ganha desconto de novo (decisão do dono). Sobra só o que está sem
+ * cobertura.
+ */
+export function discountableCents(
+  items: { finalCents: number; programDiscountCents: number }[]
+): number {
+  return items
+    .filter((i) => i.programDiscountCents <= 0)
+    .reduce((s, i) => s + i.finalCents, 0);
+}
+
+// ---------------------------------------------------------------------------
 // Carência, frequência e liberação do benefício
 // ---------------------------------------------------------------------------
 

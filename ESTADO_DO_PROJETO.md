@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.133.1** · Última migração: **0166**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.134.0** · Última migração: **0166**_
+
+> **PPR+ — o plano vence a regra da unidade ✅ (v0.134.0, sem migração):** nova
+> regra pura `effectiveRuleWithPpr` (6 testes; 135 no total) usada na **venda
+> direta** (lançamento, fechamento e lista) e na **negociação**: o PPR+ só
+> **amplia** — mais parcelas (unidade 6× + plano 10× = **10×**), mais formas de
+> pagamento (**boleto do plano vale mesmo se a unidade não aceita**) e teto de
+> desconto maior. Nunca reduz o que a unidade já permitia. E o **desconto de
+> pagamento não incide sobre procedimento que já tem benefício do plano**: a
+> base do desconto passa a excluir os itens cobertos, com o aviso na tela ("os
+> procedimentos já cobertos pelo plano (R$ X) não recebem desconto de novo").
 
 > **CORREÇÃO URGENTE — venda direta fechava sozinha ✅ (v0.133.1, migração
 > 0166):** o gatilho de "R$ 0,00 fecha sozinha" (0165) também disparava no

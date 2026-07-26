@@ -6,6 +6,8 @@ import {
   canManagePpr,
   canSellPpr,
   daysOverdue,
+  discountableCents,
+  effectiveRuleWithPpr,
   extraDependentCount,
   installmentDiscountPercent,
   maxDependentsOf,
@@ -200,6 +202,69 @@ describe("PPR+ — parcelamento e descontos", () => {
     expect(r.coverageCents).toBe(0);
     expect(r.appliedPaymentPercent).toBe(10);
     expect(r.finalCents).toBe(45000);
+  });
+});
+
+describe("PPR+ — o plano vence a regra da rede/unidade", () => {
+  const planConditions = {
+    cashDiscountPercent: 10,
+    maxInstallments: 10,
+    allowedMethods: ["pix", "boleto", "cartao_parcelado"],
+    tiers,
+  };
+
+  it("plano com mais parcelas amplia o limite da unidade", () => {
+    const r = effectiveRuleWithPpr(
+      { maxDiscountPercent: 10, maxInstallments: 6, allowedMethods: ["pix"] },
+      planConditions
+    );
+    expect(r.maxInstallments).toBe(10);
+  });
+
+  it("nunca reduz o que a unidade já permitia", () => {
+    const r = effectiveRuleWithPpr(
+      { maxDiscountPercent: 30, maxInstallments: 24, allowedMethods: ["pix"] },
+      planConditions
+    );
+    expect(r.maxInstallments).toBe(24);
+    expect(r.maxDiscountPercent).toBe(30);
+  });
+
+  it("forma de pagamento do plano entra mesmo se a unidade não aceita", () => {
+    const r = effectiveRuleWithPpr(
+      { maxDiscountPercent: null, maxInstallments: 6, allowedMethods: ["pix"] },
+      planConditions
+    );
+    expect(r.allowedMethods).toContain("boleto");
+    expect(r.allowedMethods).toContain("pix");
+  });
+
+  it("teto de desconto sobe até o maior percentual do plano", () => {
+    const r = effectiveRuleWithPpr(
+      { maxDiscountPercent: 5, maxInstallments: 6, allowedMethods: null },
+      planConditions
+    );
+    expect(r.maxDiscountPercent).toBe(15);
+    expect(r.allowedMethods).toBeNull();
+  });
+
+  it("sem plano, a regra da unidade fica intacta", () => {
+    const base = {
+      maxDiscountPercent: 10,
+      maxInstallments: 6,
+      allowedMethods: ["pix"],
+    };
+    expect(effectiveRuleWithPpr(base, null)).toEqual(base);
+  });
+
+  it("procedimento já coberto pelo plano não entra no desconto de pagamento", () => {
+    expect(
+      discountableCents([
+        { finalCents: 0, programDiscountCents: 20000 }, // isento
+        { finalCents: 30000, programDiscountCents: 30000 }, // 50% do plano
+        { finalCents: 50000, programDiscountCents: 0 }, // sem benefício
+      ])
+    ).toBe(50000);
   });
 });
 

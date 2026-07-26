@@ -60,6 +60,85 @@ function one<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 }
 
+/** Condições de pagamento do plano — o que amplia a regra da unidade. */
+export type PprConditions = {
+  cashDiscountPercent: number;
+  maxInstallments: number;
+  allowedMethods: string[] | null;
+  tiers: PprInstallmentTier[];
+};
+
+/**
+ * Condições do PPR+ de VÁRIOS clientes de uma vez (listas de venda direta).
+ * Só entra quem tem plano ATIVO — plano suspenso não amplia nada.
+ */
+export async function loadPprConditionsForClients(
+  clientIds: string[]
+): Promise<Map<string, PprConditions>> {
+  const out = new Map<string, PprConditions>();
+  const ids = [...new Set(clientIds.filter(Boolean))];
+  if (ids.length === 0) return out;
+
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("ppr_beneficiaries")
+    .select(
+      "client_id, left_at, membership:ppr_memberships ( status, plan:ppr_plans ( id, cash_discount_percent, max_installments, allowed_methods ) )"
+    )
+    .in("client_id", ids)
+    .is("left_at", null);
+
+  type PlanEmbed = {
+    id: string;
+    cash_discount_percent: number;
+    max_installments: number;
+    allowed_methods: string[] | null;
+  };
+  const byClientPlan = new Map<string, PlanEmbed>();
+  for (const r of (rows ?? []) as {
+    client_id: string;
+    membership:
+      | { status: string; plan: PlanEmbed | PlanEmbed[] | null }
+      | { status: string; plan: PlanEmbed | PlanEmbed[] | null }[]
+      | null;
+  }[]) {
+    const m = one(r.membership);
+    if (!m || m.status !== "ativo") continue;
+    const plan = one(m.plan);
+    if (plan) byClientPlan.set(r.client_id, plan);
+  }
+  if (byClientPlan.size === 0) return out;
+
+  const planIds = [...new Set([...byClientPlan.values()].map((p) => p.id))];
+  const { data: tierRows } = await supabase
+    .from("ppr_plan_installment_tiers")
+    .select("plan_id, up_to_installments, discount_percent")
+    .in("plan_id", planIds);
+  const tiersByPlan = new Map<string, PprInstallmentTier[]>();
+  for (const t of (tierRows ?? []) as {
+    plan_id: string;
+    up_to_installments: number;
+    discount_percent: number;
+  }[]) {
+    const list = tiersByPlan.get(t.plan_id) ?? [];
+    list.push({
+      upToInstallments: t.up_to_installments,
+      discountPercent: Number(t.discount_percent),
+    });
+    tiersByPlan.set(t.plan_id, list);
+  }
+
+  for (const [clientId, plan] of byClientPlan) {
+    out.set(clientId, {
+      cashDiscountPercent: Number(plan.cash_discount_percent ?? 0),
+      maxInstallments: Number(plan.max_installments ?? 1),
+      allowedMethods: plan.allowed_methods ?? null,
+      tiers: tiersByPlan.get(plan.id) ?? [],
+    });
+  }
+  return out;
+}
+
 /**
  * Resolve o PPR+ do cliente: plano, condições de pagamento e o benefício de
  * cada procedimento, já com carência (da ativação) e frequência (do último
