@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.130.1** · Última migração: **0163**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.131.0** · Última migração: **0163**_
+
+> **PPR+ — PPR4: prontuário e cartão ✅ (v0.131.0, sem migração):** o prontuário
+> ganhou o **selo PPR+** (plano + situação) na linha de pílulas e um **bloco do
+> programa**: avisa quando está suspenso ou aguardando ativação, mostra se o
+> cliente é **titular** (com a lista de dependentes e o parentesco, cada um
+> clicável para abrir o prontuário) ou **dependente** (com o titular clicável),
+> traz o código do cartão e os atalhos "Cartão do beneficiário" e "Ver adesão".
+> Quem já teve plano cancelado vê o **histórico** ("fez parte do X até …"). O
+> **cartão do beneficiário** (`/ppr/cartao/[beneficiarioId]`) sai em tamanho de
+> cartão, navy com dourado, com nome, plano, vínculo, situação e o **código
+> rastreável** — para imprimir ou salvar em PDF e mandar pelo WhatsApp. A tela
+> **Validar cartão** (`/ppr/validar`) confere o código e responde na hora se os
+> **benefícios estão liberados ou bloqueados**, listando o que o plano inclui.
+> (QR code no cartão ficou para depois — hoje a validação é pelo código.)
+> **Próximo: PPR5** — motor de benefícios ligado ao orçamento e à venda direta.
 
 > **PPR+ — correção da adesão com dependente ✅ (v0.130.1, migração 0163):**
 > "Adesão criada, mas falhou ao ligar os beneficiários" — no cadastro em lote o

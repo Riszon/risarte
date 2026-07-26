@@ -236,7 +236,7 @@ o selo do prontuário e as consultas ficarem baratas.
 | **PPR1** ✅ | Fundação: migração 0162 (tabelas + RLS), `src/lib/ppr/` com as regras puras + testes, seed dos 4 planos. |
 | **PPR2** ✅ | Seção dedicada `/ppr` no menu: "Sobre o programa" + **configuração completa** (`/ppr/configuracao`): planos, valores, vantagens, dependentes, carências, benefícios por procedimento/especialidade, faixas de parcelamento, formas de pagamento e prazos de inadimplência. |
 | **PPR3** ✅ | **Venda:** botão "Oferecer PPR+" no cockpit do comercial e no prontuário; adesão com titular + dependentes; lista `/ppr/adesoes` + tela da adesão; contrato de adesão para imprimir; ativação pela regra de ouro; suspender/reativar/cancelar. |
-| **PPR4** | **Prontuário:** selo PPR+, titular/dependentes clicáveis, histórico; **cartão do beneficiário** (impressão/digital + validação pelo código). |
+| **PPR4** ✅ | **Prontuário:** selo PPR+ na linha de pílulas + bloco do programa com titular/dependentes clicáveis, situação e histórico; **cartão do beneficiário** (`/ppr/cartao/[id]`, imprimir ou PDF) e **validação pelo código** (`/ppr/validar`). |
 | **PPR5** | **Motor de benefícios ligado** à negociação comercial e à venda direta (acima da regra da rede/unidade), com registro de uso e liberação por frequência. |
 | **PPR6** | **Mensalidades e situação:** cobranças, suspensão por inadimplência, cancelamento e reativação (+ pontos do Riso+ Social). |
 | **PPR7** | **Dashboard do PPR+** + **ranking das unidades** para a Franqueadora. |

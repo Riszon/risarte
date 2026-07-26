@@ -7,6 +7,7 @@ import {
   HandHeart,
   Heart,
   Repeat,
+  ScanLine,
   Settings,
   Sparkles,
   Users,
@@ -135,6 +136,16 @@ export default async function PprPage() {
             >
               <Users className="mr-1 size-3.5" />
               Adesões
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+              nativeButton={false}
+              render={<Link href="/ppr/validar" />}
+            >
+              <ScanLine className="mr-1 size-3.5" />
+              Validar cartão
             </Button>
             {canConfig && (
               <Button

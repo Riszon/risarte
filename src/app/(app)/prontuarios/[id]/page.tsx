@@ -43,6 +43,8 @@ import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
 import { PprOfferButton } from "@/components/ppr-offer-dialog";
+import { loadPprClientBadge } from "@/lib/ppr/client-badge-loader";
+import { PprBadge, PprClientCard } from "@/components/ppr-client-card";
 import { DirectSaleDialog } from "./direct-sale-dialog";
 import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
 import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
@@ -652,6 +654,8 @@ export default async function ClientDetailPage(
   const directSale = await loadDirectSaleContext(client.id, scheduleClinicId);
   // PPR3: contexto do "Oferecer PPR+" (planos ativos + situação do cliente).
   const pprOffer = await loadPprOffer(client.id, scheduleClinicId, "venda_direta");
+  // PPR4: selo do programa + família (titular/dependentes) + histórico.
+  const ppr = await loadPprClientBadge(client.id);
   // VD (ajuste de fluxo): vendas diretas deste cliente para FECHAR no próprio
   // prontuário + os procedimentos avulsos (aberto/concluído).
   const clientDirectSales = await loadClientDirectSales(
@@ -2232,6 +2236,8 @@ export default async function ClientDetailPage(
                 {shortAgeText}
               </span>
             )}
+            {/* PPR4: selo do Programa de Prevenção Riso+. */}
+            {ppr.current && <PprBadge badge={ppr.current} />}
           </div>
 
           {isBirthdayToday && (
@@ -2247,6 +2253,9 @@ export default async function ClientDetailPage(
           )}
         </div>
       </div>
+
+      {/* PPR4: bloco do programa — situação, família clicável e cartão. */}
+      <PprClientCard badge={ppr.current} past={ppr.past} />
 
       <PendingDecision
         decisions={decisions.map((d) => ({

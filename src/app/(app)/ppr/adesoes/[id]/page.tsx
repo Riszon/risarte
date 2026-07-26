@@ -275,6 +275,17 @@ export default async function PprMembershipPage(
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    nativeButton={false}
+                    render={
+                      <Link href={`/ppr/cartao/${b.id}`} target="_blank" />
+                    }
+                  >
+                    <CreditCard className="mr-1 size-3.5" />
+                    Cartão
+                  </Button>
                   {c?.id && (
                     <Button
                       size="sm"
