@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { HeartPulse, Plus, Trash2 } from "lucide-react";
+import { HeartPulse, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,7 +30,10 @@ import type {
   PprOfferPlan,
   PprPreviousMembership,
 } from "@/lib/ppr/offer-loader";
-import { createPprMembership } from "@/app/(app)/ppr/actions";
+import {
+  createPprMembership,
+  lookupPprCandidate,
+} from "@/app/(app)/ppr/actions";
 
 const selectClass =
   "mt-0.5 h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -44,6 +47,10 @@ type DependentDraft = {
   relationship: string;
   /** Unidade do dependente — pode ser diferente da do titular (PPR5). */
   clinicId: string;
+  /** Resultado da busca por CPF. */
+  lookup?: "loading" | "found" | null;
+  /** Já faz parte de outro plano do PPR+ — impede a inclusão. */
+  blocked?: string | null;
 };
 
 /**
@@ -178,11 +185,54 @@ function PprOfferDialog({
     setDependents((d) => d.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
   }
 
+  /**
+   * Digitou o CPF: se já existe cliente na rede, puxa os dados e avisa se essa
+   * pessoa já faz parte de um plano do PPR+ (uma pessoa, um plano).
+   */
+  async function lookupCpf(i: number, cpf: string) {
+    if (cpf.replace(/\D/g, "").length !== 11) {
+      setDep(i, { lookup: null, blocked: null });
+      return;
+    }
+    setDep(i, { lookup: "loading", blocked: null });
+    const r = await lookupPprCandidate(cpf);
+    if (!r.found) {
+      setDep(i, { lookup: null, blocked: null });
+      return;
+    }
+    if (r.alreadyInPpr) {
+      setDep(i, {
+        lookup: "found",
+        clientId: undefined,
+        fullName: r.fullName ?? "",
+        blocked: `${r.fullName ?? "Esta pessoa"} já faz parte do PPR+${
+          r.pprPlanName ? ` (${r.pprPlanName}` : ""
+        }${r.pprPlanName && r.pprRole ? `, como ${r.pprRole}` : ""}${
+          r.pprPlanName ? ")" : ""
+        }. Para incluir aqui, cancele o plano atual dela.`,
+      });
+      return;
+    }
+    setDep(i, {
+      lookup: "found",
+      blocked: null,
+      clientId: r.clientId,
+      fullName: r.fullName ?? "",
+      birthDate: r.birthDate ?? "",
+      clinicId: r.clinicId || clinicId,
+    });
+  }
+
   function submit() {
     if (!plan) return;
     const filled = dependents.filter((d) => d.fullName.trim());
     if (filled.length !== dependents.length) {
       toast.error("Informe o nome de todos os dependentes.");
+      return;
+    }
+    const blocked = dependents.find((d) => d.blocked);
+    if (blocked) {
+      toast.error(blocked.blocked ?? "Dependente já faz parte do PPR+.");
       return;
     }
     startTransition(async () => {
@@ -356,8 +406,19 @@ function PprOfferDialog({
                             <Input
                               value={d.cpf}
                               onChange={(e) => setDep(i, { cpf: e.target.value })}
+                              onBlur={(e) => lookupCpf(i, e.target.value)}
                               inputMode="numeric"
                             />
+                            {d.lookup === "loading" && (
+                              <span className="text-[11px] text-muted-foreground">
+                                procurando cadastro...
+                              </span>
+                            )}
+                            {d.lookup === "found" && !d.blocked && (
+                              <span className="text-[11px] text-emerald-700">
+                                Cliente já cadastrado — dados preenchidos.
+                              </span>
+                            )}
                           </label>
                           <label className="text-xs">
                             <span className="text-muted-foreground">Nascimento</span>
@@ -417,6 +478,12 @@ function PprOfferDialog({
                           <Trash2 className="size-3.5" />
                         </Button>
                       </div>
+                      {d.blocked && (
+                        <p className="flex items-start gap-1.5 rounded-md border border-rose-300 bg-rose-50 p-2 text-[11px] text-rose-800 sm:col-span-2">
+                          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                          <span>{d.blocked}</span>
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>

@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.133.0** · Última migração: **0165**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.133.1** · Última migração: **0166**_
+
+> **CORREÇÃO URGENTE — venda direta fechava sozinha ✅ (v0.133.1, migração
+> 0166):** o gatilho de "R$ 0,00 fecha sozinha" (0165) também disparava no
+> **INSERT**, e como a venda nasce com `final_cents = 0` (o total só é gravado
+> depois dos itens), **toda venda direta era concluída na hora** — mesmo com
+> valor a pagar. Agora o gatilho só roda no **update do total** e só quando a
+> venda **já tem itens**. A migração 0166 **reabre** as vendas fechadas por
+> engano (reconhecidas por estarem fechadas, com valor > 0 e **sem ninguém**
+> registrado como quem assinou/confirmou). **PPR+ — uma pessoa, um plano:** ao
+> incluir um dependente, o CPF **puxa o cadastro existente** e autopreenche; se
+> a pessoa já é beneficiária de um plano vivo, aparece o aviso vermelho e a
+> inclusão é bloqueada (trava também no banco, `ALREADY_IN_PPR`) — para entrar
+> em outro plano é preciso cancelar o atual.
 
 > **PPR+ — PPR5b: brinde, aviso de benefício usado e fechamento correto ✅
 > (v0.133.0, migração 0165):** (1) o **brinde** do benefício (escova a cada

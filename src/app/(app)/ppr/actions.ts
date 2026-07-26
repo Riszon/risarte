@@ -112,6 +112,111 @@ async function logEvent(
 }
 
 // ---------------------------------------------------------------------------
+// Busca do dependente por CPF (autopreenchimento + trava do PPR+)
+// ---------------------------------------------------------------------------
+
+export type PprCandidate = {
+  found: boolean;
+  clientId?: string;
+  fullName?: string;
+  birthDate?: string | null;
+  clinicId?: string | null;
+  clinicName?: string | null;
+  /** Já é beneficiário de um plano vivo — não pode entrar em outro. */
+  alreadyInPpr?: boolean;
+  pprPlanName?: string | null;
+  pprRole?: "titular" | "dependente" | null;
+};
+
+/**
+ * Digitou o CPF do dependente: se já existe cliente na rede, devolve os dados
+ * para autopreencher — e avisa se essa pessoa já faz parte de um plano do PPR+
+ * (uma pessoa só pode estar em UM plano).
+ */
+export async function lookupPprCandidate(cpf: string): Promise<PprCandidate> {
+  await getSessionContext();
+  const formatted = formatCpf(cpf ?? "");
+  if (formatted.replace(/\D/g, "").length !== 11) return { found: false };
+
+  const supabase = await createClient();
+  const { data: dup } = await supabase.rpc("find_duplicate_client", {
+    p_cpf: formatted,
+    p_full_name: "",
+    p_birth_date: null,
+  });
+  const hit = (dup ?? [])[0] as
+    | { client_id: string; full_name: string; clinic_id: string; clinic_name: string }
+    | undefined;
+  if (!hit) return { found: false };
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id, full_name, birth_date, clinic_id")
+    .eq("id", hit.client_id)
+    .maybeSingle();
+
+  const { data: benRows } = await supabase
+    .from("ppr_beneficiaries")
+    .select("role, membership:ppr_memberships ( status, plan:ppr_plans ( name ) )")
+    .eq("client_id", hit.client_id)
+    .is("left_at", null);
+  let alreadyInPpr = false;
+  let pprPlanName: string | null = null;
+  let pprRole: "titular" | "dependente" | null = null;
+  for (const r of (benRows ?? []) as {
+    role: string;
+    membership:
+      | { status: string; plan: { name: string } | { name: string }[] | null }
+      | { status: string; plan: { name: string } | { name: string }[] | null }[]
+      | null;
+  }[]) {
+    const m = Array.isArray(r.membership) ? r.membership[0] : r.membership;
+    if (!m || m.status === "cancelado") continue;
+    const plan = Array.isArray(m.plan) ? m.plan[0] : m.plan;
+    alreadyInPpr = true;
+    pprPlanName = plan?.name ?? null;
+    pprRole = r.role === "titular" ? "titular" : "dependente";
+    break;
+  }
+
+  return {
+    found: true,
+    clientId: hit.client_id,
+    fullName: client?.full_name ?? hit.full_name,
+    birthDate: (client?.birth_date as string | null) ?? null,
+    clinicId: (client?.clinic_id as string | null) ?? hit.clinic_id ?? null,
+    clinicName: hit.clinic_name ?? null,
+    alreadyInPpr,
+    pprPlanName,
+    pprRole,
+  };
+}
+
+/** Este cliente já está em algum plano vivo do PPR+? */
+async function livePprMembershipOf(
+  clientId: string
+): Promise<{ planName: string | null } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("ppr_beneficiaries")
+    .select("membership:ppr_memberships ( status, plan:ppr_plans ( name ) )")
+    .eq("client_id", clientId)
+    .is("left_at", null);
+  for (const r of (data ?? []) as {
+    membership:
+      | { status: string; plan: { name: string } | { name: string }[] | null }
+      | { status: string; plan: { name: string } | { name: string }[] | null }[]
+      | null;
+  }[]) {
+    const m = Array.isArray(r.membership) ? r.membership[0] : r.membership;
+    if (!m || m.status === "cancelado") continue;
+    const plan = Array.isArray(m.plan) ? m.plan[0] : m.plan;
+    return { planName: plan?.name ?? null };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Venda / adesão
 // ---------------------------------------------------------------------------
 
@@ -260,6 +365,15 @@ export async function createPprMembership(input: {
         }
         clientId = newClient.id as string;
       }
+    }
+    // Uma pessoa, um plano: se o dependente já é beneficiário, não entra.
+    const live = await livePprMembershipOf(clientId);
+    if (live) {
+      await supabase.from("ppr_memberships").delete().eq("id", membershipId);
+      return {
+        ok: false,
+        error: `${d.fullName ?? "O dependente"} já faz parte do PPR+${live.planName ? ` (${live.planName})` : ""}. Cancele o plano atual para incluí-lo aqui.`,
+      };
     }
     rows.push({
       membership_id: membershipId,
@@ -581,6 +695,14 @@ export async function addPprDependent(
       clientId = newClient.id as string;
     }
   }
+
+  // Uma pessoa, um plano (a trava definitiva está no banco — migração 0166).
+  const live = await livePprMembershipOf(clientId);
+  if (live)
+    return {
+      ok: false,
+      error: `Esta pessoa já faz parte do PPR+${live.planName ? ` (${live.planName})` : ""}. Cancele o plano atual para incluí-la como dependente.`,
+    };
 
   const { error } = await supabase.from("ppr_beneficiaries").insert({
     membership_id: membershipId,
