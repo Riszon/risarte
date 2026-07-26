@@ -7,9 +7,12 @@ import { logAudit } from "@/lib/audit";
 import { parseBRLToCents } from "@/lib/pricing";
 import {
   resolveCommercialRule,
+  type CommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
 import { directSaleViolations } from "@/lib/direct-sale";
+import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
+import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
 
 export type DirectSaleResult = { ok: boolean; error?: string; closed?: boolean };
 
@@ -17,6 +20,7 @@ const CLOSE_ROLES = ["receptionist", "unit_manager", "sdr"] as const;
 
 async function saleClinic(saleId: string): Promise<{
   clinicId: string;
+  clientId: string | null;
   subtotalCents: number;
   programDiscountCents: number;
   isProgramMember: boolean;
@@ -25,7 +29,7 @@ async function saleClinic(saleId: string): Promise<{
   const { data } = await supabase
     .from("direct_sales")
     .select(
-      "clinic_id, subtotal_cents, program_discount_cents, client:clients!direct_sales_client_id_fkey ( empresarial_company_id, empresarial_active )"
+      "clinic_id, client_id, subtotal_cents, program_discount_cents, client:clients!direct_sales_client_id_fkey ( empresarial_company_id, empresarial_active )"
     )
     .eq("id", saleId)
     .single();
@@ -33,6 +37,7 @@ async function saleClinic(saleId: string): Promise<{
   const client = Array.isArray(data.client) ? data.client[0] : data.client;
   return {
     clinicId: data.clinic_id as string,
+    clientId: (data.client_id as string | null) ?? null,
     subtotalCents: data.subtotal_cents as number,
     // Desconto de PROGRAMA (Empresarial/riso+) tem coluna própria a partir da
     // 0159; o desconto manual é validado sobre (subtotal − programa).
@@ -88,7 +93,16 @@ export async function setDirectSaleConditions(
     .from("commercial_rules")
     .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
     .returns<CommercialRuleRow[]>();
-  const rule = resolveCommercialRule(ruleRows ?? [], info.clinicId);
+  // O plano do cliente (PPR+) é SUPERIOR à regra da rede/unidade: amplia
+  // parcelas e formas de pagamento (decisão do dono, 25/07/2026).
+  const pprConditions = info.clientId
+    ? (await loadPprConditionsForClients([info.clientId])).get(info.clientId) ??
+      null
+    : null;
+  const rule = effectiveRuleWithPpr(
+    resolveCommercialRule(ruleRows ?? [], info.clinicId),
+    pprConditions
+  ) as CommercialRule;
 
   // A regra comercial BLOQUEIA o fechamento fora do padrão (§7.5).
   const violations = directSaleViolations(

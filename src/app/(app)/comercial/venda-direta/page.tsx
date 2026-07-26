@@ -213,6 +213,8 @@ export default async function VendasDiretasPage(
       })),
       programDiscountCents: s.program_discount_cents ?? 0,
       rule: ruleFor(s.clinic_id, s.client_id),
+      programConditions:
+        (s.client_id ? pprConditions.get(s.client_id) : null) ?? null,
       canClose,
       isManager,
       // Proxy na lista: se a venda teve desconto de programa, é membro.

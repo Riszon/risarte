@@ -396,6 +396,16 @@ export async function loadClientDirectSales(
       };
     }),
     rule,
+    // Condições do plano do cliente para o fechamento (faixas de desconto).
+    programConditions: program.ppr?.planName
+      ? {
+          planName: program.ppr.planName,
+          cashDiscountPercent: program.ppr.cashDiscountPercent,
+          maxInstallments: program.ppr.maxInstallments,
+          minInstallmentCents: program.ppr.minInstallmentCents,
+          tiers: program.ppr.tiers,
+        }
+      : null,
     canClose,
     isManager,
     isProgramMember,

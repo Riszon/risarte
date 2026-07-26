@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import {
   PprBeneficiaryClinicSelect,
   PprMembershipActions,
+  PprRemoveDependentButton,
 } from "./membership-actions";
 
 export const metadata: Metadata = { title: "Adesão do PPR+" };
@@ -326,6 +327,12 @@ export default async function PprMembershipPage(
                     >
                       Prontuário
                     </Button>
+                  )}
+                  {b.role === "dependente" && canEdit && status !== "cancelado" && (
+                    <PprRemoveDependentButton
+                      beneficiaryId={b.id}
+                      name={c?.full_name ?? "o dependente"}
+                    />
                   )}
                 </div>
               </div>

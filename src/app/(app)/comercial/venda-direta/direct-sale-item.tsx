@@ -66,6 +66,14 @@ export type DirectSaleRow = {
     finalCents: number;
   }[];
   rule: CommercialRule;
+  /** Condições do plano do cliente (PPR+) — acima da regra da unidade. */
+  programConditions?: {
+    planName: string;
+    cashDiscountPercent: number;
+    maxInstallments: number;
+    minInstallmentCents: number;
+    tiers: { upToInstallments: number; discountPercent: number }[];
+  } | null;
   canClose: boolean;
   isManager: boolean;
   /** Cliente de programa com desconto automático → sem desconto manual (§7.5). */
@@ -166,6 +174,19 @@ export function SaleItem({
   // Condições definidas = forma de pagamento JÁ SALVA na venda. Sem isso não se
   // assina contrato nem se emite cobrança (regra do dono, 25/07/2026).
   const conditionsReady = Boolean(sale.paymentMethod);
+
+  // Desconto do PLANO para o parcelamento escolhido (à vista usa o percentual
+  // do plano; parcelado usa a faixa correspondente).
+  const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
+  const programDiscountPercent = useMemo(() => {
+    const pc = sale.programConditions;
+    if (!pc) return 0;
+    if (installmentsNum <= 1) return pc.cashDiscountPercent;
+    const tier = [...pc.tiers]
+      .sort((a, b) => a.upToInstallments - b.upToInstallments)
+      .find((t) => installmentsNum <= t.upToInstallments);
+    return tier ? tier.discountPercent : 0;
+  }, [sale.programConditions, installmentsNum]);
 
   function saveConditions() {
     startTransition(async () => {
@@ -376,6 +397,61 @@ export function SaleItem({
             </p>
           ) : (
             <>
+              {/* Condições do plano do cliente — acima da regra da unidade. */}
+              {sale.programConditions && (
+                <div className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px]">
+                  <p className="font-medium text-gold-foreground">
+                    PPR+ {sale.programConditions.planName} — condições do plano
+                  </p>
+                  <p className="text-muted-foreground">
+                    À vista{" "}
+                    <strong>{sale.programConditions.cashDiscountPercent}%</strong>{" "}
+                    · até{" "}
+                    <strong>{sale.programConditions.maxInstallments}×</strong>
+                    {sale.programConditions.tiers.length > 0 && (
+                      <>
+                        {" · "}
+                        {sale.programConditions.tiers
+                          .map(
+                            (t) =>
+                              `até ${t.upToInstallments}× = ${t.discountPercent}%`
+                          )
+                          .join(" · ")}
+                      </>
+                    )}
+                    {sale.programConditions.minInstallmentCents > 0 && (
+                      <>
+                        {" "}
+                        · parcela mínima{" "}
+                        {formatBRL(sale.programConditions.minInstallmentCents)}
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-2">
+                    <span>
+                      Em <strong>{installmentsNum}×</strong>, o cliente tem
+                      direito a <strong>{programDiscountPercent}%</strong>
+                      {coveredCents > 0 && (
+                        <> sobre {formatBRL(baseCents)}</>
+                      )}
+                      .
+                    </span>
+                    {programDiscountPercent > 0 && baseCents > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdjustMode("desc_pct");
+                          setAdjustValue(String(programDiscountPercent));
+                        }}
+                        className="rounded-full border border-gold bg-gold px-2 py-0.5 font-medium text-gold-foreground"
+                      >
+                        aplicar desconto do plano
+                      </button>
+                    )}
+                  </p>
+                </div>
+              )}
+
               <div className="rounded-lg border bg-muted/20 p-2">
                 <p className="mb-1.5 text-xs font-medium">
                   Condições de pagamento

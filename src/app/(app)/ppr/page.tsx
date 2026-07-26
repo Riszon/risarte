@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   BadgePercent,
   CalendarCheck,
+  CalendarPlus,
   HandHeart,
   Heart,
   Repeat,
@@ -136,6 +137,16 @@ export default async function PprPage() {
             >
               <Users className="mr-1 size-3.5" />
               Adesões
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+              nativeButton={false}
+              render={<Link href="/ppr/novos" />}
+            >
+              <CalendarPlus className="mr-1 size-3.5" />
+              Sem agendamento
             </Button>
             <Button
               size="sm"

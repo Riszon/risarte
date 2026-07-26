@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.134.0** · Última migração: **0166**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.135.0** · Última migração: **0167**_
+
+> **PPR+ — 7 ajustes do teste ✅ (v0.135.0, migração 0167):** (1) **parcelamento
+> do plano liberado de verdade** — a recusa vinha da validação no BANCO
+> (`evaluate_negotiation_rules`) e da action da venda direta, que ainda olhavam
+> só a regra da unidade; as duas agora somam as condições do PPR+;
+> (2) **boleto do plano aceito** mesmo quando a unidade não permite (união das
+> formas); (3) **faixas de desconto aparecem no fechamento da venda direta**, com
+> o botão "aplicar desconto do plano" e a base já sem os procedimentos cobertos;
+> (4) **excluir dependente** com pop-up de confirmação explicando as consequências;
+> (5) **notificação da adesão** para recepção, gerente e coordenador + **filtro
+> PPR+** na central de notificações; (6) no novo dependente o **CPF é o primeiro
+> campo** e puxa o cadastro (nome, nascimento e unidade), e quem entra pelo
+> programa recebe **código PPR-00000** (`next_client_code_prefixed`, pronta
+> também para o `PRE` do Empresarial); (7) nova tela **PPR+ → Sem agendamento**:
+> a recepção vê os beneficiários que ainda não têm agendamento nem atendimento,
+> com **há quanto tempo entraram** ("2 meses e 12 dias"), data de entrada, plano,
+> titular/dependente (e quem é o titular) e botões de agendar/abrir prontuário.
 
 > **PPR+ — o plano vence a regra da unidade ✅ (v0.134.0, sem migração):** nova
 > regra pura `effectiveRuleWithPpr` (6 testes; 135 no total) usada na **venda

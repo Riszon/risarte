@@ -8,6 +8,7 @@ export const NOTIFICATION_CATEGORIES = [
   { key: "plano", label: "Plano de Tratamento" },
   { key: "comercial", label: "Comercial" },
   { key: "vendas_diretas", label: "Vendas Diretas" },
+  { key: "ppr", label: "PPR+ (Prevenção)" },
   { key: "compartilhamento", label: "Compartilhamento" },
   { key: "inicio_tratamento", label: "Início de Tratamento" },
   { key: "agenda", label: "Agenda" },
@@ -28,6 +29,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   plano: "bg-primary/10 text-primary",
   comercial: "bg-violet-100 text-violet-800",
   vendas_diretas: "bg-teal-100 text-teal-800",
+  ppr: "bg-gold/20 text-gold-foreground",
   compartilhamento: "bg-emerald-100 text-emerald-800",
   inicio_tratamento: "bg-gold text-gold-foreground",
   agenda: "bg-red-100 text-red-800",
@@ -41,6 +43,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   plano: "bg-primary",
   comercial: "bg-violet-500",
   vendas_diretas: "bg-teal-500",
+  ppr: "bg-gold",
   compartilhamento: "bg-emerald-500",
   inicio_tratamento: "bg-gold",
   agenda: "bg-red-500",
@@ -52,6 +55,8 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
 export function categorizeNotification(title: string): NotificationCategory {
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";
+  // Programa de Prevenção Riso+ — antes do "comercial" genérico.
+  if (t.includes("ppr+") || t.includes("riso+")) return "ppr";
   if (t.startsWith("plano")) return "plano";
   // Venda direta na unidade (VD) — antes do "comercial" genérico.
   if (t.includes("venda direta")) return "vendas_diretas";

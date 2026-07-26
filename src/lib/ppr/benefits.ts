@@ -62,8 +62,10 @@ function one<T>(v: T | T[] | null | undefined): T | null {
 
 /** Condições de pagamento do plano — o que amplia a regra da unidade. */
 export type PprConditions = {
+  planName: string;
   cashDiscountPercent: number;
   maxInstallments: number;
+  minInstallmentCents: number;
   allowedMethods: string[] | null;
   tiers: PprInstallmentTier[];
 };
@@ -83,15 +85,17 @@ export async function loadPprConditionsForClients(
   const { data: rows } = await supabase
     .from("ppr_beneficiaries")
     .select(
-      "client_id, left_at, membership:ppr_memberships ( status, plan:ppr_plans ( id, cash_discount_percent, max_installments, allowed_methods ) )"
+      "client_id, left_at, membership:ppr_memberships ( status, plan:ppr_plans ( id, name, cash_discount_percent, max_installments, min_installment_cents, allowed_methods ) )"
     )
     .in("client_id", ids)
     .is("left_at", null);
 
   type PlanEmbed = {
     id: string;
+    name: string;
     cash_discount_percent: number;
     max_installments: number;
+    min_installment_cents: number;
     allowed_methods: string[] | null;
   };
   const byClientPlan = new Map<string, PlanEmbed>();
@@ -130,8 +134,10 @@ export async function loadPprConditionsForClients(
 
   for (const [clientId, plan] of byClientPlan) {
     out.set(clientId, {
+      planName: plan.name,
       cashDiscountPercent: Number(plan.cash_discount_percent ?? 0),
       maxInstallments: Number(plan.max_installments ?? 1),
+      minInstallmentCents: Number(plan.min_installment_cents ?? 0),
       allowedMethods: plan.allowed_methods ?? null,
       tiers: tiersByPlan.get(plan.id) ?? [],
     });

@@ -3,17 +3,240 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Ban, PauseCircle, PlayCircle, Plus } from "lucide-react";
+import {
+  Ban,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  TriangleAlert,
+  UserMinus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { PPR_RELATIONSHIPS, type PprStatus } from "@/lib/ppr/constants";
 import {
   addPprDependent,
   cancelPprMembership,
+  lookupPprCandidate,
   pprCloseStep,
+  removePprBeneficiary,
   setPprBeneficiaryClinic,
   setPprStatus,
 } from "../../actions";
+
+/**
+ * Formulário de novo dependente: o **CPF é a primeira linha** — ao sair do
+ * campo, o sistema procura o cadastro na rede, autopreenche e avisa se a pessoa
+ * já faz parte de um plano do PPR+ (uma pessoa, um plano).
+ */
+function AddDependentForm({
+  clinicId,
+  units,
+  isPending,
+  onSubmit,
+  onCancel,
+}: {
+  clinicId: string;
+  units: { id: string; name: string }[];
+  isPending: boolean;
+  onSubmit: (form: FormData) => void;
+  onCancel: () => void;
+}) {
+  const [cpf, setCpf] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [unit, setUnit] = useState(clinicId);
+  const [lookup, setLookup] = useState<"idle" | "loading" | "found">("idle");
+  const [blocked, setBlocked] = useState<string | null>(null);
+
+  async function search(value: string) {
+    if (value.replace(/\D/g, "").length !== 11) {
+      setLookup("idle");
+      setBlocked(null);
+      return;
+    }
+    setLookup("loading");
+    setBlocked(null);
+    const r = await lookupPprCandidate(value);
+    if (!r.found) {
+      setLookup("idle");
+      return;
+    }
+    setLookup("found");
+    setFullName(r.fullName ?? "");
+    if (r.birthDate) setBirthDate(r.birthDate);
+    if (r.clinicId) setUnit(r.clinicId);
+    if (r.alreadyInPpr) {
+      setBlocked(
+        `${r.fullName ?? "Esta pessoa"} já faz parte do PPR+${
+          r.pprPlanName ? ` (${r.pprPlanName})` : ""
+        }. Cancele o plano atual para incluí-la aqui.`
+      );
+    }
+  }
+
+  return (
+    <form
+      action={onSubmit}
+      className="grid gap-2 rounded-xl border border-dashed p-3 sm:grid-cols-2"
+    >
+      <label className="text-xs sm:col-span-2">
+        <span className="text-muted-foreground">
+          CPF (informe primeiro — puxa o cadastro se já existir)
+        </span>
+        <Input
+          name="cpf"
+          value={cpf}
+          onChange={(e) => setCpf(e.target.value)}
+          onBlur={(e) => search(e.target.value)}
+          inputMode="numeric"
+          autoFocus
+        />
+        {lookup === "loading" && (
+          <span className="text-[11px] text-muted-foreground">
+            procurando cadastro...
+          </span>
+        )}
+        {lookup === "found" && !blocked && (
+          <span className="text-[11px] text-emerald-700">
+            Cliente já cadastrado — dados preenchidos.
+          </span>
+        )}
+      </label>
+
+      {blocked && (
+        <p className="flex items-start gap-1.5 rounded-md border border-rose-300 bg-rose-50 p-2 text-[11px] text-rose-800 sm:col-span-2">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+          <span>{blocked}</span>
+        </p>
+      )}
+
+      <label className="text-xs sm:col-span-2">
+        <span className="text-muted-foreground">Nome completo</span>
+        <Input
+          name="fullName"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
+        />
+      </label>
+      <label className="text-xs">
+        <span className="text-muted-foreground">Nascimento</span>
+        <Input
+          name="birthDate"
+          type="date"
+          value={birthDate}
+          onChange={(e) => setBirthDate(e.target.value)}
+        />
+      </label>
+      <label className="text-xs">
+        <span className="text-muted-foreground">Parentesco</span>
+        <select name="relationship" className={selectClass}>
+          {PPR_RELATIONSHIPS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-xs">
+        <span className="text-muted-foreground">Unidade do dependente</span>
+        <select
+          name="clinicId"
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+          className={selectClass}
+        >
+          {units.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex items-end gap-2">
+        <Button type="submit" size="sm" disabled={isPending || Boolean(blocked)}>
+          Incluir
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Tirar um dependente do plano — com confirmação, porque ele perde os
+ * benefícios na hora (o prontuário fica, só sai o selo do PPR+).
+ */
+export function PprRemoveDependentButton({
+  beneficiaryId,
+  name,
+}: {
+  beneficiaryId: string;
+  name: string;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+
+  function remove() {
+    startTransition(async () => {
+      const r = await removePprBeneficiary(beneficiaryId);
+      if (!r.ok) toast.error(r.error ?? "Não foi possível remover.");
+      else {
+        toast.success("Dependente removido do plano.");
+        setOpen(false);
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive"
+            title={`Tirar ${name} do plano`}
+          >
+            <UserMinus className="size-3.5" />
+          </Button>
+        }
+      />
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tirar {name} do plano?</DialogTitle>
+          <DialogDescription>
+            O dependente <strong>perde os benefícios do PPR+ na hora</strong> e a
+            etiqueta sai do prontuário dele (o cadastro e o histórico
+            permanecem). A mensalidade é recalculada se ele for um dependente
+            extra. Esta ação fica registrada no histórico do plano.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Voltar
+          </Button>
+          <Button variant="destructive" disabled={isPending} onClick={remove}>
+            {isPending ? "Removendo..." : "Sim, tirar do plano"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /**
  * Unidade do dependente (PPR5): ele pode pertencer a uma unidade diferente da
@@ -227,56 +450,13 @@ export function PprMembershipActions({
       )}
 
       {addingDependent && (
-        <form
-          action={addDependent}
-          className="grid gap-2 rounded-xl border border-dashed p-3 sm:grid-cols-2"
-        >
-          <label className="text-xs sm:col-span-2">
-            <span className="text-muted-foreground">Nome completo</span>
-            <Input name="fullName" required />
-          </label>
-          <label className="text-xs">
-            <span className="text-muted-foreground">CPF (opcional)</span>
-            <Input name="cpf" inputMode="numeric" />
-          </label>
-          <label className="text-xs">
-            <span className="text-muted-foreground">Nascimento</span>
-            <Input name="birthDate" type="date" />
-          </label>
-          <label className="text-xs">
-            <span className="text-muted-foreground">Parentesco</span>
-            <select name="relationship" className={selectClass}>
-              {PPR_RELATIONSHIPS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs">
-            <span className="text-muted-foreground">Unidade do dependente</span>
-            <select name="clinicId" defaultValue={clinicId} className={selectClass}>
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-end gap-2">
-            <Button type="submit" size="sm" disabled={isPending}>
-              Incluir
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setAddingDependent(false)}
-            >
-              Cancelar
-            </Button>
-          </div>
-        </form>
+        <AddDependentForm
+          clinicId={clinicId}
+          units={units}
+          isPending={isPending}
+          onSubmit={addDependent}
+          onCancel={() => setAddingDependent(false)}
+        />
       )}
 
       {cancelling && (

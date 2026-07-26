@@ -88,6 +88,7 @@ export default async function NotificationsPage(
     plano: 0,
     comercial: 0,
     vendas_diretas: 0,
+    ppr: 0,
     compartilhamento: 0,
     inicio_tratamento: 0,
     agenda: 0,

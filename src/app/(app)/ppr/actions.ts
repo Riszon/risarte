@@ -340,9 +340,11 @@ export async function createPprMembership(input: {
       }
       if (!clientId) {
         const depClinic = d.clinicId || input.clinicId;
-        const { data: codeData } = await supabase.rpc("next_client_code", {
-          p_clinic_id: depClinic,
-        });
+        // Cliente que entra pelo PPR+ recebe código PPR-00000 (decisão do dono).
+        const { data: codeData } = await supabase.rpc(
+          "next_client_code_prefixed",
+          { p_clinic_id: depClinic, p_prefix: "PPR" }
+        );
         const { data: newClient, error: cErr } = await supabase
           .from("clients")
           .insert({
@@ -406,6 +408,40 @@ export async function createPprMembership(input: {
     "adesao",
     `Adesão ao ${plan.name} — ${deps.length} dependente(s)`
   );
+
+  // Avisa a unidade: recepção, gerente e coordenador precisam saber da adesão
+  // para agendar a primeira limpeza e acompanhar o beneficiário.
+  const { data: holderRow } = await supabase
+    .from("clients")
+    .select("full_name")
+    .eq("id", input.holderClientId)
+    .maybeSingle();
+  const holderName = (holderRow?.full_name as string) ?? "Cliente";
+  const { data: staff } = await supabase
+    .from("user_clinic_roles")
+    .select("user_id, role")
+    .eq("clinic_id", input.clinicId)
+    .in("role", ["receptionist", "unit_manager", "clinical_coordinator"]);
+  const targets = [
+    ...new Set(
+      (staff ?? [])
+        .map((r) => r.user_id as string)
+        .filter((id) => id !== session.userId)
+    ),
+  ];
+  if (targets.length > 0) {
+    await supabase.from("notifications").insert(
+      targets.map((userId) => ({
+        user_id: userId,
+        clinic_id: input.clinicId,
+        title: `PPR+ — nova adesão ao ${plan.name}`,
+        body: `${holderName} aderiu ao ${plan.name}${
+          deps.length > 0 ? ` com ${deps.length} dependente(s)` : ""
+        }. Mensalidade ${(monthly / 100).toFixed(2).replace(".", ",")}. Falta o contrato e a 1ª mensalidade para ativar.`,
+        link: `/ppr/adesoes/${membershipId}`,
+      }))
+    );
+  }
   await logAudit({
     action: "create",
     entityType: "ppr_membership",
@@ -674,8 +710,9 @@ export async function addPprDependent(
       if (dup && dup.length > 0) clientId = dup[0].client_id as string;
     }
     if (!clientId) {
-      const { data: codeData } = await supabase.rpc("next_client_code", {
-        p_clinic_id: m.clinic_id as string,
+      const { data: codeData } = await supabase.rpc("next_client_code_prefixed", {
+        p_clinic_id: (dependent.clinicId || m.clinic_id) as string,
+        p_prefix: "PPR",
       });
       const { data: newClient, error: cErr } = await supabase
         .from("clients")

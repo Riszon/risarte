@@ -58,3 +58,15 @@ describe("categorizeNotification", () => {
     expect(categorizeNotification("")).toBe("outras");
   });
 });
+
+describe("categorizeNotification — PPR+", () => {
+  it("adesão ao PPR+ vai para a categoria do programa", () => {
+    expect(categorizeNotification("PPR+ — nova adesão ao Plano Família")).toBe(
+      "ppr"
+    );
+  });
+
+  it("aviso do Riso+ também é do programa", () => {
+    expect(categorizeNotification("Riso+ Social — pontos do mês")).toBe("ppr");
+  });
+});
