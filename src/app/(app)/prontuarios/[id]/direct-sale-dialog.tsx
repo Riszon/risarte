@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, ShoppingCart, TriangleAlert, X } from "lucide-react";
+import { Gift, Plus, ShoppingCart, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -213,6 +213,12 @@ export function DirectSaleDialog({
                   <option key={p.id} value={p.id}>
                     {p.name} — {formatBRL(p.unitPriceCents)}
                     {p.isUnitPrice ? " (preço da unidade)" : ""}
+                    {p.programDiscountCents > 0
+                      ? p.programDiscountCents >= p.unitPriceCents
+                        ? " · SEM CUSTO pelo programa"
+                        : ` · -${formatBRL(p.programDiscountCents)} pelo programa`
+                      : ""}
+                    {p.benefitBlockedReason ? ` · ${p.benefitBlockedReason}` : ""}
                   </option>
                 ))}
               </select>
@@ -236,6 +242,24 @@ export function DirectSaleDialog({
                           <span className="block text-[11px] text-muted-foreground">
                             preço desta unidade · padrão da rede{" "}
                             {formatBRL(p.defaultPriceCents)}
+                          </span>
+                        )}
+                        {/* Brinde que acompanha o benefício (ex.: escova). */}
+                        {p.giftLabel && (
+                          <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-gold-foreground">
+                            <Gift className="size-3" />
+                            Entregar ao cliente: {p.giftLabel}
+                          </span>
+                        )}
+                        {/* Benefício já usado / em carência — bem visível. */}
+                        {p.benefitBlockedReason && (
+                          <span className="mt-0.5 flex items-start gap-1 rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-900">
+                            <TriangleAlert className="mt-0.5 size-3 shrink-0" />
+                            <span>
+                              <strong>Benefício não liberado:</strong>{" "}
+                              {p.benefitBlockedReason} O cliente paga o valor
+                              normal.
+                            </span>
                           </span>
                         )}
                       </span>

@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.132.0** · Última migração: **0164**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.133.0** · Última migração: **0165**_
+
+> **PPR+ — PPR5b: brinde, aviso de benefício usado e fechamento correto ✅
+> (v0.133.0, migração 0165):** (1) o **brinde** do benefício (escova a cada
+> limpeza) aparece no lançamento da venda direta e na lista de itens do
+> fechamento — "Entregar ao cliente: Escova nova"; (2) quando o benefício está
+> em carência ou **já foi usado**, o aviso fica **destacado em âmbar** ("Benefício
+> não liberado: Já utilizado. Libera em 25/11/2026 — o cliente paga o valor
+> normal"), tanto no seletor quanto na linha do procedimento e no fechamento;
+> (3) venda **sem valor a pagar (R$ 0,00)** agora **fecha sozinha** — contrato,
+> cobrança e pagamento automáticos, venda concluída (gatilho no banco, também
+> corrige as antigas); (4) com valor a pagar, **contrato e cobrança só liberam
+> depois de definir a forma de pagamento** (trava na tela e no banco,
+> `CONDITIONS_REQUIRED`). Além disso, a **negociação comercial** passou a mostrar
+> as **condições do PPR+** (à vista, faixas por parcelamento, parcela mínima e o
+> teto de parcelas do plano, acima da regra da rede) com o botão **"aplicar
+> desconto"** para o percentual da forma de pagamento escolhida.
 
 > **PPR+ — PPR5: motor de benefícios + unidades ✅ (v0.132.0, migração 0164):**
 > nasceu a **camada única de programas** (`src/lib/programs.ts`): o orçamento e a

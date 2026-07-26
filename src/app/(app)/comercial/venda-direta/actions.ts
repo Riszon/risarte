@@ -167,6 +167,12 @@ export async function closeDirectSaleStep(
     const m = error.message;
     if (m.includes("ALREADY_CLOSED"))
       return { ok: false, error: "Venda já concluída." };
+    if (m.includes("CONDITIONS_REQUIRED"))
+      return {
+        ok: false,
+        error:
+          "Defina a forma de pagamento e o parcelamento antes de assinar o contrato ou emitir a cobrança.",
+      };
     console.error("direct_sale_close_step failed:", m);
     return { ok: false, error: "Não foi possível atualizar o fechamento." };
   }

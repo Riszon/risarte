@@ -99,6 +99,7 @@ export function NegotiationPanel({
   planEvents = [],
   canEdit,
   canAuthorize,
+  programConditions = null,
 }: {
   clientId: string;
   planId: string;
@@ -108,6 +109,14 @@ export function NegotiationPanel({
   planEvents?: PlanEvent[];
   canEdit: boolean;
   canAuthorize: boolean;
+  /** PPR5b: condições do programa do cliente (acima da regra da rede). */
+  programConditions?: {
+    label: string;
+    cashDiscountPercent: number;
+    maxInstallments: number;
+    minInstallmentCents: number;
+    tiers: { upToInstallments: number; discountPercent: number }[];
+  } | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -217,6 +226,21 @@ export function NegotiationPanel({
 
   const finalCents = subtotalCents + adjustmentCents;
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
+
+  // PPR5b: desconto que o PROGRAMA do cliente garante para a forma de pagamento
+  // escolhida — à vista usa o percentual do plano, parcelado usa a faixa.
+  const programDiscountPercent = useMemo(() => {
+    if (!programConditions) return 0;
+    if (installmentsNum <= 1) return programConditions.cashDiscountPercent;
+    const tier = [...programConditions.tiers]
+      .sort((a, b) => a.upToInstallments - b.upToInstallments)
+      .find((t) => installmentsNum <= t.upToInstallments);
+    return tier ? tier.discountPercent : 0;
+  }, [programConditions, installmentsNum]);
+  const programApplied =
+    programDiscountPercent > 0 &&
+    adjustMode === "discount_percent" &&
+    Number(adjustValue.replace(",", ".")) === programDiscountPercent;
   const isPartial = option
     ? option.items.some((i) => excluded.has(i.id))
     : false;
@@ -510,6 +534,56 @@ export function NegotiationPanel({
             </div>
           )}
         </div>
+
+        {/* PPR5b: condições do programa do cliente — acima da regra da rede. */}
+        {programConditions && (
+          <div className="rounded-lg border border-gold/40 bg-gold/5 p-3 text-xs">
+            <p className="font-medium text-gold-foreground">
+              {programConditions.label} — condições do programa
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              À vista <strong>{programConditions.cashDiscountPercent}%</strong> ·
+              parcelamento até <strong>{programConditions.maxInstallments}×</strong>
+              {programConditions.tiers.length > 0 && (
+                <>
+                  {" "}
+                  ·{" "}
+                  {programConditions.tiers
+                    .map(
+                      (t) => `até ${t.upToInstallments}× = ${t.discountPercent}%`
+                    )
+                    .join(" · ")}
+                </>
+              )}
+              {programConditions.minInstallmentCents > 0 && (
+                <> · parcela mínima {formatBRL(programConditions.minInstallmentCents)}</>
+              )}
+            </p>
+            <p className="mt-1 flex flex-wrap items-center gap-2">
+              <span>
+                Para <strong>{installmentsNum}×</strong> o cliente tem direito a{" "}
+                <strong>{programDiscountPercent}%</strong> de desconto.
+              </span>
+              {!locked && programDiscountPercent > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdjustMode("discount_percent");
+                    setAdjustValue(String(programDiscountPercent));
+                  }}
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 font-medium transition-colors",
+                    programApplied
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                      : "border-gold bg-gold text-gold-foreground"
+                  )}
+                >
+                  {programApplied ? "desconto aplicado ✓" : "aplicar desconto"}
+                </button>
+              )}
+            </p>
+          </div>
+        )}
 
         {/* Condições: ajuste + pagamento + parcelas. */}
         <div className="grid gap-3 sm:grid-cols-2">

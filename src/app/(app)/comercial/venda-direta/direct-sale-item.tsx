@@ -9,7 +9,9 @@ import {
   ChevronDown,
   CircleDot,
   FileSignature,
+  Gift,
   PartyPopper,
+  TriangleAlert,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,10 @@ export type DirectSaleRow = {
   createdByName: string | null;
   createdAt: string;
   items: {
+    /** Brinde do programa a entregar (ex.: escova nova). */
+    giftLabel?: string | null;
+    /** Aviso do programa neste item (ex.: benefício já usado / libera em ...). */
+    benefitNote?: string | null;
     description: string;
     quantity: number;
     unitPriceCents: number;
@@ -148,6 +154,10 @@ export function SaleItem({
     const final = Math.max(0, baseCents - discountCents + surchargeCents);
     return { discountCents, surchargeCents, final };
   }, [adjustMode, adjustValue, baseCents]);
+
+  // Condições definidas = forma de pagamento JÁ SALVA na venda. Sem isso não se
+  // assina contrato nem se emite cobrança (regra do dono, 25/07/2026).
+  const conditionsReady = Boolean(sale.paymentMethod);
 
   function saveConditions() {
     startTransition(async () => {
@@ -251,6 +261,18 @@ export function SaleItem({
                     {hasProg && (
                       <span className="ml-1 text-gold">
                         ★ −{formatBRL(i.programDiscountCents)}
+                      </span>
+                    )}
+                    {i.giftLabel && (
+                      <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-gold-foreground">
+                        <Gift className="size-3" />
+                        Entregar: {i.giftLabel}
+                      </span>
+                    )}
+                    {i.benefitNote && (
+                      <span className="mt-0.5 flex items-start gap-1 text-[11px] text-amber-800">
+                        <TriangleAlert className="mt-0.5 size-3 shrink-0" />
+                        {i.benefitNote}
                       </span>
                     )}
                   </span>
@@ -456,11 +478,23 @@ export function SaleItem({
                 <p className="text-xs font-medium">
                   Fechamento (assinatura + pagamento)
                 </p>
+                {/* Sem forma de pagamento definida não há o que assinar nem
+                    cobrar (a trava também existe no banco). */}
+                {!zero && !conditionsReady && (
+                  <p className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
+                    <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                    <span>
+                      Defina a <strong>forma de pagamento</strong> e o
+                      parcelamento acima (e salve as condições) para liberar o
+                      contrato e a cobrança.
+                    </span>
+                  </p>
+                )}
                 <StepRow
                   icon={<FileSignature className="size-3.5" />}
                   label="Contrato assinado"
                   done={sale.contractSigned}
-                  disabled={isPending}
+                  disabled={isPending || (!zero && !conditionsReady)}
                   onToggle={(v) => step("contract", v)}
                 />
                 <StepRow
@@ -471,7 +505,7 @@ export function SaleItem({
                       : "Cobrança emitida"
                   }
                   done={sale.paymentIssued}
-                  disabled={isPending}
+                  disabled={isPending || (!zero && !conditionsReady)}
                   onToggle={(v) => step("payment_issued", v)}
                 />
                 {!zero && (

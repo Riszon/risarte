@@ -31,6 +31,10 @@ export type SellableProcedure = {
   programDiscountCents: number;
   /** Motivo de o benefício estar indisponível (carência/limite), se houver. */
   benefitBlockedReason: string | null;
+  /** Brinde que acompanha o benefício (ex.: escova nova a cada limpeza). */
+  giftLabel: string | null;
+  /** Nome do programa que está cobrindo (PPR+ / Empresarial). */
+  benefitProgram: string | null;
 };
 
 export type ChartAppointment = {
@@ -138,6 +142,12 @@ export async function loadDirectSaleContext(
       programDiscountCents: applied.savedCents,
       benefitBlockedReason:
         benefit && !benefit.available ? benefit.blockedReason : null,
+      // Brinde do PPR+ (escova a cada limpeza) — só quando o benefício vale.
+      giftLabel:
+        benefit?.available && program.sourceByProcedure[p.id] === "ppr"
+          ? (program.ppr?.byProcedure[p.id]?.giftLabel ?? null)
+          : null,
+      benefitProgram: benefit ? (program.label ?? null) : null,
     });
   }
 
@@ -225,7 +235,7 @@ export async function loadClientDirectSales(
     supabase
       .from("direct_sale_items")
       .select(
-        "id, sale_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
+        "id, sale_id, procedure_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
       ),
     supabase
       .from("treatment_sessions")
@@ -253,6 +263,7 @@ export async function loadClientDirectSales(
   const itemsBySale = new Map<
     string,
     {
+      procedure_id: string | null;
       description: string;
       quantity: number;
       unit_price_cents: number;
@@ -262,6 +273,7 @@ export async function loadClientDirectSales(
   >();
   for (const it of (itemRes.data ?? []) as {
     sale_id: string;
+    procedure_id: string | null;
     description: string;
     quantity: number;
     unit_price_cents: number;
@@ -270,6 +282,7 @@ export async function loadClientDirectSales(
   }[]) {
     const list = itemsBySale.get(it.sale_id) ?? [];
     list.push({
+      procedure_id: it.procedure_id ?? null,
       description: it.description,
       quantity: it.quantity,
       unit_price_cents: it.unit_price_cents,
@@ -339,13 +352,26 @@ export async function loadClientDirectSales(
       ? (names.get(s.created_by as string) ?? null)
       : null,
     createdAt: s.created_at as string,
-    items: (itemsBySale.get(s.id as string) ?? []).map((i) => ({
-      description: i.description,
-      quantity: i.quantity,
-      unitPriceCents: i.unit_price_cents,
-      programDiscountCents: i.program_discount_cents,
-      finalCents: i.final_cents,
-    })),
+    items: (itemsBySale.get(s.id as string) ?? []).map((i) => {
+      // Avisos do PPR+ no fechamento: brinde a entregar e benefício bloqueado
+      // (ex.: "Já utilizado. Libera em 25/11/2026").
+      const ppr = i.procedure_id
+        ? (program.ppr?.byProcedure[i.procedure_id] ?? null)
+        : null;
+      return {
+        description: i.description,
+        quantity: i.quantity,
+        unitPriceCents: i.unit_price_cents,
+        programDiscountCents: i.program_discount_cents,
+        finalCents: i.final_cents,
+        giftLabel:
+          ppr && i.program_discount_cents > 0 ? (ppr.giftLabel ?? null) : null,
+        benefitNote:
+          ppr && !ppr.available && i.program_discount_cents === 0
+            ? `Benefício do PPR+ não liberado: ${ppr.blockedReason ?? ""}`
+            : null,
+      };
+    }),
     rule,
     canClose,
     isManager,

@@ -6,6 +6,7 @@ import {
   type CommercialRuleRow,
 } from "@/lib/commercial";
 import type { PlanEvent } from "@/lib/planning";
+import { loadPprProgram } from "@/lib/ppr/benefits";
 import type {
   NegotiationData,
   NegotiationOption,
@@ -30,6 +31,17 @@ export type NegotiationBlock = {
   excludedDescriptions: string[];
   /** Resumo da apresentação (vai no contrato do fechamento). */
   presentationSummary: string | null;
+  /**
+   * PPR5b: condições de pagamento do PROGRAMA do cliente (PPR+). Ficam acima da
+   * regra da rede/unidade — o desconto sai da tabela do plano.
+   */
+  programConditions: {
+    label: string;
+    cashDiscountPercent: number;
+    maxInstallments: number;
+    minInstallmentCents: number;
+    tiers: { upToInstallments: number; discountPercent: number }[];
+  } | null;
 };
 
 /**
@@ -222,14 +234,46 @@ export async function loadNegotiationBlock(
     .eq("client_id", clientId)
     .maybeSingle();
 
+  // PPR5b: o plano do cliente manda no parcelamento e nas formas de pagamento.
+  const ppr = await loadPprProgram(clientId);
+  const baseRule = resolveCommercialRule(ruleRows ?? [], clinicId);
+  const programConditions =
+    ppr.active && ppr.planName
+      ? {
+          label: `PPR+ ${ppr.planName}`,
+          cashDiscountPercent: ppr.cashDiscountPercent,
+          maxInstallments: ppr.maxInstallments,
+          minInstallmentCents: ppr.minInstallmentCents,
+          tiers: ppr.tiers.map((t) => ({
+            upToInstallments: t.upToInstallments,
+            discountPercent: t.discountPercent,
+          })),
+        }
+      : null;
+
   return {
     planId,
     options,
     negotiation,
-    rule: resolveCommercialRule(ruleRows ?? [], clinicId),
+    // O programa fica ACIMA da regra da rede/unidade (docs/PPR.md §7).
+    rule: programConditions
+      ? {
+          maxDiscountPercent: Math.max(
+            baseRule.maxDiscountPercent ?? 0,
+            programConditions.cashDiscountPercent,
+            ...programConditions.tiers.map((t) => t.discountPercent)
+          ),
+          maxInstallments: Math.max(
+            baseRule.maxInstallments ?? 1,
+            programConditions.maxInstallments
+          ),
+          allowedMethods: baseRule.allowedMethods,
+        }
+      : baseRule,
     planEvents,
     sale,
     excludedDescriptions,
     presentationSummary: (presRow?.summary as string | null) ?? null,
+    programConditions,
   };
 }

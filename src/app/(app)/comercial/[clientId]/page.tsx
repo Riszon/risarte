@@ -436,6 +436,7 @@ export default async function CommercialCockpitPage(
                 options={negotiationBlock.options}
                 negotiation={negotiationBlock.negotiation}
                 rule={negotiationBlock.rule}
+                programConditions={negotiationBlock.programConditions}
                 planEvents={negotiationBlock.planEvents}
                 canEdit={canNegotiate}
                 canAuthorize={canAuthorize}
