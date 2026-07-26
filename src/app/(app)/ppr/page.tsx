@@ -125,18 +125,30 @@ export default async function PprPage() {
               PPR+ · o cliente paga uma mensalidade e ganha cuidado contínuo.
             </p>
           </div>
-          {canConfig && (
+          <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               variant="outline"
               className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
               nativeButton={false}
-              render={<Link href="/ppr/configuracao" />}
+              render={<Link href="/ppr/adesoes" />}
             >
-              <Settings className="mr-1 size-3.5" />
-              Configurar programa
+              <Users className="mr-1 size-3.5" />
+              Adesões
             </Button>
-          )}
+            {canConfig && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+                nativeButton={false}
+                render={<Link href="/ppr/configuracao" />}
+              >
+                <Settings className="mr-1 size-3.5" />
+                Configurar programa
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -265,7 +277,8 @@ export default async function PprPage() {
       </section>
 
       <p className="rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
-        A venda do PPR+ (botão &quot;Oferecer PPR+&quot;), o selo no prontuário, o
+        Para vender, use o botão <strong>&quot;Oferecer PPR+&quot;</strong> no
+        prontuário do cliente ou no cockpit do consultor. O selo no prontuário, o
         cartão do beneficiário e o painel do programa chegam nas próximas etapas.
       </p>
     </div>

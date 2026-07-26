@@ -41,6 +41,8 @@ import { loadNegotiationBlock } from "../../apresentacao/[clientId]/negotiation-
 import { NegotiationPanel } from "../../apresentacao/[clientId]/negotiation-panel";
 import { ClosingPanel } from "../../apresentacao/[clientId]/closing-panel";
 import { FunnelHistoryDialog, type FunnelEvent } from "./funnel-history";
+import { loadPprOffer } from "@/lib/ppr/offer-loader";
+import { PprOfferButton } from "@/components/ppr-offer-dialog";
 import {
   PresentationWorkspace,
   type PresentationData,
@@ -213,6 +215,8 @@ export default async function CommercialCockpitPage(
     (Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw)?.name ?? null;
   const isProgramMember =
     Boolean(client.empresarial_company_id) && client.empresarial_active !== false;
+  // PPR3: "Oferecer PPR+" pelo fluxo comercial (ou o selo, se já participa).
+  const pprOffer = await loadPprOffer(clientId, client.clinic_id, "comercial");
   const waLink = whatsappLink(
     client.phone,
     "Olá, {nome}! Aqui é da Risarte Odontologia, sobre o seu plano de tratamento. 😁",
@@ -303,6 +307,14 @@ export default async function CommercialCockpitPage(
               <FileText className="mr-1 size-3.5" />
               Ficha completa
             </Button>
+            {/* PPR3: o consultor também vende o programa de prevenção. */}
+            <PprOfferButton
+              clientId={clientId}
+              clientName={client.full_name}
+              clinicId={client.clinic_id}
+              origin="comercial"
+              context={pprOffer}
+            />
             <FunnelHistoryDialog events={funnelEvents} />
           </div>
         </div>

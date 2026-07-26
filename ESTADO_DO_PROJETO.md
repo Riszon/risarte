@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.129.0** · Última migração: **0162**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.130.0** · Última migração: **0162**_
+
+> **PPR+ — PPR3: venda, adesão e contrato ✅ (v0.130.0, sem migração):** o botão
+> **"Oferecer PPR+"** aparece no **prontuário** (venda direta) e no **cockpit do
+> consultor** (fluxo comercial), respeitando quem pode vender em cada fluxo. O
+> pop-up mostra os planos com vantagens e preço, permite **incluir dependentes**
+> (nome, nascimento, CPF opcional e parentesco — reaproveitando o cadastro se o
+> CPF já existir na rede), escolher a **forma recorrente** e o **dia da
+> cobrança**, e calcula a mensalidade com os **dependentes extras**. Quem já
+> participa vê o **selo do plano**, que abre a adesão. Nova tela
+> **`/ppr/adesoes`** (lista com filtros por situação e o total mensal ativo) e a
+> tela da adesão com a **regra de ouro** (contrato assinado + 1ª mensalidade →
+> **ativa**), beneficiários clicáveis com o **código do cartão**, inclusão/saída
+> de dependente (recalculando a mensalidade), **suspender/reativar/cancelar**
+> (Gerente) e o **histórico do plano**. O **contrato de adesão** sai pronto para
+> imprimir em `/ppr/adesoes/[id]/contrato`.
+> **Próximo: PPR4** — selo no prontuário (titular/dependentes) e cartão do
+> beneficiário.
 
 > **PPR+ — PPR2: seção dedicada + configuração ✅ (v0.129.0, sem migração):** o
 > menu ganhou **PPR+ (Prevenção)**. A tela `/ppr` explica **o que é o programa**

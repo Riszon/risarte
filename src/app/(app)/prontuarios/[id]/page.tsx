@@ -41,6 +41,8 @@ import {
 import { PendingDecision } from "./pending-decision";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
+import { loadPprOffer } from "@/lib/ppr/offer-loader";
+import { PprOfferButton } from "@/components/ppr-offer-dialog";
 import { DirectSaleDialog } from "./direct-sale-dialog";
 import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
 import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
@@ -648,6 +650,8 @@ export default async function ClientDetailPage(
   // VD2: contexto da VENDA DIRETA (procedimentos que ESTE usuário pode lançar,
   // atendimentos para vincular e o desconto do programa já calculado).
   const directSale = await loadDirectSaleContext(client.id, scheduleClinicId);
+  // PPR3: contexto do "Oferecer PPR+" (planos ativos + situação do cliente).
+  const pprOffer = await loadPprOffer(client.id, scheduleClinicId, "venda_direta");
   // VD (ajuste de fluxo): vendas diretas deste cliente para FECHAR no próprio
   // prontuário + os procedimentos avulsos (aberto/concluído).
   const clientDirectSales = await loadClientDirectSales(
@@ -2137,8 +2141,18 @@ export default async function ClientDetailPage(
 
             {(canScheduleFromFicha ||
               (hasApprovedPlan && canPresent) ||
-              directSale.canLaunch) && (
+              directSale.canLaunch ||
+              pprOffer.canSell ||
+              pprOffer.membership) && (
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {/* PPR3: oferecer o programa de prevenção (ou abrir a adesão). */}
+                <PprOfferButton
+                  clientId={client.id}
+                  clientName={client.full_name}
+                  clinicId={scheduleClinicId}
+                  origin="venda_direta"
+                  context={pprOffer}
+                />
                 {/* VD2: venda direta ao lado de "Novo agendamento". */}
                 {directSale.canLaunch && (
                   <DirectSaleDialog
