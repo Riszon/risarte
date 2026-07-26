@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.130.0** · Última migração: **0162**_
+_Atualizado em: 25/07/2026 · Versão do sistema: **0.130.1** · Última migração: **0163**_
+
+> **PPR+ — correção da adesão com dependente ✅ (v0.130.1, migração 0163):**
+> "Adesão criada, mas falhou ao ligar os beneficiários" — no cadastro em lote o
+> titular ia sem as colunas `relationship`/`is_extra` e os dependentes iam com
+> elas; o PostgREST **exige as mesmas colunas em todas as linhas** e recusava o
+> lote. Corrigido; além disso, se o cadastro dos beneficiários falhar a adesão é
+> **desfeita** (não fica registro solto). A migração 0163 apaga as adesões órfãs
+> (sem beneficiário, aguardando ativação e sem cobrança) do teste.
 
 > **PPR+ — PPR3: venda, adesão e contrato ✅ (v0.130.0, sem migração):** o botão
 > **"Oferecer PPR+"** aparece no **prontuário** (venda direta) e no **cockpit do

@@ -199,14 +199,18 @@ export async function createPprMembership(input: {
   }
   const membershipId = created.id as string;
 
-  // Titular.
+  // Titular. ATENÇÃO: num insert em lote, TODAS as linhas precisam ter as
+  // mesmas colunas (o PostgREST recusa o lote inteiro se faltar uma) — por isso
+  // o titular também leva relationship/is_extra explícitos.
   const rows: Record<string, unknown>[] = [
     {
       membership_id: membershipId,
       clinic_id: input.clinicId,
       client_id: input.holderClientId,
       role: "titular",
+      relationship: null,
       card_code: cardCode(),
+      is_extra: false,
     },
   ];
 
@@ -264,8 +268,14 @@ export async function createPprMembership(input: {
 
   const { error: bErr } = await supabase.from("ppr_beneficiaries").insert(rows);
   if (bErr) {
+    // Sem beneficiários a adesão não serve para nada: desfaz para não deixar
+    // registro solto na lista.
     console.error("ppr_beneficiaries insert failed:", bErr.message);
-    return { ok: false, error: "Adesão criada, mas falhou ao ligar os beneficiários." };
+    await supabase.from("ppr_memberships").delete().eq("id", membershipId);
+    return {
+      ok: false,
+      error: "Não foi possível registrar os beneficiários. Tente de novo.",
+    };
   }
 
   await logEvent(
