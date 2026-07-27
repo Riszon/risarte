@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Dialog,
@@ -23,6 +24,8 @@ export type PprDrillItem = {
   badgeTone?: "primary" | "amber" | "emerald" | "rose" | "muted";
   /** Já formatado (dinheiro, data, contagem) — o painel decide o formato. */
   value?: string | null;
+  /** Chave do filtro dentro do pop-up (ex.: "titular" / "dependente"). */
+  group?: string;
 };
 
 const BADGE_TONE: Record<NonNullable<PprDrillItem["badgeTone"]>, string> = {
@@ -44,6 +47,7 @@ export function PprDrill({
   dialogHint,
   footerLabel,
   footerValue,
+  filters,
   className,
   children,
 }: {
@@ -55,12 +59,21 @@ export function PprDrill({
   dialogHint?: string;
   footerLabel?: string;
   footerValue?: string;
+  /** Chips de filtro dentro do pop-up (casam com o `group` de cada item). */
+  filters?: { key: string; label: string }[];
   className?: string;
   children: React.ReactNode;
 }) {
+  const [selected, setSelected] = useState("all");
+
   if (items.length === 0) {
     return <div className={className}>{children}</div>;
   }
+
+  const shown =
+    filters && selected !== "all"
+      ? items.filter((i) => i.group === selected)
+      : items;
 
   const trigger = (
     <button
@@ -81,15 +94,39 @@ export function PprDrill({
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            {scopeLabel} — {items.length} registro(s).
+            {scopeLabel} — {shown.length} registro(s)
+            {shown.length !== items.length && ` de ${items.length}`}.
             {dialogHint && (
               <span className="mt-0.5 block text-xs">{dialogHint}</span>
             )}
           </DialogDescription>
         </DialogHeader>
 
+        {filters && (
+          <div className="flex flex-wrap gap-1.5">
+            <FilterChip
+              label={`Todos (${items.length})`}
+              active={selected === "all"}
+              onClick={() => setSelected("all")}
+            />
+            {filters.map((f) => (
+              <FilterChip
+                key={f.key}
+                label={`${f.label} (${items.filter((i) => i.group === f.key).length})`}
+                active={selected === f.key}
+                onClick={() => setSelected(f.key)}
+              />
+            ))}
+          </div>
+        )}
+
         <ul className="-mx-1 flex-1 space-y-1.5 overflow-y-auto px-1">
-          {items.map((i) => {
+          {shown.length === 0 && (
+            <li className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+              Ninguém neste filtro.
+            </li>
+          )}
+          {shown.map((i) => {
             const body = (
               <>
                 <span className="min-w-0">
@@ -154,5 +191,30 @@ export function PprDrill({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "cursor-pointer rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+        active
+          ? "border-primary bg-primary font-medium text-primary-foreground"
+          : "border-border text-muted-foreground hover:bg-muted"
+      )}
+    >
+      {label}
+    </button>
   );
 }

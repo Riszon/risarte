@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/07/2026 · Versão do sistema: **0.139.0** · Última migração: **0169**_
+_Atualizado em: 27/07/2026 · Versão do sistema: **0.140.0** · Última migração: **0169**_
+
+> **PPR+ — Painel: período, filtro no pop-up e crescimento refeito ✅
+> (v0.140.0, sem migração):** o painel ganhou **filtro de período** (Hoje / Esta
+> semana / Este mês / Últimos 3 meses / Tudo / período escolhido), que vale para
+> o **movimento** (entradas, saídas e limpezas realizadas) — planos,
+> beneficiários e receita continuam mostrando a situação de **hoje**, e o
+> cabeçalho diz isso. Dentro dos pop-ups agora há **chips de filtro com
+> contagem**: beneficiários por **titular × dependente**, planos por
+> **ativo/aguardando/suspenso** e o movimento por **entraram × saíram**. O
+> cartão de crescimento foi refeito: em vez de um percentual que virava "+100%"
+> com 2 planos, mostra o **saldo do período** (`+2 plano(s)`, verde/vermelho),
+> com "quantos entraram · quantos saíram", a comparação `base → hoje` e o
+> percentual **só quando a base tem 5 planos ou mais** (regra pura
+> `growthPercent`, com testes). O pop-up do movimento fecha com a **receita que
+> entrou e a que saiu**. A mesma regra vale para a taxa de cada plano no quadro
+> "Por plano".
 
 > **PPR+ — Painel clicável + gráficos separados ✅ (v0.139.0, sem migração):**
 > como no Dashboard do Comercial, **todo número do painel do PPR+ abre um

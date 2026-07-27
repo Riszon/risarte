@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { canViewPpr } from "@/lib/ppr/access";
 import { PPR_STATUS_LABELS, type PprStatus } from "@/lib/ppr/constants";
+import { growthPercent } from "@/lib/ppr/rules";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -50,6 +51,46 @@ function shortBRL(cents: number): string {
   return `R$ ${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 }
 
+// -- Filtro de período (mesmo padrão do Dashboard do Comercial) -------------
+const PERIODS = ["hoje", "semana", "mes", "trimestre", "tudo", "custom"] as const;
+type Period = (typeof PERIODS)[number];
+const PERIOD_LABELS: Record<Period, string> = {
+  hoje: "Hoje",
+  semana: "Esta semana",
+  mes: "Este mês",
+  trimestre: "Últimos 3 meses",
+  tudo: "Tudo",
+  custom: "Período escolhido",
+};
+const QUICK_PERIODS = ["hoje", "semana", "mes", "trimestre", "tudo"] as const;
+
+function periodStart(p: Period, de?: string): Date | null {
+  const now = new Date();
+  if (p === "custom") return de ? new Date(`${de}T00:00:00`) : null;
+  if (p === "hoje") return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (p === "semana") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7);
+    return d;
+  }
+  if (p === "mes") return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (p === "trimestre") {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 3);
+    return d;
+  }
+  return null;
+}
+/** Fim do período (só no período escolhido) — inclui o dia inteiro do "até". */
+function periodEnd(p: Period, ate?: string): Date | null {
+  if (p !== "custom" || !ate) return null;
+  return new Date(`${ate}T23:59:59.999`);
+}
+function fmtBr(d: string): string {
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y}`;
+}
+
 const STATUS_TONE: Record<PprStatus, PprDrillItem["badgeTone"]> = {
   ativo: "emerald",
   aguardando_ativacao: "amber",
@@ -77,6 +118,29 @@ export default async function PprDashboardPage(
 
   const sp = await props.searchParams;
   const unidadeParam = Array.isArray(sp.unidade) ? sp.unidade[0] : sp.unidade;
+  const periodParam = Array.isArray(sp.periodo) ? sp.periodo[0] : sp.periodo;
+  const deParam = Array.isArray(sp.de) ? sp.de[0] : sp.de;
+  const ateParam = Array.isArray(sp.ate) ? sp.ate[0] : sp.ate;
+  const period: Period =
+    // "Período escolhido" só vale com as duas datas preenchidas.
+    periodParam === "custom" && deParam && ateParam
+      ? "custom"
+      : PERIODS.includes(periodParam as Period) && periodParam !== "custom"
+        ? (periodParam as Period)
+        : "mes";
+  const startMs = periodStart(period, deParam)?.getTime() ?? null;
+  const endMs = periodEnd(period, ateParam)?.getTime() ?? null;
+  /** A data caiu dentro do período escolhido? */
+  const inPeriod = (iso: string | null | undefined): boolean => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    return (startMs === null || t >= startMs) && (endMs === null || t <= endMs);
+  };
+  const periodDescription =
+    period === "custom" && deParam && ateParam
+      ? `${fmtBr(deParam)} a ${fmtBr(ateParam)}`
+      : PERIOD_LABELS[period];
+
   const activeClinicId = session.activeClinic?.id ?? null;
   const activeIsUnit = session.activeClinic?.type === "franchise_unit";
   let clinicFilter: string | null;
@@ -141,16 +205,27 @@ export default async function PprDashboardPage(
   const suspended = memberships.filter((m) => m.status === "suspenso");
   const waiting = memberships.filter((m) => m.status === "aguardando_ativacao");
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const newThisMonth = memberships.filter(
-    (m) => new Date(m.created_at) >= monthStart
-  );
-  const cancelledThisMonth = memberships.filter(
-    (m) => m.cancelled_at && new Date(m.cancelled_at) >= monthStart
-  );
+  // Movimento do PERÍODO escolhido (os cartões de estoque continuam sendo "hoje").
+  const newInPeriod = memberships.filter((m) => inPeriod(m.created_at));
+  const cancelledInPeriod = memberships.filter((m) => inPeriod(m.cancelled_at));
 
   const mrr = active.reduce((s, m) => s + m.monthly_cents, 0);
   const ticket = active.length > 0 ? Math.round(mrr / active.length) : 0;
+
+  // Saldo do período: entrou − saiu, em planos e em dinheiro.
+  const aliveNow = memberships.filter((m) => m.status !== "cancelado").length;
+  const baseAtStart =
+    startMs === null
+      ? 0
+      : memberships.filter((m) => {
+          const born = new Date(m.created_at).getTime();
+          const dead = m.cancelled_at ? new Date(m.cancelled_at).getTime() : null;
+          return born < startMs && (dead === null || dead >= startMs);
+        }).length;
+  const netPlans = newInPeriod.length - cancelledInPeriod.length;
+  const mrrIn = newInPeriod.reduce((s, m) => s + m.monthly_cents, 0);
+  const mrrOut = cancelledInPeriod.reduce((s, m) => s + m.monthly_cents, 0);
+  const periodPercent = growthPercent(baseAtStart, baseAtStart + netPlans);
 
   // -- Beneficiários ---------------------------------------------------------
   const liveIds = new Set(
@@ -208,9 +283,9 @@ export default async function PprDashboardPage(
     a.mrr += m.monthly_cents;
     byPlan.set(m.plan_id, a);
   }
-  // Quantos deste plano entraram no mês (base da taxa de crescimento).
+  // Quantos deste plano entraram no período (base da taxa de crescimento).
   const newByPlan = new Map<string, number>();
-  for (const m of newThisMonth) {
+  for (const m of newInPeriod) {
     newByPlan.set(m.plan_id, (newByPlan.get(m.plan_id) ?? 0) + 1);
   }
 
@@ -239,10 +314,6 @@ export default async function PprDashboardPage(
       mrr: alive.reduce((s, x) => s + x.monthly_cents, 0),
     };
   });
-  const prevAlive = growth[growth.length - 2]?.alive ?? 0;
-  const curAlive = growth[growth.length - 1]?.alive ?? 0;
-  const growthRate =
-    prevAlive > 0 ? ((curAlive - prevAlive) / prevAlive) * 100 : 0;
 
   // -- Prevenção (uso do benefício + agenda) ---------------------------------
   let usageQuery = supabase
@@ -258,6 +329,8 @@ export default async function PprDashboardPage(
   }[]).filter((u) => clientIds.includes(u.client_id));
 
   const recurring = usages.filter((u) => u.next_available_at);
+  /** Limpezas feitas DENTRO do período escolhido (o resto é regra fixa). */
+  const usagesInPeriod = recurring.filter((u) => inPeriod(u.used_at));
   const threeMonthsAgo = new Date(now);
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   const fourMonthsAgo = new Date(now);
@@ -371,6 +444,7 @@ export default async function PprDashboardPage(
     badgeTone: STATUS_TONE[m.status as PprStatus] ?? "muted",
     value: `${formatBRL(m.monthly_cents)}/mês`,
     note: note ?? null,
+    group: m.status,
   });
 
   const liveMemberships = memberships
@@ -404,6 +478,7 @@ export default async function PprDashboardPage(
         b.role === "titular" ? "Titular" : (b.relationship ?? "Dependente"),
       badgeTone: b.role === "titular" ? "primary" : "muted",
       note: b.joined_at ? `No PPR+ desde ${fmtDate(b.joined_at)}` : null,
+      group: b.role === "titular" ? "titular" : "dependente",
     }));
 
   const revenueItems = [...active]
@@ -411,17 +486,19 @@ export default async function PprDashboardPage(
     .map((m) => memItem(m));
 
   const movementItems: PprDrillItem[] = [
-    ...newThisMonth.map((m) => ({
+    ...newInPeriod.map((m) => ({
       ...memItem(m, `Entrou em ${fmtDate(m.created_at)}`),
       key: `novo-${m.id}`,
-      badge: "Novo no mês",
+      badge: "Entrou",
       badgeTone: "emerald" as const,
+      group: "entrou",
     })),
-    ...cancelledThisMonth.map((m) => ({
+    ...cancelledInPeriod.map((m) => ({
       ...memItem(m, `Cancelado em ${fmtDate(m.cancelled_at ?? m.created_at)}`),
       key: `cancelado-${m.id}`,
-      badge: "Cancelado",
+      badge: "Saiu",
       badgeTone: "rose" as const,
+      group: "saiu",
     })),
   ];
 
@@ -466,7 +543,7 @@ export default async function PprDashboardPage(
       )
     );
 
-  const usageItems: PprDrillItem[] = [...recurring]
+  const usageItems: PprDrillItem[] = [...usagesInPeriod]
     .sort((a, b) => b.used_at.localeCompare(a.used_at))
     .map((u) => ({
       key: u.id,
@@ -533,9 +610,8 @@ export default async function PprDashboardPage(
         row.active += 1;
         row.mrr += m.monthly_cents;
       }
-      if (m.cancelled_at && new Date(m.cancelled_at) >= monthStart)
-        row.cancelled += 1;
-      if (new Date(m.created_at) >= monthStart) row.novos += 1;
+      if (inPeriod(m.cancelled_at)) row.cancelled += 1;
+      if (inPeriod(m.created_at)) row.novos += 1;
     }
     const clinicOfMembership = new Map(memberships.map((m) => [m.id, m.clinic_id]));
     for (const b of beneficiaries) {
@@ -547,7 +623,7 @@ export default async function PprDashboardPage(
       const cid = clinicOfMembership.get(b.membership_id);
       if (cid) clinicOfClient.set(b.client_id, cid);
     }
-    for (const u of recurring) {
+    for (const u of usagesInPeriod) {
       const cid = clinicOfClient.get(u.client_id);
       if (cid) ensure(cid).limpezas += 1;
     }
@@ -555,8 +631,19 @@ export default async function PprDashboardPage(
   }
 
   const unitLabel = scope;
-  const chipHref = (unidade: string | null) =>
-    `/ppr/painel?unidade=${unidade ?? "all"}`;
+  /** Troca unidade OU período preservando o resto do filtro. */
+  const filterHref = (unidade: string | null, pd: Period) => {
+    const p = new URLSearchParams();
+    p.set("unidade", unidade ?? "all");
+    p.set("periodo", pd);
+    if (pd === "custom") {
+      if (deParam) p.set("de", deParam);
+      if (ateParam) p.set("ate", ateParam);
+    }
+    return `/ppr/painel?${p.toString()}`;
+  };
+  const chipHref = (unidade: string | null) => filterHref(unidade, period);
+  const periodHref = (pd: Period) => filterHref(clinicFilter, pd);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6">
@@ -574,8 +661,8 @@ export default async function PprDashboardPage(
                 Painel do programa
               </h1>
               <p className="mt-0.5 text-sm text-primary-foreground/70">
-                {unitLabel} · {active.length} plano(s) ativo(s) ·{" "}
-                {formatBRL(mrr)}/mês
+                {unitLabel} · {periodDescription} · {active.length} plano(s)
+                ativo(s) · {formatBRL(mrr)}/mês
               </p>
             </div>
             <Button
@@ -590,26 +677,91 @@ export default async function PprDashboardPage(
             </Button>
           </div>
 
-          {canSeeNetwork && unitOptions.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 border-t border-primary-foreground/15 pt-3 text-xs">
-              <span className="w-16 shrink-0 text-primary-foreground/60">
-                Unidade
-              </span>
-              <DarkChip
-                label="Todas"
-                href={chipHref(null)}
-                active={clinicFilter === null}
-              />
-              {unitOptions.map((u) => (
+          <div className="space-y-2 border-t border-primary-foreground/15 pt-3 text-xs">
+            {canSeeNetwork && unitOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="w-16 shrink-0 text-primary-foreground/60">
+                  Unidade
+                </span>
                 <DarkChip
-                  key={u.id}
-                  label={u.name}
-                  href={chipHref(u.id)}
-                  active={clinicFilter === u.id}
+                  label="Todas"
+                  href={chipHref(null)}
+                  active={clinicFilter === null}
+                />
+                {unitOptions.map((u) => (
+                  <DarkChip
+                    key={u.id}
+                    label={u.name}
+                    href={chipHref(u.id)}
+                    active={clinicFilter === u.id}
+                  />
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="w-16 shrink-0 text-primary-foreground/60">
+                Período
+              </span>
+              {QUICK_PERIODS.map((pd) => (
+                <DarkChip
+                  key={pd}
+                  label={PERIOD_LABELS[pd]}
+                  href={periodHref(pd)}
+                  active={period === pd}
                 />
               ))}
+              {/* Período específico (de/até) — aplica ao enviar. */}
+              <form
+                method="get"
+                action="/ppr/painel"
+                className="flex flex-wrap items-center gap-1.5"
+              >
+                <input type="hidden" name="unidade" value={clinicFilter ?? "all"} />
+                <input type="hidden" name="periodo" value="custom" />
+                <input
+                  type="date"
+                  name="de"
+                  defaultValue={deParam ?? ""}
+                  aria-label="Data inicial"
+                  className={cn(
+                    "h-7 rounded-full border bg-transparent px-2 text-xs",
+                    period === "custom"
+                      ? "border-gold text-primary-foreground"
+                      : "border-primary-foreground/25 text-primary-foreground/80"
+                  )}
+                />
+                <span className="text-primary-foreground/50">a</span>
+                <input
+                  type="date"
+                  name="ate"
+                  defaultValue={ateParam ?? ""}
+                  aria-label="Data final"
+                  className={cn(
+                    "h-7 rounded-full border bg-transparent px-2 text-xs",
+                    period === "custom"
+                      ? "border-gold text-primary-foreground"
+                      : "border-primary-foreground/25 text-primary-foreground/80"
+                  )}
+                />
+                <button
+                  type="submit"
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 transition-colors",
+                    period === "custom"
+                      ? "border-gold bg-gold font-medium text-gold-foreground"
+                      : "border-primary-foreground/25 text-primary-foreground/80 hover:bg-primary-foreground/10"
+                  )}
+                >
+                  Aplicar
+                </button>
+              </form>
             </div>
-          )}
+            <p className="text-primary-foreground/50">
+              O período vale para o <strong>movimento</strong> (entradas,
+              saídas e limpezas). Planos, beneficiários e receita mostram
+              sempre a situação de <strong>hoje</strong>.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -623,6 +775,11 @@ export default async function PprDashboardPage(
           dialogHint="Adesões vivas (ativas, aguardando ativação e suspensas). Clique para abrir a adesão."
           footerLabel="Receita mensal dos ativos"
           footerValue={formatBRL(mrr)}
+          filters={[
+            { key: "ativo", label: "Ativos" },
+            { key: "aguardando_ativacao", label: "Aguardando" },
+            { key: "suspenso", label: "Suspensos" },
+          ]}
         >
           <Kpi
             tone="emerald"
@@ -642,6 +799,10 @@ export default async function PprDashboardPage(
           dialogHint="Titulares e dependentes com plano vivo. Clique para abrir o prontuário."
           footerLabel="Titulares + dependentes"
           footerValue={`${holders} + ${dependents}`}
+          filters={[
+            { key: "titular", label: "Titulares" },
+            { key: "dependente", label: "Dependentes" },
+          ]}
         >
           <Kpi
             tone="sky"
@@ -675,18 +836,29 @@ export default async function PprDashboardPage(
         <PprDrill
           className="h-full"
           items={movementItems}
-          dialogTitle="Movimento do mês"
+          dialogTitle={`Movimento — ${periodDescription.toLowerCase()}`}
           scopeLabel={unitLabel}
-          dialogHint="Quem entrou e quem saiu do programa neste mês."
-          footerLabel="Entradas / saídas"
-          footerValue={`+${newThisMonth.length} / −${cancelledThisMonth.length}`}
+          dialogHint="Quem entrou e quem saiu do programa no período escolhido."
+          footerLabel="Receita que entrou / saiu"
+          footerValue={`+${formatBRL(mrrIn)} / −${formatBRL(mrrOut)}`}
+          filters={[
+            { key: "entrou", label: "Entraram" },
+            { key: "saiu", label: "Saíram" },
+          ]}
         >
           <Kpi
-            tone="violet"
+            tone={netPlans > 0 ? "emerald" : netPlans < 0 ? "rose" : "violet"}
             icon={<TrendingUp className="size-4" />}
-            label="Crescimento do mês"
-            value={`${growthRate >= 0 ? "+" : ""}${growthRate.toFixed(0)}%`}
-            hint={`${newThisMonth.length} novo(s) · ${cancelledThisMonth.length} cancelado(s)`}
+            label="Saldo do período"
+            value={`${netPlans > 0 ? "+" : ""}${netPlans} plano(s)`}
+            hint={`${newInPeriod.length} entrou/entraram · ${cancelledInPeriod.length} saiu/saíram`}
+            foot={
+              startMs === null
+                ? `${aliveNow} plano(s) vivo(s) hoje · ${formatBRL(mrrIn)} entraram por mês`
+                : periodPercent !== null
+                  ? `${baseAtStart} → ${baseAtStart + netPlans} planos (${periodPercent > 0 ? "+" : ""}${periodPercent.toFixed(0)}%)`
+                  : `${baseAtStart} → ${baseAtStart + netPlans} planos · base pequena para calcular %`
+            }
             drill={movementItems.length > 0}
           />
         </PprDrill>
@@ -701,7 +873,8 @@ export default async function PprDashboardPage(
               Planos vivos por mês
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Quantidade de adesões ativas no fim de cada mês.
+              Quantidade de adesões vivas no fim de cada mês (histórico fixo dos
+              últimos 6 meses, não segue o filtro de período).
             </p>
           </CardHeader>
           <CardContent>
@@ -728,7 +901,7 @@ export default async function PprDashboardPage(
               Receita mensal por mês
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Quanto o programa gera por mês, em reais.
+              Quanto o programa gera por mês, em reais (últimos 6 meses).
             </p>
           </CardHeader>
           <CardContent>
@@ -759,7 +932,7 @@ export default async function PprDashboardPage(
               Por plano
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Quantidade, receita e quantos entraram neste mês. Clique para ver
+              Quantidade, receita e quantos entraram no período. Clique para ver
               a lista.
             </p>
           </CardHeader>
@@ -774,7 +947,8 @@ export default async function PprDashboardPage(
                   .sort((a, b) => b[1].mrr - a[1].mrr)
                   .map(([planId, v]) => {
                     const novos = newByPlan.get(planId) ?? 0;
-                    const base = Math.max(1, v.count - novos);
+                    // % só quando a base do plano justifica (senão vira "+100%").
+                    const planPercent = growthPercent(v.count - novos, v.count);
                     const items = active
                       .filter((m) => m.plan_id === planId)
                       .sort((a, b) =>
@@ -823,8 +997,12 @@ export default async function PprDashboardPage(
                             </div>
                             <span className="shrink-0 text-[11px] text-muted-foreground">
                               {novos > 0
-                                ? `+${novos} no mês (+${((novos / base) * 100).toFixed(0)}%)`
-                                : "sem novos no mês"}
+                                ? `+${novos} no período${
+                                    planPercent !== null
+                                      ? ` (+${planPercent.toFixed(0)}%)`
+                                      : ""
+                                  }`
+                                : "sem entradas no período"}
                             </span>
                           </div>
                         </PprDrill>
@@ -844,7 +1022,9 @@ export default async function PprDashboardPage(
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               O coração do programa: quem está voltando e quem sumiu. Clique em
-              cada número para ver os nomes.
+              cada número para ver os nomes. Só as <strong>limpezas
+              realizadas</strong> seguem o filtro de período; o resto é situação
+              de hoje.
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -891,14 +1071,15 @@ export default async function PprDashboardPage(
               <PprDrill
                 items={usageItems}
                 dialogTitle="Limpezas realizadas"
-                scopeLabel={unitLabel}
-                dialogHint="Benefícios com frequência (limpeza) já usados pelos beneficiários."
-                footerLabel="Total"
-                footerValue={String(recurring.length)}
+                scopeLabel={`${unitLabel} · ${periodDescription}`}
+                dialogHint="Benefícios com frequência (limpeza) usados no período escolhido."
+                footerLabel="No período"
+                footerValue={String(usagesInPeriod.length)}
               >
                 <Mini
                   label="Limpezas realizadas"
-                  value={String(recurring.length)}
+                  value={String(usagesInPeriod.length)}
+                  hint={`${recurring.length} desde o começo`}
                   drill={usageItems.length > 0}
                 />
               </PprDrill>
@@ -1065,6 +1246,7 @@ function Kpi({
   label,
   value,
   hint,
+  foot,
   drill,
 }: {
   tone: Tone;
@@ -1072,6 +1254,8 @@ function Kpi({
   label: string;
   value: string;
   hint?: string;
+  /** Linha extra no rodapé do cartão (comparação, base, contexto). */
+  foot?: string;
   drill?: boolean;
 }) {
   return (
@@ -1099,6 +1283,11 @@ function Kpi({
         <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
           {hint}
           {drill && <DrillHint />}
+        </p>
+      )}
+      {foot && (
+        <p className="mt-2 border-t pt-2 text-[11px] tabular-nums text-muted-foreground">
+          {foot}
         </p>
       )}
     </div>

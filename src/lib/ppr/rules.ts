@@ -453,3 +453,21 @@ export function bestProgramOffer(
   if (a === 0 && b === 0) return ppr ?? empresarial;
   return a >= b ? ppr : empresarial;
 }
+
+// ---------------------------------------------------------------------------
+// Leitura do painel
+// ---------------------------------------------------------------------------
+
+/**
+ * Percentual de crescimento SÓ quando a base é grande o bastante. Com 1 ou 2
+ * planos, "+100%" engana mais do que informa — nesse caso devolve null e o
+ * painel mostra o número absoluto (saldo) em vez do percentual.
+ */
+export function growthPercent(
+  base: number,
+  current: number,
+  minBase = 5
+): number | null {
+  if (base < minBase || base <= 0) return null;
+  return ((current - base) / base) * 100;
+}

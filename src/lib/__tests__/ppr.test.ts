@@ -9,6 +9,7 @@ import {
   discountableCents,
   effectiveRuleWithPpr,
   extraDependentCount,
+  growthPercent,
   installmentDiscountPercent,
   maxDependentsOf,
   maxInstallmentsFor,
@@ -442,5 +443,22 @@ describe("PPR+ — convivência com o Risarte Empresarial", () => {
       benefitValue: 15,
     });
     expect(best?.program).toBe("empresarial");
+  });
+});
+
+describe("crescimento do painel", () => {
+  it("não calcula % com base pequena (evita +100% com 1 plano)", () => {
+    expect(growthPercent(1, 2)).toBeNull();
+    expect(growthPercent(4, 6)).toBeNull();
+    expect(growthPercent(0, 3)).toBeNull();
+  });
+
+  it("calcula % quando a base é suficiente", () => {
+    expect(growthPercent(10, 12)).toBeCloseTo(20);
+    expect(growthPercent(20, 15)).toBeCloseTo(-25);
+  });
+
+  it("aceita base mínima configurável", () => {
+    expect(growthPercent(2, 3, 2)).toBeCloseTo(50);
   });
 });
