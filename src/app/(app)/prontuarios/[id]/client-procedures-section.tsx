@@ -314,7 +314,16 @@ export function ClientProceduresSection({
                           className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
                         >
                           <Clock className="size-3" />
-                          <span>Sessão {i + 1}</span>
+                          {/* Sessão com nome no protocolo mostra o nome — é o
+                              que o dentista e a recepção reconhecem. */}
+                          <span>
+                            Sessão {i + 1}
+                            {s.name && (
+                              <span className="ml-1 font-medium text-foreground">
+                                · {s.name}
+                              </span>
+                            )}
+                          </span>
                           {s.state === "done" ? (
                             <span className="text-emerald-600">
                               concluída{s.doneAt ? ` em ${fmtDate(s.doneAt)}` : ""}

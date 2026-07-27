@@ -227,40 +227,35 @@ async function chairLimitError(
   return null;
 }
 
-/** Sincroniza os participantes adicionais de um agendamento; devolve os que
- * foram INCLUÍDOS agora (para notificar só esses). */
+/**
+ * Sincroniza os profissionais adicionais e devolve os que foram INCLUÍDOS agora
+ * (para notificar só esses) ou o aviso de erro.
+ *
+ * I2: vai por RPC (SECURITY DEFINER). A RLS de `appointment_participants` só
+ * libera recepção/SDR/admin, então quando o coordenador ou o gerente agendava,
+ * o insert era barrado em silêncio: nada era gravado, o card ficava sem os
+ * dentistas adicionais e a agenda do outro profissional não mostrava nada.
+ */
 async function syncAppointmentParticipants(
   supabase: Awaited<ReturnType<typeof createClient>>,
   appointmentId: string,
-  clinicId: string,
-  createdBy: string,
   desired: string[]
-): Promise<string[]> {
-  const { data: currentRows } = await supabase
-    .from("appointment_participants")
-    .select("provider_user_id")
-    .eq("appointment_id", appointmentId);
-  const current = (currentRows ?? []).map((r) => r.provider_user_id as string);
-  const toAdd = desired.filter((id) => !current.includes(id));
-  const toRemove = current.filter((id) => !desired.includes(id));
-  if (toRemove.length > 0) {
-    await supabase
-      .from("appointment_participants")
-      .delete()
-      .eq("appointment_id", appointmentId)
-      .in("provider_user_id", toRemove);
+): Promise<{ added: string[]; warning?: string }> {
+  const { data, error } = await supabase.rpc("set_appointment_participants", {
+    p_appointment_id: appointmentId,
+    p_provider_ids: desired,
+  });
+  if (error) {
+    console.error("set_appointment_participants failed:", error.message);
+    const busy = error.message.match(/PARTICIPANT_TIME_CONFLICT:\s*(.+)$/);
+    return {
+      added: [],
+      warning: busy
+        ? `${busy[1].trim()} já tem outro atendimento neste horário e não entrou no atendimento conjunto.`
+        : "Não foi possível registrar os profissionais adicionais deste atendimento.",
+    };
   }
-  if (toAdd.length > 0) {
-    await supabase.from("appointment_participants").insert(
-      toAdd.map((pid) => ({
-        appointment_id: appointmentId,
-        clinic_id: clinicId,
-        provider_user_id: pid,
-        created_by: createdBy,
-      }))
-    );
-  }
-  return toAdd;
+  return { added: (data ?? []) as string[] };
 }
 
 /** Profissionais adicionais de um agendamento (para o detalhe e a edição). */
@@ -668,13 +663,12 @@ export async function createAppointment(
 
   // H4.7: registra os profissionais adicionais e avisa cada um (aviso forte).
   if (participantIds.length > 0) {
-    const added = await syncAppointmentParticipants(
+    const { added, warning } = await syncAppointmentParticipants(
       supabase,
       data.id,
-      clinicId,
-      session.userId,
       participantIds
     );
+    if (warning) sessionWarning = sessionWarning ?? warning;
     if (added.length > 0) {
       const { error: partErr } = await supabase.rpc(
         "notify_appointment_participants",
@@ -1107,13 +1101,12 @@ export async function updateAppointment(
 
   // H4.7: sincroniza os profissionais adicionais e avisa os recém-incluídos.
   if (participantSync !== null) {
-    const added = await syncAppointmentParticipants(
+    const { added, warning } = await syncAppointmentParticipants(
       supabase,
       appointmentId,
-      existing.clinic_id,
-      session.userId,
       participantSync
     );
+    if (warning) sessionWarning = sessionWarning ?? warning;
     if (added.length > 0) {
       const { error: partErr } = await supabase.rpc(
         "notify_appointment_participants",

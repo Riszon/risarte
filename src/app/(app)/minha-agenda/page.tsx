@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DoorOpen, Users } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
@@ -32,6 +33,10 @@ type AgendaRow = {
   client_name: string | null;
   role: "principal" | "participante";
   is_joint: boolean;
+  /** I2: sala e com quem é o atendimento conjunto. */
+  room_name: string | null;
+  is_online: boolean;
+  partners: string | null;
 };
 
 const UNIT_COLORS = [
@@ -292,6 +297,28 @@ export default async function MinhaAgendaPage(props: PageProps<"/minha-agenda">)
                             </Badge>
                           )}
                         </div>
+                        {/* I2: com quem e onde — o que o dentista precisa saber
+                            antes de entrar no atendimento. */}
+                        {(r.partners || r.room_name || r.is_online) && (
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                            {r.partners && (
+                              <span className="flex items-center gap-1">
+                                <Users className="size-3 text-amber-600" />
+                                com <strong>{r.partners}</strong>
+                              </span>
+                            )}
+                            {r.is_online ? (
+                              <span className="text-sky-700">ONLINE</span>
+                            ) : (
+                              r.room_name && (
+                                <span className="flex items-center gap-1">
+                                  <DoorOpen className="size-3" />
+                                  {r.room_name}
+                                </span>
+                              )
+                            )}
+                          </p>
+                        )}
                         {r.attendance && (
                           <Badge variant="secondary" className="shrink-0">
                             {ATTENDANCE_LABEL[r.attendance]}

@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/07/2026 · Versão do sistema: **0.141.0** · Última migração: **0170**_
+_Atualizado em: 27/07/2026 · Versão do sistema: **0.142.0** · Última migração: **0171**_
+
+> **LOTE I — I2: atendimento conjunto (H4.7), 4 correções ✅ (v0.142.0,
+> migração 0171):** mesma família de erro do I1 — a regra de escrita de
+> `appointment_participants` (0116) só liberava recepção, SDR e admin, então
+> quando quem agendava era o **coordenador, o gerente ou o dentista** nenhum
+> profissional adicional era gravado (card vazio, agenda do B vazia), embora o
+> aviso ao B fosse disparado do mesmo jeito. Agora: (1) os adicionais são
+> gravados por função de banco (`set_appointment_participants`) com a mesma
+> régua do agendamento, que **recusa** incluir quem já tem atendimento no
+> horário; (2) a trava de conflito passou a enxergar o profissional **adicional**
+> — antes a agenda dele continuava "livre" e aceitava outro cliente no mesmo
+> horário; (3) o aviso ao profissional agora diz **com quem** é o atendimento
+> conjunto, o paciente, a data, a unidade e a **sala**, e leva para "Minha
+> agenda"; (4) "Minha agenda" mostra **com quem** e **em qual sala**. O filtro
+> por profissional na agenda da unidade também encontra quem entra como
+> adicional. Falhas deixaram de ser silenciosas: viram aviso na tela.
 
 > **LOTE I — I1: sessão agendada não volta para o formulário ✅ (v0.141.0,
 > migração 0170):** a sessão que já tinha atendimento marcado continuava

@@ -329,6 +329,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   let appointments: AppointmentRow[] = [];
   // H4.7: nomes dos profissionais adicionais por agendamento (atendimento conjunto).
   const participantsByAppt = new Map<string, string[]>();
+  // I2: os ids dos adicionais, para o filtro por profissional.
+  const participantIdsByAppt = new Map<string, string[]>();
   let clients: { id: string; full_name: string; inactive: boolean }[] = [];
   let staff: StaffOption[] = [];
   let preselectClientId: string | undefined;
@@ -479,12 +481,13 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       const { data: partRows } = await supabase
         .from("appointment_participants")
         .select(
-          "appointment_id, profiles:profiles!appointment_participants_provider_user_id_fkey ( full_name )"
+          "appointment_id, provider_user_id, profiles:profiles!appointment_participants_provider_user_id_fkey ( full_name )"
         )
         .in("appointment_id", apptIds)
         .returns<
           {
             appointment_id: string;
+            provider_user_id: string;
             profiles: { full_name: string } | null;
           }[]
         >();
@@ -492,6 +495,11 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
         const arr = participantsByAppt.get(r.appointment_id) ?? [];
         arr.push(r.profiles?.full_name ?? "—");
         participantsByAppt.set(r.appointment_id, arr);
+        // I2: o filtro por profissional precisa achar também quem entra como
+        // adicional — senão o atendimento some da agenda do dentista B.
+        const ids = participantIdsByAppt.get(r.appointment_id) ?? [];
+        ids.push(r.provider_user_id);
+        participantIdsByAppt.set(r.appointment_id, ids);
       }
     }
 
@@ -576,7 +584,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     .map((s) => s.trim())
     .filter(Boolean);
   const hasSalaFilter = selectedSalas.length > 0;
-  // Filtro por profissional (?profissional=userId) — só o profissional responsável.
+  // Filtro por profissional (?profissional=userId) — responsável principal OU
+  // adicional do atendimento conjunto (I2).
   const provFilter =
     typeof searchParams.profissional === "string"
       ? searchParams.profissional
@@ -598,7 +607,9 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     : unitAppointments;
   if (provFilter) {
     filteredUnitAppointments = filteredUnitAppointments.filter(
-      (a) => a.provider_user_id === provFilter
+      (a) =>
+        a.provider_user_id === provFilter ||
+        (participantIdsByAppt.get(a.id) ?? []).includes(provFilter)
     );
   }
   const allRooms = (formConfig?.rooms ?? []).map((r) => ({
