@@ -193,7 +193,7 @@ export default async function PlanningCenterPage(
           }),
       supabase
         .from("sla_settings")
-        .select("id, clinic_id, sla_key, hours")
+        .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
         .returns<SlaSettingRow[]>(),
       // H3.11: clientes com informação complementar ainda não vista pelo Planner.
       ids.length > 0

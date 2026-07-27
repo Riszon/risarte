@@ -113,7 +113,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
       clientsQuery.returns<ClientRow[]>(),
       supabase
         .from("sla_settings")
-        .select("id, clinic_id, sla_key, hours")
+        .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
         .returns<SlaSettingRow[]>(),
       isFranchisor
         ? supabase

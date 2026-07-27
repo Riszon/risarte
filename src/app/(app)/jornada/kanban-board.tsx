@@ -30,6 +30,7 @@ import {
   displayedPillar,
   formatTimeInPhase,
   isSlaExceeded,
+  slaAppliesTo,
   type JourneyPhase,
   type JourneyStatus,
   type MethodologyPillar,
@@ -102,10 +103,13 @@ export function KanbanBoard({
       {JOURNEY_PHASES.map((phase, phaseIndex) => {
         const phaseClients = clients.filter((c) => c.journey_phase === phase);
         const slaKey = PHASE_SLA_KEY[phase];
-        const slaHours = slaKey ? sla[slaKey] : null;
-        const exceededCount = phaseClients.filter((c) =>
-          isSlaExceeded(c.phase_entered_at, slaHours)
-        ).length;
+        const slaMinutes = slaKey ? sla[slaKey] : null;
+        // I3: o prazo só corre enquanto o passo que ele cobra não aconteceu
+        // (ex.: Fase 5 para de cobrar quando já está "Em Tratamento").
+        const exceededOf = (c: (typeof phaseClients)[number]) =>
+          slaAppliesTo(phase, c.journey_status) &&
+          isSlaExceeded(c.phase_entered_at, slaMinutes);
+        const exceededCount = phaseClients.filter(exceededOf).length;
         const nextOptions = allowedNextPhases(phase, {
           isAdminMaster,
           clinicRoles,
@@ -166,10 +170,7 @@ export function KanbanBoard({
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
               {phaseClients.map((client) => {
-                const exceeded = isSlaExceeded(
-                  client.phase_entered_at,
-                  slaHours
-                );
+                const exceeded = exceededOf(client);
                 const pillar = displayedPillar(
                   client.journey_phase,
                   client.methodology_pillar

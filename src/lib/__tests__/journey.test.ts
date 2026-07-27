@@ -5,6 +5,7 @@ import {
   allowedNextPhases,
   displayedPillar,
   isSlaExceeded,
+  slaAppliesTo,
 } from "@/lib/journey";
 
 // A matriz "quem move o cliente de fase" é regra de negócio central (também
@@ -89,18 +90,38 @@ describe("displayedPillar", () => {
   });
 });
 
-describe("isSlaExceeded", () => {
+describe("isSlaExceeded (prazo em minutos — I3)", () => {
   const hoursAgo = (h: number) =>
     new Date(Date.now() - h * 3_600_000).toISOString();
 
-  it("estourado quando o tempo na fase passa do SLA", () => {
-    expect(isSlaExceeded(hoursAgo(10), 5)).toBe(true);
+  it("estourado quando o tempo na fase passa do prazo", () => {
+    expect(isSlaExceeded(hoursAgo(10), 5 * 60)).toBe(true);
   });
-  it("dentro do SLA", () => {
-    expect(isSlaExceeded(hoursAgo(2), 24)).toBe(false);
+  it("dentro do prazo", () => {
+    expect(isSlaExceeded(hoursAgo(2), 24 * 60)).toBe(false);
   });
-  it("sem SLA configurado nunca estoura", () => {
+  it("prazo menor que uma hora também vale", () => {
+    expect(isSlaExceeded(hoursAgo(1), 30)).toBe(true);
+    expect(isSlaExceeded(hoursAgo(0.25), 30)).toBe(false);
+  });
+  it("sem prazo configurado nunca estoura", () => {
     expect(isSlaExceeded(hoursAgo(1000), null)).toBe(false);
     expect(isSlaExceeded(hoursAgo(1000), undefined)).toBe(false);
+  });
+});
+
+describe("slaAppliesTo — o prazo desliga quando o passo já aconteceu", () => {
+  it("Fase 5 cobra só enquanto aguarda iniciar o tratamento", () => {
+    expect(slaAppliesTo("treatment_start", "awaiting_treatment_start")).toBe(true);
+    expect(slaAppliesTo("treatment_start", null)).toBe(true);
+  });
+  it("tratamento iniciado (ou encerrado) desliga o prazo", () => {
+    expect(slaAppliesTo("treatment_start", "in_treatment")).toBe(false);
+    expect(slaAppliesTo("treatment_start", "treatment_finished")).toBe(false);
+    expect(slaAppliesTo("treatment_start", "treatment_cancelled")).toBe(false);
+  });
+  it("as outras fases não mudam", () => {
+    expect(slaAppliesTo("planning_center", "in_planning")).toBe(true);
+    expect(slaAppliesTo("commercial_conversion", null)).toBe(true);
   });
 });

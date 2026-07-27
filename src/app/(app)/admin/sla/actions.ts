@@ -4,9 +4,25 @@ import { revalidatePath } from "next/cache";
 import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { SLA_KEYS, INACTIVITY_KEYS, type SlaKey, type InactivityKey } from "@/lib/sla";
+import {
+  SLA_KEYS,
+  INACTIVITY_KEYS,
+  TIME_UNITS,
+  toMinutes,
+  type SlaKey,
+  type InactivityKey,
+  type TimeUnit,
+} from "@/lib/sla";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/** I3: lê a unidade escolhida no formulário (campo `<chave>__unit`). */
+function readUnit(formData: FormData, key: string, fallback: TimeUnit): TimeUnit {
+  const raw = String(formData.get(`${key}__unit`) ?? "").trim();
+  return (TIME_UNITS as readonly string[]).includes(raw)
+    ? (raw as TimeUnit)
+    : fallback;
+}
 
 /** Saves the inactivity thresholds (network default or per-unit override). */
 export async function saveInactivitySettings(
@@ -20,6 +36,9 @@ export async function saveInactivitySettings(
     clinic_id: string | null;
     setting_key: InactivityKey;
     value_days: number;
+    amount: number;
+    unit: TimeUnit;
+    total_minutes: number;
   }[] = [];
   const toDelete: InactivityKey[] = [];
 
@@ -35,11 +54,24 @@ export async function saveInactivitySettings(
       toDelete.push(key);
       continue;
     }
-    const days = Number(raw);
-    if (!Number.isInteger(days) || days <= 0) {
-      return { ok: false, error: "Informe dias válidos (inteiro maior que zero)." };
+    const amount = Number(raw);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return {
+        ok: false,
+        error: "Informe um número inteiro maior que zero em cada prazo.",
+      };
     }
-    toUpsert.push({ clinic_id: clinicId, setting_key: key, value_days: days });
+    const unit = readUnit(formData, key, "days");
+    const total = toMinutes(amount, unit);
+    toUpsert.push({
+      clinic_id: clinicId,
+      setting_key: key,
+      // Compatibilidade: o gatilho do banco recalcula, mas mandamos coerente.
+      value_days: Math.max(1, Math.ceil(total / 1440)),
+      amount,
+      unit,
+      total_minutes: total,
+    });
   }
 
   if (toUpsert.length > 0) {
@@ -98,8 +130,14 @@ export async function saveSlaSettings(
   await requireAdminMaster();
   const supabase = await createClient();
 
-  const toUpsert: { clinic_id: string | null; sla_key: SlaKey; hours: number }[] =
-    [];
+  const toUpsert: {
+    clinic_id: string | null;
+    sla_key: SlaKey;
+    hours: number;
+    amount: number;
+    unit: TimeUnit;
+    total_minutes: number;
+  }[] = [];
   const toDelete: SlaKey[] = [];
 
   for (const key of SLA_KEYS) {
@@ -114,11 +152,23 @@ export async function saveSlaSettings(
       toDelete.push(key);
       continue;
     }
-    const hours = Number(raw);
-    if (!Number.isInteger(hours) || hours <= 0) {
-      return { ok: false, error: "Informe horas válidas (número inteiro maior que zero)." };
+    const amount = Number(raw);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return {
+        ok: false,
+        error: "Informe um número inteiro maior que zero em cada prazo.",
+      };
     }
-    toUpsert.push({ clinic_id: clinicId, sla_key: key, hours });
+    const unit = readUnit(formData, key, "hours");
+    const total = toMinutes(amount, unit);
+    toUpsert.push({
+      clinic_id: clinicId,
+      sla_key: key,
+      hours: Math.max(1, Math.ceil(total / 60)),
+      amount,
+      unit,
+      total_minutes: total,
+    });
   }
 
   if (toUpsert.length > 0) {

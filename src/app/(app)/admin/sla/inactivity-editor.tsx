@@ -23,11 +23,38 @@ import {
 import {
   INACTIVITY_KEYS,
   INACTIVITY_LABELS,
+  TIME_UNITS,
+  TIME_UNIT_LABELS,
   type InactivitySettingRow,
+  type TimeUnit,
 } from "@/lib/sla";
 import { recomputeActivity, saveInactivitySettings } from "./actions";
 
 type ClinicOption = { id: string; name: string };
+
+/** Seletor de unidade do prazo (minutos / horas / dias / meses) — I3. */
+function UnitSelect({
+  name,
+  defaultValue,
+}: {
+  name: string;
+  defaultValue: TimeUnit;
+}) {
+  return (
+    <select
+      name={name}
+      defaultValue={defaultValue}
+      className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm"
+      aria-label="Unidade de tempo"
+    >
+      {TIME_UNITS.map((u) => (
+        <option key={u} value={u}>
+          {TIME_UNIT_LABELS[u]}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export function InactivityEditor({
   rows,
@@ -40,11 +67,22 @@ export function InactivityEditor({
   const [isPending, startTransition] = useTransition();
   const [selectedClinicId, setSelectedClinicId] = useState(clinics[0]?.id ?? "");
 
-  const networkValue = (key: string) =>
-    rows.find((r) => r.clinic_id === null && r.setting_key === key)?.value_days;
-  const clinicValue = (key: string) =>
-    rows.find((r) => r.clinic_id === selectedClinicId && r.setting_key === key)
-      ?.value_days;
+  const networkRow = (key: string) =>
+    rows.find((r) => r.clinic_id === null && r.setting_key === key);
+  const clinicRow = (key: string) =>
+    rows.find((r) => r.clinic_id === selectedClinicId && r.setting_key === key);
+  // I3: quantidade + unidade (o banco converte para minutos).
+  const networkValue = (key: string) => {
+    const r = networkRow(key);
+    return r?.amount ?? r?.value_days;
+  };
+  const networkUnit = (key: string): TimeUnit => networkRow(key)?.unit ?? "days";
+  const clinicValue = (key: string) => {
+    const r = clinicRow(key);
+    return r?.amount ?? r?.value_days;
+  };
+  const clinicUnit = (key: string): TimeUnit | undefined =>
+    clinicRow(key)?.unit ?? undefined;
 
   function submit(clinicId: string | null, form: HTMLFormElement) {
     const formData = new FormData(form);
@@ -101,9 +139,9 @@ export function InactivityEditor({
                     min={1}
                     required
                     defaultValue={networkValue(key) ?? ""}
-                    className="w-24 text-right"
+                    className="w-20 text-right"
                   />
-                  <span className="w-10 text-sm text-muted-foreground">dias</span>
+                  <UnitSelect name={`${key}__unit`} defaultValue={networkUnit(key)} />
                 </div>
               </div>
             ))}
@@ -182,11 +220,12 @@ export function InactivityEditor({
                         min={1}
                         defaultValue={clinicValue(key) ?? ""}
                         placeholder={String(networkValue(key) ?? "")}
-                        className="w-24 text-right"
+                        className="w-20 text-right"
                       />
-                      <span className="w-10 text-sm text-muted-foreground">
-                        dias
-                      </span>
+                      <UnitSelect
+                        name={`${key}__unit`}
+                        defaultValue={clinicUnit(key) ?? networkUnit(key)}
+                      />
                     </div>
                   </div>
                 ))}

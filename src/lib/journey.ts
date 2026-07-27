@@ -241,10 +241,30 @@ export function formatTimeInPhase(iso: string): string {
   return rest > 0 ? `${days}d ${rest}h` : `${days}d`;
 }
 
+/**
+ * I3: o prazo agora vem em MINUTOS (dá para configurar prazos menores que uma
+ * hora). Sem prazo configurado, nada estoura.
+ */
 export function isSlaExceeded(
   phaseEnteredAt: string,
-  slaHours: number | null | undefined
+  slaMinutes: number | null | undefined
 ): boolean {
-  if (!slaHours) return false;
-  return hoursSince(phaseEnteredAt) > slaHours;
+  if (!slaMinutes) return false;
+  return hoursSince(phaseEnteredAt) * 60 > slaMinutes;
+}
+
+/**
+ * I3: o prazo de uma fase para de correr quando o passo que ele cobra JÁ
+ * aconteceu. Hoje isso vale para a Fase 5: "Fechamento → início do tratamento"
+ * só cobra enquanto o cliente está **aguardando iniciar**; assim que o
+ * sub-status vira "Em Tratamento" (ou finalizado/cancelado), o prazo desliga.
+ */
+export function slaAppliesTo(
+  phase: JourneyPhase,
+  status: JourneyStatus | null | undefined
+): boolean {
+  if (phase === "treatment_start") {
+    return !status || status === "awaiting_treatment_start";
+  }
+  return true;
 }

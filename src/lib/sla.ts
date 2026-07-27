@@ -18,11 +18,59 @@ export const SLA_LABELS: Record<SlaKey, string> = {
   closing_to_treatment_start: "Fechamento → início do tratamento",
 };
 
+/**
+ * Unidade de tempo dos prazos (I3). O sistema guarda tudo em MINUTOS
+ * (`total_minutes`); a unidade existe para a tela mostrar do jeito que o dono
+ * configurou ("2 dias" em vez de "2880 minutos"). 1 mês = 30 dias.
+ */
+export const TIME_UNITS = ["minutes", "hours", "days", "months"] as const;
+export type TimeUnit = (typeof TIME_UNITS)[number];
+
+export const TIME_UNIT_LABELS: Record<TimeUnit, string> = {
+  minutes: "minuto(s)",
+  hours: "hora(s)",
+  days: "dia(s)",
+  months: "mês(es)",
+};
+
+export const TIME_UNIT_MINUTES: Record<TimeUnit, number> = {
+  minutes: 1,
+  hours: 60,
+  days: 1440,
+  months: 43200,
+};
+
+/** Converte quantidade + unidade para minutos (mesma conta do banco). */
+export function toMinutes(amount: number, unit: TimeUnit): number {
+  return Math.max(1, Math.round(amount * TIME_UNIT_MINUTES[unit]));
+}
+
+/** "2 dias", "90 minutos", "3 meses" — como o prazo foi configurado. */
+export function formatDuration(
+  amount: number | null | undefined,
+  unit: TimeUnit | null | undefined
+): string {
+  if (!amount) return "—";
+  const u = unit ?? "hours";
+  const plural = amount !== 1;
+  const label: Record<TimeUnit, [string, string]> = {
+    minutes: ["minuto", "minutos"],
+    hours: ["hora", "horas"],
+    days: ["dia", "dias"],
+    months: ["mês", "meses"],
+  };
+  return `${amount} ${label[u][plural ? 1 : 0]}`;
+}
+
 export type SlaSettingRow = {
   id: string;
   clinic_id: string | null;
   sla_key: SlaKey;
+  /** Compatibilidade — o valor oficial é `total_minutes`. */
   hours: number;
+  amount: number | null;
+  unit: TimeUnit | null;
+  total_minutes: number | null;
 };
 
 // Inactivity thresholds (in days). Must stay in sync with migration 0020 seed.
@@ -51,7 +99,11 @@ export type InactivitySettingRow = {
   id: string;
   clinic_id: string | null;
   setting_key: InactivityKey;
+  /** Compatibilidade — o valor oficial é `total_minutes`. */
   value_days: number;
+  amount: number | null;
+  unit: TimeUnit | null;
+  total_minutes: number | null;
 };
 
 export function resolveInactivity(
@@ -71,12 +123,37 @@ export function resolveInactivity(
   return result;
 }
 
-/** Resolves the effective SLA for a clinic: unit override > network default. */
+/** Prazos de inatividade em MINUTOS (unidade sobrescreve o padrão da rede). */
+export function resolveInactivityMinutes(
+  rows: InactivitySettingRow[],
+  clinicId: string | null
+): Record<InactivityKey, number | null> {
+  const result = {} as Record<InactivityKey, number | null>;
+  const minutesOf = (r: InactivitySettingRow | undefined) =>
+    r ? (r.total_minutes ?? r.value_days * TIME_UNIT_MINUTES.days) : undefined;
+  for (const key of INACTIVITY_KEYS) {
+    const override = clinicId
+      ? rows.find((r) => r.clinic_id === clinicId && r.setting_key === key)
+      : undefined;
+    const networkDefault = rows.find(
+      (r) => r.clinic_id === null && r.setting_key === key
+    );
+    result[key] = minutesOf(override) ?? minutesOf(networkDefault) ?? null;
+  }
+  return result;
+}
+
+/**
+ * SLA efetivo de uma clínica, **em minutos** (unidade sobrescreve a rede).
+ * I3: passou a ser minutos porque agora o prazo pode ser menor que uma hora.
+ */
 export function resolveSla(
   rows: SlaSettingRow[],
   clinicId: string | null
 ): Record<SlaKey, number | null> {
   const result = {} as Record<SlaKey, number | null>;
+  const minutesOf = (r: SlaSettingRow | undefined) =>
+    r ? (r.total_minutes ?? r.hours * TIME_UNIT_MINUTES.hours) : undefined;
   for (const key of SLA_KEYS) {
     const override = clinicId
       ? rows.find((r) => r.clinic_id === clinicId && r.sla_key === key)
@@ -84,7 +161,7 @@ export function resolveSla(
     const networkDefault = rows.find(
       (r) => r.clinic_id === null && r.sla_key === key
     );
-    result[key] = override?.hours ?? networkDefault?.hours ?? null;
+    result[key] = minutesOf(override) ?? minutesOf(networkDefault) ?? null;
   }
   return result;
 }

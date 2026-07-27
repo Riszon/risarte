@@ -1,6 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/07/2026 · Versão do sistema: **0.142.0** · Última migração: **0171**_
+_Atualizado em: 27/07/2026 · Versão do sistema: **0.143.0** · Última migração: **0172**_
+
+> **LOTE I — I3: prazos com unidade de tempo + SLA que desliga ✅ (v0.143.0,
+> migração 0172):** em **Prazos (SLA)** cada prazo agora tem **quantidade +
+> unidade** — minutos, horas, dias ou meses (1 mês = 30 dias) — e a mesma
+> liberdade vale para as regras de **ativo/inativo**, que antes só aceitavam
+> dias. O sistema converte tudo para minutos e passou a comparar em minutos
+> (inclusive o recálculo de ativo/inativo no banco), então prazos menores que um
+> dia finalmente funcionam. As colunas antigas (`hours` e `value_days`) seguem
+> preenchidas por gatilho, para nada que ainda as leia quebrar. Segunda
+> correção: o prazo **"Fechamento → início do tratamento" para de correr** assim
+> que o cliente entra em **"Em Tratamento"** (ou finalizado/cancelado) — antes
+> ficava vermelho para sempre mesmo com o tratamento já em andamento.
+
+> **LOTE I — I2b: ajustes do teste ✅ (v0.143.0, sem migração):** o seletor de
+> horário **não oferece mais** o horário em que o dentista está num atendimento
+> conjunto (poupa a recepção de tentar e levar erro), e a tela **Meu Dia** —
+> hoje, próximos 14 dias, produção e futuros — passou a incluir os atendimentos
+> em que o dentista entra como **profissional adicional**, com o selo
+> "atendimento conjunto".
 
 > **LOTE I — I2: atendimento conjunto (H4.7), 4 correções ✅ (v0.142.0,
 > migração 0171):** mesma família de erro do I1 — a regra de escrita de

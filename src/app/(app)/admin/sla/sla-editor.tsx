@@ -20,10 +20,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SLA_KEYS, SLA_LABELS, type SlaSettingRow } from "@/lib/sla";
+import {
+  SLA_KEYS,
+  SLA_LABELS,
+  TIME_UNITS,
+  TIME_UNIT_LABELS,
+  type SlaSettingRow,
+  type TimeUnit,
+} from "@/lib/sla";
 import { saveSlaSettings } from "./actions";
 
 type ClinicOption = { id: string; name: string };
+
+const unitSelectClass =
+  "h-9 rounded-lg border border-input bg-transparent px-2 text-sm";
+
+/** Seletor de unidade do prazo (minutos / horas / dias / meses). */
+function UnitSelect({
+  name,
+  defaultValue,
+}: {
+  name: string;
+  defaultValue: TimeUnit;
+}) {
+  return (
+    <select
+      name={name}
+      defaultValue={defaultValue}
+      className={unitSelectClass}
+      aria-label="Unidade de tempo"
+    >
+      {TIME_UNITS.map((u) => (
+        <option key={u} value={u}>
+          {TIME_UNIT_LABELS[u]}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export function SlaEditor({
   rows,
@@ -38,11 +72,21 @@ export function SlaEditor({
     clinics[0]?.id ?? ""
   );
 
-  const networkValue = (key: string) =>
-    rows.find((r) => r.clinic_id === null && r.sla_key === key)?.hours;
-  const clinicValue = (key: string) =>
-    rows.find((r) => r.clinic_id === selectedClinicId && r.sla_key === key)
-      ?.hours;
+  const networkRow = (key: string) =>
+    rows.find((r) => r.clinic_id === null && r.sla_key === key);
+  const clinicRow = (key: string) =>
+    rows.find((r) => r.clinic_id === selectedClinicId && r.sla_key === key);
+  // I3: o prazo é quantidade + unidade (o banco converte tudo para minutos).
+  const networkValue = (key: string) => {
+    const r = networkRow(key);
+    return r?.amount ?? r?.hours;
+  };
+  const networkUnit = (key: string): TimeUnit => networkRow(key)?.unit ?? "hours";
+  const clinicValue = (key: string) => {
+    const r = clinicRow(key);
+    return r?.amount ?? r?.hours;
+  };
+  const clinicUnit = (key: string): TimeUnit | undefined => clinicRow(key)?.unit ?? undefined;
 
   function submit(clinicId: string | null, form: HTMLFormElement) {
     const formData = new FormData(form);
@@ -90,11 +134,9 @@ export function SlaEditor({
                     min={1}
                     required
                     defaultValue={networkValue(key) ?? ""}
-                    className="w-24 text-right"
+                    className="w-20 text-right"
                   />
-                  <span className="w-12 text-sm text-muted-foreground">
-                    horas
-                  </span>
+                  <UnitSelect name={`${key}__unit`} defaultValue={networkUnit(key)} />
                 </div>
               </div>
             ))}
@@ -165,11 +207,12 @@ export function SlaEditor({
                         min={1}
                         defaultValue={clinicValue(key) ?? ""}
                         placeholder={String(networkValue(key) ?? "")}
-                        className="w-24 text-right"
+                        className="w-20 text-right"
                       />
-                      <span className="w-12 text-sm text-muted-foreground">
-                        horas
-                      </span>
+                      <UnitSelect
+                        name={`${key}__unit`}
+                        defaultValue={clinicUnit(key) ?? networkUnit(key)}
+                      />
                     </div>
                   </div>
                 ))}

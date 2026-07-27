@@ -15,7 +15,7 @@ export default async function SlaPage() {
     await Promise.all([
       supabase
         .from("sla_settings")
-        .select("id, clinic_id, sla_key, hours")
+        .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
         .returns<SlaSettingRow[]>(),
       supabase
         .from("clinics")
@@ -25,7 +25,7 @@ export default async function SlaPage() {
         .order("name"),
       supabase
         .from("inactivity_settings")
-        .select("id, clinic_id, setting_key, value_days")
+        .select("id, clinic_id, setting_key, value_days, amount, unit, total_minutes")
         .returns<InactivitySettingRow[]>(),
     ]);
 

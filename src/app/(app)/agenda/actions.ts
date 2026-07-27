@@ -1556,6 +1556,37 @@ export async function getDayBusyTimes(params: {
           a.type !== "emergency"
       )
       .map((a) => ({ starts_at: a.starts_at, ends_at: a.ends_at }));
+
+    // I2: o profissional também está ocupado quando entra como ADICIONAL num
+    // atendimento conjunto — esses horários somem do seletor, poupando a
+    // recepção de tentar (e levar erro do banco).
+    const { data: jointRows } = await supabase
+      .from("appointment_participants")
+      .select(
+        "appointment_id, appt:appointments!inner ( id, starts_at, ends_at, status, type )"
+      )
+      .eq("provider_user_id", params.providerUserId)
+      .gte("appt.starts_at", start.toISOString())
+      .lt("appt.starts_at", end.toISOString())
+      .returns<
+        {
+          appointment_id: string;
+          appt: {
+            id: string;
+            starts_at: string;
+            ends_at: string;
+            status: string;
+            type: string;
+          } | null;
+        }[]
+      >();
+    for (const r of jointRows ?? []) {
+      const a = r.appt;
+      if (!a) continue;
+      if (a.id === params.excludeId || !active(a.status)) continue;
+      if (a.type === "urgency" || a.type === "emergency") continue;
+      providerBusy.push({ starts_at: a.starts_at, ends_at: a.ends_at });
+    }
   }
 
   let roomBusy: BusyRange[] = [];

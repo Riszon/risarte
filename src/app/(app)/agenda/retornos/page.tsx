@@ -109,7 +109,7 @@ export default async function ReturnsPage(
 
   const { data: inactivityRows } = await supabase
     .from("inactivity_settings")
-    .select("id, clinic_id, setting_key, value_days")
+    .select("id, clinic_id, setting_key, value_days, amount, unit, total_minutes")
     .returns<InactivitySettingRow[]>();
   const inactivity = resolveInactivity(inactivityRows ?? [], clinic.id);
 

@@ -204,6 +204,22 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
   const SELECT =
     "id, type, status, starts_at, attendance, clients ( id, full_name )";
 
+  // I2: o dia do dentista inclui os atendimentos em que ele entra como
+  // profissional ADICIONAL (atendimento conjunto), não só os que ele responde.
+  const { data: jointRows } = await supabase
+    .from("appointment_participants")
+    .select("appointment_id")
+    .eq("provider_user_id", session.userId)
+    .eq("clinic_id", clinicId)
+    .returns<{ appointment_id: string }[]>();
+  const jointIds = [...new Set((jointRows ?? []).map((r) => r.appointment_id))];
+  const isJoint = (id: string) => jointIds.includes(id);
+  /** "meus atendimentos" = como responsável OU como adicional. */
+  const mineFilter =
+    jointIds.length > 0
+      ? `provider_user_id.eq.${session.userId},id.in.(${jointIds.join(",")})`
+      : `provider_user_id.eq.${session.userId}`;
+
   const [
     { data: todayRows },
     { data: upcomingRows },
@@ -216,7 +232,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
       .from("appointments")
       .select(SELECT)
       .eq("clinic_id", clinicId)
-      .eq("provider_user_id", session.userId)
+      .or(mineFilter)
       .gte("starts_at", todayStart.toISOString())
       .lt("starts_at", tomorrowStart.toISOString())
       .not("status", "in", "(cancelled,no_show)")
@@ -226,7 +242,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
       .from("appointments")
       .select(SELECT)
       .eq("clinic_id", clinicId)
-      .eq("provider_user_id", session.userId)
+      .or(mineFilter)
       .gte("starts_at", tomorrowStart.toISOString())
       .lt("starts_at", horizon.toISOString())
       .in("status", ["scheduled", "confirmed"])
@@ -247,7 +263,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
       .from("appointments")
       .select("attendance, status, checked_in_at, called_at")
       .eq("clinic_id", clinicId)
-      .eq("provider_user_id", session.userId)
+      .or(mineFilter)
       .gte("starts_at", start.toISOString())
       .lt("starts_at", end.toISOString())
       .returns<PeriodRow[]>(),
@@ -265,7 +281,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .eq("clinic_id", clinicId)
-      .eq("provider_user_id", session.userId)
+      .or(mineFilter)
       .gte("starts_at", now.toISOString())
       .in("status", ["scheduled", "confirmed"]),
   ]);
@@ -339,6 +355,11 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
           <p className="text-xs text-muted-foreground">
             {showDay ? `${dayLabel(a.starts_at)} · ` : ""}
             {time(a.starts_at)} · {APPOINTMENT_TYPE_LABELS[a.type]}
+            {isJoint(a.id) && (
+              <span className="ml-1 font-medium text-amber-700">
+                · atendimento conjunto
+              </span>
+            )}
           </p>
         </div>
         {att ? (
