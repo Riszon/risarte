@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   BadgePercent,
+  BarChart3,
   CalendarCheck,
   CalendarPlus,
   HandHeart,
@@ -129,6 +130,15 @@ export default async function PprPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+              nativeButton={false}
+              render={<Link href="/ppr/painel" />}
+            >
+              <BarChart3 className="mr-1 size-3.5" />
+              Painel
+            </Button>
             <Button
               size="sm"
               variant="outline"

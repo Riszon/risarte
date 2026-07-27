@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/07/2026 · Versão do sistema: **0.137.0** · Última migração: **0169**_
+_Atualizado em: 26/07/2026 · Versão do sistema: **0.138.0** · Última migração: **0169**_
+
+> **PPR+ — PPR7: painel do programa + ranking ✅ (v0.138.0, sem migração) —
+> MÓDULO PPR+ COMPLETO (PPR1–PPR7):** nova tela **PPR+ → Painel**, com filtro de
+> unidade para a Franqueadora. Traz **planos ativos** (+ aguardando ativação e
+> suspensos), **beneficiários** (titulares + dependentes), **receita mensal** com
+> **ticket médio**, **crescimento do mês** (novos × cancelados), o **gráfico dos
+> últimos 6 meses** (planos vivos e receita lado a lado), o quadro **por plano**
+> (quantidade, receita, participação e quantos entraram no mês com a taxa) e o
+> bloco **Prevenção em dia**: quem está **em dia com a limpeza** (usou nos
+> últimos 3 meses ou já tem agendamento), quem está **sem usar o plano** (+4
+> meses sem agendamento — a fila de ligar), limpezas realizadas, agendamentos dos
+> próximos 7/30 dias e a **projeção de liberações** pela frequência do plano. Para
+> a Franqueadora, o **ranking das unidades** por receita, planos, beneficiários,
+> novos, cancelados e limpezas.
 
 > **PPR+ — PPR6: mensalidades, inadimplência e Riso+ Social ✅ (v0.137.0,
 > migração 0169):** nova tela **PPR+ → Mensalidades**: **gerar as cobranças do
