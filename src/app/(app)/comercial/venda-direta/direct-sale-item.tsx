@@ -156,20 +156,7 @@ export function SaleItem({
       ? Math.round((baseCents * sale.rule.maxDiscountPercent) / 100)
       : null;
 
-  // Prévia ao vivo do novo total.
-  const preview = useMemo(() => {
-    const num = Number((adjustValue || "0").replace(",", ".")) || 0;
-    let discountCents = 0;
-    let surchargeCents = 0;
-    if (adjustMode === "desc_reais") discountCents = Math.round(num * 100);
-    else if (adjustMode === "desc_pct")
-      discountCents = Math.round((baseCents * num) / 100);
-    else if (adjustMode === "acresc") surchargeCents = Math.round(num * 100);
-    // O desconto sai do TOTAL a pagar, mas o percentual é calculado só sobre a
-    // parte que ainda não tem benefício do plano.
-    const final = Math.max(0, payableCents - discountCents + surchargeCents);
-    return { discountCents, surchargeCents, final };
-  }, [adjustMode, adjustValue, baseCents, payableCents]);
+  // (a prévia do total fica mais abaixo — depois do % da faixa do plano.)
 
   // Condições definidas = forma de pagamento JÁ SALVA na venda. Sem isso não se
   // assina contrato nem se emite cobrança (regra do dono, 25/07/2026).
@@ -233,6 +220,41 @@ export function SaleItem({
       .find((t) => installmentsNum <= t.upToInstallments);
     return tier ? tier.discountPercent : 0;
   }, [sale.programConditions, installmentsNum]);
+
+  // Prévia ao vivo do novo total.
+  // Cliente com PPR+: o desconto da faixa é AUTOMÁTICO — sempre recalculado
+  // pelo parcelamento ESCOLHIDO AGORA (18× sem faixa = 0%). Nunca fica preso a
+  // um valor gravado numa escolha anterior de parcelas (era o bug do R$ 222).
+  const preview = useMemo(() => {
+    if (sale.programConditions) {
+      const discountCents = Math.round(
+        (baseCents * programDiscountPercent) / 100
+      );
+      return {
+        discountCents,
+        surchargeCents: 0,
+        final: Math.max(0, payableCents - discountCents),
+      };
+    }
+    const num = Number((adjustValue || "0").replace(",", ".")) || 0;
+    let discountCents = 0;
+    let surchargeCents = 0;
+    if (adjustMode === "desc_reais") discountCents = Math.round(num * 100);
+    else if (adjustMode === "desc_pct")
+      discountCents = Math.round((baseCents * num) / 100);
+    else if (adjustMode === "acresc") surchargeCents = Math.round(num * 100);
+    // O desconto sai do TOTAL a pagar, mas o percentual é calculado só sobre a
+    // parte que ainda não tem benefício do plano.
+    const final = Math.max(0, payableCents - discountCents + surchargeCents);
+    return { discountCents, surchargeCents, final };
+  }, [
+    sale.programConditions,
+    programDiscountPercent,
+    adjustMode,
+    adjustValue,
+    baseCents,
+    payableCents,
+  ]);
 
   function saveConditions() {
     startTransition(async () => {
@@ -477,18 +499,11 @@ export function SaleItem({
                       )}
                       .
                     </span>
-                    {programDiscountPercent > 0 && baseCents > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAdjustMode("desc_pct");
-                          setAdjustValue(String(programDiscountPercent));
-                        }}
-                        className="rounded-full border border-gold bg-gold px-2 py-0.5 font-medium text-gold-foreground"
-                      >
-                        aplicar desconto do plano
-                      </button>
-                    )}
+                    <span className="rounded-full border border-gold/50 bg-gold/10 px-2 py-0.5 font-medium text-gold-foreground">
+                      {programDiscountPercent > 0
+                        ? `aplicado automaticamente: −${formatBRL(preview.discountCents)}`
+                        : "sem desconto nesta quantidade de parcelas"}
+                    </span>
                   </p>
                 </div>
               )}
@@ -590,8 +605,9 @@ export function SaleItem({
                 {/* Ajuste: UM controle (nenhum / desconto / acréscimo). */}
                 {sale.isProgramMember ? (
                   <p className="mt-2 rounded-md border border-gold/40 bg-gold/5 p-1.5 text-[11px] text-gold-foreground">
-                    ★ Cliente de programa — o desconto automático já foi
-                    aplicado. Sem desconto manual.
+                    ★ Cliente de programa — o desconto da faixa de parcelamento
+                    é aplicado automaticamente conforme as parcelas escolhidas.
+                    Sem desconto manual.
                   </p>
                 ) : (
                   <div className="mt-2">

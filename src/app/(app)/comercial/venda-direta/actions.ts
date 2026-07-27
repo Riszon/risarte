@@ -71,7 +71,7 @@ export async function setDirectSaleConditions(
     return { ok: false, error: "Você não pode fechar esta venda direta." };
   }
 
-  const discountCents = input.discountReais.trim()
+  let discountCents = input.discountReais.trim()
     ? (parseBRLToCents(input.discountReais) ?? 0)
     : 0;
   const surchargeCents = input.surchargeReais.trim()
@@ -79,12 +79,16 @@ export async function setDirectSaleConditions(
     : 0;
   const installments = Math.max(1, Math.floor(input.installments) || 1);
 
-  // Cliente de programa (desconto automático) não recebe desconto manual.
-  if (info.isProgramMember && discountCents > 0) {
+  // À VISTA (1×) só é liberado em PIX ou depósito (regra do dono, 26/07/2026).
+  if (
+    installments === 1 &&
+    input.paymentMethod &&
+    input.paymentMethod !== "pix" &&
+    input.paymentMethod !== "deposito_avista"
+  ) {
     return {
       ok: false,
-      error:
-        "Cliente de programa (desconto automático) — não é permitido desconto manual.",
+      error: "À vista (1×) o pagamento é só por PIX ou depósito à vista.",
     };
   }
 
@@ -103,6 +107,42 @@ export async function setDirectSaleConditions(
     resolveCommercialRule(ruleRows ?? [], info.clinicId),
     pprConditions
   ) as CommercialRule;
+
+  if (pprConditions) {
+    // PPR+: o desconto da faixa é do SISTEMA, não da tela — recalculado AQUI a
+    // cada salvamento pelo parcelamento escolhido (18× sem faixa = 0%). O valor
+    // vindo do cliente é ignorado de propósito, para nunca ficar congelado um
+    // desconto de uma escolha anterior de parcelas.
+    const pct =
+      installments <= 1
+        ? pprConditions.cashDiscountPercent
+        : ([...pprConditions.tiers]
+            .sort((a, b) => a.upToInstallments - b.upToInstallments)
+            .find((t) => installments <= t.upToInstallments)?.discountPercent ??
+          0);
+    const { data: itemRows } = await supabase
+      .from("direct_sale_items")
+      .select("final_cents, program_discount_cents")
+      .eq("sale_id", saleId);
+    // Procedimento já coberto pelo plano não recebe desconto de novo.
+    const coveredCents = (
+      (itemRows ?? []) as { final_cents: number; program_discount_cents: number }[]
+    )
+      .filter((i) => (i.program_discount_cents ?? 0) > 0)
+      .reduce((s, i) => s + (i.final_cents ?? 0), 0);
+    const base = Math.max(
+      0,
+      info.subtotalCents - info.programDiscountCents - coveredCents
+    );
+    discountCents = Math.round((base * Math.max(0, pct)) / 100);
+  } else if (info.isProgramMember && discountCents > 0) {
+    // Empresarial (desconto automático) não recebe desconto manual.
+    return {
+      ok: false,
+      error:
+        "Cliente de programa (desconto automático) — não é permitido desconto manual.",
+    };
+  }
 
   // A regra comercial BLOQUEIA o fechamento fora do padrão (§7.5).
   const violations = directSaleViolations(

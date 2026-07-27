@@ -653,6 +653,21 @@ export function NegotiationPanel({
                 </button>
               )}
             </p>
+            {/* Mudou as parcelas depois de aplicar? O % antigo deixa de valer. */}
+            {adjustMode === "discount_percent" &&
+              Number(adjustValue.replace(",", ".")) > programDiscountPercent && (
+                <p className="mt-1 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-1.5 text-[11px] text-amber-900">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    O desconto aplicado (
+                    {Number(adjustValue.replace(",", "."))}%) é{" "}
+                    <strong>maior que o da faixa de {installmentsNum}×</strong> (
+                    {programDiscountPercent}%). Clique em &quot;aplicar
+                    desconto&quot; para corrigir — ou a negociação vai para
+                    autorização do Gerente.
+                  </span>
+                </p>
+              )}
           </div>
         )}
 

@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/07/2026 · Versão do sistema: **0.136.0** · Última migração: **0167**_
+_Atualizado em: 26/07/2026 · Versão do sistema: **0.136.1** · Última migração: **0168**_
+
+> **CORREÇÃO — desconto da faixa ficava congelado ✅ (v0.136.1, migração 0168):**
+> o desconto do PPR+ era gravado como valor fixo no momento do clique em
+> "aplicar desconto do plano" (15% do à vista) e **não mudava ao trocar as
+> parcelas** — em 18× (faixa sem desconto) os R$ 222 continuavam lá. Agora, para
+> cliente com PPR+, o desconto da faixa é **100% automático**: a tela recalcula
+> ao trocar o seletor de parcelas (18× → R$ 0) e o **servidor recalcula de novo
+> ao salvar** (`setDirectSaleConditions` ignora o valor vindo da tela — nunca
+> mais valor congelado). O botão "aplicar desconto do plano" saiu; no lugar, o
+> selo "aplicado automaticamente: −R$ X" / "sem desconto nesta quantidade de
+> parcelas". "À vista só PIX/depósito" também é validado no servidor. A migração
+> 0168 fecha o lado do banco na **negociação**: o teto de desconto sobe só até o
+> **percentual da faixa escolhida** (`ppr_client_tier_percent`) — 15% em 18× vai
+> para autorização do Gerente — e o painel avisa quando o % aplicado ficou maior
+> que o da faixa após trocar as parcelas.
 
 > **Pagamento: seletor de parcelas + à vista de verdade ✅ (v0.136.0, sem
 > migração):** as **parcelas viraram um seletor** (À vista (1×), 2×, 3×… até o
