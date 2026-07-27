@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BarChart3,
   CalendarCheck,
+  ChevronRight,
   HeartPulse,
   Sparkles,
   TrendingUp,
@@ -17,17 +18,50 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { canViewPpr } from "@/lib/ppr/access";
+import { PPR_STATUS_LABELS, type PprStatus } from "@/lib/ppr/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RisarteMark } from "@/components/risarte-logo";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { PprDrill, type PprDrillItem } from "./ppr-drill";
 
 export const metadata: Metadata = { title: "Painel do PPR+" };
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const monthKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
 const monthLabel = (d: Date) => `${MONTHS[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
+const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+const fmtDateTime = (s: string) =>
+  new Date(s).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+/** Valor curto para caber em cima da barra: "R$ 1,2 mil". */
+function shortBRL(cents: number): string {
+  const v = cents / 100;
+  if (v >= 1000)
+    return `R$ ${(v / 1000).toLocaleString("pt-BR", {
+      maximumFractionDigits: 1,
+    })} mil`;
+  return `R$ ${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+}
+
+const STATUS_TONE: Record<PprStatus, PprDrillItem["badgeTone"]> = {
+  ativo: "emerald",
+  aguardando_ativacao: "amber",
+  suspenso: "rose",
+  cancelado: "muted",
+};
+const STATUS_ORDER: Record<string, number> = {
+  ativo: 0,
+  aguardando_ativacao: 1,
+  suspenso: 2,
+  cancelado: 3,
+};
 
 /** Painel do PPR+: crescimento, receita, prevenção e ranking das unidades. */
 export default async function PprDashboardPage(
@@ -75,10 +109,12 @@ export default async function PprDashboardPage(
   let memQuery = supabase
     .from("ppr_memberships")
     .select(
-      "id, clinic_id, plan_id, status, monthly_cents, created_at, activated_at, cancelled_at, plan:ppr_plans ( name )"
+      "id, clinic_id, plan_id, status, monthly_cents, created_at, activated_at, cancelled_at, holder_client_id, plan:ppr_plans ( name ), holder:clients!ppr_memberships_holder_client_id_fkey ( id, full_name, code ), clinic:clinics!ppr_memberships_clinic_id_fkey ( name )"
     );
   if (clinicFilter) memQuery = memQuery.eq("clinic_id", clinicFilter);
   const { data: memRows } = await memQuery;
+  type Named = { name: string };
+  type Person = { id: string; full_name: string; code: string | null };
   type Mem = {
     id: string;
     clinic_id: string;
@@ -88,11 +124,18 @@ export default async function PprDashboardPage(
     created_at: string;
     activated_at: string | null;
     cancelled_at: string | null;
-    plan: { name: string } | { name: string }[] | null;
+    holder_client_id: string;
+    plan: Named | Named[] | null;
+    holder: Person | Person[] | null;
+    clinic: Named | Named[] | null;
   };
   const memberships = (memRows ?? []) as unknown as Mem[];
   const one = <T,>(v: T | T[] | null | undefined): T | null =>
     Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+
+  const planNameOf = (m: Mem) => one(m.plan)?.name ?? "PPR+";
+  const holderOf = (m: Mem) => one(m.holder);
+  const clinicNameOf = (m: Mem) => one(m.clinic)?.name ?? "";
 
   const active = memberships.filter((m) => m.status === "ativo");
   const suspended = memberships.filter((m) => m.status === "suspenso");
@@ -115,24 +158,51 @@ export default async function PprDashboardPage(
   );
   let benQuery = supabase
     .from("ppr_beneficiaries")
-    .select("id, membership_id, client_id, role, left_at");
+    .select(
+      "id, membership_id, client_id, role, relationship, joined_at, left_at, client:clients!ppr_beneficiaries_client_id_fkey ( id, full_name, code ), clinic:clinics!ppr_beneficiaries_clinic_id_fkey ( name )"
+    );
   if (clinicFilter) benQuery = benQuery.eq("clinic_id", clinicFilter);
   const { data: benRows } = await benQuery;
-  const beneficiaries = ((benRows ?? []) as {
+  type Ben = {
     id: string;
     membership_id: string;
     client_id: string;
     role: string;
+    relationship: string | null;
+    joined_at: string | null;
     left_at: string | null;
-  }[]).filter((b) => !b.left_at && liveIds.has(b.membership_id));
+    client: Person | Person[] | null;
+    clinic: Named | Named[] | null;
+  };
+  const beneficiaries = ((benRows ?? []) as unknown as Ben[]).filter(
+    (b) => !b.left_at && liveIds.has(b.membership_id)
+  );
   const holders = beneficiaries.filter((b) => b.role === "titular").length;
   const dependents = beneficiaries.length - holders;
   const clientIds = [...new Set(beneficiaries.map((b) => b.client_id))];
 
+  const memById = new Map(memberships.map((m) => [m.id, m]));
+  const clientName = new Map<string, string>();
+  for (const m of memberships) {
+    const h = holderOf(m);
+    if (h) clientName.set(h.id, h.full_name);
+  }
+  for (const b of beneficiaries) {
+    const c = one(b.client);
+    if (c) clientName.set(c.id, c.full_name);
+  }
+  const nameOf = (id: string) => clientName.get(id) ?? "Cliente";
+  /** "Plano Ouro · Cambé" para a linha do beneficiário. */
+  const benScope = (b: Ben) => {
+    const m = memById.get(b.membership_id);
+    const unit = one(b.clinic)?.name ?? (m ? clinicNameOf(m) : "");
+    return [m ? planNameOf(m) : "PPR+", unit].filter(Boolean).join(" · ");
+  };
+
   // -- Por plano + crescimento ----------------------------------------------
   const byPlan = new Map<string, { name: string; count: number; mrr: number }>();
   for (const m of active) {
-    const name = one(m.plan)?.name ?? "Plano";
+    const name = planNameOf(m);
     const a = byPlan.get(m.plan_id) ?? { name, count: 0, mrr: 0 };
     a.count += 1;
     a.mrr += m.monthly_cents;
@@ -173,8 +243,6 @@ export default async function PprDashboardPage(
   const curAlive = growth[growth.length - 1]?.alive ?? 0;
   const growthRate =
     prevAlive > 0 ? ((curAlive - prevAlive) / prevAlive) * 100 : 0;
-  const maxAlive = Math.max(1, ...growth.map((g) => g.alive));
-  const maxMrr = Math.max(1, ...growth.map((g) => g.mrr));
 
   // -- Prevenção (uso do benefício + agenda) ---------------------------------
   let usageQuery = supabase
@@ -204,18 +272,28 @@ export default async function PprDashboardPage(
       .filter((u) => new Date(u.used_at) >= threeMonthsAgo)
       .map((u) => u.client_id)
   );
+  /** Última limpeza registrada de cada beneficiário. */
+  const lastUsage = new Map<string, string>();
+  for (const u of recurring) {
+    const cur = lastUsage.get(u.client_id);
+    if (!cur || new Date(cur) < new Date(u.used_at))
+      lastUsage.set(u.client_id, u.used_at);
+  }
 
   // Agenda dos beneficiários (futuros e último atendimento).
   const futureIds = new Set<string>();
+  const nextAppt = new Map<string, string>();
+  const weekAppts: { id: string; client_id: string; starts_at: string }[] = [];
   let futureWeek = 0;
   let futureMonth = 0;
   const lastSeen = new Map<string, string>();
   if (clientIds.length > 0) {
     const { data: apptRows } = await supabase
       .from("appointments")
-      .select("client_id, starts_at, status")
+      .select("id, client_id, starts_at, status")
       .in("client_id", clientIds);
     for (const a of (apptRows ?? []) as {
+      id: string;
       client_id: string;
       starts_at: string;
       status: string;
@@ -224,7 +302,16 @@ export default async function PprDashboardPage(
       const at = new Date(a.starts_at);
       if (at >= now) {
         futureIds.add(a.client_id);
-        if (at <= weekAhead) futureWeek += 1;
+        const cur = nextAppt.get(a.client_id);
+        if (!cur || new Date(cur) > at) nextAppt.set(a.client_id, a.starts_at);
+        if (at <= weekAhead) {
+          futureWeek += 1;
+          weekAppts.push({
+            id: a.id,
+            client_id: a.client_id,
+            starts_at: a.starts_at,
+          });
+        }
         if (at <= monthAhead) futureMonth += 1;
       } else {
         const cur = lastSeen.get(a.client_id);
@@ -232,28 +319,185 @@ export default async function PprDashboardPage(
       }
     }
   }
-  const upToDate = clientIds.filter(
+  weekAppts.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+
+  const upToDateIds = clientIds.filter(
     (id) => recentUsers.has(id) || futureIds.has(id)
-  ).length;
-  const idle = clientIds.filter((id) => {
+  );
+  const idleIds = clientIds.filter((id) => {
     if (futureIds.has(id)) return false;
     const last = lastSeen.get(id);
     return !last || new Date(last) < fourMonthsAgo;
-  }).length;
+  });
+  const upToDate = upToDateIds.length;
+  const idle = idleIds.length;
 
   // Projeção: quando o benefício recorrente libera de novo.
-  const dueWeek = recurring.filter(
-    (u) =>
-      u.next_available_at &&
-      new Date(u.next_available_at) >= now &&
-      new Date(u.next_available_at) <= weekAhead
-  ).length;
-  const dueMonth = recurring.filter(
-    (u) =>
-      u.next_available_at &&
-      new Date(u.next_available_at) >= now &&
-      new Date(u.next_available_at) <= monthAhead
-  ).length;
+  const dueUntil = (limit: Date) =>
+    recurring
+      .filter(
+        (u) =>
+          u.next_available_at &&
+          new Date(u.next_available_at) >= now &&
+          new Date(u.next_available_at) <= limit
+      )
+      .sort((a, b) =>
+        (a.next_available_at ?? "").localeCompare(b.next_available_at ?? "")
+      );
+  const dueWeekList = dueUntil(weekAhead);
+  const dueMonthList = dueUntil(monthAhead);
+
+  // -- Listas dos pop-ups ----------------------------------------------------
+  const benByClient = new Map<string, Ben>();
+  for (const b of beneficiaries) benByClient.set(b.client_id, b);
+  const clientScope = (id: string) => {
+    const b = benByClient.get(id);
+    return b ? benScope(b) : "PPR+";
+  };
+  const clientHref = (id: string) => `/prontuarios/${id}`;
+  const scope =
+    clinicFilter === null
+      ? "Todas as unidades"
+      : (unitOptions.find((u) => u.id === clinicFilter)?.name ??
+        session.activeClinic?.name ??
+        "Unidade");
+
+  const memItem = (m: Mem, note?: string | null): PprDrillItem => ({
+    key: m.id,
+    href: `/ppr/adesoes/${m.id}`,
+    title: holderOf(m)?.full_name ?? "Titular",
+    subtitle: [planNameOf(m), clinicNameOf(m)].filter(Boolean).join(" · "),
+    badge: PPR_STATUS_LABELS[m.status as PprStatus] ?? m.status,
+    badgeTone: STATUS_TONE[m.status as PprStatus] ?? "muted",
+    value: `${formatBRL(m.monthly_cents)}/mês`,
+    note: note ?? null,
+  });
+
+  const liveMemberships = memberships
+    .filter((m) => m.status !== "cancelado")
+    .sort(
+      (a, b) =>
+        (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) ||
+        b.created_at.localeCompare(a.created_at)
+    );
+  const plansItems = liveMemberships.map((m) =>
+    memItem(
+      m,
+      m.activated_at
+        ? `Ativo desde ${fmtDate(m.activated_at)}`
+        : `Adesão em ${fmtDate(m.created_at)}`
+    )
+  );
+
+  const beneficiaryItems: PprDrillItem[] = [...beneficiaries]
+    .sort((a, b) =>
+      (one(a.client)?.full_name ?? "").localeCompare(
+        one(b.client)?.full_name ?? ""
+      )
+    )
+    .map((b) => ({
+      key: b.id,
+      href: clientHref(b.client_id),
+      title: one(b.client)?.full_name ?? "Cliente",
+      subtitle: benScope(b),
+      badge:
+        b.role === "titular" ? "Titular" : (b.relationship ?? "Dependente"),
+      badgeTone: b.role === "titular" ? "primary" : "muted",
+      note: b.joined_at ? `No PPR+ desde ${fmtDate(b.joined_at)}` : null,
+    }));
+
+  const revenueItems = [...active]
+    .sort((a, b) => b.monthly_cents - a.monthly_cents)
+    .map((m) => memItem(m));
+
+  const movementItems: PprDrillItem[] = [
+    ...newThisMonth.map((m) => ({
+      ...memItem(m, `Entrou em ${fmtDate(m.created_at)}`),
+      key: `novo-${m.id}`,
+      badge: "Novo no mês",
+      badgeTone: "emerald" as const,
+    })),
+    ...cancelledThisMonth.map((m) => ({
+      ...memItem(m, `Cancelado em ${fmtDate(m.cancelled_at ?? m.created_at)}`),
+      key: `cancelado-${m.id}`,
+      badge: "Cancelado",
+      badgeTone: "rose" as const,
+    })),
+  ];
+
+  const clientItem = (
+    id: string,
+    note: string | null,
+    badge?: { label: string; tone: PprDrillItem["badgeTone"] }
+  ): PprDrillItem => ({
+    key: id,
+    href: clientHref(id),
+    title: nameOf(id),
+    subtitle: clientScope(id),
+    badge: badge?.label ?? null,
+    badgeTone: badge?.tone,
+    note,
+  });
+
+  const upToDateItems = upToDateIds.map((id) => {
+    const appt = nextAppt.get(id);
+    const last = lastUsage.get(id);
+    return clientItem(
+      id,
+      appt
+        ? `Agendado para ${fmtDateTime(appt)}`
+        : last
+          ? `Última limpeza em ${fmtDate(last)}`
+          : null,
+      appt
+        ? { label: "Agendado", tone: "emerald" }
+        : { label: "Em dia", tone: "emerald" }
+    );
+  });
+
+  const idleItems = idleIds
+    .map((id) => ({ id, last: lastSeen.get(id) ?? null }))
+    .sort((a, b) => (a.last ?? "").localeCompare(b.last ?? ""))
+    .map(({ id, last }) =>
+      clientItem(
+        id,
+        last ? `Último atendimento em ${fmtDate(last)}` : "Nunca compareceu",
+        { label: "Ligar", tone: "rose" }
+      )
+    );
+
+  const usageItems: PprDrillItem[] = [...recurring]
+    .sort((a, b) => b.used_at.localeCompare(a.used_at))
+    .map((u) => ({
+      key: u.id,
+      href: clientHref(u.client_id),
+      title: nameOf(u.client_id),
+      subtitle: clientScope(u.client_id),
+      note: u.next_available_at
+        ? `Libera de novo em ${fmtDate(u.next_available_at)}`
+        : null,
+      value: fmtDate(u.used_at),
+    }));
+
+  const apptItems: PprDrillItem[] = weekAppts.map((a) => ({
+    key: a.id,
+    href: clientHref(a.client_id),
+    title: nameOf(a.client_id),
+    subtitle: clientScope(a.client_id),
+    value: fmtDateTime(a.starts_at),
+  }));
+
+  const dueItems = (list: typeof recurring): PprDrillItem[] =>
+    list.map((u) => ({
+      key: `due-${u.id}`,
+      href: clientHref(u.client_id),
+      title: nameOf(u.client_id),
+      subtitle: clientScope(u.client_id),
+      note: `Última limpeza em ${fmtDate(u.used_at)}`,
+      value: u.next_available_at ? fmtDate(u.next_available_at) : null,
+      badge: nextAppt.has(u.client_id) ? "Já agendado" : "Chamar",
+      badgeTone: nextAppt.has(u.client_id) ? "emerald" : "amber",
+    }));
 
   // -- Ranking das unidades (rede) ------------------------------------------
   type RankRow = {
@@ -310,12 +554,7 @@ export default async function PprDashboardPage(
     ranking = [...byClinic.values()].sort((a, b) => b.mrr - a.mrr);
   }
 
-  const unitLabel =
-    clinicFilter === null
-      ? "Todas as unidades"
-      : (unitOptions.find((u) => u.id === clinicFilter)?.name ??
-        session.activeClinic?.name ??
-        "Unidade");
+  const unitLabel = scope;
   const chipHref = (unidade: string | null) =>
     `/ppr/painel?unidade=${unidade ?? "all"}`;
 
@@ -376,84 +615,140 @@ export default async function PprDashboardPage(
 
       {/* Números do programa ----------------------------------------------- */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi
-          tone="emerald"
-          icon={<HeartPulse className="size-4" />}
-          label="Planos ativos"
-          value={String(active.length)}
-          hint={`${waiting.length} aguardando ativação · ${suspended.length} suspenso(s)`}
-        />
-        <Kpi
-          tone="sky"
-          icon={<Users className="size-4" />}
-          label="Beneficiários"
-          value={String(beneficiaries.length)}
-          hint={`${holders} titular(es) + ${dependents} dependente(s)`}
-        />
-        <Kpi
-          tone="gold"
-          icon={<Wallet className="size-4" />}
-          label="Receita mensal"
-          value={formatBRL(mrr)}
-          hint={`ticket médio ${formatBRL(ticket)}`}
-        />
-        <Kpi
-          tone="violet"
-          icon={<TrendingUp className="size-4" />}
-          label="Crescimento do mês"
-          value={`${growthRate >= 0 ? "+" : ""}${growthRate.toFixed(0)}%`}
-          hint={`${newThisMonth.length} novo(s) · ${cancelledThisMonth.length} cancelado(s)`}
-        />
+        <PprDrill
+          className="h-full"
+          items={plansItems}
+          dialogTitle="Planos do PPR+"
+          scopeLabel={unitLabel}
+          dialogHint="Adesões vivas (ativas, aguardando ativação e suspensas). Clique para abrir a adesão."
+          footerLabel="Receita mensal dos ativos"
+          footerValue={formatBRL(mrr)}
+        >
+          <Kpi
+            tone="emerald"
+            icon={<HeartPulse className="size-4" />}
+            label="Planos ativos"
+            value={String(active.length)}
+            hint={`${waiting.length} aguardando ativação · ${suspended.length} suspenso(s)`}
+            drill={plansItems.length > 0}
+          />
+        </PprDrill>
+
+        <PprDrill
+          className="h-full"
+          items={beneficiaryItems}
+          dialogTitle="Beneficiários do PPR+"
+          scopeLabel={unitLabel}
+          dialogHint="Titulares e dependentes com plano vivo. Clique para abrir o prontuário."
+          footerLabel="Titulares + dependentes"
+          footerValue={`${holders} + ${dependents}`}
+        >
+          <Kpi
+            tone="sky"
+            icon={<Users className="size-4" />}
+            label="Beneficiários"
+            value={String(beneficiaries.length)}
+            hint={`${holders} titular(es) + ${dependents} dependente(s)`}
+            drill={beneficiaryItems.length > 0}
+          />
+        </PprDrill>
+
+        <PprDrill
+          className="h-full"
+          items={revenueItems}
+          dialogTitle="Receita mensal do PPR+"
+          scopeLabel={unitLabel}
+          dialogHint="Mensalidade de cada adesão ativa, da maior para a menor."
+          footerLabel="Total por mês"
+          footerValue={formatBRL(mrr)}
+        >
+          <Kpi
+            tone="gold"
+            icon={<Wallet className="size-4" />}
+            label="Receita mensal"
+            value={formatBRL(mrr)}
+            hint={`ticket médio ${formatBRL(ticket)}`}
+            drill={revenueItems.length > 0}
+          />
+        </PprDrill>
+
+        <PprDrill
+          className="h-full"
+          items={movementItems}
+          dialogTitle="Movimento do mês"
+          scopeLabel={unitLabel}
+          dialogHint="Quem entrou e quem saiu do programa neste mês."
+          footerLabel="Entradas / saídas"
+          footerValue={`+${newThisMonth.length} / −${cancelledThisMonth.length}`}
+        >
+          <Kpi
+            tone="violet"
+            icon={<TrendingUp className="size-4" />}
+            label="Crescimento do mês"
+            value={`${growthRate >= 0 ? "+" : ""}${growthRate.toFixed(0)}%`}
+            hint={`${newThisMonth.length} novo(s) · ${cancelledThisMonth.length} cancelado(s)`}
+            drill={movementItems.length > 0}
+          />
+        </PprDrill>
       </section>
 
-      {/* Crescimento -------------------------------------------------------- */}
-      <Card>
-        <CardHeader className="gap-0.5">
-          <CardTitle className="flex items-center gap-1.5 text-base">
-            <TrendingUp className="size-4 text-primary" />
-            Crescimento do PPR+
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Planos vivos e receita mensal nos últimos 6 meses.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-6 gap-2">
-            {growth.map((g) => (
-              <div key={g.label} className="flex flex-col items-center gap-1">
-                <div className="flex h-28 w-full items-end justify-center gap-1">
-                  <div
-                    className="w-1/2 rounded-t bg-sky-500"
-                    style={{ height: `${(g.alive / maxAlive) * 100}%` }}
-                    title={`${g.alive} plano(s)`}
-                  />
-                  <div
-                    className="w-1/2 rounded-t bg-gold"
-                    style={{ height: `${(g.mrr / maxMrr) * 100}%` }}
-                    title={formatBRL(g.mrr)}
-                  />
-                </div>
-                <span className="text-[11px] text-muted-foreground">
-                  {g.label}
-                </span>
-                <span className="text-[11px] font-medium tabular-nums">
-                  {g.alive}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-sky-500" />
-              planos vivos
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-gold" />
-              receita do mês
-            </span>
-          </p>
-        </CardContent>
-      </Card>
+      {/* Crescimento — dois gráficos separados (quantidade × dinheiro) ------ */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <TrendingUp className="size-4 text-sky-600" />
+              Planos vivos por mês
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Quantidade de adesões ativas no fim de cada mês.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Bars
+              tone="sky"
+              unit="plano(s)"
+              data={growth.map((g) => ({
+                label: g.label,
+                value: g.alive,
+                display: String(g.alive),
+                sub: g.created > 0 ? `+${g.created}` : null,
+              }))}
+            />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              O número embaixo em verde é quanto entrou naquele mês.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="gap-0.5">
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <Wallet className="size-4 text-gold" />
+              Receita mensal por mês
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Quanto o programa gera por mês, em reais.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Bars
+              tone="gold"
+              unit="por mês"
+              data={growth.map((g) => ({
+                label: g.label,
+                value: g.mrr,
+                display: shortBRL(g.mrr),
+                title: formatBRL(g.mrr),
+              }))}
+            />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Valor arredondado em cima da barra; passe o mouse para ver o
+              valor exato.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Por plano + prevenção --------------------------------------------- */}
       <section className="grid gap-4 lg:grid-cols-2">
@@ -464,7 +759,8 @@ export default async function PprDashboardPage(
               Por plano
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Quantidade, receita e quantos entraram neste mês.
+              Quantidade, receita e quantos entraram neste mês. Clique para ver
+              a lista.
             </p>
           </CardHeader>
           <CardContent>
@@ -479,34 +775,59 @@ export default async function PprDashboardPage(
                   .map(([planId, v]) => {
                     const novos = newByPlan.get(planId) ?? 0;
                     const base = Math.max(1, v.count - novos);
+                    const items = active
+                      .filter((m) => m.plan_id === planId)
+                      .sort((a, b) =>
+                        (holderOf(a)?.full_name ?? "").localeCompare(
+                          holderOf(b)?.full_name ?? ""
+                        )
+                      )
+                      .map((m) =>
+                        memItem(
+                          m,
+                          m.activated_at
+                            ? `Ativo desde ${fmtDate(m.activated_at)}`
+                            : null
+                        )
+                      );
                     return (
                       <li key={planId}>
-                        <div className="flex items-baseline justify-between gap-2 text-sm">
-                          <span className="truncate">
-                            {v.name}{" "}
-                            <span className="text-xs text-muted-foreground">
-                              {v.count}
+                        <PprDrill
+                          items={items}
+                          dialogTitle={v.name}
+                          scopeLabel={unitLabel}
+                          dialogHint="Adesões ativas neste plano."
+                          footerLabel="Receita do plano"
+                          footerValue={formatBRL(v.mrr)}
+                          className="p-1"
+                        >
+                          <div className="flex items-baseline justify-between gap-2 text-sm">
+                            <span className="truncate">
+                              {v.name}{" "}
+                              <span className="text-xs text-muted-foreground">
+                                {v.count}
+                              </span>
                             </span>
-                          </span>
-                          <span className="shrink-0 font-medium tabular-nums">
-                            {formatBRL(v.mrr)}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-2">
-                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-gold"
-                              style={{
-                                width: `${Math.max(2, (v.mrr / Math.max(1, mrr)) * 100)}%`,
-                              }}
-                            />
+                            <span className="shrink-0 font-medium tabular-nums">
+                              {formatBRL(v.mrr)}
+                            </span>
                           </div>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
-                            {novos > 0
-                              ? `+${novos} no mês (+${((novos / base) * 100).toFixed(0)}%)`
-                              : "sem novos no mês"}
-                          </span>
-                        </div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full rounded-full bg-gold"
+                                style={{
+                                  width: `${Math.max(2, (v.mrr / Math.max(1, mrr)) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="shrink-0 text-[11px] text-muted-foreground">
+                              {novos > 0
+                                ? `+${novos} no mês (+${((novos / base) * 100).toFixed(0)}%)`
+                                : "sem novos no mês"}
+                            </span>
+                          </div>
+                        </PprDrill>
                       </li>
                     );
                   })}
@@ -522,42 +843,113 @@ export default async function PprDashboardPage(
               Prevenção em dia
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              O coração do programa: quem está voltando e quem sumiu.
+              O coração do programa: quem está voltando e quem sumiu. Clique em
+              cada número para ver os nomes.
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Line
-              label="Em dia com a limpeza"
-              hint="usou nos últimos 3 meses ou já tem agendamento"
-              value={upToDate}
-              total={clientIds.length}
-              tone="emerald"
-            />
-            <Line
-              label="Sem usar o plano"
-              hint="mais de 4 meses sem agendamento — ligar!"
-              value={idle}
-              total={clientIds.length}
-              tone="rose"
-              icon={<UserMinus className="size-3.5" />}
-            />
+            <PprDrill
+              items={upToDateItems}
+              dialogTitle="Em dia com a limpeza"
+              scopeLabel={unitLabel}
+              dialogHint="Usou o benefício nos últimos 3 meses ou já tem agendamento marcado."
+              footerLabel="Beneficiários"
+              footerValue={`${upToDate} de ${clientIds.length}`}
+              className="p-1"
+            >
+              <Line
+                label="Em dia com a limpeza"
+                hint="usou nos últimos 3 meses ou já tem agendamento"
+                value={upToDate}
+                total={clientIds.length}
+                tone="emerald"
+                drill={upToDateItems.length > 0}
+              />
+            </PprDrill>
+
+            <PprDrill
+              items={idleItems}
+              dialogTitle="Sem usar o plano"
+              scopeLabel={unitLabel}
+              dialogHint="Mais de 4 meses sem atendimento e sem agendamento futuro — fila de ligação."
+              footerLabel="Beneficiários"
+              footerValue={`${idle} de ${clientIds.length}`}
+              className="p-1"
+            >
+              <Line
+                label="Sem usar o plano"
+                hint="mais de 4 meses sem agendamento — ligar!"
+                value={idle}
+                total={clientIds.length}
+                tone="rose"
+                icon={<UserMinus className="size-3.5" />}
+                drill={idleItems.length > 0}
+              />
+            </PprDrill>
+
             <div className="grid grid-cols-2 gap-2 border-t pt-2 text-sm">
-              <Mini label="Limpezas realizadas" value={String(recurring.length)} />
-              <Mini
-                label="Agendados (7 dias)"
-                value={String(futureWeek)}
-                hint={`${futureMonth} no próximo mês`}
-              />
-              <Mini
-                label="Liberam em 7 dias"
-                value={String(dueWeek)}
-                hint="projeção pela frequência do plano"
-              />
-              <Mini
-                label="Liberam em 30 dias"
-                value={String(dueMonth)}
-                hint="chamar para agendar"
-              />
+              <PprDrill
+                items={usageItems}
+                dialogTitle="Limpezas realizadas"
+                scopeLabel={unitLabel}
+                dialogHint="Benefícios com frequência (limpeza) já usados pelos beneficiários."
+                footerLabel="Total"
+                footerValue={String(recurring.length)}
+              >
+                <Mini
+                  label="Limpezas realizadas"
+                  value={String(recurring.length)}
+                  drill={usageItems.length > 0}
+                />
+              </PprDrill>
+
+              <PprDrill
+                items={apptItems}
+                dialogTitle="Agendados nos próximos 7 dias"
+                scopeLabel={unitLabel}
+                dialogHint={`${futureMonth} agendamento(s) no próximo mês.`}
+                footerLabel="Nos 7 dias"
+                footerValue={String(futureWeek)}
+              >
+                <Mini
+                  label="Agendados (7 dias)"
+                  value={String(futureWeek)}
+                  hint={`${futureMonth} no próximo mês`}
+                  drill={apptItems.length > 0}
+                />
+              </PprDrill>
+
+              <PprDrill
+                items={dueItems(dueWeekList)}
+                dialogTitle="Liberam nos próximos 7 dias"
+                scopeLabel={unitLabel}
+                dialogHint="Pela frequência do plano, o benefício volta a valer nesta data."
+                footerLabel="Total"
+                footerValue={String(dueWeekList.length)}
+              >
+                <Mini
+                  label="Liberam em 7 dias"
+                  value={String(dueWeekList.length)}
+                  hint="projeção pela frequência do plano"
+                  drill={dueWeekList.length > 0}
+                />
+              </PprDrill>
+
+              <PprDrill
+                items={dueItems(dueMonthList)}
+                dialogTitle="Liberam nos próximos 30 dias"
+                scopeLabel={unitLabel}
+                dialogHint="Chamar para agendar antes que o cliente esqueça."
+                footerLabel="Total"
+                footerValue={String(dueMonthList.length)}
+              >
+                <Mini
+                  label="Liberam em 30 dias"
+                  value={String(dueMonthList.length)}
+                  hint="chamar para agendar"
+                  drill={dueMonthList.length > 0}
+                />
+              </PprDrill>
             </div>
           </CardContent>
         </Card>
@@ -603,7 +995,12 @@ export default async function PprDashboardPage(
                         >
                           {i + 1}
                         </span>
-                        {r.name}
+                        <Link
+                          href={chipHref(r.clinicId)}
+                          className="hover:underline"
+                        >
+                          {r.name}
+                        </Link>
                       </span>
                     </td>
                     <td className="py-1.5 text-right font-medium tabular-nums">
@@ -653,21 +1050,32 @@ const TONE_ICON: Record<Tone, string> = {
   rose: "bg-rose-500/10 text-rose-700",
 };
 
+/** Selo "ver lista ›" que indica que o cartão abre um pop-up. */
+function DrillHint() {
+  return (
+    <span className="inline-flex items-center font-medium text-primary">
+      · ver lista <ChevronRight className="size-3" />
+    </span>
+  );
+}
+
 function Kpi({
   tone,
   icon,
   label,
   value,
   hint,
+  drill,
 }: {
   tone: Tone;
   icon: React.ReactNode;
   label: string;
   value: string;
   hint?: string;
+  drill?: boolean;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
+    <div className="relative h-full overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
       <span
         className={cn("absolute inset-x-0 top-0 h-1", TONE_ACCENT[tone])}
         aria-hidden
@@ -687,7 +1095,60 @@ function Kpi({
       <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
         {value}
       </p>
-      {hint && <p className="mt-1.5 text-[11px] text-muted-foreground">{hint}</p>}
+      {(hint || drill) && (
+        <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+          {hint}
+          {drill && <DrillHint />}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Gráfico de barras de UMA grandeza só (nunca misturar quantidade com valor),
+ * com o número escrito em cima da barra.
+ */
+function Bars({
+  data,
+  tone,
+  unit,
+}: {
+  data: {
+    label: string;
+    value: number;
+    display: string;
+    sub?: string | null;
+    title?: string;
+  }[];
+  tone: Tone;
+  unit: string;
+}) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  return (
+    <div className="grid grid-cols-6 gap-2">
+      {data.map((d) => (
+        <div key={d.label} className="flex flex-col items-center gap-1">
+          <span className="text-[11px] font-semibold tabular-nums">
+            {d.display}
+          </span>
+          <div className="flex h-24 w-full items-end justify-center">
+            <div
+              className={cn("w-7 rounded-t", TONE_ACCENT[tone])}
+              style={{
+                height: d.value > 0 ? `${Math.max(4, (d.value / max) * 100)}%` : "2px",
+              }}
+              title={`${d.title ?? d.display} ${unit}`}
+            />
+          </div>
+          <span className="text-[11px] text-muted-foreground">{d.label}</span>
+          {d.sub && (
+            <span className="text-[10px] font-medium tabular-nums text-emerald-700">
+              {d.sub}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -699,6 +1160,7 @@ function Line({
   total,
   tone,
   icon,
+  drill,
 }: {
   label: string;
   hint: string;
@@ -706,6 +1168,7 @@ function Line({
   total: number;
   tone: Tone;
   icon?: React.ReactNode;
+  drill?: boolean;
 }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   return (
@@ -728,7 +1191,10 @@ function Line({
           style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}
         />
       </div>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
+      <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+        {hint}
+        {drill && <DrillHint />}
+      </p>
     </div>
   );
 }
@@ -737,16 +1203,23 @@ function Mini({
   label,
   value,
   hint,
+  drill,
 }: {
   label: string;
   value: string;
   hint?: string;
+  drill?: boolean;
 }) {
   return (
-    <div className="rounded-lg border p-2">
+    <div className="h-full rounded-lg border p-2">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="text-lg font-semibold tabular-nums">{value}</p>
-      {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+      {(hint || drill) && (
+        <p className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+          {hint}
+          {drill && <DrillHint />}
+        </p>
+      )}
     </div>
   );
 }

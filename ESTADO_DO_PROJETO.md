@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/07/2026 · Versão do sistema: **0.138.0** · Última migração: **0169**_
+_Atualizado em: 27/07/2026 · Versão do sistema: **0.139.0** · Última migração: **0169**_
+
+> **PPR+ — Painel clicável + gráficos separados ✅ (v0.139.0, sem migração):**
+> como no Dashboard do Comercial, **todo número do painel do PPR+ abre um
+> pop-up com a lista por trás dele** — planos ativos (leva à adesão),
+> beneficiários (leva ao prontuário), receita mensal (mensalidade de cada
+> adesão, da maior para a menor), movimento do mês (quem entrou × quem saiu),
+> cada plano do quadro "Por plano", e os cinco números da "Prevenção em dia"
+> (em dia, sem usar o plano, limpezas realizadas, agendados em 7 dias e as
+> liberações previstas em 7/30 dias, com selo "Já agendado" ou "Chamar"). O
+> **gráfico de crescimento foi dividido em dois**, porque quantidade e dinheiro
+> são grandezas diferentes: **"Planos vivos por mês"** (com o número em cima de
+> cada barra e, embaixo, quantos entraram naquele mês) e **"Receita mensal por
+> mês"** (valor em cima da barra, arredondado; o valor exato aparece ao passar o
+> mouse).
 
 > **PPR+ — PPR7: painel do programa + ranking ✅ (v0.138.0, sem migração) —
 > MÓDULO PPR+ COMPLETO (PPR1–PPR7):** nova tela **PPR+ → Painel**, com filtro de
