@@ -627,6 +627,86 @@ export async function setPprStatus(
 }
 
 // ---------------------------------------------------------------------------
+// PPR6 — mensalidades, inadimplência e pontos do Riso+ Social
+// ---------------------------------------------------------------------------
+
+/** Gera a mensalidade do mês para as adesões ativas da unidade. */
+export async function generatePprCharges(
+  clinicId: string,
+  month?: string
+): Promise<PprActionResult & { created?: number }> {
+  const session = await getSessionContext();
+  if (
+    !session.isAdminMaster &&
+    !canManagePpr(rolesAt(session, clinicId)) &&
+    !canSellPpr(rolesAt(session, clinicId), "venda_direta")
+  ) {
+    return { ok: false, error: "Você não pode gerar as mensalidades." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ppr_generate_charges", {
+    p_month: month ?? new Date().toISOString().slice(0, 8) + "01",
+    p_clinic_id: clinicId,
+  });
+  if (error) {
+    console.error("ppr_generate_charges failed:", error.message);
+    return { ok: false, error: "Não foi possível gerar as mensalidades." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "ppr_charges",
+    entityId: clinicId,
+    clinicId,
+  });
+  revalidatePath("/ppr/mensalidades");
+  return { ok: true, created: (data as number | null) ?? 0 };
+}
+
+/** Baixa (ou desfaz) o pagamento de uma mensalidade. */
+export async function markPprChargePaid(
+  chargeId: string,
+  paid: boolean
+): Promise<PprActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ppr_mark_charge_paid", {
+    p_charge_id: chargeId,
+    p_paid: paid,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NOT_ALLOWED"))
+      return { ok: false, error: "Você não pode dar baixa nesta mensalidade." };
+    console.error("ppr_mark_charge_paid failed:", m);
+    return { ok: false, error: "Não foi possível atualizar a mensalidade." };
+  }
+  revalidatePath("/ppr/mensalidades");
+  revalidatePath("/ppr/adesoes");
+  return { ok: true };
+}
+
+/** Aplica os prazos de inadimplência (suspende/cancela quem passou). */
+export async function refreshPprDelinquency(
+  clinicId: string
+): Promise<PprActionResult & { changed?: number }> {
+  const session = await getSessionContext();
+  if (!canManagePpr(rolesAt(session, clinicId), session.isAdminMaster)) {
+    return { ok: false, error: "Só o Gerente pode rodar a inadimplência." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ppr_refresh_delinquency", {
+    p_clinic_id: clinicId,
+  });
+  if (error) {
+    console.error("ppr_refresh_delinquency failed:", error.message);
+    return { ok: false, error: "Não foi possível atualizar a inadimplência." };
+  }
+  revalidatePath("/ppr/mensalidades");
+  revalidatePath("/ppr/adesoes");
+  return { ok: true, changed: (data as number | null) ?? 0 };
+}
+
+// ---------------------------------------------------------------------------
 // Dependentes depois da venda
 // ---------------------------------------------------------------------------
 

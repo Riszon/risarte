@@ -12,6 +12,7 @@ import {
   Settings,
   Sparkles,
   Users,
+  Wallet,
 } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -137,6 +138,16 @@ export default async function PprPage() {
             >
               <Users className="mr-1 size-3.5" />
               Adesões
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+              nativeButton={false}
+              render={<Link href="/ppr/mensalidades" />}
+            >
+              <Wallet className="mr-1 size-3.5" />
+              Mensalidades
             </Button>
             <Button
               size="sm"

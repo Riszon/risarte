@@ -14,11 +14,14 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewPpr } from "@/lib/ppr/access";
 import {
+  PPR_CHARGE_STATUS_LABELS,
   PPR_RECURRING_METHOD_LABELS,
   PPR_STATUS_LABELS,
+  type PprChargeStatus,
   type PprRecurringMethod,
   type PprStatus,
 } from "@/lib/ppr/constants";
+import { PprChargeRow } from "../../mensalidades/billing-client";
 import { canManagePpr, canSellPpr } from "@/lib/ppr/rules";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +75,22 @@ export default async function PprMembershipPage(
       .eq("membership_id", id)
       .order("created_at", { ascending: false }),
   ]);
+
+  // PPR6: mensalidades desta adesão (as 12 mais recentes).
+  const { data: chargeRows } = await supabase
+    .from("ppr_charges")
+    .select("id, reference_month, due_date, amount_cents, status, paid_at")
+    .eq("membership_id", id)
+    .order("due_date", { ascending: false })
+    .limit(12);
+  const charges = (chargeRows ?? []) as {
+    id: string;
+    reference_month: string;
+    due_date: string;
+    amount_cents: number;
+    status: PprChargeStatus;
+    paid_at: string | null;
+  }[];
 
   const one = <T,>(v: T | T[] | null | undefined): T | null =>
     Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
@@ -347,6 +366,86 @@ export default async function PprMembershipPage(
                 .join(", ")}
               .
             </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Mensalidades ------------------------------------------------------ */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              <CreditCard className="size-4" />
+              Mensalidades
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              A cobrança de cada mês. Dar baixa na primeira ativa o plano (com o
+              contrato assinado) e credita os pontos do Riso+ Social.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            nativeButton={false}
+            render={<Link href="/ppr/mensalidades" />}
+          >
+            Todas da unidade
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {charges.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma mensalidade gerada ainda — use{" "}
+              <strong>&quot;Gerar mensalidades do mês&quot;</strong> na tela de
+              Mensalidades.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {charges.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-sm"
+                >
+                  <span className="flex flex-wrap items-center gap-2">
+                    {new Date(
+                      `${c.reference_month}T00:00:00`
+                    ).toLocaleDateString("pt-BR", {
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
+                    <span
+                      className={cn(
+                        "rounded-full border px-1.5 py-0.5 text-[10px]",
+                        c.status === "paga"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                          : c.status === "atrasada"
+                            ? "border-rose-300 bg-rose-50 text-rose-800"
+                            : "border-amber-300 bg-amber-50 text-amber-800"
+                      )}
+                    >
+                      {PPR_CHARGE_STATUS_LABELS[c.status]}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      vence{" "}
+                      {new Date(`${c.due_date}T00:00:00`).toLocaleDateString(
+                        "pt-BR"
+                      )}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium tabular-nums">
+                      {formatBRL(c.amount_cents)}
+                    </span>
+                    {canEdit && status !== "cancelado" && (
+                      <PprChargeRow
+                        chargeId={c.id}
+                        paid={c.status === "paga"}
+                      />
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>

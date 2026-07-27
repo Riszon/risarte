@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/07/2026 · Versão do sistema: **0.136.1** · Última migração: **0168**_
+_Atualizado em: 26/07/2026 · Versão do sistema: **0.137.0** · Última migração: **0169**_
+
+> **PPR+ — PPR6: mensalidades, inadimplência e Riso+ Social ✅ (v0.137.0,
+> migração 0169):** nova tela **PPR+ → Mensalidades**: **gerar as cobranças do
+> mês** (uma por adesão ativa, sem duplicar), **dar baixa** no pagamento e
+> **aplicar a inadimplência** (suspende quem passou do prazo, cancela quem
+> passou do limite de `ppr_settings`, avisando a recepção/gerente). A baixa da
+> **primeira mensalidade** completa a regra de ouro (com o contrato, ativa o
+> plano) e, quando o plano participa, credita os **pontos do Riso+ Social**
+> proporcionais ao valor pago. Regularizou tudo? o plano **volta a ativo**
+> sozinho. A tela da adesão passou a mostrar as **12 últimas mensalidades** com
+> baixa ali mesmo. A migração também **conserta as vendas diretas abertas** que
+> ficaram com o desconto congelado, e o fechamento avisa **"Condições não
+> salvas"** quando o resumo do topo ainda não reflete a escolha atual.
 
 > **CORREÇÃO — desconto da faixa ficava congelado ✅ (v0.136.1, migração 0168):**
 > o desconto do PPR+ era gravado como valor fixo no momento do clique em

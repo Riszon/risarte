@@ -591,6 +591,18 @@ export function SaleItem({
                     <dt>Valor final</dt>
                     <dd className="tabular-nums">{formatBRL(preview.final)}</dd>
                   </div>
+                  {(preview.discountCents !== sale.discountCents ||
+                    installmentsNum !== sale.installments ||
+                    effectiveMethod !== (sale.paymentMethod ?? "")) && (
+                    <p className="mt-1 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-1.5 text-[11px] text-amber-900">
+                      <TriangleAlert className="mt-0.5 size-3 shrink-0" />
+                      <span>
+                        <strong>Condições não salvas.</strong> O resumo do topo
+                        ainda mostra {formatBRL(sale.finalCents)} — clique em{" "}
+                        <strong>Salvar condições</strong> para valer.
+                      </span>
+                    </p>
+                  )}
                   {installmentsNum > 1 && (
                     <div className="flex justify-between text-muted-foreground">
                       <dt>Parcelamento</dt>
