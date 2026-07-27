@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Edit(**)",
+
+      "PowerShell(npm run lint*)",
+      "PowerShell(npm run test*)",
+      "PowerShell(npm run build*)",
+      "PowerShell(npm run dev*)",
+      "PowerShell(npm install*)",
+      "PowerShell(npm ci*)",
+      "PowerShell(npx tsc*)",
+
+      "PowerShell(git status*)",
+      "PowerShell(git diff*)",
+      "PowerShell(git log*)",
+      "PowerShell(git add*)",
+      "PowerShell(git commit*)",
+      "PowerShell(git branch*)",
+      "PowerShell(git checkout*)",
+      "PowerShell(git pull*)",
+      "PowerShell(git push origin*)",
+      "PowerShell(git rev-list*)",
+
+      "PowerShell(npx supabase status*)",
+      "PowerShell(npx supabase gen*)",
+
+      "PowerShell(npx vercel*)",
+
+      "Bash(npm run lint)",
+      "Bash(npm run lint *)",
+      "Bash(npm run test)",
+      "Bash(npm run test *)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npm install)",
+      "Bash(npm install *)",
+      "Bash(npm ci)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(npx supabase status)",
+      "Bash(npx supabase gen *)",
+      "Bash(npx vercel *)"
+    ],
+    "ask": [
+      "PowerShell(git push --force*)",
+      "PowerShell(npx supabase db reset*)",
+      "PowerShell(npx supabase migration*)",
+      "Bash(git push --force*)",
+      "Bash(npx supabase db reset)",
+      "Bash(npx supabase migration *)"
+    ],
+    "deny": [
+      "PowerShell(Remove-Item -Recurse -Force C:*)",
+      "PowerShell(rm -rf*)",
+      "PowerShell(npm publish*)",
+      "PowerShell(npx supabase db push*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(npm publish *)",
+      "Bash(npx supabase db push *)",
+      "Read(**/.env*)",
+      "Read(**/.env)"
+    ]
+  }
+}

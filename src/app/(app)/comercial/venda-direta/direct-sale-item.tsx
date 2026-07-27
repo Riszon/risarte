@@ -178,6 +178,52 @@ export function SaleItem({
   // Desconto do PLANO para o parcelamento escolhido (à vista usa o percentual
   // do plano; parcelado usa a faixa correspondente).
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
+  /** 1× (à vista) até o máximo liberado (plano ou unidade). */
+  const installmentOptions = useMemo(
+    () => Array.from({ length: Math.max(1, maxInstallments) }, (_, i) => i + 1),
+    [maxInstallments]
+  );
+  // À VISTA = 1×, e só em PIX ou depósito (regra do dono, 26/07/2026).
+  const isCash = installmentsNum === 1;
+  const methodOptions = useMemo(
+    () =>
+      isCash
+        ? methods.filter((m) => m === "pix" || m === "deposito_avista")
+        : methods,
+    [isCash, methods]
+  );
+  // Forma que não vale para o parcelamento atual simplesmente não conta.
+  const effectiveMethod = methodOptions.includes(method as PaymentMethod)
+    ? method
+    : "";
+
+  /** Faixas do plano em texto claro: "à vista 10% · 2× a 6× 15% · ...". */
+  const tierLabels = useMemo(() => {
+    const pc = sale.programConditions;
+    if (!pc) return [] as string[];
+    const sorted = [...pc.tiers].sort(
+      (a, b) => a.upToInstallments - b.upToInstallments
+    );
+    const out: string[] = [`à vista (1×) ${pc.cashDiscountPercent}%`];
+    let from = 2;
+    for (const t of sorted) {
+      if (t.upToInstallments < from) continue;
+      out.push(
+        from === t.upToInstallments
+          ? `${from}× ${t.discountPercent}%`
+          : `${from}× a ${t.upToInstallments}× ${t.discountPercent}%`
+      );
+      from = t.upToInstallments + 1;
+    }
+    if (from <= pc.maxInstallments) {
+      out.push(
+        from === pc.maxInstallments
+          ? `${from}× sem desconto`
+          : `${from}× a ${pc.maxInstallments}× sem desconto`
+      );
+    }
+    return out;
+  }, [sale.programConditions]);
   const programDiscountPercent = useMemo(() => {
     const pc = sale.programConditions;
     if (!pc) return 0;
@@ -191,7 +237,7 @@ export function SaleItem({
   function saveConditions() {
     startTransition(async () => {
       const r = await setDirectSaleConditions(sale.id, {
-        paymentMethod: method,
+        paymentMethod: effectiveMethod,
         installments: Number.parseInt(installments, 10) || 1,
         discountReais:
           preview.discountCents > 0 ? centsToInput(preview.discountCents) : "",
@@ -404,21 +450,7 @@ export function SaleItem({
                     PPR+ {sale.programConditions.planName} — condições do plano
                   </p>
                   <p className="text-muted-foreground">
-                    À vista{" "}
-                    <strong>{sale.programConditions.cashDiscountPercent}%</strong>{" "}
-                    · até{" "}
-                    <strong>{sale.programConditions.maxInstallments}×</strong>
-                    {sale.programConditions.tiers.length > 0 && (
-                      <>
-                        {" · "}
-                        {sale.programConditions.tiers
-                          .map(
-                            (t) =>
-                              `até ${t.upToInstallments}× = ${t.discountPercent}%`
-                          )
-                          .join(" · ")}
-                      </>
-                    )}
+                    {tierLabels.join(" · ")}
                     {sale.programConditions.minInstallmentCents > 0 && (
                       <>
                         {" "}
@@ -429,8 +461,17 @@ export function SaleItem({
                   </p>
                   <p className="mt-1 flex flex-wrap items-center gap-2">
                     <span>
-                      Em <strong>{installmentsNum}×</strong>, o cliente tem
-                      direito a <strong>{programDiscountPercent}%</strong>
+                      {isCash ? (
+                        <>
+                          <strong>À vista</strong>: o cliente tem direito a{" "}
+                          <strong>{programDiscountPercent}%</strong>
+                        </>
+                      ) : (
+                        <>
+                          Em <strong>{installmentsNum}×</strong>, o cliente tem
+                          direito a <strong>{programDiscountPercent}%</strong>
+                        </>
+                      )}
                       {coveredCents > 0 && (
                         <> sobre {formatBRL(baseCents)}</>
                       )}
@@ -458,32 +499,93 @@ export function SaleItem({
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="block text-xs">
-                    <span className="text-muted-foreground">Forma</span>
+                    <span className="text-muted-foreground">
+                      Parcelas (até {maxInstallments}×)
+                    </span>
                     <select
-                      value={method}
-                      onChange={(e) => setMethod(e.target.value)}
+                      value={installments}
+                      onChange={(e) => setInstallments(e.target.value)}
                       className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
                     >
-                      <option value="">Escolher...</option>
-                      {methods.map((m) => (
-                        <option key={m} value={m}>
-                          {PAYMENT_METHOD_LABELS[m]}
+                      {installmentOptions.map((n) => (
+                        <option key={n} value={String(n)}>
+                          {n === 1 ? "À vista (1×)" : `${n}×`}
                         </option>
                       ))}
                     </select>
                   </label>
                   <label className="block text-xs">
                     <span className="text-muted-foreground">
-                      Parcelas (máx. {maxInstallments})
+                      Forma{isCash ? " (à vista)" : ""}
                     </span>
-                    <input
-                      value={installments}
-                      onChange={(e) => setInstallments(e.target.value)}
-                      inputMode="numeric"
+                    <select
+                      value={effectiveMethod}
+                      onChange={(e) => setMethod(e.target.value)}
                       className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-                    />
+                    >
+                      <option value="">Escolher...</option>
+                      {methodOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {PAYMENT_METHOD_LABELS[m]}
+                        </option>
+                      ))}
+                    </select>
+                    {isCash && (
+                      <span className="text-[11px] text-muted-foreground">
+                        À vista só em PIX ou depósito.
+                      </span>
+                    )}
                   </label>
                 </div>
+
+                {/* Resumo do dinheiro: total cheio → descontos → final. */}
+                <dl className="mt-2 space-y-0.5 rounded-md bg-background px-2 py-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">
+                      Valor total (sem descontos)
+                    </dt>
+                    <dd className="tabular-nums">
+                      {formatBRL(sale.subtotalCents)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">
+                      Total de descontos
+                      {sale.programDiscountCents > 0 && (
+                        <span className="ml-1 text-gold">
+                          (plano {formatBRL(sale.programDiscountCents)})
+                        </span>
+                      )}
+                    </dt>
+                    <dd className="tabular-nums text-gold">
+                      −
+                      {formatBRL(
+                        sale.programDiscountCents + preview.discountCents
+                      )}
+                    </dd>
+                  </div>
+                  {preview.surchargeCents > 0 && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Acréscimo</dt>
+                      <dd className="tabular-nums">
+                        +{formatBRL(preview.surchargeCents)}
+                      </dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-0.5 font-semibold">
+                    <dt>Valor final</dt>
+                    <dd className="tabular-nums">{formatBRL(preview.final)}</dd>
+                  </div>
+                  {installmentsNum > 1 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <dt>Parcelamento</dt>
+                      <dd className="tabular-nums">
+                        {installmentsNum}× de{" "}
+                        {formatBRL(Math.round(preview.final / installmentsNum))}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
 
                 {/* Ajuste: UM controle (nenhum / desconto / acréscimo). */}
                 {sale.isProgramMember ? (

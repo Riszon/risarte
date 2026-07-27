@@ -256,6 +256,56 @@ export function NegotiationPanel({
     programDiscountPercent > 0 &&
     adjustMode === "discount_percent" &&
     Number(adjustValue.replace(",", ".")) === programDiscountPercent;
+
+  // Parcelas viram SELETOR: 1× (à vista) até o máximo liberado (plano/unidade).
+  const maxInstallmentsAllowed = Math.max(
+    1,
+    rule.maxInstallments ?? programConditions?.maxInstallments ?? 18
+  );
+  const installmentOptions = useMemo(
+    () =>
+      Array.from({ length: maxInstallmentsAllowed }, (_, i) => i + 1),
+    [maxInstallmentsAllowed]
+  );
+  // À VISTA = 1×, e só em PIX ou depósito (regra do dono, 26/07/2026).
+  const isCash = installmentsNum === 1;
+  const methodOptions = useMemo(() => {
+    const allowed = rule.allowedMethods ?? [...PAYMENT_METHODS];
+    return isCash
+      ? allowed.filter((m) => m === "pix" || m === "deposito_avista")
+      : allowed;
+  }, [isCash, rule.allowedMethods]);
+  // Sem efeito colateral: a forma escolhida que não vale para o parcelamento
+  // atual simplesmente "não conta" (o seletor volta para "Escolher...").
+  const effectiveMethod: PaymentMethod | "" =
+    paymentMethod && methodOptions.includes(paymentMethod) ? paymentMethod : "";
+
+  /** Faixas do plano em texto claro (evita confundir com o "à vista"). */
+  const tierLabels = useMemo(() => {
+    if (!programConditions) return [] as string[];
+    const sorted = [...programConditions.tiers].sort(
+      (a, b) => a.upToInstallments - b.upToInstallments
+    );
+    const out = [`à vista (1×) ${programConditions.cashDiscountPercent}%`];
+    let from = 2;
+    for (const t of sorted) {
+      if (t.upToInstallments < from) continue;
+      out.push(
+        from === t.upToInstallments
+          ? `${from}× ${t.discountPercent}%`
+          : `${from}× a ${t.upToInstallments}× ${t.discountPercent}%`
+      );
+      from = t.upToInstallments + 1;
+    }
+    if (from <= programConditions.maxInstallments) {
+      out.push(
+        from === programConditions.maxInstallments
+          ? `${from}× sem desconto`
+          : `${from}× a ${programConditions.maxInstallments}× sem desconto`
+      );
+    }
+    return out;
+  }, [programConditions]);
   const isPartial = option
     ? option.items.some((i) => excluded.has(i.id))
     : false;
@@ -268,11 +318,11 @@ export function NegotiationPanel({
           subtotalCents,
           adjustmentCents,
           installments: installmentsNum,
-          paymentMethod: paymentMethod || null,
+          paymentMethod: effectiveMethod || null,
         },
         rule
       ),
-    [subtotalCents, adjustmentCents, installmentsNum, paymentMethod, rule]
+    [subtotalCents, adjustmentCents, installmentsNum, effectiveMethod, rule]
   );
 
   function save() {
@@ -284,7 +334,7 @@ export function NegotiationPanel({
         allItemIds,
         excludedItemIds: allExcludedIds,
         adjustmentCents,
-        paymentMethod: paymentMethod || null,
+        paymentMethod: effectiveMethod || null,
         installments: installmentsNum,
         partialReason,
         clientIsDecider: decider === "" ? null : decider === "sim",
@@ -347,7 +397,7 @@ export function NegotiationPanel({
           allItemIds,
           excludedItemIds: allExcludedIds,
           adjustmentCents,
-          paymentMethod: paymentMethod || null,
+          paymentMethod: effectiveMethod || null,
           installments: installmentsNum,
           partialReason,
           clientIsDecider: decider === "" ? null : decider === "sim",
@@ -557,26 +607,23 @@ export function NegotiationPanel({
               {programConditions.label} — condições do programa
             </p>
             <p className="mt-0.5 text-muted-foreground">
-              À vista <strong>{programConditions.cashDiscountPercent}%</strong> ·
-              parcelamento até <strong>{programConditions.maxInstallments}×</strong>
-              {programConditions.tiers.length > 0 && (
-                <>
-                  {" "}
-                  ·{" "}
-                  {programConditions.tiers
-                    .map(
-                      (t) => `até ${t.upToInstallments}× = ${t.discountPercent}%`
-                    )
-                    .join(" · ")}
-                </>
-              )}
+              {tierLabels.join(" · ")}
               {programConditions.minInstallmentCents > 0 && (
                 <> · parcela mínima {formatBRL(programConditions.minInstallmentCents)}</>
               )}
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-2">
               <span>
-                Para <strong>{installmentsNum}×</strong> o cliente tem direito a{" "}
+                {isCash ? (
+                  <>
+                    <strong>À vista</strong>, o cliente tem direito a{" "}
+                  </>
+                ) : (
+                  <>
+                    Em <strong>{installmentsNum}×</strong>, o cliente tem direito
+                    a{" "}
+                  </>
+                )}
                 <strong>{programDiscountPercent}%</strong> de desconto
                 {coveredCents > 0 && (
                   <>
@@ -639,9 +686,28 @@ export function NegotiationPanel({
           </label>
           <div className="grid grid-cols-2 gap-2">
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">Pagamento</span>
+              <span className="text-xs text-muted-foreground">
+                Parcelas (até {maxInstallmentsAllowed}×)
+              </span>
               <select
-                value={paymentMethod}
+                value={installments}
+                onChange={(e) => setInstallments(e.target.value)}
+                disabled={locked}
+                className={cn(selectClass, "w-full")}
+              >
+                {installmentOptions.map((n) => (
+                  <option key={n} value={String(n)}>
+                    {n === 1 ? "À vista (1×)" : `${n}×`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">
+                Pagamento{isCash ? " (à vista)" : ""}
+              </span>
+              <select
+                value={effectiveMethod}
                 onChange={(e) =>
                   setPaymentMethod(e.target.value as PaymentMethod | "")
                 }
@@ -649,22 +715,17 @@ export function NegotiationPanel({
                 className={cn(selectClass, "w-full")}
               >
                 <option value="">Escolher...</option>
-                {PAYMENT_METHODS.map((m) => (
+                {methodOptions.map((m) => (
                   <option key={m} value={m}>
                     {PAYMENT_METHOD_LABELS[m]}
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">Parcelas</span>
-              <input
-                value={installments}
-                onChange={(e) => setInstallments(e.target.value)}
-                disabled={locked}
-                inputMode="numeric"
-                className={inputClass}
-              />
+              {isCash && (
+                <span className="text-[11px] text-muted-foreground">
+                  À vista só em PIX ou depósito.
+                </span>
+              )}
             </label>
           </div>
         </div>

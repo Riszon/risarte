@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/07/2026 · Versão do sistema: **0.135.0** · Última migração: **0167**_
+_Atualizado em: 26/07/2026 · Versão do sistema: **0.136.0** · Última migração: **0167**_
+
+> **Pagamento: seletor de parcelas + à vista de verdade ✅ (v0.136.0, sem
+> migração):** as **parcelas viraram um seletor** (À vista (1×), 2×, 3×… até o
+> máximo que o plano ou a unidade libera) — na venda direta e na negociação; nada
+> de digitar número inválido. **À vista = 1×** e, nesse caso, a forma de
+> pagamento fica limitada a **PIX ou depósito**. As faixas do plano passaram a
+> ser exibidas como **intervalos claros** ("à vista (1×) 10% · 2× a 6× 15% · 7× a
+> 12× 10% · 13× a 18× 5%"), acabando com a confusão de achar que 3× estava
+> pegando o percentual do à vista. O fechamento da venda direta ganhou o **resumo
+> do dinheiro**: **Valor total (sem descontos)**, **Total de descontos** (com o
+> quanto veio do plano), acréscimo quando houver, **Valor final** e o
+> parcelamento (ex.: 3× de R$ 444,00).
 
 > **PPR+ — 7 ajustes do teste ✅ (v0.135.0, migração 0167):** (1) **parcelamento
 > do plano liberado de verdade** — a recusa vinha da validação no BANCO
