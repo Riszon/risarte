@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/07/2026 · Versão do sistema: **0.140.0** · Última migração: **0169**_
+_Atualizado em: 27/07/2026 · Versão do sistema: **0.141.0** · Última migração: **0170**_
+
+> **LOTE I — I1: sessão agendada não volta para o formulário ✅ (v0.141.0,
+> migração 0170):** a sessão que já tinha atendimento marcado continuava
+> aparecendo como opção e podia ser agendada de novo. A **causa** era de
+> permissão: quem agenda pode ser a recepção **ou a SDR**, mas a regra de
+> escrita das sessões (migração 0058) só liberava recepção, coordenador e
+> dentista — quando a SDR agendava, o "marcar como agendada" era barrado em
+> silêncio e a sessão continuava "a agendar". Agora o vínculo passa por uma
+> função de banco estreita (`link_appointment_sessions`, só mexe em situação e
+> agendamento), que autoriza pela mesma régua do agendamento, **recusa**
+> vincular sessão que já pertence a outro atendimento e devolve aviso na tela.
+> O formulário também só oferece sessões realmente livres, e a migração
+> **conserta os dados** que ficaram desencontrados (sessão presa a atendimento
+> cancelado volta para "a agendar"; sessão vinculada a atendimento vivo passa a
+> "agendada").
 
 > **PPR+ — Painel: período, filtro no pop-up e crescimento refeito ✅
 > (v0.140.0, sem migração):** o painel ganhou **filtro de período** (Hoje / Esta

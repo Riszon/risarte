@@ -649,15 +649,21 @@ export async function createAppointment(
     .filter(Boolean);
   const legacyId = String(formData.get("treatment_session_id") ?? "").trim();
   if (sessionIds.length === 0 && legacyId) sessionIds.push(legacyId);
+  let sessionWarning: string | undefined;
   if (sessionIds.length > 0) {
-    await supabase
-      .from("appointments")
-      .update({ treatment_session_id: sessionIds[0] })
-      .eq("id", data.id);
-    await supabase
-      .from("treatment_sessions")
-      .update({ status: "scheduled", appointment_id: data.id })
-      .in("id", sessionIds);
+    // I1: o vínculo vai por RPC (SECURITY DEFINER) — a RLS de treatment_sessions
+    // não libera a SDR, e o update direto falhava em silêncio, deixando a sessão
+    // como "a agendar" e permitindo agendá-la de novo.
+    const { error: linkErr } = await supabase.rpc("link_appointment_sessions", {
+      p_appointment_id: data.id,
+      p_session_ids: sessionIds,
+    });
+    if (linkErr) {
+      console.error("link_appointment_sessions failed:", linkErr.message);
+      sessionWarning = linkErr.message.includes("SESSION_ALREADY_SCHEDULED")
+        ? "Agendamento criado, mas uma das sessões já tinha atendimento marcado e não foi vinculada. Confira o plano do cliente."
+        : "Agendamento criado, mas não foi possível vincular as sessões do plano.";
+    }
   }
 
   // H4.7: registra os profissionais adicionais e avisa cada um (aviso forte).
@@ -712,7 +718,7 @@ export async function createAppointment(
     clinicId,
   });
   revalidatePath("/agenda");
-  return { ok: true, warning: rule.warn };
+  return { ok: true, warning: sessionWarning ?? rule.warn };
 }
 
 /** H4.6 E2: na hora de agendar, checa se o dentista já tem atendimento em OUTRA
@@ -786,6 +792,9 @@ export async function getClientPendingSessions(
     )
     .eq("client_id", clientId)
     .eq("status", "pending")
+    // I1: sessão presa a um atendimento nunca volta a ser oferecida (mesmo que
+    // o status tenha ficado desencontrado por algum motivo).
+    .is("appointment_id", null)
     .order("created_at")
     .returns<
       {
@@ -851,7 +860,11 @@ export async function getAppointmentSessionOptions(appointmentId: string): Promi
   const rows = data ?? [];
   return {
     linked: rows.filter((r) => r.appointment_id === appointmentId).map(toOption),
-    pending: rows.filter((r) => r.status === "pending").map(toOption),
+    // I1: só entram as realmente livres — sessão de outro atendimento não pode
+    // ser "roubada" por este formulário.
+    pending: rows
+      .filter((r) => r.status === "pending" && r.appointment_id === null)
+      .map(toOption),
   };
 }
 
@@ -1076,23 +1089,20 @@ export async function updateAppointment(
   }
 
   // H1.5: aplica o vínculo das sessões (desmarcada volta a "a agendar").
+  // I1: via RPC — vincular/desvincular numa transação só, com a checagem de
+  // "esta sessão já pertence a outro atendimento".
+  let sessionWarning: string | undefined;
   if (sessionSync) {
-    if (sessionSync.unlink.length > 0) {
-      await supabase
-        .from("treatment_sessions")
-        .update({ status: "pending", appointment_id: null })
-        .in("id", sessionSync.unlink);
+    const { error: linkErr } = await supabase.rpc("link_appointment_sessions", {
+      p_appointment_id: appointmentId,
+      p_session_ids: sessionSync.desired,
+    });
+    if (linkErr) {
+      console.error("link_appointment_sessions failed:", linkErr.message);
+      sessionWarning = linkErr.message.includes("SESSION_ALREADY_SCHEDULED")
+        ? "Agendamento alterado, mas uma das sessões já tinha outro atendimento marcado e não foi vinculada."
+        : "Agendamento alterado, mas não foi possível atualizar as sessões do plano.";
     }
-    if (sessionSync.link.length > 0) {
-      await supabase
-        .from("treatment_sessions")
-        .update({ status: "scheduled", appointment_id: appointmentId })
-        .in("id", sessionSync.link);
-    }
-    await supabase
-      .from("appointments")
-      .update({ treatment_session_id: sessionSync.desired[0] ?? null })
-      .eq("id", appointmentId);
   }
 
   // H4.7: sincroniza os profissionais adicionais e avisa os recém-incluídos.
@@ -1131,7 +1141,7 @@ export async function updateAppointment(
     details: { changes },
   });
   revalidatePath("/agenda");
-  return { ok: true, warning: rule.warn };
+  return { ok: true, warning: sessionWarning ?? rule.warn };
 }
 
 export async function updateAppointmentStatus(
