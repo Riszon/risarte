@@ -25,6 +25,10 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { missingClientFields } from "@/lib/clients";
+import {
+  RELATIONSHIP_LABELS,
+  type Relationship,
+} from "@/lib/empresarial/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -271,7 +275,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, no_cpf, registration_complete, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, no_cpf, registration_complete, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_company_name, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", id)
     .single();
@@ -481,6 +485,23 @@ export default async function ClientDetailPage(
         profiles: { full_name: string } | null;
       }[]
     >();
+
+  // I6: quem mais está no Risarte Empresarial junto com este cliente
+  // (titular ↔ dependentes). Vem por função com guarda de acesso (0175).
+  type EmpFamily = {
+    role: string;
+    client_id: string | null;
+    full_name: string;
+    relationship: string | null;
+    active: boolean;
+  };
+  let empresarialFamily: EmpFamily[] = [];
+  if (client.empresarial_company_id) {
+    const { data: fam } = await supabase.rpc("empresarial_client_family", {
+      p_client_id: id,
+    });
+    empresarialFamily = (fam ?? []) as EmpFamily[];
+  }
 
   // I4: o que falta no cadastro (mesma régua do formulário de novo cliente).
   const registrationGaps = missingClientFields({
@@ -2134,6 +2155,7 @@ export default async function ClientDetailPage(
                         ★ É um Risartano
                       </Badge>
                     ))}
+                  {/* I6: o selo agora diz POR QUAL EMPRESA. */}
                   {client.empresarial_company_id &&
                     (client.empresarial_active === false ? (
                       <Badge
@@ -2141,10 +2163,16 @@ export default async function ClientDetailPage(
                         className="border-gold/50 text-muted-foreground"
                       >
                         ★ Ex-Risarte Empresarial
+                        {client.empresarial_company_name
+                          ? ` · ${client.empresarial_company_name}`
+                          : ""}
                       </Badge>
                     ) : (
                       <Badge className="bg-gold/20 text-gold-foreground">
                         ★ Risarte Empresarial
+                        {client.empresarial_company_name
+                          ? ` · ${client.empresarial_company_name}`
+                          : ""}
                       </Badge>
                     ))}
                   {viewerIsFormerClinicOnly && (
@@ -2334,6 +2362,64 @@ export default async function ClientDetailPage(
             Coordenador uma nova avaliação. Este aviso só desaparece quando 100%
             dos procedimentos estiverem finalizados e aprovados.
           </span>
+        </div>
+      )}
+
+      {/* I6: o programa Empresarial na ficha — empresa + quem está junto. */}
+      {client.empresarial_company_id && (
+        <div className="rounded-md border border-gold/40 bg-gold/5 p-3 text-sm">
+          <p className="flex flex-wrap items-center gap-1.5 font-medium text-gold-foreground">
+            <Building2 className="size-4 shrink-0" />
+            Risarte Empresarial
+            {client.empresarial_company_name && (
+              <>
+                {" · "}
+                <span>{client.empresarial_company_name}</span>
+              </>
+            )}
+            {client.empresarial_active === false && (
+              <Badge variant="outline" className="text-[10px]">
+                vínculo encerrado
+              </Badge>
+            )}
+          </p>
+          {empresarialFamily.length > 0 ? (
+            <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              {empresarialFamily.map((f, i) => (
+                <li key={`${f.client_id ?? "sem"}-${i}`} className="flex items-center gap-1">
+                  <span className="text-muted-foreground">
+                    {f.role === "titular"
+                      ? "Titular:"
+                      : `${RELATIONSHIP_LABELS[f.relationship as Relationship] ?? "Dependente"}:`}
+                  </span>
+                  {f.client_id ? (
+                    <Link
+                      href={`/prontuarios/${f.client_id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {f.full_name}
+                    </Link>
+                  ) : (
+                    <span className="font-medium">{f.full_name}</span>
+                  )}
+                  {!f.active && (
+                    <span className="text-[10px] text-muted-foreground">
+                      (inativo)
+                    </span>
+                  )}
+                  {!f.client_id && (
+                    <span className="text-[10px] text-muted-foreground">
+                      (ainda não é cliente)
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sem dependentes cadastrados no programa.
+            </p>
+          )}
         </div>
       )}
 

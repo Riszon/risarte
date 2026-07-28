@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.146.0** · Última migração: **0174**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.147.0** · Última migração: **0175**_
+
+> **LOTE I — I6: Risarte Empresarial no prontuário ✅ (v0.147.0, migração 0175)
+> — LOTE I (I1–I6) COMPLETO:** o selo do programa agora diz **por qual empresa**
+> o cliente entrou — na **ficha**, na **lista de prontuários** e no **cockpit do
+> Planner** (que precisa disso porque a empresa define os benefícios do
+> orçamento). O nome da empresa é copiado para `clients.empresarial_company_name`
+> pelo mesmo gatilho do selo, então nenhuma tela precisa conversar com o schema
+> `empresarial`. A lista ganhou o filtro **"Somente Risarte Empresarial"**.
+> E o que estava faltando: o bloco **titular ↔ dependentes** aparece nos **dois**
+> prontuários (o do titular lista os dependentes; o do dependente mostra o
+> titular e os demais dependentes), com **nomes clicáveis** que levam de uma
+> ficha à outra, marcando quem está inativo e quem ainda **não é cliente**. Vem
+> de `public.empresarial_client_family()`, com guarda de acesso igual à da ficha.
 
 > **LOTE I — I5b: cadastro do Empresarial começa pelo CPF ✅ (v0.146.0, sem
 > migração):** no cadastro de **colaborador** e de **dependente**, o **CPF é o

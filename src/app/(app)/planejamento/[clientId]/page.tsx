@@ -103,7 +103,7 @@ export default async function PlanningCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_company_name, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -554,9 +554,20 @@ export default async function PlanningCockpitPage(
                 <Badge className="bg-gold text-gold-foreground">
                   {shownPillar ? PILLAR_LABELS[shownPillar] : "Pilar a definir"}
                 </Badge>
-                {isProgramMember && (
+                {/* I6: o Planner precisa saber POR QUAL EMPRESA o cliente vem
+                    (a empresa define os benefícios do orçamento). */}
+                {client.empresarial_company_id && (
                   <Badge className="bg-gold/20 text-gold-foreground">
                     ★ Risarte Empresarial
+                    {client.empresarial_company_name
+                      ? ` · ${client.empresarial_company_name}`
+                      : ""}
+                    {client.empresarial_active === false && " (encerrado)"}
+                  </Badge>
+                )}
+                {client.ppr_membership_id && client.ppr_active !== false && (
+                  <Badge className="bg-gold/20 text-gold-foreground">
+                    ★ PPR+
                   </Badge>
                 )}
               </div>

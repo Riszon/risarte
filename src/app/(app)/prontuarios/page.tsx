@@ -58,6 +58,10 @@ type ClientRow = {
   clinic_id: string;
   /** I4: cadastro completo pela régua do formulário (migração 0173). */
   registration_complete: boolean;
+  /** I6: vínculo com o Risarte Empresarial (empresa + situação). */
+  empresarial_company_id: string | null;
+  empresarial_company_name: string | null;
+  empresarial_active: boolean | null;
   clinics: { name: string } | null;
 };
 
@@ -115,6 +119,9 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     searchParams.cadastro === "incompleto" || searchParams.cadastro === "completo"
       ? searchParams.cadastro
       : "";
+  // I6: ?programa=empresarial (clientes do Risarte Empresarial)
+  const programFilter =
+    searchParams.programa === "empresarial" ? searchParams.programa : "";
   const tab: Tab =
     searchParams.aba === "aniversariantes" ||
     searchParams.aba === "transferidos" ||
@@ -181,9 +188,13 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       neq: (col: string, val: string) => T;
       ilike: (col: string, val: string) => T;
       is: (col: string, val: boolean) => T;
+      not: (col: string, op: string, val: null) => T;
     },
   >(request: T): T {
     let r = request;
+    // I6: só os clientes do Risarte Empresarial.
+    if (programFilter === "empresarial")
+      r = r.not("empresarial_company_id", "is", null);
     if (query) r = r.ilike("full_name", `%${query}%`);
     if (phaseFilter) r = r.eq("journey_phase", phaseFilter);
     if (pillarFilter) r = r.eq("methodology_pillar", pillarFilter);
@@ -205,7 +216,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
   let clinicOptions: { id: string; name: string }[] = [];
 
   const SELECT =
-    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, registration_complete, clinics!clients_clinic_id_fkey ( name )";
+    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, registration_complete, empresarial_company_id, empresarial_company_name, empresarial_active, clinics!clients_clinic_id_fkey ( name )";
 
   // Clients in treatment_start "awaiting start" with no future appointment.
   const awaitingSchedule = new Set<string>();
@@ -582,6 +593,15 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
               <option value="incompleto">Somente cadastro incompleto</option>
               <option value="completo">Somente cadastro completo</option>
             </select>
+            {/* I6: clientes que vieram por empresa parceira. */}
+            <select
+              name="programa"
+              defaultValue={programFilter}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">Programa (todos)</option>
+              <option value="empresarial">Somente Risarte Empresarial</option>
+            </select>
             <Button type="submit" variant="outline">
               Buscar
             </Button>
@@ -651,6 +671,20 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                             className="shrink-0 border-amber-300 bg-amber-50 text-[10px] text-amber-800"
                           >
                             Cadastro incompleto
+                          </Badge>
+                        )}
+                        {/* I6: selo com a empresa parceira do cliente. */}
+                        {client.empresarial_company_id && (
+                          <Badge
+                            className="shrink-0 bg-gold/20 text-[10px] text-gold-foreground"
+                            title={
+                              client.empresarial_active === false
+                                ? "Vínculo encerrado com a empresa"
+                                : "Cliente pelo Risarte Empresarial"
+                            }
+                          >
+                            ★ {client.empresarial_company_name ?? "Empresarial"}
+                            {client.empresarial_active === false && " (ex)"}
                           </Badge>
                         )}
                         {/* I5: fila do primeiro agendamento da SDR. */}
