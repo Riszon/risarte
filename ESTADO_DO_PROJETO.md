@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.151.0** · Última migração: **0177**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.152.0** · Última migração: **0178**_
+
+> **LOTE I — I9: entrada + parcelas personalizadas ✅ (v0.152.0, migração 0178)
+> — LOTE I (I1–I9) COMPLETO:** a venda passa a ter **plano de cobrança**:
+> **entrada** (valor livre) + **parcelas**, cada uma com **data de vencimento e
+> valor próprios** — o que o dono pediu para o boleto. O editor gera o plano
+> sozinho (entrada + nº de parcelas + 1º vencimento, mensal ou a cada N dias,
+> com a sobra dos centavos na última) e **cada linha continua editável**. A soma
+> **tem de fechar exatamente** com o valor da venda — regra garantida no banco
+> (`TOTAL_MISMATCH`), não só na tela — e a **parcela mínima do meio de pagamento
+> (I8) é respeitada** (a entrada é livre). Nova tabela
+> `public.payment_installments` (entrada/parcela, vencimento, valor, situação,
+> baixa) ligada à negociação **ou** à venda direta: ela é, de propósito, a
+> **base do módulo Financeiro** (boletos em aberto, atraso e renegociação).
+> Regras puras em `src/lib/payments.ts` com **14 testes** (181 no total).
 
 > **LOTE I — I8: regra comercial (parcela mínima + desconto só à vista) ✅
 > (v0.151.0, migração 0177):** em **Regras comerciais** entraram dois campos

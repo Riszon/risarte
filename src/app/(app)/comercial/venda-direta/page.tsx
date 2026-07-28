@@ -10,12 +10,14 @@ import { cn } from "@/lib/utils";
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
 import {
+  minInstallmentCentsFor,
   resolveCommercialRule,
   type CommercialRule,
   type CommercialRuleRow,
   type PaymentMethod,
 } from "@/lib/commercial";
 import { directSaleStatusOf } from "@/lib/direct-sale";
+import type { ScheduleEntry } from "@/lib/payments";
 import {
   VendaDiretaClient,
   type DirectSaleRow,
@@ -168,6 +170,36 @@ export default async function VendasDiretasPage(
       (clientId ? pprConditions.get(clientId) : null) ?? null
     ) as CommercialRule;
 
+  // I9: plano de cobrança (entrada + parcelas) já salvo de cada venda.
+  const scheduleBySale = new Map<string, ScheduleEntry[]>();
+  const saleIds = rows.map((s) => s.id);
+  if (saleIds.length > 0) {
+    const { data: instRows } = await supabase
+      .from("payment_installments")
+      .select("direct_sale_id, seq, kind, due_date, amount_cents")
+      .in("direct_sale_id", saleIds)
+      .order("seq")
+      .returns<
+        {
+          direct_sale_id: string;
+          seq: number;
+          kind: string;
+          due_date: string;
+          amount_cents: number;
+        }[]
+      >();
+    for (const r of instRows ?? []) {
+      const list = scheduleBySale.get(r.direct_sale_id) ?? [];
+      list.push({
+        seq: r.seq,
+        kind: r.kind === "entrada" ? "entrada" : "parcela",
+        dueDate: r.due_date,
+        amountCents: r.amount_cents,
+      });
+      scheduleBySale.set(r.direct_sale_id, list);
+    }
+  }
+
   const sales: DirectSaleRow[] = rows.map((s) => {
     const clinicName =
       (Array.isArray(s.clinic) ? s.clinic[0] : s.clinic)?.name ?? null;
@@ -225,6 +257,12 @@ export default async function VendasDiretasPage(
       paymentConfirmedByName: s.payment_confirmed_by
         ? (names.get(s.payment_confirmed_by) ?? null)
         : null,
+      // I9: plano de cobrança já salvo + parcela mínima do meio escolhido.
+      schedule: scheduleBySale.get(s.id) ?? [],
+      minInstallmentCents: minInstallmentCentsFor(
+        ruleFor(s.clinic_id, s.client_id),
+        (s.payment_method as PaymentMethod | null) ?? null
+      ),
     };
   });
 

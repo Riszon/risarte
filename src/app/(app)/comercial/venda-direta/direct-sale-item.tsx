@@ -32,6 +32,8 @@ import {
   closeDirectSaleStep,
   setDirectSaleConditions,
 } from "./actions";
+import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import type { ScheduleEntry } from "@/lib/payments";
 
 export type DirectSaleRow = {
   id: string;
@@ -81,6 +83,10 @@ export type DirectSaleRow = {
   /** Quem fez cada passo do fechamento (para o detalhe). */
   contractSignedByName: string | null;
   paymentConfirmedByName: string | null;
+  /** I9: plano de cobrança (entrada + parcelas) já salvo. */
+  schedule?: ScheduleEntry[];
+  /** I8: parcela mínima do meio escolhido (para validar o plano). */
+  minInstallmentCents?: number | null;
 };
 
 type AdjustMode = "none" | "desc_reais" | "desc_pct" | "acresc";
@@ -694,6 +700,19 @@ export function SaleItem({
                 >
                   Salvar condições
                 </Button>
+
+                {/* I9: entrada + parcelas com data e valor próprios. Aparece
+                    depois de salvar as condições (o total já é o definitivo). */}
+                {sale.finalCents > 0 && conditionsReady && (
+                  <div className="mt-3">
+                    <PaymentScheduleEditor
+                      directSaleId={sale.id}
+                      totalCents={sale.finalCents}
+                      minInstallmentCents={sale.minInstallmentCents ?? null}
+                      initial={sale.schedule ?? []}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
