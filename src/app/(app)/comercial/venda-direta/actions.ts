@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { parseBRLToCents } from "@/lib/pricing";
 import {
+  automaticDiscountPercent,
   resolveCommercialRule,
   type CommercialRule,
   type CommercialRuleRow,
@@ -95,7 +96,7 @@ export async function setDirectSaleConditions(
   const supabase = await createClient();
   const { data: ruleRows } = await supabase
     .from("commercial_rules")
-    .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+    .select("clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
     .returns<CommercialRuleRow[]>();
   // O plano do cliente (PPR+) é SUPERIOR à regra da rede/unidade: amplia
   // parcelas e formas de pagamento (decisão do dono, 25/07/2026).
@@ -135,7 +136,19 @@ export async function setDirectSaleConditions(
       info.subtotalCents - info.programDiscountCents - coveredCents
     );
     discountCents = Math.round((base * Math.max(0, pct)) / 100);
-  } else if (info.isProgramMember && discountCents > 0) {
+  } else if (!info.isProgramMember && installments <= 1) {
+    // I8: cliente SEM programa — à vista ganha o desconto automático da regra
+    // comercial (ex.: 5%). No parcelado não há automático: vale só o manual.
+    const auto = automaticDiscountPercent(rule, installments);
+    if (auto > 0) {
+      const base = Math.max(0, info.subtotalCents - info.programDiscountCents);
+      const autoCents = Math.round((base * auto) / 100);
+      // O manual maior que o automático prevalece (o teto ainda é validado).
+      discountCents = Math.max(discountCents, autoCents);
+    }
+  }
+
+  if (info.isProgramMember && !pprConditions && discountCents > 0) {
     // Empresarial (desconto automático) não recebe desconto manual.
     return {
       ok: false,

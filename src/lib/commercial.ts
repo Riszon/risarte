@@ -48,6 +48,10 @@ export type CommercialRuleRow = {
   max_discount_percent: number | null;
   max_installments: number | null;
   allowed_methods: string[] | null;
+  /** I8: desconto automático concedido no pagamento à vista (%). */
+  cash_discount_percent?: number | null;
+  /** I8: parcela mínima em centavos por meio de pagamento. */
+  min_installment_cents_by_method?: Record<string, number> | null;
 };
 
 /** Regra comercial efetiva para uma unidade (campo a campo: unidade > rede). */
@@ -55,6 +59,10 @@ export type CommercialRule = {
   maxDiscountPercent: number | null;
   maxInstallments: number | null;
   allowedMethods: PaymentMethod[] | null;
+  /** I8: % de desconto automático do pagamento à vista (null = nenhum). */
+  cashDiscountPercent: number | null;
+  /** I8: parcela mínima (centavos) por meio de pagamento. */
+  minInstallmentByMethod: Partial<Record<PaymentMethod, number>>;
 };
 
 export function resolveCommercialRule(
@@ -66,6 +74,21 @@ export function resolveCommercialRule(
     : undefined;
   const network = rows.find((r) => r.clinic_id === null);
   const methods = unit?.allowed_methods ?? network?.allowed_methods ?? null;
+  // I8: a parcela mínima é mesclada POR MEIO — a unidade sobrescreve só os
+  // meios que ela definiu; os demais seguem o padrão da rede.
+  const merged: Partial<Record<PaymentMethod, number>> = {};
+  for (const src of [
+    network?.min_installment_cents_by_method,
+    unit?.min_installment_cents_by_method,
+  ]) {
+    for (const [k, v] of Object.entries(src ?? {})) {
+      if (!(PAYMENT_METHODS as readonly string[]).includes(k)) continue;
+      const cents = Number(v);
+      if (Number.isFinite(cents) && cents > 0) {
+        merged[k as PaymentMethod] = Math.round(cents);
+      }
+    }
+  }
   return {
     maxDiscountPercent:
       unit?.max_discount_percent ?? network?.max_discount_percent ?? null,
@@ -76,7 +99,49 @@ export function resolveCommercialRule(
           (PAYMENT_METHODS as readonly string[]).includes(m)
         )
       : null,
+    cashDiscountPercent:
+      unit?.cash_discount_percent ?? network?.cash_discount_percent ?? null,
+    minInstallmentByMethod: merged,
   };
+}
+
+/**
+ * I8: desconto AUTOMÁTICO da regra comercial. Só existe à vista (1×) — no
+ * parcelado não entra desconto automático nenhum; vale só o que o consultor
+ * aplicar à mão, dentro do teto da unidade.
+ */
+export function automaticDiscountPercent(
+  rule: Pick<CommercialRule, "cashDiscountPercent" | "maxDiscountPercent">,
+  installments: number
+): number {
+  if (installments > 1) return 0;
+  const cash = rule.cashDiscountPercent ?? 0;
+  if (cash <= 0) return 0;
+  // O automático nunca passa do teto de desconto da unidade.
+  return rule.maxDiscountPercent !== null
+    ? Math.min(cash, rule.maxDiscountPercent)
+    : cash;
+}
+
+/** I8: parcela mínima (centavos) do meio escolhido — null = sem mínimo. */
+export function minInstallmentCentsFor(
+  rule: Pick<CommercialRule, "minInstallmentByMethod">,
+  method: PaymentMethod | null
+): number | null {
+  if (!method) return null;
+  return rule.minInstallmentByMethod[method] ?? null;
+}
+
+/** Quantas parcelas cabem respeitando a parcela mínima do meio de pagamento. */
+export function maxInstallmentsByMinimum(
+  rule: Pick<CommercialRule, "minInstallmentByMethod" | "maxInstallments">,
+  method: PaymentMethod | null,
+  totalCents: number
+): number {
+  const ceiling = rule.maxInstallments ?? 24;
+  const min = minInstallmentCentsFor(rule, method);
+  if (!min || totalCents <= 0) return ceiling;
+  return Math.max(1, Math.min(ceiling, Math.floor(totalCents / min)));
 }
 
 /** Desconto efetivo (%) de uma negociação: ajuste negativo sobre o subtotal. */
@@ -128,7 +193,28 @@ export function negotiationViolations(
       `Meio de pagamento "${PAYMENT_METHOD_LABELS[input.paymentMethod]}" não permitido pela regra comercial`
     );
   }
+  // I8: parcela mínima do meio de pagamento (só faz sentido no parcelado).
+  if (input.installments > 1 && input.paymentMethod) {
+    const min = minInstallmentCentsFor(rule, input.paymentMethod);
+    const total = input.subtotalCents + input.adjustmentCents;
+    if (min && total > 0) {
+      const parcela = Math.ceil(total / input.installments);
+      if (parcela < min) {
+        violations.push(
+          `Parcela de ${brl(parcela)} abaixo do mínimo de ${brl(min)} para "${PAYMENT_METHOD_LABELS[input.paymentMethod]}"`
+        );
+      }
+    }
+  }
   return violations;
+}
+
+/** R$ 1.234,56 — usado nas mensagens de violação. */
+function brl(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
 // ============================================================================

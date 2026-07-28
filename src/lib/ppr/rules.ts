@@ -245,10 +245,10 @@ export type PprPlanConditions = {
  * é SUPERIOR (decisão do dono, 25/07/2026): ele só amplia — mais parcelas,
  * mais formas de pagamento e um teto de desconto maior. Nunca reduz.
  */
-export function effectiveRuleWithPpr(
-  rule: PlainCommercialRule,
+export function effectiveRuleWithPpr<T extends PlainCommercialRule>(
+  rule: T,
   plan: PprPlanConditions | null
-): PlainCommercialRule {
+): T {
   if (!plan) return rule;
 
   const maxInstallments = Math.max(rule.maxInstallments ?? 1, plan.maxInstallments);
@@ -269,7 +269,8 @@ export function effectiveRuleWithPpr(
       ? null
       : Math.max(rule.maxDiscountPercent, planTop);
 
-  return { maxDiscountPercent, maxInstallments, allowedMethods };
+  // Preserva os demais campos da regra (I8: desconto à vista, parcela mínima).
+  return { ...rule, maxDiscountPercent, maxInstallments, allowedMethods };
 }
 
 /**

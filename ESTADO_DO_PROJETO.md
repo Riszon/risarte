@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.150.0** · Última migração: **0176**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.151.0** · Última migração: **0177**_
+
+> **LOTE I — I8: regra comercial (parcela mínima + desconto só à vista) ✅
+> (v0.151.0, migração 0177):** em **Regras comerciais** entraram dois campos
+> novos, no mesmo padrão cascata (rede → unidade): **valor mínimo da parcela por
+> meio de pagamento** (boleto, cartão parcelado etc. — a unidade sobrescreve só
+> os meios que ela definir) e **desconto automático à vista (%)**. As duas
+> regras valem nos dois fluxos: a **negociação do consultor** e a **venda
+> direta** recusam parcela abaixo do mínimo do meio escolhido (dizendo o valor
+> da parcela e o mínimo), e o **desconto automático só existe à vista (1×)** —
+> no parcelado não entra desconto nenhum sozinho: vale só o que o consultor
+> aplicar à mão, dentro do desconto máximo da unidade. O automático nunca passa
+> do teto, e o PPR+ continua **superior** (mínimo do plano prevalece quando é
+> maior). Regras puras com **9 testes novos** (167 no total).
 
 > **LOTE I — I7c: relógio do atendimento ✅ (v0.150.0, sem migração):** no
 > Desenvolvimento Clínico, o dentista passou a ver **cronômetro do atendimento**

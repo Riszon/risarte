@@ -156,7 +156,7 @@ export default async function VendasDiretasPage(
   // Regra comercial por unidade (limita o fechamento).
   const { data: ruleRows } = await supabase
     .from("commercial_rules")
-    .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+    .select("clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
     .returns<CommercialRuleRow[]>();
   // PPR+ é superior à regra da unidade: amplia parcelas e formas de pagamento.
   const pprConditions = await loadPprConditionsForClients(

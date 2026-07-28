@@ -17,7 +17,7 @@ export default async function CommercialRulesPage() {
     await Promise.all([
       supabase
         .from("commercial_rules")
-        .select("id, clinic_id, max_discount_percent, max_installments, allowed_methods")
+        .select("id, clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
         .returns<RuleRowUi[]>(),
       supabase
         .from("commercial_followup_settings")

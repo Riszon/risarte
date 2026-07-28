@@ -96,7 +96,7 @@ export async function loadDirectSaleContext(
         .eq("clinic_id", clinicId),
       supabase
         .from("commercial_rules")
-        .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+        .select("clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
         .returns<CommercialRuleRow[]>(),
       loadClientPrograms(clientId),
     ]);
@@ -259,7 +259,7 @@ export async function loadClientDirectSales(
       .order("created_at", { ascending: false }),
     supabase
       .from("commercial_rules")
-      .select("clinic_id, max_discount_percent, max_installments, allowed_methods")
+      .select("clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
       .returns<CommercialRuleRow[]>(),
     loadClientPrograms(clientId),
   ]);

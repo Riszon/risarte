@@ -3,6 +3,9 @@ import {
   commercialColumnOf,
   discountPercentOf,
   gutScore,
+  automaticDiscountPercent,
+  maxInstallmentsByMinimum,
+  minInstallmentCentsFor,
   negotiationViolations,
   resolveCommercialRule,
   type CommercialRuleRow,
@@ -206,5 +209,95 @@ describe("commercialColumnOf", () => {
     expect(
       commercialColumnOf({ ...base, cardStage: "follow_up_clinica" })
     ).toBe("follow_up");
+  });
+});
+
+// I8: parcela mínima por meio de pagamento e desconto automático só à vista.
+
+describe("parcela mínima por meio de pagamento", () => {
+  const rows: CommercialRuleRow[] = [
+    row(null, {
+      max_installments: 24,
+      min_installment_cents_by_method: { boleto: 15000, cartao_parcelado: 10000 },
+    }),
+    row("clinic-x", {
+      min_installment_cents_by_method: { boleto: 20000 },
+    }),
+  ];
+
+  it("a unidade sobrescreve só o meio que ela definiu", () => {
+    const rule = resolveCommercialRule(rows, "clinic-x");
+    expect(minInstallmentCentsFor(rule, "boleto")).toBe(20000);
+    expect(minInstallmentCentsFor(rule, "cartao_parcelado")).toBe(10000);
+    expect(minInstallmentCentsFor(rule, "pix")).toBeNull();
+  });
+
+  it("sem ajuste da unidade vale o padrão da rede", () => {
+    const rule = resolveCommercialRule(rows, "clinic-y");
+    expect(minInstallmentCentsFor(rule, "boleto")).toBe(15000);
+  });
+
+  it("limita as parcelas pelo mínimo do meio escolhido", () => {
+    const rule = resolveCommercialRule(rows, "clinic-y");
+    // R$ 1.200,00 com parcela mínima de R$ 150,00 = no máximo 8x.
+    expect(maxInstallmentsByMinimum(rule, "boleto", 120000)).toBe(8);
+    // Sem mínimo configurado, vale o teto de parcelas da regra.
+    expect(maxInstallmentsByMinimum(rule, "pix", 120000)).toBe(24);
+  });
+
+  it("acusa parcela abaixo do mínimo", () => {
+    const rule = resolveCommercialRule(rows, "clinic-y");
+    const v = negotiationViolations(
+      {
+        subtotalCents: 120000,
+        adjustmentCents: 0,
+        installments: 12, // R$ 100,00 por parcela
+        paymentMethod: "boleto",
+      },
+      rule
+    );
+    expect(v.some((x) => x.includes("abaixo do mínimo"))).toBe(true);
+  });
+
+  it("à vista não checa parcela mínima", () => {
+    const rule = resolveCommercialRule(rows, "clinic-y");
+    const v = negotiationViolations(
+      {
+        subtotalCents: 10000,
+        adjustmentCents: 0,
+        installments: 1,
+        paymentMethod: "boleto",
+      },
+      rule
+    );
+    expect(v.some((x) => x.includes("abaixo do mínimo"))).toBe(false);
+  });
+});
+
+describe("desconto automático só à vista", () => {
+  const rule = resolveCommercialRule(
+    [row(null, { cash_discount_percent: 5, max_discount_percent: 10 })],
+    null
+  );
+
+  it("à vista concede o percentual configurado", () => {
+    expect(automaticDiscountPercent(rule, 1)).toBe(5);
+  });
+
+  it("parcelado não tem desconto automático nenhum", () => {
+    expect(automaticDiscountPercent(rule, 2)).toBe(0);
+    expect(automaticDiscountPercent(rule, 12)).toBe(0);
+  });
+
+  it("nunca passa do teto de desconto da unidade", () => {
+    const tight = resolveCommercialRule(
+      [row(null, { cash_discount_percent: 15, max_discount_percent: 8 })],
+      null
+    );
+    expect(automaticDiscountPercent(tight, 1)).toBe(8);
+  });
+
+  it("sem configuração, não há desconto automático", () => {
+    expect(automaticDiscountPercent(resolveCommercialRule([], null), 1)).toBe(0);
   });
 });

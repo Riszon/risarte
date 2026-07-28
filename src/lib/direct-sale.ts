@@ -5,6 +5,7 @@
 import {
   PAYMENT_METHOD_LABELS,
   discountPercentOf,
+  minInstallmentCentsFor,
   type CommercialRule,
   type PaymentMethod,
 } from "@/lib/commercial";
@@ -126,7 +127,31 @@ export function directSaleViolations(
     );
   }
 
+  // I8: parcela mínima do meio de pagamento escolhido (só no parcelado).
+  if (c.installments > 1 && c.paymentMethod) {
+    const min = minInstallmentCentsFor(rule, c.paymentMethod);
+    const total = Math.max(
+      0,
+      c.subtotalCents - c.programDiscountCents - c.discountCents + c.surchargeCents
+    );
+    if (min && total > 0) {
+      const parcela = Math.ceil(total / c.installments);
+      if (parcela < min) {
+        violations.push(
+          `Parcela de ${fmtBRL(parcela)} abaixo do mínimo de ${fmtBRL(min)} para "${PAYMENT_METHOD_LABELS[c.paymentMethod]}"`
+        );
+      }
+    }
+  }
+
   return violations;
+}
+
+function fmtBRL(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
 /** Situação do fechamento (regra de ouro em dois passos — §7.8). */

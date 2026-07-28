@@ -20,10 +20,19 @@ export type RuleRowUi = {
   max_discount_percent: number | null;
   max_installments: number | null;
   allowed_methods: string[] | null;
+  /** I8: desconto automático à vista (%) e parcela mínima por meio. */
+  cash_discount_percent?: number | null;
+  min_installment_cents_by_method?: Record<string, number> | null;
 };
 
 const selectClass =
   "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
+
+/** I8: centavos → "150,00" para o campo de parcela mínima. */
+function centsToInput(cents: number | null | undefined): string {
+  if (!cents || cents <= 0) return "";
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
 
 export function CommercialRulesEditor({
   rows,
@@ -200,6 +209,28 @@ function RuleForm({
               />
             </label>
           </div>
+          {/* I8: desconto automático — só existe à vista. */}
+          <label className="block text-sm">
+            <span className="text-xs text-muted-foreground">
+              Desconto automático à vista (%)
+            </span>
+            <Input
+              name="cashDiscountPercent"
+              inputMode="decimal"
+              placeholder={clinicId ? "herda da rede" : "sem desconto automático"}
+              defaultValue={
+                rule?.cash_discount_percent != null
+                  ? String(rule.cash_discount_percent)
+                  : ""
+              }
+            />
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+              Concedido sozinho quando o pagamento é à vista (1×). No parcelado
+              não há desconto automático — vale só o que o consultor aplicar,
+              dentro do desconto máximo acima.
+            </span>
+          </label>
+
           <div>
             <p className="mb-1 text-xs text-muted-foreground">
               Meios de pagamento permitidos (nenhum marcado = todos liberados)
@@ -214,6 +245,31 @@ function RuleForm({
                     defaultChecked={rule?.allowed_methods?.includes(m) ?? false}
                   />
                   {PAYMENT_METHOD_LABELS[m]}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* I8: parcela mínima por meio de pagamento. */}
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">
+              Valor mínimo da parcela por meio de pagamento (em branco = sem
+              mínimo). Limita quantas parcelas o sistema oferece.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {PAYMENT_METHODS.map((m: PaymentMethod) => (
+                <label key={m} className="block text-sm">
+                  <span className="text-xs text-muted-foreground">
+                    {PAYMENT_METHOD_LABELS[m]}
+                  </span>
+                  <Input
+                    name={`min_${m}`}
+                    inputMode="decimal"
+                    placeholder={clinicId ? "herda da rede" : "sem mínimo"}
+                    defaultValue={centsToInput(
+                      rule?.min_installment_cents_by_method?.[m]
+                    )}
+                  />
                 </label>
               ))}
             </div>

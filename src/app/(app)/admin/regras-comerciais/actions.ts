@@ -45,12 +45,42 @@ export async function saveCommercialRule(
   // Nenhum meio marcado = sem restrição (null). Marcados = só os permitidos.
   const allowedMethods = methods.length > 0 ? methods : null;
 
+  // I8: desconto automático à vista (%) — vazio = sem desconto automático.
+  const cashRaw = String(formData.get("cashDiscountPercent") ?? "").trim();
+  const cashDiscountPercent =
+    cashRaw === "" ? null : Number(cashRaw.replace(",", "."));
+  if (
+    cashDiscountPercent !== null &&
+    (!Number.isFinite(cashDiscountPercent) ||
+      cashDiscountPercent < 0 ||
+      cashDiscountPercent > 100)
+  ) {
+    return { ok: false, error: "Desconto à vista inválido (0 a 100%)." };
+  }
+
+  // I8: parcela mínima por meio de pagamento (aceita "150,00" ou "150").
+  const minByMethod: Record<string, number> = {};
+  for (const m of PAYMENT_METHODS) {
+    const raw = String(formData.get(`min_${m}`) ?? "").trim();
+    if (raw === "") continue;
+    const value = Number(raw.replace(/\./g, "").replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) {
+      return {
+        ok: false,
+        error: `Valor mínimo da parcela inválido em "${m}".`,
+      };
+    }
+    if (value > 0) minByMethod[m] = Math.round(value * 100);
+  }
+
   const { error } = await supabase.from("commercial_rules").upsert(
     {
       clinic_id: clinicId,
       max_discount_percent: maxDiscountPercent,
       max_installments: maxInstallments,
       allowed_methods: allowedMethods,
+      cash_discount_percent: cashDiscountPercent,
+      min_installment_cents_by_method: minByMethod,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "clinic_id" }

@@ -129,7 +129,7 @@ export async function loadNegotiationBlock(
       supabase
         .from("commercial_rules")
         .select(
-          "clinic_id, max_discount_percent, max_installments, allowed_methods"
+          "clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method"
         )
         .returns<CommercialRuleRow[]>(),
     ]);
@@ -266,6 +266,9 @@ export async function loadNegotiationBlock(
     // O programa fica ACIMA da regra da rede/unidade (docs/PPR.md §7).
     rule: programConditions
       ? {
+          // I8: mantém os demais campos da regra (desconto à vista, parcela
+          // mínima por meio) — o programa só AMPLIA teto e parcelas.
+          ...baseRule,
           maxDiscountPercent: Math.max(
             baseRule.maxDiscountPercent ?? 0,
             programConditions.cashDiscountPercent,
@@ -275,7 +278,6 @@ export async function loadNegotiationBlock(
             baseRule.maxInstallments ?? 1,
             programConditions.maxInstallments
           ),
-          allowedMethods: baseRule.allowedMethods,
         }
       : baseRule,
     planEvents,
