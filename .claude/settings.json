@@ -58,7 +58,14 @@
       "PowerShell(git rev-list*)",
       "PowerShell(npx supabase status*)",
       "PowerShell(npx supabase gen*)",
-      "PowerShell(npx vercel*)"
+      "PowerShell(npx vercel*)",
+
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\"); Set-Location \"C:\\Users\\Jeferson\\MVP RIZON\\risarte\"; npm test*)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\"); Set-Location \"C:\\Users\\Jeferson\\MVP RIZON\\risarte\"; npm run lint*)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\"); Set-Location \"C:\\Users\\Jeferson\\MVP RIZON\\risarte\"; npm run build*)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\"); Set-Location \"C:\\Users\\Jeferson\\MVP RIZON\\risarte\"; npx tsc*)",
+
+      "PowerShell([System.IO.File]::ReadAllText(\"C:\\Users\\Jeferson\\MVP RIZON\\risarte\\supabase\\migrations\\*"
     ],
     "ask": [
       "PowerShell(git push --force*)",

@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.152.0** · Última migração: **0178**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.153.0** · Última migração: **0178**_
+
+> **I9b: o fechamento da venda ficou UMA tela só ✅ (v0.153.0, sem migração):**
+> o dono apontou que a tela tinha valores repetidos, escolha contraditória
+> ("à vista" com entrada logo abaixo) e **dois lugares para salvar**. Agora:
+> **uma pergunta** — "Como o cliente vai pagar?" **À vista / Parcelado /
+> Entrada + parcelas** — e só os campos daquele formato aparecem; **um resumo**
+> (total → descontos → valor final → "como fica"); **um botão** — *Salvar
+> pagamento*, que grava as condições **e** gera as cobranças no mesmo clique. As
+> cobranças aparecem **em leitura**; quem quiser mudar data ou valor clica em
+> **Personalizar** (aí sim há um "Salvar alterações", só nesse modo). E o que
+> mais incomodava: **editar o valor de uma cobrança recalcula as seguintes**
+> sozinho — entrada R$ 500 + 2ª parcela R$ 500 redistribui o resto para o plano
+> continuar fechando com o total (`redistributeFrom`, 5 testes novos; 186 no
+> total).
 
 > **LOTE I — I9: entrada + parcelas personalizadas ✅ (v0.152.0, migração 0178)
 > — LOTE I (I1–I9) COMPLETO:** a venda passa a ter **plano de cobrança**:

@@ -122,7 +122,7 @@ export default async function VendasDiretasPage(
   let salesQuery = supabase
     .from("direct_sales")
     .select(
-      "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_issued_by, payment_confirmed, payment_confirmed_by, cancelled, status, attendance_done_before, created_by, created_at, closed_at, clinic:clinics!direct_sales_clinic_id_fkey ( name ), items:direct_sale_items ( id, description, quantity, unit_price_cents, program_discount_cents, final_cents )"
+      "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_issued_by, payment_confirmed, payment_confirmed_by, down_payment_cents, cancelled, status, attendance_done_before, created_by, created_at, closed_at, clinic:clinics!direct_sales_clinic_id_fkey ( name ), items:direct_sale_items ( id, description, quantity, unit_price_cents, program_discount_cents, final_cents )"
     )
     .order("created_at", { ascending: false })
     .limit(300);
@@ -259,6 +259,7 @@ export default async function VendasDiretasPage(
         : null,
       // I9: plano de cobrança já salvo + parcela mínima do meio escolhido.
       schedule: scheduleBySale.get(s.id) ?? [],
+      downPaymentCents: s.down_payment_cents ?? 0,
       minInstallmentCents: minInstallmentCentsFor(
         ruleFor(s.clinic_id, s.client_id),
         (s.payment_method as PaymentMethod | null) ?? null
@@ -345,6 +346,7 @@ export default async function VendasDiretasPage(
 
 type SaleQueryRow = {
   id: string;
+  down_payment_cents: number | null;
   clinic_id: string;
   client_id: string | null;
   client_name: string | null;

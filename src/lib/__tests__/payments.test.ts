@@ -3,6 +3,7 @@ import {
   addDays,
   addMonths,
   buildSchedule,
+  redistributeFrom,
   scheduleErrors,
   scheduleTotalCents,
 } from "@/lib/payments";
@@ -145,5 +146,58 @@ describe("scheduleErrors", () => {
         e.includes("valor maior que zero")
       )
     ).toBe(true);
+  });
+});
+
+describe("redistributeFrom — editar uma parcela recalcula as seguintes", () => {
+  const plan = buildSchedule({
+    totalCents: 176700,
+    downPaymentCents: 50000,
+    installments: 5,
+    firstDueDate: "2026-07-28",
+  });
+
+  it("entrada 500 + 2ª de 500 ajusta as demais e fecha o total", () => {
+    // Índice 1 = primeira parcela (índice 0 é a entrada).
+    const next = redistributeFrom(plan, 1, 50000, 176700);
+    expect(next[0].amountCents).toBe(50000); // entrada intacta
+    expect(next[1].amountCents).toBe(50000); // a que foi editada
+    expect(scheduleTotalCents(next)).toBe(176700);
+    // As 4 seguintes dividem o que sobrou (R$ 767,00).
+    expect(next.slice(2).map((e) => e.amountCents)).toEqual([
+      19175, 19175, 19175, 19175,
+    ]);
+  });
+
+  it("as cobranças ANTERIORES não são tocadas", () => {
+    const next = redistributeFrom(plan, 3, 40000, 176700);
+    expect(next.slice(0, 3).map((e) => e.amountCents)).toEqual(
+      plan.slice(0, 3).map((e) => e.amountCents)
+    );
+    expect(scheduleTotalCents(next)).toBe(176700);
+  });
+
+  it("editar a última só muda ela (e o plano pode não fechar)", () => {
+    const next = redistributeFrom(plan, plan.length - 1, 1, 176700);
+    expect(next).toHaveLength(plan.length);
+    expect(next.at(-1)?.amountCents).toBe(1);
+  });
+
+  it("valor que consome tudo remove as cobranças seguintes", () => {
+    const next = redistributeFrom(plan, 1, 126700, 176700);
+    expect(next).toHaveLength(2);
+    expect(scheduleTotalCents(next)).toBe(176700);
+  });
+
+  it("a sobra dos centavos cai na última", () => {
+    const s = buildSchedule({
+      totalCents: 10000,
+      downPaymentCents: 0,
+      installments: 3,
+      firstDueDate: "2026-08-01",
+    });
+    const next = redistributeFrom(s, 0, 1, 10000);
+    expect(scheduleTotalCents(next)).toBe(10000);
+    expect(next.map((e) => e.amountCents)).toEqual([1, 4999, 5000]);
   });
 });

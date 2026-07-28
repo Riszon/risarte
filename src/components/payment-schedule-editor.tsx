@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, Plus, Trash2, Wand2 } from "lucide-react";
+import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,13 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   buildSchedule,
+  redistributeFrom,
   scheduleErrors,
   scheduleTotalCents,
   type ScheduleEntry,
 } from "@/lib/payments";
 import { savePaymentSchedule } from "@/app/(app)/comercial/payment-schedule-actions";
-
-const inputClass = "h-9";
 
 function toReais(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
@@ -25,10 +24,19 @@ function toReais(cents: number): string {
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
 
 /**
- * I9: entrada + parcelas personalizadas. Serve à negociação do consultor e à
- * venda direta — o mesmo plano de cobrança que o Financeiro vai usar depois.
+ * I9b: as COBRANÇAS da venda. O "como vai pagar" (à vista / parcelado /
+ * entrada + parcelas) é decidido acima, no bloco de condições — aqui só se
+ * define quando e quanto de cada cobrança.
+ *
+ * Por padrão o plano é gerado pronto e mostrado em modo leitura; quem quiser
+ * mudar data ou valor clica em "Personalizar". Editar uma cobrança RECALCULA
+ * as seguintes, para o plano sempre fechar com o valor da venda.
  */
 export function PaymentScheduleEditor({
   negotiationId,
@@ -36,64 +44,59 @@ export function PaymentScheduleEditor({
   totalCents,
   minInstallmentCents,
   initial,
+  /** Entrada e nº de parcelas vindos das condições salvas. */
+  downPaymentCents = 0,
+  installments = 1,
   readOnly,
 }: {
   negotiationId?: string;
   directSaleId?: string;
-  /** Valor final da venda — a soma das cobranças tem de fechar com ele. */
   totalCents: number;
   minInstallmentCents?: number | null;
   initial?: ScheduleEntry[];
+  downPaymentCents?: number;
+  installments?: number;
   readOnly?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [entries, setEntries] = useState<ScheduleEntry[]>(initial ?? []);
-  const [downReais, setDownReais] = useState("");
-  const [count, setCount] = useState("1");
   const [firstDue, setFirstDue] = useState(today());
-  const [everyDays, setEveryDays] = useState("");
+  const [entries, setEntries] = useState<ScheduleEntry[]>(
+    initial && initial.length > 0
+      ? initial
+      : buildSchedule({
+          totalCents,
+          downPaymentCents,
+          installments,
+          firstDueDate: today(),
+        })
+  );
+  const [editing, setEditing] = useState(false);
 
   const total = scheduleTotalCents(entries);
+  const missing = totalCents - total;
   const errors = useMemo(
-    () =>
-      entries.length > 0
-        ? scheduleErrors(entries, { totalCents, minInstallmentCents })
-        : [],
+    () => scheduleErrors(entries, { totalCents, minInstallmentCents }),
     [entries, totalCents, minInstallmentCents]
   );
-  const missing = totalCents - total;
 
-  function generate() {
-    const down = downReais.trim() ? (parseBRLToCents(downReais) ?? 0) : 0;
-    const n = Math.max(0, Number.parseInt(count || "0", 10) || 0);
+  /** Refaz o plano a partir da 1ª data (mantém entrada e nº de parcelas). */
+  function regenerate(from: string) {
+    setFirstDue(from);
     setEntries(
       buildSchedule({
         totalCents,
-        downPaymentCents: down,
-        installments: n,
-        firstDueDate: firstDue,
-        everyDays: everyDays ? Number(everyDays) : undefined,
+        downPaymentCents,
+        installments,
+        firstDueDate: from,
       })
     );
   }
 
-  function update(i: number, patch: Partial<ScheduleEntry>) {
-    setEntries((prev) =>
-      prev.map((e, idx) => (idx === i ? { ...e, ...patch } : e))
-    );
-  }
-
-  function addRow() {
-    setEntries((prev) => [
-      ...prev,
-      {
-        seq: prev.length + 1,
-        kind: "parcela",
-        dueDate: prev.at(-1)?.dueDate ?? firstDue,
-        amountCents: Math.max(0, missing),
-      },
-    ]);
+  function changeAmount(i: number, raw: string) {
+    const cents = parseBRLToCents(raw) ?? 0;
+    // O pedido do dono: mudou uma, as seguintes se ajustam sozinhas.
+    setEntries((prev) => redistributeFrom(prev, i, cents, totalCents));
   }
 
   function save() {
@@ -104,7 +107,8 @@ export function PaymentScheduleEditor({
         entries: entries.map((e, i) => ({ ...e, seq: i + 1 })),
       });
       if (r.ok) {
-        toast.success("Plano de pagamento salvo.");
+        toast.success("Cobranças salvas.");
+        setEditing(false);
         router.refresh();
       } else {
         toast.error(r.error ?? "Não foi possível salvar.");
@@ -113,77 +117,65 @@ export function PaymentScheduleEditor({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           <CalendarClock className="size-4 text-primary" />
-          Entrada + parcelas
+          Cobranças
         </p>
-        <span className="text-xs text-muted-foreground">
-          Valor da venda: <strong>{formatBRL(totalCents)}</strong>
-        </span>
-      </div>
-
-      {!readOnly && (
-        <div className="grid gap-2 rounded-md bg-muted/40 p-2 sm:grid-cols-5">
-          <div>
-            <Label className="text-[11px]">Entrada (R$)</Label>
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <Label className="text-[11px] text-muted-foreground">
+              1º vencimento
+            </Label>
             <Input
-              className={inputClass}
-              inputMode="decimal"
-              placeholder="0,00"
-              value={downReais}
-              onChange={(e) => setDownReais(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label className="text-[11px]">Parcelas</Label>
-            <Input
-              className={inputClass}
-              inputMode="numeric"
-              value={count}
-              onChange={(e) => setCount(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label className="text-[11px]">1º vencimento</Label>
-            <Input
-              className={inputClass}
               type="date"
+              className="h-8 w-[9.5rem]"
               value={firstDue}
-              onChange={(e) => setFirstDue(e.target.value)}
+              onChange={(e) => regenerate(e.target.value)}
             />
-          </div>
-          <div>
-            <Label className="text-[11px]">A cada (dias)</Label>
-            <Input
-              className={inputClass}
-              inputMode="numeric"
-              placeholder="mensal"
-              value={everyDays}
-              onChange={(e) => setEveryDays(e.target.value)}
-            />
-          </div>
-          <div className="flex items-end">
             <Button
               type="button"
-              variant="outline"
-              className="w-full"
-              onClick={generate}
-              disabled={isPending}
+              variant={editing ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEditing((v) => !v)}
             >
-              <Wand2 className="mr-1 size-3.5" />
-              Gerar
+              <Pencil className="mr-1 size-3.5" />
+              {editing ? "Concluir edição" : "Personalizar"}
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {entries.length === 0 ? (
-        <p className="py-2 text-center text-sm text-muted-foreground">
-          Nenhuma cobrança lançada. Informe a entrada e as parcelas e clique em
-          “Gerar” — depois dá para ajustar data e valor de cada uma.
-        </p>
+      {/* Modo leitura: uma linha por cobrança, curta e clara. */}
+      {!editing ? (
+        <ul className="divide-y rounded-md border">
+          {entries.map((e, i) => (
+            <li
+              key={i}
+              className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-sm"
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-5 text-center text-xs text-muted-foreground">
+                  {i + 1}
+                </span>
+                {e.kind === "entrada" ? (
+                  <Badge variant="secondary" className="text-[10px]">
+                    Entrada
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground">Parcela</span>
+                )}
+                <span className="text-muted-foreground">
+                  {fmtDate(e.dueDate)}
+                </span>
+              </span>
+              <span className="font-medium tabular-nums">
+                {formatBRL(e.amountCents)}
+              </span>
+            </li>
+          ))}
+        </ul>
       ) : (
         <ul className="space-y-1.5">
           {entries.map((e, i) => (
@@ -191,69 +183,78 @@ export function PaymentScheduleEditor({
               key={i}
               className="flex flex-wrap items-end gap-2 rounded-md border p-2"
             >
-              <span className="w-6 text-center text-xs text-muted-foreground">
+              <span className="w-5 pb-2 text-center text-xs text-muted-foreground">
                 {i + 1}
               </span>
-              <div className="w-28">
-                <Label className="text-[11px]">Tipo</Label>
-                <select
-                  className="h-9 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
-                  value={e.kind}
-                  disabled={readOnly}
-                  onChange={(ev) =>
-                    update(i, {
-                      kind: ev.target.value === "entrada" ? "entrada" : "parcela",
-                    })
-                  }
-                >
-                  <option value="entrada">Entrada</option>
-                  <option value="parcela">Parcela</option>
-                </select>
-              </div>
-              <div className="w-40">
+              <div className="w-36">
                 <Label className="text-[11px]">Vencimento</Label>
                 <Input
-                  className={inputClass}
+                  className="h-9"
                   type="date"
                   value={e.dueDate}
-                  disabled={readOnly}
-                  onChange={(ev) => update(i, { dueDate: ev.target.value })}
+                  onChange={(ev) =>
+                    setEntries((prev) =>
+                      prev.map((x, idx) =>
+                        idx === i ? { ...x, dueDate: ev.target.value } : x
+                      )
+                    )
+                  }
                 />
               </div>
               <div className="w-32">
-                <Label className="text-[11px]">Valor (R$)</Label>
+                <Label className="text-[11px]">
+                  {e.kind === "entrada" ? "Entrada (R$)" : "Valor (R$)"}
+                </Label>
                 <Input
-                  className={inputClass}
+                  className="h-9"
                   inputMode="decimal"
-                  value={toReais(e.amountCents)}
-                  disabled={readOnly}
-                  onChange={(ev) =>
-                    update(i, {
-                      amountCents: parseBRLToCents(ev.target.value) ?? 0,
-                    })
-                  }
+                  defaultValue={toReais(e.amountCents)}
+                  onBlur={(ev) => changeAmount(i, ev.target.value)}
                 />
               </div>
-              {!readOnly && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setEntries((prev) => prev.filter((_, idx) => idx !== i))
-                  }
-                  aria-label="Remover cobrança"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Remover cobrança"
+                onClick={() =>
+                  setEntries((prev) =>
+                    prev
+                      .filter((_, idx) => idx !== i)
+                      .map((x, idx) => ({ ...x, seq: idx + 1 }))
+                  )
+                }
+              >
+                <Trash2 className="size-4" />
+              </Button>
             </li>
           ))}
+          <li>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setEntries((prev) => [
+                  ...prev,
+                  {
+                    seq: prev.length + 1,
+                    kind: "parcela",
+                    dueDate: prev.at(-1)?.dueDate ?? firstDue,
+                    amountCents: Math.max(0, missing),
+                  },
+                ])
+              }
+            >
+              <Plus className="mr-1 size-3.5" />
+              Cobrança
+            </Button>
+          </li>
         </ul>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
-        <div className="text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm">
+        <span>
           <span className="text-muted-foreground">Somado: </span>
           <strong className="tabular-nums">{formatBRL(total)}</strong>
           {missing !== 0 && (
@@ -266,22 +267,18 @@ export function PaymentScheduleEditor({
                 : `passou ${formatBRL(-missing)}`}
             </Badge>
           )}
-        </div>
-        {!readOnly && (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={addRow}>
-              <Plus className="mr-1 size-3.5" />
-              Cobrança
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={isPending || errors.length > 0 || entries.length === 0}
-              onClick={save}
-            >
-              {isPending ? "Salvando…" : "Salvar plano de pagamento"}
-            </Button>
-          </div>
+        </span>
+        {/* I9b: um lugar só para salvar no fluxo normal — este botão aparece
+            apenas quando o usuário está personalizando as cobranças. */}
+        {!readOnly && editing && (
+          <Button
+            type="button"
+            size="sm"
+            disabled={isPending || errors.length > 0}
+            onClick={save}
+          >
+            {isPending ? "Salvando…" : "Salvar alterações"}
+          </Button>
         )}
       </div>
 

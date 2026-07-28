@@ -85,6 +85,43 @@ export function buildSchedule(input: {
 }
 
 /**
+ * Editou o valor de uma cobrança → as SEGUINTES se ajustam sozinhas para o
+ * plano continuar fechando com o total (pedido do dono: entrada de R$ 500 e 2ª
+ * parcela de R$ 500 recalculam as demais). As anteriores ficam intactas — já
+ * foram decididas. Se não sobrar nada, as seguintes somem.
+ */
+export function redistributeFrom(
+  entries: ScheduleEntry[],
+  index: number,
+  newAmountCents: number,
+  totalCents: number
+): ScheduleEntry[] {
+  const head = entries.slice(0, index).map((e) => ({ ...e }));
+  const edited = {
+    ...entries[index],
+    amountCents: Math.max(0, Math.round(newAmountCents)),
+  };
+  const fixed = [...head, edited];
+  const used = fixed.reduce((s, e) => s + e.amountCents, 0);
+  const rest = Math.round(totalCents) - used;
+  const tailCount = entries.length - index - 1;
+
+  if (tailCount <= 0) return fixed.map((e, i) => ({ ...e, seq: i + 1 }));
+  // Sem saldo: as cobranças seguintes deixam de existir.
+  if (rest <= 0) return fixed.map((e, i) => ({ ...e, seq: i + 1 }));
+
+  const base = Math.floor(rest / tailCount);
+  let assigned = 0;
+  const tail = entries.slice(index + 1).map((e, i) => {
+    const isLast = i === tailCount - 1;
+    const amount = isLast ? rest - assigned : base;
+    assigned += amount;
+    return { ...e, amountCents: amount };
+  });
+  return [...fixed, ...tail].map((e, i) => ({ ...e, seq: i + 1 }));
+}
+
+/**
  * Erros que impedem salvar o plano de pagamento. Vazio = pode salvar.
  * `minInstallmentCents` (I8) vale só para as PARCELAS — a entrada é livre.
  */

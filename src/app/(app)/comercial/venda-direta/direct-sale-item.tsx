@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/lib/pricing";
+import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
@@ -33,7 +33,8 @@ import {
   setDirectSaleConditions,
 } from "./actions";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
-import type { ScheduleEntry } from "@/lib/payments";
+import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
+import { savePaymentSchedule } from "../payment-schedule-actions";
 
 export type DirectSaleRow = {
   id: string;
@@ -85,11 +86,15 @@ export type DirectSaleRow = {
   paymentConfirmedByName: string | null;
   /** I9: plano de cobrança (entrada + parcelas) já salvo. */
   schedule?: ScheduleEntry[];
+  /** I9b: entrada já salva (para reabrir a tela no mesmo formato). */
+  downPaymentCents?: number;
   /** I8: parcela mínima do meio escolhido (para validar o plano). */
   minInstallmentCents?: number | null;
 };
 
 type AdjustMode = "none" | "desc_reais" | "desc_pct" | "acresc";
+/** I9b: formato do pagamento — uma escolha só. */
+type PayMode = "avista" | "parcelado" | "entrada";
 
 /** Centavos → "1234,56" para preencher o campo. */
 function centsToInput(cents: number): string {
@@ -128,6 +133,22 @@ export function SaleItem({
 
   const [method, setMethod] = useState<string>(sale.paymentMethod ?? "");
   const [installments, setInstallments] = useState(String(sale.installments));
+  // I9b: uma escolha só define o formato do pagamento.
+  const [payMode, setPayMode] = useState<PayMode>(
+    (sale.schedule ?? []).some((e) => e.kind === "entrada")
+      ? "entrada"
+      : sale.installments > 1
+        ? "parcelado"
+        : "avista"
+  );
+  const [downReais, setDownReais] = useState(
+    sale.downPaymentCents ? centsToInput(sale.downPaymentCents) : ""
+  );
+  const [firstDue, setFirstDue] = useState(
+    sale.schedule?.[0]?.dueDate ?? new Date().toISOString().slice(0, 10)
+  );
+  const downCents =
+    payMode === "entrada" ? (parseBRLToCents(downReais) ?? 0) : 0;
   // Ajuste como UM controle: nenhum / desconto R$ / desconto % / acréscimo R$.
   const initialMode: AdjustMode =
     sale.discountCents > 0
@@ -262,20 +283,37 @@ export function SaleItem({
     payableCents,
   ]);
 
+  /**
+   * I9b: UM botão só. Salva as condições e, no mesmo clique, gera e grava as
+   * cobranças (entrada + parcelas) — o dono não precisa salvar duas vezes.
+   */
   function saveConditions() {
     startTransition(async () => {
       const r = await setDirectSaleConditions(sale.id, {
         paymentMethod: effectiveMethod,
-        installments: Number.parseInt(installments, 10) || 1,
+        installments: installmentsNum,
         discountReais:
           preview.discountCents > 0 ? centsToInput(preview.discountCents) : "",
         surchargeReais:
           preview.surchargeCents > 0 ? centsToInput(preview.surchargeCents) : "",
       });
-      if (r.ok) {
-        toast.success("Condições salvas.");
-        router.refresh();
-      } else toast.error(r.error ?? "Algo deu errado.");
+      if (!r.ok) {
+        toast.error(r.error ?? "Algo deu errado.");
+        return;
+      }
+      const entries = buildSchedule({
+        totalCents: preview.final,
+        downPaymentCents: payMode === "entrada" ? downCents : 0,
+        installments: payMode === "avista" ? 1 : installmentsNum,
+        firstDueDate: firstDue,
+      });
+      const s = await savePaymentSchedule({
+        directSaleId: sale.id,
+        entries,
+      });
+      if (s.ok) toast.success("Pagamento salvo.");
+      else toast.warning(`Condições salvas. ${s.error ?? ""}`);
+      router.refresh();
     });
   }
 
@@ -515,29 +553,75 @@ export function SaleItem({
               )}
 
               <div className="rounded-lg border bg-muted/20 p-2">
+                {/* I9b: UMA pergunta define o formato do pagamento — some a
+                    contradição de escolher "à vista" e ter entrada embaixo. */}
                 <p className="mb-1.5 text-xs font-medium">
-                  Condições de pagamento
+                  Como o cliente vai pagar?
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block text-xs">
-                    <span className="text-muted-foreground">
-                      Parcelas (até {maxInstallments}×)
-                    </span>
-                    <select
-                      value={installments}
-                      onChange={(e) => setInstallments(e.target.value)}
-                      className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      ["avista", "À vista"],
+                      ["parcelado", "Parcelado"],
+                      ["entrada", "Entrada + parcelas"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        setPayMode(value);
+                        if (value === "avista") setInstallments("1");
+                        else if (installments === "1") setInstallments("2");
+                      }}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs transition-colors",
+                        payMode === value
+                          ? "border-primary bg-primary font-medium text-primary-foreground"
+                          : "border-border hover:bg-muted"
+                      )}
                     >
-                      {installmentOptions.map((n) => (
-                        <option key={n} value={String(n)}>
-                          {n === 1 ? "À vista (1×)" : `${n}×`}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  {payMode === "entrada" && (
+                    <label className="block text-xs">
+                      <span className="text-muted-foreground">Entrada (R$)</span>
+                      <input
+                        value={downReais}
+                        onChange={(e) => setDownReais(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                      />
+                    </label>
+                  )}
+                  {payMode !== "avista" && (
+                    <label className="block text-xs">
+                      <span className="text-muted-foreground">
+                        Parcelas (até {maxInstallments}×)
+                      </span>
+                      <select
+                        value={installments}
+                        onChange={(e) => setInstallments(e.target.value)}
+                        className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                      >
+                        {installmentOptions
+                          .filter((n) => n > 1)
+                          .map((n) => (
+                            <option key={n} value={String(n)}>
+                              {n}×
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  )}
                   <label className="block text-xs">
                     <span className="text-muted-foreground">
-                      Forma{isCash ? " (à vista)" : ""}
+                      Forma de pagamento
                     </span>
                     <select
                       value={effectiveMethod}
@@ -557,6 +641,19 @@ export function SaleItem({
                       </span>
                     )}
                   </label>
+                  {payMode !== "avista" && (
+                    <label className="block text-xs">
+                      <span className="text-muted-foreground">
+                        1º vencimento
+                      </span>
+                      <input
+                        type="date"
+                        value={firstDue}
+                        onChange={(e) => setFirstDue(e.target.value)}
+                        className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                      />
+                    </label>
+                  )}
                 </div>
 
                 {/* Resumo do dinheiro: total cheio → descontos → final. */}
@@ -609,12 +706,20 @@ export function SaleItem({
                       </span>
                     </p>
                   )}
-                  {installmentsNum > 1 && (
+                  {payMode !== "avista" && (
                     <div className="flex justify-between text-muted-foreground">
-                      <dt>Parcelamento</dt>
+                      <dt>Como fica</dt>
                       <dd className="tabular-nums">
+                        {payMode === "entrada" && downCents > 0 && (
+                          <>entrada {formatBRL(downCents)} + </>
+                        )}
                         {installmentsNum}× de{" "}
-                        {formatBRL(Math.round(preview.final / installmentsNum))}
+                        {formatBRL(
+                          Math.round(
+                            Math.max(0, preview.final - downCents) /
+                              installmentsNum
+                          )
+                        )}
                       </dd>
                     </div>
                   )}
@@ -693,26 +798,30 @@ export function SaleItem({
 
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="mt-2 h-7 text-xs"
-                  disabled={isPending}
+                  className="mt-2 h-8 text-xs"
+                  disabled={isPending || !effectiveMethod}
                   onClick={saveConditions}
                 >
-                  Salvar condições
+                  Salvar pagamento
                 </Button>
 
-                {/* I9: entrada + parcelas com data e valor próprios. Aparece
-                    depois de salvar as condições (o total já é o definitivo). */}
-                {sale.finalCents > 0 && conditionsReady && (
-                  <div className="mt-3">
-                    <PaymentScheduleEditor
-                      directSaleId={sale.id}
-                      totalCents={sale.finalCents}
-                      minInstallmentCents={sale.minInstallmentCents ?? null}
-                      initial={sale.schedule ?? []}
-                    />
-                  </div>
-                )}
+                {/* I9b: as cobranças já salvas, em leitura. Quem quiser mudar
+                    data/valor clica em "Personalizar" — editar uma recalcula as
+                    seguintes. */}
+                {sale.finalCents > 0 &&
+                  conditionsReady &&
+                  (sale.schedule?.length ?? 0) > 0 && (
+                    <div className="mt-3">
+                      <PaymentScheduleEditor
+                        directSaleId={sale.id}
+                        totalCents={sale.finalCents}
+                        minInstallmentCents={sale.minInstallmentCents ?? null}
+                        initial={sale.schedule ?? []}
+                        downPaymentCents={sale.downPaymentCents ?? 0}
+                        installments={sale.installments}
+                      />
+                    </div>
+                  )}
               </div>
 
               <div className="space-y-1.5">
