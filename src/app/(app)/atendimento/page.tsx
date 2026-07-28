@@ -579,7 +579,9 @@ export default async function AtendimentoPage(
   if (shownIds.length > 0) {
     const { data: sessRows } = await supabase
       .from("treatment_sessions")
-      .select("id, appointment_id, procedure_name, name, planned_minutes, plan_order, session_index")
+      .select(
+        "id, appointment_id, procedure_name, name, planned_minutes, plan_order, session_index, session_total, stage_name"
+      )
       .in("appointment_id", shownIds)
       .neq("status", "done")
       .order("plan_order", { nullsFirst: false })
@@ -593,13 +595,18 @@ export default async function AtendimentoPage(
           planned_minutes: number | null;
           plan_order: number | null;
           session_index: number;
+          session_total: number;
+          stage_name: string | null;
         }[]
       >();
     for (const s of sessRows ?? []) {
       const list = sessionsByAppt.get(s.appointment_id) ?? [];
+      // I7: o dentista precisa saber QUAL sessão é (nome do protocolo quando
+      // existe, senão "Sessão X de Y") e de que etapa ela vem.
+      const which = s.name ?? `Sessão ${s.session_index} de ${s.session_total}`;
       list.push({
         id: s.id,
-        label: s.name ? `${s.procedure_name} — ${s.name}` : s.procedure_name,
+        label: `${s.procedure_name} — ${which}${s.stage_name ? ` · ${s.stage_name}` : ""}`,
         plannedMinutes: s.planned_minutes,
       });
       sessionsByAppt.set(s.appointment_id, list);

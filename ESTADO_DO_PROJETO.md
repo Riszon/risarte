@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.147.0** · Última migração: **0175**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.148.0** · Última migração: **0175**_
+
+> **LOTE I — I7: procedimentos do atendimento à vista ✅ (v0.148.0, sem
+> migração):** o **Desenvolvimento Clínico** do prontuário abre com o quadro
+> **"Procedimentos deste atendimento"** — as sessões ligadas ao atendimento em
+> curso (ou ao próximo de hoje), com o procedimento, qual sessão é (nome do
+> protocolo ou "Sessão 2 de 4"), a **etapa** do plano, o tempo previsto e se já
+> está concluída; junto, o lembrete de que a baixa é confirmada na tela
+> **Atendimento**. No **painel de Atendimento**, cada card passou a listar os
+> mesmos procedimentos (antes só apareciam dentro do pop-up de conclusão), e o
+> rótulo da sessão deixou de sumir quando o protocolo não tem nome próprio.
 
 > **LOTE I — I6: Risarte Empresarial no prontuário ✅ (v0.147.0, migração 0175)
 > — LOTE I (I1–I6) COMPLETO:** o selo do programa agora diz **por qual empresa**

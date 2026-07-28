@@ -1327,6 +1327,99 @@ export default async function ClientDetailPage(
     });
   }
 
+  /**
+   * I7: os procedimentos PROGRAMADOS para o atendimento de agora — o que o
+   * dentista precisa ver antes de dar baixa. Pega o atendimento em curso
+   * (cliente chamado) e, se não houver, o próximo/último de hoje.
+   */
+  type TodaySession = {
+    id: string;
+    label: string;
+    stageName: string | null;
+    plannedMinutes: number | null;
+    status: string;
+    providerName: string | null;
+  };
+  let todayAttendance: {
+    appointmentId: string;
+    startsAt: string;
+    inService: boolean;
+    providerName: string | null;
+    roomName: string | null;
+    sessions: TodaySession[];
+  } | null = null;
+  if (canViewProgress) {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const { data: todayAppts } = await supabase
+      .from("appointments")
+      .select(
+        "id, starts_at, attendance, status, provider:profiles!appointments_provider_user_id_fkey ( full_name ), room:clinic_rooms ( name )"
+      )
+      .eq("client_id", id)
+      .gte("starts_at", dayStart.toISOString())
+      .lt("starts_at", dayEnd.toISOString())
+      .not("status", "in", "(cancelled,no_show)")
+      .order("starts_at")
+      .returns<
+        {
+          id: string;
+          starts_at: string;
+          attendance: string | null;
+          status: string;
+          provider: { full_name: string } | { full_name: string }[] | null;
+          room: { name: string } | { name: string }[] | null;
+        }[]
+      >();
+    const list = todayAppts ?? [];
+    // Em atendimento vence; senão, o primeiro ainda não concluído do dia.
+    const chosen =
+      list.find((a) => a.attendance === "in_service") ??
+      list.find((a) => a.attendance !== "done") ??
+      list[0];
+    if (chosen) {
+      const { data: sessRows } = await supabase
+        .from("treatment_sessions")
+        .select(
+          "id, procedure_name, name, session_index, session_total, planned_minutes, status, stage_name, provider:profiles!treatment_sessions_planner_provider_id_fkey ( full_name )"
+        )
+        .eq("appointment_id", chosen.id)
+        .order("plan_order", { nullsFirst: false })
+        .returns<
+          {
+            id: string;
+            procedure_name: string;
+            name: string | null;
+            session_index: number;
+            session_total: number;
+            planned_minutes: number | null;
+            status: string;
+            stage_name: string | null;
+            provider: { full_name: string } | { full_name: string }[] | null;
+          }[]
+        >();
+      const one2 = <T,>(v: T | T[] | null | undefined): T | null =>
+        Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+      todayAttendance = {
+        appointmentId: chosen.id,
+        startsAt: chosen.starts_at,
+        inService: chosen.attendance === "in_service",
+        providerName: one2(chosen.provider)?.full_name ?? null,
+        roomName: one2(chosen.room)?.name ?? null,
+        sessions: (sessRows ?? []).map((s) => ({
+          id: s.id,
+          label: `${s.procedure_name} — ${s.name ?? `Sessão ${s.session_index} de ${s.session_total}`}`,
+          stageName: s.stage_name,
+          plannedMinutes: s.planned_minutes,
+          status: s.status,
+          providerName: one2(s.provider)?.full_name ?? null,
+        })),
+      };
+    }
+  }
+
   // -- H4.6 A3: Procedimentos do cliente (em aberto / agendados / finalizados) --
   const canViewProcedures =
     session.isAdminMaster ||
@@ -2641,6 +2734,77 @@ export default async function ClientDetailPage(
             avaliação do Coordenador (aba Clínico). */}
         {canViewProgress && (
           <TabPanel id="desenvolvimento" label="Desenvolvimento Clínico">
+            {/* I7: o que está programado para o atendimento de agora — é o que
+                o dentista vai dar baixa no fim. */}
+            {todayAttendance && todayAttendance.sessions.length > 0 && (
+              <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
+                <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary">
+                  <Sparkles className="size-4 shrink-0" />
+                  {todayAttendance.inService
+                    ? "Procedimentos deste atendimento (em curso)"
+                    : "Procedimentos programados para hoje"}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {new Date(todayAttendance.startsAt).toLocaleTimeString(
+                      "pt-BR",
+                      { hour: "2-digit", minute: "2-digit" }
+                    )}
+                    {todayAttendance.providerName
+                      ? ` · ${todayAttendance.providerName}`
+                      : ""}
+                    {todayAttendance.roomName
+                      ? ` · ${todayAttendance.roomName}`
+                      : ""}
+                  </span>
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {todayAttendance.sessions.map((s) => (
+                    <li
+                      key={s.id}
+                      className="flex flex-wrap items-center gap-2 rounded-md border bg-background p-2 text-sm"
+                    >
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          s.status === "done" ? "bg-emerald-500" : "bg-primary"
+                        )}
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium">{s.label}</span>
+                        {s.stageName && (
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            · {s.stageName}
+                          </span>
+                        )}
+                        {s.plannedMinutes ? (
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            · {s.plannedMinutes} min
+                          </span>
+                        ) : null}
+                      </span>
+                      {s.status === "done" ? (
+                        <Badge className="bg-emerald-100 text-emerald-800">
+                          Concluída
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">A executar</Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  A baixa é confirmada ao concluir o atendimento, na tela{" "}
+                  <Link
+                    href="/atendimento"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Atendimento
+                  </Link>{" "}
+                  — lá o dentista marca o que foi feito; o que não foi volta
+                  para “a agendar”.
+                </p>
+              </div>
+            )}
             {planSummary ? (
               <PlanSummarySection
                 diagnosis={planSummary.diagnosis}

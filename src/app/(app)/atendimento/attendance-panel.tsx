@@ -554,6 +554,29 @@ export function AttendancePanel({
               </span>
             )}
           </div>
+          {/* I7: o que está programado para este atendimento — o dentista vê
+              antes de chamar e na hora da baixa, sem abrir outra tela. */}
+          {a.sessions && a.sessions.length > 0 && (
+            <ul className="space-y-0.5 rounded-md bg-muted/50 p-1.5">
+              {a.sessions.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-start gap-1.5 text-[11px] leading-snug"
+                >
+                  <Stethoscope className="mt-0.5 size-3 shrink-0 text-primary" />
+                  <span className="min-w-0">
+                    {s.label}
+                    {s.plannedMinutes ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {s.plannedMinutes} min
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           <AttendanceTimers a={a} waitingAlertMinutes={waitingAlertMinutes} />
         </div>
         {action && (
