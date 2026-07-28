@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.149.0** · Última migração: **0176**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.150.0** · Última migração: **0176**_
+
+> **LOTE I — I7c: relógio do atendimento ✅ (v0.150.0, sem migração):** no
+> Desenvolvimento Clínico, o dentista passou a ver **cronômetro do atendimento**
+> (roda de segundo em segundo desde a chamada), **quanto o cliente esperou na
+> recepção** e um **alerta da sala de espera** com o **nome** e o **tempo** de
+> cada pessoa aguardando na unidade — em vermelho e piscando quando passa do
+> limite de espera configurado para a unidade (o mesmo da tela Atendimento,
+> padrão 20 min). Os nomes são clicáveis e abrem o prontuário.
 
 > **LOTE I — I7b: o atendimento fecha pelo Desenvolvimento Clínico ✅ (v0.149.0,
 > migração 0176):** o dentista **conclui o atendimento sem sair da aba** — marca

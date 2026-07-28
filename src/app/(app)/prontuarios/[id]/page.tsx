@@ -1408,6 +1408,18 @@ export default async function ClientDetailPage(
     providerName: string | null;
   }[] = [];
   let attendanceNote: { id: string; body: string } | null = null;
+  // I7c: cronômetro do atendimento + sala de espera.
+  let attendanceClock: {
+    calledAt: string | null;
+    checkedInAt: string | null;
+  } | null = null;
+  let waitingRoom: {
+    clientId: string | null;
+    name: string;
+    checkedInAt: string;
+    providerName: string | null;
+  }[] = [];
+  let waitingAlertMinutes: number | null = null;
   if (canViewProgress) {
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
@@ -1416,7 +1428,7 @@ export default async function ClientDetailPage(
     const { data: todayAppts } = await supabase
       .from("appointments")
       .select(
-        "id, starts_at, attendance, status, provider:profiles!appointments_provider_user_id_fkey ( full_name ), room:clinic_rooms ( name )"
+        "id, starts_at, attendance, status, called_at, checked_in_at, provider:profiles!appointments_provider_user_id_fkey ( full_name ), room:clinic_rooms ( name )"
       )
       .eq("client_id", id)
       .gte("starts_at", dayStart.toISOString())
@@ -1429,6 +1441,8 @@ export default async function ClientDetailPage(
           starts_at: string;
           attendance: string | null;
           status: string;
+          called_at: string | null;
+          checked_in_at: string | null;
           provider: { full_name: string } | { full_name: string }[] | null;
           room: { name: string } | { name: string }[] | null;
         }[]
@@ -1523,6 +1537,51 @@ export default async function ClientDetailPage(
         .eq("appointment_id", chosen.id)
         .maybeSingle<{ id: string; body: string }>();
       attendanceNote = noteRow ?? null;
+
+      // I7c: cronômetro + quem está na sala de espera agora.
+      attendanceClock = {
+        calledAt: chosen.called_at,
+        checkedInAt: chosen.checked_in_at,
+      };
+      const { data: waitRows } = await supabase
+        .from("appointments")
+        .select(
+          "client_id, checked_in_at, clients ( full_name ), provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+        )
+        .eq("clinic_id", scheduleClinicId)
+        .eq("attendance", "waiting")
+        .gte("starts_at", dayStart.toISOString())
+        .lt("starts_at", dayEnd.toISOString())
+        .order("checked_in_at")
+        .returns<
+          {
+            client_id: string | null;
+            checked_in_at: string | null;
+            clients: { full_name: string } | { full_name: string }[] | null;
+            provider: { full_name: string } | { full_name: string }[] | null;
+          }[]
+        >();
+      const oneW = <T,>(v: T | T[] | null | undefined): T | null =>
+        Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+      waitingRoom = (waitRows ?? [])
+        .filter((w) => w.checked_in_at)
+        .map((w) => ({
+          clientId: w.client_id,
+          name: oneW(w.clients)?.full_name ?? "Cliente",
+          checkedInAt: w.checked_in_at as string,
+          providerName: oneW(w.provider)?.full_name ?? null,
+        }));
+
+      const { data: agendaRows } = await supabase
+        .from("clinic_agenda_settings")
+        .select("clinic_id, waiting_alert_minutes")
+        .returns<{ clinic_id: string | null; waiting_alert_minutes: number | null }[]>();
+      const rows = agendaRows ?? [];
+      waitingAlertMinutes =
+        rows.find((r) => r.clinic_id === scheduleClinicId)
+          ?.waiting_alert_minutes ??
+        rows.find((r) => r.clinic_id === null)?.waiting_alert_minutes ??
+        20;
     }
   }
 
@@ -2952,6 +3011,9 @@ export default async function ClientDetailPage(
                       // Só o dentista do atendimento (ou admin) conclui.
                       canConclude:
                         canWriteProgress && todayAttendance.inService,
+                      clock: attendanceClock,
+                      waitingRoom,
+                      waitingAlertMinutes,
                     }
                   : null
               }

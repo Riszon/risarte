@@ -22,6 +22,7 @@ import {
   type AttendanceSession,
   type ExtraSession,
 } from "./attendance-conclude-block";
+import { AttendanceClock, type WaitingClient } from "./attendance-clock";
 
 export type ProgressNoteItem = {
   id: string;
@@ -53,6 +54,11 @@ export type OpenAttendance = {
   sessions: AttendanceSession[];
   extraOptions: ExtraSession[];
   canConclude: boolean;
+  /** I7c: cronômetro do atendimento e espera do cliente. */
+  clock: { calledAt: string | null; checkedInAt: string | null } | null;
+  /** I7c: quem está na sala de espera agora (nome + desde quando). */
+  waitingRoom: WaitingClient[];
+  waitingAlertMinutes: number | null;
 };
 
 function fmtDateTime(iso: string): string {
@@ -184,6 +190,14 @@ export function ClinicalProgressSection({
               {attendance.roomName ? ` · ${attendance.roomName}` : ""}
               {attendance.inService ? " · em atendimento" : ""}
             </p>
+            {/* I7c: cronômetro do atendimento, espera do cliente e quem ainda
+                está na sala de espera. */}
+            <AttendanceClock
+              calledAt={attendance.clock?.calledAt ?? null}
+              checkedInAt={attendance.clock?.checkedInAt ?? null}
+              waiting={attendance.waitingRoom}
+              waitingAlertMinutes={attendance.waitingAlertMinutes}
+            />
             <AttendanceConcludeBlock
               clientId={clientId}
               appointmentId={attendance.appointmentId}
