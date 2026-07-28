@@ -35,7 +35,10 @@ import {
   removeDependent,
   setEmployeeStatus,
   updateEmployee,
+  lookupClientByCpf,
+  type DependentImportRow,
   type EmployeeImportRow,
+  type EmpresarialCandidate,
 } from "./employee-actions";
 
 const selectClass =
@@ -411,6 +414,31 @@ function EmployeeFormDialog({
   const isEdit = Boolean(employee);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // I5b: campos controlados para o autopreenchimento pelo CPF.
+  const [cpf, setCpf] = useState(employee?.cpf ?? "");
+  const [fullName, setFullName] = useState(employee?.fullName ?? "");
+  const [phone, setPhone] = useState(employee?.phone ?? "");
+  const [email, setEmail] = useState(employee?.email ?? "");
+  const [found, setFound] = useState<EmpresarialCandidate | null>(null);
+
+  function lookup(value: string) {
+    if (isEdit) return;
+    if (value.replace(/\D/g, "").length !== 11) {
+      setFound(null);
+      return;
+    }
+    startTransition(async () => {
+      const r = await lookupClientByCpf(value);
+      if (!r.found) {
+        setFound(null);
+        return;
+      }
+      setFound(r);
+      if (r.fullName) setFullName(r.fullName);
+      if (r.phone) setPhone(r.phone);
+      if (r.email) setEmail(r.email);
+    });
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -448,21 +476,39 @@ function EmployeeFormDialog({
           <DialogTitle>{isEdit ? "Editar colaborador" : "Novo colaborador"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3">
+          {/* I5b: o cadastro começa pelo CPF — se a pessoa já é cliente da
+              Risarte, os dados vêm sozinhos e ninguém digita duas vezes. */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="full_name">Nome completo *</Label>
-              <Input id="full_name" name="full_name" required defaultValue={employee?.fullName ?? ""} />
-            </div>
-            <div>
+            <div className="sm:col-span-2">
               <Label htmlFor="cpf">CPF *</Label>
               <Input
                 id="cpf"
                 name="cpf"
                 required
+                autoFocus={!isEdit}
                 placeholder="000.000.000-00"
-                defaultValue={employee?.cpf ?? ""}
+                value={cpf}
                 disabled={isEdit}
-                onChange={(e) => (e.target.value = formatCpf(e.target.value))}
+                onChange={(e) => setCpf(formatCpf(e.target.value))}
+                onBlur={(e) => lookup(e.target.value)}
+              />
+              {found && (
+                <p className="mt-1 text-xs text-emerald-700">
+                  Já é cliente da Risarte
+                  {found.code ? ` (${found.code})` : ""}
+                  {found.clinicName ? ` · ${found.clinicName}` : ""} — dados
+                  preenchidos. O código de cadastro dele é mantido.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="full_name">Nome completo *</Label>
+              <Input
+                id="full_name"
+                name="full_name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
               />
             </div>
             <div>
@@ -472,13 +518,19 @@ function EmployeeFormDialog({
                 name="phone"
                 required
                 placeholder="(00) 00000-0000"
-                defaultValue={employee?.phone ?? ""}
-                onChange={(e) => (e.target.value = formatPhone(e.target.value))}
+                value={phone}
+                onChange={(e) => setPhone(formatPhone(e.target.value))}
               />
             </div>
             <div>
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" name="email" type="email" defaultValue={employee?.email ?? ""} />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             <div>
               <Label htmlFor="dependent_plan">Plano de dependentes</Label>
@@ -535,6 +587,28 @@ function DependentFormDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // I5b: CPF primeiro + autopreenchimento (igual ao colaborador).
+  const [cpf, setCpf] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [found, setFound] = useState<EmpresarialCandidate | null>(null);
+
+  function lookup(value: string) {
+    if (value.replace(/\D/g, "").length !== 11) {
+      setFound(null);
+      return;
+    }
+    startTransition(async () => {
+      const r = await lookupClientByCpf(value);
+      if (!r.found) {
+        setFound(null);
+        return;
+      }
+      setFound(r);
+      if (r.fullName) setFullName(r.fullName);
+      if (r.phone) setPhone(r.phone);
+    });
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -564,21 +638,36 @@ function DependentFormDialog({
           <DialogTitle>Novo dependente</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3">
+          {/* I5b: dependente também começa pelo CPF, com autopreenchimento. */}
+          <div>
+            <Label htmlFor="dep_cpf">CPF *</Label>
+            <Input
+              id="dep_cpf"
+              name="cpf"
+              required
+              autoFocus
+              placeholder="000.000.000-00"
+              value={cpf}
+              onChange={(e) => setCpf(formatCpf(e.target.value))}
+              onBlur={(e) => lookup(e.target.value)}
+            />
+            {found && (
+              <p className="mt-1 text-xs text-emerald-700">
+                Já é cliente da Risarte
+                {found.code ? ` (${found.code})` : ""} — dados preenchidos.
+              </p>
+            )}
+          </div>
           <div>
             <Label htmlFor="dep_full_name">Nome</Label>
-            <Input id="dep_full_name" name="full_name" />
+            <Input
+              id="dep_full_name"
+              name="full_name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="dep_cpf">CPF *</Label>
-              <Input
-                id="dep_cpf"
-                name="cpf"
-                required
-                placeholder="000.000.000-00"
-                onChange={(e) => (e.target.value = formatCpf(e.target.value))}
-              />
-            </div>
             <div>
               <Label htmlFor="dep_relationship">Parentesco *</Label>
               <select id="dep_relationship" name="relationship" required className={selectClass} defaultValue="">
@@ -597,7 +686,8 @@ function DependentFormDialog({
               id="dep_phone"
               name="phone"
               placeholder="(00) 00000-0000"
-              onChange={(e) => (e.target.value = formatPhone(e.target.value))}
+              value={phone}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -694,11 +784,20 @@ const norm = (s: unknown) =>
 const PLAN_BY_LABEL = new Map<string, string>(
   DEPENDENT_PLANS.map((p) => [norm(DEPENDENT_PLAN_LABELS[p]), p])
 );
+/** I5b: "Cônjuge" → SPOUSE etc. (aceita o rótulo em pt-BR ou a chave). */
+const RELATIONSHIP_BY_LABEL = new Map<string, string>([
+  ...RELATIONSHIPS.map(
+    (r) => [norm(RELATIONSHIP_LABELS[r]), r] as [string, string]
+  ),
+  ...RELATIONSHIPS.map((r) => [norm(r), r] as [string, string]),
+]);
 
 function ImportEmployeesDialog({ companyId }: { companyId: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [rows, setRows] = useState<EmployeeImportRow[]>([]);
+  // I5b: dependentes lidos da 2ª aba da planilha.
+  const [depRows, setDepRows] = useState<DependentImportRow[]>([]);
   const [fileName, setFileName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -714,6 +813,23 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
       ws["!cols"] = headers.map((h) => ({ wch: Math.max(16, h.length + 2) }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Colaboradores");
+
+      // I5b: 2ª aba para já trazer os dependentes, ligados pelo CPF do titular.
+      const depHeaders = [
+        "CPF do Titular",
+        "CPF do Dependente",
+        "Nome",
+        "Parentesco",
+        "Telefone",
+      ];
+      const depExamples = [
+        ["222.222.222-22", "333.333.333-33", "Ana Souza", "Cônjuge", "(43) 97777-0000"],
+        ["222.222.222-22", "444.444.444-44", "Pedro Souza", "Filho(a)", ""],
+      ];
+      const depWs = XLSX.utils.aoa_to_sheet([depHeaders, ...depExamples]);
+      depWs["!cols"] = depHeaders.map((h) => ({ wch: Math.max(18, h.length + 2) }));
+      XLSX.utils.book_append_sheet(wb, depWs, "Dependentes");
+
       XLSX.writeFile(wb, "modelo-colaboradores.xlsx");
     } catch {
       toast.error("Não foi possível gerar o modelo.");
@@ -731,6 +847,34 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
       const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
         defval: "",
       });
+
+      // I5b: aba "Dependentes" (opcional), ligada pelo CPF do titular.
+      const depSheetName = wb.SheetNames.find((n) => norm(n).startsWith("depend"));
+      const depJson = depSheetName
+        ? XLSX.utils.sheet_to_json<Record<string, unknown>>(
+            wb.Sheets[depSheetName],
+            { defval: "" }
+          )
+        : [];
+      const mappedDeps: DependentImportRow[] = depJson
+        .map((obj) => {
+          const m: Record<string, string> = {};
+          for (const k of Object.keys(obj)) m[norm(k)] = String(obj[k] ?? "").trim();
+          const get = (...keys: string[]) => {
+            for (const k of keys) if (m[k]) return m[k];
+            return "";
+          };
+          const rel = get("parentesco", "grau de parentesco");
+          return {
+            holderCpf: get("cpf do titular", "cpf titular", "titular"),
+            cpf: get("cpf do dependente", "cpf dependente", "cpf"),
+            fullName: get("nome", "nome completo"),
+            relationship: RELATIONSHIP_BY_LABEL.get(norm(rel)) ?? "",
+            phone: get("telefone", "celular", "whatsapp"),
+          };
+        })
+        .filter((d) => d.holderCpf && d.cpf && d.relationship);
+      setDepRows(mappedDeps);
       const mapped: EmployeeImportRow[] = json
         .map((obj) => {
           const m: Record<string, string> = {};
@@ -777,7 +921,9 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Colunas: Nome, CPF, Telefone, E-mail, Plano de Dependentes.
+              Aba <strong>Colaboradores</strong>: Nome, CPF, Telefone, E-mail,
+              Plano de Dependentes. Aba <strong>Dependentes</strong> (opcional):
+              CPF do Titular, CPF do Dependente, Nome, Parentesco, Telefone.
             </p>
             <Button size="sm" variant="outline" onClick={downloadTemplate}>
               <Download className="mr-1 size-4" />
@@ -797,7 +943,8 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
           </Button>
           {fileName && (
             <p className="text-sm text-muted-foreground">
-              {fileName} — {rows.length} colaborador(es) lido(s)
+              {fileName} — {rows.length} colaborador(es)
+              {depRows.length > 0 && ` · ${depRows.length} dependente(s)`} lido(s)
             </p>
           )}
           {rows.length > 0 && (
@@ -806,12 +953,17 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
               disabled={isPending}
               onClick={() =>
                 startTransition(async () => {
-                  const r = await importEmployees(companyId, rows);
+                  const r = await importEmployees(companyId, rows, depRows);
                   if (r.ok) {
                     toast.success(
-                      `Importados: ${r.inserted ?? 0}${r.errors ? ` · ${r.errors} ignorado(s)` : ""}.`
+                      `Importados: ${r.inserted ?? 0} colaborador(es)` +
+                        (r.dependentsInserted
+                          ? ` · ${r.dependentsInserted} dependente(s)`
+                          : "") +
+                        (r.errors ? ` · ${r.errors} ignorado(s)` : "")
                     );
                     setRows([]);
+                    setDepRows([]);
                     setFileName("");
                     setOpen(false);
                     router.refresh();

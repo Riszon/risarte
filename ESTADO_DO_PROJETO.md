@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.145.0** · Última migração: **0174**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.146.0** · Última migração: **0174**_
+
+> **LOTE I — I5b: cadastro do Empresarial começa pelo CPF ✅ (v0.146.0, sem
+> migração):** no cadastro de **colaborador** e de **dependente**, o **CPF é o
+> primeiro campo** e, ao sair dele, o sistema **autopreenche** nome, telefone e
+> e-mail quando a pessoa já é cliente da Risarte (avisando o código dela, que é
+> mantido) — mesma ideia do cadastro do prontuário e do PPR+. O **modelo de
+> planilha** ganhou a aba **"Dependentes"** (CPF do Titular · CPF do Dependente ·
+> Nome · Parentesco · Telefone): a importação lê as duas abas de uma vez e liga
+> cada dependente ao titular pelo CPF, sem duplicar quem já existe.
 
 > **LOTE I — I5: origem do cadastro (código PRE) + fila da SDR ✅ (v0.145.0,
 > migração 0174):** o colaborador **novo** cadastrado pelo Risarte Empresarial

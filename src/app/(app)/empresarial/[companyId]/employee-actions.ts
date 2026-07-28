@@ -5,6 +5,7 @@ import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatCpf, formatPhone } from "@/lib/masks";
+import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
 import {
@@ -311,10 +312,24 @@ export type EmployeeImportRow = {
   dependentPlan: string;
 };
 
+/** I5b: dependentes vêm na 2ª aba da planilha, ligados pelo CPF do titular. */
+export type DependentImportRow = {
+  holderCpf: string;
+  cpf: string;
+  fullName?: string;
+  relationship?: string;
+  phone?: string;
+};
+
 export async function importEmployees(
   companyId: string,
-  rows: EmployeeImportRow[]
-): Promise<ActionResult & { inserted?: number; errors?: number }> {
+  rows: EmployeeImportRow[],
+  dependents: DependentImportRow[] = []
+): Promise<ActionResult & {
+  inserted?: number;
+  errors?: number;
+  dependentsInserted?: number;
+}> {
   const session = await getSessionContext();
   if (!canManageEmployees(session)) {
     return { ok: false, error: "Sem permissão." };
@@ -356,12 +371,131 @@ export async function importEmployees(
     console.error("importEmployees failed:", error.message);
     return { ok: false, error: "Não foi possível importar a planilha." };
   }
+  // I5b: dependentes da 2ª aba — ligados ao titular pelo CPF dele.
+  let dependentsInserted = 0;
+  const validDeps = dependents.filter(
+    (d) =>
+      (d.holderCpf ?? "").replace(/\D/g, "").length === 11 &&
+      (d.cpf ?? "").replace(/\D/g, "").length === 11 &&
+      (RELATIONSHIPS as readonly string[]).includes(d.relationship ?? "")
+  );
+  if (validDeps.length > 0) {
+    const holderCpfs = [
+      ...new Set(validDeps.map((d) => formatCpf(d.holderCpf))),
+    ];
+    const { data: holders } = await db
+      .from("employees")
+      .select("id, cpf")
+      .eq("company_id", companyId)
+      .in("cpf", holderCpfs);
+    const idByCpf = new Map(
+      ((holders ?? []) as { id: string; cpf: string }[]).map((h) => [
+        h.cpf.replace(/\D/g, ""),
+        h.id,
+      ])
+    );
+    const depPayload = validDeps
+      .map((d) => {
+        const employeeId = idByCpf.get(d.holderCpf.replace(/\D/g, ""));
+        if (!employeeId) return null;
+        return {
+          employee_id: employeeId,
+          cpf: formatCpf(d.cpf),
+          full_name: d.fullName?.trim() || null,
+          phone: d.phone ? formatPhone(d.phone) : null,
+          relationship: d.relationship,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    if (depPayload.length > 0) {
+      const { error: depErr, count: depCount } = await db
+        .from("dependents")
+        .upsert(depPayload, {
+          onConflict: "employee_id,cpf",
+          ignoreDuplicates: true,
+          count: "exact",
+        });
+      if (depErr) {
+        console.error("importEmployees dependents failed:", depErr.message);
+      } else {
+        dependentsInserted = depCount ?? depPayload.length;
+      }
+    }
+    errors += validDeps.length - depPayload.length;
+  }
+  errors += dependents.length - validDeps.length;
+
   await logAudit({
     action: "create",
     entityType: "empresarial_employee_import",
     entityId: companyId,
-    details: { rows: payload.length },
+    details: { rows: payload.length, dependents: dependentsInserted },
   });
   revalidatePath(`/empresarial/${companyId}`);
-  return { ok: true, inserted: count ?? payload.length, errors };
+  return {
+    ok: true,
+    inserted: count ?? payload.length,
+    errors,
+    dependentsInserted,
+  };
+}
+
+/**
+ * I5b: busca do cliente pelo CPF para AUTOPREENCHER o cadastro do colaborador
+ * ou do dependente. Mesma ideia do cadastro do prontuário (H1.9) e do PPR+:
+ * quem já é cliente da Risarte não é digitado de novo.
+ */
+export type EmpresarialCandidate = {
+  found: boolean;
+  clientId?: string;
+  fullName?: string;
+  phone?: string | null;
+  email?: string | null;
+  birthDate?: string | null;
+  clinicName?: string | null;
+  code?: string | null;
+};
+
+export async function lookupClientByCpf(
+  cpf: string
+): Promise<EmpresarialCandidate> {
+  await getSessionContext();
+  const formatted = formatCpf(cpf ?? "");
+  if (formatted.replace(/\D/g, "").length !== 11) return { found: false };
+
+  const supabase = await createClient();
+  const { data: dup } = await supabase.rpc("find_duplicate_client", {
+    p_cpf: formatted,
+    p_full_name: "",
+    p_birth_date: null,
+  });
+  const hit = (dup ?? [])[0] as
+    | { client_id: string; clinic_name?: string }
+    | undefined;
+  if (!hit) return { found: false };
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id, code, full_name, phone, email, birth_date")
+    .eq("id", hit.client_id)
+    .maybeSingle<{
+      id: string;
+      code: string | null;
+      full_name: string;
+      phone: string | null;
+      email: string | null;
+      birth_date: string | null;
+    }>();
+  if (!client) return { found: false };
+
+  return {
+    found: true,
+    clientId: client.id,
+    code: client.code,
+    fullName: client.full_name,
+    phone: client.phone,
+    email: client.email,
+    birthDate: client.birth_date,
+    clinicName: hit.clinic_name ?? null,
+  };
 }
