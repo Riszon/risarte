@@ -209,6 +209,34 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
 
   // Clients in treatment_start "awaiting start" with no future appointment.
   const awaitingSchedule = new Set<string>();
+  /** I5: fila do primeiro agendamento da SDR (colaboradores novos). */
+  const sdrFirstContact = new Set<string>();
+
+  /**
+   * I5: colaborador que ENTROU pelo Risarte Empresarial e ainda não foi
+   * agendado é fila da SDR — ela faz o primeiro agendamento de todo cliente
+   * novo. Some da lista da recepção até existir o primeiro agendamento; quem
+   * já era cliente da Risarte nunca entra aqui (a origem dele é "unidade").
+   */
+  async function sdrFirstContactIds(scopeClinicId?: string): Promise<string[]> {
+    let q = supabase
+      .from("clients")
+      .select("id")
+      .eq("origin_program", "empresarial")
+      .neq("status", "anonymized")
+      .limit(500);
+    if (scopeClinicId) q = q.eq("clinic_id", scopeClinicId);
+    const { data: candidates } = await q.returns<{ id: string }[]>();
+    const ids = (candidates ?? []).map((c) => c.id);
+    if (ids.length === 0) return [];
+    const { data: appts } = await supabase
+      .from("appointments")
+      .select("client_id")
+      .in("client_id", ids)
+      .returns<{ client_id: string }[]>();
+    const scheduled = new Set((appts ?? []).map((a) => a.client_id));
+    return ids.filter((id) => !scheduled.has(id));
+  }
 
   if (clinicId) {
     if (isFranchisor) {
@@ -247,7 +275,14 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
         if (franchisorMode === "sdr") {
           // H3.7: a SDR vê os clientes que TOCOU (cadastrou/editou/agendou/
           // transferiu), não só os que cadastrou.
-          const ids = await sdrAccessibleClientIds();
+          // I5: + os colaboradores novos do Empresarial esperando o 1º
+          // agendamento (é ela quem faz o primeiro contato).
+          const [touched, firstContact] = await Promise.all([
+            sdrAccessibleClientIds(),
+            sdrFirstContactIds(clinicFilter || undefined),
+          ]);
+          for (const id of firstContact) sdrFirstContact.add(id);
+          const ids = [...new Set([...touched, ...firstContact])];
           request = request.in("id", ids.length > 0 ? ids : [NO_MATCH_ID]);
         }
         // Default phases per role (a chosen phase filter overrides them).
@@ -280,7 +315,12 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
         .limit(100);
       request = applyFilters(request);
       const { data } = await request.returns<ClientRow[]>();
-      clients = data ?? [];
+      // I5: na unidade, o colaborador novo do Empresarial ainda não é da
+      // recepção — ele espera o primeiro agendamento da SDR. Aparece aqui
+      // assim que tiver o primeiro horário marcado (ou na busca por nome).
+      const sdrQueue = query ? [] : await sdrFirstContactIds(clinicId);
+      const hidden = new Set(sdrQueue);
+      clients = (data ?? []).filter((c) => !hidden.has(c.id));
 
       // Flag clients "awaiting treatment start" that still have no future
       // appointment — reception must schedule them (alert icon + banner).
@@ -611,6 +651,15 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                             className="shrink-0 border-amber-300 bg-amber-50 text-[10px] text-amber-800"
                           >
                             Cadastro incompleto
+                          </Badge>
+                        )}
+                        {/* I5: fila do primeiro agendamento da SDR. */}
+                        {sdrFirstContact.has(client.id) && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 border-primary/40 bg-primary/10 text-[10px] text-primary"
+                          >
+                            Novo · Empresarial · 1º agendamento
                           </Badge>
                         )}
                       </span>

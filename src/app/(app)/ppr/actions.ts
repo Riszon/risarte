@@ -354,6 +354,8 @@ export async function createPprMembership(input: {
             birth_date: d.birthDate || null,
             phone: d.phone || null,
             code: typeof codeData === "string" ? codeData : null,
+            // I5: fica registrado que este cadastro nasceu no PPR+.
+            origin_program: "ppr",
             created_by: session.userId,
           })
           .select("id")
@@ -803,6 +805,8 @@ export async function addPprDependent(
           birth_date: dependent.birthDate || null,
           phone: dependent.phone || null,
           code: typeof codeData === "string" ? codeData : null,
+          // I5: fica registrado que este cadastro nasceu no PPR+.
+          origin_program: "ppr",
           created_by: session.userId,
         })
         .select("id")

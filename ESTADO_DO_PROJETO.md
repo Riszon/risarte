@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.144.0** · Última migração: **0173**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.145.0** · Última migração: **0174**_
+
+> **LOTE I — I5: origem do cadastro (código PRE) + fila da SDR ✅ (v0.145.0,
+> migração 0174):** o colaborador **novo** cadastrado pelo Risarte Empresarial
+> passa a receber o código **`PRE-00001`** (mesma ideia do `PPR-` do Programa de
+> Prevenção); quem **já era cliente** da Risarte **mantém o código de sempre**.
+> Todo cliente agora guarda **por onde entrou**: `origin_program`
+> (unidade / empresarial / ppr), `origin_clinic_id` e `origin_at` — marca
+> **imutável**, que transferência de unidade não apaga. Segunda parte: o
+> colaborador que ainda **não é cliente da Risarte** entra na fila da **SDR**
+> (ela faz o primeiro agendamento de todo cliente novo) e **não aparece** na
+> lista da recepção até ter o primeiro horário marcado; a lista da SDR mostra o
+> selo **"Novo · Empresarial · 1º agendamento"**. Quem já era cliente segue
+> normalmente com a recepção. Busca por nome continua encontrando todo mundo.
+> ⚠ Esta migração toca duas funções do schema `empresarial`
+> (`complete_employee` e `link_dependent`) — autorizado pelo dono para o LOTE I,
+> mudança mínima e numerada na faixa do core.
 
 > **LOTE I — I4: cadastro incompleto ✅ (v0.144.0, migração 0173):** clientes que
 > entram **pré-cadastrados** (Risarte Empresarial e integrações) agora são
