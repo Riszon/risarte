@@ -56,6 +56,8 @@ type ClientRow = {
   journey_status: JourneyStatus | null;
   created_at: string;
   clinic_id: string;
+  /** I4: cadastro completo pela régua do formulário (migração 0173). */
+  registration_complete: boolean;
   clinics: { name: string } | null;
 };
 
@@ -108,6 +110,11 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     typeof searchParams.pilar === "string" ? searchParams.pilar : "";
   const statusFilter =
     typeof searchParams.status === "string" ? searchParams.status : "";
+  // I4: ?cadastro=incompleto | completo
+  const registrationFilter =
+    searchParams.cadastro === "incompleto" || searchParams.cadastro === "completo"
+      ? searchParams.cadastro
+      : "";
   const tab: Tab =
     searchParams.aba === "aniversariantes" ||
     searchParams.aba === "transferidos" ||
@@ -173,12 +180,16 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       eq: (col: string, val: string) => T;
       neq: (col: string, val: string) => T;
       ilike: (col: string, val: string) => T;
+      is: (col: string, val: boolean) => T;
     },
   >(request: T): T {
     let r = request;
     if (query) r = r.ilike("full_name", `%${query}%`);
     if (phaseFilter) r = r.eq("journey_phase", phaseFilter);
     if (pillarFilter) r = r.eq("methodology_pillar", pillarFilter);
+    // I4: cadastro incompleto (quem entrou pré-cadastrado por um programa).
+    if (registrationFilter === "incompleto") r = r.is("registration_complete", false);
+    else if (registrationFilter === "completo") r = r.is("registration_complete", true);
     // Status filter (default hides anonymized clients).
     if (statusFilter) r = r.eq("status", statusFilter);
     else r = r.neq("status", "anonymized");
@@ -194,7 +205,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
   let clinicOptions: { id: string; name: string }[] = [];
 
   const SELECT =
-    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, clinics!clients_clinic_id_fkey ( name )";
+    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, registration_complete, clinics!clients_clinic_id_fkey ( name )";
 
   // Clients in treatment_start "awaiting start" with no future appointment.
   const awaitingSchedule = new Set<string>();
@@ -521,6 +532,16 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
               <option value="active">Somente ativos</option>
               <option value="inactive">Somente inativos</option>
             </select>
+            {/* I4: a fila de faxina do cadastro. */}
+            <select
+              name="cadastro"
+              defaultValue={registrationFilter}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">Cadastro (todos)</option>
+              <option value="incompleto">Somente cadastro incompleto</option>
+              <option value="completo">Somente cadastro completo</option>
+            </select>
             <Button type="submit" variant="outline">
               Buscar
             </Button>
@@ -582,6 +603,16 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                           />
                         )}
                         {client.full_name}
+                        {/* I4: quem chegou pré-cadastrado (Empresarial/PPR+)
+                            ou está com dados faltando não pode ser agendado. */}
+                        {!client.registration_complete && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 border-amber-300 bg-amber-50 text-[10px] text-amber-800"
+                          >
+                            Cadastro incompleto
+                          </Badge>
+                        )}
                       </span>
                     </TableCell>
                     {isFranchisor && (

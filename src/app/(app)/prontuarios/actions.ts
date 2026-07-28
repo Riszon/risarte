@@ -168,6 +168,9 @@ function parseClientForm(formData: FormData) {
     values: {
       full_name: fullName,
       cpf: cpf && !noCpf ? formatCpf(cpf) : null,
+      // I4: "cliente sem CPF" precisa ficar registrado — senão o cadastro
+      // nunca contaria como completo (migração 0173).
+      no_cpf: noCpf,
       birth_date: birthDate,
       gender: (() => {
         const g = field(formData, "gender");

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Info, Wifi } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Info, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -317,6 +318,10 @@ export function AppointmentFormDialog({
   }, [editAppointmentId, actualOpen]);
 
   // The type follows the journey when creating; editing keeps all options.
+  // I4: pendências do cadastro do cliente escolhido (vazio ao editar — o
+  // agendamento já existe).
+  const registrationGaps = isEdit ? [] : (schedulingInfo?.missingFields ?? []);
+
   const typeOptions = isEdit
     ? [...APPOINTMENT_TYPES]
     : appointmentTypeOptions(schedulingInfo?.phase ?? null);
@@ -875,6 +880,28 @@ export function AppointmentFormDialog({
             </div>
           )}
 
+          {/* I4: cadastro incompleto trava o agendamento (o servidor também
+              recusa). Normalmente é quem entrou pré-cadastrado por um programa. */}
+          {!isEdit && registrationGaps.length > 0 && (
+            <div className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/5 p-2.5 text-xs">
+              <p className="flex items-center gap-1.5 font-semibold text-destructive">
+                <AlertTriangle className="size-3.5 shrink-0" />
+                Cadastro incompleto — complete antes de agendar
+              </p>
+              <p className="text-muted-foreground">
+                Falta preencher: <strong>{registrationGaps.join(", ")}</strong>.
+              </p>
+              {clientId && (
+                <Link
+                  href={`/prontuarios/${clientId}`}
+                  className="inline-flex font-medium text-primary hover:underline"
+                >
+                  Abrir o cadastro do cliente →
+                </Link>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Tipo *</Label>
             <Select
@@ -1281,6 +1308,7 @@ export function AppointmentFormDialog({
                 isPending ||
                 (pickUnit && !unitId) ||
                 (!isEdit && !clientId) ||
+                (!isEdit && registrationGaps.length > 0) ||
                 !providerValid ||
                 roomMissing ||
                 !effectiveTime

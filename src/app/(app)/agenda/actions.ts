@@ -23,6 +23,11 @@ import {
 } from "@/lib/closures";
 import { toIsoDate } from "@/lib/agenda-view";
 import {
+  missingClientFields,
+  missingSummary,
+  type ClientRegistrationFields,
+} from "@/lib/clients";
+import {
   mapPlanItem,
   PLAN_ITEM_LABELS,
   type PlanItemRow,
@@ -593,6 +598,17 @@ export async function createAppointment(
   if (rule.block) return { ok: false, error: rule.block };
 
   const supabase = await createClient();
+
+  // I4: cadastro incompleto não é agendado. A barreira de verdade é aqui, no
+  // servidor — o aviso no formulário é só conforto. Vale para todos os
+  // clientes (decisão do dono), não só os pré-cadastrados dos programas.
+  const gaps = await getClientRegistrationGaps(parsed.values.client_id);
+  if (gaps.length > 0) {
+    return {
+      ok: false,
+      error: `Complete o cadastro do cliente antes de agendar. ${missingSummary(gaps, 4)}.`,
+    };
+  }
 
   // H4.7: atendimento conjunto — valida o limite pelo nº de cadeiras.
   const participantIds = parseParticipantIds(
@@ -1464,7 +1480,75 @@ export type SchedulingInfo = {
     status: AppointmentStatus;
     starts_at: string;
   } | null;
+  /** I4: cadastro incompleto trava o agendamento. */
+  registrationComplete: boolean;
+  missingFields: string[];
 };
+
+/** Campos que o cadastro precisa ter (I4) — mesma régua do formulário. */
+const CLIENT_FIELDS_SELECT =
+  "full_name, cpf, no_cpf, birth_date, phone, email, zip_code, address, address_number, neighborhood, city, state";
+
+type ClientFieldsRow = {
+  full_name: string | null;
+  cpf: string | null;
+  no_cpf: boolean | null;
+  birth_date: string | null;
+  phone: string | null;
+  email: string | null;
+  zip_code: string | null;
+  address: string | null;
+  address_number: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+};
+
+function toRegistrationFields(
+  row: ClientFieldsRow,
+  guardianCount: number
+): ClientRegistrationFields {
+  return {
+    fullName: row.full_name,
+    cpf: row.cpf,
+    noCpf: row.no_cpf,
+    birthDate: row.birth_date,
+    phone: row.phone,
+    email: row.email,
+    zipCode: row.zip_code,
+    address: row.address,
+    addressNumber: row.address_number,
+    neighborhood: row.neighborhood,
+    city: row.city,
+    state: row.state,
+    guardianCount,
+  };
+}
+
+/**
+ * I4: o que falta no cadastro do cliente. Usada na trava do agendamento (aqui,
+ * no servidor, é a barreira de verdade) e no aviso do formulário.
+ */
+export async function getClientRegistrationGaps(
+  clientId: string
+): Promise<string[]> {
+  if (!clientId) return [];
+  await getSessionContext();
+  const supabase = await createClient();
+  const [{ data: row }, { count }] = await Promise.all([
+    supabase
+      .from("clients")
+      .select(CLIENT_FIELDS_SELECT)
+      .eq("id", clientId)
+      .maybeSingle<ClientFieldsRow>(),
+    supabase
+      .from("client_guardians")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", clientId),
+  ]);
+  if (!row) return [];
+  return missingClientFields(toRegistrationFields(row, count ?? 0));
+}
 
 /**
  * Scheduling follows the journey: tells the dialog the client's current
@@ -1477,25 +1561,35 @@ export async function getClientSchedulingInfo(
   await getSessionContext();
   const supabase = await createClient();
 
-  const [{ data: client }, { data: lastAppointments }] = await Promise.all([
-    supabase
-      .from("clients")
-      .select("journey_phase, journey_status")
-      .eq("id", clientId)
-      .single(),
-    supabase
-      .from("appointments")
-      .select("type, status, starts_at")
-      .eq("client_id", clientId)
-      .order("starts_at", { ascending: false })
-      .limit(1),
-  ]);
+  const [{ data: client }, { data: lastAppointments }, { count: guardians }] =
+    await Promise.all([
+      supabase
+        .from("clients")
+        .select(`journey_phase, journey_status, ${CLIENT_FIELDS_SELECT}`)
+        .eq("id", clientId)
+        .single(),
+      supabase
+        .from("appointments")
+        .select("type, status, starts_at")
+        .eq("client_id", clientId)
+        .order("starts_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("client_guardians")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", clientId),
+    ]);
 
   if (!client) return null;
+  const missing = missingClientFields(
+    toRegistrationFields(client as unknown as ClientFieldsRow, guardians ?? 0)
+  );
   return {
     phase: client.journey_phase as JourneyPhase,
     journeyStatus: (client.journey_status as JourneyStatus | null) ?? null,
     lastAppointment: lastAppointments?.[0] ?? null,
+    registrationComplete: missing.length === 0,
+    missingFields: missing,
   };
 }
 

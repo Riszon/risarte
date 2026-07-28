@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -112,6 +113,13 @@ export function AppointmentInfoDialog({
   const local = appointment.is_online
     ? "ONLINE"
     : (appointment.room_name ?? "—");
+  // I2b: usa os nomes que a agenda já trouxe enquanto o carregamento do
+  // pop-up não volta (e mesmo se ele falhar) — o selo de atendimento
+  // conjunto nunca depende de uma segunda consulta.
+  const jointNames =
+    participants && participants.length > 0
+      ? participants.map((p) => p.name)
+      : (appointment.participantNames ?? []);
   const pillar = appointment.clients
     ? displayedPillar(
         appointment.clients.journey_phase,
@@ -138,18 +146,17 @@ export function AppointmentInfoDialog({
           <Row label="Local" value={local} />
           <Row
             label={
-              participants && participants.length > 0
-                ? "Responsável principal"
-                : "Profissional"
+              jointNames.length > 0 ? "Responsável principal" : "Profissional"
             }
             value={appointment.provider?.full_name ?? "—"}
           />
-          {participants && participants.length > 0 && (
+          {jointNames.length > 0 && (
             <Row
               label="Atendimento conjunto"
               value={
-                <span className="text-right">
-                  {participants.map((p) => p.name).join(", ")}
+                <span className="flex items-center justify-end gap-1 text-right font-medium text-amber-700">
+                  <Users className="size-3.5 shrink-0" />
+                  {jointNames.join(", ")}
                 </span>
               }
             />

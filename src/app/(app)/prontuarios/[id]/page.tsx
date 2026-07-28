@@ -24,6 +24,7 @@ import {
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { missingClientFields } from "@/lib/clients";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -270,7 +271,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, no_cpf, registration_complete, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", id)
     .single();
@@ -480,6 +481,23 @@ export default async function ClientDetailPage(
         profiles: { full_name: string } | null;
       }[]
     >();
+
+  // I4: o que falta no cadastro (mesma régua do formulário de novo cliente).
+  const registrationGaps = missingClientFields({
+    fullName: client.full_name,
+    cpf: client.cpf,
+    noCpf: client.no_cpf,
+    birthDate: client.birth_date,
+    phone: client.phone,
+    email: client.email,
+    zipCode: client.zip_code,
+    address: client.address,
+    addressNumber: client.address_number,
+    neighborhood: client.neighborhood,
+    city: client.city,
+    state: client.state,
+    guardianCount: (guardians ?? []).length,
+  });
 
   const canEdit =
     client.status !== "anonymized" &&
@@ -2135,6 +2153,16 @@ export default async function ClientDetailPage(
                       {currentClinicEntry?.clinics?.name ?? "outra unidade"}
                     </Badge>
                   )}
+                  {/* I4: cadastro incompleto não pode ser agendado. */}
+                  {registrationGaps.length > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-50 text-amber-800"
+                      title={registrationGaps.join(", ")}
+                    >
+                      Cadastro incompleto
+                    </Badge>
+                  )}
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Cliente desde{" "}
@@ -2305,6 +2333,19 @@ export default async function ClientDetailPage(
             <strong>Sessões &amp; Procedimentos</strong>, finalize-os e solicite ao
             Coordenador uma nova avaliação. Este aviso só desaparece quando 100%
             dos procedimentos estiverem finalizados e aprovados.
+          </span>
+        </div>
+      )}
+
+      {/* I4: enquanto faltar dado, este cliente não pode ser agendado. */}
+      {registrationGaps.length > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <span>
+            <strong>Cadastro incompleto.</strong> Falta preencher:{" "}
+            <strong>{registrationGaps.join(", ")}</strong>. Enquanto isso, o
+            sistema <strong>não permite agendar</strong> este cliente — complete
+            os dados na aba <strong>Cadastro</strong>.
           </span>
         </div>
       )}

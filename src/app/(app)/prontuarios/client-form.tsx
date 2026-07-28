@@ -25,6 +25,8 @@ export type ClientFormValues = {
   id?: string;
   full_name?: string;
   cpf?: string | null;
+  /** I4: cliente realmente sem CPF (criança, por exemplo). */
+  no_cpf?: boolean | null;
   birth_date?: string | null;
   gender?: string | null;
   phone?: string | null;
@@ -73,7 +75,9 @@ export function ClientForm({
   const isEdit = Boolean(client?.id);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [noCpf, setNoCpf] = useState(false);
+  // I4: ao editar, mantém a marcação "cliente sem CPF" que já estava salva
+  // (senão o cadastro voltaria a contar como incompleto).
+  const [noCpf, setNoCpf] = useState(client?.no_cpf ?? false);
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
   const [consent, setConsent] = useState(false);
   const [fullName, setFullName] = useState(client?.full_name ?? "");

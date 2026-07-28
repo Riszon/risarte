@@ -1,6 +1,26 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/07/2026 · Versão do sistema: **0.143.0** · Última migração: **0172**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.144.0** · Última migração: **0173**_
+
+> **LOTE I — I4: cadastro incompleto ✅ (v0.144.0, migração 0173):** clientes que
+> entram **pré-cadastrados** (Risarte Empresarial e integrações) agora são
+> reconhecidos como tal. "Cadastro completo" é **a mesma régua do formulário de
+> novo cliente** (decisão do dono): nome · CPF (ou "cliente sem CPF") ·
+> nascimento · telefone · e-mail · CEP · endereço · número · bairro · cidade ·
+> UF, e **menor de 18 exige responsável**. O resultado fica em
+> `clients.registration_complete`, mantido por gatilho. Na prática: **selo
+> "Cadastro incompleto"** na lista de prontuários e na ficha (com a lista do que
+> falta), **filtro** "Somente cadastro incompleto" na lista, **aviso** no
+> formulário de agendamento com link para o cadastro e — a barreira de verdade —
+> **o servidor recusa agendar** enquanto faltar dado, dizendo o que falta. Vale
+> para **todos os clientes** (decisão do dono), então clientes antigos sem
+> e-mail ou CEP também aparecem no filtro: é a fila de faxina da base. A marcação
+> "cliente sem CPF" passou a ser gravada (`clients.no_cpf`) — antes se perdia ao
+> salvar. Regra pura em `src/lib/clients.ts` com 8 testes.
+
+> **I2c (ajuste do teste):** o pop-up de informações do agendamento mostra o
+> selo de **atendimento conjunto** e os nomes usando o que a agenda já carregou
+> — não depende mais de uma segunda consulta para aparecer.
 
 > **LOTE I — I3: prazos com unidade de tempo + SLA que desliga ✅ (v0.143.0,
 > migração 0172):** em **Prazos (SLA)** cada prazo agora tem **quantidade +
