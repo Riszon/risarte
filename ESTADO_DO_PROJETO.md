@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.148.0** · Última migração: **0175**_
+_Atualizado em: 28/07/2026 · Versão do sistema: **0.149.0** · Última migração: **0176**_
+
+> **LOTE I — I7b: o atendimento fecha pelo Desenvolvimento Clínico ✅ (v0.149.0,
+> migração 0176):** o dentista **conclui o atendimento sem sair da aba** — marca
+> o que foi feito, o que não foi (com motivo) e pode **executar uma sessão que
+> não estava programada** para o dia (só as dele ou ainda sem dentista
+> definido). **Só conclui depois de descrever** o Desenvolvimento Clínico — e
+> essa trava está no banco (`NOTE_REQUIRED`), não só na tela. Agora existe
+> **uma anotação por atendimento** (índice único), e o **resultado de cada
+> atendimento fica registrado** em `attendance_session_outcomes`: no histórico,
+> cada anotação mostra o que foi **finalizado** (✓), o que estava programado e
+> **não foi** (com o motivo) e o que foi feito **fora do programado**. Esse
+> registro era impossível antes: a sessão não realizada volta para "a agendar" e
+> perdia o vínculo com o atendimento. A conclusão pela tela **Atendimento**
+> continua funcionando igual.
 
 > **LOTE I — I7: procedimentos do atendimento à vista ✅ (v0.148.0, sem
 > migração):** o **Desenvolvimento Clínico** do prontuário abre com o quadro

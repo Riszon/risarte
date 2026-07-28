@@ -1279,11 +1279,21 @@ export default async function ClientDetailPage(
     hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
   const canViewProgress = canViewAnamnesis;
   let progressNotes: ProgressNoteItem[] = [];
+  const outcomesByAppt = new Map<
+    string,
+    {
+      label: string;
+      stageName: string | null;
+      done: boolean;
+      unplanned: boolean;
+      reason: string | null;
+    }[]
+  >();
   if (canViewProgress) {
     const { data: pnRows } = await supabase
       .from("clinical_progress_notes")
       .select(
-        "id, body, author_id, created_at, updated_at, clinic:clinics ( name )"
+        "id, body, author_id, appointment_id, created_at, updated_at, clinic:clinics ( name )"
       )
       .eq("client_id", id)
       .order("created_at", { ascending: false })
@@ -1292,11 +1302,49 @@ export default async function ClientDetailPage(
           id: string;
           body: string;
           author_id: string;
+          appointment_id: string | null;
           created_at: string;
           updated_at: string;
           clinic: { name: string } | { name: string }[] | null;
         }[]
       >();
+    // I7b: o que foi (e não foi) feito em cada atendimento anotado.
+    const noteApptIds = [
+      ...new Set(
+        (pnRows ?? [])
+          .map((r) => (r as { appointment_id?: string | null }).appointment_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    if (noteApptIds.length > 0) {
+      const { data: outRows } = await supabase
+        .from("attendance_session_outcomes")
+        .select("appointment_id, label, stage_name, done, unplanned, reason")
+        .in("appointment_id", noteApptIds)
+        .order("done", { ascending: false })
+        .returns<
+          {
+            appointment_id: string;
+            label: string;
+            stage_name: string | null;
+            done: boolean;
+            unplanned: boolean;
+            reason: string | null;
+          }[]
+        >();
+      for (const o of outRows ?? []) {
+        const list = outcomesByAppt.get(o.appointment_id) ?? [];
+        list.push({
+          label: o.label,
+          stageName: o.stage_name,
+          done: o.done,
+          unplanned: o.unplanned,
+          reason: o.reason,
+        });
+        outcomesByAppt.set(o.appointment_id, list);
+      }
+    }
+
     const progressAuthorIds = [
       ...new Set(
         (pnRows ?? [])
@@ -1323,6 +1371,9 @@ export default async function ClientDetailPage(
         clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
         createdAt: r.created_at,
         updatedAt: r.updated_at ?? null,
+        outcomes: r.appointment_id
+          ? (outcomesByAppt.get(r.appointment_id) ?? [])
+          : [],
       };
     });
   }
@@ -1344,10 +1395,19 @@ export default async function ClientDetailPage(
     appointmentId: string;
     startsAt: string;
     inService: boolean;
+    concluded: boolean;
     providerName: string | null;
     roomName: string | null;
     sessions: TodaySession[];
   } | null = null;
+  let extraSessionOptions: {
+    id: string;
+    label: string;
+    stageName: string | null;
+    plannedMinutes: number | null;
+    providerName: string | null;
+  }[] = [];
+  let attendanceNote: { id: string; body: string } | null = null;
   if (canViewProgress) {
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
@@ -1406,6 +1466,7 @@ export default async function ClientDetailPage(
         appointmentId: chosen.id,
         startsAt: chosen.starts_at,
         inService: chosen.attendance === "in_service",
+        concluded: chosen.attendance === "done",
         providerName: one2(chosen.provider)?.full_name ?? null,
         roomName: one2(chosen.room)?.name ?? null,
         sessions: (sessRows ?? []).map((s) => ({
@@ -1417,6 +1478,51 @@ export default async function ClientDetailPage(
           providerName: one2(s.provider)?.full_name ?? null,
         })),
       };
+
+      // I7b: sessões do cliente que NÃO estão neste atendimento e que este
+      // dentista pode executar agora (dele ou ainda sem dentista definido).
+      const { data: extraRows } = await supabase
+        .from("treatment_sessions")
+        .select(
+          "id, procedure_name, name, session_index, session_total, planned_minutes, stage_name, planner_provider_id, provider:profiles!treatment_sessions_planner_provider_id_fkey ( full_name )"
+        )
+        .eq("client_id", id)
+        .neq("status", "done")
+        .is("appointment_id", null)
+        .limit(30)
+        .returns<
+          {
+            id: string;
+            procedure_name: string;
+            name: string | null;
+            session_index: number;
+            session_total: number;
+            planned_minutes: number | null;
+            stage_name: string | null;
+            planner_provider_id: string | null;
+            provider: { full_name: string } | { full_name: string }[] | null;
+          }[]
+        >();
+      extraSessionOptions = (extraRows ?? [])
+        .filter(
+          (s) =>
+            !s.planner_provider_id || s.planner_provider_id === session.userId
+        )
+        .map((s) => ({
+          id: s.id,
+          label: `${s.procedure_name} — ${s.name ?? `Sessão ${s.session_index} de ${s.session_total}`}`,
+          stageName: s.stage_name,
+          plannedMinutes: s.planned_minutes,
+          providerName: one2(s.provider)?.full_name ?? null,
+        }));
+
+      // Anotação já existente deste atendimento (uma por atendimento).
+      const { data: noteRow } = await supabase
+        .from("clinical_progress_notes")
+        .select("id, body")
+        .eq("appointment_id", chosen.id)
+        .maybeSingle<{ id: string; body: string }>();
+      attendanceNote = noteRow ?? null;
     }
   }
 
@@ -2823,6 +2929,32 @@ export default async function ClientDetailPage(
               clinicId={scheduleClinicId}
               canWrite={canWriteProgress}
               notes={progressNotes}
+              attendance={
+                todayAttendance && !todayAttendance.concluded
+                  ? {
+                      appointmentId: todayAttendance.appointmentId,
+                      startsAt: todayAttendance.startsAt,
+                      providerName: todayAttendance.providerName,
+                      roomName: todayAttendance.roomName,
+                      inService: todayAttendance.inService,
+                      noteId: attendanceNote?.id ?? null,
+                      noteBody: attendanceNote?.body ?? "",
+                      sessions: todayAttendance.sessions
+                        .filter((s) => s.status !== "done")
+                        .map((s) => ({
+                          id: s.id,
+                          label: s.label,
+                          stageName: s.stageName,
+                          plannedMinutes: s.plannedMinutes,
+                          status: s.status,
+                        })),
+                      extraOptions: extraSessionOptions,
+                      // Só o dentista do atendimento (ou admin) conclui.
+                      canConclude:
+                        canWriteProgress && todayAttendance.inService,
+                    }
+                  : null
+              }
             />
           </TabPanel>
         )}

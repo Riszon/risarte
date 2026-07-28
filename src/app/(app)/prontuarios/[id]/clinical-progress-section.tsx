@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, PencilLine } from "lucide-react";
+import {
+  Check,
+  CircleCheck,
+  CircleSlash,
+  Loader2,
+  PencilLine,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +17,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { saveProgressNote } from "./clinical-progress-actions";
+import {
+  AttendanceConcludeBlock,
+  type AttendanceSession,
+  type ExtraSession,
+} from "./attendance-conclude-block";
 
 export type ProgressNoteItem = {
   id: string;
@@ -19,6 +30,29 @@ export type ProgressNoteItem = {
   clinicName: string | null;
   createdAt: string;
   updatedAt: string | null;
+  /** I7b: o que foi (e o que não foi) feito no atendimento desta anotação. */
+  outcomes?: {
+    label: string;
+    stageName: string | null;
+    done: boolean;
+    unplanned: boolean;
+    reason: string | null;
+  }[];
+};
+
+/** I7b: o atendimento aberto que esta anotação está descrevendo. */
+export type OpenAttendance = {
+  appointmentId: string;
+  startsAt: string;
+  providerName: string | null;
+  roomName: string | null;
+  inService: boolean;
+  /** Anotação já existente deste atendimento (uma por atendimento). */
+  noteId: string | null;
+  noteBody: string;
+  sessions: AttendanceSession[];
+  extraOptions: ExtraSession[];
+  canConclude: boolean;
 };
 
 function fmtDateTime(iso: string): string {
@@ -46,15 +80,20 @@ export function ClinicalProgressSection({
   clinicId,
   canWrite,
   notes,
+  attendance,
 }: {
   clientId: string;
   clinicId: string;
   canWrite: boolean;
   notes: ProgressNoteItem[];
+  /** I7b: atendimento aberto — a anotação é dele e a conclusão sai daqui. */
+  attendance?: OpenAttendance | null;
 }) {
   const router = useRouter();
-  const [noteId, setNoteId] = useState<string | null>(null);
-  const [body, setBody] = useState("");
+  const [noteId, setNoteId] = useState<string | null>(
+    attendance?.noteId ?? null
+  );
+  const [body, setBody] = useState(attendance?.noteBody ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle"
   );
@@ -62,8 +101,8 @@ export function ClinicalProgressSection({
   // Refs atualizados apenas em handlers (nunca no render) para o save com debounce
   // enxergar sempre o valor mais recente do texto e do id da anotação.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bodyRef = useRef("");
-  const noteIdRef = useRef<string | null>(null);
+  const bodyRef = useRef(attendance?.noteBody ?? "");
+  const noteIdRef = useRef<string | null>(attendance?.noteId ?? null);
 
   async function doSave() {
     const id = noteIdRef.current;
@@ -73,7 +112,14 @@ export function ClinicalProgressSection({
       return;
     }
     setStatus("saving");
-    const res = await saveProgressNote({ id, clientId, clinicId, body: b });
+    const res = await saveProgressNote({
+      id,
+      clientId,
+      clinicId,
+      body: b,
+      // I7b: a anotação nasce amarrada ao atendimento (uma por atendimento).
+      appointmentId: attendance?.appointmentId ?? null,
+    });
     if (res.ok) {
       if (res.id && !noteIdRef.current) {
         noteIdRef.current = res.id;
@@ -121,6 +167,34 @@ export function ClinicalProgressSection({
         <CardTitle className="text-base">Desenvolvimento Clínico</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* I7b: procedimentos do atendimento + conclusão, sem sair da tela. */}
+        {attendance && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Atendimento de{" "}
+              <strong>
+                {new Date(attendance.startsAt).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </strong>
+              {attendance.providerName ? ` · ${attendance.providerName}` : ""}
+              {attendance.roomName ? ` · ${attendance.roomName}` : ""}
+              {attendance.inService ? " · em atendimento" : ""}
+            </p>
+            <AttendanceConcludeBlock
+              clientId={clientId}
+              appointmentId={attendance.appointmentId}
+              sessions={attendance.sessions}
+              extraOptions={attendance.extraOptions}
+              canConclude={attendance.canConclude}
+              noteWritten={Boolean(noteId) && body.trim() !== ""}
+            />
+          </>
+        )}
+
         {canWrite && (
           <div className="space-y-1.5">
             <textarea
@@ -180,6 +254,51 @@ export function ClinicalProgressSection({
                     )}
                 </div>
                 <p className="whitespace-pre-wrap text-sm">{n.body}</p>
+                {/* I7b: o que foi feito e o que ficou para depois naquele dia. */}
+                {n.outcomes && n.outcomes.length > 0 && (
+                  <ul className="mt-2 space-y-1 border-t pt-2">
+                    {n.outcomes.map((o, i) => (
+                      <li
+                        key={`${n.id}-${i}`}
+                        className="flex items-start gap-1.5 text-xs"
+                      >
+                        {o.done ? (
+                          <CircleCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
+                        ) : (
+                          <CircleSlash className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+                        )}
+                        <span className="min-w-0">
+                          <span
+                            className={
+                              o.done ? "font-medium" : "text-muted-foreground"
+                            }
+                          >
+                            {o.label}
+                          </span>
+                          {o.stageName && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              · {o.stageName}
+                            </span>
+                          )}
+                          {o.unplanned && (
+                            <span className="text-emerald-700">
+                              {" "}
+                              · fora do programado
+                            </span>
+                          )}
+                          {!o.done && (
+                            <span className="text-amber-700">
+                              {" "}
+                              · não realizada
+                              {o.reason ? ` (${o.reason})` : ""}
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
