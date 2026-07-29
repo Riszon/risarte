@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/07/2026 · Versão do sistema: **0.153.0** · Última migração: **0178**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.154.0** · Última migração: **0179**_
+
+> **LOTE J — J1: entrada + parcelas no cockpit do consultor ✅ (v0.154.0,
+> migração 0179):** a negociação do consultor ganhou a MESMA tela de pagamento
+> da venda direta: pergunta única **"Como o cliente vai pagar?"** (À vista /
+> Parcelado / Entrada + parcelas), campos condicionais (entrada, parcelas, 1º
+> vencimento), **desconto automático à vista da unidade** (parcelado sem
+> automático) e **Salvar negociação** que também grava as cobranças; elas
+> aparecem em leitura com **Personalizar**. A 0179 também CONSERTA regressões
+> da 0167/0177 em `evaluate_negotiation_rules`: voltou a gravar
+> `subtotal_cents`/`final_cents`/`is_partial`, a filtrar pela **opção
+> selecionada**, a **reabrir a rodada** (devolvida/aceita → em negociação ao
+> salvar) e a zerar a autorização; e `ppr_client_conditions` ganhou
+> `min_installment_cents` (a 0177 lia um campo que não existia — negociação
+> parcelada estourava erro ao salvar). Reparo retroativo dos totais incluído.
 
 > **I9b: o fechamento da venda ficou UMA tela só ✅ (v0.153.0, sem migração):**
 > o dono apontou que a tela tinha valores repetidos, escolha contraditória

@@ -7,6 +7,7 @@ import {
 } from "@/lib/commercial";
 import type { PlanEvent } from "@/lib/planning";
 import { loadPprProgram } from "@/lib/ppr/benefits";
+import type { ScheduleEntry } from "@/lib/payments";
 import type {
   NegotiationData,
   NegotiationOption,
@@ -103,7 +104,7 @@ export async function loadNegotiationBlock(
       supabase
         .from("plan_negotiations")
         .select(
-          "id, option_id, status, adjustment_cents, payment_method, installments, partial_reason, client_is_decider, decider_notes, notes, rule_violations, rule_authorized, authorization_note, final_cents, plan_negotiation_items ( item_id, included )"
+          "id, option_id, status, adjustment_cents, payment_method, installments, partial_reason, client_is_decider, decider_notes, notes, rule_violations, rule_authorized, authorization_note, final_cents, down_payment_cents, plan_negotiation_items ( item_id, included )"
         )
         .eq("plan_id", planId)
         .limit(1)
@@ -123,6 +124,7 @@ export async function loadNegotiationBlock(
             rule_authorized: boolean;
             authorization_note: string | null;
             final_cents: number;
+            down_payment_cents: number;
             plan_negotiation_items: { item_id: string; included: boolean }[];
           }[]
         >(),
@@ -184,6 +186,21 @@ export async function loadNegotiationBlock(
   }));
 
   const n = negRows?.[0];
+  // J1: cobranças (entrada + parcelas) já salvas para esta negociação.
+  let schedule: ScheduleEntry[] = [];
+  if (n) {
+    const { data: instRows } = await supabase
+      .from("payment_installments")
+      .select("seq, kind, due_date, amount_cents")
+      .eq("negotiation_id", n.id)
+      .order("seq");
+    schedule = (instRows ?? []).map((r) => ({
+      seq: r.seq as number,
+      kind: (r.kind as ScheduleEntry["kind"]) ?? "parcela",
+      dueDate: r.due_date as string,
+      amountCents: r.amount_cents as number,
+    }));
+  }
   const negotiation: NegotiationData | null = n
     ? {
         id: n.id,
@@ -201,6 +218,8 @@ export async function loadNegotiationBlock(
         ruleAuthorized: n.rule_authorized,
         authorizationNote: n.authorization_note,
         finalCents: n.final_cents,
+        downPaymentCents: n.down_payment_cents ?? 0,
+        schedule,
         excludedItemIds: (n.plan_negotiation_items ?? [])
           .filter((i) => !i.included)
           .map((i) => i.item_id),

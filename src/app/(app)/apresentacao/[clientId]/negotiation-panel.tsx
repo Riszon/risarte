@@ -30,11 +30,16 @@ import {
   NEGOTIATION_STATUS_LABELS,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
+  automaticDiscountPercent,
+  minInstallmentCentsFor,
   negotiationViolations,
   type CommercialRule,
   type NegotiationStatus,
   type PaymentMethod,
 } from "@/lib/commercial";
+import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
+import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import { savePaymentSchedule } from "@/app/(app)/comercial/payment-schedule-actions";
 import {
   acceptNegotiation,
   returnToPlanning,
@@ -74,6 +79,10 @@ export type NegotiationData = {
   ruleAuthorized: boolean;
   authorizationNote: string | null;
   finalCents: number;
+  /** J1: entrada já salva (para reabrir a tela no mesmo formato). */
+  downPaymentCents: number;
+  /** J1: cobranças (entrada + parcelas) já gravadas. */
+  schedule: ScheduleEntry[];
   excludedItemIds: string[];
 };
 
@@ -83,6 +92,12 @@ const inputClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 type AdjustMode = "none" | "discount_percent" | "discount_amount" | "surcharge";
+/** J1: formato do pagamento — mesma pergunta da venda direta. */
+type PayMode = "avista" | "parcelado" | "entrada";
+
+function centsToInput(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
 
 const STATUS_PILL: Record<NegotiationStatus, string> = {
   em_negociacao: "border-primary/30 bg-primary/10 text-primary",
@@ -165,6 +180,25 @@ export function NegotiationPanel({
   const [installments, setInstallments] = useState(
     String(negotiation?.installments ?? 1)
   );
+  // J1: formato do pagamento (mesma pergunta da venda direta).
+  const [payMode, setPayMode] = useState<PayMode>(
+    (negotiation?.schedule ?? []).some((e) => e.kind === "entrada")
+      ? "entrada"
+      : (negotiation?.installments ?? 1) > 1
+        ? "parcelado"
+        : "avista"
+  );
+  const [downReais, setDownReais] = useState(
+    negotiation?.downPaymentCents
+      ? centsToInput(negotiation.downPaymentCents)
+      : ""
+  );
+  const [firstDue, setFirstDue] = useState(
+    negotiation?.schedule?.[0]?.dueDate ??
+      new Date().toISOString().slice(0, 10)
+  );
+  const downCents =
+    payMode === "entrada" ? (parseBRLToCents(downReais) ?? 0) : 0;
   const [partialReason, setPartialReason] = useState(
     negotiation?.partialReason ?? ""
   );
@@ -239,8 +273,23 @@ export function NegotiationPanel({
     return adjustMode === "discount_amount" ? -cents : cents;
   }, [adjustMode, adjustValue, discountBaseCents]);
 
-  const finalCents = subtotalCents + adjustmentCents;
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
+
+  // J1: desconto AUTOMÁTICO à vista da regra comercial (cliente SEM programa —
+  // quem tem programa usa a faixa dele). Parcelado não tem desconto automático;
+  // se o consultor der um desconto manual MAIOR, o manual prevalece.
+  const autoPct = !programConditions
+    ? automaticDiscountPercent(rule, installmentsNum)
+    : 0;
+  const autoCents = Math.round((discountBaseCents * autoPct) / 100);
+  const effectiveAdjustmentCents =
+    adjustMode === "surcharge"
+      ? adjustmentCents
+      : Math.min(adjustmentCents, -autoCents);
+  const autoApplied =
+    autoCents > 0 && effectiveAdjustmentCents === -autoCents;
+
+  const finalCents = subtotalCents + effectiveAdjustmentCents;
 
   // PPR5b: desconto que o PROGRAMA do cliente garante para a forma de pagamento
   // escolhida — à vista usa o percentual do plano, parcelado usa a faixa.
@@ -316,14 +365,29 @@ export function NegotiationPanel({
       negotiationViolations(
         {
           subtotalCents,
-          adjustmentCents,
+          adjustmentCents: effectiveAdjustmentCents,
           installments: installmentsNum,
           paymentMethod: effectiveMethod || null,
         },
         rule
       ),
-    [subtotalCents, adjustmentCents, installmentsNum, effectiveMethod, rule]
+    [
+      subtotalCents,
+      effectiveAdjustmentCents,
+      installmentsNum,
+      effectiveMethod,
+      rule,
+    ]
   );
+
+  // J1: parcela mínima das cobranças — a maior entre a do meio de pagamento e a
+  // do programa do cliente (quando houver).
+  const minInstallmentCents = (() => {
+    const ruleMin = minInstallmentCentsFor(rule, effectiveMethod || null) ?? 0;
+    const programMin = programConditions?.minInstallmentCents ?? 0;
+    const min = Math.max(ruleMin, programMin);
+    return min > 0 ? min : null;
+  })();
 
   function save() {
     if (!option) return;
@@ -333,7 +397,7 @@ export function NegotiationPanel({
         optionId: option.id,
         allItemIds,
         excludedItemIds: allExcludedIds,
-        adjustmentCents,
+        adjustmentCents: effectiveAdjustmentCents,
         paymentMethod: effectiveMethod || null,
         installments: installmentsNum,
         partialReason,
@@ -344,6 +408,25 @@ export function NegotiationPanel({
       if (!r.ok) {
         toast.error(r.error ?? "Algo deu errado.");
         return;
+      }
+      // J1: no mesmo clique, gera e grava as cobranças (entrada + parcelas) —
+      // igual à venda direta, um botão só.
+      if (r.negotiationId && finalCents > 0) {
+        const entries = buildSchedule({
+          totalCents: finalCents,
+          downPaymentCents: downCents,
+          installments: payMode === "avista" ? 1 : installmentsNum,
+          firstDueDate: firstDue,
+        });
+        const s = await savePaymentSchedule({
+          negotiationId: r.negotiationId,
+          entries,
+        });
+        if (!s.ok) {
+          toast.warning(`Negociação salva. ${s.error ?? ""}`);
+          router.refresh();
+          return;
+        }
       }
       if (r.violations && r.violations.length > 0) {
         toast.warning(
@@ -396,7 +479,7 @@ export function NegotiationPanel({
           optionId: option.id,
           allItemIds,
           excludedItemIds: allExcludedIds,
-          adjustmentCents,
+          adjustmentCents: effectiveAdjustmentCents,
           paymentMethod: effectiveMethod || null,
           installments: installmentsNum,
           partialReason,
@@ -671,8 +754,119 @@ export function NegotiationPanel({
           </div>
         )}
 
-        {/* Condições: ajuste + pagamento + parcelas. */}
-        <div className="grid gap-3 sm:grid-cols-2">
+        {/* J1: UMA pergunta define o formato do pagamento (igual à venda
+            direta) — os campos aparecem conforme a escolha. */}
+        <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+          <p className="text-xs font-medium">Como o cliente vai pagar?</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                ["avista", "À vista"],
+                ["parcelado", "Parcelado"],
+                ["entrada", "Entrada + parcelas"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                disabled={locked}
+                onClick={() => {
+                  setPayMode(value);
+                  if (value === "avista") setInstallments("1");
+                  else if (installments === "1") setInstallments("2");
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs transition-colors",
+                  payMode === value
+                    ? "border-primary bg-primary font-medium text-primary-foreground"
+                    : "border-border hover:bg-muted",
+                  locked && "opacity-60"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            {payMode === "entrada" && (
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">
+                  Entrada (R$)
+                </span>
+                <input
+                  value={downReais}
+                  onChange={(e) => setDownReais(e.target.value)}
+                  disabled={locked}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  className={inputClass}
+                />
+              </label>
+            )}
+            {payMode !== "avista" && (
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">
+                  Parcelas (até {maxInstallmentsAllowed}×)
+                </span>
+                <select
+                  value={installments}
+                  onChange={(e) => setInstallments(e.target.value)}
+                  disabled={locked}
+                  className={cn(selectClass, "w-full")}
+                >
+                  {installmentOptions
+                    .filter((n) => n > 1)
+                    .map((n) => (
+                      <option key={n} value={String(n)}>
+                        {n}×
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">
+                Pagamento{isCash ? " (à vista)" : ""}
+              </span>
+              <select
+                value={effectiveMethod}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value as PaymentMethod | "")
+                }
+                disabled={locked}
+                className={cn(selectClass, "w-full")}
+              >
+                <option value="">Escolher...</option>
+                {methodOptions.map((m) => (
+                  <option key={m} value={m}>
+                    {PAYMENT_METHOD_LABELS[m]}
+                  </option>
+                ))}
+              </select>
+              {isCash && (
+                <span className="text-[11px] text-muted-foreground">
+                  À vista só em PIX ou depósito.
+                </span>
+              )}
+            </label>
+            {payMode !== "avista" && (
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">
+                  1º vencimento
+                </span>
+                <input
+                  type="date"
+                  value={firstDue}
+                  onChange={(e) => setFirstDue(e.target.value)}
+                  disabled={locked}
+                  className={inputClass}
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Ajuste manual (desconto/acréscimo) — dentro do teto da unidade. */}
           <label className="block text-sm">
             <span className="text-xs text-muted-foreground">Ajuste</span>
             <div className="flex gap-2">
@@ -699,50 +893,14 @@ export function NegotiationPanel({
               )}
             </div>
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">
-                Parcelas (até {maxInstallmentsAllowed}×)
-              </span>
-              <select
-                value={installments}
-                onChange={(e) => setInstallments(e.target.value)}
-                disabled={locked}
-                className={cn(selectClass, "w-full")}
-              >
-                {installmentOptions.map((n) => (
-                  <option key={n} value={String(n)}>
-                    {n === 1 ? "À vista (1×)" : `${n}×`}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">
-                Pagamento{isCash ? " (à vista)" : ""}
-              </span>
-              <select
-                value={effectiveMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as PaymentMethod | "")
-                }
-                disabled={locked}
-                className={cn(selectClass, "w-full")}
-              >
-                <option value="">Escolher...</option>
-                {methodOptions.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABELS[m]}
-                  </option>
-                ))}
-              </select>
-              {isCash && (
-                <span className="text-[11px] text-muted-foreground">
-                  À vista só em PIX ou depósito.
-                </span>
-              )}
-            </label>
-          </div>
+
+          {/* J1: à vista com desconto automático da regra comercial. */}
+          {autoApplied && (
+            <p className="rounded-md border border-emerald-300 bg-emerald-50 p-1.5 text-[11px] text-emerald-900">
+              Desconto automático à vista ({autoPct}%):{" "}
+              <strong>−{formatBRL(autoCents)}</strong> — já aplicado no total.
+            </p>
+          )}
         </div>
 
         {/* Principal decisor. */}
@@ -794,22 +952,47 @@ export function NegotiationPanel({
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 text-sm">
           <span className="text-muted-foreground">
             Subtotal {formatBRL(subtotalCents)}
-            {adjustmentCents !== 0 && (
+            {effectiveAdjustmentCents !== 0 && (
               <>
                 {" "}
-                · {adjustmentCents < 0 ? "desconto" : "acréscimo"}{" "}
-                {formatBRL(Math.abs(adjustmentCents))}
+                · {effectiveAdjustmentCents < 0 ? "desconto" : "acréscimo"}{" "}
+                {formatBRL(Math.abs(effectiveAdjustmentCents))}
               </>
             )}
-            {installmentsNum > 1 && finalCents > 0 && (
+            {payMode !== "avista" && finalCents > 0 && (
               <>
                 {" "}
-                · {installmentsNum}x de {formatBRL(Math.round(finalCents / installmentsNum))}
+                · como fica:{" "}
+                {payMode === "entrada" && downCents > 0 && (
+                  <>entrada {formatBRL(downCents)} + </>
+                )}
+                {installmentsNum}× de{" "}
+                {formatBRL(
+                  Math.round(
+                    Math.max(0, finalCents - downCents) / installmentsNum
+                  )
+                )}
               </>
             )}
           </span>
           <span className="text-base font-semibold">{formatBRL(finalCents)}</span>
         </div>
+
+        {/* J1: cobranças já salvas, em leitura — "Personalizar" edita data e
+            valor (editar uma recalcula as seguintes). */}
+        {negotiation &&
+          negotiation.finalCents > 0 &&
+          (negotiation.schedule?.length ?? 0) > 0 && (
+            <PaymentScheduleEditor
+              negotiationId={negotiation.id}
+              totalCents={negotiation.finalCents}
+              minInstallmentCents={minInstallmentCents}
+              initial={negotiation.schedule}
+              downPaymentCents={negotiation.downPaymentCents}
+              installments={negotiation.installments}
+              readOnly={locked}
+            />
+          )}
 
         {/* Aviso ao consultor: fora da regra (antes mesmo de salvar). */}
         {!locked && liveViolations.length > 0 && (

@@ -14,6 +14,8 @@ export type NegotiationActionResult = {
   error?: string;
   /** Violações da regra comercial (quando salvou fora da regra). */
   violations?: string[];
+  /** J1: id da negociação salva (para gravar as cobranças em seguida). */
+  negotiationId?: string;
 };
 
 /** Salva a negociação do Consultor sobre um plano aprovado (COM1). */
@@ -130,7 +132,11 @@ export async function savePlanNegotiation(
   revalidatePath(`/apresentacao/${clientId}`);
   revalidatePath(`/comercial/${clientId}`);
   revalidatePath("/notificacoes");
-  return { ok: true, violations: (violations as string[] | null) ?? [] };
+  return {
+    ok: true,
+    violations: (violations as string[] | null) ?? [],
+    negotiationId: saved.id,
+  };
 }
 
 /** Consultor marca que o CLIENTE ACEITOU as condições. */
