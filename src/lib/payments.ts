@@ -122,6 +122,24 @@ export function redistributeFrom(
 }
 
 /**
+ * J2: mudou a DATA de uma cobrança e o usuário escolheu que as seguintes
+ * acompanham — a editada assume a nova data e cada cobrança seguinte vence um
+ * mês depois da anterior (dia 31 vira o último dia do mês curto). As
+ * anteriores ficam intactas. Valores não mudam.
+ */
+export function resequenceDatesFrom(
+  entries: ScheduleEntry[],
+  index: number,
+  newDate: string
+): ScheduleEntry[] {
+  return entries.map((e, i) => {
+    if (i < index) return { ...e };
+    if (i === index) return { ...e, dueDate: newDate };
+    return { ...e, dueDate: addMonths(newDate, i - index) };
+  });
+}
+
+/**
  * Erros que impedem salvar o plano de pagamento. Vazio = pode salvar.
  * `minInstallmentCents` (I8) vale só para as PARCELAS — a entrada é livre.
  */

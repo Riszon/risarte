@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.154.0** · Última migração: **0179**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.155.0** · Última migração: **0179**_
+
+> **LOTE J — J2: mudar a data pergunta sobre as próximas ✅ (v0.155.0, sem
+> migração):** no **Personalizar** (venda direta E cockpit do consultor, mesmo
+> componente), mudar a **data** de uma cobrança que tem outras depois abre a
+> pergunta: **"Só esta cobrança"** ou **"As seguintes acompanham"** (mesmo dia
+> dos meses seguintes; dia 31 vira o último dia do mês curto). Mudar o **valor**
+> continua recalculando as seguintes sozinho. Regra pura `resequenceDatesFrom`
+> em `src/lib/payments.ts` com 4 testes novos (190 no total).
 
 > **LOTE J — J1: entrada + parcelas no cockpit do consultor ✅ (v0.154.0,
 > migração 0179):** a negociação do consultor ganhou a MESMA tela de pagamento

@@ -4,6 +4,7 @@ import {
   addMonths,
   buildSchedule,
   redistributeFrom,
+  resequenceDatesFrom,
   scheduleErrors,
   scheduleTotalCents,
 } from "@/lib/payments";
@@ -199,5 +200,48 @@ describe("redistributeFrom — editar uma parcela recalcula as seguintes", () =>
     const next = redistributeFrom(s, 0, 1, 10000);
     expect(scheduleTotalCents(next)).toBe(10000);
     expect(next.map((e) => e.amountCents)).toEqual([1, 4999, 5000]);
+  });
+});
+
+describe("resequenceDatesFrom — mudar a data e as seguintes acompanham", () => {
+  const plan = buildSchedule({
+    totalCents: 150000,
+    downPaymentCents: 30000,
+    installments: 3,
+    firstDueDate: "2026-08-10",
+  });
+  // Datas originais: entrada 10/08, parcelas 10/09, 10/10, 10/11.
+
+  it("as seguintes viram o mesmo dia dos meses seguintes", () => {
+    const next = resequenceDatesFrom(plan, 1, "2026-09-20");
+    expect(next.map((e) => e.dueDate)).toEqual([
+      "2026-08-10", // entrada intacta
+      "2026-09-20", // a editada
+      "2026-10-20",
+      "2026-11-20",
+    ]);
+  });
+
+  it("valores não mudam, só as datas", () => {
+    const next = resequenceDatesFrom(plan, 1, "2026-09-20");
+    expect(next.map((e) => e.amountCents)).toEqual(
+      plan.map((e) => e.amountCents)
+    );
+  });
+
+  it("dia 31 vira o último dia do mês curto", () => {
+    const next = resequenceDatesFrom(plan, 1, "2027-01-31");
+    expect(next[2].dueDate).toBe("2027-02-28");
+    expect(next[3].dueDate).toBe("2027-03-31");
+  });
+
+  it("mudar a entrada rearruma o plano inteiro", () => {
+    const next = resequenceDatesFrom(plan, 0, "2026-08-25");
+    expect(next.map((e) => e.dueDate)).toEqual([
+      "2026-08-25",
+      "2026-09-25",
+      "2026-10-25",
+      "2026-11-25",
+    ]);
   });
 });

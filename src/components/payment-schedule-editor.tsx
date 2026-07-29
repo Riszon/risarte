@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   buildSchedule,
   redistributeFrom,
+  resequenceDatesFrom,
   scheduleErrors,
   scheduleTotalCents,
   type ScheduleEntry,
@@ -72,6 +80,12 @@ export function PaymentScheduleEditor({
         })
   );
   const [editing, setEditing] = useState(false);
+  // J2: mudou a data de uma cobrança que tem outras depois — perguntar se as
+  // seguintes acompanham a nova sequência ou se a mudança é só nesta.
+  const [dateChange, setDateChange] = useState<{
+    index: number;
+    date: string;
+  } | null>(null);
 
   const total = scheduleTotalCents(entries);
   const missing = totalCents - total;
@@ -97,6 +111,30 @@ export function PaymentScheduleEditor({
     const cents = parseBRLToCents(raw) ?? 0;
     // O pedido do dono: mudou uma, as seguintes se ajustam sozinhas.
     setEntries((prev) => redistributeFrom(prev, i, cents, totalCents));
+  }
+
+  /** J2: mudança de data — última cobrança aplica direto; com cobranças depois,
+   *  abre a pergunta ("só esta" × "as seguintes acompanham"). */
+  function changeDate(i: number, date: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    if (i >= entries.length - 1) {
+      setEntries((prev) =>
+        prev.map((x, idx) => (idx === i ? { ...x, dueDate: date } : x))
+      );
+      return;
+    }
+    setDateChange({ index: i, date });
+  }
+
+  function applyDateChange(cascade: boolean) {
+    if (!dateChange) return;
+    const { index, date } = dateChange;
+    setEntries((prev) =>
+      cascade
+        ? resequenceDatesFrom(prev, index, date)
+        : prev.map((x, idx) => (idx === index ? { ...x, dueDate: date } : x))
+    );
+    setDateChange(null);
   }
 
   function save() {
@@ -192,13 +230,7 @@ export function PaymentScheduleEditor({
                   className="h-9"
                   type="date"
                   value={e.dueDate}
-                  onChange={(ev) =>
-                    setEntries((prev) =>
-                      prev.map((x, idx) =>
-                        idx === i ? { ...x, dueDate: ev.target.value } : x
-                      )
-                    )
-                  }
+                  onChange={(ev) => changeDate(i, ev.target.value)}
                 />
               </div>
               <div className="w-32">
@@ -289,6 +321,38 @@ export function PaymentScheduleEditor({
           ))}
         </ul>
       )}
+
+      {/* J2: a pergunta do dono — mudou a data, e as próximas? */}
+      <Dialog
+        open={dateChange !== null}
+        onOpenChange={(open) => {
+          if (!open) setDateChange(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mudar o vencimento</DialogTitle>
+          </DialogHeader>
+          {dateChange && (
+            <p className="text-sm text-muted-foreground">
+              A cobrança {dateChange.index + 1} passa para{" "}
+              <strong>{fmtDate(dateChange.date)}</strong>. E as seguintes?
+            </p>
+          )}
+          <DialogFooter className="gap-2 sm:flex-col sm:items-stretch">
+            <Button type="button" onClick={() => applyDateChange(true)}>
+              As seguintes acompanham (mesmo dia dos meses seguintes)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => applyDateChange(false)}
+            >
+              Só esta cobrança
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
