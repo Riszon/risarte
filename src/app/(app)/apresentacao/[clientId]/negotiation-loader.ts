@@ -6,7 +6,7 @@ import {
   type CommercialRuleRow,
 } from "@/lib/commercial";
 import type { PlanEvent } from "@/lib/planning";
-import { loadPprProgram } from "@/lib/ppr/benefits";
+import { loadClientPrograms } from "@/lib/programs";
 import type { ScheduleEntry } from "@/lib/payments";
 import type {
   NegotiationData,
@@ -257,11 +257,17 @@ export async function loadNegotiationBlock(
     .eq("client_id", clientId)
     .maybeSingle();
 
-  // PPR5b: o plano do cliente manda no parcelamento e nas formas de pagamento.
-  const ppr = await loadPprProgram(clientId);
+  // J3: camada ÚNICA de programas do cliente (PPR+ E Risarte Empresarial) —
+  // procedimento coberto por QUALQUER programa não recebe desconto manual de
+  // novo, e o selo mostra o programa certo.
+  const programs = await loadClientPrograms(clientId);
+  const ppr = programs.ppr?.active ? programs.ppr : null;
+  const coveredProcedureIds = Object.values(programs.byProcedure)
+    .filter((b) => b.available && b.benefitType !== "NOT_COVERED")
+    .map((b) => b.procedureId);
   const baseRule = resolveCommercialRule(ruleRows ?? [], clinicId);
   const programConditions =
-    ppr.active && ppr.planName
+    ppr && ppr.planName
       ? {
           label: `PPR+ ${ppr.planName}`,
           cashDiscountPercent: ppr.cashDiscountPercent,
@@ -271,31 +277,39 @@ export async function loadNegotiationBlock(
             upToInstallments: t.upToInstallments,
             discountPercent: t.discountPercent,
           })),
-          // Procedimentos que o plano JÁ cobre — não recebem desconto de novo.
-          coveredProcedureIds: Object.values(ppr.byProcedure)
-            .filter((b) => b.available)
-            .map((b) => b.procedureId),
+          coveredProcedureIds,
         }
-      : null;
+      : programs.active
+        ? {
+            // Empresarial: benefício é POR PROCEDIMENTO (sem condições próprias
+            // de parcelamento) — o teto/parcelas seguem a regra da unidade.
+            label: programs.label ?? "Risarte Empresarial",
+            cashDiscountPercent: 0,
+            maxInstallments: 0,
+            minInstallmentCents: 0,
+            tiers: [] as { upToInstallments: number; discountPercent: number }[],
+            coveredProcedureIds,
+          }
+        : null;
 
   return {
     planId,
     options,
     negotiation,
-    // O programa fica ACIMA da regra da rede/unidade (docs/PPR.md §7).
-    rule: programConditions
+    // O PPR+ fica ACIMA da regra da rede/unidade (docs/PPR.md §7).
+    rule: ppr
       ? {
           // I8: mantém os demais campos da regra (desconto à vista, parcela
           // mínima por meio) — o programa só AMPLIA teto e parcelas.
           ...baseRule,
           maxDiscountPercent: Math.max(
             baseRule.maxDiscountPercent ?? 0,
-            programConditions.cashDiscountPercent,
-            ...programConditions.tiers.map((t) => t.discountPercent)
+            ppr.cashDiscountPercent,
+            ...ppr.tiers.map((t) => t.discountPercent)
           ),
           maxInstallments: Math.max(
             baseRule.maxInstallments ?? 1,
-            programConditions.maxInstallments
+            ppr.maxInstallments
           ),
         }
       : baseRule,

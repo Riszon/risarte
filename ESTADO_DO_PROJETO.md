@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.155.0** · Última migração: **0179**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.156.0** · Última migração: **0179**_
+
+> **LOTE J — J3: programas acima das regras no cockpit ✅ (v0.156.0, sem
+> migração) — LOTE J (J1–J3) COMPLETO:** o cockpit do consultor passou a
+> consultar a **camada única de programas** (PPR+ **e** Risarte Empresarial):
+> procedimento coberto por **qualquer** programa não recebe desconto manual de
+> novo (a base do desconto exclui os cobertos), o selo dourado mostra o
+> programa certo (cliente Empresarial vê "cliente do programa" com a trava,
+> sem faixas de parcelamento — o benefício dele é por procedimento), e o PPR+
+> continua sobrepondo teto de desconto/parcelas da unidade. A parcela mínima
+> do programa vale nas cobranças das duas telas (J1).
 
 > **LOTE J — J2: mudar a data pergunta sobre as próximas ✅ (v0.155.0, sem
 > migração):** no **Personalizar** (venda direta E cockpit do consultor, mesmo

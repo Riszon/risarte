@@ -291,6 +291,14 @@ export function NegotiationPanel({
 
   const finalCents = subtotalCents + effectiveAdjustmentCents;
 
+  // J3: o Empresarial dá benefício POR PROCEDIMENTO (sem condições próprias de
+  // pagamento) — o selo aparece, mas as faixas/desconto do programa não.
+  const programHasTerms =
+    !!programConditions &&
+    (programConditions.maxInstallments > 0 ||
+      programConditions.cashDiscountPercent > 0 ||
+      programConditions.tiers.length > 0);
+
   // PPR5b: desconto que o PROGRAMA do cliente garante para a forma de pagamento
   // escolhida — à vista usa o percentual do plano, parcelado usa a faixa.
   const programDiscountPercent = useMemo(() => {
@@ -309,7 +317,10 @@ export function NegotiationPanel({
   // Parcelas viram SELETOR: 1× (à vista) até o máximo liberado (plano/unidade).
   const maxInstallmentsAllowed = Math.max(
     1,
-    rule.maxInstallments ?? programConditions?.maxInstallments ?? 18
+    rule.maxInstallments ??
+      (programConditions && programConditions.maxInstallments > 0
+        ? programConditions.maxInstallments
+        : 18)
   );
   const installmentOptions = useMemo(
     () =>
@@ -331,7 +342,7 @@ export function NegotiationPanel({
 
   /** Faixas do plano em texto claro (evita confundir com o "à vista"). */
   const tierLabels = useMemo(() => {
-    if (!programConditions) return [] as string[];
+    if (!programConditions || !programHasTerms) return [] as string[];
     const sorted = [...programConditions.tiers].sort(
       (a, b) => a.upToInstallments - b.upToInstallments
     );
@@ -354,7 +365,7 @@ export function NegotiationPanel({
       );
     }
     return out;
-  }, [programConditions]);
+  }, [programConditions, programHasTerms]);
   const isPartial = option
     ? option.items.some((i) => excluded.has(i.id))
     : false;
@@ -683,8 +694,29 @@ export function NegotiationPanel({
           )}
         </div>
 
-        {/* PPR5b: condições do programa do cliente — acima da regra da rede. */}
-        {programConditions && (
+        {/* PPR5b/J3: condições do programa do cliente — acima da regra da
+            rede. Empresarial (benefício por procedimento) mostra só o selo e a
+            trava do desconto. */}
+        {programConditions && !programHasTerms && (
+          <div className="rounded-lg border border-gold/40 bg-gold/5 p-3 text-xs">
+            <p className="font-medium text-gold-foreground">
+              {programConditions.label} — cliente do programa
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              Os benefícios do programa são por procedimento e já entram no
+              orçamento.
+              {coveredCents > 0 && (
+                <>
+                  {" "}
+                  Procedimentos cobertos ({formatBRL(coveredCents)}){" "}
+                  <strong>não recebem desconto de novo</strong> — descontos
+                  valem só sobre {formatBRL(discountBaseCents)}.
+                </>
+              )}
+            </p>
+          </div>
+        )}
+        {programConditions && programHasTerms && (
           <div className="rounded-lg border border-gold/40 bg-gold/5 p-3 text-xs">
             <p className="font-medium text-gold-foreground">
               {programConditions.label} — condições do programa
