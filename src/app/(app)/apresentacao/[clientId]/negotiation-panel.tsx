@@ -64,6 +64,8 @@ export type NegotiationOption = {
     unitPriceCents: number;
     /** Procedimento do catálogo — usado para saber se o plano já cobre. */
     procedureId?: string | null;
+    /** J7: quanto o programa do cliente desconta NESTE item (0 = sem benefício). */
+    programDiscountCents: number;
     gutGravity: number | null;
     gutUrgency: number | null;
     gutTendency: number | null;
@@ -268,16 +270,26 @@ export function NegotiationPanel({
       .reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
   }, [option, excluded]);
 
-  // Base do DESCONTO: procedimento que o plano já cobre não recebe desconto de
-  // novo (decisão do dono, 25/07/2026).
-  const coveredCents = useMemo(() => {
-    if (!option || !programConditions?.coveredProcedureIds?.length) return 0;
-    const covered = new Set(programConditions.coveredProcedureIds);
+  // J7: BENEFÍCIO DO PROGRAMA — o desconto a que o cliente tem direito por
+  // procedimento (Empresarial/PPR+). Entra no valor final automaticamente.
+  const programDiscountCents = useMemo(() => {
+    if (!option) return 0;
     return option.items
       .filter((i) => !excluded.has(i.id))
-      .filter((i) => i.procedureId && covered.has(i.procedureId))
+      .reduce((s, i) => s + (i.programDiscountCents ?? 0), 0);
+  }, [option, excluded]);
+  /** O que o cliente paga antes do ajuste manual. */
+  const payableCents = Math.max(0, subtotalCents - programDiscountCents);
+
+  // Base do DESCONTO manual: procedimento que já tem benefício do programa não
+  // recebe desconto de novo (decisão do dono, 25/07/2026).
+  const coveredCents = useMemo(() => {
+    if (!option) return 0;
+    return option.items
+      .filter((i) => !excluded.has(i.id))
+      .filter((i) => (i.programDiscountCents ?? 0) > 0)
       .reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
-  }, [option, excluded, programConditions]);
+  }, [option, excluded]);
   const discountBaseCents = Math.max(0, subtotalCents - coveredCents);
 
   const adjustmentCents = useMemo(() => {
@@ -293,43 +305,54 @@ export function NegotiationPanel({
 
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
 
-  // J1: desconto AUTOMÁTICO à vista da regra comercial (cliente SEM programa —
-  // quem tem programa usa a faixa dele). Parcelado não tem desconto automático;
-  // se o consultor der um desconto manual MAIOR, o manual prevalece.
-  const autoPct = !programConditions
-    ? automaticDiscountPercent(rule, installmentsNum)
-    : 0;
-  const autoCents = Math.round((discountBaseCents * autoPct) / 100);
-  const effectiveAdjustmentCents =
-    adjustMode === "surcharge"
-      ? adjustmentCents
-      : Math.min(adjustmentCents, -autoCents);
-  const autoApplied =
-    autoCents > 0 && effectiveAdjustmentCents === -autoCents;
-
-  const finalCents = subtotalCents + effectiveAdjustmentCents;
-
   // J3/J5: o Empresarial dá benefício POR PROCEDIMENTO (não tem faixas de
   // desconto por parcelamento como o PPR+) — o selo aparece, as faixas não.
   const programHasTerms =
     !!programConditions &&
     (programConditions.cashDiscountPercent > 0 ||
       programConditions.tiers.length > 0);
+  /** Cliente de programa (Empresarial ou PPR+) = desconto AUTOMÁTICO. */
+  const isProgramMember = !!programConditions;
 
-  // PPR5b: desconto que o PROGRAMA do cliente garante para a forma de pagamento
+  // PPR5b: desconto que o PLANO do cliente garante para a forma de pagamento
   // escolhida — à vista usa o percentual do plano, parcelado usa a faixa.
   const programDiscountPercent = useMemo(() => {
-    if (!programConditions) return 0;
+    if (!programConditions || !programHasTerms) return 0;
     if (installmentsNum <= 1) return programConditions.cashDiscountPercent;
     const tier = [...programConditions.tiers]
       .sort((a, b) => a.upToInstallments - b.upToInstallments)
       .find((t) => installmentsNum <= t.upToInstallments);
     return tier ? tier.discountPercent : 0;
-  }, [programConditions, installmentsNum]);
-  const programApplied =
-    programDiscountPercent > 0 &&
-    adjustMode === "discount_percent" &&
-    Number(adjustValue.replace(",", ".")) === programDiscountPercent;
+  }, [programConditions, programHasTerms, installmentsNum]);
+
+  /**
+   * J7: o desconto do PROGRAMA é AUTOMÁTICO (pedido do dono, 29/07/2026) — do
+   * mesmo jeito que já era na venda direta:
+   *  • PPR+: a faixa do plano para o parcelamento ESCOLHIDO AGORA, sobre a base
+   *    descontável (procedimento com benefício por procedimento não recebe
+   *    desconto de novo);
+   *  • Empresarial: o benefício por procedimento já está em programDiscountCents;
+   *  • sem programa: desconto automático à vista da regra da unidade (I8), e o
+   *    desconto manual MAIOR prevalece.
+   * Cliente de programa não recebe desconto manual (§7.5).
+   */
+  const tierAutoCents = Math.round(
+    (discountBaseCents * programDiscountPercent) / 100
+  );
+  const autoPct = !isProgramMember
+    ? automaticDiscountPercent(rule, installmentsNum)
+    : 0;
+  const autoCents = Math.round((discountBaseCents * autoPct) / 100);
+  const effectiveAdjustmentCents = isProgramMember
+    ? -tierAutoCents
+    : adjustMode === "surcharge"
+      ? adjustmentCents
+      : Math.min(adjustmentCents, -autoCents);
+  const autoApplied =
+    autoCents > 0 && effectiveAdjustmentCents === -autoCents;
+
+  // O que o cliente paga: orçamento − benefício do programa + ajuste.
+  const finalCents = Math.max(0, payableCents + effectiveAdjustmentCents);
 
   // Parcelas viram SELETOR: 1× (à vista) até o máximo liberado (plano/unidade).
   const maxInstallmentsAllowed = Math.max(
@@ -695,10 +718,23 @@ export function NegotiationPanel({
                   <span className={cn("min-w-0 flex-1", out && "line-through opacity-70")}>
                     {i.description}
                     {i.quantity > 1 ? ` ×${i.quantity}` : ""}
+                    {/* J7: benefício do programa neste procedimento. */}
+                    {(i.programDiscountCents ?? 0) > 0 && (
+                      <span className="ml-1 text-[11px] font-medium text-gold">
+                        ★ −{formatBRL(i.programDiscountCents)}
+                      </span>
+                    )}
                   </span>
                   <GutBadge item={i} />
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {formatBRL(i.quantity * i.unitPriceCents)}
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {(i.programDiscountCents ?? 0) > 0 && (
+                      <span className="mr-1 line-through opacity-70">
+                        {formatBRL(i.quantity * i.unitPriceCents)}
+                      </span>
+                    )}
+                    {formatBRL(
+                      i.quantity * i.unitPriceCents - (i.programDiscountCents ?? 0)
+                    )}
                   </span>
                 </li>
               );
@@ -765,75 +801,44 @@ export function NegotiationPanel({
             )}
           </div>
         )}
-        {programConditions && programHasTerms && (
-          <div className="rounded-lg border border-gold/40 bg-gold/5 p-3 text-xs">
-            <p className="font-medium text-gold-foreground">
-              {programConditions.label} — condições do programa
-            </p>
-            <p className="mt-0.5 text-muted-foreground">
-              {tierLabels.join(" · ")}
-              {programConditions.minInstallmentCents > 0 && (
-                <> · parcela mínima {formatBRL(programConditions.minInstallmentCents)}</>
-              )}
-            </p>
-            <p className="mt-1 flex flex-wrap items-center gap-2">
-              <span>
-                {isCash ? (
+          {programConditions && programHasTerms && (
+            <div className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px]">
+              <p className="font-medium text-gold-foreground">
+                ★ {programConditions.label}
+              </p>
+              <p className="text-muted-foreground">
+                {tierLabels.join(" · ")}
+                {programConditions.minInstallmentCents > 0 && (
                   <>
-                    <strong>À vista</strong>, o cliente tem direito a{" "}
-                  </>
-                ) : (
-                  <>
-                    Em <strong>{installmentsNum}×</strong>, o cliente tem direito
-                    a{" "}
+                    {" "}
+                    · parcela mínima{" "}
+                    {formatBRL(programConditions.minInstallmentCents)}
                   </>
                 )}
-                <strong>{programDiscountPercent}%</strong> de desconto
+              </p>
+              <p className="mt-1">
+                {isCash ? "À vista" : `Em ${installmentsNum}×`}, o cliente tem
+                direito a <strong>{programDiscountPercent}%</strong>
+                {coveredCents > 0 && <> sobre {formatBRL(discountBaseCents)}</>}{" "}
+                —{" "}
+                {programDiscountPercent > 0 ? (
+                  <strong>
+                    aplicado automaticamente (−{formatBRL(tierAutoCents)})
+                  </strong>
+                ) : (
+                  "sem desconto nesta quantidade de parcelas"
+                )}
+                .
                 {coveredCents > 0 && (
                   <>
                     {" "}
-                    sobre <strong>{formatBRL(discountBaseCents)}</strong> — os
-                    procedimentos já cobertos pelo plano (
-                    {formatBRL(coveredCents)}) não recebem desconto de novo
+                    Procedimentos com benefício ({formatBRL(coveredCents)}) não
+                    recebem desconto de novo.
                   </>
                 )}
-                .
-              </span>
-              {!locked && programDiscountPercent > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAdjustMode("discount_percent");
-                    setAdjustValue(String(programDiscountPercent));
-                  }}
-                  className={cn(
-                    "rounded-full border px-2 py-0.5 font-medium transition-colors",
-                    programApplied
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                      : "border-gold bg-gold text-gold-foreground"
-                  )}
-                >
-                  {programApplied ? "desconto aplicado ✓" : "aplicar desconto"}
-                </button>
-              )}
-            </p>
-            {/* Mudou as parcelas depois de aplicar? O % antigo deixa de valer. */}
-            {adjustMode === "discount_percent" &&
-              Number(adjustValue.replace(",", ".")) > programDiscountPercent && (
-                <p className="mt-1 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-1.5 text-[11px] text-amber-900">
-                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                  <span>
-                    O desconto aplicado (
-                    {Number(adjustValue.replace(",", "."))}%) é{" "}
-                    <strong>maior que o da faixa de {installmentsNum}×</strong> (
-                    {programDiscountPercent}%). Clique em &quot;aplicar
-                    desconto&quot; para corrigir — ou a negociação vai para
-                    autorização do Gerente.
-                  </span>
-                </p>
-              )}
-          </div>
-        )}
+              </p>
+            </div>
+          )}
 
           {/* J6: os MESMOS campos da venda direta (componente único). */}
           <PaymentFields
@@ -856,35 +861,60 @@ export function NegotiationPanel({
             disabled={locked}
           />
 
-          {/* Ajuste manual (desconto/acréscimo) — dentro do teto da unidade. */}
-          <div>
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Ajuste
-            </span>
-            <div className="mt-0.5 flex gap-2">
-              <select
-                value={adjustMode}
-                onChange={(e) => setAdjustMode(e.target.value as AdjustMode)}
-                disabled={locked}
-                className={selectClass}
-              >
-                <option value="none">Sem ajuste</option>
-                <option value="discount_percent">Desconto (%)</option>
-                <option value="discount_amount">Desconto (R$)</option>
-                <option value="surcharge">Acréscimo (R$)</option>
-              </select>
-              {adjustMode !== "none" && (
-                <input
-                  value={adjustValue}
-                  onChange={(e) => setAdjustValue(e.target.value)}
+          {/* J7: cliente de programa não recebe desconto manual — o do
+              programa é automático (mesma regra da venda direta, §7.5). */}
+          {isProgramMember ? (
+            <p className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px] text-gold-foreground">
+              ★ Cliente de programa — o desconto é aplicado automaticamente
+              {programHasTerms
+                ? " conforme as parcelas escolhidas"
+                : " por procedimento"}
+              . Sem desconto manual.
+            </p>
+          ) : (
+            <div>
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Ajuste
+              </span>
+              <div className="mt-0.5 flex gap-2">
+                <select
+                  value={adjustMode}
+                  onChange={(e) => setAdjustMode(e.target.value as AdjustMode)}
                   disabled={locked}
-                  inputMode="decimal"
-                  placeholder={adjustMode === "discount_percent" ? "%" : "R$"}
-                  className={cn(inputClass, "flex-1")}
-                />
-              )}
+                  className={selectClass}
+                >
+                  <option value="none">Sem ajuste</option>
+                  <option value="discount_percent">Desconto (%)</option>
+                  <option value="discount_amount">Desconto (R$)</option>
+                  <option value="surcharge">Acréscimo (R$)</option>
+                </select>
+                {adjustMode !== "none" && (
+                  <input
+                    value={adjustValue}
+                    onChange={(e) => setAdjustValue(e.target.value)}
+                    disabled={locked}
+                    inputMode="decimal"
+                    placeholder={adjustMode === "discount_percent" ? "%" : "R$"}
+                    className={cn(inputClass, "flex-1")}
+                  />
+                )}
+              </div>
+              {rule.maxDiscountPercent != null &&
+                (adjustMode === "discount_percent" ||
+                  adjustMode === "discount_amount") && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Desconto máximo: {rule.maxDiscountPercent}% de{" "}
+                    {formatBRL(discountBaseCents)} ={" "}
+                    {formatBRL(
+                      Math.round(
+                        (discountBaseCents * rule.maxDiscountPercent) / 100
+                      )
+                    )}
+                    .
+                  </p>
+                )}
             </div>
-          </div>
+          )}
 
           {/* J1: à vista com desconto automático da regra comercial. */}
           {autoApplied && (
@@ -899,9 +929,26 @@ export function NegotiationPanel({
             rows={[
               { label: "Procedimentos aprovados", cents: subtotalCents },
               {
-                label: effectiveAdjustmentCents < 0 ? "Desconto" : "Acréscimo",
+                label: "Benefício do programa",
+                cents: programDiscountCents,
+                tone: "program",
+                note: programConditions?.label ?? undefined,
+              },
+              {
+                label:
+                  effectiveAdjustmentCents < 0
+                    ? isProgramMember
+                      ? "Desconto do programa"
+                      : "Desconto"
+                    : "Acréscimo",
                 cents: Math.abs(effectiveAdjustmentCents),
                 tone: effectiveAdjustmentCents < 0 ? "discount" : "surcharge",
+                note:
+                  isProgramMember && programDiscountPercent > 0
+                    ? `${programDiscountPercent}% em ${installmentsNum}×`
+                    : autoApplied
+                      ? `${autoPct}% à vista`
+                      : undefined,
               },
             ]}
             totalCents={finalCents}

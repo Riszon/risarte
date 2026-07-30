@@ -8,6 +8,8 @@ import {
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { PaymentMethod } from "@/lib/commercial";
+import { loadClientPrograms } from "@/lib/programs";
+import { applyBenefit } from "@/lib/empresarial/pricing";
 
 export type NegotiationActionResult = {
   ok: boolean;
@@ -70,6 +72,73 @@ export async function savePlanNegotiation(
       ? Math.floor(input.installments)
       : 1;
 
+  // J7: BENEFÍCIO DO PROGRAMA por item (Empresarial/PPR+). Calculado AQUI, no
+  // servidor, pelo mesmo motor da venda direta — a tela não manda valor de
+  // dinheiro. É isso que faz o benefício entrar no valor final (antes o
+  // orçamento do plano ia cheio para a negociação).
+  const programDiscountByItem = new Map<string, number>();
+  const excluded = new Set(input.excludedItemIds);
+  let discountableCents = 0;
+  const programs = await loadClientPrograms(clientId);
+  if (input.allItemIds.length > 0) {
+    const { data: itemRows } = await supabase
+      .from("treatment_plan_option_items")
+      .select("id, option_id, procedure_id, quantity, unit_price_cents")
+      .in("id", input.allItemIds);
+    for (const it of itemRows ?? []) {
+      const itemId = it.id as string;
+      const lineFull =
+        (it.quantity as number) * (it.unit_price_cents as number);
+      const procedureId = it.procedure_id as string | null;
+      const benefit = procedureId ? programs.byProcedure[procedureId] : null;
+      const benefitCents =
+        benefit && benefit.available
+          ? applyBenefit(
+              {
+                benefitType: benefit.benefitType,
+                benefitValue: benefit.benefitValue,
+              },
+              lineFull
+            ).savedCents
+          : 0;
+      if (benefitCents > 0) programDiscountByItem.set(itemId, benefitCents);
+      // Base do desconto de pagamento: itens da opção em negociação, incluídos
+      // e SEM benefício por procedimento (não descontam duas vezes).
+      if (
+        (it.option_id as string) === input.optionId &&
+        !excluded.has(itemId) &&
+        benefitCents === 0
+      ) {
+        discountableCents += lineFull;
+      }
+    }
+  }
+
+  /**
+   * J7: para cliente de PROGRAMA o desconto de pagamento é do SISTEMA, não da
+   * tela — recalculado aqui a cada salvamento pelo parcelamento escolhido
+   * (mesma regra da venda direta). PPR+ usa a faixa do plano; Empresarial não
+   * tem faixa (o benefício dele é por procedimento). O valor vindo da tela é
+   * ignorado de propósito, para nunca congelar um desconto antigo.
+   */
+  const ppr = programs.ppr?.active ? programs.ppr : null;
+  let adjustmentCents = Math.round(input.adjustmentCents);
+  if (ppr) {
+    const pct =
+      installments <= 1
+        ? ppr.cashDiscountPercent
+        : ([...ppr.tiers]
+            .sort((a, b) => a.upToInstallments - b.upToInstallments)
+            .find((t) => installments <= t.upToInstallments)?.discountPercent ??
+          0);
+    adjustmentCents = -Math.round(
+      (discountableCents * Math.max(0, pct)) / 100
+    );
+  } else if (programs.active) {
+    // Empresarial: benefício automático por procedimento, sem desconto manual.
+    adjustmentCents = 0;
+  }
+
   const { data: saved, error } = await supabase
     .from("plan_negotiations")
     .upsert(
@@ -78,7 +147,7 @@ export async function savePlanNegotiation(
         option_id: input.optionId,
         client_id: clientId,
         clinic_id: client.clinic_id,
-        adjustment_cents: Math.round(input.adjustmentCents),
+        adjustment_cents: adjustmentCents,
         payment_method: input.paymentMethod,
         installments,
         partial_reason: input.partialReason.trim() || null,
@@ -98,7 +167,6 @@ export async function savePlanNegotiation(
   }
 
   // Itens: regrava o espelho da opção (incluído × excluído pelo cliente).
-  const excluded = new Set(input.excludedItemIds);
   await supabase
     .from("plan_negotiation_items")
     .delete()
@@ -111,6 +179,7 @@ export async function savePlanNegotiation(
           negotiation_id: saved.id,
           item_id: itemId,
           included: !excluded.has(itemId),
+          program_discount_cents: programDiscountByItem.get(itemId) ?? 0,
         }))
       );
     if (itemsError) {

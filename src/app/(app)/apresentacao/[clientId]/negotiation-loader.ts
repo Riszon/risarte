@@ -10,6 +10,7 @@ import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import type { PlanEvent } from "@/lib/planning";
 import { loadClientPrograms } from "@/lib/programs";
+import { applyBenefit } from "@/lib/empresarial/pricing";
 import type { ScheduleEntry } from "@/lib/payments";
 import type {
   NegotiationData,
@@ -139,6 +140,23 @@ export async function loadNegotiationBlock(
         .returns<CommercialRuleRow[]>(),
     ]);
 
+  // J7: benefício do programa por PROCEDIMENTO (Empresarial/PPR+) aplicado aos
+  // itens do orçamento — é o desconto que o cliente tem direito, e ele tem de
+  // aparecer no valor (antes o plano ia cheio para a negociação).
+  const [programs, empresarialConditions] = await Promise.all([
+    loadClientPrograms(clientId),
+    loadEmpresarialConditions(clientId),
+  ]);
+  const benefitFor = (procedureId: string | null, lineFull: number): number => {
+    if (!procedureId) return 0;
+    const b = programs.byProcedure[procedureId];
+    if (!b || !b.available) return 0;
+    return applyBenefit(
+      { benefitType: b.benefitType, benefitValue: b.benefitValue },
+      lineFull
+    ).savedCents;
+  };
+
   const options: NegotiationOption[] = (optRows ?? []).map((o) => ({
     id: o.id,
     title: o.title,
@@ -151,6 +169,10 @@ export async function loadNegotiationBlock(
         quantity: i.quantity,
         unitPriceCents: i.unit_price_cents,
         procedureId: i.procedure_id ?? null,
+        programDiscountCents: benefitFor(
+          i.procedure_id ?? null,
+          i.quantity * i.unit_price_cents
+        ),
         gutGravity: i.gut_gravity,
         gutUrgency: i.gut_urgency,
         gutTendency: i.gut_tendency,
@@ -263,10 +285,6 @@ export async function loadNegotiationBlock(
   // J3: camada ÚNICA de programas do cliente (PPR+ E Risarte Empresarial) —
   // procedimento coberto por QUALQUER programa não recebe desconto manual de
   // novo, e o selo mostra o programa certo.
-  const [programs, empresarialConditions] = await Promise.all([
-    loadClientPrograms(clientId),
-    loadEmpresarialConditions(clientId),
-  ]);
   const ppr = programs.ppr?.active ? programs.ppr : null;
   const coveredProcedureIds = Object.values(programs.byProcedure)
     .filter((b) => b.available && b.benefitType !== "NOT_COVERED")

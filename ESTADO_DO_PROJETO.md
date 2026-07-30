@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.159.0** · Última migração: **0181**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.160.0** · Última migração: **0182**_
+
+> **LOTE J — J7: o benefício do programa entra no VALOR da negociação ✅
+> (v0.160.0, migração 0182):** bug relatado com print — no cockpit o valor final
+> **não descontava** os benefícios (cartão dizia "cobertos R$ 1.500,00" e cobrava
+> os R$ 7.280,00 cheios). Causa: a negociação nasce do orçamento do plano e
+> ninguém aplicava o benefício por procedimento; o J3 só usava a lista de
+> cobertos para tirá-los da base do desconto manual — o benefício em si nunca
+> era concedido. Agora: `program_discount_cents` por item e no total, calculado
+> no SERVIDOR pelo mesmo motor da venda direta (carência/limite/frequência), e
+> `evaluate_negotiation_rules` calcula **final = subtotal − benefício +
+> ajuste**. O desconto de pagamento do **PPR+** virou **automático** pela faixa
+> do parcelamento escolhido (era um botão "aplicar desconto" manual, que
+> congelava percentual antigo) e **cliente de programa não recebe desconto
+> manual** (§7.5, igual à venda direta). O desconto manual passou a ser medido
+> sobre a base descontável, não sobre o subtotal cheio. Na tela: cada item
+> mostra o preço riscado + "★ −valor", e o resumo ganhou a linha "Benefício do
+> programa".
 
 > **LOTE J — J6: refinamento visual das duas telas do dinheiro ✅ (v0.159.0,
 > sem migração):** venda direta e cockpit do consultor passaram a ser montadas
