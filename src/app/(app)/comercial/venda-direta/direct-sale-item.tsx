@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   PAYMENT_METHODS,
-  PAYMENT_METHOD_LABELS,
   type CommercialRule,
   type PaymentMethod,
 } from "@/lib/commercial";
@@ -33,6 +32,12 @@ import {
   setDirectSaleConditions,
 } from "./actions";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import { FlowSection } from "@/components/commercial/flow-section";
+import { MoneySummary } from "@/components/commercial/money-summary";
+import {
+  PaymentFields,
+  type PayMode,
+} from "@/components/commercial/payment-fields";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { savePaymentSchedule } from "../payment-schedule-actions";
 
@@ -93,8 +98,6 @@ export type DirectSaleRow = {
 };
 
 type AdjustMode = "none" | "desc_reais" | "desc_pct" | "acresc";
-/** I9b: formato do pagamento — uma escolha só. */
-type PayMode = "avista" | "parcelado" | "entrada";
 
 /** Centavos → "1234,56" para preencher o campo. */
 function centsToInput(cents: number): string {
@@ -209,11 +212,6 @@ export function SaleItem({
   // Desconto do PLANO para o parcelamento escolhido (à vista usa o percentual
   // do plano; parcelado usa a faixa correspondente).
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
-  /** 1× (à vista) até o máximo liberado (plano ou unidade). */
-  const installmentOptions = useMemo(
-    () => Array.from({ length: Math.max(1, maxInstallments) }, (_, i) => i + 1),
-    [maxInstallments]
-  );
   // À VISTA = 1×, e só em PIX ou depósito (regra do dono, 26/07/2026).
   const isCash = installmentsNum === 1;
   const methodOptions = useMemo(
@@ -299,6 +297,12 @@ export function SaleItem({
     baseCents,
     payableCents,
   ]);
+
+  // J6: selo do passo 2 — o que está na tela ainda não foi gravado.
+  const unsavedConditions =
+    preview.discountCents !== sale.discountCents ||
+    installmentsNum !== sale.installments ||
+    effectiveMethod !== (sale.paymentMethod ?? "");
 
   // As condições geram as cobranças AO VIVO — o dono vê o plano antes de salvar.
   const sig = `${payMode}|${downCents}|${installmentsNum}|${firstDue}|${preview.final}`;
@@ -417,360 +421,215 @@ export function SaleItem({
       </button>
 
       {expanded && (
-        <div className="mt-3 space-y-3 border-t pt-3">
-          {/* Itens: valor normal → desconto do programa → final. */}
-          <ul className="space-y-0.5 text-xs">
-            {sale.items.map((i, idx) => {
-              const full = i.unitPriceCents * i.quantity;
-              const hasProg = i.programDiscountCents > 0;
-              return (
-                <li key={idx} className="flex justify-between gap-2">
-                  <span className="min-w-0">
-                    {i.description}
-                    {i.quantity > 1 ? ` ×${i.quantity}` : ""}
-                    {hasProg && (
-                      <span className="ml-1 text-gold">
-                        ★ −{formatBRL(i.programDiscountCents)}
-                      </span>
-                    )}
-                    {i.giftLabel && (
-                      <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-gold-foreground">
-                        <Gift className="size-3" />
-                        Entregar: {i.giftLabel}
-                      </span>
-                    )}
-                    {i.benefitNote && (
-                      <span className="mt-0.5 flex items-start gap-1 text-[11px] text-amber-800">
-                        <TriangleAlert className="mt-0.5 size-3 shrink-0" />
-                        {i.benefitNote}
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0 tabular-nums">
-                    {hasProg && (
-                      <span className="mr-1 text-muted-foreground line-through">
-                        {formatBRL(full)}
-                      </span>
-                    )}
-                    {formatBRL(i.finalCents)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* Resumo: programa + parcela. */}
-          <div className="space-y-0.5 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
-            {sale.programDiscountCents > 0 && (
-              <div className="flex justify-between text-gold">
-                <span>★ Desconto do programa</span>
-                <span className="tabular-nums">
-                  − {formatBRL(sale.programDiscountCents)}
-                </span>
-              </div>
-            )}
-            {sale.discountCents > 0 && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Desconto</span>
-                <span className="tabular-nums">
-                  − {formatBRL(sale.discountCents)}
-                </span>
-              </div>
-            )}
-            {sale.surchargeCents > 0 && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Acréscimo</span>
-                <span className="tabular-nums">
-                  + {formatBRL(sale.surchargeCents)}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between font-medium">
-              <span>Total</span>
-              <span className="tabular-nums">{formatBRL(sale.finalCents)}</span>
-            </div>
-            {sale.installments > 1 && sale.finalCents > 0 && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Parcelamento</span>
-                <span className="tabular-nums">
-                  {sale.installments}× de{" "}
-                  {formatBRL(Math.round(sale.finalCents / sale.installments))}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Quem fez o fechamento (discreto). */}
-          {(sale.contractSignedByName || sale.paymentConfirmedByName) && (
-            <p className="text-[11px] text-muted-foreground">
-              {sale.contractSignedByName &&
-                `Contrato: ${sale.contractSignedByName}`}
-              {sale.contractSignedByName && sale.paymentConfirmedByName
-                ? " · "
-                : ""}
-              {sale.paymentConfirmedByName &&
-                `Pagamento: ${sale.paymentConfirmedByName}`}
-            </p>
-          )}
-
-          {showClientLink && sale.clientId && (
-            <Link
-              href={`/prontuarios/${sale.clientId}`}
-              className="inline-block text-xs text-primary hover:underline"
-            >
-              Abrir prontuário →
-            </Link>
-          )}
-
-          {sale.cancelled ? (
-            <p className="text-xs text-muted-foreground">Venda cancelada.</p>
-          ) : sale.status === "concluida" ? (
-            <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-emerald-900">
-              <PartyPopper className="size-4" />
-              <span className="text-sm font-medium">
-                Venda concluída — contrato assinado e pagamento confirmado.
-              </span>
-            </div>
-          ) : !sale.canClose ? (
-            <p className="flex items-center gap-1.5 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
-              <Wallet className="size-3.5" />
-              Aguardando a recepção ou o gerente definir o pagamento e fechar.
-            </p>
-          ) : (
-            <>
-              {/* Condições do plano do cliente — acima da regra da unidade. */}
-              {sale.programConditions && (
-                <div className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px]">
-                  <p className="font-medium text-gold-foreground">
-                    PPR+ {sale.programConditions.planName} — condições do plano
-                  </p>
-                  <p className="text-muted-foreground">
-                    {tierLabels.join(" · ")}
-                    {sale.programConditions.minInstallmentCents > 0 && (
-                      <>
-                        {" "}
-                        · parcela mínima{" "}
-                        {formatBRL(sale.programConditions.minInstallmentCents)}
-                      </>
-                    )}
-                  </p>
-                  <p className="mt-1 flex flex-wrap items-center gap-2">
-                    <span>
-                      {isCash ? (
-                        <>
-                          <strong>À vista</strong>: o cliente tem direito a{" "}
-                          <strong>{programDiscountPercent}%</strong>
-                        </>
-                      ) : (
-                        <>
-                          Em <strong>{installmentsNum}×</strong>, o cliente tem
-                          direito a <strong>{programDiscountPercent}%</strong>
-                        </>
-                      )}
-                      {coveredCents > 0 && (
-                        <> sobre {formatBRL(baseCents)}</>
-                      )}
-                      .
-                    </span>
-                    <span className="rounded-full border border-gold/50 bg-gold/10 px-2 py-0.5 font-medium text-gold-foreground">
-                      {programDiscountPercent > 0
-                        ? `aplicado automaticamente: −${formatBRL(preview.discountCents)}`
-                        : "sem desconto nesta quantidade de parcelas"}
-                    </span>
-                  </p>
-                </div>
-              )}
-
-              <div className="rounded-lg border bg-muted/20 p-2">
-                {/* I9b: UMA pergunta define o formato do pagamento — some a
-                    contradição de escolher "à vista" e ter entrada embaixo. */}
-                <p className="mb-1.5 text-xs font-medium">
-                  Como o cliente vai pagar?
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(
-                    [
-                      ["avista", "À vista"],
-                      ["parcelado", "Parcelado"],
-                      ["entrada", "Entrada + parcelas"],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => {
-                        setPayMode(value);
-                        if (value === "avista") setInstallments("1");
-                        else if (installments === "1") setInstallments("2");
-                      }}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs transition-colors",
-                        payMode === value
-                          ? "border-primary bg-primary font-medium text-primary-foreground"
-                          : "border-border hover:bg-muted"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                  {payMode === "entrada" && (
-                    <label className="block text-xs">
-                      <span className="text-muted-foreground">Entrada (R$)</span>
-                      <input
-                        value={downReais}
-                        onChange={(e) => setDownReais(e.target.value)}
-                        inputMode="decimal"
-                        placeholder="0,00"
-                        className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-                      />
-                    </label>
-                  )}
-                  {payMode !== "avista" && (
-                    <label className="block text-xs">
-                      <span className="text-muted-foreground">
-                        Parcelas (até {maxInstallments}×)
-                      </span>
-                      <select
-                        value={installments}
-                        onChange={(e) => setInstallments(e.target.value)}
-                        className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-                      >
-                        {installmentOptions
-                          .filter((n) => n > 1)
-                          .map((n) => (
-                            <option key={n} value={String(n)}>
-                              {n}×
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                  )}
-                  <label className="block text-xs">
-                    <span className="text-muted-foreground">
-                      Forma de pagamento
-                    </span>
-                    <select
-                      value={effectiveMethod}
-                      onChange={(e) => setMethod(e.target.value)}
-                      className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-                    >
-                      <option value="">Escolher...</option>
-                      {methodOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {PAYMENT_METHOD_LABELS[m]}
-                        </option>
-                      ))}
-                    </select>
-                    {isCash && (
-                      <span className="text-[11px] text-muted-foreground">
-                        À vista só em PIX ou depósito.
-                      </span>
-                    )}
-                  </label>
-                  {payMode !== "avista" && (
-                    <label className="block text-xs">
-                      <span className="text-muted-foreground">
-                        1º vencimento
-                      </span>
-                      <input
-                        type="date"
-                        value={firstDue}
-                        onChange={(e) => setFirstDue(e.target.value)}
-                        className="mt-0.5 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* Resumo do dinheiro: total cheio → descontos → final. */}
-                <dl className="mt-2 space-y-0.5 rounded-md bg-background px-2 py-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">
-                      Valor total (sem descontos)
-                    </dt>
-                    <dd className="tabular-nums">
-                      {formatBRL(sale.subtotalCents)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">
-                      Total de descontos
-                      {sale.programDiscountCents > 0 && (
+        <div className="mt-3 space-y-4 border-t pt-3">
+          {/* PASSO 1 — o que foi vendido. */}
+          <FlowSection
+            step={1}
+            title="O que foi vendido"
+            hint={`${sale.items.length} procedimento(s) lançado(s) na clínica`}
+          >
+            <ul className="space-y-1 text-xs">
+              {sale.items.map((i, idx) => {
+                const full = i.unitPriceCents * i.quantity;
+                const hasProg = i.programDiscountCents > 0;
+                return (
+                  <li key={idx} className="flex justify-between gap-2">
+                    <span className="min-w-0">
+                      {i.description}
+                      {i.quantity > 1 ? ` ×${i.quantity}` : ""}
+                      {hasProg && (
                         <span className="ml-1 text-gold">
-                          (plano {formatBRL(sale.programDiscountCents)})
+                          ★ −{formatBRL(i.programDiscountCents)}
                         </span>
                       )}
-                    </dt>
-                    <dd className="tabular-nums text-gold">
-                      −
-                      {formatBRL(
-                        sale.programDiscountCents + preview.discountCents
+                      {i.giftLabel && (
+                        <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-gold-foreground">
+                          <Gift className="size-3" />
+                          Entregar: {i.giftLabel}
+                        </span>
                       )}
-                    </dd>
-                  </div>
-                  {preview.surchargeCents > 0 && (
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Acréscimo</dt>
-                      <dd className="tabular-nums">
-                        +{formatBRL(preview.surchargeCents)}
-                      </dd>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t pt-0.5 font-semibold">
-                    <dt>Valor final</dt>
-                    <dd className="tabular-nums">{formatBRL(preview.final)}</dd>
-                  </div>
-                  {(preview.discountCents !== sale.discountCents ||
-                    installmentsNum !== sale.installments ||
-                    effectiveMethod !== (sale.paymentMethod ?? "")) && (
-                    <p className="mt-1 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-1.5 text-[11px] text-amber-900">
-                      <TriangleAlert className="mt-0.5 size-3 shrink-0" />
-                      <span>
-                        <strong>Condições não salvas.</strong> O resumo do topo
-                        ainda mostra {formatBRL(sale.finalCents)} — clique em{" "}
-                        <strong>Salvar condições</strong> para valer.
-                      </span>
-                    </p>
-                  )}
-                  {payMode !== "avista" && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <dt>Como fica</dt>
-                      <dd className="tabular-nums">
-                        {payMode === "entrada" && downCents > 0 && (
-                          <>entrada {formatBRL(downCents)} + </>
-                        )}
-                        {installmentsNum}× de{" "}
-                        {formatBRL(
-                          Math.round(
-                            Math.max(0, preview.final - downCents) /
-                              installmentsNum
-                          )
-                        )}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
+                      {i.benefitNote && (
+                        <span className="mt-0.5 flex items-start gap-1 text-[11px] text-amber-800">
+                          <TriangleAlert className="mt-0.5 size-3 shrink-0" />
+                          {i.benefitNote}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 tabular-nums">
+                      {hasProg && (
+                        <span className="mr-1 text-muted-foreground line-through">
+                          {formatBRL(full)}
+                        </span>
+                      )}
+                      {formatBRL(i.finalCents)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
 
-                {/* Ajuste: UM controle (nenhum / desconto / acréscimo). */}
+            {showClientLink && sale.clientId && (
+              <Link
+                href={`/prontuarios/${sale.clientId}`}
+                className="inline-block text-xs text-primary hover:underline"
+              >
+                Abrir prontuário →
+              </Link>
+            )}
+          </FlowSection>
+
+          {sale.cancelled || sale.status === "concluida" || !sale.canClose ? (
+            <>
+              {/* Fechado/cancelado/sem permissão: mostra o dinheiro COMO ESTÁ
+                  salvo, sem campos de edição. */}
+              <div className="pl-7">
+                <MoneySummary
+                  rows={[
+                    { label: "Valor dos procedimentos", cents: sale.subtotalCents },
+                    {
+                      label: "Desconto do programa",
+                      cents: sale.programDiscountCents,
+                      tone: "program",
+                    },
+                    { label: "Desconto", cents: sale.discountCents, tone: "discount" },
+                    {
+                      label: "Acréscimo",
+                      cents: sale.surchargeCents,
+                      tone: "surcharge",
+                    },
+                  ]}
+                  totalCents={sale.finalCents}
+                  footer={
+                    sale.installments > 1 && sale.finalCents > 0
+                      ? `${sale.installments}× de ${formatBRL(
+                          Math.round(sale.finalCents / sale.installments)
+                        )}`
+                      : null
+                  }
+                />
+              </div>
+              {sale.cancelled ? (
+                <p className="pl-7 text-xs text-muted-foreground">
+                  Venda cancelada — os procedimentos dela foram cancelados no
+                  prontuário.
+                </p>
+              ) : sale.status === "concluida" ? (
+                <div className="ml-7 flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-emerald-900">
+                  <PartyPopper className="size-4" />
+                  <span className="text-sm font-medium">
+                    Venda concluída — contrato assinado e pagamento confirmado.
+                  </span>
+                </div>
+              ) : (
+                <p className="ml-7 flex items-center gap-1.5 rounded-lg border bg-muted/40 p-2 text-xs text-muted-foreground">
+                  <Wallet className="size-3.5" />
+                  Aguardando a recepção ou o gerente definir o pagamento e
+                  fechar.
+                </p>
+              )}
+              {(sale.contractSignedByName || sale.paymentConfirmedByName) && (
+                <p className="pl-7 text-[11px] text-muted-foreground">
+                  {sale.contractSignedByName &&
+                    `Contrato: ${sale.contractSignedByName}`}
+                  {sale.contractSignedByName && sale.paymentConfirmedByName
+                    ? " · "
+                    : ""}
+                  {sale.paymentConfirmedByName &&
+                    `Pagamento: ${sale.paymentConfirmedByName}`}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              {/* PASSO 2 — o pagamento. Uma pergunta, um resumo, um botão. */}
+              <FlowSection
+                step={2}
+                title="Como o cliente vai pagar"
+                hint="Escolha o formato: os campos e as cobranças se ajustam sozinhos"
+                aside={
+                  unsavedConditions ? (
+                    <span className="flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                      <TriangleAlert className="size-3" />
+                      não salvo
+                    </span>
+                  ) : conditionsReady ? (
+                    <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+                      salvo
+                    </span>
+                  ) : null
+                }
+              >
+                {/* Condições do programa do cliente — acima da regra da unidade. */}
+                {sale.programConditions && (
+                  <div className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px]">
+                    <p className="font-medium text-gold-foreground">
+                      ★ PPR+ {sale.programConditions.planName}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {tierLabels.join(" · ")}
+                      {sale.programConditions.minInstallmentCents > 0 && (
+                        <>
+                          {" "}
+                          · parcela mínima{" "}
+                          {formatBRL(sale.programConditions.minInstallmentCents)}
+                        </>
+                      )}
+                    </p>
+                    <p className="mt-1">
+                      {isCash ? "À vista" : `Em ${installmentsNum}×`}, o cliente
+                      tem direito a{" "}
+                      <strong>{programDiscountPercent}%</strong>
+                      {coveredCents > 0 && <> sobre {formatBRL(baseCents)}</>} —{" "}
+                      {programDiscountPercent > 0 ? (
+                        <strong>
+                          aplicado automaticamente (−
+                          {formatBRL(preview.discountCents)})
+                        </strong>
+                      ) : (
+                        "sem desconto nesta quantidade de parcelas"
+                      )}
+                      .
+                    </p>
+                  </div>
+                )}
+
+                <PaymentFields
+                  payMode={payMode}
+                  onPayModeChange={(mode) => {
+                    setPayMode(mode);
+                    if (mode === "avista") setInstallments("1");
+                    else if (installments === "1") setInstallments("2");
+                  }}
+                  downReais={downReais}
+                  onDownReaisChange={setDownReais}
+                  installments={installments}
+                  onInstallmentsChange={setInstallments}
+                  maxInstallments={maxInstallments}
+                  method={effectiveMethod as PaymentMethod | ""}
+                  onMethodChange={(m) => setMethod(m)}
+                  methodOptions={methodOptions}
+                  firstDue={firstDue}
+                  onFirstDueChange={setFirstDue}
+                />
+
+                {/* Ajuste manual — só para quem não tem desconto automático. */}
                 {sale.isProgramMember ? (
-                  <p className="mt-2 rounded-md border border-gold/40 bg-gold/5 p-1.5 text-[11px] text-gold-foreground">
-                    ★ Cliente de programa — o desconto da faixa de parcelamento
-                    é aplicado automaticamente conforme as parcelas escolhidas.
-                    Sem desconto manual.
+                  <p className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px] text-gold-foreground">
+                    ★ Cliente de programa — o desconto é automático conforme as
+                    parcelas escolhidas. Sem desconto manual.
                   </p>
                 ) : (
-                  <div className="mt-2">
-                    <span className="text-xs text-muted-foreground">Ajuste</span>
+                  <div>
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      Ajuste
+                    </span>
                     <div className="mt-0.5 flex gap-2">
                       <select
                         value={adjustMode}
                         onChange={(e) =>
                           setAdjustMode(e.target.value as AdjustMode)
                         }
-                        className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+                        className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
                       >
                         <option value="none">Sem ajuste</option>
                         <option value="desc_reais">Desconto (R$)</option>
@@ -785,13 +644,13 @@ export function SaleItem({
                           onChange={(e) => setAdjustValue(e.target.value)}
                           inputMode="decimal"
                           placeholder={adjustMode === "desc_pct" ? "%" : "R$"}
-                          className="h-8 flex-1 rounded-md border border-input bg-transparent px-2 text-sm"
+                          className="h-9 flex-1 rounded-lg border border-input bg-background px-2 text-sm"
                         />
                       )}
                     </div>
                     {(adjustMode === "desc_reais" ||
                       adjustMode === "desc_pct") &&
-                      maxDiscountCents != null && (
+                      (maxDiscountCents != null ? (
                         <p className="mt-1 text-[11px] text-muted-foreground">
                           Desconto máximo: {formatBRL(maxDiscountCents)} (
                           {sale.rule.maxDiscountPercent}% de{" "}
@@ -799,100 +658,145 @@ export function SaleItem({
                           {coveredCents > 0 && (
                             <>
                               {" "}
-                              — os procedimentos já cobertos pelo plano (
+                              — procedimentos já cobertos pelo plano (
                               {formatBRL(coveredCents)}){" "}
                               <strong>não recebem desconto de novo</strong>.
                             </>
                           )}
                         </p>
-                      )}
-                    {(adjustMode === "desc_reais" ||
-                      adjustMode === "desc_pct") &&
-                      maxDiscountCents == null && (
+                      ) : (
                         <p className="mt-1 text-[11px] text-rose-700">
                           A rede não configurou desconto — não é permitido
                           desconto nesta unidade.
                         </p>
-                      )}
+                      ))}
                   </div>
                 )}
 
-                {/* J4b: as cobranças aparecem AO VIVO (antes de salvar) e
-                    "Personalizar" edita ali mesmo — um único botão grava tudo. */}
+                {/* UM resumo do dinheiro. */}
+                <MoneySummary
+                  rows={[
+                    {
+                      label: "Valor dos procedimentos",
+                      cents: sale.subtotalCents,
+                    },
+                    {
+                      label: "Desconto do programa",
+                      cents: sale.programDiscountCents,
+                      tone: "program",
+                    },
+                    {
+                      label: "Desconto",
+                      cents: preview.discountCents,
+                      tone: "discount",
+                    },
+                    {
+                      label: "Acréscimo",
+                      cents: preview.surchargeCents,
+                      tone: "surcharge",
+                    },
+                  ]}
+                  totalCents={preview.final}
+                  footer={
+                    payMode === "avista"
+                      ? null
+                      : `${
+                          payMode === "entrada" && downCents > 0
+                            ? `entrada ${formatBRL(downCents)} + `
+                            : ""
+                        }${installmentsNum}× de ${formatBRL(
+                          Math.round(
+                            Math.max(0, preview.final - downCents) /
+                              installmentsNum
+                          )
+                        )}`
+                  }
+                />
+
+                {/* Cobranças ao vivo (antes de salvar). */}
                 {preview.final > 0 && (
-                  <div className="mt-2">
-                    <PaymentScheduleEditor
-                      entries={schedule}
-                      onChange={(next) => setCustom({ sig, entries: next })}
-                      totalCents={preview.final}
-                      minInstallmentCents={sale.minInstallmentCents ?? null}
-                    />
-                  </div>
+                  <PaymentScheduleEditor
+                    entries={schedule}
+                    onChange={(next) => setCustom({ sig, entries: next })}
+                    totalCents={preview.final}
+                    minInstallmentCents={sale.minInstallmentCents ?? null}
+                  />
                 )}
 
-                <Button
-                  size="sm"
-                  className="mt-2 h-8 text-xs"
-                  disabled={isPending || !effectiveMethod}
-                  onClick={saveConditions}
-                >
-                  {isPending ? "Salvando…" : "Salvar pagamento"}
-                </Button>
-              </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    className="h-9"
+                    disabled={isPending || !effectiveMethod}
+                    onClick={saveConditions}
+                  >
+                    {isPending ? "Salvando…" : "Salvar pagamento"}
+                  </Button>
+                  {unsavedConditions && (
+                    <span className="text-[11px] text-muted-foreground">
+                      O valor no topo do cartão só muda depois de salvar.
+                    </span>
+                  )}
+                </div>
+              </FlowSection>
 
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium">
-                  Fechamento (assinatura + pagamento)
-                </p>
-                {/* Sem forma de pagamento definida não há o que assinar nem
-                    cobrar (a trava também existe no banco). */}
+              {/* PASSO 3 — fechamento. */}
+              <FlowSection
+                step={3}
+                title="Fechamento"
+                hint="Só é venda com documento assinado E pagamento confirmado"
+              >
                 {!zero && !conditionsReady && (
-                  <p className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
+                  <p className="flex items-start gap-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
                     <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
                     <span>
-                      Defina a <strong>forma de pagamento</strong> e o
-                      parcelamento acima (e salve as condições) para liberar o
-                      contrato e a cobrança.
+                      Salve o pagamento no passo 2 para liberar o contrato e a
+                      cobrança.
                     </span>
                   </p>
                 )}
-                <StepRow
-                  icon={<FileSignature className="size-3.5" />}
-                  label="Contrato assinado"
-                  done={sale.contractSigned}
-                  disabled={isPending || (!zero && !conditionsReady)}
-                  onToggle={(v) => step("contract", v)}
-                />
-                <StepRow
-                  icon={<Wallet className="size-3.5" />}
-                  label={
-                    zero
-                      ? "Cobrança emitida (R$ 0 — já conta como pago)"
-                      : "Cobrança emitida"
-                  }
-                  done={sale.paymentIssued}
-                  disabled={isPending || (!zero && !conditionsReady)}
-                  onToggle={(v) => step("payment_issued", v)}
-                />
-                {!zero && (
+                <div className="space-y-1.5">
+                  <StepRow
+                    icon={<FileSignature className="size-3.5" />}
+                    label="Contrato assinado"
+                    done={sale.contractSigned}
+                    disabled={isPending || (!zero && !conditionsReady)}
+                    onToggle={(v) => step("contract", v)}
+                  />
                   <StepRow
                     icon={<Wallet className="size-3.5" />}
-                    label="Pagamento confirmado"
-                    done={sale.paymentConfirmed}
-                    disabled={isPending || !sale.paymentIssued}
-                    onToggle={(v) => step("payment_confirmed", v)}
+                    label={
+                      zero
+                        ? "Cobrança emitida (R$ 0 — já conta como pago)"
+                        : "Cobrança emitida"
+                    }
+                    done={sale.paymentIssued}
+                    disabled={isPending || (!zero && !conditionsReady)}
+                    onToggle={(v) => step("payment_issued", v)}
                   />
-                )}
-              </div>
+                  {!zero && (
+                    <StepRow
+                      icon={<Wallet className="size-3.5" />}
+                      label="Pagamento confirmado"
+                      done={sale.paymentConfirmed}
+                      disabled={isPending || !sale.paymentIssued}
+                      onToggle={(v) => step("payment_confirmed", v)}
+                    />
+                  )}
+                </div>
+              </FlowSection>
 
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={cancel}
-                className="text-xs text-rose-600 hover:underline"
-              >
-                Cancelar venda
-              </button>
+              {/* Ação destrutiva: discreta e no fim. */}
+              <div className="border-t pt-2">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={cancel}
+                  className="text-xs text-muted-foreground hover:text-rose-600 hover:underline"
+                >
+                  Cancelar venda
+                </button>
+              </div>
             </>
           )}
         </div>

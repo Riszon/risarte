@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.158.0** · Última migração: **0181**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.159.0** · Última migração: **0181**_
+
+> **LOTE J — J6: refinamento visual das duas telas do dinheiro ✅ (v0.159.0,
+> sem migração):** venda direta e cockpit do consultor passaram a ser montadas
+> com os MESMOS componentes, em **passos numerados**: venda direta = 1 O que
+> foi vendido → 2 Como o cliente vai pagar → 3 Fechamento; cockpit = 1 O que o
+> cliente aprovou → 2 Como o cliente vai pagar → 3 Quem decide e observações.
+> Três componentes novos em `src/components/commercial/`: **FlowSection**
+> (passo numerado com título e uma linha de ajuda), **MoneySummary** (um resumo
+> só — entra apenas a linha que muda o total, com o valor final em destaque) e
+> **PaymentFields** (a pergunta "como vai pagar?" + os campos daquele formato,
+> componente único usado nas duas telas, o que impede as duas de divergirem).
+> Também: selo "salvo/não salvo" no passo 2 em vez do aviso grande, "Cancelar
+> venda" discreto no fim, campos maiores (h-9) e venda concluída/cancelada
+> mostrando o resumo do dinheiro sem campos de edição.
 
 > **LOTE J — J5: condição de pagamento do programa é automática ✅ (v0.158.0,
 > migração 0181):** cliente do **Risarte Empresarial** ou do **PPR+** passa a

@@ -39,6 +39,12 @@ import {
 } from "@/lib/commercial";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import { FlowSection } from "@/components/commercial/flow-section";
+import { MoneySummary } from "@/components/commercial/money-summary";
+import {
+  PaymentFields,
+  type PayMode,
+} from "@/components/commercial/payment-fields";
 import { savePaymentSchedule } from "@/app/(app)/comercial/payment-schedule-actions";
 import {
   acceptNegotiation,
@@ -92,8 +98,6 @@ const inputClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 type AdjustMode = "none" | "discount_percent" | "discount_amount" | "surcharge";
-/** J1: formato do pagamento — mesma pergunta da venda direta. */
-type PayMode = "avista" | "parcelado" | "entrada";
 
 function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
@@ -334,11 +338,6 @@ export function NegotiationPanel({
       (programConditions && programConditions.maxInstallments > 0
         ? programConditions.maxInstallments
         : 18)
-  );
-  const installmentOptions = useMemo(
-    () =>
-      Array.from({ length: maxInstallmentsAllowed }, (_, i) => i + 1),
-    [maxInstallmentsAllowed]
   );
   // À VISTA = 1×, e só em PIX ou depósito (regra do dono, 26/07/2026).
   const isCash = installmentsNum === 1;
@@ -642,35 +641,39 @@ export function NegotiationPanel({
           </p>
         )}
 
-        {/* Escolha do plano (principal × secundários aprovados). */}
-        {options.length > 1 && (
-          <label className="block text-sm">
+        {/* PASSO 1 — o que o cliente aprovou. */}
+        <FlowSection
+          step={1}
+          title="O que o cliente aprovou"
+          hint="Em ordem de prioridade (GUT) — desmarque o que ele NÃO aprovou"
+          aside={
             <span className="text-xs text-muted-foreground">
-              Plano em negociação (secundários são a carta na manga):
+              {option.items.length - excluded.size} de {option.items.length}
             </span>
-            <select
-              value={optionId}
-              onChange={(e) => setOptionId(e.target.value)}
-              disabled={locked}
-              className={cn(selectClass, "w-full")}
-            >
-              {options.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.isPrimary ? "★ Principal — " : "Secundário — "}
-                  {o.title}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+          }
+        >
+          {/* Escolha do plano (principal × secundários aprovados). */}
+          {options.length > 1 && (
+            <label className="block text-sm">
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Plano em negociação (secundários são a carta na manga)
+              </span>
+              <select
+                value={optionId}
+                onChange={(e) => setOptionId(e.target.value)}
+                disabled={locked}
+                className={cn(selectClass, "w-full")}
+              >
+                {options.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.isPrimary ? "★ Principal — " : "Secundário — "}
+                    {o.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
-        {/* Procedimentos: desmarcar = cliente NÃO aprovou (aprovação parcial). */}
-        <div>
-          <p className="mb-1 text-xs text-muted-foreground">
-            Procedimentos em ordem de prioridade (matriz GUT) — desmarque o que
-            o cliente NÃO aprovou. As marcações feitas em outros planos deste
-            cliente são preservadas ao trocar de plano.
-          </p>
           <ul className="space-y-1">
             {sortByGutDesc(option.items).map((i) => {
               const out = excluded.has(i.id);
@@ -702,9 +705,9 @@ export function NegotiationPanel({
             })}
           </ul>
           {isPartial && (
-            <div className="mt-2">
-              <label className="block text-xs font-medium text-rose-700">
-                Motivo da aprovação parcial (obrigatório):
+            <div>
+              <label className="block text-[11px] font-medium text-rose-700">
+                Motivo da aprovação parcial (obrigatório)
               </label>
               <textarea
                 value={partialReason}
@@ -715,8 +718,14 @@ export function NegotiationPanel({
               />
             </div>
           )}
-        </div>
+        </FlowSection>
 
+        {/* PASSO 2 — o pagamento (mesma estrutura da venda direta). */}
+        <FlowSection
+          step={2}
+          title="Como o cliente vai pagar"
+          hint="Escolha o formato: os campos e as cobranças se ajustam sozinhos"
+        >
         {/* PPR5b/J3: condições do programa do cliente — acima da regra da
             rede. Empresarial (benefício por procedimento) mostra só o selo e a
             trava do desconto. */}
@@ -826,122 +835,33 @@ export function NegotiationPanel({
           </div>
         )}
 
-        {/* J1: UMA pergunta define o formato do pagamento (igual à venda
-            direta) — os campos aparecem conforme a escolha. */}
-        <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
-          <p className="text-xs font-medium">Como o cliente vai pagar?</p>
-          <div className="flex flex-wrap gap-1.5">
-            {(
-              [
-                ["avista", "À vista"],
-                ["parcelado", "Parcelado"],
-                ["entrada", "Entrada + parcelas"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                disabled={locked}
-                onClick={() => {
-                  setPayMode(value);
-                  if (value === "avista") setInstallments("1");
-                  else if (installments === "1") setInstallments("2");
-                }}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs transition-colors",
-                  payMode === value
-                    ? "border-primary bg-primary font-medium text-primary-foreground"
-                    : "border-border hover:bg-muted",
-                  locked && "opacity-60"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            {payMode === "entrada" && (
-              <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">
-                  Entrada (R$)
-                </span>
-                <input
-                  value={downReais}
-                  onChange={(e) => setDownReais(e.target.value)}
-                  disabled={locked}
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  className={inputClass}
-                />
-              </label>
-            )}
-            {payMode !== "avista" && (
-              <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">
-                  Parcelas (até {maxInstallmentsAllowed}×)
-                </span>
-                <select
-                  value={installments}
-                  onChange={(e) => setInstallments(e.target.value)}
-                  disabled={locked}
-                  className={cn(selectClass, "w-full")}
-                >
-                  {installmentOptions
-                    .filter((n) => n > 1)
-                    .map((n) => (
-                      <option key={n} value={String(n)}>
-                        {n}×
-                      </option>
-                    ))}
-                </select>
-              </label>
-            )}
-            <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">
-                Pagamento{isCash ? " (à vista)" : ""}
-              </span>
-              <select
-                value={effectiveMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as PaymentMethod | "")
-                }
-                disabled={locked}
-                className={cn(selectClass, "w-full")}
-              >
-                <option value="">Escolher...</option>
-                {methodOptions.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABELS[m]}
-                  </option>
-                ))}
-              </select>
-              {isCash && (
-                <span className="text-[11px] text-muted-foreground">
-                  À vista só em PIX ou depósito.
-                </span>
-              )}
-            </label>
-            {payMode !== "avista" && (
-              <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">
-                  1º vencimento
-                </span>
-                <input
-                  type="date"
-                  value={firstDue}
-                  onChange={(e) => setFirstDue(e.target.value)}
-                  disabled={locked}
-                  className={inputClass}
-                />
-              </label>
-            )}
-          </div>
+          {/* J6: os MESMOS campos da venda direta (componente único). */}
+          <PaymentFields
+            payMode={payMode}
+            onPayModeChange={(mode) => {
+              setPayMode(mode);
+              if (mode === "avista") setInstallments("1");
+              else if (installments === "1") setInstallments("2");
+            }}
+            downReais={downReais}
+            onDownReaisChange={setDownReais}
+            installments={installments}
+            onInstallmentsChange={setInstallments}
+            maxInstallments={maxInstallmentsAllowed}
+            method={effectiveMethod}
+            onMethodChange={setPaymentMethod}
+            methodOptions={methodOptions}
+            firstDue={firstDue}
+            onFirstDueChange={setFirstDue}
+            disabled={locked}
+          />
 
           {/* Ajuste manual (desconto/acréscimo) — dentro do teto da unidade. */}
-          <label className="block text-sm">
-            <span className="text-xs text-muted-foreground">Ajuste</span>
-            <div className="flex gap-2">
+          <div>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Ajuste
+            </span>
+            <div className="mt-0.5 flex gap-2">
               <select
                 value={adjustMode}
                 onChange={(e) => setAdjustMode(e.target.value as AdjustMode)}
@@ -964,127 +884,129 @@ export function NegotiationPanel({
                 />
               )}
             </div>
-          </label>
+          </div>
 
           {/* J1: à vista com desconto automático da regra comercial. */}
           {autoApplied && (
-            <p className="rounded-md border border-emerald-300 bg-emerald-50 p-1.5 text-[11px] text-emerald-900">
+            <p className="rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-[11px] text-emerald-900">
               Desconto automático à vista ({autoPct}%):{" "}
               <strong>−{formatBRL(autoCents)}</strong> — já aplicado no total.
             </p>
           )}
-        </div>
 
-        {/* Principal decisor. */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="text-xs text-muted-foreground">
-              O cliente é o principal decisor?
-            </span>
-            <select
-              value={decider}
-              onChange={(e) => setDecider(e.target.value as "" | "sim" | "nao")}
-              disabled={locked}
-              className={cn(selectClass, "w-full")}
-            >
-              <option value="">Não informado</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </label>
-          {decider === "nao" && (
-            <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">
-                Quem decide? (nome/relação)
-              </span>
-              <input
-                value={deciderNotes}
-                onChange={(e) => setDeciderNotes(e.target.value)}
-                disabled={locked}
-                className={inputClass}
-              />
-            </label>
-          )}
-        </div>
-
-        {/* Observações do consultor. */}
-        <label className="block text-sm">
-          <span className="text-xs text-muted-foreground">
-            Observações da negociação
-          </span>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            disabled={locked}
-            className="mt-1 min-h-14 w-full rounded-lg border border-input bg-transparent p-2 text-sm"
-          />
-        </label>
-
-        {/* Totais. */}
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 text-sm">
-          <span className="text-muted-foreground">
-            Subtotal {formatBRL(subtotalCents)}
-            {effectiveAdjustmentCents !== 0 && (
-              <>
-                {" "}
-                · {effectiveAdjustmentCents < 0 ? "desconto" : "acréscimo"}{" "}
-                {formatBRL(Math.abs(effectiveAdjustmentCents))}
-              </>
-            )}
-            {payMode !== "avista" && finalCents > 0 && (
-              <>
-                {" "}
-                · como fica:{" "}
-                {payMode === "entrada" && downCents > 0 && (
-                  <>entrada {formatBRL(downCents)} + </>
-                )}
-                {installmentsNum}× de{" "}
-                {formatBRL(
-                  Math.round(
-                    Math.max(0, finalCents - downCents) / installmentsNum
-                  )
-                )}
-              </>
-            )}
-          </span>
-          <span className="text-base font-semibold">{formatBRL(finalCents)}</span>
-        </div>
-
-        {/* J4b: cobranças AO VIVO (antes de salvar), em leitura compacta —
-            "Personalizar" edita data e valor ali mesmo. */}
-        {finalCents > 0 && schedule.length > 0 && (
-          <PaymentScheduleEditor
-            entries={schedule}
-            onChange={(next) => setCustom({ sig, entries: next })}
+          {/* UM resumo do dinheiro (mesmo formato da venda direta). */}
+          <MoneySummary
+            rows={[
+              { label: "Procedimentos aprovados", cents: subtotalCents },
+              {
+                label: effectiveAdjustmentCents < 0 ? "Desconto" : "Acréscimo",
+                cents: Math.abs(effectiveAdjustmentCents),
+                tone: effectiveAdjustmentCents < 0 ? "discount" : "surcharge",
+              },
+            ]}
             totalCents={finalCents}
-            minInstallmentCents={minInstallmentCents}
-            readOnly={locked}
+            footer={
+              payMode === "avista" || finalCents <= 0
+                ? null
+                : `${
+                    payMode === "entrada" && downCents > 0
+                      ? `entrada ${formatBRL(downCents)} + `
+                      : ""
+                  }${installmentsNum}× de ${formatBRL(
+                    Math.round(
+                      Math.max(0, finalCents - downCents) / installmentsNum
+                    )
+                  )}`
+            }
           />
-        )}
 
-        {/* Aviso ao consultor: fora da regra (antes mesmo de salvar). */}
-        {!locked && liveViolations.length > 0 && (
-          <p className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-            <span>
-              Fora da regra comercial: {liveViolations.join("; ")}. Ao salvar, o
-              Gerente da unidade será acionado para autorizar.
+          {/* Cobranças AO VIVO (antes de salvar), em leitura compacta —
+              "Personalizar" edita data e valor ali mesmo. */}
+          {finalCents > 0 && schedule.length > 0 && (
+            <PaymentScheduleEditor
+              entries={schedule}
+              onChange={(next) => setCustom({ sig, entries: next })}
+              totalCents={finalCents}
+              minInstallmentCents={minInstallmentCents}
+              readOnly={locked}
+            />
+          )}
+
+          {/* Aviso ao consultor: fora da regra (antes mesmo de salvar). */}
+          {!locked && liveViolations.length > 0 && (
+            <p className="flex items-start gap-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>
+                Fora da regra comercial: {liveViolations.join("; ")}. Ao salvar,
+                o Gerente da unidade será acionado para autorizar.
+              </span>
+            </p>
+          )}
+        </FlowSection>
+
+        {/* PASSO 3 — quem decide e o que ficou combinado. */}
+        <FlowSection
+          step={3}
+          title="Quem decide e observações"
+          hint="Informação que ajuda o follow-up e o replanejamento"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="text-[11px] font-medium text-muted-foreground">
+                O cliente é o principal decisor?
+              </span>
+              <select
+                value={decider}
+                onChange={(e) =>
+                  setDecider(e.target.value as "" | "sim" | "nao")
+                }
+                disabled={locked}
+                className={cn(selectClass, "w-full")}
+              >
+                <option value="">Não informado</option>
+                <option value="sim">Sim</option>
+                <option value="nao">Não</option>
+              </select>
+            </label>
+            {decider === "nao" && (
+              <label className="block text-sm">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Quem decide? (nome/relação)
+                </span>
+                <input
+                  value={deciderNotes}
+                  onChange={(e) => setDeciderNotes(e.target.value)}
+                  disabled={locked}
+                  className={inputClass}
+                />
+              </label>
+            )}
+          </div>
+          <label className="block text-sm">
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Observações da negociação
             </span>
-          </p>
-        )}
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={locked}
+              className="mt-1 min-h-14 w-full rounded-lg border border-input bg-transparent p-2 text-sm"
+            />
+          </label>
+        </FlowSection>
 
-        {/* Ações. */}
+        {/* Ações — sempre no fim, com a principal em destaque. */}
         {status === "aceita" ? (
-          <p className="flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-sm text-emerald-800">
+          <p className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-sm text-emerald-800">
             <CheckCircle2 className="size-4" />
             Cliente aceitou — aguardando o fechamento pelo Assistente Comercial
             (contrato + pagamento).
           </p>
         ) : (
           canEdit && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2 border-t pt-3">
               <Button disabled={isPending} onClick={save}>
-                Salvar negociação
+                {isPending ? "Salvando…" : "Salvar negociação"}
               </Button>
               {negotiation && (
                 <Button
@@ -1102,6 +1024,7 @@ export function NegotiationPanel({
               )}
               <Button
                 variant="ghost"
+                className="ml-auto text-muted-foreground"
                 disabled={isPending}
                 onClick={() => setReturnOpen(true)}
               >
