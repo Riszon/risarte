@@ -181,24 +181,38 @@ export function NegotiationPanel({
     String(negotiation?.installments ?? 1)
   );
   // J1: formato do pagamento (mesma pergunta da venda direta).
-  const [payMode, setPayMode] = useState<PayMode>(
-    (negotiation?.schedule ?? []).some((e) => e.kind === "entrada")
-      ? "entrada"
-      : (negotiation?.installments ?? 1) > 1
-        ? "parcelado"
-        : "avista"
-  );
-  const [downReais, setDownReais] = useState(
-    negotiation?.downPaymentCents
-      ? centsToInput(negotiation.downPaymentCents)
-      : ""
-  );
-  const [firstDue, setFirstDue] = useState(
+  const initialPayMode: PayMode = (negotiation?.schedule ?? []).some(
+    (e) => e.kind === "entrada"
+  )
+    ? "entrada"
+    : (negotiation?.installments ?? 1) > 1
+      ? "parcelado"
+      : "avista";
+  const initialDownCents = negotiation?.downPaymentCents ?? 0;
+  const initialFirstDue =
     negotiation?.schedule?.[0]?.dueDate ??
-      new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10);
+  const [payMode, setPayMode] = useState<PayMode>(initialPayMode);
+  const [downReais, setDownReais] = useState(
+    initialDownCents ? centsToInput(initialDownCents) : ""
   );
+  const [firstDue, setFirstDue] = useState(initialFirstDue);
   const downCents =
     payMode === "entrada" ? (parseBRLToCents(downReais) ?? 0) : 0;
+  // J4b: as cobranças vivem NA TELA (antes de salvar), igual à venda direta —
+  // derivadas das condições, com a personalização guardada pela "assinatura"
+  // das condições em que ela valia.
+  const [custom, setCustom] = useState<{
+    sig: string;
+    entries: ScheduleEntry[];
+  } | null>(
+    (negotiation?.schedule?.length ?? 0) > 0
+      ? {
+          sig: `${initialPayMode}|${initialDownCents}|${Math.max(1, negotiation?.installments ?? 1)}|${initialFirstDue}|${negotiation?.finalCents ?? 0}`,
+          entries: negotiation?.schedule ?? [],
+        }
+      : null
+  );
   const [partialReason, setPartialReason] = useState(
     negotiation?.partialReason ?? ""
   );
@@ -400,6 +414,22 @@ export function NegotiationPanel({
     return min > 0 ? min : null;
   })();
 
+  // J4b: condições → cobranças ao vivo (respeitando a personalização feita).
+  const sig = `${payMode}|${downCents}|${installmentsNum}|${firstDue}|${finalCents}`;
+  const autoSchedule = useMemo(
+    () =>
+      finalCents > 0
+        ? buildSchedule({
+            totalCents: finalCents,
+            downPaymentCents: downCents,
+            installments: payMode === "avista" ? 1 : installmentsNum,
+            firstDueDate: firstDue,
+          })
+        : [],
+    [finalCents, downCents, payMode, installmentsNum, firstDue]
+  );
+  const schedule = custom?.sig === sig ? custom.entries : autoSchedule;
+
   function save() {
     if (!option) return;
     startTransition(async () => {
@@ -420,18 +450,12 @@ export function NegotiationPanel({
         toast.error(r.error ?? "Algo deu errado.");
         return;
       }
-      // J1: no mesmo clique, gera e grava as cobranças (entrada + parcelas) —
-      // igual à venda direta, um botão só.
-      if (r.negotiationId && finalCents > 0) {
-        const entries = buildSchedule({
-          totalCents: finalCents,
-          downPaymentCents: downCents,
-          installments: payMode === "avista" ? 1 : installmentsNum,
-          firstDueDate: firstDue,
-        });
+      // J4b: no mesmo clique grava as cobranças exatamente como estão na tela
+      // (personalizadas ou não) — um botão só para finalizar.
+      if (r.negotiationId && finalCents > 0 && schedule.length > 0) {
         const s = await savePaymentSchedule({
           negotiationId: r.negotiationId,
-          entries,
+          entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
         });
         if (!s.ok) {
           toast.warning(`Negociação salva. ${s.error ?? ""}`);
@@ -1010,21 +1034,17 @@ export function NegotiationPanel({
           <span className="text-base font-semibold">{formatBRL(finalCents)}</span>
         </div>
 
-        {/* J1: cobranças já salvas, em leitura — "Personalizar" edita data e
-            valor (editar uma recalcula as seguintes). */}
-        {negotiation &&
-          negotiation.finalCents > 0 &&
-          (negotiation.schedule?.length ?? 0) > 0 && (
-            <PaymentScheduleEditor
-              negotiationId={negotiation.id}
-              totalCents={negotiation.finalCents}
-              minInstallmentCents={minInstallmentCents}
-              initial={negotiation.schedule}
-              downPaymentCents={negotiation.downPaymentCents}
-              installments={negotiation.installments}
-              readOnly={locked}
-            />
-          )}
+        {/* J4b: cobranças AO VIVO (antes de salvar), em leitura compacta —
+            "Personalizar" edita data e valor ali mesmo. */}
+        {finalCents > 0 && schedule.length > 0 && (
+          <PaymentScheduleEditor
+            entries={schedule}
+            onChange={(next) => setCustom({ sig, entries: next })}
+            totalCents={finalCents}
+            minInstallmentCents={minInstallmentCents}
+            readOnly={locked}
+          />
+        )}
 
         {/* Aviso ao consultor: fora da regra (antes mesmo de salvar). */}
         {!locked && liveViolations.length > 0 && (

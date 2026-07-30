@@ -2,9 +2,11 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import {
   resolveCommercialRule,
+  ruleFreeingMethods,
   type CommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
+import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import type { PlanEvent } from "@/lib/planning";
 import { loadClientPrograms } from "@/lib/programs";
 import type { ScheduleEntry } from "@/lib/payments";
@@ -296,23 +298,23 @@ export async function loadNegotiationBlock(
     planId,
     options,
     negotiation,
-    // O PPR+ fica ACIMA da regra da rede/unidade (docs/PPR.md §7).
-    rule: ppr
-      ? {
-          // I8: mantém os demais campos da regra (desconto à vista, parcela
-          // mínima por meio) — o programa só AMPLIA teto e parcelas.
-          ...baseRule,
-          maxDiscountPercent: Math.max(
-            baseRule.maxDiscountPercent ?? 0,
-            ppr.cashDiscountPercent,
-            ...ppr.tiers.map((t) => t.discountPercent)
-          ),
-          maxInstallments: Math.max(
-            baseRule.maxInstallments ?? 1,
-            ppr.maxInstallments
-          ),
-        }
-      : baseRule,
+    // J4b: MESMA regra da venda direta — o PPR+ amplia teto/parcelas E as
+    // formas de pagamento (era a paridade que faltava: a venda direta já usava
+    // effectiveRuleWithPpr, o cockpit não), e o Empresarial libera os meios.
+    rule: ruleFreeingMethods(
+      effectiveRuleWithPpr(
+        baseRule,
+        ppr
+          ? {
+              cashDiscountPercent: ppr.cashDiscountPercent,
+              maxInstallments: ppr.maxInstallments,
+              allowedMethods: ppr.allowedMethods,
+              tiers: ppr.tiers,
+            }
+          : null
+      ),
+      Boolean(programs.companyId)
+    ),
     planEvents,
     sale,
     excludedDescriptions,

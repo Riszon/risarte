@@ -583,7 +583,7 @@ export default async function AtendimentoPage(
         "id, appointment_id, procedure_name, name, planned_minutes, plan_order, session_index, session_total, stage_name"
       )
       .in("appointment_id", shownIds)
-      .neq("status", "done")
+      .not("status", "in", "(done,cancelled)")
       .order("plan_order", { nullsFirst: false })
       .order("session_index")
       .returns<

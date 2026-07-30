@@ -846,7 +846,7 @@ export async function getAppointmentSessionOptions(appointmentId: string): Promi
       "id, procedure_id, procedure_name, session_index, session_total, name, planned_minutes, status, appointment_id"
     )
     .eq("client_id", appt.client_id)
-    .neq("status", "done")
+    .not("status", "in", "(done,cancelled)")
     .order("created_at")
     .returns<
       {
@@ -1052,7 +1052,7 @@ export async function updateAppointment(
       .from("treatment_sessions")
       .select("id")
       .eq("appointment_id", appointmentId)
-      .neq("status", "done");
+      .not("status", "in", "(done,cancelled)");
     const currentIds = (currentRows ?? []).map((r) => r.id);
     const link = desired.filter((id) => !currentIds.includes(id));
     const unlink = currentIds.filter((id) => !desired.includes(id));
@@ -1198,7 +1198,7 @@ export async function updateAppointmentStatus(
       .from("treatment_sessions")
       .update({ status: "pending", appointment_id: null })
       .eq("appointment_id", appointmentId)
-      .neq("status", "done");
+      .not("status", "in", "(done,cancelled)");
     await supabase
       .from("appointments")
       .update({ treatment_session_id: null })

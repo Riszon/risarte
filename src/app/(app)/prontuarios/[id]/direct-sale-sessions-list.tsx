@@ -8,11 +8,14 @@ const STATE_STYLE: Record<DirectSaleSession["state"], string> = {
   done: "border-emerald-300 bg-emerald-50 text-emerald-700",
   scheduled: "border-sky-300 bg-sky-50 text-sky-700",
   open: "border-amber-300 bg-amber-50 text-amber-700",
+  // J4a: venda cancelada → o procedimento não vale mais (fica no histórico).
+  cancelled: "border-border bg-muted text-muted-foreground",
 };
 const STATE_LABEL: Record<DirectSaleSession["state"], string> = {
   done: "Concluído",
   scheduled: "Agendado",
   open: "Em aberto",
+  cancelled: "Cancelado",
 };
 
 function fmt(iso: string): string {
@@ -56,7 +59,15 @@ export function DirectSaleSessionsList({
         {sessions.map((s) => (
           <li key={s.id}>
             <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0">{s.procedureName}</span>
+              <span
+                className={cn(
+                  "min-w-0",
+                  s.state === "cancelled" &&
+                    "text-muted-foreground line-through"
+                )}
+              >
+                {s.procedureName}
+              </span>
               <span
                 className={cn(
                   "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
@@ -75,13 +86,20 @@ export function DirectSaleSessionsList({
                     {s.executorName ? ` · por ${s.executorName}` : ""}
                   </>
                 )}
-                {s.state !== "done" && s.appointmentAt && (
-                  <>
-                    Agendado para {fmt(s.appointmentAt)}
-                    {s.providerName ? ` · com ${s.providerName}` : ""}
-                  </>
-                )}
-                {s.state !== "done" && !s.appointmentAt && "Sem agendamento."}
+                {s.state === "cancelled" &&
+                  "A venda deste procedimento foi cancelada."}
+                {s.state !== "done" &&
+                  s.state !== "cancelled" &&
+                  s.appointmentAt && (
+                    <>
+                      Agendado para {fmt(s.appointmentAt)}
+                      {s.providerName ? ` · com ${s.providerName}` : ""}
+                    </>
+                  )}
+                {s.state !== "done" &&
+                  s.state !== "cancelled" &&
+                  !s.appointmentAt &&
+                  "Sem agendamento."}
               </p>
             )}
           </li>

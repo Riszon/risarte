@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.156.0** · Última migração: **0179**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.157.0** · Última migração: **0180**_
+
+> **LOTE J — J4: pagamento em UMA tela + cancelamento de verdade ✅ (v0.157.0,
+> migração 0180):** feedback do teste do dono. (a) **Venda cancelada agora
+> cancela os procedimentos** — a sessão do prontuário passou a guardar de qual
+> venda veio (`treatment_sessions.direct_sale_id`, com preenchimento
+> retroativo) e `cancel_direct_sale` cancela venda + procedimentos + cobranças
+> e devolve o benefício do programa; procedimento cancelado aparece riscado
+> ("Cancelado") e sai de todas as listas de pendentes. Reparo das vendas já
+> canceladas incluído. (b) **Cobranças AO VIVO**: o plano aparece na tela antes
+> de salvar (era preciso salvar para depois personalizar) e **um único botão**
+> grava condições + cobranças exatamente como estão. (c) **Lista compacta em 2
+> colunas** — 10 parcelas não viram uma tela inteira. (d) **Boleto no
+> Empresarial**: cliente do programa vê TODAS as formas de pagamento da rede
+> (decisão do dono), na tela e no banco. (e) **Paridade**: o cockpit passou a
+> usar a mesma regra da venda direta (`effectiveRuleWithPpr`), então o PPR+
+> amplia formas de pagamento nos dois.
 
 > **LOTE J — J3: programas acima das regras no cockpit ✅ (v0.156.0, sem
 > migração) — LOTE J (J1–J3) COMPLETO:** o cockpit do consultor passou a

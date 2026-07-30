@@ -8,6 +8,7 @@ import { parseBRLToCents } from "@/lib/pricing";
 import {
   automaticDiscountPercent,
   resolveCommercialRule,
+  ruleFreeingMethods,
   type CommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
@@ -104,10 +105,14 @@ export async function setDirectSaleConditions(
     ? (await loadPprConditionsForClients([info.clientId])).get(info.clientId) ??
       null
     : null;
-  const rule = effectiveRuleWithPpr(
-    resolveCommercialRule(ruleRows ?? [], info.clinicId),
-    pprConditions
-  ) as CommercialRule;
+  const rule = ruleFreeingMethods(
+    effectiveRuleWithPpr(
+      resolveCommercialRule(ruleRows ?? [], info.clinicId),
+      pprConditions
+    ) as CommercialRule,
+    // J4a: Empresarial libera todas as formas de pagamento (inclui boleto).
+    info.isProgramMember
+  );
 
   if (pprConditions) {
     // PPR+: o desconto da faixa é do SISTEMA, não da tela — recalculado AQUI a
@@ -268,26 +273,24 @@ export async function cancelDirectSale(
     return { ok: false, error: "Você não pode cancelar esta venda direta." };
   }
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("direct_sales")
-    .update({
-      cancelled: true,
-      status: "cancelada",
-      // Data/autor ficam registrados para o dashboard mostrar na lista de
-      // cancelados (migração 0161).
-      cancelled_at: new Date().toISOString(),
-      cancelled_by: session.userId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", saleId)
-    .is("closed_at", null);
+  // J4a: uma função só no banco cancela a venda E os procedimentos dela. Antes
+  // a tela cancelava a venda e as sessões ficavam "Concluído" no prontuário
+  // (bug relatado pelo dono). A função também devolve o benefício do programa
+  // e cancela as cobranças em aberto.
+  const { error } = await supabase.rpc("cancel_direct_sale", {
+    p_sale_id: saleId,
+  });
   if (error) {
-    console.error("cancelDirectSale failed:", error.message);
+    const m = error.message;
+    if (m.includes("ALREADY_CLOSED")) {
+      return { ok: false, error: "Venda já concluída — não pode ser cancelada." };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Você não pode cancelar esta venda direta." };
+    }
+    console.error("cancel_direct_sale failed:", m);
     return { ok: false, error: "Não foi possível cancelar a venda." };
   }
-  // PPR5: venda cancelada devolve o benefício usado (a limpeza volta a estar
-  // liberada, por exemplo).
-  await supabase.from("ppr_benefit_usages").delete().eq("direct_sale_id", saleId);
   await logAudit({
     action: "update",
     entityType: "direct_sale_cancel",
@@ -295,5 +298,6 @@ export async function cancelDirectSale(
     clinicId: info.clinicId,
   });
   revalidatePath("/comercial/venda-direta");
+  revalidatePath(`/prontuarios/${info.clientId ?? ""}`);
   return { ok: true };
 }

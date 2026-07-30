@@ -6,6 +6,7 @@ import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import {
   resolveCommercialRule,
+  ruleFreeingMethods,
   type CommercialRule,
   type CommercialRuleRow,
   type PaymentMethod,
@@ -197,17 +198,21 @@ export async function loadDirectSaleContext(
     procedures,
     appointments,
     // O PPR+ é superior à regra da rede/unidade: amplia parcelas e formas.
-    rule: effectiveRuleWithPpr(
-      resolveCommercialRule(ruleRows ?? [], clinicId),
-      program.ppr
-        ? {
-            cashDiscountPercent: program.ppr.cashDiscountPercent,
-            maxInstallments: program.ppr.maxInstallments,
-            allowedMethods: program.ppr.allowedMethods,
-            tiers: program.ppr.tiers,
-          }
-        : null
-    ) as CommercialRule,
+    // J4a: o Empresarial libera TODAS as formas de pagamento.
+    rule: ruleFreeingMethods(
+      effectiveRuleWithPpr(
+        resolveCommercialRule(ruleRows ?? [], clinicId),
+        program.ppr
+          ? {
+              cashDiscountPercent: program.ppr.cashDiscountPercent,
+              maxInstallments: program.ppr.maxInstallments,
+              allowedMethods: program.ppr.allowedMethods,
+              tiers: program.ppr.tiers,
+            }
+          : null
+      ) as CommercialRule,
+      Boolean(program.companyId)
+    ),
     programActive: program.active,
     // Mostra de qual programa veio o benefício (PPR+ ou Empresarial).
     programName: program.label ?? program.companyName,
@@ -218,7 +223,7 @@ export async function loadDirectSaleContext(
 export type DirectSaleSession = {
   id: string;
   procedureName: string;
-  state: "open" | "scheduled" | "done";
+  state: "open" | "scheduled" | "done" | "cancelled";
   doneAt: string | null;
   executorName: string | null;
   providerName: string | null;
@@ -310,18 +315,22 @@ export async function loadClientDirectSales(
     hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager", "sdr"]);
   const isManager =
     session.isAdminMaster || hasRoleInClinic(session, clinicId, ["unit_manager"]);
-  // Regra do fechamento: a da unidade AMPLIADA pelo plano do cliente (PPR+).
-  const rule = effectiveRuleWithPpr(
-    resolveCommercialRule(ruleRows ?? [], clinicId),
-    program.ppr
-      ? {
-          cashDiscountPercent: program.ppr.cashDiscountPercent,
-          maxInstallments: program.ppr.maxInstallments,
-          allowedMethods: program.ppr.allowedMethods,
-          tiers: program.ppr.tiers,
-        }
-      : null
-  ) as CommercialRule;
+  // Regra do fechamento: a da unidade AMPLIADA pelo plano do cliente (PPR+) e,
+  // no Empresarial, com TODAS as formas de pagamento liberadas (J4a).
+  const rule = ruleFreeingMethods(
+    effectiveRuleWithPpr(
+      resolveCommercialRule(ruleRows ?? [], clinicId),
+      program.ppr
+        ? {
+            cashDiscountPercent: program.ppr.cashDiscountPercent,
+            maxInstallments: program.ppr.maxInstallments,
+            allowedMethods: program.ppr.allowedMethods,
+            tiers: program.ppr.tiers,
+          }
+        : null
+    ) as CommercialRule,
+    Boolean(program.companyId)
+  );
 
   const idsForNames = [
     ...new Set(
@@ -422,7 +431,7 @@ export async function loadClientDirectSales(
     (sessRows ?? []) as {
       id: string;
       procedure_name: string;
-      status: "pending" | "scheduled" | "done";
+      status: "pending" | "scheduled" | "done" | "cancelled";
       done_at: string | null;
       executed_by: string | null;
       appointment:
@@ -439,7 +448,15 @@ export async function loadClientDirectSales(
     return {
       id: r.id,
       procedureName: r.procedure_name,
-      state: r.status === "done" ? "done" : isScheduled ? "scheduled" : "open",
+      state:
+        // J4a: procedimento de venda cancelada não conta como feito.
+        r.status === "cancelled"
+          ? "cancelled"
+          : r.status === "done"
+            ? "done"
+            : isScheduled
+              ? "scheduled"
+              : "open",
       doneAt: r.done_at,
       executorName: r.executed_by ? (names.get(r.executed_by) ?? null) : null,
       providerName: prov?.full_name ?? null,

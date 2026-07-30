@@ -106,6 +106,20 @@ export function resolveCommercialRule(
 }
 
 /**
+ * J4a: cliente do Risarte Empresarial vê TODAS as formas de pagamento da rede
+ * (decisão do dono, 29/07/2026 — o boleto não aparecia porque a unidade não o
+ * tinha na lista). O programa sobrepõe a restrição de meios da unidade, como já
+ * acontece com o PPR+. Os demais limites (teto de desconto, parcela mínima)
+ * continuam valendo.
+ */
+export function ruleFreeingMethods<T extends { allowedMethods: PaymentMethod[] | null }>(
+  rule: T,
+  isEmpresarialMember: boolean
+): T {
+  return isEmpresarialMember ? { ...rule, allowedMethods: null } : rule;
+}
+
+/**
  * I8: desconto AUTOMÁTICO da regra comercial. Só existe à vista (1×) — no
  * parcelado não entra desconto automático nenhum; vale só o que o consultor
  * aplicar à mão, dentro do teto da unidade.

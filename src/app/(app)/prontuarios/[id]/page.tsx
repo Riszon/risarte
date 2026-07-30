@@ -1501,7 +1501,7 @@ export default async function ClientDetailPage(
           "id, procedure_name, name, session_index, session_total, planned_minutes, stage_name, planner_provider_id, provider:profiles!treatment_sessions_planner_provider_id_fkey ( full_name )"
         )
         .eq("client_id", id)
-        .neq("status", "done")
+        .not("status", "in", "(done,cancelled)")
         .is("appointment_id", null)
         .limit(30)
         .returns<

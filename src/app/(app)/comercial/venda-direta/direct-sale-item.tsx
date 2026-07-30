@@ -134,21 +134,38 @@ export function SaleItem({
   const [method, setMethod] = useState<string>(sale.paymentMethod ?? "");
   const [installments, setInstallments] = useState(String(sale.installments));
   // I9b: uma escolha só define o formato do pagamento.
-  const [payMode, setPayMode] = useState<PayMode>(
-    (sale.schedule ?? []).some((e) => e.kind === "entrada")
-      ? "entrada"
-      : sale.installments > 1
-        ? "parcelado"
-        : "avista"
-  );
+  const initialPayMode: PayMode = (sale.schedule ?? []).some(
+    (e) => e.kind === "entrada"
+  )
+    ? "entrada"
+    : sale.installments > 1
+      ? "parcelado"
+      : "avista";
+  const initialDownCents = sale.downPaymentCents ?? 0;
+  const initialFirstDue =
+    sale.schedule?.[0]?.dueDate ?? new Date().toISOString().slice(0, 10);
+  const [payMode, setPayMode] = useState<PayMode>(initialPayMode);
   const [downReais, setDownReais] = useState(
-    sale.downPaymentCents ? centsToInput(sale.downPaymentCents) : ""
+    initialDownCents ? centsToInput(initialDownCents) : ""
   );
-  const [firstDue, setFirstDue] = useState(
-    sale.schedule?.[0]?.dueDate ?? new Date().toISOString().slice(0, 10)
-  );
+  const [firstDue, setFirstDue] = useState(initialFirstDue);
   const downCents =
     payMode === "entrada" ? (parseBRLToCents(downReais) ?? 0) : 0;
+  // J4b: as cobranças vivem NA TELA (antes de salvar). O plano é DERIVADO das
+  // condições; a personalização (ou o plano que veio salvo) fica guardada com a
+  // "assinatura" das condições em que valia — mexer nas condições volta ao
+  // plano automático, sem efeito colateral.
+  const [custom, setCustom] = useState<{
+    sig: string;
+    entries: ScheduleEntry[];
+  } | null>(
+    (sale.schedule?.length ?? 0) > 0
+      ? {
+          sig: `${initialPayMode}|${initialDownCents}|${Math.max(1, sale.installments)}|${initialFirstDue}|${sale.finalCents}`,
+          entries: sale.schedule ?? [],
+        }
+      : null
+  );
   // Ajuste como UM controle: nenhum / desconto R$ / desconto % / acréscimo R$.
   const initialMode: AdjustMode =
     sale.discountCents > 0
@@ -283,9 +300,27 @@ export function SaleItem({
     payableCents,
   ]);
 
+  // As condições geram as cobranças AO VIVO — o dono vê o plano antes de salvar.
+  const sig = `${payMode}|${downCents}|${installmentsNum}|${firstDue}|${preview.final}`;
+  const autoSchedule = useMemo(
+    () =>
+      preview.final > 0
+        ? buildSchedule({
+            totalCents: preview.final,
+            downPaymentCents: payMode === "entrada" ? downCents : 0,
+            installments: payMode === "avista" ? 1 : installmentsNum,
+            firstDueDate: firstDue,
+          })
+        : [],
+    [preview.final, payMode, downCents, installmentsNum, firstDue]
+  );
+  // Plano exibido: o personalizado (enquanto as condições não mudaram) ou o
+  // automático.
+  const schedule = custom?.sig === sig ? custom.entries : autoSchedule;
+
   /**
-   * I9b: UM botão só. Salva as condições e, no mesmo clique, gera e grava as
-   * cobranças (entrada + parcelas) — o dono não precisa salvar duas vezes.
+   * J4b: UM botão só, e ele salva exatamente o que está na tela — condições +
+   * as cobranças (personalizadas ou não).
    */
   function saveConditions() {
     startTransition(async () => {
@@ -301,15 +336,9 @@ export function SaleItem({
         toast.error(r.error ?? "Algo deu errado.");
         return;
       }
-      const entries = buildSchedule({
-        totalCents: preview.final,
-        downPaymentCents: payMode === "entrada" ? downCents : 0,
-        installments: payMode === "avista" ? 1 : installmentsNum,
-        firstDueDate: firstDue,
-      });
       const s = await savePaymentSchedule({
         directSaleId: sale.id,
-        entries,
+        entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
       });
       if (s.ok) toast.success("Pagamento salvo.");
       else toast.warning(`Condições salvas. ${s.error ?? ""}`);
@@ -788,13 +817,18 @@ export function SaleItem({
                   </div>
                 )}
 
-                {/* Prévia do novo total. */}
-                <div className="mt-2 flex items-center justify-between rounded-md bg-background px-2 py-1 text-xs">
-                  <span className="text-muted-foreground">Novo total</span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {formatBRL(preview.final)}
-                  </span>
-                </div>
+                {/* J4b: as cobranças aparecem AO VIVO (antes de salvar) e
+                    "Personalizar" edita ali mesmo — um único botão grava tudo. */}
+                {preview.final > 0 && (
+                  <div className="mt-2">
+                    <PaymentScheduleEditor
+                      entries={schedule}
+                      onChange={(next) => setCustom({ sig, entries: next })}
+                      totalCents={preview.final}
+                      minInstallmentCents={sale.minInstallmentCents ?? null}
+                    />
+                  </div>
+                )}
 
                 <Button
                   size="sm"
@@ -802,26 +836,8 @@ export function SaleItem({
                   disabled={isPending || !effectiveMethod}
                   onClick={saveConditions}
                 >
-                  Salvar pagamento
+                  {isPending ? "Salvando…" : "Salvar pagamento"}
                 </Button>
-
-                {/* I9b: as cobranças já salvas, em leitura. Quem quiser mudar
-                    data/valor clica em "Personalizar" — editar uma recalcula as
-                    seguintes. */}
-                {sale.finalCents > 0 &&
-                  conditionsReady &&
-                  (sale.schedule?.length ?? 0) > 0 && (
-                    <div className="mt-3">
-                      <PaymentScheduleEditor
-                        directSaleId={sale.id}
-                        totalCents={sale.finalCents}
-                        minInstallmentCents={sale.minInstallmentCents ?? null}
-                        initial={sale.schedule ?? []}
-                        downPaymentCents={sale.downPaymentCents ?? 0}
-                        installments={sale.installments}
-                      />
-                    </div>
-                  )}
               </div>
 
               <div className="space-y-1.5">

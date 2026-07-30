@@ -132,7 +132,7 @@ export async function suggestTreatmentSeries(
     .from("treatment_sessions")
     .select("id, procedure_id, session_index, status, created_at, plan_order")
     .eq("client_id", clientId)
-    .neq("status", "done")
+    .not("status", "in", "(done,cancelled)")
     // H4.5: respeita a sequência definida pelo Planner (plan_order); depois a
     // ordem de criação e o índice da sessão.
     .order("plan_order", { nullsFirst: false })
