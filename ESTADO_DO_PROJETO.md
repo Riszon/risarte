@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.157.0** · Última migração: **0180**_
+_Atualizado em: 29/07/2026 · Versão do sistema: **0.158.0** · Última migração: **0181**_
+
+> **LOTE J — J5: condição de pagamento do programa é automática ✅ (v0.158.0,
+> migração 0181):** cliente do **Risarte Empresarial** ou do **PPR+** passa a
+> ter automaticamente a condição diferenciada do programa na venda do
+> tratamento — boleto liberado e parcelamento próprio. Descoberta: a condição
+> do Empresarial **já existia** e é editada na ficha da empresa
+> (`companies.payment_methods` = BOLETO/PIX/CARD e
+> `default_max_installments`, padrão **24×**), mas era usada só na
+> **mensalidade** do programa; a venda do tratamento continuava presa à regra
+> da unidade (era a causa real do boleto não aparecer). Agora a regra efetiva é
+> a da unidade **ampliada** pelos programas: formas de pagamento = **união** (o
+> programa acrescenta, nunca tira) e parcelamento = o **maior** dos dois. Vale
+> nas 4 pontas — ficha do cliente, lista de vendas diretas, validação do
+> servidor e cockpit do consultor — e no banco (`empresarial_client_conditions`
+> dentro de `evaluate_negotiation_rules`). Isso substitui o "libera todas as
+> formas" provisório da 0180, que ignorava o que cada empresa contratou.
+> `ruleWithProgramConditions` em `src/lib/commercial.ts` com 5 testes novos
+> (195 no total).
 
 > **LOTE J — J4: pagamento em UMA tela + cancelamento de verdade ✅ (v0.157.0,
 > migração 0180):** feedback do teste do dono. (a) **Venda cancelada agora

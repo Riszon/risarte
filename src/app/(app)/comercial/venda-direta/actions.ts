@@ -8,10 +8,11 @@ import { parseBRLToCents } from "@/lib/pricing";
 import {
   automaticDiscountPercent,
   resolveCommercialRule,
-  ruleFreeingMethods,
+  ruleWithProgramConditions,
   type CommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
+import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import { directSaleViolations } from "@/lib/direct-sale";
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
@@ -105,13 +106,17 @@ export async function setDirectSaleConditions(
     ? (await loadPprConditionsForClients([info.clientId])).get(info.clientId) ??
       null
     : null;
-  const rule = ruleFreeingMethods(
+  // J5: a condição da empresa parceira (boleto + parcelamento próprio) vale
+  // aqui também — a validação do servidor precisa concordar com a tela.
+  const empresarialConditions = info.clientId
+    ? await loadEmpresarialConditions(info.clientId)
+    : null;
+  const rule = ruleWithProgramConditions(
     effectiveRuleWithPpr(
       resolveCommercialRule(ruleRows ?? [], info.clinicId),
       pprConditions
     ) as CommercialRule,
-    // J4a: Empresarial libera todas as formas de pagamento (inclui boleto).
-    info.isProgramMember
+    empresarialConditions
   );
 
   if (pprConditions) {

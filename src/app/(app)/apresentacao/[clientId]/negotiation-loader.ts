@@ -2,11 +2,12 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import {
   resolveCommercialRule,
-  ruleFreeingMethods,
+  ruleWithProgramConditions,
   type CommercialRule,
   type CommercialRuleRow,
 } from "@/lib/commercial";
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
+import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import type { PlanEvent } from "@/lib/planning";
 import { loadClientPrograms } from "@/lib/programs";
 import type { ScheduleEntry } from "@/lib/payments";
@@ -262,7 +263,10 @@ export async function loadNegotiationBlock(
   // J3: camada ÚNICA de programas do cliente (PPR+ E Risarte Empresarial) —
   // procedimento coberto por QUALQUER programa não recebe desconto manual de
   // novo, e o selo mostra o programa certo.
-  const programs = await loadClientPrograms(clientId);
+  const [programs, empresarialConditions] = await Promise.all([
+    loadClientPrograms(clientId),
+    loadEmpresarialConditions(clientId),
+  ]);
   const ppr = programs.ppr?.active ? programs.ppr : null;
   const coveredProcedureIds = Object.values(programs.byProcedure)
     .filter((b) => b.available && b.benefitType !== "NOT_COVERED")
@@ -283,11 +287,12 @@ export async function loadNegotiationBlock(
         }
       : programs.active
         ? {
-            // Empresarial: benefício é POR PROCEDIMENTO (sem condições próprias
-            // de parcelamento) — o teto/parcelas seguem a regra da unidade.
+            // Empresarial: o desconto é POR PROCEDIMENTO (não há faixas de
+            // parcelamento), mas a empresa parceira define formas de pagamento
+            // e parcelamento próprios (J5).
             label: programs.label ?? "Risarte Empresarial",
             cashDiscountPercent: 0,
-            maxInstallments: 0,
+            maxInstallments: empresarialConditions?.maxInstallments ?? 0,
             minInstallmentCents: 0,
             tiers: [] as { upToInstallments: number; discountPercent: number }[],
             coveredProcedureIds,
@@ -298,10 +303,10 @@ export async function loadNegotiationBlock(
     planId,
     options,
     negotiation,
-    // J4b: MESMA regra da venda direta — o PPR+ amplia teto/parcelas E as
-    // formas de pagamento (era a paridade que faltava: a venda direta já usava
-    // effectiveRuleWithPpr, o cockpit não), e o Empresarial libera os meios.
-    rule: ruleFreeingMethods(
+    // J4b/J5: MESMA regra da venda direta — o PPR+ amplia teto/parcelas e as
+    // formas de pagamento pelo plano, e o Empresarial pela condição da empresa
+    // parceira (boleto + parcelamento próprio).
+    rule: ruleWithProgramConditions(
       effectiveRuleWithPpr(
         baseRule,
         ppr
@@ -313,7 +318,7 @@ export async function loadNegotiationBlock(
             }
           : null
       ),
-      Boolean(programs.companyId)
+      empresarialConditions
     ),
     planEvents,
     sale,

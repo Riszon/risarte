@@ -106,17 +106,38 @@ export function resolveCommercialRule(
 }
 
 /**
- * J4a: cliente do Risarte Empresarial vê TODAS as formas de pagamento da rede
- * (decisão do dono, 29/07/2026 — o boleto não aparecia porque a unidade não o
- * tinha na lista). O programa sobrepõe a restrição de meios da unidade, como já
- * acontece com o PPR+. Os demais limites (teto de desconto, parcela mínima)
- * continuam valendo.
+ * J5: condição de pagamento DIFERENCIADA do programa do cliente aplicada por
+ * cima da regra da unidade — o mesmo tratamento que o PPR+ já recebia, agora
+ * também para o Risarte Empresarial (que tem as formas de pagamento e o
+ * parcelamento configurados por empresa).
+ *
+ * Formas de pagamento = UNIÃO (o programa acrescenta, nunca tira o que a
+ * unidade permite); parcelas = o MAIOR dos dois. Os demais limites (teto de
+ * desconto, parcela mínima) continuam sendo os da unidade.
  */
-export function ruleFreeingMethods<T extends { allowedMethods: PaymentMethod[] | null }>(
+export function ruleWithProgramConditions<
+  T extends {
+    allowedMethods: PaymentMethod[] | null;
+    maxInstallments: number | null;
+  },
+>(
   rule: T,
-  isEmpresarialMember: boolean
+  program: {
+    allowedMethods: PaymentMethod[] | null;
+    maxInstallments: number;
+  } | null
 ): T {
-  return isEmpresarialMember ? { ...rule, allowedMethods: null } : rule;
+  if (!program) return rule;
+  // null em qualquer um dos lados = "todas as formas".
+  const allowedMethods =
+    rule.allowedMethods == null || program.allowedMethods == null
+      ? null
+      : [...new Set([...rule.allowedMethods, ...program.allowedMethods])];
+  return {
+    ...rule,
+    allowedMethods,
+    maxInstallments: Math.max(rule.maxInstallments ?? 1, program.maxInstallments),
+  };
 }
 
 /**

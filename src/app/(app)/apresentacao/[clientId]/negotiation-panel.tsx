@@ -305,12 +305,11 @@ export function NegotiationPanel({
 
   const finalCents = subtotalCents + effectiveAdjustmentCents;
 
-  // J3: o Empresarial dá benefício POR PROCEDIMENTO (sem condições próprias de
-  // pagamento) — o selo aparece, mas as faixas/desconto do programa não.
+  // J3/J5: o Empresarial dá benefício POR PROCEDIMENTO (não tem faixas de
+  // desconto por parcelamento como o PPR+) — o selo aparece, as faixas não.
   const programHasTerms =
     !!programConditions &&
-    (programConditions.maxInstallments > 0 ||
-      programConditions.cashDiscountPercent > 0 ||
+    (programConditions.cashDiscountPercent > 0 ||
       programConditions.tiers.length > 0);
 
   // PPR5b: desconto que o PROGRAMA do cliente garante para a forma de pagamento
@@ -738,6 +737,23 @@ export function NegotiationPanel({
                 </>
               )}
             </p>
+            {/* J5: condição de pagamento diferenciada da empresa parceira. */}
+            {programConditions.maxInstallments > 0 && (
+              <p className="mt-1 text-muted-foreground">
+                Condição de pagamento do programa:{" "}
+                <strong>até {programConditions.maxInstallments}×</strong>
+                {rule.allowedMethods && rule.allowedMethods.length > 0 && (
+                  <>
+                    {" "}
+                    · formas liberadas:{" "}
+                    {rule.allowedMethods
+                      .map((m) => PAYMENT_METHOD_LABELS[m])
+                      .join(", ")}
+                  </>
+                )}
+                .
+              </p>
+            )}
           </div>
         )}
         {programConditions && programHasTerms && (

@@ -6,11 +6,12 @@ import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import {
   resolveCommercialRule,
-  ruleFreeingMethods,
+  ruleWithProgramConditions,
   type CommercialRule,
   type CommercialRuleRow,
   type PaymentMethod,
 } from "@/lib/commercial";
+import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import {
   canLaunchDirectSaleProcedure,
   directSaleStatusOf,
@@ -81,8 +82,13 @@ export async function loadDirectSaleContext(
     session.isAdminMaster ||
     hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager", "sdr"]);
 
-  const [{ data: procRows }, { data: unitPrices }, { data: ruleRows }, program] =
-    await Promise.all([
+  const [
+    { data: procRows },
+    { data: unitPrices },
+    { data: ruleRows },
+    program,
+    empresarial,
+  ] = await Promise.all([
       supabase
         .from("procedures")
         .select(
@@ -100,6 +106,8 @@ export async function loadDirectSaleContext(
         .select("clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
         .returns<CommercialRuleRow[]>(),
       loadClientPrograms(clientId),
+      // J5: condição de pagamento da empresa parceira (boleto, parcelas).
+      loadEmpresarialConditions(clientId),
     ]);
 
   const priceByProcedure = new Map<string, number>();
@@ -197,9 +205,9 @@ export async function loadDirectSaleContext(
     isManager,
     procedures,
     appointments,
-    // O PPR+ é superior à regra da rede/unidade: amplia parcelas e formas.
-    // J4a: o Empresarial libera TODAS as formas de pagamento.
-    rule: ruleFreeingMethods(
+    // Programas são superiores à regra da rede/unidade: ampliam parcelas e
+    // formas de pagamento — PPR+ pelo plano, Empresarial pela empresa (J5).
+    rule: ruleWithProgramConditions(
       effectiveRuleWithPpr(
         resolveCommercialRule(ruleRows ?? [], clinicId),
         program.ppr
@@ -211,7 +219,7 @@ export async function loadDirectSaleContext(
             }
           : null
       ) as CommercialRule,
-      Boolean(program.companyId)
+      empresarial
     ),
     programActive: program.active,
     // Mostra de qual programa veio o benefício (PPR+ ou Empresarial).
@@ -241,7 +249,8 @@ export async function loadClientDirectSales(
   const session = await getSessionContext();
   const supabase = await createClient();
 
-  const [saleRes, itemRes, sessRes, ruleRes, program] = await Promise.all([
+  const [saleRes, itemRes, sessRes, ruleRes, program, empresarial] =
+    await Promise.all([
     supabase
       .from("direct_sales")
       .select(
@@ -267,6 +276,7 @@ export async function loadClientDirectSales(
       .select("clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method")
       .returns<CommercialRuleRow[]>(),
     loadClientPrograms(clientId),
+    loadEmpresarialConditions(clientId),
   ]);
   if (saleRes.error)
     console.error("loadClientDirectSales sales failed:", saleRes.error.message);
@@ -315,9 +325,9 @@ export async function loadClientDirectSales(
     hasRoleInClinic(session, clinicId, ["receptionist", "unit_manager", "sdr"]);
   const isManager =
     session.isAdminMaster || hasRoleInClinic(session, clinicId, ["unit_manager"]);
-  // Regra do fechamento: a da unidade AMPLIADA pelo plano do cliente (PPR+) e,
-  // no Empresarial, com TODAS as formas de pagamento liberadas (J4a).
-  const rule = ruleFreeingMethods(
+  // Regra do fechamento: a da unidade AMPLIADA pelos programas do cliente —
+  // plano do PPR+ e/ou condição da empresa parceira (J5).
+  const rule = ruleWithProgramConditions(
     effectiveRuleWithPpr(
       resolveCommercialRule(ruleRows ?? [], clinicId),
       program.ppr
@@ -329,7 +339,7 @@ export async function loadClientDirectSales(
           }
         : null
     ) as CommercialRule,
-    Boolean(program.companyId)
+    empresarial
   );
 
   const idsForNames = [

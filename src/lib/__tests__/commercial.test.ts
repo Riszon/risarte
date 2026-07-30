@@ -4,6 +4,7 @@ import {
   discountPercentOf,
   gutScore,
   automaticDiscountPercent,
+  ruleWithProgramConditions,
   maxInstallmentsByMinimum,
   minInstallmentCentsFor,
   negotiationViolations,
@@ -299,5 +300,71 @@ describe("desconto automático só à vista", () => {
 
   it("sem configuração, não há desconto automático", () => {
     expect(automaticDiscountPercent(resolveCommercialRule([], null), 1)).toBe(0);
+  });
+});
+
+// J5: condição de pagamento do programa (Empresarial/PPR+) por cima da unidade.
+describe("ruleWithProgramConditions", () => {
+  const unit = resolveCommercialRule(
+    [row(null, { allowed_methods: ["pix", "cartao"], max_installments: 6 })],
+    null
+  );
+
+  it("acrescenta as formas do programa sem tirar as da unidade", () => {
+    const r = ruleWithProgramConditions(unit, {
+      allowedMethods: ["boleto", "pix"],
+      maxInstallments: 24,
+    });
+    expect(new Set(r.allowedMethods ?? [])).toEqual(
+      new Set(["pix", "cartao", "boleto"])
+    );
+  });
+
+  it("vale o MAIOR parcelamento entre unidade e programa", () => {
+    expect(
+      ruleWithProgramConditions(unit, {
+        allowedMethods: ["boleto"],
+        maxInstallments: 24,
+      }).maxInstallments
+    ).toBe(24);
+    // Programa menor que a unidade não reduz o que a unidade já permite.
+    expect(
+      ruleWithProgramConditions(unit, {
+        allowedMethods: ["boleto"],
+        maxInstallments: 2,
+      }).maxInstallments
+    ).toBe(6);
+  });
+
+  it("programa sem restrição de formas libera todas", () => {
+    const r = ruleWithProgramConditions(unit, {
+      allowedMethods: null,
+      maxInstallments: 12,
+    });
+    expect(r.allowedMethods).toBeNull();
+  });
+
+  it("cliente sem programa mantém a regra da unidade intacta", () => {
+    expect(ruleWithProgramConditions(unit, null)).toBe(unit);
+  });
+
+  it("preserva os demais campos da regra (parcela mínima, desconto à vista)", () => {
+    const withExtras = resolveCommercialRule(
+      [
+        row(null, {
+          allowed_methods: ["pix"],
+          max_installments: 6,
+          cash_discount_percent: 5,
+          min_installment_cents_by_method: { boleto: 10000 },
+        }),
+      ],
+      null
+    );
+    const r = ruleWithProgramConditions(withExtras, {
+      allowedMethods: ["boleto"],
+      maxInstallments: 24,
+    });
+    expect(r.cashDiscountPercent).toBe(5);
+    expect(r.minInstallmentByMethod.boleto).toBe(10000);
   });
 });

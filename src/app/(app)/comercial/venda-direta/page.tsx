@@ -12,11 +12,12 @@ import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
 import {
   minInstallmentCentsFor,
   resolveCommercialRule,
-  ruleFreeingMethods,
+  ruleWithProgramConditions,
   type CommercialRule,
   type CommercialRuleRow,
   type PaymentMethod,
 } from "@/lib/commercial";
+import { loadEmpresarialConditionsForClients } from "@/lib/empresarial/conditions";
 import { directSaleStatusOf } from "@/lib/direct-sale";
 import type { ScheduleEntry } from "@/lib/payments";
 import {
@@ -165,34 +166,18 @@ export default async function VendasDiretasPage(
   const pprConditions = await loadPprConditionsForClients(
     rows.map((s) => s.client_id).filter((x): x is string => Boolean(x))
   );
-  // J4a: cliente do Risarte Empresarial vê TODAS as formas de pagamento
-  // (o boleto não aparecia quando a unidade não o tinha na lista).
-  const empresarialClientIds = new Set<string>();
-  {
-    const ids = [
-      ...new Set(
-        rows.map((s) => s.client_id).filter((x): x is string => Boolean(x))
-      ),
-    ];
-    if (ids.length > 0) {
-      const { data: clientRows } = await supabase
-        .from("clients")
-        .select("id, empresarial_company_id, empresarial_active")
-        .in("id", ids);
-      for (const c of clientRows ?? []) {
-        if (c.empresarial_company_id && c.empresarial_active !== false) {
-          empresarialClientIds.add(c.id as string);
-        }
-      }
-    }
-  }
+  // J5: condição de pagamento da empresa parceira (boleto + parcelamento
+  // próprio) — o Empresarial passa a valer aqui como o PPR+ já valia.
+  const empresarialConditions = await loadEmpresarialConditionsForClients(
+    rows.map((s) => s.client_id).filter((x): x is string => Boolean(x))
+  );
   const ruleFor = (clinicId: string, clientId: string | null): CommercialRule =>
-    ruleFreeingMethods(
+    ruleWithProgramConditions(
       effectiveRuleWithPpr(
         resolveCommercialRule(ruleRows ?? [], clinicId),
         (clientId ? pprConditions.get(clientId) : null) ?? null
       ) as CommercialRule,
-      clientId ? empresarialClientIds.has(clientId) : false
+      (clientId ? empresarialConditions.get(clientId) : null) ?? null
     );
 
   // I9: plano de cobrança (entrada + parcelas) já salvo de cada venda.
