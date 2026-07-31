@@ -4,10 +4,18 @@ import { empresarialDb } from "@/lib/empresarial/db";
 import type { MethodologyPillar } from "@/lib/journey";
 import type { EmployeeStatus, Relationship } from "@/lib/empresarial/constants";
 
-/** Uma linha do extrato de economia (um uso de benefício). */
+/**
+ * Uma linha do extrato: um ATENDIMENTO (ou um lançamento sem horário vinculado).
+ * Decisão do dono: o extrato mostra data, chegada (check-in), fim do atendimento
+ * e a economia — sem nome de procedimento e sem o que o cliente pagou.
+ */
 export type UsageLine = {
-  procedureName: string;
-  usedAt: string;
+  /** Data do atendimento (ou do lançamento, quando não há horário). */
+  date: string;
+  /** Chegada na clínica (check-in) — null quando não houve atendimento. */
+  checkInAt: string | null;
+  /** Fim do atendimento — null quando ainda não concluído. */
+  doneAt: string | null;
   fullCents: number;
   chargedCents: number;
   savedCents: number;
@@ -43,9 +51,12 @@ export type MemberStats = {
   cancellations: number;
   lateArrivals: number;
 
-  // Procedimentos (itens do plano)
+  // Procedimentos (itens do plano / da venda direta)
   proceduresDone: number;
   proceduresOpen: number;
+  /** Nomes — só aparecem no relatório se o usuário pedir o detalhamento. */
+  doneProcedureNames: string[];
+  openProcedureNames: string[];
 };
 
 export type BenefitsReport = {
@@ -222,7 +233,7 @@ export async function loadBenefitsReport(
     db
       .from("benefit_usage")
       .select(
-        "client_id, procedure_id, used_at, amount_full_cents, amount_charged_cents, amount_saved_cents"
+        "client_id, procedure_id, used_at, appointment_id, amount_full_cents, amount_charged_cents, amount_saved_cents"
       )
       .eq("company_id", companyId)
       .in("client_id", clientIds)
@@ -230,8 +241,9 @@ export async function loadBenefitsReport(
       .returns<
         {
           client_id: string;
-          procedure_id: string;
+          procedure_id: string | null;
           used_at: string;
+          appointment_id: string | null;
           amount_full_cents: number | null;
           amount_charged_cents: number | null;
           amount_saved_cents: number | null;
@@ -239,32 +251,53 @@ export async function loadBenefitsReport(
       >(),
     supabase
       .from("treatment_sessions")
-      .select("client_id, clinic_id, status, procedure_id, item_id")
+      .select(
+        "id, client_id, clinic_id, status, procedure_id, procedure_name, item_id"
+      )
       .in("client_id", clientIds)
       .returns<
         {
+          id: string;
           client_id: string;
           clinic_id: string | null;
           status: string;
           procedure_id: string | null;
+          procedure_name: string | null;
           item_id: string | null;
         }[]
       >(),
     supabase
       .from("appointments")
-      .select("client_id, clinic_id, status, attendance, starts_at, checked_in_at")
+      .select(
+        "id, client_id, clinic_id, status, attendance, starts_at, checked_in_at, done_at"
+      )
       .in("client_id", clientIds)
       .returns<
         {
+          id: string;
           client_id: string;
           clinic_id: string;
           status: string;
           attendance: string | null;
           starts_at: string;
           checked_in_at: string | null;
+          done_at: string | null;
         }[]
       >(),
   ]);
+
+  // Atendimentos por id (o extrato mostra data, chegada e fim).
+  const apptById = new Map<
+    string,
+    { startsAt: string; checkInAt: string | null; doneAt: string | null }
+  >();
+  for (const a of appts ?? []) {
+    apptById.set(a.id, {
+      startsAt: a.starts_at,
+      checkInAt: a.checked_in_at,
+      doneAt: a.done_at,
+    });
+  }
 
   // Nomes de procedimento + pilar (para o extrato e a distribuição por pilar).
   const procIds = [
@@ -311,12 +344,22 @@ export async function loadBenefitsReport(
   const OPEN_SESSION = new Set(["pending", "scheduled"]);
   const FUTURE_STATUS = new Set(["scheduled", "confirmed"]);
 
-  // Procedimentos (itens do plano): concluído = todas as sessões do item feitas.
-  const itemsByClient = new Map<string, Map<string, { total: number; done: number }>>();
+  // Procedimentos: um procedimento é CONCLUÍDO quando todas as suas sessões
+  // estão concluídas; em aberto se ainda tem sessão pendente/agendada. Vale para
+  // plano (item_id) e para venda direta (sem item_id — agrupa pelo procedimento).
+  const itemsByClient = new Map<
+    string,
+    Map<string, { total: number; done: number; name: string }>
+  >();
   for (const s of sessions ?? []) {
-    const key = s.item_id ?? `proc:${s.procedure_id ?? "?"}`;
+    if (s.status === "cancelled") continue;
+    const key = s.item_id ?? `proc:${s.procedure_id ?? s.procedure_name ?? "?"}`;
     const perClient = itemsByClient.get(s.client_id) ?? new Map();
-    const cur = perClient.get(key) ?? { total: 0, done: 0 };
+    const name =
+      s.procedure_name ??
+      (s.procedure_id ? procName.get(s.procedure_id) : null) ??
+      "Procedimento";
+    const cur = perClient.get(key) ?? { total: 0, done: 0, name };
     cur.total++;
     if (s.status === "done") cur.done++;
     perClient.set(key, cur);
@@ -331,10 +374,44 @@ export async function loadBenefitsReport(
     const items = itemsByClient.get(s.clientId) ?? new Map();
     let proceduresDone = 0;
     let proceduresOpen = 0;
+    const doneProcedureNames: string[] = [];
+    const openProcedureNames: string[] = [];
     for (const v of items.values()) {
-      if (v.total > 0 && v.done === v.total) proceduresDone++;
-      else proceduresOpen++;
+      if (v.total > 0 && v.done === v.total) {
+        proceduresDone++;
+        doneProcedureNames.push(v.name);
+      } else {
+        proceduresOpen++;
+        openProcedureNames.push(
+          v.done > 0 ? `${v.name} (${v.done}/${v.total} sessões)` : v.name
+        );
+      }
     }
+
+    // Extrato: uma linha por ATENDIMENTO (agrupa os usos do mesmo horário).
+    // Sem atendimento vinculado (ex.: venda direta sem horário), agrupa pelo dia.
+    const lineMap = new Map<string, UsageLine>();
+    for (const u of uses) {
+      const appt = u.appointment_id ? apptById.get(u.appointment_id) : undefined;
+      const key = u.appointment_id ?? `dia:${u.used_at.slice(0, 10)}`;
+      const cur =
+        lineMap.get(key) ??
+        {
+          date: appt?.startsAt ?? u.used_at,
+          checkInAt: appt?.checkInAt ?? null,
+          doneAt: appt?.doneAt ?? null,
+          fullCents: 0,
+          chargedCents: 0,
+          savedCents: 0,
+        };
+      cur.fullCents += u.amount_full_cents ?? 0;
+      cur.chargedCents += u.amount_charged_cents ?? 0;
+      cur.savedCents += u.amount_saved_cents ?? 0;
+      lineMap.set(key, cur);
+    }
+    const usageLines = [...lineMap.values()].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     return {
       clientId: s.clientId,
@@ -350,13 +427,7 @@ export async function loadBenefitsReport(
       chargedCents: uses.reduce((a, u) => a + (u.amount_charged_cents ?? 0), 0),
       savedCents: uses.reduce((a, u) => a + (u.amount_saved_cents ?? 0), 0),
       usageCount: uses.length,
-      usages: uses.map((u) => ({
-        procedureName: procName.get(u.procedure_id) ?? "Procedimento",
-        usedAt: u.used_at,
-        fullCents: u.amount_full_cents ?? 0,
-        chargedCents: u.amount_charged_cents ?? 0,
-        savedCents: u.amount_saved_cents ?? 0,
-      })),
+      usages: usageLines,
 
       sessionsDone: sess.filter((x) => x.status === "done").length,
       sessionsOpen: sess.filter((x) => OPEN_SESSION.has(x.status)).length,
@@ -378,6 +449,8 @@ export async function loadBenefitsReport(
 
       proceduresDone,
       proceduresOpen,
+      doneProcedureNames,
+      openProcedureNames,
     };
   });
 
