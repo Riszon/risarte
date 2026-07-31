@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Download, FileUp, Plus, UserPlus } from "lucide-react";
+import { Download, FileText, FileUp, Plus, UserPlus } from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,12 +82,22 @@ export function ColaboradoresTab({
 }) {
   return (
     <div className="space-y-4">
-      {canManage && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <EmployeeFormDialog companyId={companyId} />
-          <ImportEmployeesDialog companyId={companyId} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {canManage && <EmployeeFormDialog companyId={companyId} />}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Relatório detalhado (empresa + colaboradores + dependentes). */}
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href={`/empresarial/${companyId}/relatorio`} />}
+          >
+            <FileText className="mr-1 size-4" />
+            Relatório detalhado
+          </Button>
+          {canManage && <ImportEmployeesDialog companyId={companyId} />}
         </div>
-      )}
+      </div>
 
       {employees.length === 0 ? (
         <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
