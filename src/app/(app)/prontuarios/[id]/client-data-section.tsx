@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MapPin, Pencil, Phone, StickyNote, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +60,18 @@ export function ClientDataSection({
   /** J8: abrir já em edição (veio do "Completar o cadastro" do agendamento). */
   startEditing?: boolean;
 }) {
-  const [editing, setEditing] = useState(canEdit && startEditing);
+  // J9: o ?editar=1 é lido TAMBÉM aqui no navegador. Só a prop do servidor não
+  // bastava: ao voltar para uma ficha já visitada, o Next serve a página do
+  // cache de navegação e a prop vinha com o valor antigo (era por isso que
+  // ainda pedia um clique em "Editar").
+  const searchParams = useSearchParams();
+  const wantsEdit = startEditing || searchParams.get("editar") === "1";
+  // O botão "Editar" (ou salvar/sair) sobrepõe o que a URL pede; enquanto
+  // ninguém clicou, vale a URL — assim o estado acompanha a navegação sem
+  // precisar de efeito.
+  const [override, setOverride] = useState<boolean | null>(null);
+  const editing = override ?? wantsEdit;
+  const setEditing = setOverride;
 
   if (canEdit && editing) {
     return (

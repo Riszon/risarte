@@ -101,8 +101,49 @@ type StaffRow = {
 export default async function AgendaPage(props: PageProps<"/agenda">) {
   const session = await getSessionContext();
   const searchParams = await props.searchParams;
-  const clinicId = session.activeClinic?.id;
-  const isFranchisor = session.activeClinic?.type === "franchisor";
+  const isFranchisorClinic = session.activeClinic?.type === "franchisor";
+
+  /**
+   * J9: a SDR da franqueadora agenda para as unidades — e para não errar
+   * horário ela precisa ver a agenda REAL da unidade (salas, fechamentos,
+   * dias avulsos, almoço, feriados), não um resumo. Escolhendo a unidade no
+   * filtro, ela entra na MESMA tela que a recepcionista vê.
+   */
+  const unitParam =
+    typeof searchParams.unidade === "string" ? searchParams.unidade : "";
+  const isSdrRole = Object.values(session.rolesByClinic).some((r) =>
+    r.includes("sdr")
+  );
+  const sdrOnlyRole =
+    isSdrRole &&
+    !session.isAdminMaster &&
+    !Object.values(session.rolesByClinic).some(
+      (r) => r.includes("planner_dentist") || r.includes("commercial_consultant")
+    );
+  let sdrUnitView = false;
+  let sdrUnitName = "";
+  if (isFranchisorClinic && sdrOnlyRole && unitParam) {
+    const supabase = await createClient();
+    const { data: scopeIds } = await supabase.rpc("user_full_access_clinic_ids");
+    const allowed = new Set<string>(
+      ((scopeIds as { clinic_id?: string }[] | string[] | null) ?? []).map((x) =>
+        typeof x === "string" ? x : (x.clinic_id ?? "")
+      )
+    );
+    sdrUnitView = allowed.has(unitParam);
+    if (sdrUnitView) {
+      const { data: unitRow } = await supabase
+        .from("clinics")
+        .select("name")
+        .eq("id", unitParam)
+        .maybeSingle();
+      sdrUnitName = (unitRow?.name as string | undefined) ?? "";
+    }
+  }
+
+  // Com a unidade escolhida, a SDR usa a agenda da UNIDADE (abaixo).
+  const clinicId = sdrUnitView ? unitParam : session.activeClinic?.id;
+  const isFranchisor = isFranchisorClinic && !sdrUnitView;
 
   const view: AgendaView =
     typeof searchParams.vista === "string" && isAgendaView(searchParams.vista)
@@ -188,14 +229,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       )
     );
     const sdrUnits = (unitOptions ?? []).filter((u) => accessibleIds.has(u.id));
-
-    // J8: com uma unidade escolhida, a SDR vê a agenda DELA como a própria
-    // unidade vê — profissionais em coluna, salas e horário de funcionamento.
-    // Sem isso ela agendava "no escuro" e cometia equívocos (pedido do dono).
-    const sdrUnitData =
-      sdrOnly && unitFilter && accessibleIds.has(unitFilter)
-        ? await getUnitSchedulingData(unitFilter)
-        : null;
 
     // H3.7: a SDR vê a agenda toda, mas só abre a ficha dos clientes que ela
     // tocou; nos demais, o nome aparece sem link.
@@ -315,16 +348,15 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             )}
           </div>
         </div>
-        {/* J8: a SDR agenda para várias unidades — escolher a unidade mostra a
-            agenda completa dela (profissionais, salas e horário). */}
-        {sdrOnly && !unitFilter && (
+        {/* J9: escolher a unidade abre a agenda REAL dela (a mesma da
+            recepção), com salas, fechamentos e horários. */}
+        {sdrOnly && (
           <p className="mx-auto flex max-w-7xl items-start gap-1.5 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs">
             <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
             <span>
-              Você está vendo os agendamentos de <strong>todas</strong> as suas
-              unidades. Para agendar com segurança, escolha a unidade acima — aí
-              a agenda aparece completa, com os profissionais e o horário de
-              funcionamento dela.
+              Visão geral das suas unidades. Para <strong>agendar</strong>,
+              escolha a unidade acima — você passa a ver a agenda completa dela,
+              igual à da recepção (salas, fechamentos, dias avulsos e horários).
             </span>
           </p>
         )}
@@ -340,8 +372,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               weekStartIso={range.start.toISOString()}
               appointments={networkAppointments}
               canManage={false}
-              staff={sdrUnitData?.staff ?? []}
-              config={sdrUnitData?.config}
+              staff={[]}
               highlightType="commercial_presentation"
               dayCount={range.dayCount}
             />
@@ -371,10 +402,10 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     (APPOINTMENT_TYPES as readonly string[]).includes(searchParams.tipo)
       ? (searchParams.tipo as AppointmentType)
       : undefined;
-  const canSchedule = hasRoleInClinic(session, clinicId, [
-    "receptionist",
-    "sdr",
-  ]);
+  // J9: a SDR da franqueadora agenda nas unidades do escopo dela (o papel está
+  // registrado na matriz, não na unidade) — por isso o sdrUnitView entra aqui.
+  const canSchedule =
+    sdrUnitView || hasRoleInClinic(session, clinicId, ["receptionist", "sdr"]);
   const canConfig = hasRoleInClinic(session, clinicId, ["unit_manager"]);
   const canCloseAgenda = hasRoleInClinic(session, clinicId, [
     "receptionist",
@@ -713,11 +744,22 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
+          {/* J9: a SDR está vendo a agenda de uma UNIDADE (ela é da matriz). */}
+          {sdrUnitView && (
+            <Link
+              href="/agenda"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              ← Voltar para todas as minhas unidades
+            </Link>
+          )}
           {session.activeClinic ? (
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
                 <Building2 className="size-3.5" />
-                {session.activeClinic.name}
+                {sdrUnitView
+                  ? sdrUnitName || "Unidade"
+                  : session.activeClinic.name}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-muted-foreground">
                 <CalendarRange className="size-3.5" />

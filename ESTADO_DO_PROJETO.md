@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 30/07/2026 · Versão do sistema: **0.161.0** · Última migração: **0182**_
+_Atualizado em: 30/07/2026 · Versão do sistema: **0.162.0** · Última migração: **0182**_
+
+> **J9: SDR vê a agenda REAL da unidade + cadastro abre editável ✅ (v0.162.0,
+> sem migração):** o J8 tinha dado à SDR só um resumo com profissionais e
+> horário. Agora, escolhendo a unidade no filtro, ela **entra na mesma tela da
+> recepcionista** — a página passa a tratar aquela unidade como a clínica da
+> agenda (`sdrUnitView`): salas, fechamentos por sala/profissional, dias
+> avulsos, feriados decididos, dias não úteis e horário/almoço reais, e o botão
+> de agendar liberado (o papel dela fica na matriz, por isso `canSchedule`
+> considera o escopo). Cabeçalho mostra o nome da unidade + link "voltar para
+> todas as minhas unidades". **Cadastro incompleto:** o botão do agendamento
+> agora abre a ficha **já em edição** de verdade — só a prop do servidor não
+> bastava porque, em ficha já visitada, o Next serve a página do cache de
+> navegação; `ClientDataSection` passou a ler `?editar=1` também no navegador
+> (`useSearchParams`), com o estado derivado da URL (sem efeito colateral).
 
 > **J8: três ajustes do teste ✅ (v0.161.0, sem migração):**
 > **(1) Prontuários mostram o PPR+** — selo dourado "★ PPR+ <plano>" ao lado do
