@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Download, FileText, FileUp, Plus, UserPlus } from "lucide-react";
+import { Download, FileText, FileUp, PiggyBank, Plus, UserPlus } from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,11 +74,14 @@ export function ColaboradoresTab({
   employees,
   units,
   canManage,
+  canViewBenefitsReport = false,
 }: {
   companyId: string;
   employees: EmployeeView[];
   units: Unit[];
   canManage: boolean;
+  /** Extrato de benefícios: gestão só (tem dado clínico por pessoa — LGPD). */
+  canViewBenefitsReport?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -95,6 +98,19 @@ export function ColaboradoresTab({
             <FileText className="mr-1 size-4" />
             Relatório detalhado
           </Button>
+          {canViewBenefitsReport && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link href={`/empresarial/${companyId}/relatorio-beneficios`} />
+              }
+            >
+              <PiggyBank className="mr-1 size-4" />
+              Benefícios e economia
+            </Button>
+          )}
           {canManage && <ImportEmployeesDialog companyId={companyId} />}
         </div>
       </div>

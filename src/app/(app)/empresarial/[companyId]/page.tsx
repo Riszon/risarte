@@ -188,6 +188,18 @@ export default async function CompanyDetailPage(props: {
     allRoles.some((r) =>
       ["sdr", "receptionist", "unit_manager", "franchisee"].includes(r)
     );
+  // Extrato de benefícios tem dado clínico por pessoa (sessões/pilar): só gestão.
+  // O Consultor RisLife (comercial) fica de fora — mesma regra da página.
+  const canViewBenefitsReport =
+    session.isAdminMaster ||
+    allRoles.some((r) =>
+      [
+        "franchisor_staff",
+        "unit_manager",
+        "franchisee",
+        "clinical_coordinator",
+      ].includes(r)
+    );
   let employees: EmployeeView[] = [];
   let units: { id: string; name: string }[] = [];
   if (aba === "colaboradores") {
@@ -599,6 +611,7 @@ export default async function CompanyDetailPage(props: {
           employees={employees}
           units={units}
           canManage={canManageEmp}
+          canViewBenefitsReport={canViewBenefitsReport}
         />
       )}
 
