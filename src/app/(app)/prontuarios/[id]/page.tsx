@@ -270,6 +270,9 @@ export default async function ClientDetailPage(
 ) {
   const session = await getSessionContext();
   const { id } = await props.params;
+  // J8: ?editar=1 abre o cadastro já em edição — usado pelo botão "Completar o
+  // cadastro" do agendamento (cliente com cadastro incompleto).
+  const startEditing = (await props.searchParams)?.editar === "1";
   const supabase = await createClient();
 
   const { data: client } = await supabase
@@ -2700,6 +2703,7 @@ export default async function ClientDetailPage(
           <ClientDataSection
             client={client}
             canEdit={canEdit}
+            startEditing={startEditing}
             initialGuardians={(guardians ?? []).map((g) => ({
               fullName: g.full_name,
               cpf: g.cpf,

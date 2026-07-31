@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 29/07/2026 · Versão do sistema: **0.160.0** · Última migração: **0182**_
+_Atualizado em: 30/07/2026 · Versão do sistema: **0.161.0** · Última migração: **0182**_
+
+> **J8: três ajustes do teste ✅ (v0.161.0, sem migração):**
+> **(1) Prontuários mostram o PPR+** — selo dourado "★ PPR+ <plano>" ao lado do
+> nome (o do Empresarial já existia) e nova opção **"Somente PPR+"** no filtro
+> de Programa. O dado já existia em `clients.ppr_membership_id`/`ppr_active`
+> (mantidos por gatilho); faltava exibir. **(2) Agenda da SDR** — ao escolher
+> uma unidade no filtro, a SDR da franqueadora passa a ver a agenda **completa**
+> daquela unidade (profissionais em coluna, salas e horário de funcionamento,
+> via `getUnitSchedulingData`), em vez de só a lista de agendamentos; sem
+> unidade escolhida, um aviso explica que ela está vendo todas e que escolher a
+> unidade abre a agenda cheia. **(3) Cadastro incompleto no agendamento** — o
+> link que não abria (o dialog engolia o clique) virou **botão "Completar o
+> cadastro do cliente"**, que fecha o agendamento e abre a ficha **já em modo de
+> edição** (`?editar=1` → `ClientDataSection startEditing`).
 
 > **LOTE J — J7: o benefício do programa entra no VALOR da negociação ✅
 > (v0.160.0, migração 0182):** bug relatado com print — no cockpit o valor final

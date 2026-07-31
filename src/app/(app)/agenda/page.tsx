@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, CalendarDays, CalendarRange, DoorOpen } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  CalendarRange,
+  DoorOpen,
+  Info,
+} from "lucide-react";
 import {
   getSessionContext,
   hasRoleInClinic,
@@ -183,6 +189,14 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     );
     const sdrUnits = (unitOptions ?? []).filter((u) => accessibleIds.has(u.id));
 
+    // J8: com uma unidade escolhida, a SDR vê a agenda DELA como a própria
+    // unidade vê — profissionais em coluna, salas e horário de funcionamento.
+    // Sem isso ela agendava "no escuro" e cometia equívocos (pedido do dono).
+    const sdrUnitData =
+      sdrOnly && unitFilter && accessibleIds.has(unitFilter)
+        ? await getUnitSchedulingData(unitFilter)
+        : null;
+
     // H3.7: a SDR vê a agenda toda, mas só abre a ficha dos clientes que ela
     // tocou; nos demais, o nome aparece sem link.
     const sdrClientIds =
@@ -301,6 +315,19 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             )}
           </div>
         </div>
+        {/* J8: a SDR agenda para várias unidades — escolher a unidade mostra a
+            agenda completa dela (profissionais, salas e horário). */}
+        {sdrOnly && !unitFilter && (
+          <p className="mx-auto flex max-w-7xl items-start gap-1.5 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs">
+            <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <span>
+              Você está vendo os agendamentos de <strong>todas</strong> as suas
+              unidades. Para agendar com segurança, escolha a unidade acima — aí
+              a agenda aparece completa, com os profissionais e o horário de
+              funcionamento dela.
+            </span>
+          </p>
+        )}
         <div className="mx-auto max-w-7xl overflow-x-auto pb-4">
           {view === "mes" ? (
             <MonthView
@@ -313,7 +340,8 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               weekStartIso={range.start.toISOString()}
               appointments={networkAppointments}
               canManage={false}
-              staff={[]}
+              staff={sdrUnitData?.staff ?? []}
+              config={sdrUnitData?.config}
               highlightType="commercial_presentation"
               dayCount={range.dayCount}
             />

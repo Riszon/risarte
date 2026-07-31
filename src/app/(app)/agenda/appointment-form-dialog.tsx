@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Link from "next/link";
-import { AlertTriangle, Info, Wifi } from "lucide-react";
+import { AlertTriangle, Info, UserPen, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -891,13 +890,22 @@ export function AppointmentFormDialog({
               <p className="text-muted-foreground">
                 Falta preencher: <strong>{registrationGaps.join(", ")}</strong>.
               </p>
+              {/* J8: era um link que não abria (o dialog engolia o clique).
+                  Agora é um BOTÃO que fecha o agendamento e leva ao cadastro. */}
               {clientId && (
-                <Link
-                  href={`/prontuarios/${clientId}`}
-                  className="inline-flex font-medium text-primary hover:underline"
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-0.5 h-8 border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    setActualOpen(false);
+                    router.push(`/prontuarios/${clientId}?editar=1`);
+                  }}
                 >
-                  Abrir o cadastro do cliente →
-                </Link>
+                  <UserPen className="mr-1 size-3.5" />
+                  Completar o cadastro do cliente
+                </Button>
               )}
             </div>
           )}

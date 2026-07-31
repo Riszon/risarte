@@ -62,6 +62,9 @@ type ClientRow = {
   empresarial_company_id: string | null;
   empresarial_company_name: string | null;
   empresarial_active: boolean | null;
+  /** J8: selo do PPR+ (null = fora do programa; false = suspenso). */
+  ppr_membership_id: string | null;
+  ppr_active: boolean | null;
   clinics: { name: string } | null;
 };
 
@@ -119,9 +122,11 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     searchParams.cadastro === "incompleto" || searchParams.cadastro === "completo"
       ? searchParams.cadastro
       : "";
-  // I6: ?programa=empresarial (clientes do Risarte Empresarial)
+  // I6/J8: ?programa=empresarial | ppr (programas do cliente)
   const programFilter =
-    searchParams.programa === "empresarial" ? searchParams.programa : "";
+    searchParams.programa === "empresarial" || searchParams.programa === "ppr"
+      ? searchParams.programa
+      : "";
   const tab: Tab =
     searchParams.aba === "aniversariantes" ||
     searchParams.aba === "transferidos" ||
@@ -192,9 +197,11 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     },
   >(request: T): T {
     let r = request;
-    // I6: só os clientes do Risarte Empresarial.
+    // I6/J8: filtrar por programa do cliente.
     if (programFilter === "empresarial")
       r = r.not("empresarial_company_id", "is", null);
+    else if (programFilter === "ppr")
+      r = r.not("ppr_membership_id", "is", null);
     if (query) r = r.ilike("full_name", `%${query}%`);
     if (phaseFilter) r = r.eq("journey_phase", phaseFilter);
     if (pillarFilter) r = r.eq("methodology_pillar", pillarFilter);
@@ -216,7 +223,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
   let clinicOptions: { id: string; name: string }[] = [];
 
   const SELECT =
-    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, registration_complete, empresarial_company_id, empresarial_company_name, empresarial_active, clinics!clients_clinic_id_fkey ( name )";
+    "id, code, full_name, phone, email, status, journey_phase, journey_status, created_at, clinic_id, registration_complete, empresarial_company_id, empresarial_company_name, empresarial_active, ppr_membership_id, ppr_active, clinics!clients_clinic_id_fkey ( name )";
 
   // Clients in treatment_start "awaiting start" with no future appointment.
   const awaitingSchedule = new Set<string>();
@@ -467,6 +474,29 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     ? ["ativos"]
     : ["ativos", "aniversariantes", "transferidos", "compartilhados"];
 
+  // J8: nome do plano do PPR+ para o selo ("★ PPR+ Família"). O cliente guarda
+  // só a adesão; o nome do plano vem daqui.
+  const pprPlanByMembership = new Map<string, string>();
+  {
+    const membershipIds = [
+      ...new Set(
+        clients
+          .map((c) => c.ppr_membership_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    if (membershipIds.length > 0) {
+      const { data: memberships } = await supabase
+        .from("ppr_memberships")
+        .select("id, ppr_plans ( name )")
+        .in("id", membershipIds)
+        .returns<{ id: string; ppr_plans: { name: string } | null }[]>();
+      for (const m of memberships ?? []) {
+        if (m.ppr_plans?.name) pprPlanByMembership.set(m.id, m.ppr_plans.name);
+      }
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -593,7 +623,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
               <option value="incompleto">Somente cadastro incompleto</option>
               <option value="completo">Somente cadastro completo</option>
             </select>
-            {/* I6: clientes que vieram por empresa parceira. */}
+            {/* I6/J8: clientes por programa (empresa parceira ou PPR+). */}
             <select
               name="programa"
               defaultValue={programFilter}
@@ -601,6 +631,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
             >
               <option value="">Programa (todos)</option>
               <option value="empresarial">Somente Risarte Empresarial</option>
+              <option value="ppr">Somente PPR+</option>
             </select>
             <Button type="submit" variant="outline">
               Buscar
@@ -685,6 +716,23 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                           >
                             ★ {client.empresarial_company_name ?? "Empresarial"}
                             {client.empresarial_active === false && " (ex)"}
+                          </Badge>
+                        )}
+                        {/* J8: selo do PPR+ (o do Empresarial já existia). */}
+                        {client.ppr_membership_id && (
+                          <Badge
+                            className="shrink-0 bg-gold/20 text-[10px] text-gold-foreground"
+                            title={
+                              client.ppr_active === false
+                                ? "Adesão do PPR+ suspensa"
+                                : "Cliente do PPR+"
+                            }
+                          >
+                            ★ PPR+
+                            {pprPlanByMembership.get(client.ppr_membership_id)
+                              ? ` ${pprPlanByMembership.get(client.ppr_membership_id)}`
+                              : ""}
+                            {client.ppr_active === false && " (suspenso)"}
                           </Badge>
                         )}
                         {/* I5: fila do primeiro agendamento da SDR. */}

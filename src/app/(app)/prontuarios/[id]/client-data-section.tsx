@@ -51,12 +51,15 @@ export function ClientDataSection({
   client,
   initialGuardians,
   canEdit,
+  startEditing = false,
 }: {
   client: ClientFormValues;
   initialGuardians: GuardianInput[];
   canEdit: boolean;
+  /** J8: abrir já em edição (veio do "Completar o cadastro" do agendamento). */
+  startEditing?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(canEdit && startEditing);
 
   if (canEdit && editing) {
     return (
