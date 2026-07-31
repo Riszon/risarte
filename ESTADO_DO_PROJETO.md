@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/07/2026 · Versão do sistema: **0.162.1** · Última migração: **0182**_
+_Atualizado em: 31/07/2026 · Versão do sistema: **0.163.0** · Última migração: **0183**_
+
+> **J11: concluir atendimento voltou a funcionar no painel ✅ (v0.163.0,
+> migração 0183):** "Não foi possível concluir o atendimento", sem motivo.
+> Causa: a migração 0176 criou `conclude_attendance_partial` com um argumento
+> novo (`p_extra_ids`), mas a versão antiga de 3 argumentos (0105) **continuou
+> existindo** — `create or replace` com assinatura diferente CRIA outra função.
+> Com duas versões, a chamada de 3 argumentos do painel de Atendimento ficava
+> ambígua (**PGRST203**, confirmado chamando as duas assinaturas no banco).
+> Concluir pela aba *Desenvolvimento clínico* funcionava porque de lá já iam os
+> 4 argumentos. A 0183 **remove a versão antiga** (e lista no log qualquer outra
+> função duplicada do projeto — a mesma armadilha pode se repetir). O app passou
+> a mandar sempre os 4 argumentos e a **traduzir os erros**: NOTE_REQUIRED →
+> "Descreva o atendimento no Desenvolvimento clínico antes de concluir",
+> NOT_ALLOWED e APPOINTMENT_NOT_FOUND com texto próprio; o caso não mapeado
+> agora diz o que fazer.
 
 > **J10: aviso de cadastro incompleto se revalida ✅ (v0.162.1, sem migração):**
 > depois de completar a ficha, o agendamento continuava mostrando o aviso

@@ -1387,6 +1387,26 @@ export async function updateAttendance(
   return { ok: true };
 }
 
+/**
+ * J11: traduz o erro do banco ao concluir o atendimento. Antes tudo virava
+ * "Não foi possível concluir o atendimento" e o dentista ficava sem saber o
+ * que fazer — mensagem sem motivo é bug de produto, não detalhe.
+ */
+function concludeAttendanceError(message: string): string {
+  if (message.includes("NOTE_REQUIRED")) {
+    return "Descreva o atendimento no Desenvolvimento clínico antes de concluir.";
+  }
+  if (message.includes("NOT_ALLOWED")) {
+    return "Apenas o dentista que atendeu pode dar baixa nas sessões.";
+  }
+  if (message.includes("APPOINTMENT_NOT_FOUND")) {
+    return "Agendamento não encontrado — atualize a tela e tente de novo.";
+  }
+  // Nada mapeado: registra o detalhe técnico e mostra algo acionável.
+  console.error("conclude_attendance_partial failed:", message);
+  return "Não foi possível concluir o atendimento. Atualize a tela e tente de novo; se continuar, avise o suporte.";
+}
+
 /** H4.6 A1: o Dentista conclui o atendimento confirmando QUAIS sessões foram
  * feitas. As confirmadas são liquidadas (tempo real rateado só entre elas); as
  * não feitas voltam para "a agendar" (com motivo opcional) e a Recepção é
@@ -1398,20 +1418,17 @@ export async function concludeAttendancePartial(
 ): Promise<ActionResult> {
   await getSessionContext();
   const supabase = await createClient();
+  // J11: manda SEMPRE os 4 argumentos. Com 3, a chamada ficava ambígua entre a
+  // versão antiga e a nova da função (ver migração 0183) e o erro chegava aqui
+  // sem motivo nenhum.
   const { error } = await supabase.rpc("conclude_attendance_partial", {
     p_appointment_id: appointmentId,
     p_done_ids: doneSessionIds,
     p_reasons: reasons,
+    p_extra_ids: [],
   });
   if (error) {
-    if (error.message.includes("NOT_ALLOWED")) {
-      return {
-        ok: false,
-        error: "Apenas o dentista que atendeu pode dar baixa nas sessões.",
-      };
-    }
-    console.error("conclude_attendance_partial failed:", error.message);
-    return { ok: false, error: "Não foi possível concluir o atendimento." };
+    return { ok: false, error: concludeAttendanceError(error.message) };
   }
   revalidatePath("/atendimento");
   revalidatePath("/agenda");

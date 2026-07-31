@@ -112,8 +112,18 @@ export async function concludeFromProgress(input: {
         error: "Apenas o dentista que atendeu pode concluir o atendimento.",
       };
     }
+    if (error.message.includes("APPOINTMENT_NOT_FOUND")) {
+      return {
+        ok: false,
+        error: "Agendamento não encontrado — atualize a tela e tente de novo.",
+      };
+    }
     console.error("concludeFromProgress failed:", error.message);
-    return { ok: false, error: "Não foi possível concluir o atendimento." };
+    return {
+      ok: false,
+      error:
+        "Não foi possível concluir o atendimento. Atualize a tela e tente de novo; se continuar, avise o suporte.",
+    };
   }
   await logAudit({
     action: "update",
