@@ -40,6 +40,11 @@ import {
   type EmployeeImportRow,
   type EmpresarialCandidate,
 } from "./employee-actions";
+import {
+  EmployeeDocumentPicker,
+  EmployeeFilesDialog,
+  type EmployeeFileView,
+} from "./employee-files-dialog";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -65,6 +70,8 @@ export type EmployeeView = {
   dependentPlan: string;
   clientId: string | null;
   dependents: DependentView[];
+  /** CNPJ (documento) da empresa a que este colaborador pertence. */
+  companyDocumentId?: string | null;
 };
 
 type Unit = { id: string; name: string };
@@ -75,6 +82,8 @@ export function ColaboradoresTab({
   units,
   canManage,
   canViewBenefitsReport = false,
+  companyDocuments = [],
+  employeeFiles = [],
 }: {
   companyId: string;
   employees: EmployeeView[];
@@ -82,6 +91,10 @@ export function ColaboradoresTab({
   canManage: boolean;
   /** Extrato de benefícios: gestão só (tem dado clínico por pessoa — LGPD). */
   canViewBenefitsReport?: boolean;
+  /** Documentos (CNPJs) da empresa — o seletor só aparece se houver mais de um. */
+  companyDocuments?: { id: string; label: string }[];
+  /** Arquivos dos colaboradores/dependentes desta empresa. */
+  employeeFiles?: EmployeeFileView[];
 }) {
   return (
     <div className="space-y-4">
@@ -128,6 +141,8 @@ export function ColaboradoresTab({
               employee={e}
               units={units}
               canManage={canManage}
+              companyDocuments={companyDocuments}
+              employeeFiles={employeeFiles}
             />
           ))}
         </div>
@@ -141,14 +156,19 @@ function EmployeeRow({
   employee,
   units,
   canManage,
+  companyDocuments = [],
+  employeeFiles = [],
 }: {
   companyId: string;
   employee: EmployeeView;
   units: Unit[];
   canManage: boolean;
+  companyDocuments?: { id: string; label: string }[];
+  employeeFiles?: EmployeeFileView[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const activeDeps = employee.dependents.filter((d) => d.status === "ACTIVE");
+  const myFiles = employeeFiles.filter((f) => f.employeeId === employee.id);
 
   return (
     <div className="rounded-lg border">
@@ -192,6 +212,24 @@ function EmployeeRow({
           >
             Dependentes ({activeDeps.length})
           </Button>
+          {/* CNPJ do colaborador (só quando a empresa tem mais de um). */}
+          <EmployeeDocumentPicker
+            companyId={companyId}
+            employeeId={employee.id}
+            current={employee.companyDocumentId ?? null}
+            documents={companyDocuments}
+          />
+          <EmployeeFilesDialog
+            companyId={companyId}
+            employeeId={employee.id}
+            employeeName={employee.fullName}
+            dependents={employee.dependents.map((d) => ({
+              id: d.id,
+              name: d.fullName ?? "Dependente",
+            }))}
+            files={myFiles}
+            canManage={canManage}
+          />
           {canManage && (
             <>
               {employee.registrationStage === "PRE_REGISTERED" &&

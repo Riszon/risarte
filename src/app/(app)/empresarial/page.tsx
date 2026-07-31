@@ -24,6 +24,7 @@ import {
   type PaymentModel,
 } from "@/lib/empresarial/constants";
 import type { Company } from "@/lib/empresarial/types";
+import type { BillingModel, CompanyCategory } from "@/lib/empresarial/documents";
 import { CompanyFormDialog } from "./company-form-dialog";
 
 export const metadata: Metadata = { title: "Risarte Empresarial" };
@@ -49,6 +50,13 @@ type CompanyRow = {
   employee_grace_period_days: number;
   notes: string | null;
   created_at: string;
+  category: CompanyCategory;
+  billing_model: BillingModel;
+  responsible_name: string | null;
+  responsible_role: string | null;
+  responsible_cpf: string | null;
+  responsible_email: string | null;
+  responsible_phone: string | null;
 };
 
 function toCompany(r: CompanyRow): Company {
@@ -73,6 +81,13 @@ function toCompany(r: CompanyRow): Company {
     employeeGracePeriodDays: r.employee_grace_period_days,
     notes: r.notes,
     createdAt: r.created_at,
+    category: r.category,
+    billingModel: r.billing_model,
+    responsibleName: r.responsible_name,
+    responsibleRole: r.responsible_role,
+    responsibleCpf: r.responsible_cpf,
+    responsibleEmail: r.responsible_email,
+    responsiblePhone: r.responsible_phone,
   };
 }
 
@@ -102,7 +117,7 @@ export default async function EmpresarialPage(props: {
   let query = db
     .from("companies")
     .select(
-      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, created_at"
+      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, created_at, category, billing_model, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone"
     )
     .order("legal_name")
     .limit(2000);

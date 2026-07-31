@@ -28,6 +28,18 @@ import { isAsaasConfigured } from "@/lib/empresarial/asaas";
 import { ContratosTab, type ContractView } from "./contratos-tab";
 import { isZapsignConfigured } from "@/lib/empresarial/zapsign";
 import {
+  DocumentosTab,
+  type CompanyDocumentView,
+  type CompanyFileView,
+} from "./documentos-tab";
+import type { EmployeeFileView } from "./employee-files-dialog";
+import {
+  COMPANY_CATEGORY_LABELS,
+  type BillingModel,
+  type CompanyCategory,
+  type DocType,
+} from "@/lib/empresarial/documents";
+import {
   computeMonthlyCents,
   type AdhesionPricing,
   type SplitRules,
@@ -62,6 +74,7 @@ const STATUS_VARIANT: Record<
 
 const TABS = [
   { key: "geral", label: "Dados Gerais" },
+  { key: "documentos", label: "Documentos" },
   { key: "colaboradores", label: "Colaboradores" },
   { key: "plano", label: "Plano & Benefícios" },
   { key: "financeiro", label: "Financeiro" },
@@ -90,6 +103,13 @@ type CompanyRow = {
   employee_grace_period_days: number;
   notes: string | null;
   created_at: string;
+  category: CompanyCategory;
+  billing_model: BillingModel;
+  responsible_name: string | null;
+  responsible_role: string | null;
+  responsible_cpf: string | null;
+  responsible_email: string | null;
+  responsible_phone: string | null;
 };
 
 function toCompany(r: CompanyRow): Company {
@@ -114,6 +134,13 @@ function toCompany(r: CompanyRow): Company {
     employeeGracePeriodDays: r.employee_grace_period_days,
     notes: r.notes,
     createdAt: r.created_at,
+    category: r.category,
+    billingModel: r.billing_model,
+    responsibleName: r.responsible_name,
+    responsibleRole: r.responsible_role,
+    responsibleCpf: r.responsible_cpf,
+    responsibleEmail: r.responsible_email,
+    responsiblePhone: r.responsible_phone,
   };
 }
 
@@ -143,7 +170,7 @@ export default async function CompanyDetailPage(props: {
   const { data: row } = await db
     .from("companies")
     .select(
-      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, created_at"
+      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, created_at, category, billing_model, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone"
     )
     .eq("id", companyId)
     .maybeSingle<CompanyRow>();
@@ -202,6 +229,8 @@ export default async function CompanyDetailPage(props: {
     );
   let employees: EmployeeView[] = [];
   let units: { id: string; name: string }[] = [];
+  let companyDocuments: { id: string; label: string }[] = [];
+  let employeeFiles: EmployeeFileView[] = [];
   if (aba === "colaboradores") {
     type EmpRow = {
       id: string;
@@ -213,6 +242,7 @@ export default async function CompanyDetailPage(props: {
       registration_stage: "PRE_REGISTERED" | "COMPLETED";
       dependent_plan: string;
       client_id: string | null;
+      company_document_id: string | null;
       dependents: {
         id: string;
         cpf: string;
@@ -224,22 +254,69 @@ export default async function CompanyDetailPage(props: {
       }[];
     };
     const supabase = await createClient();
-    const [{ data: empRows }, { data: unitRows }] = await Promise.all([
-      db
-        .from("employees")
-        .select(
-          "id, cpf, full_name, phone, email, status, registration_stage, dependent_plan, client_id, dependents ( id, cpf, full_name, phone, relationship, status, client_id )"
-        )
-        .eq("company_id", companyId)
-        .order("full_name")
-        .returns<EmpRow[]>(),
-      supabase
-        .from("clinics")
-        .select("id, name")
-        .eq("type", "franchise_unit")
-        .eq("is_active", true)
-        .order("name"),
-    ]);
+    const [{ data: empRows }, { data: unitRows }, { data: docRows }, { data: fileRows }] =
+      await Promise.all([
+        db
+          .from("employees")
+          .select(
+            "id, cpf, full_name, phone, email, status, registration_stage, dependent_plan, client_id, company_document_id, dependents ( id, cpf, full_name, phone, relationship, status, client_id )"
+          )
+          .eq("company_id", companyId)
+          .order("full_name")
+          .returns<EmpRow[]>(),
+        supabase
+          .from("clinics")
+          .select("id, name")
+          .eq("type", "franchise_unit")
+          .eq("is_active", true)
+          .order("name"),
+        db
+          .from("company_documents")
+          .select("id, doc_type, doc_formatted, nickname, is_primary")
+          .eq("company_id", companyId)
+          .order("is_primary", { ascending: false })
+          .returns<
+            {
+              id: string;
+              doc_type: DocType;
+              doc_formatted: string;
+              nickname: string | null;
+              is_primary: boolean;
+            }[]
+          >(),
+        db
+          .from("employee_files")
+          .select(
+            "id, employee_id, dependent_id, file_type, file_name, storage_path, created_at, employees!inner ( company_id )"
+          )
+          .eq("employees.company_id", companyId)
+          .order("created_at", { ascending: false })
+          .returns<
+            {
+              id: string;
+              employee_id: string;
+              dependent_id: string | null;
+              file_type: string;
+              file_name: string;
+              storage_path: string;
+              created_at: string;
+            }[]
+          >(),
+      ]);
+
+    companyDocuments = (docRows ?? []).map((d) => ({
+      id: d.id,
+      label: `${d.nickname ? `${d.nickname} — ` : ""}${d.doc_type} ${d.doc_formatted}${d.is_primary ? " ★" : ""}`,
+    }));
+    employeeFiles = (fileRows ?? []).map((f) => ({
+      id: f.id,
+      employeeId: f.employee_id,
+      dependentId: f.dependent_id,
+      fileType: f.file_type,
+      fileName: f.file_name,
+      storagePath: f.storage_path,
+      createdAt: f.created_at,
+    }));
     employees = (empRows ?? []).map((e) => ({
       id: e.id,
       cpf: e.cpf,
@@ -250,6 +327,7 @@ export default async function CompanyDetailPage(props: {
       registrationStage: e.registration_stage,
       dependentPlan: e.dependent_plan,
       clientId: e.client_id,
+      companyDocumentId: e.company_document_id,
       dependents: (e.dependents ?? []).map((d) => ({
         id: d.id,
         cpf: d.cpf,
@@ -321,6 +399,107 @@ export default async function CompanyDetailPage(props: {
       benefits,
       procedures,
       monthly,
+    };
+  }
+
+  // Aba Documentos: documentos da empresa (CNPJ/CPF/CAEPF/CNO/NIF) + arquivos.
+  let docsTab: {
+    documents: CompanyDocumentView[];
+    files: CompanyFileView[];
+  } | null = null;
+  if (aba === "documentos") {
+    const supabase = await createClient();
+    const [{ data: docRows }, { data: fileRows }, { data: empDocCounts }] =
+      await Promise.all([
+        db
+          .from("company_documents")
+          .select(
+            "id, doc_type, doc_number, doc_formatted, holder_cpf, is_primary, nickname"
+          )
+          .eq("company_id", companyId)
+          .order("is_primary", { ascending: false })
+          .order("created_at")
+          .returns<
+            {
+              id: string;
+              doc_type: DocType;
+              doc_number: string;
+              doc_formatted: string;
+              holder_cpf: string | null;
+              is_primary: boolean;
+              nickname: string | null;
+            }[]
+          >(),
+        db
+          .from("company_files")
+          .select("id, file_type, file_name, storage_path, created_at, uploaded_by")
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false })
+          .returns<
+            {
+              id: string;
+              file_type: string;
+              file_name: string;
+              storage_path: string;
+              created_at: string;
+              uploaded_by: string | null;
+            }[]
+          >(),
+        db
+          .from("employees")
+          .select("company_document_id")
+          .eq("company_id", companyId)
+          .returns<{ company_document_id: string | null }[]>(),
+      ]);
+
+    const countByDoc = new Map<string, number>();
+    for (const e of empDocCounts ?? []) {
+      if (e.company_document_id) {
+        countByDoc.set(
+          e.company_document_id,
+          (countByDoc.get(e.company_document_id) ?? 0) + 1
+        );
+      }
+    }
+
+    const uploaderIds = [
+      ...new Set(
+        (fileRows ?? [])
+          .map((f) => f.uploaded_by)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const uploaderName = new Map<string, string>();
+    if (uploaderIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", uploaderIds);
+      for (const p of profs ?? [])
+        uploaderName.set(p.id, p.full_name || p.email || "—");
+    }
+
+    docsTab = {
+      documents: (docRows ?? []).map((d) => ({
+        id: d.id,
+        docType: d.doc_type,
+        docNumber: d.doc_number,
+        docFormatted: d.doc_formatted,
+        holderCpf: d.holder_cpf,
+        isPrimary: d.is_primary,
+        nickname: d.nickname,
+        employeeCount: countByDoc.get(d.id) ?? 0,
+      })),
+      files: (fileRows ?? []).map((f) => ({
+        id: f.id,
+        fileType: f.file_type,
+        fileName: f.file_name,
+        storagePath: f.storage_path,
+        createdAt: f.created_at,
+        uploaderName: f.uploaded_by
+          ? uploaderName.get(f.uploaded_by) ?? null
+          : null,
+      })),
     };
   }
 
@@ -539,6 +718,10 @@ export default async function CompanyDetailPage(props: {
               <Info label="Razão social" value={company.legalName} />
               <Info label="Nome fantasia" value={company.tradeName} />
               <Info
+                label="Categoria"
+                value={COMPANY_CATEGORY_LABELS[company.category]}
+              />
+              <Info
                 label="Inscrição estadual"
                 value={company.stateRegistration}
               />
@@ -549,6 +732,32 @@ export default async function CompanyDetailPage(props: {
               <div className="col-span-2">
                 <Info label="Endereço" value={addrText} />
               </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Responsável pela empresa
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              {company.responsibleName ? (
+                <>
+                  <Info label="Nome" value={company.responsibleName} />
+                  <Info label="Cargo" value={company.responsibleRole} />
+                  <Info label="CPF" value={company.responsibleCpf} />
+                  <Info label="Telefone" value={company.responsiblePhone} />
+                  <div className="col-span-2">
+                    <Info label="E-mail" value={company.responsibleEmail} />
+                  </div>
+                </>
+              ) : (
+                <p className="col-span-2 text-sm text-muted-foreground">
+                  Nenhum responsável informado. Use{" "}
+                  <strong>Editar</strong> para cadastrar quem assina e trata os
+                  assuntos com o Risarte Empresarial.
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -605,6 +814,16 @@ export default async function CompanyDetailPage(props: {
         </div>
       )}
 
+      {aba === "documentos" && docsTab && (
+        <DocumentosTab
+          companyId={company.id}
+          documents={docsTab.documents}
+          files={docsTab.files}
+          billingModel={company.billingModel}
+          canManage={canManage}
+        />
+      )}
+
       {aba === "colaboradores" && (
         <ColaboradoresTab
           companyId={company.id}
@@ -612,6 +831,8 @@ export default async function CompanyDetailPage(props: {
           units={units}
           canManage={canManageEmp}
           canViewBenefitsReport={canViewBenefitsReport}
+          companyDocuments={companyDocuments}
+          employeeFiles={employeeFiles}
         />
       )}
 

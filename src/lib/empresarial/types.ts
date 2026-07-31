@@ -12,6 +12,7 @@ import type {
   RegistrationStage,
   Relationship,
 } from "./constants";
+import type { BillingModel, CompanyCategory } from "./documents";
 
 export type CompanyAddress = {
   zipCode?: string;
@@ -44,6 +45,16 @@ export type Company = {
   employeeGracePeriodDays: number;
   notes: string | null;
   createdAt: string;
+  /** Categoria da empresa (define o documento sugerido). */
+  category: CompanyCategory;
+  /** Boleto único (consolidado) x um por CNPJ — só relevante com vários CNPJs. */
+  billingModel: BillingModel;
+  // Responsável principal: quem assina e trata com o Risarte Empresarial.
+  responsibleName: string | null;
+  responsibleRole: string | null;
+  responsibleCpf: string | null;
+  responsibleEmail: string | null;
+  responsiblePhone: string | null;
 };
 
 export type Employee = {

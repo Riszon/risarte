@@ -4,7 +4,17 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-import { formatCnpj, formatCep } from "@/lib/masks";
+import { formatCnpj, formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import {
+  COMPANY_CATEGORIES,
+  COMPANY_CATEGORY_LABELS,
+  DOC_TYPES,
+  DOC_TYPE_LABELS,
+  SUGGESTED_DOC_BY_CATEGORY,
+  maskDocument,
+  type CompanyCategory,
+  type DocType,
+} from "@/lib/empresarial/documents";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,7 +50,29 @@ export function CompanyFormDialog({
   const isEdit = Boolean(company);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // Documento principal (a empresa pode ter vários — aba Documentos).
+  const [category, setCategory] = useState<CompanyCategory>(
+    company?.category ?? "empresa_privada"
+  );
+  const [docType, setDocType] = useState<DocType>("CNPJ");
   const [cnpj, setCnpj] = useState(company ? formatCnpj(company.cnpj) : "");
+
+  // Trocar a categoria sugere o documento típico (o usuário pode mudar).
+  function changeCategory(next: string) {
+    const cat = next as CompanyCategory;
+    setCategory(cat);
+    if (!isEdit) {
+      const suggested = SUGGESTED_DOC_BY_CATEGORY[cat];
+      setDocType(suggested);
+      setCnpj((cur) => maskDocument(suggested, cur));
+    }
+  }
+
+  function changeDocType(next: string) {
+    const t = next as DocType;
+    setDocType(t);
+    setCnpj((cur) => maskDocument(t, cur));
+  }
   const [paymentModel, setPaymentModel] = useState<string>(
     company?.paymentModel ?? "EMPLOYEE_PAYS"
   );
@@ -93,15 +125,70 @@ export function CompanyFormDialog({
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="cnpj">CNPJ *</Label>
-              <Input
-                id="cnpj"
-                name="cnpj"
-                required
-                placeholder="00.000.000/0000-00"
-                value={cnpj}
-                onChange={(e) => setCnpj(formatCnpj(e.target.value))}
-              />
+              <Label htmlFor="category">Categoria *</Label>
+              <select
+                id="category"
+                name="category"
+                value={category}
+                onChange={(e) => changeCategory(e.target.value)}
+                className={selectClass}
+              >
+                {COMPANY_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {COMPANY_CATEGORY_LABELS[c]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-[8rem_1fr] gap-2">
+              <div>
+                <Label htmlFor="doc_type">Documento *</Label>
+                <select
+                  id="doc_type"
+                  name="doc_type"
+                  value={docType}
+                  onChange={(e) => changeDocType(e.target.value)}
+                  className={selectClass}
+                >
+                  {DOC_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="cnpj">Número *</Label>
+                <Input
+                  id="cnpj"
+                  name="cnpj"
+                  required
+                  value={cnpj}
+                  onChange={(e) => setCnpj(maskDocument(docType, e.target.value))}
+                />
+              </div>
+            </div>
+            {docType === "CAEPF" && (
+              <div>
+                <Label htmlFor="holder_cpf">CPF do titular (CAEPF) *</Label>
+                <Input
+                  id="holder_cpf"
+                  name="holder_cpf"
+                  required
+                  placeholder="000.000.000-00"
+                  onChange={(e) => (e.target.value = formatCpf(e.target.value))}
+                />
+              </div>
+            )}
+            <div className="sm:col-span-2">
+              <p className="rounded-md border border-gold/40 bg-gold/5 px-2.5 py-1.5 text-xs">
+                Este é o documento <strong>principal</strong>
+                {DOC_TYPE_LABELS[docType] !== docType
+                  ? ` (${DOC_TYPE_LABELS[docType]})`
+                  : ""}
+                . Filiais e outros CNPJs entram na aba{" "}
+                <strong>Documentos</strong> da empresa.
+              </p>
             </div>
             <div>
               <Label htmlFor="state_registration">Inscrição estadual</Label>
@@ -155,6 +242,58 @@ export function CompanyFormDialog({
                 </select>
               </div>
             )}
+          </div>
+
+          <p className="text-xs font-medium uppercase text-muted-foreground">
+            Responsável pela empresa (quem assina e trata com o Risarte)
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="responsible_name">Nome</Label>
+              <Input
+                id="responsible_name"
+                name="responsible_name"
+                defaultValue={company?.responsibleName ?? ""}
+              />
+            </div>
+            <div>
+              <Label htmlFor="responsible_role">Cargo</Label>
+              <Input
+                id="responsible_role"
+                name="responsible_role"
+                placeholder="Ex.: Gerente de RH"
+                defaultValue={company?.responsibleRole ?? ""}
+              />
+            </div>
+            <div>
+              <Label htmlFor="responsible_cpf">CPF</Label>
+              <Input
+                id="responsible_cpf"
+                name="responsible_cpf"
+                placeholder="000.000.000-00"
+                defaultValue={company?.responsibleCpf ?? ""}
+                onChange={(e) => (e.target.value = formatCpf(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="responsible_phone">Telefone</Label>
+              <Input
+                id="responsible_phone"
+                name="responsible_phone"
+                placeholder="(00) 00000-0000"
+                defaultValue={company?.responsiblePhone ?? ""}
+                onChange={(e) => (e.target.value = formatPhone(e.target.value))}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="responsible_email">E-mail</Label>
+              <Input
+                id="responsible_email"
+                name="responsible_email"
+                type="email"
+                defaultValue={company?.responsibleEmail ?? ""}
+              />
+            </div>
           </div>
 
           <p className="text-xs font-medium uppercase text-muted-foreground">
