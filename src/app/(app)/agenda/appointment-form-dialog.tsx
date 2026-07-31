@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, Info, UserPen, Wifi } from "lucide-react";
+import { AlertTriangle, Info, RefreshCw, UserPen, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -293,6 +293,23 @@ export function AppointmentFormDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * J10: sempre que o agendamento ABRE com um cliente escolhido, o cadastro é
+   * conferido de novo no servidor. Quem sai para completar a ficha e volta não
+   * pode continuar vendo o aviso antigo — o navegador restaura a tela como
+   * estava (e o dado já está certo no banco).
+   */
+  useEffect(() => {
+    if (!actualOpen || isEdit || !clientId) return;
+    let alive = true;
+    getClientSchedulingInfo(clientId).then((info) => {
+      if (alive && info) setSchedulingInfo(info);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [actualOpen, isEdit, clientId]);
 
   // H1.5: editing loads the sessions already linked to this appointment +
   // the client's still-pending ones, with the linked ones pre-checked.
@@ -891,21 +908,45 @@ export function AppointmentFormDialog({
                 Falta preencher: <strong>{registrationGaps.join(", ")}</strong>.
               </p>
               {/* J8: era um link que não abria (o dialog engolia o clique).
-                  Agora é um BOTÃO que fecha o agendamento e leva ao cadastro. */}
+                  Agora é um BOTÃO que fecha o agendamento e leva ao cadastro
+                  JÁ EDITÁVEL. Ao lado, conferir de novo sem sair da tela. */}
               {clientId && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="mt-0.5 h-8 border-destructive/40 text-destructive hover:bg-destructive/10"
-                  onClick={() => {
-                    setActualOpen(false);
-                    router.push(`/prontuarios/${clientId}?editar=1`);
-                  }}
-                >
-                  <UserPen className="mr-1 size-3.5" />
-                  Completar o cadastro do cliente
-                </Button>
+                <div className="mt-0.5 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-destructive/40 text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      setActualOpen(false);
+                      router.push(`/prontuarios/${clientId}?editar=1`);
+                    }}
+                  >
+                    <UserPen className="mr-1 size-3.5" />
+                    Completar o cadastro do cliente
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8"
+                    disabled={isPending}
+                    onClick={() =>
+                      startTransition(async () => {
+                        const info = await getClientSchedulingInfo(clientId);
+                        if (info) setSchedulingInfo(info);
+                        if (info && info.registrationComplete) {
+                          toast.success("Cadastro completo — pode agendar.");
+                        } else {
+                          toast.warning("Ainda faltam dados no cadastro.");
+                        }
+                      })
+                    }
+                  >
+                    <RefreshCw className="mr-1 size-3.5" />
+                    Já completei — conferir
+                  </Button>
+                </div>
               )}
             </div>
           )}

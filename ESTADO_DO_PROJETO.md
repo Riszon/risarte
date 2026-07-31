@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 30/07/2026 · Versão do sistema: **0.162.0** · Última migração: **0182**_
+_Atualizado em: 31/07/2026 · Versão do sistema: **0.162.1** · Última migração: **0182**_
+
+> **J10: aviso de cadastro incompleto se revalida ✅ (v0.162.1, sem migração):**
+> depois de completar a ficha, o agendamento continuava mostrando o aviso
+> antigo. O dado estava CERTO no banco (conferido: `registration_complete =
+> true`, nenhum campo vazio) — era a tela restaurada pelo navegador com o
+> estado anterior. Agora, **toda vez que o agendamento abre** com um cliente
+> escolhido, o cadastro é conferido de novo no servidor
+> (`getClientSchedulingInfo` no `actualOpen`), e o aviso ganhou o botão **"Já
+> completei — conferir"** para revalidar na hora (útil quando se completa a
+> ficha em outra aba). A trava de verdade continua no servidor, que recusa
+> agendar cadastro incompleto.
 
 > **J9: SDR vê a agenda REAL da unidade + cadastro abre editável ✅ (v0.162.0,
 > sem migração):** o J8 tinha dado à SDR só um resumo com profissionais e
