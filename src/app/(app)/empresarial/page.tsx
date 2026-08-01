@@ -127,8 +127,18 @@ export default async function EmpresarialPage(props: {
 
   const [{ data: companyRows }, { data: empRows }] = await Promise.all([
     query.returns<CompanyRow[]>(),
-    db.from("employees").select("id, status").eq("status", "ACTIVE"),
+    db
+      .from("employees")
+      .select("id, status, company_id")
+      .eq("status", "ACTIVE")
+      .returns<{ id: string; status: string; company_id: string }[]>(),
   ]);
+
+  // Colaboradores ativos por empresa (coluna da lista).
+  const activeByCompany = new Map<string, number>();
+  for (const e of empRows ?? []) {
+    activeByCompany.set(e.company_id, (activeByCompany.get(e.company_id) ?? 0) + 1);
+  }
 
   // Consultores RisLife disponíveis para o seletor do formulário.
   const supabase = await createClient();
@@ -270,6 +280,7 @@ export default async function EmpresarialPage(props: {
                   <th className="px-2 py-1.5 font-medium">Empresa</th>
                   <th className="px-2 py-1.5 font-medium">CNPJ</th>
                   <th className="px-2 py-1.5 font-medium">Situação</th>
+                  <th className="px-2 py-1.5 font-medium">Colaboradores</th>
                   <th className="px-2 py-1.5 font-medium">Modelo</th>
                   <th className="px-2 py-1.5 font-medium">Consultor</th>
                   {canManage && <th className="px-2 py-1.5 font-medium" />}
@@ -298,6 +309,14 @@ export default async function EmpresarialPage(props: {
                       <Badge variant={STATUS_VARIANT[r.status]}>
                         {COMPANY_STATUS_LABELS[r.status]}
                       </Badge>
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <span className="font-medium">
+                        {activeByCompany.get(r.id) ?? 0}
+                      </span>
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ativo{(activeByCompany.get(r.id) ?? 0) === 1 ? "" : "s"}
+                      </span>
                     </td>
                     <td className="px-2 py-1.5 text-muted-foreground">
                       {PAYMENT_MODEL_LABELS[r.payment_model]}

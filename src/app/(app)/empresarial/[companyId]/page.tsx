@@ -41,6 +41,7 @@ import {
 } from "@/lib/empresarial/documents";
 import {
   computeMonthlyCents,
+  DEFAULT_ADHESION_PRICING,
   type AdhesionPricing,
   type SplitRules,
 } from "@/lib/empresarial/pricing";
@@ -402,6 +403,93 @@ export default async function CompanyDetailPage(props: {
     };
   }
 
+  // Dados Gerais: resumo do programa nesta empresa (pessoas, mensalidade, economia).
+  let resumo: {
+    holders: number;
+    dependents: number;
+    total: number;
+    monthlyCents: number;
+    savedCents: number;
+  } | null = null;
+  if (aba === "geral") {
+    const [{ data: pricingRows }, { data: emps }, { data: deps }, { data: usage }] =
+      await Promise.all([
+        db
+          .from("adhesion_pricing")
+          .select(
+            "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
+          )
+          .or(`company_id.eq.${companyId},company_id.is.null`)
+          .returns<
+            {
+              company_id: string | null;
+              holder_fee_cents: number;
+              dependent_individual_fee_cents: number;
+              dependent_family_fee_cents: number;
+              dependent_family_extra_fee_cents: number;
+              max_installments: number;
+            }[]
+          >(),
+        db
+          .from("employees")
+          .select("id, dependent_plan, status")
+          .eq("company_id", companyId)
+          .eq("status", "ACTIVE")
+          .returns<
+            { id: string; dependent_plan: DependentPlan; status: "ACTIVE" }[]
+          >(),
+        db
+          .from("dependents")
+          .select("employee_id, status, employees!inner ( company_id )")
+          .eq("status", "ACTIVE")
+          .eq("employees.company_id", companyId)
+          .returns<{ employee_id: string; status: string }[]>(),
+        db
+          .from("benefit_usage")
+          .select("amount_saved_cents")
+          .eq("company_id", companyId)
+          .returns<{ amount_saved_cents: number | null }[]>(),
+      ]);
+
+    const chosen =
+      (pricingRows ?? []).find((p) => p.company_id === companyId) ??
+      (pricingRows ?? []).find((p) => p.company_id === null);
+    const pricing: AdhesionPricing = chosen
+      ? {
+          holderFeeCents: chosen.holder_fee_cents,
+          dependentIndividualFeeCents: chosen.dependent_individual_fee_cents,
+          dependentFamilyFeeCents: chosen.dependent_family_fee_cents,
+          dependentFamilyExtraFeeCents: chosen.dependent_family_extra_fee_cents,
+          maxInstallments: chosen.max_installments,
+        }
+      : DEFAULT_ADHESION_PRICING;
+
+    const depCount = new Map<string, number>();
+    for (const d of deps ?? [])
+      depCount.set(d.employee_id, (depCount.get(d.employee_id) ?? 0) + 1);
+
+    const monthly = computeMonthlyCents(
+      pricing,
+      (emps ?? []).map((e) => ({
+        status: "ACTIVE" as const,
+        dependentPlan: e.dependent_plan,
+        activeDependentCount: depCount.get(e.id) ?? 0,
+      }))
+    );
+    const holders = (emps ?? []).length;
+    const dependentsCount = (deps ?? []).length;
+    resumo = {
+      holders,
+      dependents: dependentsCount,
+      total: holders + dependentsCount,
+      monthlyCents: monthly.totalCents,
+      savedCents: (usage ?? []).reduce(
+        (a, u) => a + (u.amount_saved_cents ?? 0),
+        0
+      ),
+    };
+  }
+
   // Aba Documentos: documentos da empresa (CNPJ/CPF/CAEPF/CNO/NIF) + arquivos.
   let docsTab: {
     documents: CompanyDocumentView[];
@@ -720,6 +808,55 @@ export default async function CompanyDetailPage(props: {
           </Button>
         ))}
       </div>
+
+      {aba === "geral" && resumo && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">
+                Pessoas no programa
+              </p>
+              <p className="mt-0.5 text-2xl font-semibold">{resumo.total}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">
+                Titulares
+              </p>
+              <p className="mt-0.5 text-2xl font-semibold">{resumo.holders}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">
+                Dependentes
+              </p>
+              <p className="mt-0.5 text-2xl font-semibold">{resumo.dependents}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">
+                Mensalidade
+              </p>
+              <p className="mt-0.5 text-xl font-semibold">
+                {formatBRL(resumo.monthlyCents)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">
+                Economia gerada
+              </p>
+              <p className="mt-0.5 text-xl font-semibold text-gold">
+                {formatBRL(resumo.savedCents)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {aba === "geral" && (
         <div className="grid gap-4 sm:grid-cols-2">
