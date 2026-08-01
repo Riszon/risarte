@@ -34,6 +34,7 @@ import {
   linkDependent,
   removeDependent,
   setEmployeeStatus,
+  updateDependent,
   updateEmployee,
   lookupClientByCpf,
   type DependentImportRow,
@@ -410,6 +411,11 @@ function DependentsBlock({
               </span>
               {canManage && d.status === "ACTIVE" && (
                 <span className="flex items-center gap-1.5">
+                  <DependentFormDialog
+                    companyId={companyId}
+                    employeeId={employee.id}
+                    dependent={d}
+                  />
                   {!d.clientId && (
                     <UnitPickerDialog
                       units={units}
@@ -597,19 +603,19 @@ function EmployeeFormDialog({
               />
             </div>
             <div>
-              <Label htmlFor="dependent_plan">Plano de dependentes</Label>
-              <select
-                id="dependent_plan"
-                name="dependent_plan"
-                defaultValue={employee?.dependentPlan ?? "NONE"}
-                className={selectClass}
-              >
-                {DEPENDENT_PLANS.map((p) => (
-                  <option key={p} value={p}>
-                    {DEPENDENT_PLAN_LABELS[p]}
-                  </option>
-                ))}
-              </select>
+              <Label>Plano de dependentes</Label>
+              <p className="flex h-9 items-center text-sm">
+                {DEPENDENT_PLAN_LABELS[
+                  (employee?.dependentPlan ?? "NONE") as keyof typeof DEPENDENT_PLAN_LABELS
+                ]}
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  (automático)
+                </span>
+              </p>
+              <p className="text-[10px] leading-tight text-muted-foreground">
+                Definido pela quantidade de dependentes: 1 = individual, 2 a 3 =
+                familiar, 4+ = familiar com extras.
+              </p>
             </div>
             <div>
               <Label htmlFor="grace_period_days">Carência (dias) — opcional</Label>
@@ -644,20 +650,25 @@ function EmployeeFormDialog({
 function DependentFormDialog({
   companyId,
   employeeId,
+  dependent,
 }: {
   companyId: string;
   employeeId: string;
+  /** Presente = edição do dependente; ausente = novo. */
+  dependent?: DependentView;
 }) {
   const router = useRouter();
+  const isEdit = Boolean(dependent);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   // I5b: CPF primeiro + autopreenchimento (igual ao colaborador).
-  const [cpf, setCpf] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [cpf, setCpf] = useState(dependent?.cpf ?? "");
+  const [fullName, setFullName] = useState(dependent?.fullName ?? "");
+  const [phone, setPhone] = useState(dependent?.phone ?? "");
   const [found, setFound] = useState<EmpresarialCandidate | null>(null);
 
   function lookup(value: string) {
+    if (isEdit) return; // Na edição não sobrescreve o que já está cadastrado.
     if (value.replace(/\D/g, "").length !== 11) {
       setFound(null);
       return;
@@ -678,9 +689,11 @@ function DependentFormDialog({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      const r = await addDependent(companyId, employeeId, formData);
+      const r = isEdit
+        ? await updateDependent(companyId, dependent!.id, formData)
+        : await addDependent(companyId, employeeId, formData);
       if (r.ok) {
-        toast.success("Dependente adicionado.");
+        toast.success(isEdit ? "Dependente atualizado." : "Dependente adicionado.");
         setOpen(false);
         router.refresh();
       } else toast.error(r.error ?? "Erro.");
@@ -691,15 +704,23 @@ function DependentFormDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-            <UserPlus className="mr-1 size-3.5" />
-            Adicionar dependente
-          </Button>
+          isEdit ? (
+            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              Editar
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+              <UserPlus className="mr-1 size-3.5" />
+              Adicionar dependente
+            </Button>
+          )
         }
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Novo dependente</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Editar dependente" : "Novo dependente"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3">
           {/* I5b: dependente também começa pelo CPF, com autopreenchimento. */}
@@ -734,7 +755,13 @@ function DependentFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="dep_relationship">Parentesco *</Label>
-              <select id="dep_relationship" name="relationship" required className={selectClass} defaultValue="">
+              <select
+                id="dep_relationship"
+                name="relationship"
+                required
+                className={selectClass}
+                defaultValue={dependent?.relationship ?? ""}
+              >
                 <option value="">Selecione...</option>
                 {RELATIONSHIPS.map((r) => (
                   <option key={r} value={r}>
@@ -759,7 +786,7 @@ function DependentFormDialog({
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending}>
-              Adicionar
+              {isEdit ? "Salvar" : "Adicionar"}
             </Button>
           </div>
         </form>
@@ -849,11 +876,48 @@ const PLAN_BY_LABEL = new Map<string, string>(
   DEPENDENT_PLANS.map((p) => [norm(DEPENDENT_PLAN_LABELS[p]), p])
 );
 /** I5b: "Cônjuge" → SPOUSE etc. (aceita o rótulo em pt-BR ou a chave). */
+// Parentesco na planilha: aceita o rótulo oficial, o valor do enum e as formas
+// que as pessoas realmente escrevem ("esposa", "filho", "mãe"...). Antes só o
+// rótulo exato passava e a linha era descartada em silêncio.
+const RELATIONSHIP_SYNONYMS: Record<string, string> = {
+  esposa: "SPOUSE",
+  esposo: "SPOUSE",
+  marido: "SPOUSE",
+  mulher: "SPOUSE",
+  companheiro: "SPOUSE",
+  companheira: "SPOUSE",
+  "companheiro(a)": "SPOUSE",
+  conjuge: "SPOUSE",
+  parceiro: "SPOUSE",
+  parceira: "SPOUSE",
+  filho: "CHILD",
+  filha: "CHILD",
+  filhos: "CHILD",
+  enteado: "CHILD",
+  enteada: "CHILD",
+  dependente: "CHILD",
+  pai: "PARENT",
+  mae: "PARENT",
+  genitor: "PARENT",
+  genitora: "PARENT",
+  sogro: "OTHER",
+  sogra: "OTHER",
+  irmao: "OTHER",
+  irma: "OTHER",
+  neto: "OTHER",
+  neta: "OTHER",
+  avo: "OTHER",
+  outros: "OTHER",
+};
+
 const RELATIONSHIP_BY_LABEL = new Map<string, string>([
   ...RELATIONSHIPS.map(
     (r) => [norm(RELATIONSHIP_LABELS[r]), r] as [string, string]
   ),
   ...RELATIONSHIPS.map((r) => [norm(r), r] as [string, string]),
+  ...Object.entries(RELATIONSHIP_SYNONYMS).map(
+    ([k, v]) => [norm(k), v] as [string, string]
+  ),
 ]);
 
 function ImportEmployeesDialog({ companyId }: { companyId: string }) {
@@ -928,16 +992,29 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
             for (const k of keys) if (m[k]) return m[k];
             return "";
           };
-          const rel = get("parentesco", "grau de parentesco");
+          const rel = get("parentesco", "grau de parentesco", "vinculo");
           return {
-            holderCpf: get("cpf do titular", "cpf titular", "titular"),
-            cpf: get("cpf do dependente", "cpf dependente", "cpf"),
-            fullName: get("nome", "nome completo"),
-            relationship: RELATIONSHIP_BY_LABEL.get(norm(rel)) ?? "",
+            holderCpf: get(
+              "cpf do titular",
+              "cpf titular",
+              "titular",
+              "cpf do colaborador",
+              "cpf colaborador"
+            ),
+            cpf: get(
+              "cpf do dependente",
+              "cpf dependente",
+              "cpf",
+              "documento"
+            ),
+            fullName: get("nome", "nome completo", "nome do dependente"),
+            // Parentesco não reconhecido não descarta a linha: entra como "Outro".
+            relationship: RELATIONSHIP_BY_LABEL.get(norm(rel)) ?? "OTHER",
             phone: get("telefone", "celular", "whatsapp"),
           };
         })
-        .filter((d) => d.holderCpf && d.cpf && d.relationship);
+        .filter((d) => d.holderCpf && d.cpf);
+      const depIgnored = depJson.length - mappedDeps.length;
       setDepRows(mappedDeps);
       const mapped: EmployeeImportRow[] = json
         .map((obj) => {
@@ -961,9 +1038,20 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
         .filter((r) => r.fullName && r.cpf);
       setRows(mapped);
       if (mapped.length === 0) toast.error("Nenhuma linha válida (confira Nome e CPF).");
+      // Sem a aba de dependentes o usuário achava que a planilha "não trouxe".
+      if (!depSheetName && mapped.length > 0) {
+        toast.info(
+          "A planilha não tem a aba “Dependentes” — só os titulares foram lidos. Baixe o Modelo para incluir dependentes."
+        );
+      } else if (depIgnored > 0) {
+        toast.warning(
+          `${depIgnored} dependente(s) ignorado(s): confira as colunas “CPF do Titular” e “CPF do Dependente”.`
+        );
+      }
     } catch {
       toast.error("Não foi possível ler a planilha.");
       setRows([]);
+      setDepRows([]);
     }
   }
 

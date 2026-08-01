@@ -613,7 +613,7 @@ export default async function CompanyDetailPage(props: {
       db
         .from("adhesion_billing")
         .select(
-          "id, billing_type, reference_month, total_amount_cents, status, due_date, paid_at, split_risarte_cents, split_rislife_cents"
+          "id, billing_type, reference_month, total_amount_cents, status, due_date, paid_at, split_risarte_cents, split_rislife_cents, description, cancel_reason, company_document_id, company_documents ( doc_type, doc_formatted, nickname )"
         )
         .eq("company_id", companyId)
         .order("created_at", { ascending: false })
@@ -628,6 +628,14 @@ export default async function CompanyDetailPage(props: {
             paid_at: string | null;
             split_risarte_cents: number | null;
             split_rislife_cents: number | null;
+            description: string | null;
+            cancel_reason: string | null;
+            company_document_id: string | null;
+            company_documents: {
+              doc_type: string;
+              doc_formatted: string;
+              nickname: string | null;
+            } | null;
           }[]
         >(),
     ]);
@@ -647,6 +655,11 @@ export default async function CompanyDetailPage(props: {
         paidAt: b.paid_at,
         splitRisarteCents: b.split_risarte_cents,
         splitRislifeCents: b.split_rislife_cents,
+        description: b.description,
+        cancelReason: b.cancel_reason,
+        payerLabel: b.company_documents
+          ? `${b.company_documents.nickname ? `${b.company_documents.nickname} · ` : ""}${b.company_documents.doc_type} ${b.company_documents.doc_formatted}`
+          : null,
       })),
     };
   }

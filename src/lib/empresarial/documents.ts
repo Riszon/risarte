@@ -62,7 +62,7 @@ export type BillingModel = (typeof BILLING_MODELS)[number];
 
 export const BILLING_MODEL_LABELS: Record<BillingModel, string> = {
   unico: "Boleto único (consolidado)",
-  por_cnpj: "Um boleto por CNPJ",
+  por_cnpj: "Um boleto por documento (CNPJ/CAEPF/CNO)",
 };
 
 export const COMPANY_FILE_TYPES = [

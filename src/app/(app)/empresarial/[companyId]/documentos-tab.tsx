@@ -77,7 +77,9 @@ export function DocumentosTab({
   billingModel: BillingModel;
   canManage: boolean;
 }) {
-  const cnpjCount = documents.filter((d) => d.docType === "CNPJ").length;
+  // Faturamento separado vale para qualquer documento (CNPJ, CAEPF, CNO...),
+  // não só CNPJ — o dono cadastrou uma empresa com 2 CAEPF e precisava da opção.
+  const docCount = documents.length;
 
   return (
     <div className="space-y-4">
@@ -160,8 +162,8 @@ export function DocumentosTab({
         </CardContent>
       </Card>
 
-      {/* Faturamento: só faz sentido com mais de um CNPJ. */}
-      {cnpjCount > 1 && (
+      {/* Faturamento: só faz sentido com mais de um documento. */}
+      {docCount > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Modelo de faturamento</CardTitle>
@@ -171,7 +173,7 @@ export function DocumentosTab({
               companyId={companyId}
               current={billingModel}
               canManage={canManage}
-              cnpjCount={cnpjCount}
+              docCount={docCount}
             />
           </CardContent>
         </Card>
@@ -416,12 +418,12 @@ function BillingModelPicker({
   companyId,
   current,
   canManage,
-  cnpjCount,
+  docCount,
 }: {
   companyId: string;
   current: BillingModel;
   canManage: boolean;
-  cnpjCount: number;
+  docCount: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -429,8 +431,8 @@ function BillingModelPicker({
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">
-        Esta empresa tem <strong>{cnpjCount} CNPJs</strong>. Como a cobrança deve
-        sair?
+        Esta empresa tem <strong>{docCount} documentos</strong>. Como a cobrança
+        deve sair?
       </p>
       <div className="space-y-1.5">
         {BILLING_MODELS.map((m) => (

@@ -61,10 +61,6 @@ export async function createEmployee(
   if (!fullName) return { ok: false, error: "Informe o nome do colaborador." };
   const phone = field(formData, "phone");
   if (!phone) return { ok: false, error: "Informe o telefone." };
-  const plan = field(formData, "dependent_plan") ?? "NONE";
-  if (!(DEPENDENT_PLANS as readonly string[]).includes(plan)) {
-    return { ok: false, error: "Plano de dependentes inválido." };
-  }
 
   const db = await empresarialDb();
   const { data, error } = await db
@@ -75,7 +71,8 @@ export async function createEmployee(
       full_name: fullName,
       phone: formatPhone(phone),
       email: field(formData, "email"),
-      dependent_plan: plan,
+      // Plano de dependentes é CALCULADO pelo banco (gatilho da 1002).
+      dependent_plan: "NONE",
       grace_period_days: field(formData, "grace_period_days")
         ? Number.parseInt(field(formData, "grace_period_days")!, 10)
         : null,
@@ -110,10 +107,6 @@ export async function updateEmployee(
   const fullName = field(formData, "full_name");
   if (!fullName) return { ok: false, error: "Informe o nome." };
   const phone = field(formData, "phone");
-  const plan = field(formData, "dependent_plan") ?? "NONE";
-  if (!(DEPENDENT_PLANS as readonly string[]).includes(plan)) {
-    return { ok: false, error: "Plano de dependentes inválido." };
-  }
 
   const db = await empresarialDb();
   const { error } = await db
@@ -122,7 +115,7 @@ export async function updateEmployee(
       full_name: fullName,
       phone: phone ? formatPhone(phone) : null,
       email: field(formData, "email"),
-      dependent_plan: plan,
+      // dependent_plan não entra: o banco calcula pelos dependentes (1002).
       grace_period_days: field(formData, "grace_period_days")
         ? Number.parseInt(field(formData, "grace_period_days")!, 10)
         : null,
@@ -252,6 +245,73 @@ export async function addDependent(
   return { ok: true };
 }
 
+export async function updateDependent(
+  companyId: string,
+  dependentId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canManageEmployees(session)) {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const relationship = field(formData, "relationship") ?? "";
+  if (!(RELATIONSHIPS as readonly string[]).includes(relationship)) {
+    return { ok: false, error: "Selecione o grau de parentesco." };
+  }
+  const cpf = (field(formData, "cpf") ?? "").replace(/\D/g, "");
+  if (cpf.length !== 11) return { ok: false, error: "Informe o CPF completo." };
+
+  const db = await empresarialDb();
+  const { error } = await db
+    .from("dependents")
+    .update({
+      cpf: formatCpf(cpf),
+      full_name: field(formData, "full_name"),
+      phone: field(formData, "phone")
+        ? formatPhone(field(formData, "phone")!)
+        : null,
+      relationship,
+    })
+    .eq("id", dependentId);
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: "Este CPF já é dependente deste colaborador." };
+    }
+    console.error("updateDependent failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o dependente." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_dependent",
+    entityId: dependentId,
+  });
+  revalidatePath(`/empresarial/${companyId}`);
+  return { ok: true };
+}
+
+/** Ativa/inativa o dependente (o plano do titular recalcula sozinho). */
+export async function setDependentStatus(
+  companyId: string,
+  dependentId: string,
+  active: boolean
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canManageEmployees(session)) {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const db = await empresarialDb();
+  const { error } = await db
+    .from("dependents")
+    .update({ status: active ? "ACTIVE" : "INACTIVE" })
+    .eq("id", dependentId);
+  if (error) {
+    console.error("setDependentStatus failed:", error.message);
+    return { ok: false, error: "Não foi possível atualizar." };
+  }
+  revalidatePath(`/empresarial/${companyId}`);
+  return { ok: true };
+}
+
 export async function linkDependent(
   companyId: string,
   dependentId: string,
@@ -347,16 +407,14 @@ export async function importEmployees(
     }
     if (seen.has(cpf)) continue;
     seen.add(cpf);
-    const plan = (DEPENDENT_PLANS as readonly string[]).includes(r.dependentPlan)
-      ? r.dependentPlan
-      : "NONE";
     payload.push({
       company_id: companyId,
       cpf: formatCpf(cpf),
       full_name: r.fullName.trim(),
       phone: r.phone ? formatPhone(r.phone) : "",
       email: r.email?.trim() || null,
-      dependent_plan: plan,
+      // O plano vem dos dependentes importados (gatilho da 1002), não da coluna.
+      dependent_plan: "NONE",
     });
   }
   if (payload.length === 0) {

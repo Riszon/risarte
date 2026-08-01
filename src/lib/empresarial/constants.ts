@@ -102,12 +102,18 @@ export const BILLING_TYPE_LABELS: Record<BillingType, string> = {
   MONTHLY: "Mensalidade",
 };
 
-export const BILLING_STATUSES = ["PENDING", "PAID", "OVERDUE"] as const;
+export const BILLING_STATUSES = [
+  "PENDING",
+  "PAID",
+  "OVERDUE",
+  "CANCELLED",
+] as const;
 export type BillingStatus = (typeof BILLING_STATUSES)[number];
 export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
   PENDING: "Pendente",
   PAID: "Pago",
   OVERDUE: "Em atraso",
+  CANCELLED: "Cancelada",
 };
 
 export const LEAD_STAGES = [
