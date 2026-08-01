@@ -539,6 +539,11 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide">
                 Extrato de economia por beneficiário
               </h3>
+              <p className="mb-2 text-[10px] text-muted-foreground">
+                Chegada e fim aparecem quando o procedimento já foi atendido (vêm
+                do check-in e da conclusão no painel de Atendimento). Benefício
+                lançado no fechamento e ainda não atendido fica sem horário.
+              </p>
               {withUsage.length === 0 ? (
                 <p className="rounded-lg border p-3 text-sm text-muted-foreground">
                   Nenhum benefício registrado até agora. A economia é registrada
@@ -588,7 +593,14 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
                           <tbody>
                             {m.usages.map((u, i) => (
                               <tr key={i} className="border-t">
-                                <td className="py-1 pr-2">{d(u.date)}</td>
+                                <td className="py-1 pr-2">
+                                  {d(u.date)}
+                                  {!u.hasAttendance && (
+                                    <span className="block text-[10px] text-muted-foreground">
+                                      lançado no fechamento
+                                    </span>
+                                  )}
+                                </td>
                                 <td className="py-1 pr-2 tabular-nums">
                                   {hm(u.checkInAt)}
                                 </td>

@@ -16,6 +16,8 @@ export type UsageLine = {
   checkInAt: string | null;
   /** Fim do atendimento — null quando ainda não concluído. */
   doneAt: string | null;
+  /** false = benefício lançado no fechamento, ainda sem atendimento realizado. */
+  hasAttendance: boolean;
   fullCents: number;
   chargedCents: number;
   savedCents: number;
@@ -400,6 +402,7 @@ export async function loadBenefitsReport(
           date: appt?.startsAt ?? u.used_at,
           checkInAt: appt?.checkInAt ?? null,
           doneAt: appt?.doneAt ?? null,
+          hasAttendance: Boolean(appt),
           fullCents: 0,
           chargedCents: 0,
           savedCents: 0,
