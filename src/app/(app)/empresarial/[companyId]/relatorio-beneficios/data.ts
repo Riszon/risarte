@@ -5,22 +5,22 @@ import type { MethodologyPillar } from "@/lib/journey";
 import type { EmployeeStatus, Relationship } from "@/lib/empresarial/constants";
 
 /**
- * Uma linha do extrato: um ATENDIMENTO (ou um lançamento sem horário vinculado).
- * Decisão do dono: o extrato mostra data, chegada (check-in), fim do atendimento
- * e a economia — sem nome de procedimento e sem o que o cliente pagou.
+ * Uma linha do EXTRATO DE ATENDIMENTOS. Vem da agenda (check-in e conclusão no
+ * painel de Atendimento), independente de fechamento — decisão do dono: o
+ * fechamento registra a economia; o atendimento registra a passagem do cliente
+ * pela clínica. Sem valores aqui (a economia fica no quadro por beneficiário).
  */
-export type UsageLine = {
-  /** Data do atendimento (ou do lançamento, quando não há horário). */
+export type AttendanceLine = {
+  /** Data do atendimento. */
   date: string;
-  /** Chegada na clínica (check-in) — null quando não houve atendimento. */
+  clinicName: string | null;
+  providerName: string | null;
+  /** Chegada na clínica (check-in). */
   checkInAt: string | null;
-  /** Fim do atendimento — null quando ainda não concluído. */
+  /** Fim do atendimento. */
   doneAt: string | null;
-  /** false = benefício lançado no fechamento, ainda sem atendimento realizado. */
-  hasAttendance: boolean;
-  fullCents: number;
-  chargedCents: number;
-  savedCents: number;
+  /** Minutos entre a chegada e o fim (null quando falta um dos dois). */
+  durationMinutes: number | null;
 };
 
 export type MemberStats = {
@@ -40,7 +40,8 @@ export type MemberStats = {
   chargedCents: number;
   savedCents: number;
   usageCount: number;
-  usages: UsageLine[];
+  /** Extrato de atendimentos (da agenda, não do fechamento). */
+  attendances: AttendanceLine[];
 
   // Sessões de tratamento
   sessionsDone: number;
@@ -271,9 +272,10 @@ export async function loadBenefitsReport(
     supabase
       .from("appointments")
       .select(
-        "id, client_id, clinic_id, status, attendance, starts_at, checked_in_at, done_at"
+        "id, client_id, clinic_id, status, attendance, starts_at, checked_in_at, done_at, provider_user_id, called_by"
       )
       .in("client_id", clientIds)
+      .order("starts_at", { ascending: false })
       .returns<
         {
           id: string;
@@ -284,9 +286,29 @@ export async function loadBenefitsReport(
           starts_at: string;
           checked_in_at: string | null;
           done_at: string | null;
+          provider_user_id: string | null;
+          called_by: string | null;
         }[]
       >(),
   ]);
+
+  // Profissionais que atenderam (quem chamou; senão o profissional agendado).
+  const providerIds = [
+    ...new Set(
+      (appts ?? [])
+        .flatMap((a) => [a.called_by, a.provider_user_id])
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const providerName = new Map<string, string>();
+  if (providerIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", providerIds);
+    for (const p of profs ?? [])
+      providerName.set(p.id, p.full_name || p.email || "—");
+  }
 
   // Atendimentos por id (o extrato mostra data, chegada e fim).
   const apptById = new Map<
@@ -390,31 +412,39 @@ export async function loadBenefitsReport(
       }
     }
 
-    // Extrato: uma linha por ATENDIMENTO (agrupa os usos do mesmo horário).
-    // Sem atendimento vinculado (ex.: venda direta sem horário), agrupa pelo dia.
-    const lineMap = new Map<string, UsageLine>();
-    for (const u of uses) {
-      const appt = u.appointment_id ? apptById.get(u.appointment_id) : undefined;
-      const key = u.appointment_id ?? `dia:${u.used_at.slice(0, 10)}`;
-      const cur =
-        lineMap.get(key) ??
-        {
-          date: appt?.startsAt ?? u.used_at,
-          checkInAt: appt?.checkInAt ?? null,
-          doneAt: appt?.doneAt ?? null,
-          hasAttendance: Boolean(appt),
-          fullCents: 0,
-          chargedCents: 0,
-          savedCents: 0,
+    // Extrato de atendimentos: veio da AGENDA (o cliente esteve na clínica),
+    // não do fechamento. Entra quem teve check-in ou atendimento concluído.
+    const attendanceLines: AttendanceLine[] = ap
+      .filter(
+        (a) =>
+          a.checked_in_at != null ||
+          a.done_at != null ||
+          a.attendance === "done" ||
+          a.status === "completed"
+      )
+      .map((a) => {
+        const start = a.checked_in_at;
+        const end = a.done_at;
+        const durationMinutes =
+          start && end
+            ? Math.max(
+                0,
+                Math.round(
+                  (new Date(end).getTime() - new Date(start).getTime()) / 60000
+                )
+              )
+            : null;
+        const who = a.called_by ?? a.provider_user_id;
+        return {
+          date: a.starts_at,
+          clinicName: clinicName.get(a.clinic_id) ?? null,
+          providerName: who ? providerName.get(who) ?? null : null,
+          checkInAt: a.checked_in_at,
+          doneAt: a.done_at,
+          durationMinutes,
         };
-      cur.fullCents += u.amount_full_cents ?? 0;
-      cur.chargedCents += u.amount_charged_cents ?? 0;
-      cur.savedCents += u.amount_saved_cents ?? 0;
-      lineMap.set(key, cur);
-    }
-    const usageLines = [...lineMap.values()].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+      })
+      .sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime());
 
     return {
       clientId: s.clientId,
@@ -430,7 +460,7 @@ export async function loadBenefitsReport(
       chargedCents: uses.reduce((a, u) => a + (u.amount_charged_cents ?? 0), 0),
       savedCents: uses.reduce((a, u) => a + (u.amount_saved_cents ?? 0), 0),
       usageCount: uses.length,
-      usages: usageLines,
+      attendances: attendanceLines,
 
       sessionsDone: sess.filter((x) => x.status === "done").length,
       sessionsOpen: sess.filter((x) => OPEN_SESSION.has(x.status)).length,

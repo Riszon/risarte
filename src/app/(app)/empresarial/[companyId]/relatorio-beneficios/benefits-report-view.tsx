@@ -77,7 +77,7 @@ function Kpi({ label, value, gold }: { label: string; value: string; gold?: bool
 
 export function BenefitsReportView({ report }: { report: BenefitsReport }) {
   const { company: c, totals: t, members, byPillar, byClinic } = report;
-  const withUsage = members.filter((m) => m.usageCount > 0);
+  const withAttendance = members.filter((m) => m.attendances.length > 0);
 
   // Valores financeiros começam OCULTOS (decisão do dono: são opcionais).
   const [opt, setOpt] = useState<Options>({
@@ -207,27 +207,31 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
       ];
       XLSX.utils.book_append_sheet(wb, porPessoa, "Por beneficiário");
 
-      // Extrato: atendimento por atendimento (sem nome de procedimento).
+      // Extrato de atendimentos: uma linha por passagem pela clínica.
       const extrato = XLSX.utils.aoa_to_sheet([
         [
-          "Beneficiário", "Vínculo", "Data do atendimento", "Chegada (check-in)",
-          "Fim do atendimento", "Economia (R$)",
+          "Beneficiário", "Vínculo", "Data do atendimento", "Unidade",
+          "Profissional", "Chegada (check-in)", "Fim do atendimento",
+          "Tempo (min)",
         ],
         ...members.flatMap((m) =>
-          m.usages.map((u) => [
+          m.attendances.map((a) => [
             m.name,
             memberRole(m),
-            d(u.date),
-            hm(u.checkInAt),
-            hm(u.doneAt),
-            (u.savedCents / 100).toFixed(2),
+            d(a.date),
+            a.clinicName ?? "",
+            a.providerName ?? "",
+            hm(a.checkInAt),
+            hm(a.doneAt),
+            a.durationMinutes ?? "",
           ])
         ),
       ]);
       extrato["!cols"] = [
-        { wch: 28 }, { wch: 22 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 14 },
+        { wch: 28 }, { wch: 22 }, { wch: 20 }, { wch: 20 },
+        { wch: 24 }, { wch: 18 }, { wch: 20 }, { wch: 12 },
       ];
-      XLSX.utils.book_append_sheet(wb, extrato, "Extrato");
+      XLSX.utils.book_append_sheet(wb, extrato, "Atendimentos");
 
       const safe = companyLabel
         .normalize("NFD")
@@ -534,116 +538,68 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
               </div>
             </section>
 
-            {/* Extrato por atendimento */}
+            {/* Extrato de atendimentos (vem da agenda, não do fechamento) */}
             <section>
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide">
-                Extrato de economia por beneficiário
+                Extrato de atendimentos
               </h3>
               <p className="mb-2 text-[10px] text-muted-foreground">
-                Chegada e fim aparecem quando o procedimento já foi atendido (vêm
-                do check-in e da conclusão no painel de Atendimento). Benefício
-                lançado no fechamento e ainda não atendido fica sem horário.
+                Cada passagem do beneficiário pela clínica: registrada no
+                check-in da recepção e na conclusão do atendimento. A economia
+                fica no quadro por beneficiário, acima.
               </p>
-              {withUsage.length === 0 ? (
+              {withAttendance.length === 0 ? (
                 <p className="rounded-lg border p-3 text-sm text-muted-foreground">
-                  Nenhum benefício registrado até agora. A economia é registrada
-                  no fechamento — pelo fluxo do comercial ou pela venda direta.
+                  Nenhum atendimento registrado até agora.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {withUsage.map((m) => (
+                  {withAttendance.map((m) => (
                     <div key={m.clientId} className="avoid-break rounded-lg border p-3">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <p className="font-medium">
                           {m.name}{" "}
                           <span className="text-xs font-normal text-muted-foreground">
                             {memberRole(m)}
-                            {m.clinicName ? ` · ${m.clinicName}` : ""}
                           </span>
                         </p>
-                        <p className="text-sm">
-                          <span className="text-muted-foreground">Economia: </span>
-                          <span className="font-semibold text-gold">
-                            {formatBRL(m.savedCents)}
-                          </span>
+                        <p className="text-xs text-muted-foreground">
+                          {m.attendances.length} atendimento
+                          {m.attendances.length === 1 ? "" : "s"}
                         </p>
                       </div>
                       <div className="mt-2 overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead className="text-left text-muted-foreground">
                             <tr>
-                              <th className="py-1 pr-2 font-medium">Atendimento</th>
+                              <th className="py-1 pr-2 font-medium">Data</th>
+                              <th className="py-1 pr-2 font-medium">Unidade</th>
+                              <th className="py-1 pr-2 font-medium">Profissional</th>
                               <th className="py-1 pr-2 font-medium">Chegada</th>
                               <th className="py-1 pr-2 font-medium">Fim</th>
-                              {opt.showFull && (
-                                <th className="py-1 pr-2 text-right font-medium">
-                                  Valor cheio
-                                </th>
-                              )}
-                              {opt.showCharged && (
-                                <th className="py-1 pr-2 text-right font-medium">
-                                  Pagou
-                                </th>
-                              )}
-                              <th className="py-1 text-right font-medium">
-                                Economizou
-                              </th>
+                              <th className="py-1 text-right font-medium">Tempo</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {m.usages.map((u, i) => (
+                            {m.attendances.map((a, i) => (
                               <tr key={i} className="border-t">
-                                <td className="py-1 pr-2">
-                                  {d(u.date)}
-                                  {!u.hasAttendance && (
-                                    <span className="block text-[10px] text-muted-foreground">
-                                      lançado no fechamento
-                                    </span>
-                                  )}
+                                <td className="py-1 pr-2">{d(a.date)}</td>
+                                <td className="py-1 pr-2">{a.clinicName ?? "—"}</td>
+                                <td className="py-1 pr-2">{a.providerName ?? "—"}</td>
+                                <td className="py-1 pr-2 tabular-nums">
+                                  {hm(a.checkInAt)}
                                 </td>
                                 <td className="py-1 pr-2 tabular-nums">
-                                  {hm(u.checkInAt)}
+                                  {hm(a.doneAt)}
                                 </td>
-                                <td className="py-1 pr-2 tabular-nums">
-                                  {hm(u.doneAt)}
-                                </td>
-                                {opt.showFull && (
-                                  <td className="py-1 pr-2 text-right tabular-nums">
-                                    {formatBRL(u.fullCents)}
-                                  </td>
-                                )}
-                                {opt.showCharged && (
-                                  <td className="py-1 pr-2 text-right tabular-nums">
-                                    {formatBRL(u.chargedCents)}
-                                  </td>
-                                )}
-                                <td className="py-1 text-right font-medium tabular-nums text-gold">
-                                  {formatBRL(u.savedCents)}
+                                <td className="py-1 text-right tabular-nums">
+                                  {a.durationMinutes != null
+                                    ? `${a.durationMinutes} min`
+                                    : "—"}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
-                          <tfoot>
-                            <tr className="border-t font-medium">
-                              <td className="py-1 pr-2" colSpan={3}>
-                                Total ({m.usages.length} atendimento
-                                {m.usages.length === 1 ? "" : "s"})
-                              </td>
-                              {opt.showFull && (
-                                <td className="py-1 pr-2 text-right tabular-nums">
-                                  {formatBRL(m.fullCents)}
-                                </td>
-                              )}
-                              {opt.showCharged && (
-                                <td className="py-1 pr-2 text-right tabular-nums">
-                                  {formatBRL(m.chargedCents)}
-                                </td>
-                              )}
-                              <td className="py-1 text-right tabular-nums text-gold">
-                                {formatBRL(m.savedCents)}
-                              </td>
-                            </tr>
-                          </tfoot>
                         </table>
                       </div>
                     </div>
