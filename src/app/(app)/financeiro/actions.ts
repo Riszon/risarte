@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { isValidAccountCode } from "@/lib/finance/accounts";
+import { canConfigureFinanceNetwork } from "@/lib/finance/access";
 
 export type FinanceResult = { ok: boolean; error?: string };
 
@@ -109,6 +110,16 @@ export async function createCostCenter(input: {
   const session = await getSessionContext();
   const supabase = await createClient();
 
+  // A árvore é da REDE: só a Franqueadora cria centro (decisão do dono,
+  // 31/07/2026). A RLS da 0186 é a barreira real; isto é a mensagem amigável.
+  if (!canConfigureFinanceNetwork(session)) {
+    return {
+      ok: false,
+      error:
+        "Centros de custo são definidos pela Franqueadora — é o que mantém as unidades comparáveis. Peça a criação a ela.",
+    };
+  }
+
   const code = input.code.trim().toUpperCase();
   const name = input.name.trim();
   if (!code) return { ok: false, error: "Informe o código do centro." };
@@ -167,6 +178,13 @@ export async function updateCostCenter(input: {
   const session = await getSessionContext();
   const supabase = await createClient();
 
+  if (!canConfigureFinanceNetwork(session)) {
+    return {
+      ok: false,
+      error: "Centros de custo são definidos pela Franqueadora.",
+    };
+  }
+
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
     updated_by: session.userId,
@@ -203,6 +221,8 @@ export async function updateCostCenter(input: {
 export async function updateChartAccount(input: {
   code: string;
   costBehavior?: "fixed" | "variable" | "none";
+  /** Onde a conta vale — corrigível na tela (ex.: receita que é da matriz). */
+  scope?: "unit" | "franchisor" | "both";
   fiscalAccountCode?: string | null;
   active?: boolean;
 }): Promise<FinanceResult> {
@@ -217,6 +237,7 @@ export async function updateChartAccount(input: {
     updated_by: session.userId,
   };
   if (input.costBehavior !== undefined) patch.cost_behavior = input.costBehavior;
+  if (input.scope !== undefined) patch.scope = input.scope;
   if (input.fiscalAccountCode !== undefined) {
     patch.fiscal_account_code = input.fiscalAccountCode?.trim() || null;
   }

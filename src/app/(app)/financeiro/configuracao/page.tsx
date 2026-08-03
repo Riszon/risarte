@@ -39,6 +39,18 @@ export default async function FinanceSettingsPage() {
     };
   const overrides = (settings ?? []).filter((s) => s.clinic_id !== null);
 
+  // Gerente/Franqueado veem SÓ a configuração que vale para a própria unidade
+  // (decisão do dono, 31/07/2026) — nada da rede nem das outras unidades.
+  const isNetworkAdmin = canConfigureFinanceNetwork(session);
+  const activeClinicId = session.activeClinic?.id ?? null;
+  const visibleClinics = (clinics ?? [])
+    .map((c) => ({
+      id: c.id as string,
+      name: c.name as string,
+      type: c.type as "franchisor" | "franchise_unit",
+    }))
+    .filter((c) => isNetworkAdmin || c.id === activeClinicId);
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       <div>
@@ -47,21 +59,18 @@ export default async function FinanceSettingsPage() {
           Configuração financeira
         </h1>
         <p className="text-sm text-muted-foreground">
-          Multa, juros e carência de atraso. O padrão da rede vale para todas as
-          unidades; a unidade só precisa de configuração própria quando for
-          diferente.
+          {isNetworkAdmin
+            ? "Multa, juros e carência de atraso. O padrão da rede vale para todas as unidades; a unidade só precisa de configuração própria quando for diferente."
+            : "Multa, juros e carência de atraso que valem para a sua unidade. Quem define é a Franqueadora."}
         </p>
       </div>
 
       <FinanceSettingsForm
         network={network}
         overrides={overrides}
-        clinics={(clinics ?? []).map((c) => ({
-          id: c.id as string,
-          name: c.name as string,
-          type: c.type as "franchisor" | "franchise_unit",
-        }))}
-        canEdit={canConfigureFinanceNetwork(session)}
+        clinics={visibleClinics}
+        canEdit={isNetworkAdmin}
+        showNetwork={isNetworkAdmin}
       />
     </div>
   );

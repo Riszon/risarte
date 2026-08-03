@@ -24,13 +24,12 @@ export function CostCenterManager({
   clinics,
   activeClinicId,
   canManageNetwork,
-  canManageUnit,
 }: {
   centers: CostCenter[];
   clinics: { id: string; name: string }[];
   activeClinicId: string | null;
+  /** Só a Franqueadora configura a árvore — a unidade apenas consulta. */
   canManageNetwork: boolean;
-  canManageUnit: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -95,8 +94,8 @@ export function CostCenterManager({
     });
   }
 
-  const canEdit = (c: CostCenter) =>
-    c.scope === "unit" ? canManageUnit : canManageNetwork;
+  // Só a Franqueadora edita a árvore — vale para centro de rede e de unidade.
+  const canEdit = canManageNetwork;
 
   function renderNode(node: CostCenterNode, level = 0) {
     const editing = editingId === node.id;
@@ -148,7 +147,7 @@ export function CostCenterManager({
                   Inativo
                 </Badge>
               )}
-              {canEdit(node) && (
+              {canEdit && (
                 <div className="flex gap-1">
                   <Button
                     size="sm"
@@ -184,7 +183,7 @@ export function CostCenterManager({
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">Árvore de centros</CardTitle>
-          {(canManageNetwork || canManageUnit) && (
+          {canManageNetwork && (
             <Button size="sm" onClick={() => setShowNew((v) => !v)}>
               <Plus className="mr-1 size-3.5" />
               Novo centro
@@ -302,8 +301,9 @@ export function CostCenterManager({
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Centro com lançamento não pode ser excluído nem trocar de código — só
-        desativado. Isso preserva o histórico e a comparação entre períodos.
+        {canManageNetwork
+          ? "Centro com lançamento não pode ser excluído nem trocar de código — só desativado. Isso preserva o histórico e a comparação entre períodos."
+          : "A árvore de centros é definida pela Franqueadora e vale para toda a rede — é o que permite comparar unidades no consolidado. Precisa de um centro novo? Peça à Franqueadora."}
       </p>
     </div>
   );

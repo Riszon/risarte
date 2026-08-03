@@ -11,6 +11,7 @@ import {
   ACCOUNT_NATURE_LABELS,
   ACCOUNT_SCOPE_LABELS,
   COST_BEHAVIOR_LABELS,
+  type AccountScope,
   type ChartAccount,
   type CostBehavior,
 } from "@/lib/finance/accounts";
@@ -25,9 +26,12 @@ const BEHAVIOR_STYLE: Record<CostBehavior, string> = {
 export function ChartOfAccountsTable({
   accounts,
   canEdit,
+  showScope = true,
 }: {
   accounts: ChartAccount[];
   canEdit: boolean;
+  /** "Onde vale" só interessa a quem enxerga rede e franqueadora juntas. */
+  showScope?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -39,6 +43,16 @@ export function ChartOfAccountsTable({
       const r = await updateChartAccount({ code, costBehavior: behavior });
       if (r.ok) {
         toast.success("Classificação atualizada.");
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  function changeScope(code: string, scope: AccountScope) {
+    startTransition(async () => {
+      const r = await updateChartAccount({ code, scope });
+      if (r.ok) {
+        toast.success("Escopo da conta atualizado.");
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -65,7 +79,9 @@ export function ChartOfAccountsTable({
               <th className="px-3 py-2 text-left font-medium">Tipo</th>
               <th className="px-3 py-2 text-left font-medium">Natureza</th>
               <th className="px-3 py-2 text-left font-medium">Comportamento</th>
-              <th className="px-3 py-2 text-left font-medium">Onde vale</th>
+              {showScope && (
+                <th className="px-3 py-2 text-left font-medium">Onde vale</th>
+              )}
               <th className="px-3 py-2 text-left font-medium">Cód. fiscal</th>
             </tr>
           </thead>
@@ -129,9 +145,27 @@ export function ChartOfAccountsTable({
                       </Badge>
                     )}
                   </td>
-                  <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                    {ACCOUNT_SCOPE_LABELS[a.scope]}
-                  </td>
+                  {showScope && (
+                    <td className="px-3 py-1.5">
+                      {canEdit ? (
+                        <select
+                          value={a.scope}
+                          onChange={(e) =>
+                            changeScope(a.code, e.target.value as AccountScope)
+                          }
+                          className="h-7 rounded-md border border-input bg-background px-1.5 text-xs"
+                        >
+                          <option value="unit">Unidade</option>
+                          <option value="franchisor">Franqueadora</option>
+                          <option value="both">Ambas</option>
+                        </select>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          {ACCOUNT_SCOPE_LABELS[a.scope]}
+                        </span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-3 py-1.5 text-xs">
                     {canEdit && a.isAnalytic && editing === a.code ? (
                       <span className="flex items-center gap-1">

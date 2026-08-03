@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/07/2026 · Versão do sistema: **0.164.0** · Última migração: **0185**_
+_Atualizado em: 31/07/2026 · Versão do sistema: **0.164.1** · Última migração: **0186**_
+
+> **FIN0 — escopo da unidade corrigido ✅ (v0.164.1, migração 0186):** testando
+> como Gerente, o dono viu telas abertas demais. Agora: **Configuração** mostra
+> só a da própria unidade (sem o padrão da rede nem as outras unidades);
+> **Centros de custo** viraram leitura para a unidade — quem define a árvore é a
+> Franqueadora (RLS fechada na 0186, não só a tela) — e a unidade ganhou o
+> **relatório de movimento por centro** (mês, entradas/saídas, com filtro e
+> destaque de lançamento sem centro); **Plano de contas** na unidade lista só as
+> contas que valem para ela e **esconde a coluna "Onde vale"**. Essa coluna
+> passou a ser **editável** pela Franqueadora, e a 0186 corrigiu **1.2.02
+> (Risarte Empresarial — adesão e mensalidade)** de unidade para
+> **franqueadora**, com o grupo 1.2 virando "ambas".
 
 > **MÓDULO FINANCEIRO — FIN0: FUNDAÇÃO ✅ (v0.164.0, migrações 0184 + 0185).**
 > Base contábil sobre a qual todas as telas financeiras serão apenas *visões*.

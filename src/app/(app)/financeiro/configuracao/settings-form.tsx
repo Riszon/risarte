@@ -205,11 +205,14 @@ export function FinanceSettingsForm({
   overrides,
   clinics,
   canEdit,
+  showNetwork = true,
 }: {
   network: SettingsRow;
   overrides: SettingsRow[];
   clinics: ClinicOption[];
   canEdit: boolean;
+  /** Gerente/Franqueado não veem o padrão da rede — só o que vale para eles. */
+  showNetwork?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -243,15 +246,17 @@ export function FinanceSettingsForm({
 
   return (
     <div className={cn("space-y-4", isPending && "opacity-70")}>
-      <SettingsBlock
-        title="Padrão da rede"
-        subtitle="Vale para toda unidade que não tiver configuração própria."
-        icon={<Globe2 className="size-4 text-primary" />}
-        value={network}
-        inherited={false}
-        canEdit={canEdit}
-        onSave={save}
-      />
+      {showNetwork && (
+        <SettingsBlock
+          title="Padrão da rede"
+          subtitle="Vale para toda unidade que não tiver configuração própria."
+          icon={<Globe2 className="size-4 text-primary" />}
+          value={network}
+          inherited={false}
+          canEdit={canEdit}
+          onSave={save}
+        />
+      )}
 
       {clinics.map((c) => {
         const own = overrideByClinic.get(c.id);
@@ -260,9 +265,11 @@ export function FinanceSettingsForm({
             key={c.id}
             title={c.name}
             subtitle={
-              c.type === "franchisor"
-                ? "Franqueadora — juros e multa das cobranças próprias."
-                : "Unidade — só configure se for diferente da rede."
+              !showNetwork
+                ? "Estes são os valores que valem para a sua unidade hoje."
+                : c.type === "franchisor"
+                  ? "Franqueadora — juros e multa das cobranças próprias."
+                  : "Unidade — só configure se for diferente da rede."
             }
             icon={<Building2 className="size-4 text-muted-foreground" />}
             value={own ?? { ...network, clinic_id: c.id }}
@@ -276,8 +283,9 @@ export function FinanceSettingsForm({
 
       {!canEdit && (
         <p className="text-xs text-muted-foreground">
-          Você está vendo a configuração em modo leitura. Apenas Admin Master e
-          Financeiro da Franqueadora alteram estes valores.
+          Modo leitura. Multa, juros e carência são definidos pela Franqueadora
+          (Admin Master ou Financeiro) — fale com eles se precisar de valores
+          diferentes para a sua unidade.
         </p>
       )}
     </div>

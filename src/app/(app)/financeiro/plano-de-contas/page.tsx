@@ -36,7 +36,10 @@ export default async function ChartOfAccountsPage() {
     )
     .returns<Row[]>();
 
-  const accounts: ChartAccount[] = sortAccounts(
+  const isNetworkAdmin = canConfigureFinanceNetwork(session);
+  const isFranchisorClinic = session.activeClinic?.type === "franchisor";
+
+  const all: ChartAccount[] = sortAccounts(
     (rows ?? []).map((r) => ({
       code: r.code,
       name: r.name,
@@ -51,6 +54,19 @@ export default async function ChartOfAccountsPage() {
     }))
   );
 
+  // A unidade vê só o que vale para ela (unidade + ambas) — mostrar contas da
+  // franqueadora só geraria dúvida (decisão do dono, 31/07/2026). Como o filtro
+  // pode deixar um grupo sem filhos, os grupos vazios também saem.
+  const scoped = isNetworkAdmin
+    ? all
+    : all.filter((a) => {
+        const mine = isFranchisorClinic ? "franchisor" : "unit";
+        return a.scope === "both" || a.scope === mine;
+      });
+  const accounts = scoped.filter(
+    (a) => a.isAnalytic || scoped.some((x) => x.parentCode === a.code)
+  );
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <div>
@@ -59,16 +75,16 @@ export default async function ChartOfAccountsPage() {
           Plano de contas
         </h1>
         <p className="text-sm text-muted-foreground">
-          Estrutura gerencial única da rede. A coluna{" "}
-          <strong>fixo × variável</strong> é o que permite calcular o ponto de
-          equilíbrio da unidade; o <strong>código fiscal</strong> fica em branco
-          até o contador validar o de-para.
+          {isNetworkAdmin
+            ? "Estrutura gerencial única da rede. A coluna fixo × variável é o que permite calcular o ponto de equilíbrio; o código fiscal fica em branco até o contador validar o de-para."
+            : "Contas que valem para a sua unidade. A estrutura é definida pela Franqueadora e é igual para toda a rede — é o que permite comparar resultados."}
         </p>
       </div>
 
       <ChartOfAccountsTable
         accounts={accounts}
-        canEdit={canConfigureFinanceNetwork(session)}
+        canEdit={isNetworkAdmin}
+        showScope={isNetworkAdmin}
       />
     </div>
   );
