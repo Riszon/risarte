@@ -320,6 +320,66 @@ roteiro em `docs/risarte-empresarial/ROTEIRO-TESTE.md`. ASAAS/ZapSign/Gamma fica
 
 Não avançar de etapa sem o OK do proprietário.
 
+## 8b. Módulo Financeiro (em construção — FIN0 entregue)
+
+Especificação funcional aprovada em `docs/financeiro/DOCUMENTO-BASE-FINANCEIRO.md`
+e o briefing de execução em `docs/financeiro/PROMPT-riSZon-Modulo-Financeiro.md`.
+**Ler os dois antes de qualquer fase nova.**
+
+**Regra estrutural:** a aba financeira do cliente é uma **visão** sobre uma base
+contábil — nunca a base. Tudo nasce em `financial_entries` (o razão); contas a
+receber e a pagar são projeções sobre ele. Sem isso, DRE, DFC, ponto de
+equilíbrio e consolidação da rede não fecham.
+
+**Invariantes de toda fase do Financeiro:**
+
+- **Competência × caixa:** todo lançamento tem `accrual_date` (fato gerador →
+  DRE) e `cash_date` (movimentação → DFC).
+- **Nada se apaga.** Lançamento liquidado/conciliado não é editado nem
+  excluído: gera-se **contra-lançamento** com motivo (trigger no banco).
+- **Rastreabilidade:** `source_type` + `source_id` em tudo; qualquer número de
+  relatório precisa chegar ao documento de origem.
+- **Dinheiro em BIGINT de centavos** nas tabelas do módulo (o núcleo antigo usa
+  INTEGER; conversão fica para janela dedicada).
+- **Arredondamento** meio para cima; a última parcela absorve o resíduo.
+- **Cálculo isolado e testado** em `src/lib/finance/` — nenhuma regra de
+  dinheiro dentro de componente de tela.
+- **Taxas congeladas:** a parcela guarda multa/juros vigentes quando foi gerada;
+  mudar a configuração não reescreve o passado.
+- **LGPD:** relatório gerencial usa identificador anonimizado do paciente.
+
+**Decisões de negócio travadas (dono, 31/07/2026):**
+
+- **Multa 2% + juros 1% ao mês, pro rata die**, cascata rede→unidade. O teto de
+  2% é limite do **CDC art. 52, §1º** (contrato de consumo parcelado) e está
+  travado no banco.
+- **Atraso conta no dia seguinte** ao vencimento (carência configurável).
+- **Renegociação substitui** as parcelas antigas (viram `renegotiated`, com a
+  marca de que estiveram em atraso — senão renegociar zeraria a inadimplência
+  e o indicador 9.28 perderia sentido).
+- **Centro de custo por ÁREA** (Clínico, Comercial, Administrativo, Marketing,
+  Infraestrutura), nunca por especialidade clínica. Unidade só cria centro como
+  **filho de um centro da rede**, para o consolidado ficar comparável.
+- **Dois consolidados distintos:** *Resultado do Grupo* (franqueadora +
+  unidades **próprias**, com eliminação intercompany do royalty) × *Faturamento
+  da Rede* (todas as unidades, só benchmarking). **Faturamento de franqueada
+  nunca entra no resultado da franqueadora** — se algum card somar, é bug de
+  negócio.
+- **Repasse de dentista:** valor **fixo por procedimento**, tabela com vigência,
+  chaveada por **nível do plano de carreira**; bônus percentual apurado no
+  fechamento do mês. Reajuste de tabela nunca recalcula repasse já apurado.
+- **Gerente de unidade nunca vê financeiro de outra unidade**; no ranking da
+  rede as demais aparecem anonimizadas.
+
+**Papel novo:** `finance_franchisor` (Financeiro da Franqueadora), com escopo de
+unidades. Auditor/Controladoria somente-leitura está previsto, não implementado.
+
+**Roadmap:** FIN0 fundação ✅ → FIN1 aba do cliente/contas a receber → FIN2
+renegociação → FIN3 contas a pagar → FIN4 conciliação OFX + adquirente →
+FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC
+→ FIN7 orçado×realizado e alertas → FIN8 franqueadora/royalties/consolidação.
+**Uma fase por vez, com plano aprovado antes do código.**
+
 ## 9. Convenções de trabalho com o proprietário (Jeferson)
 
 - Ele **não é programador**: explicar decisões em linguagem simples (analogias

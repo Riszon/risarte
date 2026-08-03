@@ -14,6 +14,7 @@ export const USER_ROLES = [
   "tsb",
   "asb",
   "rislife_consultant",
+  "finance_franchisor",
 ] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -32,6 +33,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   tsb: "TSB (Técnica em Saúde Bucal)",
   asb: "ASB (Auxiliar em Saúde Bucal)",
   rislife_consultant: "Consultor Comercial Empresarial (RisLife)",
+  finance_franchisor: "Financeiro da Franqueadora",
 };
 
 export const CLINIC_TYPES = ["franchisor", "franchise_unit"] as const;
@@ -52,6 +54,9 @@ export const FRANCHISOR_ROLES: UserRole[] = [
   "commercial_assistant",
   "franchisor_staff",
   "rislife_consultant",
+  // FIN0: vê o financeiro das unidades do escopo, configura multa/juros e
+  // centros de custo, e renegocia junto com o Gerente da unidade.
+  "finance_franchisor",
 ];
 
 export const UNIT_ROLES: UserRole[] = [

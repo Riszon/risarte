@@ -22,6 +22,7 @@ import {
   Handshake,
   HeartPulse,
   Home,
+  Landmark,
   LogOut,
   MessagesSquare,
   Route,
@@ -83,6 +84,8 @@ type Props = {
   canViewEmpresarial: boolean;
   /** PPR2: seção do Programa de Prevenção Riso+ (PPR+). */
   canViewPpr: boolean;
+  /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
+  canViewFinance: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -148,6 +151,14 @@ const PPR_ITEM = {
   icon: HeartPulse,
 };
 
+// FIN0: Financeiro — Admin Master, Financeiro da Franqueadora, Gerente e
+// Franqueado (estes dois só enxergam a própria unidade, garantido pela RLS).
+const FINANCE_ITEM = {
+  href: "/financeiro/configuracao",
+  label: "Financeiro",
+  icon: Landmark,
+};
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -173,6 +184,7 @@ export function AppSidebar({
   canViewStaff,
   canViewEmpresarial,
   canViewPpr,
+  canViewFinance,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -233,6 +245,9 @@ export function AppSidebar({
   }
   if (canViewPpr) {
     navItems = [...navItems, PPR_ITEM];
+  }
+  if (!dentistOnly && canViewFinance) {
+    navItems = [...navItems, FINANCE_ITEM];
   }
 
   function switchClinic(clinicId: string) {

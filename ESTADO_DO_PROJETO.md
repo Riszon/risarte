@@ -1,6 +1,41 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/07/2026 · Versão do sistema: **0.163.0** · Última migração: **0183**_
+_Atualizado em: 31/07/2026 · Versão do sistema: **0.164.0** · Última migração: **0185**_
+
+> **MÓDULO FINANCEIRO — FIN0: FUNDAÇÃO ✅ (v0.164.0, migrações 0184 + 0185).**
+> Base contábil sobre a qual todas as telas financeiras serão apenas *visões*.
+> Especificação em `docs/financeiro/`; regras e decisões travadas na seção 8b do
+> `CLAUDE.md`.
+>
+> **Duas migrações, nesta ordem:** a **0184** só cria o papel
+> `finance_franchisor` (o Postgres não deixa criar e usar um valor de enum na
+> mesma transação — mesma armadilha da 0096/0097); a **0185** traz a fundação.
+>
+> **O que entrou:** `clinics.ownership` (própria × franqueada, base do Resultado
+> do Grupo × Faturamento da Rede); **`chart_of_accounts`** — plano gerencial
+> único, 47 contas seedadas, com **fixo × variável** desde já (é o que permite
+> ponto de equilíbrio) e `fiscal_account_code` em branco para o de-para futuro;
+> **`cost_centers`** — por ÁREA, com as 5 da rede seedadas, código imutável,
+> centro em uso não some (só desativa) e unidade só cria filho de centro da rede
+> (trava no banco); **`financial_entries`** — o razão, com competência × caixa,
+> `expected_settlement_date` para a projeção do DFC, rastreio por
+> `source_type`/`source_id`, estorno por contra-lançamento e imutabilidade de
+> lançamento liquidado; **`finance_settings`** em cascata (multa 2% + juros 1%
+> a.m., carência, arredondamento; teto de 2% travado por *check* — limite do
+> CDC); **`fiscal_periods`** (estrutura do fechamento, trava efetiva no FIN6);
+> helpers de RLS `is_finance_franchisor()`, `finance_visible_clinic_ids()` e
+> `can_post_finance()`.
+>
+> **Código:** `src/lib/finance/` (money, late-fees, accounts, access) — regras
+> puras com **29 testes novos** (224 no total), incluindo tabela de casos fixos
+> de multa/juros e a prova de que taxas congeladas não são reescritas.
+> **Telas:** `/financeiro/configuracao` (cascata, mostrando herdado × próprio,
+> com exemplo ao vivo), `/financeiro/centros-de-custo` (árvore) e
+> `/financeiro/plano-de-contas`. Menu lateral ganhou **Financeiro** para Admin
+> Master, Financeiro da Franqueadora, Gerente e Franqueado.
+>
+> **Próximo:** FIN1 — aba Financeiro na ficha do cliente (contas a receber),
+> com baixa **parcial**, que é rotina em clínica.
 
 > **J11: concluir atendimento voltou a funcionar no painel ✅ (v0.163.0,
 > migração 0183):** "Não foi possível concluir o atendimento", sem motivo.
