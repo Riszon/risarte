@@ -38,6 +38,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ClientDataSection } from "./client-data-section";
+import { ReceivablesSection } from "./receivables-section";
+import { loadClientReceivables } from "./receivables-loader";
 import {
   JourneySection,
   type ClientAppointment,
@@ -522,6 +524,28 @@ export default async function ClientDetailPage(
     state: client.state,
     guardianCount: (guardians ?? []).length,
   });
+
+  // FIN1: quem vê e quem mexe no financeiro do cliente. A recepção dá baixa
+  // (recebe no balcão); o estorno é ato de conferência do gerente/financeiro.
+  const financeRoles = session.rolesByClinic[client.clinic_id] ?? [];
+  const isFinanceStaff =
+    session.isAdminMaster ||
+    Object.values(session.rolesByClinic).some((r) =>
+      r.includes("finance_franchisor")
+    );
+  const canSeeReceivables =
+    isFinanceStaff ||
+    financeRoles.some((r) =>
+      ["unit_manager", "receptionist", "franchisee"].includes(r)
+    );
+  const canReceivePayment =
+    isFinanceStaff ||
+    financeRoles.some((r) => ["unit_manager", "receptionist"].includes(r));
+  const canReverseReceipt =
+    isFinanceStaff || financeRoles.includes("unit_manager");
+  const receivables = canSeeReceivables
+    ? await loadClientReceivables(client.id)
+    : { installments: [], receipts: [], receivedInPeriodCents: 0, periodStart: "", periodEnd: "" };
 
   const canEdit =
     client.status !== "anonymized" &&
@@ -3130,6 +3154,22 @@ export default async function ClientDetailPage(
               canCreate={canCreateRequest}
               canResolve={canResolveRequest}
               requests={clinicalRequests}
+            />
+          </TabPanel>
+        )}
+
+        {/* FIN1: contas a receber do cliente. Recepção/Gerente/Financeiro. */}
+        {canSeeReceivables && (
+          <TabPanel id="financeiro" label="Financeiro">
+            <ReceivablesSection
+              clientId={client.id}
+              installments={receivables.installments}
+              receipts={receivables.receipts}
+              receivedInPeriodCents={receivables.receivedInPeriodCents}
+              periodStart={receivables.periodStart}
+              today={new Date().toISOString().slice(0, 10)}
+              canReceive={canReceivePayment}
+              canReverse={canReverseReceipt}
             />
           </TabPanel>
         )}

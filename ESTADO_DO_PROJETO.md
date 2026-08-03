@@ -1,6 +1,39 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/07/2026 · Versão do sistema: **0.164.1** · Última migração: **0186**_
+_Atualizado em: 31/07/2026 · Versão do sistema: **0.165.0** · Última migração: **0187**_
+
+> **FINANCEIRO — FIN1: CONTAS A RECEBER ✅ (v0.165.0, migração 0187).** A ficha
+> do cliente ganhou a aba **Financeiro**: resumo (em aberto / em atraso com
+> multa e juros / recebido no mês), lista das cobranças com a **origem**
+> (negociação × venda direta), atraso em vermelho com **dias e valor
+> atualizado**, e **baixa com valor parcial** — paciente pagando metade da
+> parcela é rotina em clínica.
+>
+> **A parcela virou documento contábil.** Ela nasce com as **taxas congeladas**
+> (multa/juros/carência do momento) e **gera lançamento no razão**: competência
+> na criação (DRE) e caixa a cada baixa (DFC). A aba do cliente é uma *visão*
+> sobre `financial_entries`, não uma base paralela.
+>
+> **Baixa = tabela `payment_receipts`.** A situação da parcela deixou de ser
+> digitada e passou a ser **derivada** da soma das baixas (em aberto → parcial →
+> paga). Isso trouxe de graça: **idempotência** (token por baixa — duplo clique
+> não vira dois recebimentos), **estorno com motivo obrigatório**
+> (contra-lançamento; a baixa original fica no histórico) e o registro de quem
+> recebeu. `mark_installment_paid` (telas do I9) foi reescrita para usar o mesmo
+> caminho — sem duas verdades.
+>
+> **Quem faz o quê:** recepção e gerente **dão baixa** (a recepção recebe no
+> balcão — decisão do dono); **estorno** só gerente, Financeiro da Franqueadora
+> ou Admin Master. Franqueado vê, não mexe.
+>
+> **Regras puras** em `src/lib/finance/receivables.ts` com **8 testes novos**
+> (232 no total): saldo, valor atualizado, resumo e a regra de que a baixa
+> parcial **abate o principal primeiro** (multa e juros passam a incidir só
+> sobre o que falta). A parcela também guarda `was_overdue` — a marca de que
+> esteve em atraso **sobrevive à renegociação**, senão renegociar viraria forma
+> de zerar a inadimplência da unidade (indicador 9.28).
+>
+> **Próximo:** FIN2 — renegociação das parcelas em atraso.
 
 > **FIN0 — escopo da unidade corrigido ✅ (v0.164.1, migração 0186):** testando
 > como Gerente, o dono viu telas abertas demais. Agora: **Configuração** mostra

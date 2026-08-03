@@ -15,6 +15,12 @@ import {
   type LateFeeTerms,
 } from "@/lib/finance/late-fees";
 import {
+  summarizeReceivables,
+  viewInstallment,
+  receiptErrors,
+  type Installment,
+} from "@/lib/finance/receivables";
+import {
   accountLevel,
   buildCostCenterTree,
   canBeParentOfUnitCenter,
@@ -340,5 +346,119 @@ describe("centros de custo", () => {
     expect(canBeParentOfUnitCenter(centros[0])).toBe(true); // network
     expect(canBeParentOfUnitCenter(centros[2])).toBe(false); // unit
     expect(canBeParentOfUnitCenter(null)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN1 — contas a receber
+// ---------------------------------------------------------------------------
+describe("contas a receber", () => {
+  const rede = { lateFeePercent: 2, monthlyInterestPercent: 1, graceDays: 0 };
+
+  const base: Installment = {
+    id: "i1",
+    seq: 1,
+    kind: "parcela",
+    dueDate: "2026-07-10",
+    amountCents: 50000,
+    paidAmountCents: 0,
+    status: "em_aberto",
+    paymentMethod: "boleto",
+    terms: rede,
+    origin: "negotiation",
+    wasOverdue: false,
+  };
+
+  it("parcela em dia: sem multa, saldo cheio", () => {
+    const v = viewInstallment({ ...base, dueDate: "2026-08-10" }, "2026-07-31");
+    expect(v.isLate).toBe(false);
+    expect(v.balanceCents).toBe(50000);
+    expect(v.updatedBalanceCents).toBe(50000);
+  });
+
+  it("parcela vencida: multa + juros sobre o saldo", () => {
+    const v = viewInstallment(base, "2026-08-09"); // 30 dias
+    expect(v.daysLate).toBe(30);
+    expect(v.lateFeeCents).toBe(1000); // 2% de 500,00
+    expect(v.interestCents).toBe(500); // 1% ao mês
+    expect(v.updatedBalanceCents).toBe(51500);
+  });
+
+  it("BAIXA PARCIAL abate o principal primeiro", () => {
+    const v = viewInstallment(
+      { ...base, paidAmountCents: 20000, status: "parcial" },
+      "2026-08-09"
+    );
+    expect(v.balanceCents).toBe(30000);
+    // Multa e juros passam a incidir só sobre os R$ 300 que faltam.
+    expect(v.lateFeeCents).toBe(600);
+    expect(v.interestCents).toBe(300);
+    expect(v.updatedBalanceCents).toBe(30900);
+  });
+
+  it("parcela paga, cancelada ou renegociada não cobra nada", () => {
+    for (const status of ["paga", "cancelada", "renegociada"] as const) {
+      const v = viewInstallment(
+        { ...base, status, paidAmountCents: status === "paga" ? 50000 : 0 },
+        "2026-12-31"
+      );
+      expect(v.isOpen).toBe(false);
+      expect(v.isLate).toBe(false);
+      expect(v.updatedBalanceCents).toBe(v.balanceCents);
+    }
+  });
+
+  it("taxas CONGELADAS da parcela valem, não as da rede hoje", () => {
+    const antiga = { ...base, terms: { ...rede, lateFeePercent: 1, monthlyInterestPercent: 0.5 } };
+    const v = viewInstallment(antiga, "2026-08-09");
+    expect(v.lateFeeCents).toBe(500);
+    expect(v.interestCents).toBe(250);
+  });
+
+  it("resumo separa em aberto, atraso e recebido no período", () => {
+    const views = [
+      viewInstallment(base, "2026-08-09"), // vencida
+      viewInstallment(
+        { ...base, id: "i2", seq: 2, dueDate: "2026-09-10" },
+        "2026-08-09"
+      ), // a vencer
+      viewInstallment(
+        { ...base, id: "i3", seq: 3, status: "paga", paidAmountCents: 50000 },
+        "2026-08-09"
+      ),
+      viewInstallment(
+        { ...base, id: "i4", seq: 4, status: "cancelada" },
+        "2026-08-09"
+      ),
+    ];
+    const s = summarizeReceivables(views, 50000);
+    expect(s.openCents).toBe(100000); // duas em aberto
+    expect(s.lateCount).toBe(1);
+    expect(s.lateCents).toBe(51500); // com multa e juros
+    expect(s.receivedCents).toBe(50000);
+    // Cancelada não entra no contratado.
+    expect(s.contractedCents).toBe(150000);
+    expect(s.latePercent).toBeCloseTo(51.5, 1);
+  });
+
+  it("cliente sem nada em aberto tem inadimplência zero (não divide por zero)", () => {
+    const s = summarizeReceivables([], 0);
+    expect(s.latePercent).toBe(0);
+    expect(s.openCents).toBe(0);
+  });
+
+  it("recusa baixa maior que o saldo, valor zerado e data futura", () => {
+    expect(
+      receiptErrors({ amountCents: 60000, balanceCents: 50000, receivedAt: "2026-07-31", today: "2026-07-31" })
+    ).toContain("O valor é maior que o saldo desta cobrança.");
+    expect(
+      receiptErrors({ amountCents: 0, balanceCents: 50000, receivedAt: "2026-07-31", today: "2026-07-31" })
+    ).toContain("Informe o valor recebido.");
+    expect(
+      receiptErrors({ amountCents: 1000, balanceCents: 50000, receivedAt: "2026-08-05", today: "2026-07-31" })
+    ).toContain("A data do recebimento não pode ser no futuro.");
+    expect(
+      receiptErrors({ amountCents: 1000, balanceCents: 50000, receivedAt: "2026-07-30", today: "2026-07-31" })
+    ).toEqual([]);
   });
 });
