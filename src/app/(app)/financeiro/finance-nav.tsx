@@ -1,0 +1,43 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BookOpen, Network, Settings2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const TABS = [
+  { href: "/financeiro/configuracao", label: "Configuração", icon: Settings2 },
+  { href: "/financeiro/centros-de-custo", label: "Centros de custo", icon: Network },
+  { href: "/financeiro/plano-de-contas", label: "Plano de contas", icon: BookOpen },
+];
+
+/** Abas do módulo Financeiro (FIN0). Novas fases entram aqui. */
+export function FinanceNav() {
+  const pathname = usePathname();
+
+  return (
+    <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
+        {TABS.map((tab) => {
+          const active = pathname === tab.href;
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm transition-colors",
+                active
+                  ? "border-gold font-semibold text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className="size-4" />
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

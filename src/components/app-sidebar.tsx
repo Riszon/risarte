@@ -154,7 +154,7 @@ const PPR_ITEM = {
 // FIN0: Financeiro — Admin Master, Financeiro da Franqueadora, Gerente e
 // Franqueado (estes dois só enxergam a própria unidade, garantido pela RLS).
 const FINANCE_ITEM = {
-  href: "/financeiro/configuracao",
+  href: "/financeiro",
   label: "Financeiro",
   icon: Landmark,
 };
