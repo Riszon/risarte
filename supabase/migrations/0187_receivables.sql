@@ -265,13 +265,20 @@ language sql
 security definer
 set search_path = ''
 as $$
+  -- A carência sai da própria parcela (congelada); só cai na configuração da
+  -- unidade quando a parcela é antiga e ainda não tem taxa. Nota: em
+  -- UPDATE ... FROM o Postgres NÃO aceita passar coluna da tabela alvo como
+  -- argumento de função — por isso a subconsulta escalar.
   with upd as (
     update public.payment_installments i
        set was_overdue = true
-      from public.finance_settings_for(i.clinic_id) cfg
      where i.status in ('em_aberto', 'parcial')
        and not i.was_overdue
-       and current_date > i.due_date + coalesce(i.grace_days, cfg.grace_days, 0)
+       and current_date > i.due_date + coalesce(
+             i.grace_days,
+             (select f.grace_days
+                from public.finance_settings_for(i.clinic_id) f),
+             0)
     returning 1
   )
   select count(*)::integer from upd;
@@ -477,11 +484,14 @@ grant execute on function public.mark_installment_paid(uuid, boolean) to authent
 -- -----------------------------------------------------------------------------
 -- 8) Reparo: parcelas que já existem ganham taxas e lançamento de competência
 -- -----------------------------------------------------------------------------
-update public.payment_installments i
-   set late_fee_percent = cfg.late_fee_percent,
-       monthly_interest_percent = cfg.monthly_interest_percent,
-       grace_days = cfg.grace_days
-  from public.finance_settings_for(i.clinic_id) cfg
+update public.payment_installments i set
+  late_fee_percent =
+    (select f.late_fee_percent from public.finance_settings_for(i.clinic_id) f),
+  monthly_interest_percent =
+    (select f.monthly_interest_percent
+       from public.finance_settings_for(i.clinic_id) f),
+  grace_days =
+    (select f.grace_days from public.finance_settings_for(i.clinic_id) f)
  where i.late_fee_percent is null;
 
 update public.payment_installments i
