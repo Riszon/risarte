@@ -78,6 +78,9 @@ export async function markInstallmentPaid(
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Sua função não permite dar baixa." };
     }
+    if (error.message.includes("INSTALLMENT_SETTLED")) {
+      return { ok: false, error: "Esta cobrança já está quitada." };
+    }
     console.error("mark_installment_paid failed:", error.message);
     return { ok: false, error: "Não foi possível registrar a baixa." };
   }

@@ -354,6 +354,21 @@ equilíbrio e consolidação da rede não fecham.
   2% é limite do **CDC art. 52, §1º** (contrato de consumo parcelado) e está
   travado no banco.
 - **Atraso conta no dia seguinte** ao vencimento (carência configurável).
+- **Multa e juros incidem sobre o valor CHEIO da parcela** (mais o benefício
+  perdido), nunca sobre o saldo — *revisa a decisão de 31/07 em 04/08/2026*:
+  receber metade não pode cortar a multa pela metade, senão a baixa parcial vira
+  desconto disfarçado. Ordem de abatimento de um recebimento: **principal →
+  benefício perdido → multa → juros**.
+- **Pontualidade é condição do benefício.** Cliente de programa (PPR+ /
+  Empresarial) que paga por **boleto ou recorrência no cartão** só tem o
+  desconto porque paga em dia: atrasou, aquela parcela volta ao preço sem
+  benefício e a multa/juros incidem sobre o valor maior. **Não vale para cartão
+  parcelado nem à vista** (o dinheiro já entrou, não há risco). Procedimento que
+  ficou **100% gratuito nunca é cobrado** — sai da base. O valor em risco é
+  congelado na parcela (`benefit_discount_cents`) no fechamento da venda.
+- **Não existe desconto na baixa.** Receber menos que o total devido é baixa
+  **parcial**; perdoar diferença é ato de **renegociação** — Gerente da unidade,
+  Financeiro da Franqueadora (com autorização do Gerente) ou Admin Master.
 - **Renegociação substitui** as parcelas antigas (viram `renegotiated`, com a
   marca de que estiveram em atraso — senão renegociar zeraria a inadimplência
   e o indicador 9.28 perderia sentido).

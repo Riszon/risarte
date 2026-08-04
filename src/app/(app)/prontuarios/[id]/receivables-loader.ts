@@ -6,6 +6,11 @@ export type ReceiptRow = {
   id: string;
   installmentId: string;
   amountCents: number;
+  /** Composição da baixa (0188): a soma das quatro bate com amountCents. */
+  principalCents: number;
+  benefitCents: number;
+  lateFeeCents: number;
+  interestCents: number;
   receivedAt: string;
   paymentMethod: string | null;
   reference: string | null;
@@ -31,7 +36,11 @@ type InstallmentRow = {
   kind: "entrada" | "parcela";
   due_date: string;
   amount_cents: number;
+  benefit_discount_cents: number | null;
   paid_amount_cents: number;
+  paid_benefit_cents: number | null;
+  paid_fee_cents: number | null;
+  paid_interest_cents: number | null;
   status: Installment["status"];
   payment_method: string | null;
   late_fee_percent: number | null;
@@ -64,7 +73,7 @@ export async function loadClientReceivables(
   const { data: instRows } = await supabase
     .from("payment_installments")
     .select(
-      "id, seq, kind, due_date, amount_cents, paid_amount_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id"
+      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id"
     )
     .eq("client_id", clientId)
     .order("due_date")
@@ -76,7 +85,11 @@ export async function loadClientReceivables(
     kind: r.kind,
     dueDate: r.due_date,
     amountCents: r.amount_cents,
+    benefitDiscountCents: r.benefit_discount_cents ?? 0,
     paidAmountCents: r.paid_amount_cents ?? 0,
+    paidBenefitCents: r.paid_benefit_cents ?? 0,
+    paidFeeCents: r.paid_fee_cents ?? 0,
+    paidInterestCents: r.paid_interest_cents ?? 0,
     status: r.status,
     paymentMethod: r.payment_method,
     terms: {
@@ -102,7 +115,7 @@ export async function loadClientReceivables(
   const { data: recRows } = await supabase
     .from("payment_receipts")
     .select(
-      "id, installment_id, amount_cents, received_at, payment_method, reference, reversed, reversal_of, reversal_reason, created_at, profiles:profiles!payment_receipts_created_by_fkey ( full_name )"
+      "id, installment_id, amount_cents, principal_cents, benefit_cents, late_fee_cents, interest_cents, received_at, payment_method, reference, reversed, reversal_of, reversal_reason, created_at, profiles:profiles!payment_receipts_created_by_fkey ( full_name )"
     )
     .in("installment_id", ids)
     .order("created_at", { ascending: false })
@@ -111,6 +124,10 @@ export async function loadClientReceivables(
         id: string;
         installment_id: string;
         amount_cents: number;
+        principal_cents: number | null;
+        benefit_cents: number | null;
+        late_fee_cents: number | null;
+        interest_cents: number | null;
         received_at: string;
         payment_method: string | null;
         reference: string | null;
@@ -126,6 +143,10 @@ export async function loadClientReceivables(
     id: r.id,
     installmentId: r.installment_id,
     amountCents: r.amount_cents,
+    principalCents: r.principal_cents ?? 0,
+    benefitCents: r.benefit_cents ?? 0,
+    lateFeeCents: r.late_fee_cents ?? 0,
+    interestCents: r.interest_cents ?? 0,
     receivedAt: r.received_at,
     paymentMethod: r.payment_method,
     reference: r.reference,

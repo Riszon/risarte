@@ -15,6 +15,10 @@ import {
   type LateFeeTerms,
 } from "@/lib/finance/late-fees";
 import {
+  allocateReceipt,
+  countByFilter,
+  matchesFilter,
+  methodRunsLateRisk,
   summarizeReceivables,
   viewInstallment,
   receiptErrors,
@@ -361,7 +365,11 @@ describe("contas a receber", () => {
     kind: "parcela",
     dueDate: "2026-07-10",
     amountCents: 50000,
+    benefitDiscountCents: 0,
     paidAmountCents: 0,
+    paidBenefitCents: 0,
+    paidFeeCents: 0,
+    paidInterestCents: 0,
     status: "em_aberto",
     paymentMethod: "boleto",
     terms: rede,
@@ -376,7 +384,7 @@ describe("contas a receber", () => {
     expect(v.updatedBalanceCents).toBe(50000);
   });
 
-  it("parcela vencida: multa + juros sobre o saldo", () => {
+  it("parcela vencida: multa + juros", () => {
     const v = viewInstallment(base, "2026-08-09"); // 30 dias
     expect(v.daysLate).toBe(30);
     expect(v.lateFeeCents).toBe(1000); // 2% de 500,00
@@ -384,16 +392,111 @@ describe("contas a receber", () => {
     expect(v.updatedBalanceCents).toBe(51500);
   });
 
-  it("BAIXA PARCIAL abate o principal primeiro", () => {
+  // O bug relatado pelo dono em 04/08/2026: receber metade estava cortando a
+  // multa e os juros pela metade — desconto disfarçado.
+  it("BAIXA PARCIAL abate o principal, mas multa e juros ficam INTEGRAIS", () => {
     const v = viewInstallment(
       { ...base, paidAmountCents: 20000, status: "parcial" },
       "2026-08-09"
     );
     expect(v.balanceCents).toBe(30000);
-    // Multa e juros passam a incidir só sobre os R$ 300 que faltam.
-    expect(v.lateFeeCents).toBe(600);
-    expect(v.interestCents).toBe(300);
-    expect(v.updatedBalanceCents).toBe(30900);
+    // Base da multa e dos juros continua sendo os R$ 500,00 cheios.
+    expect(v.lateFeeCents).toBe(1000);
+    expect(v.interestCents).toBe(500);
+    expect(v.updatedBalanceCents).toBe(31500);
+  });
+
+  it("caso exato do print: R$ 1.000 com 5 dias de atraso, metade recebida", () => {
+    const mil: Installment = {
+      ...base,
+      amountCents: 100000,
+      dueDate: "2026-07-30",
+    };
+    const cheia = viewInstallment(mil, "2026-08-04");
+    expect(cheia.daysLate).toBe(5);
+    expect(cheia.updatedBalanceCents).toBe(102167); // 1.021,67
+
+    const metade = viewInstallment(
+      { ...mil, paidAmountCents: 50000, status: "parcial" },
+      "2026-08-04"
+    );
+    // Antes dava 51.083 (multa e juros pela metade). Agora fica integral.
+    expect(metade.updatedBalanceCents).toBe(52167);
+  });
+
+  it("multa e juros já pagos abatem do que falta", () => {
+    const v = viewInstallment(
+      { ...base, paidFeeCents: 1000, paidInterestCents: 200, status: "parcial" },
+      "2026-08-09"
+    );
+    expect(v.lateFeeRemCents).toBe(0);
+    expect(v.interestRemCents).toBe(300);
+    expect(v.updatedBalanceCents).toBe(50300);
+  });
+
+  // -------------------------------------------------------------------------
+  // Perda do benefício por falta de pontualidade (0188)
+  // -------------------------------------------------------------------------
+  describe("benefício perdido por atraso", () => {
+    // Exemplo do dono: parcela de R$ 120 que, sem o benefício, vale R$ 150.
+    const parcela: Installment = {
+      ...base,
+      amountCents: 12000,
+      benefitDiscountCents: 3000,
+      paymentMethod: "boleto",
+    };
+
+    it("em dia o cliente mantém o benefício", () => {
+      const v = viewInstallment(parcela, "2026-07-10");
+      expect(v.isLate).toBe(false);
+      expect(v.benefitDueCents).toBe(0);
+      expect(v.updatedBalanceCents).toBe(12000);
+    });
+
+    it("atrasou: volta para R$ 150 e a multa incide sobre esse valor", () => {
+      const v = viewInstallment(parcela, "2026-07-11"); // 1 dia
+      expect(v.benefitDueCents).toBe(3000);
+      expect(v.lateFeeCents).toBe(300); // 2% de 150,00 (não de 120,00)
+      expect(v.interestCents).toBe(5);
+      expect(v.updatedBalanceCents).toBe(15305);
+    });
+
+    it("procedimento gratuito nunca volta a ser cobrado", () => {
+      // Item 100% coberto nem entra em benefitDiscountCents (o banco filtra).
+      const semRisco = { ...parcela, benefitDiscountCents: 0 };
+      const v = viewInstallment(semRisco, "2026-07-11");
+      expect(v.benefitDueCents).toBe(0);
+      expect(v.updatedBalanceCents).toBe(12000 + 240 + 4);
+    });
+
+    it("só boleto e recorrência correm o risco de perder o benefício", () => {
+      expect(methodRunsLateRisk("boleto")).toBe(true);
+      expect(methodRunsLateRisk("credito_recorrente")).toBe(true);
+      expect(methodRunsLateRisk("cartao_parcelado")).toBe(false);
+      expect(methodRunsLateRisk("pix")).toBe(false);
+      expect(methodRunsLateRisk(null)).toBe(false);
+    });
+  });
+
+  it("ordem de abatimento: principal → benefício → multa → juros", () => {
+    const v = viewInstallment(
+      { ...base, amountCents: 12000, benefitDiscountCents: 3000 },
+      "2026-07-11"
+    );
+    // Recebimento parcial cobre só parte do principal.
+    expect(allocateReceipt(v, 5000)).toEqual({
+      principalCents: 5000,
+      benefitCents: 0,
+      lateFeeCents: 0,
+      interestCents: 0,
+    });
+    // Quitação: cada real cai na sua natureza.
+    expect(allocateReceipt(v, 15305)).toEqual({
+      principalCents: 12000,
+      benefitCents: 3000,
+      lateFeeCents: 300,
+      interestCents: 5,
+    });
   });
 
   it("parcela paga, cancelada ou renegociada não cobra nada", () => {
@@ -439,6 +542,16 @@ describe("contas a receber", () => {
     // Cancelada não entra no contratado.
     expect(s.contractedCents).toBe(150000);
     expect(s.latePercent).toBeCloseTo(51.5, 1);
+
+    // Filtros da aba: vencida sai de "em aberto" e vira "em atraso".
+    const c = countByFilter(views);
+    expect(c.todas).toBe(4);
+    expect(c.em_aberto).toBe(1);
+    expect(c.em_atraso).toBe(1);
+    expect(c.paga).toBe(1);
+    expect(c.cancelada).toBe(1);
+    expect(c.renegociada).toBe(0);
+    expect(matchesFilter(views[0], "em_aberto")).toBe(false);
   });
 
   it("cliente sem nada em aberto tem inadimplência zero (não divide por zero)", () => {
@@ -447,18 +560,22 @@ describe("contas a receber", () => {
     expect(s.openCents).toBe(0);
   });
 
-  it("recusa baixa maior que o saldo, valor zerado e data futura", () => {
+  it("recusa baixa maior que o total devido, valor zerado e data futura", () => {
     expect(
-      receiptErrors({ amountCents: 60000, balanceCents: 50000, receivedAt: "2026-07-31", today: "2026-07-31" })
-    ).toContain("O valor é maior que o saldo desta cobrança.");
+      receiptErrors({ amountCents: 60000, payoffCents: 51500, receivedAt: "2026-07-31", today: "2026-07-31" })
+    ).toContain("O valor é maior que o total devido nesta cobrança.");
+    // Receber a parcela COM multa e juros é válido (era o bug do dono).
     expect(
-      receiptErrors({ amountCents: 0, balanceCents: 50000, receivedAt: "2026-07-31", today: "2026-07-31" })
+      receiptErrors({ amountCents: 51500, payoffCents: 51500, receivedAt: "2026-07-31", today: "2026-07-31" })
+    ).toEqual([]);
+    expect(
+      receiptErrors({ amountCents: 0, payoffCents: 50000, receivedAt: "2026-07-31", today: "2026-07-31" })
     ).toContain("Informe o valor recebido.");
     expect(
-      receiptErrors({ amountCents: 1000, balanceCents: 50000, receivedAt: "2026-08-05", today: "2026-07-31" })
+      receiptErrors({ amountCents: 1000, payoffCents: 50000, receivedAt: "2026-08-05", today: "2026-07-31" })
     ).toContain("A data do recebimento não pode ser no futuro.");
     expect(
-      receiptErrors({ amountCents: 1000, balanceCents: 50000, receivedAt: "2026-07-30", today: "2026-07-31" })
+      receiptErrors({ amountCents: 1000, payoffCents: 50000, receivedAt: "2026-07-30", today: "2026-07-31" })
     ).toEqual([]);
   });
 });

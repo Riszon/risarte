@@ -38,8 +38,12 @@ export async function registerReceipt(input: {
     if (m.includes("AMOUNT_OVER_BALANCE")) {
       return {
         ok: false,
-        error: "O valor é maior que o saldo desta cobrança.",
+        error:
+          "O valor é maior que o total devido (parcela + multa e juros). Recarregue a tela.",
       };
+    }
+    if (m.includes("INSTALLMENT_SETTLED")) {
+      return { ok: false, error: "Esta cobrança já está quitada." };
     }
     if (m.includes("INVALID_AMOUNT")) {
       return { ok: false, error: "Informe um valor maior que zero." };

@@ -24,12 +24,17 @@ import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/commercial";
 import {
+  allocateReceipt,
+  countByFilter,
   INSTALLMENT_STATUS_LABELS,
+  matchesFilter,
+  RECEIVABLE_FILTERS,
   receiptErrors,
   summarizeReceivables,
   viewInstallment,
   type Installment,
   type InstallmentStatus,
+  type ReceivableFilter,
 } from "@/lib/finance/receivables";
 import { lateLabel } from "@/lib/finance/late-fees";
 import type { ReceiptRow } from "./receivables-loader";
@@ -63,10 +68,15 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function centsToInput(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+
 /**
  * FIN1 — a aba Financeiro da ficha: o que o cliente deve, o que está em atraso
  * e o que já pagou. A baixa aceita **valor parcial** (paciente pagando metade da
- * parcela é rotina em clínica).
+ * parcela é rotina em clínica), mas **nunca desconto**: quitar por menos é ato
+ * de renegociação.
  */
 export function ReceivablesSection({
   clientId,
@@ -89,6 +99,7 @@ export function ReceivablesSection({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [filter, setFilter] = useState<ReceivableFilter>("todas");
   const [payingId, setPayingId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [receivedAt, setReceivedAt] = useState(today);
@@ -107,24 +118,31 @@ export function ReceivablesSection({
     () => summarizeReceivables(views, receivedInPeriodCents),
     [views, receivedInPeriodCents]
   );
+  const counts = useMemo(() => countByFilter(views), [views]);
+  const shown = useMemo(
+    () => views.filter((v) => matchesFilter(v, filter)),
+    [views, filter]
+  );
 
   const paying = views.find((v) => v.id === payingId) ?? null;
   const amountCents = parseBRLToCents(amount) ?? 0;
   const errors = paying
     ? receiptErrors({
         amountCents,
-        balanceCents: paying.balanceCents,
+        payoffCents: paying.updatedBalanceCents,
         receivedAt,
         today,
       })
     : [];
+  const allocation = paying ? allocateReceipt(paying, amountCents) : null;
 
   function openPayment(id: string) {
     const v = views.find((x) => x.id === id);
     if (!v) return;
     setPayingId(id);
-    // Sugere o saldo cheio; o usuário reduz para baixa parcial.
-    setAmount((v.balanceCents / 100).toFixed(2).replace(".", ","));
+    // Já vem com multa, juros e benefício perdido — o usuário só reduz se
+    // recebeu menos (o que vira baixa parcial, nunca quitação).
+    setAmount(centsToInput(v.updatedBalanceCents));
     setReceivedAt(today);
     setMethod(v.paymentMethod ?? "pix");
     setReference("");
@@ -133,6 +151,7 @@ export function ReceivablesSection({
 
   function save() {
     if (!paying) return;
+    const quita = amountCents >= paying.updatedBalanceCents;
     startTransition(async () => {
       const r = await registerReceipt({
         clientId,
@@ -146,7 +165,7 @@ export function ReceivablesSection({
       });
       if (r.ok) {
         toast.success(
-          amountCents >= paying.balanceCents
+          quita
             ? "Recebimento registrado — cobrança quitada."
             : "Recebimento parcial registrado."
         );
@@ -231,14 +250,47 @@ export function ReceivablesSection({
 
       {/* Cobranças. */}
       <Card>
-        <CardHeader>
+        <CardHeader className="gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="size-4 text-primary" />
             Cobranças
           </CardTitle>
+          {/* Filtro por situação. */}
+          <div className="flex flex-wrap gap-1">
+            {RECEIVABLE_FILTERS.map((f) => {
+              const active = filter === f.key;
+              const n = counts[f.key];
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFilter(f.key)}
+                  disabled={n === 0 && f.key !== "todas"}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-40",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground",
+                    !active &&
+                      f.key === "em_atraso" &&
+                      n > 0 &&
+                      "border-destructive/40 text-destructive"
+                  )}
+                >
+                  {f.label}
+                  <span className="ml-1 tabular-nums opacity-70">{n}</span>
+                </button>
+              );
+            })}
+          </div>
         </CardHeader>
         <CardContent className="space-y-1.5">
-          {views.map((v) => {
+          {shown.length === 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              Nenhuma cobrança nesta situação.
+            </p>
+          )}
+          {shown.map((v) => {
             const hist = historyOf(v.id);
             return (
               <div
@@ -262,17 +314,28 @@ export function ReceivablesSection({
                       {v.paymentMethod && ` · ${methodLabel(v.paymentMethod)}`}
                     </span>
                     {v.isLate && (
-                      <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-destructive">
+                      <span className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[11px] font-medium text-destructive">
                         <AlertTriangle className="size-3" />
                         {lateLabel(v.daysLate)} · multa{" "}
                         {formatBRL(v.lateFeeCents)} + juros{" "}
                         {formatBRL(v.interestCents)}
+                        {v.benefitDueCents > 0 && (
+                          <> + benefício perdido {formatBRL(v.benefitDueCents)}</>
+                        )}
                       </span>
                     )}
-                    {v.paidAmountCents > 0 && v.status === "parcial" && (
+                    {!v.isLate &&
+                      v.isOpen &&
+                      v.benefitDiscountCents > 0 && (
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          Pagando em dia, o cliente economiza{" "}
+                          {formatBRL(v.benefitDiscountCents)} nesta parcela.
+                        </span>
+                      )}
+                    {v.paidTotalCents > 0 && v.status === "parcial" && (
                       <span className="mt-0.5 block text-[11px] text-sky-800">
-                        Pago {formatBRL(v.paidAmountCents)} de{" "}
-                        {formatBRL(v.amountCents)}
+                        Recebido {formatBRL(v.paidTotalCents)} — falta{" "}
+                        {formatBRL(v.updatedBalanceCents)}
                       </span>
                     )}
                   </span>
@@ -297,7 +360,7 @@ export function ReceivablesSection({
                     ) : (
                       <span className="font-medium">
                         {formatBRL(
-                          v.isOpen ? v.balanceCents : v.amountCents
+                          v.isOpen ? v.updatedBalanceCents : v.amountCents
                         )}
                       </span>
                     )}
@@ -330,53 +393,73 @@ export function ReceivablesSection({
 
                 {historyId === v.id && (
                   <ul className="mt-2 space-y-1 border-t pt-2 text-xs">
-                    {hist.map((r) => (
-                      <li
-                        key={r.id}
-                        className={cn(
-                          "flex flex-wrap items-center justify-between gap-2",
-                          (r.reversed || r.reversalOf) && "text-muted-foreground"
-                        )}
-                      >
-                        <span>
-                          {r.reversalOf ? "Estorno" : "Recebimento"} ·{" "}
-                          {fmtDate(r.receivedAt)} · {methodLabel(r.paymentMethod)}
-                          {r.reference && ` · ${r.reference}`}
-                          {r.byName && ` · ${r.byName}`}
-                          {r.reversalReason && (
-                            <span className="block text-[11px]">
-                              Motivo: {r.reversalReason}
-                            </span>
+                    {hist.map((r) => {
+                      const extras = [
+                        r.benefitCents > 0 &&
+                          `benefício perdido ${formatBRL(r.benefitCents)}`,
+                        r.lateFeeCents > 0 &&
+                          `multa ${formatBRL(r.lateFeeCents)}`,
+                        r.interestCents > 0 &&
+                          `juros ${formatBRL(r.interestCents)}`,
+                      ].filter(Boolean) as string[];
+                      return (
+                        <li
+                          key={r.id}
+                          className={cn(
+                            "flex flex-wrap items-center justify-between gap-2",
+                            (r.reversed || r.reversalOf) &&
+                              "text-muted-foreground"
                           )}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "tabular-nums",
-                              r.reversalOf
-                                ? "text-destructive"
-                                : r.reversed
-                                  ? "line-through"
-                                  : "text-emerald-700"
+                        >
+                          <span>
+                            {r.reversalOf ? "Estorno" : "Recebimento"} ·{" "}
+                            {fmtDate(r.receivedAt)} ·{" "}
+                            {methodLabel(r.paymentMethod)}
+                            {r.reference && ` · ${r.reference}`}
+                            {r.byName && ` · ${r.byName}`}
+                            {/* Detalhamento: o dono precisa ver o que foi
+                                principal e o que foi multa/juros. */}
+                            {extras.length > 0 && (
+                              <span className="block text-[11px]">
+                                principal {formatBRL(r.principalCents)} +{" "}
+                                {extras.join(" + ")}
+                              </span>
                             )}
-                          >
-                            {r.reversalOf ? "−" : "+"}
-                            {formatBRL(r.amountCents)}
+                            {r.reversalReason && (
+                              <span className="block text-[11px]">
+                                Motivo: {r.reversalReason}
+                              </span>
+                            )}
                           </span>
-                          {canReverse && !r.reversed && !r.reversalOf && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-[11px]"
-                              onClick={() => setReversingId(r.id)}
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "tabular-nums",
+                                r.reversalOf
+                                  ? "text-destructive"
+                                  : r.reversed
+                                    ? "line-through"
+                                    : "text-emerald-700"
+                              )}
                             >
-                              <RotateCcw className="mr-1 size-3" />
-                              Estornar
-                            </Button>
-                          )}
-                        </span>
-                      </li>
-                    ))}
+                              {r.reversalOf ? "−" : "+"}
+                              {formatBRL(r.amountCents)}
+                            </span>
+                            {canReverse && !r.reversed && !r.reversalOf && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-[11px]"
+                                onClick={() => setReversingId(r.id)}
+                              >
+                                <RotateCcw className="mr-1 size-3" />
+                                Estornar
+                              </Button>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -396,17 +479,39 @@ export function ReceivablesSection({
           </DialogHeader>
           {paying && (
             <div className="space-y-3 text-sm">
-              <p className="rounded-lg bg-muted/40 p-2 text-xs">
-                Cobrança {paying.seq} · vencimento {fmtDate(paying.dueDate)} ·
-                saldo <strong>{formatBRL(paying.balanceCents)}</strong>
-                {paying.isLate && (
-                  <>
-                    {" "}
-                    · com multa e juros hoje:{" "}
-                    <strong>{formatBRL(paying.updatedBalanceCents)}</strong>
-                  </>
-                )}
-              </p>
+              <div className="space-y-1 rounded-lg bg-muted/40 p-2 text-xs">
+                <p>
+                  Cobrança {paying.seq} · vencimento {fmtDate(paying.dueDate)}
+                </p>
+                <ul className="space-y-0.5 tabular-nums">
+                  <li className="flex justify-between">
+                    <span>Valor da parcela</span>
+                    <span>{formatBRL(paying.balanceCents)}</span>
+                  </li>
+                  {paying.benefitRemCents > 0 && (
+                    <li className="flex justify-between text-destructive">
+                      <span>Benefício perdido por atraso</span>
+                      <span>+ {formatBRL(paying.benefitRemCents)}</span>
+                    </li>
+                  )}
+                  {paying.lateFeeRemCents > 0 && (
+                    <li className="flex justify-between text-destructive">
+                      <span>Multa</span>
+                      <span>+ {formatBRL(paying.lateFeeRemCents)}</span>
+                    </li>
+                  )}
+                  {paying.interestRemCents > 0 && (
+                    <li className="flex justify-between text-destructive">
+                      <span>Juros ({lateLabel(paying.daysLate)})</span>
+                      <span>+ {formatBRL(paying.interestRemCents)}</span>
+                    </li>
+                  )}
+                  <li className="flex justify-between border-t pt-0.5 font-semibold">
+                    <span>Total a receber</span>
+                    <span>{formatBRL(paying.updatedBalanceCents)}</span>
+                  </li>
+                </ul>
+              </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="block">
@@ -483,13 +588,47 @@ export function ReceivablesSection({
                 </ul>
               )}
 
-              {errors.length === 0 && amountCents < paying.balanceCents && (
-                <p className="rounded-lg border border-sky-300 bg-sky-50 p-2 text-xs text-sky-900">
-                  Baixa parcial: sobra{" "}
-                  <strong>{formatBRL(paying.balanceCents - amountCents)}</strong>{" "}
-                  em aberto nesta cobrança.
+              {errors.length === 0 && allocation && (
+                <p className="rounded-lg border border-border bg-muted/30 p-2 text-xs">
+                  Vai ser registrado como principal{" "}
+                  <strong>{formatBRL(allocation.principalCents)}</strong>
+                  {allocation.benefitCents > 0 && (
+                    <>
+                      {" "}
+                      + benefício perdido{" "}
+                      <strong>{formatBRL(allocation.benefitCents)}</strong>
+                    </>
+                  )}
+                  {allocation.lateFeeCents > 0 && (
+                    <>
+                      {" "}
+                      + multa{" "}
+                      <strong>{formatBRL(allocation.lateFeeCents)}</strong>
+                    </>
+                  )}
+                  {allocation.interestCents > 0 && (
+                    <>
+                      {" "}
+                      + juros{" "}
+                      <strong>{formatBRL(allocation.interestCents)}</strong>
+                    </>
+                  )}
+                  .
                 </p>
               )}
+
+              {errors.length === 0 &&
+                amountCents < paying.updatedBalanceCents && (
+                  <p className="rounded-lg border border-sky-300 bg-sky-50 p-2 text-xs text-sky-900">
+                    Baixa parcial: sobra{" "}
+                    <strong>
+                      {formatBRL(paying.updatedBalanceCents - amountCents)}
+                    </strong>{" "}
+                    em aberto, e a multa e os juros continuam sobre o valor
+                    cheio até a cobrança ser quitada. Perdoar a diferença só em
+                    renegociação.
+                  </p>
+                )}
             </div>
           )}
           <DialogFooter className="gap-2">

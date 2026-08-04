@@ -64,6 +64,11 @@ export function daysLate(
  *   (pro rata die), sobre o principal — juros SIMPLES, não compostos, que é o
  *   praticado em cobrança de mensalidade/parcela no varejo.
  *
+ * `principalCents` é o valor CHEIO da parcela (mais o benefício perdido por
+ * atraso), **nunca o saldo restante** — receber metade não reduz a multa pela
+ * metade (decisão do dono, 04/08/2026). Quem controla o que já foi pago de
+ * multa e juros é `viewInstallment`.
+ *
  * Em dia (ou dentro da carência) devolve tudo zero e o total igual ao principal.
  */
 export function computeLateCharges(input: {

@@ -16,11 +16,18 @@ import {
   Route,
   Stethoscope,
   User,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type PanelProps = { id: string; label: string; children: ReactNode };
+type PanelProps = {
+  id: string;
+  label: string;
+  /** Quantidade a destacar em vermelho no rótulo (ex.: parcelas em atraso). */
+  alertCount?: number;
+  children: ReactNode;
+};
 
 /** Ícone por aba (identidade visual). Aba sem ícone mapeado mostra só o rótulo. */
 const TAB_ICONS: Record<string, LucideIcon> = {
@@ -31,6 +38,7 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   sessoes: ListChecks,
   documentos: FileText,
   pedidos: Inbox,
+  financeiro: Wallet,
   historico: History,
 };
 
@@ -79,6 +87,15 @@ export function ProntuarioTabs({ children }: { children: ReactNode }) {
                   />
                 )}
                 {p.props.label}
+                {/* Alerta na própria aba: o usuário vê o atraso sem abri-la. */}
+                {(p.props.alertCount ?? 0) > 0 && (
+                  <span
+                    title="Cobranças em atraso"
+                    className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-4 text-destructive-foreground tabular-nums"
+                  >
+                    {p.props.alertCount}
+                  </span>
+                )}
               </button>
             );
           })}

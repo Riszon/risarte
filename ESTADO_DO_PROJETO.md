@@ -1,6 +1,38 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/07/2026 · Versão do sistema: **0.165.0** · Última migração: **0187**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.166.0** · Última migração: **0188**_
+
+> **FINANCEIRO — FIN1.1: PONTUALIDADE E DETALHAMENTO DA BAIXA ✅ (v0.166.0,
+> migração 0188).** Cinco correções do teste do FIN1:
+>
+> 1. **A baixa guarda o detalhamento.** Antes o diálogo sugeria o *saldo* e o
+>    banco recusava receber mais que ele — o que o cliente pagou de multa e
+>    juros não tinha onde entrar. Agora cada recebimento é gravado repartido em
+>    **principal / benefício perdido / multa / juros**, e o razão recebe uma
+>    linha por natureza (multa e juros vão para **4.1.01**, receita financeira).
+>    O campo já abre preenchido com o **valor atualizado**.
+> 2. **Perda do benefício por falta de pontualidade.** Cliente de programa
+>    (PPR+ / Empresarial) que paga por **boleto ou recorrência no cartão** só
+>    tem o desconto porque paga em dia: atrasou, aquela parcela volta ao preço
+>    sem benefício. **Cartão parcelado e à vista não perdem** (o dinheiro já
+>    entrou). **Procedimento 100% gratuito nunca é cobrado** — sai da base. O
+>    valor em risco é rateado entre as parcelas e **congelado** no fechamento
+>    (`benefit_discount_cents`).
+> 3. **Multa e juros integrais.** Recebimento parcial estava cortando multa e
+>    juros na mesma proporção (desconto disfarçado). A base passou a ser o valor
+>    **cheio** da parcela até ela ser quitada. *Revisa a decisão de 31/07.*
+> 4. **Sem desconto na baixa:** valor menor vira baixa **parcial**, nunca
+>    quitação. Perdoar diferença é ato de **renegociação** (FIN2).
+> 5. **Filtro por situação** (Todas / Em aberto / Em atraso / Pagas /
+>    Canceladas / Renegociadas, com contador) e **selo vermelho na aba
+>    Financeiro** com o número de cobranças vencidas.
+>
+> Regras puras em `src/lib/finance/receivables.ts` (`allocateReceipt`,
+> `matchesFilter`, `methodRunsLateRisk`) com **239 testes** no total, incluindo
+> o caso exato do print do dono (R$ 1.000 com 5 dias de atraso → R$ 1.021,67; e
+> R$ 500 recebidos → R$ 521,67, não R$ 510,83).
+>
+> **Próximo:** FIN2 — renegociação das parcelas em atraso.
 
 > **FINANCEIRO — FIN1: CONTAS A RECEBER ✅ (v0.165.0, migração 0187).** A ficha
 > do cliente ganhou a aba **Financeiro**: resumo (em aberto / em atraso com
@@ -27,13 +59,11 @@ _Atualizado em: 31/07/2026 · Versão do sistema: **0.165.0** · Última migraç
 > ou Admin Master. Franqueado vê, não mexe.
 >
 > **Regras puras** em `src/lib/finance/receivables.ts` com **8 testes novos**
-> (232 no total): saldo, valor atualizado, resumo e a regra de que a baixa
-> parcial **abate o principal primeiro** (multa e juros passam a incidir só
-> sobre o que falta). A parcela também guarda `was_overdue` — a marca de que
-> esteve em atraso **sobrevive à renegociação**, senão renegociar viraria forma
-> de zerar a inadimplência da unidade (indicador 9.28).
->
-> **Próximo:** FIN2 — renegociação das parcelas em atraso.
+> (232 no total): saldo, valor atualizado, resumo e a ordem de abatimento da
+> baixa parcial (**o principal primeiro**). A parcela também guarda
+> `was_overdue` — a marca de que esteve em atraso **sobrevive à renegociação**,
+> senão renegociar viraria forma de zerar a inadimplência da unidade (indicador
+> 9.28). *A regra de multa e juros sobre o saldo foi revista na 0188.*
 
 > **FIN0 — escopo da unidade corrigido ✅ (v0.164.1, migração 0186):** testando
 > como Gerente, o dono viu telas abertas demais. Agora: **Configuração** mostra

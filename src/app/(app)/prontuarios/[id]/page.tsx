@@ -40,6 +40,7 @@ import {
 import { ClientDataSection } from "./client-data-section";
 import { ReceivablesSection } from "./receivables-section";
 import { loadClientReceivables } from "./receivables-loader";
+import { viewInstallment } from "@/lib/finance/receivables";
 import {
   JourneySection,
   type ClientAppointment,
@@ -546,6 +547,11 @@ export default async function ClientDetailPage(
   const receivables = canSeeReceivables
     ? await loadClientReceivables(client.id)
     : { installments: [], receipts: [], receivedInPeriodCents: 0, periodStart: "", periodEnd: "" };
+  const financeToday = new Date().toISOString().slice(0, 10);
+  // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
+  const lateInstallmentCount = receivables.installments.filter(
+    (i) => viewInstallment(i, financeToday).isLate
+  ).length;
 
   const canEdit =
     client.status !== "anonymized" &&
@@ -3160,14 +3166,18 @@ export default async function ClientDetailPage(
 
         {/* FIN1: contas a receber do cliente. Recepção/Gerente/Financeiro. */}
         {canSeeReceivables && (
-          <TabPanel id="financeiro" label="Financeiro">
+          <TabPanel
+            id="financeiro"
+            label="Financeiro"
+            alertCount={lateInstallmentCount}
+          >
             <ReceivablesSection
               clientId={client.id}
               installments={receivables.installments}
               receipts={receivables.receipts}
               receivedInPeriodCents={receivables.receivedInPeriodCents}
               periodStart={receivables.periodStart}
-              today={new Date().toISOString().slice(0, 10)}
+              today={financeToday}
               canReceive={canReceivePayment}
               canReverse={canReverseReceipt}
             />

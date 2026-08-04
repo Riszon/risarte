@@ -1,5 +1,9 @@
 // FIN1 — contas a receber do cliente. Regras puras: saldo, valor atualizado,
 // situação e resumo. Nenhuma delas pode viver dentro de componente de tela.
+//
+// Espelha `public.installment_balance` (migração 0188): a conta de uma parcela
+// é sempre a soma de QUATRO naturezas — principal, benefício perdido por
+// atraso, multa e juros.
 
 import { computeLateCharges, daysLate, type LateFeeTerms } from "./late-fees";
 
@@ -20,13 +24,31 @@ export const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
   renegociada: "Renegociada",
 };
 
+/** Meios em que o cliente pode atrasar — e por isso perder o benefício. */
+export const BENEFIT_RISK_METHODS = ["boleto", "credito_recorrente"] as const;
+
+export function methodRunsLateRisk(method: string | null): boolean {
+  return (BENEFIT_RISK_METHODS as readonly string[]).includes(method ?? "");
+}
+
 export type Installment = {
   id: string;
   seq: number;
   kind: "entrada" | "parcela";
   dueDate: string;
+  /** Valor combinado da parcela (já com o benefício do programa aplicado). */
   amountCents: number;
+  /**
+   * Benefício que ESTA parcela perde se atrasar. Congelado no fechamento e já
+   * zerado quando o meio de pagamento não corre risco (cartão, à vista) ou
+   * quando o procedimento ficou 100% gratuito — gratuito nunca é cobrado.
+   */
+  benefitDiscountCents: number;
+  /** Principal já recebido. */
   paidAmountCents: number;
+  paidBenefitCents: number;
+  paidFeeCents: number;
+  paidInterestCents: number;
   status: InstallmentStatus;
   paymentMethod: string | null;
   /** Taxas CONGELADAS quando a parcela nasceu. */
@@ -41,65 +63,179 @@ export type InstallmentView = Installment & {
   /** Quanto ainda falta do principal. */
   balanceCents: number;
   daysLate: number;
+  /** Benefício efetivamente perdido nesta data (0 se está em dia). */
+  benefitDueCents: number;
+  benefitRemCents: number;
   lateFeeCents: number;
+  lateFeeRemCents: number;
   interestCents: number;
-  /** Saldo + multa + juros — o que o cliente paga se quitar hoje. */
+  interestRemCents: number;
+  /** Tudo que falta hoje: principal + benefício perdido + multa + juros. */
   updatedBalanceCents: number;
+  /** Total já recebido nesta cobrança, somadas as quatro naturezas. */
+  paidTotalCents: number;
   isOpen: boolean;
   isLate: boolean;
 };
 
 /**
- * Situação de uma parcela numa data. **O que se abate primeiro é o PRINCIPAL**
- * (decisão do dono, 31/07/2026): multa e juros incidem sobre o que ainda falta,
- * o que é mais favorável ao cliente e mais simples de explicar no balcão.
+ * Situação de uma parcela numa data.
+ *
+ * **Multa e juros incidem sobre o valor CHEIO da parcela** (mais o benefício
+ * perdido), não sobre o saldo — decisão do dono em 04/08/2026, que revisa a de
+ * 31/07: receber metade não pode reduzir a multa pela metade, senão a baixa
+ * parcial vira um desconto disfarçado. O que muda com o recebimento é só o
+ * quanto AINDA FALTA de cada natureza.
+ *
+ * A ordem de abatimento continua sendo principal → benefício → multa → juros.
  */
 export function viewInstallment(
   inst: Installment,
   referenceDate: string
 ): InstallmentView {
   const balance = Math.max(0, inst.amountCents - inst.paidAmountCents);
+  const paidTotal =
+    inst.paidAmountCents +
+    inst.paidBenefitCents +
+    inst.paidFeeCents +
+    inst.paidInterestCents;
   const closed =
     inst.status === "paga" ||
     inst.status === "cancelada" ||
     inst.status === "renegociada";
 
-  if (closed || balance <= 0) {
+  if (closed) {
     return {
       ...inst,
       balanceCents: balance,
       daysLate: 0,
+      benefitDueCents: 0,
+      benefitRemCents: 0,
       lateFeeCents: 0,
+      lateFeeRemCents: 0,
       interestCents: 0,
+      interestRemCents: 0,
       updatedBalanceCents: balance,
+      paidTotalCents: paidTotal,
       isOpen: false,
       isLate: false,
     };
   }
 
+  const late = daysLate(inst.dueDate, referenceDate, inst.terms.graceDays);
+  // Perdeu a pontualidade → perde o benefício daquela parcela.
+  const benefitDue = late > 0 ? Math.max(0, inst.benefitDiscountCents) : 0;
+
   const charges = computeLateCharges({
-    principalCents: balance,
+    principalCents: inst.amountCents + benefitDue,
     dueDate: inst.dueDate,
     referenceDate,
     terms: inst.terms,
   });
 
+  const benefitRem = Math.max(0, benefitDue - inst.paidBenefitCents);
+  const feeRem = Math.max(0, charges.lateFeeCents - inst.paidFeeCents);
+  const interestRem = Math.max(0, charges.interestCents - inst.paidInterestCents);
+  const updated = balance + benefitRem + feeRem + interestRem;
+
   return {
     ...inst,
     balanceCents: balance,
     daysLate: charges.daysLate,
+    benefitDueCents: benefitDue,
+    benefitRemCents: benefitRem,
     lateFeeCents: charges.lateFeeCents,
+    lateFeeRemCents: feeRem,
     interestCents: charges.interestCents,
-    updatedBalanceCents: charges.totalCents,
-    isOpen: true,
-    isLate: charges.daysLate > 0,
+    interestRemCents: interestRem,
+    updatedBalanceCents: updated,
+    paidTotalCents: paidTotal,
+    isOpen: updated > 0,
+    isLate: charges.daysLate > 0 && updated > 0,
   };
+}
+
+/**
+ * Como um recebimento se reparte entre as quatro naturezas. Mesma ordem do
+ * banco (`register_payment_receipt`): principal → benefício → multa → juros.
+ */
+export type ReceiptAllocation = {
+  principalCents: number;
+  benefitCents: number;
+  lateFeeCents: number;
+  interestCents: number;
+};
+
+export function allocateReceipt(
+  view: InstallmentView,
+  amountCents: number
+): ReceiptAllocation {
+  let rest = Math.max(0, Math.round(amountCents));
+  const principal = Math.min(rest, view.balanceCents);
+  rest -= principal;
+  const benefit = Math.min(rest, view.benefitRemCents);
+  rest -= benefit;
+  const fee = Math.min(rest, view.lateFeeRemCents);
+  rest -= fee;
+  const interest = Math.min(rest, view.interestRemCents);
+
+  return {
+    principalCents: principal,
+    benefitCents: benefit,
+    lateFeeCents: fee,
+    interestCents: interest,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Filtros da aba (o dono pediu ver por situação)
+// ---------------------------------------------------------------------------
+export const RECEIVABLE_FILTERS = [
+  { key: "todas", label: "Todas" },
+  { key: "em_aberto", label: "Em aberto" },
+  { key: "em_atraso", label: "Em atraso" },
+  { key: "paga", label: "Pagas" },
+  { key: "cancelada", label: "Canceladas" },
+  { key: "renegociada", label: "Renegociadas" },
+] as const;
+
+export type ReceivableFilter = (typeof RECEIVABLE_FILTERS)[number]["key"];
+
+/** "Em aberto" e "Em atraso" são listas separadas: vencida sai de "em aberto". */
+export function matchesFilter(
+  view: InstallmentView,
+  filter: ReceivableFilter
+): boolean {
+  switch (filter) {
+    case "todas":
+      return true;
+    case "em_aberto":
+      return view.isOpen && !view.isLate;
+    case "em_atraso":
+      return view.isLate;
+    case "paga":
+      return view.status === "paga";
+    case "cancelada":
+      return view.status === "cancelada";
+    case "renegociada":
+      return view.status === "renegociada";
+  }
+}
+
+export function countByFilter(
+  views: InstallmentView[]
+): Record<ReceivableFilter, number> {
+  const out = {} as Record<ReceivableFilter, number>;
+  for (const f of RECEIVABLE_FILTERS) {
+    out[f.key] = views.filter((v) => matchesFilter(v, f.key)).length;
+  }
+  return out;
 }
 
 export type ReceivablesSummary = {
   /** Principal ainda devido (sem multa/juros). */
   openCents: number;
-  /** Só a parte vencida, já com multa e juros. */
+  /** Só a parte vencida, já com benefício perdido, multa e juros. */
   lateCents: number;
   /** Quantas parcelas estão em atraso. */
   lateCount: number;
@@ -146,7 +282,7 @@ export function summarizeReceivables(
   };
 }
 
-/** Quanto falta para quitar a parcela hoje (com multa e juros). */
+/** Quanto falta para quitar a parcela hoje (com benefício perdido, multa e juros). */
 export function payoffCents(view: InstallmentView): number {
   return view.updatedBalanceCents;
 }
@@ -155,10 +291,15 @@ export function payoffCents(view: InstallmentView): number {
  * Erros que impedem registrar uma baixa. Vazio = pode salvar. A validação de
  * verdade está no banco (AMOUNT_OVER_BALANCE); aqui é para o usuário não
  * descobrir só depois de clicar.
+ *
+ * Não existe "receber com desconto": valor menor que o total vira baixa
+ * PARCIAL. Perdoar diferença é ato de renegociação (Gerente da unidade,
+ * Financeiro da Franqueadora com autorização, ou Admin Master).
  */
 export function receiptErrors(input: {
   amountCents: number;
-  balanceCents: number;
+  /** Total devido hoje: principal + benefício perdido + multa + juros. */
+  payoffCents: number;
   receivedAt: string;
   today: string;
 }): string[] {
@@ -166,8 +307,8 @@ export function receiptErrors(input: {
   if (!Number.isFinite(input.amountCents) || input.amountCents <= 0) {
     errors.push("Informe o valor recebido.");
   }
-  if (input.amountCents > input.balanceCents) {
-    errors.push("O valor é maior que o saldo desta cobrança.");
+  if (input.amountCents > input.payoffCents) {
+    errors.push("O valor é maior que o total devido nesta cobrança.");
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.receivedAt)) {
     errors.push("Informe a data do recebimento.");
