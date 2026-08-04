@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Check,
+  FileText,
   Handshake,
   History,
   RotateCcw,
@@ -57,6 +58,7 @@ import {
   authorizeRenegotiation,
   registerReceipt,
   reverseReceipt,
+  setRenegotiationStep,
 } from "./receivables-actions";
 import { RenegotiationDialog } from "./renegotiation-dialog";
 
@@ -255,6 +257,23 @@ export function ReceivablesSection({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+  }
+
+  function setStep(
+    renegotiationId: string,
+    step: "contract" | "payment_issued" | "payment_confirmed",
+    value: boolean
+  ) {
+    startTransition(async () => {
+      const r = await setRenegotiationStep({
+        clientId,
+        renegotiationId,
+        step,
+        value,
+      });
+      if (r.ok) router.refresh();
+      else toast.error(r.error ?? "Algo deu errado.");
     });
   }
 
@@ -1055,6 +1074,59 @@ export function ReceivablesSection({
                     {r.authorizationNote && ` — ${r.authorizationNote}`}
                   </p>
                 )}
+                {/* FIN2.4: fechamento do acordo — mesmas etapas da venda. */}
+                {r.status === "aplicada" && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 border-t pt-2">
+                    <a
+                      href={`/renegociacoes/${r.id}/acordo`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] font-medium hover:border-primary hover:text-primary"
+                    >
+                      <FileText className="size-3.5" />
+                      Termo do acordo
+                    </a>
+                    {(
+                      [
+                        ["contract", "Acordo assinado", r.contractSigned],
+                        ["payment_issued", "Cobrança emitida", r.paymentIssued],
+                        [
+                          "payment_confirmed",
+                          "Pagamento confirmado",
+                          r.paymentConfirmed,
+                        ],
+                      ] as const
+                    ).map(([step, label, done]) => (
+                      <label
+                        key={step}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px]",
+                          done
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                            : "border-border",
+                          !canReceive && "opacity-60"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-3 accent-emerald-600"
+                          checked={done}
+                          disabled={!canReceive || isPending}
+                          onChange={(e) =>
+                            setStep(r.id, step, e.target.checked)
+                          }
+                        />
+                        {label}
+                      </label>
+                    ))}
+                    {r.closedAt && (
+                      <Badge className="bg-emerald-600 text-[10px] text-white">
+                        Acordo fechado
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
                 {r.status === "aguardando_autorizacao" && canAuthorize && (
                   <div className="mt-2 flex gap-1">
                     <Button

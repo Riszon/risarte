@@ -99,6 +99,11 @@ export type RenegotiationRow = {
   authorizationNote: string | null;
   byName: string | null;
   authorizedByName: string | null;
+  /** Etapas do fechamento (manuais, como na venda) — FIN2.4. */
+  contractSigned: boolean;
+  paymentIssued: boolean;
+  paymentConfirmed: boolean;
+  closedAt: string | null;
 };
 
 /**
@@ -416,7 +421,7 @@ async function loadRenegotiations(
   const { data } = await supabase
     .from("payment_renegotiations")
     .select(
-      "id, code, created_at, status, original_principal_cents, original_benefit_cents, original_fee_cents, original_interest_cents, original_total_cents, discount_cents, discount_percent, new_total_cents, monthly_interest_percent, financed_interest_cents, reason, requires_authorization, authorization_note, author:profiles!payment_renegotiations_created_by_fkey ( full_name ), approver:profiles!payment_renegotiations_authorized_by_fkey ( full_name )"
+      "id, code, created_at, status, original_principal_cents, original_benefit_cents, original_fee_cents, original_interest_cents, original_total_cents, discount_cents, discount_percent, new_total_cents, monthly_interest_percent, financed_interest_cents, reason, requires_authorization, authorization_note, contract_signed, payment_issued, payment_confirmed, closed_at, author:profiles!payment_renegotiations_created_by_fkey ( full_name ), approver:profiles!payment_renegotiations_authorized_by_fkey ( full_name )"
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
@@ -439,6 +444,10 @@ async function loadRenegotiations(
         reason: string | null;
         requires_authorization: boolean;
         authorization_note: string | null;
+        contract_signed: boolean;
+        payment_issued: boolean;
+        payment_confirmed: boolean;
+        closed_at: string | null;
         author: { full_name: string } | null;
         approver: { full_name: string } | null;
       }[]
@@ -464,5 +473,9 @@ async function loadRenegotiations(
     authorizationNote: r.authorization_note,
     byName: r.author?.full_name ?? null,
     authorizedByName: r.approver?.full_name ?? null,
+    contractSigned: r.contract_signed,
+    paymentIssued: r.payment_issued,
+    paymentConfirmed: r.payment_confirmed,
+    closedAt: r.closed_at,
   }));
 }

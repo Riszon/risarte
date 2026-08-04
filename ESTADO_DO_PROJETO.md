@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.172.0** · Última migração: **0192**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.173.0** · Última migração: **0193**_
+
+> **FIN2.4 — fechamento da renegociação (v0.173.0, migração 0193).** O dono
+> pediu ZapSign + ASAAS na renegociação, "como no fechamento das vendas".
+> **Correção de premissa:** o fechamento das vendas do core **não** chama
+> ZapSign nem ASAAS — ele marca três etapas à mão. As integrações reais só
+> existem no módulo Empresarial. Decisão do dono: a renegociação ganha o
+> **mesmo fluxo manual**, para as duas entrarem juntas quando o core ganhar as
+> integrações.
+>
+> A renegociação aplicada ganhou **Termo do acordo** (página imprimível em
+> `/renegociacoes/[id]/acordo`, com a dívida apurada, as cobranças
+> substituídas, o novo plano e as linhas de assinatura) e as três etapas —
+> **acordo assinado / cobrança emitida / pagamento confirmado**. Assinado +
+> confirmado = **acordo fechado** (a mesma regra de ouro da venda). Quem marca
+> é quem atende no balcão (recepção, gerente, financeiro, admin).
 
 > **FIN2.3 — o benefício corre risco em TODA promessa de pagamento (v0.172.0,
 > migração 0192).** O dono mostrou a **VD-00038**: benefício de R$ 300,00,

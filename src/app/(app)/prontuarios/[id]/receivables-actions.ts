@@ -195,6 +195,50 @@ export async function authorizeRenegotiation(input: {
   return { ok: true };
 }
 
+/**
+ * FIN2.4 — marca uma etapa do fechamento da renegociação (acordo assinado /
+ * cobrança emitida / pagamento confirmado). Mesmo fluxo manual do fechamento
+ * da venda: quando o core ganhar ZapSign/ASAAS, é aqui que eles se plugam.
+ */
+export async function setRenegotiationStep(input: {
+  clientId: string;
+  renegotiationId: string;
+  step: "contract" | "payment_issued" | "payment_confirmed";
+  value: boolean;
+}): Promise<ReceivableResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("renegotiation_close_step", {
+    p_id: input.renegotiationId,
+    p_step: input.step,
+    p_value: input.value,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NOT_APPLIED")) {
+      return {
+        ok: false,
+        error:
+          "A renegociação ainda espera autorização do Gerente — não há acordo para assinar.",
+      };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite esta etapa." };
+    }
+    console.error("renegotiation_close_step failed:", m);
+    return { ok: false, error: "Não foi possível registrar a etapa." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "renegotiation_close",
+    entityId: input.renegotiationId,
+  });
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  return { ok: true };
+}
+
 /** FIN1 — estorna uma baixa (contra-lançamento; a original fica no histórico). */
 export async function reverseReceipt(input: {
   clientId: string;
