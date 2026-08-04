@@ -113,7 +113,15 @@ export default async function RenegotiationAgreementPage(
     kind: "negotiation" | "direct_sale";
     createdAt: string;
     totalCents: number;
-    items: { description: string; quantity: number; finalCents: number }[];
+    items: {
+      description: string;
+      quantity: number;
+      /** Preço de tabela, sem nenhum benefício. */
+      grossCents: number;
+      /** O que o cliente ganhou por se comprometer a pagar em dia. */
+      benefitCents: number;
+      finalCents: number;
+    }[];
   };
   const origins: OriginSale[] = [];
 
@@ -172,14 +180,14 @@ export default async function RenegotiationAgreementPage(
           )
           .map((i) => {
             const it = i.treatment_plan_option_items!;
+            const gross = it.quantity * it.unit_price_cents;
+            const benefit = i.program_discount_cents ?? 0;
             return {
               description: it.description,
               quantity: it.quantity,
-              finalCents: Math.max(
-                0,
-                it.quantity * it.unit_price_cents -
-                  (i.program_discount_cents ?? 0)
-              ),
+              grossCents: gross,
+              benefitCents: benefit,
+              finalCents: Math.max(0, gross - benefit),
             };
           }),
       });
@@ -201,13 +209,17 @@ export default async function RenegotiationAgreementPage(
       >();
     const { data: saleItems } = await supabase
       .from("direct_sale_items")
-      .select("sale_id, description, quantity, final_cents")
+      .select(
+        "sale_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
+      )
       .in("sale_id", saleIds)
       .returns<
         {
           sale_id: string;
           description: string;
           quantity: number;
+          unit_price_cents: number;
+          program_discount_cents: number | null;
           final_cents: number;
         }[]
       >();
@@ -223,6 +235,8 @@ export default async function RenegotiationAgreementPage(
           .map((i) => ({
             description: i.description,
             quantity: i.quantity,
+            grossCents: i.quantity * i.unit_price_cents,
+            benefitCents: i.program_discount_cents ?? 0,
             finalCents: i.final_cents,
           })),
       });
@@ -344,37 +358,115 @@ export default async function RenegotiationAgreementPage(
             A dívida acima vem {origins.length === 1 ? "da" : "das"} venda
             {origins.length === 1 ? "" : "s"} abaixo.
           </p>
-          {origins.map((o) => (
-            <div key={o.id} className="mb-3 border-l-2 border-neutral-300 pl-3">
-              <p className="text-xs font-semibold">
-                {o.code ?? "—"} ·{" "}
-                {o.kind === "direct_sale"
-                  ? "Venda direta"
-                  : "Plano de tratamento"}{" "}
-                · {fmtDate(o.createdAt)}
-              </p>
-              <ul className="text-xs">
-                {o.items.map((it, n) => (
-                  <li key={n} className="flex justify-between py-0.5">
-                    <span>
-                      {it.quantity > 1 && `${it.quantity}× `}
-                      {it.description}
-                    </span>
-                    <span>{formatBRL(it.finalCents)}</span>
-                  </li>
-                ))}
-                {o.items.length === 0 && (
-                  <li className="py-0.5 text-neutral-500">
-                    Sem procedimentos lançados.
-                  </li>
+          {origins.map((o) => {
+            const bruto = o.items.reduce((s, i) => s + i.grossCents, 0);
+            const beneficio = o.items.reduce((s, i) => s + i.benefitCents, 0);
+            // Procedimento que ficou 100% gratuito não volta a ser cobrado —
+            // ele sai da conta do que se perde por atraso.
+            const gratuitos = o.items.filter(
+              (i) => i.finalCents === 0 && i.benefitCents > 0
+            );
+            const emRisco = o.items
+              .filter((i) => i.finalCents > 0)
+              .reduce((s, i) => s + i.benefitCents, 0);
+            return (
+              <div
+                key={o.id}
+                className="mb-4 border-l-2 border-neutral-300 pl-3"
+              >
+                <p className="text-xs font-semibold">
+                  {o.code ?? "—"} ·{" "}
+                  {o.kind === "direct_sale"
+                    ? "Venda direta"
+                    : "Plano de tratamento"}{" "}
+                  · {fmtDate(o.createdAt)}
+                </p>
+                <table className="mt-1 w-full text-xs">
+                  <thead>
+                    <tr className="border-b text-neutral-600">
+                      <th className="py-0.5 text-left font-normal">
+                        Procedimento
+                      </th>
+                      <th className="py-0.5 text-right font-normal">
+                        Valor de tabela
+                      </th>
+                      <th className="py-0.5 text-right font-normal">
+                        Benefício por pagar em dia
+                      </th>
+                      <th className="py-0.5 text-right font-normal">
+                        Valor contratado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {o.items.map((it, n) => (
+                      <tr key={n} className="border-b border-dotted">
+                        <td className="py-0.5">
+                          {it.quantity > 1 && `${it.quantity}× `}
+                          {it.description}
+                        </td>
+                        <td className="py-0.5 text-right">
+                          {formatBRL(it.grossCents)}
+                        </td>
+                        <td className="py-0.5 text-right">
+                          {it.benefitCents > 0
+                            ? `− ${formatBRL(it.benefitCents)}`
+                            : "—"}
+                        </td>
+                        <td className="py-0.5 text-right">
+                          {formatBRL(it.finalCents)}
+                          {it.finalCents === 0 && " (sem custo)"}
+                        </td>
+                      </tr>
+                    ))}
+                    {o.items.length === 0 && (
+                      <tr>
+                        <td className="py-0.5 text-neutral-500" colSpan={4}>
+                          Sem procedimentos lançados.
+                        </td>
+                      </tr>
+                    )}
+                    <tr className="font-semibold">
+                      <td className="py-1">Total</td>
+                      <td className="py-1 text-right">{formatBRL(bruto)}</td>
+                      <td className="py-1 text-right">
+                        {beneficio > 0 ? `− ${formatBRL(beneficio)}` : "—"}
+                      </td>
+                      <td className="py-1 text-right">
+                        {formatBRL(o.totalCents)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* É esta linha que justifica o "benefício perdido" do topo. */}
+                {emRisco > 0 && (
+                  <p className="mt-1 text-xs">
+                    Desse total, <strong>{formatBRL(emRisco)}</strong> era
+                    desconto <strong>condicionado ao pagamento em dia</strong>.
+                    Com o atraso, esse valor volta a ser devido — na proporção
+                    da cobrança atrasada.
+                    {gratuitos.length > 0 && (
+                      <>
+                        {" "}
+                        {gratuitos.length === 1
+                          ? "O procedimento"
+                          : "Os procedimentos"}{" "}
+                        <em>
+                          {gratuitos.map((g) => g.description).join(", ")}
+                        </em>{" "}
+                        {gratuitos.length === 1 ? "ficou" : "ficaram"} sem
+                        custo e <strong>não</strong>{" "}
+                        {gratuitos.length === 1 ? "volta" : "voltam"} a ser
+                        cobrad{gratuitos.length === 1 ? "o" : "os"} em nenhuma
+                        hipótese.
+                      </>
+                    )}
+                  </p>
                 )}
-                <li className="flex justify-between border-t py-0.5 font-semibold">
-                  <span>Total da venda</span>
-                  <span>{formatBRL(o.totalCents)}</span>
-                </li>
-              </ul>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </section>
       )}
 

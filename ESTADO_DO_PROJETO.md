@@ -1,6 +1,12 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.173.1** · Última migração: **0193**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.173.2** · Última migração: **0193**_
+
+> **v0.173.2 (sem migração):** a venda de origem no termo virou uma tabela com
+> **valor de tabela × benefício por pagar em dia × valor contratado**, por
+> procedimento e no total, mais a frase que **justifica** o "benefício perdido"
+> do topo do documento — inclusive dizendo quais procedimentos ficaram sem
+> custo e nunca voltam a ser cobrados.
 
 > **v0.173.1 (sem migração):** o termo de renegociação passou a trazer as
 > **vendas de origem** — código (`PT-…`/`VD-…`), tipo, data, procedimentos e
