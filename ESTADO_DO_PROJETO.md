@@ -1,6 +1,28 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.169.0** · Última migração: **0189**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.170.0** · Última migração: **0190**_
+
+> **FIN2.1 — correção da renegociação + código da venda (v0.170.0, migração
+> 0190).** No teste da 0189 o dono viu que a renegociação era gravada mas
+> **nada acontecia** — as parcelas antigas não viravam `renegociada`, as novas
+> não nasciam, e por isso a MESMA parcela podia ser renegociada várias vezes.
+> **Causa:** `save_renegotiation` já gravava a linha com status `aplicada`, e
+> `apply_renegotiation` começava com `if status = 'aplicada' then return` — a
+> guarda de idempotência barrava a própria primeira aplicação. Agora a guarda
+> olha `applied_at`. As renegociações que ficaram pelo caminho foram marcadas
+> como **canceladas** (não aplicadas retroativamente de propósito: aplicar
+> todas duplicaria dívida). Também entrou trava para cobrança que já está numa
+> renegociação **aguardando autorização**.
+>
+> **Juros do parcelamento (Tabela Price):** a renegociação ganhou o campo
+> *Juros ao mês (%)*. Quanto mais tempo o cliente leva para quitar, mais paga —
+> e o valor aparece antes de salvar. Entra no razão como receita financeira
+> (4.1.01), separado do desconto.
+>
+> **Código da venda:** cada plano de tratamento (**PT-00001**), venda direta
+> (**VD-00001**) e renegociação (**RN-00001**) tem código único. Ele aparece na
+> cobrança e **abre o resumo**: procedimentos, preço de tabela, benefício
+> aplicado e total — ou, na renegociação, a composição da dívida.
 
 > **FINANCEIRO — FIN2: RENEGOCIAÇÃO ✅ (v0.169.0, migração 0189).** Na aba
 > Financeiro da ficha, marcar as cobranças → **Renegociar**. A tela apura a

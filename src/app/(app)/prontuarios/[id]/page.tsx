@@ -556,6 +556,7 @@ export default async function ClientDetailPage(
         installments: [],
         receipts: [],
         renegotiations: [],
+        sales: [],
         maxDiscountPercent: null,
         receivedInPeriodCents: 0,
         periodStart: "",
@@ -3202,6 +3203,7 @@ export default async function ClientDetailPage(
               installments={receivables.installments}
               receipts={receivables.receipts}
               renegotiations={receivables.renegotiations}
+              sales={receivables.sales}
               maxDiscountPercent={receivables.maxDiscountPercent}
               today={financeToday}
               canReceive={canReceivePayment}

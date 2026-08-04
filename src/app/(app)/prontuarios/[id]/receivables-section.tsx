@@ -48,7 +48,11 @@ import {
   canRenegotiateInstallment,
   RENEGOTIATION_STATUS_LABELS,
 } from "@/lib/finance/renegotiation";
-import type { ReceiptRow, RenegotiationRow } from "./receivables-loader";
+import type {
+  ReceiptRow,
+  RenegotiationRow,
+  SaleSummary,
+} from "./receivables-loader";
 import {
   authorizeRenegotiation,
   registerReceipt,
@@ -99,6 +103,7 @@ export function ReceivablesSection({
   installments,
   receipts,
   renegotiations,
+  sales,
   maxDiscountPercent,
   today,
   canReceive,
@@ -110,6 +115,7 @@ export function ReceivablesSection({
   installments: Installment[];
   receipts: ReceiptRow[];
   renegotiations: RenegotiationRow[];
+  sales: SaleSummary[];
   maxDiscountPercent: number | null;
   today: string;
   canReceive: boolean;
@@ -126,6 +132,8 @@ export function ReceivablesSection({
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [decisionApprove, setDecisionApprove] = useState(true);
   const [decisionNote, setDecisionNote] = useState("");
+  /** Documento aberto no resumo ("a que se refere esta cobrança"). */
+  const [openSourceId, setOpenSourceId] = useState<string | null>(null);
   const [preset, setPreset] = useState<PeriodPreset>("tudo");
   const [customStart, setCustomStart] = useState(today.slice(0, 8) + "01");
   const [customEnd, setCustomEnd] = useState(today);
@@ -493,6 +501,18 @@ export function ReceivablesSection({
                       {v.kind === "entrada" ? "Entrada" : "Parcela"} ·{" "}
                       {fmtDate(v.dueDate)}
                     </span>
+                    {/* FIN2.1: o código diz a que a cobrança se refere e abre
+                        o resumo da venda. */}
+                    {v.sourceCode && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenSourceId(v.sourceId)}
+                        title="Ver a que esta cobrança se refere"
+                        className="ml-2 rounded border border-border bg-muted/60 px-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                      >
+                        {v.sourceCode}
+                      </button>
+                    )}
                     <span className="ml-2 text-xs text-muted-foreground">
                       {v.origin === "direct_sale"
                         ? "Venda direta"
@@ -656,6 +676,142 @@ export function ReceivablesSection({
         </CardContent>
       </Card>
 
+      {/* FIN2.1: o resumo do documento que gerou a cobrança. */}
+      <Dialog
+        open={openSourceId !== null}
+        onOpenChange={(o) => !o && setOpenSourceId(null)}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>A que esta cobrança se refere</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const sale = sales.find((s) => s.id === openSourceId);
+            if (sale) {
+              return (
+                <div className="space-y-2 text-sm">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-mono">{sale.code ?? "—"}</span> ·{" "}
+                    {sale.kind === "direct_sale"
+                      ? "Venda direta"
+                      : "Plano de tratamento"}{" "}
+                    · {new Date(sale.createdAt).toLocaleDateString("pt-BR")}
+                  </p>
+                  <ul className="space-y-1">
+                    {sale.items.map((it, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start justify-between gap-2 border-b border-dashed pb-1 text-xs last:border-0"
+                      >
+                        <span>
+                          {it.quantity > 1 && `${it.quantity}× `}
+                          {it.description}
+                          {it.discountCents > 0 && (
+                            <span className="block text-[11px] text-emerald-700">
+                              benefício do programa −{" "}
+                              {formatBRL(it.discountCents)}
+                              {it.finalCents === 0 && " (sem custo)"}
+                            </span>
+                          )}
+                        </span>
+                        <span className="whitespace-nowrap text-right tabular-nums">
+                          {it.discountCents > 0 && (
+                            <span className="block text-[11px] text-muted-foreground line-through">
+                              {formatBRL(it.quantity * it.unitPriceCents)}
+                            </span>
+                          )}
+                          <span className="font-medium">
+                            {formatBRL(it.finalCents)}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                    {sale.items.length === 0 && (
+                      <li className="text-xs text-muted-foreground">
+                        Esta venda não tem procedimentos lançados.
+                      </li>
+                    )}
+                  </ul>
+                  <p className="flex justify-between border-t pt-1 font-semibold tabular-nums">
+                    <span>Total da venda</span>
+                    <span>{formatBRL(sale.totalCents)}</span>
+                  </p>
+                </div>
+              );
+            }
+            const reneg = renegotiations.find((r) => r.id === openSourceId);
+            if (reneg) {
+              return (
+                <div className="space-y-2 text-sm">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-mono">{reneg.code ?? "—"}</span> ·
+                    Renegociação ·{" "}
+                    {new Date(reneg.createdAt).toLocaleDateString("pt-BR")}
+                    {reneg.byName && ` · ${reneg.byName}`}
+                  </p>
+                  <ul className="space-y-0.5 text-xs tabular-nums">
+                    <li className="flex justify-between">
+                      <span>Valor que faltava das parcelas</span>
+                      <span>{formatBRL(reneg.originalPrincipalCents)}</span>
+                    </li>
+                    {reneg.originalBenefitCents > 0 && (
+                      <li className="flex justify-between">
+                        <span>Benefício perdido por atraso</span>
+                        <span>+ {formatBRL(reneg.originalBenefitCents)}</span>
+                      </li>
+                    )}
+                    {reneg.originalFeeCents > 0 && (
+                      <li className="flex justify-between">
+                        <span>Multa</span>
+                        <span>+ {formatBRL(reneg.originalFeeCents)}</span>
+                      </li>
+                    )}
+                    {reneg.originalInterestCents > 0 && (
+                      <li className="flex justify-between">
+                        <span>Juros do atraso</span>
+                        <span>+ {formatBRL(reneg.originalInterestCents)}</span>
+                      </li>
+                    )}
+                    {reneg.discountCents > 0 && (
+                      <li className="flex justify-between text-destructive">
+                        <span>Desconto concedido</span>
+                        <span>− {formatBRL(reneg.discountCents)}</span>
+                      </li>
+                    )}
+                    {reneg.financedInterestCents > 0 && (
+                      <li className="flex justify-between">
+                        <span>
+                          Juros do parcelamento (
+                          {reneg.monthlyInterestPercent}% ao mês)
+                        </span>
+                        <span>+ {formatBRL(reneg.financedInterestCents)}</span>
+                      </li>
+                    )}
+                    <li className="flex justify-between border-t pt-0.5 font-semibold">
+                      <span>Total renegociado</span>
+                      <span>{formatBRL(reneg.newTotalCents)}</span>
+                    </li>
+                  </ul>
+                  {reneg.reason && (
+                    <p className="text-xs">Motivo: {reneg.reason}</p>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <p className="text-sm text-muted-foreground">
+                Não encontrei o documento desta cobrança.
+              </p>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenSourceId(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* FIN2: renegociações — o documento que explica de onde veio o valor. */}
       {renegotiations.length > 0 && (
         <Card>
@@ -678,6 +834,11 @@ export function ReceivablesSection({
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">
+                    {r.code && (
+                      <span className="mr-1 font-mono text-[10px] text-muted-foreground">
+                        {r.code}
+                      </span>
+                    )}
                     {new Date(r.createdAt).toLocaleDateString("pt-BR")}
                     {r.byName && ` · ${r.byName}`}
                   </span>
@@ -708,6 +869,8 @@ export function ReceivablesSection({
                     ` + multa ${formatBRL(r.originalFeeCents)}`}
                   {r.originalInterestCents > 0 &&
                     ` + juros ${formatBRL(r.originalInterestCents)}`}
+                  {r.financedInterestCents > 0 &&
+                    ` + juros do parcelamento ${formatBRL(r.financedInterestCents)} (${r.monthlyInterestPercent}% ao mês)`}
                 </p>
                 {r.reason && (
                   <p className="mt-0.5 text-[11px]">Motivo: {r.reason}</p>

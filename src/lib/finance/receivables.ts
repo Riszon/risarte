@@ -55,6 +55,10 @@ export type Installment = {
   terms: LateFeeTerms;
   /** De onde veio: negociação do consultor, venda direta ou renegociação. */
   origin: "negotiation" | "direct_sale" | "renegotiation";
+  /** Documento de origem (venda ou renegociação) — para abrir o resumo. */
+  sourceId: string | null;
+  /** Código do documento: PT-00001 (plano), VD-00001 (venda direta), RN-…. */
+  sourceCode: string | null;
   /** Já esteve em atraso (sobrevive à renegociação — indicador 9.28). */
   wasOverdue: boolean;
 };

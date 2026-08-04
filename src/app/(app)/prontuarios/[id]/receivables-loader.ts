@@ -26,6 +26,7 @@ export type ReceivablesData = {
   installments: Installment[];
   receipts: ReceiptRow[];
   renegotiations: RenegotiationRow[];
+  sales: SaleSummary[];
   /** Teto de desconto da unidade — o MESMO da regra comercial (FIN2). */
   maxDiscountPercent: number | null;
   /** Recebido no período consultado (baixas ativas). */
@@ -56,9 +57,29 @@ type InstallmentRow = {
   renegotiation_id: string | null;
 };
 
+/**
+ * FIN2.1 — o resumo do que a cobrança está pagando. O dono pediu poder clicar
+ * na parcela e ver a que venda ela se refere (código + procedimentos).
+ */
+export type SaleSummary = {
+  id: string;
+  kind: "negotiation" | "direct_sale";
+  code: string | null;
+  createdAt: string;
+  totalCents: number;
+  items: {
+    description: string;
+    quantity: number;
+    unitPriceCents: number;
+    discountCents: number;
+    finalCents: number;
+  }[];
+};
+
 /** FIN2 — uma renegociação do cliente (documento, não cobrança). */
 export type RenegotiationRow = {
   id: string;
+  code: string | null;
   createdAt: string;
   status: RenegotiationStatus;
   originalPrincipalCents: number;
@@ -69,6 +90,9 @@ export type RenegotiationRow = {
   discountCents: number;
   discountPercent: number;
   newTotalCents: number;
+  /** Juros ao mês do novo parcelamento (Tabela Price). */
+  monthlyInterestPercent: number;
+  financedInterestCents: number;
   reason: string | null;
   requiresAuthorization: boolean;
   authorizationNote: string | null;
@@ -105,6 +129,12 @@ export async function loadClientReceivables(
     .order("due_date")
     .returns<InstallmentRow[]>();
 
+  const renegotiations = await loadRenegotiations(supabase, clientId);
+  const sales = await loadSaleSummaries(supabase, instRows ?? []);
+  const codeById = new Map<string, string | null>();
+  for (const s of sales) codeById.set(s.id, s.code);
+  for (const r of renegotiations) codeById.set(r.id, r.code);
+
   const installments: Installment[] = (instRows ?? []).map((r) => ({
     id: r.id,
     seq: r.seq,
@@ -128,10 +158,14 @@ export async function loadClientReceivables(
       : r.direct_sale_id
         ? "direct_sale"
         : "negotiation",
+    sourceId: r.renegotiation_id ?? r.direct_sale_id ?? r.negotiation_id,
+    sourceCode:
+      codeById.get(
+        r.renegotiation_id ?? r.direct_sale_id ?? r.negotiation_id ?? ""
+      ) ?? null,
     wasOverdue: r.was_overdue,
   }));
 
-  const renegotiations = await loadRenegotiations(supabase, clientId);
   const maxDiscountPercent = await loadMaxDiscountPercent(supabase, clinicId);
 
   if (installments.length === 0) {
@@ -139,6 +173,7 @@ export async function loadClientReceivables(
       installments: [],
       receipts: [],
       renegotiations,
+      sales,
       maxDiscountPercent,
       receivedInPeriodCents: 0,
       periodStart: start,
@@ -207,11 +242,153 @@ export async function loadClientReceivables(
     installments,
     receipts,
     renegotiations,
+    sales,
     maxDiscountPercent,
     receivedInPeriodCents,
     periodStart: start,
     periodEnd: end,
   };
+}
+
+/**
+ * FIN2.1 — o resumo de cada venda que gerou cobrança para este cliente:
+ * código, data e os procedimentos com o preço de tabela e o benefício aplicado.
+ * É o que a ficha mostra quando o usuário clica no código da parcela.
+ */
+async function loadSaleSummaries(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  rows: InstallmentRow[]
+): Promise<SaleSummary[]> {
+  const negotiationIds = [
+    ...new Set(rows.map((r) => r.negotiation_id).filter((x): x is string => !!x)),
+  ];
+  const saleIds = [
+    ...new Set(rows.map((r) => r.direct_sale_id).filter((x): x is string => !!x)),
+  ];
+  const out: SaleSummary[] = [];
+
+  if (negotiationIds.length > 0) {
+    const { data: negs } = await supabase
+      .from("plan_negotiations")
+      .select("id, code, created_at, final_cents, option_id")
+      .in("id", negotiationIds)
+      .returns<
+        {
+          id: string;
+          code: string | null;
+          created_at: string;
+          final_cents: number;
+          option_id: string;
+        }[]
+      >();
+    const { data: items } = await supabase
+      .from("plan_negotiation_items")
+      .select(
+        "negotiation_id, included, program_discount_cents, treatment_plan_option_items ( option_id, description, quantity, unit_price_cents, sort_order )"
+      )
+      .in("negotiation_id", negotiationIds)
+      .returns<
+        {
+          negotiation_id: string;
+          included: boolean;
+          program_discount_cents: number | null;
+          treatment_plan_option_items: {
+            option_id: string;
+            description: string;
+            quantity: number;
+            unit_price_cents: number;
+            sort_order: number;
+          } | null;
+        }[]
+      >();
+
+    for (const n of negs ?? []) {
+      const mine = (items ?? [])
+        // Só a opção que foi negociada, e só o que entrou na venda.
+        .filter(
+          (i) =>
+            i.negotiation_id === n.id &&
+            i.included &&
+            i.treatment_plan_option_items?.option_id === n.option_id
+        )
+        .sort(
+          (a, b) =>
+            (a.treatment_plan_option_items?.sort_order ?? 0) -
+            (b.treatment_plan_option_items?.sort_order ?? 0)
+        );
+      out.push({
+        id: n.id,
+        kind: "negotiation",
+        code: n.code,
+        createdAt: n.created_at,
+        totalCents: n.final_cents,
+        items: mine.map((i) => {
+          const item = i.treatment_plan_option_items!;
+          const gross = item.quantity * item.unit_price_cents;
+          const discount = i.program_discount_cents ?? 0;
+          return {
+            description: item.description,
+            quantity: item.quantity,
+            unitPriceCents: item.unit_price_cents,
+            discountCents: discount,
+            finalCents: Math.max(0, gross - discount),
+          };
+        }),
+      });
+    }
+  }
+
+  if (saleIds.length > 0) {
+    const { data: sales } = await supabase
+      .from("direct_sales")
+      .select("id, code, created_at, final_cents")
+      .in("id", saleIds)
+      .returns<
+        {
+          id: string;
+          code: string | null;
+          created_at: string;
+          final_cents: number;
+        }[]
+      >();
+    const { data: items } = await supabase
+      .from("direct_sale_items")
+      .select(
+        "sale_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
+      )
+      .in("sale_id", saleIds)
+      .returns<
+        {
+          sale_id: string;
+          description: string;
+          quantity: number;
+          unit_price_cents: number;
+          program_discount_cents: number | null;
+          final_cents: number;
+        }[]
+      >();
+
+    for (const s of sales ?? []) {
+      out.push({
+        id: s.id,
+        kind: "direct_sale",
+        code: s.code,
+        createdAt: s.created_at,
+        totalCents: s.final_cents,
+        items: (items ?? [])
+          .filter((i) => i.sale_id === s.id)
+          .map((i) => ({
+            description: i.description,
+            quantity: i.quantity,
+            unitPriceCents: i.unit_price_cents,
+            discountCents: i.program_discount_cents ?? 0,
+            finalCents: i.final_cents,
+          })),
+      });
+    }
+  }
+
+  return out;
 }
 
 /** Cascata rede → unidade, como no resto do sistema. */
@@ -237,13 +414,14 @@ async function loadRenegotiations(
   const { data } = await supabase
     .from("payment_renegotiations")
     .select(
-      "id, created_at, status, original_principal_cents, original_benefit_cents, original_fee_cents, original_interest_cents, original_total_cents, discount_cents, discount_percent, new_total_cents, reason, requires_authorization, authorization_note, author:profiles!payment_renegotiations_created_by_fkey ( full_name ), approver:profiles!payment_renegotiations_authorized_by_fkey ( full_name )"
+      "id, code, created_at, status, original_principal_cents, original_benefit_cents, original_fee_cents, original_interest_cents, original_total_cents, discount_cents, discount_percent, new_total_cents, monthly_interest_percent, financed_interest_cents, reason, requires_authorization, authorization_note, author:profiles!payment_renegotiations_created_by_fkey ( full_name ), approver:profiles!payment_renegotiations_authorized_by_fkey ( full_name )"
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
     .returns<
       {
         id: string;
+        code: string | null;
         created_at: string;
         status: RenegotiationStatus;
         original_principal_cents: number;
@@ -254,6 +432,8 @@ async function loadRenegotiations(
         discount_cents: number;
         discount_percent: number;
         new_total_cents: number;
+        monthly_interest_percent: number | null;
+        financed_interest_cents: number | null;
         reason: string | null;
         requires_authorization: boolean;
         authorization_note: string | null;
@@ -264,6 +444,7 @@ async function loadRenegotiations(
 
   return (data ?? []).map((r) => ({
     id: r.id,
+    code: r.code,
     createdAt: r.created_at,
     status: r.status,
     originalPrincipalCents: r.original_principal_cents,
@@ -274,6 +455,8 @@ async function loadRenegotiations(
     discountCents: r.discount_cents,
     discountPercent: Number(r.discount_percent ?? 0),
     newTotalCents: r.new_total_cents,
+    monthlyInterestPercent: Number(r.monthly_interest_percent ?? 0),
+    financedInterestCents: r.financed_interest_cents ?? 0,
     reason: r.reason,
     requiresAuthorization: r.requires_authorization,
     authorizationNote: r.authorization_note,

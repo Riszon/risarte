@@ -32,6 +32,8 @@ import {
 } from "@/lib/finance/receivables";
 import {
   canRenegotiateInstallment,
+  financedPlan,
+  priceInstallmentCents,
   renegotiationBase,
   renegotiationErrors,
   renegotiationOutcome,
@@ -386,6 +388,8 @@ describe("contas a receber", () => {
     paymentMethod: "boleto",
     terms: rede,
     origin: "negotiation",
+    sourceId: null,
+    sourceCode: null,
     wasOverdue: false,
   };
 
@@ -740,6 +744,8 @@ describe("renegociação", () => {
     paymentMethod: "boleto",
     terms: rede,
     origin: "negotiation",
+    sourceId: null,
+    sourceCode: null,
     wasOverdue: false,
   };
 
@@ -863,5 +869,47 @@ describe("renegociação", () => {
         scheduleErrors: ["Só pode haver uma entrada."],
       })
     ).toEqual(["Só pode haver uma entrada."]);
+  });
+});
+
+describe("juros do parcelamento na renegociação (Tabela Price)", () => {
+  it("sem juros o cliente paga exatamente a dívida", () => {
+    const p = financedPlan(120000, 0, 6);
+    expect(p.financedTotalCents).toBe(120000);
+    expect(p.interestCents).toBe(0);
+  });
+
+  it("com juros, a parcela é fixa e o total passa da dívida", () => {
+    // R$ 1.000,00 em 10x a 2% ao mês.
+    const p = financedPlan(100000, 2, 10);
+    expect(p.installmentCents).toBe(11133); // Price: 1000 × i/(1−(1+i)^−10)
+    expect(p.financedTotalCents).toBe(111330);
+    expect(p.interestCents).toBe(11330);
+  });
+
+  it("quanto mais tempo para quitar, mais juros — o pedido do dono", () => {
+    const curto = financedPlan(100000, 2, 6);
+    const longo = financedPlan(100000, 2, 24);
+    expect(longo.interestCents).toBeGreaterThan(curto.interestCents);
+    // E a parcela do prazo longo é menor, que é o que o cliente enxerga.
+    expect(longo.installmentCents).toBeLessThan(curto.installmentCents);
+  });
+
+  it("taxa negativa ou dívida zero não quebram a conta", () => {
+    expect(financedPlan(0, 5, 10).financedTotalCents).toBe(0);
+    expect(financedPlan(100000, -3, 10).interestCents).toBe(0);
+    expect(priceInstallmentCents(100000, 2, 0)).toBe(priceInstallmentCents(100000, 2, 1));
+  });
+
+  it("os juros do parcelamento entram como ACRÉSCIMO, não como desconto", () => {
+    const p = financedPlan(100000, 2, 10);
+    const o = renegotiationOutcome({
+      originalCents: 100000,
+      newCents: p.financedTotalCents,
+      maxDiscountPercent: 15,
+      isManager: false,
+    });
+    expect(o.discountCents).toBe(-11330);
+    expect(o.needsAuthorization).toBe(false);
   });
 });

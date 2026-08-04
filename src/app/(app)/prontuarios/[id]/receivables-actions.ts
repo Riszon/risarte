@@ -90,6 +90,8 @@ export async function saveRenegotiation(input: {
     payment_method?: string | null;
   }[];
   reason: string;
+  /** Juros ao mês do novo parcelamento (Tabela Price). */
+  monthlyInterestPercent: number;
 }): Promise<ReceivableResult & { pending?: boolean }> {
   await getSessionContext();
   const supabase = await createClient();
@@ -99,6 +101,7 @@ export async function saveRenegotiation(input: {
     p_installment_ids: input.installmentIds,
     p_entries: input.entries,
     p_reason: input.reason || null,
+    p_monthly_interest_percent: input.monthlyInterestPercent,
   });
   if (error) {
     const m = error.message;
@@ -123,6 +126,13 @@ export async function saveRenegotiation(input: {
     }
     if (m.includes("MULTIPLE_DOWN_PAYMENTS")) {
       return { ok: false, error: "Só pode haver uma entrada." };
+    }
+    if (m.includes("RENEGOTIATION_PENDING")) {
+      return {
+        ok: false,
+        error:
+          "Alguma dessas cobranças já está numa renegociação aguardando autorização do Gerente.",
+      };
     }
     if (m.includes("NOT_ALLOWED")) {
       return {

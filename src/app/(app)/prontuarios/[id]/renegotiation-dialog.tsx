@@ -23,6 +23,7 @@ import {
 } from "@/lib/payments";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import {
+  financedPlan,
   renegotiationBase,
   renegotiationErrors,
   renegotiationOutcome,
@@ -63,22 +64,36 @@ export function RenegotiationDialog({
   const [count, setCount] = useState(3);
   const [firstDue, setFirstDue] = useState(today);
   const [method, setMethod] = useState("boleto");
+  const [rate, setRate] = useState("0");
   const [reason, setReason] = useState("");
   const [entries, setEntries] = useState<ScheduleEntry[] | null>(null);
 
   const base = useMemo(() => renegotiationBase(selected), [selected]);
 
-  // O parcelamento sugerido cobre a dívida cheia; o usuário edita à vontade —
-  // é a diferença que vira desconto (ou acréscimo).
+  const downCents = parseBRLToCents(downPayment) ?? 0;
+  const monthlyPercent = Math.max(0, Number(rate.replace(",", ".")) || 0);
+  // Juros do parcelamento: quanto mais tempo para quitar, mais o cliente paga.
+  const financed = useMemo(
+    () =>
+      financedPlan(
+        Math.max(0, base.totalCents - downCents),
+        monthlyPercent,
+        Math.max(1, count)
+      ),
+    [base.totalCents, downCents, monthlyPercent, count]
+  );
+
+  // O parcelamento sugerido cobre a dívida (mais os juros, se houver); o
+  // usuário edita à vontade — é a diferença que vira desconto ou acréscimo.
   const suggested = useMemo(
     () =>
       buildSchedule({
-        totalCents: base.totalCents,
-        downPaymentCents: parseBRLToCents(downPayment) ?? 0,
+        totalCents: downCents + financed.financedTotalCents,
+        downPaymentCents: downCents,
         installments: Math.max(1, count),
         firstDueDate: firstDue,
       }),
-    [base.totalCents, downPayment, count, firstDue]
+    [downCents, financed.financedTotalCents, count, firstDue]
   );
   const current = entries ?? suggested;
   const newTotal = scheduleTotalCents(current);
@@ -112,6 +127,7 @@ export function RenegotiationDialog({
           payment_method: method || null,
         })),
         reason,
+        monthlyInterestPercent: monthlyPercent,
       });
       if (r.ok) {
         toast.success(
@@ -186,7 +202,7 @@ export function RenegotiationDialog({
           </div>
 
           {/* 2) O novo parcelamento. */}
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-5">
             <div>
               <Label className="text-[11px]">Entrada (R$)</Label>
               <Input
@@ -209,6 +225,18 @@ export function RenegotiationDialog({
                 value={count}
                 onChange={(e) => {
                   setCount(Number(e.target.value) || 1);
+                  setEntries(null);
+                }}
+              />
+            </div>
+            <div>
+              <Label className="text-[11px]">Juros ao mês (%)</Label>
+              <Input
+                className="h-9 text-sm"
+                inputMode="decimal"
+                value={rate}
+                onChange={(e) => {
+                  setRate(e.target.value);
                   setEntries(null);
                 }}
               />
@@ -243,6 +271,15 @@ export function RenegotiationDialog({
             </div>
           </div>
 
+          {financed.interestCents > 0 && (
+            <p className="rounded-lg border border-border bg-muted/30 p-2 text-xs">
+              Parcelando {count}× a {monthlyPercent}% ao mês, o cliente paga{" "}
+              <strong>{formatBRL(financed.installmentCents)}</strong> por
+              parcela — <strong>{formatBRL(financed.interestCents)}</strong> de
+              juros pelo tempo até quitar. Alongar o prazo aumenta esse valor.
+            </p>
+          )}
+
           <PaymentScheduleEditor
             entries={current}
             onChange={setEntries}
@@ -267,7 +304,10 @@ export function RenegotiationDialog({
             )}
             {outcome.discountCents < 0 && (
               <p className="flex justify-between font-semibold">
-                <span>Acréscimo do parcelamento</span>
+                <span>
+                  Juros do parcelamento
+                  {monthlyPercent > 0 && ` (${monthlyPercent}% ao mês)`}
+                </span>
                 <span>+ {formatBRL(-outcome.discountCents)}</span>
               </p>
             )}

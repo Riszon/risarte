@@ -69,6 +69,66 @@ export function canRenegotiateInstallment(v: InstallmentView): boolean {
   return v.status === "em_aberto" || v.status === "parcial";
 }
 
+// ---------------------------------------------------------------------------
+// Juros do parcelamento (Tabela Price)
+// ---------------------------------------------------------------------------
+/**
+ * Parcela fixa que quita `pvCents` em `n` meses a `monthlyPercent` ao mês —
+ * a **Tabela Price**, que é como o varejo brasileiro parcela.
+ *
+ * Pedido do dono (04/08/2026): quanto mais tempo o cliente leva para quitar a
+ * dívida, mais juros ele paga. Com taxa zero devolve a divisão simples.
+ */
+export function priceInstallmentCents(
+  pvCents: number,
+  monthlyPercent: number,
+  n: number
+): number {
+  const pv = Math.max(0, Math.round(pvCents));
+  const count = Math.max(1, Math.floor(n));
+  const i = Math.max(0, monthlyPercent) / 100;
+  if (pv === 0) return 0;
+  // Sem juros a parcela não é "fixa": o resíduo de centavos vai para a última
+  // (regra do splitAmount). Aqui devolvemos só a parte inteira.
+  if (i === 0) return Math.floor(pv / count);
+  const factor = i / (1 - Math.pow(1 + i, -count));
+  return Math.round(pv * factor);
+}
+
+export type FinancedPlan = {
+  /** Parcela fixa. */
+  installmentCents: number;
+  /** Soma das parcelas (sem a entrada). */
+  financedTotalCents: number;
+  /** Quanto do total é juros do parcelamento. */
+  interestCents: number;
+};
+
+/** O que o cliente paga ao parcelar `pvCents` em `n` vezes com juros. */
+export function financedPlan(
+  pvCents: number,
+  monthlyPercent: number,
+  n: number
+): FinancedPlan {
+  const pv = Math.max(0, Math.round(pvCents));
+  const count = Math.max(1, Math.floor(n));
+  const pmt = priceInstallmentCents(pv, monthlyPercent, count);
+  // Sem juros, o financiado é a própria dívida (o resíduo cai na última parcela).
+  if (Math.max(0, monthlyPercent) === 0) {
+    return {
+      installmentCents: pmt,
+      financedTotalCents: pv,
+      interestCents: 0,
+    };
+  }
+  const total = pmt * count;
+  return {
+    installmentCents: pmt,
+    financedTotalCents: total,
+    interestCents: Math.max(0, total - pv),
+  };
+}
+
 export type RenegotiationOutcome = {
   originalCents: number;
   newCents: number;
