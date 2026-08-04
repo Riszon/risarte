@@ -1,6 +1,27 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.170.0** · Última migração: **0190**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.171.0** · Última migração: **0191**_
+
+> **FIN2.2 — código no fechamento + detalhe da renegociação (v0.171.0,
+> migração 0191).**
+>
+> **Bug de capacidade encontrado por uma pergunta do dono** ("e quando passar de
+> 99.999?"): o `lpad` do Postgres **TRUNCA** quando o número é maior que o
+> tamanho pedido — `lpad('100000', 5, '0')` devolve `'10000'`. Na venda de
+> número 100.000 o código sairia repetido, bateria no índice único e **o
+> fechamento da venda falharia**. Não era "parar de contar", era quebrar. Agora
+> o preenchimento é o maior entre 5 dígitos e o tamanho real: PT-00001 …
+> PT-99999 … PT-100000 … e segue. A sequência é BIGINT — na prática não acaba.
+>
+> **O código nasce no FECHAMENTO**, não na criação: plano de tratamento em
+> `aceita`, venda direta em `concluida` (assinado + pago). Negociação perdida
+> não queima número. Os códigos dados pela 0190 a vendas que nunca fecharam
+> foram devolvidos.
+>
+> **O código aparece** na venda direta, no painel de Negociação e em cada
+> cobrança da ficha. **A renegociação detalhada:** clicando no `RN-…` aparecem
+> as cobranças substituídas (parcela, vencimento, valor, código da venda de
+> origem e quanto já fora pago) e as novas cobranças que nasceram dela.
 
 > **FIN2.1 — correção da renegociação + código da venda (v0.170.0, migração
 > 0190).** No teste da 0189 o dono viu que a renegociação era gravada mas

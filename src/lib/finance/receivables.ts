@@ -59,6 +59,8 @@ export type Installment = {
   sourceId: string | null;
   /** Código do documento: PT-00001 (plano), VD-00001 (venda direta), RN-…. */
   sourceCode: string | null;
+  /** Renegociação que SUBSTITUIU esta cobrança (quando status = renegociada). */
+  renegotiatedById: string | null;
   /** Já esteve em atraso (sobrevive à renegociação — indicador 9.28). */
   wasOverdue: boolean;
 };

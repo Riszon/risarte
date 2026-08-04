@@ -43,6 +43,8 @@ import { savePaymentSchedule } from "../payment-schedule-actions";
 
 export type DirectSaleRow = {
   id: string;
+  /** VD-00001 — nasce no fechamento e amarra as cobranças (FIN2.2). */
+  code: string | null;
   clinicId: string;
   clinicName: string | null;
   clientId: string | null;
@@ -385,6 +387,12 @@ export function SaleItem({
       >
         <div className="min-w-0">
           <p className="flex items-center gap-2 font-medium">
+            {/* FIN2.2: o código da venda amarra o financeiro à venda. */}
+            {sale.code && (
+              <span className="rounded border border-border bg-muted/60 px-1 font-mono text-[10px] text-muted-foreground">
+                {sale.code}
+              </span>
+            )}
             {sale.clientName ?? "Cliente avulso"}
             <span
               className={cn(

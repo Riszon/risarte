@@ -55,6 +55,7 @@ type InstallmentRow = {
   negotiation_id: string | null;
   direct_sale_id: string | null;
   renegotiation_id: string | null;
+  renegotiated_by_id: string | null;
 };
 
 /**
@@ -123,7 +124,7 @@ export async function loadClientReceivables(
   const { data: instRows } = await supabase
     .from("payment_installments")
     .select(
-      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id"
+      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id"
     )
     .eq("client_id", clientId)
     .order("due_date")
@@ -163,6 +164,7 @@ export async function loadClientReceivables(
       codeById.get(
         r.renegotiation_id ?? r.direct_sale_id ?? r.negotiation_id ?? ""
       ) ?? null,
+    renegotiatedById: r.renegotiated_by_id,
     wasOverdue: r.was_overdue,
   }));
 

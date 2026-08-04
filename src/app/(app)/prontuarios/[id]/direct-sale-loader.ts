@@ -254,7 +254,7 @@ export async function loadClientDirectSales(
     supabase
       .from("direct_sales")
       .select(
-        "id, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_confirmed, payment_confirmed_by, cancelled, status, attendance_done_before, created_by, created_at, closed_at"
+        "id, code, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_confirmed, payment_confirmed_by, cancelled, status, attendance_done_before, created_by, created_at, closed_at"
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
@@ -367,6 +367,7 @@ export async function loadClientDirectSales(
 
   const sales: DirectSaleRow[] = (saleRows ?? []).map((s) => ({
     id: s.id as string,
+    code: (s.code as string | null) ?? null,
     clinicId: s.clinic_id as string,
     clinicName: null,
     clientId: s.client_id as string | null,

@@ -74,6 +74,8 @@ export type NegotiationOption = {
 
 export type NegotiationData = {
   id: string;
+  /** PT-00001 — nasce quando a venda fecha (FIN2.2). */
+  code: string | null;
   optionId: string;
   status: NegotiationStatus;
   adjustmentCents: number;
@@ -567,6 +569,12 @@ export function NegotiationPanel({
           <CardTitle className="flex items-center gap-1.5 text-base">
             <Handshake className="size-4" />
             Negociação
+            {/* FIN2.2: o código nasce no fechamento e amarra as cobranças. */}
+            {negotiation?.code && (
+              <span className="rounded border border-border bg-muted/60 px-1 font-mono text-[10px] font-normal text-muted-foreground">
+                {negotiation.code}
+              </span>
+            )}
           </CardTitle>
           <div className="flex items-center gap-1.5">
             {/* Histórico do plano — o Consultor e o Gerente entendem o caminho

@@ -390,6 +390,7 @@ describe("contas a receber", () => {
     origin: "negotiation",
     sourceId: null,
     sourceCode: null,
+    renegotiatedById: null,
     wasOverdue: false,
   };
 
@@ -746,6 +747,7 @@ describe("renegociação", () => {
     origin: "negotiation",
     sourceId: null,
     sourceCode: null,
+    renegotiatedById: null,
     wasOverdue: false,
   };
 

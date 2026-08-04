@@ -108,13 +108,14 @@ export async function loadNegotiationBlock(
       supabase
         .from("plan_negotiations")
         .select(
-          "id, option_id, status, adjustment_cents, payment_method, installments, partial_reason, client_is_decider, decider_notes, notes, rule_violations, rule_authorized, authorization_note, final_cents, down_payment_cents, plan_negotiation_items ( item_id, included )"
+          "id, code, option_id, status, adjustment_cents, payment_method, installments, partial_reason, client_is_decider, decider_notes, notes, rule_violations, rule_authorized, authorization_note, final_cents, down_payment_cents, plan_negotiation_items ( item_id, included )"
         )
         .eq("plan_id", planId)
         .limit(1)
         .returns<
           {
             id: string;
+            code: string | null;
             option_id: string;
             status: string;
             adjustment_cents: number;
@@ -229,6 +230,7 @@ export async function loadNegotiationBlock(
   const negotiation: NegotiationData | null = n
     ? {
         id: n.id,
+        code: (n.code as string | null) ?? null,
         optionId: n.option_id,
         status: n.status as NegotiationData["status"],
         adjustmentCents: n.adjustment_cents,

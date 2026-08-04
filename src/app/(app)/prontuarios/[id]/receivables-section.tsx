@@ -795,6 +795,92 @@ export function ReceivablesSection({
                   {reneg.reason && (
                     <p className="text-xs">Motivo: {reneg.reason}</p>
                   )}
+
+                  {/* Quais cobranças entraram — e de qual venda vieram. */}
+                  {(() => {
+                    const antigas = allViews.filter(
+                      (v) => v.renegotiatedById === reneg.id
+                    );
+                    if (antigas.length === 0) return null;
+                    return (
+                      <div className="rounded-lg border bg-muted/30 p-2">
+                        <p className="mb-1 text-[11px] font-semibold">
+                          Cobranças substituídas ({antigas.length})
+                        </p>
+                        <ul className="space-y-0.5 text-[11px]">
+                          {antigas.map((v) => (
+                            <li
+                              key={v.id}
+                              className="flex flex-wrap items-center justify-between gap-2"
+                            >
+                              <span>
+                                {v.kind === "entrada"
+                                  ? "Entrada"
+                                  : `Parcela ${v.seq}`}{" "}
+                                · venc. {fmtDate(v.dueDate)}
+                                {v.sourceCode && (
+                                  <span className="ml-1 font-mono text-muted-foreground">
+                                    {v.sourceCode}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="tabular-nums">
+                                {formatBRL(v.amountCents)}
+                                {v.paidAmountCents > 0 && (
+                                  <span className="text-muted-foreground">
+                                    {" "}
+                                    (pago {formatBRL(v.paidAmountCents)})
+                                  </span>
+                                )}
+                              </span>
+                            </li>
+                          ))}
+                          <li className="flex justify-between border-t pt-0.5 font-medium">
+                            <span>Valor original somado</span>
+                            <span className="tabular-nums">
+                              {formatBRL(
+                                antigas.reduce((s, v) => s + v.amountCents, 0)
+                              )}
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                    );
+                  })()}
+
+                  {/* E as cobranças novas que nasceram dela. */}
+                  {(() => {
+                    const novas = allViews.filter(
+                      (v) => v.sourceId === reneg.id
+                    );
+                    if (novas.length === 0) return null;
+                    return (
+                      <div className="rounded-lg border bg-muted/30 p-2">
+                        <p className="mb-1 text-[11px] font-semibold">
+                          Novas cobranças ({novas.length})
+                        </p>
+                        <ul className="space-y-0.5 text-[11px]">
+                          {novas.map((v) => (
+                            <li
+                              key={v.id}
+                              className="flex flex-wrap items-center justify-between gap-2"
+                            >
+                              <span>
+                                {v.kind === "entrada"
+                                  ? "Entrada"
+                                  : `Parcela ${v.seq}`}{" "}
+                                · venc. {fmtDate(v.dueDate)} ·{" "}
+                                {INSTALLMENT_STATUS_LABELS[v.status]}
+                              </span>
+                              <span className="tabular-nums">
+                                {formatBRL(v.amountCents)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             }
