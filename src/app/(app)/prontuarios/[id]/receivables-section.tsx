@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Check,
+  Handshake,
   History,
   RotateCcw,
   Wallet,
@@ -43,8 +44,17 @@ import {
   type ReceivableFilter,
 } from "@/lib/finance/receivables";
 import { lateLabel } from "@/lib/finance/late-fees";
-import type { ReceiptRow } from "./receivables-loader";
-import { registerReceipt, reverseReceipt } from "./receivables-actions";
+import {
+  canRenegotiateInstallment,
+  RENEGOTIATION_STATUS_LABELS,
+} from "@/lib/finance/renegotiation";
+import type { ReceiptRow, RenegotiationRow } from "./receivables-loader";
+import {
+  authorizeRenegotiation,
+  registerReceipt,
+  reverseReceipt,
+} from "./receivables-actions";
+import { RenegotiationDialog } from "./renegotiation-dialog";
 
 const STATUS_STYLE: Record<InstallmentStatus, string> = {
   em_aberto: "border-border bg-muted text-muted-foreground",
@@ -88,20 +98,34 @@ export function ReceivablesSection({
   clientId,
   installments,
   receipts,
+  renegotiations,
+  maxDiscountPercent,
   today,
   canReceive,
   canReverse,
+  canRenegotiate,
+  canAuthorize,
 }: {
   clientId: string;
   installments: Installment[];
   receipts: ReceiptRow[];
+  renegotiations: RenegotiationRow[];
+  maxDiscountPercent: number | null;
   today: string;
   canReceive: boolean;
   canReverse: boolean;
+  canRenegotiate: boolean;
+  /** Gerente da unidade / Admin Master — quem libera desconto acima do teto. */
+  canAuthorize: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState<ReceivableFilter>("todas");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [renegotiating, setRenegotiating] = useState(false);
+  const [decisionId, setDecisionId] = useState<string | null>(null);
+  const [decisionApprove, setDecisionApprove] = useState(true);
+  const [decisionNote, setDecisionNote] = useState("");
   const [preset, setPreset] = useState<PeriodPreset>("tudo");
   const [customStart, setCustomStart] = useState(today.slice(0, 8) + "01");
   const [customEnd, setCustomEnd] = useState(today);
@@ -190,6 +214,41 @@ export function ReceivablesSection({
             : "Recebimento parcial registrado."
         );
         setPayingId(null);
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  const selectedViews = allViews.filter(
+    (v) => picked.has(v.id) && canRenegotiateInstallment(v)
+  );
+
+  function togglePick(id: string) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function decide() {
+    if (!decisionId) return;
+    startTransition(async () => {
+      const r = await authorizeRenegotiation({
+        clientId,
+        renegotiationId: decisionId,
+        approve: decisionApprove,
+        note: decisionNote,
+      });
+      if (r.ok) {
+        toast.success(
+          decisionApprove
+            ? "Renegociação autorizada e aplicada."
+            : "Renegociação recusada."
+        );
+        setDecisionId(null);
+        setDecisionNote("");
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -360,6 +419,43 @@ export function ReceivablesSection({
               );
             })}
           </div>
+          {/* FIN2: barra da renegociação — aparece ao marcar cobranças. */}
+          {canRenegotiate && selectedViews.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 p-2 text-xs">
+              <span>
+                <strong>{selectedViews.length}</strong> cobrança
+                {selectedViews.length === 1 ? "" : "s"} marcada
+                {selectedViews.length === 1 ? "" : "s"} ·{" "}
+                <strong className="tabular-nums">
+                  {formatBRL(
+                    selectedViews.reduce(
+                      (s, v) => s + v.updatedBalanceCents,
+                      0
+                    )
+                  )}
+                </strong>{" "}
+                devidos hoje
+              </span>
+              <span className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-[11px]"
+                  onClick={() => setPicked(new Set())}
+                >
+                  Limpar
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-[11px]"
+                  onClick={() => setRenegotiating(true)}
+                >
+                  <Handshake className="mr-1 size-3.5" />
+                  Renegociar
+                </Button>
+              </span>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-1.5">
           {shown.length === 0 && (
@@ -378,6 +474,17 @@ export function ReceivablesSection({
                 )}
               >
                 <div className="flex flex-wrap items-center gap-2">
+                  {canRenegotiate && canRenegotiateInstallment(v) ? (
+                    <input
+                      type="checkbox"
+                      className="size-3.5 shrink-0 accent-primary"
+                      checked={picked.has(v.id)}
+                      onChange={() => togglePick(v.id)}
+                      aria-label={`Marcar cobrança ${v.seq} para renegociar`}
+                    />
+                  ) : (
+                    canRenegotiate && <span className="size-3.5 shrink-0" />
+                  )}
                   <span className="w-6 text-center text-xs text-muted-foreground">
                     {v.seq}
                   </span>
@@ -387,7 +494,11 @@ export function ReceivablesSection({
                       {fmtDate(v.dueDate)}
                     </span>
                     <span className="ml-2 text-xs text-muted-foreground">
-                      {v.origin === "direct_sale" ? "Venda direta" : "Negociação"}
+                      {v.origin === "direct_sale"
+                        ? "Venda direta"
+                        : v.origin === "renegotiation"
+                          ? "Renegociação"
+                          : "Negociação"}
                       {v.paymentMethod && ` · ${methodLabel(v.paymentMethod)}`}
                     </span>
                     {v.isLate && (
@@ -544,6 +655,150 @@ export function ReceivablesSection({
           })}
         </CardContent>
       </Card>
+
+      {/* FIN2: renegociações — o documento que explica de onde veio o valor. */}
+      {renegotiations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Handshake className="size-4 text-primary" />
+              Renegociações
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {renegotiations.map((r) => (
+              <div
+                key={r.id}
+                className={cn(
+                  "rounded-lg border p-2.5 text-xs",
+                  r.status === "aguardando_autorizacao" &&
+                    "border-amber-300 bg-amber-50",
+                  r.status === "recusada" && "opacity-60"
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">
+                    {new Date(r.createdAt).toLocaleDateString("pt-BR")}
+                    {r.byName && ` · ${r.byName}`}
+                  </span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {RENEGOTIATION_STATUS_LABELS[r.status]}
+                  </Badge>
+                </div>
+                <p className="mt-1 tabular-nums">
+                  Dívida apurada {formatBRL(r.originalTotalCents)} → novo
+                  parcelamento {formatBRL(r.newTotalCents)}
+                  {r.discountCents > 0 && (
+                    <span className="text-destructive">
+                      {" "}
+                      · desconto {formatBRL(r.discountCents)} (
+                      {r.discountPercent}%)
+                    </span>
+                  )}
+                  {r.discountCents < 0 && (
+                    <span> · acréscimo {formatBRL(-r.discountCents)}</span>
+                  )}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Composição: parcelas{" "}
+                  {formatBRL(r.originalPrincipalCents)}
+                  {r.originalBenefitCents > 0 &&
+                    ` + benefício perdido ${formatBRL(r.originalBenefitCents)}`}
+                  {r.originalFeeCents > 0 &&
+                    ` + multa ${formatBRL(r.originalFeeCents)}`}
+                  {r.originalInterestCents > 0 &&
+                    ` + juros ${formatBRL(r.originalInterestCents)}`}
+                </p>
+                {r.reason && (
+                  <p className="mt-0.5 text-[11px]">Motivo: {r.reason}</p>
+                )}
+                {r.authorizedByName && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Decisão de {r.authorizedByName}
+                    {r.authorizationNote && ` — ${r.authorizationNote}`}
+                  </p>
+                )}
+                {r.status === "aguardando_autorizacao" && canAuthorize && (
+                  <div className="mt-2 flex gap-1">
+                    <Button
+                      size="sm"
+                      className="h-7 text-[11px]"
+                      onClick={() => {
+                        setDecisionId(r.id);
+                        setDecisionApprove(true);
+                        setDecisionNote("");
+                      }}
+                    >
+                      Autorizar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px]"
+                      onClick={() => {
+                        setDecisionId(r.id);
+                        setDecisionApprove(false);
+                        setDecisionNote("");
+                      }}
+                    >
+                      Recusar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* FIN2: montar a renegociação. */}
+      {canRenegotiate && (
+        <RenegotiationDialog
+          open={renegotiating}
+          onOpenChange={(o) => {
+            setRenegotiating(o);
+            if (!o) setPicked(new Set());
+          }}
+          clientId={clientId}
+          selected={selectedViews}
+          today={today}
+          maxDiscountPercent={maxDiscountPercent}
+          isManager={canAuthorize}
+        />
+      )}
+
+      {/* FIN2: decisão do Gerente sobre um desconto. */}
+      <Dialog
+        open={decisionId !== null}
+        onOpenChange={(o) => !o && setDecisionId(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {decisionApprove ? "Autorizar renegociação" : "Recusar renegociação"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {decisionApprove
+              ? "As cobranças antigas passam a valer como renegociadas e as novas entram na ficha."
+              : "Nada muda nas cobranças. A renegociação fica registrada como recusada."}
+          </p>
+          <textarea
+            value={decisionNote}
+            onChange={(e) => setDecisionNote(e.target.value)}
+            placeholder="Observação (opcional)"
+            className="min-h-16 w-full rounded-lg border border-input bg-transparent p-2 text-sm"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDecisionId(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={isPending} onClick={decide}>
+              {decisionApprove ? "Autorizar" : "Recusar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Baixa (total ou parcial). */}
       <Dialog

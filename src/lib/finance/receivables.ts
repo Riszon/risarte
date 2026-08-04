@@ -53,8 +53,8 @@ export type Installment = {
   paymentMethod: string | null;
   /** Taxas CONGELADAS quando a parcela nasceu. */
   terms: LateFeeTerms;
-  /** De onde veio: negociação do consultor ou venda direta. */
-  origin: "negotiation" | "direct_sale";
+  /** De onde veio: negociação do consultor, venda direta ou renegociação. */
+  origin: "negotiation" | "direct_sale" | "renegotiation";
   /** Já esteve em atraso (sobrevive à renegociação — indicador 9.28). */
   wasOverdue: boolean;
 };

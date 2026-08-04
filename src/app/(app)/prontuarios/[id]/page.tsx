@@ -544,9 +544,23 @@ export default async function ClientDetailPage(
     financeRoles.some((r) => ["unit_manager", "receptionist"].includes(r));
   const canReverseReceipt =
     isFinanceStaff || financeRoles.includes("unit_manager");
+  // FIN2: renegociar é do Gerente, do Financeiro da Franqueadora e do Admin;
+  // autorizar desconto acima do teto é só do Gerente/Admin.
+  const canRenegotiate =
+    isFinanceStaff || financeRoles.includes("unit_manager");
+  const canAuthorizeRenegotiation =
+    session.isAdminMaster || financeRoles.includes("unit_manager");
   const receivables = canSeeReceivables
-    ? await loadClientReceivables(client.id)
-    : { installments: [], receipts: [], receivedInPeriodCents: 0, periodStart: "", periodEnd: "" };
+    ? await loadClientReceivables(client.id, client.clinic_id)
+    : {
+        installments: [],
+        receipts: [],
+        renegotiations: [],
+        maxDiscountPercent: null,
+        receivedInPeriodCents: 0,
+        periodStart: "",
+        periodEnd: "",
+      };
   const financeToday = new Date().toISOString().slice(0, 10);
   // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
   const lateInstallmentCount = receivables.installments.filter(
@@ -3187,9 +3201,13 @@ export default async function ClientDetailPage(
               clientId={client.id}
               installments={receivables.installments}
               receipts={receivables.receipts}
+              renegotiations={receivables.renegotiations}
+              maxDiscountPercent={receivables.maxDiscountPercent}
               today={financeToday}
               canReceive={canReceivePayment}
               canReverse={canReverseReceipt}
+              canRenegotiate={canRenegotiate}
+              canAuthorize={canAuthorizeRenegotiation}
             />
           </TabPanel>
         )}

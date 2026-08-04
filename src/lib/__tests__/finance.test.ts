@@ -31,6 +31,12 @@ import {
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
+  canRenegotiateInstallment,
+  renegotiationBase,
+  renegotiationErrors,
+  renegotiationOutcome,
+} from "@/lib/finance/renegotiation";
+import {
   accountLevel,
   buildCostCenterTree,
   canBeParentOfUnitCenter,
@@ -711,5 +717,151 @@ describe("contas a receber", () => {
     expect(
       receiptErrors({ amountCents: 1000, payoffCents: 50000, receivedAt: "2026-07-30", today: "2026-07-31" })
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN2 — renegociação
+// ---------------------------------------------------------------------------
+describe("renegociação", () => {
+  const rede = { lateFeePercent: 2, monthlyInterestPercent: 1, graceDays: 0 };
+  const parcela: Installment = {
+    id: "r1",
+    seq: 1,
+    kind: "parcela",
+    dueDate: "2026-07-10",
+    amountCents: 50000,
+    benefitDiscountCents: 0,
+    paidAmountCents: 0,
+    paidBenefitCents: 0,
+    paidFeeCents: 0,
+    paidInterestCents: 0,
+    status: "em_aberto",
+    paymentMethod: "boleto",
+    terms: rede,
+    origin: "negotiation",
+    wasOverdue: false,
+  };
+
+  it("a dívida apurada é TUDO o que falta hoje", () => {
+    const views = [
+      // Vencida há 30 dias, com benefício a perder.
+      viewInstallment(
+        { ...parcela, benefitDiscountCents: 5000 },
+        "2026-08-09"
+      ),
+      // A vencer, intacta.
+      viewInstallment(
+        { ...parcela, id: "r2", seq: 2, dueDate: "2026-09-10" },
+        "2026-08-09"
+      ),
+    ];
+    const b = renegotiationBase(views);
+    expect(b.count).toBe(2);
+    expect(b.lateCount).toBe(1);
+    expect(b.principalCents).toBe(100000);
+    expect(b.benefitCents).toBe(5000);
+    // Multa e juros sobre 550,00 (parcela + benefício perdido).
+    expect(b.lateFeeCents).toBe(1100);
+    expect(b.interestCents).toBe(550);
+    expect(b.totalCents).toBe(106650);
+  });
+
+  it("cobrança paga, cancelada ou renegociada não entra na apuração", () => {
+    for (const status of ["paga", "cancelada", "renegociada"] as const) {
+      const v = viewInstallment({ ...parcela, status }, "2026-08-09");
+      expect(canRenegotiateInstallment(v)).toBe(false);
+      expect(renegotiationBase([v]).count).toBe(0);
+    }
+    const aberta = viewInstallment(parcela, "2026-08-09");
+    const parcial = viewInstallment(
+      { ...parcela, status: "parcial", paidAmountCents: 10000 },
+      "2026-08-09"
+    );
+    expect(canRenegotiateInstallment(aberta)).toBe(true);
+    expect(canRenegotiateInstallment(parcial)).toBe(true);
+  });
+
+  it("desconto dentro do teto: o Gerente aplica direto", () => {
+    const o = renegotiationOutcome({
+      originalCents: 100000,
+      newCents: 90000,
+      maxDiscountPercent: 15,
+      isManager: true,
+    });
+    expect(o.discountCents).toBe(10000);
+    expect(o.discountPercent).toBe(10);
+    expect(o.needsAuthorization).toBe(false);
+  });
+
+  it("desconto acima do teto exige autorização, mesmo do Gerente", () => {
+    const o = renegotiationOutcome({
+      originalCents: 100000,
+      newCents: 70000,
+      maxDiscountPercent: 15,
+      isManager: true,
+    });
+    expect(o.discountPercent).toBe(30);
+    expect(o.needsAuthorization).toBe(true);
+  });
+
+  it("quem não é Gerente não perdoa sozinho — qualquer desconto vai a autorização", () => {
+    const o = renegotiationOutcome({
+      originalCents: 100000,
+      newCents: 99000,
+      maxDiscountPercent: 15,
+      isManager: false,
+    });
+    expect(o.discountPercent).toBe(1);
+    expect(o.needsAuthorization).toBe(true);
+    // Sem desconto nenhum, o Financeiro aplica direto.
+    expect(
+      renegotiationOutcome({
+        originalCents: 100000,
+        newCents: 100000,
+        maxDiscountPercent: 15,
+        isManager: false,
+      }).needsAuthorization
+    ).toBe(false);
+  });
+
+  it("parcelar por mais que a dívida é ACRÉSCIMO, não desconto", () => {
+    const o = renegotiationOutcome({
+      originalCents: 100000,
+      newCents: 112000,
+      maxDiscountPercent: 15,
+      isManager: false,
+    });
+    expect(o.discountCents).toBe(-12000);
+    expect(o.discountPercent).toBe(0);
+    expect(o.needsAuthorization).toBe(false);
+  });
+
+  it("recusa renegociação sem cobrança escolhida ou sem parcelamento", () => {
+    expect(
+      renegotiationErrors({
+        selectedCount: 0,
+        originalCents: 0,
+        newCents: 0,
+        scheduleErrors: [],
+      })
+    ).toContain("Escolha ao menos uma cobrança para renegociar.");
+    expect(
+      renegotiationErrors({
+        selectedCount: 1,
+        originalCents: 50000,
+        newCents: 0,
+        scheduleErrors: [],
+      })
+    ).toContain("O novo parcelamento precisa somar mais que zero.");
+    // Erros do editor de cobranças vêm junto.
+    expect(
+      renegotiationErrors({
+        selectedCount: 1,
+        originalCents: 50000,
+        newCents: 50000,
+        scheduleErrors: ["Só pode haver uma entrada."],
+      })
+    ).toEqual(["Só pode haver uma entrada."]);
   });
 });

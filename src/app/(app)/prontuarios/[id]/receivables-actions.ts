@@ -74,6 +74,117 @@ export async function registerReceipt(input: {
   return { ok: true };
 }
 
+/**
+ * FIN2 — renegocia as cobranças escolhidas. O banco apura a dívida (o que
+ * falta + benefício perdido + multa + juros), mede o desconto contra o teto da
+ * unidade e, se preciso, deixa a renegociação **aguardando autorização** do
+ * Gerente em vez de aplicar.
+ */
+export async function saveRenegotiation(input: {
+  clientId: string;
+  installmentIds: string[];
+  entries: {
+    kind: "entrada" | "parcela";
+    due_date: string;
+    amount_cents: number;
+    payment_method?: string | null;
+  }[];
+  reason: string;
+}): Promise<ReceivableResult & { pending?: boolean }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("save_renegotiation", {
+    p_client_id: input.clientId,
+    p_installment_ids: input.installmentIds,
+    p_entries: input.entries,
+    p_reason: input.reason || null,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NO_INSTALLMENTS")) {
+      return { ok: false, error: "Escolha ao menos uma cobrança." };
+    }
+    if (m.includes("NO_ENTRIES")) {
+      return { ok: false, error: "Monte o novo parcelamento antes de salvar." };
+    }
+    if (m.includes("INSTALLMENT_NOT_OPEN")) {
+      return {
+        ok: false,
+        error:
+          "Alguma cobrança escolhida já foi paga, cancelada ou renegociada. Recarregue a tela.",
+      };
+    }
+    if (m.includes("CLIENT_MISMATCH") || m.includes("CLINIC_MISMATCH")) {
+      return {
+        ok: false,
+        error: "As cobranças precisam ser do mesmo cliente e da mesma unidade.",
+      };
+    }
+    if (m.includes("MULTIPLE_DOWN_PAYMENTS")) {
+      return { ok: false, error: "Só pode haver uma entrada." };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error:
+          "Renegociar é do Gerente da unidade, do Financeiro da Franqueadora ou do Admin Master.",
+      };
+    }
+    console.error("save_renegotiation failed:", m);
+    return { ok: false, error: "Não foi possível salvar a renegociação." };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "payment_renegotiation",
+    entityId: typeof data === "string" ? data : input.clientId,
+  });
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  revalidatePath("/financeiro");
+  return { ok: true };
+}
+
+/** FIN2 — o Gerente autoriza (ou recusa) a renegociação com desconto. */
+export async function authorizeRenegotiation(input: {
+  clientId: string;
+  renegotiationId: string;
+  approve: boolean;
+  note: string;
+}): Promise<ReceivableResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("authorize_renegotiation", {
+    p_id: input.renegotiationId,
+    p_approve: input.approve,
+    p_note: input.note || null,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NOT_PENDING")) {
+      return { ok: false, error: "Esta renegociação já foi decidida." };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Só o Gerente da unidade ou o Admin Master autoriza.",
+      };
+    }
+    console.error("authorize_renegotiation failed:", m);
+    return { ok: false, error: "Não foi possível registrar a decisão." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "payment_renegotiation",
+    entityId: input.renegotiationId,
+  });
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  revalidatePath("/financeiro");
+  return { ok: true };
+}
+
 /** FIN1 — estorna uma baixa (contra-lançamento; a original fica no histórico). */
 export async function reverseReceipt(input: {
   clientId: string;

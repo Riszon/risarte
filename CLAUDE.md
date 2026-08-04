@@ -369,6 +369,14 @@ equilíbrio e consolidação da rede não fecham.
 - **Não existe desconto na baixa.** Receber menos que o total devido é baixa
   **parcial**; perdoar diferença é ato de **renegociação** — Gerente da unidade,
   Financeiro da Franqueadora (com autorização do Gerente) ou Admin Master.
+- **Renegociação (FIN2):** a dívida nova nasce com **tudo** o que é devido hoje
+  (o que falta + benefício perdido + multa + juros). O perdão é **desconto**,
+  tem o **mesmo teto da regra comercial da unidade** e vira lançamento em
+  **1.9.02**. Acima do teto, ou qualquer desconto de quem não é Gerente/Admin,
+  fica **aguardando autorização** e as cobranças não mudam antes disso. As
+  cobranças novas **não geram lançamento de competência** — a receita do
+  serviço já foi reconhecida pelas originais; só multa/juros (4.1.01),
+  benefício incorporado (1.1.01) e desconto (1.9.02) entram no razão.
 - **Renegociação substitui** as parcelas antigas (viram `renegotiated`, com a
   marca de que estiveram em atraso — senão renegociar zeraria a inadimplência
   e o indicador 9.28 perderia sentido).
@@ -389,8 +397,8 @@ equilíbrio e consolidação da rede não fecham.
 **Papel novo:** `finance_franchisor` (Financeiro da Franqueadora), com escopo de
 unidades. Auditor/Controladoria somente-leitura está previsto, não implementado.
 
-**Roadmap:** FIN0 fundação ✅ → FIN1 aba do cliente/contas a receber → FIN2
-renegociação → FIN3 contas a pagar → FIN4 conciliação OFX + adquirente →
+**Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
+renegociação ✅ → FIN3 contas a pagar → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC
 → FIN7 orçado×realizado e alertas → FIN8 franqueadora/royalties/consolidação.
 **Uma fase por vez, com plano aprovado antes do código.**

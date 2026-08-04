@@ -1,6 +1,40 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.168.0** · Última migração: **0188**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.169.0** · Última migração: **0189**_
+
+> **FINANCEIRO — FIN2: RENEGOCIAÇÃO ✅ (v0.169.0, migração 0189).** Na aba
+> Financeiro da ficha, marcar as cobranças → **Renegociar**. A tela apura a
+> dívida de hoje (o que falta das parcelas + benefício perdido + multa + juros),
+> monta o novo parcelamento no **mesmo editor de entrada + parcelas** da venda,
+> e mostra o que a diferença significa: **desconto** ou **acréscimo**.
+>
+> **As decisões travadas (dono, 04/08/2026):** a dívida nova nasce com **tudo**
+> o que é devido — nada é perdoado por acidente; o que for perdoado é
+> **desconto**, tem o **mesmo teto da regra comercial da unidade** e vira
+> lançamento em **1.9.02 (Descontos concedidos)**, com motivo e autor. Acima do
+> teto — ou qualquer desconto do **Financeiro da Franqueadora** — a
+> renegociação fica **aguardando autorização do Gerente** e as cobranças só
+> mudam quando ele aprovar (notificação nos dois sentidos). Recepção não
+> renegocia.
+>
+> **Nada se apaga:** as antigas viram `renegociada` e continuam na ficha,
+> ligadas por `renegotiated_by_id`; as novas nascem com `renegotiation_id`. A
+> marca de que a parcela **esteve em atraso sobrevive** — senão renegociar
+> zeraria a inadimplência da unidade.
+>
+> **Sem contar receita duas vezes:** as cobranças novas **não** geram
+> lançamento de competência (a receita do serviço já foi reconhecida pelas
+> originais). Só o que é novo entra no razão: multa e juros incorporados
+> (4.1.01), benefício perdido incorporado (1.1.01) e o desconto (1.9.02).
+>
+> **Trava nova de segurança:** `save_payment_schedule` passou a **recusar**
+> reescrever o plano de cobrança de uma venda que já tem baixa, pagamento ou
+> renegociação — antes, editar a venda apagava as parcelas e levava junto o
+> histórico do dinheiro (cascade).
+>
+> Regras puras em `src/lib/finance/renegotiation.ts` com **251 testes**.
+>
+> **Próximo:** FIN3 — contas a pagar.
 
 > **FIN1.1 — atraso na lista de Prontuários (v0.168.0, sem migração):** o selo
 > **"N cobranças em atraso"** passou a aparecer na linha do cliente, e a barra
