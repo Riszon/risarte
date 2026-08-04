@@ -1,6 +1,12 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.167.0** · Última migração: **0188**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.168.0** · Última migração: **0188**_
+
+> **FIN1.1 — atraso na lista de Prontuários (v0.168.0, sem migração):** o selo
+> **"N cobranças em atraso"** passou a aparecer na linha do cliente, e a barra
+> de filtros ganhou **"Somente com parcela em atraso"** — a fila de cobrança da
+> recepção. Só quem enxerga o financeiro do cliente (Recepção, Gerente,
+> Franqueado, Financeiro da Franqueadora, Admin Master) vê o selo e o filtro.
 
 > **FIN1.1 — ajustes do teste (v0.167.0, sem migração):** o card **Recebido**
 > passou a dizer o que tem dentro (`R$ 510,00 de parcelas + R$ 4,27 de multa e

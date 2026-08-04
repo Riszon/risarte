@@ -39,6 +39,7 @@ import { ShareByCpf } from "./share-by-cpf";
 import { BirthdayWhatsApp } from "./birthday-whatsapp";
 import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
+import { daysLate } from "@/lib/finance/late-fees";
 
 export const metadata: Metadata = { title: "Prontuários" };
 
@@ -127,6 +128,8 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     searchParams.programa === "empresarial" || searchParams.programa === "ppr"
       ? searchParams.programa
       : "";
+  // FIN1.1: ?cobranca=atraso — só quem tem parcela vencida.
+  const overdueFilter = searchParams.cobranca === "atraso";
   const tab: Tab =
     searchParams.aba === "aniversariantes" ||
     searchParams.aba === "transferidos" ||
@@ -194,9 +197,14 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       ilike: (col: string, val: string) => T;
       is: (col: string, val: boolean) => T;
       not: (col: string, op: string, val: null) => T;
+      in: (col: string, vals: string[]) => T;
     },
   >(request: T): T {
     let r = request;
+    // FIN1.1: fila de cobrança — só clientes com parcela vencida hoje.
+    if (overdueFilter) {
+      r = r.in("id", overdueIds.length > 0 ? overdueIds : [NO_MATCH_ID]);
+    }
     // I6/J8: filtrar por programa do cliente.
     if (programFilter === "empresarial")
       r = r.not("empresarial_company_id", "is", null);
@@ -215,6 +223,45 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
   }
 
   const supabase = await createClient();
+
+  /**
+   * FIN1.1 — quem está com cobrança vencida. O dono pediu o aviso na lista:
+   * a recepção precisa ver o atraso ANTES de abrir a ficha. Só aparece para
+   * quem enxerga o financeiro do cliente (mesma regra da aba Financeiro).
+   */
+  const canSeeFinance =
+    session.isAdminMaster ||
+    Object.values(session.rolesByClinic).some((r) =>
+      r.includes("finance_franchisor")
+    ) ||
+    fRoles.some((r) =>
+      ["unit_manager", "receptionist", "franchisee"].includes(r)
+    );
+  const overdueByClient = new Map<string, number>();
+  if (canSeeFinance) {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    let q = supabase
+      .from("payment_installments")
+      .select("client_id, due_date, grace_days")
+      .in("status", ["em_aberto", "parcial"])
+      .lte("due_date", todayIso)
+      .limit(2000);
+    const scope = isFranchisor ? clinicFilter : clinicId;
+    if (scope) q = q.eq("clinic_id", scope);
+    const { data: overdueRows } = await q.returns<
+      { client_id: string | null; due_date: string; grace_days: number | null }[]
+    >();
+    for (const row of overdueRows ?? []) {
+      // A carência é a congelada na parcela (mesma conta da ficha).
+      if (!row.client_id) continue;
+      if (daysLate(row.due_date, todayIso, row.grace_days ?? 0) <= 0) continue;
+      overdueByClient.set(
+        row.client_id,
+        (overdueByClient.get(row.client_id) ?? 0) + 1
+      );
+    }
+  }
+  const overdueIds = [...overdueByClient.keys()];
 
   let clients: ClientRow[] = [];
   let transferred: TransferredRow[] = [];
@@ -633,6 +680,17 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
               <option value="empresarial">Somente Risarte Empresarial</option>
               <option value="ppr">Somente PPR+</option>
             </select>
+            {/* FIN1.1: a fila de cobrança da recepção. */}
+            {canSeeFinance && (
+              <select
+                name="cobranca"
+                defaultValue={overdueFilter ? "atraso" : ""}
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Cobranças (todas)</option>
+                <option value="atraso">Somente com parcela em atraso</option>
+              </select>
+            )}
             <Button type="submit" variant="outline">
               Buscar
             </Button>
@@ -733,6 +791,19 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                               ? ` ${pprPlanByMembership.get(client.ppr_membership_id)}`
                               : ""}
                             {client.ppr_active === false && " (suspenso)"}
+                          </Badge>
+                        )}
+                        {/* FIN1.1: cobrança vencida aparece na lista, para a
+                            recepção ver antes de abrir a ficha. */}
+                        {(overdueByClient.get(client.id) ?? 0) > 0 && (
+                          <Badge
+                            variant="destructive"
+                            className="shrink-0 text-[10px]"
+                            title="Veja a aba Financeiro da ficha"
+                          >
+                            {overdueByClient.get(client.id) === 1
+                              ? "1 cobrança em atraso"
+                              : `${overdueByClient.get(client.id)} cobranças em atraso`}
                           </Badge>
                         )}
                         {/* I5: fila do primeiro agendamento da SDR. */}
