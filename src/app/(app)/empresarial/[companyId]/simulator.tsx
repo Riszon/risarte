@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { formatBRL } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { AdhesionPricing } from "@/lib/empresarial/pricing";
 import { removeOverride } from "../configuracoes/actions";
 

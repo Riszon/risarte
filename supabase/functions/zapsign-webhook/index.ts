@@ -6,8 +6,15 @@
 // SEGREDOS: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ZAPSIGN_WEBHOOK_TOKEN.
 // Na ZapSign: cadastre a URL da função como webhook e informe o token.
 //
-// deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/** Só o que usamos do corpo do webhook da ZapSign. */
+type ZapsignWebhookBody = {
+  token?: string;
+  event_type?: string;
+  status?: string;
+  doc?: { token?: string };
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -18,7 +25,7 @@ Deno.serve(async (req: Request) => {
     if (got !== expected) return new Response("Unauthorized", { status: 401 });
   }
 
-  let body: any;
+  let body: ZapsignWebhookBody;
   try {
     body = await req.json();
   } catch {

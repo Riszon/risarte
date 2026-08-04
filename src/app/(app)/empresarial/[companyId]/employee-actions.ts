@@ -8,11 +8,7 @@ import { formatCpf, formatPhone } from "@/lib/masks";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
-import {
-  DEPENDENT_PLANS,
-  LEFT_REASONS,
-  RELATIONSHIPS,
-} from "@/lib/empresarial/constants";
+import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
 export type ActionResult = { ok: boolean; error?: string };
 

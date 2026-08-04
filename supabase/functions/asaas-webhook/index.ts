@@ -9,8 +9,17 @@
 //   ASAAS_WEBHOOK_TOKEN                        (defina o mesmo no painel do ASAAS)
 // No ASAAS: cadastre a URL da função como webhook de pagamentos e informe o token.
 //
-// deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/** Só o que usamos do corpo do webhook do ASAAS. */
+type AsaasWebhookBody = {
+  id?: string;
+  event?: string;
+  payment?: {
+    id?: string;
+    externalReference?: string;
+  };
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -22,7 +31,7 @@ Deno.serve(async (req: Request) => {
     if (got !== expected) return new Response("Unauthorized", { status: 401 });
   }
 
-  let body: any;
+  let body: AsaasWebhookBody;
   try {
     body = await req.json();
   } catch {
@@ -35,7 +44,7 @@ Deno.serve(async (req: Request) => {
     { db: { schema: "empresarial" } }
   );
 
-  const eventId: string = body?.id ?? body?.event?.id ?? crypto.randomUUID();
+  const eventId: string = body?.id ?? crypto.randomUUID();
   const eventType: string = body?.event ?? "UNKNOWN";
 
   // Idempotência: se já processamos este evento, para aqui.

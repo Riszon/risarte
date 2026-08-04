@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Download, MessageCircle, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -88,22 +88,14 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
   const [askPrint, setAskPrint] = useState(false);
   const [askWhats, setAskWhats] = useState(false);
   const [phone, setPhone] = useState("");
-  const [pendingPrint, setPendingPrint] = useState(false);
-
-  // Imprime só depois que as opções escolhidas já estão na tela.
-  useEffect(() => {
-    if (!pendingPrint) return;
-    setPendingPrint(false);
-    const timer = setTimeout(() => window.print(), 80);
-    return () => clearTimeout(timer);
-  }, [pendingPrint]);
 
   const companyLabel = c.tradeName || c.legalName;
 
   function confirmPrint(chosen: Options) {
     setOpt(chosen);
     setAskPrint(false);
-    setPendingPrint(true);
+    // Espera o React aplicar as opções na tela antes de abrir a impressão.
+    setTimeout(() => window.print(), 120);
   }
 
   function sendWhatsapp() {
@@ -619,6 +611,7 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
 
       {/* Pop-up: o que entra no PDF que será enviado */}
       <PrintOptionsDialog
+        key={askPrint ? "print-open" : "print-closed"}
         open={askPrint}
         current={opt}
         onCancel={() => setAskPrint(false)}
@@ -685,12 +678,9 @@ function PrintOptionsDialog({
   onCancel: () => void;
   onConfirm: (o: Options) => void;
 }) {
+  // Parte das opções que estão na tela. O pai remonta este componente a cada
+  // abertura (prop `key`), então não precisa sincronizar por efeito.
   const [local, setLocal] = useState<Options>(current);
-
-  // Reabrir o pop-up parte das opções que estão na tela.
-  useEffect(() => {
-    if (open) setLocal(current);
-  }, [open, current]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
