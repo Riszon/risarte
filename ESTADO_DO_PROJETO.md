@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.166.0** · Última migração: **0188**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.167.0** · Última migração: **0188**_
+
+> **FIN1.1 — ajustes do teste (v0.167.0, sem migração):** o card **Recebido**
+> passou a dizer o que tem dentro (`R$ 510,00 de parcelas + R$ 4,27 de multa e
+> juros`) — o número sozinho parecia faturamento; o **atraso virou selo no
+> cabeçalho da ficha** ("1 cobrança em atraso"), porque a barra de abas rola e o
+> selo da aba Financeiro ficava fora da tela (a aba também fica vermelha); e a
+> aba ganhou **filtro de período** (Tudo / Este mês / Mês passado / Este ano /
+> Período específico) que vale para as cobranças **pelo vencimento** e para o
+> recebido **pela data do dinheiro**.
 
 > **FINANCEIRO — FIN1.1: PONTUALIDADE E DETALHAMENTO DA BAIXA ✅ (v0.166.0,
 > migração 0188).** Cinco correções do teste do FIN1:

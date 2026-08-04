@@ -75,7 +75,8 @@ export function ProntuarioTabs({ children }: { children: ReactNode }) {
                   "-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   isActive
                     ? "border-gold text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                  (p.props.alertCount ?? 0) > 0 && !isActive && "text-destructive"
                 )}
               >
                 {Icon && (
@@ -91,7 +92,7 @@ export function ProntuarioTabs({ children }: { children: ReactNode }) {
                 {(p.props.alertCount ?? 0) > 0 && (
                   <span
                     title="Cobranças em atraso"
-                    className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-4 text-destructive-foreground tabular-nums"
+                    className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-4 text-white tabular-nums"
                   >
                     {p.props.alertCount}
                   </span>

@@ -232,6 +232,141 @@ export function countByFilter(
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Período (mês, ano ou intervalo escolhido)
+// ---------------------------------------------------------------------------
+/** Intervalo [start, end) — `end` é EXCLUSIVO, como no resto do sistema. */
+export type Period = { start: string; end: string };
+
+export const PERIOD_PRESETS = [
+  { key: "tudo", label: "Tudo" },
+  { key: "mes", label: "Este mês" },
+  { key: "mes_passado", label: "Mês passado" },
+  { key: "ano", label: "Este ano" },
+  { key: "custom", label: "Período específico" },
+] as const;
+
+export type PeriodPreset = (typeof PERIOD_PRESETS)[number]["key"];
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Dia seguinte a uma data YYYY-MM-DD (para virar fim EXCLUSIVO). */
+export function nextDay(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = new Date(Date.UTC(y, (m ?? 1) - 1, (d ?? 1) + 1));
+  return `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`;
+}
+
+/** `null` = sem limite (Tudo). O intervalo específico é inclusivo na tela. */
+export function resolvePeriod(
+  preset: PeriodPreset,
+  today: string,
+  custom?: { start: string; end: string }
+): Period | null {
+  const [y, m] = today.split("-").map(Number);
+  switch (preset) {
+    case "tudo":
+      return null;
+    case "mes":
+      return {
+        start: `${y}-${pad2(m)}-01`,
+        end: m === 12 ? `${y + 1}-01-01` : `${y}-${pad2(m + 1)}-01`,
+      };
+    case "mes_passado":
+      return {
+        start:
+          m === 1 ? `${y - 1}-12-01` : `${y}-${pad2(m - 1)}-01`,
+        end: `${y}-${pad2(m)}-01`,
+      };
+    case "ano":
+      return { start: `${y}-01-01`, end: `${y + 1}-01-01` };
+    case "custom":
+      if (!custom?.start || !custom?.end) return null;
+      return { start: custom.start, end: nextDay(custom.end) };
+  }
+}
+
+export function inPeriod(dateIso: string, period: Period | null): boolean {
+  if (!period) return true;
+  return dateIso >= period.start && dateIso < period.end;
+}
+
+/** Rótulo curto do período, para o card de recebimento. */
+export function periodLabel(
+  preset: PeriodPreset,
+  period: Period | null
+): string {
+  if (!period) return "no total";
+  const [y, m, d] = period.start.split("-");
+  if (preset === "ano") return `em ${y}`;
+  if (preset === "mes" || preset === "mes_passado") return `em ${m}/${y}`;
+  const [ey, em, ed] = period.end.split("-");
+  const fim = new Date(Date.UTC(Number(ey), Number(em) - 1, Number(ed) - 1));
+  return `de ${d}/${m}/${y} a ${pad2(fim.getUTCDate())}/${pad2(
+    fim.getUTCMonth() + 1
+  )}/${fim.getUTCFullYear()}`;
+}
+
+// ---------------------------------------------------------------------------
+// Recebimentos do período — separados por natureza
+// ---------------------------------------------------------------------------
+/** O mínimo que a regra precisa de uma baixa (a tela carrega mais campos). */
+export type ReceiptEntry = {
+  receivedAt: string;
+  amountCents: number;
+  principalCents: number;
+  benefitCents: number;
+  lateFeeCents: number;
+  interestCents: number;
+  reversed: boolean;
+  reversalOf: string | null;
+};
+
+export type ReceiptTotals = {
+  totalCents: number;
+  principalCents: number;
+  benefitCents: number;
+  lateFeeCents: number;
+  interestCents: number;
+  /** Multa + juros — o que NÃO é o valor da parcela. */
+  chargesCents: number;
+  count: number;
+};
+
+/**
+ * Soma as baixas ATIVAS do período (estorno e baixa estornada ficam de fora).
+ * O dono pediu que o card diga o que do recebido é multa e juros — senão o
+ * número parece faturamento e não é.
+ */
+export function summarizeReceipts(
+  receipts: ReceiptEntry[],
+  period: Period | null
+): ReceiptTotals {
+  const out: ReceiptTotals = {
+    totalCents: 0,
+    principalCents: 0,
+    benefitCents: 0,
+    lateFeeCents: 0,
+    interestCents: 0,
+    chargesCents: 0,
+    count: 0,
+  };
+  for (const r of receipts) {
+    if (r.reversed || r.reversalOf) continue;
+    if (!inPeriod(r.receivedAt, period)) continue;
+    out.totalCents += r.amountCents;
+    out.principalCents += r.principalCents;
+    out.benefitCents += r.benefitCents;
+    out.lateFeeCents += r.lateFeeCents;
+    out.interestCents += r.interestCents;
+    out.count += 1;
+  }
+  out.chargesCents = out.lateFeeCents + out.interestCents;
+  return out;
+}
+
 export type ReceivablesSummary = {
   /** Principal ainda devido (sem multa/juros). */
   openCents: number;

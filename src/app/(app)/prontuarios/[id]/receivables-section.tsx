@@ -26,14 +26,20 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/commercial";
 import {
   allocateReceipt,
   countByFilter,
+  inPeriod,
   INSTALLMENT_STATUS_LABELS,
   matchesFilter,
+  PERIOD_PRESETS,
+  periodLabel,
   RECEIVABLE_FILTERS,
   receiptErrors,
+  resolvePeriod,
+  summarizeReceipts,
   summarizeReceivables,
   viewInstallment,
   type Installment,
   type InstallmentStatus,
+  type PeriodPreset,
   type ReceivableFilter,
 } from "@/lib/finance/receivables";
 import { lateLabel } from "@/lib/finance/late-fees";
@@ -82,8 +88,6 @@ export function ReceivablesSection({
   clientId,
   installments,
   receipts,
-  receivedInPeriodCents,
-  periodStart,
   today,
   canReceive,
   canReverse,
@@ -91,8 +95,6 @@ export function ReceivablesSection({
   clientId: string;
   installments: Installment[];
   receipts: ReceiptRow[];
-  receivedInPeriodCents: number;
-  periodStart: string;
   today: string;
   canReceive: boolean;
   canReverse: boolean;
@@ -100,6 +102,9 @@ export function ReceivablesSection({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState<ReceivableFilter>("todas");
+  const [preset, setPreset] = useState<PeriodPreset>("tudo");
+  const [customStart, setCustomStart] = useState(today.slice(0, 8) + "01");
+  const [customEnd, setCustomEnd] = useState(today);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [receivedAt, setReceivedAt] = useState(today);
@@ -110,13 +115,28 @@ export function ReceivablesSection({
   const [reversingId, setReversingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
 
-  const views = useMemo(
+  const allViews = useMemo(
     () => installments.map((i) => viewInstallment(i, today)),
     [installments, today]
   );
+  // Período escolhido: as cobranças entram pelo VENCIMENTO; os recebimentos,
+  // pela data em que o dinheiro entrou.
+  const period = useMemo(
+    () =>
+      resolvePeriod(preset, today, { start: customStart, end: customEnd }),
+    [preset, today, customStart, customEnd]
+  );
+  const views = useMemo(
+    () => allViews.filter((v) => inPeriod(v.dueDate, period)),
+    [allViews, period]
+  );
+  const received = useMemo(
+    () => summarizeReceipts(receipts, period),
+    [receipts, period]
+  );
   const summary = useMemo(
-    () => summarizeReceivables(views, receivedInPeriodCents),
-    [views, receivedInPeriodCents]
+    () => summarizeReceivables(views, received.totalCents),
+    [views, received.totalCents]
   );
   const counts = useMemo(() => countByFilter(views), [views]);
   const shown = useMemo(
@@ -124,7 +144,7 @@ export function ReceivablesSection({
     [views, filter]
   );
 
-  const paying = views.find((v) => v.id === payingId) ?? null;
+  const paying = allViews.find((v) => v.id === payingId) ?? null;
   const amountCents = parseBRLToCents(amount) ?? 0;
   const errors = paying
     ? receiptErrors({
@@ -137,7 +157,7 @@ export function ReceivablesSection({
   const allocation = paying ? allocateReceipt(paying, amountCents) : null;
 
   function openPayment(id: string) {
-    const v = views.find((x) => x.id === id);
+    const v = allViews.find((x) => x.id === id);
     if (!v) return;
     setPayingId(id);
     // Já vem com multa, juros e benefício perdido — o usuário só reduz se
@@ -204,6 +224,46 @@ export function ReceivablesSection({
 
   return (
     <div className={cn("space-y-4", isPending && "opacity-70")}>
+      {/* Período: mês, ano ou intervalo escolhido. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Período
+        </span>
+        <select
+          value={preset}
+          onChange={(e) => setPreset(e.target.value as PeriodPreset)}
+          className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
+        >
+          {PERIOD_PRESETS.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        {preset === "custom" && (
+          <>
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
+            />
+            <span className="text-xs text-muted-foreground">até</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
+            />
+          </>
+        )}
+        {period && (
+          <span className="text-[11px] text-muted-foreground">
+            cobranças com vencimento {periodLabel(preset, period)}
+          </span>
+        )}
+      </div>
+
       {/* Resumo do topo. */}
       <div className="grid gap-2 sm:grid-cols-3">
         <Card>
@@ -239,11 +299,28 @@ export function ReceivablesSection({
         <Card>
           <CardContent className="p-3">
             <p className="text-[11px] font-medium text-muted-foreground">
-              Recebido em {fmtDate(periodStart).slice(3)}
+              Recebido {periodLabel(preset, period)}
             </p>
             <p className="text-xl font-semibold tabular-nums text-emerald-700">
-              {formatBRL(summary.receivedCents)}
+              {formatBRL(received.totalCents)}
             </p>
+            {/* O dono pediu: o card precisa dizer o que aí dentro é multa e
+                juros — senão o número parece faturamento e não é. */}
+            {received.chargesCents + received.benefitCents > 0 ? (
+              <p className="text-[10px] leading-tight text-muted-foreground">
+                {formatBRL(received.principalCents)} de parcelas +{" "}
+                {formatBRL(received.chargesCents)} de multa e juros
+                {received.benefitCents > 0 && (
+                  <> + {formatBRL(received.benefitCents)} de benefício perdido</>
+                )}
+              </p>
+            ) : (
+              received.count > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  sem multa e juros
+                </p>
+              )
+            )}
           </CardContent>
         </Card>
       </div>

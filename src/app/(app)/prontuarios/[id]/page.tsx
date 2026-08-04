@@ -2472,6 +2472,18 @@ export default async function ClientDetailPage(
                       {currentClinicEntry?.clinics?.name ?? "outra unidade"}
                     </Badge>
                   )}
+                  {/* FIN1.1: atraso aparece no cabeçalho, não só na aba — a
+                      barra de abas rola e o selo ficava fora da tela. */}
+                  {lateInstallmentCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      title="Veja a aba Financeiro"
+                    >
+                      {lateInstallmentCount === 1
+                        ? "1 cobrança em atraso"
+                        : `${lateInstallmentCount} cobranças em atraso`}
+                    </Badge>
+                  )}
                   {/* I4: cadastro incompleto não pode ser agendado. */}
                   {registrationGaps.length > 0 && (
                     <Badge
@@ -3175,8 +3187,6 @@ export default async function ClientDetailPage(
               clientId={client.id}
               installments={receivables.installments}
               receipts={receivables.receipts}
-              receivedInPeriodCents={receivables.receivedInPeriodCents}
-              periodStart={receivables.periodStart}
               today={financeToday}
               canReceive={canReceivePayment}
               canReverse={canReverseReceipt}

@@ -17,12 +17,18 @@ import {
 import {
   allocateReceipt,
   countByFilter,
+  inPeriod,
   matchesFilter,
   methodRunsLateRisk,
+  nextDay,
+  periodLabel,
+  resolvePeriod,
+  summarizeReceipts,
   summarizeReceivables,
   viewInstallment,
   receiptErrors,
   type Installment,
+  type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
   accountLevel,
@@ -558,6 +564,134 @@ describe("contas a receber", () => {
     const s = summarizeReceivables([], 0);
     expect(s.latePercent).toBe(0);
     expect(s.openCents).toBe(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // Período e composição do recebido
+  // -------------------------------------------------------------------------
+  describe("período", () => {
+    const hoje = "2026-08-04";
+
+    it("resolve mês, mês passado, ano e intervalo específico", () => {
+      expect(resolvePeriod("tudo", hoje)).toBeNull();
+      expect(resolvePeriod("mes", hoje)).toEqual({
+        start: "2026-08-01",
+        end: "2026-09-01",
+      });
+      expect(resolvePeriod("mes_passado", hoje)).toEqual({
+        start: "2026-07-01",
+        end: "2026-08-01",
+      });
+      expect(resolvePeriod("ano", hoje)).toEqual({
+        start: "2026-01-01",
+        end: "2027-01-01",
+      });
+      // O intervalo da tela é inclusivo; o fim vira exclusivo.
+      expect(
+        resolvePeriod("custom", hoje, { start: "2026-03-10", end: "2026-03-20" })
+      ).toEqual({ start: "2026-03-10", end: "2026-03-21" });
+    });
+
+    it("vira o ano em dezembro e em janeiro", () => {
+      expect(resolvePeriod("mes", "2026-12-15")).toEqual({
+        start: "2026-12-01",
+        end: "2027-01-01",
+      });
+      expect(resolvePeriod("mes_passado", "2026-01-15")).toEqual({
+        start: "2025-12-01",
+        end: "2026-01-01",
+      });
+      expect(nextDay("2026-12-31")).toBe("2027-01-01");
+    });
+
+    it("inPeriod tem fim exclusivo e 'tudo' aceita qualquer data", () => {
+      const p = resolvePeriod("mes", hoje);
+      expect(inPeriod("2026-08-01", p)).toBe(true);
+      expect(inPeriod("2026-08-31", p)).toBe(true);
+      expect(inPeriod("2026-09-01", p)).toBe(false);
+      expect(inPeriod("2026-07-31", p)).toBe(false);
+      expect(inPeriod("1999-01-01", null)).toBe(true);
+    });
+
+    it("rótulo do período", () => {
+      expect(periodLabel("tudo", null)).toBe("no total");
+      expect(periodLabel("mes", resolvePeriod("mes", hoje))).toBe("em 08/2026");
+      expect(periodLabel("ano", resolvePeriod("ano", hoje))).toBe("em 2026");
+      expect(
+        periodLabel(
+          "custom",
+          resolvePeriod("custom", hoje, {
+            start: "2026-03-10",
+            end: "2026-03-20",
+          })
+        )
+      ).toBe("de 10/03/2026 a 20/03/2026");
+    });
+
+    it("recebido separa parcela de multa e juros e ignora estorno", () => {
+      const rec: ReceiptEntry[] = [
+        {
+          receivedAt: "2026-08-04",
+          amountCents: 20427,
+          principalCents: 20000,
+          benefitCents: 0,
+          lateFeeCents: 400,
+          interestCents: 27,
+          reversed: false,
+          reversalOf: null,
+        },
+        {
+          receivedAt: "2026-08-01",
+          amountCents: 31000,
+          principalCents: 31000,
+          benefitCents: 0,
+          lateFeeCents: 0,
+          interestCents: 0,
+          reversed: false,
+          reversalOf: null,
+        },
+        // Estornada e o próprio estorno: nenhum dos dois conta.
+        {
+          receivedAt: "2026-08-02",
+          amountCents: 5000,
+          principalCents: 5000,
+          benefitCents: 0,
+          lateFeeCents: 0,
+          interestCents: 0,
+          reversed: true,
+          reversalOf: null,
+        },
+        {
+          receivedAt: "2026-08-02",
+          amountCents: 5000,
+          principalCents: 5000,
+          benefitCents: 0,
+          lateFeeCents: 0,
+          interestCents: 0,
+          reversed: true,
+          reversalOf: "r3",
+        },
+        // Fora do mês.
+        {
+          receivedAt: "2026-07-20",
+          amountCents: 9900,
+          principalCents: 9900,
+          benefitCents: 0,
+          lateFeeCents: 0,
+          interestCents: 0,
+          reversed: false,
+          reversalOf: null,
+        },
+      ];
+      const t = summarizeReceipts(rec, resolvePeriod("mes", hoje));
+      expect(t.totalCents).toBe(51427);
+      expect(t.principalCents).toBe(51000);
+      expect(t.chargesCents).toBe(427); // multa 4,00 + juros 0,27
+      expect(t.count).toBe(2);
+
+      // Sem período, entra também o de julho.
+      expect(summarizeReceipts(rec, null).totalCents).toBe(61327);
+    });
   });
 
   it("recusa baixa maior que o total devido, valor zerado e data futura", () => {
