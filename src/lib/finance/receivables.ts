@@ -24,11 +24,22 @@ export const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
   renegociada: "Renegociada",
 };
 
-/** Meios em que o cliente pode atrasar — e por isso perder o benefício. */
-export const BENEFIT_RISK_METHODS = ["boleto", "credito_recorrente"] as const;
+/**
+ * Meios em que a adquirente JÁ garantiu o dinheiro no fechamento — não há
+ * inadimplência possível, então o benefício não corre risco.
+ */
+export const BENEFIT_SAFE_METHODS = ["cartao", "cartao_parcelado"] as const;
 
+/**
+ * Toda cobrança é promessa de pagamento e corre risco, exceto no cartão.
+ *
+ * A regra nasceu (0188) olhando o rótulo — só boleto e recorrência. O dono
+ * mostrou o furo com a VD-00038: **PIX em 4x com vencimentos mensais** é
+ * exatamente o mesmo risco de um boleto. O critério é o RISCO, não o nome do
+ * meio (correção de 04/08/2026, migração 0192).
+ */
 export function methodRunsLateRisk(method: string | null): boolean {
-  return (BENEFIT_RISK_METHODS as readonly string[]).includes(method ?? "");
+  return !(BENEFIT_SAFE_METHODS as readonly string[]).includes(method ?? "");
 }
 
 export type Installment = {

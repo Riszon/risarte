@@ -360,12 +360,16 @@ equilíbrio e consolidação da rede não fecham.
   desconto disfarçado. Ordem de abatimento de um recebimento: **principal →
   benefício perdido → multa → juros**.
 - **Pontualidade é condição do benefício.** Cliente de programa (PPR+ /
-  Empresarial) que paga por **boleto ou recorrência no cartão** só tem o
-  desconto porque paga em dia: atrasou, aquela parcela volta ao preço sem
-  benefício e a multa/juros incidem sobre o valor maior. **Não vale para cartão
-  parcelado nem à vista** (o dinheiro já entrou, não há risco). Procedimento que
-  ficou **100% gratuito nunca é cobrado** — sai da base. O valor em risco é
-  congelado na parcela (`benefit_discount_cents`) no fechamento da venda.
+  Empresarial) só tem o desconto porque paga em dia: atrasou, aquela parcela
+  volta ao preço sem benefício e a multa/juros incidem sobre o valor maior.
+  **O critério é o RISCO, não o rótulo do meio de pagamento** (correção de
+  04/08/2026, migração 0192 — a regra nasceu olhando "boleto e recorrência" e
+  deixava passar PIX parcelado com vencimentos futuros, que é o mesmo risco).
+  Toda cobrança é promessa de pagamento e corre risco, **exceto no cartão**
+  (`cartao`, `cartao_parcelado`), onde a adquirente já garantiu o dinheiro.
+  Procedimento que ficou **100% gratuito nunca é cobrado** — sai da base. O
+  valor em risco é rateado entre as parcelas e congelado
+  (`benefit_discount_cents`) no fechamento da venda.
 - **Não existe desconto na baixa.** Receber menos que o total devido é baixa
   **parcial**; perdoar diferença é ato de **renegociação** — Gerente da unidade,
   Financeiro da Franqueadora (com autorização do Gerente) ou Admin Master.

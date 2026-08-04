@@ -486,12 +486,17 @@ describe("contas a receber", () => {
       expect(v.updatedBalanceCents).toBe(12000 + 240 + 4);
     });
 
-    it("só boleto e recorrência correm o risco de perder o benefício", () => {
+    // 0192: a regra era pelo RÓTULO (só boleto/recorrência) e deixava passar
+    // PIX parcelado com vencimentos futuros — o mesmo risco de um boleto.
+    it("toda promessa de pagamento corre risco; só o cartão não", () => {
       expect(methodRunsLateRisk("boleto")).toBe(true);
       expect(methodRunsLateRisk("credito_recorrente")).toBe(true);
+      expect(methodRunsLateRisk("pix")).toBe(true);
+      expect(methodRunsLateRisk("deposito_avista")).toBe(true);
+      expect(methodRunsLateRisk("dinheiro")).toBe(true);
+      // A adquirente já garantiu o dinheiro: não há inadimplência possível.
+      expect(methodRunsLateRisk("cartao")).toBe(false);
       expect(methodRunsLateRisk("cartao_parcelado")).toBe(false);
-      expect(methodRunsLateRisk("pix")).toBe(false);
-      expect(methodRunsLateRisk(null)).toBe(false);
     });
   });
 

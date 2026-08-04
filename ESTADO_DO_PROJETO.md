@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.171.0** · Última migração: **0191**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.172.0** · Última migração: **0192**_
+
+> **FIN2.3 — o benefício corre risco em TODA promessa de pagamento (v0.172.0,
+> migração 0192).** O dono mostrou a **VD-00038**: benefício de R$ 300,00,
+> venda parcelada com vencimentos mensais, parcela 4 dias em atraso — e nada de
+> benefício perdido. Conferi no banco: o cálculo estava certo (recuperável =
+> R$ 300,00, já excluindo a limpeza gratuita). **O errado era a regra que eu
+> escrevi na 0188:** ela olhava o RÓTULO do meio de pagamento e só aceitava
+> `boleto` e `credito_recorrente`. A venda foi fechada em **PIX parcelado** —
+> mesmo risco de um boleto. O critério do dono sempre foi o **risco**, não o
+> nome: agora toda cobrança corre risco, **exceto no cartão**, onde a
+> adquirente já garantiu o dinheiro.
+>
+> Também: o resumo da venda mostra **as cobranças dela e qual foi a clicada**
+> ("você clicou na 2ª de 4"), e a aba ganhou **filtro por documento** (PT/VD/RN)
+> para cliente com várias vendas.
 
 > **FIN2.2 — código no fechamento + detalhe da renegociação (v0.171.0,
 > migração 0191).**

@@ -134,6 +134,10 @@ export function ReceivablesSection({
   const [decisionNote, setDecisionNote] = useState("");
   /** Documento aberto no resumo ("a que se refere esta cobrança"). */
   const [openSourceId, setOpenSourceId] = useState<string | null>(null);
+  /** Qual cobrança foi clicada — para o resumo dizer "parcela 2 de 4". */
+  const [openFromId, setOpenFromId] = useState<string | null>(null);
+  /** Filtro por documento: cliente com várias vendas acha o que precisa. */
+  const [codeFilter, setCodeFilter] = useState<string>("");
   const [preset, setPreset] = useState<PeriodPreset>("tudo");
   const [customStart, setCustomStart] = useState(today.slice(0, 8) + "01");
   const [customEnd, setCustomEnd] = useState(today);
@@ -159,9 +163,23 @@ export function ReceivablesSection({
     [preset, today, customStart, customEnd]
   );
   const views = useMemo(
-    () => allViews.filter((v) => inPeriod(v.dueDate, period)),
-    [allViews, period]
+    () =>
+      allViews.filter(
+        (v) =>
+          inPeriod(v.dueDate, period) &&
+          (!codeFilter || v.sourceCode === codeFilter)
+      ),
+    [allViews, period, codeFilter]
   );
+  /** Os documentos que este cliente tem, para o seletor. */
+  const codeOptions = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const v of allViews) {
+      if (!v.sourceCode) continue;
+      seen.set(v.sourceCode, (seen.get(v.sourceCode) ?? 0) + 1);
+    }
+    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [allViews]);
   const received = useMemo(
     () => summarizeReceipts(receipts, period),
     [receipts, period]
@@ -328,6 +346,27 @@ export function ReceivablesSection({
           <span className="text-[11px] text-muted-foreground">
             cobranças com vencimento {periodLabel(preset, period)}
           </span>
+        )}
+
+        {/* Filtro por documento (venda ou renegociação). */}
+        {codeOptions.length > 1 && (
+          <>
+            <span className="ml-2 text-[11px] font-medium text-muted-foreground">
+              Documento
+            </span>
+            <select
+              value={codeFilter}
+              onChange={(e) => setCodeFilter(e.target.value)}
+              className="h-8 rounded-lg border border-input bg-background px-2 font-mono text-xs"
+            >
+              <option value="">Todos ({codeOptions.length})</option>
+              {codeOptions.map(([code, n]) => (
+                <option key={code} value={code}>
+                  {code} · {n}x
+                </option>
+              ))}
+            </select>
+          </>
         )}
       </div>
 
@@ -506,7 +545,10 @@ export function ReceivablesSection({
                     {v.sourceCode && (
                       <button
                         type="button"
-                        onClick={() => setOpenSourceId(v.sourceId)}
+                        onClick={() => {
+                          setOpenSourceId(v.sourceId);
+                          setOpenFromId(v.id);
+                        }}
                         title="Ver a que esta cobrança se refere"
                         className="ml-2 rounded border border-border bg-muted/60 px-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                       >
@@ -736,6 +778,52 @@ export function ReceivablesSection({
                     <span>Total da venda</span>
                     <span>{formatBRL(sale.totalCents)}</span>
                   </p>
+
+                  {/* Como esta venda foi cobrada, e onde está a parcela
+                      que o usuário clicou. */}
+                  {(() => {
+                    const cobrancas = allViews
+                      .filter((v) => v.sourceId === sale.id)
+                      .sort((a, b) => a.seq - b.seq);
+                    if (cobrancas.length === 0) return null;
+                    const pos = cobrancas.findIndex((v) => v.id === openFromId);
+                    return (
+                      <div className="rounded-lg border bg-muted/30 p-2">
+                        <p className="mb-1 text-[11px] font-semibold">
+                          Cobranças desta venda ({cobrancas.length})
+                          {pos >= 0 && (
+                            <span className="ml-1 font-normal text-primary">
+                              — você clicou na {pos + 1}ª de{" "}
+                              {cobrancas.length}
+                            </span>
+                          )}
+                        </p>
+                        <ul className="space-y-0.5 text-[11px]">
+                          {cobrancas.map((v) => (
+                            <li
+                              key={v.id}
+                              className={cn(
+                                "flex flex-wrap items-center justify-between gap-2 rounded px-1",
+                                v.id === openFromId &&
+                                  "bg-primary/10 font-medium text-primary"
+                              )}
+                            >
+                              <span>
+                                {v.kind === "entrada"
+                                  ? "Entrada"
+                                  : `Parcela ${v.seq}`}{" "}
+                                · venc. {fmtDate(v.dueDate)} ·{" "}
+                                {INSTALLMENT_STATUS_LABELS[v.status]}
+                              </span>
+                              <span className="tabular-nums">
+                                {formatBRL(v.amountCents)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             }
