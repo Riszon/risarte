@@ -50,6 +50,14 @@ export async function savePaymentSchedule(input: {
         error: "Você não pode definir o pagamento desta venda.",
       };
     }
+    // FIN2: reescrever o plano apagaria as parcelas — e as baixas junto.
+    if (m.includes("SCHEDULE_LOCKED")) {
+      return {
+        ok: false,
+        error:
+          "Esta venda já tem recebimento ou renegociação: o plano de cobrança não pode mais ser reescrito. Use a renegociação na aba Financeiro da ficha.",
+      };
+    }
     console.error("save_payment_schedule failed:", m);
     return { ok: false, error: "Não foi possível salvar o plano de pagamento." };
   }
