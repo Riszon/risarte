@@ -1,6 +1,11 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.173.0** · Última migração: **0193**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.173.1** · Última migração: **0193**_
+
+> **v0.173.1 (sem migração):** o termo de renegociação passou a trazer as
+> **vendas de origem** — código (`PT-…`/`VD-…`), tipo, data, procedimentos e
+> total de cada uma — e cada cobrança substituída aparece com o código da venda
+> de onde veio. O cliente reconhece o que está renegociando.
 
 > **FIN2.4 — fechamento da renegociação (v0.173.0, migração 0193).** O dono
 > pediu ZapSign + ASAAS na renegociação, "como no fechamento das vendas".

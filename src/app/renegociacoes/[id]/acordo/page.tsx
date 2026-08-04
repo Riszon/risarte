@@ -72,15 +72,167 @@ export default async function RenegotiationAgreementPage(
       }[]
     >();
 
-  // As cobranças SUBSTITUÍDAS (o que estava em aberto).
+  // As cobranças SUBSTITUÍDAS (o que estava em aberto) e de que venda vieram.
   const { data: antigas } = await supabase
     .from("payment_installments")
-    .select("seq, kind, due_date, amount_cents")
+    .select(
+      "seq, kind, due_date, amount_cents, negotiation_id, direct_sale_id"
+    )
     .in("id", (r.source_installment_ids as string[]) ?? [])
     .order("due_date")
     .returns<
-      { seq: number; kind: string; due_date: string; amount_cents: number }[]
+      {
+        seq: number;
+        kind: string;
+        due_date: string;
+        amount_cents: number;
+        negotiation_id: string | null;
+        direct_sale_id: string | null;
+      }[]
     >();
+
+  // As VENDAS de origem: o cliente precisa reconhecer o que está renegociando.
+  const negIds = [
+    ...new Set(
+      (antigas ?? [])
+        .map((i) => i.negotiation_id)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+  const saleIds = [
+    ...new Set(
+      (antigas ?? [])
+        .map((i) => i.direct_sale_id)
+        .filter((x): x is string => Boolean(x))
+    ),
+  ];
+
+  type OriginSale = {
+    id: string;
+    code: string | null;
+    kind: "negotiation" | "direct_sale";
+    createdAt: string;
+    totalCents: number;
+    items: { description: string; quantity: number; finalCents: number }[];
+  };
+  const origins: OriginSale[] = [];
+
+  if (negIds.length > 0) {
+    const { data: negs } = await supabase
+      .from("plan_negotiations")
+      .select("id, code, created_at, final_cents, option_id")
+      .in("id", negIds)
+      .returns<
+        {
+          id: string;
+          code: string | null;
+          created_at: string;
+          final_cents: number;
+          option_id: string;
+        }[]
+      >();
+    const { data: negItems } = await supabase
+      .from("plan_negotiation_items")
+      .select(
+        "negotiation_id, included, program_discount_cents, treatment_plan_option_items ( option_id, description, quantity, unit_price_cents, sort_order )"
+      )
+      .in("negotiation_id", negIds)
+      .returns<
+        {
+          negotiation_id: string;
+          included: boolean;
+          program_discount_cents: number | null;
+          treatment_plan_option_items: {
+            option_id: string;
+            description: string;
+            quantity: number;
+            unit_price_cents: number;
+            sort_order: number;
+          } | null;
+        }[]
+      >();
+    for (const n of negs ?? []) {
+      origins.push({
+        id: n.id,
+        code: n.code,
+        kind: "negotiation",
+        createdAt: n.created_at,
+        totalCents: n.final_cents,
+        items: (negItems ?? [])
+          .filter(
+            (i) =>
+              i.negotiation_id === n.id &&
+              i.included &&
+              i.treatment_plan_option_items?.option_id === n.option_id
+          )
+          .sort(
+            (a, b) =>
+              (a.treatment_plan_option_items?.sort_order ?? 0) -
+              (b.treatment_plan_option_items?.sort_order ?? 0)
+          )
+          .map((i) => {
+            const it = i.treatment_plan_option_items!;
+            return {
+              description: it.description,
+              quantity: it.quantity,
+              finalCents: Math.max(
+                0,
+                it.quantity * it.unit_price_cents -
+                  (i.program_discount_cents ?? 0)
+              ),
+            };
+          }),
+      });
+    }
+  }
+
+  if (saleIds.length > 0) {
+    const { data: sales } = await supabase
+      .from("direct_sales")
+      .select("id, code, created_at, final_cents")
+      .in("id", saleIds)
+      .returns<
+        {
+          id: string;
+          code: string | null;
+          created_at: string;
+          final_cents: number;
+        }[]
+      >();
+    const { data: saleItems } = await supabase
+      .from("direct_sale_items")
+      .select("sale_id, description, quantity, final_cents")
+      .in("sale_id", saleIds)
+      .returns<
+        {
+          sale_id: string;
+          description: string;
+          quantity: number;
+          final_cents: number;
+        }[]
+      >();
+    for (const s of sales ?? []) {
+      origins.push({
+        id: s.id,
+        code: s.code,
+        kind: "direct_sale",
+        createdAt: s.created_at,
+        totalCents: s.final_cents,
+        items: (saleItems ?? [])
+          .filter((i) => i.sale_id === s.id)
+          .map((i) => ({
+            description: i.description,
+            quantity: i.quantity,
+            finalCents: i.final_cents,
+          })),
+      });
+    }
+  }
+  origins.sort((a, b) => (a.code ?? "").localeCompare(b.code ?? ""));
+
+  const codeOf = (i: { negotiation_id: string | null; direct_sale_id: string | null }) =>
+    origins.find((o) => o.id === (i.negotiation_id ?? i.direct_sale_id))?.code ??
+    null;
 
   return (
     <main className="mx-auto max-w-3xl bg-white p-8 text-sm text-black print:p-0">
@@ -183,6 +335,49 @@ export default async function RenegotiationAgreementPage(
         </table>
       </section>
 
+      {origins.length > 0 && (
+        <section className="mb-5">
+          <h2 className="mb-1 text-sm font-semibold">
+            Vendas de origem ({origins.length})
+          </h2>
+          <p className="mb-2 text-xs text-neutral-600">
+            A dívida acima vem {origins.length === 1 ? "da" : "das"} venda
+            {origins.length === 1 ? "" : "s"} abaixo.
+          </p>
+          {origins.map((o) => (
+            <div key={o.id} className="mb-3 border-l-2 border-neutral-300 pl-3">
+              <p className="text-xs font-semibold">
+                {o.code ?? "—"} ·{" "}
+                {o.kind === "direct_sale"
+                  ? "Venda direta"
+                  : "Plano de tratamento"}{" "}
+                · {fmtDate(o.createdAt)}
+              </p>
+              <ul className="text-xs">
+                {o.items.map((it, n) => (
+                  <li key={n} className="flex justify-between py-0.5">
+                    <span>
+                      {it.quantity > 1 && `${it.quantity}× `}
+                      {it.description}
+                    </span>
+                    <span>{formatBRL(it.finalCents)}</span>
+                  </li>
+                ))}
+                {o.items.length === 0 && (
+                  <li className="py-0.5 text-neutral-500">
+                    Sem procedimentos lançados.
+                  </li>
+                )}
+                <li className="flex justify-between border-t py-0.5 font-semibold">
+                  <span>Total da venda</span>
+                  <span>{formatBRL(o.totalCents)}</span>
+                </li>
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+
       {(antigas ?? []).length > 0 && (
         <section className="mb-5">
           <h2 className="mb-1 text-sm font-semibold">
@@ -192,6 +387,9 @@ export default async function RenegotiationAgreementPage(
             {(antigas ?? []).map((i, n) => (
               <li key={n} className="flex justify-between border-b py-0.5">
                 <span>
+                  {codeOf(i) && (
+                    <span className="mr-1 font-semibold">{codeOf(i)}</span>
+                  )}
                   {i.kind === "entrada" ? "Entrada" : `Parcela ${i.seq}`} ·
                   vencimento {fmtDate(i.due_date)}
                 </span>
