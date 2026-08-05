@@ -75,6 +75,67 @@ export async function registerReceipt(input: {
 }
 
 /**
+ * FIN4b — no cartão, a clínica não recebe o valor cheio nem no mesmo dia.
+ * O cliente pagou o BRUTO (é isso que quita a dívida dele); aqui registramos
+ * a taxa da adquirente e a data em que o dinheiro cai.
+ */
+export async function applyAcquirerFee(input: {
+  clientId: string;
+  receiptId: string;
+  acquirerId: string;
+  modality: string;
+  installments: number;
+}): Promise<
+  ReceivableResult & {
+    feeCents?: number;
+    netCents?: number;
+    settlementDate?: string;
+  }
+> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("apply_acquirer_fee", {
+    p_receipt_id: input.receiptId,
+    p_acquirer_id: input.acquirerId,
+    p_modality: input.modality,
+    p_installments: input.installments,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("RATE_NOT_FOUND")) {
+      return {
+        ok: false,
+        error:
+          "Não há taxa cadastrada para essa modalidade e número de parcelas nesta adquirente.",
+      };
+    }
+    if (m.includes("FEE_ALREADY_APPLIED")) {
+      return { ok: false, error: "A taxa desta baixa já foi registrada." };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite registrar a taxa." };
+    }
+    console.error("apply_acquirer_fee failed:", m);
+    return { ok: false, error: "Não foi possível registrar a taxa do cartão." };
+  }
+
+  const r = (data ?? {}) as {
+    fee_cents?: number;
+    net_cents?: number;
+    settlement_date?: string;
+  };
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  revalidatePath("/financeiro");
+  return {
+    ok: true,
+    feeCents: r.fee_cents ?? 0,
+    netCents: r.net_cents ?? 0,
+    settlementDate: r.settlement_date,
+  };
+}
+
+/**
  * FIN2 — renegocia as cobranças escolhidas. O banco apura a dívida (o que
  * falta + benefício perdido + multa + juros), mede o desconto contra o teto da
  * unidade e, se preciso, deixa a renegociação **aguardando autorização** do

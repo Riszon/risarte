@@ -31,6 +31,14 @@ import {
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
+  computeSettlement,
+  daysUntilSettlement,
+  modalityOf,
+  rateErrors,
+  resolveRate,
+  type AcquirerRate,
+} from "@/lib/finance/acquirers";
+import {
   parseAmountCents,
   parseCsv,
   parseDate,
@@ -1455,5 +1463,205 @@ describe("de qual conta é o extrato (trava do extrato trocado)", () => {
     const r = parseCsv("Data;Historico;Valor\n04/08/2026;X;-150,00");
     expect(r.statementAccountId).toBeNull();
     expect(r.transactions).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN4b — adquirentes (taxa do cartão e liquidação D+n)
+// ---------------------------------------------------------------------------
+describe("adquirentes", () => {
+  const rates: AcquirerRate[] = [
+    {
+      id: "r1",
+      acquirerId: "a1",
+      modality: "debito",
+      minInstallments: 1,
+      maxInstallments: 1,
+      feePercent: 1.5,
+      settlementDays: 1,
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+    {
+      id: "r2",
+      acquirerId: "a1",
+      modality: "credito_avista",
+      minInstallments: 1,
+      maxInstallments: 1,
+      feePercent: 3.2,
+      settlementDays: 30,
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+    {
+      id: "r3",
+      acquirerId: "a1",
+      modality: "credito_parcelado",
+      minInstallments: 2,
+      maxInstallments: 6,
+      feePercent: 4.5,
+      settlementDays: 30,
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+    {
+      id: "r4",
+      acquirerId: "a1",
+      modality: "credito_parcelado",
+      minInstallments: 7,
+      maxInstallments: 12,
+      feePercent: 5.9,
+      settlementDays: 30,
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+    // Taxa renegociada: vale a partir de agosto.
+    {
+      id: "r5",
+      acquirerId: "a1",
+      modality: "credito_avista",
+      minInstallments: 1,
+      maxInstallments: 1,
+      feePercent: 2.5,
+      settlementDays: 30,
+      validFrom: "2026-08-01",
+      validTo: null,
+    },
+  ];
+
+  it("acha a faixa de parcelas certa", () => {
+    const base = { acquirerId: "a1", date: "2026-07-15" } as const;
+    expect(
+      resolveRate(rates, { ...base, modality: "credito_parcelado", installments: 3 })
+        ?.feePercent
+    ).toBe(4.5);
+    expect(
+      resolveRate(rates, { ...base, modality: "credito_parcelado", installments: 10 })
+        ?.feePercent
+    ).toBe(5.9);
+    expect(
+      resolveRate(rates, { ...base, modality: "debito", installments: 1 })
+        ?.settlementDays
+    ).toBe(1);
+  });
+
+  // O ponto da vigência: renegociar a taxa NÃO reescreve o que já passou.
+  it("usa a taxa vigente NA DATA, não a de hoje", () => {
+    const antes = resolveRate(rates, {
+      acquirerId: "a1",
+      modality: "credito_avista",
+      installments: 1,
+      date: "2026-07-15",
+    });
+    const depois = resolveRate(rates, {
+      acquirerId: "a1",
+      modality: "credito_avista",
+      installments: 1,
+      date: "2026-08-15",
+    });
+    expect(antes?.feePercent).toBe(3.2);
+    expect(depois?.feePercent).toBe(2.5);
+  });
+
+  it("fora da faixa ou de outra adquirente não acha nada", () => {
+    expect(
+      resolveRate(rates, {
+        acquirerId: "a1",
+        modality: "credito_parcelado",
+        installments: 18,
+        date: "2026-07-15",
+      })
+    ).toBeNull();
+    expect(
+      resolveRate(rates, {
+        acquirerId: "outra",
+        modality: "debito",
+        installments: 1,
+        date: "2026-07-15",
+      })
+    ).toBeNull();
+  });
+
+  it("o cliente paga o bruto; a clínica recebe o líquido", () => {
+    const s = computeSettlement({
+      grossCents: 100000,
+      rate: { feePercent: 3.2, settlementDays: 30 },
+      paidAt: "2026-08-04",
+    });
+    expect(s.grossCents).toBe(100000);
+    expect(s.feeCents).toBe(3200);
+    expect(s.netCents).toBe(96800);
+    expect(s.settlementDate).toBe("2026-09-03");
+  });
+
+  it("débito cai em D+1; crédito em D+30", () => {
+    expect(
+      computeSettlement({
+        grossCents: 50000,
+        rate: { feePercent: 1.5, settlementDays: 1 },
+        paidAt: "2026-08-04",
+      }).settlementDate
+    ).toBe("2026-08-05");
+    expect(daysUntilSettlement("2026-08-04", "2026-09-03")).toBe(30);
+  });
+
+  it("taxa zero (PIX na maquininha) não inventa desconto", () => {
+    const s = computeSettlement({
+      grossCents: 100000,
+      rate: { feePercent: 0, settlementDays: 0 },
+      paidAt: "2026-08-04",
+    });
+    expect(s.feeCents).toBe(0);
+    expect(s.netCents).toBe(100000);
+    expect(s.settlementDate).toBe("2026-08-04");
+  });
+
+  it("arredondamento meio para cima, como o resto do módulo", () => {
+    // 2,5% de R$ 253,40 = R$ 6,335 → R$ 6,34
+    expect(
+      computeSettlement({
+        grossCents: 25340,
+        rate: { feePercent: 2.5, settlementDays: 30 },
+        paidAt: "2026-08-04",
+      }).feeCents
+    ).toBe(634);
+  });
+
+  it("a modalidade sai do meio de pagamento da venda", () => {
+    expect(modalityOf("cartao", 1)).toBe("credito_avista");
+    expect(modalityOf("cartao", 4)).toBe("credito_parcelado");
+    expect(modalityOf("cartao_parcelado", 6)).toBe("credito_parcelado");
+    expect(modalityOf("credito_recorrente", 12)).toBe("recorrente");
+    // Boleto e PIX não passam por adquirente.
+    expect(modalityOf("boleto", 1)).toBeNull();
+    expect(modalityOf("pix", 1)).toBeNull();
+    expect(modalityOf(null, 1)).toBeNull();
+  });
+
+  it("recusa taxa e faixa impossíveis", () => {
+    expect(
+      rateErrors({
+        feePercent: 45,
+        settlementDays: 30,
+        minInstallments: 1,
+        maxInstallments: 1,
+      })
+    ).toContain("Taxa acima de 30% — confira se não digitou errado.");
+    expect(
+      rateErrors({
+        feePercent: 3,
+        settlementDays: 30,
+        minInstallments: 6,
+        maxInstallments: 2,
+      })
+    ).toContain("A faixa de parcelas está invertida.");
+    expect(
+      rateErrors({
+        feePercent: 0,
+        settlementDays: 0,
+        minInstallments: 1,
+        maxInstallments: 1,
+      })
+    ).toEqual([]);
   });
 });

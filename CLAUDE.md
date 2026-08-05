@@ -412,8 +412,15 @@ conta** (o Financeiro da Franqueadora e o Admin Master são a exceção).
 Multa e juros que NÓS pagamos são **informados** (quem define é o fornecedor) e
 vão para **4.2.01**, separados da despesa.
 
+**Adquirente (FIN4b):** a taxa do cartão é **despesa da UNIDADE** (conta
+2.4.01), nunca da franqueadora — senão a unidade não tem incentivo para
+negociar a taxa nem para puxar o cliente para o PIX. A tabela de taxa/prazo tem
+**vigência**: renegociar a taxa não reescreve o que já foi recebido. O cliente
+paga o **bruto** (é isso que quita a dívida dele); a clínica recebe o
+**líquido**, em **D+n**, e é essa data que vai para a projeção de caixa.
+
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
-renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação OFX + adquirente →
+renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC
 → FIN7 orçado×realizado e alertas → FIN8 franqueadora/royalties/consolidação.
 **Uma fase por vez, com plano aprovado antes do código.**

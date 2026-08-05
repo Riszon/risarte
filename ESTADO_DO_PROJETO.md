@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/08/2026 · Versão do sistema: **0.176.1** · Última migração: **0196**_
+_Atualizado em: 05/08/2026 · Versão do sistema: **0.177.0** · Última migração: **0197**_
+
+> **FINANCEIRO — FIN4b: ADQUIRENTES ✅ (v0.177.0, migração 0197).** Dois erros
+> que o sistema cometia todo dia com cartão: registrava o **valor cheio** (a
+> maquininha desconta a taxa) e assumia que o dinheiro caía **no vencimento**
+> (na prática é D+1 no débito, D+30 no crédito).
+>
+> Nova aba **Adquirentes**: cadastro por unidade, com **taxa e prazo por
+> modalidade** (débito, crédito à vista, crédito parcelado por faixa de
+> parcelas, recorrência) e **vigência** — renegociar a taxa não reescreve o que
+> já foi recebido. Ao cadastrar, a tela mostra o efeito numa venda de R$
+> 1.000,00: quanto entra e em que dia.
+>
+> A cobrança passou a guardar **`expected_settlement_date`** — quando o dinheiro
+> cai de verdade. No boleto e no PIX é o próprio vencimento; no cartão é D+n da
+> adquirente padrão da unidade. Sem isso a projeção 30/60/90 do DFC mentiria.
+>
+> Na baixa no cartão: o cliente paga o **bruto** (é o que quita a dívida dele),
+> a **taxa vira despesa da unidade** (conta 2.4.01, decisão do dono) e a entrada
+> de caixa passa a valer **na data da liquidação**.
+>
+> Regras puras em `src/lib/finance/acquirers.ts` com **301 testes** no total.
+>
+> **FIN4 completo.** Próximo: FIN5 — repasse de dentistas e split.
 
 > **FIN4a — trava do extrato trocado + desfazer importação (v0.176.1, migração
 > 0196).** O dono importou o **mesmo extrato em duas contas diferentes** e os
