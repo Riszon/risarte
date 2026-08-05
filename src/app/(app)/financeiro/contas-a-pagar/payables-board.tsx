@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   AlertTriangle,
+  CalendarSync,
   Check,
   History,
   Plus,
@@ -59,6 +60,10 @@ import {
   savePayable,
 } from "../payables-actions";
 import { ApprovalRulesDialog } from "./approval-rules-dialog";
+import {
+  RecurrencesDialog,
+  type RecurrenceRow,
+} from "./recurrences-dialog";
 
 export type PaymentRow = {
   id: string;
@@ -108,6 +113,7 @@ export function PayablesBoard({
   accounts,
   costCenters,
   rules,
+  recurrences,
   today,
   canManage,
   canConfigureNetworkRules,
@@ -122,6 +128,7 @@ export function PayablesBoard({
   accounts: ChartAccount[];
   costCenters: { id: string; name: string }[];
   rules: ApprovalRule[];
+  recurrences: RecurrenceRow[];
   today: string;
   canManage: boolean;
   canConfigureNetworkRules: boolean;
@@ -137,6 +144,7 @@ export function PayablesBoard({
   const [supplierFilter, setSupplierFilter] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [recurrencesOpen, setRecurrencesOpen] = useState(false);
 
   // Diálogos
   const [creating, setCreating] = useState(false);
@@ -400,6 +408,22 @@ export function PayablesBoard({
           </select>
         )}
         <span className="ml-auto flex gap-1">
+          {canManage && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              onClick={() => setRecurrencesOpen(true)}
+            >
+              <CalendarSync className="mr-1 size-3.5" />
+              Recorrentes
+              {recurrences.filter((r) => r.active).length > 0 && (
+                <span className="ml-1 tabular-nums opacity-70">
+                  {recurrences.filter((r) => r.active).length}
+                </span>
+              )}
+            </Button>
+          )}
           {canManage && (
             <Button
               size="sm"
@@ -1052,6 +1076,18 @@ export function PayablesBoard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RecurrencesDialog
+        open={recurrencesOpen}
+        onOpenChange={setRecurrencesOpen}
+        clinicId={clinicId}
+        recurrences={recurrences}
+        suppliers={suppliers}
+        accounts={accounts}
+        costCenters={costCenters}
+        today={today}
+        canEdit={canManage}
+      />
 
       <ApprovalRulesDialog
         open={rulesOpen}

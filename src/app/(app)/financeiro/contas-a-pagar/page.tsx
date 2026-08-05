@@ -11,6 +11,7 @@ import type {
   PayablePaymentEntry,
 } from "@/lib/finance/payables";
 import { PayablesBoard, type PaymentRow } from "./payables-board";
+import type { RecurrenceRow } from "./recurrences-dialog";
 
 /** FIN3 — contas a pagar da unidade: o outro lado do caixa. */
 export default async function PayablesPage() {
@@ -38,6 +39,7 @@ export default async function PayablesPage() {
     { data: accountRows },
     { data: centerRows },
     { data: ruleRows },
+    { data: recurrenceRows },
   ] = await Promise.all([
     supabase
       .from("payables")
@@ -71,6 +73,13 @@ export default async function PayablesPage() {
     supabase
       .from("payable_approval_rules")
       .select("clinic_id, account_code, approval_mode, threshold_cents"),
+    supabase
+      .from("payable_recurrences")
+      .select(
+        "id, supplier_id, account_code, cost_center_id, description, amount_cents, due_day, start_month, end_month, active, supplier:suppliers ( name ), account:chart_of_accounts!payable_recurrences_account_code_fkey ( name )"
+      )
+      .eq("clinic_id", clinicId)
+      .order("description"),
   ]);
 
   type Embed = { name: string } | { name: string }[] | null;
@@ -179,6 +188,23 @@ export default async function PayablesPage() {
       r.threshold_cents === null ? null : Number(r.threshold_cents),
   }));
 
+  const recurrences: RecurrenceRow[] = (
+    (recurrenceRows ?? []) as unknown as Record<string, unknown>[]
+  ).map((r) => ({
+    id: r.id as string,
+    supplierId: (r.supplier_id as string | null) ?? null,
+    supplierName: one(r.supplier as Embed),
+    accountCode: r.account_code as string,
+    accountName: one(r.account as Embed),
+    costCenterId: (r.cost_center_id as string | null) ?? null,
+    description: r.description as string,
+    amountCents: Number(r.amount_cents),
+    dueDay: Number(r.due_day),
+    startMonth: r.start_month as string,
+    endMonth: (r.end_month as string | null) ?? null,
+    active: Boolean(r.active),
+  }));
+
   const isFinanceStaff =
     session.isAdminMaster ||
     Object.values(session.rolesByClinic).some((r) =>
@@ -218,6 +244,7 @@ export default async function PayablesPage() {
         accounts={accounts}
         costCenters={costCenters}
         rules={rules}
+        recurrences={recurrences}
         today={today}
         canManage={canManage}
         canConfigureNetworkRules={canConfigureNetworkRules}

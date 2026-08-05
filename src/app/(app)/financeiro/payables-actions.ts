@@ -248,6 +248,70 @@ export async function generateRecurringPayables(input: {
   return { ok: true, created: typeof data === "number" ? data : 0 };
 }
 
+/**
+ * FIN3 — despesa recorrente (aluguel, software, contabilidade). Cadastra uma
+ * vez e o sistema gera a conta do mês, em vez de alguém digitar 12 vezes.
+ */
+export async function saveRecurrence(input: {
+  id: string | null;
+  clinicId: string;
+  supplierId: string | null;
+  accountCode: string;
+  costCenterId: string | null;
+  description: string;
+  amountCents: number;
+  dueDay: number;
+  startMonth: string;
+  endMonth: string | null;
+  active: boolean;
+}): Promise<PayableResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+
+  if (!input.description.trim()) return { ok: false, error: "Descreva a despesa." };
+  if (!input.accountCode) {
+    return { ok: false, error: "Escolha a conta do plano de contas." };
+  }
+  if (input.amountCents <= 0) {
+    return { ok: false, error: "Informe um valor maior que zero." };
+  }
+  if (!Number.isInteger(input.dueDay) || input.dueDay < 1 || input.dueDay > 31) {
+    return { ok: false, error: "O dia do vencimento vai de 1 a 31." };
+  }
+
+  const row = {
+    clinic_id: input.clinicId,
+    supplier_id: input.supplierId,
+    account_code: input.accountCode,
+    cost_center_id: input.costCenterId,
+    description: input.description.trim(),
+    amount_cents: Math.round(input.amountCents),
+    due_day: input.dueDay,
+    // Sempre o primeiro dia do mês: a competência é o mês, não o dia.
+    start_month: input.startMonth.slice(0, 8) + "01",
+    end_month: input.endMonth ? input.endMonth.slice(0, 8) + "01" : null,
+    active: input.active,
+  };
+
+  const { error } = input.id
+    ? await supabase.from("payable_recurrences").update(row).eq("id", input.id)
+    : await supabase
+        .from("payable_recurrences")
+        .insert({ ...row, created_by: session.userId });
+  if (error) {
+    console.error("saveRecurrence failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a despesa recorrente." };
+  }
+
+  await logAudit({
+    action: input.id ? "update" : "create",
+    entityType: "payable_recurrence",
+    entityId: input.id ?? input.clinicId,
+  });
+  refresh();
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------------
 // Fornecedores e alçada (escrita direta, protegida pela RLS)
 // ---------------------------------------------------------------------------

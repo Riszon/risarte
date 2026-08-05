@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.174.0** · Última migração: **0194**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.175.0** · Última migração: **0194**_
+
+> **FIN3 — tela das despesas recorrentes (v0.175.0, sem migração):** o botão
+> **Recorrentes** em Contas a pagar cadastra aluguel, software e contabilidade
+> (conta, centro de custo, fornecedor, valor, dia do vencimento e vigência) e
+> **gera as contas do mês** com um clique. A mesma despesa nunca gera duas
+> contas para o mesmo mês — índice único no banco, então clicar de novo é
+> seguro. Dia 31 em mês curto cai no último dia.
 
 > **FINANCEIRO — FIN3: CONTAS A PAGAR ✅ (v0.174.0, migração 0194).** O outro
 > lado do caixa. Até aqui o sistema sabia tudo o que ENTRA e nada do que SAI —
