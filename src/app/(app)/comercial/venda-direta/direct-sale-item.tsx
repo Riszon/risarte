@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
+  automaticDiscountPercent,
   PAYMENT_METHODS,
   type CommercialRule,
   type PaymentMethod,
@@ -171,17 +172,33 @@ export function SaleItem({
         }
       : null
   );
+  // O desconto AUTOMÁTICO à vista é gravado no mesmo campo do manual. Ao
+  // reabrir a venda não podemos relê-lo como manual: ele ficaria congelado e
+  // seguiria valendo mesmo depois de trocar para parcelado, onde não vale.
+  const savedAutoDiscountCents = (() => {
+    if (sale.isProgramMember || sale.programConditions) return 0;
+    const pct = automaticDiscountPercent(sale.rule, sale.installments);
+    if (pct <= 0) return 0;
+    return Math.round(
+      (Math.max(0, sale.subtotalCents - sale.programDiscountCents) * pct) / 100
+    );
+  })();
+  const savedManualDiscount =
+    sale.discountCents > 0 && sale.discountCents !== savedAutoDiscountCents
+      ? sale.discountCents
+      : 0;
+
   // Ajuste como UM controle: nenhum / desconto R$ / desconto % / acréscimo R$.
   const initialMode: AdjustMode =
-    sale.discountCents > 0
+    savedManualDiscount > 0
       ? "desc_reais"
       : sale.surchargeCents > 0
         ? "acresc"
         : "none";
   const [adjustMode, setAdjustMode] = useState<AdjustMode>(initialMode);
   const [adjustValue, setAdjustValue] = useState<string>(
-    sale.discountCents > 0
-      ? centsToInput(sale.discountCents)
+    savedManualDiscount > 0
+      ? centsToInput(savedManualDiscount)
       : sale.surchargeCents > 0
         ? centsToInput(sale.surchargeCents)
         : ""
@@ -278,6 +295,8 @@ export function SaleItem({
         discountCents,
         surchargeCents: 0,
         final: Math.max(0, payableCents - discountCents),
+        autoPercent: programDiscountPercent,
+        isAuto: discountCents > 0,
       };
     }
     const num = Number((adjustValue || "0").replace(",", ".")) || 0;
@@ -287,17 +306,32 @@ export function SaleItem({
     else if (adjustMode === "desc_pct")
       discountCents = Math.round((baseCents * num) / 100);
     else if (adjustMode === "acresc") surchargeCents = Math.round(num * 100);
-    // O desconto sai do TOTAL a pagar, mas o percentual é calculado só sobre a
-    // parte que ainda não tem benefício do plano.
+
+    // DESCONTO AUTOMÁTICO À VISTA da regra comercial. O servidor já aplicava
+    // isso ao salvar; a tela não — e o resultado era o cabeçalho com um valor
+    // e o painel com outro, sem explicação, e o plano de cobranças recusado
+    // por não fechar com a venda (bug do dono, 05/08/2026).
+    // O manual maior que o automático prevalece, igual ao servidor.
+    const autoPercent = sale.isProgramMember
+      ? 0
+      : automaticDiscountPercent(sale.rule, installmentsNum);
+    const autoCents =
+      autoPercent > 0 ? Math.round((payableCents * autoPercent) / 100) : 0;
+    const isAuto = autoCents > 0 && autoCents >= discountCents;
+    discountCents = Math.max(discountCents, autoCents);
+
     const final = Math.max(0, payableCents - discountCents + surchargeCents);
-    return { discountCents, surchargeCents, final };
+    return { discountCents, surchargeCents, final, autoPercent, isAuto };
   }, [
     sale.programConditions,
+    sale.isProgramMember,
+    sale.rule,
     programDiscountPercent,
     adjustMode,
     adjustValue,
     baseCents,
     payableCents,
+    installmentsNum,
   ]);
 
   // J6: selo do passo 2 — o que está na tela ainda não foi gravado.
@@ -678,6 +712,17 @@ export function SaleItem({
                           desconto nesta unidade.
                         </p>
                       ))}
+
+                    {/* O desconto automático precisa se explicar: era ele que
+                        derrubava o total "sem motivo aparente". */}
+                    {preview.isAuto && !sale.programConditions && (
+                      <p className="mt-1 text-[11px] text-emerald-800">
+                        À vista, a regra da unidade dá{" "}
+                        <strong>{preview.autoPercent}% automático</strong> —{" "}
+                        {formatBRL(preview.discountCents)} já estão no total
+                        abaixo. Parcelando, esse desconto não vale.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -694,7 +739,13 @@ export function SaleItem({
                       tone: "program",
                     },
                     {
-                      label: "Desconto",
+                      // O nome diz de ONDE vem o desconto — era o que faltava
+                      // quando o total aparecia menor "sem explicação".
+                      label: preview.isAuto
+                        ? sale.programConditions
+                          ? `Desconto do plano (${preview.autoPercent}%)`
+                          : `Desconto à vista (${preview.autoPercent}%)`
+                        : "Desconto",
                       cents: preview.discountCents,
                       tone: "discount",
                     },

@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/08/2026 · Versão do sistema: **0.178.0** · Última migração: **0198**_
+_Atualizado em: 05/08/2026 · Versão do sistema: **0.178.1** · Última migração: **0198**_
+
+> **Venda direta — desconto à vista aparecia sem explicação (v0.178.1, sem
+> migração).** O dono lançou uma venda e viu o cabeçalho com R$ 1.596,00 e o
+> painel com R$ 1.680,00, sem nada dizendo de onde vinham os R$ 84,00 — e ao
+> salvar: *"A soma das cobranças precisa fechar exatamente com o valor da
+> venda."*
+>
+> **Causa:** o SERVIDOR aplica o desconto automático à vista da regra comercial
+> (5%) quando o cliente não é de programa e o pagamento é 1×; **a tela não
+> aplicava**. O painel montava as cobranças sobre o valor cheio, e o banco
+> recusava porque a soma não batia com o `final_cents` já descontado.
+>
+> Agora a prévia aplica a mesma regra do servidor, a linha do resumo diz
+> **"Desconto à vista (5%)"** e um aviso explica que parcelando esse desconto
+> não vale. Também: o desconto automático **não é mais relido como manual** ao
+> reabrir a venda — ficava congelado e continuava valendo no parcelado.
 
 > **FIN4b.1 — cadastro de taxas como a tabela real (v0.178.0, migração 0198).**
 > O dono trouxe a tabela do Asaas e ela mostrou três buracos no modelo da 0197:
