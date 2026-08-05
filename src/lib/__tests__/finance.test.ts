@@ -1409,3 +1409,51 @@ describe("resumo da conciliação", () => {
     expect(s.differenceCents).toBe(0);
   });
 });
+
+describe("de qual conta é o extrato (trava do extrato trocado)", () => {
+  // O bug do dono (05/08/2026): o MESMO extrato importado em duas contas
+  // duplicou o dinheiro. O OFX diz de qual conta ele é — é isso que trava.
+  const comConta = `
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS>
+<BANKACCTFROM>
+<BANKID>341
+<BRANCHID>1234
+<ACCTID>56789-0
+<ACCTTYPE>CHECKING
+</BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20260804
+<TRNAMT>-150.00
+<FITID>A1
+<MEMO>PAGAMENTO
+</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  it("lê o número da conta do próprio arquivo, só os dígitos", () => {
+    expect(parseOfx(comConta).statementAccountId).toBe("567890");
+  });
+
+  it("não confunde o número da conta com o do lançamento", () => {
+    const r = parseOfx(comConta);
+    expect(r.transactions).toHaveLength(1);
+    expect(r.transactions[0].fitId).toBe("A1");
+  });
+
+  it("OFX sem identificação de conta não inventa", () => {
+    const semConta = `<OFX><STMTTRN>
+<DTPOSTED>20260804
+<TRNAMT>-150.00
+<FITID>A1
+<MEMO>X
+</STMTTRN></OFX>`;
+    expect(parseOfx(semConta).statementAccountId).toBeNull();
+  });
+
+  it("CSV não identifica a conta — a trava fica por conta do banco de dados", () => {
+    const r = parseCsv("Data;Historico;Valor\n04/08/2026;X;-150,00");
+    expect(r.statementAccountId).toBeNull();
+    expect(r.transactions).toHaveLength(1);
+  });
+});

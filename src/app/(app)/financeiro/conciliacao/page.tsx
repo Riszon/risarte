@@ -12,6 +12,7 @@ import {
   ReconciliationBoard,
   type BankAccountRow,
   type BankTxRow,
+  type ImportRow,
 } from "./reconciliation-board";
 
 /** FIN4a — conciliação bancária: o que o sistema diz × o que o banco mostra. */
@@ -36,6 +37,7 @@ export default async function ReconciliationPage() {
   const [
     { data: accountRows },
     { data: txRows },
+    { data: importRows },
     { data: entryRows },
     { data: chartRows },
     { data: centerRows },
@@ -54,6 +56,13 @@ export default async function ReconciliationPage() {
       )
       .eq("clinic_id", clinicId)
       .order("posted_at"),
+    supabase
+      .from("bank_statement_imports")
+      .select(
+        "id, bank_account_id, file_name, format, period_start, period_end, inserted_count, duplicate_count, created_at, reverted_at, author:profiles!bank_statement_imports_created_by_fkey ( full_name )"
+      )
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false }),
     // Só o que tem CAIXA: conciliação é sobre dinheiro que se moveu.
     supabase
       .from("financial_entries")
@@ -106,6 +115,22 @@ export default async function ReconciliationPage() {
     matchedEntryId: (t.matched_entry_id as string | null) ?? null,
     ignoreReason: (t.ignore_reason as string | null) ?? null,
     matchedByName: person(t.matcher as PersonEmbed),
+  }));
+
+  const imports: ImportRow[] = (
+    (importRows ?? []) as unknown as Record<string, unknown>[]
+  ).map((i) => ({
+    id: i.id as string,
+    bankAccountId: i.bank_account_id as string,
+    fileName: (i.file_name as string | null) ?? null,
+    format: i.format as string,
+    periodStart: (i.period_start as string | null) ?? null,
+    periodEnd: (i.period_end as string | null) ?? null,
+    insertedCount: Number(i.inserted_count ?? 0),
+    duplicateCount: Number(i.duplicate_count ?? 0),
+    createdAt: i.created_at as string,
+    byName: person(i.author as PersonEmbed),
+    revertedAt: (i.reverted_at as string | null) ?? null,
   }));
 
   // No razão o valor é positivo e o sinal vem da direção; aqui viramos para o
@@ -174,6 +199,7 @@ export default async function ReconciliationPage() {
         clinicId={clinicId}
         accounts={accounts}
         transactions={transactions}
+        imports={imports}
         entries={entries}
         chart={chart}
         costCenters={costCenters}

@@ -37,12 +37,27 @@ import {
 } from "@/lib/finance/reconciliation";
 import {
   createEntryFromTransaction,
+  deleteImport,
   ignoreTransaction,
   importStatement,
   reconcileTransaction,
   saveBankAccount,
   unreconcileTransaction,
 } from "./actions";
+
+export type ImportRow = {
+  id: string;
+  bankAccountId: string;
+  fileName: string | null;
+  format: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  insertedCount: number;
+  duplicateCount: number;
+  createdAt: string;
+  byName: string | null;
+  revertedAt: string | null;
+};
 
 export type BankAccountRow = {
   id: string;
@@ -104,6 +119,7 @@ export function ReconciliationBoard({
   clinicId,
   accounts,
   transactions,
+  imports,
   entries,
   chart,
   costCenters,
@@ -113,6 +129,7 @@ export function ReconciliationBoard({
   clinicId: string;
   accounts: BankAccountRow[];
   transactions: BankTxRow[];
+  imports: ImportRow[];
   entries: LedgerEntry[];
   chart: ChartAccount[];
   costCenters: { id: string; name: string }[];
@@ -139,11 +156,21 @@ export function ReconciliationBoard({
   const [newDescription, setNewDescription] = useState("");
   const [ignoringFor, setIgnoringFor] = useState<BankTxRow | null>(null);
   const [ignoreReason, setIgnoreReason] = useState("");
+  const [showImports, setShowImports] = useState(false);
+  /** A trava disparou: guardamos o arquivo lido para o "importar mesmo assim". */
+  const [blocked, setBlocked] = useState<{
+    message: string;
+    payload: Parameters<typeof importStatement>[0];
+  } | null>(null);
 
   const account = accounts.find((a) => a.id === accountId) ?? null;
   const accountTx = useMemo(
     () => transactions.filter((t) => t.bankAccountId === accountId),
     [transactions, accountId]
+  );
+  const accountImports = useMemo(
+    () => imports.filter((i) => i.bankAccountId === accountId),
+    [imports, accountId]
   );
   const shown = useMemo(
     () => accountTx.filter((t) => filter === "todas" || t.status === filter),
@@ -192,13 +219,15 @@ export function ReconciliationBoard({
       }
       for (const e of parsed.errors) toast.warning(e);
 
+      const payload = {
+        bankAccountId: accountId,
+        format: parsed.format,
+        fileName: file.name,
+        rows: parsed.transactions,
+        statementAccountId: parsed.statementAccountId,
+      };
       startTransition(async () => {
-        const r = await importStatement({
-          bankAccountId: accountId,
-          format: parsed.format,
-          fileName: file.name,
-          rows: parsed.transactions,
-        });
+        const r = await importStatement(payload);
         if (r.ok) {
           toast.success(
             `${r.inserted} lançamento(s) importado(s)` +
@@ -207,12 +236,41 @@ export function ReconciliationBoard({
                 : ".")
           );
           router.refresh();
+        } else if (r.blocked) {
+          // Erro que o usuário resolve: mostramos e deixamos ele decidir.
+          setBlocked({ message: r.error ?? "", payload });
         } else toast.error(r.error ?? "Algo deu errado.");
       });
     };
     // Extrato de banco brasileiro costuma vir em Latin-1; ler como UTF-8
     // estragaria os acentos da descrição.
     reader.readAsText(file, "windows-1252");
+  }
+
+  function forceImport() {
+    if (!blocked) return;
+    startTransition(async () => {
+      const r = await importStatement({ ...blocked.payload, force: true });
+      if (r.ok) {
+        toast.success(`${r.inserted} lançamento(s) importado(s).`);
+        setBlocked(null);
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  function undoImport(importId: string) {
+    startTransition(async () => {
+      const r = await deleteImport({ importId });
+      if (r.ok) {
+        toast.success(
+          r.deleted === 0
+            ? "Nada a remover: todas as linhas já tinham sido conciliadas ou removidas."
+            : `${r.deleted} linha(s) removida(s).`
+        );
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
   }
 
   function match(txId: string, entryId: string) {
@@ -392,9 +450,60 @@ export function ReconciliationBoard({
             >
               <Plus className="size-4" />
             </Button>
+            {accountImports.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-9 text-xs"
+                onClick={() => setShowImports((v) => !v)}
+              >
+                Importações ({accountImports.length})
+              </Button>
+            )}
           </>
         )}
       </div>
+
+      {/* Histórico de importações — e o caminho de volta de quem errou a conta. */}
+      {showImports && (
+        <Card>
+          <CardContent className="space-y-1 p-3 text-xs">
+            {accountImports.map((imp) => (
+              <div
+                key={imp.id}
+                className={cn(
+                  "flex flex-wrap items-center justify-between gap-2 border-b py-1 last:border-0",
+                  imp.revertedAt && "opacity-60"
+                )}
+              >
+                <span>
+                  {new Date(imp.createdAt).toLocaleDateString("pt-BR")} ·{" "}
+                  {imp.fileName ?? "(sem nome)"} ·{" "}
+                  {imp.format.toUpperCase()}
+                  <span className="block text-[11px] text-muted-foreground">
+                    {imp.insertedCount} importado(s)
+                    {imp.duplicateCount > 0 &&
+                      ` · ${imp.duplicateCount} já existiam`}
+                    {imp.byName && ` · ${imp.byName}`}
+                    {imp.revertedAt && " · desfeita"}
+                  </span>
+                </span>
+                {canReconcile && !imp.revertedAt && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-[11px]"
+                    onClick={() => undoImport(imp.id)}
+                  >
+                    <RotateCcw className="mr-1 size-3" />
+                    Desfazer
+                  </Button>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Saldos. */}
       <div className="grid gap-2 sm:grid-cols-3">
@@ -751,6 +860,37 @@ export function ReconciliationBoard({
               onClick={doIgnore}
             >
               Ignorar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* A trava disparou. */}
+      <Dialog open={blocked !== null} onOpenChange={(o) => !o && setBlocked(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Importação bloqueada</DialogTitle>
+          </DialogHeader>
+          <p className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2 text-sm text-destructive">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>{blocked?.message}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O caminho normal é <strong>cancelar</strong> e escolher a conta
+            certa. Só force se estes lançamentos forem mesmo de contas
+            diferentes com valores iguais — forçar errado faz o sistema mostrar
+            o dobro do dinheiro.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setBlocked(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isPending}
+              onClick={forceImport}
+            >
+              Importar mesmo assim
             </Button>
           </DialogFooter>
         </DialogContent>

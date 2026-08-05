@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/08/2026 · Versão do sistema: **0.176.0** · Última migração: **0195**_
+_Atualizado em: 05/08/2026 · Versão do sistema: **0.176.1** · Última migração: **0196**_
+
+> **FIN4a — trava do extrato trocado + desfazer importação (v0.176.1, migração
+> 0196).** O dono importou o **mesmo extrato em duas contas diferentes** e os
+> lançamentos duplicaram. A chave anti-duplicidade da 0195 é única por CONTA —
+> certo para o caso normal (duas contas podem ter movimentos iguais), mas
+> deixava passar o erro real: escolher a conta errada. Resultado: o sistema
+> mostrando o dobro do dinheiro.
+>
+> **Duas travas novas:** o OFX traz `<BANKACCTFROM><ACCTID>` — se não bate com
+> o número da conta cadastrada, a importação para; e se as mesmas chaves já
+> existem em **outra conta da unidade**, também para, dizendo em qual. Vale
+> para CSV, que não identifica a conta. Ambas podem ser forçadas, mas aí é
+> decisão consciente, com aviso na tela.
+>
+> **E o caminho de volta:** `Importações` lista os arquivos que entraram e
+> permite **desfazer** um deles. Só apaga linha **pendente** — o que já foi
+> conciliado é dinheiro conferido e exige desfazer a conciliação antes.
 
 > **FINANCEIRO — FIN4a: CONCILIAÇÃO BANCÁRIA ✅ (v0.176.0, migração 0195).**
 > Enquanto o saldo do sistema não bate com o do banco, o caixa é opinião — e a

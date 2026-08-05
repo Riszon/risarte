@@ -23,6 +23,12 @@ export type ParseResult = {
   /** Linhas que não deu para ler — o usuário precisa saber, não sumir. */
   skipped: number;
   errors: string[];
+  /**
+   * A conta que o próprio arquivo diz pertencer (`BANKACCTFROM` do OFX).
+   * É o que impede importar o extrato do banco A na conta B — o erro que
+   * duplicou lançamento no teste do dono (05/08/2026).
+   */
+  statementAccountId: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -119,12 +125,19 @@ export function parseOfx(content: string): ParseResult {
   const errors: string[] = [];
   let skipped = 0;
 
+  // De qual conta é este extrato — o próprio arquivo diz.
+  const from = content.match(/<BANKACCTFROM>[\s\S]*?(?=<\/BANKACCTFROM>|<BANKTRANLIST>)/i);
+  const statementAccountId = from
+    ? tagValue(from[0], "ACCTID").replace(/\D/g, "") || null
+    : null;
+
   const blocks = content.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi) ?? [];
   if (blocks.length === 0) {
     return {
       transactions: [],
       skipped: 0,
       errors: ["Não encontrei lançamentos neste arquivo OFX."],
+      statementAccountId,
     };
   }
 
@@ -148,7 +161,7 @@ export function parseOfx(content: string): ParseResult {
   if (skipped > 0) {
     errors.push(`${skipped} lançamento(s) sem data ou valor foram ignorados.`);
   }
-  return { transactions, skipped, errors };
+  return { transactions, skipped, errors, statementAccountId };
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +216,12 @@ export function parseCsv(content: string): ParseResult {
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
   if (lines.length === 0) {
-    return { transactions: [], skipped: 0, errors: ["Arquivo vazio."] };
+    return {
+      transactions: [],
+      skipped: 0,
+      errors: ["Arquivo vazio."],
+      statementAccountId: null,
+    };
   }
 
   // O separador é o que aparece mais na primeira linha com conteúdo.
@@ -275,7 +293,9 @@ export function parseCsv(content: string): ParseResult {
       `${skipped} linha(s) sem data ou valor foram ignoradas (cabeçalho, saldo, totais).`
     );
   }
-  return { transactions, skipped, errors };
+  // CSV não diz de qual conta é — por isso a trava contra importar o mesmo
+  // extrato em duas contas depende da checagem no banco.
+  return { transactions, skipped, errors, statementAccountId: null };
 }
 
 /** Escolhe o leitor pelo conteúdo, não pela extensão do arquivo. */

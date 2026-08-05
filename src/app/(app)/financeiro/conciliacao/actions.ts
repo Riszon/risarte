@@ -48,8 +48,17 @@ export async function importStatement(input: {
   format: "ofx" | "csv";
   fileName: string;
   rows: ParsedBankTx[];
+  statementAccountId: string | null;
+  /** Só quando o usuário confirma que a trava é falso positivo. */
+  force?: boolean;
 }): Promise<
-  ReconcileResult & { inserted?: number; duplicates?: number; rows?: number }
+  ReconcileResult & {
+    inserted?: number;
+    duplicates?: number;
+    rows?: number;
+    /** A trava disparou: a tela oferece "importar mesmo assim". */
+    blocked?: boolean;
+  }
 > {
   await getSessionContext();
   const supabase = await createClient();
@@ -59,12 +68,35 @@ export async function importStatement(input: {
     p_format: input.format,
     p_file_name: input.fileName,
     p_rows: input.rows,
+    p_statement_account_id: input.statementAccountId,
+    p_force: input.force ?? false,
   });
   if (error) {
-    console.error("import_bank_transactions failed:", error.message);
+    const m = error.message;
+    // Erro que o usuário PODE resolver: escolher a conta certa, ou forçar.
+    if (m.includes("ACCOUNT_MISMATCH")) {
+      return {
+        ok: false,
+        blocked: true,
+        error:
+          "Este extrato é de outra conta bancária — confira qual conta você escolheu.",
+      };
+    }
+    if (m.includes("ALREADY_IN_ANOTHER_ACCOUNT")) {
+      const other = m.split("ALREADY_IN_ANOTHER_ACCOUNT:")[1]?.trim() ?? "";
+      return {
+        ok: false,
+        blocked: true,
+        error:
+          "Estes lançamentos já foram importados em outra conta" +
+          (other ? ` (${other.replace(/^estes lançamentos já estão em /i, "")})` : "") +
+          ". Importar de novo aqui duplicaria o dinheiro.",
+      };
+    }
+    console.error("import_bank_transactions failed:", m);
     return {
       ok: false,
-      error: translate(error.message, "Não foi possível importar o extrato."),
+      error: translate(m, "Não foi possível importar o extrato."),
     };
   }
 
@@ -203,6 +235,45 @@ export async function createEntryFromTransaction(input: {
   });
   refresh();
   return { ok: true };
+}
+
+/**
+ * FIN4a — desfaz uma importação inteira (importou na conta errada). Só apaga
+ * linha PENDENTE: o que já foi conciliado é dinheiro conferido.
+ */
+export async function deleteImport(input: {
+  importId: string;
+}): Promise<ReconcileResult & { deleted?: number }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("delete_bank_import", {
+    p_import_id: input.importId,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("HAS_RECONCILED")) {
+      return {
+        ok: false,
+        error:
+          "Esta importação tem linhas já conciliadas. Desfaça a conciliação delas antes de remover.",
+      };
+    }
+    console.error("delete_bank_import failed:", m);
+    return {
+      ok: false,
+      error: translate(m, "Não foi possível desfazer a importação."),
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "bank_statement_import_undo",
+    entityId: input.importId,
+  });
+  refresh();
+  const result = (data ?? {}) as { deleted?: number };
+  return { ok: true, deleted: result.deleted ?? 0 };
 }
 
 /** Conta bancária da unidade — o saldo de abertura ancora a conciliação. */
