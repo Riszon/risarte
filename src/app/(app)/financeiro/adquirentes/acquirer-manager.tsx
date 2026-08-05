@@ -17,11 +17,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/lib/pricing";
+import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   CARD_MODALITIES,
   CARD_MODALITY_LABELS,
   computeSettlement,
+  hasInstallmentRange,
   type AcquirerRate,
   type CardModality,
 } from "@/lib/finance/acquirers";
@@ -71,7 +72,10 @@ export function AcquirerManager({
   const [minInst, setMinInst] = useState(1);
   const [maxInst, setMaxInst] = useState(1);
   const [fee, setFee] = useState("");
+  const [fixedFee, setFixedFee] = useState("");
   const [days, setDays] = useState(30);
+  const [businessDays, setBusinessDays] = useState(false);
+  const [freeCount, setFreeCount] = useState("");
   const [validFrom, setValidFrom] = useState(today);
 
   function saveAcq() {
@@ -100,16 +104,21 @@ export function AcquirerManager({
         id: null,
         acquirerId: rateFor.id,
         modality,
-        minInstallments: modality === "credito_parcelado" ? minInst : 1,
-        maxInstallments: modality === "credito_parcelado" ? maxInst : 1,
+        minInstallments: hasInstallmentRange(modality) ? minInst : 1,
+        maxInstallments: hasInstallmentRange(modality) ? maxInst : 1,
         feePercent: Number(fee.replace(",", ".")) || 0,
+        fixedFeeCents: parseBRLToCents(fixedFee) ?? 0,
         settlementDays: days,
+        settlementBusinessDays: businessDays,
+        freeMonthlyCount: freeCount.trim() ? Number(freeCount) : null,
         validFrom,
         validTo: null,
       });
       if (r.ok) {
         toast.success("Taxa salva.");
         setFee("");
+        setFixedFee("");
+        setFreeCount("");
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -125,17 +134,22 @@ export function AcquirerManager({
     });
   }
 
-  const preview =
-    fee.trim() !== ""
-      ? computeSettlement({
-          grossCents: 100000,
-          rate: {
-            feePercent: Number(fee.replace(",", ".")) || 0,
-            settlementDays: days,
-          },
-          paidAt: today,
-        })
-      : null;
+  // Prévia em DOIS valores: numa cobrança pequena a taxa fixa pesa mais que o
+  // percentual, e é isso que o cadastro precisa deixar claro.
+  const rateShape = {
+    feePercent: Number(fee.replace(",", ".")) || 0,
+    fixedFeeCents: parseBRLToCents(fixedFee) ?? 0,
+    settlementDays: days,
+    settlementBusinessDays: businessDays,
+    freeMonthlyCount: null,
+  };
+  const hasRate = fee.trim() !== "" || fixedFee.trim() !== "";
+  const previewBig = hasRate
+    ? computeSettlement({ grossCents: 100000, rate: rateShape, paidAt: today })
+    : null;
+  const previewSmall = hasRate
+    ? computeSettlement({ grossCents: 5000, rate: rateShape, paidAt: today })
+    : null;
 
   return (
     <div className={cn("space-y-3", isPending && "opacity-70")}>
@@ -229,9 +243,22 @@ export function AcquirerManager({
                           </span>
                         </span>
                         <span className="flex items-center gap-2 tabular-nums">
-                          <strong>{r.feePercent}%</strong>
+                          <strong>
+                            {r.feePercent > 0 && `${r.feePercent}%`}
+                            {r.feePercent > 0 && r.fixedFeeCents > 0 && " + "}
+                            {r.fixedFeeCents > 0 && formatBRL(r.fixedFeeCents)}
+                            {r.feePercent === 0 &&
+                              r.fixedFeeCents === 0 &&
+                              "sem custo"}
+                          </strong>
+                          {r.freeMonthlyCount !== null && (
+                            <span className="text-muted-foreground">
+                              {r.freeMonthlyCount} grátis/mês
+                            </span>
+                          )}
                           <span className="text-muted-foreground">
                             D+{r.settlementDays}
+                            {r.settlementBusinessDays && " úteis"}
                           </span>
                           {canEdit && (
                             <Button
@@ -348,7 +375,7 @@ export function AcquirerManager({
                 ))}
               </select>
             </label>
-            {modality === "credito_parcelado" && (
+            {hasInstallmentRange(modality) && (
               <>
                 <label className="block">
                   <Label className="text-[11px]">De (parcelas)</Label>
@@ -379,7 +406,17 @@ export function AcquirerManager({
                 inputMode="decimal"
                 value={fee}
                 onChange={(e) => setFee(e.target.value)}
-                placeholder="Ex.: 3,2"
+                placeholder="Ex.: 2,39"
+              />
+            </label>
+            <label className="block">
+              <Label className="text-[11px]">+ Taxa fixa (R$)</Label>
+              <Input
+                className="h-9"
+                inputMode="decimal"
+                value={fixedFee}
+                onChange={(e) => setFixedFee(e.target.value)}
+                placeholder="Ex.: 0,29"
               />
             </label>
             <label className="block">
@@ -392,6 +429,29 @@ export function AcquirerManager({
                 onChange={(e) => setDays(Number(e.target.value) || 0)}
               />
             </label>
+            <label className="block">
+              <Label className="text-[11px]">Franquia grátis por mês</Label>
+              <Input
+                className="h-9"
+                type="number"
+                min={1}
+                value={freeCount}
+                onChange={(e) => setFreeCount(e.target.value)}
+                placeholder="em branco = sem franquia"
+              />
+            </label>
+            <label className="flex items-center gap-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={businessDays}
+                onChange={(e) => setBusinessDays(e.target.checked)}
+              />
+              <span className="text-xs">
+                O prazo é em <strong>dias úteis</strong> (pula fim de semana;
+                feriado ainda não é considerado)
+              </span>
+            </label>
             <label className="block sm:col-span-2">
               <Label className="text-[11px]">Vale a partir de</Label>
               <Input
@@ -403,13 +463,29 @@ export function AcquirerManager({
             </label>
           </div>
 
-          {preview && (
-            <p className="rounded-lg border border-border bg-muted/30 p-2 text-xs">
-              Numa venda de <strong>R$ 1.000,00</strong>: a clínica recebe{" "}
-              <strong>{formatBRL(preview.netCents)}</strong> (taxa de{" "}
-              {formatBRL(preview.feeCents)}), e o dinheiro cai em{" "}
-              <strong>{fmtDate(preview.settlementDate)}</strong>.
-            </p>
+          {previewBig && previewSmall && (
+            <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-2 text-xs">
+              <p>
+                Cobrança de <strong>R$ 1.000,00</strong>: a clínica recebe{" "}
+                <strong>{formatBRL(previewBig.netCents)}</strong> (taxa de{" "}
+                {formatBRL(previewBig.feeCents)}), em{" "}
+                <strong>{fmtDate(previewBig.settlementDate)}</strong>.
+              </p>
+              <p>
+                Cobrança de <strong>R$ 50,00</strong>: recebe{" "}
+                <strong>{formatBRL(previewSmall.netCents)}</strong> (taxa de{" "}
+                {formatBRL(previewSmall.feeCents)}
+                {previewSmall.fixedFeeCents > 0 &&
+                  ` — ${((previewSmall.feeCents / 5000) * 100).toFixed(1)}% do valor`}
+                ).
+              </p>
+              {previewSmall.fixedFeeCents > 0 && (
+                <p className="text-muted-foreground">
+                  A taxa fixa pesa muito mais nas cobranças pequenas — é por
+                  isso que ela precisa estar aqui.
+                </p>
+              )}
+            </div>
           )}
 
           <DialogFooter className="gap-2">

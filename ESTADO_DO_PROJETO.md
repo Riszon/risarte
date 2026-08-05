@@ -1,6 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/08/2026 · Versão do sistema: **0.177.0** · Última migração: **0197**_
+_Atualizado em: 05/08/2026 · Versão do sistema: **0.178.0** · Última migração: **0198**_
+
+> **FIN4b.1 — cadastro de taxas como a tabela real (v0.178.0, migração 0198).**
+> O dono trouxe a tabela do Asaas e ela mostrou três buracos no modelo da 0197:
+>
+> 1. **Taxa fixa por transação** — "2,39% **+ R$ 0,29**", "R$ 1,99 por boleto",
+>    "R$ 1,49 por PIX". Só percentual não representa a realidade: numa cobrança
+>    de R$ 50 a parte fixa é a maior parte do custo (2,97% contra 2,42% numa de
+>    R$ 1.000 — está em teste).
+> 2. **Boleto e PIX também custam.** A 0197 só tinha modalidades de cartão, o
+>    que fazia o sistema tratá-los como grátis. Agora as modalidades cobrem
+>    boleto, PIX, débito, crédito à vista, crédito parcelado por faixa, cartão
+>    voucher e recorrência.
+> 3. **Franquia mensal** — "100 recebimentos gratuitos por mês".
+>
+> E o prazo passou a distinguir **dias corridos × dias úteis** ("1 dia útil" do
+> boleto contra "32 dias" do cartão). **Feriado não é considerado** — não há
+> calendário de feriados no sistema; em janeiro e no carnaval a data projetada
+> sai otimista. Registrado como pendência.
+>
+> A tela mostra a prévia em **dois valores** (R$ 1.000 e R$ 50) justamente para
+> a taxa fixa ficar visível. **310 testes.**
+>
+> **Adiado por decisão do dono:** antecipação de recebíveis (etapa própria) e
+> tabela de tarifas de movimentação (transferência entra como despesa normal,
+> lançada pela conciliação em 4.2.02).
 
 > **FINANCEIRO — FIN4b: ADQUIRENTES ✅ (v0.177.0, migração 0197).** Dois erros
 > que o sistema cometia todo dia com cartão: registrava o **valor cheio** (a

@@ -77,7 +77,10 @@ export async function saveRate(input: {
   minInstallments: number;
   maxInstallments: number;
   feePercent: number;
+  fixedFeeCents: number;
   settlementDays: number;
+  settlementBusinessDays: boolean;
+  freeMonthlyCount: number | null;
   validFrom: string;
   validTo: string | null;
 }): Promise<AcquirerResult> {
@@ -93,7 +96,10 @@ export async function saveRate(input: {
     min_installments: input.minInstallments,
     max_installments: input.maxInstallments,
     fee_percent: input.feePercent,
+    fixed_fee_cents: Math.round(input.fixedFeeCents),
     settlement_days: input.settlementDays,
+    settlement_business_days: input.settlementBusinessDays,
+    free_monthly_count: input.freeMonthlyCount,
     valid_from: input.validFrom,
     valid_to: input.validTo,
   };

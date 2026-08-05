@@ -34,7 +34,7 @@ export default async function AcquirersPage() {
     ? await supabase
         .from("acquirer_rates")
         .select(
-          "id, acquirer_id, modality, min_installments, max_installments, fee_percent, settlement_days, valid_from, valid_to"
+          "id, acquirer_id, modality, min_installments, max_installments, fee_percent, fixed_fee_cents, settlement_days, settlement_business_days, free_monthly_count, valid_from, valid_to"
         )
         .in("acquirer_id", ids)
         .order("valid_from", { ascending: false })
@@ -55,7 +55,11 @@ export default async function AcquirersPage() {
     minInstallments: Number(r.min_installments),
     maxInstallments: Number(r.max_installments),
     feePercent: Number(r.fee_percent),
+    fixedFeeCents: Number(r.fixed_fee_cents ?? 0),
     settlementDays: Number(r.settlement_days),
+    settlementBusinessDays: Boolean(r.settlement_business_days),
+    freeMonthlyCount:
+      r.free_monthly_count === null ? null : Number(r.free_monthly_count),
     validFrom: r.valid_from as string,
     validTo: (r.valid_to as string | null) ?? null,
   }));

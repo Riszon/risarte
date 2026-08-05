@@ -31,8 +31,11 @@ import {
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
+  addBusinessDays,
+  addDays,
   computeSettlement,
   daysUntilSettlement,
+  hasInstallmentRange,
   modalityOf,
   rateErrors,
   resolveRate,
@@ -1478,7 +1481,10 @@ describe("adquirentes", () => {
       minInstallments: 1,
       maxInstallments: 1,
       feePercent: 1.5,
+      fixedFeeCents: 0,
       settlementDays: 1,
+      settlementBusinessDays: false,
+      freeMonthlyCount: null,
       validFrom: "2026-01-01",
       validTo: null,
     },
@@ -1489,7 +1495,10 @@ describe("adquirentes", () => {
       minInstallments: 1,
       maxInstallments: 1,
       feePercent: 3.2,
+      fixedFeeCents: 0,
       settlementDays: 30,
+      settlementBusinessDays: false,
+      freeMonthlyCount: null,
       validFrom: "2026-01-01",
       validTo: null,
     },
@@ -1500,7 +1509,10 @@ describe("adquirentes", () => {
       minInstallments: 2,
       maxInstallments: 6,
       feePercent: 4.5,
+      fixedFeeCents: 0,
       settlementDays: 30,
+      settlementBusinessDays: false,
+      freeMonthlyCount: null,
       validFrom: "2026-01-01",
       validTo: null,
     },
@@ -1511,7 +1523,10 @@ describe("adquirentes", () => {
       minInstallments: 7,
       maxInstallments: 12,
       feePercent: 5.9,
+      fixedFeeCents: 0,
       settlementDays: 30,
+      settlementBusinessDays: false,
+      freeMonthlyCount: null,
       validFrom: "2026-01-01",
       validTo: null,
     },
@@ -1523,7 +1538,10 @@ describe("adquirentes", () => {
       minInstallments: 1,
       maxInstallments: 1,
       feePercent: 2.5,
+      fixedFeeCents: 0,
       settlementDays: 30,
+      settlementBusinessDays: false,
+      freeMonthlyCount: null,
       validFrom: "2026-08-01",
       validTo: null,
     },
@@ -1632,10 +1650,11 @@ describe("adquirentes", () => {
     expect(modalityOf("cartao", 4)).toBe("credito_parcelado");
     expect(modalityOf("cartao_parcelado", 6)).toBe("credito_parcelado");
     expect(modalityOf("credito_recorrente", 12)).toBe("recorrente");
-    // Boleto e PIX não passam por adquirente.
-    expect(modalityOf("boleto", 1)).toBeNull();
-    expect(modalityOf("pix", 1)).toBeNull();
+    // Desde a 0198 boleto e PIX também têm custo e viraram modalidade.
+    expect(modalityOf("boleto", 1)).toBe("boleto");
+    expect(modalityOf("pix", 1)).toBe("pix");
     expect(modalityOf(null, 1)).toBeNull();
+    expect(modalityOf("deposito_avista", 1)).toBeNull();
   });
 
   it("recusa taxa e faixa impossíveis", () => {
@@ -1658,6 +1677,208 @@ describe("adquirentes", () => {
     expect(
       rateErrors({
         feePercent: 0,
+        settlementDays: 0,
+        minInstallments: 1,
+        maxInstallments: 1,
+      })
+    ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN4b.1 — taxa fixa, franquia mensal e dias úteis (tabela real do Asaas)
+// ---------------------------------------------------------------------------
+describe("taxa fixa e franquia (tabela do Asaas)", () => {
+  // "2,39% + R$ 0,29 à vista · Recebimento em 32 dias"
+  const creditoAvista = {
+    feePercent: 2.39,
+    fixedFeeCents: 29,
+    settlementDays: 32,
+    settlementBusinessDays: false,
+    freeMonthlyCount: null,
+  };
+  // "R$ 1,99 por boleto pago · Recebimento em 1 dia útil"
+  const boleto = {
+    feePercent: 0,
+    fixedFeeCents: 199,
+    settlementDays: 1,
+    settlementBusinessDays: true,
+    freeMonthlyCount: null,
+  };
+  // "R$ 1,49 por cobrança recebida · 100 recebimentos gratuitos por mês"
+  const pix = {
+    feePercent: 0,
+    fixedFeeCents: 149,
+    settlementDays: 0,
+    settlementBusinessDays: false,
+    freeMonthlyCount: 100,
+  };
+
+  it("percentual MAIS taxa fixa", () => {
+    const s = computeSettlement({
+      grossCents: 100000,
+      rate: creditoAvista,
+      paidAt: "2026-08-04",
+    });
+    expect(s.percentFeeCents).toBe(2390);
+    expect(s.fixedFeeCents).toBe(29);
+    expect(s.feeCents).toBe(2419);
+    expect(s.netCents).toBe(97581);
+  });
+
+  // O motivo de a taxa fixa existir no modelo: numa cobrança pequena ela é a
+  // maior parte do custo, e o percentual sozinho subestimaria feio.
+  it("na cobrança pequena a taxa fixa pesa muito mais", () => {
+    const grande = computeSettlement({
+      grossCents: 100000,
+      rate: creditoAvista,
+      paidAt: "2026-08-04",
+    });
+    const pequena = computeSettlement({
+      grossCents: 5000,
+      rate: creditoAvista,
+      paidAt: "2026-08-04",
+    });
+    // R$ 1.000 → 2,42% do valor; R$ 50 → 2,97%.
+    expect((grande.feeCents / grande.grossCents) * 100).toBeCloseTo(2.42, 1);
+    expect((pequena.feeCents / pequena.grossCents) * 100).toBeCloseTo(2.97, 1);
+  });
+
+  it("boleto: só taxa fixa, sem percentual", () => {
+    const s = computeSettlement({
+      grossCents: 30000,
+      rate: boleto,
+      paidAt: "2026-08-04",
+    });
+    expect(s.percentFeeCents).toBe(0);
+    expect(s.feeCents).toBe(199);
+    expect(s.netCents).toBe(29801);
+  });
+
+  it("1 dia útil na sexta cai na segunda, não no sábado", () => {
+    // 07/08/2026 é uma sexta-feira.
+    expect(addBusinessDays("2026-08-07", 1)).toBe("2026-08-10");
+    // 3 dias úteis a partir de quinta → terça.
+    expect(addBusinessDays("2026-08-06", 3)).toBe("2026-08-11");
+    // Dias corridos ignoram o fim de semana e caem no sábado.
+    expect(addDays("2026-08-07", 1)).toBe("2026-08-08");
+  });
+
+  it("franquia mensal: os primeiros são grátis, o seguinte paga", () => {
+    const dentro = computeSettlement({
+      grossCents: 20000,
+      rate: pix,
+      paidAt: "2026-08-04",
+      usedThisMonth: 99,
+    });
+    expect(dentro.waived).toBe(true);
+    expect(dentro.feeCents).toBe(0);
+    expect(dentro.netCents).toBe(20000);
+
+    const fora = computeSettlement({
+      grossCents: 20000,
+      rate: pix,
+      paidAt: "2026-08-04",
+      usedThisMonth: 100,
+    });
+    expect(fora.waived).toBe(false);
+    expect(fora.feeCents).toBe(149);
+  });
+
+  it("sem franquia configurada, a taxa fixa sempre é cobrada", () => {
+    const s = computeSettlement({
+      grossCents: 20000,
+      rate: boleto,
+      paidAt: "2026-08-04",
+      usedThisMonth: 0,
+    });
+    expect(s.waived).toBe(false);
+    expect(s.feeCents).toBe(199);
+  });
+
+  it("boleto e PIX agora entram como modalidade (antes eram tratados como grátis)", () => {
+    expect(modalityOf("boleto", 1)).toBe("boleto");
+    expect(modalityOf("pix", 1)).toBe("pix");
+    // Só o crédito parcelado tem faixa de parcelas.
+    expect(hasInstallmentRange("credito_parcelado")).toBe(true);
+    expect(hasInstallmentRange("boleto")).toBe(false);
+    expect(hasInstallmentRange("pix")).toBe(false);
+  });
+
+  it("faixas do Asaas: 13 a 21 parcelas tem taxa maior", () => {
+    const rates: AcquirerRate[] = [
+      {
+        id: "x1",
+        acquirerId: "a1",
+        modality: "credito_parcelado",
+        minInstallments: 2,
+        maxInstallments: 12,
+        feePercent: 2.39,
+        fixedFeeCents: 29,
+        settlementDays: 32,
+        settlementBusinessDays: false,
+        freeMonthlyCount: null,
+        validFrom: "2026-01-01",
+        validTo: null,
+      },
+      {
+        id: "x2",
+        acquirerId: "a1",
+        modality: "credito_parcelado",
+        minInstallments: 13,
+        maxInstallments: 21,
+        feePercent: 4.29,
+        fixedFeeCents: 29,
+        settlementDays: 32,
+        settlementBusinessDays: false,
+        freeMonthlyCount: null,
+        validFrom: "2026-01-01",
+        validTo: null,
+      },
+    ];
+    expect(
+      resolveRate(rates, {
+        acquirerId: "a1",
+        modality: "credito_parcelado",
+        installments: 10,
+        date: "2026-08-04",
+      })?.feePercent
+    ).toBe(2.39);
+    expect(
+      resolveRate(rates, {
+        acquirerId: "a1",
+        modality: "credito_parcelado",
+        installments: 18,
+        date: "2026-08-04",
+      })?.feePercent
+    ).toBe(4.29);
+  });
+
+  it("recusa franquia quebrada e taxa fixa negativa", () => {
+    expect(
+      rateErrors({
+        feePercent: 2,
+        fixedFeeCents: -1,
+        settlementDays: 30,
+        minInstallments: 1,
+        maxInstallments: 1,
+      })
+    ).toContain("A taxa fixa não pode ser negativa.");
+    expect(
+      rateErrors({
+        feePercent: 2,
+        fixedFeeCents: 29,
+        settlementDays: 30,
+        minInstallments: 1,
+        maxInstallments: 1,
+        freeMonthlyCount: 0,
+      })
+    ).toContain("A franquia mensal é um número inteiro de transações.");
+    // Meio de pagamento realmente gratuito continua podendo ser cadastrado.
+    expect(
+      rateErrors({
+        feePercent: 0,
+        fixedFeeCents: 0,
         settlementDays: 0,
         minInstallments: 1,
         maxInstallments: 1,
