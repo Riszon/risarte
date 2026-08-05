@@ -401,8 +401,19 @@ equilíbrio e consolidação da rede não fecham.
 **Papel novo:** `finance_franchisor` (Financeiro da Franqueadora), com escopo de
 unidades. Auditor/Controladoria somente-leitura está previsto, não implementado.
 
+**Alçada das contas a pagar (FIN3, decisão do dono 04/08/2026):** cada conta do
+plano de contas tem um **modo** — `automatica` (despesa contratada: nunca pede
+autorização e **não olha o teto**), `sem_autorizacao` (livre, mas respeita o
+teto) ou `com_autorizacao` (sempre exige). Cascata rede→unidade e geral→conta,
+sendo que **a conta pesa mais que o escopo**: regra da rede sobre uma conta não
+é derrubada pelo teto geral da unidade. **Quem lançou não autoriza a própria
+conta** (o Financeiro da Franqueadora e o Admin Master são a exceção).
+**Recepção não entra em contas a pagar** — pagar fornecedor não é ato de balcão.
+Multa e juros que NÓS pagamos são **informados** (quem define é o fornecedor) e
+vão para **4.2.01**, separados da despesa.
+
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
-renegociação ✅ → FIN3 contas a pagar → FIN4 conciliação OFX + adquirente →
+renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC
 → FIN7 orçado×realizado e alertas → FIN8 franqueadora/royalties/consolidação.
 **Uma fase por vez, com plano aprovado antes do código.**

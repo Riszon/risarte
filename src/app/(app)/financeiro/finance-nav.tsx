@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Network, Settings2 } from "lucide-react";
+import {
+  BookOpen,
+  Network,
+  Receipt,
+  Settings2,
+  Truck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
+  { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
+  { href: "/financeiro/fornecedores", label: "Fornecedores", icon: Truck },
   { href: "/financeiro/configuracao", label: "Configuração", icon: Settings2 },
   { href: "/financeiro/centros-de-custo", label: "Centros de custo", icon: Network },
   { href: "/financeiro/plano-de-contas", label: "Plano de contas", icon: BookOpen },

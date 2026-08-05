@@ -31,6 +31,18 @@ import {
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
+  matchesPayableFilter,
+  payableErrors,
+  payablePaymentErrors,
+  requiresApproval,
+  resolveApproval,
+  summarizePayables,
+  viewPayable,
+  type ApprovalRule,
+  type Payable,
+  type PayablePaymentEntry,
+} from "@/lib/finance/payables";
+import {
   canRenegotiateInstallment,
   financedPlan,
   priceInstallmentCents,
@@ -918,5 +930,218 @@ describe("juros do parcelamento na renegociação (Tabela Price)", () => {
     });
     expect(o.discountCents).toBe(-11330);
     expect(o.needsAuthorization).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN3 — contas a pagar
+// ---------------------------------------------------------------------------
+describe("alçada das contas a pagar", () => {
+  const rules: ApprovalRule[] = [
+    // Padrão da rede: livre até R$ 2.000,00.
+    { clinicId: null, accountCode: null, mode: "sem_autorizacao", thresholdCents: 200000 },
+    // A rede exige liberação para equipamentos, em qualquer valor.
+    { clinicId: null, accountCode: "5.1.01", mode: "com_autorizacao", thresholdCents: null },
+    // Aluguel é contratado: nunca pede nada.
+    { clinicId: null, accountCode: "3.2.01", mode: "automatica", thresholdCents: null },
+    // A unidade aperta o próprio teto geral.
+    { clinicId: "u1", accountCode: null, mode: "sem_autorizacao", thresholdCents: 50000 },
+  ];
+
+  it("a cascata pega o mais específico: unidade+conta > rede+conta > unidade > rede", () => {
+    expect(resolveApproval(rules, "u1", "9.9.99").thresholdCents).toBe(50000);
+    expect(resolveApproval(rules, "u2", "9.9.99").thresholdCents).toBe(200000);
+    expect(resolveApproval(rules, "u1", "5.1.01").mode).toBe("com_autorizacao");
+    expect(resolveApproval(rules, "u1", "3.2.01").mode).toBe("automatica");
+  });
+
+  it("sem nenhuma regra, passa sem autorização e sem teto", () => {
+    const r = resolveApproval([], "u1", "3.3.01");
+    expect(r.mode).toBe("sem_autorizacao");
+    expect(r.thresholdCents).toBeNull();
+    expect(requiresApproval(r, 99999999)).toBe(false);
+  });
+
+  it("o teto só vale no modo sem autorização", () => {
+    const unidade = resolveApproval(rules, "u1", "3.3.01"); // teto 500,00
+    expect(requiresApproval(unidade, 49999)).toBe(false);
+    expect(requiresApproval(unidade, 50000)).toBe(false); // no teto, não passa dele
+    expect(requiresApproval(unidade, 50001)).toBe(true);
+  });
+
+  it("automática é despesa contratada: nunca pede, nem olha o teto", () => {
+    const aluguel = resolveApproval(rules, "u1", "3.2.01");
+    expect(requiresApproval(aluguel, 100000000)).toBe(false);
+    // Mesmo com teto configurado por engano, o modo automático ignora.
+    expect(
+      requiresApproval({ mode: "automatica", thresholdCents: 100 }, 999999)
+    ).toBe(false);
+  });
+
+  it("com autorização exige liberação em qualquer valor", () => {
+    const equip = resolveApproval(rules, "u1", "5.1.01");
+    expect(requiresApproval(equip, 1)).toBe(true);
+  });
+});
+
+describe("situação da conta a pagar", () => {
+  const base: Payable = {
+    id: "p1",
+    clinicId: "u1",
+    supplierId: null,
+    supplierName: null,
+    accountCode: "2.2",
+    accountName: "Materiais",
+    costCenterId: null,
+    costCenterName: null,
+    description: "Resina",
+    documentNumber: null,
+    accrualDate: "2026-07-01",
+    dueDate: "2026-07-10",
+    amountCents: 50000,
+    paidAmountCents: 0,
+    paidFeeCents: 0,
+    paidInterestCents: 0,
+    status: "aberta",
+    approvalMode: "sem_autorizacao",
+    requiresApproval: false,
+    approvedByName: null,
+    approvalNote: null,
+    cancelReason: null,
+    createdByName: null,
+    createdById: null,
+    notes: null,
+    recurrenceId: null,
+  };
+
+  it("a vencer não está vencida", () => {
+    const v = viewPayable({ ...base, dueDate: "2026-08-10" }, "2026-07-31");
+    expect(v.isOpen).toBe(true);
+    expect(v.isOverdue).toBe(false);
+    expect(v.balanceCents).toBe(50000);
+  });
+
+  it("vencida conta os dias", () => {
+    const v = viewPayable(base, "2026-07-31");
+    expect(v.isOverdue).toBe(true);
+    expect(v.daysLate).toBe(21);
+  });
+
+  it("pagamento parcial deixa saldo e o desembolso soma multa e juros", () => {
+    const v = viewPayable(
+      {
+        ...base,
+        status: "parcial",
+        paidAmountCents: 20000,
+        paidFeeCents: 400,
+        paidInterestCents: 100,
+      },
+      "2026-07-31"
+    );
+    expect(v.balanceCents).toBe(30000);
+    expect(v.paidTotalCents).toBe(20500);
+  });
+
+  it("paga, cancelada e recusada não ficam abertas nem vencidas", () => {
+    for (const status of ["paga", "cancelada", "recusada"] as const) {
+      const v = viewPayable({ ...base, status }, "2026-12-31");
+      expect(v.isOpen).toBe(false);
+      expect(v.isOverdue).toBe(false);
+    }
+  });
+
+  // Conta esperando autorização já pode estar vencida — e é o que precisa
+  // gritar na tela, senão o prazo passa esperando liberação.
+  it("conta a autorizar aparece como vencida quando o prazo passou", () => {
+    const v = viewPayable(
+      { ...base, status: "aguardando_autorizacao" },
+      "2026-07-31"
+    );
+    expect(v.isOverdue).toBe(true);
+    expect(matchesPayableFilter(v, "a_autorizar")).toBe(true);
+    expect(matchesPayableFilter(v, "vencidas")).toBe(true);
+    // Mas não entra em "a vencer": ela já venceu.
+    expect(matchesPayableFilter(v, "a_vencer")).toBe(false);
+  });
+
+  it("resumo separa aberto, vencido, a autorizar e pago no período", () => {
+    const views = [
+      viewPayable(base, "2026-07-31"), // vencida
+      viewPayable({ ...base, id: "p2", dueDate: "2026-08-10" }, "2026-07-31"),
+      viewPayable(
+        { ...base, id: "p3", status: "aguardando_autorizacao", amountCents: 90000 },
+        "2026-07-31"
+      ),
+      viewPayable({ ...base, id: "p4", status: "cancelada" }, "2026-07-31"),
+    ];
+    const pagamentos: PayablePaymentEntry[] = [
+      {
+        paidAt: "2026-07-15",
+        amountCents: 10000,
+        feeCents: 200,
+        interestCents: 50,
+        reversed: false,
+        reversalOf: null,
+      },
+      // Estornado não conta.
+      {
+        paidAt: "2026-07-16",
+        amountCents: 30000,
+        feeCents: 0,
+        interestCents: 0,
+        reversed: true,
+        reversalOf: null,
+      },
+      // Fora do período.
+      {
+        paidAt: "2026-06-10",
+        amountCents: 70000,
+        feeCents: 0,
+        interestCents: 0,
+        reversed: false,
+        reversalOf: null,
+      },
+    ];
+    const s = summarizePayables(
+      views,
+      pagamentos,
+      resolvePeriod("mes", "2026-07-20")
+    );
+    expect(s.overdueCount).toBe(2); // a vencida e a que espera autorização
+    expect(s.awaitingCount).toBe(1);
+    expect(s.awaitingCents).toBe(90000);
+    expect(s.paidCents).toBe(10250); // com multa e juros, sem o estornado
+    // Cancelada não entra em nada.
+    expect(s.openCents).toBe(190000);
+  });
+
+  it("recusa lançar sem descrição, sem conta, sem valor ou sem vencimento", () => {
+    expect(
+      payableErrors({ description: "", accountCode: "2.2", amountCents: 100, dueDate: "2026-07-10" })
+    ).toContain("Descreva a despesa.");
+    expect(
+      payableErrors({ description: "x", accountCode: "", amountCents: 100, dueDate: "2026-07-10" })
+    ).toContain("Escolha a conta do plano de contas.");
+    expect(
+      payableErrors({ description: "x", accountCode: "2.2", amountCents: 0, dueDate: "2026-07-10" })
+    ).toContain("Informe um valor maior que zero.");
+    expect(
+      payableErrors({ description: "x", accountCode: "2.2", amountCents: 100, dueDate: "" })
+    ).toContain("Informe o vencimento.");
+    expect(
+      payableErrors({ description: "x", accountCode: "2.2", amountCents: 100, dueDate: "2026-07-10" })
+    ).toEqual([]);
+  });
+
+  it("recusa pagar mais que o saldo e data no futuro", () => {
+    expect(
+      payablePaymentErrors({ amountCents: 60000, balanceCents: 50000, paidAt: "2026-07-31", today: "2026-07-31" })
+    ).toContain("O valor é maior que o saldo desta conta.");
+    expect(
+      payablePaymentErrors({ amountCents: 100, balanceCents: 50000, paidAt: "2026-08-05", today: "2026-07-31" })
+    ).toContain("A data do pagamento não pode ser no futuro.");
+    expect(
+      payablePaymentErrors({ amountCents: 50000, balanceCents: 50000, paidAt: "2026-07-30", today: "2026-07-31" })
+    ).toEqual([]);
   });
 });

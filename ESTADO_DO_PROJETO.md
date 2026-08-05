@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.173.2** · Última migração: **0193**_
+_Atualizado em: 04/08/2026 · Versão do sistema: **0.174.0** · Última migração: **0194**_
+
+> **FINANCEIRO — FIN3: CONTAS A PAGAR ✅ (v0.174.0, migração 0194).** O outro
+> lado do caixa. Até aqui o sistema sabia tudo o que ENTRA e nada do que SAI —
+> sem isso não existe DRE, nem fluxo de caixa, nem ponto de equilíbrio.
+>
+> **Toda despesa nasce classificada** (conta do plano de contas + centro de
+> custo). É isso que faz a DRE fechar sozinha depois, em vez de alguém
+> classificar tudo no fim do mês.
+>
+> **Alçada configurável** (decisão do dono): cada conta tem um modo —
+> **Automática** (despesa contratada: nunca pede autorização nem olha o teto),
+> **Sem autorização** (livre, mas respeita o teto) ou **Com autorização**
+> (sempre exige). Cascata rede→unidade e geral→conta, com uma trava de
+> governança: **a conta pesa mais que o escopo**, senão bastaria a unidade criar
+> um teto geral para escapar da regra da rede sobre uma conta sensível — furo
+> que os testes acharam antes de ir ao ar. **Quem lançou não autoriza a própria
+> conta.**
+>
+> Também: fornecedores por unidade, despesas recorrentes (aluguel, software)
+> que geram as contas do mês, pagamento total/parcial com estorno e motivo,
+> cancelamento com motivo, e a tela com filtros por situação, período e
+> fornecedor + cards de **a pagar · vencidas · a autorizar · pago no período**.
+>
+> **Multa e juros que NÓS pagamos são informados** (quem define é o fornecedor,
+> não a nossa configuração) e vão para **4.2.01**, separados da despesa. No
+> razão: competência no lançamento, caixa no pagamento. **Recepção não entra
+> aqui** — pagar fornecedor não é ato de balcão.
+>
+> Regras puras em `src/lib/finance/payables.ts` com **269 testes** no total.
+>
+> **Próximo:** FIN4 — conciliação (OFX + adquirente).
 
 > **v0.173.2 (sem migração):** a venda de origem no termo virou uma tabela com
 > **valor de tabela × benefício por pagar em dia × valor contratado**, por
