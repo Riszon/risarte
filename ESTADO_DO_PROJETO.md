@@ -1,6 +1,34 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/08/2026 · Versão do sistema: **0.175.0** · Última migração: **0194**_
+_Atualizado em: 05/08/2026 · Versão do sistema: **0.176.0** · Última migração: **0195**_
+
+> **FINANCEIRO — FIN4a: CONCILIAÇÃO BANCÁRIA ✅ (v0.176.0, migração 0195).**
+> Enquanto o saldo do sistema não bate com o do banco, o caixa é opinião — e a
+> projeção do FIN6 mentiria.
+>
+> **Importa OFX e CSV.** O arquivo é lido **no navegador** (nenhum extrato sobe
+> para o servidor) e chegam só as linhas limpas. No OFX o `FITID` do banco
+> impede duplicar; no CSV a chave é data + valor + descrição + a ordem da
+> repetição — dois pagamentos idênticos no mesmo dia continuam sendo dois.
+>
+> **Cada linha tem três saídas:** casar com um lançamento (o sistema sugere por
+> valor exato e data próxima, mesmo dia primeiro), **lançar o que faltava** (já
+> classificado e conciliado, para tarifa e rendimento) ou **ignorar com motivo**
+> (transferência entre contas próprias sai do saldo do banco).
+>
+> Cards de **saldo pelo banco × saldo pelo sistema × diferença** — a diferença
+> fica vermelha até fechar em zero. O saldo de abertura da conta é o ponto de
+> partida.
+>
+> **Travas:** o valor tem de bater exatamente **e no mesmo sentido**
+> (entrada/saída); um lançamento do razão só concilia com **uma** linha do
+> extrato (índice único), senão o mesmo dinheiro fecharia duas vezes.
+>
+> Leitor e casamento em `src/lib/finance/reconciliation.ts` com **288 testes**
+> no total — incluindo o caso que estraga conciliação: `1.234` é R$ 1.234,00,
+> não R$ 1,23.
+>
+> **Próximo:** FIN4b — adquirentes (taxa do cartão e liquidação D+n).
 
 > **FIN3 — tela das despesas recorrentes (v0.175.0, sem migração):** o botão
 > **Recorrentes** em Contas a pagar cadastra aluguel, software e contabilidade

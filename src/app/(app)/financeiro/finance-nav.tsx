@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
+  Landmark,
   Network,
   Receipt,
   Settings2,
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
+  { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/fornecedores", label: "Fornecedores", icon: Truck },
   { href: "/financeiro/configuracao", label: "Configuração", icon: Settings2 },
   { href: "/financeiro/centros-de-custo", label: "Centros de custo", icon: Network },

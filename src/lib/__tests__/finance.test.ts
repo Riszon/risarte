@@ -31,6 +31,16 @@ import {
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
+  parseAmountCents,
+  parseCsv,
+  parseDate,
+  parseOfx,
+  parseStatement,
+  suggestMatches,
+  summarizeReconciliation,
+  type LedgerEntry,
+} from "@/lib/finance/reconciliation";
+import {
   matchesPayableFilter,
   payableErrors,
   payablePaymentErrors,
@@ -1143,5 +1153,259 @@ describe("situação da conta a pagar", () => {
     expect(
       payablePaymentErrors({ amountCents: 50000, balanceCents: 50000, paidAt: "2026-07-30", today: "2026-07-31" })
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN4a — conciliação bancária
+// ---------------------------------------------------------------------------
+describe("leitura de valores do extrato", () => {
+  it("formato brasileiro e americano", () => {
+    expect(parseAmountCents("1.234,56")).toBe(123456);
+    expect(parseAmountCents("1,234.56")).toBe(123456);
+    expect(parseAmountCents("-150.00")).toBe(-15000);
+    expect(parseAmountCents("90,00")).toBe(9000);
+    expect(parseAmountCents("R$ 1.500,00")).toBe(150000);
+  });
+
+  it("milhar sem decimal não vira centavo", () => {
+    // O erro clássico: 1.234 lido como 1,234 → R$ 1,23 em vez de R$ 1.234,00.
+    expect(parseAmountCents("1.234")).toBe(123400);
+    expect(parseAmountCents("1234")).toBe(123400);
+  });
+
+  it("parênteses são saída (padrão contábil)", () => {
+    expect(parseAmountCents("(150,00)")).toBe(-15000);
+  });
+
+  it("texto sem número devolve nulo", () => {
+    expect(parseAmountCents("SALDO")).toBeNull();
+    expect(parseAmountCents("")).toBeNull();
+  });
+
+  it("datas em dd/mm/aaaa, aaaa-mm-dd e OFX", () => {
+    expect(parseDate("04/08/2026")).toBe("2026-08-04");
+    expect(parseDate("2026-08-04")).toBe("2026-08-04");
+    expect(parseDate("20260804120000[-3:BRT]")).toBe("2026-08-04");
+    expect(parseDate("qualquer coisa")).toBeNull();
+  });
+});
+
+describe("extrato OFX", () => {
+  const ofx = `
+OFXHEADER:100
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20260804120000[-3:BRT]
+<TRNAMT>-150.00
+<FITID>202608040001
+<MEMO>PAGAMENTO FORNECEDOR
+</STMTTRN>
+<STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20260805
+<TRNAMT>1021.67
+<FITID>202608050002
+<MEMO>PIX RECEBIDO
+</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  it("lê lançamentos com identificador do banco", () => {
+    const r = parseOfx(ofx);
+    expect(r.transactions).toHaveLength(2);
+    expect(r.transactions[0]).toEqual({
+      fitId: "202608040001",
+      postedAt: "2026-08-04",
+      amountCents: -15000,
+      description: "PAGAMENTO FORNECEDOR",
+      kind: "debit",
+    });
+    expect(r.transactions[1].amountCents).toBe(102167);
+    expect(r.transactions[1].kind).toBe("credit");
+  });
+
+  it("arquivo sem lançamento avisa em vez de aceitar calado", () => {
+    const r = parseOfx("<OFX></OFX>");
+    expect(r.transactions).toHaveLength(0);
+    expect(r.errors.length).toBeGreaterThan(0);
+  });
+
+  it("parseStatement reconhece OFX pelo conteúdo, não pela extensão", () => {
+    expect(parseStatement(ofx).format).toBe("ofx");
+  });
+});
+
+describe("extrato CSV", () => {
+  it("ponto e vírgula com cabeçalho em português", () => {
+    const csv = [
+      "Data;Historico;Valor",
+      "04/08/2026;PAGAMENTO FORNECEDOR;-150,00",
+      "05/08/2026;PIX RECEBIDO;1.021,67",
+    ].join("\n");
+    const r = parseCsv(csv);
+    expect(r.transactions).toHaveLength(2);
+    expect(r.transactions[0].amountCents).toBe(-15000);
+    expect(r.transactions[1].amountCents).toBe(102167);
+    expect(r.transactions[0].fitId).toBeNull();
+  });
+
+  it("colunas separadas de crédito e débito", () => {
+    const csv = [
+      "Data;Descricao;Credito;Debito",
+      "04/08/2026;ALUGUEL;;1.500,00",
+      "05/08/2026;RECEBIMENTO;900,00;",
+    ].join("\n");
+    const r = parseCsv(csv);
+    expect(r.transactions[0].amountCents).toBe(-150000);
+    expect(r.transactions[1].amountCents).toBe(90000);
+  });
+
+  it("linha de saldo e total é ignorada, e o usuário é avisado", () => {
+    const csv = [
+      "Data;Historico;Valor",
+      "04/08/2026;PAGAMENTO;-150,00",
+      "SALDO ANTERIOR;;1.000,00",
+      ";;",
+    ].join("\n");
+    const r = parseCsv(csv);
+    expect(r.transactions).toHaveLength(1);
+    expect(r.skipped).toBeGreaterThan(0);
+    expect(r.errors.length).toBeGreaterThan(0);
+  });
+
+  it("sem cabeçalho, assume data · descrição · valor", () => {
+    const csv = "04/08/2026;COMPRA;-99,90";
+    const r = parseCsv(csv);
+    expect(r.transactions).toHaveLength(1);
+    expect(r.transactions[0].description).toBe("COMPRA");
+  });
+
+  it("aspas com o separador dentro não quebram a linha", () => {
+    const csv = [
+      "Data;Historico;Valor",
+      '04/08/2026;"LAB PROTESE; NF 123";-150,00',
+    ].join("\n");
+    const r = parseCsv(csv);
+    expect(r.transactions[0].description).toBe("LAB PROTESE; NF 123");
+  });
+});
+
+describe("casamento com o razão", () => {
+  const entries: LedgerEntry[] = [
+    {
+      id: "e1",
+      amountCents: -15000,
+      cashDate: "2026-08-04",
+      description: "Pagamento laboratório",
+      accountCode: "2.3",
+      reconciled: false,
+    },
+    {
+      id: "e2",
+      amountCents: -15000,
+      cashDate: "2026-08-02",
+      description: "Outro pagamento",
+      accountCode: "2.2",
+      reconciled: false,
+    },
+    {
+      id: "e3",
+      amountCents: -20000,
+      cashDate: "2026-08-04",
+      description: "Valor diferente",
+      accountCode: "2.2",
+      reconciled: false,
+    },
+    {
+      id: "e4",
+      amountCents: -15000,
+      cashDate: "2026-08-04",
+      description: "Já conciliado",
+      accountCode: "2.2",
+      reconciled: true,
+    },
+  ];
+
+  const tx = {
+    amountCents: -15000,
+    postedAt: "2026-08-04",
+    description: "PAGAMENTO LABORATORIO",
+  };
+
+  it("o valor tem de bater exatamente — conciliação não aproxima", () => {
+    const found = suggestMatches(tx, entries);
+    expect(found.every((c) => c.entry.amountCents === -15000)).toBe(true);
+    expect(found.map((c) => c.entry.id)).not.toContain("e3");
+  });
+
+  it("lançamento já conciliado não é sugerido de novo", () => {
+    expect(suggestMatches(tx, entries).map((c) => c.entry.id)).not.toContain(
+      "e4"
+    );
+  });
+
+  it("mesmo dia vem primeiro; dias de diferença perdem pontos", () => {
+    const found = suggestMatches(tx, entries);
+    expect(found[0].entry.id).toBe("e1");
+    expect(found[0].sameDay).toBe(true);
+    expect(found[1].entry.id).toBe("e2");
+    expect(found[0].score).toBeGreaterThan(found[1].score);
+  });
+
+  it("fora da janela de dias não é sugerido", () => {
+    const distante = suggestMatches(
+      { ...tx, postedAt: "2026-08-20" },
+      entries
+    );
+    expect(distante).toHaveLength(0);
+  });
+});
+
+describe("resumo da conciliação", () => {
+  it("banco menos sistema é a diferença; ignorado fica de fora do banco", () => {
+    const s = summarizeReconciliation({
+      openingBalanceCents: 100000,
+      transactions: [
+        { amountCents: -15000, status: "conciliado" },
+        { amountCents: 50000, status: "pendente" },
+        { amountCents: 99999, status: "ignorado" },
+      ],
+      entries: [
+        {
+          id: "e1",
+          amountCents: -15000,
+          cashDate: "2026-08-04",
+          description: "x",
+          accountCode: "2.3",
+          reconciled: true,
+        },
+      ],
+    });
+    expect(s.bankBalanceCents).toBe(135000); // 1000 − 150 + 500
+    expect(s.systemBalanceCents).toBe(85000); // 1000 − 150
+    expect(s.differenceCents).toBe(50000); // o PIX que ninguém lançou
+    expect(s.pendingCount).toBe(1);
+    expect(s.reconciledCount).toBe(1);
+    expect(s.ignoredCount).toBe(1);
+    expect(s.unmatchedEntryCount).toBe(0);
+  });
+
+  it("tudo conciliado fecha em zero", () => {
+    const s = summarizeReconciliation({
+      openingBalanceCents: 0,
+      transactions: [{ amountCents: -15000, status: "conciliado" }],
+      entries: [
+        {
+          id: "e1",
+          amountCents: -15000,
+          cashDate: "2026-08-04",
+          description: "x",
+          accountCode: "2.3",
+          reconciled: true,
+        },
+      ],
+    });
+    expect(s.differenceCents).toBe(0);
   });
 });
