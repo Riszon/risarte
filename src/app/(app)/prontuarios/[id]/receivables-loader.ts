@@ -2,6 +2,13 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Installment } from "@/lib/finance/receivables";
 import type { RenegotiationStatus } from "@/lib/finance/renegotiation";
+import {
+  acquirerAppliesTo,
+  type AcquirerScope,
+} from "@/lib/finance/acquirers";
+
+/** FIN4b.2 — o boleto que já foi gerado (e o que ele custou na emissão). */
+export type BoletoIssue = { issuedAt: string; feeCents: number };
 
 export type ReceiptRow = {
   id: string;
@@ -33,6 +40,13 @@ export type ReceivablesData = {
   receivedInPeriodCents: number;
   periodStart: string;
   periodEnd: string;
+  /** Boletos já emitidos, por cobrança (FIN4b.2). */
+  boletos: Record<string, BoletoIssue>;
+  /**
+   * A adquirente desta unidade cobra a taxa de boleto NA EMISSÃO. Só nesse caso
+   * a ficha oferece o registro da emissão — é a mesma regra que o banco impõe.
+   */
+  boletoFeeOnIssue: boolean;
 };
 
 type InstallmentRow = {
@@ -56,6 +70,8 @@ type InstallmentRow = {
   direct_sale_id: string | null;
   renegotiation_id: string | null;
   renegotiated_by_id: string | null;
+  boleto_issued_at: string | null;
+  boleto_fee_cents: number | null;
 };
 
 /**
@@ -129,7 +145,7 @@ export async function loadClientReceivables(
   const { data: instRows } = await supabase
     .from("payment_installments")
     .select(
-      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id"
+      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id, boleto_issued_at, boleto_fee_cents"
     )
     .eq("client_id", clientId)
     .order("due_date")
@@ -173,7 +189,18 @@ export async function loadClientReceivables(
     wasOverdue: r.was_overdue,
   }));
 
+  const boletos: Record<string, BoletoIssue> = {};
+  for (const r of instRows ?? []) {
+    if (r.boleto_issued_at) {
+      boletos[r.id] = {
+        issuedAt: r.boleto_issued_at,
+        feeCents: r.boleto_fee_cents ?? 0,
+      };
+    }
+  }
+
   const maxDiscountPercent = await loadMaxDiscountPercent(supabase, clinicId);
+  const boletoFeeOnIssue = await loadBoletoFeeOnIssue(supabase, clinicId);
 
   if (installments.length === 0) {
     return {
@@ -185,6 +212,8 @@ export async function loadClientReceivables(
       receivedInPeriodCents: 0,
       periodStart: start,
       periodEnd: end,
+      boletos,
+      boletoFeeOnIssue,
     };
   }
 
@@ -254,7 +283,85 @@ export async function loadClientReceivables(
     receivedInPeriodCents,
     periodStart: start,
     periodEnd: end,
+    boletos,
+    boletoFeeOnIssue,
   };
+}
+
+/**
+ * FIN4b.2 — a adquirente que atende esta unidade cobra o boleto na EMISSÃO?
+ *
+ * A ficha só oferece o registro da emissão quando a resposta é sim. A trava de
+ * verdade está no banco (`register_boleto_issue` recusa o resto); isto aqui é
+ * para não mostrar um botão que só serviria para dar erro.
+ */
+async function loadBoletoFeeOnIssue(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId?: string
+): Promise<boolean> {
+  if (!clinicId) return false;
+
+  const { data: acquirers } = await supabase
+    .from("card_acquirers")
+    .select("id, clinic_id, scope, is_default, active, name")
+    .eq("active", true)
+    .returns<
+      {
+        id: string;
+        clinic_id: string | null;
+        scope: AcquirerScope | null;
+        is_default: boolean;
+        active: boolean;
+        name: string;
+      }[]
+    >();
+  if (!acquirers || acquirers.length === 0) return false;
+
+  const { data: links } = await supabase
+    .from("card_acquirer_clinics")
+    .select("acquirer_id, clinic_id")
+    .eq("clinic_id", clinicId)
+    .returns<{ acquirer_id: string; clinic_id: string }[]>();
+  const linked = new Set((links ?? []).map((l) => l.acquirer_id));
+
+  const applicable = acquirers.filter((a) =>
+    acquirerAppliesTo(
+      {
+        id: a.id,
+        clinicId: a.clinic_id,
+        scope: a.scope ?? "unidade",
+        isDefault: a.is_default,
+        active: a.active,
+        name: a.name,
+        clinicIds: linked.has(a.id) ? [clinicId] : [],
+      },
+      clinicId
+    )
+  );
+  if (applicable.length === 0) return false;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: rates } = await supabase
+    .from("acquirer_rates")
+    .select("acquirer_id, fee_charged_on, valid_from, valid_to")
+    .in(
+      "acquirer_id",
+      applicable.map((a) => a.id)
+    )
+    .eq("modality", "boleto")
+    .eq("fee_charged_on", "emissao")
+    .returns<
+      {
+        acquirer_id: string;
+        fee_charged_on: string;
+        valid_from: string;
+        valid_to: string | null;
+      }[]
+    >();
+
+  return (rates ?? []).some(
+    (r) => r.valid_from <= today && (r.valid_to === null || r.valid_to >= today)
+  );
 }
 
 /**

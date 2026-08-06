@@ -136,6 +136,75 @@ export async function applyAcquirerFee(input: {
 }
 
 /**
+ * FIN4b.2 — registra que o boleto foi GERADO e lança a taxa de emissão.
+ *
+ * Só cobra quando a configuração da adquirente diz que a taxa é cobrada na
+ * emissão — e o banco garante que a mesma parcela nunca paga a taxa duas vezes.
+ * Quando o ASAAS entrar, o webhook de "boleto gerado" chama esta mesma função.
+ */
+export async function registerBoletoIssue(input: {
+  clientId: string;
+  installmentId: string;
+  issuedAt: string;
+}): Promise<ReceivableResult & { feeCents?: number; waived?: boolean }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("register_boleto_issue", {
+    p_installment_id: input.installmentId,
+    p_acquirer_id: null,
+    p_issued_at: input.issuedAt,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("ALREADY_ISSUED")) {
+      return { ok: false, error: "O boleto desta cobrança já foi registrado." };
+    }
+    if (m.includes("FEE_ALREADY_CHARGED")) {
+      return {
+        ok: false,
+        error:
+          "A taxa desta cobrança já foi lançada na baixa — não se cobra duas vezes.",
+      };
+    }
+    if (m.includes("FEE_NOT_ON_ISSUE")) {
+      return {
+        ok: false,
+        error:
+          "A adquirente está configurada para cobrar a taxa no pagamento, não na emissão.",
+      };
+    }
+    if (m.includes("RATE_NOT_FOUND")) {
+      return {
+        ok: false,
+        error: "Não há taxa de boleto cadastrada para esta adquirente.",
+      };
+    }
+    if (m.includes("ACQUIRER_NOT_FOUND") || m.includes("CLINIC_MISMATCH")) {
+      return {
+        ok: false,
+        error: "Nenhuma adquirente cadastrada atende esta unidade.",
+      };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Sua função não permite registrar a emissão." };
+    }
+    console.error("register_boleto_issue failed:", m);
+    return { ok: false, error: "Não foi possível registrar a emissão." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "boleto_issue",
+    entityId: input.installmentId,
+  });
+  const r = (data ?? {}) as { fee_cents?: number; waived?: boolean };
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  revalidatePath("/financeiro");
+  return { ok: true, feeCents: r.fee_cents ?? 0, waived: Boolean(r.waived) };
+}
+
+/**
  * FIN2 — renegocia as cobranças escolhidas. O banco apura a dívida (o que
  * falta + benefício perdido + multa + juros), mede o desconto contra o teto da
  * unidade e, se preciso, deixa a renegociação **aguardando autorização** do

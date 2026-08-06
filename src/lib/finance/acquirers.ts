@@ -37,6 +37,22 @@ export function hasInstallmentRange(modality: CardModality): boolean {
   return modality === "credito_parcelado";
 }
 
+/**
+ * Quando o custo do meio de pagamento nasce.
+ *
+ * `pagamento` — a taxa sai do que entra na baixa: não pagou, não custou.
+ * `emissao` — o custo nasce quando o documento é gerado, **pago ou não**. É
+ * assim que o banco cobra o boleto, e sem isso boleto emitido e não pago fica
+ * com custo zero no resultado (mentira).
+ */
+export const FEE_CHARGE_MOMENTS = ["pagamento", "emissao"] as const;
+export type FeeChargeMoment = (typeof FEE_CHARGE_MOMENTS)[number];
+
+export const FEE_CHARGE_MOMENT_LABELS: Record<FeeChargeMoment, string> = {
+  pagamento: "No pagamento",
+  emissao: "Na emissão",
+};
+
 export type AcquirerRate = {
   id: string;
   acquirerId: string;
@@ -52,9 +68,70 @@ export type AcquirerRate = {
   settlementBusinessDays: boolean;
   /** "100 recebimentos gratuitos por mês". Nulo = sem franquia. */
   freeMonthlyCount: number | null;
+  feeChargedOn: FeeChargeMoment;
   validFrom: string;
   validTo: string | null;
 };
+
+/**
+ * Abrangência do cadastro. A franqueadora negocia uma tabela com a adquirente
+ * para a rede inteira; recadastrar a mesma coisa em 200 unidades só multiplica
+ * erro de digitação — e erro de digitação aqui vira caixa errado.
+ */
+export const ACQUIRER_SCOPES = ["unidade", "rede", "unidades"] as const;
+export type AcquirerScope = (typeof ACQUIRER_SCOPES)[number];
+
+export const ACQUIRER_SCOPE_LABELS: Record<AcquirerScope, string> = {
+  unidade: "Só esta unidade",
+  rede: "Toda a rede",
+  unidades: "Unidades específicas",
+};
+
+export type AcquirerScopeShape = {
+  id: string;
+  /** Nulo quando o cadastro é da franqueadora (rede ou unidades específicas). */
+  clinicId: string | null;
+  scope: AcquirerScope;
+  isDefault: boolean;
+  active: boolean;
+  name: string;
+  /** Unidades atendidas quando o escopo é `unidades`. */
+  clinicIds?: string[];
+};
+
+/** A adquirente atende esta unidade? Espelha `acquirer_applies_to` no banco. */
+export function acquirerAppliesTo(
+  acquirer: AcquirerScopeShape,
+  clinicId: string
+): boolean {
+  if (acquirer.clinicId === clinicId) return true;
+  if (acquirer.scope === "rede") return true;
+  if (acquirer.scope === "unidades") {
+    return (acquirer.clinicIds ?? []).includes(clinicId);
+  }
+  return false;
+}
+
+/**
+ * Qual adquirente o sistema usa sozinho numa venda desta unidade.
+ *
+ * Ordem: padrão da própria unidade → outra da unidade → padrão da rede →
+ * qualquer uma que atenda. **O cadastro próprio ganha da rede** porque quem
+ * tem contrato próprio é quem paga aquela taxa.
+ */
+export function pickAcquirer<T extends AcquirerScopeShape>(
+  acquirers: T[],
+  clinicId: string
+): T | null {
+  const usable = acquirers.filter(
+    (a) => a.active && acquirerAppliesTo(a, clinicId)
+  );
+  const score = (a: T) => (a.clinicId !== null ? 2 : 0) + (a.isDefault ? 1 : 0);
+  const sorted = [...usable].sort(
+    (a, b) => score(b) - score(a) || a.name.localeCompare(b.name, "pt-BR")
+  );
+  return sorted[0] ?? null;
+}
 
 /**
  * A taxa vigente NA DATA pedida, para a faixa de parcelas.
@@ -99,6 +176,8 @@ export type AcquirerSettlement = {
   feePercent: number;
   /** A taxa fixa foi dispensada pela franquia mensal. */
   waived: boolean;
+  /** O custo desta faixa nasce na emissão do documento, não no recebimento. */
+  chargedAtIssue: boolean;
   settlementDays: number;
   /** Quando o dinheiro cai. */
   settlementDate: string;
@@ -135,9 +214,28 @@ type RateShape = Pick<AcquirerRate, "feePercent" | "settlementDays"> &
   Partial<
     Pick<
       AcquirerRate,
-      "fixedFeeCents" | "settlementBusinessDays" | "freeMonthlyCount"
+      | "fixedFeeCents"
+      | "settlementBusinessDays"
+      | "freeMonthlyCount"
+      | "feeChargedOn"
     >
   >;
+
+/**
+ * A BAIXA cobra a taxa desta cobrança?
+ *
+ * Trava de dupla cobrança, e é a razão de ela morar aqui e no banco: se a
+ * faixa diz "emissão", a baixa **nunca** cobra — nem quando a emissão não foi
+ * registrada. Deixar de lançar um custo é erro menor que lançar o mesmo custo
+ * duas vezes, e é isso que protege o dia em que o ASAAS emitir sozinho.
+ */
+export function chargesFeeAtReceipt(input: {
+  rate: Pick<RateShape, "feeChargedOn">;
+  alreadyIssued?: boolean;
+}): boolean {
+  if (input.alreadyIssued) return false;
+  return (input.rate.feeChargedOn ?? "pagamento") !== "emissao";
+}
 
 /**
  * O que a clínica realmente recebe. O cliente paga o BRUTO (é isso que quita a
@@ -173,6 +271,7 @@ export function computeSettlement(input: {
     netCents: gross - feeCents,
     feePercent: input.rate.feePercent,
     waived,
+    chargedAtIssue: (input.rate.feeChargedOn ?? "pagamento") === "emissao",
     settlementDays: input.rate.settlementDays,
     settlementDate: input.rate.settlementBusinessDays
       ? addBusinessDays(input.paidAt, input.rate.settlementDays)
@@ -214,8 +313,22 @@ export function rateErrors(input: {
   minInstallments: number;
   maxInstallments: number;
   freeMonthlyCount?: number | null;
+  modality?: CardModality;
+  feeChargedOn?: FeeChargeMoment;
 }): string[] {
   const errors: string[] = [];
+  // "Na emissão" só faz sentido onde existe um documento a gerar. No cartão a
+  // adquirente cobra sobre a transação — não há o que emitir.
+  if (
+    input.feeChargedOn === "emissao" &&
+    input.modality !== undefined &&
+    input.modality !== "boleto" &&
+    input.modality !== "pix"
+  ) {
+    errors.push(
+      "Cobrança na emissão só vale para boleto e PIX — no cartão não há documento a emitir."
+    );
+  }
   if (!Number.isFinite(input.feePercent) || input.feePercent < 0) {
     errors.push("Informe a taxa (pode ser zero).");
   }

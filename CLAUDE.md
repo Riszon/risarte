@@ -419,6 +419,31 @@ negociar a taxa nem para puxar o cliente para o PIX. A tabela de taxa/prazo tem
 paga o **bruto** (é isso que quita a dívida dele); a clínica recebe o
 **líquido**, em **D+n**, e é essa data que vai para a projeção de caixa.
 
+**Abrangência da adquirente (FIN4b.2, dono 06/08/2026):** o cadastro tem escopo
+**unidade / rede / unidades específicas**. Rede e unidades específicas são ato
+da **Franqueadora** (`clinic_id` nulo) — a unidade não reescreve a taxa que a
+rede negociou. Na hora de escolher sozinho, **o cadastro próprio da unidade
+ganha do padrão da rede** (quem tem contrato próprio é quem paga aquela taxa).
+A **franquia gratuita mensal conta por unidade**, não somando a rede: a fatura
+da adquirente chega por conta/CNPJ.
+
+**Momento da cobrança da taxa (FIN4b.2):** cada faixa diz se a taxa é cobrada
+**no pagamento** (sai do que entra na baixa — não pagou, não custou) ou **na
+emissão** (o custo nasce ao gerar o documento, pago ou não; é como o banco
+cobra o boleto). Só boleto e PIX aceitam "emissão" — no cartão não há documento
+a emitir. **Trava de dupla cobrança, exigida pelo dono pensando no ASAAS:**
+`register_boleto_issue()` recusa quando a faixa diz "pagamento"
+(`FEE_NOT_ON_ISSUE`) ou quando a baixa já cobrou; `apply_acquirer_fee()` **não
+cobra** quando a faixa diz "emissão" — nem se a emissão não tiver sido
+registrada (deixar de lançar um custo é erro menor que lançar duas vezes o
+mesmo custo); e a origem `boleto_issue` aponta para a **parcela** no índice
+único do razão, então o webhook futuro do ASAAS cai na mesma porta e não
+duplica. Adiado: **segunda via de boleto** (hoje é uma cobrança por parcela).
+
+**Faixa de taxa (FIN4b.2):** dá para **editar** (para consertar digitação) e
+**encerrar a vigência** (o caminho certo quando a taxa mudou). Faixa que já
+precificou recebimentos **não é apagada** — gatilho `RATE_IN_USE` no banco.
+
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC

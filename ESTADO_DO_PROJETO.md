@@ -1,6 +1,42 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/08/2026 · Versão do sistema: **0.178.1** · Última migração: **0198**_
+_Atualizado em: 06/08/2026 · Versão do sistema: **0.179.0** · Última migração: **0199**_
+
+> **FIN4b.2 — abrangência, taxa na emissão e edição de faixa (v0.179.0,
+> migração 0199).** Três pedidos do dono depois do teste do FIN4b:
+>
+> 1. **Adquirente da rede.** O cadastro tinha dono obrigatório (uma unidade), e
+>    a franqueadora que negocia uma tabela com o Asaas para a rede precisaria
+>    recadastrar a mesma coisa em cada unidade — cada erro de digitação virando
+>    caixa errado lá. Agora tem **abrangência**: só esta unidade / toda a rede /
+>    unidades específicas. Rede e específicas são ato da **Franqueadora**; a
+>    unidade vê com o selo `Rede` e não edita. Na escolha automática, **o
+>    cadastro próprio da unidade ganha do padrão da rede** — quem tem contrato
+>    próprio é quem paga aquela taxa. A **franquia gratuita conta por unidade**
+>    (a fatura da adquirente chega por conta/CNPJ).
+> 2. **Taxa de boleto na emissão.** A faixa passa a dizer se a taxa é cobrada
+>    **no pagamento** ou **na emissão** — e "na emissão" é o custo que o sistema
+>    perdia inteiro: boleto emitido e não pago ficava com custo zero. Na ficha,
+>    a cobrança de boleto ganha **"Registrar emissão"**, que lança a despesa em
+>    **2.4.01** na hora.
+>
+>    **A preocupação do dono virou a trava principal:** quando o ASAAS emitir
+>    sozinho, o botão não pode fazer o custo ser lançado duas vezes. Então a
+>    regra mora no **banco**, não na tela — a emissão recusa se a configuração
+>    disser "no pagamento" (`FEE_NOT_ON_ISSUE`) ou se a baixa já cobrou; a baixa
+>    **não cobra** quando a faixa diz "emissão", nem se a emissão não tiver sido
+>    registrada; e a origem `boleto_issue` aponta para a **parcela** no índice
+>    único do razão, então botão e webhook caem na mesma porta e o segundo
+>    lançamento é impossível.
+> 3. **Editar faixa de taxa.** Antes só dava para excluir — e excluir uma faixa
+>    já usada apaga a explicação de números que foram ao razão. Agora: **editar**
+>    (para consertar digitação, com aviso de quantas cobranças aquela faixa já
+>    precificou), **encerrar a vigência** (o caminho certo quando a taxa mudou)
+>    e **exclusão bloqueada** para faixa já usada (`RATE_IN_USE`, gatilho no
+>    banco).
+>
+> **321 testes.** Adiado: **segunda via de boleto** (hoje o sistema cobra uma
+> emissão por parcela; reemissão vira ação própria quando entrar).
 
 > **Venda direta — desconto à vista aparecia sem explicação (v0.178.1, sem
 > migração).** O dono lançou uma venda e viu o cabeçalho com R$ 1.596,00 e o

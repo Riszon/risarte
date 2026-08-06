@@ -31,12 +31,15 @@ import {
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
 import {
+  acquirerAppliesTo,
   addBusinessDays,
   addDays,
+  chargesFeeAtReceipt,
   computeSettlement,
   daysUntilSettlement,
   hasInstallmentRange,
   modalityOf,
+  pickAcquirer,
   rateErrors,
   resolveRate,
   type AcquirerRate,
@@ -1882,6 +1885,196 @@ describe("taxa fixa e franquia (tabela do Asaas)", () => {
         settlementDays: 0,
         minInstallments: 1,
         maxInstallments: 1,
+      })
+    ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN4b.2 — abrangência da adquirente e o momento da cobrança da taxa
+// ---------------------------------------------------------------------------
+describe("adquirente: abrangência (rede × unidade)", () => {
+  const A = "clinica-a";
+  const B = "clinica-b";
+  const base = { isDefault: false, active: true };
+
+  it("cadastro da unidade só vale para ela", () => {
+    const own = {
+      ...base,
+      id: "1",
+      clinicId: A,
+      scope: "unidade" as const,
+      name: "Stone",
+    };
+    expect(acquirerAppliesTo(own, A)).toBe(true);
+    expect(acquirerAppliesTo(own, B)).toBe(false);
+  });
+
+  it("cadastro da rede vale para qualquer unidade, inclusive as futuras", () => {
+    const net = {
+      ...base,
+      id: "2",
+      clinicId: null,
+      scope: "rede" as const,
+      name: "Asaas",
+    };
+    expect(acquirerAppliesTo(net, A)).toBe(true);
+    expect(acquirerAppliesTo(net, "unidade-que-ainda-nao-existia")).toBe(true);
+  });
+
+  it("cadastro para unidades específicas vale só para as marcadas", () => {
+    const some = {
+      ...base,
+      id: "3",
+      clinicId: null,
+      scope: "unidades" as const,
+      name: "Cielo",
+      clinicIds: [A],
+    };
+    expect(acquirerAppliesTo(some, A)).toBe(true);
+    expect(acquirerAppliesTo(some, B)).toBe(false);
+  });
+
+  it("o cadastro próprio da unidade ganha do padrão da rede", () => {
+    const escolhida = pickAcquirer(
+      [
+        {
+          ...base,
+          id: "net",
+          clinicId: null,
+          scope: "rede" as const,
+          name: "Asaas",
+          isDefault: true,
+        },
+        {
+          ...base,
+          id: "own",
+          clinicId: A,
+          scope: "unidade" as const,
+          name: "Stone",
+        },
+      ],
+      A
+    );
+    // Quem tem contrato próprio é quem paga aquela taxa.
+    expect(escolhida?.id).toBe("own");
+  });
+
+  it("sem cadastro próprio, a unidade usa o padrão da rede", () => {
+    const escolhida = pickAcquirer(
+      [
+        {
+          ...base,
+          id: "net1",
+          clinicId: null,
+          scope: "rede" as const,
+          name: "Zeta",
+        },
+        {
+          ...base,
+          id: "net2",
+          clinicId: null,
+          scope: "rede" as const,
+          name: "Asaas",
+          isDefault: true,
+        },
+      ],
+      A
+    );
+    expect(escolhida?.id).toBe("net2");
+  });
+
+  it("adquirente inativa ou de outra unidade não é escolhida", () => {
+    expect(
+      pickAcquirer(
+        [
+          {
+            ...base,
+            id: "off",
+            clinicId: A,
+            scope: "unidade" as const,
+            name: "Stone",
+            active: false,
+          },
+          {
+            ...base,
+            id: "outra",
+            clinicId: B,
+            scope: "unidade" as const,
+            name: "Cielo",
+          },
+        ],
+        A
+      )
+    ).toBeNull();
+  });
+});
+
+describe("adquirente: quando a taxa é cobrada", () => {
+  it("no pagamento (padrão), a baixa cobra a taxa", () => {
+    expect(chargesFeeAtReceipt({ rate: { feeChargedOn: "pagamento" } })).toBe(
+      true
+    );
+    // Faixa antiga, sem o campo, continua se comportando como antes.
+    expect(chargesFeeAtReceipt({ rate: {} })).toBe(true);
+  });
+
+  it("na emissão, a baixa NUNCA cobra — nem se a emissão não foi registrada", () => {
+    // Trava de dupla cobrança: deixar de lançar um custo é erro menor que
+    // lançar o mesmo custo duas vezes.
+    expect(chargesFeeAtReceipt({ rate: { feeChargedOn: "emissao" } })).toBe(
+      false
+    );
+  });
+
+  it("boleto já emitido zera a cobrança na baixa", () => {
+    expect(
+      chargesFeeAtReceipt({
+        rate: { feeChargedOn: "pagamento" },
+        alreadyIssued: true,
+      })
+    ).toBe(false);
+  });
+
+  it("a prévia avisa que o custo é da emissão", () => {
+    const s = computeSettlement({
+      grossCents: 20000,
+      rate: {
+        feePercent: 0,
+        fixedFeeCents: 199,
+        settlementDays: 1,
+        settlementBusinessDays: true,
+        feeChargedOn: "emissao",
+      },
+      paidAt: "2026-08-06",
+    });
+    expect(s.chargedAtIssue).toBe(true);
+    expect(s.feeCents).toBe(199);
+  });
+
+  it("cobrança na emissão só vale para boleto e PIX", () => {
+    expect(
+      rateErrors({
+        feePercent: 2.39,
+        fixedFeeCents: 29,
+        settlementDays: 30,
+        minInstallments: 1,
+        maxInstallments: 1,
+        modality: "credito_avista",
+        feeChargedOn: "emissao",
+      })
+    ).toContain(
+      "Cobrança na emissão só vale para boleto e PIX — no cartão não há documento a emitir."
+    );
+    expect(
+      rateErrors({
+        feePercent: 0,
+        fixedFeeCents: 199,
+        settlementDays: 1,
+        minInstallments: 1,
+        maxInstallments: 1,
+        modality: "boleto",
+        feeChargedOn: "emissao",
       })
     ).toEqual([]);
   });

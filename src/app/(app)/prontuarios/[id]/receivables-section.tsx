@@ -56,6 +56,7 @@ import type {
 } from "./receivables-loader";
 import {
   authorizeRenegotiation,
+  registerBoletoIssue,
   registerReceipt,
   reverseReceipt,
   setRenegotiationStep,
@@ -108,6 +109,8 @@ export function ReceivablesSection({
   sales,
   maxDiscountPercent,
   today,
+  boletos,
+  boletoFeeOnIssue,
   canReceive,
   canReverse,
   canRenegotiate,
@@ -120,6 +123,10 @@ export function ReceivablesSection({
   sales: SaleSummary[];
   maxDiscountPercent: number | null;
   today: string;
+  /** Boletos já emitidos, por cobrança (FIN4b.2). */
+  boletos: Record<string, { issuedAt: string; feeCents: number }>;
+  /** A adquirente desta unidade cobra a taxa do boleto na emissão. */
+  boletoFeeOnIssue: boolean;
   canReceive: boolean;
   canReverse: boolean;
   canRenegotiate: boolean;
@@ -207,6 +214,29 @@ export function ReceivablesSection({
       })
     : [];
   const allocation = paying ? allocateReceipt(paying, amountCents) : null;
+
+  /**
+   * FIN4b.2 — registra que o boleto foi gerado. A taxa é lançada AGORA porque
+   * é agora que ela sai do caixa: o banco cobra a emissão pago ou não. A baixa
+   * desta cobrança não cobra a taxa de novo.
+   */
+  function issueBoleto(id: string) {
+    startTransition(async () => {
+      const r = await registerBoletoIssue({
+        clientId,
+        installmentId: id,
+        issuedAt: today,
+      });
+      if (r.ok) {
+        toast.success(
+          r.waived
+            ? "Emissão registrada — sem taxa (franquia do mês)."
+            : `Emissão registrada — taxa de ${formatBRL(r.feeCents ?? 0)}.`
+        );
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
 
   function openPayment(id: string) {
     const v = allViews.find((x) => x.id === id);
@@ -607,6 +637,16 @@ export function ReceivablesSection({
                         {formatBRL(v.updatedBalanceCents)}
                       </span>
                     )}
+                    {/* FIN4b.2: o boleto já custou na emissão — a baixa não
+                        cobra de novo. */}
+                    {boletos[v.id] && (
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        Boleto emitido em {fmtDate(boletos[v.id].issuedAt)}
+                        {boletos[v.id].feeCents > 0
+                          ? ` — taxa de ${formatBRL(boletos[v.id].feeCents)} já lançada`
+                          : " — sem taxa (franquia do mês)"}
+                      </span>
+                    )}
                   </span>
 
                   <Badge
@@ -636,6 +676,21 @@ export function ReceivablesSection({
                   </span>
 
                   <div className="flex gap-1">
+                    {boletoFeeOnIssue &&
+                      canReceive &&
+                      v.isOpen &&
+                      v.paymentMethod === "boleto" &&
+                      !boletos[v.id] && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs"
+                          title="A adquirente cobra a taxa do boleto ao gerar o documento"
+                          onClick={() => issueBoleto(v.id)}
+                        >
+                          Registrar emissão
+                        </Button>
+                      )}
                     {v.isOpen && canReceive && (
                       <Button
                         size="sm"
