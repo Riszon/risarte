@@ -9,6 +9,7 @@ import { logAudit } from "@/lib/audit";
 import { cn } from "@/lib/utils";
 import {
   commercialColumnOf,
+  isHistoryColumn,
   type CardStage,
   type NegotiationStatus,
 } from "@/lib/commercial";
@@ -207,11 +208,10 @@ export default async function ComercialKanbanPage(
     };
   });
 
-  const lost = allCards.filter((c) => c.column === "perdido");
-  const cancelled = allCards.filter((c) => c.column === "cancelado");
-  const boardCards = allCards.filter(
-    (c) => c.column !== "perdido" && c.column !== "cancelado"
-  );
+  // O quadro é a fila de trabalho; o que já fechou (ou se perdeu) vai para o
+  // Histórico — decisão do dono, 06/08/2026.
+  const history = allCards.filter((c) => isHistoryColumn(c.column));
+  const boardCards = allCards.filter((c) => !isHistoryColumn(c.column));
 
   // Unidades para o filtro (só para quem pode ver mais de uma).
   let unitOptions: { id: string; name: string }[] = [];
@@ -303,8 +303,7 @@ export default async function ComercialKanbanPage(
       <div className="min-h-0 flex-1 overflow-x-auto pb-2">
         <CommercialKanban
           cards={boardCards}
-          lost={lost}
-          cancelled={cancelled}
+          history={history}
           viewer={viewer}
         />
       </div>

@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  Archive,
   Ban,
   Building2,
   ChevronRight,
@@ -34,6 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatBRL } from "@/lib/pricing";
+import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 import {
   BOARD_COLUMNS,
@@ -43,8 +45,10 @@ import {
   FOLLOWUP_CHANNEL_LABELS,
   FOLLOWUP_OUTCOMES,
   FOLLOWUP_OUTCOME_LABELS,
+  HISTORY_COLUMNS,
   type BoardColumn,
   type CommercialColumn,
+  type HistoryColumn,
 } from "@/lib/commercial";
 import {
   logFollowupAttempt,
@@ -75,13 +79,12 @@ export type ViewerKind = "commercial" | "unit";
 
 export function CommercialKanban({
   cards,
-  lost,
-  cancelled,
+  history,
   viewer,
 }: {
   cards: BoardCard[];
-  lost: BoardCard[];
-  cancelled: BoardCard[];
+  /** Encerrados: fechados, em tratamento, cancelados e perdidos. */
+  history: BoardCard[];
   viewer: ViewerKind;
 }) {
   const router = useRouter();
@@ -96,9 +99,9 @@ export function CommercialKanban({
   const [channel, setChannel] = useState("whatsapp");
   const [outcome, setOutcome] = useState("sem_resposta");
   const [notes, setNotes] = useState("");
-  const [outcomeList, setOutcomeList] = useState<null | "perdido" | "cancelado">(
-    null
-  );
+  /** Histórico aberto e filtrado por situação (null = todas). */
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<HistoryColumn | null>(null);
 
   function move(card: BoardCard, stage: Parameters<typeof setCardStage>[1]) {
     startTransition(async () => {
@@ -172,34 +175,42 @@ export function CommercialKanban({
     });
   }
 
-  const outcomeItems = outcomeList === "perdido" ? lost : cancelled;
+  const historyItems = historyFilter
+    ? history.filter((c) => c.column === historyFilter)
+    : history;
 
   return (
     <>
-      {/* Botões de detalhe: Perdidos e Cancelados (fora do board). */}
+      {/* O que saiu do quadro: fechados, em tratamento, cancelados e perdidos. */}
       <div className="mb-2 flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setOutcomeList("perdido")}
-        >
-          <ThumbsDown className="mr-1 size-3.5 text-rose-600" />
-          Perdidos
+        <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
+          <Archive className="mr-1 size-3.5" />
+          Histórico
           <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[11px] tabular-nums">
-            {lost.length}
+            {history.length}
           </span>
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setOutcomeList("cancelado")}
-        >
-          <Ban className="mr-1 size-3.5 text-muted-foreground" />
-          Cancelados
-          <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[11px] tabular-nums">
-            {cancelled.length}
-          </span>
-        </Button>
+        {HISTORY_COLUMNS.map((col) => {
+          const n = history.filter((c) => c.column === col).length;
+          if (n === 0) return null;
+          return (
+            <Button
+              key={col}
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={() => {
+                setHistoryFilter(col);
+                setHistoryOpen(true);
+              }}
+            >
+              {COMMERCIAL_COLUMN_LABELS[col]}
+              <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[11px] tabular-nums">
+                {n}
+              </span>
+            </Button>
+          );
+        })}
       </div>
 
       <div className="flex h-full min-w-max gap-3">
@@ -342,18 +353,41 @@ export function CommercialKanban({
       </Dialog>
 
       {/* Lista de Perdidos / Cancelados com detalhes. */}
-      <Dialog open={outcomeList !== null} onOpenChange={(o) => !o && setOutcomeList(null)}>
+      <Dialog
+        open={historyOpen}
+        onOpenChange={(o) => {
+          setHistoryOpen(o);
+          if (!o) setHistoryFilter(null);
+        }}
+      >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {outcomeList === "perdido" ? "Clientes perdidos" : "Clientes cancelados"}
-            </DialogTitle>
+            <DialogTitle>Histórico do Comercial</DialogTitle>
           </DialogHeader>
-          {outcomeItems.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            O que saiu do quadro de trabalho: vendas fechadas, tratamentos já
+            iniciados, cancelados e perdidos.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <FilterPill
+              label="Todos"
+              active={historyFilter === null}
+              onClick={() => setHistoryFilter(null)}
+            />
+            {HISTORY_COLUMNS.map((col) => (
+              <FilterPill
+                key={col}
+                label={`${COMMERCIAL_COLUMN_LABELS[col]} (${history.filter((c) => c.column === col).length})`}
+                active={historyFilter === col}
+                onClick={() => setHistoryFilter(col)}
+              />
+            ))}
+          </div>
+          {historyItems.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum por aqui.</p>
           ) : (
             <ul className="space-y-2">
-              {outcomeItems.map((c) => (
+              {historyItems.map((c) => (
                 <li key={c.clientId} className="rounded-md border p-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <Link
@@ -362,6 +396,21 @@ export function CommercialKanban({
                     >
                       {c.fullName}
                     </Link>
+                    <span
+                      className="shrink-0 rounded-full px-1.5 text-[10px] font-medium text-white"
+                      style={{
+                        backgroundColor: COMMERCIAL_COLUMN_COLORS[c.column],
+                      }}
+                    >
+                      {COMMERCIAL_COLUMN_LABELS[c.column]}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    {c.finalCents !== null && (
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {formatBRL(c.finalCents)}
+                      </span>
+                    )}
                     {c.clinicName && (
                       <span className="text-[11px] text-muted-foreground">
                         {c.clinicName}
@@ -642,5 +691,29 @@ function CardMenu({
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** Chip de filtro do Histórico. */
+function FilterPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-2 py-0.5 text-xs transition-colors",
+        active ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"
+      )}
+    >
+      {label}
+    </button>
   );
 }

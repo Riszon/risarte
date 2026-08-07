@@ -85,6 +85,7 @@ export default async function PresentationPage(
           programConditions={negotiationBlock.programConditions}
           planEvents={negotiationBlock.planEvents}
           canEdit={canNegotiate}
+          scheduleLocked={negotiationBlock.scheduleLocked}
           canAuthorize={canAuthorize}
         />
       )}

@@ -48,6 +48,14 @@ export async function registerReceipt(input: {
     if (m.includes("INVALID_AMOUNT")) {
       return { ok: false, error: "Informe um valor maior que zero." };
     }
+    if (m.includes("SALE_NOT_CLOSED")) {
+      // 0203: a regra de ouro passou a ser imposta pelo banco.
+      return {
+        ok: false,
+        error:
+          "Esta venda ainda não foi fechada. Registre o contrato assinado e o pagamento confirmado antes de dar baixa.",
+      };
+    }
     if (m.includes("INSTALLMENT_CLOSED")) {
       return {
         ok: false,

@@ -439,6 +439,7 @@ export default async function CommercialCockpitPage(
                 programConditions={negotiationBlock.programConditions}
                 planEvents={negotiationBlock.planEvents}
                 canEdit={canNegotiate}
+                scheduleLocked={negotiationBlock.scheduleLocked}
                 canAuthorize={canAuthorize}
               />
               {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}

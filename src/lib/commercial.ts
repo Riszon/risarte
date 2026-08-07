@@ -284,17 +284,35 @@ export type CommercialColumn =
   | "cancelado"
   | "perdido";
 
-/** Colunas efetivamente renderizadas no kanban, na ordem do funil. */
+/**
+ * Colunas do QUADRO DE TRABALHO, na ordem do funil.
+ *
+ * Vai até "Fechamentos" (decisão do dono, 06/08/2026): o quadro é a fila de
+ * quem ainda depende do Consultor para virar venda. O que já fechou — e o que
+ * se perdeu — sai daqui e vai para o **Histórico**, senão o consultor não
+ * enxerga o próprio trabalho no meio de casos encerrados.
+ */
 export const BOARD_COLUMNS = [
   "a_apresentar",
   "acontecendo_agora",
   "apresentado",
   "follow_up",
   "fechamento",
-  "aguardando_iniciar",
-  "tratamento_iniciado",
 ] as const;
 export type BoardColumn = (typeof BOARD_COLUMNS)[number];
+
+/** O que sai do quadro e vive no Histórico do cockpit. */
+export const HISTORY_COLUMNS = [
+  "aguardando_iniciar",
+  "tratamento_iniciado",
+  "cancelado",
+  "perdido",
+] as const;
+export type HistoryColumn = (typeof HISTORY_COLUMNS)[number];
+
+export function isHistoryColumn(col: CommercialColumn): col is HistoryColumn {
+  return (HISTORY_COLUMNS as readonly string[]).includes(col);
+}
 
 export const COMMERCIAL_COLUMN_LABELS: Record<CommercialColumn, string> = {
   a_apresentar: "A apresentar",

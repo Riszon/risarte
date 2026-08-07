@@ -1,6 +1,38 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/08/2026 · Versão do sistema: **0.181.0** · Última migração: **0202**_
+_Atualizado em: 06/08/2026 · Versão do sistema: **0.182.0** · Última migração: **0203**_
+
+> **Entrou dinheiro numa venda que nunca foi fechada (v0.182.0, migração
+> 0203).** O dono tentou fechar um plano e recebeu *"Esta venda já tem
+> recebimento… o plano de cobrança não pode mais ser reescrito"*. O banco
+> explicou:
+>
+> | PT-00003 | |
+> |---|---|
+> | Situação | Em negociação — **nunca aceita** |
+> | Registro de fechamento | **não existe** |
+> | Cobranças / baixas | 11 / 4 — **R$ 869,00 recebidos** |
+>
+> A trava que ele encontrou estava **certa** (reescrever cobrança já paga
+> apagaria histórico). O problema era outro: a **regra de ouro** — *só é venda
+> com documentos assinados E pagamento confirmado* — estava na documentação e na
+> tela, mas **não no banco**. As cobranças nascem quando o plano de pagamento é
+> salvo, ainda em negociação, e a aba Financeiro aceitava baixa nelas.
+>
+> Três correções:
+>
+> 1. **Baixa só com a venda fechada** (decisão do dono). Gatilho em
+>    `payment_receipts` levanta `SALE_NOT_CLOSED`. Estorno e cobrança de
+>    renegociação passam — desfazer não se bloqueia, e dívida renegociada já era
+>    devida. Não invalida o que já foi recebido.
+> 2. **A tela diz quando a cobrança travou**, com o caminho certo escrito
+>    (renegociação na aba Financeiro), e nem tenta salvar o plano de cobrança.
+> 3. **Cockpit do Consultor virou fila de trabalho**: o quadro vai até
+>    *Fechamentos*; "Aguardando iniciar", "Tratamento iniciado", cancelados e
+>    perdidos vão para o **Histórico**, com filtro por situação e valor da venda.
+>
+> Lição registrada no CLAUDE.md: **quando uma regra de negócio importa, ela mora
+> no banco** — não na tela nem na documentação.
 
 > **Paridade dos fluxos de venda (v0.181.0, migração 0202).** Duas das quatro
 > assimetrias do comparativo, escolhidas pelo dono:

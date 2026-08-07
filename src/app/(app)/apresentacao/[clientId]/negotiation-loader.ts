@@ -34,6 +34,12 @@ export type NegotiationBlock = {
   planEvents: PlanEvent[];
   /** Fechamento (COM4) — existe quando a negociação foi aceita. */
   sale: SaleData | null;
+  /**
+   * As cobranças desta venda já receberam (ou foram renegociadas): o plano de
+   * cobrança não pode mais ser reescrito. A tela precisa DIZER isso — antes o
+   * consultor só descobria pelo erro ao salvar.
+   */
+  scheduleLocked: boolean;
   /** Descrições dos itens não aprovados pelo cliente (aprovação parcial). */
   excludedDescriptions: string[];
   /** Resumo da apresentação (vai no contrato do fechamento). */
@@ -273,6 +279,20 @@ export async function loadNegotiationBlock(
     }
   }
 
+  // A cobrança já andou? Mesma condição do SCHEDULE_LOCKED no banco.
+  let scheduleLocked = false;
+  if (n) {
+    const { data: instRows } = await supabase
+      .from("payment_installments")
+      .select("id, status, paid_amount_cents")
+      .eq("negotiation_id", n.id);
+    scheduleLocked = (instRows ?? []).some(
+      (i) =>
+        ["paga", "parcial", "renegociada"].includes(i.status as string) ||
+        Number(i.paid_amount_cents ?? 0) > 0
+    );
+  }
+
   // Itens não aprovados pelo cliente (aprovação parcial) — vão no contrato.
   const excludedSet = new Set(negotiation?.excludedItemIds ?? []);
   const excludedDescriptions = options
@@ -345,6 +365,7 @@ export async function loadNegotiationBlock(
     ),
     planEvents,
     sale,
+    scheduleLocked,
     excludedDescriptions,
     presentationSummary: (presRow?.summary as string | null) ?? null,
     programConditions,

@@ -125,6 +125,7 @@ export function NegotiationPanel({
   planEvents = [],
   canEdit,
   canAuthorize,
+  scheduleLocked = false,
   programConditions = null,
 }: {
   clientId: string;
@@ -135,6 +136,12 @@ export function NegotiationPanel({
   planEvents?: PlanEvent[];
   canEdit: boolean;
   canAuthorize: boolean;
+  /**
+   * Já existe recebimento (ou renegociação) nas cobranças desta venda: o plano
+   * de cobrança não pode mais ser reescrito. Antes a tela não dizia nada e o
+   * consultor só descobria pelo erro ao salvar (achado do dono, 06/08/2026).
+   */
+  scheduleLocked?: boolean;
   /** PPR5b: condições do programa do cliente (acima da regra da rede). */
   programConditions?: {
     label: string;
@@ -500,7 +507,14 @@ export function NegotiationPanel({
       }
       // J4b: no mesmo clique grava as cobranças exatamente como estão na tela
       // (personalizadas ou não) — um botão só para finalizar.
-      if (r.negotiationId && finalCents > 0 && schedule.length > 0) {
+      // 0203: cobrança que já recebeu não é reescrita — nem tentamos, para o
+      // consultor não levar um erro que ele não pode resolver ali.
+      if (
+        !scheduleLocked &&
+        r.negotiationId &&
+        finalCents > 0 &&
+        schedule.length > 0
+      ) {
         const s = await savePaymentSchedule({
           negotiationId: r.negotiationId,
           entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
@@ -988,6 +1002,19 @@ export function NegotiationPanel({
             footer={paymentFooter}
           />
 
+          {/* 0203: a tela DIZ que a cobrança já não pode ser reescrita — antes
+              o consultor só descobria pelo erro ao salvar. */}
+          {scheduleLocked && (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+              <strong>Cobrança já em andamento.</strong> Esta venda já tem
+              recebimento ou renegociação, então o plano de cobrança não pode
+              mais ser reescrito — mexer nele apagaria o histórico do que já foi
+              pago. Para mudar valores ou datas, use a{" "}
+              <strong>renegociação</strong> na aba Financeiro da ficha do
+              cliente.
+            </p>
+          )}
+
           {/* Cobranças AO VIVO (antes de salvar), em leitura compacta —
               "Personalizar" edita data e valor ali mesmo. */}
           {finalCents > 0 && schedule.length > 0 && (
@@ -996,7 +1023,7 @@ export function NegotiationPanel({
               onChange={(next) => setCustom({ sig, entries: next })}
               totalCents={finalCents}
               minInstallmentCents={minInstallmentCents}
-              readOnly={locked}
+              readOnly={locked || scheduleLocked}
             />
           )}
 

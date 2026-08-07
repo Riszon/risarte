@@ -448,6 +448,18 @@ de amanhã. No app, a única fonte de "hoje" é **`todayInBrazil()`**
 **`public.today_br()`** para funções novas. Nunca usar `toISOString()` para
 obter "hoje".
 
+**A REGRA DE OURO É IMPOSTA PELO BANCO (0203).** Não se recebe por uma venda que
+não foi fechada: gatilho em `payment_receipts` levanta `SALE_NOT_CLOSED`.
+Estorno e cobrança de renegociação passam (desfazer não se bloqueia; dívida
+renegociada já era devida). A regra estava só na documentação e na tela, e o
+teste do dono achou R$ 869,00 recebidos numa negociação nunca aceita
+(06/08/2026). **Quando uma regra de negócio importa, ela mora no banco.**
+
+**Cockpit do Consultor = fila de trabalho.** O quadro vai até *Fechamentos*;
+"Aguardando iniciar", "Tratamento iniciado", cancelados e perdidos vivem no
+**Histórico** (decisão do dono, 06/08/2026) — o consultor precisa enxergar o que
+ainda depende dele, não o que já encerrou.
+
 **Os dois fluxos de venda andam juntos.** Comparativo completo em
 `docs/COMPARATIVO-VENDAS.md`. Regra: o que muda na venda direta tem de ser
 verificado no fechamento pelo Comercial e vice-versa — os dois terminam nas
