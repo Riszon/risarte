@@ -11,6 +11,63 @@ export type ClosingResult = {
 };
 
 /**
+ * 0205 — cancela uma venda fechada pelo Comercial.
+ *
+ * Desfaz os efeitos (sessões não realizadas, cobranças em aberto) e devolve o
+ * cliente à **Fase 4**, de onde ele pode ser renegociado ou marcado como
+ * perdido. **Com recebimento, não cancela**: dinheiro que entrou sai por
+ * estorno ou renegociação, nunca por cancelamento.
+ */
+export async function cancelNegotiationSale(
+  clientId: string,
+  negotiationId: string,
+  reason: string
+): Promise<ClosingResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  if (!reason.trim()) {
+    return { ok: false, error: "Escreva o motivo do cancelamento." };
+  }
+
+  const { error } = await supabase.rpc("cancel_negotiation", {
+    p_negotiation_id: negotiationId,
+    p_reason: reason,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("HAS_RECEIPTS")) {
+      return {
+        ok: false,
+        error:
+          "Esta venda já tem recebimento. Estorne a baixa ou faça uma renegociação — cancelar não faz o dinheiro desaparecer.",
+      };
+    }
+    if (m.includes("ALREADY_CANCELLED")) {
+      return { ok: false, error: "Esta venda já foi cancelada." };
+    }
+    if (m.includes("REASON_REQUIRED")) {
+      return { ok: false, error: "Escreva o motivo do cancelamento." };
+    }
+    if (m.includes("NOT_ALLOWED")) {
+      return {
+        ok: false,
+        error: "Cancelar venda é do Gerente da unidade ou do Admin Master.",
+      };
+    }
+    console.error("cancel_negotiation failed:", m);
+    return { ok: false, error: "Não foi possível cancelar a venda." };
+  }
+
+  revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath("/comercial");
+  revalidatePath("/jornada");
+  return { ok: true };
+}
+
+/**
  * COM4 — marca (ou desmarca) um passo do fechamento: contrato assinado ou
  * pagamento confirmado. Regra de ouro: quando os dois estão marcados, a venda é
  * concluída no banco (cliente vai à Fase 5 + avisos). Marcação manual-primeiro.

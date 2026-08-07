@@ -102,7 +102,13 @@ const selectClass =
 const inputClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
-type AdjustMode = "none" | "discount_percent" | "discount_amount" | "surcharge";
+/**
+ * 0205: plano de tratamento **não tem acréscimo** (decisão do dono,
+ * 06/08/2026). O preço vem do orçamento aprovado pelo Coordenador; somar valor
+ * por cima enfraquece a aprovação clínica. Só a venda direta soma — e lá é
+ * restrito ao Gerente.
+ */
+type AdjustMode = "none" | "discount_percent" | "discount_amount";
 
 function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
@@ -114,6 +120,7 @@ const STATUS_PILL: Record<NegotiationStatus, string> = {
   aceita: "border-emerald-300 bg-emerald-50 text-emerald-800",
   devolvida: "border-border bg-muted text-muted-foreground",
   perdida: "border-rose-300 bg-rose-50 text-rose-800",
+  cancelada: "border-border bg-muted text-muted-foreground",
 };
 
 export function NegotiationPanel({
@@ -181,9 +188,7 @@ export function NegotiationPanel({
     ? "none"
     : negotiation.adjustmentCents < 0
       ? "discount_amount"
-      : negotiation.adjustmentCents > 0
-        ? "surcharge"
-        : "none";
+      : "none";
   const [adjustMode, setAdjustMode] = useState<AdjustMode>(initialMode);
   const [adjustValue, setAdjustValue] = useState(
     negotiation && negotiation.adjustmentCents !== 0
@@ -355,9 +360,7 @@ export function NegotiationPanel({
   const autoCents = Math.round((discountBaseCents * autoPct) / 100);
   const effectiveAdjustmentCents = isProgramMember
     ? -tierAutoCents
-    : adjustMode === "surcharge"
-      ? adjustmentCents
-      : Math.min(adjustmentCents, -autoCents);
+    : Math.min(adjustmentCents, -autoCents);
   const autoApplied =
     autoCents > 0 && effectiveAdjustmentCents === -autoCents;
 
@@ -933,7 +936,6 @@ export function NegotiationPanel({
                   <option value="none">Sem ajuste</option>
                   <option value="discount_percent">Desconto (%)</option>
                   <option value="discount_amount">Desconto (R$)</option>
-                  <option value="surcharge">Acréscimo (R$)</option>
                 </select>
                 {adjustMode !== "none" && (
                   <input

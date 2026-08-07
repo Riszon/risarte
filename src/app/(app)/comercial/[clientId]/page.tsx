@@ -443,12 +443,14 @@ export default async function CommercialCockpitPage(
                 canAuthorize={canAuthorize}
               />
               {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}
-              {negotiationBlock.negotiation?.status === "aceita" && (
+              {(negotiationBlock.negotiation?.status === "aceita" || negotiationBlock.negotiation?.status === "cancelada") && (
                 <ClosingPanel
                   clientId={clientId}
                   negotiationId={negotiationBlock.negotiation.id}
                   sale={negotiationBlock.sale}
                   canClose={canClose}
+                  canCancel={canAuthorize}
+                  negotiationCancelled={negotiationBlock.negotiation?.status === "cancelada"}
                   summary={{
                     finalCents: negotiationBlock.negotiation.finalCents,
                     adjustmentCents: negotiationBlock.negotiation.adjustmentCents,

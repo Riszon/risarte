@@ -127,7 +127,10 @@ export async function savePlanNegotiation(
    * ignorado de propósito, para nunca congelar um desconto antigo.
    */
   const ppr = programs.ppr?.active ? programs.ppr : null;
-  let adjustmentCents = Math.round(input.adjustmentCents);
+  // 0205: plano de tratamento não tem acréscimo — o preço vem do orçamento
+  // aprovado pelo Coordenador. O banco também recusa (SURCHARGE_NOT_ALLOWED);
+  // aqui só evitamos mandar o que já se sabe inválido.
+  let adjustmentCents = Math.min(0, Math.round(input.adjustmentCents));
   if (ppr) {
     const pct =
       installments <= 1

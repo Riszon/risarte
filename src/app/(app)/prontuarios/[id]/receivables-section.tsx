@@ -272,13 +272,31 @@ export function ReceivablesSection({
         // FIN4c: o cliente pagou o bruto, mas a clínica recebe o líquido — e
         // não hoje. Dizer isso na hora evita a surpresa no extrato.
         const fee = r.fee;
-        toast.success(
-          fee && fee.feeCents > 0
-            ? `${base} Taxa de ${formatBRL(fee.feeCents)} — líquido ${formatBRL(fee.netCents)}${
-                fee.settlementDate ? ` em ${fmtDate(fee.settlementDate)}` : ""
-              }.`
-            : base
-        );
+        if (fee && fee.feeCents > 0) {
+          toast.success(
+            `${base} Taxa de ${formatBRL(fee.feeCents)} — líquido ${formatBRL(fee.netCents)}${
+              fee.settlementDate ? ` em ${fmtDate(fee.settlementDate)}` : ""
+            }.`
+          );
+        } else if (r.feeSkipped?.kind === "no_rate") {
+          // Silêncio aqui esconderia despesa: quem recebe precisa saber que o
+          // custo do meio de pagamento não entrou por falta de cadastro.
+          toast.warning(
+            `${base} MAS a taxa não foi lançada: não há taxa de "${r.feeSkipped.modality}" cadastrada${
+              r.feeSkipped.acquirerName
+                ? ` na adquirente ${r.feeSkipped.acquirerName}`
+                : ""
+            }. Avise o Gerente — a despesa do meio de pagamento está ficando de fora.`,
+            { duration: 12000 }
+          );
+        } else if (r.feeSkipped?.kind === "no_acquirer") {
+          toast.warning(
+            `${base} Sem adquirente vinculada a esta cobrança — nenhuma taxa foi lançada.`,
+            { duration: 12000 }
+          );
+        } else {
+          toast.success(base);
+        }
         setPayingId(null);
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");

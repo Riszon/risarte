@@ -76,8 +76,7 @@ o cliente **perderia o desconto em silêncio**. Agora o servidor garante o piso
 nos dois fluxos (`savePlanNegotiation`). O desconto manual maior continua
 prevalecendo, e acréscimo lançado não é revertido pelo automático.
 
-**2. Não existe cancelar uma venda fechada pelo Comercial.** *(decidido —
-a construir)*
+**2. ✅ RESOLVIDO (v0.184.0, migração 0205) — cancelar venda do Comercial.**
 A venda direta tem `cancel_direct_sale`, que devolve o benefício do programa,
 cancela as sessões no prontuário e as cobranças em aberto. No Comercial não há
 equivalente.
@@ -85,9 +84,14 @@ equivalente.
 **Decisão do dono (06/08/2026):** cancelar **desfaz tudo e devolve o cliente à
 Fase 4 (Conversão Comercial)** — de onde ele pode ser renegociado ou marcado
 como perdido, sem recomeçar do zero. O cancelamento cancela as sessões ainda
-não realizadas, cancela as cobranças em aberto e devolve o benefício do
-programa. **Se já houve recebimento**, o sistema exige estorno ou renegociação
-antes: dinheiro que entrou não desaparece por cancelamento.
+não realizadas e as cobranças em aberto. **Se já houve recebimento**, o sistema
+recusa (`HAS_RECEIPTS`): dinheiro que entrou sai por estorno ou renegociação,
+nunca por cancelamento. É ato de **Gerente/Admin**, com motivo obrigatório.
+
+**Limite conhecido:** o benefício do programa **não** volta aqui (na venda
+direta volta). O consumo em `ppr_benefit_usages` não guarda vínculo com a
+negociação — ele nasce no atendimento, não no fechamento. Pendência para quando
+o consumo apontar para a venda de origem.
 
 **3. ✅ RESOLVIDO (v0.181.0, migração 0202) — os passos eram 3 contra 2.**
 O Comercial não tinha "cobrança emitida", justamente o passo que o **ASAAS** vai

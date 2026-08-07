@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -20,7 +20,7 @@ import {
   PAYMENT_METHOD_LABELS,
   type PaymentMethod,
 } from "@/lib/commercial";
-import { markClosingStep } from "./closing-actions";
+import { cancelNegotiationSale, markClosingStep } from "./closing-actions";
 
 export type ClosingSummary = {
   finalCents: number;
@@ -38,6 +38,8 @@ export function ClosingPanel({
   sale,
   summary,
   canClose,
+  canCancel = false,
+  negotiationCancelled = false,
 }: {
   clientId: string;
   negotiationId: string;
@@ -50,9 +52,32 @@ export function ClosingPanel({
   } | null;
   summary: ClosingSummary;
   canClose: boolean;
+  /** Cancelar venda fechada é do Gerente/Admin (0205). */
+  canCancel?: boolean;
+  negotiationCancelled?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+
+  function doCancel() {
+    startTransition(async () => {
+      const r = await cancelNegotiationSale(
+        clientId,
+        negotiationId,
+        cancelReason
+      );
+      if (r.ok) {
+        toast.success(
+          "Venda cancelada. O cliente voltou para a Conversão Comercial."
+        );
+        setCancelling(false);
+        setCancelReason("");
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
 
   const signed = sale?.contractSigned ?? false;
   const issued = sale?.paymentIssued ?? false;
@@ -147,16 +172,72 @@ export function ClosingPanel({
           )}
         </div>
 
-        {closed ? (
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <PartyPopper className="size-5 shrink-0" />
-            <div>
-              <p className="font-semibold">Venda concluída!</p>
-              <p className="text-xs">
-                Cliente movido para o Início de Tratamento. A recepção foi
-                acionada para agendar.
-              </p>
+        {negotiationCancelled ? (
+          <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
+            <p className="font-semibold">Venda cancelada.</p>
+            <p className="text-xs text-muted-foreground">
+              As sessões não realizadas e as cobranças em aberto foram
+              canceladas, e o cliente voltou para a Conversão Comercial.
+            </p>
+          </div>
+        ) : closed ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
+              <PartyPopper className="size-5 shrink-0" />
+              <div>
+                <p className="font-semibold">Venda concluída!</p>
+                <p className="text-xs">
+                  Cliente movido para o Início de Tratamento. A recepção foi
+                  acionada para agendar.
+                </p>
+              </div>
             </div>
+            {/* 0205: desfazer uma venda fechada por engano ou desistência. */}
+            {canCancel && !cancelling && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={() => setCancelling(true)}
+              >
+                Cancelar esta venda
+              </Button>
+            )}
+            {canCancel && cancelling && (
+              <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2">
+                <p className="text-xs">
+                  Cancelar <strong>desfaz</strong> as sessões ainda não
+                  realizadas e as cobranças em aberto, e devolve o cliente à
+                  Conversão Comercial. Se já houve recebimento, o sistema
+                  recusa — nesse caso o caminho é estorno ou renegociação.
+                </p>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Motivo do cancelamento (obrigatório)"
+                  className="min-h-16 w-full rounded-md border border-input bg-transparent p-2 text-xs"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => setCancelling(false)}
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs"
+                    disabled={isPending || !cancelReason.trim()}
+                    onClick={doCancel}
+                  >
+                    Confirmar cancelamento
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>

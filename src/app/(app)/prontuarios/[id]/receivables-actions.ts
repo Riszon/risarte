@@ -18,6 +18,17 @@ export type FeeOutcome = {
 };
 
 /**
+ * Por que a taxa NÃO foi calculada. O dono deu baixa num cartão e não viu aviso
+ * nenhum (07/08/2026): a adquirente da unidade só tinha taxa de boleto, e o
+ * sistema pulou em silêncio. Silêncio aqui é pior que erro — quem recebe fica
+ * sem saber se o meio é grátis ou se o cadastro está incompleto.
+ */
+export type FeeSkipReason =
+  | { kind: "no_acquirer" }
+  | { kind: "no_modality"; method: string | null }
+  | { kind: "no_rate"; modality: string; acquirerName: string | null };
+
+/**
  * FIN4c — aplica a taxa da adquirente sobre um recebimento recém-registrado.
  *
  * Roda logo depois da baixa e **nunca derruba a baixa**: se não houver taxa
@@ -33,13 +44,15 @@ async function applyFeeToReceipt(
   receiptId: string,
   installmentId: string,
   receiptMethod: string | null
-): Promise<FeeOutcome | null> {
+): Promise<{ fee: FeeOutcome | null; skipped: FeeSkipReason | null }> {
   const { data: inst } = await supabase
     .from("payment_installments")
     .select("acquirer_id, negotiation_id, direct_sale_id")
     .eq("id", installmentId)
     .maybeSingle();
-  if (!inst?.acquirer_id) return null;
+  if (!inst?.acquirer_id) {
+    return { fee: null, skipped: { kind: "no_acquirer" } };
+  }
 
   // Faixa de parcelas que a adquirente cobra = parcelamento da VENDA.
   let installments = 1;
@@ -54,7 +67,10 @@ async function applyFeeToReceipt(
   }
 
   const modality = modalityOf(receiptMethod, installments);
-  if (!modality) return null;
+  // Dinheiro em espécie não passa por adquirente — não há taxa a procurar.
+  if (!modality) {
+    return { fee: null, skipped: { kind: "no_modality", method: receiptMethod } };
+  }
 
   const { data, error } = await supabase.rpc("apply_acquirer_fee", {
     p_receipt_id: receiptId,
@@ -63,18 +79,32 @@ async function applyFeeToReceipt(
     p_installments: installments,
   });
   if (error) {
-    // Cadastro incompleto não é erro de atendimento — a baixa já valeu.
+    // Cadastro incompleto não é erro de atendimento — a baixa já valeu. Mas o
+    // usuário PRECISA saber, senão some a despesa e ninguém percebe.
     if (
       error.message.includes("RATE_NOT_FOUND") ||
       error.message.includes("ACQUIRER_NOT_FOUND") ||
-      error.message.includes("CLINIC_MISMATCH") ||
-      error.message.includes("FEE_ALREADY_APPLIED")
+      error.message.includes("CLINIC_MISMATCH")
     ) {
-      console.warn("taxa da adquirente não aplicada:", error.message);
-      return null;
+      const { data: acq } = await supabase
+        .from("card_acquirers")
+        .select("name")
+        .eq("id", inst.acquirer_id as string)
+        .maybeSingle();
+      return {
+        fee: null,
+        skipped: {
+          kind: "no_rate",
+          modality,
+          acquirerName: (acq?.name as string | undefined) ?? null,
+        },
+      };
+    }
+    if (error.message.includes("FEE_ALREADY_APPLIED")) {
+      return { fee: null, skipped: null };
     }
     console.error("apply_acquirer_fee failed:", error.message);
-    return null;
+    return { fee: null, skipped: null };
   }
 
   const r = (data ?? {}) as {
@@ -84,10 +114,13 @@ async function applyFeeToReceipt(
     charged_at_issue?: boolean;
   };
   return {
-    feeCents: r.fee_cents ?? 0,
-    netCents: r.net_cents ?? 0,
-    settlementDate: r.settlement_date ?? null,
-    chargedAtIssue: Boolean(r.charged_at_issue),
+    fee: {
+      feeCents: r.fee_cents ?? 0,
+      netCents: r.net_cents ?? 0,
+      settlementDate: r.settlement_date ?? null,
+      chargedAtIssue: Boolean(r.charged_at_issue),
+    },
+    skipped: null,
   };
 }
 
@@ -104,7 +137,9 @@ export async function registerReceipt(input: {
   reference: string;
   notes: string;
   clientToken: string;
-}): Promise<ReceivableResult & { fee?: FeeOutcome }> {
+}): Promise<
+  ReceivableResult & { fee?: FeeOutcome; feeSkipped?: FeeSkipReason }
+> {
   await getSessionContext();
   const supabase = await createClient();
 
@@ -158,7 +193,7 @@ export async function registerReceipt(input: {
 
   // FIN4c: a taxa da adquirente entra AGORA. Antes a função existia e nenhuma
   // tela a chamava — a despesa da maquininha nunca era lançada.
-  const fee =
+  const feeResult =
     typeof receiptId === "string"
       ? await applyFeeToReceipt(
           supabase,
@@ -166,7 +201,7 @@ export async function registerReceipt(input: {
           input.installmentId,
           input.paymentMethod || null
         )
-      : null;
+      : { fee: null, skipped: null };
 
   await logAudit({
     action: "create",
@@ -175,7 +210,11 @@ export async function registerReceipt(input: {
   });
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath("/financeiro");
-  return { ok: true, fee: fee ?? undefined };
+  return {
+    ok: true,
+    fee: feeResult.fee ?? undefined,
+    feeSkipped: feeResult.skipped ?? undefined,
+  };
 }
 
 /**

@@ -1,6 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/08/2026 · Versão do sistema: **0.183.0** · Última migração: **0204**_
+_Atualizado em: 07/08/2026 · Versão do sistema: **0.184.0** · Última migração: **0205**_
+
+> **Cancelar venda do Comercial + plano sem acréscimo (v0.184.0, migração
+> 0205).** As duas assimetrias que faltavam do comparativo.
+>
+> **Cancelar** desfaz as sessões não realizadas e as cobranças em aberto, e
+> devolve o cliente à **Fase 4** — de onde ele pode ser renegociado ou marcado
+> como perdido, sem refazer avaliação e planejamento. **Com recebimento, não
+> cancela** (`HAS_RECEIPTS`): dinheiro que entrou sai por estorno ou
+> renegociação. É ato de **Gerente/Admin**, com motivo obrigatório.
+>
+> *Limite conhecido:* o benefício do programa **não** volta no cancelamento do
+> Comercial (na venda direta volta). O consumo em `ppr_benefit_usages` não
+> guarda vínculo com a negociação — nasce no atendimento, não no fechamento.
+> Inventar o vínculo agora devolveria benefício errado; fica como pendência.
+>
+> **Plano de tratamento não tem acréscimo.** Trava no banco
+> (`SURCHARGE_NOT_ALLOWED`), campo removido da tela e ajustes positivos antigos
+> zerados. A venda direta mantém acréscimo, restrito ao Gerente.
+>
+> **E o aviso que faltava:** o dono deu baixa num cartão e não viu taxa nenhuma.
+> Não era falha do cálculo — a adquirente que atende a unidade (Asaas rede) só
+> tinha taxa de **boleto** cadastrada, e o sistema pulava **em silêncio**. O
+> silêncio era decisão minha do FIN4c e estava errada: agora a baixa avisa
+> *"a taxa não foi lançada: não há taxa de X cadastrada"*. Cadastro incompleto
+> continua não derrubando a baixa, mas para de esconder despesa.
 
 > **FIN4c — a taxa da adquirente nunca era lançada (v0.183.0, migração 0204).**
 > Descoberto ao conferir o teste do boleto: `apply_acquirer_fee` existia no
