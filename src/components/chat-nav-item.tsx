@@ -110,7 +110,19 @@ export function ChatNavItem({
       const uid = data.user?.id ?? null;
       meRef.current = uid;
       if (!uid) return;
+      // O efeito pode ter sido desmontado enquanto o getUser() estava no ar
+      // (troca de página, hot reload, StrictMode). Sem esta guarda, um canal
+      // nasceria já órfão — ninguém o removeria na limpeza.
+      if (cancelled) return;
       supabase.rpc("touch_presence").then(() => {});
+      // O client do Supabase é singleton: `channel(nome)` DEVOLVE o canal
+      // existente em vez de criar outro. Se sobrou um de um efeito anterior,
+      // ele já está inscrito — e registrar callback depois do `subscribe()`
+      // estoura ("cannot add `presence` callbacks ... after subscribe()").
+      // Por isso descartamos qualquer resto antes de abrir o nosso.
+      for (const c of supabase.getChannels()) {
+        if (c.topic === "realtime:online-users") supabase.removeChannel(c);
+      }
       presence = supabase.channel("online-users", {
         config: { presence: { key: uid } },
       });
