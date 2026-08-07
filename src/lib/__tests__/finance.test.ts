@@ -30,6 +30,11 @@ import {
   type Installment,
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
+import {
+  cancellationErrors,
+  contractRatio,
+  settleCancellation,
+} from "@/lib/finance/cancellation";
 import { isoDateIn } from "@/lib/dates";
 import {
   acquirerAppliesTo,
@@ -2200,5 +2205,131 @@ describe("taxa da adquirente na baixa", () => {
         date: "2026-08-06",
       })
     ).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cancelamento de plano — o acerto de contas do termo
+// ---------------------------------------------------------------------------
+describe("cancelamento: acerto de contas", () => {
+  // Plano de R$ 10.000 de tabela fechado por R$ 8.000 (20% de desconto).
+  const base = {
+    contractCents: 800000,
+    listTotalCents: 1000000,
+    penaltyPercent: 0,
+  };
+
+  it("o realizado é cobrado COM o desconto que o cliente tinha", () => {
+    // Metade do plano executada: R$ 5.000 de tabela viram R$ 4.000.
+    const s = settleCancellation({
+      ...base,
+      executedListCents: 500000,
+      paidCents: 0,
+    });
+    expect(s.executedCents).toBe(400000);
+    expect(s.pendingCents).toBe(400000);
+    expect(s.dueCents).toBe(400000);
+    expect(s.clientOwesCents).toBe(400000);
+    expect(s.clinicRefundsCents).toBe(0);
+  });
+
+  it("quem pagou mais do que consumiu recebe de volta", () => {
+    const s = settleCancellation({
+      ...base,
+      executedListCents: 500000,
+      paidCents: 600000, // pagou R$ 6.000, consumiu R$ 4.000
+    });
+    expect(s.clinicRefundsCents).toBe(200000);
+    expect(s.clientOwesCents).toBe(0);
+  });
+
+  it("a multa incide sobre o NÃO executado, não sobre o contrato", () => {
+    const s = settleCancellation({
+      ...base,
+      penaltyPercent: 10,
+      executedListCents: 500000,
+      paidCents: 0,
+    });
+    // 10% sobre os R$ 4.000 que a clínica deixou de faturar.
+    expect(s.penaltyCents).toBe(40000);
+    expect(s.dueCents).toBe(440000);
+  });
+
+  it("multa zero (padrão) não cria linha nenhuma", () => {
+    const s = settleCancellation({
+      ...base,
+      executedListCents: 250000,
+      paidCents: 0,
+    });
+    expect(s.penaltyCents).toBe(0);
+    expect(s.dueCents).toBe(s.executedCents);
+  });
+
+  it("plano inteiro executado não cobra mais que o contrato", () => {
+    // Arredondamento não pode fazer o total passar do que foi contratado.
+    const s = settleCancellation({
+      ...base,
+      executedListCents: 1000000,
+      paidCents: 800000,
+    });
+    expect(s.executedCents).toBe(800000);
+    expect(s.pendingCents).toBe(0);
+    expect(s.clientOwesCents).toBe(0);
+    expect(s.clinicRefundsCents).toBe(0);
+  });
+
+  it("nada executado e nada pago zera o acerto", () => {
+    const s = settleCancellation({
+      ...base,
+      executedListCents: 0,
+      paidCents: 0,
+    });
+    expect(s.executedCents).toBe(0);
+    expect(s.dueCents).toBe(0);
+    expect(s.clientOwesCents).toBe(0);
+  });
+
+  it("sem total de tabela, cobra o preço cheio em vez de dividir por zero", () => {
+    expect(contractRatio({ contractCents: 5000, listTotalCents: 0 })).toBe(1);
+  });
+
+  it("acompanhamento sem data de retorno não gera termo", () => {
+    // Sem data ninguém sabe quando ligar — o caso some do radar da unidade.
+    expect(
+      cancellationErrors({
+        reason: "Mudou de cidade",
+        destination: "follow_up",
+        returnDate: null,
+        wasClosed: true,
+      })
+    ).toContain("Informe a data de retorno do acompanhamento.");
+    expect(
+      cancellationErrors({
+        reason: "Mudou de cidade",
+        destination: "follow_up",
+        returnDate: "2026-12-01",
+        wasClosed: true,
+      })
+    ).toEqual([]);
+  });
+
+  it("motivo é obrigatório sempre; destino só quando a venda fechou", () => {
+    expect(
+      cancellationErrors({
+        reason: "",
+        destination: null,
+        returnDate: null,
+        wasClosed: false,
+      })
+    ).toEqual(["Escreva o motivo do cancelamento."]);
+    // Negociação não fechada: o cliente segue na Fase 4, sem pergunta.
+    expect(
+      cancellationErrors({
+        reason: "Desistiu antes de assinar",
+        destination: null,
+        returnDate: null,
+        wasClosed: false,
+      })
+    ).toEqual([]);
   });
 });

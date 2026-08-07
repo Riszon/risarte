@@ -464,11 +464,30 @@ ainda depende dele, não o que já encerrou.
 orçamento aprovado pelo Coordenador; somar valor por cima enfraquece a aprovação
 clínica. Venda direta mantém acréscimo, restrito ao Gerente.
 
-**Cancelar venda fechada pelo Comercial** (dono, 06/08/2026 — a construir):
-desfaz tudo e devolve o cliente à **Fase 4**, de onde ele pode ser renegociado
-ou marcado como perdido. Cancela sessões não realizadas, cobranças em aberto e
-devolve o benefício do programa. **Com recebimento já feito, exige estorno ou
-renegociação antes** — dinheiro que entrou não some por cancelamento.
+**Cancelar plano de tratamento (0206, dono 07/08/2026).** Três passos, e **nada
+é desfeito antes do último**: *apurar* (congela o acerto) → *assinar* (o
+paciente assina o termo) → *efetivar* (sessões, cobranças e fase mudam).
+Descartar no meio não deixa rastro no tratamento.
+
+- **Destino do paciente:** quem **não fechou** continua na **Fase 4**. Quem
+  fechou vai para **Fase 6 (reavaliação)** ou **Fase 7 (acompanhamento, com
+  data de retorno obrigatória)** — escolha do Gerente no ato. Voltar à Fase 4
+  quem já estava em tratamento seria fingir que o clínico não aconteceu.
+- **O realizado é cobrado COM o desconto** do contrato (retirar desconto já
+  concedido é cláusula que o CDC olha com rigor).
+- **Multa de rescisão** é percentual configurável (cascata rede→unidade),
+  **padrão 0%**, e incide sobre o **não executado** — compensa a agenda
+  perdida, não pune o que já foi entregue.
+- **Cliente devendo** → nasce cobrança nova (15 dias). **Clínica devendo** →
+  nasce conta a pagar em **1.9.03**; a forma de devolver é decidida no
+  Financeiro (estorno em cartão depende da adquirente e nem sempre existe).
+- **Sessão concluída nunca é desfeita** — é histórico clínico.
+- **O sistema não lê o contrato assinado** (não há texto armazenado): ele aplica
+  as regras acima e **cita** o contrato de origem. Divergência é conciliada por
+  gente, no campo de observações do termo.
+- Pendência: o **benefício do programa não volta** no cancelamento do Comercial
+  (na venda direta volta) — `ppr_benefit_usages` não guarda vínculo com a
+  negociação.
 
 **A taxa da adquirente entra NA BAIXA (FIN4c, 0204).** A **modalidade vem do
 meio da BAIXA, não do meio da venda**: parcela de boleto paga por PIX no balcão

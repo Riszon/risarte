@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/08/2026 · Versão do sistema: **0.184.0** · Última migração: **0205**_
+_Atualizado em: 07/08/2026 · Versão do sistema: **0.185.0** · Última migração: **0206**_
+
+> **Cancelamento de plano com TERMO ASSINADO (v0.185.0, migração 0206).** O dono
+> corrigiu duas coisas da 0205 e pediu o documento.
+>
+> **O destino estava errado.** Eu mandava todo cancelamento para a Fase 4. Quem
+> já estava em tratamento não volta para a fila comercial como caso novo: vai
+> para a **Fase 6 (reavaliação com o Coordenador)** ou **Fase 7 (acompanhamento,
+> com data de retorno obrigatória)** — o Gerente escolhe no ato. Quem **não**
+> fechou continua na Fase 4, sem termo e sem pergunta.
+>
+> **A recusa por causa de dinheiro recebido saiu.** Ela existia porque não havia
+> como resolver o já pago; agora existe o **termo de cancelamento**, que apura o
+> acerto e é assinado pelo paciente.
+>
+> **Três passos, e nada é desfeito antes do último:** apurar (congela o acerto) →
+> assinar → efetivar. Descartar no meio não deixa rastro no tratamento — é o que
+> permite conversar com o paciente sem medo.
+>
+> **O acerto** (regras do dono): realizado cobrado **com o desconto** do
+> contrato; multa de rescisão percentual configurável, **padrão 0%**, sobre o
+> **não executado**; cliente devendo vira cobrança nova, clínica devendo vira
+> conta a pagar em 1.9.03 com a forma decidida no Financeiro. Sessão concluída
+> nunca é desfeita.
+>
+> O termo (`/cancelamentos/[id]/termo`) traz realizado, pendente, pago, estorno
+> anterior, devido e o resultado, e **cita o contrato de origem** (`PT-`, data do
+> fechamento). **337 testes**, 9 deles só na conta do acerto.
+>
+> **Limite declarado:** o sistema **não lê o contrato assinado** — não há texto
+> armazenado. Ele aplica as regras configuradas e cita o documento; divergência
+> é conciliada por gente, nas observações do termo.
 
 > **Cancelar venda do Comercial + plano sem acréscimo (v0.184.0, migração
 > 0205).** As duas assimetrias que faltavam do comparativo.
