@@ -18,7 +18,13 @@ export type ClosingResult = {
 export async function markClosingStep(
   clientId: string,
   negotiationId: string,
-  step: "contract" | "payment",
+  /**
+   * 0202: `payment_issued` (cobrança gerada) entrou para a venda do Comercial
+   * ter os MESMOS três passos da venda direta e da renegociação — é o passo que
+   * o ASAAS vai preencher sozinho. `payment` continua valendo como apelido de
+   * `payment_confirmed`.
+   */
+  step: "contract" | "payment_issued" | "payment_confirmed" | "payment",
   value: boolean
 ): Promise<ClosingResult> {
   await getSessionContext();

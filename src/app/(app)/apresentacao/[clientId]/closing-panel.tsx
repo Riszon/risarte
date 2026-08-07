@@ -9,6 +9,7 @@ import {
   FileSignature,
   Lock,
   PartyPopper,
+  Receipt,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,13 @@ export function ClosingPanel({
 }: {
   clientId: string;
   negotiationId: string;
-  sale: { contractSigned: boolean; paymentConfirmed: boolean; closedAt: string | null } | null;
+  sale: {
+    contractSigned: boolean;
+    /** 0202: cobrança gerada — informativo, não conclui a venda. */
+    paymentIssued?: boolean;
+    paymentConfirmed: boolean;
+    closedAt: string | null;
+  } | null;
   summary: ClosingSummary;
   canClose: boolean;
 }) {
@@ -48,10 +55,14 @@ export function ClosingPanel({
   const [isPending, startTransition] = useTransition();
 
   const signed = sale?.contractSigned ?? false;
+  const issued = sale?.paymentIssued ?? false;
   const paid = sale?.paymentConfirmed ?? false;
   const closed = Boolean(sale?.closedAt);
 
-  function toggle(step: "contract" | "payment", value: boolean) {
+  function toggle(
+    step: "contract" | "payment_issued" | "payment_confirmed",
+    value: boolean
+  ) {
     startTransition(async () => {
       const r = await markClosingStep(clientId, negotiationId, step, value);
       if (r.ok) {
@@ -149,8 +160,10 @@ export function ClosingPanel({
           </div>
         ) : (
           <>
-            {/* Regra de ouro: dois passos manuais. */}
-            <div className="grid gap-2 sm:grid-cols-2">
+            {/* 0202: os MESMOS três passos da venda direta e da renegociação.
+                Só contrato + pagamento CONFIRMADO concluem a venda; "cobrança
+                emitida" registra que o documento foi gerado. */}
+            <div className="grid gap-2 sm:grid-cols-3">
               <StepToggle
                 icon={<FileSignature className="size-4" />}
                 label="Contrato assinado"
@@ -160,12 +173,20 @@ export function ClosingPanel({
                 onToggle={(v) => toggle("contract", v)}
               />
               <StepToggle
+                icon={<Receipt className="size-4" />}
+                label="Cobrança emitida"
+                hint="Boleto/link gerado e enviado — ainda não é pagamento"
+                done={issued}
+                disabled={!canClose || isPending}
+                onToggle={(v) => toggle("payment_issued", v)}
+              />
+              <StepToggle
                 icon={<Wallet className="size-4" />}
                 label="Pagamento confirmado"
-                hint="Cobrança via ASAAS (marcação manual por enquanto)"
+                hint="Dinheiro na conta (marcação manual por enquanto)"
                 done={paid}
                 disabled={!canClose || isPending}
-                onToggle={(v) => toggle("payment", v)}
+                onToggle={(v) => toggle("payment_confirmed", v)}
               />
             </div>
             {!canClose && (

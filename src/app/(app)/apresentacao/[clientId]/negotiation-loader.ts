@@ -19,6 +19,8 @@ import type {
 
 export type SaleData = {
   contractSigned: boolean;
+  /** 0202: cobrança gerada — informativo; quem conclui é o pagamento. */
+  paymentIssued: boolean;
   paymentConfirmed: boolean;
   closedAt: string | null;
 };
@@ -258,12 +260,13 @@ export async function loadNegotiationBlock(
   if (n) {
     const { data: saleRow } = await supabase
       .from("commercial_sales")
-      .select("contract_signed, payment_confirmed, closed_at")
+      .select("contract_signed, payment_issued, payment_confirmed, closed_at")
       .eq("negotiation_id", n.id)
       .maybeSingle();
     if (saleRow) {
       sale = {
         contractSigned: saleRow.contract_signed as boolean,
+        paymentIssued: Boolean(saleRow.payment_issued),
         paymentConfirmed: saleRow.payment_confirmed as boolean,
         closedAt: (saleRow.closed_at as string | null) ?? null,
       };

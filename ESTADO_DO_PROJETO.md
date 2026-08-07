@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/08/2026 · Versão do sistema: **0.180.0** · Última migração: **0201**_
+_Atualizado em: 06/08/2026 · Versão do sistema: **0.181.0** · Última migração: **0202**_
+
+> **Paridade dos fluxos de venda (v0.181.0, migração 0202).** Duas das quatro
+> assimetrias do comparativo, escolhidas pelo dono:
+>
+> **1. Desconto automático à vista no Comercial agora é do servidor.** Era
+> calculado pela TELA; o servidor só conferia o teto. Se a tela errasse, o
+> cliente **perderia os 5% em silêncio** — sem erro, sem aviso, sem ninguém
+> perceber. É a mesma família do bug da venda direta, virada do avesso (lá o
+> erro pelo menos travava o salvamento). Agora o servidor garante o piso nos
+> dois fluxos. O desconto manual maior continua prevalecendo, e acréscimo
+> lançado não é revertido pelo automático.
+>
+> **2. "Cobrança emitida" entrou no fechamento do Comercial.** Eram 3 passos na
+> venda direta contra 2 no Comercial. Hoje seria só diferença de tela, mas é
+> exatamente esse o passo que o **ASAAS** vai preencher sozinho — e o Comercial
+> não teria onde encaixá-lo. Os três caminhos que geram cobrança (venda direta,
+> Comercial, renegociação) agora falam a mesma língua. **A regra de ouro não
+> mudou:** só contrato assinado + pagamento confirmado conclui a venda.
+>
+> Ficam em aberto, por decisão: **cancelar venda fechada pelo Comercial**
+> (etapa própria antes do lançamento — exige decidir o que acontece com sessões
+> agendadas, fase da jornada e benefício do programa) e **acréscimo em plano de
+> tratamento** (recomendação: não ter; aguarda resposta do dono).
 
 > **O sistema virava o dia às 21h (v0.180.0, migração 0201).** O dono viu uma
 > parcela vencendo **hoje** já contada como atrasada, e a baixa dada em 06/08

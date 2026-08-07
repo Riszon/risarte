@@ -30,12 +30,12 @@ e o razão do Financeiro.
 | **Código** | `VD-` no fechamento | `PT-` no fechamento |
 | **Benefício do programa** (PPR+/Empresarial) | Calculado **no servidor**, por procedimento | Calculado **no servidor**, por procedimento |
 | **Desconto de faixa do PPR+** | Servidor recalcula a cada salvamento | Servidor recalcula a cada salvamento |
-| **Desconto automático à vista** (5% da regra) | **Servidor calcula e impõe** | **A tela calcula**; o servidor só confere o teto ⚠️ |
+| **Desconto automático à vista** (5% da regra) | **Servidor calcula e impõe** | **Servidor calcula e impõe** (corrigido em 06/08/2026) |
 | **Desconto manual acima do teto** | **Bloqueia** o salvamento | Vai para **autorização do Gerente** |
 | **Acréscimo** | Campo próprio, **só o Gerente** | Não há campo próprio de acréscimo |
 | **À vista (1×) só PIX/depósito** | Sim, validado no servidor | Sim, validado no servidor |
 | **Teto de parcelas / parcela mínima / meios permitidos** | Sim | Sim |
-| **Passos do fechamento** | **3**: contrato assinado · cobrança emitida · pagamento confirmado | **2**: contrato assinado · pagamento confirmado |
+| **Passos do fechamento** | **3**: contrato assinado · cobrança emitida · pagamento confirmado | **3**, iguais (corrigido em 06/08/2026) |
 | **Trava antes de fechar** | Exige condições de pagamento definidas | Exige a negociação **aceita** pelo cliente |
 | **Cancelar depois de fechada** | **Sim** — devolve o benefício, cancela sessões e cobranças | **Não existe** ⚠️ |
 | **Cobranças geradas** | `save_payment_schedule` | `save_payment_schedule` — **a mesma função** |
@@ -69,13 +69,12 @@ origem — só olham a cobrança.
 
 ## Diferenças que parecem falha (para o dono decidir)
 
-**1. O desconto automático à vista, no Comercial, depende da tela.**
-Na venda direta o servidor calcula os 5% e os impõe (foi a correção da
-v0.178.1). No Comercial, a tela calcula e manda o valor pronto; o servidor só
-verifica se não passou do teto. Consequência prática: se a tela errar ou
-mudar, o cliente **perde o desconto em silêncio** — e ninguém percebe, porque
-não gera erro. É a mesma família do bug de ontem, só que virado do avesso.
-*Sugestão: mover o cálculo para o servidor, como na venda direta.*
+**1. ✅ RESOLVIDO (v0.181.0) — o desconto automático à vista dependia da tela.**
+Na venda direta o servidor calculava os 5% e os impunha; no Comercial, a tela
+calculava e mandava pronto, e o servidor só conferia o teto. Se a tela errasse,
+o cliente **perderia o desconto em silêncio**. Agora o servidor garante o piso
+nos dois fluxos (`savePlanNegotiation`). O desconto manual maior continua
+prevalecendo, e acréscimo lançado não é revertido pelo automático.
 
 **2. Não existe cancelar uma venda fechada pelo Comercial.**
 A venda direta tem `cancel_direct_sale`, que devolve o benefício do programa,
@@ -85,13 +84,12 @@ lançamento), hoje só dá para cancelar cobrança por cobrança, e as sessões 
 no prontuário.
 *Sugestão: um `cancel_negotiation` espelhando o da venda direta.*
 
-**3. Os passos de fechamento são diferentes: 3 contra 2.**
-A venda direta tem "cobrança emitida" entre o contrato e o pagamento; o
-Comercial não. Hoje isso é só uma diferença de tela, mas quando o **ASAAS**
-entrar, "cobrança emitida" é justamente o passo que a integração preenche
-sozinha — e o fluxo do Comercial ficaria sem onde encaixá-la. A renegociação
-(FIN2.4) já tem os três.
-*Sugestão: alinhar o Comercial nos mesmos três passos.*
+**3. ✅ RESOLVIDO (v0.181.0, migração 0202) — os passos eram 3 contra 2.**
+O Comercial não tinha "cobrança emitida", justamente o passo que o **ASAAS** vai
+preencher sozinho. Agora os três caminhos que geram cobrança — venda direta,
+fechamento pelo Comercial e renegociação — têm os mesmos três passos. A regra
+de ouro não mudou: só **contrato assinado + pagamento confirmado** conclui a
+venda; "cobrança emitida" é informativo.
 
 **4. Acréscimo só existe na venda direta.**
 No Comercial o ajuste é um número só, e a checagem de regra mede apenas

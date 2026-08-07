@@ -7,7 +7,12 @@ import {
   hasRoleWithScopeForClinic,
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { PaymentMethod } from "@/lib/commercial";
+import {
+  automaticDiscountPercent,
+  resolveCommercialRule,
+  type CommercialRuleRow,
+  type PaymentMethod,
+} from "@/lib/commercial";
 import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 
@@ -137,6 +142,34 @@ export async function savePlanNegotiation(
   } else if (programs.active) {
     // Empresarial: benefício automático por procedimento, sem desconto manual.
     adjustmentCents = 0;
+  } else if (installments <= 1 && adjustmentCents <= 0) {
+    /**
+     * PARIDADE COM A VENDA DIRETA (06/08/2026). Cliente SEM programa pagando à
+     * vista tem direito ao desconto automático da regra comercial (ex.: 5%).
+     *
+     * Isso já acontecia — mas quem calculava era a TELA, e o servidor só
+     * conferia o teto. Se a tela deixasse de mandar, o cliente perderia o
+     * desconto **em silêncio**, sem erro nenhum aparecer. Agora o servidor
+     * garante o piso, como na venda direta.
+     *
+     * O desconto manual MAIOR prevalece (o teto continua sendo validado por
+     * `evaluate_negotiation_rules`). Acréscimo — ajuste positivo — não é
+     * tocado: quem lançou quis somar, e o automático não deve virar isso do
+     * avesso.
+     */
+    const { data: ruleRows } = await supabase
+      .from("commercial_rules")
+      .select(
+        "clinic_id, max_discount_percent, max_installments, allowed_methods, cash_discount_percent, min_installment_cents_by_method"
+      )
+      .returns<CommercialRuleRow[]>();
+    const rule = resolveCommercialRule(ruleRows ?? [], client.clinic_id);
+    const auto = automaticDiscountPercent(rule, installments);
+    if (auto > 0) {
+      const autoCents = -Math.round((discountableCents * auto) / 100);
+      // Ambos negativos: o mais negativo é o desconto maior.
+      adjustmentCents = Math.min(adjustmentCents, autoCents);
+    }
   }
 
   const { data: saved, error } = await supabase
