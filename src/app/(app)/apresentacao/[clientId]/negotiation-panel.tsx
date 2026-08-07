@@ -453,6 +453,30 @@ export function NegotiationPanel({
   );
   const schedule = custom?.sig === sig ? custom.entries : autoSchedule;
 
+  /**
+   * Rodapé do resumo: parcelamento **e meio de pagamento**, igual à venda
+   * direta (pedido do dono, 06/08/2026 — os dois fluxos têm de andar iguais).
+   * O meio muda taxa, prazo de liquidação e risco do benefício; some do resumo
+   * e a informação some da conversa com o cliente.
+   */
+  const paymentFooter =
+    [
+      finalCents <= 0
+        ? null
+        : payMode === "avista"
+          ? "À vista"
+          : `${
+              payMode === "entrada" && downCents > 0
+                ? `entrada ${formatBRL(downCents)} + `
+                : ""
+            }${installmentsNum}× de ${formatBRL(
+              Math.round(Math.max(0, finalCents - downCents) / installmentsNum)
+            )}`,
+      effectiveMethod ? PAYMENT_METHOD_LABELS[effectiveMethod] : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || null;
+
   function save() {
     if (!option) return;
     startTransition(async () => {
@@ -960,19 +984,7 @@ export function NegotiationPanel({
               },
             ]}
             totalCents={finalCents}
-            footer={
-              payMode === "avista" || finalCents <= 0
-                ? null
-                : `${
-                    payMode === "entrada" && downCents > 0
-                      ? `entrada ${formatBRL(downCents)} + `
-                      : ""
-                  }${installmentsNum}× de ${formatBRL(
-                    Math.round(
-                      Math.max(0, finalCents - downCents) / installmentsNum
-                    )
-                  )}`
-            }
+            footer={paymentFooter}
           />
 
           {/* Cobranças AO VIVO (antes de salvar), em leitura compacta —

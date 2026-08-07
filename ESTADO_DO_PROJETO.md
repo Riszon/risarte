@@ -1,6 +1,33 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/08/2026 · Versão do sistema: **0.179.0** · Última migração: **0199**_
+_Atualizado em: 06/08/2026 · Versão do sistema: **0.179.1** · Última migração: **0200**_
+
+> **A cobrança não sabia como seria paga (v0.179.1, migração 0200).** O dono fez
+> uma venda direta em 2× no **boleto** e o botão "Registrar emissão" não
+> apareceu.
+>
+> **Causa (confirmada no banco):** `payment_installments.payment_method` estava
+> **nulo em todas as cobranças** do sistema. O meio de pagamento só existia na
+> venda (`direct_sales.payment_method` = 'boleto'); a coluna da parcela só era
+> preenchida se a tela mandasse um meio por cobrança — o que ela nunca faz.
+> A premissa que eu usei no FIN4b.2 (a parcela sabe o meio) estava errada.
+>
+> Isso era maior que o botão: a aba Financeiro da ficha também deixava de
+> mostrar como cada cobrança seria paga, e qualquer regra futura que dependa do
+> meio (repasse, conciliação, projeção) leria nulo. Agora **a cobrança herda o
+> meio da venda** ao salvar, com reparo das que já existiam — na venda direta e
+> na negociação do Comercial.
+>
+> Também: o **meio de pagamento agora aparece no resumo** das duas telas
+> ("2× de R$ 465,00 · Boleto"). Faltava nas duas — dava para ver o parcelamento
+> sem saber se era boleto, PIX ou cartão, que é justamente o que muda taxa,
+> prazo de liquidação e risco do benefício.
+>
+> E a elegibilidade do botão passou a ser **por cobrança**, olhando a adquirente
+> daquela cobrança — não mais "alguma adquirente da unidade cobra na emissão".
+> Duas adquirentes da mesma unidade podem cobrar em momentos diferentes (foi
+> exatamente o caso no teste: Asaas da unidade no pagamento, Asaas da rede na
+> emissão), e oferecer o botão na errada só daria erro.
 
 > **FIN4b.2 — abrangência, taxa na emissão e edição de faixa (v0.179.0,
 > migração 0199).** Três pedidos do dono depois do teste do FIN4b:

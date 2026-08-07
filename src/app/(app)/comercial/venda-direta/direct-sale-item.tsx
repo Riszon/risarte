@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   automaticDiscountPercent,
+  PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
   type CommercialRule,
   type PaymentMethod,
@@ -334,6 +335,26 @@ export function SaleItem({
     installmentsNum,
   ]);
 
+  /**
+   * Venda fechada: o rodapé do resumo diz o parcelamento **e o meio de
+   * pagamento**. Faltava o meio (achado do dono, 06/08/2026) — dava para ver
+   * "2× de R$ 465,00" sem saber se era boleto, PIX ou cartão, que é justamente
+   * o que muda taxa, prazo e risco do benefício.
+   */
+  const closedPaymentFooter =
+    [
+      sale.finalCents > 0
+        ? sale.installments > 1
+          ? `${sale.installments}× de ${formatBRL(
+              Math.round(sale.finalCents / sale.installments)
+            )}`
+          : "À vista"
+        : null,
+      sale.paymentMethod ? PAYMENT_METHOD_LABELS[sale.paymentMethod] : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || null;
+
   // J6: selo do passo 2 — o que está na tela ainda não foi gravado.
   const unsavedConditions =
     preview.discountCents !== sale.discountCents ||
@@ -541,13 +562,7 @@ export function SaleItem({
                     },
                   ]}
                   totalCents={sale.finalCents}
-                  footer={
-                    sale.installments > 1 && sale.finalCents > 0
-                      ? `${sale.installments}× de ${formatBRL(
-                          Math.round(sale.finalCents / sale.installments)
-                        )}`
-                      : null
-                  }
+                  footer={closedPaymentFooter}
                 />
               </div>
               {sale.cancelled ? (

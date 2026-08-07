@@ -110,7 +110,7 @@ export function ReceivablesSection({
   maxDiscountPercent,
   today,
   boletos,
-  boletoFeeOnIssue,
+  boletoIssuableIds,
   canReceive,
   canReverse,
   canRenegotiate,
@@ -125,8 +125,8 @@ export function ReceivablesSection({
   today: string;
   /** Boletos já emitidos, por cobrança (FIN4b.2). */
   boletos: Record<string, { issuedAt: string; feeCents: number }>;
-  /** A adquirente desta unidade cobra a taxa do boleto na emissão. */
-  boletoFeeOnIssue: boolean;
+  /** Cobranças cuja adquirente cobra a taxa do boleto na emissão. */
+  boletoIssuableIds: string[];
   canReceive: boolean;
   canReverse: boolean;
   canRenegotiate: boolean;
@@ -676,11 +676,10 @@ export function ReceivablesSection({
                   </span>
 
                   <div className="flex gap-1">
-                    {boletoFeeOnIssue &&
-                      canReceive &&
+                    {canReceive &&
                       v.isOpen &&
-                      v.paymentMethod === "boleto" &&
-                      !boletos[v.id] && (
+                      !boletos[v.id] &&
+                      boletoIssuableIds.includes(v.id) && (
                         <Button
                           size="sm"
                           variant="outline"

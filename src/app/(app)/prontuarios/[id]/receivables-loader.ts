@@ -4,6 +4,7 @@ import type { Installment } from "@/lib/finance/receivables";
 import type { RenegotiationStatus } from "@/lib/finance/renegotiation";
 import {
   acquirerAppliesTo,
+  pickAcquirer,
   type AcquirerScope,
 } from "@/lib/finance/acquirers";
 
@@ -43,10 +44,12 @@ export type ReceivablesData = {
   /** Boletos já emitidos, por cobrança (FIN4b.2). */
   boletos: Record<string, BoletoIssue>;
   /**
-   * A adquirente desta unidade cobra a taxa de boleto NA EMISSÃO. Só nesse caso
-   * a ficha oferece o registro da emissão — é a mesma regra que o banco impõe.
+   * Cobranças que aceitam o registro da emissão: boleto em aberto cuja
+   * **adquirente** cobra a taxa NA EMISSÃO. A conta é por cobrança, não por
+   * unidade — duas adquirentes da mesma unidade podem cobrar em momentos
+   * diferentes, e oferecer o botão na errada só daria erro.
    */
-  boletoFeeOnIssue: boolean;
+  boletoIssuableIds: string[];
 };
 
 type InstallmentRow = {
@@ -72,6 +75,7 @@ type InstallmentRow = {
   renegotiated_by_id: string | null;
   boleto_issued_at: string | null;
   boleto_fee_cents: number | null;
+  acquirer_id: string | null;
 };
 
 /**
@@ -145,7 +149,7 @@ export async function loadClientReceivables(
   const { data: instRows } = await supabase
     .from("payment_installments")
     .select(
-      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id, boleto_issued_at, boleto_fee_cents"
+      "id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id, boleto_issued_at, boleto_fee_cents, acquirer_id"
     )
     .eq("client_id", clientId)
     .order("due_date")
@@ -200,7 +204,11 @@ export async function loadClientReceivables(
   }
 
   const maxDiscountPercent = await loadMaxDiscountPercent(supabase, clinicId);
-  const boletoFeeOnIssue = await loadBoletoFeeOnIssue(supabase, clinicId);
+  const boletoIssuableIds = await loadBoletoIssuable(
+    supabase,
+    clinicId,
+    instRows ?? []
+  );
 
   if (installments.length === 0) {
     return {
@@ -213,7 +221,7 @@ export async function loadClientReceivables(
       periodStart: start,
       periodEnd: end,
       boletos,
-      boletoFeeOnIssue,
+      boletoIssuableIds,
     };
   }
 
@@ -284,24 +292,35 @@ export async function loadClientReceivables(
     periodStart: start,
     periodEnd: end,
     boletos,
-    boletoFeeOnIssue,
+    boletoIssuableIds,
   };
 }
 
 /**
- * FIN4b.2 — a adquirente que atende esta unidade cobra o boleto na EMISSÃO?
+ * FIN4b.2 — quais cobranças aceitam o registro da emissão do boleto.
  *
- * A ficha só oferece o registro da emissão quando a resposta é sim. A trava de
- * verdade está no banco (`register_boleto_issue` recusa o resto); isto aqui é
- * para não mostrar um botão que só serviria para dar erro.
+ * A pergunta é **por cobrança**, não por unidade: quem manda é a adquirente
+ * daquela cobrança. Duas adquirentes da mesma unidade podem cobrar em momentos
+ * diferentes (uma no pagamento, outra na emissão), e oferecer o botão na errada
+ * só produziria erro. A trava de verdade está no banco
+ * (`register_boleto_issue`); isto aqui é para não mostrar botão inútil.
  */
-async function loadBoletoFeeOnIssue(
+async function loadBoletoIssuable(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  clinicId?: string
-): Promise<boolean> {
-  if (!clinicId) return false;
+  clinicId: string | undefined,
+  rows: InstallmentRow[]
+): Promise<string[]> {
+  if (!clinicId) return [];
 
-  const { data: acquirers } = await supabase
+  const candidates = rows.filter(
+    (r) =>
+      r.payment_method === "boleto" &&
+      (r.status === "em_aberto" || r.status === "parcial") &&
+      r.boleto_issued_at === null
+  );
+  if (candidates.length === 0) return [];
+
+  const { data: acquirerRows } = await supabase
     .from("card_acquirers")
     .select("id, clinic_id, scope, is_default, active, name")
     .eq("active", true)
@@ -315,7 +334,7 @@ async function loadBoletoFeeOnIssue(
         name: string;
       }[]
     >();
-  if (!acquirers || acquirers.length === 0) return false;
+  if (!acquirerRows || acquirerRows.length === 0) return [];
 
   const { data: links } = await supabase
     .from("card_acquirer_clinics")
@@ -324,26 +343,27 @@ async function loadBoletoFeeOnIssue(
     .returns<{ acquirer_id: string; clinic_id: string }[]>();
   const linked = new Set((links ?? []).map((l) => l.acquirer_id));
 
-  const applicable = acquirers.filter((a) =>
-    acquirerAppliesTo(
-      {
-        id: a.id,
-        clinicId: a.clinic_id,
-        scope: a.scope ?? "unidade",
-        isDefault: a.is_default,
-        active: a.active,
-        name: a.name,
-        clinicIds: linked.has(a.id) ? [clinicId] : [],
-      },
-      clinicId
-    )
-  );
-  if (applicable.length === 0) return false;
+  const applicable = acquirerRows
+    .map((a) => ({
+      id: a.id,
+      clinicId: a.clinic_id,
+      scope: a.scope ?? ("unidade" as AcquirerScope),
+      isDefault: a.is_default,
+      active: a.active,
+      name: a.name,
+      clinicIds: linked.has(a.id) ? [clinicId] : [],
+    }))
+    .filter((a) => acquirerAppliesTo(a, clinicId));
+  if (applicable.length === 0) return [];
+
+  // A cobrança sem adquirente gravada cairia na mesma escolha automática do
+  // banco — espelhamos a regra para o botão bater com o que vai acontecer.
+  const fallback = pickAcquirer(applicable, clinicId);
 
   const today = new Date().toISOString().slice(0, 10);
   const { data: rates } = await supabase
     .from("acquirer_rates")
-    .select("acquirer_id, fee_charged_on, valid_from, valid_to")
+    .select("acquirer_id, valid_from, valid_to")
     .in(
       "acquirer_id",
       applicable.map((a) => a.id)
@@ -351,17 +371,25 @@ async function loadBoletoFeeOnIssue(
     .eq("modality", "boleto")
     .eq("fee_charged_on", "emissao")
     .returns<
-      {
-        acquirer_id: string;
-        fee_charged_on: string;
-        valid_from: string;
-        valid_to: string | null;
-      }[]
+      { acquirer_id: string; valid_from: string; valid_to: string | null }[]
     >();
 
-  return (rates ?? []).some(
-    (r) => r.valid_from <= today && (r.valid_to === null || r.valid_to >= today)
+  const chargesAtIssue = new Set(
+    (rates ?? [])
+      .filter(
+        (r) =>
+          r.valid_from <= today && (r.valid_to === null || r.valid_to >= today)
+      )
+      .map((r) => r.acquirer_id)
   );
+  if (chargesAtIssue.size === 0) return [];
+
+  return candidates
+    .filter((r) => {
+      const acquirerId = r.acquirer_id ?? fallback?.id ?? null;
+      return acquirerId !== null && chargesAtIssue.has(acquirerId);
+    })
+    .map((r) => r.id);
 }
 
 /**

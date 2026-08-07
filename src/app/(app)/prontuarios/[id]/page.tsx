@@ -562,7 +562,7 @@ export default async function ClientDetailPage(
         periodStart: "",
         periodEnd: "",
         boletos: {},
-        boletoFeeOnIssue: false,
+        boletoIssuableIds: [] as string[],
       };
   const financeToday = new Date().toISOString().slice(0, 10);
   // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
@@ -3209,7 +3209,7 @@ export default async function ClientDetailPage(
               maxDiscountPercent={receivables.maxDiscountPercent}
               today={financeToday}
               boletos={receivables.boletos}
-              boletoFeeOnIssue={receivables.boletoFeeOnIssue}
+              boletoIssuableIds={receivables.boletoIssuableIds}
               canReceive={canReceivePayment}
               canReverse={canReverseReceipt}
               canRenegotiate={canRenegotiate}

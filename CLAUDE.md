@@ -440,6 +440,14 @@ mesmo custo); e a origem `boleto_issue` aponta para a **parcela** no índice
 único do razão, então o webhook futuro do ASAAS cai na mesma porta e não
 duplica. Adiado: **segunda via de boleto** (hoje é uma cobrança por parcela).
 
+**A cobrança guarda o meio de pagamento (0200).** `payment_installments
+.payment_method` era sempre nulo — o meio só existia na venda. Agora a cobrança
+**herda o meio da venda** quando não traz um próprio (`save_payment_schedule`),
+nos dois fluxos: venda direta e negociação do Comercial. Regra do dono: **o que
+for testado na venda direta tem de funcionar igual no fluxo do Comercial.**
+O meio aparece no resumo das duas telas — ele é o que muda taxa, prazo de
+liquidação e risco do benefício.
+
 **Faixa de taxa (FIN4b.2):** dá para **editar** (para consertar digitação) e
 **encerrar a vigência** (o caminho certo quando a taxa mudou). Faixa que já
 precificou recebimentos **não é apagada** — gatilho `RATE_IN_USE` no banco.
