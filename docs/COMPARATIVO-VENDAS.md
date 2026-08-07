@@ -76,13 +76,18 @@ o cliente **perderia o desconto em silêncio**. Agora o servidor garante o piso
 nos dois fluxos (`savePlanNegotiation`). O desconto manual maior continua
 prevalecendo, e acréscimo lançado não é revertido pelo automático.
 
-**2. Não existe cancelar uma venda fechada pelo Comercial.**
+**2. Não existe cancelar uma venda fechada pelo Comercial.** *(decidido —
+a construir)*
 A venda direta tem `cancel_direct_sale`, que devolve o benefício do programa,
 cancela as sessões no prontuário e as cobranças em aberto. No Comercial não há
-equivalente. Se um plano fechado precisar ser desfeito (desistência, erro de
-lançamento), hoje só dá para cancelar cobrança por cobrança, e as sessões ficam
-no prontuário.
-*Sugestão: um `cancel_negotiation` espelhando o da venda direta.*
+equivalente.
+
+**Decisão do dono (06/08/2026):** cancelar **desfaz tudo e devolve o cliente à
+Fase 4 (Conversão Comercial)** — de onde ele pode ser renegociado ou marcado
+como perdido, sem recomeçar do zero. O cancelamento cancela as sessões ainda
+não realizadas, cancela as cobranças em aberto e devolve o benefício do
+programa. **Se já houve recebimento**, o sistema exige estorno ou renegociação
+antes: dinheiro que entrou não desaparece por cancelamento.
 
 **3. ✅ RESOLVIDO (v0.181.0, migração 0202) — os passos eram 3 contra 2.**
 O Comercial não tinha "cobrança emitida", justamente o passo que o **ASAAS** vai
@@ -91,12 +96,12 @@ fechamento pelo Comercial e renegociação — têm os mesmos três passos. A re
 de ouro não mudou: só **contrato assinado + pagamento confirmado** conclui a
 venda; "cobrança emitida" é informativo.
 
-**4. Acréscimo só existe na venda direta.**
-No Comercial o ajuste é um número só, e a checagem de regra mede apenas
-desconto. Não é necessariamente um erro — pode ser que acréscimo em plano de
-tratamento não faça sentido no negócio —, mas hoje é uma assimetria não
-declarada.
-*Pergunta ao dono: plano de tratamento pode ter acréscimo?*
+**4. ✅ DECIDIDO — acréscimo só existe na venda direta, e é para continuar assim.**
+**Decisão do dono (06/08/2026): plano de tratamento NÃO tem acréscimo.** O preço
+vem do orçamento aprovado pelo Coordenador; somar valor por cima enfraquece a
+aprovação clínica e é difícil de justificar ao paciente. A venda direta mantém o
+acréscimo (item avulso é outra conversa) e ele continua restrito ao Gerente.
+Falta impor a regra no código da negociação — vai junto com o cancelamento.
 
 ---
 

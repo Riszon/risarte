@@ -460,6 +460,22 @@ teste do dono achou R$ 869,00 recebidos numa negociação nunca aceita
 **Histórico** (decisão do dono, 06/08/2026) — o consultor precisa enxergar o que
 ainda depende dele, não o que já encerrou.
 
+**Plano de tratamento NÃO tem acréscimo** (dono, 06/08/2026). O preço vem do
+orçamento aprovado pelo Coordenador; somar valor por cima enfraquece a aprovação
+clínica. Venda direta mantém acréscimo, restrito ao Gerente.
+
+**Cancelar venda fechada pelo Comercial** (dono, 06/08/2026 — a construir):
+desfaz tudo e devolve o cliente à **Fase 4**, de onde ele pode ser renegociado
+ou marcado como perdido. Cancela sessões não realizadas, cobranças em aberto e
+devolve o benefício do programa. **Com recebimento já feito, exige estorno ou
+renegociação antes** — dinheiro que entrou não some por cancelamento.
+
+**PENDÊNCIA CONHECIDA — a taxa do cartão nunca é lançada.** `apply_acquirer_fee`
+existe no banco e a action `applyAcquirerFee` existe no código, mas **nenhuma
+tela as chama**. Na prática a baixa no cartão não registra a despesa de 2.4.01
+nem a data de liquidação do recebimento — o FIN4b está pela metade. Descoberto
+em 06/08/2026 ao conferir o teste do boleto.
+
 **Os dois fluxos de venda andam juntos.** Comparativo completo em
 `docs/COMPARATIVO-VENDAS.md`. Regra: o que muda na venda direta tem de ser
 verificado no fechamento pelo Comercial e vice-versa — os dois terminam nas
