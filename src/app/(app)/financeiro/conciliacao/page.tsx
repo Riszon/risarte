@@ -14,6 +14,7 @@ import {
   type BankTxRow,
   type ImportRow,
 } from "./reconciliation-board";
+import { todayInBrazil } from "@/lib/dates";
 
 /** FIN4a — conciliação bancária: o que o sistema diz × o que o banco mostra. */
 export default async function ReconciliationPage() {
@@ -32,7 +33,7 @@ export default async function ReconciliationPage() {
   }
 
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInBrazil();
 
   const [
     { data: accountRows },

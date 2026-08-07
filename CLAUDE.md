@@ -440,6 +440,19 @@ mesmo custo); e a origem `boleto_issue` aponta para a **parcela** no índice
 único do razão, então o webhook futuro do ASAAS cai na mesma porta e não
 duplica. Adiado: **segunda via de boleto** (hoje é uma cobrança por parcela).
 
+**FUSO: data de negócio é data civil brasileira (0201).** `new Date()
+.toISOString().slice(0,10)` devolve a data em **UTC** e, das 21h à meia-noite,
+já é o dia seguinte — parcela do dia virava atrasada e a baixa nascia com data
+de amanhã. No app, a única fonte de "hoje" é **`todayInBrazil()`**
+(`src/lib/dates.ts`); no banco, o fuso é `America/Sao_Paulo` e existe
+**`public.today_br()`** para funções novas. Nunca usar `toISOString()` para
+obter "hoje".
+
+**Os dois fluxos de venda andam juntos.** Comparativo completo em
+`docs/COMPARATIVO-VENDAS.md`. Regra: o que muda na venda direta tem de ser
+verificado no fechamento pelo Comercial e vice-versa — os dois terminam nas
+mesmas `payment_installments`.
+
 **A cobrança guarda o meio de pagamento (0200).** `payment_installments
 .payment_method` era sempre nulo — o meio só existia na venda. Agora a cobrança
 **herda o meio da venda** quando não traz um próprio (`save_payment_schedule`),

@@ -12,6 +12,7 @@ import type {
 } from "@/lib/finance/payables";
 import { PayablesBoard, type PaymentRow } from "./payables-board";
 import type { RecurrenceRow } from "./recurrences-dialog";
+import { todayInBrazil } from "@/lib/dates";
 
 /** FIN3 — contas a pagar da unidade: o outro lado do caixa. */
 export default async function PayablesPage() {
@@ -20,7 +21,7 @@ export default async function PayablesPage() {
 
   const clinicId = session.activeClinic?.id ?? null;
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInBrazil();
 
   if (!clinicId) {
     return (

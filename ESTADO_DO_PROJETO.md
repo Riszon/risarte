@@ -1,6 +1,34 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/08/2026 · Versão do sistema: **0.179.1** · Última migração: **0200**_
+_Atualizado em: 06/08/2026 · Versão do sistema: **0.180.0** · Última migração: **0201**_
+
+> **O sistema virava o dia às 21h (v0.180.0, migração 0201).** O dono viu uma
+> parcela vencendo **hoje** já contada como atrasada, e a baixa dada em 06/08
+> gravada como 07/08.
+>
+> **Causa, medida na hora:** às 21h45 de Londrina, `new Date().toISOString()`
+> devolvia **2026-08-07**. App e banco usavam a data em **UTC**, e o Brasil está
+> 3 horas atrás — das 21h à meia-noite o sistema inteiro já estava no dia
+> seguinte. Nesse intervalo, parcela do dia entrava na conta de multa e juros, e
+> a receita ia para o dia errado no fluxo de caixa.
+>
+> Correção em duas frentes: `src/lib/dates.ts` (`todayInBrazil()`) passa a ser a
+> única fonte de "hoje" do app, e o **fuso do banco** vira `America/Sao_Paulo`,
+> o que corrige de uma vez os ~40 usos de `current_date` nas funções do
+> Financeiro. `public.today_br()` fica como forma explícita para funções novas.
+> **325 testes**, incluindo o instante exato que causou o erro.
+>
+> **Não corrige dados já gravados:** as baixas que ficaram com 07/08 continuam
+> assim — corrigir dinheiro por trás é contra a regra do módulo; o caminho é
+> estornar e lançar de novo.
+>
+> **Revisão comparativa dos dois fluxos de venda** em
+> `docs/COMPARATIVO-VENDAS.md`: o que é igual, o que difere por decisão e
+> **quatro assimetrias** que parecem falha — desconto automático à vista
+> calculado pela tela no Comercial (e pelo servidor na venda direta); não existe
+> cancelar venda fechada pelo Comercial; passos de fechamento 3 × 2 (o
+> "cobrança emitida" que o ASAAS vai preencher não existe no Comercial); e
+> acréscimo só na venda direta.
 
 > **A cobrança não sabia como seria paga (v0.179.1, migração 0200).** O dono fez
 > uma venda direta em 2× no **boleto** e o botão "Registrar emissão" não

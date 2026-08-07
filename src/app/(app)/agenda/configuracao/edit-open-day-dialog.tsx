@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { updateSpecialDay } from "../actions";
+import { todayInBrazil } from "@/lib/dates";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -45,7 +46,7 @@ export function EditOpenDayDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInBrazil();
 
   const [date, setDate] = useState(openDay.date);
   const [startTime, setStartTime] = useState(openDay.startTime);

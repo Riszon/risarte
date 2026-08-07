@@ -42,6 +42,7 @@ import {
 } from "@/components/commercial/payment-fields";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { savePaymentSchedule } from "../payment-schedule-actions";
+import { todayInBrazil } from "@/lib/dates";
 
 export type DirectSaleRow = {
   id: string;
@@ -150,7 +151,7 @@ export function SaleItem({
       : "avista";
   const initialDownCents = sale.downPaymentCents ?? 0;
   const initialFirstDue =
-    sale.schedule?.[0]?.dueDate ?? new Date().toISOString().slice(0, 10);
+    sale.schedule?.[0]?.dueDate ?? todayInBrazil();
   const [payMode, setPayMode] = useState<PayMode>(initialPayMode);
   const [downReais, setDownReais] = useState(
     initialDownCents ? centsToInput(initialDownCents) : ""

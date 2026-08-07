@@ -1,0 +1,110 @@
+# As duas portas de venda — comparativo
+
+_Revisão feita em 06/08/2026, a pedido do dono, lendo o código dos dois fluxos._
+
+O sistema tem **duas formas de vender** para o cliente. Elas nascem de
+necessidades diferentes, seguem caminhos diferentes até o fechamento e depois
+**desembocam exatamente no mesmo lugar**: as cobranças (`payment_installments`)
+e o razão do Financeiro.
+
+- **Venda direta (`VD-00001`)** — o balcão. Alguém chega, compra um
+  procedimento avulso (uma restauração, uma limpeza) e paga. Não passa pelo
+  Centro de Planejamento. Tela: `/comercial/venda-direta`.
+- **Fechamento pelo Comercial (`PT-00001`)** — o plano de tratamento. O caso já
+  passou por avaliação, planejamento e aprovação do Coordenador; o Consultor
+  apresenta e negocia. Tela: `/apresentacao/[cliente]`.
+
+---
+
+## Comparativo
+
+| | **Venda direta** | **Fechamento pelo Comercial** |
+|---|---|---|
+| **Quem pode fazer** | Recepção, Gerente, SDR, Admin Master | Consultor Comercial, Gerente, Admin Master |
+| **O que vende** | Procedimentos lançados na clínica, do catálogo | Os itens da **opção aprovada** do plano |
+| **Exige plano aprovado** | Não | **Sim** |
+| **Jornada do cliente** | Não mexe na fase | Exige **Fase 4**; ao concluir vai à **Fase 5** e avisa a recepção |
+| **Cliente pode recusar item** | Não — o que foi lançado é o que é | **Sim** — aprovação parcial, com motivo obrigatório |
+| **Aceite do cliente** | Não existe como passo | **Sim** — o Consultor registra o aceite antes de fechar |
+| **Devolver ao planejamento** | Não se aplica | **Sim**, com considerações obrigatórias ao Planner |
+| **Código** | `VD-` no fechamento | `PT-` no fechamento |
+| **Benefício do programa** (PPR+/Empresarial) | Calculado **no servidor**, por procedimento | Calculado **no servidor**, por procedimento |
+| **Desconto de faixa do PPR+** | Servidor recalcula a cada salvamento | Servidor recalcula a cada salvamento |
+| **Desconto automático à vista** (5% da regra) | **Servidor calcula e impõe** | **A tela calcula**; o servidor só confere o teto ⚠️ |
+| **Desconto manual acima do teto** | **Bloqueia** o salvamento | Vai para **autorização do Gerente** |
+| **Acréscimo** | Campo próprio, **só o Gerente** | Não há campo próprio de acréscimo |
+| **À vista (1×) só PIX/depósito** | Sim, validado no servidor | Sim, validado no servidor |
+| **Teto de parcelas / parcela mínima / meios permitidos** | Sim | Sim |
+| **Passos do fechamento** | **3**: contrato assinado · cobrança emitida · pagamento confirmado | **2**: contrato assinado · pagamento confirmado |
+| **Trava antes de fechar** | Exige condições de pagamento definidas | Exige a negociação **aceita** pelo cliente |
+| **Cancelar depois de fechada** | **Sim** — devolve o benefício, cancela sessões e cobranças | **Não existe** ⚠️ |
+| **Cobranças geradas** | `save_payment_schedule` | `save_payment_schedule` — **a mesma função** |
+| **Meio de pagamento na cobrança** | Herda o da venda (0200) | Herda o da venda (0200) |
+| **Benefício em risco por atraso** | Igual | Igual |
+| **Adquirente, taxa e D+n** | Igual | Igual |
+| **Renegociação de dívida** | Igual | Igual |
+
+**O que é rigorosamente igual nas duas:** tudo o que acontece **depois** do
+fechamento. As cobranças nascem da mesma função, com as mesmas travas (soma tem
+de fechar com o valor da venda, uma entrada só, cronograma trava depois da
+primeira baixa). Multa, juros, perda de benefício por atraso, taxa da
+adquirente, data de liquidação, renegociação e razão contábil não distinguem a
+origem — só olham a cobrança.
+
+---
+
+## Diferenças que são decisão de negócio (e estão certas)
+
+1. **Quem faz.** Venda direta é ato de balcão (recepção); fechamento de plano é
+   ato comercial (consultor). Por isso as listas de papéis não se cruzam.
+2. **A jornada.** A venda direta não move o cliente de fase porque não é
+   tratamento planejado — mover seria poluir o funil. O fechamento do plano
+   move, porque é exatamente o gatilho para a recepção agendar o início.
+3. **Aprovação parcial.** Só existe no Comercial porque só ali o cliente está
+   escolhendo entre itens de um plano. No balcão, o que foi lançado já é a
+   escolha dele.
+4. **Desconto acima do teto.** No Comercial existe negociação de verdade, então
+   faz sentido pedir autorização ao Gerente. No balcão não há negociação — por
+   isso bloqueia direto.
+
+## Diferenças que parecem falha (para o dono decidir)
+
+**1. O desconto automático à vista, no Comercial, depende da tela.**
+Na venda direta o servidor calcula os 5% e os impõe (foi a correção da
+v0.178.1). No Comercial, a tela calcula e manda o valor pronto; o servidor só
+verifica se não passou do teto. Consequência prática: se a tela errar ou
+mudar, o cliente **perde o desconto em silêncio** — e ninguém percebe, porque
+não gera erro. É a mesma família do bug de ontem, só que virado do avesso.
+*Sugestão: mover o cálculo para o servidor, como na venda direta.*
+
+**2. Não existe cancelar uma venda fechada pelo Comercial.**
+A venda direta tem `cancel_direct_sale`, que devolve o benefício do programa,
+cancela as sessões no prontuário e as cobranças em aberto. No Comercial não há
+equivalente. Se um plano fechado precisar ser desfeito (desistência, erro de
+lançamento), hoje só dá para cancelar cobrança por cobrança, e as sessões ficam
+no prontuário.
+*Sugestão: um `cancel_negotiation` espelhando o da venda direta.*
+
+**3. Os passos de fechamento são diferentes: 3 contra 2.**
+A venda direta tem "cobrança emitida" entre o contrato e o pagamento; o
+Comercial não. Hoje isso é só uma diferença de tela, mas quando o **ASAAS**
+entrar, "cobrança emitida" é justamente o passo que a integração preenche
+sozinha — e o fluxo do Comercial ficaria sem onde encaixá-la. A renegociação
+(FIN2.4) já tem os três.
+*Sugestão: alinhar o Comercial nos mesmos três passos.*
+
+**4. Acréscimo só existe na venda direta.**
+No Comercial o ajuste é um número só, e a checagem de regra mede apenas
+desconto. Não é necessariamente um erro — pode ser que acréscimo em plano de
+tratamento não faça sentido no negócio —, mas hoje é uma assimetria não
+declarada.
+*Pergunta ao dono: plano de tratamento pode ter acréscimo?*
+
+---
+
+## Regra de trabalho
+
+Toda mudança testada na venda direta precisa ser verificada no fechamento pelo
+Comercial, e vice-versa. Os dois caminhos terminam nas mesmas cobranças: corrigir
+só um lado deixa metade das vendas com o dado errado, e o erro só aparece
+semanas depois, no relatório.

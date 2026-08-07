@@ -11,6 +11,7 @@ import {
 import { mapRoom, sortRooms, type RoomRow } from "@/lib/rooms";
 import { AgendaConfigEditor } from "./agenda-config-editor";
 import { NetworkLunchEditor } from "./network-lunch-editor";
+import { todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Configurar agenda" };
 
@@ -85,7 +86,7 @@ export default async function AgendaConfigPage() {
   if (!canConfig) redirect("/agenda");
 
   const supabase = await createClient();
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayInBrazil();
   const historyFrom = new Date();
   historyFrom.setDate(historyFrom.getDate() - 180);
   const historyFromIso = historyFrom.toISOString().slice(0, 10);

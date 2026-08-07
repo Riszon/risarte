@@ -7,6 +7,7 @@ import {
   pickAcquirer,
   type AcquirerScope,
 } from "@/lib/finance/acquirers";
+import { todayInBrazil } from "@/lib/dates";
 
 /** FIN4b.2 — o boleto que já foi gerado (e o que ele custou na emissão). */
 export type BoletoIssue = { issuedAt: string; feeCents: number };
@@ -360,7 +361,7 @@ async function loadBoletoIssuable(
   // banco — espelhamos a regra para o botão bater com o que vai acontecer.
   const fallback = pickAcquirer(applicable, clinicId);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInBrazil();
   const { data: rates } = await supabase
     .from("acquirer_rates")
     .select("acquirer_id, valid_from, valid_to")

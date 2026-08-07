@@ -152,6 +152,7 @@ import type {
   JourneyStatus,
   MethodologyPillar,
 } from "@/lib/journey";
+import { todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Prontuário do cliente" };
 
@@ -564,7 +565,7 @@ export default async function ClientDetailPage(
         boletos: {},
         boletoIssuableIds: [] as string[],
       };
-  const financeToday = new Date().toISOString().slice(0, 10);
+  const financeToday = todayInBrazil();
   // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
   const lateInstallmentCount = receivables.installments.filter(
     (i) => viewInstallment(i, financeToday).isLate

@@ -11,6 +11,7 @@ import {
   type FeeChargeMoment,
 } from "@/lib/finance/acquirers";
 import { AcquirerManager, type AcquirerRow } from "./acquirer-manager";
+import { todayInBrazil } from "@/lib/dates";
 
 /** FIN4b — adquirentes: taxa do cartão e quando o dinheiro cai de verdade. */
 export default async function AcquirersPage() {
@@ -151,7 +152,7 @@ export default async function AcquirersPage() {
         rates={rates}
         usageByRate={usageByRate}
         clinics={clinics}
-        today={new Date().toISOString().slice(0, 10)}
+        today={todayInBrazil()}
         canEdit={canEdit}
         canManageNetwork={canManageNetwork}
       />

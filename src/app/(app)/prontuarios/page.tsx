@@ -40,6 +40,7 @@ import { BirthdayWhatsApp } from "./birthday-whatsapp";
 import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
 import { daysLate } from "@/lib/finance/late-fees";
+import { todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Prontuários" };
 
@@ -239,7 +240,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     );
   const overdueByClient = new Map<string, number>();
   if (canSeeFinance) {
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = todayInBrazil();
     let q = supabase
       .from("payment_installments")
       .select("client_id, due_date, grace_days")

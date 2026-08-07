@@ -30,6 +30,7 @@ import {
   type Installment,
   type ReceiptEntry,
 } from "@/lib/finance/receivables";
+import { isoDateIn } from "@/lib/dates";
 import {
   acquirerAppliesTo,
   addBusinessDays,
@@ -2077,5 +2078,31 @@ describe("adquirente: quando a taxa é cobrada", () => {
         feeChargedOn: "emissao",
       })
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fuso: "hoje" é data civil brasileira, não UTC
+// ---------------------------------------------------------------------------
+describe("data de hoje no Brasil", () => {
+  it("depois das 21h, UTC já virou o dia — o Brasil não", () => {
+    // Foi exatamente este instante que gravou uma baixa de 06/08 como 07/08.
+    const instante = new Date("2026-08-07T00:39:58Z");
+    expect(instante.toISOString().slice(0, 10)).toBe("2026-08-07");
+    expect(isoDateIn(instante)).toBe("2026-08-06");
+  });
+
+  it("no meio do dia os dois coincidem", () => {
+    const instante = new Date("2026-08-06T15:00:00Z");
+    expect(isoDateIn(instante)).toBe("2026-08-06");
+  });
+
+  it("à meia-noite e um do Brasil ainda é o mesmo dia", () => {
+    // 00h01 em Brasília = 03h01 UTC.
+    expect(isoDateIn(new Date("2026-08-06T03:01:00Z"))).toBe("2026-08-06");
+  });
+
+  it("23h59 do Brasil ainda não virou", () => {
+    expect(isoDateIn(new Date("2026-08-07T02:59:00Z"))).toBe("2026-08-06");
   });
 });

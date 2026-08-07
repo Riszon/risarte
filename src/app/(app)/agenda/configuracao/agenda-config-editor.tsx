@@ -23,6 +23,7 @@ import Link from "next/link";
 import { CalendarSearch } from "lucide-react";
 import { openSpecialDays, removeSpecialDay, saveLunchBreak } from "../actions";
 import { EditOpenDayDialog } from "./edit-open-day-dialog";
+import { todayInBrazil } from "@/lib/dates";
 
 const TIME_OPTIONS: string[] = [];
 for (let h = 6; h <= 22; h++) {
@@ -108,7 +109,7 @@ export function AgendaConfigEditor({
   const deletedRooms = rooms.filter((r) => r.deletedAt);
   const activeRooms = liveRooms.filter((r) => r.isActive);
   const staffNameById = new Map(staff.map((s) => [s.userId, s.name]));
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayInBrazil();
 
   function toggleReleaseStaff(id: string) {
     setReleaseStaff((prev) => {

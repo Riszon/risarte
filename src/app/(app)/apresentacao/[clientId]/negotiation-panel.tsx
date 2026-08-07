@@ -52,6 +52,7 @@ import {
   reviewNegotiationAction,
   savePlanNegotiation,
 } from "./negotiation-actions";
+import { todayInBrazil } from "@/lib/dates";
 
 export type NegotiationOption = {
   id: string;
@@ -199,7 +200,7 @@ export function NegotiationPanel({
   const initialDownCents = negotiation?.downPaymentCents ?? 0;
   const initialFirstDue =
     negotiation?.schedule?.[0]?.dueDate ??
-    new Date().toISOString().slice(0, 10);
+    todayInBrazil();
   const [payMode, setPayMode] = useState<PayMode>(initialPayMode);
   const [downReais, setDownReais] = useState(
     initialDownCents ? centsToInput(initialDownCents) : ""
