@@ -470,11 +470,12 @@ ou marcado como perdido. Cancela sessões não realizadas, cobranças em aberto 
 devolve o benefício do programa. **Com recebimento já feito, exige estorno ou
 renegociação antes** — dinheiro que entrou não some por cancelamento.
 
-**PENDÊNCIA CONHECIDA — a taxa do cartão nunca é lançada.** `apply_acquirer_fee`
-existe no banco e a action `applyAcquirerFee` existe no código, mas **nenhuma
-tela as chama**. Na prática a baixa no cartão não registra a despesa de 2.4.01
-nem a data de liquidação do recebimento — o FIN4b está pela metade. Descoberto
-em 06/08/2026 ao conferir o teste do boleto.
+**A taxa da adquirente entra NA BAIXA (FIN4c, 0204).** A **modalidade vem do
+meio da BAIXA, não do meio da venda**: parcela de boleto paga por PIX no balcão
+custou o PIX. Sem taxa cadastrada, a baixa **não falha** — segue sem taxa (é
+problema de cadastro, não de atendimento). O **estorno reverte a taxa** junto,
+com a direção invertida; a taxa de **emissão de boleto não volta** (o banco
+cobrou por emitir, e isso independe da baixa).
 
 **Os dois fluxos de venda andam juntos.** Comparativo completo em
 `docs/COMPARATIVO-VENDAS.md`. Regra: o que muda na venda direta tem de ser

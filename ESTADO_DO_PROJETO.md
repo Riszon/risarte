@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 06/08/2026 · Versão do sistema: **0.182.0** · Última migração: **0203**_
+_Atualizado em: 06/08/2026 · Versão do sistema: **0.183.0** · Última migração: **0204**_
+
+> **FIN4c — a taxa da adquirente nunca era lançada (v0.183.0, migração 0204).**
+> Descoberto ao conferir o teste do boleto: `apply_acquirer_fee` existia no
+> banco, a action existia no código e **nenhuma tela as chamava**. Na prática,
+> toda baixa no cartão deixava de registrar a despesa da maquininha (2.4.01) e a
+> data em que o dinheiro cai — o FIN4b estava pela metade.
+>
+> - **A baixa aplica a taxa sozinha.** A modalidade vem do **meio da baixa**,
+>   não do meio da venda: parcela de boleto paga por PIX no balcão custou o PIX.
+> - **Sem taxa cadastrada, a baixa não falha** — segue sem taxa. Erro aqui
+>   assustaria a recepção por um problema que é de cadastro.
+> - **O estorno reverte a taxa** (migração 0204), com a direção invertida: o
+>   contra-lançamento antigo era "saída" fixa, o que dobraria a despesa em vez de
+>   anulá-la. A taxa de **emissão de boleto não volta** — o banco cobrou por
+>   emitir, e isso independe da baixa.
+> - A tela mostra **taxa · líquido · data em que cai**, no aviso da baixa e no
+>   histórico da cobrança.
+>
+> **328 testes.** Não lança retroativamente a taxa das baixas antigas: reescrever
+> razão do passado é o que o módulo proíbe.
+>
+> **Teste do boleto (FIN4b.2) confirmado no banco:** 1 lançamento de taxa
+> (R$ 1,99, origem `boleto_issue`), nenhum na baixa. **Não cobrou duas vezes.**
 
 > **Entrou dinheiro numa venda que nunca foi fechada (v0.182.0, migração
 > 0203).** O dono tentou fechar um plano e recebeu *"Esta venda já tem

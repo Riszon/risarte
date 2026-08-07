@@ -4,8 +4,92 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { modalityOf } from "@/lib/finance/acquirers";
 
 export type ReceivableResult = { ok: boolean; error?: string };
+
+/** O que a taxa da adquirente fez com este recebimento (FIN4c). */
+export type FeeOutcome = {
+  feeCents: number;
+  netCents: number;
+  settlementDate: string | null;
+  /** A taxa já tinha sido paga na emissão do boleto. */
+  chargedAtIssue: boolean;
+};
+
+/**
+ * FIN4c — aplica a taxa da adquirente sobre um recebimento recém-registrado.
+ *
+ * Roda logo depois da baixa e **nunca derruba a baixa**: se não houver taxa
+ * cadastrada para aquele meio de pagamento (unidade que ainda não montou a
+ * tabela), o recebimento continua válido e simplesmente fica sem taxa. Mostrar
+ * erro aqui só assustaria a recepção por um problema que é de cadastro.
+ *
+ * A MODALIDADE VEM DO MEIO DA BAIXA, não do meio da venda: se a parcela era
+ * boleto e o cliente pagou por PIX no balcão, quem custou foi o PIX.
+ */
+async function applyFeeToReceipt(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  receiptId: string,
+  installmentId: string,
+  receiptMethod: string | null
+): Promise<FeeOutcome | null> {
+  const { data: inst } = await supabase
+    .from("payment_installments")
+    .select("acquirer_id, negotiation_id, direct_sale_id")
+    .eq("id", installmentId)
+    .maybeSingle();
+  if (!inst?.acquirer_id) return null;
+
+  // Faixa de parcelas que a adquirente cobra = parcelamento da VENDA.
+  let installments = 1;
+  const originColumn = inst.negotiation_id ? "negotiation_id" : "direct_sale_id";
+  const originId = inst.negotiation_id ?? inst.direct_sale_id;
+  if (originId) {
+    const { count } = await supabase
+      .from("payment_installments")
+      .select("id", { count: "exact", head: true })
+      .eq(originColumn, originId);
+    installments = Math.max(1, count ?? 1);
+  }
+
+  const modality = modalityOf(receiptMethod, installments);
+  if (!modality) return null;
+
+  const { data, error } = await supabase.rpc("apply_acquirer_fee", {
+    p_receipt_id: receiptId,
+    p_acquirer_id: inst.acquirer_id as string,
+    p_modality: modality,
+    p_installments: installments,
+  });
+  if (error) {
+    // Cadastro incompleto não é erro de atendimento — a baixa já valeu.
+    if (
+      error.message.includes("RATE_NOT_FOUND") ||
+      error.message.includes("ACQUIRER_NOT_FOUND") ||
+      error.message.includes("CLINIC_MISMATCH") ||
+      error.message.includes("FEE_ALREADY_APPLIED")
+    ) {
+      console.warn("taxa da adquirente não aplicada:", error.message);
+      return null;
+    }
+    console.error("apply_acquirer_fee failed:", error.message);
+    return null;
+  }
+
+  const r = (data ?? {}) as {
+    fee_cents?: number;
+    net_cents?: number;
+    settlement_date?: string;
+    charged_at_issue?: boolean;
+  };
+  return {
+    feeCents: r.fee_cents ?? 0,
+    netCents: r.net_cents ?? 0,
+    settlementDate: r.settlement_date ?? null,
+    chargedAtIssue: Boolean(r.charged_at_issue),
+  };
+}
 
 /**
  * FIN1 — registra uma BAIXA (total ou parcial). O `clientToken` garante
@@ -20,11 +104,11 @@ export async function registerReceipt(input: {
   reference: string;
   notes: string;
   clientToken: string;
-}): Promise<ReceivableResult> {
+}): Promise<ReceivableResult & { fee?: FeeOutcome }> {
   await getSessionContext();
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("register_payment_receipt", {
+  const { data: receiptId, error } = await supabase.rpc("register_payment_receipt", {
     p_installment_id: input.installmentId,
     p_amount_cents: Math.round(input.amountCents),
     p_received_at: input.receivedAt,
@@ -72,6 +156,18 @@ export async function registerReceipt(input: {
     return { ok: false, error: "Não foi possível registrar o recebimento." };
   }
 
+  // FIN4c: a taxa da adquirente entra AGORA. Antes a função existia e nenhuma
+  // tela a chamava — a despesa da maquininha nunca era lançada.
+  const fee =
+    typeof receiptId === "string"
+      ? await applyFeeToReceipt(
+          supabase,
+          receiptId,
+          input.installmentId,
+          input.paymentMethod || null
+        )
+      : null;
+
   await logAudit({
     action: "create",
     entityType: "payment_receipt",
@@ -79,7 +175,7 @@ export async function registerReceipt(input: {
   });
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath("/financeiro");
-  return { ok: true };
+  return { ok: true, fee: fee ?? undefined };
 }
 
 /**

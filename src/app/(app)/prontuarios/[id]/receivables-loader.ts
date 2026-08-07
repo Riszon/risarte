@@ -29,6 +29,10 @@ export type ReceiptRow = {
   reversalReason: string | null;
   byName: string | null;
   createdAt: string;
+  /** FIN4c: o que a adquirente descontou e quando o dinheiro cai. */
+  acquirerFeeCents: number;
+  acquirerFeeChargedAtIssue: boolean;
+  settlementDate: string | null;
 };
 
 export type ReceivablesData = {
@@ -230,7 +234,7 @@ export async function loadClientReceivables(
   const { data: recRows } = await supabase
     .from("payment_receipts")
     .select(
-      "id, installment_id, amount_cents, principal_cents, benefit_cents, late_fee_cents, interest_cents, received_at, payment_method, reference, reversed, reversal_of, reversal_reason, created_at, profiles:profiles!payment_receipts_created_by_fkey ( full_name )"
+      "id, installment_id, amount_cents, principal_cents, benefit_cents, late_fee_cents, interest_cents, received_at, payment_method, reference, reversed, reversal_of, reversal_reason, created_at, acquirer_fee_cents, acquirer_fee_charged_at_issue, settlement_date, profiles:profiles!payment_receipts_created_by_fkey ( full_name )"
     )
     .in("installment_id", ids)
     .order("created_at", { ascending: false })
@@ -250,6 +254,9 @@ export async function loadClientReceivables(
         reversal_of: string | null;
         reversal_reason: string | null;
         created_at: string;
+        acquirer_fee_cents: number | null;
+        acquirer_fee_charged_at_issue: boolean | null;
+        settlement_date: string | null;
         profiles: { full_name: string } | null;
       }[]
     >();
@@ -270,6 +277,9 @@ export async function loadClientReceivables(
     reversalReason: r.reversal_reason,
     byName: r.profiles?.full_name ?? null,
     createdAt: r.created_at,
+    acquirerFeeCents: r.acquirer_fee_cents ?? 0,
+    acquirerFeeChargedAtIssue: Boolean(r.acquirer_fee_charged_at_issue),
+    settlementDate: r.settlement_date ?? null,
   }));
 
   // "Recebido no período": baixas ATIVAS (não estornadas, não estornos).

@@ -266,10 +266,18 @@ export function ReceivablesSection({
         clientToken: crypto.randomUUID(),
       });
       if (r.ok) {
+        const base = quita
+          ? "Recebimento registrado — cobrança quitada."
+          : "Recebimento parcial registrado.";
+        // FIN4c: o cliente pagou o bruto, mas a clínica recebe o líquido — e
+        // não hoje. Dizer isso na hora evita a surpresa no extrato.
+        const fee = r.fee;
         toast.success(
-          quita
-            ? "Recebimento registrado — cobrança quitada."
-            : "Recebimento parcial registrado."
+          fee && fee.feeCents > 0
+            ? `${base} Taxa de ${formatBRL(fee.feeCents)} — líquido ${formatBRL(fee.netCents)}${
+                fee.settlementDate ? ` em ${fmtDate(fee.settlementDate)}` : ""
+              }.`
+            : base
         );
         setPayingId(null);
         router.refresh();
@@ -724,6 +732,16 @@ export function ReceivablesSection({
                           `multa ${formatBRL(r.lateFeeCents)}`,
                         r.interestCents > 0 &&
                           `juros ${formatBRL(r.interestCents)}`,
+                        // FIN4c: o que a adquirente levou e quando o dinheiro cai.
+                        r.acquirerFeeCents > 0 &&
+                          `taxa ${formatBRL(r.acquirerFeeCents)} · líquido ${formatBRL(
+                            r.amountCents - r.acquirerFeeCents
+                          )}`,
+                        r.acquirerFeeChargedAtIssue &&
+                          "taxa já paga na emissão",
+                        r.settlementDate &&
+                          r.settlementDate !== r.receivedAt &&
+                          `cai em ${fmtDate(r.settlementDate)}`,
                       ].filter(Boolean) as string[];
                       return (
                         <li

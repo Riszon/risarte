@@ -2106,3 +2106,92 @@ describe("data de hoje no Brasil", () => {
     expect(isoDateIn(new Date("2026-08-07T02:59:00Z"))).toBe("2026-08-06");
   });
 });
+
+// ---------------------------------------------------------------------------
+// FIN4c — a taxa segue o meio da BAIXA, não o meio da venda
+// ---------------------------------------------------------------------------
+describe("taxa da adquirente na baixa", () => {
+  const rates: AcquirerRate[] = [
+    {
+      id: "r-boleto",
+      acquirerId: "acq",
+      modality: "boleto",
+      minInstallments: 1,
+      maxInstallments: 1,
+      feePercent: 0,
+      fixedFeeCents: 199,
+      settlementDays: 1,
+      settlementBusinessDays: true,
+      freeMonthlyCount: null,
+      feeChargedOn: "pagamento",
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+    {
+      id: "r-pix",
+      acquirerId: "acq",
+      modality: "pix",
+      minInstallments: 1,
+      maxInstallments: 1,
+      feePercent: 0,
+      fixedFeeCents: 149,
+      settlementDays: 0,
+      settlementBusinessDays: false,
+      freeMonthlyCount: null,
+      feeChargedOn: "pagamento",
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+  ];
+
+  it("parcela de boleto paga por PIX custa a taxa do PIX", () => {
+    // Quem custou foi o meio que o dinheiro realmente usou.
+    const modality = modalityOf("pix", 1);
+    expect(modality).toBe("pix");
+    const rate = resolveRate(rates, {
+      acquirerId: "acq",
+      modality: modality!,
+      installments: 1,
+      date: "2026-08-06",
+    });
+    const s = computeSettlement({
+      grossCents: 50000,
+      rate: rate!,
+      paidAt: "2026-08-06",
+    });
+    expect(s.feeCents).toBe(149);
+    expect(s.netCents).toBe(50000 - 149);
+    // PIX cai no mesmo dia; boleto cairia em D+1 útil.
+    expect(s.settlementDate).toBe("2026-08-06");
+  });
+
+  it("a mesma parcela paga em boleto custa a taxa do boleto", () => {
+    const rate = resolveRate(rates, {
+      acquirerId: "acq",
+      modality: modalityOf("boleto", 1)!,
+      installments: 1,
+      date: "2026-08-06",
+    });
+    const s = computeSettlement({
+      grossCents: 50000,
+      rate: rate!,
+      paidAt: "2026-08-06",
+    });
+    expect(s.feeCents).toBe(199);
+    // 06/08/2026 é quinta — D+1 útil é sexta.
+    expect(s.settlementDate).toBe("2026-08-07");
+  });
+
+  it("meio sem taxa cadastrada não gera cobrança nenhuma", () => {
+    // Dinheiro em espécie não passa por adquirente.
+    expect(modalityOf("dinheiro", 1)).toBeNull();
+    expect(
+      resolveRate(rates, {
+        acquirerId: "acq",
+        modality: "credito_avista",
+        installments: 1,
+        date: "2026-08-06",
+      })
+    ).toBeNull();
+  });
+});
