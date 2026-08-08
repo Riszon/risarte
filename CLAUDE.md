@@ -496,6 +496,22 @@ problema de cadastro, não de atendimento). O **estorno reverte a taxa** junto,
 com a direção invertida; a taxa de **emissão de boleto não volta** (o banco
 cobrou por emitir, e isso independe da baixa).
 
+**⚠️ O CÓDIGO DO DOCUMENTO NUNCA SOME** (regra do dono, 07/08/2026, depois de
+ele sumir em três telas diferentes). Todo código gerado — **`PT-`** plano de
+tratamento, **`VD-`** venda direta, **`RN-`** renegociação, **`CN-`**
+cancelamento — **acompanha o registro para sempre e em todo lugar**: listagens,
+cabeçalhos, eventos de histórico, notificações, termos e documentos impressos.
+
+O código é o que **rastreia o documento**: amarra plano, cobranças, razão
+contábil, termo assinado e histórico. Quando some de uma tela, o caso vira um
+buraco — ninguém liga o que aconteceu no clínico ao que aconteceu no financeiro.
+
+**Armadilha que já causou o problema três vezes:** consulta que filtra por
+status "ativo" (`aceita`, `em_aberto`, `stage` do funil) **exclui o encerrado e
+leva o código junto**. Cancelado, perdido ou concluído é exatamente quando
+alguém vai procurar o código — sempre incluir os estados encerrados. Evento de
+histórico sem código é evento incompleto.
+
 **Os dois fluxos de venda andam juntos.** Comparativo completo em
 `docs/COMPARATIVO-VENDAS.md`. Regra: o que muda na venda direta tem de ser
 verificado no fechamento pelo Comercial e vice-versa — os dois terminam nas
