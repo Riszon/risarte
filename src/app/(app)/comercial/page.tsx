@@ -71,12 +71,32 @@ export default async function ComercialKanbanPage(
 
   const supabase = await createClient();
 
+  /**
+   * 0208 — o quadro busca as Fases 4 e 5, mas **encerramento tira o cliente de
+   * lá**: cancelar o tratamento manda para a Fase 6/7 e marcar perdido pode
+   * mudar a fase também. Sem esta exceção o caso sumia do cockpit inteiro —
+   * inclusive do Histórico, que existe justamente para guardar encerramentos.
+   */
+  let endedQuery = supabase
+    .from("commercial_cards")
+    .select("client_id")
+    .in("stage", ["cancelado", "perdido"]);
+  if (clinicFilter) endedQuery = endedQuery.eq("clinic_id", clinicFilter);
+  const { data: endedRows } = await endedQuery;
+  const endedIds = [
+    ...new Set((endedRows ?? []).map((r) => r.client_id as string)),
+  ];
+
   let clientsQuery = supabase
     .from("clients")
     .select(
       "id, full_name, code, phone, clinic_id, journey_phase, journey_status, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
-    .in("journey_phase", ["commercial_conversion", "treatment_start"])
+    .or(
+      endedIds.length > 0
+        ? `journey_phase.in.(commercial_conversion,treatment_start),id.in.(${endedIds.join(",")})`
+        : "journey_phase.in.(commercial_conversion,treatment_start)"
+    )
     .neq("status", "anonymized")
     .order("full_name");
   if (clinicFilter) clientsQuery = clientsQuery.eq("clinic_id", clinicFilter);

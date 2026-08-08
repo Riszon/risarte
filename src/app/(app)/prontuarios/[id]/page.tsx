@@ -574,12 +574,14 @@ export default async function ClientDetailPage(
    */
   const canCancelTreatment =
     session.isAdminMaster || financeRoles.includes("unit_manager");
+  // Inclui a CANCELADA: o plano cancelado precisa continuar mostrando o código
+  // da venda, o selo e o link do termo — senão o histórico do paciente some.
   const { data: cancellableNeg } = canCancelTreatment
     ? await supabase
         .from("plan_negotiations")
-        .select("id, status, commercial_sales ( closed_at )")
+        .select("id, code, status, commercial_sales ( closed_at )")
         .eq("client_id", client.id)
-        .eq("status", "aceita")
+        .in("status", ["aceita", "cancelada"])
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -589,7 +591,9 @@ export default async function ClientDetailPage(
         .from("plan_cancellations")
         .select("id, code, status")
         .eq("negotiation_id", cancellableNeg.id as string)
-        .in("status", ["rascunho", "assinado"])
+        .neq("status", "descartado")
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle()
     : { data: null };
   const cancellationSale = Array.isArray(cancellableNeg?.commercial_sales)
@@ -3153,6 +3157,8 @@ export default async function ClientDetailPage(
                 <CancelPlanCard
                   clientId={client.id}
                   negotiationId={cancellableNeg.id as string}
+                  saleCode={(cancellableNeg.code as string | null) ?? null}
+                  negotiationCancelled={cancellableNeg.status === "cancelada"}
                   wasClosed={Boolean(cancellationSale?.closed_at)}
                   openCancellation={
                     openCancellationRow

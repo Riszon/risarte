@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/08/2026 · Versão do sistema: **0.186.0** · Última migração: **0207**_
+_Atualizado em: 07/08/2026 · Versão do sistema: **0.186.1** · Última migração: **0207**_
+
+> **O plano cancelado sumia de três telas (v0.186.1, sem migração).** O dono
+> testou o cancelamento e achou três buracos — todos de **tela**, nenhum de
+> dado: o banco estava certo (cartão em `cancelado`, negociação `cancelada`,
+> código `PT-00003` intacto, paciente na Fase 6).
+>
+> 1. **Não aparecia no Histórico do cockpit.** A tela busca clientes das Fases 4
+>    e 5 — e cancelar manda para a Fase 6/7. O caso saía da consulta inteira,
+>    inclusive do Histórico, que existe justamente para guardar encerramentos.
+>    Agora a busca abre exceção para quem tem cartão `cancelado`/`perdido`.
+> 2. **Não havia onde ver o termo depois de efetivado.** O cartão do prontuário
+>    só aparecia enquanto o termo estava em aberto; efetivado, sumia junto com o
+>    link. Agora fica permanente, com **"Ver termo assinado"**.
+> 3. **O plano cancelado "perdia" o código da venda.** Ele nunca foi perdido — a
+>    aba Plano é que só carregava negociação `aceita`. O código amarra cobranças,
+>    termo e histórico; sumir da ficha transforma o cancelamento num buraco.
+>    Agora a aba mostra o código, o selo **Plano cancelado** e o link do termo.
 
 > **Cancelar tratamento mudou de lugar — e aparecia em lugar nenhum (v0.186.0,
 > migração 0207).** O dono perguntou "onde eu clico para cancelar?" e a resposta

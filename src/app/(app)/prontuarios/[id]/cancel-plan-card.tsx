@@ -27,14 +27,19 @@ import {
 export function CancelPlanCard({
   clientId,
   negotiationId,
+  saleCode,
+  negotiationCancelled,
   wasClosed,
   openCancellation,
 }: {
   clientId: string;
   negotiationId: string;
+  /** PT-00003 — o código da venda continua valendo depois de cancelada. */
+  saleCode: string | null;
+  negotiationCancelled: boolean;
   /** Venda fechada: exige destino do paciente (Fase 6 ou 7). */
   wasClosed: boolean;
-  /** Termo já aberto e ainda não efetivado. */
+  /** Termo do cancelamento (em andamento OU já efetivado). */
   openCancellation: { id: string; code: string | null; status: string } | null;
 }) {
   const router = useRouter();
@@ -71,8 +76,50 @@ export function CancelPlanCard({
     });
   }
 
+  /**
+   * PLANO JÁ CANCELADO. O código da venda **continua valendo** — é ele que
+   * amarra as cobranças, o termo e o histórico do paciente. Some daqui e o
+   * cancelamento vira um buraco na ficha (achado do dono, 07/08/2026).
+   */
+  if (negotiationCancelled) {
+    return (
+      <Card className="border-border bg-muted/40">
+        <CardContent className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+          <span>
+            <span className="mr-2 rounded border border-border bg-background px-1 font-mono text-[11px]">
+              {saleCode ?? "—"}
+            </span>
+            <strong>Plano cancelado</strong>
+            {openCancellation?.code ? ` · termo ${openCancellation.code}` : ""}
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              As sessões não realizadas e as cobranças em aberto foram
+              canceladas. O que já foi executado continua no prontuário.
+            </span>
+          </span>
+          {openCancellation && (
+            <Button
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={
+                <Link href={`/cancelamentos/${openCancellation.id}/termo`} />
+              }
+            >
+              <FileText className="mr-1 size-4" />
+              Ver termo assinado
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Já existe termo em andamento: o caminho é continuar nele, não abrir outro.
-  if (openCancellation) {
+  if (
+    openCancellation &&
+    (openCancellation.status === "rascunho" ||
+      openCancellation.status === "assinado")
+  ) {
     return (
       <Card className="border-amber-300 bg-amber-50/50">
         <CardContent className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
