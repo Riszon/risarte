@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  HandCoins,
   BookOpen,
   CreditCard,
   Landmark,
@@ -17,6 +18,7 @@ const TABS = [
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },
+  { href: "/financeiro/repasses", label: "Repasses", icon: HandCoins },
   { href: "/financeiro/fornecedores", label: "Fornecedores", icon: Truck },
   { href: "/financeiro/configuracao", label: "Configuração", icon: Settings2 },
   { href: "/financeiro/centros-de-custo", label: "Centros de custo", icon: Network },

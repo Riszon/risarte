@@ -1,6 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/08/2026 · Versão do sistema: **0.187.1** · Última migração: **0208**_
+_Atualizado em: 08/08/2026 · Versão do sistema: **0.188.0** · Última migração: **0209**_
+
+> **FIN5 — REPASSE AO DENTISTA + ALERTA DE MARGEM (v0.188.0, migração 0209).**
+>
+> O repasse é **valor fixo por procedimento**, por nível do plano de carreira,
+> com vigência. A apuração nasce quando a sessão é **concluída**, com
+> competência na data do procedimento e **valor congelado** — reajustar a tabela
+> não reescreve o que já foi produzido. O fechamento mensal aplica o **bônus
+> sobre o total do período** (nunca por procedimento) e gera **duas contas a
+> pagar por dentista**: fixo em 2.1.01 e bônus em 2.1.02, porque o plano de
+> contas separa produção de premiação. O sistema **não paga ninguém** — quem
+> paga é o Financeiro, com a alçada que já existe.
+>
+> **O alerta de margem** é a peça que o repasse fixo torna necessária: o
+> dentista recebe o mesmo valor independente do preço fechado, então **cada real
+> de desconto sai inteiro da margem**. A negociação mostra a conta ao vivo e
+> avisa abaixo do mínimo — **sem bloquear**, porque o teto de desconto já é a
+> trava e travar duas vezes só ensina a ignorar o aviso.
+>
+> **348 testes**, 11 novos só nas regras de repasse e margem.
+>
+> **Limites declarados:** material e laboratório **não entram** na margem (são
+> do módulo de Estoque, que vem depois) — a tela diz isso em vez de apresentar
+> margem incompleta como completa. Procedimento sem valor cadastrado apura
+> **R$ 0,00 e aparece na lista** com aviso, em vez de sumir: silêncio aqui
+> viraria dentista recebendo a menos.
 
 > **Qual OPÇÃO o cliente comprou (v0.187.1, sem migração).** O dono abriu um
 > plano com duas opções aprovadas e apresentadas, das quais o cliente comprou

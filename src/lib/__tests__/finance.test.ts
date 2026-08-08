@@ -35,6 +35,13 @@ import {
   contractRatio,
   settleCancellation,
 } from "@/lib/finance/cancellation";
+import {
+  payoutRateErrors,
+  resolvePayoutRate,
+  summarizePayouts,
+  type PayoutRate,
+} from "@/lib/finance/payout";
+import { computeMargin, marginLostByDiscount } from "@/lib/finance/margin";
 import { isoDateIn } from "@/lib/dates";
 import {
   acquirerAppliesTo,
@@ -2331,5 +2338,171 @@ describe("cancelamento: acerto de contas", () => {
         wasClosed: false,
       })
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIN5 — repasse ao dentista e margem da venda
+// ---------------------------------------------------------------------------
+describe("repasse: a tabela vigente na data do procedimento", () => {
+  const rates: PayoutRate[] = [
+    {
+      id: "nivel-antigo",
+      procedureId: "proc-1",
+      levelId: "pleno",
+      providerId: null,
+      amountCents: 10000,
+      validFrom: "2026-01-01",
+      validTo: "2026-06-30",
+    },
+    {
+      id: "nivel-novo",
+      procedureId: "proc-1",
+      levelId: "pleno",
+      providerId: null,
+      amountCents: 12000,
+      validFrom: "2026-07-01",
+      validTo: null,
+    },
+    {
+      id: "individual",
+      procedureId: "proc-1",
+      levelId: null,
+      providerId: "dr-ana",
+      amountCents: 15000,
+      validFrom: "2026-07-01",
+      validTo: null,
+    },
+  ];
+
+  it("reajuste NÃO recalcula o que já foi produzido", () => {
+    // Procedimento feito em maio usa a tabela de maio, mesmo consultando hoje.
+    const maio = resolvePayoutRate(rates, {
+      procedureId: "proc-1",
+      levelId: "pleno",
+      providerId: "dr-bruno",
+      date: "2026-05-10",
+    });
+    expect(maio?.amountCents).toBe(10000);
+
+    const agosto = resolvePayoutRate(rates, {
+      procedureId: "proc-1",
+      levelId: "pleno",
+      providerId: "dr-bruno",
+      date: "2026-08-10",
+    });
+    expect(agosto?.amountCents).toBe(12000);
+  });
+
+  it("valor individual vence o do nível", () => {
+    const r = resolvePayoutRate(rates, {
+      procedureId: "proc-1",
+      levelId: "pleno",
+      providerId: "dr-ana",
+      date: "2026-08-10",
+    });
+    expect(r?.amountCents).toBe(15000);
+  });
+
+  it("sem tabela para o procedimento, devolve nulo em vez de inventar", () => {
+    // Inventar valor faria o dentista receber errado sem ninguém notar.
+    expect(
+      resolvePayoutRate(rates, {
+        procedureId: "proc-sem-tabela",
+        levelId: "pleno",
+        providerId: "dr-ana",
+        date: "2026-08-10",
+      })
+    ).toBeNull();
+  });
+
+  it("o bônus incide sobre o TOTAL do período, não por procedimento", () => {
+    const linhas = [
+      { providerId: "a", providerName: "Dra. Ana", amountCents: 10000, accrualDate: "2026-08-03" },
+      { providerId: "a", providerName: "Dra. Ana", amountCents: 15000, accrualDate: "2026-08-10" },
+      { providerId: "b", providerName: "Dr. Bruno", amountCents: 20000, accrualDate: "2026-08-05" },
+    ];
+    const [primeiro, segundo] = summarizePayouts(linhas, 10);
+    // Quem produziu mais aparece primeiro: Ana (R$ 250) na frente de Bruno (R$ 200).
+    expect(primeiro.providerId).toBe("a");
+    expect(segundo.providerId).toBe("b");
+    const somaAna = summarizePayouts(linhas, 10).find((s) => s.providerId === "a")!;
+    expect(somaAna.count).toBe(2);
+    expect(somaAna.fixedCents).toBe(25000);
+    expect(somaAna.bonusCents).toBe(2500);
+    expect(somaAna.totalCents).toBe(27500);
+  });
+
+  it("uma linha vale para um nível OU para uma pessoa, nunca ambos", () => {
+    expect(
+      payoutRateErrors({
+        procedureId: "p",
+        levelId: "pleno",
+        providerId: "dr-ana",
+        amountCents: 100,
+        validFrom: "2026-01-01",
+      })
+    ).toContain(
+      "A linha vale para um nível OU para um profissional, não ambos."
+    );
+  });
+});
+
+describe("margem: o desconto sai inteiro da clínica", () => {
+  it("mostra a conta completa da venda", () => {
+    const m = computeMargin(
+      {
+        priceCents: 800000,
+        payoutCents: 320000,
+        materialCents: 90000,
+        acquirerFeeCents: 19000,
+      },
+      30
+    );
+    expect(m.costCents).toBe(429000);
+    expect(m.marginCents).toBe(371000);
+    expect(m.marginPercent).toBe(46.38);
+    expect(m.belowMinimum).toBe(false);
+    expect(m.negative).toBe(false);
+  });
+
+  it("avisa quando a margem cai abaixo do mínimo", () => {
+    const m = computeMargin(
+      { priceCents: 500000, payoutCents: 320000, acquirerFeeCents: 12000 },
+      40
+    );
+    // Sobra 33,6% de margem — acima de zero, mas abaixo do mínimo de 40%.
+    expect(m.belowMinimum).toBe(true);
+    expect(m.negative).toBe(false);
+  });
+
+  it("margem negativa é venda com prejuízo direto", () => {
+    const m = computeMargin({ priceCents: 200000, payoutCents: 320000 }, 30);
+    expect(m.negative).toBe(true);
+    expect(m.marginCents).toBe(-120000);
+  });
+
+  it("declara que materiais ainda não entram na conta", () => {
+    // O Estoque vem depois do FIN5 — apresentar margem incompleta como
+    // completa é pior que não mostrar.
+    const m = computeMargin({ priceCents: 100000, payoutCents: 40000 });
+    expect(m.materialsPending).toBe(true);
+  });
+
+  it("com repasse fixo, cada real de desconto é um real de margem", () => {
+    const perda = marginLostByDiscount({
+      discountCents: 80000,
+      marginBeforeDiscountCents: 371000,
+    });
+    expect(perda.lostCents).toBe(80000);
+    // 10% de desconto no preço come 21,6% da margem — é isso que o consultor
+    // precisa ver antes de conceder.
+    expect(perda.percentOfMargin).toBe(21.56);
+  });
+
+  it("preço zero não divide por zero", () => {
+    const m = computeMargin({ priceCents: 0, payoutCents: 0 }, 30);
+    expect(m.marginPercent).toBe(0);
+    expect(m.belowMinimum).toBe(false);
   });
 });
