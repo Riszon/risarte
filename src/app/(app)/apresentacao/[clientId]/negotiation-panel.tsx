@@ -41,6 +41,7 @@ import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
+import { MarginAlert } from "@/components/commercial/margin-alert";
 import {
   PaymentFields,
   type PayMode,
@@ -134,6 +135,8 @@ export function NegotiationPanel({
   canAuthorize,
   scheduleLocked = false,
   programConditions = null,
+  payoutByOption = {},
+  minMarginPercent = null,
 }: {
   clientId: string;
   planId: string;
@@ -143,6 +146,9 @@ export function NegotiationPanel({
   planEvents?: PlanEvent[];
   canEdit: boolean;
   canAuthorize: boolean;
+  /** FIN5: repasse estimado por opção + margem mínima (alerta de margem). */
+  payoutByOption?: Record<string, number>;
+  minMarginPercent?: number | null;
   /**
    * Já existe recebimento (ou renegociação) nas cobranças desta venda: o plano
    * de cobrança não pode mais ser reescrito. Antes a tela não dizia nada e o
@@ -1002,6 +1008,14 @@ export function NegotiationPanel({
             ]}
             totalCents={finalCents}
             footer={paymentFooter}
+          />
+
+          {/* FIN5: o repasse é FIXO — cada real de desconto sai inteiro da
+              margem da clínica. O consultor precisa ver isso ENQUANTO negocia. */}
+          <MarginAlert
+            priceCents={finalCents}
+            payoutCents={payoutByOption[option.id] ?? 0}
+            minimumPercent={minMarginPercent}
           />
 
           {/* 0203: a tela DIZ que a cobrança já não pode ser reescrita — antes

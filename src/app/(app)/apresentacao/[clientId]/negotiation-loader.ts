@@ -40,6 +40,9 @@ export type NegotiationBlock = {
    * consultor só descobria pelo erro ao salvar.
    */
   scheduleLocked: boolean;
+  /** FIN5: repasse estimado por opção + margem mínima da unidade. */
+  payoutByOption: Record<string, number>;
+  minMarginPercent: number | null;
   /** Descrições dos itens não aprovados pelo cliente (aprovação parcial). */
   excludedDescriptions: string[];
   /** Resumo da apresentação (vai no contrato do fechamento). */
@@ -342,10 +345,25 @@ export async function loadNegotiationBlock(
           }
         : null;
 
+  // FIN5: quanto cada opção custa em repasse — base do alerta de margem.
+  const payoutByOption: Record<string, number> = {};
+  for (const o of options) {
+    const { data } = await supabase.rpc("estimated_option_payout", {
+      p_option_id: o.id,
+      p_clinic_id: clinicId,
+    });
+    payoutByOption[o.id] = Number(data ?? 0);
+  }
+  const { data: minMargin } = await supabase.rpc("min_margin_percent", {
+    p_clinic: clinicId,
+  });
+
   return {
     planId,
     options,
     negotiation,
+    payoutByOption,
+    minMarginPercent: minMargin === null ? null : Number(minMargin),
     // J4b/J5: MESMA regra da venda direta — o PPR+ amplia teto/parcelas e as
     // formas de pagamento pelo plano, e o Empresarial pela condição da empresa
     // parceira (boleto + parcelamento próprio).

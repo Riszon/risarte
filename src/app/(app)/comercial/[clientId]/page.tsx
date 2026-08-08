@@ -441,6 +441,8 @@ export default async function CommercialCockpitPage(
                 canEdit={canNegotiate}
                 scheduleLocked={negotiationBlock.scheduleLocked}
                 canAuthorize={canAuthorize}
+                payoutByOption={negotiationBlock.payoutByOption}
+                minMarginPercent={negotiationBlock.minMarginPercent}
               />
               {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}
               {(negotiationBlock.negotiation?.status === "aceita" || negotiationBlock.negotiation?.status === "cancelada") && (
