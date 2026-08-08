@@ -130,7 +130,7 @@ export default async function ComercialKanbanPage(
   >();
   const negByClient = new Map<
     string,
-    { status: NegotiationStatus; finalCents: number }
+    { status: NegotiationStatus; finalCents: number; code: string | null }
   >();
 
   if (ids.length > 0) {
@@ -143,7 +143,7 @@ export default async function ComercialKanbanPage(
         .in("client_id", ids),
       supabase
         .from("plan_negotiations")
-        .select("client_id, status, final_cents, updated_at")
+        .select("client_id, code, status, final_cents, updated_at")
         .in("client_id", ids)
         .order("updated_at", { ascending: false }),
     ]);
@@ -171,6 +171,7 @@ export default async function ComercialKanbanPage(
     }
     for (const n of (negs ?? []) as {
       client_id: string;
+      code: string | null;
       status: NegotiationStatus;
       final_cents: number;
     }[]) {
@@ -178,6 +179,7 @@ export default async function ComercialKanbanPage(
         negByClient.set(n.client_id, {
           status: n.status,
           finalCents: n.final_cents,
+          code: n.code,
         });
       }
     }
@@ -218,6 +220,7 @@ export default async function ComercialKanbanPage(
         negotiationAccepted: neg?.status === "aceita",
       }),
       finalCents: neg?.finalCents ?? null,
+      saleCode: neg?.code ?? null,
       followupAttempts: card?.attempts ?? 0,
       nextAttemptAt: card?.next ?? null,
       followupByClinic: card?.byClinic ?? false,

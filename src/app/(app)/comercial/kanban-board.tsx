@@ -65,6 +65,8 @@ export type BoardCard = {
   clinicName: string | null;
   column: CommercialColumn;
   finalCents: number | null;
+  /** PT-00003 — amarra plano, cobranças, termo e histórico. */
+  saleCode: string | null;
   followupAttempts: number;
   nextAttemptAt: string | null;
   followupByClinic: boolean;
@@ -406,11 +408,20 @@ export function CommercialKanban({
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    {c.finalCents !== null && (
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {formatBRL(c.finalCents)}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-2">
+                      {c.finalCents !== null && (
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {formatBRL(c.finalCents)}
+                        </span>
+                      )}
+                      {/* O código da venda amarra tudo — no Histórico ele é o
+                          que permite achar o caso no Financeiro e no termo. */}
+                      {c.saleCode && (
+                        <span className="rounded border border-border bg-muted/60 px-1 font-mono text-[10px] text-muted-foreground">
+                          {c.saleCode}
+                        </span>
+                      )}
+                    </span>
                     {c.clinicName && (
                       <span className="text-[11px] text-muted-foreground">
                         {c.clinicName}

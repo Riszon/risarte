@@ -1,6 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/08/2026 · Versão do sistema: **0.186.1** · Última migração: **0207**_
+_Atualizado em: 07/08/2026 · Versão do sistema: **0.187.0** · Última migração: **0208**_
+
+> **O histórico do plano parava no Comercial (v0.187.0, migração 0208).** O dono
+> abriu o Histórico de um plano já vendido E cancelado e viu quatro linhas:
+> criado, enviado, aprovado, enviado ao Comercial. Depois disso, silêncio.
+>
+> A tabela de eventos existe desde a 0148, mas **só o clínico escrevia nela**.
+> Aceite, código de venda, contrato, cobrança, pagamento, conclusão e
+> cancelamento não chegavam ao histórico — quem abrisse a ficha meses depois não
+> conseguiria contar a história do caso.
+>
+> O registro passa a ser por **gatilho**, não dentro de cada função: pega todos
+> os caminhos, inclusive os que ainda vão existir, e nenhuma função nova precisa
+> lembrar de registrar. Foi esquecer disso que criou o buraco. Cada evento leva
+> o **código da venda** junto. Com reparo do que já aconteceu, usando a data
+> verdadeira.
+>
+> Também: o **código da venda** aparece agora no cabeçalho de cada plano (com o
+> selo **Plano cancelado** quando for o caso) e nos cartões do **Histórico do
+> Comercial** — é ele que amarra plano, cobranças, termo e histórico.
 
 > **O plano cancelado sumia de três telas (v0.186.1, sem migração).** O dono
 > testou o cancelamento e achou três buracos — todos de **tela**, nenhum de

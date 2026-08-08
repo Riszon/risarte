@@ -324,6 +324,7 @@ export function PlanningSection({
   programCompanyName = null,
   programBenefits = {},
   onNewPlan,
+  commercialByPlan = {},
 }: {
   clientId: string;
   clientName: string;
@@ -338,6 +339,8 @@ export function PlanningSection({
   currentPillar: MethodologyPillar | null;
   /** (Ficha) link para abrir o cockpit do Planner; ausente no próprio cockpit. */
   cockpitHref?: string;
+  /** Situação comercial por plano: código da venda + status (0208). */
+  commercialByPlan?: Record<string, { code: string | null; status: string }>;
   /** H4.5 Pedido 1: profissionais da unidade do cliente (para o Planner indicar). */
   providerOptions?: { id: string; name: string }[];
   /** Risarte Empresarial: cliente do programa → orçamento mostra a economia. */
@@ -604,6 +607,19 @@ export function PlanningSection({
                 <LayoutDashboard className="mr-1 size-4" />
                 Abrir cockpit
               </Button>
+            )}
+            {/* 0208: o CÓDIGO DA VENDA e a situação comercial ficam no
+                cabeçalho do plano. O dono cancelou um plano e a ficha não dizia
+                nem o código nem que estava cancelado — o caso virava um buraco. */}
+            {commercialByPlan[plan.id]?.code && (
+              <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                {commercialByPlan[plan.id].code}
+              </span>
+            )}
+            {commercialByPlan[plan.id]?.status === "cancelada" && (
+              <Badge variant="outline" className="border-destructive text-destructive">
+                Plano cancelado
+              </Badge>
             )}
             <Badge
               variant={plan.status === "approved" ? "secondary" : "outline"}

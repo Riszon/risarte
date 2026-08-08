@@ -46,6 +46,7 @@ export function PlanEditorSwitcher({
   programCompanyName = null,
   programBenefits = {},
   lifecycleCaps = { presentation: false, commercial: false, treatment: false },
+  commercialByPlan = {},
 }: {
   clientId: string;
   clientName: string;
@@ -58,6 +59,8 @@ export function PlanEditorSwitcher({
   realStats: Record<string, RealStat>;
   currentPillar: MethodologyPillar | null;
   cockpitHref?: string;
+  /** Situação comercial por plano: código da venda + status (0208). */
+  commercialByPlan?: Record<string, { code: string | null; status: string }>;
   providerOptions?: { id: string; name: string }[];
   programActive?: boolean;
   programCompanyName?: string | null;
@@ -190,6 +193,7 @@ export function PlanEditorSwitcher({
       )}
 
       <PlanningSection
+        commercialByPlan={commercialByPlan}
         key={selected?.id ?? "none"}
         clientId={clientId}
         clientName={clientName}
