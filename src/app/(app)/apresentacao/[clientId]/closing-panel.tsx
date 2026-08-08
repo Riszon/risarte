@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -21,13 +21,6 @@ import {
   type PaymentMethod,
 } from "@/lib/commercial";
 import { markClosingStep } from "./closing-actions";
-import { openPlanCancellation } from "./cancellation-actions";
-import {
-  CANCELLATION_DESTINATIONS,
-  CANCELLATION_DESTINATION_LABELS,
-  cancellationErrors,
-  type CancellationDestination,
-} from "@/lib/finance/cancellation";
 
 export type ClosingSummary = {
   finalCents: number;
@@ -45,7 +38,6 @@ export function ClosingPanel({
   sale,
   summary,
   canClose,
-  canCancel = false,
   negotiationCancelled = false,
 }: {
   clientId: string;
@@ -59,51 +51,10 @@ export function ClosingPanel({
   } | null;
   summary: ClosingSummary;
   canClose: boolean;
-  /** Cancelar venda fechada é do Gerente/Admin (0205). */
-  canCancel?: boolean;
   negotiationCancelled?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [cancelling, setCancelling] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [destination, setDestination] = useState<CancellationDestination | "">(
-    ""
-  );
-  const [returnDate, setReturnDate] = useState("");
-  const [cancelNotes, setCancelNotes] = useState("");
-
-  /**
-   * 0206 — cancelar NÃO desfaz nada aqui. Este passo só apura o acerto de
-   * contas e abre o termo; sessões, cobranças e fase do cliente só mudam
-   * quando o paciente assinar e o Gerente efetivar, na página do termo.
-   */
-  function doCancel() {
-    startTransition(async () => {
-      const r = await openPlanCancellation({
-        clientId,
-        negotiationId,
-        reason: cancelReason,
-        destination: closed ? (destination || null) : null,
-        returnDate: destination === "follow_up" ? returnDate || null : null,
-        notes: cancelNotes,
-      });
-      if (r.ok && r.cancellationId) {
-        toast.success("Termo de cancelamento gerado — confira e colha a assinatura.");
-        router.push(`/cancelamentos/${r.cancellationId}/termo`);
-      } else if (r.ok) {
-        router.refresh();
-      } else toast.error(r.error ?? "Algo deu errado.");
-    });
-  }
-
-  const cancelErrors = cancellationErrors({
-    reason: cancelReason,
-    destination: destination || null,
-    returnDate: returnDate || null,
-    wasClosed: Boolean(sale?.closedAt),
-  });
-
   const signed = sale?.contractSigned ?? false;
   const issued = sale?.paymentIssued ?? false;
   const paid = sale?.paymentConfirmed ?? false;
@@ -202,7 +153,8 @@ export function ClosingPanel({
             <p className="font-semibold">Venda cancelada.</p>
             <p className="text-xs text-muted-foreground">
               As sessões não realizadas e as cobranças em aberto foram
-              canceladas, e o cliente voltou para a Conversão Comercial.
+              canceladas. O termo de cancelamento está no prontuário do
+              paciente.
             </p>
           </div>
         ) : closed ? (
@@ -217,103 +169,9 @@ export function ClosingPanel({
                 </p>
               </div>
             </div>
-            {/* 0205: desfazer uma venda fechada por engano ou desistência. */}
-            {canCancel && !cancelling && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={() => setCancelling(true)}
-              >
-                Cancelar tratamento
-              </Button>
-            )}
-            {canCancel && cancelling && (
-              <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2">
-                <p className="text-xs">
-                  Este passo <strong>não desfaz nada ainda</strong>: ele apura o
-                  acerto de contas e gera o <strong>termo de cancelamento</strong>{" "}
-                  para o paciente assinar. Sessões, cobranças e fase só mudam
-                  depois da assinatura.
-                </p>
-
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Motivo do cancelamento (obrigatório)"
-                  className="min-h-16 w-full rounded-md border border-input bg-transparent p-2 text-xs"
-                />
-
-                <label className="block">
-                  <span className="text-[11px] font-medium">
-                    Para onde o paciente vai depois do cancelamento
-                  </span>
-                  <select
-                    value={destination}
-                    onChange={(e) =>
-                      setDestination(
-                        e.target.value as CancellationDestination | ""
-                      )
-                    }
-                    className="mt-0.5 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                  >
-                    <option value="">Escolher…</option>
-                    {CANCELLATION_DESTINATIONS.map((d) => (
-                      <option key={d} value={d}>
-                        {CANCELLATION_DESTINATION_LABELS[d]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {destination === "follow_up" && (
-                  <label className="block">
-                    <span className="text-[11px] font-medium">
-                      Data de retorno (obrigatória)
-                    </span>
-                    <input
-                      type="date"
-                      value={returnDate}
-                      onChange={(e) => setReturnDate(e.target.value)}
-                      className="mt-0.5 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                    />
-                  </label>
-                )}
-
-                <textarea
-                  value={cancelNotes}
-                  onChange={(e) => setCancelNotes(e.target.value)}
-                  placeholder="Observações para o termo (opcional) — use para registrar o que o contrato previa"
-                  className="min-h-12 w-full rounded-md border border-input bg-transparent p-2 text-xs"
-                />
-
-                {cancelErrors.length > 0 && (
-                  <p className="text-[11px] text-destructive">
-                    {cancelErrors[0]}
-                  </p>
-                )}
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                    onClick={() => setCancelling(false)}
-                  >
-                    Voltar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="h-7 text-xs"
-                    disabled={isPending || cancelErrors.length > 0}
-                    onClick={doCancel}
-                  >
-                    Gerar termo de cancelamento
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* 0207: cancelar tratamento saiu daqui e foi para o PRONTUÁRIO,
+                aba Plano — quem cancela é o Gerente, e apresentação é passado
+                quando o paciente já está em tratamento. */}
           </div>
         ) : (
           <>

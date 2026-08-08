@@ -1,6 +1,26 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/08/2026 · Versão do sistema: **0.185.0** · Última migração: **0206**_
+_Atualizado em: 07/08/2026 · Versão do sistema: **0.186.0** · Última migração: **0207**_
+
+> **Cancelar tratamento mudou de lugar — e aparecia em lugar nenhum (v0.186.0,
+> migração 0207).** O dono perguntou "onde eu clico para cancelar?" e a resposta
+> expôs dois erros meus.
+>
+> **O botão estava enterrado na tela de apresentação.** Errado por dois motivos:
+> o paciente já está na Fase 5, então apresentação é passado e ninguém procura
+> lá; e quem cancela é o **Gerente**, que não usa a tela do Consultor. Foi para
+> o **prontuário, aba Plano** — junto do plano e das sessões, onde ele está
+> quando decide. Termo em andamento aparece ali com atalho para continuar.
+>
+> **O cancelamento não marcava o cartão do cockpit.** A coluna "Cancelado" lê o
+> `stage` do cartão, não a negociação — sem marcar, um plano cancelado sumia do
+> quadro E do histórico, como se nunca tivesse existido. A 0207 marca o cartão,
+> registra o evento na linha do tempo com o saldo do acerto, e repara os
+> cancelamentos anteriores.
+>
+> O Histórico do cockpit (Aguardando iniciar / Tratamento iniciado / Cancelado /
+> Perdido) **já existia** desde a 0203 — era só o cancelamento que não chegava
+> lá.
 
 > **Cancelamento de plano com TERMO ASSINADO (v0.185.0, migração 0206).** O dono
 > corrigiu duas coisas da 0205 e pediu o documento.

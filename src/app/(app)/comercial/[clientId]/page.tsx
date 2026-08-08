@@ -449,7 +449,6 @@ export default async function CommercialCockpitPage(
                   negotiationId={negotiationBlock.negotiation.id}
                   sale={negotiationBlock.sale}
                   canClose={canClose}
-                  canCancel={canAuthorize}
                   negotiationCancelled={negotiationBlock.negotiation?.status === "cancelada"}
                   summary={{
                     finalCents: negotiationBlock.negotiation.finalCents,

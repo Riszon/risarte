@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/card";
 import { ClientDataSection } from "./client-data-section";
 import { ReceivablesSection } from "./receivables-section";
+import { CancelPlanCard } from "./cancel-plan-card";
 import { loadClientReceivables } from "./receivables-loader";
 import { viewInstallment } from "@/lib/finance/receivables";
 import {
@@ -566,6 +567,34 @@ export default async function ClientDetailPage(
         boletoIssuableIds: [] as string[],
       };
   const financeToday = todayInBrazil();
+
+  /**
+   * 0207 — cancelar tratamento mora AQUI, não na tela de apresentação: quem
+   * cancela é o Gerente, e ele está no prontuário quando decide.
+   */
+  const canCancelTreatment =
+    session.isAdminMaster || financeRoles.includes("unit_manager");
+  const { data: cancellableNeg } = canCancelTreatment
+    ? await supabase
+        .from("plan_negotiations")
+        .select("id, status, commercial_sales ( closed_at )")
+        .eq("client_id", client.id)
+        .eq("status", "aceita")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+  const { data: openCancellationRow } = cancellableNeg
+    ? await supabase
+        .from("plan_cancellations")
+        .select("id, code, status")
+        .eq("negotiation_id", cancellableNeg.id as string)
+        .in("status", ["rascunho", "assinado"])
+        .maybeSingle()
+    : { data: null };
+  const cancellationSale = Array.isArray(cancellableNeg?.commercial_sales)
+    ? cancellableNeg?.commercial_sales[0]
+    : cancellableNeg?.commercial_sales;
   // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
   const lateInstallmentCount = receivables.installments.filter(
     (i) => viewInstallment(i, financeToday).isLate
@@ -3118,6 +3147,24 @@ export default async function ClientDetailPage(
                 programBenefits={program?.byProcedure ?? {}}
                 lifecycleCaps={lifecycleCaps}
               />
+            )}
+            {canCancelTreatment && cancellableNeg && (
+              <div className="mt-4">
+                <CancelPlanCard
+                  clientId={client.id}
+                  negotiationId={cancellableNeg.id as string}
+                  wasClosed={Boolean(cancellationSale?.closed_at)}
+                  openCancellation={
+                    openCancellationRow
+                      ? {
+                          id: openCancellationRow.id as string,
+                          code: (openCancellationRow.code as string | null) ?? null,
+                          status: openCancellationRow.status as string,
+                        }
+                      : null
+                  }
+                />
+              </div>
             )}
           </TabPanel>
         )}

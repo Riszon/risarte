@@ -96,7 +96,6 @@ export default async function PresentationPage(
           negotiationId={negotiationBlock.negotiation.id}
           sale={negotiationBlock.sale}
           canClose={isCommercialTeam}
-          canCancel={canAuthorize}
           negotiationCancelled={
             negotiationBlock.negotiation.status === "cancelada"
           }
