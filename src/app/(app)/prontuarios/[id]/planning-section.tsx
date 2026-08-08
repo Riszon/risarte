@@ -340,7 +340,10 @@ export function PlanningSection({
   /** (Ficha) link para abrir o cockpit do Planner; ausente no próprio cockpit. */
   cockpitHref?: string;
   /** Situação comercial por plano: código da venda + status (0208). */
-  commercialByPlan?: Record<string, { code: string | null; status: string }>;
+  commercialByPlan?: Record<
+    string,
+    { code: string | null; status: string; optionId: string | null }
+  >;
   /** H4.5 Pedido 1: profissionais da unidade do cliente (para o Planner indicar). */
   providerOptions?: { id: string; name: string }[];
   /** Risarte Empresarial: cliente do programa → orçamento mostra a economia. */
@@ -452,6 +455,10 @@ export function PlanningSection({
       }
     });
   }
+
+  /** Situação comercial DESTE plano: código da venda, status e qual opção o
+   *  cliente comprou. */
+  const commercial = plan ? commercialByPlan[plan.id] : undefined;
 
   // -- No plan yet -----------------------------------------------------------
   if (!plan) {
@@ -611,12 +618,12 @@ export function PlanningSection({
             {/* 0208: o CÓDIGO DA VENDA e a situação comercial ficam no
                 cabeçalho do plano. O dono cancelou um plano e a ficha não dizia
                 nem o código nem que estava cancelado — o caso virava um buraco. */}
-            {commercialByPlan[plan.id]?.code && (
+            {commercial?.code && (
               <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                {commercialByPlan[plan.id].code}
+                {commercial.code}
               </span>
             )}
-            {commercialByPlan[plan.id]?.status === "cancelada" && (
+            {commercial?.status === "cancelada" && (
               <Badge variant="outline" className="border-destructive text-destructive">
                 Plano cancelado
               </Badge>
@@ -842,6 +849,24 @@ export function PlanningSection({
                           {o.title}
                         </p>
                         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          {/* 0208b: QUAL OPÇÃO O CLIENTE COMPROU. Com duas ou
+                              três opções aprovadas, sem esta marca é preciso
+                              deduzir — e deduzir dinheiro dá errado. O código
+                              da venda vem junto porque é ele que rastreia. */}
+                          {commercial?.optionId === o.id && (
+                            <Badge
+                              className={
+                                commercial.status === "cancelada"
+                                  ? "border-destructive bg-destructive/10 text-[10px] text-destructive"
+                                  : "bg-emerald-600 text-[10px] text-white"
+                              }
+                            >
+                              {commercial.status === "cancelada"
+                                ? "Comprada — cancelada"
+                                : "Comprada pelo cliente"}
+                              {commercial.code ? ` · ${commercial.code}` : ""}
+                            </Badge>
+                          )}
                           {o.isPrimary && (
                             <Badge className="bg-gold text-gold-foreground text-[10px]">
                               Plano principal

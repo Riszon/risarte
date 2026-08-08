@@ -60,7 +60,10 @@ export function PlanEditorSwitcher({
   currentPillar: MethodologyPillar | null;
   cockpitHref?: string;
   /** Situação comercial por plano: código da venda + status (0208). */
-  commercialByPlan?: Record<string, { code: string | null; status: string }>;
+  commercialByPlan?: Record<
+    string,
+    { code: string | null; status: string; optionId: string | null }
+  >;
   providerOptions?: { id: string; name: string }[];
   programActive?: boolean;
   programCompanyName?: string | null;

@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/08/2026 · Versão do sistema: **0.187.0** · Última migração: **0208**_
+_Atualizado em: 07/08/2026 · Versão do sistema: **0.187.1** · Última migração: **0208**_
+
+> **Qual OPÇÃO o cliente comprou (v0.187.1, sem migração).** O dono abriu um
+> plano com duas opções aprovadas e apresentadas, das quais o cliente comprou
+> uma — e não tinha como saber qual. Precisava deduzir.
+>
+> Erro do meu desenho anterior: pus o código da venda no **cabeçalho do plano**,
+> mas quem é comprada é a **opção**. Com duas ou três opções aprovadas, o código
+> no topo não diz nada. O sistema já sabia (`plan_negotiations.option_id`) —
+> só não mostrava.
+>
+> Agora a opção vendida traz o selo **"Comprada pelo cliente · PT-00003"** (ou
+> **"Comprada — cancelada"**, em vermelho), no mesmo lugar dos selos de
+> aprovação. Deduzir qual opção virou dinheiro é o tipo de dúvida que termina em
+> tratamento errado executado.
 
 > **O histórico do plano parava no Comercial (v0.187.0, migração 0208).** O dono
 > abriu o Histórico de um plano já vendido E cancelado e viu quatro linhas:
