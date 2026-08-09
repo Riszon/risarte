@@ -36,6 +36,7 @@ import {
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
+import { MarginAlert } from "@/components/commercial/margin-alert";
 import {
   PaymentFields,
   type PayMode,
@@ -100,6 +101,9 @@ export type DirectSaleRow = {
   downPaymentCents?: number;
   /** I8: parcela mínima do meio escolhido (para validar o plano). */
   minInstallmentCents?: number | null;
+  /** FIN5: repasse estimado da venda + margem mínima (alerta de margem). */
+  payoutCents?: number;
+  minMarginPercent?: number | null;
 };
 
 type AdjustMode = "none" | "desc_reais" | "desc_pct" | "acresc";
@@ -564,6 +568,14 @@ export function SaleItem({
                   ]}
                   totalCents={sale.finalCents}
                   footer={closedPaymentFooter}
+                />
+                {/* FIN5: mesma conta da negociação — o repasse é fixo, então o
+                    desconto sai inteiro da margem da clínica. */}
+                <MarginAlert
+                  className="mt-2"
+                  priceCents={sale.finalCents}
+                  payoutCents={sale.payoutCents ?? 0}
+                  minimumPercent={sale.minMarginPercent ?? null}
                 />
               </div>
               {sale.cancelled ? (

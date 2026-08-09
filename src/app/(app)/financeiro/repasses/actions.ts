@@ -152,3 +152,61 @@ export async function closePayoutMonth(input: {
   refresh();
   return { ok: true };
 }
+
+/**
+ * 0210 — nível de carreira editável: nome, descrição e os REQUISITOS para
+ * evoluir. Os requisitos são descritivos de propósito — o sistema não promove
+ * ninguém sozinho. Promover é decisão de gestão; o que o sistema faz é deixar
+ * o critério escrito e visível para os dois lados.
+ */
+export async function saveCareerLevel(input: {
+  id: string | null;
+  clinicId: string | null;
+  name: string;
+  sortOrder: number;
+  description: string;
+  reqMonthsMin: number | null;
+  reqMonthlyProductionCents: number | null;
+  reqResults: string;
+  reqEducation: string;
+  reqOther: string;
+  active: boolean;
+}): Promise<PayoutResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+
+  if (!input.name.trim()) return { ok: false, error: "Informe o nome do nível." };
+
+  const row = {
+    clinic_id: input.clinicId,
+    name: input.name.trim(),
+    sort_order: input.sortOrder,
+    description: input.description.trim() || null,
+    req_months_min: input.reqMonthsMin,
+    req_monthly_production_cents: input.reqMonthlyProductionCents,
+    req_results: input.reqResults.trim() || null,
+    req_education: input.reqEducation.trim() || null,
+    req_other: input.reqOther.trim() || null,
+    active: input.active,
+    updated_at: new Date().toISOString(),
+    updated_by: session.userId,
+  };
+
+  const { error } = input.id
+    ? await supabase.from("career_levels").update(row).eq("id", input.id)
+    : await supabase
+        .from("career_levels")
+        .insert({ ...row, created_by: session.userId });
+  if (error) {
+    console.error("saveCareerLevel failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o nível." };
+  }
+
+  await logAudit({
+    action: input.id ? "update" : "create",
+    entityType: "career_level",
+    entityId: input.id ?? input.name,
+  });
+  refresh();
+  return { ok: true };
+}

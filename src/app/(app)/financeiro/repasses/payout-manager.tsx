@@ -12,9 +12,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import { summarizePayouts } from "@/lib/finance/payout";
-import { closePayoutMonth, savePayoutRate, setProviderLevel } from "./actions";
+import {
+  closePayoutMonth,
+  saveCareerLevel,
+  savePayoutRate,
+  setProviderLevel,
+} from "./actions";
 
-type Level = { id: string; clinicId: string | null; name: string; active: boolean };
+type Level = {
+  id: string;
+  clinicId: string | null;
+  name: string;
+  sortOrder: number;
+  active: boolean;
+  description: string;
+  reqMonthsMin: number | null;
+  reqMonthlyProductionCents: number | null;
+  reqResults: string;
+  reqEducation: string;
+  reqOther: string;
+};
 type Rate = {
   id: string;
   procedureId: string;
@@ -77,6 +94,62 @@ export function PayoutManager({
   const [levelId, setLevelId] = useState("");
   const [amount, setAmount] = useState("");
   const [validFrom, setValidFrom] = useState(today);
+
+  /** 0210: nível em edição — nome, descrição e requisitos para evoluir. */
+  const [editLevel, setEditLevel] = useState<Level | null>(null);
+
+  function submitLevel() {
+    if (!editLevel) return;
+    startTransition(async () => {
+      const r = await saveCareerLevel({
+        id: editLevel.id || null,
+        clinicId: editLevel.clinicId,
+        name: editLevel.name,
+        sortOrder: editLevel.sortOrder,
+        description: editLevel.description,
+        reqMonthsMin: editLevel.reqMonthsMin,
+        reqMonthlyProductionCents: editLevel.reqMonthlyProductionCents,
+        reqResults: editLevel.reqResults,
+        reqEducation: editLevel.reqEducation,
+        reqOther: editLevel.reqOther,
+        active: editLevel.active,
+      });
+      if (r.ok) {
+        toast.success("Nível salvo.");
+        setEditLevel(null);
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  function emptyLevel(): Level {
+    return {
+      id: "",
+      clinicId: null,
+      name: "",
+      sortOrder: levels.length + 1,
+      active: true,
+      description: "",
+      reqMonthsMin: null,
+      reqMonthlyProductionCents: null,
+      reqResults: "",
+      reqEducation: "",
+      reqOther: "",
+    };
+  }
+
+  function levelRequirements(l: Level): string {
+    const parts = [
+      l.reqMonthsMin !== null ? `${l.reqMonthsMin} meses na função` : null,
+      l.reqMonthlyProductionCents !== null
+        ? `produção ${formatBRL(l.reqMonthlyProductionCents)}/mês`
+        : null,
+      l.reqResults || null,
+      l.reqEducation || null,
+      l.reqOther || null,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(" · ") : "Sem requisitos definidos";
+  }
 
   const procName = useMemo(
     () => new Map(procedures.map((p) => [p.id, p.name])),
@@ -279,6 +352,215 @@ export function PayoutManager({
                 </li>
               ))}
             </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* -- PLANO DE CARREIRA ------------------------------------------ */}
+      <Card>
+        <CardContent className="space-y-2 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium">Plano de carreira</h2>
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => setEditLevel(emptyLevel())}
+              >
+                <Plus className="mr-1 size-4" />
+                Novo nível
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Os requisitos são <strong>descritivos</strong>: o sistema não promove
+            ninguém sozinho. Promover é decisão de gestão — o que o sistema faz é
+            deixar o critério escrito e visível para os dois lados.
+          </p>
+
+          <ul className="space-y-1 text-sm">
+            {levels.map((l) => (
+              <li
+                key={l.id}
+                className="flex flex-wrap items-start justify-between gap-2 border-b border-dashed py-1 last:border-0"
+              >
+                <span className="min-w-0">
+                  <strong>{l.name}</strong>
+                  {l.clinicId === null && (
+                    <Badge variant="outline" className="ml-2 text-[10px]">
+                      Rede
+                    </Badge>
+                  )}
+                  {!l.active && (
+                    <Badge variant="outline" className="ml-2 text-[10px]">
+                      Inativo
+                    </Badge>
+                  )}
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {levelRequirements(l)}
+                  </span>
+                </span>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => setEditLevel(l)}
+                  >
+                    Editar
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {editLevel && (
+            <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
+              <label className="block">
+                <Label className="text-[11px]">Nome do nível</Label>
+                <Input
+                  className="h-8"
+                  value={editLevel.name}
+                  onChange={(e) =>
+                    setEditLevel({ ...editLevel, name: e.target.value })
+                  }
+                  placeholder="Ex.: Pleno"
+                />
+              </label>
+              <label className="block">
+                <Label className="text-[11px]">Ordem</Label>
+                <Input
+                  className="h-8"
+                  type="number"
+                  min={0}
+                  value={editLevel.sortOrder}
+                  onChange={(e) =>
+                    setEditLevel({
+                      ...editLevel,
+                      sortOrder: Number(e.target.value) || 0,
+                    })
+                  }
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <Label className="text-[11px]">
+                  O que se espera de quem está neste nível
+                </Label>
+                <textarea
+                  value={editLevel.description}
+                  onChange={(e) =>
+                    setEditLevel({ ...editLevel, description: e.target.value })
+                  }
+                  className="mt-0.5 min-h-12 w-full rounded-md border border-input bg-transparent p-2 text-xs"
+                />
+              </label>
+
+              <p className="sm:col-span-2 text-[11px] font-medium">
+                Requisitos para evoluir para o próximo nível
+              </p>
+              <label className="block">
+                <Label className="text-[11px]">Tempo mínimo (meses)</Label>
+                <Input
+                  className="h-8"
+                  type="number"
+                  min={0}
+                  value={editLevel.reqMonthsMin ?? ""}
+                  onChange={(e) =>
+                    setEditLevel({
+                      ...editLevel,
+                      reqMonthsMin: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    })
+                  }
+                />
+              </label>
+              <label className="block">
+                <Label className="text-[11px]">Produção mensal (R$)</Label>
+                <Input
+                  className="h-8"
+                  inputMode="decimal"
+                  value={
+                    editLevel.reqMonthlyProductionCents !== null
+                      ? (editLevel.reqMonthlyProductionCents / 100)
+                          .toFixed(2)
+                          .replace(".", ",")
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setEditLevel({
+                      ...editLevel,
+                      reqMonthlyProductionCents: e.target.value
+                        ? (parseBRLToCents(e.target.value) ?? null)
+                        : null,
+                    })
+                  }
+                />
+              </label>
+              <label className="block">
+                <Label className="text-[11px]">Indicadores de resultado</Label>
+                <Input
+                  className="h-8"
+                  value={editLevel.reqResults}
+                  onChange={(e) =>
+                    setEditLevel({ ...editLevel, reqResults: e.target.value })
+                  }
+                  placeholder="Ex.: NPS acima de 80, retrabalho abaixo de 3%"
+                />
+              </label>
+              <label className="block">
+                <Label className="text-[11px]">Formação / experiência</Label>
+                <Input
+                  className="h-8"
+                  value={editLevel.reqEducation}
+                  onChange={(e) =>
+                    setEditLevel({ ...editLevel, reqEducation: e.target.value })
+                  }
+                  placeholder="Ex.: especialização concluída"
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <Label className="text-[11px]">Outros critérios</Label>
+                <Input
+                  className="h-8"
+                  value={editLevel.reqOther}
+                  onChange={(e) =>
+                    setEditLevel({ ...editLevel, reqOther: e.target.value })
+                  }
+                />
+              </label>
+              <label className="flex items-center gap-2 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={editLevel.active}
+                  onChange={(e) =>
+                    setEditLevel({ ...editLevel, active: e.target.checked })
+                  }
+                />
+                <span className="text-xs">Nível ativo</span>
+              </label>
+
+              <div className="sm:col-span-2 flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => setEditLevel(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={isPending || !editLevel.name.trim()}
+                  onClick={submitLevel}
+                >
+                  Salvar nível
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

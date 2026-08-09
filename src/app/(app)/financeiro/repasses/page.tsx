@@ -43,7 +43,7 @@ export default async function PayoutsPage(
   ] = await Promise.all([
     supabase
       .from("career_levels")
-      .select("id, clinic_id, name, sort_order, active")
+      .select("id, clinic_id, name, sort_order, active, description, req_months_min, req_monthly_production_cents, req_results, req_education, req_other")
       .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
       .order("sort_order"),
     supabase
@@ -131,7 +131,15 @@ export default async function PayoutsPage(
           id: l.id as string,
           clinicId: (l.clinic_id as string | null) ?? null,
           name: l.name as string,
+          sortOrder: Number(l.sort_order ?? 0),
           active: Boolean(l.active),
+          description: (l.description as string | null) ?? "",
+          reqMonthsMin: (l.req_months_min as number | null) ?? null,
+          reqMonthlyProductionCents:
+            (l.req_monthly_production_cents as number | null) ?? null,
+          reqResults: (l.req_results as string | null) ?? "",
+          reqEducation: (l.req_education as string | null) ?? "",
+          reqOther: (l.req_other as string | null) ?? "",
         }))}
         rates={(rateRows ?? []).map((r) => ({
           id: r.id as string,

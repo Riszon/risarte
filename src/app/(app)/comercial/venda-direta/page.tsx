@@ -210,6 +210,24 @@ export default async function VendasDiretasPage(
     }
   }
 
+  /**
+   * FIN5 — repasse estimado de cada venda, para o alerta de margem. Sai da
+   * MESMA fonte da negociação (os quatro degraus da 0210): nível de carreira,
+   * individual, ou o que já estava no cadastro do procedimento.
+   */
+  const payoutBySale = new Map<string, number>();
+  for (const s of rows) {
+    const { data } = await supabase.rpc("estimated_direct_sale_payout", {
+      p_sale_id: s.id,
+    });
+    payoutBySale.set(s.id, Number(data ?? 0));
+  }
+  const { data: minMarginRow } = await supabase.rpc("min_margin_percent", {
+    p_clinic: activeClinicId,
+  });
+  const minMarginBase =
+    minMarginRow === null ? null : Number(minMarginRow);
+
   const sales: DirectSaleRow[] = rows.map((s) => {
     const clinicName =
       (Array.isArray(s.clinic) ? s.clinic[0] : s.clinic)?.name ?? null;
@@ -275,6 +293,9 @@ export default async function VendasDiretasPage(
         ruleFor(s.clinic_id, s.client_id),
         (s.payment_method as PaymentMethod | null) ?? null
       ),
+      // FIN5: repasse estimado + margem mínima — base do alerta de margem.
+      payoutCents: payoutBySale.get(s.id) ?? 0,
+      minMarginPercent: minMarginBase,
     };
   });
 

@@ -24,15 +24,35 @@ export type PayoutRate = {
   validTo: string | null;
 };
 
+/** De onde o valor do repasse veio — a tela mostra isto para ninguém adivinhar. */
+export type PayoutSource =
+  | "individual"
+  | "nivel"
+  | "procedimento_fixo"
+  | "procedimento_percentual";
+
+export const PAYOUT_SOURCE_LABELS: Record<PayoutSource, string> = {
+  individual: "valor individual",
+  nivel: "do nível de carreira",
+  procedimento_fixo: "do cadastro do procedimento",
+  procedimento_percentual: "percentual do procedimento",
+};
+
 /**
- * O valor vigente NA DATA do procedimento.
+ * O valor vigente NA DATA do procedimento, em QUATRO DEGRAUS (decisão do dono,
+ * 08/08/2026, depois de ele notar que eu havia duplicado a fonte):
  *
- * Precedência: **individual vence o nível**. Entre linhas do mesmo tipo, a
- * vigência mais recente manda.
+ *   1. valor INDIVIDUAL do profissional
+ *   2. valor do NÍVEL de carreira
+ *   3. valor FIXO do cadastro do procedimento
+ *   4. PERCENTUAL do procedimento sobre o preço padrão
+ *
+ * Os degraus 3 e 4 são o que já existia em `procedures` desde a 0039 — nada do
+ * que foi preenchido se perde, e a precedência fica declarada em vez de
+ * depender de quem lê a tela.
  *
  * A data é a do PROCEDIMENTO REALIZADO, nunca "hoje": reajustar a tabela não
- * pode reescrever o que já foi produzido (mesma lógica das taxas congeladas da
- * parcela e da adquirente).
+ * pode reescrever o que já foi produzido.
  */
 export function resolvePayoutRate(
   rates: PayoutRate[],
@@ -41,8 +61,12 @@ export function resolvePayoutRate(
     levelId: string | null;
     providerId: string;
     date: string;
+    /** Degraus 3 e 4: o que está no cadastro do procedimento. */
+    procedureFixedCents?: number;
+    procedurePercent?: number;
+    procedurePriceCents?: number;
   }
-): PayoutRate | null {
+): (PayoutRate & { source: PayoutSource }) | null {
   const valid = rates.filter(
     (r) =>
       r.procedureId === input.procedureId &&
@@ -53,17 +77,50 @@ export function resolvePayoutRate(
   const individual = valid
     .filter((r) => r.providerId === input.providerId)
     .sort((a, b) => (a.validFrom < b.validFrom ? 1 : -1));
-  if (individual.length > 0) return individual[0];
+  if (individual.length > 0) return { ...individual[0], source: "individual" };
 
   if (input.levelId) {
     const byLevel = valid
       .filter((r) => r.providerId === null && r.levelId === input.levelId)
       .sort((a, b) => (a.validFrom < b.validFrom ? 1 : -1));
-    if (byLevel.length > 0) return byLevel[0];
+    if (byLevel.length > 0) return { ...byLevel[0], source: "nivel" };
   }
 
-  // Sem tabela para este procedimento/nível: repasse ZERO e o sistema avisa.
-  // Inventar valor seria pior — o dentista receberia errado sem ninguém notar.
+  // Degrau 3: valor fixo do cadastro do procedimento.
+  const fixed = input.procedureFixedCents ?? 0;
+  if (fixed > 0) {
+    return {
+      id: "procedure",
+      procedureId: input.procedureId,
+      levelId: null,
+      providerId: null,
+      amountCents: fixed,
+      validFrom: input.date,
+      validTo: null,
+      source: "procedimento_fixo",
+    };
+  }
+
+  // Degrau 4: percentual sobre o preço padrão. O briefing decidiu repasse
+  // fixo, mas quem já usa percentual não pode ficar sem repasse nenhum.
+  const percent = input.procedurePercent ?? 0;
+  if (percent > 0) {
+    return {
+      id: "procedure",
+      procedureId: input.procedureId,
+      levelId: null,
+      providerId: null,
+      amountCents: roundHalfUp(
+        ((input.procedurePriceCents ?? 0) * percent) / 100
+      ),
+      validFrom: input.date,
+      validTo: null,
+      source: "procedimento_percentual",
+    };
+  }
+
+  // Nenhum degrau: repasse ZERO e o sistema AVISA. Inventar valor seria pior —
+  // o dentista receberia errado sem ninguém notar.
   return null;
 }
 

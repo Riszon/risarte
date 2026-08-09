@@ -2506,3 +2506,83 @@ describe("margem: o desconto sai inteiro da clínica", () => {
     expect(m.belowMinimum).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 0210 — os QUATRO DEGRAUS do repasse (uma fonte só, precedência declarada)
+// ---------------------------------------------------------------------------
+describe("repasse: precedência entre nível e cadastro do procedimento", () => {
+  const doNivel: PayoutRate[] = [
+    {
+      id: "n1",
+      procedureId: "p1",
+      levelId: "pleno",
+      providerId: null,
+      amountCents: 12000,
+      validFrom: "2026-01-01",
+      validTo: null,
+    },
+  ];
+
+  it("o nível vence o valor do cadastro do procedimento", () => {
+    const r = resolvePayoutRate(doNivel, {
+      procedureId: "p1",
+      levelId: "pleno",
+      providerId: "dr-ana",
+      date: "2026-08-08",
+      procedureFixedCents: 9000,
+    });
+    expect(r?.amountCents).toBe(12000);
+    expect(r?.source).toBe("nivel");
+  });
+
+  it("sem nível cadastrado, cai no valor fixo do procedimento", () => {
+    // Isto é o que o dono já tinha preenchido desde a 0039 — não se perde.
+    const r = resolvePayoutRate([], {
+      procedureId: "p1",
+      levelId: null,
+      providerId: "dr-ana",
+      date: "2026-08-08",
+      procedureFixedCents: 9000,
+    });
+    expect(r?.amountCents).toBe(9000);
+    expect(r?.source).toBe("procedimento_fixo");
+  });
+
+  it("sem fixo, usa o percentual sobre o preço do procedimento", () => {
+    const r = resolvePayoutRate([], {
+      procedureId: "p1",
+      levelId: null,
+      providerId: "dr-ana",
+      date: "2026-08-08",
+      procedureFixedCents: 0,
+      procedurePercent: 30,
+      procedurePriceCents: 50000,
+    });
+    expect(r?.amountCents).toBe(15000);
+    expect(r?.source).toBe("procedimento_percentual");
+  });
+
+  it("o fixo vence o percentual quando os dois existem", () => {
+    const r = resolvePayoutRate([], {
+      procedureId: "p1",
+      levelId: null,
+      providerId: "dr-ana",
+      date: "2026-08-08",
+      procedureFixedCents: 9000,
+      procedurePercent: 30,
+      procedurePriceCents: 50000,
+    });
+    expect(r?.amountCents).toBe(9000);
+  });
+
+  it("nenhum degrau: devolve nulo em vez de inventar valor", () => {
+    expect(
+      resolvePayoutRate([], {
+        procedureId: "p1",
+        levelId: null,
+        providerId: "dr-ana",
+        date: "2026-08-08",
+      })
+    ).toBeNull();
+  });
+});
