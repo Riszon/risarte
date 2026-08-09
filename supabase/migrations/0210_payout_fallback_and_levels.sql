@@ -214,6 +214,6 @@ select
     where coalesce(commission_fixed_cents, 0) = 0
       and coalesce(commission_percent, 0) > 0) as procedimentos_so_com_percentual,
   (select count(*) from public.procedures
-    where active
+    where is_active
       and coalesce(commission_fixed_cents, 0) = 0
       and coalesce(commission_percent, 0) = 0) as procedimentos_sem_repasse;

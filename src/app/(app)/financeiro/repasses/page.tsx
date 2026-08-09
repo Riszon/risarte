@@ -71,7 +71,9 @@ export default async function PayoutsPage(
     supabase
       .from("procedures")
       .select("id, name")
-      .eq("active", true)
+      // A coluna é `is_active` (0036), não `active` — o mesmo engano derrubou
+      // a 0210 no SQL Editor.
+      .eq("is_active", true)
       .order("name")
       .limit(500),
   ]);
