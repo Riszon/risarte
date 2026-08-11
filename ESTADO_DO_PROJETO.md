@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 08/08/2026 · Versão do sistema: **0.190.0** · Última migração: **0211**_
+_Atualizado em: 11/08/2026 · Versão do sistema: **0.191.0** · Última migração: **0212**_
+
+> **REPASSE POR NÍVEL + TAXA MÉDIA SUGERIDA (v0.191.0, migração 0212).**
+>
+> **1. Júnior × sênior deixou de ser invisível.** Só existia a pergunta "quanto
+> ganha o Dr. Fulano"; faltava "quanto ganha *um* sênior" — e sem ela não há
+> comparativo. Agora o repasse por nível aparece em **três lugares**: quadro
+> **procedimento × nível** em Repasses (célula clicável para editar), **repasse
+> por nível** dentro do cadastro do procedimento, e **margem por nível** no
+> precificador ("no preço de hoje: Júnior 41% · Pleno 36% · Sênior 30%").
+> Como o repasse é fixo, **trocar quem executa mexe na margem sem mexer no
+> preço** — um procedimento saudável na mão do júnior pode dar prejuízo na do
+> sênior, e essa conta não existia em lugar nenhum.
+>
+> Valor em **itálico** = veio do cadastro do procedimento, não do nível. Os dois
+> mostram o mesmo R$; é essa diferença que denuncia a tabela pela metade.
+> As três telas usam `payout_matrix`, que aplica os **mesmos quatro degraus da
+> apuração** — mostrar uma conta e gravar outra seria pior que não mostrar nada.
+>
+> **2. A taxa média do pagamento agora é sugerida.** O sistema já sabia a
+> resposta: `taxas de adquirente ÷ recebido` nos últimos 90 dias, direto do
+> razão. Botão **"Usar esta taxa"**. Quando não há taxa lançada no período, ele
+> **não sugere 0%** — diz que ainda não sabe, porque 0% seria lido como "não
+> pago taxa".
+>
+> **3. Reajuste em massa e comissão em massa mudaram para a Precificação.**
+> Mexer em preço sem ver custo e margem na mesma tela é exatamente o que o
+> precificador existe para impedir. O catálogo ficou com o caminho apontado.
+>
+> Também: `payout_rate_for` ganhou o desempate **unidade vence rede** — sem ele,
+> um valor da rede criado depois passaria por cima do contrato próprio da
+> unidade. Nada recalcula repasse já apurado: o valor continua congelado.
 
 > **PRECIFICADOR (v0.190.0, migração 0211).** Aba **Precificação** em
 > Procedimentos — onde o dono decidiu que ela mora, porque o preço nasce do

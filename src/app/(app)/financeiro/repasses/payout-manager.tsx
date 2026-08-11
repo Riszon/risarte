@@ -56,6 +56,198 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/**
+ * 0212 — o comparativo procedimento × nível.
+ *
+ * Pedido do dono: "para poder visualizar o resultado quando um dentista junior
+ * ou senior executa o procedimento". A tabela de repasse era uma LISTA solta —
+ * para responder isso era preciso caçar linha por linha e fazer a conta de
+ * cabeça.
+ *
+ * Célula em cinza itálico = o nível NÃO tem valor próprio; está herdando a
+ * comissão do cadastro do procedimento. Traço = nenhum degrau, vai apurar
+ * R$ 0,00. É esse buraco que a lista escondia.
+ */
+function PayoutMatrix({
+  levels,
+  procedures,
+  matrix,
+  canEdit,
+  today,
+  clinicId,
+  isPending,
+  onSaved,
+  startTransition,
+}: {
+  levels: Level[];
+  procedures: { id: string; name: string }[];
+  matrix: Record<
+    string,
+    Record<string, { amountCents: number; source: string }>
+  >;
+  canEdit: boolean;
+  today: string;
+  clinicId: string;
+  isPending: boolean;
+  onSaved: () => void;
+  startTransition: (cb: () => void) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<{
+    procedureId: string;
+    levelId: string;
+  } | null>(null);
+  const [value, setValue] = useState("");
+
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = q
+      ? procedures.filter((p) => p.name.toLowerCase().includes(q))
+      : procedures;
+    return list.slice(0, 60);
+  }, [procedures, search]);
+
+  if (levels.length === 0) return null;
+
+  function startEdit(procedureId: string, levelId: string) {
+    const cur = matrix[procedureId]?.[levelId];
+    setValue(
+      cur && cur.source === "nivel"
+        ? (cur.amountCents / 100).toFixed(2).replace(".", ",")
+        : ""
+    );
+    setEditing({ procedureId, levelId });
+  }
+
+  function save() {
+    if (!editing) return;
+    startTransition(async () => {
+      const r = await savePayoutRate({
+        id: null,
+        clinicId,
+        procedureId: editing.procedureId,
+        levelId: editing.levelId,
+        providerId: null,
+        amountCents: parseBRLToCents(value) ?? 0,
+        validFrom: today,
+        validTo: null,
+      });
+      if (r.ok) {
+        toast.success("Valor salvo para este nível.");
+        setEditing(null);
+        onSaved();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-medium">Comparativo por nível</h2>
+          <Input
+            className="h-8 w-56"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar procedimento"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Quanto o mesmo procedimento custa em repasse conforme{" "}
+          <strong>quem executa</strong>. Valor em <em>itálico</em> não é do
+          nível: é a comissão do cadastro do procedimento aparecendo igual para
+          todos — quem olhar de longe acha que a tabela está pronta.
+          {canEdit && " Clique numa célula para definir o valor da unidade."}
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-xs">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="py-1 pr-2 font-medium">Procedimento</th>
+                {levels.map((l) => (
+                  <th key={l.id} className="px-2 py-1 text-right font-medium">
+                    {l.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((p) => (
+                <tr key={p.id} className="border-b border-dashed last:border-0">
+                  <td className="py-1 pr-2">{p.name}</td>
+                  {levels.map((l) => {
+                    const cell = matrix[p.id]?.[l.id];
+                    const isEditing =
+                      editing?.procedureId === p.id && editing?.levelId === l.id;
+                    return (
+                      <td key={l.id} className="px-2 py-1 text-right tabular-nums">
+                        {isEditing ? (
+                          <span className="flex items-center justify-end gap-1">
+                            <Input
+                              className="h-7 w-24 text-xs"
+                              inputMode="decimal"
+                              autoFocus
+                              value={value}
+                              onChange={(e) => setValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") save();
+                                if (e.key === "Escape") setEditing(null);
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-7 px-2 text-[11px]"
+                              disabled={isPending}
+                              onClick={save}
+                            >
+                              OK
+                            </Button>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!canEdit}
+                            onClick={() => startEdit(p.id, l.id)}
+                            className={cn(
+                              "rounded px-1",
+                              canEdit && "hover:bg-muted"
+                            )}
+                          >
+                            {!cell ? (
+                              <span className="text-destructive">—</span>
+                            ) : cell.source === "nivel" ? (
+                              formatBRL(cell.amountCents)
+                            ) : (
+                              <em
+                                className="text-muted-foreground"
+                                title="Vem do cadastro do procedimento — este nível não tem valor próprio."
+                              >
+                                {formatBRL(cell.amountCents)}
+                              </em>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {procedures.length > shown.length && (
+          <p className="text-[11px] text-muted-foreground">
+            Mostrando {shown.length} de {procedures.length} procedimentos — use a
+            busca para chegar no que falta.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function PayoutManager({
   clinicId,
   month,
@@ -66,6 +258,7 @@ export function PayoutManager({
   procedures,
   providers,
   lines,
+  matrix,
   closing,
 }: {
   clinicId: string;
@@ -77,6 +270,11 @@ export function PayoutManager({
   procedures: { id: string; name: string }[];
   providers: { id: string; name: string; levelId: string | null }[];
   lines: Line[];
+  /** 0212: procedimento → nível → repasse vigente + de onde ele veio. */
+  matrix: Record<
+    string,
+    Record<string, { amountCents: number; source: string }>
+  >;
   closing: {
     bonusPercent: number;
     fixedCents: number;
@@ -157,6 +355,11 @@ export function PayoutManager({
   );
   const levelName = useMemo(
     () => new Map(levels.map((l) => [l.id, l.name])),
+    [levels]
+  );
+
+  const activeLevels = useMemo(
+    () => levels.filter((l) => l.active),
     [levels]
   );
 
@@ -312,6 +515,19 @@ export function PayoutManager({
           )}
         </CardContent>
       </Card>
+
+      {/* -- COMPARATIVO POR NÍVEL (0212) -------------------------------- */}
+      <PayoutMatrix
+        levels={activeLevels}
+        procedures={procedures}
+        matrix={matrix}
+        canEdit={canEdit}
+        today={today}
+        clinicId={clinicId}
+        isPending={isPending}
+        onSaved={() => router.refresh()}
+        startTransition={startTransition}
+      />
 
       {/* -- NÍVEL DE CADA DENTISTA ------------------------------------- */}
       <Card>

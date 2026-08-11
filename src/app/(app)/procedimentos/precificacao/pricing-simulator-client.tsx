@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Search, TriangleAlert } from "lucide-react";
+import { Check, Search, Sparkles, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
   simulatePrice,
   simulationWarnings,
 } from "@/lib/finance/pricing-simulator";
+import { CommissionPanel, ReadjustPanel } from "../bulk-panels";
 import {
   applySuggestedPrice,
   saveCostSettings,
@@ -26,26 +27,47 @@ type Proc = {
   specialty: string | null;
   priceCents: number;
   minutes: number;
+  /** Repasse do cadastro do procedimento (degrau 3/4). */
   payoutCents: number;
+  /** 0212: repasse vigente por nível de carreira. */
+  payoutByLevel: Record<string, { amountCents: number; source: string }>;
   materialsCents: number;
   labCents: number;
   notes: string;
 };
 
+type Level = { id: string; name: string };
+
+/** Chave do seletor quando se simula sem nível (só o cadastro). */
+const CATALOG = "__catalogo__";
+
 export function PricingSimulator({
   clinicId,
   clinicName,
+  canManageCatalog,
+  specialties,
   settings,
+  suggestedFee,
+  levels,
   procedures,
 }: {
   clinicId: string | null;
   clinicName: string | null;
+  canManageCatalog: boolean;
+  specialties: string[];
   settings: {
     chairCostPerHourCents: number;
     taxPercent: number;
     avgAcquirerFeePercent: number;
     targetMarginPercent: number;
   };
+  suggestedFee: {
+    percent: number;
+    feeCents: number;
+    receivedCents: number;
+    fromDate: string;
+  } | null;
+  levels: Level[];
   procedures: Proc[];
 }) {
   const router = useRouter();
@@ -65,6 +87,11 @@ export function PricingSimulator({
   const [materials, setMaterials] = useState("");
   const [lab, setLab] = useState("");
   const [notes, setNotes] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  /** Nível usado no PREÇO SUGERIDO. Começa no cadastro para não mudar sozinho
+   *  o que a tela mostrava antes; o comparativo abaixo mostra todos. */
+  const [simLevel, setSimLevel] = useState<string>(CATALOG);
 
   const num = (v: string) => Number(v.replace(",", ".")) || 0;
   const chairCents = parseBRLToCents(chair) ?? 0;
@@ -80,6 +107,15 @@ export function PricingSimulator({
       : procedures;
   }, [procedures, search]);
 
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function openProcedure(p: Proc) {
     setOpenId(p.id === openId ? null : p.id);
     setMaterials(
@@ -87,6 +123,28 @@ export function PricingSimulator({
     );
     setLab(p.labCents ? (p.labCents / 100).toFixed(2).replace(".", ",") : "");
     setNotes(p.notes);
+  }
+
+  /** Repasse a usar para este procedimento, no nível escolhido. */
+  function payoutFor(p: Proc, levelId: string): number {
+    if (levelId === CATALOG) return p.payoutCents;
+    return p.payoutByLevel[levelId]?.amountCents ?? p.payoutCents;
+  }
+
+  function run(
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) {
+    startTransition(async () => {
+      const r = await action();
+      if (r.ok) {
+        if (r.error) toast.info(r.error);
+        else toast.success(msg);
+        after?.();
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
   }
 
   function saveSettings() {
@@ -134,14 +192,17 @@ export function PricingSimulator({
     });
   }
 
-  function simFor(p: Proc, override?: { materials: number; lab: number }) {
+  function simFor(
+    p: Proc,
+    opts?: { materials?: number; lab?: number; levelId?: string }
+  ) {
     return simulatePrice({
       cost: {
         minutes: p.minutes,
         chairCostPerHourCents: chairCents,
-        materialsCents: override?.materials ?? p.materialsCents,
-        labCents: override?.lab ?? p.labCents,
-        payoutCents: p.payoutCents,
+        materialsCents: opts?.materials ?? p.materialsCents,
+        labCents: opts?.lab ?? p.labCents,
+        payoutCents: payoutFor(p, opts?.levelId ?? simLevel),
       },
       taxPercent: num(tax),
       acquirerFeePercent: num(fee),
@@ -149,6 +210,9 @@ export function PricingSimulator({
       currentPriceCents: p.priceCents,
     });
   }
+
+  const feeIsSuggestion =
+    suggestedFee !== null && Math.abs(num(fee) - suggestedFee.percent) > 0.005;
 
   return (
     <div className={cn("space-y-5", isPending && "opacity-70")}>
@@ -204,6 +268,45 @@ export function PricingSimulator({
               />
             </label>
           </div>
+
+          {/* 0212 — a taxa média não precisa ser chutada: o razão já sabe. */}
+          <div className="rounded-lg border bg-muted/30 p-2 text-xs">
+            {suggestedFee ? (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  <strong>Taxa média dos últimos 90 dias: </strong>
+                  {suggestedFee.percent.toFixed(2).replace(".", ",")}%
+                  <span className="ml-1 text-muted-foreground">
+                    ({formatBRL(suggestedFee.feeCents)} de taxa sobre{" "}
+                    {formatBRL(suggestedFee.receivedCents)} recebidos)
+                  </span>
+                </span>
+                {feeIsSuggestion && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() =>
+                      setFee(
+                        suggestedFee.percent.toFixed(2).replace(".", ",")
+                      )
+                    }
+                  >
+                    <Sparkles className="mr-1 size-3.5" />
+                    Usar esta taxa
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">
+                Ainda não dá para sugerir a taxa média: não há taxa de
+                adquirente lançada nos últimos 90 dias nesta unidade. Enquanto
+                isso, informe à mão — um &quot;0%&quot; aqui seria lido como
+                &quot;não pago taxa&quot;.
+              </span>
+            )}
+          </div>
+
           {num(tax) + num(fee) + num(target) >= 100 && (
             <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
               Imposto + taxa + margem somam {num(tax) + num(fee) + num(target)}%
@@ -219,20 +322,61 @@ export function PricingSimulator({
         </CardContent>
       </Card>
 
+      {/* -- AJUSTES EM MASSA (vieram do catálogo, 0212) ----------------- */}
+      {canManageCatalog && (
+        <>
+          <ReadjustPanel
+            specialties={specialties}
+            selectedCount={selected.size}
+            isPending={isPending}
+            run={run}
+            getSelectedIds={() => [...selected]}
+            onDone={() => setSelected(new Set())}
+          />
+          <CommissionPanel
+            specialties={specialties}
+            selectedCount={selected.size}
+            isPending={isPending}
+            run={run}
+            getSelectedIds={() => [...selected]}
+            onDone={() => setSelected(new Set())}
+          />
+        </>
+      )}
+
       {/* -- PROCEDIMENTOS ---------------------------------------------- */}
       <Card>
         <CardContent className="space-y-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-medium">Procedimentos ({shown.length})</h2>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-8 w-56 pl-7"
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar procedimento"
-              />
+            <div className="flex flex-wrap items-center gap-2">
+              {levels.length > 0 && (
+                <label className="flex items-center gap-1 text-xs">
+                  <span className="text-muted-foreground">Simular com</span>
+                  <select
+                    value={simLevel}
+                    onChange={(e) => setSimLevel(e.target.value)}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  >
+                    <option value={CATALOG}>Repasse do cadastro</option>
+                    {levels.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="h-8 w-56 pl-7"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar procedimento"
+                />
+              </div>
             </div>
           </div>
 
@@ -252,7 +396,7 @@ export function PricingSimulator({
                   chairCostPerHourCents: chairCents,
                   materialsCents: p.materialsCents,
                   labCents: p.labCents,
-                  payoutCents: p.payoutCents,
+                  payoutCents: payoutFor(p, simLevel),
                 },
                 taxPercent: num(tax),
                 acquirerFeePercent: num(fee),
@@ -262,38 +406,49 @@ export function PricingSimulator({
 
               return (
                 <li key={p.id} className="rounded-lg border">
-                  <button
-                    type="button"
-                    onClick={() => openProcedure(p)}
-                    className="flex w-full flex-wrap items-center justify-between gap-2 p-2.5 text-left text-sm hover:bg-muted/40"
-                  >
-                    <span className="min-w-0">
-                      {p.name}
-                      {p.specialty && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {p.specialty}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex items-center gap-3 text-xs tabular-nums">
-                      <span className="text-muted-foreground">
-                        custo {formatBRL(sim.breakdown.directCents)}
-                      </span>
-                      <span>preço {formatBRL(p.priceCents)}</span>
-                      <span
-                        className={cn(
-                          "font-medium",
-                          sim.currentIsLoss
-                            ? "text-destructive"
-                            : sim.belowTarget
-                              ? "text-amber-700"
-                              : "text-emerald-700"
+                  <div className="flex items-center gap-2 pl-2.5">
+                    {canManageCatalog && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(p.id)}
+                        onChange={() => toggleSelect(p.id)}
+                        aria-label={`Selecionar ${p.name}`}
+                        className="size-4 shrink-0 accent-primary"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => openProcedure(p)}
+                      className="flex w-full flex-wrap items-center justify-between gap-2 p-2.5 pl-1 text-left text-sm hover:bg-muted/40"
+                    >
+                      <span className="min-w-0">
+                        {p.name}
+                        {p.specialty && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {p.specialty}
+                          </span>
                         )}
-                      >
-                        {sim.currentMarginPercent}%
                       </span>
-                    </span>
-                  </button>
+                      <span className="flex items-center gap-3 text-xs tabular-nums">
+                        <span className="text-muted-foreground">
+                          custo {formatBRL(sim.breakdown.directCents)}
+                        </span>
+                        <span>preço {formatBRL(p.priceCents)}</span>
+                        <span
+                          className={cn(
+                            "font-medium",
+                            sim.currentIsLoss
+                              ? "text-destructive"
+                              : sim.belowTarget
+                                ? "text-amber-700"
+                                : "text-emerald-700"
+                          )}
+                        >
+                          {sim.currentMarginPercent}%
+                        </span>
+                      </span>
+                    </button>
+                  </div>
 
                   {open && (
                     <div className="space-y-3 border-t p-3">
@@ -358,6 +513,27 @@ export function PricingSimulator({
                         </div>
                       </dl>
 
+                      {/* 0212 — o resultado muda com QUEM executa. Como o
+                          repasse é fixo, trocar o dentista mexe na margem sem
+                          mexer no preço; sem esta linha ninguém enxerga isso. */}
+                      {levels.length > 0 && (
+                        <LevelComparison
+                          proc={p}
+                          levels={levels}
+                          currentPriceCents={p.priceCents}
+                          simulate={(levelId) =>
+                            simFor(p, {
+                              materials: open
+                                ? (parseBRLToCents(materials) ?? 0)
+                                : undefined,
+                              lab: open ? (parseBRLToCents(lab) ?? 0) : undefined,
+                              levelId,
+                            })
+                          }
+                          targetPercent={num(target)}
+                        />
+                      )}
+
                       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 p-2 text-sm">
                         <span>
                           Preço sugerido:{" "}
@@ -415,6 +591,76 @@ export function PricingSimulator({
           </ul>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/**
+ * Júnior × sênior no MESMO preço.
+ *
+ * O repasse é fixo por procedimento, então quem executa não muda o que o
+ * cliente paga — muda o que sobra. Um procedimento saudável na mão do júnior
+ * pode dar prejuízo na mão do sênior, e essa conta nunca esteve em lugar
+ * nenhum do sistema.
+ */
+function LevelComparison({
+  proc,
+  levels,
+  currentPriceCents,
+  simulate,
+  targetPercent,
+}: {
+  proc: Proc;
+  levels: Level[];
+  currentPriceCents: number;
+  simulate: (levelId: string) => ReturnType<typeof simulatePrice>;
+  targetPercent: number;
+}) {
+  if (currentPriceCents <= 0) {
+    return (
+      <p className="rounded-lg border bg-muted/20 p-2 text-[11px] text-muted-foreground">
+        Sem preço cadastrado — não há margem para comparar entre os níveis.
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border bg-muted/20 p-2 text-xs">
+      <p className="mb-1 font-medium">
+        No preço de hoje ({formatBRL(currentPriceCents)}), por quem executa
+      </p>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1">
+        {levels.map((l) => {
+          const s = simulate(l.id);
+          const own = proc.payoutByLevel[l.id]?.source === "nivel";
+          return (
+            <li key={l.id} className="tabular-nums">
+              <span className="text-muted-foreground">{l.name}:</span>{" "}
+              <span
+                className={cn(
+                  "font-medium",
+                  s.currentIsLoss
+                    ? "text-destructive"
+                    : s.currentMarginPercent < targetPercent
+                      ? "text-amber-700"
+                      : "text-emerald-700"
+                )}
+              >
+                {s.currentMarginPercent}%
+              </span>
+              <span className="ml-1 text-muted-foreground">
+                (repasse {formatBRL(s.breakdown.payoutCents)}
+                {!own && ", do cadastro"})
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        &quot;do cadastro&quot; = este nível não tem valor próprio na tabela de
+        repasse e está herdando a comissão do procedimento — todos custam igual
+        até alguém cadastrar.
+      </p>
     </div>
   );
 }

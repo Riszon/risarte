@@ -531,6 +531,12 @@ precificou recebimentos **não é apagada** — gatilho `RATE_IN_USE` no banco.
 
 **Repasse ao dentista (FIN5, 0209).** Valor **FIXO por procedimento**, tabela com vigência chaveada por **nível do plano de carreira** (individual é exceção). Apuração nasce na **conclusão da sessão**, com competência na data do procedimento e valor **congelado** — reajuste nunca recalcula o apurado. **Bônus percentual sobre o total do período**, nunca por procedimento. Fechamento mensal gera **duas contas a pagar por dentista**: fixo em **2.1.01** e bônus em **2.1.02** (o plano de contas separa produção de premiação). O sistema **não paga** — quem paga é o Financeiro.
 
+**Repasse por NÍVEL, visível onde se decide (0212).** A pergunta que faltava era "quanto ganha *um* sênior" — só existia "quanto ganha o Dr. Fulano". Agora há `payout_rate_by_level` e `payout_matrix` (os **mesmos quatro degraus** da apuração; conta diferente da que grava = tela que mente). Aparece em três lugares: **comparativo procedimento × nível** em Repasses (célula editável), **repasse por nível** no cadastro do procedimento, e **margem por nível** no precificador. Valor em itálico = veio do **cadastro do procedimento**, não do nível — os dois mostram o mesmo R$, e é essa diferença que revela a tabela incompleta. O catálogo grava no escopo da **rede**; a unidade sobrescreve em Repasses (**unidade vence rede**, desempate que a 0210 não tinha).
+
+**Taxa média do pagamento — sugerida pelo razão (0212).** É quanto o meio de pagamento come do preço, e entra como custo **proporcional** (sobe com o preço) porque na hora de precificar não se sabe como o cliente vai pagar; o preço é um só, então usa-se a média da mistura. `suggested_avg_acquirer_fee` calcula **taxas de adquirente ÷ recebido nos últimos 90 dias** (inclui a taxa de emissão de boleto; estornados saem dos dois lados). **Devolve nada** quando não há taxa lançada — um "0%" seria lido como "não pago taxa".
+
+**Reajuste em massa e comissão em massa moram na Precificação (0212).** Saíram do catálogo por decisão do dono: mexer em preço sem ver custo e margem na mesma tela é o erro que o precificador existe para impedir.
+
 **Alerta de margem.** Como o repasse é fixo, **desconto não reduz repasse**: sai inteiro da margem. A negociação mostra a margem ao vivo e **avisa** abaixo de `min_margin_percent` (cascata rede→unidade) — **não bloqueia**, porque o teto de desconto já é a trava. **Material e laboratório ainda não entram** (são do Estoque); a tela declara isso.
 
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2

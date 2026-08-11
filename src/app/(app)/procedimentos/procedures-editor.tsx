@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -38,8 +39,7 @@ import {
   deleteProcedure,
   editProcedure,
   proposeProtocolChange,
-  readjustPrices,
-  setCommissionBulk,
+  saveProcedurePayoutLevels,
   setProcedureActive,
   setProcedureSessions,
   setUnitPrice,
@@ -597,6 +597,9 @@ export function ProceduresEditor({
   unitSessionsByProcedure,
   canManageCatalog,
   isAdmin,
+  levels = [],
+  payoutByProcedure = {},
+  canEditPayout = false,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -614,6 +617,13 @@ export function ProceduresEditor({
   canManageCatalog: boolean;
   /** Admin aplica protocolo direto; Planner (não-admin) apenas propõe. */
   isAdmin: boolean;
+  /** 0212: níveis do plano de carreira, para o repasse por nível. */
+  levels?: { id: string; name: string }[];
+  payoutByProcedure?: Record<
+    string,
+    Record<string, { amountCents: number; source: string }>
+  >;
+  canEditPayout?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -622,16 +632,6 @@ export function ProceduresEditor({
 
   const [adding, setAdding] = useState(false);
   const [newProc, setNewProc] = useState<ProcedureInput>(EMPTY);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -698,26 +698,21 @@ export function ProceduresEditor({
         </Card>
       )}
 
+      {/* 0212: reajuste e comissão em massa MUDARAM para a Precificação —
+          mexer em preço sem ver a margem é o que a tela nova existe para
+          impedir. Fica o caminho, para ninguém procurar o botão sumido. */}
       {networkMode && canManageCatalog && (
-        <ReadjustPanel
-          specialties={specialties}
-          selectedCount={selected.size}
-          isPending={isPending}
-          run={run}
-          getSelectedIds={() => [...selected]}
-          onDone={() => setSelected(new Set())}
-        />
-      )}
-
-      {networkMode && canManageCatalog && (
-        <CommissionPanel
-          specialties={specialties}
-          selectedCount={selected.size}
-          isPending={isPending}
-          run={run}
-          getSelectedIds={() => [...selected]}
-          onDone={() => setSelected(new Set())}
-        />
+        <p className="rounded-md border bg-muted/30 p-2 text-sm text-muted-foreground">
+          <strong>Reajuste de preços</strong> e <strong>comissão em massa</strong>{" "}
+          agora ficam em{" "}
+          <Link
+            href="/procedimentos/precificacao"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Precificação
+          </Link>
+          , ao lado do custo e da margem que eles alteram.
+        </p>
       )}
 
       {!networkMode && (
@@ -751,8 +746,9 @@ export function ProceduresEditor({
                   isAdmin={isAdmin}
                   isPending={isPending}
                   run={run}
-                  selected={selected.has(p.id)}
-                  onToggleSelect={() => toggleSelect(p.id)}
+                  levels={levels}
+                  payoutByLevel={payoutByProcedure[p.id] ?? {}}
+                  canEditPayout={canEditPayout}
                 />
               ))}
             </ul>
@@ -763,293 +759,141 @@ export function ProceduresEditor({
   );
 }
 
-function ReadjustPanel({
-  specialties,
-  selectedCount,
+/**
+ * 0212 — o repasse de cada NÍVEL, ao lado da comissão do procedimento.
+ *
+ * Pedido do dono: "nos procedimentos onde é lançado o repasse para o dentista
+ * deve também ter a informação de repasse para cada nível". Sem isto, o
+ * cadastro mostrava só a comissão do procedimento — que é o ÚLTIMO degrau, o
+ * que vale quando o nível não tem valor próprio. Quem olhasse a tela concluiria
+ * que todo dentista custa igual.
+ *
+ * Valor em itálico = veio do cadastro do procedimento, não do nível. Os dois
+ * mostram o mesmo R$, e é justamente essa diferença que o gestor precisa ver.
+ */
+function PayoutByLevel({
+  procedureId,
+  levels,
+  payoutByLevel,
+  canEdit,
   isPending,
   run,
-  getSelectedIds,
-  onDone,
 }: {
-  specialties: string[];
-  selectedCount: number;
+  procedureId: string;
+  levels: { id: string; name: string }[];
+  payoutByLevel: Record<string, { amountCents: number; source: string }>;
+  canEdit: boolean;
   isPending: boolean;
   run: (
     action: () => Promise<{ ok: boolean; error?: string }>,
     msg: string,
     after?: () => void
   ) => void;
-  getSelectedIds: () => string[];
-  onDone: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [percent, setPercent] = useState("");
-  const [scope, setScope] = useState<"all" | "specialty" | "pillar" | "selected">(
-    "all"
-  );
-  const [specialty, setSpecialty] = useState("");
-  const [pillar, setPillar] = useState("");
-  const [applyToBand, setApplyToBand] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  function startEdit() {
+    const next: Record<string, string> = {};
+    for (const l of levels) {
+      const v = payoutByLevel[l.id];
+      next[l.id] =
+        v && v.source === "nivel" ? centsToInput(v.amountCents) : "";
+    }
+    setDraft(next);
+    setEditing(true);
+  }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Reajuste de preços em massa</CardTitle>
-        <Button size="sm" variant={open ? "outline" : "default"} onClick={() => setOpen((s) => !s)}>
-          {open ? "Fechar" : "Abrir"}
-        </Button>
-      </CardHeader>
-      {open && (
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
-              <Label>Percentual (%)</Label>
-              <Input
-                value={percent}
-                onChange={(e) => setPercent(e.target.value)}
-                inputMode="decimal"
-                placeholder="Ex.: 10 ou -5"
-                className="w-28"
-              />
-            </div>
-            <div>
-              <Label>Aplicar a</Label>
-              <select
-                value={scope}
-                onChange={(e) =>
-                  setScope(e.target.value as typeof scope)
-                }
-                className={selectClass.replace("w-full", "w-48")}
-              >
-                <option value="all">Todos os procedimentos</option>
-                <option value="specialty">Por especialidade</option>
-                <option value="pillar">Por pilar</option>
-                <option value="selected">Selecionados ({selectedCount})</option>
-              </select>
-            </div>
-            {scope === "specialty" && (
-              <div>
-                <Label>Especialidade</Label>
-                <select
-                  value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className={selectClass.replace("w-full", "w-44")}
-                >
-                  <option value="">Selecione...</option>
-                  {specialties.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {scope === "pillar" && (
-              <div>
-                <Label>Pilar</Label>
-                <select
-                  value={pillar}
-                  onChange={(e) => setPillar(e.target.value)}
-                  className={selectClass.replace("w-full", "w-44")}
-                >
-                  <option value="">Selecione...</option>
-                  {METHODOLOGY_PILLARS.map((p) => (
-                    <option key={p} value={p}>
-                      {PILLAR_LABELS[p as MethodologyPillar]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={applyToBand}
-              onChange={(e) => setApplyToBand(e.target.checked)}
-            />
-            Ajustar também os preços mínimo e máximo
-          </label>
+    <div className="mt-2 rounded-md border bg-muted/20 p-2 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">Repasse por nível</span>
+        {canEdit && (
           <Button
             size="sm"
-            disabled={!percent.trim() || isPending}
-            onClick={() =>
-              run(
-                () =>
-                  readjustPrices({
-                    percent,
-                    scope,
-                    specialty: specialty || undefined,
-                    pillar: pillar || undefined,
-                    ids: scope === "selected" ? getSelectedIds() : undefined,
-                    applyToBand,
-                  }),
-                "Reajuste aplicado.",
-                () => {
-                  setPercent("");
-                  onDone();
-                }
-              )
-            }
+            variant="ghost"
+            className="h-6 text-[11px]"
+            onClick={() => (editing ? setEditing(false) : startEdit())}
           >
-            Aplicar reajuste
+            {editing ? "Cancelar" : "Editar"}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Use “Selecionados” marcando os procedimentos na lista abaixo. O
-            reajuste fica registrado no histórico de cada procedimento.
-          </p>
-        </CardContent>
-      )}
-    </Card>
-  );
-}
+        )}
+      </div>
 
-/** H4.13: definir a comissão (%, R$ fixo, ou ambos) em massa, por escopo. */
-function CommissionPanel({
-  specialties,
-  selectedCount,
-  isPending,
-  run,
-  getSelectedIds,
-  onDone,
-}: {
-  specialties: string[];
-  selectedCount: number;
-  isPending: boolean;
-  run: (
-    action: () => Promise<{ ok: boolean; error?: string }>,
-    msg: string,
-    after?: () => void
-  ) => void;
-  getSelectedIds: () => string[];
-  onDone: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [percent, setPercent] = useState("");
-  const [fixed, setFixed] = useState("");
-  const [scope, setScope] = useState<"all" | "specialty" | "pillar" | "selected">(
-    "all"
-  );
-  const [specialty, setSpecialty] = useState("");
-  const [pillar, setPillar] = useState("");
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Comissão em massa</CardTitle>
-        <Button size="sm" variant={open ? "outline" : "default"} onClick={() => setOpen((s) => !s)}>
-          {open ? "Fechar" : "Abrir"}
-        </Button>
-      </CardHeader>
-      {open && (
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
-              <Label>Comissão (%)</Label>
-              <Input
-                value={percent}
-                onChange={(e) => setPercent(e.target.value)}
-                inputMode="decimal"
-                placeholder="Ex.: 10"
-                className="w-24"
-              />
-            </div>
-            <div>
-              <Label>Comissão fixa (R$)</Label>
-              <Input
-                value={fixed}
-                onChange={(e) => setFixed(e.target.value)}
-                inputMode="decimal"
-                placeholder="Ex.: 5,00"
-                className="w-28"
-              />
-            </div>
-            <div>
-              <Label>Aplicar a</Label>
-              <select
-                value={scope}
-                onChange={(e) => setScope(e.target.value as typeof scope)}
-                className={selectClass.replace("w-full", "w-48")}
-              >
-                <option value="all">Todos os procedimentos</option>
-                <option value="specialty">Por especialidade</option>
-                <option value="pillar">Por pilar</option>
-                <option value="selected">Selecionados ({selectedCount})</option>
-              </select>
-            </div>
-            {scope === "specialty" && (
-              <div>
-                <Label>Especialidade</Label>
-                <select
-                  value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className={selectClass.replace("w-full", "w-44")}
-                >
-                  <option value="">Selecione...</option>
-                  {specialties.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {scope === "pillar" && (
-              <div>
-                <Label>Pilar</Label>
-                <select
-                  value={pillar}
-                  onChange={(e) => setPillar(e.target.value)}
-                  className={selectClass.replace("w-full", "w-44")}
-                >
-                  <option value="">Selecione...</option>
-                  {METHODOLOGY_PILLARS.map((p) => (
-                    <option key={p} value={p}>
-                      {PILLAR_LABELS[p as MethodologyPillar]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+      {editing ? (
+        <div className="mt-1 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {levels.map((l) => (
+              <label key={l.id} className="block">
+                <span className="text-[10px] text-muted-foreground">
+                  {l.name}
+                </span>
+                <Input
+                  className="h-7 w-24 text-xs"
+                  inputMode="decimal"
+                  placeholder="—"
+                  value={draft[l.id] ?? ""}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, [l.id]: e.target.value }))
+                  }
+                />
+              </label>
+            ))}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Deixe um dos campos em branco para não alterá-lo. Ex.: só o “%” muda a
-            comissão percentual e mantém a fixa.
+          <p className="text-[10px] text-muted-foreground">
+            Valor da <strong>rede</strong>, valendo a partir de hoje. A unidade
+            que tem contrato próprio sobrescreve em Financeiro › Repasses, e o
+            que já foi apurado continua com o valor da época. Em branco = o nível
+            usa a comissão do procedimento.
           </p>
           <Button
             size="sm"
-            disabled={(!percent.trim() && !fixed.trim()) || isPending}
+            className="h-7 text-[11px]"
+            disabled={isPending}
             onClick={() =>
               run(
                 () =>
-                  setCommissionBulk({
-                    percent: percent || undefined,
-                    fixed: fixed || undefined,
-                    scope,
-                    specialty: specialty || undefined,
-                    pillar: pillar || undefined,
-                    ids: scope === "selected" ? getSelectedIds() : undefined,
+                  saveProcedurePayoutLevels({
+                    procedureId,
+                    values: levels
+                      .filter((l) => (draft[l.id] ?? "").trim() !== "")
+                      .map((l) => ({ levelId: l.id, amount: draft[l.id] })),
                   }),
-                "Comissão aplicada.",
-                () => {
-                  setPercent("");
-                  setFixed("");
-                  onDone();
-                }
+                "Repasse por nível salvo.",
+                () => setEditing(false)
               )
             }
           >
-            Aplicar comissão
+            Salvar repasses
           </Button>
-          <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-            <strong>Regra:</strong> a comissão só é contabilizada quando o
-            procedimento é <strong>finalizado</strong>. O pagamento é feito no{" "}
-            <strong>módulo financeiro</strong> (Fase 2); aqui você só cadastra a
-            regra de cada procedimento.
-          </p>
-        </CardContent>
+        </div>
+      ) : (
+        <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
+          {levels.map((l) => {
+            const v = payoutByLevel[l.id];
+            return (
+              <span key={l.id}>
+                {l.name}:{" "}
+                {!v ? (
+                  <span className="text-destructive">sem repasse</span>
+                ) : v.source === "nivel" ? (
+                  <strong className="text-foreground tabular-nums">
+                    {formatBRL(v.amountCents)}
+                  </strong>
+                ) : (
+                  <em
+                    className="tabular-nums"
+                    title="Valor do cadastro do procedimento — este nível não tem valor próprio."
+                  >
+                    {formatBRL(v.amountCents)}
+                  </em>
+                )}
+              </span>
+            );
+          })}
+        </p>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -1067,8 +911,9 @@ function ProcedureRow({
   isAdmin,
   isPending,
   run,
-  selected,
-  onToggleSelect,
+  levels,
+  payoutByLevel,
+  canEditPayout,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -1088,8 +933,11 @@ function ProcedureRow({
     msg: string,
     after?: () => void
   ) => void;
-  selected: boolean;
-  onToggleSelect: () => void;
+  /** 0212: níveis do plano de carreira (rede + unidade ativa). */
+  levels: { id: string; name: string }[];
+  /** Repasse vigente deste procedimento por nível. */
+  payoutByLevel: Record<string, { amountCents: number; source: string }>;
+  canEditPayout: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProcedureInput>(() => toInput(p));
@@ -1165,15 +1013,6 @@ function ProcedureRow({
     <li className="p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2">
-          {networkMode && (
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={onToggleSelect}
-              aria-label="Selecionar procedimento"
-              className="mt-1 size-4 shrink-0 accent-primary"
-            />
-          )}
           <div className="min-w-0">
           <p className="font-medium">
             {p.name}
@@ -1347,6 +1186,17 @@ function ProcedureRow({
           </div>
         )}
       </div>
+
+      {networkMode && levels.length > 0 && (
+        <PayoutByLevel
+          procedureId={p.id}
+          levels={levels}
+          payoutByLevel={payoutByLevel}
+          canEdit={canEditPayout}
+          isPending={isPending}
+          run={run}
+        />
+      )}
 
       {showHistory && <ChangeHistory changes={changes} />}
 

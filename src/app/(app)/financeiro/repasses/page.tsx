@@ -78,6 +78,28 @@ export default async function PayoutsPage(
       .limit(500),
   ]);
 
+  // 0212 — o comparativo procedimento × nível. Usa a MESMA função dos quatro
+  // degraus que a apuração usa; se mostrasse outra conta, o quadro mentiria.
+  const { data: matrixRows } = await supabase.rpc("payout_matrix", {
+    p_clinic_id: clinicId,
+    p_date: null,
+  });
+  const matrix: Record<
+    string,
+    Record<string, { amountCents: number; source: string }>
+  > = {};
+  for (const r of (matrixRows ?? []) as {
+    procedure_id: string;
+    level_id: string;
+    amount_cents: number;
+    source: string;
+  }[]) {
+    (matrix[r.procedure_id] ??= {})[r.level_id] = {
+      amountCents: Number(r.amount_cents ?? 0),
+      source: r.source,
+    };
+  }
+
   // Dentistas da unidade + o nível de carreira de cada um.
   const { data: staffRows } = await supabase
     .from("user_clinic_roles")
@@ -158,6 +180,7 @@ export default async function PayoutsPage(
         }))}
         providers={providers}
         lines={lines}
+        matrix={matrix}
         closing={
           closingRow
             ? {

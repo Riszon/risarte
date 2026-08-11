@@ -13,6 +13,16 @@ import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
 
 export type ProcedureResult = { ok: boolean; error?: string };
 
+/**
+ * 0212: o catálogo e a Precificação mostram os MESMOS números (preço, comissão,
+ * repasse). Revalidar só um deixava o outro exibindo o valor antigo — e tela de
+ * dinheiro desatualizada é pior que tela vazia.
+ */
+function refreshCatalog() {
+  revalidatePath("/procedimentos");
+  revalidatePath("/procedimentos/precificacao");
+}
+
 export type ProcedureInput = {
   name: string;
   tussCode: string;
@@ -163,7 +173,7 @@ export async function addProcedure(
     entityType: "procedure",
     entityId: data.id,
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -229,7 +239,7 @@ export async function editProcedure(
       : "Procedimento salvo (sem mudanças)."
   );
   await logAudit({ action: "update", entityType: "procedure", entityId: id });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -261,7 +271,7 @@ export async function setProcedureActive(
     entityId: id,
     details: { is_active: active },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -295,7 +305,7 @@ export async function deleteProcedure(id: string): Promise<ProcedureResult> {
       session.userId,
       "Desativado (já usado em orçamentos — não pode ser excluído)."
     );
-    revalidatePath("/procedimentos");
+    refreshCatalog();
     return {
       ok: true,
       error:
@@ -314,7 +324,7 @@ export async function deleteProcedure(id: string): Promise<ProcedureResult> {
     entityId: id,
     details: { removed: true },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -397,7 +407,7 @@ export async function importProcedures(
     entityId: "import",
     details: { inserted, updated, errors },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true, inserted, updated, errors };
 }
 
@@ -483,7 +493,7 @@ export async function readjustPrices(input: {
     entityId: "readjust",
     details: { percent, scope: input.scope, adjusted },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true, adjusted };
 }
 
@@ -575,7 +585,7 @@ export async function setCommissionBulk(input: {
     entityId: "commission-bulk",
     details: { scope: input.scope, count: ids.length },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true, adjusted: ids.length };
 }
 
@@ -693,7 +703,7 @@ export async function setProcedureSessions(
     entityId: procedureId,
     details: { network: isNetwork, sessions: clean.length, total: w.total },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -739,7 +749,7 @@ export async function proposeProtocolChange(
     entityId: data.id,
     clinicId: clinicId ?? undefined,
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -812,7 +822,7 @@ export async function reviewProtocolProposal(
     clinicId: prop.clinic_id ?? undefined,
     details: { approved: approve },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -848,7 +858,7 @@ export async function clearProcedureSessions(
     entityId: procedureId,
     details: { cleared_unit: clinicId },
   });
-  revalidatePath("/procedimentos");
+  refreshCatalog();
   return { ok: true };
 }
 
@@ -874,7 +884,7 @@ export async function setUnitPrice(
       console.error("setUnitPrice (clear) failed:", error.message);
       return { ok: false, error: "Não foi possível remover o preço da unidade." };
     }
-    revalidatePath("/procedimentos");
+    refreshCatalog();
     return { ok: true };
   }
 
@@ -894,6 +904,64 @@ export async function setUnitPrice(
     console.error("setUnitPrice failed:", error.message);
     return { ok: false, error: "Não foi possível salvar o preço da unidade." };
   }
-  revalidatePath("/procedimentos");
+  refreshCatalog();
+  return { ok: true };
+}
+
+/**
+ * 0212 — repasse por NÍVEL, lançado no próprio procedimento.
+ *
+ * Grava sempre no escopo da REDE (clinic_id nulo): o catálogo é da rede, e a
+ * unidade que negociou contrato próprio sobrescreve em Financeiro › Repasses.
+ * É a mesma cascata do preço.
+ *
+ * Quem grava é o banco (`set_payout_rate_for_level`): trocar o valor significa
+ * ENCERRAR a vigência anterior e abrir outra, e essas duas coisas não podem
+ * acontecer pela metade — senão o mesmo procedimento fica com dois valores
+ * vigentes e a apuração passa a depender de sorte.
+ */
+export async function saveProcedurePayoutLevels(input: {
+  procedureId: string;
+  values: { levelId: string; amount: string }[];
+}): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  // Repasse é dinheiro do dentista: o Planner edita o catálogo, mas não a
+  // remuneração. A RLS diz o mesmo — aqui é só para o erro sair legível.
+  if (!session.isAdminMaster) {
+    return {
+      ok: false,
+      error: "Só o Admin Master define o repasse padrão da rede.",
+    };
+  }
+  const supabase = await createClient();
+
+  for (const v of input.values) {
+    const cents = parseBRLToCents(v.amount);
+    if (cents === null || cents < 0) {
+      return { ok: false, error: `Valor inválido: ${v.amount}` };
+    }
+    const { error } = await supabase.rpc("set_payout_rate_for_level", {
+      p_procedure_id: input.procedureId,
+      p_level_id: v.levelId,
+      p_clinic_id: null,
+      p_amount_cents: cents,
+      p_valid_from: null,
+    });
+    if (error) {
+      console.error("set_payout_rate_for_level failed:", error.message);
+      if (error.message.includes("NOT_ALLOWED")) {
+        return { ok: false, error: "Sem permissão para definir o repasse." };
+      }
+      return { ok: false, error: "Não foi possível salvar o repasse." };
+    }
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "payout_rate",
+    entityId: input.procedureId,
+  });
+  refreshCatalog();
+  revalidatePath("/financeiro/repasses");
   return { ok: true };
 }

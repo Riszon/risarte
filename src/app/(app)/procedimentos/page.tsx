@@ -295,6 +295,44 @@ export default async function ProceduresPage(
     }
   }
 
+  // 0212: repasse por NÍVEL, para o cadastro mostrar quanto custa cada dentista
+  // e não só a comissão do procedimento (que é o último degrau). `payout_matrix`
+  // aplica os mesmos quatro degraus da apuração — se mostrasse outra conta, a
+  // tela mentiria.
+  const activeClinicId = session.activeClinic?.id ?? null;
+  const [{ data: levelRows }, { data: matrixRows }] = await Promise.all([
+    supabase
+      .from("career_levels")
+      .select("id, name, clinic_id, sort_order")
+      .eq("active", true)
+      .order("sort_order")
+      .order("name"),
+    supabase.rpc("payout_matrix", {
+      p_clinic_id: activeClinicId,
+      p_date: null,
+    }),
+  ]);
+
+  const levels = (levelRows ?? [])
+    .filter((l) => l.clinic_id === null || l.clinic_id === activeClinicId)
+    .map((l) => ({ id: l.id as string, name: l.name as string }));
+
+  const payoutByProcedure: Record<
+    string,
+    Record<string, { amountCents: number; source: string }>
+  > = {};
+  for (const r of (matrixRows ?? []) as {
+    procedure_id: string;
+    level_id: string;
+    amount_cents: number;
+    source: string;
+  }[]) {
+    (payoutByProcedure[r.procedure_id] ??= {})[r.level_id] = {
+      amountCents: Number(r.amount_cents ?? 0),
+      source: r.source,
+    };
+  }
+
   // H4.3 Lote 4: propostas de protocolo pendentes visíveis a este usuário (a RLS
   // já limita: Admin vê todas; Coordenador vê as da sua unidade; Planner as suas).
   const { data: propRows } = await supabase
@@ -429,6 +467,9 @@ export default async function ProceduresPage(
         unitSessionsByProcedure={unitSessionsByProcedure}
         canManageCatalog={canManageCatalog}
         isAdmin={session.isAdminMaster}
+        levels={levels}
+        payoutByProcedure={payoutByProcedure}
+        canEditPayout={session.isAdminMaster}
       />
     </div>
   );
