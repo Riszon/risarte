@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Tag } from "lucide-react";
+import { Calculator, Tag } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
@@ -346,13 +346,24 @@ export default async function ProceduresPage(
           </p>
         </div>
         {canManageCatalog && (
-          <Link
-            href="/procedimentos/especialidades"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
-          >
-            <Tag className="size-4" />
-            Especialidades
-          </Link>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {/* 0211: o precificador fica AO LADO do preço que ele justifica —
+                simula, vê o custo real e aplica ali mesmo. */}
+            <Link
+              href="/procedimentos/precificacao"
+              className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
+            >
+              <Calculator className="size-4" />
+              Precificação
+            </Link>
+            <Link
+              href="/procedimentos/especialidades"
+              className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
+            >
+              <Tag className="size-4" />
+              Especialidades
+            </Link>
+          </div>
         )}
       </div>
 

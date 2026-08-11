@@ -1,6 +1,32 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 08/08/2026 · Versão do sistema: **0.188.0** · Última migração: **0209**_
+_Atualizado em: 08/08/2026 · Versão do sistema: **0.190.0** · Última migração: **0211**_
+
+> **PRECIFICADOR (v0.190.0, migração 0211).** Aba **Precificação** em
+> Procedimentos — onde o dono decidiu que ela mora, porque o preço nasce do
+> procedimento e quem simula é quem conhece a clínica por dentro. Simula, vê o
+> custo real e **aplica o preço ali mesmo**, sem copiar número entre telas.
+>
+> **A conta separa dois tipos de custo,** e confundi-los é o erro clássico da
+> precificação: o **direto** (material, laboratório, repasse, cadeira) não muda
+> com o preço; o **proporcional** (imposto, taxa) sobe junto com ele. Por isso o
+> preço sugerido usa markup — `custo ÷ (1 − imposto − taxa − margem)` — e não
+> "custo + margem".
+>
+> Está travado em teste com o exemplo do porquê: custo R$ 200, imposto 6%, taxa
+> 3%, margem 40%. "Custo + 40%" daria R$ 280 — que entrega **19,6%** de margem
+> real, menos da metade do pretendido. A fórmula devolve **R$ 392,16**, que
+> entrega os 40% de verdade.
+>
+> O custo de material também alimenta a **margem da negociação**, fechando o
+> buraco declarado no FIN5. **360 testes.**
+>
+> **Limite:** não é controle de estoque — é o custo **padrão** informado por quem
+> conhece a clínica. Quando o Estoque existir, ele substitui a estimativa pelo
+> consumo real, sem mudar a estrutura. A tela avisa o que ficou de fora da conta
+> (sem tempo de cadeira, sem custo-hora, sem repasse cadastrado).
+
+> **FIN5 — REPASSE AO DENTISTA + ALERTA DE MARGEM (v0.188.0, migração 0209).**
 
 > **FIN5 — REPASSE AO DENTISTA + ALERTA DE MARGEM (v0.188.0, migração 0209).**
 >

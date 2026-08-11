@@ -42,6 +42,11 @@ import {
   type PayoutRate,
 } from "@/lib/finance/payout";
 import { computeMargin, marginLostByDiscount } from "@/lib/finance/margin";
+import {
+  computeDirectCost,
+  simulatePrice,
+  simulationWarnings,
+} from "@/lib/finance/pricing-simulator";
 import { isoDateIn } from "@/lib/dates";
 import {
   acquirerAppliesTo,
@@ -2584,5 +2589,137 @@ describe("repasse: precedência entre nível e cadastro do procedimento", () => 
         date: "2026-08-08",
       })
     ).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Precificador — custo direto × custo proporcional
+// ---------------------------------------------------------------------------
+describe("precificador", () => {
+  const cost = {
+    minutes: 60,
+    chairCostPerHourCents: 8000,
+    materialsCents: 5000,
+    labCents: 0,
+    payoutCents: 7000,
+  };
+
+  it("a cadeira entra proporcional ao tempo do procedimento", () => {
+    const meia = computeDirectCost({ ...cost, minutes: 30 });
+    expect(meia.chairCents).toBe(4000);
+    const duas = computeDirectCost({ ...cost, minutes: 120 });
+    expect(duas.chairCents).toBe(16000);
+  });
+
+  it("custo direto é a soma do que não varia com o preço", () => {
+    const b = computeDirectCost(cost);
+    expect(b.directCents).toBe(8000 + 5000 + 7000);
+  });
+
+  it("o preço sugerido entrega a margem-alvo DE VERDADE", () => {
+    // Custo R$ 200, imposto 6%, taxa 3%, margem 40%.
+    const s = simulatePrice({
+      cost: {
+        minutes: 0,
+        chairCostPerHourCents: 0,
+        materialsCents: 20000,
+        labCents: 0,
+        payoutCents: 0,
+      },
+      taxPercent: 6,
+      acquirerFeePercent: 3,
+      targetMarginPercent: 40,
+      currentPriceCents: 0,
+    });
+    // 20000 / (1 - 0,49) = 39215,7 → R$ 392,16
+    expect(s.suggestedPriceCents).toBe(39216);
+
+    // A prova: com esse preço, a margem realizada é os 40% pedidos.
+    const conferencia = simulatePrice({
+      cost: {
+        minutes: 0,
+        chairCostPerHourCents: 0,
+        materialsCents: 20000,
+        labCents: 0,
+        payoutCents: 0,
+      },
+      taxPercent: 6,
+      acquirerFeePercent: 3,
+      targetMarginPercent: 40,
+      currentPriceCents: 39216,
+    });
+    expect(conferencia.currentMarginPercent).toBeCloseTo(40, 1);
+  });
+
+  it("'custo + margem' entregaria bem menos — é por isso que a fórmula existe", () => {
+    // O jeito ingênuo: R$ 200 + 40% = R$ 280.
+    const ingenuo = simulatePrice({
+      cost: {
+        minutes: 0,
+        chairCostPerHourCents: 0,
+        materialsCents: 20000,
+        labCents: 0,
+        payoutCents: 0,
+      },
+      taxPercent: 6,
+      acquirerFeePercent: 3,
+      targetMarginPercent: 40,
+      currentPriceCents: 28000,
+    });
+    // Sobram só ~19,6%, menos da metade do pretendido.
+    expect(ingenuo.currentMarginPercent).toBeCloseTo(19.6, 1);
+    expect(ingenuo.belowTarget).toBe(true);
+  });
+
+  it("preço abaixo do custo é prejuízo, não margem baixa", () => {
+    const s = simulatePrice({
+      cost,
+      taxPercent: 6,
+      acquirerFeePercent: 3,
+      targetMarginPercent: 40,
+      currentPriceCents: 15000,
+    });
+    expect(s.currentIsLoss).toBe(true);
+  });
+
+  it("percentuais somando 100% não têm preço possível", () => {
+    const s = simulatePrice({
+      cost,
+      taxPercent: 60,
+      acquirerFeePercent: 10,
+      targetMarginPercent: 30,
+      currentPriceCents: 50000,
+    });
+    // Nenhum preço fecha: tudo o que entrar já está comprometido.
+    expect(s.suggestedPriceCents).toBeNull();
+    expect(
+      simulationWarnings({
+        cost,
+        taxPercent: 60,
+        acquirerFeePercent: 10,
+        targetMarginPercent: 30,
+        currentPriceCents: 50000,
+      })
+    ).toContain(
+      "Imposto + taxa + margem somam 100% ou mais — nenhum preço fecha essa conta."
+    );
+  });
+
+  it("avisa o que ficou de fora da conta", () => {
+    const w = simulationWarnings({
+      cost: {
+        minutes: 0,
+        chairCostPerHourCents: 0,
+        materialsCents: 1000,
+        labCents: 0,
+        payoutCents: 0,
+      },
+      taxPercent: 6,
+      acquirerFeePercent: 3,
+      targetMarginPercent: 40,
+      currentPriceCents: 10000,
+    });
+    // Custo incompleto apresentado como completo é pior que não simular.
+    expect(w.length).toBe(3);
   });
 });
