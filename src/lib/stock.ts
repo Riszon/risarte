@@ -14,6 +14,111 @@
 
 import { roundHalfUp } from "./finance/money";
 
+// -----------------------------------------------------------------------------
+// UNIDADES — listas fechadas, não texto livre (0214)
+// -----------------------------------------------------------------------------
+// Com campo livre, "un", "und", "UN" e "unid" viram quatro itens diferentes no
+// consolidado da rede, e ninguém descobre isso até o relatório sair errado.
+
+/** Em que se COMPRA. Só serve para lançar a entrada como está na nota. */
+export const PURCHASE_UNITS = [
+  "unidade",
+  "caixa",
+  "pacote",
+  "frasco",
+  "tubo",
+  "bisnaga",
+  "galão",
+  "rolo",
+  "kit",
+  "envelope",
+] as const;
+
+/** Em que se CONSOME — é nela que o saldo vive e o kit fala. */
+export const STOCK_UNITS = [
+  "unidade",
+  "grama",
+  "mililitro",
+  "aplicação",
+  "folha",
+  "par",
+  "metro",
+] as const;
+
+export type PurchaseUnit = (typeof PURCHASE_UNITS)[number];
+export type StockUnit = (typeof STOCK_UNITS)[number];
+
+/** Abreviação para caber nas listas sem virar sopa de letras. */
+export const UNIT_SHORT: Record<string, string> = {
+  unidade: "un",
+  grama: "g",
+  mililitro: "ml",
+  aplicação: "apl",
+  folha: "fl",
+  par: "par",
+  metro: "m",
+  caixa: "cx",
+  pacote: "pct",
+  frasco: "fr",
+  tubo: "tb",
+  bisnaga: "bg",
+  galão: "gl",
+  rolo: "rl",
+  kit: "kit",
+  envelope: "env",
+};
+
+export function unitShort(unit: string): string {
+  return UNIT_SHORT[unit] ?? unit;
+}
+
+/**
+ * O custo de UMA unidade de consumo, a partir do preço da embalagem.
+ *
+ * É o cálculo que faltava: uma caixa de sugadores de R$ 25,00 com 100 unidades
+ * custa 25 centavos por sugador, não R$ 25,00. Sem ele, o material do
+ * procedimento saía 100 vezes maior — e em silêncio, porque nada na tela
+ * apontava o motivo.
+ *
+ * Devolve centavos COM decimais de propósito: R$ 180,00 ÷ 7 g = 2571,4286
+ * centavos por grama, e arredondar a cada movimento subestimaria o custo sempre
+ * para o mesmo lado. Taxa carrega decimais; valor vira centavo inteiro só no
+ * total.
+ */
+export function unitCostFromPackage(
+  packageCostCents: number,
+  unitsPerPackage: number
+): number {
+  const factor = unitsPerPackage > 0 ? unitsPerPackage : 1;
+  return packageCostCents / factor;
+}
+
+/** Quantas unidades de consumo entram ao comprar N embalagens. */
+export function unitsFromPackages(
+  packages: number,
+  unitsPerPackage: number
+): number {
+  const factor = unitsPerPackage > 0 ? unitsPerPackage : 1;
+  return packages * factor;
+}
+
+/** Como a conversão é lida na tela: "1 caixa = 100 un a R$ 0,25". */
+export function conversionSummary(input: {
+  packages: number;
+  packageUnit: string;
+  packageCostCents: number;
+  unitsPerPackage: number;
+  stockUnit: string;
+}): { units: number; unitCostCents: number } {
+  return {
+    units: unitsFromPackages(input.packages, input.unitsPerPackage),
+    unitCostCents: unitCostFromPackage(
+      input.packageCostCents,
+      input.unitsPerPackage
+    ),
+  };
+}
+
 export const MOVEMENT_KINDS = [
   "entrada",
   "consumo",
@@ -89,10 +194,19 @@ export function weightedAverage(
   inCostCents: number
 ): number {
   const newQty = currentQty + inQty;
-  if (currentQty <= 0 || newQty <= 0) return Math.max(0, Math.round(inCostCents));
-  return roundHalfUp(
-    (currentQty * currentAvgCents + inQty * inCostCents) / newQty
-  );
+  if (currentQty <= 0 || newQty <= 0) return rate(Math.max(0, inCostCents));
+  return rate((currentQty * currentAvgCents + inQty * inCostCents) / newQty);
+}
+
+/**
+ * Custo unitário guarda 4 casas; valor total vira centavo inteiro.
+ *
+ * R$ 180,00 ÷ 7 g dá 2571,4286 centavos por grama. Arredondar isso para 2571 a
+ * cada movimento subestimaria o custo sempre para o mesmo lado — pouco por vez,
+ * e sempre a favor do mesmo erro.
+ */
+function rate(value: number): number {
+  return Math.round(value * 10000) / 10000;
 }
 
 /**
@@ -112,10 +226,7 @@ export function applyMovement(
   const inbound = isInbound(movement.kind);
 
   if (inbound) {
-    const unit = Math.max(
-      0,
-      Math.round(movement.unitCostCents ?? balance.avgCostCents)
-    );
+    const unit = Math.max(0, movement.unitCostCents ?? balance.avgCostCents);
     const avg = weightedAverage(balance.quantity, balance.avgCostCents, qty, unit);
     return {
       balance: {
@@ -123,7 +234,7 @@ export function applyMovement(
         quantity: balance.quantity + qty,
         avgCostCents: avg,
       },
-      unitCostCents: unit,
+      unitCostCents: rate(unit),
       totalCents: roundHalfUp(qty * unit),
     };
   }

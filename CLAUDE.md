@@ -561,8 +561,30 @@ saldo não vale nada. Por isso **a baixa é automática, pelo KIT do procediment
   faltou dar entrada em alguma nota.
 - **Ajuste e perda exigem motivo.** A diferença do inventário é o dado (perda,
   furto, kit errado); sem motivo ninguém audita depois.
-- **Item é da REDE; saldo, mínimo e custo são da UNIDADE** (cada uma compra pelo
-  seu preço). **Kit** segue a mesma cascata: padrão da rede, ajuste por unidade.
+- **Item é da REDE; saldo, mínimo, máximo, local e fornecedor habitual são da
+  UNIDADE** (cada uma compra pelo seu preço e guarda onde quer). **Kit** segue a
+  mesma cascata: padrão da rede, ajuste por unidade.
+- **UNIDADE DE COMPRA ≠ UNIDADE DE CONSUMO (0214).** O dono achou no teste: *"eu
+  pago R$ 25,00 na caixa de sugadores, mas vem 100 unidades"*. A 0213 tratava as
+  duas como iguais e cada sugador entrava no procedimento por R$ 25,00 — erro de
+  100× e **silencioso**. A correção é um conceito só: **unidade de CONTROLE**
+  (o que se consome) + **fator de conversão** da embalagem. Resolve também o
+  fracionamento (tubo de resina → grama) e o **rendimento** (frasco de adesivo →
+  20 aplicações; ninguém mede ml de adesivo na clínica). **O saldo vive sempre
+  na unidade de controle**; a entrada é lançada como está na nota e o BANCO
+  converte — a mesma conta vale para a nota digitada hoje e para a integração de
+  compras amanhã.
+- **Unidades são listas fechadas**, nunca texto livre: "un", "und", "UN" e
+  "unid" viram quatro itens no consolidado da rede.
+- **Custo unitário carrega 4 casas; valor total é centavo inteiro.** R$ 180,00 ÷
+  7 g = 2571,4286 centavos/g — arredondar a cada movimento subestimaria o custo
+  sempre para o mesmo lado. Regra: **taxa tem decimais, valor é centavo**.
+- **LOTE E VALIDADE SÃO DA COMPRA, NÃO DO ITEM.** A caixa de março tem lote e
+  validade diferentes da de agosto; gravar no item faria a compra nova apagar a
+  informação da anterior — errado e silencioso. Ficam no **movimento de entrada**
+  (com fornecedor e nota), e `stock_expiring()` aponta o que vence primeiro.
+  **Limite declarado:** o consumo **ainda não escolhe lote** (sem baixa FIFO nem
+  recusa de vencido) — controle por lote muda a baixa, e fica para depois da E3.
 - **O kit alimenta o preço.** Em vez de mudar precificador, margem da negociação
   e venda direta, o kit **escreve** em `procedure_costs.materials_cents`
   (`materials_source = 'kit'`) — quem já lia continua lendo, e o número passa a

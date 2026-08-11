@@ -1,6 +1,49 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/08/2026 · Versão do sistema: **0.192.0** · Última migração: **0213**_
+_Atualizado em: 11/08/2026 · Versão do sistema: **0.193.0** · Última migração: **0214**_
+
+> **ESTOQUE — EMBALAGEM × CONSUMO, LOTE E MOVIMENTO DETALHADO (v0.193.0,
+> migração 0214).** Cinco pedidos do teste do dono, e dois deles eram o mesmo
+> problema — o mais grave que este módulo tinha.
+>
+> **1. Você compra num tamanho e consome noutro.** *"Pago R$ 25,00 na caixa de
+> sugadores, mas vem 100 unidades."* A 0213 tratava os dois como iguais, então
+> cada sugador entrava no procedimento por **R$ 25,00** — erro de 100 vezes, e
+> silencioso: o preço sugerido sairia absurdo sem nada apontar o motivo.
+>
+> A correção é **um conceito só**: unidade de **CONTROLE** (o que se consome) +
+> **fator de conversão** da embalagem. Resolve os três casos que ele levantou:
+>
+> | | compra | fator | controle | custo |
+> |---|---|---|---|---|
+> | sugador | caixa R$ 25,00 | 100 | unidade | R$ 0,25 |
+> | resina | tubo R$ 180,00 | 4 | grama | R$ 45,00/g |
+> | adesivo | frasco R$ 240,00 | 20 | aplicação | R$ 12,00 |
+>
+> O adesivo é o que prova a escolha: ninguém mede ml de adesivo na clínica — o
+> que se sabe é **rendimento** ("um frasco dá 20 restaurações"). O fator aceita
+> isso sem mecanismo novo. **O saldo vive sempre na unidade de controle**; a
+> entrada é lançada como está na nota e o banco converte.
+>
+> **2. Lote e validade são da COMPRA, não do item.** A caixa de março tem lote e
+> validade diferentes da de agosto — no item, a compra nova apagaria a
+> informação da anterior. Vão no movimento de entrada, junto de fornecedor e
+> nota fiscal, e a tela aponta o que vence primeiro. **Limite declarado:** o
+> consumo ainda não escolhe lote (decisão do dono: depois da baixa automática).
+>
+> **3. Cadastro completo:** marca, categoria, embalagem, fator; e, **por
+> unidade**, mínimo, máximo, onde fica guardado e fornecedor habitual.
+>
+> **4. Unidades viraram listas fechadas** — com campo livre, "un", "und", "UN" e
+> "unid" viram quatro itens no consolidado da rede.
+>
+> **5. Movimento com data e hora**, quem lançou, as duas versões da quantidade
+> ("1 caixa a R$ 25,00 = 100 un a R$ 0,25"), lote, validade, fornecedor, nota e
+> saldo depois — mais **histórico por item**.
+>
+> Custo unitário passou a carregar 4 casas (R$ 180,00 ÷ 7 g = 2571,4286
+> centavos/g): arredondar a cada movimento erraria sempre para o mesmo lado.
+> Valor total continua em centavo inteiro. **388 testes** (8 novos).
 
 > **ESTOQUE E1+E2 (v0.192.0, migração 0213).** Cadastro, saldo, movimentos e o
 > **kit do procedimento**, em `/estoque`.

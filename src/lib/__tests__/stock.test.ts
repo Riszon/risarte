@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   applyMovement,
   balanceAlerts,
+  conversionSummary,
   isInbound,
   kitCost,
   movementErrors,
   replayMovements,
+  unitCostFromPackage,
+  unitShort,
+  unitsFromPackages,
   weightedAverage,
   type Balance,
 } from "../stock";
@@ -63,7 +67,7 @@ describe("aplicar movimento", () => {
       unitCostCents: 900,
     });
     // A compra nova mudou o médio para frente...
-    expect(compra.balance.avgCostCents).toBe(722);
+    expect(compra.balance.avgCostCents).toBeCloseTo(722.2222, 3);
     // ...mas o consumo já registrado continua valendo R$ 5,00 a unidade.
     expect(consumo.totalCents).toBe(1000);
   });
@@ -106,7 +110,77 @@ describe("o saldo é projeção — dá para reconstruir", () => {
     ]);
     expect(b.quantity).toBe(172);
     // 80 a R$ 3,00 + 100 a R$ 5,00 = R$ 4,11 (ponderado, não R$ 4,00).
-    expect(b.avgCostCents).toBe(411);
+    expect(b.avgCostCents).toBeCloseTo(411.1111, 3);
+  });
+});
+
+describe("embalagem × consumo — o erro de 100 vezes", () => {
+  it("caixa de sugadores: R$ 25,00 por 100 vira R$ 0,25 cada", () => {
+    // Sem esta conta, cada sugador entrava no procedimento por R$ 25,00.
+    expect(unitCostFromPackage(2500, 100)).toBe(25);
+    expect(unitsFromPackages(1, 100)).toBe(100);
+  });
+
+  it("resina: tubo de R$ 180,00 com 4 g custa R$ 45,00 o grama", () => {
+    expect(unitCostFromPackage(18000, 4)).toBe(4500);
+  });
+
+  it("adesivo por RENDIMENTO: frasco de R$ 240,00 rende 20 aplicações", () => {
+    // Ninguém mede ml de adesivo na clínica; mede-se quantas restaurações o
+    // frasco dá. A unidade de controle vira "aplicação" e a conta é a mesma.
+    expect(unitCostFromPackage(24000, 20)).toBe(1200);
+  });
+
+  it("custo unitário mantém decimais em vez de arredondar sempre para baixo", () => {
+    // R$ 180,00 ÷ 7 g. Arredondar para 2571 a cada movimento erraria sempre
+    // para o mesmo lado.
+    expect(unitCostFromPackage(18000, 7)).toBeCloseTo(2571.4286, 3);
+  });
+
+  it("fator inválido não divide por zero", () => {
+    expect(unitCostFromPackage(2500, 0)).toBe(2500);
+    expect(unitsFromPackages(2, 0)).toBe(2);
+  });
+
+  it("a entrada pela embalagem chega ao mesmo saldo da entrada avulsa", () => {
+    const conv = conversionSummary({
+      packages: 2,
+      packageUnit: "caixa",
+      packageCostCents: 2500,
+      unitsPerPackage: 100,
+      stockUnit: "unidade",
+    });
+    expect(conv.units).toBe(200);
+    expect(conv.unitCostCents).toBe(25);
+
+    const r = applyMovement(
+      { quantity: 0, avgCostCents: 0, minQuantity: 0 },
+      {
+        kind: "entrada",
+        quantity: conv.units,
+        unitCostCents: conv.unitCostCents,
+      }
+    );
+    expect(r.balance.quantity).toBe(200);
+    expect(r.balance.avgCostCents).toBe(25);
+    // 2 caixas a R$ 25,00 = R$ 50,00. O total fecha com a nota.
+    expect(r.totalCents).toBe(5000);
+  });
+
+  it("consumo fracionado cobra o pedaço certo", () => {
+    // 0,2 g de resina a R$ 45,00/g = R$ 9,00.
+    const r = applyMovement(
+      { quantity: 4, avgCostCents: 4500, minQuantity: 0 },
+      { kind: "consumo", quantity: 0.2 }
+    );
+    expect(r.totalCents).toBe(900);
+    expect(r.balance.quantity).toBeCloseTo(3.8, 5);
+  });
+
+  it("abreviação das unidades", () => {
+    expect(unitShort("unidade")).toBe("un");
+    expect(unitShort("aplicação")).toBe("apl");
+    expect(unitShort("caixa")).toBe("cx");
   });
 });
 

@@ -46,24 +46,30 @@ export default async function StockPage() {
     { data: movementRows },
     { data: procRows },
     { data: kitRows },
+    { data: supplierRows },
+    { data: expiringRows },
   ] = await Promise.all([
     supabase
       .from("stock_items")
-      .select("id, code, name, unit_of_measure, category, notes, is_active")
+      .select(
+        "id, code, name, brand, unit_of_measure, purchase_unit, units_per_purchase, category, notes, is_active"
+      )
       .order("name")
       .limit(1000),
     supabase
       .from("stock_balances")
-      .select("item_id, quantity, min_quantity, avg_cost_cents")
+      .select(
+        "item_id, quantity, min_quantity, max_quantity, avg_cost_cents, storage_location, preferred_supplier_id"
+      )
       .eq("clinic_id", clinicId),
     supabase
       .from("stock_movements")
       .select(
-        "id, item_id, kind, quantity, unit_cost_cents, total_cents, movement_date, reason, balance_after, profiles:created_by ( full_name )"
+        "id, item_id, kind, quantity, unit_cost_cents, total_cents, movement_date, created_at, reason, balance_after, purchase_quantity, purchase_unit_cost_cents, purchase_unit, lot_code, expires_at, invoice_number, supplier_id, created_by"
       )
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false })
-      .limit(80),
+      .limit(120),
     supabase
       .from("procedures")
       .select("id, name, specialty")
@@ -74,7 +80,34 @@ export default async function StockPage() {
       .from("procedure_kits")
       .select("id, procedure_id, clinic_id, procedure_kit_items ( item_id, quantity )")
       .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`),
+    supabase
+      .from("suppliers")
+      .select("id, name")
+      .eq("clinic_id", clinicId)
+      .eq("active", true)
+      .order("name"),
+    supabase.rpc("stock_expiring", { p_clinic_id: clinicId, p_days: 120 }),
   ]);
+
+  // O nome de quem lançou vem numa consulta à parte: o atalho de embed em
+  // `created_by` fica ambíguo quando a tabela tem mais de uma FK para profiles.
+  const authorIds = [
+    ...new Set(
+      (movementRows ?? [])
+        .map((m) => m.created_by as string | null)
+        .filter((v): v is string => Boolean(v))
+    ),
+  ];
+  const { data: authorRows } = authorIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", authorIds)
+    : { data: [] };
+  const authorName = new Map(
+    (authorRows ?? []).map((p) => [p.id as string, p.full_name as string])
+  );
+
+  const supplierName = new Map(
+    (supplierRows ?? []).map((s) => [s.id as string, s.name as string])
+  );
 
   const balanceByItem = new Map(
     (balanceRows ?? []).map((b) => [
@@ -82,7 +115,11 @@ export default async function StockPage() {
       {
         quantity: Number(b.quantity ?? 0),
         minQuantity: Number(b.min_quantity ?? 0),
+        maxQuantity:
+          b.max_quantity === null ? null : Number(b.max_quantity ?? 0),
         avgCostCents: Number(b.avg_cost_cents ?? 0),
+        storageLocation: (b.storage_location as string | null) ?? "",
+        supplierId: (b.preferred_supplier_id as string | null) ?? "",
       },
     ])
   );
@@ -93,31 +130,68 @@ export default async function StockPage() {
       id: i.id as string,
       code: (i.code as string | null) ?? "",
       name: i.name as string,
-      unitOfMeasure: (i.unit_of_measure as string) ?? "un",
+      brand: (i.brand as string | null) ?? "",
+      unitOfMeasure: (i.unit_of_measure as string) ?? "unidade",
+      purchaseUnit: (i.purchase_unit as string) ?? "unidade",
+      unitsPerPurchase: Number(i.units_per_purchase ?? 1),
       category: (i.category as string | null) ?? "",
       notes: (i.notes as string | null) ?? "",
       isActive: Boolean(i.is_active),
       quantity: b?.quantity ?? 0,
       minQuantity: b?.minQuantity ?? 0,
+      maxQuantity: b?.maxQuantity ?? null,
       avgCostCents: b?.avgCostCents ?? 0,
+      storageLocation: b?.storageLocation ?? "",
+      supplierId: b?.supplierId ?? "",
     };
   });
 
-  const movements = (movementRows ?? []).map((m) => {
-    const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-    return {
-      id: m.id as string,
-      itemId: m.item_id as string,
-      kind: m.kind as string,
-      quantity: Number(m.quantity ?? 0),
-      unitCostCents: Number(m.unit_cost_cents ?? 0),
-      totalCents: Number(m.total_cents ?? 0),
-      movementDate: m.movement_date as string,
-      reason: (m.reason as string | null) ?? "",
-      balanceAfter: Number(m.balance_after ?? 0),
-      byName: (p?.full_name as string) ?? null,
-    };
-  });
+  const movements = (movementRows ?? []).map((m) => ({
+    id: m.id as string,
+    itemId: m.item_id as string,
+    kind: m.kind as string,
+    quantity: Number(m.quantity ?? 0),
+    unitCostCents: Number(m.unit_cost_cents ?? 0),
+    totalCents: Number(m.total_cents ?? 0),
+    movementDate: m.movement_date as string,
+    createdAt: m.created_at as string,
+    reason: (m.reason as string | null) ?? "",
+    balanceAfter: Number(m.balance_after ?? 0),
+    purchaseQuantity:
+      m.purchase_quantity === null ? null : Number(m.purchase_quantity),
+    purchaseUnitCostCents:
+      m.purchase_unit_cost_cents === null
+        ? null
+        : Number(m.purchase_unit_cost_cents),
+    purchaseUnit: (m.purchase_unit as string | null) ?? "",
+    lotCode: (m.lot_code as string | null) ?? "",
+    expiresAt: (m.expires_at as string | null) ?? "",
+    invoiceNumber: (m.invoice_number as string | null) ?? "",
+    supplierName: m.supplier_id
+      ? (supplierName.get(m.supplier_id as string) ?? "")
+      : "",
+    byName: m.created_by
+      ? (authorName.get(m.created_by as string) ?? null)
+      : null,
+  }));
+
+  const expiring = (
+    (expiringRows ?? []) as {
+      item_id: string;
+      item_name: string;
+      lot_code: string | null;
+      expires_at: string;
+      quantity: number;
+      days_left: number;
+    }[]
+  ).map((e) => ({
+    itemId: e.item_id,
+    itemName: e.item_name,
+    lotCode: e.lot_code ?? "",
+    expiresAt: e.expires_at,
+    quantity: Number(e.quantity ?? 0),
+    daysLeft: Number(e.days_left ?? 0),
+  }));
 
   // Kit da unidade vence o da rede (mesma cascata de preço e protocolo).
   const kitByProcedure: Record<
@@ -167,6 +241,11 @@ export default async function StockPage() {
         canManageCatalog={canManageStockCatalog(session)}
         items={items}
         movements={movements}
+        expiring={expiring}
+        suppliers={(supplierRows ?? []).map((s) => ({
+          id: s.id as string,
+          name: s.name as string,
+        }))}
         procedures={(procRows ?? []).map((p) => ({
           id: p.id as string,
           name: p.name as string,
