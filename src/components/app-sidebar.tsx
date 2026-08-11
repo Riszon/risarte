@@ -22,6 +22,7 @@ import {
   Handshake,
   HeartPulse,
   Home,
+  Boxes,
   Landmark,
   LogOut,
   MessagesSquare,
@@ -86,6 +87,8 @@ type Props = {
   canViewPpr: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
+  /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
+  canViewStock: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -159,6 +162,15 @@ const FINANCE_ITEM = {
   icon: Landmark,
 };
 
+// 0213: Estoque — gestão da unidade lança entrada e inventário; quem atende
+// registra o consumo avulso. Fica FORA do Financeiro de propósito: dentista e
+// TSB precisam desta tela e não podem ver financeiro.
+const STOCK_ITEM = {
+  href: "/estoque",
+  label: "Estoque",
+  icon: Boxes,
+};
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -185,6 +197,7 @@ export function AppSidebar({
   canViewEmpresarial,
   canViewPpr,
   canViewFinance,
+  canViewStock,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -245,6 +258,9 @@ export function AppSidebar({
   }
   if (canViewPpr) {
     navItems = [...navItems, PPR_ITEM];
+  }
+  if (canViewStock) {
+    navItems = [...navItems, STOCK_ITEM];
   }
   if (!dentistOnly && canViewFinance) {
     navItems = [...navItems, FINANCE_ITEM];

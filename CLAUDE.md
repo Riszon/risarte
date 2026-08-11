@@ -539,6 +539,50 @@ precificou recebimentos **não é apagada** — gatilho `RATE_IN_USE` no banco.
 
 **Alerta de margem.** Como o repasse é fixo, **desconto não reduz repasse**: sai inteiro da margem. A negociação mostra a margem ao vivo e **avisa** abaixo de `min_margin_percent` (cascata rede→unidade) — **não bloqueia**, porque o teto de desconto já é a trava. **Material e laboratório ainda não entram** (são do Estoque); a tela declara isso.
 
+## 8c. Estoque (em construção — E1+E2 entregues, migração 0213)
+
+**O documento base já diz como este módulo morre:** *"falta de baixa no uso"*
+(§7). Todo estoque de clínica quebra no mesmo ponto — alguém teria de digitar
+"usei 2 anestésicos" no meio do atendimento, ninguém digita, e em três meses o
+saldo não vale nada. Por isso **a baixa é automática, pelo KIT do procedimento**
+(E3); o registro manual existe só para a exceção.
+
+- **O saldo é PROJEÇÃO, não base.** Tudo nasce em `stock_movements`;
+  `stock_balances` é derivado e reconstruível. Ninguém escreve saldo direto — a
+  única porta é `post_stock_movement()`, que calcula, congela e projeta sob
+  trava. Estoque com saldo digitado é estoque que ninguém audita.
+- **Custo médio ponderado.** Entrada recalcula o médio; **saída sai pelo médio
+  vigente e o valor fica CONGELADO no movimento** — comprar mais caro amanhã não
+  reescreve o custo do que foi usado ontem (mesma regra do repasse). Saldo
+  zerado ou negativo não pondera: o custo da entrada vira o custo.
+- **Saída NÃO é recusada por falta de saldo** — registra negativo e alerta.
+  Travar aqui seria parar atendimento por causa de cadastro, o erro que a baixa
+  da adquirente já ensinou a não repetir. Saldo negativo *é* a informação:
+  faltou dar entrada em alguma nota.
+- **Ajuste e perda exigem motivo.** A diferença do inventário é o dado (perda,
+  furto, kit errado); sem motivo ninguém audita depois.
+- **Item é da REDE; saldo, mínimo e custo são da UNIDADE** (cada uma compra pelo
+  seu preço). **Kit** segue a mesma cascata: padrão da rede, ajuste por unidade.
+- **O kit alimenta o preço.** Em vez de mudar precificador, margem da negociação
+  e venda direta, o kit **escreve** em `procedure_costs.materials_cents`
+  (`materials_source = 'kit'`) — quem já lia continua lendo, e o número passa a
+  ser o custo real. Compra que muda o custo médio dispara `refresh_kit_costs`.
+- **Compra vira ESTOQUE, não despesa** (decisão do dono, 11/08/2026): material
+  comprado em janeiro e usado em março não pode afundar janeiro. Daí o grupo
+  **6 (Ativos) / 6.1.01 Estoque de materiais** e a natureza `asset`, a única que
+  **não entra na DRE**. O custo vira **2.2** no consumo (E4).
+- **Quem opera:** entrada, mínimo e inventário = **Gerente + Admin/Financeiro**;
+  consumo avulso = **dentista, coordenador, planner, TSB, ASB**; **recepção fora**
+  (mesma lógica de contas a pagar). O catálogo de itens é da Franqueadora.
+- O módulo mora em **`/estoque`**, fora do Financeiro de propósito: dentista e
+  TSB precisam da tela e não podem ver financeiro.
+
+**Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** baixa automática
+na conclusão da sessão (sozinha, porque mexe em caminho crítico do clínico) →
+**E4** entrada por nota + conta a pagar + custo em 2.2 → **E5** mínimo,
+inventário e alertas. **Transferência entre unidades** fica para o fim da E5
+(os tipos já existem no banco, sem tela).
+
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC

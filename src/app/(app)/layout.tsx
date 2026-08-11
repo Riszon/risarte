@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { getSessionContext } from "@/lib/auth";
 import { canViewEmpresarial } from "@/lib/empresarial/access";
 import { canViewFinance } from "@/lib/finance/access";
+import { canViewStock } from "@/lib/stock-access";
 import { canViewPpr } from "@/lib/ppr/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
@@ -92,6 +93,9 @@ export default async function AppLayout({
   const canViewEmp = canViewEmpresarial(session);
   // FIN0: módulo Financeiro — gestão da unidade + Financeiro da Franqueadora.
   const canSeeFinance = canViewFinance(session);
+  // 0213: Estoque — gestão + quem atende. Fora do Financeiro de propósito:
+  // dentista e TSB precisam da tela e não podem ver financeiro.
+  const canSeeStock = canViewStock(session, session.activeClinic?.id ?? null);
 
   // PPR2: seção do Programa de Prevenção Riso+ (toda a operação enxerga).
   const canSeePpr = canViewPpr(session);
@@ -114,6 +118,7 @@ export default async function AppLayout({
         canViewStaff={canViewStaff}
         canViewEmpresarial={canViewEmp}
         canViewFinance={canSeeFinance}
+        canViewStock={canSeeStock}
         canViewPpr={canSeePpr}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,

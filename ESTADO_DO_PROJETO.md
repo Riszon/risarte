@@ -1,6 +1,40 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/08/2026 · Versão do sistema: **0.191.0** · Última migração: **0212**_
+_Atualizado em: 11/08/2026 · Versão do sistema: **0.192.0** · Última migração: **0213**_
+
+> **ESTOQUE E1+E2 (v0.192.0, migração 0213).** Cadastro, saldo, movimentos e o
+> **kit do procedimento**, em `/estoque`.
+>
+> **O desenho parte do jeito de este módulo morrer,** que o documento base já
+> registrava: *"falta de baixa no uso"*. Se alguém precisar digitar o consumo no
+> meio do atendimento, em três meses o saldo não vale nada. Por isso o **kit**
+> nasce junto da fundação: é dele que a baixa automática (E3) vai sair.
+>
+> **O saldo é projeção, nunca um número digitado.** Tudo nasce em movimentos, e
+> a única porta é uma função no banco que calcula, congela e projeta de uma vez
+> — assim dá para descobrir *por que* um saldo está errado, não só que está.
+>
+> **Custo médio ponderado**, com a saída congelada no movimento: comprar mais
+> caro amanhã não reescreve o que foi usado ontem (a regra que o repasse já
+> seguia). O teste trava a diferença: 10 unidades a R$ 5,00 + 90 a R$ 10,00 dá
+> **R$ 9,50**, não os R$ 7,50 da média simples.
+>
+> **Saída não é recusada por falta de saldo** — fica negativo e avisa. Travar
+> aqui seria parar atendimento por causa de cadastro. O negativo é a informação:
+> faltou dar entrada em alguma nota.
+>
+> **O kit alimenta o preço** escrevendo no mesmo campo que o precificador, a
+> margem da negociação e a venda direta já liam — nenhuma das três precisou
+> mudar, e o material passa a ser custo real em vez de estimativa. Comprar mais
+> caro recalcula o custo de todo procedimento que usa o item.
+>
+> **Compra vira estoque, não despesa** (decisão do dono): material comprado em
+> janeiro e usado em março não pode afundar janeiro. Entrou o grupo **6
+> (Ativos)** no plano de contas, com a natureza `asset` — a única que não entra
+> na DRE. **380 testes** (20 novos).
+>
+> **Falta:** E3 baixa automática · E4 entrada por nota + conta a pagar · E5
+> mínimo, inventário e alertas · transferência entre unidades.
 
 > **REPASSE POR NÍVEL + TAXA MÉDIA SUGERIDA (v0.191.0, migração 0212).**
 >
