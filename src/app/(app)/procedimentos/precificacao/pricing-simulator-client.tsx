@@ -34,12 +34,20 @@ type Proc = {
   materialsCents: number;
   labCents: number;
   notes: string;
+  /** 0216: material vindo dos KITS (calculado), não do valor digitado. */
+  fromKit: boolean;
+  kitCount: number;
+  itemsWithoutCost: number;
 };
 
 type Level = { id: string; name: string };
 
 /** Chave do seletor quando se simula sem nível (só o cadastro). */
 const CATALOG = "__catalogo__";
+
+function fmtCents(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
 
 export function PricingSimulator({
   clinicId,
@@ -384,12 +392,17 @@ export function PricingSimulator({
             {shown.map((p) => {
               const sim = simFor(p);
               const open = openId === p.id;
-              const liveSim = open
-                ? simFor(p, {
-                    materials: parseBRLToCents(materials) ?? 0,
-                    lab: parseBRLToCents(lab) ?? 0,
-                  })
-                : sim;
+              // Com kit, o material não é editável aqui: mexer no número sem
+              // mexer no kit criaria de novo a divergência que a 0216 tirou.
+              const liveSim =
+                open && !p.fromKit
+                  ? simFor(p, {
+                      materials: parseBRLToCents(materials) ?? 0,
+                      lab: parseBRLToCents(lab) ?? 0,
+                    })
+                  : open
+                    ? simFor(p, { lab: parseBRLToCents(lab) ?? 0 })
+                    : sim;
               const warnings = simulationWarnings({
                 cost: {
                   minutes: p.minutes,
@@ -454,11 +467,19 @@ export function PricingSimulator({
                     <div className="space-y-3 border-t p-3">
                       <div className="grid gap-2 sm:grid-cols-3">
                         <label className="block">
-                          <Label className="text-[11px]">Material (R$)</Label>
+                          <Label className="text-[11px]">
+                            Material (R$)
+                            {p.fromKit && (
+                              <span className="ml-1 text-muted-foreground">
+                                — do kit
+                              </span>
+                            )}
+                          </Label>
                           <Input
                             className="h-8"
                             inputMode="decimal"
-                            value={materials}
+                            value={p.fromKit ? fmtCents(p.materialsCents) : materials}
+                            disabled={p.fromKit}
                             onChange={(e) => setMaterials(e.target.value)}
                           />
                         </label>
@@ -487,7 +508,11 @@ export function PricingSimulator({
                           cents={liveSim.breakdown.chairCents}
                         />
                         <Row
-                          label="Material"
+                          label={
+                            p.fromKit
+                              ? `Material (${p.kitCount} kit${p.kitCount === 1 ? "" : "s"})`
+                              : "Material"
+                          }
                           cents={liveSim.breakdown.materialsCents}
                         />
                         <Row
@@ -572,6 +597,28 @@ export function PricingSimulator({
                           </Button>
                         </span>
                       </div>
+
+                      {p.fromKit && (
+                        <p className="rounded-lg border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+                          O material vem dos <strong>kits</strong> deste
+                          procedimento, ao custo médio da unidade, e é calculado
+                          na hora — não há valor guardado para envelhecer. Para
+                          mudá-lo, mude o kit em <strong>Estoque</strong>.
+                          {p.itemsWithoutCost > 0 && (
+                            <>
+                              {" "}
+                              <span className="text-amber-800">
+                                {p.itemsWithoutCost}{" "}
+                                {p.itemsWithoutCost === 1
+                                  ? "item do kit está sem custo"
+                                  : "itens do kit estão sem custo"}{" "}
+                                (nunca houve entrada com valor) — o custo real é
+                                maior que este.
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      )}
 
                       {warnings.length > 0 && (
                         <ul className="space-y-0.5 text-[11px] text-amber-800">

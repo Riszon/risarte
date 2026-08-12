@@ -602,10 +602,18 @@ saldo não vale nada. Por isso **a baixa é automática, pelo KIT do procediment
   (com fornecedor e nota), e `stock_expiring()` aponta o que vence primeiro.
   **Limite declarado:** o consumo **ainda não escolhe lote** (sem baixa FIFO nem
   recusa de vencido) — controle por lote muda a baixa, e fica para depois da E3.
-- **O kit alimenta o preço.** Em vez de mudar precificador, margem da negociação
-  e venda direta, o kit **escreve** em `procedure_costs.materials_cents`
-  (`materials_source = 'kit'`) — quem já lia continua lendo, e o número passa a
-  ser o custo real. Compra que muda o custo médio dispara `refresh_kit_costs`.
+- **CUSTO DE MATERIAL É CALCULADO, NUNCA GUARDADO (0216).** A 0213 fazia o kit
+  *escrever* o resultado em `procedure_costs.materials_cents` para não mexer nos
+  três consumidores. **Foi erro de desenho, e o teste do dono achou:** ele somou
+  os kits (R$ 17,92) e a Precificação mostrava R$ 11,69. Valor guardado é foto —
+  fica certo no instante em que é tirada e envelhece sozinho; todo caminho que
+  muda o custo passa a ter de lembrar de tirar outra, e um não lembrou. Pior: o
+  recálculo só cobria a **clínica ativa**, então salvar um kit da REDE deixava as
+  outras unidades com o número velho (uma tinha R$ 220,00 contra R$ 0,00 real).
+  Agora `material_cost_for()` resolve na leitura: **tem kit, o kit manda; não
+  tem, vale o valor informado à mão**. Não existe cache para envelhecer.
+  **Regra geral: não cachear número derivado de dinheiro** — o custo de
+  recalcular é sempre menor que o de formar preço com valor velho.
 - **Compra vira ESTOQUE, não despesa** (decisão do dono, 11/08/2026): material
   comprado em janeiro e usado em março não pode afundar janeiro. Daí o grupo
   **6 (Ativos) / 6.1.01 Estoque de materiais** e a natureza `asset`, a única que

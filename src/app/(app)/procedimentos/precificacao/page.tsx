@@ -44,9 +44,10 @@ export default async function PricingPage() {
       .order("name")
       .limit(1000),
     supabase.rpc("cost_settings_for", { p_clinic: clinicId }),
-    supabase
-      .from("procedure_costs")
-      .select("procedure_id, clinic_id, materials_cents, lab_cents, notes"),
+    // 0216: material CALCULADO, não guardado. Guardar o resultado foi o que
+    // deixou uma unidade com R$ 11,69 e outra com R$ 220,00 quando o valor real
+    // era outro — cache de número derivado envelhece em silêncio.
+    supabase.rpc("material_costs_for_clinic", { p_clinic_id: clinicId }),
     supabase
       .from("career_levels")
       .select("id, name, clinic_id, sort_order")
@@ -63,21 +64,46 @@ export default async function PricingPage() {
   const settings = Array.isArray(settingsRow) ? settingsRow[0] : settingsRow;
   const suggestedFee = Array.isArray(feeRow) ? feeRow[0] : feeRow;
 
-  // Custo da unidade vence o da rede (mesma cascata do resto do sistema).
   const costByProcedure = new Map<
     string,
-    { materialsCents: number; labCents: number; notes: string }
+    {
+      materialsCents: number;
+      labCents: number;
+      fromKit: boolean;
+      kitCount: number;
+      itemsWithoutCost: number;
+    }
   >();
-  for (const c of costRows ?? []) {
-    const key = c.procedure_id as string;
-    const isUnit = c.clinic_id === clinicId;
-    if (!costByProcedure.has(key) || isUnit) {
-      if (c.clinic_id === null || isUnit) {
-        costByProcedure.set(key, {
-          materialsCents: Number(c.materials_cents ?? 0),
-          labCents: Number(c.lab_cents ?? 0),
-          notes: (c.notes as string | null) ?? "",
-        });
+  for (const c of (costRows ?? []) as {
+    procedure_id: string;
+    materials_cents: number;
+    lab_cents: number;
+    from_kit: boolean;
+    kit_count: number;
+    items_without_cost: number;
+  }[]) {
+    costByProcedure.set(c.procedure_id, {
+      materialsCents: Number(c.materials_cents ?? 0),
+      labCents: Number(c.lab_cents ?? 0),
+      fromKit: Boolean(c.from_kit),
+      kitCount: Number(c.kit_count ?? 0),
+      itemsWithoutCost: Number(c.items_without_cost ?? 0),
+    });
+  }
+
+  // A observação continua sendo do cadastro (texto de quem conhece a clínica).
+  const { data: noteRows } = await supabase
+    .from("procedure_costs")
+    .select("procedure_id, clinic_id, notes");
+  const noteByProcedure = new Map<string, string>();
+  for (const n of noteRows ?? []) {
+    const isUnit = n.clinic_id === clinicId;
+    if (n.clinic_id === null || isUnit) {
+      if (isUnit || !noteByProcedure.has(n.procedure_id as string)) {
+        noteByProcedure.set(
+          n.procedure_id as string,
+          (n.notes as string | null) ?? ""
+        );
       }
     }
   }
@@ -175,7 +201,11 @@ export default async function PricingPage() {
           payoutByLevel: payoutByProcedure[p.id as string] ?? {},
           materialsCents: costByProcedure.get(p.id as string)?.materialsCents ?? 0,
           labCents: costByProcedure.get(p.id as string)?.labCents ?? 0,
-          notes: costByProcedure.get(p.id as string)?.notes ?? "",
+          notes: noteByProcedure.get(p.id as string) ?? "",
+          fromKit: costByProcedure.get(p.id as string)?.fromKit ?? false,
+          kitCount: costByProcedure.get(p.id as string)?.kitCount ?? 0,
+          itemsWithoutCost:
+            costByProcedure.get(p.id as string)?.itemsWithoutCost ?? 0,
         }))}
       />
     </div>

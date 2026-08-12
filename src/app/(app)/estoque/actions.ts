@@ -289,7 +289,6 @@ export async function saveItemSettings(input: {
 export async function saveKit(input: {
   kitId: string | null;
   clinicId: string | null;
-  activeClinicId: string;
   name: string;
   notes: string;
   active: boolean;
@@ -338,13 +337,9 @@ export async function saveKit(input: {
     };
   }
 
-  const { error: refreshError } = await supabase.rpc("refresh_kit_costs", {
-    p_clinic_id: input.activeClinicId,
-    p_item_id: null,
-  });
-  if (refreshError) {
-    console.error("refresh_kit_costs failed:", refreshError.message);
-  }
+  // 0216: não há mais o que recalcular. O custo de material é CALCULADO na
+  // leitura — guardar o resultado foi o que deixou Cambé com R$ 11,69 e Roteiro
+  // com R$ 220,00 enquanto o valor real era outro.
 
   await logAudit({
     action: input.kitId ? "update" : "create",

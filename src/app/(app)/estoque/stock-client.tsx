@@ -204,9 +204,10 @@ export function StockManager({
   // Histórico de um item
   const [historyFor, setHistoryFor] = useState<string | null>(null);
 
-  // Kit em edição
+  // Kit em edição / kit apenas aberto para ver
   const [kitDraft, setKitDraft] = useState<KitDraft | null>(null);
   const [kitProcSearch, setKitProcSearch] = useState("");
+  const [kitOpen, setKitOpen] = useState<string | null>(null);
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const avgByItem = useMemo(() => {
@@ -1052,12 +1053,18 @@ export function StockManager({
                   })),
                   avgByItem
                 );
+                const open = kitOpen === k.id;
                 return (
                   <li
                     key={k.id}
-                    className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed py-1 last:border-0"
+                    className="border-b border-dashed py-1 last:border-0"
                   >
-                    <span className="min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setKitOpen(open ? null : k.id)}
+                      className="min-w-0 rounded px-1 text-left hover:bg-muted/60"
+                    >
                       {k.name}
                       {k.clinicId === null && (
                         <Badge variant="outline" className="ml-2 text-[10px]">
@@ -1080,7 +1087,7 @@ export function StockManager({
                             .map((id) => procName.get(id) ?? "—")
                             .join(", ")}${k.procedureIds.length > 3 ? "…" : ""}`}
                       </span>
-                    </span>
+                    </button>
                     <span className="flex items-center gap-3 text-xs">
                       <strong className="tabular-nums">
                         {formatBRL(cost.totalCents)}
@@ -1095,6 +1102,57 @@ export function StockManager({
                         </button>
                       )}
                     </span>
+                  </div>
+
+                  {/* Ver o que compõe o kit SEM abrir a edição — clicar para
+                      olhar não deveria exigir entrar no modo de mexer. */}
+                  {open && (
+                    <div className="mt-1 rounded-lg border bg-muted/20 p-2 text-xs">
+                      <ul className="space-y-0.5">
+                        {k.lines.map((l) => {
+                          const li = itemById.get(l.itemId);
+                          const avg = avgByItem[l.itemId] ?? 0;
+                          return (
+                            <li
+                              key={l.itemId}
+                              className="flex flex-wrap justify-between gap-2"
+                            >
+                              <span>
+                                {li?.name ?? "item"}
+                                <span className="ml-1 text-muted-foreground">
+                                  {fmtQty(l.quantity)}{" "}
+                                  {unitShort(li?.unitOfMeasure ?? "unidade")} ×{" "}
+                                  {fmtUnitCost(avg)}
+                                </span>
+                              </span>
+                              <span className="tabular-nums">
+                                {avg > 0 ? (
+                                  formatBRL(Math.round(l.quantity * avg))
+                                ) : (
+                                  <span className="text-amber-700">
+                                    sem custo
+                                  </span>
+                                )}
+                              </span>
+                            </li>
+                          );
+                        })}
+                        {k.lines.length === 0 && (
+                          <li className="text-muted-foreground">
+                            Kit sem itens.
+                          </li>
+                        )}
+                      </ul>
+                      {k.procedureIds.length > 0 && (
+                        <p className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
+                          <strong>Procedimentos:</strong>{" "}
+                          {k.procedureIds
+                            .map((id) => procName.get(id) ?? "—")
+                            .join(" · ")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   </li>
                 );
               })}
@@ -1334,7 +1392,6 @@ export function StockManager({
                           saveKit({
                             kitId: kitDraft.id,
                             clinicId: kitDraft.clinicId,
-                            activeClinicId: clinicId,
                             name: kitDraft.name,
                             notes: kitDraft.notes,
                             active: kitDraft.active,

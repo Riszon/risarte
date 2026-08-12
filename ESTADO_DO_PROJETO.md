@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/08/2026 · Versão do sistema: **0.194.0** · Última migração: **0215**_
+_Atualizado em: 11/08/2026 · Versão do sistema: **0.195.0** · Última migração: **0216**_
+
+> **CUSTO DE MATERIAL CALCULADO, NÃO GUARDADO (v0.195.0, migração 0216).**
+>
+> **O dono achou o bug somando na mão:** os kits do procedimento davam R$ 17,92
+> e a Precificação mostrava R$ 11,69. A diferença era exatamente a linha da
+> resina (0,2 × R$ 31,125 = R$ 6,23).
+>
+> **A causa foi desenho meu.** Na 0213 fiz o kit *escrever* o resultado num
+> campo, para não mexer nas três telas que já liam aquele campo. Mas valor
+> guardado é **foto**: fica certo no instante em que é tirada e envelhece
+> sozinho — e todo caminho que muda o custo passa a ter de lembrar de tirar
+> outra. Um não lembrou.
+>
+> E o buraco era maior que o caso dele. No banco: **Cambé** com R$ 11,69
+> guardado contra R$ 17,92 real; **Roteiro** com **R$ 220,00** contra R$ 0,00. O
+> da Roteiro expõe o defeito estrutural: o recálculo só cobria a **clínica
+> ativa**, então salvar um kit **da rede** deixava as outras unidades com o
+> número velho, e nada denunciava.
+>
+> **A correção não foi lembrar de tirar a foto em mais lugares — foi parar de
+> guardar.** O material passa a ser calculado na leitura: kits do procedimento ×
+> custo médio da unidade. Não existe "velho" porque não existe foto. O campo
+> continua servindo para quem informa o valor à mão (procedimento sem kit), e
+> com kit ele fica travado na tela, apontando o Estoque.
+>
+> **Regra que fica:** não cachear número derivado de dinheiro. Recalcular custa
+> milissegundos; preço formado com custo velho custa margem.
+>
+> Junto: **Procedimentos** mostra os kits de cada procedimento com o custo de
+> cada um e "ver itens" sem sair da tela; **Estoque** abre os detalhes do kit ao
+> clicar, sem entrar no modo de edição.
 
 > **KIT COM NOME PRÓPRIO + EDITAR/INATIVAR ITEM (v0.194.0, migração 0215).**
 >

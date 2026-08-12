@@ -333,6 +333,54 @@ export default async function ProceduresPage(
     };
   }
 
+  // 0216: quais kits cada procedimento usa, e o que compõe cada um — pedido do
+  // dono: dá para ver o kit sem sair do catálogo.
+  const [{ data: kitDetailRows }, { data: kitItemRows }] = await Promise.all([
+    supabase.rpc("procedure_kits_detail", { p_clinic_id: activeClinicId }),
+    supabase
+      .from("stock_kit_items")
+      .select("kit_id, quantity, stock_items ( name, unit_of_measure )"),
+  ]);
+
+  const kitItems: Record<
+    string,
+    { name: string; quantity: number; unit: string }[]
+  > = {};
+  for (const r of kitItemRows ?? []) {
+    const item = Array.isArray(r.stock_items) ? r.stock_items[0] : r.stock_items;
+    (kitItems[r.kit_id as string] ??= []).push({
+      name: (item?.name as string) ?? "item",
+      quantity: Number(r.quantity ?? 0),
+      unit: (item?.unit_of_measure as string) ?? "unidade",
+    });
+  }
+
+  const kitsByProcedure: Record<
+    string,
+    {
+      id: string;
+      name: string;
+      scope: string;
+      costCents: number;
+      items: { name: string; quantity: number; unit: string }[];
+    }[]
+  > = {};
+  for (const r of (kitDetailRows ?? []) as {
+    procedure_id: string;
+    kit_id: string;
+    kit_name: string;
+    kit_scope: string;
+    kit_cost_cents: number;
+  }[]) {
+    (kitsByProcedure[r.procedure_id] ??= []).push({
+      id: r.kit_id,
+      name: r.kit_name,
+      scope: r.kit_scope,
+      costCents: Number(r.kit_cost_cents ?? 0),
+      items: kitItems[r.kit_id] ?? [],
+    });
+  }
+
   // H4.3 Lote 4: propostas de protocolo pendentes visíveis a este usuário (a RLS
   // já limita: Admin vê todas; Coordenador vê as da sua unidade; Planner as suas).
   const { data: propRows } = await supabase
@@ -470,6 +518,7 @@ export default async function ProceduresPage(
         levels={levels}
         payoutByProcedure={payoutByProcedure}
         canEditPayout={session.isAdminMaster}
+        kitsByProcedure={kitsByProcedure}
       />
     </div>
   );

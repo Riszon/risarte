@@ -46,6 +46,14 @@ import {
   type ProcedureInput,
 } from "./actions";
 
+export type ProcedureKit = {
+  id: string;
+  name: string;
+  scope: string;
+  costCents: number;
+  items: { name: string; quantity: number; unit: string }[];
+};
+
 export type ProcedureChange = {
   id: string;
   changedAt: string;
@@ -600,6 +608,7 @@ export function ProceduresEditor({
   levels = [],
   payoutByProcedure = {},
   canEditPayout = false,
+  kitsByProcedure = {},
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -624,6 +633,8 @@ export function ProceduresEditor({
     Record<string, { amountCents: number; source: string }>
   >;
   canEditPayout?: boolean;
+  /** 0216: kits vinculados a cada procedimento, com o que compõe cada um. */
+  kitsByProcedure?: Record<string, ProcedureKit[]>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -749,6 +760,7 @@ export function ProceduresEditor({
                   levels={levels}
                   payoutByLevel={payoutByProcedure[p.id] ?? {}}
                   canEditPayout={canEditPayout}
+                  kits={kitsByProcedure[p.id] ?? []}
                 />
               ))}
             </ul>
@@ -914,6 +926,7 @@ function ProcedureRow({
   levels,
   payoutByLevel,
   canEditPayout,
+  kits,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -938,8 +951,10 @@ function ProcedureRow({
   /** Repasse vigente deste procedimento por nível. */
   payoutByLevel: Record<string, { amountCents: number; source: string }>;
   canEditPayout: boolean;
+  kits: ProcedureKit[];
 }) {
   const [editing, setEditing] = useState(false);
+  const [showKits, setShowKits] = useState(false);
   const [form, setForm] = useState<ProcedureInput>(() => toInput(p));
   const [showHistory, setShowHistory] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
@@ -1186,6 +1201,67 @@ function ProcedureRow({
           </div>
         )}
       </div>
+
+      {/* 0216: os kits que este procedimento consome, e o que tem dentro —
+          sem sair do catálogo e sem entrar em modo de edição. */}
+      {kits.length > 0 && (
+        <div className="mt-2 rounded-md border bg-muted/20 p-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowKits((s) => !s)}
+            className="flex w-full flex-wrap items-center justify-between gap-2 text-left"
+          >
+            <span>
+              <strong>
+                {kits.length} kit{kits.length === 1 ? "" : "s"}
+              </strong>{" "}
+              <span className="text-muted-foreground">
+                {kits.map((k) => k.name).join(" · ")}
+              </span>
+            </span>
+            <span className="tabular-nums">
+              material{" "}
+              <strong>
+                {formatBRL(kits.reduce((s, k) => s + k.costCents, 0))}
+              </strong>
+              <span className="ml-2 text-muted-foreground">
+                {showKits ? "ocultar" : "ver itens"}
+              </span>
+            </span>
+          </button>
+
+          {showKits && (
+            <div className="mt-1 space-y-1 border-t pt-1">
+              {kits.map((k) => (
+                <div key={k.id}>
+                  <p className="font-medium">
+                    {k.name}
+                    <Badge variant="outline" className="ml-1 text-[10px]">
+                      {k.scope === "rede" ? "Rede" : "Unidade"}
+                    </Badge>
+                    <span className="ml-2 tabular-nums text-muted-foreground">
+                      {formatBRL(k.costCents)}
+                    </span>
+                  </p>
+                  <ul className="ml-3 text-muted-foreground">
+                    {k.items.map((it, idx) => (
+                      <li key={idx}>
+                        {it.name} — {it.quantity} {it.unit}
+                        {it.quantity === 1 ? "" : "s"}
+                      </li>
+                    ))}
+                    {k.items.length === 0 && <li>Kit sem itens.</li>}
+                  </ul>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground">
+                O custo é calculado ao custo médio da sua unidade, na hora. Para
+                mudar, edite o kit em Estoque.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {networkMode && levels.length > 0 && (
         <PayoutByLevel
