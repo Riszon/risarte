@@ -564,6 +564,23 @@ saldo não vale nada. Por isso **a baixa é automática, pelo KIT do procediment
 - **Item é da REDE; saldo, mínimo, máximo, local e fornecedor habitual são da
   UNIDADE** (cada uma compra pelo seu preço e guarda onde quer). **Kit** segue a
   mesma cascata: padrão da rede, ajuste por unidade.
+- **O KIT TEM NOME PRÓPRIO E SERVE A VÁRIOS PROCEDIMENTOS (0215).** Na 0213 ele
+  era filho de um procedimento — "Kit restauração" viraria três cópias (1, 2 e 3
+  faces) e uma delas ficaria desatualizada sem ninguém perceber. Agora: kit é
+  entidade (criar, renomear, inativar), **um kit → vários procedimentos**, e
+  **um procedimento pode ter vários kits** (básico + específico; sem isso o
+  básico seria copiado em todo kit). Itens e vínculos são gravados juntos
+  (`save_stock_kit`) — separados, um procedimento ficaria ligado ao kit com o
+  conteúdo anterior. Vínculo da unidade **vence** o da rede (não mistura: herdar
+  de volta o que a unidade trocou seria pior que não ter cascata).
+- **Editar item: o FATOR muda livre, a UNIDADE DE CONSUMO não** (0215). O fator
+  novo vale só para as próximas entradas — o saldo já está contado em unidades
+  de consumo. Trocar a unidade com saldo/movimento é **bloqueado no banco**
+  (`UNIT_LOCKED`): 240 sugadores não viram 240 gramas, e o erro levaria junto o
+  custo de todo procedimento que usa o item.
+- **Excluir = inativar** quando o item tem movimento ou está num kit (mesma
+  regra do catálogo de procedimentos). Apagar de verdade, só o que nunca foi
+  usado.
 - **UNIDADE DE COMPRA ≠ UNIDADE DE CONSUMO (0214).** O dono achou no teste: *"eu
   pago R$ 25,00 na caixa de sugadores, mas vem 100 unidades"*. A 0213 tratava as
   duas como iguais e cada sugador entrava no procedimento por R$ 25,00 — erro de

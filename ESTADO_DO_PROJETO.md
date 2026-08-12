@@ -1,6 +1,36 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/08/2026 · Versão do sistema: **0.193.0** · Última migração: **0214**_
+_Atualizado em: 11/08/2026 · Versão do sistema: **0.194.0** · Última migração: **0215**_
+
+> **KIT COM NOME PRÓPRIO + EDITAR/INATIVAR ITEM (v0.194.0, migração 0215).**
+>
+> **1. O kit deixou de ser filho do procedimento.** Ele era uma lista presa a
+> UM procedimento — "Kit restauração" viraria três cópias (1, 2 e 3 faces), e
+> manter cópias iguais é garantia de que uma fica desatualizada sem ninguém
+> perceber. Agora o kit **tem nome**, existe sozinho e **se liga a vários
+> procedimentos** (você marca todos numa lista, de uma vez). E **um
+> procedimento pode ter mais de um kit** — o básico ("luva, sugador, babador")
+> mais o específico; sem isso, o básico seria copiado dentro de cada kit, que é
+> o mesmo problema com outro nome. O custo soma os kits ligados.
+>
+> **Nada do que estava cadastrado se perdeu:** cada kit da 0213 virou um kit
+> nomeado "Kit — &lt;procedimento&gt;", com os itens copiados e o vínculo já
+> criado. As tabelas antigas só saíram depois da cópia, no mesmo script.
+>
+> **2. Editar item** — nome, marca, categoria, embalagem e fator. Com duas
+> travas:
+>
+> - **Mudar o fator não mexe no saldo.** Ele já está contado em unidades de
+>   consumo; 240 sugadores continuam 240. O fator novo vale para as próximas
+>   entradas.
+> - **Mudar a unidade de consumo é BLOQUEADO** quando há saldo ou movimento
+>   (trava no banco, `UNIT_LOCKED`). Trocar "unidade" por "grama" num item com
+>   240 em estoque transformaria 240 sugadores em 240 gramas de nada — e levaria
+>   junto o custo de todo procedimento que usa o item.
+>
+> **3. Excluir = inativar** quando o item tem movimento ou está num kit (mesma
+> regra do catálogo de procedimentos): ele some das listas de lançamento e o
+> histórico continua inteiro. Apagar de verdade, só o que nunca foi usado.
 
 > **ESTOQUE — EMBALAGEM × CONSUMO, LOTE E MOVIMENTO DETALHADO (v0.193.0,
 > migração 0214).** Cinco pedidos do teste do dono, e dois deles eram o mesmo

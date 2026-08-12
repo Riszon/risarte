@@ -77,9 +77,12 @@ export default async function StockPage() {
       .order("name")
       .limit(1000),
     supabase
-      .from("procedure_kits")
-      .select("id, procedure_id, clinic_id, procedure_kit_items ( item_id, quantity )")
-      .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`),
+      .from("stock_kits")
+      .select(
+        "id, clinic_id, name, notes, active, stock_kit_items ( item_id, quantity ), procedure_kit_links ( procedure_id, clinic_id )"
+      )
+      .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
+      .order("name"),
     supabase
       .from("suppliers")
       .select("id, name")
@@ -193,28 +196,28 @@ export default async function StockPage() {
     daysLeft: Number(e.days_left ?? 0),
   }));
 
-  // Kit da unidade vence o da rede (mesma cascata de preço e protocolo).
-  const kitByProcedure: Record<
-    string,
-    { scope: "rede" | "unidade"; lines: { itemId: string; quantity: number }[] }
-  > = {};
-  for (const k of kitRows ?? []) {
-    const procedureId = k.procedure_id as string;
-    const scope = k.clinic_id === null ? "rede" : "unidade";
-    if (kitByProcedure[procedureId] && scope === "rede") continue;
-    kitByProcedure[procedureId] = {
-      scope,
-      lines: (
-        (k.procedure_kit_items ?? []) as {
-          item_id: string;
-          quantity: number;
-        }[]
-      ).map((l) => ({
+  // 0215: kits têm nome e se ligam a vários procedimentos. O vínculo da
+  // unidade vence o da rede — se a unidade montou os seus, são só eles.
+  const kits = (kitRows ?? []).map((k) => ({
+    id: k.id as string,
+    clinicId: (k.clinic_id as string | null) ?? null,
+    name: k.name as string,
+    notes: (k.notes as string | null) ?? "",
+    active: Boolean(k.active),
+    lines: ((k.stock_kit_items ?? []) as { item_id: string; quantity: number }[])
+      .map((l) => ({
         itemId: l.item_id,
         quantity: Number(l.quantity ?? 0),
       })),
-    };
-  }
+    procedureIds: (
+      (k.procedure_kit_links ?? []) as {
+        procedure_id: string;
+        clinic_id: string | null;
+      }[]
+    )
+      .filter((l) => l.clinic_id === (k.clinic_id ?? null))
+      .map((l) => l.procedure_id),
+  }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
@@ -251,7 +254,7 @@ export default async function StockPage() {
           name: p.name as string,
           specialty: (p.specialty as string | null) ?? null,
         }))}
-        kits={kitByProcedure}
+        kits={kits}
       />
     </div>
   );

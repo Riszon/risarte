@@ -57,7 +57,7 @@ export async function saveStockItem(input: {
   const factor = Number(input.unitsPerPurchase.replace(",", ".")) || 0;
   if (factor <= 0) {
     // Fator zero ou vazio faria a caixa inteira virar uma unidade — o erro de
-    // 100 vezes que esta migração existe para consertar.
+    // 100 vezes que a 0214 existe para consertar.
     return {
       ok: false,
       error:
@@ -66,25 +66,35 @@ export async function saveStockItem(input: {
   }
 
   const supabase = await createClient();
-  const row = {
-    name: input.name.trim(),
-    brand: input.brand.trim() || null,
-    unit_of_measure: input.unitOfMeasure.trim() || "unidade",
-    purchase_unit: input.purchaseUnit.trim() || "unidade",
-    units_per_purchase: factor,
-    category: input.category.trim() || null,
-    notes: input.notes.trim() || null,
-    is_active: input.isActive,
-  };
-
-  const { error } = input.id
-    ? await supabase.from("stock_items").update(row).eq("id", input.id)
-    : await supabase
-        .from("stock_items")
-        .insert({ ...row, created_by: session.userId });
+  // Quem grava é o banco: a trava da unidade de consumo (0215) é regra de
+  // negócio, e regra que importa mora no banco.
+  const { error } = await supabase.rpc("save_stock_item", {
+    p_id: input.id,
+    p_name: input.name,
+    p_brand: input.brand,
+    p_unit_of_measure: input.unitOfMeasure || "unidade",
+    p_purchase_unit: input.purchaseUnit || "unidade",
+    p_units_per_purchase: factor,
+    p_category: input.category,
+    p_notes: input.notes,
+    p_active: input.isActive,
+  });
   if (error) {
-    console.error("saveStockItem failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar o item." };
+    if (error.message.includes("UNIT_LOCKED")) {
+      return {
+        ok: false,
+        error:
+          "Este item já tem saldo ou movimento: a unidade de consumo não pode mudar. Zere o saldo ou cadastre outro item.",
+      };
+    }
+    if (error.message.includes("NAME_REQUIRED")) {
+      return { ok: false, error: "Informe o nome do item." };
+    }
+    console.error("save_stock_item failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível salvar o item."),
+    };
   }
 
   await logAudit({
@@ -94,6 +104,35 @@ export async function saveStockItem(input: {
   });
   refresh();
   return { ok: true };
+}
+
+/** Excluir = inativar quando o item tem passado (regra do catálogo, 0039). */
+export async function removeStockItem(id: string): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStockCatalog(session)) {
+    return { ok: false, error: "O catálogo de insumos é da Franqueadora." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("delete_stock_item", { p_id: id });
+  if (error) {
+    console.error("delete_stock_item failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível excluir o item."),
+    };
+  }
+
+  await logAudit({ action: "update", entityType: "stock_item", entityId: id });
+  refresh();
+  // `ok` com mensagem = a tela mostra como aviso, não como erro.
+  return data === "inativado"
+    ? {
+        ok: true,
+        error:
+          "Item já tem histórico: foi inativado, não excluído. Ele some das listas e o histórico continua inteiro.",
+      }
+    : { ok: true };
 }
 
 // -- MOVIMENTO ---------------------------------------------------------------
@@ -240,15 +279,22 @@ export async function saveItemSettings(input: {
 // -- KIT DO PROCEDIMENTO -----------------------------------------------------
 
 /**
- * Grava o kit da REDE (padrão) ou o da unidade, e recalcula o custo de
- * material do procedimento na hora — senão o preço continuaria mostrando a
- * estimativa antiga e ninguém notaria a diferença.
+ * 0215 — o kit tem NOME e se liga a vários procedimentos.
+ *
+ * Itens e vínculos são gravados de uma vez pelo banco: se a lista de itens
+ * mudasse sem os vínculos (ou o contrário), um procedimento ficaria ligado a um
+ * kit com o conteúdo do estado anterior. Depois recalcula o custo — senão o
+ * preço continuaria mostrando a estimativa antiga e ninguém notaria.
  */
 export async function saveKit(input: {
-  procedureId: string;
+  kitId: string | null;
   clinicId: string | null;
   activeClinicId: string;
+  name: string;
+  notes: string;
+  active: boolean;
   lines: { itemId: string; quantity: string }[];
+  procedureIds: string[];
 }): Promise<StockResult> {
   const session = await getSessionContext();
   const scopeOk =
@@ -264,51 +310,32 @@ export async function saveKit(input: {
           : "Sua função não permite editar o kit desta unidade.",
     };
   }
+  if (!input.name.trim()) return { ok: false, error: "Dê um nome ao kit." };
 
   const supabase = await createClient();
-
-  const { data: kitRow, error: kitError } = await supabase
-    .from("procedure_kits")
-    .upsert(
-      {
-        procedure_id: input.procedureId,
-        clinic_id: input.clinicId,
-        created_by: session.userId,
-      },
-      { onConflict: "procedure_id,clinic_id" }
-    )
-    .select("id")
-    .single();
-  if (kitError || !kitRow) {
-    console.error("saveKit (upsert) failed:", kitError?.message);
-    return { ok: false, error: "Não foi possível salvar o kit." };
-  }
-
-  // Substitui a lista inteira: kit é uma foto do que se usa hoje, não um
-  // histórico. O histórico de consumo real está em stock_movements.
-  const { error: delError } = await supabase
-    .from("procedure_kit_items")
-    .delete()
-    .eq("kit_id", kitRow.id);
-  if (delError) {
-    console.error("saveKit (clear) failed:", delError.message);
-    return { ok: false, error: "Não foi possível atualizar o kit." };
-  }
-
-  const rows = input.lines
-    .map((l) => ({
-      kit_id: kitRow.id as string,
-      item_id: l.itemId,
-      quantity: Number(l.quantity.replace(",", ".")) || 0,
-    }))
-    .filter((r) => r.item_id && r.quantity > 0);
-
-  if (rows.length > 0) {
-    const { error } = await supabase.from("procedure_kit_items").insert(rows);
-    if (error) {
-      console.error("saveKit (insert) failed:", error.message);
-      return { ok: false, error: "Não foi possível salvar os itens do kit." };
+  const { error } = await supabase.rpc("save_stock_kit", {
+    p_kit_id: input.kitId,
+    p_clinic_id: input.clinicId,
+    p_name: input.name,
+    p_notes: input.notes,
+    p_items: input.lines
+      .map((l) => ({
+        itemId: l.itemId,
+        quantity: Number(l.quantity.replace(",", ".")) || 0,
+      }))
+      .filter((l) => l.itemId && l.quantity > 0),
+    p_procedure_ids: input.procedureIds,
+    p_active: input.active,
+  });
+  if (error) {
+    if (error.message.includes("NAME_REQUIRED")) {
+      return { ok: false, error: "Dê um nome ao kit." };
     }
+    console.error("save_stock_kit failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível salvar o kit."),
+    };
   }
 
   const { error: refreshError } = await supabase.rpc("refresh_kit_costs", {
@@ -320,9 +347,9 @@ export async function saveKit(input: {
   }
 
   await logAudit({
-    action: "update",
-    entityType: "procedure_kit",
-    entityId: input.procedureId,
+    action: input.kitId ? "update" : "create",
+    entityType: "stock_kit",
+    entityId: input.kitId ?? input.name,
     clinicId: input.clinicId ?? undefined,
   });
   refresh();

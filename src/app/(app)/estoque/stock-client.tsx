@@ -3,7 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, Plus, Search, TriangleAlert } from "lucide-react";
+import {
+  CalendarClock,
+  Plus,
+  Search,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +31,7 @@ import {
 } from "@/lib/stock";
 import {
   postMovement,
+  removeStockItem,
   saveItemSettings,
   saveKit,
   saveStockItem,
@@ -80,8 +87,24 @@ type Expiring = {
 };
 
 type Kit = {
-  scope: "rede" | "unidade";
+  id: string;
+  clinicId: string | null;
+  name: string;
+  notes: string;
+  active: boolean;
   lines: { itemId: string; quantity: number }[];
+  procedureIds: string[];
+};
+
+/** Formulário do kit em edição (o "novo" nasce sem id). */
+type KitDraft = {
+  id: string | null;
+  clinicId: string | null;
+  name: string;
+  notes: string;
+  active: boolean;
+  lines: { itemId: string; quantity: string }[];
+  procedureIds: string[];
 };
 
 const selectClass =
@@ -140,7 +163,7 @@ export function StockManager({
   expiring: Expiring[];
   suppliers: { id: string; name: string }[];
   procedures: { id: string; name: string; specialty: string | null }[];
-  kits: Record<string, Kit>;
+  kits: Kit[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -158,14 +181,16 @@ export function StockManager({
   const [mvSupplier, setMvSupplier] = useState("");
   const [mvInvoice, setMvInvoice] = useState("");
 
-  // Cadastro de item
+  // Cadastro / edição de item
   const emptyItem = {
+    id: null as string | null,
     name: "",
     brand: "",
     unitOfMeasure: "unidade",
     purchaseUnit: "unidade",
     unitsPerPurchase: "1",
     category: "",
+    hasHistory: false,
   };
   const [newItem, setNewItem] = useState<typeof emptyItem | null>(null);
 
@@ -179,12 +204,9 @@ export function StockManager({
   // Histórico de um item
   const [historyFor, setHistoryFor] = useState<string | null>(null);
 
-  // Kit
-  const [kitProc, setKitProc] = useState("");
-  const [kitScope, setKitScope] = useState<"rede" | "unidade">("rede");
-  const [kitLines, setKitLines] = useState<
-    { itemId: string; quantity: string }[]
-  >([]);
+  // Kit em edição
+  const [kitDraft, setKitDraft] = useState<KitDraft | null>(null);
+  const [kitProcSearch, setKitProcSearch] = useState("");
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const avgByItem = useMemo(() => {
@@ -231,7 +253,10 @@ export function StockManager({
     startTransition(async () => {
       const r = await action();
       if (r.ok) {
-        toast.success(msg);
+        // ok COM mensagem = aviso, não erro (ex.: item inativado em vez de
+        // excluído porque já tinha histórico).
+        if (r.error) toast.info(r.error);
+        else toast.success(msg);
         after?.();
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
@@ -242,15 +267,31 @@ export function StockManager({
     canManage ? true : k === "consumo" || k === "perda"
   );
 
-  function openKit(procedureId: string) {
-    setKitProc(procedureId);
-    const kit = kits[procedureId];
-    setKitScope(kit?.scope ?? "rede");
-    setKitLines(
-      kit?.lines.map((l) => ({
-        itemId: l.itemId,
-        quantity: fmtQty(l.quantity),
-      })) ?? []
+  function openKit(kit: Kit | null) {
+    setKitProcSearch("");
+    setKitDraft(
+      kit
+        ? {
+            id: kit.id,
+            clinicId: kit.clinicId,
+            name: kit.name,
+            notes: kit.notes,
+            active: kit.active,
+            lines: kit.lines.map((l) => ({
+              itemId: l.itemId,
+              quantity: fmtQty(l.quantity),
+            })),
+            procedureIds: [...kit.procedureIds],
+          }
+        : {
+            id: null,
+            clinicId: canManageCatalog ? null : clinicId,
+            name: "",
+            notes: "",
+            active: true,
+            lines: [],
+            procedureIds: [],
+          }
     );
   }
 
@@ -263,7 +304,7 @@ export function StockManager({
   }
 
   const kitPreview = kitCost(
-    kitLines
+    (kitDraft?.lines ?? [])
       .filter((l) => l.itemId)
       .map((l) => ({
         itemId: l.itemId,
@@ -271,6 +312,22 @@ export function StockManager({
       })),
     avgByItem
   );
+
+  const procName = useMemo(
+    () => new Map(procedures.map((p) => [p.id, p.name])),
+    [procedures]
+  );
+
+  const kitProcOptions = useMemo(() => {
+    const q = kitProcSearch.trim().toLowerCase();
+    return q
+      ? procedures.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            (p.specialty ?? "").toLowerCase().includes(q)
+        )
+      : procedures.slice(0, 40);
+  }, [procedures, kitProcSearch]);
 
   return (
     <div className={cn("space-y-5", isPending && "opacity-70")}>
@@ -568,7 +625,8 @@ export function StockManager({
           {newItem && (
             <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 sm:grid-cols-3">
               <p className="sm:col-span-3 text-[11px] font-medium">
-                Cadastro do item (vale para toda a rede)
+                {newItem.id ? "Editar item" : "Cadastro do item"} (vale para
+                toda a rede)
               </p>
               <label className="block">
                 <Label className="text-[11px]">Nome</Label>
@@ -620,13 +678,24 @@ export function StockManager({
                 </select>
               </label>
               <label className="block">
-                <Label className="text-[11px]">Consome em</Label>
+                <Label className="text-[11px]">
+                  Consome em
+                  {newItem.hasHistory && (
+                    <span className="ml-1 text-muted-foreground">
+                      (travado)
+                    </span>
+                  )}
+                </Label>
                 <select
                   value={newItem.unitOfMeasure}
+                  disabled={newItem.hasHistory}
                   onChange={(e) =>
                     setNewItem({ ...newItem, unitOfMeasure: e.target.value })
                   }
-                  className={selectClass}
+                  className={cn(
+                    selectClass,
+                    newItem.hasHistory && "opacity-60"
+                  )}
                 >
                   {STOCK_UNITS.map((u) => (
                     <option key={u} value={u}>
@@ -660,33 +729,80 @@ export function StockManager({
                 adesivo que dá <strong>20</strong> restaurações se cadastra como
                 &quot;20 aplicações por frasco&quot;. Se compra e consumo são a
                 mesma coisa, deixe 1.
+                {newItem.id && (
+                  <>
+                    {" "}
+                    <strong>Mudar o fator não mexe no saldo atual</strong> — ele
+                    já está contado em {newItem.unitOfMeasure}s; o fator novo
+                    vale para as próximas entradas.
+                  </>
+                )}
+                {newItem.hasHistory && (
+                  <>
+                    {" "}
+                    A <strong>unidade de consumo está travada</strong> porque já
+                    existe saldo ou movimento: trocá-la transformaria o que está
+                    em estoque em outra coisa, e levaria junto o custo de todo
+                    procedimento que usa o item.
+                  </>
+                )}
               </p>
 
-              <div className="sm:col-span-3 flex justify-end">
-                <Button
-                  size="sm"
-                  disabled={isPending || !newItem.name.trim()}
-                  onClick={() =>
-                    run(
-                      () =>
-                        saveStockItem({
-                          id: null,
-                          name: newItem.name,
-                          brand: newItem.brand,
-                          unitOfMeasure: newItem.unitOfMeasure,
-                          purchaseUnit: newItem.purchaseUnit,
-                          unitsPerPurchase: newItem.unitsPerPurchase,
-                          category: newItem.category,
-                          notes: "",
-                          isActive: true,
-                        }),
-                      "Item cadastrado.",
-                      () => setNewItem(null)
-                    )
-                  }
-                >
-                  Salvar item
-                </Button>
+              <div className="sm:col-span-3 flex justify-between gap-2">
+                {newItem.id && canManageCatalog ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    disabled={isPending}
+                    onClick={() =>
+                      run(
+                        () => removeStockItem(newItem.id as string),
+                        "Item excluído.",
+                        () => setNewItem(null)
+                      )
+                    }
+                  >
+                    <Trash2 className="mr-1 size-4" />
+                    Excluir / inativar
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <span className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isPending}
+                    onClick={() => setNewItem(null)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={isPending || !newItem.name.trim()}
+                    onClick={() =>
+                      run(
+                        () =>
+                          saveStockItem({
+                            id: newItem.id,
+                            name: newItem.name,
+                            brand: newItem.brand,
+                            unitOfMeasure: newItem.unitOfMeasure,
+                            purchaseUnit: newItem.purchaseUnit,
+                            unitsPerPurchase: newItem.unitsPerPurchase,
+                            category: newItem.category,
+                            notes: "",
+                            isActive: true,
+                          }),
+                        newItem.id ? "Item atualizado." : "Item cadastrado.",
+                        () => setNewItem(null)
+                      )
+                    }
+                  >
+                    Salvar item
+                  </Button>
+                </span>
               </div>
             </div>
           )}
@@ -740,6 +856,30 @@ export function StockManager({
                         <span className="text-muted-foreground">
                           {fmtUnitCost(i.avgCostCents)}
                         </span>
+                        {canManageCatalog && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewItem({
+                                id: i.id,
+                                name: i.name,
+                                brand: i.brand,
+                                unitOfMeasure: i.unitOfMeasure,
+                                purchaseUnit: i.purchaseUnit,
+                                unitsPerPurchase: fmtQty(i.unitsPerPurchase),
+                                category: i.category,
+                                // A trava é do banco; aqui é só para a tela
+                                // explicar antes de deixar tentar.
+                                hasHistory:
+                                  i.quantity !== 0 ||
+                                  movements.some((m) => m.itemId === i.id),
+                              })
+                            }
+                            className="rounded px-1 text-muted-foreground hover:bg-muted"
+                          >
+                            editar
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() =>
@@ -872,61 +1012,147 @@ export function StockManager({
         </CardContent>
       </Card>
 
-      {/* -- KIT DO PROCEDIMENTO ------------------------------------------ */}
+      {/* -- KITS (0215: nome próprio, vários procedimentos) -------------- */}
       <Card>
         <CardContent className="space-y-3 p-4">
-          <h2 className="font-medium">Kit do procedimento</h2>
-          <p className="text-xs text-muted-foreground">
-            O que cada procedimento consome, <strong>na unidade de consumo</strong>{" "}
-            — 1 sugador, 0,2 grama de resina, 1 aplicação de adesivo. É daqui que
-            sai a <strong>baixa automática</strong> quando a sessão for
-            concluída, e o custo do kit alimenta o preço e a margem no lugar da
-            estimativa.
-          </p>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <label className="block sm:col-span-2">
-              <Label className="text-[11px]">Procedimento</Label>
-              <select
-                value={kitProc}
-                onChange={(e) => openKit(e.target.value)}
-                className={selectClass}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium">Kits ({kits.length})</h2>
+            {canManage && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => openKit(null)}
               >
-                <option value="">Escolher…</option>
-                {procedures.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                    {kits[p.id] ? ` · kit da ${kits[p.id].scope}` : " · sem kit"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {kitProc && (
-              <label className="block">
-                <Label className="text-[11px]">Vale para</Label>
-                <select
-                  value={kitScope}
-                  onChange={(e) =>
-                    setKitScope(e.target.value as "rede" | "unidade")
-                  }
-                  className={selectClass}
-                  disabled={!canManageCatalog}
-                >
-                  <option value="rede">Toda a rede (padrão)</option>
-                  <option value="unidade">Só esta unidade</option>
-                </select>
-              </label>
+                <Plus className="mr-1 size-4" />
+                Novo kit
+              </Button>
             )}
           </div>
+          <p className="text-xs text-muted-foreground">
+            O kit tem <strong>nome</strong> e se liga a vários procedimentos —
+            &quot;Kit restauração&quot; serve para 1, 2 e 3 faces sem virar três
+            cópias que saem do ar uma a uma. Um procedimento pode ter mais de um
+            kit (o básico + o específico), e o custo soma os dois. É daqui que
+            sai a <strong>baixa automática</strong>, e o custo alimenta o preço
+            no lugar da estimativa.
+          </p>
 
-          {kitProc && (
-            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
-              {kitLines.length === 0 && (
+          {kits.length === 0 ? (
+            <p className="py-2 text-xs text-muted-foreground">
+              Nenhum kit cadastrado.
+            </p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {kits.map((k) => {
+                const cost = kitCost(
+                  k.lines.map((l) => ({
+                    itemId: l.itemId,
+                    quantity: l.quantity,
+                  })),
+                  avgByItem
+                );
+                return (
+                  <li
+                    key={k.id}
+                    className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed py-1 last:border-0"
+                  >
+                    <span className="min-w-0">
+                      {k.name}
+                      {k.clinicId === null && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">
+                          Rede
+                        </Badge>
+                      )}
+                      {!k.active && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">
+                          Inativo
+                        </Badge>
+                      )}
+                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                        {k.lines.length} item
+                        {k.lines.length === 1 ? "" : "s"} ·{" "}
+                        {k.procedureIds.length} procedimento
+                        {k.procedureIds.length === 1 ? "" : "s"}
+                        {k.procedureIds.length > 0 &&
+                          `: ${k.procedureIds
+                            .slice(0, 3)
+                            .map((id) => procName.get(id) ?? "—")
+                            .join(", ")}${k.procedureIds.length > 3 ? "…" : ""}`}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-3 text-xs">
+                      <strong className="tabular-nums">
+                        {formatBRL(cost.totalCents)}
+                      </strong>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => openKit(k)}
+                          className="rounded px-1 text-muted-foreground hover:bg-muted"
+                        >
+                          editar
+                        </button>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {kitDraft && (
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+              <div className="grid gap-2 sm:grid-cols-4">
+                <label className="block sm:col-span-2">
+                  <Label className="text-[11px]">Nome do kit</Label>
+                  <Input
+                    className="h-8"
+                    value={kitDraft.name}
+                    onChange={(e) =>
+                      setKitDraft({ ...kitDraft, name: e.target.value })
+                    }
+                    placeholder="Ex.: Kit restauração"
+                  />
+                </label>
+                <label className="block">
+                  <Label className="text-[11px]">Vale para</Label>
+                  <select
+                    value={kitDraft.clinicId === null ? "rede" : "unidade"}
+                    onChange={(e) =>
+                      setKitDraft({
+                        ...kitDraft,
+                        clinicId: e.target.value === "rede" ? null : clinicId,
+                      })
+                    }
+                    className={selectClass}
+                    disabled={!canManageCatalog}
+                  >
+                    <option value="rede">Toda a rede (padrão)</option>
+                    <option value="unidade">Só esta unidade</option>
+                  </select>
+                </label>
+                <label className="flex items-end gap-2 pb-1">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={kitDraft.active}
+                    onChange={(e) =>
+                      setKitDraft({ ...kitDraft, active: e.target.checked })
+                    }
+                  />
+                  <span className="text-xs">Kit ativo</span>
+                </label>
+              </div>
+
+              {/* ITENS */}
+              <p className="text-[11px] font-medium">Itens do kit</p>
+              {kitDraft.lines.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Nenhum item no kit ainda.
+                  Nenhum item ainda.
                 </p>
               )}
-              {kitLines.map((line, idx) => {
+              {kitDraft.lines.map((line, idx) => {
                 const li = line.itemId ? itemById.get(line.itemId) : undefined;
                 return (
                   <div key={idx} className="flex flex-wrap items-end gap-2">
@@ -935,11 +1161,12 @@ export function StockManager({
                       <select
                         value={line.itemId}
                         onChange={(e) =>
-                          setKitLines((ls) =>
-                            ls.map((l, i) =>
+                          setKitDraft({
+                            ...kitDraft,
+                            lines: kitDraft.lines.map((l, i) =>
                               i === idx ? { ...l, itemId: e.target.value } : l
-                            )
-                          )
+                            ),
+                          })
                         }
                         className={selectClass}
                       >
@@ -963,11 +1190,12 @@ export function StockManager({
                         inputMode="decimal"
                         value={line.quantity}
                         onChange={(e) =>
-                          setKitLines((ls) =>
-                            ls.map((l, i) =>
+                          setKitDraft({
+                            ...kitDraft,
+                            lines: kitDraft.lines.map((l, i) =>
                               i === idx ? { ...l, quantity: e.target.value } : l
-                            )
-                          )
+                            ),
+                          })
                         }
                       />
                     </label>
@@ -976,7 +1204,10 @@ export function StockManager({
                       variant="ghost"
                       className="h-8 text-xs"
                       onClick={() =>
-                        setKitLines((ls) => ls.filter((_, i) => i !== idx))
+                        setKitDraft({
+                          ...kitDraft,
+                          lines: kitDraft.lines.filter((_, i) => i !== idx),
+                        })
                       }
                     >
                       Remover
@@ -984,42 +1215,140 @@ export function StockManager({
                   </div>
                 );
               })}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() =>
+                  setKitDraft({
+                    ...kitDraft,
+                    lines: [...kitDraft.lines, { itemId: "", quantity: "1" }],
+                  })
+                }
+              >
+                <Plus className="mr-1 size-3.5" />
+                Adicionar item
+              </Button>
 
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() =>
-                    setKitLines((ls) => [...ls, { itemId: "", quantity: "1" }])
-                  }
-                >
-                  <Plus className="mr-1 size-3.5" />
-                  Adicionar item
-                </Button>
+              {/* PROCEDIMENTOS VINCULADOS */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <p className="text-[11px] font-medium">
+                  Procedimentos que usam este kit (
+                  {kitDraft.procedureIds.length})
+                </p>
+                <Input
+                  className="h-7 w-52 text-xs"
+                  type="search"
+                  value={kitProcSearch}
+                  onChange={(e) => setKitProcSearch(e.target.value)}
+                  placeholder="Buscar procedimento"
+                />
+              </div>
+
+              {kitDraft.procedureIds.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {kitDraft.procedureIds.map((id) => (
+                    <Badge
+                      key={id}
+                      variant="outline"
+                      className="cursor-pointer text-[10px]"
+                      onClick={() =>
+                        setKitDraft({
+                          ...kitDraft,
+                          procedureIds: kitDraft.procedureIds.filter(
+                            (x) => x !== id
+                          ),
+                        })
+                      }
+                    >
+                      {procName.get(id) ?? "—"} ✕
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="max-h-44 overflow-y-auto rounded-md border bg-background p-1">
+                {kitProcOptions.map((p) => {
+                  const on = kitDraft.procedureIds.includes(p.id);
+                  return (
+                    <label
+                      key={p.id}
+                      className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-muted"
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-3.5 accent-primary"
+                        checked={on}
+                        onChange={() =>
+                          setKitDraft({
+                            ...kitDraft,
+                            procedureIds: on
+                              ? kitDraft.procedureIds.filter((x) => x !== p.id)
+                              : [...kitDraft.procedureIds, p.id],
+                          })
+                        }
+                      />
+                      {p.name}
+                      {p.specialty && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {p.specialty}
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+                {kitProcOptions.length === 0 && (
+                  <p className="p-1 text-[11px] text-muted-foreground">
+                    Nenhum procedimento encontrado.
+                  </p>
+                )}
+              </div>
+              {!kitProcSearch && procedures.length > kitProcOptions.length && (
+                <p className="text-[10px] text-muted-foreground">
+                  Mostrando {kitProcOptions.length} de {procedures.length} —
+                  use a busca para achar o resto.
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
                 <span className="text-sm">
                   Custo do kit:{" "}
                   <strong>{formatBRL(kitPreview.totalCents)}</strong>
                 </span>
-                <Button
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={isPending}
-                  onClick={() =>
-                    run(
-                      () =>
-                        saveKit({
-                          procedureId: kitProc,
-                          clinicId: kitScope === "rede" ? null : clinicId,
-                          activeClinicId: clinicId,
-                          lines: kitLines,
-                        }),
-                      "Kit salvo — o custo do procedimento foi recalculado."
-                    )
-                  }
-                >
-                  Salvar kit
-                </Button>
+                <span className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => setKitDraft(null)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={isPending || !kitDraft.name.trim()}
+                    onClick={() =>
+                      run(
+                        () =>
+                          saveKit({
+                            kitId: kitDraft.id,
+                            clinicId: kitDraft.clinicId,
+                            activeClinicId: clinicId,
+                            name: kitDraft.name,
+                            notes: kitDraft.notes,
+                            active: kitDraft.active,
+                            lines: kitDraft.lines,
+                            procedureIds: kitDraft.procedureIds,
+                          }),
+                        "Kit salvo — o custo dos procedimentos foi recalculado.",
+                        () => setKitDraft(null)
+                      )
+                    }
+                  >
+                    Salvar kit
+                  </Button>
+                </span>
               </div>
 
               {kitPreview.missingItemIds.length > 0 && (
@@ -1032,8 +1361,8 @@ export function StockManager({
                   ({kitPreview.missingItemIds
                     .map((id) => itemById.get(id)?.name ?? "item")
                     .join(", ")}
-                  ) — nunca houve entrada com valor. Enquanto isso, o custo
-                  deste procedimento sai menor do que é.
+                  ) — nunca houve entrada com valor. Enquanto isso, o custo dos
+                  procedimentos ligados sai menor do que é.
                 </p>
               )}
             </div>
