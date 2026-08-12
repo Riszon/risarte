@@ -149,6 +149,7 @@ export function StockManager({
   items,
   movements,
   expiring,
+  withoutKit,
   suppliers,
   procedures,
   kits,
@@ -161,6 +162,13 @@ export function StockManager({
   items: Item[];
   movements: Movement[];
   expiring: Expiring[];
+  /** 0217: procedimentos concluídos que não baixaram nada por não ter kit. */
+  withoutKit: {
+    procedureId: string;
+    procedureName: string;
+    sessions: number;
+    lastDone: string;
+  }[];
   suppliers: { id: string; name: string }[];
   procedures: { id: string; name: string; specialty: string | null }[];
   kits: Kit[];
@@ -384,6 +392,33 @@ export function StockManager({
         </Card>
       )}
 
+      {/* -- SEM KIT: o furo da baixa automática (0217) -------------------- */}
+      {withoutKit.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50/40">
+          <CardContent className="space-y-1 p-4">
+            <h2 className="flex items-center gap-1 text-sm font-medium text-amber-900">
+              <TriangleAlert className="size-4" />
+              Concluídos sem baixar estoque (últimos 30 dias)
+            </h2>
+            <p className="text-[11px] text-amber-900">
+              Estes procedimentos foram <strong>concluídos</strong> e não
+              descontaram nada, porque não têm kit cadastrado. Não é erro do
+              sistema — é cadastro faltando. Enquanto ficar assim, o saldo vai
+              parando de bater e a culpa cai no estoque.
+            </p>
+            <ul className="space-y-0.5 text-xs text-amber-900">
+              {withoutKit.slice(0, 10).map((w) => (
+                <li key={w.procedureId}>
+                  <strong>{w.procedureName}</strong> — {w.sessions} sessão
+                  {w.sessions === 1 ? "" : "ões"}
+                  {w.lastDone && ` · última em ${fmtDate(w.lastDone)}`}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {/* -- LANÇAR MOVIMENTO -------------------------------------------- */}
       {canConsume && (
         <Card>
@@ -588,6 +623,11 @@ export function StockManager({
               negativo e o alerta aparece. Travar aqui seria parar um
               atendimento por causa de cadastro — o saldo negativo é a
               informação de que faltou dar entrada em alguma nota.
+              <br />
+              O consumo do kit é <strong>baixado sozinho</strong> quando a
+              sessão é concluída, e é o <em>previsto</em>: se usaram duas
+              anestesias em vez de uma, registre a diferença aqui como consumo
+              avulso.
             </p>
           </CardContent>
         </Card>

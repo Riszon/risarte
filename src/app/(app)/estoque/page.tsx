@@ -48,6 +48,7 @@ export default async function StockPage() {
     { data: kitRows },
     { data: supplierRows },
     { data: expiringRows },
+    { data: noKitRows },
   ] = await Promise.all([
     supabase
       .from("stock_items")
@@ -90,6 +91,13 @@ export default async function StockPage() {
       .eq("active", true)
       .order("name"),
     supabase.rpc("stock_expiring", { p_clinic_id: clinicId, p_days: 120 }),
+    // 0217: procedimento concluído sem kit não consome nada. Normal no começo,
+    // problema quando ninguém percebe — o saldo para de bater e a culpa cai no
+    // estoque.
+    supabase.rpc("sessions_without_kit", {
+      p_clinic_id: clinicId,
+      p_days: 30,
+    }),
   ]);
 
   // O nome de quem lançou vem numa consulta à parte: o atalho de embed em
@@ -196,6 +204,20 @@ export default async function StockPage() {
     daysLeft: Number(e.days_left ?? 0),
   }));
 
+  const withoutKit = (
+    (noKitRows ?? []) as {
+      procedure_id: string;
+      procedure_name: string;
+      sessions: number;
+      last_done: string;
+    }[]
+  ).map((r) => ({
+    procedureId: r.procedure_id,
+    procedureName: r.procedure_name,
+    sessions: Number(r.sessions ?? 0),
+    lastDone: r.last_done ?? "",
+  }));
+
   // 0215: kits têm nome e se ligam a vários procedimentos. O vínculo da
   // unidade vence o da rede — se a unidade montou os seus, são só eles.
   const kits = (kitRows ?? []).map((k) => ({
@@ -245,6 +267,7 @@ export default async function StockPage() {
         items={items}
         movements={movements}
         expiring={expiring}
+        withoutKit={withoutKit}
         suppliers={(supplierRows ?? []).map((s) => ({
           id: s.id as string,
           name: s.name as string,

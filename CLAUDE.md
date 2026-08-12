@@ -624,11 +624,30 @@ saldo não vale nada. Por isso **a baixa é automática, pelo KIT do procediment
 - O módulo mora em **`/estoque`**, fora do Financeiro de propósito: dentista e
   TSB precisam da tela e não podem ver financeiro.
 
-**Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** baixa automática
-na conclusão da sessão (sozinha, porque mexe em caminho crítico do clínico) →
-**E4** entrada por nota + conta a pagar + custo em 2.2 → **E5** mínimo,
-inventário e alertas. **Transferência entre unidades** fica para o fim da E5
-(os tipos já existem no banco, sem tela).
+**BAIXA AUTOMÁTICA NA CONCLUSÃO DA SESSÃO (E3, 0217).** Mesmo gancho do repasse:
+a sessão passa a `done`. Nenhuma tela nova para o dentista.
+
+- **Concluir de novo não consome de novo** — índice único por (sessão, item).
+- **Reabrir NÃO devolve o material**: ele foi usado de verdade; devolver ao
+  saldo seria inventar gaze que não está mais na gaveta.
+- **Nunca bloqueia**: sem saldo → negativo + alerta; sem kit → não consome.
+- **O que não tem kit fica visível** (`sessions_without_kit`, 30 dias) — silêncio
+  aqui vira rotina, e rotina vira saldo que ninguém confia.
+- **O consumo é o PREVISTO, não o medido.** Usou duas anestesias? Registro
+  avulso corrige. A tela declara isso.
+- **O mesmo item em dois kits vira uma linha só** (soma antes de baixar).
+- **Sem baixa retroativa**: ninguém sabe o que foi usado nas sessões antigas, e
+  inventar consumo velho estragaria o custo médio de hoje.
+- A conta do movimento saiu para `apply_stock_movement()` (sem guarda de papel);
+  `post_stock_movement()` virou a porta com a guarda. **Uma conta só** — duplicar
+  a matemática nos dois caminhos é como eles passam a divergir.
+
+**Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** ✅ baixa
+automática → **E4** entrada por nota + conta a pagar + as duas metades do razão
+(compra → 6.1.01, consumo → 2.2) → **E5** mínimo, inventário e alertas.
+**Transferência entre unidades** fica para o fim da E5 (os tipos já existem no
+banco, sem tela). **Controle por lote** (baixa pelo que vence primeiro, recusa de
+vencido) fica para depois da E3, por decisão do dono.
 
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →

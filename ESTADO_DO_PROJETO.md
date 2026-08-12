@@ -1,6 +1,40 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 11/08/2026 · Versão do sistema: **0.195.0** · Última migração: **0216**_
+_Atualizado em: 12/08/2026 · Versão do sistema: **0.196.0** · Última migração: **0217**_
+
+> **ESTOQUE E3 — A BAIXA AUTOMÁTICA (v0.196.0, migração 0217).** É a etapa que
+> dá sentido ao resto: sem ela o kit é uma tabela bonita e o saldo depende de
+> alguém lembrar de digitar no meio do atendimento — que é exatamente como
+> controle de estoque de clínica morre.
+>
+> **O gancho é o mesmo do repasse ao dentista:** a sessão passa a *concluída*.
+> Nenhuma tela nova para o dentista; ele conclui como já faz, e o estoque se
+> move sozinho. O movimento fica marcado como *"Sessão concluída — &lt;
+> procedimento&gt;"*, então dá para ir do saldo até o atendimento que o gerou.
+>
+> **Cinco regras travadas:**
+>
+> 1. **Concluir de novo não consome de novo** (índice único por sessão + item).
+>    Sem isso, um duplo clique viraria estoque negativo sem ninguém entender.
+> 2. **Reabrir NÃO devolve o material** — ele foi usado de verdade; devolvê-lo
+>    seria inventar gaze que não está mais na gaveta.
+> 3. **Nunca bloqueia o atendimento** — sem saldo fica negativo e alerta; sem
+>    kit não consome e segue.
+> 4. **O que não tem kit fica visível:** a tela lista *"concluídos sem baixar
+>    estoque (últimos 30 dias)"*. Silêncio aqui viraria rotina, e rotina vira
+>    saldo que ninguém confia.
+> 5. **O consumo é o previsto, não o medido** — usou duas anestesias? o registro
+>    avulso corrige, e a tela diz isso.
+>
+> O mesmo item em dois kits vira **uma linha só** (soma antes de baixar). **Não
+> há baixa retroativa:** ninguém sabe o que foi usado nas sessões antigas, e
+> inventar consumo velho estragaria o custo médio de hoje.
+>
+> A conta do movimento saiu para uma função interna, e a porta pública ficou só
+> com a guarda de papel — o gatilho e a tela passam a usar **a mesma conta**.
+>
+> **Falta:** E4 (entrada por nota + conta a pagar + as duas metades do razão) ·
+> E5 (mínimo, inventário, alertas) · lote · transferência entre unidades.
 
 > **CUSTO DE MATERIAL CALCULADO, NÃO GUARDADO (v0.195.0, migração 0216).**
 >
