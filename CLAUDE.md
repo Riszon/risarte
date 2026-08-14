@@ -651,12 +651,24 @@ update`, com `TG_OP` no lugar de `old.status` (ler OLD em INSERT levanta erro).
 Sem apuração retroativa, por decisão do dono. **Regra:** gatilho de conclusão
 tem de ouvir a CRIAÇÃO — há fluxo que nasce concluído.
 
-**FRASCO ABERTO (0218).** "2,78 ml de adesivo" é ficção: existe *1 frasco pela
-metade*. Item marcado com `track_open_package` separa **fechados** de **em uso**;
-o consumo sai do aberto e, quando ele acaba, o sistema **abre o próximo** e
-registra o movimento `abertura` (reclassificação — não move valor). A conta do
-custo não muda. `in_use_quantity` pode ficar negativo: consumiu sem ter aberto e
-sem embalagem para abrir — o número denuncia em vez de esconder.
+**FRASCO ABERTO (0218/0219).** "2,78 ml de adesivo" é ficção: existe *1 frasco
+pela metade*. Item marcado com `track_open_package` separa **fechados** de **em
+uso**, e o consumo sai do aberto.
+
+**ABRIR EMBALAGEM É ATO DE GENTE, NUNCA DO SISTEMA (0219 — correção do dono).**
+A 0218 abria a seguinte sozinha quando a conta zerava, e a premissa estava
+errada: o consumo do kit é **estimativa** (0,2 g de resina, 1 aplicação de
+adesivo) e estimativa não sabe se o frasco acabou. Abrir sozinho faria o sistema
+afirmar um fato físico que ele não conhece, e o saldo de fechados cairia por
+conta própria. Agora `in_use_quantity` **pode ficar negativo** — é a estimativa
+dizendo *"pela conta este frasco já deveria ter acabado"*, não um erro — e o
+sistema **avisa** (`packages_running_out`) em vez de decidir.
+
+**A troca de embalagem é o MOMENTO DA VERDADE.** `open_stock_package()` é
+manual, e é onde a estimativa se acerta com a realidade: a sobra (ou a falta) da
+anterior vira **ajuste com motivo**, em vez de ser arrastada para a próxima —
+senão o erro de uma embalagem contamina todas as seguintes. O movimento
+`abertura` é reclassificação: não move valor. A conta do custo não muda.
 
 **GORRO/MÁSCARA/PROPÉ — duas coisas diferentes (0218).**
 - **Do paciente** (gorro, propé, babador) → **kit de atendimento**

@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/08/2026 · Versão do sistema: **0.197.0** · Última migração: **0218**_
+_Atualizado em: 12/08/2026 · Versão do sistema: **0.198.0** · Última migração: **0219**_
+
+> **QUEM ABRE A EMBALAGEM É GENTE (v0.198.0, migração 0219).** Correção pedida
+> pelo dono, e ele está certo:
+>
+> *"não permitir que o sistema abra o próximo sozinho (...) pode ser que o
+> sistema vai achar que acabou um produto mas ainda não acabou."*
+>
+> A 0218 abria a embalagem seguinte quando a conta zerava. **O erro está na
+> premissa:** o consumo do kit é *estimativa* — 0,2 g de resina, 1 aplicação de
+> adesivo — e estimativa não sabe se o frasco acabou. Abrir sozinho fazia o
+> sistema afirmar um fato físico que ele não tem como conhecer, e o saldo de
+> embalagens fechadas passava a cair por conta própria.
+>
+> Agora: o consumo desconta do que está em uso e **pode ficar negativo** —
+> negativo aqui não é erro, é a estimativa dizendo *"pela conta este frasco já
+> deveria ter acabado"*. O sistema **avisa** ("confira o que está em uso") com
+> três situações: *acabando*, *deve ter acabado* e *houve consumo sem nenhuma
+> embalagem aberta*. Quem olha a bancada decide, com um botão **"Abrir frasco"**.
+>
+> **A troca é o momento da verdade,** e é onde a estimativa se acerta com a
+> realidade: a sobra (ou a falta) da embalagem anterior vira um **ajuste
+> registrado com motivo**, em vez de ser arrastada para a próxima — senão o erro
+> de uma contamina todas as seguintes.
 
 > **VENDA DIRETA BAIXA · FRASCO EM USO · KIT DE ATENDIMENTO (v0.197.0, 0218).**
 >

@@ -49,6 +49,7 @@ export default async function StockPage() {
     { data: supplierRows },
     { data: expiringRows },
     { data: noKitRows },
+    { data: runningOutRows },
   ] = await Promise.all([
     supabase
       .from("stock_items")
@@ -97,6 +98,12 @@ export default async function StockPage() {
     supabase.rpc("sessions_without_kit", {
       p_clinic_id: clinicId,
       p_days: 30,
+    }),
+    // 0219: o sistema AVISA que o frasco em uso deve estar acabando; quem olha
+    // a bancada é que decide abrir outro.
+    supabase.rpc("packages_running_out", {
+      p_clinic_id: clinicId,
+      p_threshold_percent: 15,
     }),
   ]);
 
@@ -224,6 +231,30 @@ export default async function StockPage() {
     lastDone: r.last_done ?? "",
   }));
 
+  const runningOut = (
+    (runningOutRows ?? []) as {
+      item_id: string;
+      item_name: string;
+      purchase_unit: string;
+      stock_unit: string;
+      in_use_quantity: number;
+      units_per_purchase: number;
+      percent_left: number;
+      closed_packages: number;
+      state: string;
+    }[]
+  ).map((r) => ({
+    itemId: r.item_id,
+    itemName: r.item_name,
+    purchaseUnit: r.purchase_unit,
+    stockUnit: r.stock_unit,
+    inUseQuantity: Number(r.in_use_quantity ?? 0),
+    unitsPerPurchase: Number(r.units_per_purchase ?? 1),
+    percentLeft: Number(r.percent_left ?? 0),
+    closedPackages: Number(r.closed_packages ?? 0),
+    state: r.state as "sem_aberta" | "deve_ter_acabado" | "acabando",
+  }));
+
   // 0215: kits têm nome e se ligam a vários procedimentos. O vínculo da
   // unidade vence o da rede — se a unidade montou os seus, são só eles.
   const kits = (kitRows ?? []).map((k) => ({
@@ -277,6 +308,7 @@ export default async function StockPage() {
         movements={movements}
         expiring={expiring}
         withoutKit={withoutKit}
+        runningOut={runningOut}
         suppliers={(supplierRows ?? []).map((s) => ({
           id: s.id as string,
           name: s.name as string,

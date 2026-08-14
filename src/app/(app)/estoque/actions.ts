@@ -240,6 +240,60 @@ export async function postMovement(input: {
 }
 
 /**
+ * 0219 — abrir embalagem é ato de GENTE.
+ *
+ * O consumo do kit é estimativa: ele não sabe se o frasco acabou. Por isso o
+ * sistema deixou de abrir sozinho — quem olha a bancada decide. E a troca é o
+ * momento em que a estimativa se acerta com a realidade: a sobra (ou a falta)
+ * da embalagem anterior vira ajuste com motivo, em vez de ser arrastada.
+ */
+export async function openPackage(input: {
+  clinicId: string;
+  itemId: string;
+  packages: number;
+  previousFinished: boolean;
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canConsumeStock(session, input.clinicId)) {
+    return { ok: false, error: "Sua função não permite abrir embalagem." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("open_stock_package", {
+    p_clinic_id: input.clinicId,
+    p_item_id: input.itemId,
+    p_packages: Math.max(1, Math.round(input.packages)),
+    p_previous_finished: input.previousFinished,
+  });
+  if (error) {
+    if (error.message.includes("NO_CLOSED_PACKAGE")) {
+      return {
+        ok: false,
+        error:
+          "Não há embalagem fechada em estoque para abrir. Dê entrada da compra primeiro.",
+      };
+    }
+    if (error.message.includes("NO_BALANCE")) {
+      return { ok: false, error: "Este item ainda não tem saldo nesta unidade." };
+    }
+    console.error("open_stock_package failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível abrir a embalagem."),
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "stock_open_package",
+    entityId: input.itemId,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  return { ok: true };
+}
+
+/**
  * Mínimo, máximo, onde fica guardado e o fornecedor habitual — tudo isto é DA
  * UNIDADE: Cambé guarda num armário e Londrina noutro, e `suppliers` já é por
  * clínica.
