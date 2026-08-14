@@ -642,6 +642,33 @@ a sessão passa a `done`. Nenhuma tela nova para o dentista.
   `post_stock_movement()` virou a porta com a guarda. **Uma conta só** — duplicar
   a matemática nos dois caminhos é como eles passam a divergir.
 
+**VENDA DIRETA TAMBÉM BAIXA (0218).** Na venda direta a sessão é **criada
+pronta** (`insert ... status='done'`), não criada e depois concluída — e os dois
+gatilhos escutavam só `after update`. **O mesmo buraco estava no repasse do
+FIN5:** procedimento vendido na venda direta nunca gerou repasse (68 sessões no
+banco de teste, zero repasses, zero baixas). Agora ambos são `after insert or
+update`, com `TG_OP` no lugar de `old.status` (ler OLD em INSERT levanta erro).
+Sem apuração retroativa, por decisão do dono. **Regra:** gatilho de conclusão
+tem de ouvir a CRIAÇÃO — há fluxo que nasce concluído.
+
+**FRASCO ABERTO (0218).** "2,78 ml de adesivo" é ficção: existe *1 frasco pela
+metade*. Item marcado com `track_open_package` separa **fechados** de **em uso**;
+o consumo sai do aberto e, quando ele acaba, o sistema **abre o próximo** e
+registra o movimento `abertura` (reclassificação — não move valor). A conta do
+custo não muda. `in_use_quantity` pode ficar negativo: consumiu sem ter aberto e
+sem embalagem para abrir — o número denuncia em vez de esconder.
+
+**GORRO/MÁSCARA/PROPÉ — duas coisas diferentes (0218).**
+- **Do paciente** (gorro, propé, babador) → **kit de atendimento**
+  (`stock_kits.kind = 'atendimento'`), baixado **uma vez por atendimento**
+  quando `appointments.attendance` vira `done`. Quem faz três procedimentos na
+  mesma consulta não usa três gorros. Não se liga a procedimento.
+- **Do profissional** (máscara e gorro dele) → item de **uso geral**
+  (`general_use`), fora dos kits de procedimento, baixado por lançamento avulso
+  quando a caixa vai para a sala. **O custo dele já está na HORA DE CADEIRA** do
+  precificador: é estrutura. Rateá-lo por procedimento contaria duas vezes e
+  inflaria o preço sugerido.
+
 **Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** ✅ baixa
 automática → **E4** entrada por nota + conta a pagar + as duas metades do razão
 (compra → 6.1.01, consumo → 2.2) → **E5** mínimo, inventário e alertas.

@@ -47,6 +47,10 @@ export async function saveStockItem(input: {
   category: string;
   notes: string;
   isActive: boolean;
+  /** 0218: embalagem aberta importa (adesivo, resina). */
+  trackOpenPackage: boolean;
+  /** 0218: uso geral do atendimento — não entra em kit de procedimento. */
+  generalUse: boolean;
 }): Promise<StockResult> {
   const session = await getSessionContext();
   if (!canManageStockCatalog(session)) {
@@ -78,6 +82,8 @@ export async function saveStockItem(input: {
     p_category: input.category,
     p_notes: input.notes,
     p_active: input.isActive,
+    p_track_open_package: input.trackOpenPackage,
+    p_general_use: input.generalUse,
   });
   if (error) {
     if (error.message.includes("UNIT_LOCKED")) {
@@ -292,6 +298,8 @@ export async function saveKit(input: {
   name: string;
   notes: string;
   active: boolean;
+  /** 0218: 'procedimento' (por procedimento) ou 'atendimento' (por paciente). */
+  kind: "procedimento" | "atendimento";
   lines: { itemId: string; quantity: string }[];
   procedureIds: string[];
 }): Promise<StockResult> {
@@ -325,6 +333,7 @@ export async function saveKit(input: {
       .filter((l) => l.itemId && l.quantity > 0),
     p_procedure_ids: input.procedureIds,
     p_active: input.active,
+    p_kind: input.kind,
   });
   if (error) {
     if (error.message.includes("NAME_REQUIRED")) {

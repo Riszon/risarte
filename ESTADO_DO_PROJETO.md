@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/08/2026 · Versão do sistema: **0.196.0** · Última migração: **0217**_
+_Atualizado em: 12/08/2026 · Versão do sistema: **0.197.0** · Última migração: **0218**_
+
+> **VENDA DIRETA BAIXA · FRASCO EM USO · KIT DE ATENDIMENTO (v0.197.0, 0218).**
+>
+> **1. Bug, e maior do que ele viu.** Na venda direta o procedimento já nasce
+> concluído: a sessão é *criada* pronta, não criada e depois concluída. Os
+> gatilhos escutavam só a *mudança* de status, então nunca eram acionados.
+> **O mesmo buraco estava no repasse ao dentista (FIN5):** procedimento vendido
+> na venda direta nunca gerou repasse. No banco: **68 sessões concluídas por
+> venda direta, zero repasses, zero baixas.** Sem apuração retroativa (decisão
+> do dono). Fica a regra: *gatilho de conclusão tem de ouvir a criação — há
+> fluxo que nasce concluído*.
+>
+> **2. "1 frasco em uso" no lugar de "2,78 ml".** Ele está certo, e o problema é
+> de leitura, não de conta: ninguém tem 2,78 ml de adesivo, tem **um frasco pela
+> metade**. O saldo passa a ter dois números — **fechados** e **em uso** — e o
+> consumo sai do frasco aberto. Quando ele acaba, o sistema **abre o próximo** e
+> registra a abertura, então o "1 em uso" nunca é um número sem origem. A conta
+> do custo não mudou em nada, como ele pediu.
+>
+> **3. Gorro, máscara e propé — são duas coisas.**
+> - **Do paciente** (gorro, propé, babador): **kit de atendimento**, baixado
+>   **uma vez por atendimento**. Quem faz três procedimentos na mesma consulta
+>   não usa três gorros.
+> - **Do profissional** (máscara e gorro dele, que veste de manhã e tira no fim
+>   do dia): item de **uso geral**. Rastrear por paciente seria trabalho diário
+>   sem retorno, e o número sairia errado do mesmo jeito.
+>
+> **A razão de fundo:** o custo da máscara que o dentista usa o dia inteiro **já
+> está na hora de cadeira** do precificador — é estrutura, como aluguel e luz.
+> Rateá-la também por procedimento contaria o mesmo custo duas vezes e inflaria
+> o preço sugerido sem motivo.
 
 > **ESTOQUE E3 — A BAIXA AUTOMÁTICA (v0.196.0, migração 0217).** É a etapa que
 > dá sentido ao resto: sem ela o kit é uma tabela bonita e o saldo depende de

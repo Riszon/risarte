@@ -53,14 +53,14 @@ export default async function StockPage() {
     supabase
       .from("stock_items")
       .select(
-        "id, code, name, brand, unit_of_measure, purchase_unit, units_per_purchase, category, notes, is_active"
+        "id, code, name, brand, unit_of_measure, purchase_unit, units_per_purchase, category, notes, is_active, track_open_package, general_use"
       )
       .order("name")
       .limit(1000),
     supabase
       .from("stock_balances")
       .select(
-        "item_id, quantity, min_quantity, max_quantity, avg_cost_cents, storage_location, preferred_supplier_id"
+        "item_id, quantity, min_quantity, max_quantity, avg_cost_cents, storage_location, preferred_supplier_id, in_use_quantity, open_packages"
       )
       .eq("clinic_id", clinicId),
     supabase
@@ -80,7 +80,7 @@ export default async function StockPage() {
     supabase
       .from("stock_kits")
       .select(
-        "id, clinic_id, name, notes, active, stock_kit_items ( item_id, quantity ), procedure_kit_links ( procedure_id, clinic_id )"
+        "id, clinic_id, name, notes, active, kind, stock_kit_items ( item_id, quantity ), procedure_kit_links ( procedure_id, clinic_id )"
       )
       .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
       .order("name"),
@@ -131,6 +131,8 @@ export default async function StockPage() {
         avgCostCents: Number(b.avg_cost_cents ?? 0),
         storageLocation: (b.storage_location as string | null) ?? "",
         supplierId: (b.preferred_supplier_id as string | null) ?? "",
+        inUseQuantity: Number(b.in_use_quantity ?? 0),
+        openPackages: Number(b.open_packages ?? 0),
       },
     ])
   );
@@ -148,6 +150,10 @@ export default async function StockPage() {
       category: (i.category as string | null) ?? "",
       notes: (i.notes as string | null) ?? "",
       isActive: Boolean(i.is_active),
+      trackOpenPackage: Boolean(i.track_open_package),
+      generalUse: Boolean(i.general_use),
+      inUseQuantity: b?.inUseQuantity ?? 0,
+      openPackages: b?.openPackages ?? 0,
       quantity: b?.quantity ?? 0,
       minQuantity: b?.minQuantity ?? 0,
       maxQuantity: b?.maxQuantity ?? null,
@@ -226,6 +232,9 @@ export default async function StockPage() {
     name: k.name as string,
     notes: (k.notes as string | null) ?? "",
     active: Boolean(k.active),
+    kind: ((k.kind as string) ?? "procedimento") as
+      | "procedimento"
+      | "atendimento",
     lines: ((k.stock_kit_items ?? []) as { item_id: string; quantity: number }[])
       .map((l) => ({
         itemId: l.item_id,

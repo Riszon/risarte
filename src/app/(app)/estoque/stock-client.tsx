@@ -48,6 +48,12 @@ type Item = {
   category: string;
   notes: string;
   isActive: boolean;
+  /** 0218: embalagem aberta importa â€” o saldo separa fechados de "em uso". */
+  trackOpenPackage: boolean;
+  /** 0218: uso geral do atendimento; fora dos kits de procedimento. */
+  generalUse: boolean;
+  inUseQuantity: number;
+  openPackages: number;
   quantity: number;
   minQuantity: number;
   maxQuantity: number | null;
@@ -86,23 +92,27 @@ type Expiring = {
   daysLeft: number;
 };
 
+type KitKind = "procedimento" | "atendimento";
+
 type Kit = {
   id: string;
   clinicId: string | null;
   name: string;
   notes: string;
   active: boolean;
+  kind: KitKind;
   lines: { itemId: string; quantity: number }[];
   procedureIds: string[];
 };
 
-/** Formulário do kit em edição (o "novo" nasce sem id). */
+/** FormulÃ¡rio do kit em ediÃ§Ã£o (o "novo" nasce sem id). */
 type KitDraft = {
   id: string | null;
   clinicId: string | null;
   name: string;
   notes: string;
   active: boolean;
+  kind: KitKind;
   lines: { itemId: string; quantity: string }[];
   procedureIds: string[];
 };
@@ -120,7 +130,7 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-/** Data e HORA do lançamento — pedido do dono: o momento importa. */
+/** Data e HORA do lanÃ§amento â€” pedido do dono: o momento importa. */
 function fmtDateTime(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -134,7 +144,7 @@ function fmtDateTime(iso: string): string {
   });
 }
 
-/** Custo unitário pode ter centavos fracionados (R$ 0,2571 por grama). */
+/** Custo unitÃ¡rio pode ter centavos fracionados (R$ 0,2571 por grama). */
 function fmtUnitCost(cents: number): string {
   if (Number.isInteger(cents)) return formatBRL(cents);
   return `R$ ${(cents / 100).toFixed(4).replace(".", ",")}`;
@@ -162,7 +172,7 @@ export function StockManager({
   items: Item[];
   movements: Movement[];
   expiring: Expiring[];
-  /** 0217: procedimentos concluídos que não baixaram nada por não ter kit. */
+  /** 0217: procedimentos concluÃ­dos que nÃ£o baixaram nada por nÃ£o ter kit. */
   withoutKit: {
     procedureId: string;
     procedureName: string;
@@ -189,7 +199,7 @@ export function StockManager({
   const [mvSupplier, setMvSupplier] = useState("");
   const [mvInvoice, setMvInvoice] = useState("");
 
-  // Cadastro / edição de item
+  // Cadastro / ediÃ§Ã£o de item
   const emptyItem = {
     id: null as string | null,
     name: "",
@@ -199,20 +209,22 @@ export function StockManager({
     unitsPerPurchase: "1",
     category: "",
     hasHistory: false,
+    trackOpenPackage: false,
+    generalUse: false,
   };
   const [newItem, setNewItem] = useState<typeof emptyItem | null>(null);
 
-  // Configuração do item na unidade
+  // ConfiguraÃ§Ã£o do item na unidade
   const [settingsFor, setSettingsFor] = useState<string | null>(null);
   const [stMin, setStMin] = useState("");
   const [stMax, setStMax] = useState("");
   const [stLocation, setStLocation] = useState("");
   const [stSupplier, setStSupplier] = useState("");
 
-  // Histórico de um item
+  // HistÃ³rico de um item
   const [historyFor, setHistoryFor] = useState<string | null>(null);
 
-  // Kit em edição / kit apenas aberto para ver
+  // Kit em ediÃ§Ã£o / kit apenas aberto para ver
   const [kitDraft, setKitDraft] = useState<KitDraft | null>(null);
   const [kitProcSearch, setKitProcSearch] = useState("");
   const [kitOpen, setKitOpen] = useState<string | null>(null);
@@ -238,10 +250,19 @@ export function StockManager({
       : items;
   }, [items, search]);
 
-  const withAlerts = items.filter((i) => balanceAlerts(i).length > 0);
+  // 0218: o mÃ­nimo olha o TOTAL (fechado + o que resta na embalagem aberta) â€”
+  // senÃ£o um frasco aberto pela metade nÃ£o contaria como estoque nenhum.
+  const alertsFor = (i: Item) =>
+    balanceAlerts({
+      quantity: i.quantity + i.inUseQuantity,
+      avgCostCents: i.avgCostCents,
+      minQuantity: i.minQuantity,
+    });
+
+  const withAlerts = items.filter((i) => alertsFor(i).length > 0);
   const selectedItem = mvItem ? itemById.get(mvItem) : undefined;
 
-  // "1 caixa a R$ 25,00 = 100 un a R$ 0,25" — a conta na frente de quem digita.
+  // "1 caixa a R$ 25,00 = 100 un a R$ 0,25" â€” a conta na frente de quem digita.
   const entryByPackage = mvKind === "entrada" && selectedItem !== undefined;
   const preview =
     entryByPackage && mvQty && mvCost
@@ -262,8 +283,8 @@ export function StockManager({
     startTransition(async () => {
       const r = await action();
       if (r.ok) {
-        // ok COM mensagem = aviso, não erro (ex.: item inativado em vez de
-        // excluído porque já tinha histórico).
+        // ok COM mensagem = aviso, nÃ£o erro (ex.: item inativado em vez de
+        // excluÃ­do porque jÃ¡ tinha histÃ³rico).
         if (r.error) toast.info(r.error);
         else toast.success(msg);
         after?.();
@@ -286,6 +307,7 @@ export function StockManager({
             name: kit.name,
             notes: kit.notes,
             active: kit.active,
+            kind: kit.kind,
             lines: kit.lines.map((l) => ({
               itemId: l.itemId,
               quantity: fmtQty(l.quantity),
@@ -298,6 +320,7 @@ export function StockManager({
             name: "",
             notes: "",
             active: true,
+            kind: "procedimento",
             lines: [],
             procedureIds: [],
           }
@@ -349,14 +372,14 @@ export function StockManager({
                 <h2 className="flex items-center gap-1 text-sm font-medium text-amber-900">
                   <TriangleAlert className="size-4" />
                   {withAlerts.length}{" "}
-                  {withAlerts.length === 1 ? "item pede" : "itens pedem"} atenção
+                  {withAlerts.length === 1 ? "item pede" : "itens pedem"} atenÃ§Ã£o
                 </h2>
                 <ul className="space-y-0.5 text-xs text-amber-900">
                   {withAlerts.slice(0, 8).map((i) => (
                     <li key={i.id}>
                       <strong>{i.name}</strong> ({fmtQty(i.quantity)}{" "}
-                      {unitShort(i.unitOfMeasure)}) —{" "}
-                      {ALERT_LABELS[balanceAlerts(i)[0]]}
+                      {unitShort(i.unitOfMeasure)}) â€”{" "}
+                      {ALERT_LABELS[alertsFor(i)[0]]}
                     </li>
                   ))}
                 </ul>
@@ -367,13 +390,13 @@ export function StockManager({
               <>
                 <h2 className="flex items-center gap-1 pt-1 text-sm font-medium text-amber-900">
                   <CalendarClock className="size-4" />
-                  Vencendo nos próximos 120 dias
+                  Vencendo nos prÃ³ximos 120 dias
                 </h2>
                 <ul className="space-y-0.5 text-xs text-amber-900">
                   {expiring.slice(0, 8).map((e, idx) => (
                     <li key={`${e.itemId}-${e.lotCode}-${idx}`}>
                       <strong>{e.itemName}</strong>
-                      {e.lotCode && ` · lote ${e.lotCode}`} — vence em{" "}
+                      {e.lotCode && ` Â· lote ${e.lotCode}`} â€” vence em{" "}
                       {fmtDate(e.expiresAt)}{" "}
                       {e.daysLeft < 0
                         ? "(VENCIDO)"
@@ -382,9 +405,9 @@ export function StockManager({
                   ))}
                 </ul>
                 <p className="text-[10px] text-amber-800">
-                  O consumo ainda <strong>não escolhe lote</strong>: o sistema
-                  aponta o que vence primeiro, mas quem separa na prateleira é
-                  você. Baixa por lote entra depois da baixa automática.
+                  O consumo ainda <strong>nÃ£o escolhe lote</strong>: o sistema
+                  aponta o que vence primeiro, mas quem separa na prateleira Ã©
+                  vocÃª. Baixa por lote entra depois da baixa automÃ¡tica.
                 </p>
               </>
             )}
@@ -392,26 +415,26 @@ export function StockManager({
         </Card>
       )}
 
-      {/* -- SEM KIT: o furo da baixa automática (0217) -------------------- */}
+      {/* -- SEM KIT: o furo da baixa automÃ¡tica (0217) -------------------- */}
       {withoutKit.length > 0 && (
         <Card className="border-amber-300 bg-amber-50/40">
           <CardContent className="space-y-1 p-4">
             <h2 className="flex items-center gap-1 text-sm font-medium text-amber-900">
               <TriangleAlert className="size-4" />
-              Concluídos sem baixar estoque (últimos 30 dias)
+              ConcluÃ­dos sem baixar estoque (Ãºltimos 30 dias)
             </h2>
             <p className="text-[11px] text-amber-900">
-              Estes procedimentos foram <strong>concluídos</strong> e não
-              descontaram nada, porque não têm kit cadastrado. Não é erro do
-              sistema — é cadastro faltando. Enquanto ficar assim, o saldo vai
+              Estes procedimentos foram <strong>concluÃ­dos</strong> e nÃ£o
+              descontaram nada, porque nÃ£o tÃªm kit cadastrado. NÃ£o Ã© erro do
+              sistema â€” Ã© cadastro faltando. Enquanto ficar assim, o saldo vai
               parando de bater e a culpa cai no estoque.
             </p>
             <ul className="space-y-0.5 text-xs text-amber-900">
               {withoutKit.slice(0, 10).map((w) => (
                 <li key={w.procedureId}>
-                  <strong>{w.procedureName}</strong> — {w.sessions} sessão
-                  {w.sessions === 1 ? "" : "ões"}
-                  {w.lastDone && ` · última em ${fmtDate(w.lastDone)}`}
+                  <strong>{w.procedureName}</strong> â€” {w.sessions} sessÃ£o
+                  {w.sessions === 1 ? "" : "Ãµes"}
+                  {w.lastDone && ` Â· Ãºltima em ${fmtDate(w.lastDone)}`}
                 </li>
               ))}
             </ul>
@@ -419,11 +442,11 @@ export function StockManager({
         </Card>
       )}
 
-      {/* -- LANÇAR MOVIMENTO -------------------------------------------- */}
+      {/* -- LANÃ‡AR MOVIMENTO -------------------------------------------- */}
       {canConsume && (
         <Card>
           <CardContent className="space-y-3 p-4">
-            <h2 className="font-medium">Lançar movimento</h2>
+            <h2 className="font-medium">LanÃ§ar movimento</h2>
             <div className="grid gap-2 sm:grid-cols-6">
               <label className="block sm:col-span-3">
                 <Label className="text-[11px]">Item</Label>
@@ -432,13 +455,13 @@ export function StockManager({
                   onChange={(e) => setMvItem(e.target.value)}
                   className={selectClass}
                 >
-                  <option value="">Escolher…</option>
+                  <option value="">Escolherâ€¦</option>
                   {items
                     .filter((i) => i.isActive)
                     .map((i) => (
                       <option key={i.id} value={i.id}>
                         {i.name}
-                        {i.brand && ` · ${i.brand}`} — {fmtQty(i.quantity)}{" "}
+                        {i.brand && ` Â· ${i.brand}`} â€” {fmtQty(i.quantity)}{" "}
                         {unitShort(i.unitOfMeasure)}
                       </option>
                     ))}
@@ -474,8 +497,8 @@ export function StockManager({
               <label className="block">
                 <Label className="text-[11px]">
                   {entryByPackage
-                    ? `Preço da ${selectedItem.purchaseUnit} (R$)`
-                    : "Custo unitário (R$)"}
+                    ? `PreÃ§o da ${selectedItem.purchaseUnit} (R$)`
+                    : "Custo unitÃ¡rio (R$)"}
                 </Label>
                 <Input
                   className="h-8"
@@ -483,14 +506,14 @@ export function StockManager({
                   value={mvCost}
                   disabled={mvKind !== "entrada"}
                   placeholder={
-                    mvKind === "entrada" ? "obrigatório" : "sai pelo médio"
+                    mvKind === "entrada" ? "obrigatÃ³rio" : "sai pelo mÃ©dio"
                   }
                   onChange={(e) => setMvCost(e.target.value)}
                 />
               </label>
             </div>
 
-            {/* A conversão embalagem → consumo, na frente de quem digita. */}
+            {/* A conversÃ£o embalagem â†’ consumo, na frente de quem digita. */}
             {preview && selectedItem && (
               <p className="rounded-lg border border-primary/40 bg-primary/5 p-2 text-xs">
                 {mvQty} {selectedItem.purchaseUnit}
@@ -540,7 +563,7 @@ export function StockManager({
                       onChange={(e) => setMvSupplier(e.target.value)}
                       className={selectClass}
                     >
-                      <option value="">—</option>
+                      <option value="">â€”</option>
                       {suppliers.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}
@@ -569,13 +592,13 @@ export function StockManager({
                   {(mvKind === "perda" ||
                     mvKind === "ajuste_entrada" ||
                     mvKind === "ajuste_saida") &&
-                    " (obrigatório)"}
+                    " (obrigatÃ³rio)"}
                 </Label>
                 <Input
                   className="h-8"
                   value={mvReason}
                   onChange={(e) => setMvReason(e.target.value)}
-                  placeholder="Ex.: contagem do inventário de agosto"
+                  placeholder="Ex.: contagem do inventÃ¡rio de agosto"
                 />
               </label>
               <div className="flex items-end sm:col-span-1">
@@ -601,7 +624,7 @@ export function StockManager({
                           supplierId: mvSupplier,
                           invoiceNumber: mvInvoice,
                         }),
-                      "Movimento lançado.",
+                      "Movimento lanÃ§ado.",
                       () => {
                         setMvQty("");
                         setMvCost("");
@@ -613,20 +636,20 @@ export function StockManager({
                     )
                   }
                 >
-                  Lançar
+                  LanÃ§ar
                 </Button>
               </div>
             </div>
 
             <p className="text-[11px] text-muted-foreground">
-              Saída <strong>não é recusada</strong> por falta de saldo: fica
+              SaÃ­da <strong>nÃ£o Ã© recusada</strong> por falta de saldo: fica
               negativo e o alerta aparece. Travar aqui seria parar um
-              atendimento por causa de cadastro — o saldo negativo é a
-              informação de que faltou dar entrada em alguma nota.
+              atendimento por causa de cadastro â€” o saldo negativo Ã© a
+              informaÃ§Ã£o de que faltou dar entrada em alguma nota.
               <br />
-              O consumo do kit é <strong>baixado sozinho</strong> quando a
-              sessão é concluída, e é o <em>previsto</em>: se usaram duas
-              anestesias em vez de uma, registre a diferença aqui como consumo
+              O consumo do kit Ã© <strong>baixado sozinho</strong> quando a
+              sessÃ£o Ã© concluÃ­da, e Ã© o <em>previsto</em>: se usaram duas
+              anestesias em vez de uma, registre a diferenÃ§a aqui como consumo
               avulso.
             </p>
           </CardContent>
@@ -698,7 +721,7 @@ export function StockManager({
                   onChange={(e) =>
                     setNewItem({ ...newItem, category: e.target.value })
                   }
-                  placeholder="Ex.: Dentística"
+                  placeholder="Ex.: DentÃ­stica"
                 />
               </label>
 
@@ -762,27 +785,64 @@ export function StockManager({
                 />
               </label>
 
+              <label className="flex items-center gap-2 sm:col-span-3">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={newItem.trackOpenPackage}
+                  onChange={(e) =>
+                    setNewItem({
+                      ...newItem,
+                      trackOpenPackage: e.target.checked,
+                    })
+                  }
+                />
+                <span className="text-xs">
+                  <strong>Controlar embalagem aberta</strong> â€” o saldo separa
+                  &quot;fechados&quot; de &quot;em uso&quot;. NinguÃ©m tem 2,78 ml
+                  de adesivo: tem <em>1 frasco pela metade</em>. Marque em
+                  adesivo, resina, anestÃ©sico; nÃ£o precisa em sugador.
+                </span>
+              </label>
+              <label className="flex items-center gap-2 sm:col-span-3">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={newItem.generalUse}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, generalUse: e.target.checked })
+                  }
+                />
+                <span className="text-xs">
+                  <strong>Uso geral do atendimento</strong> â€” mÃ¡scara e gorro do
+                  profissional, que ele veste de manhÃ£ e tira no fim do dia.
+                  NÃ£o entra em kit de procedimento: esse custo Ã©{" "}
+                  <em>estrutura</em> e jÃ¡ estÃ¡ na hora de cadeira. RateÃ¡-lo por
+                  procedimento contaria duas vezes.
+                </span>
+              </label>
+
               <p className="sm:col-span-3 rounded-md bg-background p-2 text-[11px] text-muted-foreground">
-                <strong>É aqui que o custo deixa de mentir.</strong> Uma caixa
+                <strong>Ã‰ aqui que o custo deixa de mentir.</strong> Uma caixa
                 de sugadores de R$ 25,00 com <strong>100</strong> unidades faz
-                cada sugador custar R$ 0,25 — sem isso, o procedimento cobraria
+                cada sugador custar R$ 0,25 â€” sem isso, o procedimento cobraria
                 R$ 25,00 por sugador. Vale igual para o que rende: um frasco de
-                adesivo que dá <strong>20</strong> restaurações se cadastra como
-                &quot;20 aplicações por frasco&quot;. Se compra e consumo são a
+                adesivo que dÃ¡ <strong>20</strong> restauraÃ§Ãµes se cadastra como
+                &quot;20 aplicaÃ§Ãµes por frasco&quot;. Se compra e consumo sÃ£o a
                 mesma coisa, deixe 1.
                 {newItem.id && (
                   <>
                     {" "}
-                    <strong>Mudar o fator não mexe no saldo atual</strong> — ele
-                    já está contado em {newItem.unitOfMeasure}s; o fator novo
-                    vale para as próximas entradas.
+                    <strong>Mudar o fator nÃ£o mexe no saldo atual</strong> â€” ele
+                    jÃ¡ estÃ¡ contado em {newItem.unitOfMeasure}s; o fator novo
+                    vale para as prÃ³ximas entradas.
                   </>
                 )}
                 {newItem.hasHistory && (
                   <>
                     {" "}
-                    A <strong>unidade de consumo está travada</strong> porque já
-                    existe saldo ou movimento: trocá-la transformaria o que está
+                    A <strong>unidade de consumo estÃ¡ travada</strong> porque jÃ¡
+                    existe saldo ou movimento: trocÃ¡-la transformaria o que estÃ¡
                     em estoque em outra coisa, e levaria junto o custo de todo
                     procedimento que usa o item.
                   </>
@@ -799,7 +859,7 @@ export function StockManager({
                     onClick={() =>
                       run(
                         () => removeStockItem(newItem.id as string),
-                        "Item excluído.",
+                        "Item excluÃ­do.",
                         () => setNewItem(null)
                       )
                     }
@@ -835,6 +895,8 @@ export function StockManager({
                             category: newItem.category,
                             notes: "",
                             isActive: true,
+                            trackOpenPackage: newItem.trackOpenPackage,
+                            generalUse: newItem.generalUse,
                           }),
                         newItem.id ? "Item atualizado." : "Item cadastrado.",
                         () => setNewItem(null)
@@ -850,12 +912,12 @@ export function StockManager({
 
           {shown.length === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">
-              Nenhum item no catálogo ainda.
+              Nenhum item no catÃ¡logo ainda.
             </p>
           ) : (
             <ul className="space-y-1 text-sm">
               {shown.map((i) => {
-                const alerts = balanceAlerts(i);
+                const alerts = alertsFor(i);
                 const open = settingsFor === i.id;
                 const showHistory = historyFor === i.id;
                 const itemMoves = showHistory
@@ -868,10 +930,10 @@ export function StockManager({
                         {i.name}
                         <span className="ml-2 text-[10px] text-muted-foreground">
                           {i.code}
-                          {i.brand && ` · ${i.brand}`}
-                          {i.storageLocation && ` · ${i.storageLocation}`}
+                          {i.brand && ` Â· ${i.brand}`}
+                          {i.storageLocation && ` Â· ${i.storageLocation}`}
                           {i.unitsPerPurchase !== 1 &&
-                            ` · ${fmtQty(i.unitsPerPurchase)} ${unitShort(i.unitOfMeasure)}/${unitShort(i.purchaseUnit)}`}
+                            ` Â· ${fmtQty(i.unitsPerPurchase)} ${unitShort(i.unitOfMeasure)}/${unitShort(i.purchaseUnit)}`}
                         </span>
                         {alerts.length > 0 && (
                           <Badge
@@ -887,13 +949,41 @@ export function StockManager({
                         )}
                       </span>
                       <span className="flex items-center gap-3 text-xs tabular-nums">
-                        <span
-                          className={cn(
-                            i.quantity < 0 && "font-medium text-destructive"
-                          )}
-                        >
-                          {fmtQty(i.quantity)} {unitShort(i.unitOfMeasure)}
-                        </span>
+                        {/* 0218: com embalagem aberta, "1 frasco em uso" diz
+                            mais que "2,78 ml" â€” que Ã© o que ele apontou. */}
+                        {i.trackOpenPackage ? (
+                          <span>
+                            <span
+                              className={cn(
+                                i.quantity < 0 &&
+                                  "font-medium text-destructive"
+                              )}
+                            >
+                              {fmtQty(i.quantity / (i.unitsPerPurchase || 1))}{" "}
+                              {unitShort(i.purchaseUnit)} fechado
+                              {Math.abs(
+                                i.quantity / (i.unitsPerPurchase || 1)
+                              ) === 1
+                                ? ""
+                                : "s"}
+                            </span>
+                            {(i.inUseQuantity !== 0 || i.openPackages > 0) && (
+                              <span className="ml-1 text-primary">
+                                + {Math.max(i.openPackages, 1)} em uso (
+                                {fmtQty(i.inUseQuantity)}{" "}
+                                {unitShort(i.unitOfMeasure)})
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              i.quantity < 0 && "font-medium text-destructive"
+                            )}
+                          >
+                            {fmtQty(i.quantity)} {unitShort(i.unitOfMeasure)}
+                          </span>
+                        )}
                         <span className="text-muted-foreground">
                           {fmtUnitCost(i.avgCostCents)}
                         </span>
@@ -909,11 +999,13 @@ export function StockManager({
                                 purchaseUnit: i.purchaseUnit,
                                 unitsPerPurchase: fmtQty(i.unitsPerPurchase),
                                 category: i.category,
-                                // A trava é do banco; aqui é só para a tela
+                                // A trava Ã© do banco; aqui Ã© sÃ³ para a tela
                                 // explicar antes de deixar tentar.
                                 hasHistory:
                                   i.quantity !== 0 ||
                                   movements.some((m) => m.itemId === i.id),
+                                trackOpenPackage: i.trackOpenPackage,
+                                generalUse: i.generalUse,
                               })
                             }
                             className="rounded px-1 text-muted-foreground hover:bg-muted"
@@ -928,7 +1020,7 @@ export function StockManager({
                           }
                           className="rounded px-1 text-muted-foreground hover:bg-muted"
                         >
-                          histórico
+                          histÃ³rico
                         </button>
                         {canManage && (
                           <button
@@ -936,9 +1028,9 @@ export function StockManager({
                             onClick={() => openSettings(i)}
                             className="rounded px-1 text-muted-foreground hover:bg-muted"
                           >
-                            mín. {fmtQty(i.minQuantity)}
+                            mÃ­n. {fmtQty(i.minQuantity)}
                             {i.maxQuantity !== null &&
-                              ` / máx. ${fmtQty(i.maxQuantity)}`}
+                              ` / mÃ¡x. ${fmtQty(i.maxQuantity)}`}
                           </button>
                         )}
                       </span>
@@ -947,11 +1039,11 @@ export function StockManager({
                     {open && (
                       <div className="mt-1 grid gap-2 rounded-lg border bg-muted/30 p-2 sm:grid-cols-5">
                         <p className="sm:col-span-5 text-[11px] text-muted-foreground">
-                          Isto vale <strong>nesta unidade</strong> — cada uma
+                          Isto vale <strong>nesta unidade</strong> â€” cada uma
                           guarda onde quer e compra de quem quer.
                         </p>
                         <label className="block">
-                          <Label className="text-[11px]">Mínimo</Label>
+                          <Label className="text-[11px]">MÃ­nimo</Label>
                           <Input
                             className="h-8"
                             inputMode="decimal"
@@ -960,7 +1052,7 @@ export function StockManager({
                           />
                         </label>
                         <label className="block">
-                          <Label className="text-[11px]">Máximo</Label>
+                          <Label className="text-[11px]">MÃ¡ximo</Label>
                           <Input
                             className="h-8"
                             inputMode="decimal"
@@ -977,7 +1069,7 @@ export function StockManager({
                             className="h-8"
                             value={stLocation}
                             onChange={(e) => setStLocation(e.target.value)}
-                            placeholder="Ex.: Sala 2 · gaveta 3 / Geladeira"
+                            placeholder="Ex.: Sala 2 Â· gaveta 3 / Geladeira"
                           />
                         </label>
                         <label className="block">
@@ -989,7 +1081,7 @@ export function StockManager({
                             onChange={(e) => setStSupplier(e.target.value)}
                             className={selectClass}
                           >
-                            <option value="">—</option>
+                            <option value="">â€”</option>
                             {suppliers.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.name}
@@ -1013,7 +1105,7 @@ export function StockManager({
                                     storageLocation: stLocation,
                                     supplierId: stSupplier,
                                   }),
-                                "Configuração salva.",
+                                "ConfiguraÃ§Ã£o salva.",
                                 () => setSettingsFor(null)
                               )
                             }
@@ -1053,7 +1145,7 @@ export function StockManager({
         </CardContent>
       </Card>
 
-      {/* -- KITS (0215: nome próprio, vários procedimentos) -------------- */}
+      {/* -- KITS (0215: nome prÃ³prio, vÃ¡rios procedimentos) -------------- */}
       <Card>
         <CardContent className="space-y-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1071,11 +1163,11 @@ export function StockManager({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            O kit tem <strong>nome</strong> e se liga a vários procedimentos —
-            &quot;Kit restauração&quot; serve para 1, 2 e 3 faces sem virar três
-            cópias que saem do ar uma a uma. Um procedimento pode ter mais de um
-            kit (o básico + o específico), e o custo soma os dois. É daqui que
-            sai a <strong>baixa automática</strong>, e o custo alimenta o preço
+            O kit tem <strong>nome</strong> e se liga a vÃ¡rios procedimentos â€”
+            &quot;Kit restauraÃ§Ã£o&quot; serve para 1, 2 e 3 faces sem virar trÃªs
+            cÃ³pias que saem do ar uma a uma. Um procedimento pode ter mais de um
+            kit (o bÃ¡sico + o especÃ­fico), e o custo soma os dois. Ã‰ daqui que
+            sai a <strong>baixa automÃ¡tica</strong>, e o custo alimenta o preÃ§o
             no lugar da estimativa.
           </p>
 
@@ -1118,14 +1210,14 @@ export function StockManager({
                       )}
                       <span className="mt-0.5 block text-[10px] text-muted-foreground">
                         {k.lines.length} item
-                        {k.lines.length === 1 ? "" : "s"} ·{" "}
+                        {k.lines.length === 1 ? "" : "s"} Â·{" "}
                         {k.procedureIds.length} procedimento
                         {k.procedureIds.length === 1 ? "" : "s"}
                         {k.procedureIds.length > 0 &&
                           `: ${k.procedureIds
                             .slice(0, 3)
-                            .map((id) => procName.get(id) ?? "—")
-                            .join(", ")}${k.procedureIds.length > 3 ? "…" : ""}`}
+                            .map((id) => procName.get(id) ?? "â€”")
+                            .join(", ")}${k.procedureIds.length > 3 ? "â€¦" : ""}`}
                       </span>
                     </button>
                     <span className="flex items-center gap-3 text-xs">
@@ -1144,8 +1236,8 @@ export function StockManager({
                     </span>
                   </div>
 
-                  {/* Ver o que compõe o kit SEM abrir a edição — clicar para
-                      olhar não deveria exigir entrar no modo de mexer. */}
+                  {/* Ver o que compÃµe o kit SEM abrir a ediÃ§Ã£o â€” clicar para
+                      olhar nÃ£o deveria exigir entrar no modo de mexer. */}
                   {open && (
                     <div className="mt-1 rounded-lg border bg-muted/20 p-2 text-xs">
                       <ul className="space-y-0.5">
@@ -1161,7 +1253,7 @@ export function StockManager({
                                 {li?.name ?? "item"}
                                 <span className="ml-1 text-muted-foreground">
                                   {fmtQty(l.quantity)}{" "}
-                                  {unitShort(li?.unitOfMeasure ?? "unidade")} ×{" "}
+                                  {unitShort(li?.unitOfMeasure ?? "unidade")} Ã—{" "}
                                   {fmtUnitCost(avg)}
                                 </span>
                               </span>
@@ -1187,8 +1279,8 @@ export function StockManager({
                         <p className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
                           <strong>Procedimentos:</strong>{" "}
                           {k.procedureIds
-                            .map((id) => procName.get(id) ?? "—")
-                            .join(" · ")}
+                            .map((id) => procName.get(id) ?? "â€”")
+                            .join(" Â· ")}
                         </p>
                       )}
                     </div>
@@ -1210,7 +1302,7 @@ export function StockManager({
                     onChange={(e) =>
                       setKitDraft({ ...kitDraft, name: e.target.value })
                     }
-                    placeholder="Ex.: Kit restauração"
+                    placeholder="Ex.: Kit restauraÃ§Ã£o"
                   />
                 </label>
                 <label className="block">
@@ -1226,8 +1318,8 @@ export function StockManager({
                     className={selectClass}
                     disabled={!canManageCatalog}
                   >
-                    <option value="rede">Toda a rede (padrão)</option>
-                    <option value="unidade">Só esta unidade</option>
+                    <option value="rede">Toda a rede (padrÃ£o)</option>
+                    <option value="unidade">SÃ³ esta unidade</option>
                   </select>
                 </label>
                 <label className="flex items-end gap-2 pb-1">
@@ -1241,6 +1333,35 @@ export function StockManager({
                   />
                   <span className="text-xs">Kit ativo</span>
                 </label>
+
+                {/* 0218: o kit de ATENDIMENTO baixa por paciente, nÃ£o por
+                    procedimento â€” quem faz trÃªs procedimentos na mesma consulta
+                    nÃ£o usa trÃªs gorros. */}
+                <label className="block sm:col-span-2">
+                  <Label className="text-[11px]">Quando baixa</Label>
+                  <select
+                    value={kitDraft.kind}
+                    onChange={(e) =>
+                      setKitDraft({
+                        ...kitDraft,
+                        kind: e.target.value as KitKind,
+                      })
+                    }
+                    className={selectClass}
+                  >
+                    <option value="procedimento">
+                      A cada procedimento concluÃ­do
+                    </option>
+                    <option value="atendimento">
+                      Uma vez por atendimento (gorro, propÃ©, babador)
+                    </option>
+                  </select>
+                </label>
+                <p className="sm:col-span-2 self-end pb-1 text-[10px] text-muted-foreground">
+                  {kitDraft.kind === "atendimento"
+                    ? "Baixa quando a recepÃ§Ã£o encerra o atendimento, uma vez sÃ³ â€” e nÃ£o se liga a procedimento nenhum."
+                    : "Baixa a cada sessÃ£o concluÃ­da deste procedimento."}
+                </p>
               </div>
 
               {/* ITENS */}
@@ -1268,12 +1389,12 @@ export function StockManager({
                         }
                         className={selectClass}
                       >
-                        <option value="">Escolher…</option>
+                        <option value="">Escolherâ€¦</option>
                         {items
                           .filter((i) => i.isActive)
                           .map((i) => (
                             <option key={i.id} value={i.id}>
-                              {i.name} — {fmtUnitCost(i.avgCostCents)}/
+                              {i.name} â€” {fmtUnitCost(i.avgCostCents)}/
                               {unitShort(i.unitOfMeasure)}
                             </option>
                           ))}
@@ -1328,7 +1449,11 @@ export function StockManager({
                 Adicionar item
               </Button>
 
-              {/* PROCEDIMENTOS VINCULADOS */}
+              {/* PROCEDIMENTOS VINCULADOS â€” sÃ³ faz sentido no kit de
+                  procedimento; no de atendimento, ligar a procedimento traria o
+                  gorro de volta para o custo de cada um. */}
+              {kitDraft.kind === "procedimento" && (
+              <>
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <p className="text-[11px] font-medium">
                   Procedimentos que usam este kit (
@@ -1359,7 +1484,7 @@ export function StockManager({
                         })
                       }
                     >
-                      {procName.get(id) ?? "—"} ✕
+                      {procName.get(id) ?? "â€”"} âœ•
                     </Badge>
                   ))}
                 </div>
@@ -1403,9 +1528,11 @@ export function StockManager({
               </div>
               {!kitProcSearch && procedures.length > kitProcOptions.length && (
                 <p className="text-[10px] text-muted-foreground">
-                  Mostrando {kitProcOptions.length} de {procedures.length} —
+                  Mostrando {kitProcOptions.length} de {procedures.length} â€”
                   use a busca para achar o resto.
                 </p>
+              )}
+              </>
               )}
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
@@ -1435,10 +1562,11 @@ export function StockManager({
                             name: kitDraft.name,
                             notes: kitDraft.notes,
                             active: kitDraft.active,
+                            kind: kitDraft.kind,
                             lines: kitDraft.lines,
                             procedureIds: kitDraft.procedureIds,
                           }),
-                        "Kit salvo — o custo dos procedimentos foi recalculado.",
+                        "Kit salvo â€” o custo dos procedimentos foi recalculado.",
                         () => setKitDraft(null)
                       )
                     }
@@ -1458,8 +1586,8 @@ export function StockManager({
                   ({kitPreview.missingItemIds
                     .map((id) => itemById.get(id)?.name ?? "item")
                     .join(", ")}
-                  ) — nunca houve entrada com valor. Enquanto isso, o custo dos
-                  procedimentos ligados sai menor do que é.
+                  ) â€” nunca houve entrada com valor. Enquanto isso, o custo dos
+                  procedimentos ligados sai menor do que Ã©.
                 </p>
               )}
             </div>
@@ -1470,7 +1598,7 @@ export function StockManager({
       {/* -- MOVIMENTOS --------------------------------------------------- */}
       <Card>
         <CardContent className="space-y-2 p-4">
-          <h2 className="font-medium">Últimos movimentos</h2>
+          <h2 className="font-medium">Ãšltimos movimentos</h2>
           {movements.length === 0 ? (
             <p className="py-2 text-xs text-muted-foreground">
               Nenhum movimento registrado nesta unidade.
@@ -1497,11 +1625,11 @@ export function StockManager({
 }
 
 /**
- * Uma linha do razão do estoque.
+ * Uma linha do razÃ£o do estoque.
  *
- * Mostra a hora (pedido do dono) e as DUAS versões da quantidade quando a
- * entrada veio pela embalagem: é assim que se confere contra a nota sem refazer
- * a conta de cabeça.
+ * Mostra a hora (pedido do dono) e as DUAS versÃµes da quantidade quando a
+ * entrada veio pela embalagem: Ã© assim que se confere contra a nota sem refazer
+ * a conta de cabeÃ§a.
  */
 function MovementLine({
   movement: m,
@@ -1548,7 +1676,7 @@ function MovementLine({
               {" = "}
             </span>
           )}
-          {fmtQty(m.quantity)} {unitShort(stockUnit)} ×{" "}
+          {fmtQty(m.quantity)} {unitShort(stockUnit)} Ã—{" "}
           {fmtUnitCost(m.unitCostCents)} ={" "}
           <strong>{formatBRL(m.totalCents)}</strong>
           <span className="ml-2 text-muted-foreground">
@@ -1558,11 +1686,12 @@ function MovementLine({
       </div>
       {details.length > 0 && (
         <p className="text-[10px] text-muted-foreground">
-          {details.join(" · ")}
+          {details.join(" Â· ")}
           {m.movementDate !== m.createdAt.slice(0, 10) &&
-            ` · competência ${fmtDate(m.movementDate)}`}
+            ` Â· competÃªncia ${fmtDate(m.movementDate)}`}
         </p>
       )}
     </li>
   );
 }
+
