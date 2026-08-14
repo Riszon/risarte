@@ -670,6 +670,18 @@ anterior vira **ajuste com motivo**, em vez de ser arrastada para a próxima —
 senão o erro de uma embalagem contamina todas as seguintes. O movimento
 `abertura` é reclassificação: não move valor. A conta do custo não muda.
 
+**ENVIAR PARA USO É PARA QUALQUER EMBALAGEM (0220).** Não é só resina e adesivo:
+**caixa de sugador e pacote de algodão também saem inteiros** — ninguém retira 40
+sugadores da caixa, retira a caixa. Botão em cada item (`units_per_purchase > 1`).
+Regra única do consumo: **sai do que está EM USO; sem nada em uso, sai do
+fechado** — com uma exceção deliberada para o item fracionado
+(`track_open_package`), onde sai do "em uso" mesmo sem nada aberto, ficando
+negativo: é o único jeito de dizer "usaram resina sem ninguém ter aberto tubo".
+Para sugador isso seria ruído; para resina é a informação. **O que resta aparece
+em PERCENTUAL** — "~35% do frasco" é honesto; "7 aplicações" sugere uma precisão
+que a estimativa não tem. Enviar reforço **não** encerra a embalagem anterior; o
+acerto só acontece quando ela é dada por encerrada.
+
 **GORRO/MÁSCARA/PROPÉ — duas coisas diferentes (0218).**
 - **Do paciente** (gorro, propé, babador) → **kit de atendimento**
   (`stock_kits.kind = 'atendimento'`), baixado **uma vez por atendimento**

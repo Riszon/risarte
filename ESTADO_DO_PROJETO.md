@@ -1,6 +1,32 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/08/2026 · Versão do sistema: **0.198.0** · Última migração: **0219**_
+_Atualizado em: 12/08/2026 · Versão do sistema: **0.199.0** · Última migração: **0220**_
+
+> **ENVIAR PARA USO — UM CLIQUE, UMA EMBALAGEM (v0.199.0, migração 0220).**
+>
+> Pedido do dono: botão rápido em cada item, e **a embalagem sai inteira**.
+> *"um tubo de resina, um frasco de adesivo, um pacote de algodão, um pacote de
+> sugador não deve ser retirado 1 a 1 do estoque"* — está certo: ninguém retira
+> 40 sugadores da caixa, retira a caixa.
+>
+> A 0219 já sabia abrir embalagem, mas só para itens fracionados (resina,
+> adesivo) e com o botão escondido dentro do aviso. Agora o botão **usar** fica
+> em cada item que vem em embalagem, e o saldo é lido em embalagem:
+>
+> > **Sugador** — 2 caixas fechadas **+ 1 em uso (~35%)**
+>
+> **O percentual é a leitura honesta:** o rendimento já é estimado, então
+> "~35% do frasco" diz mais que "7 aplicações", que sugere uma precisão que a
+> conta não tem.
+>
+> **Regra única do consumo:** sai do que está em uso; sem nada em uso, sai do
+> fechado. A exceção é o item fracionado, onde o consumo sem nada aberto fica
+> negativo de propósito — é o único jeito de o sistema dizer "usaram resina sem
+> ninguém ter aberto tubo nenhum". Para sugador esse aviso seria ruído.
+>
+> Enviar um segundo pacote para a sala **não** encerra o primeiro: o acerto da
+> sobra/falta só acontece quando a embalagem é dada por encerrada. O custo
+> continua igual — enviar para uso não move valor, só muda de prateleira.
 
 > **QUEM ABRE A EMBALAGEM É GENTE (v0.198.0, migração 0219).** Correção pedida
 > pelo dono, e ele está certo:

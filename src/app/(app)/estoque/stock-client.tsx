@@ -146,6 +146,32 @@ function fmtDateTime(iso: string): string {
   });
 }
 
+/**
+ * 0220 — quem compra em embalagem lê em embalagem.
+ *
+ * Item cujo fator é 1 (a compra é a própria unidade de consumo) não tem
+ * "embalagem para enviar": mostrar o botão ali seria oferecer uma ação sem
+ * significado.
+ */
+function inPackages(i: { unitsPerPurchase: number }): boolean {
+  return i.unitsPerPurchase > 1;
+}
+
+function closedPackages(i: { quantity: number; unitsPerPurchase: number }) {
+  return Math.floor(i.quantity / (i.unitsPerPurchase || 1));
+}
+
+/**
+ * Quanto resta da embalagem aberta, em PERCENTUAL — pedido do dono, e é a
+ * leitura honesta: o rendimento já é estimado, então "~35% do frasco" diz mais
+ * que "7 aplicações", que sugere uma precisão que a conta não tem.
+ */
+function percentLeft(i: { inUseQuantity: number; unitsPerPurchase: number }) {
+  return Math.round(
+    (i.inUseQuantity * 100) / Math.max(i.unitsPerPurchase || 1, 0.000001)
+  );
+}
+
 /** Custo unitário pode ter centavos fracionados (R$ 0,2571 por grama). */
 function fmtUnitCost(cents: number): string {
   if (Number.isInteger(cents)) return formatBRL(cents);
@@ -1043,9 +1069,10 @@ export function StockManager({
                         )}
                       </span>
                       <span className="flex items-center gap-3 text-xs tabular-nums">
-                        {/* 0218: com embalagem aberta, "1 frasco em uso" diz
-                            mais que "2,78 ml" — que é o que ele apontou. */}
-                        {i.trackOpenPackage ? (
+                        {/* 0218/0220: quem compra em embalagem lê em embalagem
+                            — "2 caixas fechadas + 1 em uso (35%)" diz o que
+                            "240 un" não diz. */}
+                        {inPackages(i) ? (
                           <span>
                             <span
                               className={cn(
@@ -1053,19 +1080,24 @@ export function StockManager({
                                   "font-medium text-destructive"
                               )}
                             >
-                              {fmtQty(i.quantity / (i.unitsPerPurchase || 1))}{" "}
-                              {unitShort(i.purchaseUnit)} fechado
-                              {Math.abs(
-                                i.quantity / (i.unitsPerPurchase || 1)
-                              ) === 1
-                                ? ""
-                                : "s"}
+                              {fmtQty(closedPackages(i))}{" "}
+                              {unitShort(i.purchaseUnit)} fechad
+                              {closedPackages(i) === 1 ? "a" : "as"}
                             </span>
-                            {(i.inUseQuantity !== 0 || i.openPackages > 0) && (
-                              <span className="ml-1 text-primary">
+                            {(i.openPackages > 0 || i.inUseQuantity !== 0) && (
+                              <span
+                                className={cn(
+                                  "ml-1",
+                                  percentLeft(i) <= 0
+                                    ? "text-amber-700"
+                                    : "text-primary"
+                                )}
+                              >
                                 + {Math.max(i.openPackages, 1)} em uso (
-                                {fmtQty(i.inUseQuantity)}{" "}
-                                {unitShort(i.unitOfMeasure)})
+                                {percentLeft(i) <= 0
+                                  ? "deve ter acabado"
+                                  : `~${percentLeft(i)}%`}
+                                )
                               </span>
                             )}
                           </span>
@@ -1077,6 +1109,43 @@ export function StockManager({
                           >
                             {fmtQty(i.quantity)} {unitShort(i.unitOfMeasure)}
                           </span>
+                        )}
+
+                        {/* 0220: enviar a embalagem INTEIRA para uso, num
+                            clique. Ninguém retira 40 sugadores da caixa —
+                            retira a caixa. */}
+                        {canConsume && inPackages(i) && (
+                          <button
+                            type="button"
+                            disabled={isPending || closedPackages(i) < 1}
+                            title={`Enviar 1 ${i.purchaseUnit} para uso`}
+                            onClick={() =>
+                              run(
+                                () =>
+                                  openPackage({
+                                    clinicId,
+                                    itemId: i.id,
+                                    packages: 1,
+                                    // Segundo pacote na sala não encerra o
+                                    // primeiro; só encerra quando a conta diz
+                                    // que ele acabou.
+                                    previousFinished:
+                                      i.openPackages > 0 &&
+                                      i.inUseQuantity <= 0,
+                                  }),
+                                `1 ${i.purchaseUnit} enviada para uso.`
+                              )
+                            }
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded px-1 text-primary",
+                              closedPackages(i) < 1
+                                ? "opacity-40"
+                                : "hover:bg-primary/10"
+                            )}
+                          >
+                            <PackageOpen className="size-3.5" />
+                            usar
+                          </button>
                         )}
                         <span className="text-muted-foreground">
                           {fmtUnitCost(i.avgCostCents)}
