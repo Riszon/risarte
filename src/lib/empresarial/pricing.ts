@@ -58,7 +58,8 @@ export function dependentPlanCostCents(
 }
 
 export type MonthlyEmployee = {
-  status: "ACTIVE" | "INACTIVE";
+  /** Só ACTIVE entra na conta; INACTIVE e DELETED (exclusão lógica) ficam fora. */
+  status: "ACTIVE" | "INACTIVE" | "DELETED";
   dependentPlan: DependentPlan;
   activeDependentCount: number;
 };

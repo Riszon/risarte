@@ -30,6 +30,8 @@ import {
   addDependent,
   completeEmployee,
   createEmployee,
+  deleteEmployee,
+  restoreEmployee,
   importEmployees,
   linkDependent,
   removeDependent,
@@ -50,6 +52,21 @@ import {
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
+/** Situação do colaborador nas listas e no relatório (padrão: ativos). */
+export const EMPLOYEE_FILTERS = [
+  "ACTIVE",
+  "INACTIVE",
+  "DELETED",
+  "ALL",
+] as const;
+export type EmployeeFilter = (typeof EMPLOYEE_FILTERS)[number];
+export const EMPLOYEE_FILTER_LABELS: Record<EmployeeFilter, string> = {
+  ACTIVE: "Ativos",
+  INACTIVE: "Inativos",
+  DELETED: "Excluídos",
+  ALL: "Todos",
+};
+
 export type DependentView = {
   id: string;
   cpf: string;
@@ -66,7 +83,7 @@ export type EmployeeView = {
   fullName: string;
   phone: string;
   email: string | null;
-  status: "ACTIVE" | "INACTIVE";
+  status: "ACTIVE" | "INACTIVE" | "DELETED";
   registrationStage: "PRE_REGISTERED" | "COMPLETED";
   dependentPlan: string;
   clientId: string | null;
@@ -97,6 +114,16 @@ export function ColaboradoresTab({
   /** Arquivos dos colaboradores/dependentes desta empresa. */
   employeeFiles?: EmployeeFileView[];
 }) {
+  // Padrão: só os ATIVOS (decisão do dono). Excluídos ficam fora até pedir.
+  const [statusFilter, setStatusFilter] = useState<EmployeeFilter>("ACTIVE");
+  const shown = employees.filter((e) =>
+    statusFilter === "ALL" ? true : e.status === statusFilter
+  );
+  const countBy = (s: EmployeeFilter) =>
+    s === "ALL"
+      ? employees.length
+      : employees.filter((e) => e.status === s).length;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -129,13 +156,34 @@ export function ColaboradoresTab({
         </div>
       </div>
 
+      {/* Filtro por situação — padrão: ativos. */}
+      {employees.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {EMPLOYEE_FILTERS.map((f) => (
+            <Button
+              key={f}
+              variant={statusFilter === f ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setStatusFilter(f)}
+            >
+              {EMPLOYEE_FILTER_LABELS[f]} ({countBy(f)})
+            </Button>
+          ))}
+        </div>
+      )}
+
       {employees.length === 0 ? (
         <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
           Nenhum colaborador cadastrado ainda.
         </p>
+      ) : shown.length === 0 ? (
+        <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
+          Nenhum colaborador {EMPLOYEE_FILTER_LABELS[statusFilter].toLowerCase()}.
+        </p>
       ) : (
         <div className="space-y-2">
-          {employees.map((e) => (
+          {shown.map((e) => (
             <EmployeeRow
               key={e.id}
               companyId={companyId}
@@ -177,7 +225,9 @@ function EmployeeRow({
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2 font-medium">
             {employee.fullName}
-            {employee.status === "INACTIVE" ? (
+            {employee.status === "DELETED" ? (
+              <Badge variant="destructive">Excluído</Badge>
+            ) : employee.status === "INACTIVE" ? (
               <Badge variant="outline">Inativo</Badge>
             ) : employee.registrationStage === "COMPLETED" ? (
               <Badge className="bg-gold/20 text-gold-foreground">
@@ -231,7 +281,10 @@ function EmployeeRow({
             files={myFiles}
             canManage={canManage}
           />
-          {canManage && (
+          {canManage && employee.status === "DELETED" && (
+            <RestoreButton companyId={companyId} employee={employee} />
+          )}
+          {canManage && employee.status !== "DELETED" && (
             <>
               {employee.registrationStage === "PRE_REGISTERED" &&
                 employee.status === "ACTIVE" && (
@@ -252,6 +305,7 @@ function EmployeeRow({
                 )}
               <EmployeeFormDialog companyId={companyId} employee={employee} />
               <StatusButton companyId={companyId} employee={employee} />
+              <DeleteEmployeeButton companyId={companyId} employee={employee} />
             </>
           )}
         </div>
@@ -365,6 +419,106 @@ function StatusButton({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Excluir colaborador — exclusão lógica, com confirmação explícita. */
+function DeleteEmployeeButton({
+  companyId,
+  employee,
+}: {
+  companyId: string;
+  employee: EmployeeView;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const activeDeps = employee.dependents.filter((d) => d.status === "ACTIVE");
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 px-2 text-xs text-destructive"
+        onClick={() => setOpen(true)}
+      >
+        Excluir
+      </Button>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Excluir {employee.fullName}?</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            O colaborador sai das listas, das contagens e da mensalidade, e perde
+            o selo do programa.
+          </p>
+          {activeDeps.length > 0 && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+              {activeDeps.length} dependente(s) saem junto.
+            </p>
+          )}
+          <p className="rounded-md border bg-muted/30 p-2 text-xs text-muted-foreground">
+            O cadastro <strong>não é apagado do banco</strong>: o histórico de
+            uso de benefícios, o período no programa e as cobranças precisam
+            continuar existindo. Ele fica na lista de <strong>Excluídos</strong> e
+            pode ser restaurado.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isPending}
+              onClick={() =>
+                startTransition(async () => {
+                  const r = await deleteEmployee(companyId, employee.id);
+                  if (r.ok) {
+                    toast.success("Colaborador excluído.");
+                    setOpen(false);
+                    router.refresh();
+                  } else toast.error(r.error ?? "Erro.");
+                })
+              }
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RestoreButton({
+  companyId,
+  employee,
+}: {
+  companyId: string;
+  employee: EmployeeView;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-7 px-2 text-xs"
+      disabled={isPending}
+      onClick={() =>
+        startTransition(async () => {
+          const r = await restoreEmployee(companyId, employee.id);
+          if (r.ok) {
+            toast.success("Colaborador restaurado (como inativo).");
+            router.refresh();
+          } else toast.error(r.error ?? "Erro.");
+        })
+      }
+    >
+      Restaurar
+    </Button>
   );
 }
 

@@ -201,6 +201,65 @@ export async function setEmployeeStatus(
   return { ok: true };
 }
 
+/**
+ * Exclusão LÓGICA do colaborador: some das listas, mas o registro fica para
+ * preservar o histórico (uso de benefício, período no programa, cobranças).
+ * Dependentes saem junto e o selo do cliente é recalculado.
+ */
+export async function deleteEmployee(
+  companyId: string,
+  employeeId: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canManageEmployees(session)) {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const db = await empresarialDb();
+  const { error } = await db.rpc("delete_employee", {
+    p_employee_id: employeeId,
+  });
+  if (error) {
+    console.error("deleteEmployee failed:", error.message);
+    return { ok: false, error: "Não foi possível excluir o colaborador." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_employee",
+    entityId: employeeId,
+    details: { deleted: true },
+  });
+  revalidatePath(`/empresarial/${companyId}`);
+  revalidatePath("/prontuarios");
+  return { ok: true };
+}
+
+/** Desfaz a exclusão — volta como INATIVO (reativar é decisão à parte). */
+export async function restoreEmployee(
+  companyId: string,
+  employeeId: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canManageEmployees(session)) {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const db = await empresarialDb();
+  const { error } = await db.rpc("restore_employee", {
+    p_employee_id: employeeId,
+  });
+  if (error) {
+    console.error("restoreEmployee failed:", error.message);
+    return { ok: false, error: "Não foi possível restaurar." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_employee",
+    entityId: employeeId,
+    details: { restored: true },
+  });
+  revalidatePath(`/empresarial/${companyId}`);
+  return { ok: true };
+}
+
 export async function addDependent(
   companyId: string,
   employeeId: string,

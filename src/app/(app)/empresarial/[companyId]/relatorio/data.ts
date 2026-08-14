@@ -68,10 +68,14 @@ export type CompanyReport = {
   };
   pricing: AdhesionPricing;
   pricingScope: "empresa" | "rede";
+  /** Lista já filtrada pela situação escolhida. */
   employees: ReportEmployee[];
+  filter: ReportFilter;
+  filterLabel: string;
   totals: {
     employeesActive: number;
     employeesInactive: number;
+    employeesDeleted: number;
     dependentsActive: number;
     linkedClients: number;
     pendingRegistration: number;
@@ -132,8 +136,19 @@ type EmployeeRow = {
  * preços efetivos (empresa > rede), colaboradores com dependentes e os totais.
  * A RLS do schema `empresarial` continua sendo a barreira real.
  */
+/** Situação usada para filtrar a LISTA do relatório (os totais não mudam). */
+export type ReportFilter = "ACTIVE" | "INACTIVE" | "DELETED" | "ALL";
+
+export const REPORT_FILTER_LABELS: Record<ReportFilter, string> = {
+  ACTIVE: "Somente ativos",
+  INACTIVE: "Somente inativos",
+  DELETED: "Somente excluídos",
+  ALL: "Todos",
+};
+
 export async function loadCompanyReport(
-  companyId: string
+  companyId: string,
+  filter: ReportFilter = "ACTIVE"
 ): Promise<CompanyReport | null> {
   const db = await empresarialDb();
 
@@ -216,7 +231,7 @@ export async function loadCompanyReport(
     consultantName = prof?.full_name || prof?.email || null;
   }
 
-  const employees: ReportEmployee[] = (empRows ?? []).map((e) => {
+  const allEmployees: ReportEmployee[] = (empRows ?? []).map((e) => {
     const deps = (e.dependents ?? []).map((d) => ({
       id: d.id,
       fullName: d.full_name,
@@ -254,14 +269,21 @@ export async function loadCompanyReport(
     };
   });
 
+  // Totais SEMPRE sobre a base completa — o filtro muda só a lista impressa,
+  // senão a mensalidade da empresa mudaria conforme o que está sendo exibido.
   const monthly = computeMonthlyCents(
     pricing,
-    employees.map((e) => ({
+    allEmployees.map((e) => ({
       status: e.status,
       dependentPlan: e.dependentPlan,
       activeDependentCount: e.dependents.filter((d) => d.status === "ACTIVE").length,
     }))
   );
+
+  const employees =
+    filter === "ALL"
+      ? allEmployees
+      : allEmployees.filter((e) => e.status === filter);
 
   return {
     company: {
@@ -286,15 +308,18 @@ export async function loadCompanyReport(
     pricing,
     pricingScope: own ? "empresa" : "rede",
     employees,
+    filter,
+    filterLabel: REPORT_FILTER_LABELS[filter],
     totals: {
-      employeesActive: employees.filter((e) => e.status === "ACTIVE").length,
-      employeesInactive: employees.filter((e) => e.status === "INACTIVE").length,
-      dependentsActive: employees.reduce(
+      employeesActive: allEmployees.filter((e) => e.status === "ACTIVE").length,
+      employeesInactive: allEmployees.filter((e) => e.status === "INACTIVE").length,
+      employeesDeleted: allEmployees.filter((e) => e.status === "DELETED").length,
+      dependentsActive: allEmployees.reduce(
         (a, e) => a + e.dependents.filter((d) => d.status === "ACTIVE").length,
         0
       ),
-      linkedClients: employees.filter((e) => e.linked).length,
-      pendingRegistration: employees.filter(
+      linkedClients: allEmployees.filter((e) => e.linked).length,
+      pendingRegistration: allEmployees.filter(
         (e) => e.registrationStage === "PRE_REGISTERED" && e.status === "ACTIVE"
       ).length,
       monthlyCents: monthly.totalCents,

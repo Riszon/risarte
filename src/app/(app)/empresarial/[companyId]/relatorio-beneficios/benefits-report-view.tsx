@@ -17,7 +17,10 @@ import { formatBRL } from "@/lib/pricing";
 import { formatCnpj, formatCpf, formatPhone } from "@/lib/masks";
 import { whatsappLink } from "@/lib/whatsapp";
 import { PILLAR_LABELS, type MethodologyPillar } from "@/lib/journey";
-import { RELATIONSHIP_LABELS } from "@/lib/empresarial/constants";
+import {
+  EMPLOYEE_STATUS_LABELS,
+  RELATIONSHIP_LABELS,
+} from "@/lib/empresarial/constants";
 import type { BenefitsReport, MemberStats } from "./data";
 
 const PRINT_CSS = `
@@ -468,9 +471,9 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
                       <tr key={m.clientId} className="border-b last:border-0 align-top">
                         <td className="px-2 py-1.5">
                           <span className="font-medium">{m.name}</span>
-                          {m.status === "INACTIVE" && (
+                          {m.status !== "ACTIVE" && (
                             <Badge variant="outline" className="ml-1 text-[10px]">
-                              Inativo
+                              {EMPLOYEE_STATUS_LABELS[m.status]}
                             </Badge>
                           )}
                           <span className="block text-[10px] text-muted-foreground">

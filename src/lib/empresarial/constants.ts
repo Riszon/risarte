@@ -44,11 +44,14 @@ export const DEPENDENT_PLAN_LABELS: Record<DependentPlan, string> = {
   FAMILY_EXTRA: "Familiar + extras",
 };
 
-export const EMPLOYEE_STATUSES = ["ACTIVE", "INACTIVE"] as const;
+// DELETED = exclusão LÓGICA (o registro fica para preservar o histórico de uso
+// de benefícios, período no programa e cobranças). Ver migração 1004.
+export const EMPLOYEE_STATUSES = ["ACTIVE", "INACTIVE", "DELETED"] as const;
 export type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number];
 export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
   ACTIVE: "Ativo",
   INACTIVE: "Inativo",
+  DELETED: "Excluído",
 };
 
 export const REGISTRATION_STAGES = ["PRE_REGISTERED", "COMPLETED"] as const;

@@ -338,12 +338,17 @@ export function ReportView({ report }: { report: CompanyReport }) {
 
         {/* Colaboradores + dependentes */}
         <section>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+          <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide">
             Colaboradores e dependentes ({employees.length})
           </h3>
+          {/* Sai impresso: o leitor precisa saber que a lista está filtrada. */}
+          <p className="mb-2 text-[10px] text-muted-foreground">
+            Situação exibida: <strong>{report.filterLabel}</strong>. Os números do
+            resumo consideram sempre a base completa da empresa.
+          </p>
           {employees.length === 0 ? (
             <p className="rounded-lg border py-6 text-center text-sm text-muted-foreground">
-              Nenhum colaborador cadastrado.
+              Nenhum colaborador nesta situação.
             </p>
           ) : (
             <div className="space-y-2">
