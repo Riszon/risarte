@@ -47,6 +47,7 @@ import {
 } from "@/lib/empresarial/pricing";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCnpj } from "@/lib/masks";
 import { formatBRL } from "@/lib/pricing";
@@ -772,16 +773,28 @@ export default async function CompanyDetailPage(props: {
             {formatCnpj(company.cnpj)}
           </p>
         </div>
-        {canManage && (
-          <CompanyFormDialog
-            company={company}
-            consultants={
-              row.assigned_consultant_id && consultantName
-                ? [{ id: row.assigned_consultant_id, label: consultantName }]
-                : []
-            }
-          />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Ficha completa da empresa, pronta para imprimir/PDF. */}
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href={`/empresarial/${company.id}/ficha`} />}
+          >
+            <FileText className="mr-1 size-4" />
+            Ficha em PDF
+          </Button>
+          {canManage && (
+            <CompanyFormDialog
+              company={company}
+              consultants={
+                row.assigned_consultant_id && consultantName
+                  ? [{ id: row.assigned_consultant_id, label: consultantName }]
+                  : []
+              }
+            />
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1 border-b">
