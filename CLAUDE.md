@@ -693,9 +693,30 @@ acerto só acontece quando ela é dada por encerrada.
   precificador: é estrutura. Rateá-lo por procedimento contaria duas vezes e
   inflaria o preço sugerido.
 
+**A COMPRA ENTRA NA CONTABILIDADE (E4, 0221).** As duas metades da decisão:
+**comprar não é gastar** (a nota vira conta a pagar em **6.1.01**, ativo, fora do
+resultado) e **gastar é usar** (o consumo vira custo em **2.2.01**, na
+competência do procedimento). Cada movimento também baixa o ativo, então o saldo
+de 6.1.01 **é** o valor do estoque — e `stock_ledger_check()` compara com a
+prateleira.
+
+- **Perda não é custo de procedimento** (dono, 12/08/2026): consumo em
+  **2.2.01**, quebra/vencimento/inventário em **2.2.02**. Juntos, o custo dos
+  procedimentos subiria por material que caiu no chão, e o desperdício ficaria
+  invisível dentro do custo do serviço. A conta 2.2 virou grupo.
+- **Um lançamento por movimento**, não consolidado mensal: rastreabilidade é
+  invariante do módulo. Consolidar depois é fácil; recuperar rastro não é.
+- `register_stock_purchase()` cria nota, entradas e contas a pagar **numa
+  transação** — se a conta a pagar falhasse depois das entradas, o estoque
+  subiria sem a obrigação e a conferência nunca mais fecharia. As parcelas
+  precisam fechar com o total da nota.
+- **Limites declarados:** nota com serviço junto → só as linhas de estoque aqui,
+  frete/serviço seguem em Contas a Pagar; **devolução ao fornecedor** fica de
+  fora; **entrada manual não contabiliza** (não há documento nem obrigação) e a
+  conferência mostra a diferença em vez de escondê-la; nada retroativo.
+
 **Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** ✅ baixa
-automática → **E4** entrada por nota + conta a pagar + as duas metades do razão
-(compra → 6.1.01, consumo → 2.2) → **E5** mínimo, inventário e alertas.
+automática → **E4** ✅ compra + razão → **E5** mínimo, inventário e alertas.
 **Transferência entre unidades** fica para o fim da E5 (os tipos já existem no
 banco, sem tela). **Controle por lote** (baixa pelo que vence primeiro, recusa de
 vencido) fica para depois da E3, por decisão do dono.

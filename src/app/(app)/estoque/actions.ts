@@ -240,6 +240,115 @@ export async function postMovement(input: {
 }
 
 /**
+ * 0221 — a nota de compra: entradas de estoque e contas a pagar de uma vez.
+ *
+ * COMPRAR NÃO É GASTAR. A conta a pagar nasce classificada em 6.1.01 (ativo) e
+ * não toca o resultado; o custo só aparece quando o material for usado. Tudo
+ * numa transação: se a conta a pagar falhasse depois das entradas, o estoque
+ * subiria sem a obrigação e a conferência nunca mais fecharia.
+ */
+export async function registerPurchase(input: {
+  clinicId: string;
+  supplierId: string;
+  invoiceNumber: string;
+  issueDate: string;
+  costCenterId: string;
+  notes: string;
+  items: {
+    itemId: string;
+    packages: string;
+    packageCost: string;
+    lotCode: string;
+    expiresAt: string;
+  }[];
+  installments: { dueDate: string; amount: string }[];
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStock(session, input.clinicId)) {
+    return { ok: false, error: "Sua função não permite registrar compras." };
+  }
+
+  const items = input.items
+    .map((l) => ({
+      itemId: l.itemId,
+      packages: Number(l.packages.replace(",", ".")) || 0,
+      packageCostCents: parseBRLToCents(l.packageCost) ?? 0,
+      lotCode: l.lotCode.trim() || null,
+      expiresAt: l.expiresAt || null,
+    }))
+    .filter((l) => l.itemId && l.packages > 0);
+
+  if (items.length === 0) {
+    return { ok: false, error: "Informe ao menos um item com quantidade." };
+  }
+  if (items.some((l) => l.packageCostCents <= 0)) {
+    // Entrada sem valor destrói o custo médio em silêncio.
+    return { ok: false, error: "Informe o valor de cada item da nota." };
+  }
+
+  const total = items.reduce(
+    (s, l) => s + Math.round(l.packages * l.packageCostCents),
+    0
+  );
+
+  const installments = input.installments
+    .map((p) => ({
+      dueDate: p.dueDate,
+      amountCents: parseBRLToCents(p.amount) ?? 0,
+    }))
+    .filter((p) => p.dueDate && p.amountCents > 0);
+
+  if (installments.length === 0) {
+    return { ok: false, error: "Informe ao menos um vencimento." };
+  }
+
+  const parcels = installments.reduce((s, p) => s + p.amountCents, 0);
+  if (parcels !== total) {
+    // Parcelas que não fecham com a nota deixariam ativo e obrigação
+    // discordando desde o primeiro dia.
+    return {
+      ok: false,
+      error: `As parcelas somam ${(parcels / 100).toFixed(2)} e a nota soma ${(total / 100).toFixed(2)}.`,
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("register_stock_purchase", {
+    p_clinic_id: input.clinicId,
+    p_supplier_id: input.supplierId || null,
+    p_invoice_number: input.invoiceNumber,
+    p_issue_date: input.issueDate || null,
+    p_items: items,
+    p_installments: installments,
+    p_cost_center_id: input.costCenterId || null,
+    p_notes: input.notes,
+  });
+  if (error) {
+    if (error.message.includes("NO_ITEMS")) {
+      return { ok: false, error: "Informe ao menos um item." };
+    }
+    if (error.message.includes("NO_INSTALLMENTS")) {
+      return { ok: false, error: "Informe ao menos um vencimento." };
+    }
+    console.error("register_stock_purchase failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível registrar a nota."),
+    };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "stock_purchase",
+    entityId: input.invoiceNumber || input.clinicId,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true };
+}
+
+/**
  * 0219 — abrir embalagem é ato de GENTE.
  *
  * O consumo do kit é estimativa: ele não sabe se o frasco acabou. Por isso o

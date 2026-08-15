@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/08/2026 · Versão do sistema: **0.199.0** · Última migração: **0220**_
+_Atualizado em: 12/08/2026 · Versão do sistema: **0.200.0** · Última migração: **0221**_
+
+> **ESTOQUE E4 — A COMPRA ENTRA NA CONTABILIDADE (v0.200.0, migração 0221).**
+> Até aqui o estoque andava sozinho: o material entrava e saía e o Financeiro
+> não ficava sabendo. Esta etapa fecha o círculo, e é ela que faz o DRE do FIN6
+> nascer certo em vez de nascer torto.
+>
+> **Comprar não é gastar.** A nota vira conta a pagar classificada em **6.1.01
+> (Estoque de materiais)** — um ativo, que não entra no resultado. **Gastar é
+> usar:** o consumo vira custo em **2.2.01**, com competência na data do
+> procedimento. Sem isso, o mês da compra parece péssimo e o mês do uso parece
+> ótimo.
+>
+> Como cada movimento também baixa o ativo, **o saldo de 6.1.01 é o valor do
+> estoque** — e a tela compara os dois: *"prateleira R$ X · contabilidade R$ Y"*.
+> Divergiu, algo escapou; melhor descobrir por um número do que por um balanço.
+>
+> **Perda não é custo de procedimento** (decisão do dono): consumo em 2.2.01,
+> quebra/vencimento/inventário em **2.2.02**. Juntos, o custo dos seus
+> procedimentos subiria por causa de material que caiu no chão — e o
+> desperdício, que é o problema de verdade, ficaria escondido dentro do custo do
+> serviço.
+>
+> **Uma tela só:** a nota de compra cria as entradas de estoque **e** as contas a
+> pagar de uma vez, numa transação. Se a conta a pagar falhasse depois das
+> entradas, o estoque subiria sem a obrigação e a conferência nunca mais
+> fecharia. As parcelas têm de fechar com o total da nota.
+>
+> **Limites declarados:** nota com serviço junto (frete) → só as linhas de
+> estoque aqui · devolução ao fornecedor fica de fora · **entrada manual não
+> contabiliza** (não há documento nem obrigação), e a conferência mostra a
+> diferença em vez de escondê-la · nada retroativo.
 
 > **ENVIAR PARA USO — UM CLIQUE, UMA EMBALAGEM (v0.199.0, migração 0220).**
 >

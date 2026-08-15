@@ -33,6 +33,7 @@ import {
 import {
   openPackage,
   postMovement,
+  registerPurchase,
   removeStockItem,
   saveItemSettings,
   saveKit,
@@ -172,6 +173,28 @@ function percentLeft(i: { inUseQuantity: number; unitsPerPurchase: number }) {
   );
 }
 
+type PurchaseDraft = {
+  items: { packages: string; packageCost: string }[];
+  installments: { amount: string }[];
+};
+
+/** O total da nota, para conferir com a soma dos vencimentos antes de gravar. */
+function purchaseTotal(p: PurchaseDraft): number {
+  return p.items.reduce(
+    (s, l) =>
+      s +
+      Math.round(
+        (Number(l.packages.replace(",", ".")) || 0) *
+          (parseBRLToCents(l.packageCost) ?? 0)
+      ),
+    0
+  );
+}
+
+function installmentsTotal(p: PurchaseDraft): number {
+  return p.installments.reduce((s, x) => s + (parseBRLToCents(x.amount) ?? 0), 0);
+}
+
 /** Custo unitário pode ter centavos fracionados (R$ 0,2571 por grama). */
 function fmtUnitCost(cents: number): string {
   if (Number.isInteger(cents)) return formatBRL(cents);
@@ -189,6 +212,8 @@ export function StockManager({
   expiring,
   withoutKit,
   runningOut,
+  ledger,
+  costCenters,
   suppliers,
   procedures,
   kits,
@@ -220,6 +245,15 @@ export function StockManager({
     closedPackages: number;
     state: "sem_aberta" | "deve_ter_acabado" | "acabando";
   }[];
+  /** 0221: prateleira × conta 6.1.01. */
+  ledger: {
+    stockValueCents: number;
+    ledgerValueCents: number;
+    differenceCents: number;
+    manualEntries: number;
+    manualEntriesCents: number;
+  };
+  costCenters: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   procedures: { id: string; name: string; specialty: string | null }[];
   kits: Kit[];
@@ -264,6 +298,20 @@ export function StockManager({
 
   // Histórico de um item
   const [historyFor, setHistoryFor] = useState<string | null>(null);
+
+  // Nota de compra (0221)
+  const emptyPurchase = {
+    supplierId: "",
+    invoiceNumber: "",
+    issueDate: today,
+    costCenterId: "",
+    notes: "",
+    items: [
+      { itemId: "", packages: "1", packageCost: "", lotCode: "", expiresAt: "" },
+    ],
+    installments: [{ dueDate: today, amount: "" }],
+  };
+  const [purchase, setPurchase] = useState<typeof emptyPurchase | null>(null);
 
   // Kit em edição / kit apenas aberto para ver
   const [kitDraft, setKitDraft] = useState<KitDraft | null>(null);
@@ -451,6 +499,411 @@ export function StockManager({
                   você. Baixa por lote entra depois da baixa automática.
                 </p>
               </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* -- NOTA DE COMPRA (0221) ----------------------------------------- */}
+      {canManage && (
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-medium">Nota de compra</h2>
+              <Button
+                size="sm"
+                variant={purchase ? "outline" : "default"}
+                className="h-8 text-xs"
+                onClick={() =>
+                  setPurchase(purchase ? null : { ...emptyPurchase })
+                }
+              >
+                {purchase ? "Fechar" : "Registrar nota"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Uma tela só: as <strong>entradas de estoque</strong> e a{" "}
+              <strong>conta a pagar</strong> nascem juntas.{" "}
+              <strong>Comprar não é gastar</strong> — a nota entra como{" "}
+              <em>estoque</em> (conta 6.1.01), e o custo só aparece no resultado
+              quando o material for usado. Material comprado em janeiro e usado
+              em março não pode afundar janeiro.
+            </p>
+
+            {purchase && (
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div className="grid gap-2 sm:grid-cols-4">
+                  <label className="block">
+                    <Label className="text-[11px]">Fornecedor</Label>
+                    <select
+                      value={purchase.supplierId}
+                      onChange={(e) =>
+                        setPurchase({ ...purchase, supplierId: e.target.value })
+                      }
+                      className={selectClass}
+                    >
+                      <option value="">—</option>
+                      {suppliers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <Label className="text-[11px]">Nota fiscal</Label>
+                    <Input
+                      className="h-8"
+                      value={purchase.invoiceNumber}
+                      onChange={(e) =>
+                        setPurchase({
+                          ...purchase,
+                          invoiceNumber: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="block">
+                    <Label className="text-[11px]">Data da nota</Label>
+                    <Input
+                      className="h-8"
+                      type="date"
+                      value={purchase.issueDate}
+                      onChange={(e) =>
+                        setPurchase({ ...purchase, issueDate: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="block">
+                    <Label className="text-[11px]">Centro de custo</Label>
+                    <select
+                      value={purchase.costCenterId}
+                      onChange={(e) =>
+                        setPurchase({
+                          ...purchase,
+                          costCenterId: e.target.value,
+                        })
+                      }
+                      className={selectClass}
+                    >
+                      <option value="">—</option>
+                      {costCenters.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <p className="text-[11px] font-medium">Itens da nota</p>
+                {purchase.items.map((line, idx) => {
+                  const li = line.itemId ? itemById.get(line.itemId) : undefined;
+                  return (
+                    <div key={idx} className="flex flex-wrap items-end gap-2">
+                      <label className="block min-w-48 flex-1">
+                        <Label className="text-[11px]">Item</Label>
+                        <select
+                          value={line.itemId}
+                          onChange={(e) =>
+                            setPurchase({
+                              ...purchase,
+                              items: purchase.items.map((l, i) =>
+                                i === idx ? { ...l, itemId: e.target.value } : l
+                              ),
+                            })
+                          }
+                          className={selectClass}
+                        >
+                          <option value="">Escolher…</option>
+                          {items
+                            .filter((i) => i.isActive)
+                            .map((i) => (
+                              <option key={i.id} value={i.id}>
+                                {i.name}
+                                {i.brand && ` · ${i.brand}`}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <label className="block w-24">
+                        <Label className="text-[11px]">
+                          {li ? li.purchaseUnit : "Qtd"}
+                        </Label>
+                        <Input
+                          className="h-8"
+                          inputMode="decimal"
+                          value={line.packages}
+                          onChange={(e) =>
+                            setPurchase({
+                              ...purchase,
+                              items: purchase.items.map((l, i) =>
+                                i === idx
+                                  ? { ...l, packages: e.target.value }
+                                  : l
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="block w-28">
+                        <Label className="text-[11px]">Valor unit. (R$)</Label>
+                        <Input
+                          className="h-8"
+                          inputMode="decimal"
+                          value={line.packageCost}
+                          onChange={(e) =>
+                            setPurchase({
+                              ...purchase,
+                              items: purchase.items.map((l, i) =>
+                                i === idx
+                                  ? { ...l, packageCost: e.target.value }
+                                  : l
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="block w-24">
+                        <Label className="text-[11px]">Lote</Label>
+                        <Input
+                          className="h-8"
+                          value={line.lotCode}
+                          onChange={(e) =>
+                            setPurchase({
+                              ...purchase,
+                              items: purchase.items.map((l, i) =>
+                                i === idx ? { ...l, lotCode: e.target.value } : l
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="block w-36">
+                        <Label className="text-[11px]">Validade</Label>
+                        <Input
+                          className="h-8"
+                          type="date"
+                          value={line.expiresAt}
+                          onChange={(e) =>
+                            setPurchase({
+                              ...purchase,
+                              items: purchase.items.map((l, i) =>
+                                i === idx
+                                  ? { ...l, expiresAt: e.target.value }
+                                  : l
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 text-xs"
+                        onClick={() =>
+                          setPurchase({
+                            ...purchase,
+                            items: purchase.items.filter((_, i) => i !== idx),
+                          })
+                        }
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  );
+                })}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    setPurchase({
+                      ...purchase,
+                      items: [
+                        ...purchase.items,
+                        {
+                          itemId: "",
+                          packages: "1",
+                          packageCost: "",
+                          lotCode: "",
+                          expiresAt: "",
+                        },
+                      ],
+                    })
+                  }
+                >
+                  <Plus className="mr-1 size-3.5" />
+                  Adicionar item
+                </Button>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
+                  <p className="text-[11px] font-medium">Vencimentos</p>
+                  <span className="text-sm">
+                    Total da nota:{" "}
+                    <strong>{formatBRL(purchaseTotal(purchase))}</strong>
+                  </span>
+                </div>
+                {purchase.installments.map((p, idx) => (
+                  <div key={idx} className="flex flex-wrap items-end gap-2">
+                    <label className="block w-40">
+                      <Label className="text-[11px]">Vencimento</Label>
+                      <Input
+                        className="h-8"
+                        type="date"
+                        value={p.dueDate}
+                        onChange={(e) =>
+                          setPurchase({
+                            ...purchase,
+                            installments: purchase.installments.map((x, i) =>
+                              i === idx ? { ...x, dueDate: e.target.value } : x
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="block w-32">
+                      <Label className="text-[11px]">Valor (R$)</Label>
+                      <Input
+                        className="h-8"
+                        inputMode="decimal"
+                        value={p.amount}
+                        onChange={(e) =>
+                          setPurchase({
+                            ...purchase,
+                            installments: purchase.installments.map((x, i) =>
+                              i === idx ? { ...x, amount: e.target.value } : x
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs"
+                      onClick={() =>
+                        setPurchase({
+                          ...purchase,
+                          installments: purchase.installments.filter(
+                            (_, i) => i !== idx
+                          ),
+                        })
+                      }
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() =>
+                      setPurchase({
+                        ...purchase,
+                        installments: [
+                          ...purchase.installments,
+                          { dueDate: today, amount: "" },
+                        ],
+                      })
+                    }
+                  >
+                    <Plus className="mr-1 size-3.5" />
+                    Adicionar vencimento
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() =>
+                      setPurchase({
+                        ...purchase,
+                        installments: [
+                          {
+                            dueDate: purchase.installments[0]?.dueDate ?? today,
+                            amount: (purchaseTotal(purchase) / 100)
+                              .toFixed(2)
+                              .replace(".", ","),
+                          },
+                        ],
+                      })
+                    }
+                  >
+                    Usar total em 1 vencimento
+                  </Button>
+                  <span className="ml-auto flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-xs",
+                        installmentsTotal(purchase) === purchaseTotal(purchase)
+                          ? "text-emerald-700"
+                          : "text-destructive"
+                      )}
+                    >
+                      parcelas {formatBRL(installmentsTotal(purchase))}
+                    </span>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={isPending}
+                      onClick={() =>
+                        run(
+                          () =>
+                            registerPurchase({
+                              clinicId,
+                              supplierId: purchase.supplierId,
+                              invoiceNumber: purchase.invoiceNumber,
+                              issueDate: purchase.issueDate,
+                              costCenterId: purchase.costCenterId,
+                              notes: purchase.notes,
+                              items: purchase.items,
+                              installments: purchase.installments,
+                            }),
+                          "Nota registrada — estoque e conta a pagar criados.",
+                          () => setPurchase(null)
+                        )
+                      }
+                    >
+                      Registrar nota
+                    </Button>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* CONFERÊNCIA: prateleira × contabilidade */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-2 text-xs">
+              <span>
+                Estoque na prateleira{" "}
+                <strong>{formatBRL(ledger.stockValueCents)}</strong> · na
+                contabilidade{" "}
+                <strong>{formatBRL(ledger.ledgerValueCents)}</strong>
+              </span>
+              <span
+                className={cn(
+                  "font-medium",
+                  ledger.differenceCents === 0
+                    ? "text-emerald-700"
+                    : "text-amber-700"
+                )}
+              >
+                {ledger.differenceCents === 0
+                  ? "conferem"
+                  : `diferença ${formatBRL(ledger.differenceCents)}`}
+              </span>
+            </div>
+            {ledger.differenceCents !== 0 && ledger.manualEntries > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {ledger.manualEntries} entrada
+                {ledger.manualEntries === 1 ? "" : "s"} lançada
+                {ledger.manualEntries === 1 ? "" : "s"} sem nota (
+                {formatBRL(ledger.manualEntriesCents)}) — entrada manual{" "}
+                <strong>não contabiliza</strong>, porque não há documento nem
+                obrigação a registrar. Para o material entrar na contabilidade,
+                registre pela nota de compra.
+              </p>
             )}
           </CardContent>
         </Card>

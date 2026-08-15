@@ -50,6 +50,8 @@ export default async function StockPage() {
     { data: expiringRows },
     { data: noKitRows },
     { data: runningOutRows },
+    { data: ledgerRow },
+    { data: costCenterRows },
   ] = await Promise.all([
     supabase
       .from("stock_items")
@@ -105,6 +107,15 @@ export default async function StockPage() {
       p_clinic_id: clinicId,
       p_threshold_percent: 15,
     }),
+    // 0221: prateleira × contabilidade. Se os dois divergem, algo escapou — e
+    // é melhor descobrir por um número do que por um balanço.
+    supabase.rpc("stock_ledger_check", { p_clinic_id: clinicId }),
+    supabase
+      .from("cost_centers")
+      .select("id, name, clinic_id")
+      .eq("active", true)
+      .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
+      .order("code"),
   ]);
 
   // O nome de quem lançou vem numa consulta à parte: o atalho de embed em
@@ -255,6 +266,15 @@ export default async function StockPage() {
     state: r.state as "sem_aberta" | "deve_ter_acabado" | "acabando",
   }));
 
+  const lc = Array.isArray(ledgerRow) ? ledgerRow[0] : ledgerRow;
+  const ledger = {
+    stockValueCents: Number(lc?.stock_value_cents ?? 0),
+    ledgerValueCents: Number(lc?.ledger_value_cents ?? 0),
+    differenceCents: Number(lc?.difference_cents ?? 0),
+    manualEntries: Number(lc?.manual_entries ?? 0),
+    manualEntriesCents: Number(lc?.manual_entries_cents ?? 0),
+  };
+
   // 0215: kits têm nome e se ligam a vários procedimentos. O vínculo da
   // unidade vence o da rede — se a unidade montou os seus, são só eles.
   const kits = (kitRows ?? []).map((k) => ({
@@ -309,6 +329,11 @@ export default async function StockPage() {
         expiring={expiring}
         withoutKit={withoutKit}
         runningOut={runningOut}
+        ledger={ledger}
+        costCenters={(costCenterRows ?? []).map((c) => ({
+          id: c.id as string,
+          name: c.name as string,
+        }))}
         suppliers={(supplierRows ?? []).map((s) => ({
           id: s.id as string,
           name: s.name as string,
