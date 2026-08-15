@@ -1,6 +1,35 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/08/2026 · Versão do sistema: **0.200.0** · Última migração: **0221**_
+_Atualizado em: 12/08/2026 · Versão do sistema: **0.201.0** · Última migração: **0222**_
+
+> **ESTOQUE E5 — INVENTÁRIO, REPOSIÇÃO E EXCESSO (v0.201.0, migração 0222).
+> MÓDULO ESTOQUE COMPLETO.**
+>
+> **1. Inventário.** Você abre a contagem, conta a prateleira e informa o que
+> achou. A **diferença não é um erro a apagar** — ela mede perda, furto, kit mal
+> cadastrado e consumo fora do previsto. Por isso vira **ajuste com motivo**, ao
+> lado do que o sistema esperava, e não uma correção silenciosa.
+>
+> **A contagem congela o esperado.** Entre contar a gaveta e aplicar a contagem
+> pode ter havido um atendimento. Se o ajuste fosse *"deixe o saldo igual ao
+> contado"*, ele **apagaria esse consumo legítimo**. O ajuste sai contra o que o
+> sistema dizia **quando você começou a contar**.
+>
+> Contar e corrigir são atos diferentes: a folha fica aberta enquanto se conta e
+> só vira ajuste quando aplicada — dá para descartar sem deixar rastro no saldo.
+> **Sobra e falta aparecem separadas**: compensar as duas esconderia que faltou
+> um item caro e sobrou um barato.
+>
+> **2. Lista de reposição.** O que comprar, em **embalagens** — é assim que se
+> compra — e arredondado para cima: meia caixa não existe, e faltar custa mais
+> que sobrar um pouco. Sem máximo definido, o alvo é o dobro do mínimo; repor só
+> até o mínimo deixaria o item em alerta no dia seguinte.
+>
+> **3. Acima do máximo.** O alerta que faltava: falta todo mundo olha, sobra
+> ninguém olha. Excesso é dinheiro parado — e, em material com validade, perda
+> marcada para acontecer. A tela mostra quanto sobra e quanto isso vale.
+>
+> **398 testes** (10 novos). **Próximo: leitura do XML da nota fiscal.**
 
 > **ESTOQUE E4 — A COMPRA ENTRA NA CONTABILIDADE (v0.200.0, migração 0221).**
 > Até aqui o estoque andava sozinho: o material entrava e saía e o Financeiro

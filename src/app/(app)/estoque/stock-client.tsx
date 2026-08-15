@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   CalendarClock,
+  ClipboardList,
   PackageOpen,
   Plus,
   Search,
+  ShoppingCart,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -27,12 +29,17 @@ import {
   balanceAlerts,
   conversionSummary,
   kitCost,
+  summarizeCount,
   unitShort,
   type MovementKind,
 } from "@/lib/stock";
 import {
+  applyCount,
+  discardCount,
+  openCount as openCount2,
   openPackage,
   postMovement,
+  saveCountLine,
   registerPurchase,
   removeStockItem,
   saveItemSettings,
@@ -201,6 +208,255 @@ function fmtUnitCost(cents: number): string {
   return `R$ ${(cents / 100).toFixed(4).replace(".", ",")}`;
 }
 
+/**
+ * 0222 — o inventário.
+ *
+ * Contar e corrigir são atos diferentes: a folha fica ABERTA enquanto se conta e
+ * só vira ajuste quando aplicada. E a diferença não é um erro a apagar — ela
+ * mede perda, furto, kit mal cadastrado e consumo fora do previsto, então vira
+ * movimento com motivo, ao lado do que o sistema esperava.
+ */
+function StockCount({
+  clinicId,
+  openCount,
+  items,
+  isPending,
+  run,
+}: {
+  clinicId: string;
+  openCount: {
+    id: string;
+    countDate: string;
+    notes: string;
+    lines: {
+      id: string;
+      itemId: string;
+      expectedQuantity: number;
+      countedQuantity: number | null;
+    }[];
+  } | null;
+  items: Item[];
+  isPending: boolean;
+  run: (
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) => void;
+}) {
+  const [onlyWithBalance, setOnlyWithBalance] = useState(true);
+  const [reason, setReason] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const nameById = useMemo(
+    () => new Map(items.map((i) => [i.id, i])),
+    [items]
+  );
+
+  const lines = openCount?.lines ?? [];
+  const summary = summarizeCount(
+    lines.map((l) => ({
+      itemId: l.itemId,
+      expectedQuantity: l.expectedQuantity,
+      countedQuantity:
+        drafts[l.id] !== undefined
+          ? drafts[l.id].trim() === ""
+            ? null
+            : Number(drafts[l.id].replace(",", "."))
+          : l.countedQuantity,
+      avgCostCents: nameById.get(l.itemId)?.avgCostCents ?? 0,
+    }))
+  );
+
+  if (!openCount) {
+    return (
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
+          <div>
+            <h2 className="flex items-center gap-1 font-medium">
+              <ClipboardList className="size-4 text-primary" />
+              Inventário
+            </h2>
+            <p className="text-[11px] text-muted-foreground">
+              Conte a prateleira e acerte o sistema. A diferença vira ajuste{" "}
+              <strong>com motivo</strong> — ela não é um erro a apagar, é o que
+              mede perda, furto e consumo fora do previsto.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1 text-[11px]">
+              <input
+                type="checkbox"
+                className="size-3.5 accent-primary"
+                checked={onlyWithBalance}
+                onChange={(e) => setOnlyWithBalance(e.target.checked)}
+              />
+              só itens com saldo
+            </label>
+            <Button
+              size="sm"
+              disabled={isPending}
+              onClick={() =>
+                run(
+                  () => openCount2({ clinicId, onlyWithBalance }),
+                  "Contagem aberta."
+                )
+              }
+            >
+              Abrir contagem
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-primary/40">
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="flex items-center gap-1 font-medium">
+            <ClipboardList className="size-4 text-primary" />
+            Inventário de {fmtDate(openCount.countDate)}
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {summary.counted} contados · {summary.pending} pendentes ·{" "}
+            <strong>{summary.differences}</strong> com diferença
+          </span>
+        </div>
+
+        <div className="max-h-80 space-y-0.5 overflow-y-auto rounded-lg border p-2 text-xs">
+          {lines.map((l) => {
+            const item = nameById.get(l.itemId);
+            const raw =
+              drafts[l.id] !== undefined
+                ? drafts[l.id]
+                : l.countedQuantity === null
+                  ? ""
+                  : fmtQty(l.countedQuantity);
+            const counted = raw.trim() === "" ? null : Number(raw.replace(",", "."));
+            const diff =
+              counted === null ? null : counted - l.expectedQuantity;
+            return (
+              <div
+                key={l.id}
+                className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed py-1 last:border-0"
+              >
+                <span className="min-w-0">
+                  {item?.name ?? "item"}
+                  <span className="ml-2 text-muted-foreground">
+                    sistema: {fmtQty(l.expectedQuantity)}{" "}
+                    {unitShort(item?.unitOfMeasure ?? "unidade")}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2">
+                  {diff !== null && diff !== 0 && (
+                    <span
+                      className={cn(
+                        "tabular-nums",
+                        diff > 0 ? "text-emerald-700" : "text-destructive"
+                      )}
+                    >
+                      {diff > 0 ? "+" : ""}
+                      {fmtQty(diff)}
+                    </span>
+                  )}
+                  <Input
+                    className="h-7 w-24 text-xs"
+                    inputMode="decimal"
+                    placeholder="contado"
+                    value={raw}
+                    onChange={(e) =>
+                      setDrafts((d) => ({ ...d, [l.id]: e.target.value }))
+                    }
+                    onBlur={() =>
+                      drafts[l.id] !== undefined &&
+                      run(
+                        () =>
+                          saveCountLine({
+                            clinicId,
+                            lineId: l.id,
+                            counted: drafts[l.id],
+                          }),
+                        "Contagem salva."
+                      )
+                    }
+                  />
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-lg border bg-muted/30 p-2 text-xs">
+          <span className="text-emerald-700">
+            sobras {formatBRL(summary.surplusCents)}
+          </span>
+          {" · "}
+          <span className="text-destructive">
+            faltas {formatBRL(summary.shortageCents)}
+          </span>
+          {" · "}
+          <strong>líquido {formatBRL(summary.netCents)}</strong>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            Sobra e falta aparecem separadas de propósito: compensar as duas
+            esconderia que faltou um item caro e sobrou um barato.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <label className="block flex-1 min-w-48">
+            <Label className="text-[11px]">Observação da contagem</Label>
+            <Input
+              className="h-8"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Ex.: contagem trimestral, sala 2"
+            />
+          </label>
+          <span className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={isPending}
+              onClick={() =>
+                run(
+                  () => discardCount({ clinicId, countId: openCount.id }),
+                  "Contagem descartada — nada foi ajustado."
+                )
+              }
+            >
+              Descartar
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 text-xs"
+              disabled={isPending || summary.counted === 0}
+              onClick={() =>
+                run(
+                  () =>
+                    applyCount({
+                      clinicId,
+                      countId: openCount.id,
+                      reason,
+                    }),
+                  "Contagem aplicada — as diferenças viraram ajustes."
+                )
+              }
+            >
+              Aplicar contagem
+            </Button>
+          </span>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          O ajuste sai contra o que o sistema dizia <strong>quando você
+          começou a contar</strong>. Se houve atendimento no meio, aquele consumo
+          continua valendo — não é apagado pela contagem.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function StockManager({
   clinicId,
   today,
@@ -213,6 +469,9 @@ export function StockManager({
   withoutKit,
   runningOut,
   ledger,
+  replenishment,
+  overstocked,
+  openCount,
   costCenters,
   suppliers,
   procedures,
@@ -253,6 +512,42 @@ export function StockManager({
     manualEntries: number;
     manualEntriesCents: number;
   };
+  /** 0222: o que comprar, em EMBALAGENS. */
+  replenishment: {
+    itemId: string;
+    itemName: string;
+    brand: string;
+    purchaseUnit: string;
+    stockUnit: string;
+    total: number;
+    minQuantity: number;
+    maxQuantity: number | null;
+    suggestedPackages: number;
+    estimatedCostCents: number;
+    state: string;
+  }[];
+  /** 0222: acima do máximo — dinheiro parado. */
+  overstocked: {
+    itemId: string;
+    itemName: string;
+    stockUnit: string;
+    total: number;
+    maxQuantity: number;
+    excess: number;
+    excessCents: number;
+  }[];
+  /** 0222: contagem em aberto, se houver. */
+  openCount: {
+    id: string;
+    countDate: string;
+    notes: string;
+    lines: {
+      id: string;
+      itemId: string;
+      expectedQuantity: number;
+      countedQuantity: number | null;
+    }[];
+  } | null;
   costCenters: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   procedures: { id: string; name: string; specialty: string | null }[];
@@ -986,6 +1281,112 @@ export function StockManager({
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* -- REPOSIÇÃO (0222) ---------------------------------------------- */}
+      {replenishment.length > 0 && (
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="flex items-center gap-1 font-medium">
+                <ShoppingCart className="size-4 text-primary" />
+                Repor ({replenishment.length})
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                estimado{" "}
+                <strong>
+                  {formatBRL(
+                    replenishment.reduce((s, r) => s + r.estimatedCostCents, 0)
+                  )}
+                </strong>
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Sugestão em <strong>embalagens</strong> — é assim que se compra — e
+              arredondada para cima: meia caixa não existe, e faltar custa mais
+              que sobrar um pouco.
+            </p>
+            <ul className="space-y-0.5 text-xs">
+              {replenishment.map((r) => (
+                <li
+                  key={r.itemId}
+                  className="flex flex-wrap items-baseline justify-between gap-2 border-b border-dashed py-1 last:border-0"
+                >
+                  <span>
+                    <strong>{r.itemName}</strong>
+                    {r.brand && (
+                      <span className="ml-1 text-muted-foreground">
+                        {r.brand}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "ml-2",
+                        r.state === "negativo"
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      tem {fmtQty(r.total)} {unitShort(r.stockUnit)} · mínimo{" "}
+                      {fmtQty(r.minQuantity)}
+                    </span>
+                  </span>
+                  <span className="tabular-nums">
+                    comprar{" "}
+                    <strong>
+                      {fmtQty(r.suggestedPackages)} {r.purchaseUnit}
+                      {r.suggestedPackages === 1 ? "" : "s"}
+                    </strong>
+                    <span className="ml-2 text-muted-foreground">
+                      ~{formatBRL(r.estimatedCostCents)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* -- ACIMA DO MÁXIMO (0222) ---------------------------------------- */}
+      {overstocked.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50/40">
+          <CardContent className="space-y-1 p-4">
+            <h2 className="flex items-center gap-1 text-sm font-medium text-amber-900">
+              <TriangleAlert className="size-4" />
+              Acima do máximo — dinheiro parado
+            </h2>
+            <p className="text-[11px] text-amber-900">
+              Falta é o alerta que todo mundo olha; sobra é o que ninguém olha.
+              Em material com validade, excesso é perda marcada para acontecer.
+            </p>
+            <ul className="space-y-0.5 text-xs text-amber-900">
+              {overstocked.slice(0, 10).map((o) => (
+                <li key={o.itemId} className="flex justify-between gap-2">
+                  <span>
+                    <strong>{o.itemName}</strong> — tem {fmtQty(o.total)}{" "}
+                    {unitShort(o.stockUnit)}, máximo {fmtQty(o.maxQuantity)}
+                  </span>
+                  <span className="tabular-nums">
+                    {fmtQty(o.excess)} a mais ·{" "}
+                    <strong>{formatBRL(o.excessCents)}</strong>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* -- INVENTÁRIO (0222) --------------------------------------------- */}
+      {canManage && (
+        <StockCount
+          clinicId={clinicId}
+          openCount={openCount}
+          items={items}
+          isPending={isPending}
+          run={run}
+        />
       )}
 
       {/* -- SEM KIT: o furo da baixa automática (0217) -------------------- */}

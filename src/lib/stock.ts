@@ -163,6 +163,8 @@ export type Balance = {
   quantity: number;
   avgCostCents: number;
   minQuantity: number;
+  /** 0222: acima disto é dinheiro parado. Nulo = sem controle de máximo. */
+  maxQuantity?: number | null;
 };
 
 export type MovementInput = {
@@ -254,7 +256,11 @@ export function replayMovements(movements: MovementInput[]): Balance {
   return balance;
 }
 
-export type StockAlert = "negativo" | "abaixo_minimo" | "sem_custo";
+export type StockAlert =
+  | "negativo"
+  | "abaixo_minimo"
+  | "acima_maximo"
+  | "sem_custo";
 
 /**
  * O que está errado neste saldo. Ordem importa: negativo é mais grave que
@@ -265,6 +271,15 @@ export function balanceAlerts(balance: Balance): StockAlert[] {
   if (balance.quantity < 0) alerts.push("negativo");
   else if (balance.minQuantity > 0 && balance.quantity <= balance.minQuantity) {
     alerts.push("abaixo_minimo");
+  } else if (
+    balance.maxQuantity != null &&
+    balance.maxQuantity > 0 &&
+    balance.quantity > balance.maxQuantity
+  ) {
+    // 0222: falta é o alerta óbvio; sobra é o que ninguém olha. Acima do
+    // máximo é dinheiro parado — e, em material com validade, perda marcada
+    // para acontecer.
+    alerts.push("acima_maximo");
   }
   if (balance.quantity > 0 && balance.avgCostCents <= 0) {
     alerts.push("sem_custo");
@@ -276,9 +291,100 @@ export const ALERT_LABELS: Record<StockAlert, string> = {
   negativo:
     "Saldo negativo — houve consumo sem entrada registrada. Confira a nota que faltou dar entrada.",
   abaixo_minimo: "Abaixo do mínimo — hora de repor.",
+  acima_maximo:
+    "Acima do máximo — dinheiro parado na prateleira, e risco de vencer antes de usar.",
   sem_custo:
     "Tem saldo mas não tem custo: a entrada foi lançada sem valor, e o custo do procedimento sai menor do que é.",
 };
+
+/**
+ * 0222 — o inventário.
+ *
+ * A DIFERENÇA É A INFORMAÇÃO, não um erro a apagar: ela mede perda, furto, kit
+ * mal cadastrado e consumo fora do previsto.
+ *
+ * E o ajuste sai contra o ESPERADO CONGELADO no momento da contagem, não contra
+ * o saldo de agora. Entre contar a gaveta e aplicar a contagem pode ter havido
+ * um atendimento — se o ajuste fosse "deixe o saldo igual ao contado", ele
+ * apagaria esse consumo legítimo.
+ */
+export type CountLine = {
+  itemId: string;
+  expectedQuantity: number;
+  countedQuantity: number | null;
+  avgCostCents: number;
+};
+
+export type CountSummary = {
+  counted: number;
+  pending: number;
+  matching: number;
+  differences: number;
+  /** Valor das sobras encontradas (positivo). */
+  surplusCents: number;
+  /** Valor das faltas (positivo, para leitura). */
+  shortageCents: number;
+  netCents: number;
+};
+
+export function summarizeCount(lines: CountLine[]): CountSummary {
+  let counted = 0;
+  let pending = 0;
+  let matching = 0;
+  let differences = 0;
+  let surplus = 0;
+  let shortage = 0;
+
+  for (const l of lines) {
+    if (l.countedQuantity === null) {
+      pending += 1;
+      continue;
+    }
+    counted += 1;
+    const diff = l.countedQuantity - l.expectedQuantity;
+    if (diff === 0) {
+      matching += 1;
+      continue;
+    }
+    differences += 1;
+    const value = roundHalfUp(Math.abs(diff) * l.avgCostCents);
+    if (diff > 0) surplus += value;
+    else shortage += value;
+  }
+
+  return {
+    counted,
+    pending,
+    matching,
+    differences,
+    surplusCents: surplus,
+    shortageCents: shortage,
+    netCents: surplus - shortage,
+  };
+}
+
+/**
+ * Quanto comprar, em EMBALAGENS.
+ *
+ * Comprar é em caixa, não em unidade — e arredonda para CIMA, porque meia caixa
+ * não existe e faltar custa mais que sobrar um pouco. Sem máximo definido, o
+ * alvo é o dobro do mínimo: repor até o mínimo deixaria o item em alerta no dia
+ * seguinte.
+ */
+export function suggestedPackages(input: {
+  total: number;
+  minQuantity: number;
+  maxQuantity: number | null;
+  unitsPerPurchase: number;
+}): number {
+  const target =
+    input.maxQuantity != null && input.maxQuantity > 0
+      ? input.maxQuantity
+      : input.minQuantity * 2;
+  const missing = target - input.total;
+  if (missing <= 0) return 0;
+  return Math.ceil(missing / Math.max(input.unitsPerPurchase || 1, 0.000001));
+}
 
 export type KitLine = { itemId: string; quantity: number };
 

@@ -52,6 +52,9 @@ export default async function StockPage() {
     { data: runningOutRows },
     { data: ledgerRow },
     { data: costCenterRows },
+    { data: replenishRows },
+    { data: overstockRows },
+    { data: openCountRow },
   ] = await Promise.all([
     supabase
       .from("stock_items")
@@ -116,6 +119,18 @@ export default async function StockPage() {
       .eq("active", true)
       .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
       .order("code"),
+    // 0222: o que comprar (em embalagens), o que está sobrando, e a contagem
+    // em aberto — se houver.
+    supabase.rpc("replenishment_list", { p_clinic_id: clinicId }),
+    supabase.rpc("overstocked_items", { p_clinic_id: clinicId }),
+    supabase
+      .from("stock_counts")
+      .select(
+        "id, count_date, status, notes, stock_count_items ( id, item_id, expected_quantity, counted_quantity )"
+      )
+      .eq("clinic_id", clinicId)
+      .eq("status", "aberta")
+      .maybeSingle(),
   ]);
 
   // O nome de quem lançou vem numa consulta à parte: o atalho de embed em
@@ -266,6 +281,76 @@ export default async function StockPage() {
     state: r.state as "sem_aberta" | "deve_ter_acabado" | "acabando",
   }));
 
+  const replenishment = (
+    (replenishRows ?? []) as {
+      item_id: string;
+      item_name: string;
+      brand: string | null;
+      purchase_unit: string;
+      stock_unit: string;
+      total_quantity: number;
+      min_quantity: number;
+      max_quantity: number | null;
+      suggested_packages: number;
+      estimated_cost_cents: number;
+      state: string;
+    }[]
+  ).map((r) => ({
+    itemId: r.item_id,
+    itemName: r.item_name,
+    brand: r.brand ?? "",
+    purchaseUnit: r.purchase_unit,
+    stockUnit: r.stock_unit,
+    total: Number(r.total_quantity ?? 0),
+    minQuantity: Number(r.min_quantity ?? 0),
+    maxQuantity: r.max_quantity === null ? null : Number(r.max_quantity),
+    suggestedPackages: Number(r.suggested_packages ?? 0),
+    estimatedCostCents: Number(r.estimated_cost_cents ?? 0),
+    state: r.state,
+  }));
+
+  const overstocked = (
+    (overstockRows ?? []) as {
+      item_id: string;
+      item_name: string;
+      stock_unit: string;
+      total_quantity: number;
+      max_quantity: number;
+      excess_quantity: number;
+      excess_cents: number;
+    }[]
+  ).map((r) => ({
+    itemId: r.item_id,
+    itemName: r.item_name,
+    stockUnit: r.stock_unit,
+    total: Number(r.total_quantity ?? 0),
+    maxQuantity: Number(r.max_quantity ?? 0),
+    excess: Number(r.excess_quantity ?? 0),
+    excessCents: Number(r.excess_cents ?? 0),
+  }));
+
+  const openCount = openCountRow
+    ? {
+        id: openCountRow.id as string,
+        countDate: openCountRow.count_date as string,
+        notes: (openCountRow.notes as string | null) ?? "",
+        lines: (
+          (openCountRow.stock_count_items ?? []) as {
+            id: string;
+            item_id: string;
+            expected_quantity: number;
+            counted_quantity: number | null;
+          }[]
+        ).map((l) => ({
+          id: l.id,
+          itemId: l.item_id,
+          expectedQuantity: Number(l.expected_quantity ?? 0),
+          countedQuantity:
+            l.counted_quantity === null ? null : Number(l.counted_quantity),
+        })),
+      }
+    : null;
+
   const lc = Array.isArray(ledgerRow) ? ledgerRow[0] : ledgerRow;
   const ledger = {
     stockValueCents: Number(lc?.stock_value_cents ?? 0),
@@ -330,6 +415,9 @@ export default async function StockPage() {
         withoutKit={withoutKit}
         runningOut={runningOut}
         ledger={ledger}
+        replenishment={replenishment}
+        overstocked={overstocked}
+        openCount={openCount}
         costCenters={(costCenterRows ?? []).map((c) => ({
           id: c.id as string,
           name: c.name as string,

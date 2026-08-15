@@ -239,6 +239,144 @@ export async function postMovement(input: {
   return { ok: true };
 }
 
+// -- INVENTÁRIO (0222) -------------------------------------------------------
+
+/** Abre a contagem já com o esperado CONGELADO item a item. */
+export async function openCount(input: {
+  clinicId: string;
+  onlyWithBalance: boolean;
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStock(session, input.clinicId)) {
+    return { ok: false, error: "Só a gestão faz inventário." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("open_stock_count", {
+    p_clinic_id: input.clinicId,
+    p_only_with_balance: input.onlyWithBalance,
+  });
+  if (error) {
+    if (error.message.includes("COUNT_ALREADY_OPEN")) {
+      return {
+        ok: false,
+        error: "Já existe uma contagem aberta nesta unidade.",
+      };
+    }
+    console.error("open_stock_count failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível abrir a contagem."),
+    };
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function saveCountLine(input: {
+  clinicId: string;
+  lineId: string;
+  counted: string;
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStock(session, input.clinicId)) {
+    return { ok: false, error: "Só a gestão faz inventário." };
+  }
+
+  const value =
+    input.counted.trim() === ""
+      ? null
+      : Number(input.counted.replace(",", "."));
+  if (value !== null && (!Number.isFinite(value) || value < 0)) {
+    return { ok: false, error: "Quantidade contada inválida." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("stock_count_items")
+    .update({ counted_quantity: value })
+    .eq("id", input.lineId);
+  if (error) {
+    console.error("saveCountLine failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a contagem do item." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * Aplica a contagem: cada diferença vira um ajuste COM MOTIVO.
+ *
+ * A diferença não é um erro a apagar — ela mede perda, furto, kit mal
+ * cadastrado e consumo fora do previsto. Por isso vira movimento, e não uma
+ * correção silenciosa do saldo.
+ */
+export async function applyCount(input: {
+  clinicId: string;
+  countId: string;
+  reason: string;
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStock(session, input.clinicId)) {
+    return { ok: false, error: "Só a gestão faz inventário." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apply_stock_count", {
+    p_count_id: input.countId,
+    p_reason: input.reason,
+  });
+  if (error) {
+    if (error.message.includes("COUNT_NOT_OPEN")) {
+      return { ok: false, error: "Esta contagem já foi aplicada ou descartada." };
+    }
+    console.error("apply_stock_count failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível aplicar a contagem."),
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "stock_count",
+    entityId: input.countId,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  return {
+    ok: true,
+    error:
+      Number(data ?? 0) === 0
+        ? "Contagem aplicada — nenhuma diferença encontrada."
+        : undefined,
+  };
+}
+
+export async function discardCount(input: {
+  clinicId: string;
+  countId: string;
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStock(session, input.clinicId)) {
+    return { ok: false, error: "Só a gestão faz inventário." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("discard_stock_count", {
+    p_count_id: input.countId,
+  });
+  if (error) {
+    console.error("discard_stock_count failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível descartar a contagem."),
+    };
+  }
+  refresh();
+  return { ok: true };
+}
+
 /**
  * 0221 — a nota de compra: entradas de estoque e contas a pagar de uma vez.
  *

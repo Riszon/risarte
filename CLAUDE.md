@@ -715,8 +715,31 @@ prateleira.
   fora; **entrada manual não contabiliza** (não há documento nem obrigação) e a
   conferência mostra a diferença em vez de escondê-la; nada retroativo.
 
+**INVENTÁRIO, REPOSIÇÃO E EXCESSO (E5, 0222).**
+
+- **A DIFERENÇA É A INFORMAÇÃO**, não um erro a apagar: ela mede perda, furto,
+  kit mal cadastrado e consumo fora do previsto. Por isso a contagem vira
+  **movimento de ajuste com motivo**, nunca correção silenciosa do saldo.
+- **A CONTAGEM CONGELA O ESPERADO** (`expected_quantity` na linha). Entre contar
+  e aplicar pode haver atendimento; se o ajuste fosse "deixe o saldo igual ao
+  contado", ele **apagaria esse consumo legítimo**. O ajuste é
+  `contado − esperado no momento da contagem`.
+- **Contar e corrigir são atos diferentes:** a folha fica `aberta` e só vira
+  ajuste quando aplicada. Uma contagem aberta por unidade (`COUNT_ALREADY_OPEN`).
+- **Sobra e falta aparecem separadas** — compensar as duas esconderia que faltou
+  um item caro e sobrou um barato.
+- **Acima do máximo é alerta** (`overstocked_items`): falta todo mundo olha,
+  sobra ninguém olha — e é dinheiro parado, ou perda programada em material com
+  validade.
+- **Reposição em EMBALAGENS**, arredondada para **cima** (meia caixa não existe;
+  faltar custa mais que sobrar um pouco). Sem máximo, o alvo é o **dobro do
+  mínimo** — repor até o mínimo deixaria o item em alerta no dia seguinte.
+
 **Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** ✅ baixa
-automática → **E4** ✅ compra + razão → **E5** mínimo, inventário e alertas.
+automática → **E4** ✅ compra + razão → **E5** ✅ inventário, reposição e excesso.
+**MÓDULO ESTOQUE COMPLETO.** Próximo: **leitura do XML da NF-e** (o de-para
+fornecedor→item que aprende; PDF/DANFE não, porque exigiria OCR e errar número
+aqui contamina o custo médio e o preço de todo procedimento).
 **Transferência entre unidades** fica para o fim da E5 (os tipos já existem no
 banco, sem tela). **Controle por lote** (baixa pelo que vence primeiro, recusa de
 vencido) fica para depois da E3, por decisão do dono.

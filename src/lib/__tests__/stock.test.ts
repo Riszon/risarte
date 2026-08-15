@@ -7,6 +7,8 @@ import {
   kitCost,
   movementErrors,
   replayMovements,
+  suggestedPackages,
+  summarizeCount,
   unitCostFromPackage,
   unitShort,
   unitsFromPackages,
@@ -206,6 +208,124 @@ describe("alertas do saldo", () => {
   it("saldo saudável não inventa alerta", () => {
     expect(
       balanceAlerts({ quantity: 50, avgCostCents: 700, minQuantity: 10 })
+    ).toEqual([]);
+  });
+});
+
+describe("inventário", () => {
+  it("a diferença sai contra o ESPERADO CONGELADO, não contra o saldo de agora", () => {
+    // Entre contar a gaveta e aplicar a contagem houve um atendimento. Se o
+    // ajuste fosse "deixe o saldo igual ao contado", ele apagaria esse consumo.
+    const r = summarizeCount([
+      { itemId: "a", expectedQuantity: 10, countedQuantity: 8, avgCostCents: 500 },
+    ]);
+    expect(r.differences).toBe(1);
+    expect(r.shortageCents).toBe(1000); // 2 unidades a R$ 5,00
+    expect(r.surplusCents).toBe(0);
+  });
+
+  it("separa sobra de falta em vez de compensar as duas", () => {
+    // Compensar esconderia que faltou um item caro e sobrou um barato.
+    const r = summarizeCount([
+      { itemId: "a", expectedQuantity: 10, countedQuantity: 12, avgCostCents: 300 },
+      { itemId: "b", expectedQuantity: 5, countedQuantity: 2, avgCostCents: 900 },
+    ]);
+    expect(r.surplusCents).toBe(600);
+    expect(r.shortageCents).toBe(2700);
+    expect(r.netCents).toBe(-2100);
+  });
+
+  it("linha não contada fica pendente, não vira diferença zero", () => {
+    const r = summarizeCount([
+      { itemId: "a", expectedQuantity: 4, countedQuantity: null, avgCostCents: 100 },
+      { itemId: "b", expectedQuantity: 4, countedQuantity: 4, avgCostCents: 100 },
+    ]);
+    expect(r.pending).toBe(1);
+    expect(r.counted).toBe(1);
+    expect(r.matching).toBe(1);
+    expect(r.differences).toBe(0);
+  });
+});
+
+describe("reposição", () => {
+  it("arredonda a compra para CIMA: meia caixa não existe", () => {
+    // Faltam 130 unidades, caixa com 100 → 2 caixas.
+    expect(
+      suggestedPackages({
+        total: 20,
+        minQuantity: 50,
+        maxQuantity: 150,
+        unitsPerPurchase: 100,
+      })
+    ).toBe(2);
+  });
+
+  it("sem máximo, o alvo é o dobro do mínimo", () => {
+    // Repor só até o mínimo deixaria o item em alerta no dia seguinte.
+    expect(
+      suggestedPackages({
+        total: 10,
+        minQuantity: 50,
+        maxQuantity: null,
+        unitsPerPurchase: 20,
+      })
+    ).toBe(5); // alvo 100, faltam 90, caixa de 20 → 4,5 → 5
+  });
+
+  it("estoque acima do alvo não sugere compra", () => {
+    expect(
+      suggestedPackages({
+        total: 200,
+        minQuantity: 50,
+        maxQuantity: 150,
+        unitsPerPurchase: 100,
+      })
+    ).toBe(0);
+  });
+
+  it("saldo negativo entra na conta do que falta", () => {
+    expect(
+      suggestedPackages({
+        total: -5,
+        minQuantity: 10,
+        maxQuantity: 20,
+        unitsPerPurchase: 10,
+      })
+    ).toBe(3); // faltam 25 para o alvo 20
+  });
+});
+
+describe("alerta de excesso", () => {
+  it("acima do máximo é dinheiro parado", () => {
+    expect(
+      balanceAlerts({
+        quantity: 300,
+        avgCostCents: 100,
+        minQuantity: 10,
+        maxQuantity: 200,
+      })
+    ).toEqual(["acima_maximo"]);
+  });
+
+  it("falta pesa mais que sobra — abaixo do mínimo vem primeiro", () => {
+    expect(
+      balanceAlerts({
+        quantity: 5,
+        avgCostCents: 100,
+        minQuantity: 10,
+        maxQuantity: 4,
+      })
+    ).toEqual(["abaixo_minimo"]);
+  });
+
+  it("sem máximo definido, não inventa alerta", () => {
+    expect(
+      balanceAlerts({
+        quantity: 5000,
+        avgCostCents: 100,
+        minQuantity: 10,
+        maxQuantity: null,
+      })
     ).toEqual([]);
   });
 });
