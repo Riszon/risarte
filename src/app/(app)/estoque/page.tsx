@@ -10,6 +10,7 @@ import {
   canManageStockCatalog,
   canViewStock,
 } from "@/lib/stock-access";
+import { NfeImport } from "./nfe-import";
 import { StockManager } from "./stock-client";
 
 export const metadata: Metadata = { title: "Estoque" };
@@ -92,7 +93,9 @@ export default async function StockPage() {
       .order("name"),
     supabase
       .from("suppliers")
-      .select("id, name")
+      // 0223: o CNPJ é como a nota encontra o fornecedor — pelo documento, não
+      // pelo nome, que varia entre a nota e o cadastro.
+      .select("id, name, document")
       .eq("clinic_id", clinicId)
       .eq("active", true)
       .order("name"),
@@ -402,6 +405,28 @@ export default async function StockPage() {
           não reescreve o que foi usado ontem.
         </p>
       </div>
+
+      {canManageStock(session, clinicId) && (
+        <NfeImport
+          clinicId={clinicId}
+          items={items.map((i) => ({
+            id: i.id,
+            name: i.name,
+            brand: i.brand,
+            purchaseUnit: i.purchaseUnit,
+            unitsPerPurchase: i.unitsPerPurchase,
+          }))}
+          suppliers={(supplierRows ?? []).map((s) => ({
+            id: s.id as string,
+            name: s.name as string,
+            document: (s.document as string | null) ?? "",
+          }))}
+          costCenters={(costCenterRows ?? []).map((c) => ({
+            id: c.id as string,
+            name: c.name as string,
+          }))}
+        />
+      )}
 
       <StockManager
         clinicId={clinicId}

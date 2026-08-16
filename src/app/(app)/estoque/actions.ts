@@ -239,6 +239,145 @@ export async function postMovement(input: {
   return { ok: true };
 }
 
+// -- NOTA FISCAL POR XML (0223) ----------------------------------------------
+
+/**
+ * Resolve as linhas da nota contra o que já se sabe.
+ *
+ * GTIN primeiro (vale entre fornecedores), depois o vínculo daquele fornecedor.
+ * A descrição NÃO entra aqui de propósito: casar por nome é a maneira certa de
+ * gravar material errado dando baixa em procedimento errado.
+ */
+export async function resolveNfeItems(input: {
+  cnpj: string;
+  codes: string[];
+  gtins: string[];
+}): Promise<{
+  byGtin: Record<string, string>;
+  bySupplierCode: Record<string, string>;
+}> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const gtins = input.gtins.filter(Boolean);
+  const [{ data: itemRows }, { data: linkRows }] = await Promise.all([
+    gtins.length
+      ? supabase.from("stock_items").select("id, gtin").in("gtin", gtins)
+      : Promise.resolve({ data: [] as { id: string; gtin: string }[] }),
+    supabase
+      .from("supplier_item_links")
+      .select("supplier_code, item_id")
+      .eq("supplier_cnpj", input.cnpj.replace(/\D/g, ""))
+      .in("supplier_code", input.codes),
+  ]);
+
+  const byGtin: Record<string, string> = {};
+  for (const r of itemRows ?? []) {
+    if (r.gtin) byGtin[r.gtin as string] = r.id as string;
+  }
+  const bySupplierCode: Record<string, string> = {};
+  for (const r of linkRows ?? []) {
+    bySupplierCode[r.supplier_code as string] = r.item_id as string;
+  }
+  return { byGtin, bySupplierCode };
+}
+
+/**
+ * Importa a nota conferida.
+ *
+ * O XML vai para o Storage porque é documento fiscal — permite reconferir a
+ * origem de qualquer número depois. E a chave da NF-e trava a duplicidade no
+ * banco: subir o mesmo arquivo de novo dobraria estoque e conta a pagar.
+ */
+export async function importNfe(input: {
+  clinicId: string;
+  supplierId: string;
+  costCenterId: string;
+  nfeKey: string;
+  invoiceNumber: string;
+  issueDate: string;
+  supplierCnpj: string;
+  xml: string;
+  items: {
+    itemId: string;
+    packages: string;
+    packageCostCents: number;
+    supplierCode: string;
+    supplierDescription: string;
+    gtin: string;
+  }[];
+  installments: { dueDate: string; amountCents: number }[];
+}): Promise<StockResult> {
+  const session = await getSessionContext();
+  if (!canManageStock(session, input.clinicId)) {
+    return { ok: false, error: "Sua função não permite importar notas." };
+  }
+  if (input.items.length === 0) {
+    return { ok: false, error: "Aponte o item de cada linha antes de lançar." };
+  }
+
+  const supabase = await createClient();
+
+  // O arquivo primeiro: se o Storage falhar, ninguém lançou nada ainda.
+  const path = `${input.clinicId}/${input.nfeKey || Date.now()}.xml`;
+  const { error: upErr } = await supabase.storage
+    .from("nfe")
+    .upload(path, new Blob([input.xml], { type: "text/xml" }), {
+      upsert: true,
+      contentType: "text/xml",
+    });
+  if (upErr) {
+    // Guardar o XML é desejável, não essencial: o lançamento não pode ficar
+    // refém do arquivo. Segue e registra o que faltou.
+    console.error("upload do XML da NF-e falhou:", upErr.message);
+  }
+
+  const { error } = await supabase.rpc("register_stock_purchase", {
+    p_clinic_id: input.clinicId,
+    p_supplier_id: input.supplierId || null,
+    p_invoice_number: input.invoiceNumber,
+    p_issue_date: input.issueDate || null,
+    p_items: input.items.map((i) => ({
+      itemId: i.itemId,
+      packages: Number(i.packages.replace(",", ".")) || 0,
+      packageCostCents: i.packageCostCents,
+      supplierCode: i.supplierCode,
+      supplierCnpj: input.supplierCnpj,
+      supplierDescription: i.supplierDescription,
+      gtin: i.gtin,
+    })),
+    p_installments: input.installments,
+    p_cost_center_id: input.costCenterId || null,
+    p_notes: null,
+    p_nfe_key: input.nfeKey,
+    p_xml_path: upErr ? null : path,
+  });
+  if (error) {
+    if (error.message.includes("NFE_ALREADY_IMPORTED")) {
+      return {
+        ok: false,
+        error:
+          "Esta nota já foi importada nesta unidade — importar de novo dobraria o estoque e a conta a pagar.",
+      };
+    }
+    console.error("importNfe failed:", error.message);
+    return {
+      ok: false,
+      error: friendly(error.message, "Não foi possível importar a nota."),
+    };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "stock_purchase_nfe",
+    entityId: input.nfeKey || input.invoiceNumber,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true };
+}
+
 // -- INVENTÁRIO (0222) -------------------------------------------------------
 
 /** Abre a contagem já com o esperado CONGELADO item a item. */

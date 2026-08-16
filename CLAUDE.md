@@ -737,9 +737,40 @@ prateleira.
 
 **Ordem:** E1+E2 ✅ (cadastro, saldo, movimentos, kit) → **E3** ✅ baixa
 automática → **E4** ✅ compra + razão → **E5** ✅ inventário, reposição e excesso.
-**MÓDULO ESTOQUE COMPLETO.** Próximo: **leitura do XML da NF-e** (o de-para
-fornecedor→item que aprende; PDF/DANFE não, porque exigiria OCR e errar número
-aqui contamina o custo médio e o preço de todo procedimento).
+**MÓDULO ESTOQUE COMPLETO** — mais a **leitura do XML da NF-e** (0223).
+
+**O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor
+escreve `RESINA COMP Z350XT A2 4G 3M`; no cadastro está `Resina composta A2`.
+Nenhuma regra de texto faz um virar o outro, e a mesma resina tem descrição
+diferente em cada distribuidor. **Casar por nome é a maneira certa de gravar
+material errado dando baixa em procedimento errado.**
+
+**Casa-se por CÓDIGO, em três degraus:**
+1. **GTIN** (`stock_items.gtin`) — identifica o produto **no mundo**, então um
+   fornecedor novo já é reconhecido de primeira. Validado com dígito verificador:
+   a NF-e aceita "SEM GTIN" e alguns emissores põem lixo no campo, e um GTIN
+   inválido virando chave amarraria dois produtos ao mesmo item, em silêncio.
+2. **CNPJ + `cProd`** (`supplier_item_links`) — aquele item naquele fornecedor.
+3. **Descrição** — só **sugere**, nunca casa. E é a **confirmação de alguém** que
+   cria o vínculo: por isso o sistema acerta mais a cada nota, em vez de errar
+   mais.
+
+**O de-para é DA REDE** (chaveado por CNPJ, não por `supplier_id`): o que Cambé
+amarra uma vez, Londrina recebe pronto.
+
+**A mesma nota não entra duas vezes** — `nfe_key` (44 dígitos) única por unidade;
+importar de novo dobraria estoque **e** conta a pagar. **O XML fica no Storage**
+(bucket privado `nfe`): é documento fiscal. **O XML é lido no NAVEGADOR**
+(`DOMParser` nativo, sem dependência nova) e nada é gravado antes da conferência.
+
+**Fora do escopo:** download automático da SEFAZ (exige certificado A1),
+**PDF/DANFE** (exigiria OCR — errar número aqui contamina custo médio e preço de
+todo procedimento) e notas de serviço.
+
+**PADRÃO DE NOME DO NOSSO ITEM:** o que tem campo próprio **não** entra no nome
+(marca, embalagem, fator, GTIN). `Resina composta A2`, não
+`Resina 3M Z350 A2 seringa 4g` — senão o mesmo item vira dois no consolidado da
+rede e ninguém descobre até o relatório sair errado.
 **Transferência entre unidades** fica para o fim da E5 (os tipos já existem no
 banco, sem tela). **Controle por lote** (baixa pelo que vence primeiro, recusa de
 vencido) fica para depois da E3, por decisão do dono.

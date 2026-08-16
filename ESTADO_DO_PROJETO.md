@@ -1,6 +1,45 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 12/08/2026 · Versão do sistema: **0.201.0** · Última migração: **0222**_
+_Atualizado em: 13/08/2026 · Versão do sistema: **0.202.0** · Última migração: **0223**_
+
+> **LEITURA DO XML DA NOTA FISCAL (v0.202.0, migração 0223).**
+>
+> **O problema não é ler a nota — é saber que item é aquele.** O fornecedor
+> escreve `RESINA COMP Z350XT A2 4G 3M`; no cadastro está `Resina composta A2`.
+> Nenhuma regra de texto faz um virar o outro: a mesma resina tem descrição
+> diferente em cada distribuidor, e às vezes muda entre duas notas do mesmo
+> fornecedor. Casar por nome seria a maneira certa de gravar material errado
+> dando baixa em procedimento errado.
+>
+> **A saída é não usar o nome.** A nota traz códigos, e código não muda:
+>
+> 1. **GTIN** (código de barras) — identifica o produto **no mundo**: um
+>    fornecedor novo já é reconhecido de primeira. Validado com dígito
+>    verificador, porque a NF-e aceita "SEM GTIN" e alguns emissores põem lixo
+>    ali — e um GTIN inválido virando chave amarraria dois produtos diferentes
+>    ao mesmo item, sem ninguém perceber.
+> 2. **CNPJ + código do produto** — aquele item naquele fornecedor.
+> 3. **Descrição** — só **sugere**; nunca casa sozinha.
+>
+> **É a sua confirmação que cria o vínculo** — por isso o sistema acerta mais a
+> cada nota. E o aprendizado é **da rede**: o que Cambé amarra, Londrina recebe
+> pronto.
+>
+> A tela lê o arquivo, monta a nota (fornecedor pelo CNPJ, número, data e **os
+> vencimentos, que saem das duplicatas**) e marca cada linha: *código de
+> barras*, *já vinculado*, *sugestão — confira* ou *sem item*. **Nada é gravado
+> antes de você confirmar**; ao confirmar, entra pela mesma porta da E4.
+>
+> **A mesma nota não entra duas vezes** (chave de 44 dígitos travada no banco):
+> importar de novo dobraria o estoque **e** a conta a pagar. O XML fica guardado
+> em bucket privado — é documento fiscal.
+>
+> **Padrão do nosso nome:** o que tem campo próprio não entra no nome. `Resina
+> composta A2` — marca, embalagem e fator já são campos. Senão o mesmo item vira
+> dois no consolidado da rede.
+>
+> **417 testes** (19 novos). **Fora do escopo:** download da SEFAZ (certificado
+> A1), PDF/DANFE (exigiria OCR) e notas de serviço.
 
 > **ESTOQUE E5 — INVENTÁRIO, REPOSIÇÃO E EXCESSO (v0.201.0, migração 0222).
 > MÓDULO ESTOQUE COMPLETO.**
