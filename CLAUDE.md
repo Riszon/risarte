@@ -784,6 +784,45 @@ rede e ninguém descobre até o relatório sair errado.
 banco, sem tela). **Controle por lote** (baixa pelo que vence primeiro, recusa de
 vencido) fica para depois da E3, por decisão do dono.
 
+## 8d. FIN6 — DRE e Fluxo de Caixa (em construção)
+
+**Decisões do dono (12/08/2026), na tela de perguntas:**
+
+- **Depreciação = cadastro de bens**, não lançamento manual (ele escolheu contra
+  a minha recomendação de prazo; a escolha é melhor a longo prazo — a DRE passa
+  a consumir número calculado em vez de digitado).
+- **Competência da DRE = liquidado + em aberto.** Previsto, estornado e
+  cancelado ficam fora. A venda de março aparece em março mesmo que o cliente
+  pague em junho — é a definição de competência.
+- **Fechamento de período fica para o FIN7.** Trava é assunto de processo, e
+  travar antes de conferir os primeiros meses só atrapalharia.
+- **Centro de custo = filtro na mesma tela da DRE**, não relatório separado.
+
+**BENS E DEPRECIAÇÃO (FIN6.0, 0224).** **Comprar um bem não é gastar** — mesma
+regra do estoque. Cadeira de R$ 30 mil não afunda o mês da compra: nasce em
+**6.2.01 (ativo)** e vira R$ 250/mês por dez anos em **5.2.01**, que é o que
+custa usá-la.
+
+- **Depreciação linear, e a ÚLTIMA PARCELA ABSORVE O RESÍDUO** — mesma regra das
+  parcelas de venda. Sem ela, R$ 10.000 em 36 meses deixaria centavos órfãos e o
+  bem nunca zeraria.
+- **Começa no mês SEGUINTE à entrada em uso**, e `in_service_date` ≠ data da
+  compra: equipamento comprado em dezembro e instalado em fevereiro deprecia a
+  partir de março.
+- **Depreciar de novo não duplica** (único por bem+mês) e **nunca deprecia além
+  do custo**.
+- **Vida útil com padrão por categoria, EDITÁVEL** — padrão que ninguém pode
+  mudar vira número errado com cara de oficial. Valor residual **zero**.
+- **Baixa** (`dispose_asset`) para a depreciação e joga o valor restante em
+  **5.2.02**; sem ela o sistema depreciaria para sempre uma cadeira que foi para
+  o lixo. **Limite declarado:** venda de bem registra a baixa contábil; o
+  dinheiro recebido é lançado à parte.
+- Código **`AT-`** — o código do documento nunca some.
+
+**Ordem:** 6.0 bens ✅ → **6.1 DRE** (com filtro por centro de custo) → **6.2
+fluxo de caixa** realizado + projetado → **6.3 ponto de equilíbrio e a ponte
+lucro × caixa**.
+
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC

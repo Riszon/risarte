@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Building2,
   HandCoins,
   BookOpen,
   CreditCard,
@@ -19,6 +20,8 @@ const TABS = [
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },
   { href: "/financeiro/repasses", label: "Repasses", icon: HandCoins },
+  // FIN6.0: comprar um bem não é gastar — ele vira despesa aos poucos.
+  { href: "/financeiro/bens", label: "Bens", icon: Building2 },
   { href: "/financeiro/fornecedores", label: "Fornecedores", icon: Truck },
   { href: "/financeiro/configuracao", label: "Configuração", icon: Settings2 },
   { href: "/financeiro/centros-de-custo", label: "Centros de custo", icon: Network },

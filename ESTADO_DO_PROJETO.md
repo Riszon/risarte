@@ -1,6 +1,39 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/08/2026 · Versão do sistema: **0.202.0** · Última migração: **0223**_
+_Atualizado em: 13/08/2026 · Versão do sistema: **0.203.0** · Última migração: **0224**_
+
+> **FIN6.0 — BENS E DEPRECIAÇÃO (v0.203.0, migração 0224).**
+>
+> **Comprar um bem não é gastar** — a mesma regra que já vale para o estoque.
+> Uma cadeira de R$ 30 mil não afunda o mês em que foi comprada: ela entra como
+> **ativo** e vira **R$ 250 por mês durante dez anos**, que é o que de fato
+> custa usá-la. É essa conta que faz a DRE dizer a verdade sobre cada mês — sem
+> ela, o mês da compra pareceria péssimo e os dez anos seguintes, bons demais.
+>
+> O dono escolheu **construir o cadastro de bens** em vez do lançamento manual
+> que eu havia recomendado pelo prazo. A escolha é melhor: a DRE passa a
+> consumir um número **calculado**, não digitado.
+>
+> **Regras travadas:**
+>
+> - **Depreciação linear, e a última parcela absorve o resíduo** — a mesma regra
+>   das parcelas de venda. Sem ela, R$ 10.000 em 36 meses deixaria centavos
+>   órfãos e o bem nunca zeraria.
+> - **Começa no mês seguinte à entrada em uso** — que é diferente da data da
+>   compra: equipamento comprado em dezembro e instalado em fevereiro só
+>   deprecia a partir de março.
+> - **Rodar duas vezes é seguro** (único por bem + mês) e **nunca deprecia além
+>   do custo**.
+> - **Vida útil com padrão por categoria, editável.** Padrão que ninguém pode
+>   mudar vira número errado com cara de oficial.
+> - **Baixa** para a depreciação e joga o valor restante no resultado — senão o
+>   sistema depreciaria para sempre uma cadeira que já foi para o lixo.
+>
+> A tela mostra o número que a DRE vai usar: **quanto de depreciação por mês** —
+> o custo fixo que a clínica carrega só por ter os equipamentos que tem, mesmo
+> num mês sem gastar nada. Ele entra no ponto de equilíbrio (FIN6.3).
+>
+> **428 testes** (11 novos). **Próximo: FIN6.1 — a DRE.**
 
 > **LEITURA DO XML DA NOTA FISCAL (v0.202.0, migração 0223).**
 >
