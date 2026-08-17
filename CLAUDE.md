@@ -819,9 +819,34 @@ custa usá-la.
   dinheiro recebido é lançado à parte.
 - Código **`AT-`** — o código do documento nunca some.
 
-**Ordem:** 6.0 bens ✅ → **6.1 DRE** (com filtro por centro de custo) → **6.2
-fluxo de caixa** realizado + projetado → **6.3 ponto de equilíbrio e a ponte
-lucro × caixa**.
+**A DRE (FIN6.1, 0225).** Por **competência**: liquidado + em aberto, filtrado
+por período e por centro de custo. Estrutura do documento base — receita bruta →
+deduções → **receita líquida** → custos diretos → **lucro bruto** → despesas
+operacionais → **EBITDA** → depreciação → resultado financeiro → **lucro
+líquido**.
+
+- **O SINAL VEM DA DIREÇÃO** (entrada soma, saída subtrai), então cada subtotal é
+  soma acumulada. Sem isso seria preciso manter uma tabela "esta conta subtrai,
+  aquela soma" em sincronia com o plano de contas — e ela ficaria desatualizada
+  no dia em que alguém criasse uma conta.
+- **Estorno some dos DOIS lados** (`status in (settled, open) and reversal_of is
+  null`). Filtrar só por status deixaria o contra-lançamento sozinho, e a receita
+  estornada entraria **com o sinal invertido**, virando despesa.
+- **Fora da DRE:** 6 (ativos), **5.1** (comprar bem não é gastar — entra pela
+  depreciação; contar os dois seria contar duas vezes), **5.3** (empréstimo é
+  troca de dívida por caixa) e **5.4** (distribuição sai DEPOIS do lucro).
+- **Análise vertical sobre a receita LÍQUIDA**, não a bruta: sobre a bruta toda
+  unidade pareceria mais eficiente, e o erro seria maior onde o imposto é maior.
+- **Comparação com período de MESMO tamanho** — comparar janeiro (31 dias) com
+  fevereiro (28) mostraria queda que é só calendário.
+- **Toda linha abre os lançamentos** até o documento (a invariante do FIN0
+  finalmente na tela).
+- **Verde = melhorou o resultado, sempre.** Como o sinal já vem da direção, não
+  existe "linha boa quando sobe": custo caindo de −1.200 para −1.000 dá delta
+  positivo igual a receita subindo.
+
+**Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → **6.2 fluxo de caixa** realizado +
+projetado → **6.3 ponto de equilíbrio e a ponte lucro × caixa**.
 
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →

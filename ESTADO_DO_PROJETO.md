@@ -1,6 +1,38 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/08/2026 · Versão do sistema: **0.203.0** · Última migração: **0224**_
+_Atualizado em: 13/08/2026 · Versão do sistema: **0.204.0** · Última migração: **0225**_
+
+> **FIN6.1 — A DRE (v0.204.0, migração 0225).** A tela que responde **"o mês deu
+> lucro?"** — em Financeiro › DRE.
+>
+> Por **competência**, como o dono decidiu: cada valor aparece no mês em que o
+> fato aconteceu, não no mês em que o dinheiro entrou. A venda de março aparece
+> em março mesmo que o cliente pague em junho. É isso que separa esta tela do
+> fluxo de caixa, que responde outra pergunta e vem na 6.2.
+>
+> **Três coisas que fazem a diferença entre uma DRE que se lê e uma que se
+> ignora:**
+>
+> - **Toda linha abre os lançamentos por trás** — a invariante do módulo desde o
+>   FIN0 ("todo número chega ao documento") finalmente aparece na tela. Número
+>   que não se explica não se usa para decidir.
+> - **Análise vertical sobre a receita líquida** — é assim que se enxerga que o
+>   material subiu de 8% para 13% mesmo com o faturamento crescendo. Sobre a
+>   bruta, toda unidade pareceria mais eficiente do que é.
+> - **Comparação com período do mesmo tamanho** — comparar janeiro (31 dias) com
+>   fevereiro (28) mostraria uma queda de 10% que é só calendário.
+>
+> **Duas decisões de estrutura que evitam erro silencioso:** o sinal vem da
+> direção do lançamento (entrada soma, saída subtrai), então cada subtotal é uma
+> soma simples e nenhuma conta nova precisa ser cadastrada numa tabela de
+> "soma/subtrai". E **estorno some dos dois lados**: filtrar só por status
+> deixaria o contra-lançamento sozinho, e a receita estornada entraria como
+> despesa.
+>
+> **Compra de bens e de estoque não aparecem na DRE** — viram ativo e entram no
+> resultado aos poucos, pela depreciação e pelo consumo. A tela diz isso.
+>
+> **442 testes** (14 novos). **Próximo: FIN6.2 — o fluxo de caixa.**
 
 > **FIN6.0 — BENS E DEPRECIAÇÃO (v0.203.0, migração 0224).**
 >
