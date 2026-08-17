@@ -739,6 +739,15 @@ prateleira.
 automática → **E4** ✅ compra + razão → **E5** ✅ inventário, reposição e excesso.
 **MÓDULO ESTOQUE COMPLETO** — mais a **leitura do XML da NF-e** (0223).
 
+**MÓDULO COMPRAS — plano aprovado e CONGELADO** em `docs/COMPRAS.md` (12/08/2026).
+Retomar **depois de fechar o Financeiro** (FIN6 → FIN7 → FIN8). A regra que
+organiza o módulo: **a negociação é da rede, o dinheiro é da unidade** — a
+franqueadora consolida e negocia por todas, mas cada unidade aprova, é faturada,
+paga e recebe a sua parte. Etapas C1 (necessidade + previsão pelo histórico) →
+C2 (consolidado e cotação) → C3 (aprovação e pedido) → C4 (dashboard, com
+*economia da negociação* e *compras por fora* como indicadores). **Três decisões
+seguem em aberto** — ler o documento antes de começar.
+
 **O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor
 escreve `RESINA COMP Z350XT A2 4G 3M`; no cadastro está `Resina composta A2`.
 Nenhuma regra de texto faz um virar o outro, e a mesma resina tem descrição
