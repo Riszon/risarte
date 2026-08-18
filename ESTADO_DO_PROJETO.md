@@ -1,6 +1,27 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/08/2026 · Versão do sistema: **0.204.0** · Última migração: **0225**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.204.1** · Última migração: **0226**_
+
+> **CORREÇÃO — A DRE SOMAVA QUASE O DOBRO (v0.204.1, migração 0226).**
+> Conferência no razão contra os dados reais, antes de o teste terminar. Duas
+> causas, as duas corrigidas:
+>
+> 1. **Liquidação não é fato gerador.** O razão grava duas linhas por venda, de
+>    propósito: uma na competência (a parcela nasce) e outra no caixa (o cliente
+>    paga). É o que permite DRE e fluxo de caixa lendo o mesmo razão — e a DRE
+>    estava somando as duas. Parcela paga virava receita de novo; conta paga,
+>    despesa de novo. Agora `receipt_cash` e `payable_cash` ficam de fora — são
+>    exatamente as linhas que o **fluxo de caixa (FIN6.2)** vai ler.
+>    Multa, juros, taxa de adquirente, boleto e extrato conciliado **continuam**:
+>    nascem já pagos e são o único registro do fato.
+> 2. **Venda cancelada continuava como receita** — 43 parcelas, R$ 10.941 de
+>    receita fantasma. As contas a pagar já cancelavam o lançamento desde a
+>    0194; o recebimento nunca fez. Gatilho nos dois sentidos (descancelar
+>    devolve a receita), e parcela cancelada que já recebeu **mantém** a receita
+>    — senão o dinheiro ficaria no caixa sem origem no resultado.
+>
+> **Renegociação não muda:** a parcela vira `renegociada`, não `cancelada`, e
+> mantém o lançamento — a receita foi reconhecida na venda.
 
 > **FIN6.1 — A DRE (v0.204.0, migração 0225).** A tela que responde **"o mês deu
 > lucro?"** — em Financeiro › DRE.

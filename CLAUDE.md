@@ -845,6 +845,28 @@ líquido**.
   existe "linha boa quando sobe": custo caindo de −1.200 para −1.000 dá delta
   positivo igual a receita subindo.
 
+**A DRE SOMAVA O DOBRO (0226 — correção da 0225).** Conferência no razão contra
+os dados reais, antes de o dono terminar o teste. Duas causas independentes:
+
+- **LIQUIDAÇÃO NÃO É FATO GERADOR.** O razão grava **duas linhas por venda**, de
+  propósito desde o FIN0: competência (`installment_accrual`, sem `cash_date`) e
+  caixa (`receipt_cash`, com `cash_date`). A 0225 somava as duas — parcela paga
+  virava receita de novo, conta paga virava despesa de novo (R$ 4.416 + R$ 5.096
+  das MESMAS parcelas). **Regra geral: relatório de competência lê uma linha,
+  relatório de caixa lê a outra — nunca as duas.** `receipt_cash` e
+  `payable_cash` são as duas únicas origens de pura liquidação; tudo o mais
+  (multa, juros, taxa de adquirente, boleto, extrato conciliado) **nasce já
+  pago e é o único registro do fato** — excluí-las apagaria a despesa.
+- **VENDA CANCELADA CONTINUAVA COMO RECEITA** (43 parcelas, R$ 10.941). Contas a
+  pagar já cancelavam o lançamento desde a 0194; o recebimento nunca fez.
+  **Regra: toda mudança de status do documento tem de chegar ao razão** — o
+  documento é a verdade, e relatório que lê razão desatualizado mente com cara
+  de número oficial. Gatilho nos dois sentidos (descancelar devolve a receita) e
+  guarda `paid_amount_cents = 0`: parcela cancelada que já recebeu mantém a
+  receita, senão o dinheiro ficaria no caixa sem origem no resultado.
+- **Renegociação não muda:** a parcela vira `renegociada` (≠ `cancelada`) e
+  mantém o lançamento — a receita foi reconhecida na venda (regra da 0189).
+
 **Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → **6.2 fluxo de caixa** realizado +
 projetado → **6.3 ponto de equilíbrio e a ponte lucro × caixa**.
 

@@ -401,7 +401,9 @@ export function DreView({
             é assim que se enxerga que o material subiu de 8% para 13% mesmo com
             o faturamento crescendo. Compra de bens e de estoque{" "}
             <strong>não aparecem aqui</strong>: viram ativo e entram no resultado
-            aos poucos, pela depreciação e pelo consumo.
+            aos poucos, pela depreciação e pelo consumo. Recebimentos e
+            pagamentos também não: a venda já contou quando foi feita — quem
+            mostra o dinheiro entrando é o fluxo de caixa.
           </p>
         </CardContent>
       </Card>
