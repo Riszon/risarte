@@ -13,12 +13,15 @@ import {
   Receipt,
   Settings2,
   Truck,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   // FIN6.1: a pergunta que decide — "o mês deu lucro?".
   { href: "/financeiro/dre", label: "DRE", icon: BarChart3 },
+  // FIN6.2: a outra pergunta, que quebra clínica lucrativa — "tenho dinheiro?".
+  { href: "/financeiro/fluxo-de-caixa", label: "Fluxo de caixa", icon: Wallet },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },

@@ -1,6 +1,40 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.204.1** · Última migração: **0226**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.205.0** · Última migração: **0227**_
+
+> **FIN6.2 — O FLUXO DE CAIXA (v0.205.0, migração 0227).** Em Financeiro ›
+> Fluxo de caixa. A DRE responde *"o mês deu lucro?"*; esta responde a outra,
+> que é a que quebra clínica lucrativa: **vai faltar dinheiro, e quando?**
+>
+> **Realizado** vem do razão, pela data em que o dinheiro entrou ou saiu — é
+> exatamente a metade que a DRE passou a ignorar na 0226. **Previsto** vem das
+> parcelas e contas em aberto, pelo que **ainda falta** (valor − já pago): o
+> razão guarda o valor cheio, e só o documento sabe o saldo. Cartão entra pela
+> **data de liquidação**, não pelo vencimento.
+>
+> O que a tela mostra:
+>
+> - **O aviso:** o primeiro dia em que o saldo fica negativo, e de quanto. Sai
+>   sempre da conta **diária** — agrupado por mês, um buraco no dia 8 coberto
+>   por um recebimento no dia 25 sumiria, e é ele que faz o cheque voltar.
+> - **Vencido fica FORA da projeção**, numa faixa própria: a data já falhou uma
+>   vez, e contá-la de novo é como projeção de caixa mente para o lado otimista.
+> - **Operacional × investimento × financiamento** — separa "a operação gera
+>   caixa" de "fechou no azul porque vendeu uma cadeira".
+> - **Todo período abre** até o lançamento e o documento.
+> - Agrupamento por dia, semana ou mês; padrão 30 dias para trás e 90 para a
+>   frente, porque o passado é a régua que diz se a projeção é plausível.
+>
+> **Saldo de partida** = o saldo inicial das contas bancárias (campo que a
+> Conciliação já pede) mais o caixa anterior. Sem conta cadastrada começa em
+> zero **e a tela avisa**.
+>
+> **Correção de segurança junto:** função `security definer` passa por cima do
+> RLS, e a DRE e a lista de bens tinham ficado sem checagem de quem pode ler.
+> Agora todas usam a mesma guarda (`can_see_clinic_finance`).
+>
+> **459 testes** (17 novos). **Próximo: FIN6.3 — ponto de equilíbrio e a ponte
+> lucro × caixa.**
 
 > **CORREÇÃO — A DRE SOMAVA QUASE O DOBRO (v0.204.1, migração 0226).**
 > Conferência no razão contra os dados reais, antes de o teste terminar. Duas
@@ -53,7 +87,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.204.1** · Última migraç
 > **Compra de bens e de estoque não aparecem na DRE** — viram ativo e entram no
 > resultado aos poucos, pela depreciação e pelo consumo. A tela diz isso.
 >
-> **442 testes** (14 novos). **Próximo: FIN6.2 — o fluxo de caixa.**
+> **442 testes** (14 novos).
 
 > **FIN6.0 — BENS E DEPRECIAÇÃO (v0.203.0, migração 0224).**
 >

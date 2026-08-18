@@ -867,8 +867,50 @@ os dados reais, antes de o dono terminar o teste. Duas causas independentes:
 - **Renegociação não muda:** a parcela vira `renegociada` (≠ `cancelada`) e
   mantém o lançamento — a receita foi reconhecida na venda (regra da 0189).
 
-**Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → **6.2 fluxo de caixa** realizado +
-projetado → **6.3 ponto de equilíbrio e a ponte lucro × caixa**.
+**O FLUXO DE CAIXA (FIN6.2, 0227).** A outra pergunta, a que quebra clínica
+lucrativa: **vai faltar dinheiro, e quando?** As duas metades vêm de lugares
+diferentes, de propósito:
+
+- **Realizado = o RAZÃO, pela `cash_date`** — exatamente o que a DRE passou a
+  ignorar na 0226. Os dois relatórios leem o mesmo razão por metades opostas, e
+  por isso nunca divergem da origem.
+- **Previsto = os DOCUMENTOS** (parcelas e contas), pelo que **ainda falta**
+  (valor − já pago). O razão guarda o valor CHEIO da parcela; projetar por ele
+  faria a parcela de R$ 500 já recebida pela metade entrar como R$ 500.
+- **Data do previsto = `expected_settlement_date`**, senão o vencimento: cartão
+  liquida em D+30, e usar o vencimento mostraria o dinheiro um mês antes de ele
+  existir.
+- **VENCIDO NÃO ENTRA NA PROJEÇÃO** (decisão do dono): já falhou uma data;
+  contá-lo de novo é como projeção de caixa mente para o lado otimista — e o
+  erro otimista é o que quebra caixa. Aparece à parte, para ser cobrado.
+- **Conta esperando autorização ENTRA na saída prevista**, ao contrário da DRE.
+  Regras diferentes porque as perguntas são diferentes: para o resultado ainda
+  não é despesa reconhecida; para o caixa é conta que quase certamente será paga.
+- **O aviso sai da série DIÁRIA**, sempre — agrupado por mês, um buraco no dia 8
+  coberto por um recebimento no dia 25 desapareceria, e é justamente ele que faz
+  o cheque voltar.
+- **Atividade:** operacional / investimento (5.1) / financiamento (5.3, 5.4).
+  Separa "a operação gera caixa" de "fechou no azul porque vendeu uma cadeira".
+- **Saldo de partida** = saldo inicial das contas bancárias (campo que a
+  Conciliação já pede) + o caixa anterior. Sem conta cadastrada começa em zero
+  **e a tela diz isso** — saldo incompleto declarado é honesto; inventado vira
+  decisão errada.
+- A conta (régua de dias vazios, saldo acumulado, agrupamento) mora em
+  `src/lib/finance/cash-flow.ts`, com teste. O SQL devolve só os dias COM
+  movimento.
+- **Limites declarados na tela:** projeção bruta (a taxa da adquirente entra
+  quando o dinheiro entra); sem calendário de feriados; conta recorrente só
+  entra depois de gerada.
+
+**`security definer` SEM GUARDA ENTREGA O DADO A QUEM CHAMAR (0227).** Função
+`security definer` roda como dona do banco e **passa por cima do RLS** — a DRE,
+o drill-down e a lista de bens nasceram sem checagem, então qualquer usuário
+logado poderia ler o relatório de outra unidade pela API, mesmo sem enxergar a
+tela. Agora existe **`can_see_clinic_finance(clinic_id)`**, uma função só, usada
+por todos: guarda copiada solta vira duas versões da mesma régua.
+
+**Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → 6.2 fluxo de caixa ✅ → **6.3 ponto de
+equilíbrio e a ponte lucro × caixa**.
 
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
