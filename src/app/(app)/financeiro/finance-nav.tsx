@@ -12,6 +12,7 @@ import {
   Network,
   Receipt,
   Settings2,
+  Target,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -22,6 +23,13 @@ const TABS = [
   { href: "/financeiro/dre", label: "DRE", icon: BarChart3 },
   // FIN6.2: a outra pergunta, que quebra clínica lucrativa — "tenho dinheiro?".
   { href: "/financeiro/fluxo-de-caixa", label: "Fluxo de caixa", icon: Wallet },
+  // FIN6.3: quanto preciso faturar para não dar prejuízo — e a ponte entre as
+  // duas telas acima ("deu lucro, então por que o caixa caiu?").
+  {
+    href: "/financeiro/ponto-de-equilibrio",
+    label: "Ponto de equilíbrio",
+    icon: Target,
+  },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },

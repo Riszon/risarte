@@ -1,6 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.205.0** · Última migração: **0227**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.206.0** · Última migração: **0228**_
+
+> **FIN6.3 — PONTO DE EQUILÍBRIO E A PONTE LUCRO × CAIXA (v0.206.0, migração
+> 0228).** Em Financeiro › Ponto de equilíbrio. **Fecha o FIN6.**
+>
+> **Quanto preciso faturar para não dar prejuízo?** A conta depende de separar
+> custo que acompanha o faturamento (material, repasse, taxa do cartão,
+> imposto) de custo que existe com a cadeira vazia (aluguel, salário). Essa
+> separação **já estava no Plano de contas** desde o FIN0 e é **editável** —
+> se uma conta estiver do lado errado, você corrige lá e o número muda junto.
+>
+> - **Dois pontos, não um:** o contábil inclui a depreciação; o **de caixa**
+>   não. "Estou destruindo valor?" e "vai faltar dinheiro este mês?" são
+>   perguntas diferentes.
+> - **Margem de segurança:** quanto o faturamento pode cair antes de virar
+>   prejuízo — o número que diz se o mês bom foi folga ou sorte.
+> - **O dia da virada:** no ritmo do período, o dia em que o faturamento passou
+>   do ponto. Virar no dia 12 ou no dia 28 é a mesma conta com folgas
+>   diferentes.
+> - **Se os custos variáveis comerem toda a receita**, a tela diz que não existe
+>   faturamento que resolva: o problema é preço ou custo direto, não volume.
+>
+> **Do lucro ao caixa** — a segunda metade da tela responde "deu lucro, então
+> por que o caixa caiu?". Sai do lucro e chega na variação do caixa, linha por
+> linha: depreciação que não sai do bolso, vendas ainda não recebidas, despesas
+> ainda não pagas, compra de bens, distribuição de lucros.
+>
+> **A ponte fecha por construção, não por estimativa:** cada lançamento cai num
+> de três baldes (só competência, só caixa, os dois). Se sobrar um centavo sem
+> explicação, **a tela avisa** em vez de esconder numa linha "outros".
+>
+> **474 testes** (15 novos). **Próximo: FIN7 — orçado × realizado e alertas.**
 
 > **FIN6.2 — O FLUXO DE CAIXA (v0.205.0, migração 0227).** Em Financeiro ›
 > Fluxo de caixa. A DRE responde *"o mês deu lucro?"*; esta responde a outra,
@@ -33,8 +64,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.205.0** · Última migraç
 > RLS, e a DRE e a lista de bens tinham ficado sem checagem de quem pode ler.
 > Agora todas usam a mesma guarda (`can_see_clinic_finance`).
 >
-> **459 testes** (17 novos). **Próximo: FIN6.3 — ponto de equilíbrio e a ponte
-> lucro × caixa.**
+> **459 testes** (17 novos).
 
 > **CORREÇÃO — A DRE SOMAVA QUASE O DOBRO (v0.204.1, migração 0226).**
 > Conferência no razão contra os dados reais, antes de o teste terminar. Duas

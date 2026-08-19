@@ -909,8 +909,32 @@ logado poderia ler o relatório de outra unidade pela API, mesmo sem enxergar a
 tela. Agora existe **`can_see_clinic_finance(clinic_id)`**, uma função só, usada
 por todos: guarda copiada solta vira duas versões da mesma régua.
 
-**Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → 6.2 fluxo de caixa ✅ → **6.3 ponto de
-equilíbrio e a ponte lucro × caixa**.
+**PONTO DE EQUILÍBRIO E A PONTE LUCRO × CAIXA (FIN6.3, 0228).**
+
+- **Fixo × variável já existia** (`chart_of_accounts.cost_behavior`, semeado no
+  FIN0 e **editável no Plano de contas**). Nenhuma coluna nova: a classificação
+  é do dono, não do código — margem calculada sobre rótulo que ninguém pode
+  corrigir vira número errado com cara de oficial.
+- **DOIS pontos de equilíbrio, não um.** O contábil inclui a depreciação; o de
+  **caixa** não. Respondem perguntas diferentes ("estou destruindo valor?" ×
+  "vai faltar dinheiro este mês?"), e mostrar só um esconde a outra.
+- **Receita financeira abate o custo fixo**, não entra na receita: somá-la à
+  base inflaria o faturamento e faria o ponto parecer mais perto do que está.
+- **Margem de contribuição ≤ 0 não tem ponto de equilíbrio** — a tela diz que o
+  problema é preço ou custo direto, não volume. A conta daria um número
+  negativo ou gigante, e um número absurdo com cara de resposta é pior que
+  nenhum.
+- **O dia da virada** ("passou do ponto por volta do dia 21") é declarado como
+  régua, não previsão: o movimento não é igual todo dia.
+- **A PONTE FECHA POR CONSTRUÇÃO.** Cada lançamento cai em um de três baldes —
+  só competência, só caixa, ou os dois — e daí sai `caixa = lucro − (só
+  competência) + (só caixa)`, porque a parte comum é a mesma soma dos dois
+  lados. Existe `residualCents`: **se sobrar um centavo, a tela mostra qual
+  lançamento escapou**, em vez de fechar com uma linha "outros" que esconde
+  erro. Nada cai em balde genérico — conta sem categoria aparece pelo código.
+
+**Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → 6.2 fluxo de caixa ✅ → 6.3 ponto de
+equilíbrio ✅. **FIN6 fechado.**
 
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
