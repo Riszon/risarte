@@ -936,6 +936,49 @@ por todos: guarda copiada solta vira duas versões da mesma régua.
 **Ordem:** 6.0 bens ✅ → 6.1 DRE ✅ → 6.2 fluxo de caixa ✅ → 6.3 ponto de
 equilíbrio ✅. **FIN6 fechado.**
 
+## 8e. FIN7 — orçado × realizado, alertas e fechamento (em construção)
+
+**Decisões do dono (17/08/2026), na tela de perguntas:**
+
+- **A UNIDADE faz o seu orçamento; a franqueadora enxerga, não impõe.** Sem
+  cascata rede→unidade: número que o gerente assumiu ele defende, número que
+  caiu de cima ele explica.
+- **Receita E despesa.** Sem meta de faturamento não dá para dizer se o mês foi
+  ruim porque gastou demais ou porque vendeu de menos.
+- **Realizado = COMPETÊNCIA**, o mesmo recorte da DRE. Comparar com o que já foi
+  pago faria toda conta em aberto parecer economia, e o mês fecharia parecendo
+  melhor do que foi.
+
+**ORÇAMENTO (FIN7.1/7.2, 0229).** `budget_lines` por clínica/ano/mês/conta.
+
+- **A META É GUARDADA COM O SINAL DO REALIZADO** (receita positiva, despesa
+  negativa). Assim `realizado − orçado` positivo significa **sempre** "melhor
+  que o previsto" — receita acima da meta e despesa abaixo dela dão o mesmo
+  sinal. É a mesma lição da DRE: uma regra só, sem tabela de "nesta conta subir
+  é bom, naquela é ruim". A tela mostra e recebe magnitude; o sinal é aplicado
+  em **um lugar só** (`budget_sign` no banco, espelhado em `budgetSign` no TS).
+- **Meta zero apaga a linha** — meta zerada e meta inexistente são a mesma
+  coisa; guardar as duas mostraria "0,00" onde ninguém orçou.
+- **Mês E acumulado do ano até ele.** Despesa não é uniforme: quem paga o seguro
+  anual em março estoura março e fecha o ano no lugar. Comparar o acumulado
+  contra a meta do ano INTEIRO diria que março está 75% abaixo, sempre.
+- **Farol com folga configurável** (5% padrão, "estourou" acima do dobro):
+  orçamento acertado no centavo não existe, e farol que acende com 1% ninguém
+  olha.
+- **Copiar o ano anterior + sugerir pela média de 3 meses**, nenhum dos dois
+  sobrescrevendo meta já preenchida. Orçamento em branco não é preenchido: 12
+  meses × 30 contas é trabalho que ninguém faz duas vezes. A sugestão é
+  **rascunho declarado** — a média achata o sazonal.
+- **Limite declarado:** orçamento sem centro de custo. Orçar por centro exigiria
+  ratear realizado que hoje nasce sem centro, e rateio inventado é pior que
+  ausência de rateio.
+
+**Ordem:** 7.1/7.2 orçamento ✅ → **7.3 alertas** → **7.4 fechamento de
+competência**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
+pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
+essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
+dia seguinte ao fechamento.
+
 **Roadmap:** FIN0 fundação ✅ → FIN1 contas a receber ✅ → FIN2
 renegociação ✅ → FIN3 contas a pagar ✅ → FIN4 conciliação ✅ → FIN4 conciliação OFX + adquirente →
 FIN5 repasse/split → **Estoque** → **Rentabilidade por serviço** → FIN6 DRE+DFC

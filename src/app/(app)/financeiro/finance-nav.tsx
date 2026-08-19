@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Building2,
+  ClipboardList,
   HandCoins,
   BookOpen,
   CreditCard,
@@ -30,6 +31,8 @@ const TABS = [
     label: "Ponto de equilíbrio",
     icon: Target,
   },
+  // FIN7: o que DEVERIA ter acontecido, ao lado do que aconteceu.
+  { href: "/financeiro/orcamento", label: "Orçamento", icon: ClipboardList },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },

@@ -1,6 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.206.0** · Última migração: **0228**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.207.0** · Última migração: **0229**_
+
+> **FIN7.1/7.2 — ORÇAMENTO E ORÇADO × REALIZADO (v0.207.0, migração 0229).** Em
+> Financeiro › Orçamento, com duas vistas: **Planejar** e **Comparar**.
+>
+> O sistema responde o que aconteceu; o orçamento acrescenta o que **deveria**
+> ter acontecido. É a diferença entre descobrir no dia 30 que o marketing
+> estourou e ser avisado no dia 12.
+>
+> **Suas decisões:** a **unidade** monta o próprio orçamento (a franqueadora vê,
+> não impõe); a meta cobre **receita e despesa**; e o realizado é por
+> **competência**, o mesmo recorte da DRE.
+>
+> - **Diferença positiva é sempre "melhor que o previsto"** — receita acima da
+>   meta e despesa abaixo dela dão o mesmo sinal. Você digita sempre valor
+>   positivo; o sistema sabe se a conta soma ou subtrai.
+> - **Mês e acumulado do ano lado a lado.** Quem paga o seguro anual em março
+>   estoura março e fecha o ano no lugar — só o acumulado mostra isso.
+> - **Farol com folga de 5%** (acima de 10%, "fora"): orçamento acertado no
+>   centavo não existe, e alarme que dispara com 1% ninguém olha.
+> - **Copiar o ano anterior com reajuste** ou **sugerir pela média dos últimos 3
+>   meses** — nenhum dos dois apaga meta já preenchida. A sugestão é rascunho: a
+>   média achata o sazonal.
+> - **Limite:** orçamento por conta e mês, **sem centro de custo**.
+>
+> **491 testes** (17 novos). **Próximo: FIN7.3 — alertas.**
 
 > **FIN6.3 — PONTO DE EQUILÍBRIO E A PONTE LUCRO × CAIXA (v0.206.0, migração
 > 0228).** Em Financeiro › Ponto de equilíbrio. **Fecha o FIN6.**
@@ -31,7 +56,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.206.0** · Última migraç
 > de três baldes (só competência, só caixa, os dois). Se sobrar um centavo sem
 > explicação, **a tela avisa** em vez de esconder numa linha "outros".
 >
-> **474 testes** (15 novos). **Próximo: FIN7 — orçado × realizado e alertas.**
+> **474 testes** (15 novos).
 
 > **FIN6.2 — O FLUXO DE CAIXA (v0.205.0, migração 0227).** Em Financeiro ›
 > Fluxo de caixa. A DRE responde *"o mês deu lucro?"*; esta responde a outra,
