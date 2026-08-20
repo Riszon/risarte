@@ -1,6 +1,34 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.207.0** · Última migração: **0229**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.208.0** · Última migração: **0230**_
+
+> **FIN7.3 — OS ALERTAS DO FINANCEIRO (v0.208.0, migração 0230).** Quatro
+> avisos, verificados **todo dia às 9h**, direto na Central de Notificações
+> (categoria nova, **Financeiro**):
+>
+> 1. **Orçamento estourando** — uma despesa já passou de 90% da meta antes de o
+>    mês acabar. Só despesa: estar com 90% da meta de receita é notícia boa.
+> 2. **Caixa negativo previsto** — com a data e quanto falta.
+> 3. **Faturamento atrás do ponto de equilíbrio**, faltando poucos dias.
+> 4. **Atraso a receber acima do limite.**
+>
+> **Cada aviso sai uma vez.** Ele só volta se a situação sumir e reaparecer —
+> alerta que repete todo dia vira paisagem, e aí o gerente ignora inclusive o
+> que importava.
+>
+> **Quem recebe:** gerente e franqueado **da unidade**. A franqueadora fica de
+> fora de propósito: com 200 unidades seriam centenas de avisos por dia.
+>
+> **Os limites são seus.** Em Financeiro › Configuração, um bloco novo com os
+> quatro números e um botão **Verificar agora**. A unidade ajusta os próprios
+> limites; multa e juros continuam sendo regra da rede.
+>
+> **Correção que entrou junto:** a configuração financeira dizia funcionar em
+> cascata "campo a campo", mas não funcionava — qualquer linha de unidade
+> congelava multa e juros nos valores padrão, e uma mudança futura da rede nunca
+> chegaria naquela unidade, sem nada na tela denunciando.
+>
+> **493 testes** (2 novos). **Próximo: FIN7.4 — fechamento de competência.**
 
 > **FIN7.1/7.2 — ORÇAMENTO E ORÇADO × REALIZADO (v0.207.0, migração 0229).** Em
 > Financeiro › Orçamento, com duas vistas: **Planejar** e **Comparar**.
@@ -25,7 +53,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.207.0** · Última migraç
 >   média achata o sazonal.
 > - **Limite:** orçamento por conta e mês, **sem centro de custo**.
 >
-> **491 testes** (17 novos). **Próximo: FIN7.3 — alertas.**
+> **491 testes** (17 novos).
 
 > **FIN6.3 — PONTO DE EQUILÍBRIO E A PONTE LUCRO × CAIXA (v0.206.0, migração
 > 0228).** Em Financeiro › Ponto de equilíbrio. **Fecha o FIN6.**

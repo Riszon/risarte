@@ -14,6 +14,8 @@ export const NOTIFICATION_CATEGORIES = [
   { key: "agenda", label: "Agenda" },
   { key: "aniversario", label: "Aniversários" },
   { key: "transferencia", label: "Transferência" },
+  // FIN7.3 — orçamento estourando, caixa negativo, ponto de equilíbrio, atraso.
+  { key: "financeiro", label: "Financeiro" },
   { key: "outras", label: "Outras" },
 ] as const;
 
@@ -35,6 +37,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   agenda: "bg-red-100 text-red-800",
   aniversario: "bg-pink-100 text-pink-800",
   transferencia: "bg-amber-100 text-amber-800",
+  financeiro: "bg-slate-200 text-slate-800",
   outras: "bg-muted text-muted-foreground",
 };
 
@@ -49,6 +52,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   agenda: "bg-red-500",
   aniversario: "bg-pink-500",
   transferencia: "bg-amber-500",
+  financeiro: "bg-slate-600",
   outras: "bg-muted-foreground",
 };
 
@@ -57,6 +61,16 @@ export function categorizeNotification(title: string): NotificationCategory {
   if (t.includes("aniversari")) return "aniversario";
   // Programa de Prevenção Riso+ — antes do "comercial" genérico.
   if (t.includes("ppr+") || t.includes("riso+")) return "ppr";
+  // FIN7.3 — antes do "plano"/"comercial": "Orçamento estourando — ..." não é
+  // orçamento de tratamento, é a meta de gasto do mês.
+  if (
+    t.includes("orçamento estourando") ||
+    t.includes("caixa negativo") ||
+    t.includes("ponto de equilíbrio") ||
+    t.includes("atraso a receber")
+  ) {
+    return "financeiro";
+  }
   if (t.startsWith("plano")) return "plano";
   // Venda direta na unidade (VD) — antes do "comercial" genérico.
   if (t.includes("venda direta")) return "vendas_diretas";

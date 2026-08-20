@@ -70,3 +70,28 @@ describe("categorizeNotification — PPR+", () => {
     expect(categorizeNotification("Riso+ Social — pontos do mês")).toBe("ppr");
   });
 });
+
+describe("categorizeNotification — alertas do Financeiro (FIN7.3)", () => {
+  it("os quatro alertas caem em 'financeiro'", () => {
+    expect(categorizeNotification("Orçamento estourando — Mídia paga")).toBe(
+      "financeiro"
+    );
+    expect(categorizeNotification("Caixa negativo previsto para 12/09")).toBe(
+      "financeiro"
+    );
+    expect(
+      categorizeNotification("Faturamento atrás do ponto de equilíbrio")
+    ).toBe("financeiro");
+    expect(categorizeNotification("Atraso a receber acima do limite")).toBe(
+      "financeiro"
+    );
+  });
+
+  it("orçamento de TRATAMENTO continua sendo do plano", () => {
+    // A palavra "orçamento" sozinha não basta: o alerta financeiro casa pela
+    // frase inteira, senão todo aviso do comercial viraria financeiro.
+    expect(categorizeNotification("Plano aprovado — orçamento assinado")).toBe(
+      "plano"
+    );
+  });
+});

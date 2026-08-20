@@ -94,6 +94,7 @@ export default async function NotificationsPage(
     agenda: 0,
     aniversario: 0,
     transferencia: 0,
+    financeiro: 0,
     outras: 0,
   };
   for (const n of all) counts[categorizeNotification(n.title)] += 1;

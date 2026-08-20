@@ -973,7 +973,42 @@ equilíbrio ✅. **FIN6 fechado.**
   ratear realizado que hoje nasce sem centro, e rateio inventado é pior que
   ausência de rateio.
 
-**Ordem:** 7.1/7.2 orçamento ✅ → **7.3 alertas** → **7.4 fechamento de
+**ALERTAS (FIN7.3, 0230).** Quatro regras, uma vez por dia às 9h, por pg_cron:
+orçamento de DESPESA passando de 90% da meta, caixa projetado ficando negativo,
+faturamento atrás do ponto de equilíbrio perto do fim do mês, atraso acumulado
+acima do limite.
+
+- **ALERTA QUE REPETE TODO DIA É ALERTA QUE NINGUÉM LÊ.** `finance_alerts` guarda
+  (unidade, regra, referência) e o aviso sai **uma vez**; só rearma quando a
+  condição some e volta (`cleared_at`). Sem isso o gerente ganharia quatro
+  notificações por dia até o fim do mês e ignoraria todas.
+- **RODA SEM USUÁRIO — e isso obrigou uma separação.** No cron `auth.uid()` é
+  nulo e toda guarda recusaria tudo. As contas foram para funções **`_raw`** (sem
+  guarda) e as públicas viraram casca com a guarda — mesmo desenho de
+  `apply_stock_movement` × `post_stock_movement`. **As `_raw` levam `revoke ...
+  from public`:** no Postgres função nova nasce executável por TODO MUNDO, e uma
+  conta sem guarda exposta assim entregaria o número de qualquer unidade.
+- **O alerta de orçamento só vale para DESPESA** — 90% da meta de receita no meio
+  do mês é notícia boa.
+- **Quem recebe: só a unidade** (gerente e franqueado). Franqueadora fora: com
+  200 unidades seriam centenas de avisos/dia, e rede é assunto de painel (FIN8).
+- **`brl()` formata dinheiro sem depender do idioma do servidor** — `to_char`
+  com `G`/`D` usa a configuração regional e o mesmo alerta sairia "1,234.56" ou
+  "1.234,56" conforme o servidor.
+- **A unidade ajusta os próprios limites** (`save_alert_settings`, porta estreita
+  para as colunas de alerta); multa e juros continuam sendo regra da rede.
+
+**A CASCATA DA `finance_settings` NUNCA FOI CASCATA (corrigido na 0230).** Ela
+sempre disse resolver "campo a campo", mas as quatro colunas antigas eram NOT
+NULL com padrão: toda linha de unidade já nascia com 2,00/1,00/0/half_up e o
+`coalesce` nunca chegava na rede. Ficou escondido enquanto só a Franqueadora
+criava linha de unidade; ao deixar a UNIDADE criar linha para ajustar alerta,
+ela congelaria multa e juros nos padrões — mudança futura da rede jamais
+chegaria nela, sem nada na tela denunciando. Colunas passaram a anuláveis e a
+tela resolve contra a rede antes de exibir. **Regra: configuração em cascata só
+funciona com coluna ANULÁVEL na linha que sobrescreve.**
+
+**Ordem:** 7.1/7.2 orçamento ✅ → 7.3 alertas ✅ → **7.4 fechamento de
 competência**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no

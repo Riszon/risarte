@@ -17,6 +17,7 @@ import {
   Presentation,
   Share2,
   Store,
+  TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +44,7 @@ const CATEGORY_ICON: Record<NotificationCategory, React.ComponentType<{ classNam
   agenda: CalendarClock,
   aniversario: Cake,
   transferencia: ArrowLeftRight,
+  financeiro: TrendingDown,
   outras: Bell,
 };
 
