@@ -25,6 +25,8 @@ const LOCAL_ERRORS: Record<string, string> = {
     "Esta é uma das taxas originais da rede: dá para inativar, não para excluir.",
   FEE_IN_USE:
     "Esta taxa já foi cobrada de alguma unidade. Inative em vez de excluir — apagar levaria junto a explicação de dinheiro que já saiu.",
+  FEE_IN_CAMPAIGN:
+    "Existe campanha usando esta taxa. Tire-a da campanha primeiro: se ela saísse sozinha, a campanha ficaria sem taxa nenhuma — e campanha sem taxa vale para todas.",
   KIND_LOCKED:
     "A taxa já tem cobrança: não dá para trocar percentual por valor fixo, senão o histórico deixaria de explicar o que foi cobrado.",
   UNIT_ACCOUNT_INVALID:
@@ -217,7 +219,8 @@ export async function saveCampaign(input: {
   id: string | null;
   name: string;
   clinicId: string | null;
-  fee: string | null;
+  /** Taxas alcançadas. Vazio = todas. */
+  fees: string[];
   startsOn: string;
   endsOn: string;
   mode: CampaignMode;
@@ -237,7 +240,9 @@ export async function saveCampaign(input: {
   const row = {
     name: input.name.trim(),
     clinic_id: input.clinicId,
-    fee: input.fee,
+    // Nenhuma escolhida = todas. Guardar lista vazia daria no mesmo para o
+    // banco, mas nulo diz a intenção sem depender de interpretar o vazio.
+    fees: input.fees.length > 0 ? input.fees : null,
     starts_on: input.startsOn,
     ends_on: input.endsOn,
     mode: input.mode,

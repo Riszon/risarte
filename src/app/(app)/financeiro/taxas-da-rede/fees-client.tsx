@@ -69,6 +69,17 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/** As taxas da campanha, por nome. Lista vazia significa todas. */
+function feesLabel(
+  fees: string[] | null,
+  types: NetworkFeeType[]
+): string {
+  if (!fees || fees.length === 0) return "todas as taxas";
+  return fees
+    .map((k) => types.find((t) => t.key === k)?.label ?? k)
+    .join(", ");
+}
+
 /** Uma linha editável da configuração de valor. */
 function RuleRow({
   rule,
@@ -392,7 +403,7 @@ function CampaignForm({
     id: string | null;
     name: string;
     clinicId: string | null;
-    fee: string | null;
+    fees: string[];
     startsOn: string;
     endsOn: string;
     mode: CampaignMode;
@@ -406,7 +417,8 @@ function CampaignForm({
 }) {
   const [name, setName] = useState("");
   const [clinicId, setClinicId] = useState("");
-  const [fee, setFee] = useState("");
+  const [allFees, setAllFees] = useState(true);
+  const [fees, setFees] = useState<string[]>([]);
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
   const [mode, setMode] = useState<CampaignMode>("valor");
@@ -415,7 +427,17 @@ function CampaignForm({
   const [discount, setDiscount] = useState("50");
   const [note, setNote] = useState("");
 
-  const chosen = types.find((t) => t.key === fee);
+  const selected = allFees ? [] : fees;
+  // O campo de valor depende da natureza. Com taxas de naturezas diferentes na
+  // mesma campanha, "trocar o valor" não faz sentido — trocar por qual? Nesse
+  // caso só o desconto percentual serve, e a tela diz isso.
+  const kinds = new Set(
+    (allFees ? types : types.filter((t) => fees.includes(t.key))).map(
+      (t) => t.kind
+    )
+  );
+  const singleKind = kinds.size === 1 ? [...kinds][0] : null;
+  const mustDiscount = mode === "valor" && singleKind === null;
 
   return (
     <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
@@ -446,21 +468,41 @@ function CampaignForm({
             ))}
           </select>
         </label>
-        <label className="block">
-          <Label className="text-[11px]">Taxa</Label>
-          <select
-            value={fee}
-            onChange={(e) => setFee(e.target.value)}
-            className={cn(selectClass, "w-48")}
-          >
-            <option value="">Todas as taxas</option>
-            {types.map((t) => (
-              <option key={t.key} value={t.key}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+      </div>
+
+      <div>
+        <Label className="text-[11px]">Taxas da campanha</Label>
+        <label className="flex items-center gap-1 py-0.5 text-xs">
+          <input
+            type="checkbox"
+            checked={allFees}
+            onChange={(e) => setAllFees(e.target.checked)}
+          />
+          <strong>Todas as taxas</strong>
         </label>
+        {!allFees && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 rounded border bg-background p-2">
+            {types.map((t) => (
+              <label key={t.key} className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={fees.includes(t.key)}
+                  onChange={(e) =>
+                    setFees((v) =>
+                      e.target.checked
+                        ? [...v, t.key]
+                        : v.filter((k) => k !== t.key)
+                    )
+                  }
+                />
+                {t.label}
+                <span className="text-muted-foreground">
+                  ({t.kind === "percent" ? "%" : "fixa"})
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
@@ -503,7 +545,7 @@ function CampaignForm({
               onChange={(e) => setDiscount(e.target.value)}
             />
           </label>
-        ) : chosen?.kind === "fixed" ? (
+        ) : mustDiscount ? null : singleKind === "fixed" ? (
           <label className="block">
             <Label className="text-[11px]">Novo valor (R$)</Label>
             <Input
@@ -533,6 +575,15 @@ function CampaignForm({
         />
       </label>
 
+      {mustDiscount && (
+        <p className="rounded border border-amber-500/40 bg-amber-500/5 p-2 text-[11px]">
+          A seleção mistura taxas <strong>percentuais e fixas</strong>. &quot;Trocar
+          o valor&quot; não funciona para as duas ao mesmo tempo — trocar por
+          qual? Use <strong>descontar do valor vigente</strong>, que vale para
+          qualquer natureza, ou separe em duas campanhas.
+        </p>
+      )}
+
       <p className="text-[10px] text-muted-foreground">
         A campanha ganha do acordo da unidade e do padrão da rede enquanto
         estiver valendo. <strong>Não recalcula o passado:</strong> o percentual
@@ -542,18 +593,22 @@ function CampaignForm({
       <div className="flex gap-2">
         <Button
           size="sm"
+          disabled={mustDiscount || (!allFees && fees.length === 0)}
           onClick={() =>
             onSave({
               id: null,
               name,
               clinicId: clinicId || null,
-              fee: fee || null,
+              fees: selected,
               startsOn,
               endsOn,
               mode,
-              percent: mode === "valor" ? parseNumber(percent) : null,
+              percent:
+                mode === "valor" && singleKind === "percent"
+                  ? parseNumber(percent)
+                  : null,
               amountCents:
-                mode === "valor" && chosen?.kind === "fixed"
+                mode === "valor" && singleKind === "fixed"
                   ? Math.round(parseNumber(amount) * 100)
                   : null,
               discountPercent: mode === "desconto" ? parseNumber(discount) : null,
@@ -685,7 +740,7 @@ export function NetworkFeesView({
           <ul className="mt-1 space-y-0.5 text-xs">
             {liveCampaigns.map((c) => (
               <li key={c.id}>
-                <strong>{c.name}</strong> — {c.fee ? c.fee : "todas as taxas"},{" "}
+                <strong>{c.name}</strong> — {feesLabel(c.fees, types)},{" "}
                 {c.clinicId ? "só esta unidade" : "toda a rede"}, de{" "}
                 {fmtDate(c.startsOn)} a {fmtDate(c.endsOn)}
                 {c.mode === "desconto"
@@ -1019,7 +1074,7 @@ export function NetworkFeesView({
                         <strong>{c.name}</strong>{" "}
                         <span className="text-muted-foreground">
                           {fmtDate(c.startsOn)} a {fmtDate(c.endsOn)} ·{" "}
-                          {c.fee ?? "todas as taxas"} ·{" "}
+                          {feesLabel(c.fees, types)} ·{" "}
                           {c.clinicId ? "uma unidade" : "toda a rede"}
                         </span>
                         {live && (

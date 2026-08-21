@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.211.0** · Última migração: **0233**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.211.1** · Última migração: **0234**_
+
+> **Campanha vale para VÁRIAS taxas (v0.211.1, migração 0234).** Ao criar a
+> campanha, marque **todas as taxas** ou escolha **quantas quiser** na lista.
+> Antes só dava para escolher uma ou todas, e o caso comum é o meio-termo:
+> "campanha de abertura: royalty e fundo pela metade, o resto normal".
+>
+> Campanha com taxas escolhidas **ganha** de campanha que vale para todas — o
+> mais específico manda, como no resto do sistema.
+>
+> Se a seleção misturar taxa percentual com taxa fixa, "trocar o valor" fica
+> indisponível (trocar por qual?) e a tela pede para usar **descontar do valor
+> vigente**, que serve para as duas naturezas.
+>
+> **Excluir uma taxa que está em campanha passa a ser recusado:** se ela saísse
+> sozinha da lista, a campanha ficaria sem taxa nenhuma — e campanha sem taxa
+> vale para TODAS.
 
 > **FIN8.1b — CADASTRAR TAXAS E LANÇAR CAMPANHAS (v0.211.0, migração 0233).**
 > Em Financeiro › Taxas da rede.

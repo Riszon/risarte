@@ -104,7 +104,7 @@ export default async function NetworkFeesPage(
     supabase
       .from("network_fee_campaigns")
       .select(
-        "id, name, clinic_id, fee, starts_on, ends_on, mode, percent, amount_cents, discount_percent, note, active"
+        "id, name, clinic_id, fees, starts_on, ends_on, mode, percent, amount_cents, discount_percent, note, active"
       )
       .order("starts_on", { ascending: false }),
     supabase
@@ -189,7 +189,7 @@ export default async function NetworkFeesPage(
       id: string;
       name: string;
       clinic_id: string | null;
-      fee: string | null;
+      fees: string[] | null;
       starts_on: string;
       ends_on: string;
       mode: string;
@@ -203,7 +203,7 @@ export default async function NetworkFeesPage(
     id: c.id,
     name: c.name,
     clinicId: c.clinic_id,
-    fee: c.fee,
+    fees: c.fees && c.fees.length > 0 ? c.fees : null,
     startsOn: c.starts_on,
     endsOn: c.ends_on,
     mode: c.mode === "desconto" ? "desconto" : "valor",

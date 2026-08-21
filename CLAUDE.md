@@ -1104,6 +1104,13 @@ taxa nova, inativar/excluir, e lançar campanhas por período.
 - **Dois modos só:** `valor` (troca; 0 = isenção) e `desconto` (corta % do
   vigente). Mais modos dariam a mesma coisa por caminhos diferentes, e cada
   caminho é um lugar onde a conta pode divergir.
+- **A campanha alcança VÁRIAS taxas (0234):** `fees text[]`, nulo/vazio =
+  todas. Campanha de taxas escolhidas **ganha** de campanha "todas" — o mais
+  específico manda. Sem chave estrangeira de propósito: `delete_network_fee_type`
+  **recusa** apagar taxa que esteja em campanha (`FEE_IN_CAMPAIGN`), porque
+  esvaziar a lista transformaria campanha de uma taxa em campanha de todas.
+- **Seleção que mistura percentual e fixa não aceita o modo `valor`** — trocar
+  por qual? A tela manda usar desconto, que vale para as duas naturezas.
 - **Campanha não recalcula o passado** — o percentual congela na baixa; e a
   regra vale pelo **dia da baixa**, não pelo de hoje, então baixa lançada com
   atraso cobra o que valia quando o dinheiro entrou.

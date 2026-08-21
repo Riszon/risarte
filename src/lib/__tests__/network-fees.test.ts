@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyCampaign,
+  campaignCoversFee,
   campaignErrors,
   isCampaignLive,
   ruleErrors,
@@ -256,5 +257,33 @@ describe("chave da taxa nova", () => {
     expect(slugifyFeeKey("Taxa de Inovação")).toBe("taxa_de_inovacao");
     expect(slugifyFeeKey("  Marketing Local  ")).toBe("marketing_local");
     expect(slugifyFeeKey("Suporte 24/7")).toBe("suporte_24_7");
+  });
+});
+
+describe("quais taxas a campanha alcança", () => {
+  const covers = (fees: string[] | null, key: string) =>
+    campaignCoversFee({ fees }, key);
+
+  it("lista nula alcança todas", () => {
+    expect(covers(null, "royalty")).toBe(true);
+    expect(covers(null, "sdr")).toBe(true);
+  });
+
+  it("lista VAZIA também alcança todas", () => {
+    // É o mesmo significado de nulo. Por isso o banco recusa apagar uma taxa
+    // que está em campanha: esvaziar a lista viraria "todas" sem ninguém pedir.
+    expect(covers([], "royalty")).toBe(true);
+  });
+
+  it("lista com taxas alcança só as escolhidas", () => {
+    expect(covers(["royalty", "fundo"], "royalty")).toBe(true);
+    expect(covers(["royalty", "fundo"], "fundo")).toBe(true);
+    expect(covers(["royalty", "fundo"], "comercial")).toBe(false);
+    expect(covers(["royalty", "fundo"], "sdr")).toBe(false);
+  });
+
+  it("uma taxa só continua funcionando", () => {
+    expect(covers(["sistema"], "sistema")).toBe(true);
+    expect(covers(["sistema"], "sdr")).toBe(false);
   });
 });

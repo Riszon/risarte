@@ -49,7 +49,8 @@ export type FeeCampaign = {
   id: string;
   name: string;
   clinicId: string | null;
-  fee: string | null;
+  /** Taxas alcançadas. `null` ou vazio = todas. */
+  fees: string[] | null;
   startsOn: string;
   endsOn: string;
   mode: CampaignMode;
@@ -59,6 +60,22 @@ export type FeeCampaign = {
   note: string;
   active: boolean;
 };
+
+/**
+ * A campanha alcança esta taxa?
+ *
+ * Lista vazia significa TODAS — e é por isso que apagar uma taxa que está em
+ * campanha é recusado no banco: esvaziar a lista transformaria a campanha de
+ * uma taxa em campanha de todas, sem ninguém pedir.
+ */
+export function campaignCoversFee(
+  campaign: Pick<FeeCampaign, "fees">,
+  feeKey: string
+): boolean {
+  const fees = campaign.fees;
+  if (!fees || fees.length === 0) return true;
+  return fees.includes(feeKey);
+}
 
 /**
  * O valor de UMA baixa para UMA taxa percentual.
