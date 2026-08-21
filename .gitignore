@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+# Build de verificação do assistente (NEXT_DIST_DIR) — não pode encostar no
+# .next do servidor local do dono.
+/.next-verify/
 /out/
 
 # production

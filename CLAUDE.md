@@ -64,7 +64,11 @@ multi-tenant. Projeto Supabase `hvhbijctanrrkxhemlza`.
 
 ```powershell
 npm run dev     # servidor dev em http://localhost:3000 (Turbopack, hot reload)
-npm run build   # portão de verificação: compila + checa tipos. Rodar antes de cada commit.
+# Portão de verificação. SEMPRE com NEXT_DIST_DIR: `next build` e `next dev`
+# gravam na MESMA pasta `.next`, e buildar enquanto o dono está com o servidor
+# aberto QUEBRA o servidor dele — o sistema passa a dar 404 em página que
+# existe, com cara de bug da tela nova. Já aconteceu em /financeiro/configuracao.
+$env:NEXT_DIST_DIR=".next-verify"; npm run build
 npm run test    # testes unitários (Vitest) das regras de negócio em src/lib. Rodar antes de cada commit.
 npm run lint    # eslint (baseline: 3 problemas pré-existentes; não adicionar nenhum novo)
 ```

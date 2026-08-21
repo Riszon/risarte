@@ -93,6 +93,24 @@ incluindo o token `--gold` exposto como utilitário `bg-gold`.
   exception when others then null; end $$`. Regra: ao re-rodar, "already exists"
   = aquela parte já foi aplicada (seguir); qualquer OUTRO erro = reportar.
 
+## Portão de entrega — SEMPRE em pasta separada
+
+`npm test` e o build. **O build de verificação roda com `NEXT_DIST_DIR`:**
+
+```bash
+NEXT_DIST_DIR=.next-verify npm run build
+```
+
+`next build` e `next dev` gravam na MESMA pasta `.next`. O dono deixa o servidor
+local aberto (`Iniciar Risarte.bat` → `next dev`) enquanto testa; rodar o build
+por cima **sobrescreve o estado do servidor dele** e o sistema passa a dar **404
+em páginas que existem**. O sintoma engana: parece bug da tela recém-entregue, e
+não é — já custou um diagnóstico inteiro em `/financeiro/configuracao`.
+
+`next.config.ts` lê `NEXT_DIST_DIR` com padrão `.next`, então a Vercel não muda.
+Se o `.next` já tiver sido contaminado: fechar a janela do servidor, apagar
+`.next` e reabrir.
+
 ## Lições que já custaram bug (não repetir)
 
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou
