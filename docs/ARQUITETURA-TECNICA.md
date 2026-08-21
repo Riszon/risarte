@@ -111,6 +111,27 @@ não é — já custou um diagnóstico inteiro em `/financeiro/configuracao`.
 Se o `.next` já tiver sido contaminado: fechar a janela do servidor, apagar
 `.next` e reabrir.
 
+## Conferir a migração ANTES de mandar rodar
+
+```bash
+node scripts/check-migrations.mjs 0233
+```
+
+O portão de entrega compila TypeScript e **não enxerga SQL**. Duas migrações
+seguidas (0232 e 0233) chegaram ao dono com erro mecânico que o Postgres só
+acusa na hora de rodar, e cada uma custou uma ida e volta. O script pega as duas
+causas, e as duas estão cobertas por teste manual documentado no commit:
+
+1. **`create or replace function` com retorno diferente** → *"cannot change
+   return type of existing function"*. Precisa de `drop function` antes.
+2. **`returns table (...)` com número de colunas diferente do que o SELECT
+   devolve** → *"Final statement returns too many columns"*. Inclui o caso do
+   `select *` sobre `(values ...) as t(a,b,c)`, em que a coluna de filtro vaza
+   para o retorno.
+
+O script **cala quando não tem certeza** (union, subconsulta na lista de
+seleção): checagem que erra é pior que checagem que não existe.
+
 ## Lições que já custaram bug (não repetir)
 
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou

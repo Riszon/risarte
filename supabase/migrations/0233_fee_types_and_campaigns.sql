@@ -622,6 +622,10 @@ grant execute on function public.charge_fixed_network_fees(integer, integer)
   to authenticated;
 
 -- O extrato, agora vindo do catálogo e mostrando a campanha.
+-- Ganhou a coluna `campaign_name`: mudou o tipo de retorno, então `create or
+-- replace` não basta.
+drop function if exists public.network_fee_summary(uuid, integer, integer);
+
 create or replace function public.network_fee_summary(
   p_clinic_id uuid,
   p_year integer,

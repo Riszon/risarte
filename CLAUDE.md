@@ -69,6 +69,10 @@ npm run dev     # servidor dev em http://localhost:3000 (Turbopack, hot reload)
 # aberto QUEBRA o servidor dele — o sistema passa a dar 404 em página que
 # existe, com cara de bug da tela nova. Já aconteceu em /financeiro/configuracao.
 $env:NEXT_DIST_DIR=".next-verify"; npm run build
+# Migração nova: conferir ANTES de mandar rodar. O build compila TypeScript e
+# NÃO enxerga SQL — 0232 e 0233 chegaram ao dono com erro que só o Postgres
+# acusa, e cada uma custou uma ida e volta.
+node scripts/check-migrations.mjs 0233
 npm run test    # testes unitários (Vitest) das regras de negócio em src/lib. Rodar antes de cada commit.
 npm run lint    # eslint (baseline: 3 problemas pré-existentes; não adicionar nenhum novo)
 ```
