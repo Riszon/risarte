@@ -1039,7 +1039,47 @@ funciona com coluna ANULÁVEL na linha que sobrescreve.**
   vira mensagem errada com cara de certa.
 
 **Ordem:** 7.1/7.2 orçamento ✅ → 7.3 alertas ✅ → 7.4 fechamento ✅. **FIN7
-fechado.** Próximo: **FIN8 — franqueadora, royalties e consolidação.** A trava do 7.4 **não pode valer para pagamento e recebimento**:
+fechado.**
+
+## 8f. FIN8 — franqueadora, royalties e consolidação (em construção)
+
+**TAXAS DA REDE E SPLIT (FIN8.1, 0232).** O `docs/COMERCIAL.md` §8 já dizia
+"todo recebimento da unidade sofre split"; aqui ele existe.
+
+- **A BASE É O DINHEIRO QUE ENTROU** (decisão do dono, 17/08/2026), não a
+  competência. Cada BAIXA dispara o cálculo sobre o valor recebido. Desconto
+  concedido já está embutido no que entrou; parcela nunca paga não gera taxa; e
+  o franqueado confere olhando o extrato dele. **Eu tinha proposto apuração
+  mensal sobre competência e estava errado** — a decisão já existia no doc.
+- **Seis taxas:** royalty, fundo, centro de planejamento, comercial
+  (percentuais, custo **variável**) + sistema e SDR (fixas mensais, custo fixo).
+- **Cascata com exceção por unidade, e a linha guarda o MOTIVO** (`note`):
+  configuração que diverge sem registro de por quê vira briga de memória seis
+  meses depois. **Desligar ≠ apagar:** desligada é acordo ("esta unidade não
+  paga royalty"); apagada é "não tem acordo próprio, segue a rede".
+- **Padrão da rede semeado em ZERO** — taxa começa desligada até alguém decidir
+  o número. Semear com percentual inventado faria a primeira baixa cobrar errado.
+- **O percentual fica CONGELADO na baixa** (`split_charges.percent`): mudar a
+  regra não recalcula o passado. Mesma lei do repasse (0209) e da alçada (0194).
+- **O dinheiro anda pelo CONTAS A PAGAR** — uma conta por taxa por mês, que
+  cresce a cada recebimento. É o caminho que já aparece no fluxo de caixa, entra
+  na DRE e tem baixa com histórico; lançar por fora criaria um segundo caminho
+  para o mesmo dinheiro. **Como `post_payable_accrual` não reescreve lançamento
+  existente**, o refresh atualiza o valor do razão à mão — senão ele ficaria
+  congelado no primeiro recebimento do mês.
+- **RECEBER NUNCA PODE SER RECUSADO.** A taxa é competência; se o mês da baixa
+  já está fechado (FIN7.4), o razão a recusaria e derrubaria junto o registro do
+  recebimento — o oposto da regra do fechamento. Nesse caso a taxa cai no **mês
+  aberto**, como nota que chegou atrasada.
+- **A franqueadora não paga taxa a si mesma.** Unidade PRÓPRIA paga: a
+  eliminação do intercompany é assunto do consolidado (8.2), não da cobrança.
+- **Limites declarados:** ASAAS não plugado (hoje a unidade recebe tudo e paga
+  pela conta; quando entrar, o mesmo cálculo vira o valor retido); do lado da
+  franqueadora entra receita por competência **sem cobrança formal com parcela**
+  — a baixa vem pela conciliação.
+
+**Ordem:** 8.1 taxas e split ✅ → **8.2 consolidação** (Resultado do Grupo com
+eliminação × Faturamento da Rede) → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
 dia seguinte ao fechamento.

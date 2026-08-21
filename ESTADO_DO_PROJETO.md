@@ -1,6 +1,41 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.209.0** · Última migração: **0231**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.210.0** · Última migração: **0232**_
+
+> **FIN8.1 — TAXAS DA REDE E SPLIT DE PAGAMENTO (v0.210.0, migração 0232).** Em
+> Financeiro › Taxas da rede.
+>
+> **Seis taxas:** royalty, fundo de propaganda, centro de planejamento e
+> comercial (percentuais) + taxa de sistema e SDR (valores fixos mensais).
+>
+> **A base é o dinheiro que entra.** Cada baixa de parcela cobra os percentuais
+> sobre o valor recebido, na hora. Três coisas que isso resolve sozinho:
+> desconto concedido já está embutido no que entrou; parcela que nunca foi paga
+> não gera taxa; e o franqueado confere olhando o próprio extrato.
+>
+> **A tela de configuração** tem o padrão da rede e a exceção por unidade — e a
+> linha da exceção guarda **o motivo do acordo diferente**. Configuração que
+> diverge sem registro de por quê vira discussão de memória seis meses depois.
+> *Desligar* uma taxa (acordo: esta unidade não paga) é diferente de *apagar* a
+> exceção (volta a seguir a rede).
+>
+> Tem também um simulador: *"se eu receber R$ X no mês, pago R$ Y"* — inclusive
+> mostrando que mês sem faturar ainda paga as taxas fixas.
+>
+> - **O percentual fica congelado em cada baixa.** Mudar a regra não recalcula o
+>   que já foi cobrado.
+> - **Cada taxa vira uma conta a pagar por mês**, que cresce conforme os
+>   recebimentos entram — é por lá que ela aparece no fluxo de caixa e na DRE.
+> - **Padrão da rede começa em zero**, desligado, até você definir os números.
+> - **Receber nunca é recusado:** se a baixa cai num mês já fechado, a taxa vai
+>   para o mês aberto, como nota que chegou atrasada.
+>
+> **Limite declarado:** o ASAAS ainda não está plugado, então o split **não é
+> retido** — a unidade recebe tudo e paga a rede pela conta. Quando entrar, o
+> mesmo cálculo vira o valor retido.
+>
+> **525 testes** (13 novos). **Próximo: FIN8.2 — consolidação (Resultado do
+> Grupo × Faturamento da Rede).**
 
 > **FIN7.4 — FECHAMENTO DE COMPETÊNCIA (v0.209.0, migração 0231).** Em
 > Financeiro › Fechamento. **Fecha o FIN7.**
@@ -25,8 +60,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.209.0** · Última migraç
 > - **Não dá para fechar fora de ordem** nem mês que ainda não terminou.
 > - A DRE ganha um **selo de período fechado** quando você olha um mês travado.
 >
-> **512 testes** (19 novos). **Próximo: FIN8 — franqueadora, royalties e
-> consolidação da rede.**
+> **512 testes** (19 novos).
 
 > **FIN7.3 — OS ALERTAS DO FINANCEIRO (v0.208.0, migração 0230).** Quatro
 > avisos, verificados **todo dia às 9h**, direto na Central de Notificações

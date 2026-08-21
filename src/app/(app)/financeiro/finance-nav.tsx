@@ -36,6 +36,8 @@ const TABS = [
   { href: "/financeiro/orcamento", label: "Orçamento", icon: ClipboardList },
   // FIN7.4: mês conferido é mês que não muda mais sozinho.
   { href: "/financeiro/fechamento", label: "Fechamento", icon: Lock },
+  // FIN8.1: o que a rede cobra da unidade — a referência do split.
+  { href: "/financeiro/taxas-da-rede", label: "Taxas da rede", icon: Network },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },
