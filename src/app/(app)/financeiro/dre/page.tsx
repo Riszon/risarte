@@ -57,8 +57,12 @@ export default async function DrePage(props: PageProps<"/financeiro/dre">) {
   const previous = previousPeriod(from, to);
   const supabase = await createClient();
 
-  const [{ data: currentRows }, { data: previousRows }, { data: centerRows }] =
-    await Promise.all([
+  const [
+    { data: currentRows },
+    { data: previousRows },
+    { data: centerRows },
+    { data: closedData },
+  ] = await Promise.all([
       supabase.rpc("dre_lines", {
         p_clinic_id: clinicId,
         p_from: from,
@@ -77,6 +81,12 @@ export default async function DrePage(props: PageProps<"/financeiro/dre">) {
         .eq("active", true)
         .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
         .order("code"),
+      // FIN7.4: o mês do INÍCIO do período. Se ele está fechado, estes números
+      // não mudam mais — e vale dizer isso na tela.
+      supabase.rpc("is_period_closed", {
+        p_clinic_id: clinicId,
+        p_date: from,
+      }),
     ]);
 
   const toLines = (rows: unknown): DreLine[] =>
@@ -127,6 +137,7 @@ export default async function DrePage(props: PageProps<"/financeiro/dre">) {
         dre={dre}
         previousDre={dreBefore}
         clinicId={clinicId}
+        periodClosed={closedData === true}
       />
     </div>
   );

@@ -10,6 +10,7 @@ import {
   BookOpen,
   CreditCard,
   Landmark,
+  Lock,
   Network,
   Receipt,
   Settings2,
@@ -33,6 +34,8 @@ const TABS = [
   },
   // FIN7: o que DEVERIA ter acontecido, ao lado do que aconteceu.
   { href: "/financeiro/orcamento", label: "Orçamento", icon: ClipboardList },
+  // FIN7.4: mês conferido é mês que não muda mais sozinho.
+  { href: "/financeiro/fechamento", label: "Fechamento", icon: Lock },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },

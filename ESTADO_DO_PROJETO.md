@@ -1,6 +1,32 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.208.0** · Última migração: **0230**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.209.0** · Última migração: **0231**_
+
+> **FIN7.4 — FECHAMENTO DE COMPETÊNCIA (v0.209.0, migração 0231).** Em
+> Financeiro › Fechamento. **Fecha o FIN7.**
+>
+> Fechar um mês faz o sistema **recusar lançamento novo de competência** nele:
+> depois de conferido, o resultado não muda mais sozinho na semana seguinte.
+>
+> **O que continua livre:** receber uma parcela, pagar uma conta e conciliar o
+> extrato. Pagar hoje uma conta de janeiro não altera o resultado de janeiro —
+> se a trava pegasse nisso, fechar o mês quebraria o trabalho da recepção no dia
+> seguinte, e na prática ninguém fecharia mês nenhum.
+>
+> - **A unidade fecha; a Franqueadora reabre**, com motivo escrito que fica
+>   registrado. Trava que quem está travado destrava sozinho vira lembrete, não
+>   controle.
+> - **A conferência antes de fechar não bloqueia** — mostra o que ficou pendente
+>   (depreciação não rodada, contas vencidas, parcelas sem baixa, banco não
+>   conciliado, sessões que não baixaram material) e o botão passa a dizer
+>   *"fechar mesmo assim"*. Bloquear faria o mês nunca fechar.
+> - **A depreciação é a pendência em vermelho:** fechar sem ela deixa o
+>   resultado do mês subestimado, e corrigir depois exige reabrir.
+> - **Não dá para fechar fora de ordem** nem mês que ainda não terminou.
+> - A DRE ganha um **selo de período fechado** quando você olha um mês travado.
+>
+> **512 testes** (19 novos). **Próximo: FIN8 — franqueadora, royalties e
+> consolidação da rede.**
 
 > **FIN7.3 — OS ALERTAS DO FINANCEIRO (v0.208.0, migração 0230).** Quatro
 > avisos, verificados **todo dia às 9h**, direto na Central de Notificações
@@ -28,7 +54,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.208.0** · Última migraç
 > congelava multa e juros nos valores padrão, e uma mudança futura da rede nunca
 > chegaria naquela unidade, sem nada na tela denunciando.
 >
-> **493 testes** (2 novos). **Próximo: FIN7.4 — fechamento de competência.**
+> **493 testes** (2 novos).
 
 > **FIN7.1/7.2 — ORÇAMENTO E ORÇADO × REALIZADO (v0.207.0, migração 0229).** Em
 > Financeiro › Orçamento, com duas vistas: **Planejar** e **Comparar**.

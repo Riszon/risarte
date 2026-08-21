@@ -1012,8 +1012,34 @@ chegaria nela, sem nada na tela denunciando. Colunas passaram a anuláveis e a
 tela resolve contra a rede antes de exibir. **Regra: configuração em cascata só
 funciona com coluna ANULÁVEL na linha que sobrescreve.**
 
-**Ordem:** 7.1/7.2 orçamento ✅ → 7.3 alertas ✅ → **7.4 fechamento de
-competência**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
+**FECHAMENTO DE COMPETÊNCIA (FIN7.4, 0231).** A trava adiada no FIN6.
+
+- **A trava NÃO vale para pagamento e recebimento.** Pagar hoje uma conta de
+  janeiro não altera o resultado de janeiro (`receipt_cash`/`payable_cash` nem
+  entram na DRE desde a 0226). Se pegasse nelas, fechar o mês quebraria a
+  recepção no dia seguinte — e ninguém fecharia mês nenhum.
+- **Nem toda alteração muda o resultado.** Conciliar escreve `reconciled_at` e
+  não move um centavo; travar isso impediria conciliar o extrato de um mês
+  fechado, que é justamente quando se concilia. O gatilho só reage a **valor,
+  direção, conta, data de competência, status e centro de custo**.
+- **Tirar de um mês fechado é tão proibido quanto pôr:** no UPDATE o guarda
+  checa a data ANTIGA e a nova.
+- **Quem fecha × quem reabre (decisão do dono, 17/08/2026):** a **unidade**
+  fecha (é ela que sabe se terminou de lançar); a **franqueadora** reabre, com
+  justificativa escrita. Trava que quem está travado destrava sozinho vira
+  lembrete, não controle.
+- **Não se fecha fora de ordem** nem mês que ainda não terminou. Mês anterior
+  vazio não atrapalha (unidade que começou em março não precisa fechar janeiro).
+- **A conferência NÃO bloqueia** — lista pendências e o botão vira "fechar mesmo
+  assim". Bloquear faria o mês nunca fechar, que dá no mesmo que não ter trava.
+  Só a **depreciação não rodada** é severidade alta: fechar sem ela deixa o
+  resultado subestimado.
+- **`financeErrorMessage`** (`src/lib/finance/errors.ts`) traduz os códigos do
+  banco num lugar só, e devolve `null` no que não reconhece — erro novo nunca
+  vira mensagem errada com cara de certa.
+
+**Ordem:** 7.1/7.2 orçamento ✅ → 7.3 alertas ✅ → 7.4 fechamento ✅. **FIN7
+fechado.** Próximo: **FIN8 — franqueadora, royalties e consolidação.** A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
 dia seguinte ao fechamento.

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -109,6 +109,7 @@ export function DreView({
   dre,
   previousDre,
   clinicId,
+  periodClosed,
 }: {
   from: string;
   to: string;
@@ -119,6 +120,8 @@ export function DreView({
   dre: Dre;
   previousDre: Dre;
   clinicId: string;
+  /** FIN7.4 — o mês do início do período está fechado. */
+  periodClosed?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -207,6 +210,16 @@ export function DreView({
           </p>
         </CardContent>
       </Card>
+
+      {periodClosed && (
+        <p className="flex items-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-50 p-2 text-xs text-emerald-900">
+          <Lock className="size-3.5 shrink-0" />
+          <span>
+            <strong>Período fechado.</strong> Estes números não mudam mais —
+            lançamento novo de competência neste mês é recusado.
+          </span>
+        </p>
+      )}
 
       {/* -- O RESUMO ----------------------------------------------------- */}
       <Card>
