@@ -6,8 +6,8 @@
 // CLAUDE.md). Cada agente edita SÓ as suas duas linhas — nunca as do outro.
 
 // Core (MVP / riSZon) — faixa de migração 0106+ (0–999).
-export const APP_VERSION = "0.210.0";
-export const LATEST_MIGRATION = "0232";
+export const APP_VERSION = "0.211.0";
+export const LATEST_MIGRATION = "0233";
 
 // Risarte Empresarial (B2B) — faixa de migração 1000+.
 export const EMPRESARIAL_VERSION = "0.42.0";

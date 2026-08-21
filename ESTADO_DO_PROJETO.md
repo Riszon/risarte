@@ -1,6 +1,36 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.210.0** · Última migração: **0232**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.211.0** · Última migração: **0233**_
+
+> **FIN8.1b — CADASTRAR TAXAS E LANÇAR CAMPANHAS (v0.211.0, migração 0233).**
+> Em Financeiro › Taxas da rede.
+>
+> **Botão "Nova taxa".** As seis deixaram de ser uma lista fixa no sistema: você
+> cadastra quantas quiser, dizendo o nome, se é percentual ou valor fixo, e as
+> **duas contas do plano** (a despesa na unidade, a receita na franqueadora).
+> As contas são escolhidas entre as que já existem — se faltar a certa, crie no
+> Plano de contas antes.
+>
+> **Inativar ou excluir.** Inativar para de cobrar daqui para frente e mantém o
+> histórico. Excluir **só se a taxa nunca foi cobrada**; se já tem cobrança, o
+> sistema recusa e explica por quê. As seis originais podem ser inativadas, mas
+> nunca apagadas.
+>
+> **Campanhas por período.** *"Royalty a 3% em setembro e outubro"*, *"isenção
+> da taxa de sistema nos 3 primeiros meses"*. Com data de início e fim, para a
+> rede inteira ou para uma unidade, e com o motivo registrado. Dois formatos:
+> **trocar o valor** (zero = isenção) ou **descontar** uma porcentagem do que
+> está valendo.
+>
+> A campanha **ganha do acordo da unidade**, que ganha do padrão da rede — e a
+> faixa verde no topo da tela mostra o que está valendo hoje.
+>
+> **Campanha não mexe no passado:** o percentual fica congelado em cada baixa. E
+> ele vale pelo **dia da baixa**, não pelo dia de hoje — baixa lançada com
+> atraso cobra o que valia quando o dinheiro entrou.
+>
+> **535 testes** (10 novos). **Próximo: o desconto por pontualidade** (o quarto
+> pedido), que mexe no pagamento dentro de Contas a pagar.
 
 > **FIN8.1 — TAXAS DA REDE E SPLIT DE PAGAMENTO (v0.210.0, migração 0232).** Em
 > Financeiro › Taxas da rede.
@@ -34,8 +64,7 @@ _Atualizado em: 17/08/2026 · Versão do sistema: **0.210.0** · Última migraç
 > retido** — a unidade recebe tudo e paga a rede pela conta. Quando entrar, o
 > mesmo cálculo vira o valor retido.
 >
-> **525 testes** (13 novos). **Próximo: FIN8.2 — consolidação (Resultado do
-> Grupo × Faturamento da Rede).**
+> **525 testes** (13 novos).
 
 > **FIN7.4 — FECHAMENTO DE COMPETÊNCIA (v0.209.0, migração 0231).** Em
 > Financeiro › Fechamento. **Fecha o FIN7.**

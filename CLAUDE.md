@@ -1078,8 +1078,38 @@ fechado.**
   franqueadora entra receita por competência **sem cobrança formal com parcela**
   — a baixa vem pela conciliação.
 
-**Ordem:** 8.1 taxas e split ✅ → **8.2 consolidação** (Resultado do Grupo com
-eliminação × Faturamento da Rede) → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
+**TAXAS COMO DADOS + CAMPANHAS (FIN8.1b, 0233).** Pedidos do dono: cadastrar
+taxa nova, inativar/excluir, e lançar campanhas por período.
+
+- **Taxa virou DADO, não enum.** `network_fee_types` no banco; criar a sétima é
+  operação de tela. Mesmo caminho dos centros de custo. **Sumiu a cópia da lista
+  no TypeScript** — ela envelheceria no dia em que alguém cadastrasse uma nova,
+  e a tela mostraria uma lista diferente da que o banco cobra.
+- **As contas são ESCOLHIDAS, não inventadas:** quem cadastra aponta a conta de
+  despesa da unidade e a de receita da franqueadora, entre as analíticas que já
+  existem. Sistema que cria conta contábil sozinho faz o plano crescer sem
+  ninguém olhar.
+- **Inativar ≠ excluir.** Inativar para de cobrar e preserva o histórico;
+  excluir só se **nunca cobrou** (senão `FEE_IN_USE`). As seis originais são
+  `system`: nunca se apagam. Mesma regra do item de estoque (0215).
+- **Natureza travada depois da primeira cobrança** (`KIND_LOCKED`): percentual
+  virando fixo faria o histórico deixar de explicar o valor cobrado.
+- **Campanha > acordo da unidade > padrão da rede.** Entre campanhas, a da
+  unidade ganha da rede; empatou, a que começou por último — sem desempate,
+  duas campanhas sobrepostas dariam resultado diferente a cada consulta.
+- **Dois modos só:** `valor` (troca; 0 = isenção) e `desconto` (corta % do
+  vigente). Mais modos dariam a mesma coisa por caminhos diferentes, e cada
+  caminho é um lugar onde a conta pode divergir.
+- **Campanha não recalcula o passado** — o percentual congela na baixa; e a
+  regra vale pelo **dia da baixa**, não pelo de hoje, então baixa lançada com
+  atraso cobra o que valia quando o dinheiro entrou.
+- `applyCampaign` no TS espelha `network_fee_for` no SQL (a tela precisa mostrar
+  o efeito antes de salvar); os testes prendem os dois números.
+
+**Ordem:** 8.1 taxas e split ✅ → 8.1b catálogo e campanhas ✅ → **8.1c desconto
+por pontualidade** (mexe no pagamento em Contas a pagar; conta nasce cheia e o
+abatimento entra na baixa — decisão do dono) → **8.2 consolidação** (Resultado
+do Grupo com eliminação × Faturamento da Rede) → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
 dia seguinte ao fechamento.

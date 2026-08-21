@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  feeKind,
-  feeLabel,
+  applyCampaign,
+  campaignErrors,
+  isCampaignLive,
   ruleErrors,
   simulateMonth,
+  slugifyFeeKey,
   splitAmountCents,
   totalFixedCents,
   totalPercent,
@@ -11,13 +13,14 @@ import {
 } from "@/lib/finance/network-fees";
 
 const rule = (
-  fee: NetworkFeeRule["fee"],
+  fee: string,
   kind: NetworkFeeRule["kind"],
   percent: number,
   amountCents = 0,
   active = true
 ): NetworkFeeRule => ({
   fee,
+  label: fee,
   kind,
   percent,
   amountCents,
@@ -25,6 +28,7 @@ const rule = (
   active,
   isOverride: false,
   note: "",
+  campaignName: null,
 });
 
 describe("o valor de uma baixa", () => {
@@ -91,7 +95,92 @@ describe("o que incide sobre cada real", () => {
   });
 });
 
-describe("validação da configuração", () => {
+describe("campanhas", () => {
+  const base = { kind: "percent" as const, percent: 5, amountCents: 100_000 };
+
+  it("sem campanha, o valor combinado não muda", () => {
+    expect(applyCampaign(base, null)).toEqual({
+      percent: 5,
+      amountCents: 100_000,
+    });
+  });
+
+  it("modo VALOR troca o percentual", () => {
+    expect(
+      applyCampaign(base, {
+        mode: "valor",
+        percent: 3,
+        amountCents: null,
+        discountPercent: null,
+      }).percent
+    ).toBe(3);
+  });
+
+  it("isenção é valor zero, não campanha ausente", () => {
+    // Zero precisa sobreviver ao coalesce: `percent ?? base` com 0 daria 0,
+    // mas com null daria 5 — e a unidade continuaria pagando.
+    expect(
+      applyCampaign(base, {
+        mode: "valor",
+        percent: 0,
+        amountCents: null,
+        discountPercent: null,
+      }).percent
+    ).toBe(0);
+  });
+
+  it("modo VALOR sem informar o campo mantém o que estava", () => {
+    expect(
+      applyCampaign(base, {
+        mode: "valor",
+        percent: null,
+        amountCents: null,
+        discountPercent: null,
+      })
+    ).toEqual({ percent: 5, amountCents: 100_000 });
+  });
+
+  it("modo DESCONTO corta um pedaço do valor vigente", () => {
+    const r = applyCampaign(base, {
+      mode: "desconto",
+      percent: null,
+      amountCents: null,
+      discountPercent: 50,
+    });
+    expect(r.percent).toBe(2.5);
+    expect(r.amountCents).toBe(50_000);
+  });
+
+  it("desconto de 100% zera, mas não inverte o sinal", () => {
+    const r = applyCampaign(base, {
+      mode: "desconto",
+      percent: null,
+      amountCents: null,
+      discountPercent: 100,
+    });
+    expect(r.percent).toBe(0);
+    expect(r.amountCents).toBe(0);
+  });
+
+  it("vale só dentro do período", () => {
+    const c = { startsOn: "2026-09-01", endsOn: "2026-10-31", active: true };
+    expect(isCampaignLive(c, "2026-08-31")).toBe(false);
+    expect(isCampaignLive(c, "2026-09-01")).toBe(true);
+    expect(isCampaignLive(c, "2026-10-31")).toBe(true);
+    expect(isCampaignLive(c, "2026-11-01")).toBe(false);
+  });
+
+  it("campanha desligada não vale nem dentro do período", () => {
+    expect(
+      isCampaignLive(
+        { startsOn: "2026-09-01", endsOn: "2026-10-31", active: false },
+        "2026-09-15"
+      )
+    ).toBe(false);
+  });
+});
+
+describe("validação", () => {
   it("recusa percentual fora da faixa", () => {
     expect(
       ruleErrors({ kind: "percent", percent: -1, amountCents: 0, dueDay: 10 })
@@ -111,18 +200,61 @@ describe("validação da configuração", () => {
     ).toHaveLength(0);
   });
 
-  it("configuração válida não reclama", () => {
+  it("campanha precisa de nome e de período coerente", () => {
     expect(
-      ruleErrors({ kind: "percent", percent: 5, amountCents: 0, dueDay: 10 })
+      campaignErrors({
+        name: "",
+        startsOn: "2026-09-01",
+        endsOn: "2026-10-31",
+        mode: "valor",
+        percent: 3,
+        discountPercent: null,
+      })
+    ).toContain("Dê um nome à campanha.");
+
+    expect(
+      campaignErrors({
+        name: "Campanha",
+        startsOn: "2026-10-01",
+        endsOn: "2026-09-01",
+        mode: "valor",
+        percent: 3,
+        discountPercent: null,
+      })
+    ).toContain("O fim da campanha não pode ser antes do início.");
+  });
+
+  it("campanha de desconto precisa de um desconto de verdade", () => {
+    expect(
+      campaignErrors({
+        name: "Campanha",
+        startsOn: "2026-09-01",
+        endsOn: "2026-10-31",
+        mode: "desconto",
+        percent: null,
+        discountPercent: 0,
+      })
+    ).toContain("O desconto precisa ser maior que zero.");
+  });
+
+  it("campanha válida não reclama", () => {
+    expect(
+      campaignErrors({
+        name: "Isenção de implantação",
+        startsOn: "2026-09-01",
+        endsOn: "2026-11-30",
+        mode: "valor",
+        percent: 0,
+        discountPercent: null,
+      })
     ).toEqual([]);
   });
 });
 
-describe("rótulos", () => {
-  it("traduz e sabe a natureza de cada taxa", () => {
-    expect(feeLabel("planejamento")).toBe("Centro de planejamento");
-    expect(feeKind("sdr")).toBe("fixed");
-    expect(feeKind("royalty")).toBe("percent");
-    expect(feeLabel("desconhecida")).toBe("desconhecida");
+describe("chave da taxa nova", () => {
+  it("tira acento, espaço e maiúscula", () => {
+    expect(slugifyFeeKey("Taxa de Inovação")).toBe("taxa_de_inovacao");
+    expect(slugifyFeeKey("  Marketing Local  ")).toBe("marketing_local");
+    expect(slugifyFeeKey("Suporte 24/7")).toBe("suporte_24_7");
   });
 });
