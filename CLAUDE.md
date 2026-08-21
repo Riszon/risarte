@@ -1138,9 +1138,30 @@ no atraso, espelhando o PPR+).
   pago com R$ 900 + R$ 100 ficaria "parcial" para sempre.
 - Só para conta com `network_fee`: fornecedor tem desconto negociado caso a caso.
 
+**CONSOLIDAÇÃO (FIN8.2, 0236).** Só a Franqueadora enxerga.
+
+- **Resultado do Grupo** = franqueadora + unidades **próprias**; **Faturamento
+  da Rede** = todas as unidades lado a lado, só para comparar. **Os dois não se
+  somam** — a franqueadora ganha o royalty da franqueada, não a receita dela.
+- **A ELIMINAÇÃO NÃO MUDA O LUCRO.** Despesa da unidade própria (−X) e receita
+  da franqueadora (+X) já se anulam ao somar. O que ela conserta é o
+  **faturamento**, que sem ela apareceria inflado dos dois lados. É isso que
+  consolidar significa, e é o que a tela explica.
+- **Quem é o par de quem:** despesa intercompany de unidade DO GRUPO sempre
+  elimina (o outro lado é a franqueadora); **receita** intercompany da
+  franqueadora só elimina quando veio de unidade do grupo — a de franqueada é
+  dinheiro de fora, receita de verdade.
+- **Limite declarado:** só elimina o rastreável até a conta de taxa
+  (`network_fee_revenue`/`network_fee_discount`). Intercompany manual fica de
+  fora **e a tela avisa**, em vez de eliminar por conta própria.
+- **Drill-down por UNIDADE, não por lançamento:** no consolidado a pergunta é
+  quem trouxe o número; o caminho até o documento continua na DRE da unidade.
+- **`clinics.ownership` ganhou tela** (`set_clinic_ownership`). Existia desde o
+  FIN0 sem interface — sem ela o grupo mostraria só a franqueadora para sempre e
+  ninguém saberia por quê. **As três unidades estão como `franchised`.**
+
 **Ordem:** 8.1 taxas e split ✅ → 8.1b catálogo e campanhas ✅ → 8.1c desconto
-por pontualidade ✅ → **8.2 consolidação** (Resultado do Grupo com eliminação ×
-Faturamento da Rede) → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
+por pontualidade ✅ → 8.2 consolidação ✅ → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
 dia seguinte ao fechamento.

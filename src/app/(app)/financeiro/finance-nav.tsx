@@ -38,6 +38,8 @@ const TABS = [
   { href: "/financeiro/fechamento", label: "Fechamento", icon: Lock },
   // FIN8.1: o que a rede cobra da unidade — a referência do split.
   { href: "/financeiro/taxas-da-rede", label: "Taxas da rede", icon: Network },
+  // FIN8.2: o resultado do grupo, e a rede lado a lado. Só a Franqueadora.
+  { href: "/financeiro/consolidado", label: "Consolidado", icon: Building2 },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/financeiro/conciliacao", label: "Conciliação", icon: Landmark },
   { href: "/financeiro/adquirentes", label: "Adquirentes", icon: CreditCard },

@@ -1,6 +1,39 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.212.0** · Última migração: **0235**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.213.0** · Última migração: **0236**_
+
+> **FIN8.2 — CONSOLIDAÇÃO (v0.213.0, migração 0236).** Em Financeiro ›
+> Consolidado, **só para a Franqueadora**.
+>
+> **Duas telas que não podem se misturar:**
+>
+> - **Resultado do Grupo** = franqueadora + unidades **próprias**. O resultado
+>   de quem é dono do negócio.
+> - **Faturamento da Rede** = todas as unidades lado a lado, com ranking,
+>   comparação com a média e margem. Só para comparar.
+>
+> Somar os dois é o erro que faz uma rede parecer dez vezes maior do que é: a
+> franqueadora ganha o **royalty** da franqueada, não a receita da cadeira dela.
+>
+> **A eliminação, explicada:** quando uma unidade própria paga royalty à
+> franqueadora, o dinheiro trocou de bolso dentro de casa. Isso já se anula
+> sozinho no **lucro** — o que a eliminação conserta é o **faturamento**, que
+> sem ela apareceria inflado dos dois lados. A tela mostra uma coluna de
+> eliminado e avisa quais contas sumiram inteiras.
+>
+> **Cada linha abre por unidade** (não por lançamento): aqui a pergunta é quem
+> trouxe o número. O caminho até o documento continua na DRE da unidade.
+>
+> **Própria ou franqueada agora tem interruptor.** A marcação existia desde o
+> começo do Financeiro e nunca teve tela — sem ela, o Resultado do Grupo
+> mostraria só a franqueadora para sempre. **Hoje as três unidades estão como
+> franqueadas**; se alguma for própria, mude ali.
+>
+> **Limite declarado:** só é eliminado o que dá para rastrear até a conta de
+> taxa que gerou o par. Lançamento entre empresas feito à mão fica de fora, e a
+> tela diz isso.
+>
+> **554 testes** (9 novos). **Próximo: FIN8.3 — painel da rede.**
 
 > **FIN8.1c — DESCONTO POR PONTUALIDADE (v0.212.0, migração 0235).** Fecha os
 > quatro pedidos sobre as taxas da rede.
