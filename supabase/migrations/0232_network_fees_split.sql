@@ -125,7 +125,9 @@ returns table (unit_account text, franchisor_account text)
 language sql
 immutable
 as $$
-  select * from (values
+  -- Só as DUAS colunas declaradas: a coluna `fee` da tabela de valores serve
+  -- para filtrar e não pode vazar para o retorno.
+  select t.unit_account, t.franchisor_account from (values
     ('royalty',      '2.6.01', '1.3.01'),
     ('fundo',        '2.6.02', '1.3.03'),
     ('planejamento', '2.6.03', '1.3.05'),
