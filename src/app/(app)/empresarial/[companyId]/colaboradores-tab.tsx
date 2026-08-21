@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Download, FileText, FileUp, PiggyBank, Plus, UserPlus } from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
+import { reportFileName } from "@/lib/empresarial/filenames";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -102,8 +103,11 @@ export function ColaboradoresTab({
   canViewBenefitsReport = false,
   companyDocuments = [],
   employeeFiles = [],
+  companyName = "",
 }: {
   companyId: string;
+  /** Usado para nomear a planilha-modelo baixada. */
+  companyName?: string;
   employees: EmployeeView[];
   units: Unit[];
   canManage: boolean;
@@ -152,7 +156,12 @@ export function ColaboradoresTab({
               Benefícios e economia
             </Button>
           )}
-          {canManage && <ImportEmployeesDialog companyId={companyId} />}
+          {canManage && (
+            <ImportEmployeesDialog
+              companyId={companyId}
+              companyName={companyName}
+            />
+          )}
         </div>
       </div>
 
@@ -1074,7 +1083,13 @@ const RELATIONSHIP_BY_LABEL = new Map<string, string>([
   ),
 ]);
 
-function ImportEmployeesDialog({ companyId }: { companyId: string }) {
+function ImportEmployeesDialog({
+  companyId,
+  companyName = "",
+}: {
+  companyId: string;
+  companyName?: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [rows, setRows] = useState<EmployeeImportRow[]>([]);
@@ -1112,7 +1127,12 @@ function ImportEmployeesDialog({ companyId }: { companyId: string }) {
       depWs["!cols"] = depHeaders.map((h) => ({ wch: Math.max(18, h.length + 2) }));
       XLSX.utils.book_append_sheet(wb, depWs, "Dependentes");
 
-      XLSX.writeFile(wb, "modelo-colaboradores.xlsx");
+      XLSX.writeFile(
+        wb,
+        companyName
+          ? `${reportFileName("modelo-colaboradores", companyName)}.xlsx`
+          : "modelo-colaboradores.xlsx"
+      );
     } catch {
       toast.error("Não foi possível gerar o modelo.");
     }

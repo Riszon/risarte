@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { formatBRL } from "@/lib/pricing";
 import { formatCnpj, formatCpf, formatPhone } from "@/lib/masks";
 import { whatsappLink } from "@/lib/whatsapp";
+import { printAs, reportFileName } from "@/lib/empresarial/filenames";
 import { PILLAR_LABELS, type MethodologyPillar } from "@/lib/journey";
 import {
   EMPLOYEE_STATUS_LABELS,
@@ -97,8 +98,9 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
   function confirmPrint(chosen: Options) {
     setOpt(chosen);
     setAskPrint(false);
-    // Espera o React aplicar as opções na tela antes de abrir a impressão.
-    setTimeout(() => window.print(), 120);
+    // Espera o React aplicar as opções na tela antes de abrir a impressão. O
+    // nome do arquivo vai no título da página (é o que o navegador sugere).
+    printAs(reportFileName("beneficios-e-economia", companyLabel));
   }
 
   function sendWhatsapp() {
@@ -228,14 +230,10 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
       ];
       XLSX.utils.book_append_sheet(wb, extrato, "Atendimentos");
 
-      const safe = companyLabel
-        .normalize("NFD")
-        .replace(/\p{Diacritic}/gu, "")
-        .replace(/[^\w\s-]/g, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .toLowerCase();
-      XLSX.writeFile(wb, `beneficios-${safe}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `${reportFileName("beneficios-e-economia", companyLabel)}.xlsx`
+      );
     } catch {
       toast.error("Não foi possível gerar a planilha.");
     }

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/pricing";
 import { formatCnpj } from "@/lib/masks";
+import { printAs, reportFileName } from "@/lib/empresarial/filenames";
 import {
   BILLING_STATUS_LABELS,
   BILLING_TYPE_LABELS,
@@ -121,7 +122,10 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
             Todos os dados cadastrados sobre a empresa, prontos para imprimir.
           </p>
         </div>
-        <Button size="sm" onClick={() => window.print()}>
+        <Button
+          size="sm"
+          onClick={() => printAs(reportFileName("ficha-da-empresa", name))}
+        >
           <Printer className="mr-1 size-4" />
           Imprimir / PDF
         </Button>

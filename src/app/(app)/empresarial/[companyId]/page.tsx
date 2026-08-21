@@ -996,6 +996,7 @@ export default async function CompanyDetailPage(props: {
           canViewBenefitsReport={canViewBenefitsReport}
           companyDocuments={companyDocuments}
           employeeFiles={employeeFiles}
+          companyName={company.tradeName || company.legalName}
         />
       )}
 

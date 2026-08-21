@@ -7,13 +7,14 @@ import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  loadCompanyReport,
   REPORT_FILTER_LABELS,
+  REPORT_FILTERS,
   type ReportFilter,
-} from "./data";
+} from "@/lib/empresarial/constants";
+import { loadCompanyReport } from "./data";
 import { ReportView } from "./report-view";
 
-const FILTERS: ReportFilter[] = ["ACTIVE", "INACTIVE", "DELETED", "ALL"];
+const FILTERS: readonly ReportFilter[] = REPORT_FILTERS;
 
 export const metadata: Metadata = {
   title: "Relatório da empresa · Risarte Empresarial",

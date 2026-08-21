@@ -16,6 +16,8 @@ import {
   RELATIONSHIP_LABELS,
   type LeftReason,
 } from "@/lib/empresarial/constants";
+import { printAs, reportFileName } from "@/lib/empresarial/filenames";
+import { REPORT_FILTER_LABELS } from "@/lib/empresarial/constants";
 import type { CompanyReport } from "./data";
 
 // PDF: esconde a tela (menu/botões) e imprime só o relatório.
@@ -49,6 +51,14 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 
 export function ReportView({ report }: { report: CompanyReport }) {
   const { company: c, totals, pricing, employees } = report;
+
+  // Nome do arquivo já com empresa, filtro aplicado e data — para achar depois.
+  const fileBaseName = () =>
+    reportFileName(
+      "relatorio-colaboradores",
+      c.tradeName || c.legalName,
+      report.filter === "ALL" ? null : REPORT_FILTER_LABELS[report.filter]
+    );
 
   const addr = c.address;
   const addrText = addr
@@ -171,14 +181,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
       ];
       XLSX.utils.book_append_sheet(wb, deps, "Dependentes");
 
-      const safe = (c.tradeName || c.legalName)
-        .normalize("NFD")
-        .replace(/\p{Diacritic}/gu, "")
-        .replace(/[^\w\s-]/g, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .toLowerCase();
-      XLSX.writeFile(wb, `relatorio-${safe}.xlsx`);
+      XLSX.writeFile(wb, `${fileBaseName()}.xlsx`);
     } catch {
       toast.error("Não foi possível gerar a planilha.");
     }
@@ -202,7 +205,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
             <Download className="mr-1 size-4" />
             Excel
           </Button>
-          <Button size="sm" onClick={() => window.print()}>
+          <Button size="sm" onClick={() => printAs(fileBaseName())}>
             <Printer className="mr-1 size-4" />
             Imprimir / PDF
           </Button>

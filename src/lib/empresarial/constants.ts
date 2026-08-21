@@ -54,6 +54,23 @@ export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
   DELETED: "Excluído",
 };
 
+// Filtro de situação nas listas e relatórios. Fica AQUI (e não no data.ts do
+// relatório) porque telas de cliente também usam: importar valor de um módulo
+// `server-only` arrastaria o servidor para o navegador e quebra o build.
+export const REPORT_FILTERS = [
+  "ACTIVE",
+  "INACTIVE",
+  "DELETED",
+  "ALL",
+] as const;
+export type ReportFilter = (typeof REPORT_FILTERS)[number];
+export const REPORT_FILTER_LABELS: Record<ReportFilter, string> = {
+  ACTIVE: "Somente ativos",
+  INACTIVE: "Somente inativos",
+  DELETED: "Somente excluídos",
+  ALL: "Todos",
+};
+
 export const REGISTRATION_STAGES = ["PRE_REGISTERED", "COMPLETED"] as const;
 export type RegistrationStage = (typeof REGISTRATION_STAGES)[number];
 export const REGISTRATION_STAGE_LABELS: Record<RegistrationStage, string> = {

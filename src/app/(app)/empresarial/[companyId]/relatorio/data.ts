@@ -7,13 +7,15 @@ import {
   DEFAULT_ADHESION_PRICING,
   type AdhesionPricing,
 } from "@/lib/empresarial/pricing";
-import type {
-  CompanyStatus,
-  DependentPlan,
-  EmployeeStatus,
-  PaymentMethod,
-  PaymentModel,
-  Relationship,
+import {
+  REPORT_FILTER_LABELS,
+  type CompanyStatus,
+  type DependentPlan,
+  type EmployeeStatus,
+  type PaymentMethod,
+  type PaymentModel,
+  type Relationship,
+  type ReportFilter,
 } from "@/lib/empresarial/constants";
 import type { CompanyAddress } from "@/lib/empresarial/types";
 
@@ -136,16 +138,6 @@ type EmployeeRow = {
  * preços efetivos (empresa > rede), colaboradores com dependentes e os totais.
  * A RLS do schema `empresarial` continua sendo a barreira real.
  */
-/** Situação usada para filtrar a LISTA do relatório (os totais não mudam). */
-export type ReportFilter = "ACTIVE" | "INACTIVE" | "DELETED" | "ALL";
-
-export const REPORT_FILTER_LABELS: Record<ReportFilter, string> = {
-  ACTIVE: "Somente ativos",
-  INACTIVE: "Somente inativos",
-  DELETED: "Somente excluídos",
-  ALL: "Todos",
-};
-
 export async function loadCompanyReport(
   companyId: string,
   filter: ReportFilter = "ACTIVE"
