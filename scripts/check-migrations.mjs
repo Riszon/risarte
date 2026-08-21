@@ -57,7 +57,7 @@ const drops = new Set(
 const problems = [];
 
 for (const m of sql.matchAll(FN)) {
-  const [, name, args, returns, lang] = m;
+  const [, name, , returns, lang] = m;
   const prev = known.get(name);
 
   // Regra 1 — retorno mudou sem drop.
