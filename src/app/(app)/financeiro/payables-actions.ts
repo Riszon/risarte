@@ -126,6 +126,8 @@ export async function registerPayablePayment(input: {
   amountCents: number;
   feeCents: number;
   interestCents: number;
+  /** Abatimento por pontualidade. O banco recusa acima do concedido. */
+  discountCents?: number;
   paidAt: string;
   paymentMethod: string;
   reference: string;
@@ -142,6 +144,7 @@ export async function registerPayablePayment(input: {
     p_payment_method: input.paymentMethod || null,
     p_fee_cents: Math.round(input.feeCents),
     p_interest_cents: Math.round(input.interestCents),
+    p_discount_cents: Math.round(input.discountCents ?? 0),
     p_reference: input.reference || null,
     p_notes: input.notes || null,
     p_client_token: input.clientToken,

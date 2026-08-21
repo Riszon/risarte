@@ -57,8 +57,19 @@ const drops = new Set(
 const problems = [];
 
 for (const m of sql.matchAll(FN)) {
-  const [, name, , returns, lang] = m;
+  const [, name, args, returns, lang] = m;
   const prev = known.get(name);
+
+  // Regra 3 — lista de PARÂMETROS mudou sem drop. Não dá erro ao criar: cria
+  // uma sobrecarga. O erro aparece depois, na chamada, como "function is not
+  // unique" — longe da causa, e só quando alguém usa a tela.
+  if (prev && norm(args) !== prev.args && !drops.has(name)) {
+    problems.push(
+      `${name}: os parâmetros mudaram desde ${prev.file} e não há ` +
+        `"drop function" antes — vai virar sobrecarga, e a chamada antiga ` +
+        `fica ambígua.`
+    );
+  }
 
   // Regra 1 — retorno mudou sem drop.
   if (prev && norm(returns) !== prev.returns && !drops.has(name)) {

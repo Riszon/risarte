@@ -41,7 +41,30 @@ export type NetworkFeeRule = {
   note: string;
   /** Campanha vigente que está mudando este valor, se houver. */
   campaignName: string | null;
+  /** Abatimento se a conta for paga até o vencimento. Zero = sem desconto. */
+  punctualityDiscountPercent: number;
 };
+
+/**
+ * O abatimento por pagar em dia.
+ *
+ * Incide sobre o SALDO, não sobre o valor original: numa conta paga pela metade
+ * fora do prazo, premiar o valor cheio daria desconto sobre parcela atrasada.
+ * Depois do vencimento não há pontualidade a premiar — e é a data do pagamento
+ * que decide, não a de hoje, porque a baixa pode ser lançada com atraso.
+ */
+export function punctualityDiscountCents(input: {
+  balanceCents: number;
+  percent: number;
+  /** "YYYY-MM-DD" do pagamento. */
+  paidAt: string;
+  dueDate: string;
+}): number {
+  const { balanceCents, percent, paidAt, dueDate } = input;
+  if (percent <= 0 || balanceCents <= 0) return 0;
+  if (!paidAt || !dueDate || paidAt > dueDate) return 0;
+  return Math.round((balanceCents * percent) / 100);
+}
 
 export type CampaignMode = "valor" | "desconto";
 

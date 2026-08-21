@@ -1,6 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.211.1** · Última migração: **0234**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.212.0** · Última migração: **0235**_
+
+> **FIN8.1c — DESCONTO POR PONTUALIDADE (v0.212.0, migração 0235).** Fecha os
+> quatro pedidos sobre as taxas da rede.
+>
+> Em **Taxas da rede**, cada taxa ganhou o campo *"Desconto se pagar em dia
+> (%)"*. Ele segue a mesma cascata: o padrão da rede vale, e uma unidade pode
+> ter acordo próprio.
+>
+> **Como você escolheu:** a conta **nasce cheia** e o abatimento entra na hora
+> de pagar. Em **Contas a pagar**, ao abrir a baixa de uma conta de taxa dentro
+> do prazo, aparece uma faixa verde com o desconto e o valor já vem descontado.
+> Marcar/desmarcar recalcula.
+>
+> - **O desconto é redução de despesa, não entrada de dinheiro.** A unidade não
+>   ganhou nada por pagar em dia — ela gastou menos, e a DRE mostra a despesa
+>   líquida.
+> - **A franqueadora também recebe menos**, e o lançamento dela cai junto. Sem
+>   isso, a receita da rede ficaria inflada no valor dos descontos concedidos.
+> - **A tela sugere; o banco decide.** Desconto acima do concedido é recusado.
+> - Incide sobre o **saldo**, não sobre o valor original: conta paga pela
+>   metade fora do prazo não ganha prêmio sobre a parte atrasada.
+> - Vale só para **contas de taxa da rede**. Conta de fornecedor tem desconto
+>   negociado caso a caso.
+>
+> **545 testes** (6 novos).
 
 > **Campanha vale para VÁRIAS taxas (v0.211.1, migração 0234).** Ao criar a
 > campanha, marque **todas as taxas** ou escolha **quantas quiser** na lista.

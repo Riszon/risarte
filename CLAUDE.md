@@ -1117,10 +1117,30 @@ taxa nova, inativar/excluir, e lançar campanhas por período.
 - `applyCampaign` no TS espelha `network_fee_for` no SQL (a tela precisa mostrar
   o efeito antes de salvar); os testes prendem os dois números.
 
-**Ordem:** 8.1 taxas e split ✅ → 8.1b catálogo e campanhas ✅ → **8.1c desconto
-por pontualidade** (mexe no pagamento em Contas a pagar; conta nasce cheia e o
-abatimento entra na baixa — decisão do dono) → **8.2 consolidação** (Resultado
-do Grupo com eliminação × Faturamento da Rede) → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
+**DESCONTO POR PONTUALIDADE (FIN8.1c, 0235).** Percentual por taxa, na mesma
+cascata. Forma escolhida pelo dono: **conta nasce cheia, abatimento entra na
+baixa** se paga até o vencimento (a alternativa era nascer com desconto e perdê-lo
+no atraso, espelhando o PPR+).
+
+- **É REDUÇÃO DE DESPESA, NÃO ENTRADA DE DINHEIRO:** crédito na própria conta de
+  despesa (`payable_discount`), então a DRE mostra a despesa líquida e a ponte
+  lucro × caixa continua fechando. Lançar como receita financeira faria a unidade
+  parecer ter ganhado algo por pagar em dia — ela apenas gastou menos.
+- **O outro lado cai junto** (`network_fee_discount`): a franqueadora reconheceu
+  a receita cheia; sem o contra-lançamento ela ficaria inflada no valor dos
+  descontos concedidos.
+- **Incide sobre o SALDO**, não sobre o valor original — conta paga pela metade
+  fora do prazo não ganha prêmio sobre a parte atrasada.
+- **A tela sugere; o banco decide** (`DISCOUNT_NOT_ALLOWED` acima do concedido).
+- **Mexe em fluxo que já roda em produção** (pagamento de conta): parâmetro novo
+  com **padrão zero**, e `refresh_payable_payment` só muda quando há desconto de
+  verdade. `paid + discount >= amount` é o que fecha a conta — sem isso, R$ 1.000
+  pago com R$ 900 + R$ 100 ficaria "parcial" para sempre.
+- Só para conta com `network_fee`: fornecedor tem desconto negociado caso a caso.
+
+**Ordem:** 8.1 taxas e split ✅ → 8.1b catálogo e campanhas ✅ → 8.1c desconto
+por pontualidade ✅ → **8.2 consolidação** (Resultado do Grupo com eliminação ×
+Faturamento da Rede) → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
 dia seguinte ao fechamento.

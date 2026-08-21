@@ -4,6 +4,7 @@ import {
   campaignCoversFee,
   campaignErrors,
   isCampaignLive,
+  punctualityDiscountCents,
   ruleErrors,
   simulateMonth,
   slugifyFeeKey,
@@ -30,6 +31,7 @@ const rule = (
   isOverride: false,
   note: "",
   campaignName: null,
+  punctualityDiscountPercent: 0,
 });
 
 describe("o valor de uma baixa", () => {
@@ -285,5 +287,52 @@ describe("quais taxas a campanha alcança", () => {
   it("uma taxa só continua funcionando", () => {
     expect(covers(["sistema"], "sistema")).toBe(true);
     expect(covers(["sistema"], "sdr")).toBe(false);
+  });
+});
+
+describe("desconto por pontualidade", () => {
+  const base = {
+    balanceCents: 100_000,
+    percent: 10,
+    dueDate: "2026-09-10",
+  };
+
+  it("paga antes do vencimento, ganha", () => {
+    expect(punctualityDiscountCents({ ...base, paidAt: "2026-09-05" })).toBe(
+      10_000
+    );
+  });
+
+  it("paga NO vencimento ainda ganha", () => {
+    expect(punctualityDiscountCents({ ...base, paidAt: "2026-09-10" })).toBe(
+      10_000
+    );
+  });
+
+  it("um dia depois, nao ganha", () => {
+    expect(punctualityDiscountCents({ ...base, paidAt: "2026-09-11" })).toBe(0);
+  });
+
+  it("sem percentual configurado, nao ha desconto", () => {
+    expect(
+      punctualityDiscountCents({ ...base, percent: 0, paidAt: "2026-09-01" })
+    ).toBe(0);
+  });
+
+  it("incide sobre o SALDO, nao sobre o valor original", () => {
+    // Conta de 1.000 com 600 ja pagos: o premio e sobre os 400 que faltam.
+    expect(
+      punctualityDiscountCents({
+        ...base,
+        balanceCents: 40_000,
+        paidAt: "2026-09-01",
+      })
+    ).toBe(4_000);
+  });
+
+  it("saldo zerado nao gera desconto", () => {
+    expect(
+      punctualityDiscountCents({ ...base, balanceCents: 0, paidAt: "2026-09-01" })
+    ).toBe(0);
   });
 });

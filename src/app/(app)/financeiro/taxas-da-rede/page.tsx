@@ -38,6 +38,7 @@ type FeeRow = {
   due_day: number;
   active: boolean;
   note: string | null;
+  punctuality_discount_percent: number;
 };
 
 /**
@@ -87,7 +88,7 @@ export default async function NetworkFeesPage(
       .returns<TypeRow[]>(),
     supabase
       .from("network_fees")
-      .select("clinic_id, fee, kind, percent, amount_cents, due_day, active, note")
+      .select("clinic_id, fee, kind, percent, amount_cents, due_day, active, note, punctuality_discount_percent")
       .returns<FeeRow[]>(),
     supabase
       .from("clinics")
@@ -141,6 +142,7 @@ export default async function NetworkFeesPage(
     isOverride: !!row?.clinic_id,
     note: row?.note ?? "",
     campaignName: null,
+    punctualityDiscountPercent: Number(row?.punctuality_discount_percent ?? 0),
   });
 
   const network = types.map((t) =>

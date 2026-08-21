@@ -133,6 +133,7 @@ export async function saveNetworkFee(input: {
   dueDay: number;
   active: boolean;
   note: string;
+  punctualityDiscountPercent: number;
 }): Promise<Result> {
   const session = await requireNetworkAdmin();
   if (!session) return { ok: false, error: DENIED };
@@ -155,6 +156,7 @@ export async function saveNetworkFee(input: {
       amount_cents: input.kind === "fixed" ? Math.round(input.amountCents) : 0,
       due_day: input.dueDay,
       active: input.active,
+      punctuality_discount_percent: Math.max(0, Math.min(100, input.punctualityDiscountPercent)),
       note: input.note.trim() || null,
       updated_at: new Date().toISOString(),
       updated_by: session.userId,

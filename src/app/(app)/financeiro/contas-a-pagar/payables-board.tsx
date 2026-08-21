@@ -114,6 +114,7 @@ export function PayablesBoard({
   costCenters,
   rules,
   recurrences,
+  discounts,
   today,
   canManage,
   canConfigureNetworkRules,
@@ -129,6 +130,8 @@ export function PayablesBoard({
   costCenters: { id: string; name: string }[];
   rules: ApprovalRule[];
   recurrences: RecurrenceRow[];
+  /** Abatimento por pagar em dia, por conta. Vazio = sem desconto. */
+  discounts: Record<string, number>;
   today: string;
   canManage: boolean;
   canConfigureNetworkRules: boolean;
@@ -176,6 +179,9 @@ export function PayablesBoard({
   const [payMethod, setPayMethod] = useState("pix");
   const [payReference, setPayReference] = useState("");
   const [payNotes, setPayNotes] = useState("");
+  // Abatimento aplicado nesta baixa. A tela sugere; a régua que vale é a do
+  // banco, que recusa desconto acima do concedido.
+  const [payDiscount, setPayDiscount] = useState(0);
 
   const period = useMemo(
     () => resolvePeriod(preset, today, { start: customStart, end: customEnd }),
@@ -275,7 +281,12 @@ export function PayablesBoard({
     const v = allViews.find((x) => x.id === id);
     if (!v) return;
     setPayingId(id);
-    setPayAmount((v.balanceCents / 100).toFixed(2).replace(".", ","));
+    // A conta nasce cheia (decisão do dono); o abatimento entra aqui, na baixa.
+    const disc = discounts[id] ?? 0;
+    setPayDiscount(disc);
+    setPayAmount(
+      (Math.max(0, v.balanceCents - disc) / 100).toFixed(2).replace(".", ",")
+    );
     setPayFee("0,00");
     setPayInterest("0,00");
     setPaidAt(today);
@@ -292,6 +303,7 @@ export function PayablesBoard({
         amountCents: payCents,
         feeCents: parseBRLToCents(payFee) ?? 0,
         interestCents: parseBRLToCents(payInterest) ?? 0,
+        discountCents: payDiscount,
         paidAt,
         paymentMethod: payMethod,
         reference: payReference,
@@ -897,6 +909,39 @@ export function PayablesBoard({
                 {paying.description} · vencimento {fmtDate(paying.dueDate)} ·
                 saldo <strong>{formatBRL(paying.balanceCents)}</strong>
               </p>
+
+              {payDiscount > 0 && (
+                <label className="flex items-start gap-2 rounded-lg border border-emerald-600/40 bg-emerald-50 p-2 text-xs text-emerald-900">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={payDiscount > 0}
+                    onChange={(e) => {
+                      const disc = e.target.checked
+                        ? (discounts[paying.id] ?? 0)
+                        : 0;
+                      setPayDiscount(disc);
+                      setPayAmount(
+                        (Math.max(0, paying.balanceCents - disc) / 100)
+                          .toFixed(2)
+                          .replace(".", ",")
+                      );
+                    }}
+                  />
+                  <span>
+                    <strong>
+                      Desconto por pontualidade: {formatBRL(payDiscount)}
+                    </strong>
+                    <br />
+                    Vale porque o pagamento está sendo lançado até o vencimento.
+                    Quitar a conta pede{" "}
+                    <strong>
+                      {formatBRL(paying.balanceCents - payDiscount)}
+                    </strong>{" "}
+                    em dinheiro — o resto some como abatimento.
+                  </span>
+                </label>
+              )}
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="block">
                   <Label className="text-[11px]">Valor pago (R$)</Label>

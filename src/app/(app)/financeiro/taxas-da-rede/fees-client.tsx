@@ -102,6 +102,9 @@ function RuleRow({
   const [dueDay, setDueDay] = useState(String(rule.dueDay));
   const [active, setActive] = useState(rule.active);
   const [note, setNote] = useState(rule.note);
+  const [punctuality, setPunctuality] = useState(
+    String(rule.punctualityDiscountPercent).replace(".", ",")
+  );
 
   if (!editing) {
     return (
@@ -135,6 +138,11 @@ function RuleRow({
           </span>
           <span className="w-24 text-right text-xs text-muted-foreground">
             vence dia {rule.dueDay}
+          </span>
+          <span className="w-28 text-right text-xs text-muted-foreground">
+            {rule.punctualityDiscountPercent > 0
+              ? `−${pct(rule.punctualityDiscountPercent)} em dia`
+              : ""}
           </span>
           {canEdit && (
             <>
@@ -194,6 +202,14 @@ function RuleRow({
             onChange={(e) => setDueDay(e.target.value)}
           />
         </label>
+        <label className="block">
+          <Label className="text-[11px]">Desconto se pagar em dia (%)</Label>
+          <Input
+            className="h-8 w-28"
+            value={punctuality}
+            onChange={(e) => setPunctuality(e.target.value)}
+          />
+        </label>
         <label className="flex items-center gap-1 pb-1 text-xs">
           <input
             type="checkbox"
@@ -231,6 +247,7 @@ function RuleRow({
               dueDay: Number(dueDay) || 10,
               active,
               note,
+              punctualityDiscountPercent: parseNumber(punctuality),
             });
             setEditing(false);
           }}
@@ -784,6 +801,8 @@ export function NetworkFeesView({
                       dueDay: next.dueDay,
                       active: next.active,
                       note: next.note,
+                      punctualityDiscountPercent:
+                        next.punctualityDiscountPercent,
                     }),
                   () => "Taxa salva."
                 )
@@ -984,6 +1003,8 @@ export function NetworkFeesView({
                               dueDay: next.dueDay,
                               active: next.active,
                               note: next.note,
+                              punctualityDiscountPercent:
+                                next.punctualityDiscountPercent,
                             }),
                           () => "Padrão da rede salvo."
                         )

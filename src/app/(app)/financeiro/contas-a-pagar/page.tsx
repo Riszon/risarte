@@ -41,6 +41,7 @@ export default async function PayablesPage() {
     { data: centerRows },
     { data: ruleRows },
     { data: recurrenceRows },
+    { data: discountRows },
   ] = await Promise.all([
     supabase
       .from("payables")
@@ -81,6 +82,10 @@ export default async function PayablesPage() {
       )
       .eq("clinic_id", clinicId)
       .order("description"),
+    // FIN8.1c — o abatimento por pagar em dia, conta a conta. Vem do banco
+    // porque o percentual passa pela cascata e pelas campanhas: recalcular na
+    // tela seria uma segunda régua para o mesmo número.
+    supabase.rpc("payable_discounts", { p_clinic_id: clinicId }),
   ]);
 
   type Embed = { name: string } | { name: string }[] | null;
@@ -246,6 +251,16 @@ export default async function PayablesPage() {
         costCenters={costCenters}
         rules={rules}
         recurrences={recurrences}
+        discounts={Object.fromEntries(
+          (
+            (discountRows ?? []) as {
+              payable_id: string;
+              discount_cents: number;
+            }[]
+          )
+            .filter((d) => Number(d.discount_cents ?? 0) > 0)
+            .map((d) => [d.payable_id, Number(d.discount_cents)])
+        )}
         today={today}
         canManage={canManage}
         canConfigureNetworkRules={canConfigureNetworkRules}
