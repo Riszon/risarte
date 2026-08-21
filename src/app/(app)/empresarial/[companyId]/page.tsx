@@ -1111,6 +1111,7 @@ export default async function CompanyDetailPage(props: {
             companyStatus={company.status}
             billings={financeiro.billings}
             asaasConfigured={isAsaasConfigured()}
+            isAdminMaster={session.isAdminMaster}
           />
         </div>
       )}

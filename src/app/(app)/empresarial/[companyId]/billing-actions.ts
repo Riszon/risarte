@@ -355,7 +355,9 @@ export async function cancelBilling(
     entityId: billingId,
     details: { cancelled: true },
   });
+  // A empresa pode sair da suspensão ao acabar o atraso — a lista mostra isso.
   revalidatePath(`/empresarial/${companyId}`);
+  revalidatePath("/empresarial");
   return { ok: true };
 }
 
@@ -384,7 +386,39 @@ export async function markBillingPaid(
     entityId: billingId,
     details: { paid: true },
   });
+  // Pagar pode tirar a empresa da suspensão por inadimplência.
   revalidatePath(`/empresarial/${companyId}`);
+  revalidatePath("/empresarial");
+  return { ok: true };
+}
+
+/**
+ * Exclui a cobrança de vez (Admin Master). Diferente de cancelar, que fica no
+ * histórico: aqui a linha é apagada — serve para limpar cobranças de TESTE
+ * antes de a empresa receber um relatório. O banco registra em audit_logs antes
+ * de apagar e reavalia a suspensão da empresa.
+ */
+export async function deleteBilling(
+  companyId: string,
+  billingId: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) {
+    return { ok: false, error: "Só o Admin Master pode excluir uma cobrança." };
+  }
+  const db = await empresarialDb();
+  const { error } = await db.rpc("delete_billing", {
+    p_billing_id: billingId,
+  });
+  if (error) {
+    console.error("deleteBilling failed:", error.message);
+    return {
+      ok: false,
+      error: error.hint ?? "Não foi possível excluir a cobrança.",
+    };
+  }
+  revalidatePath(`/empresarial/${companyId}`);
+  revalidatePath("/empresarial");
   return { ok: true };
 }
 

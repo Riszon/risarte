@@ -13,8 +13,10 @@ import {
   type BillingStatus,
   type BillingType,
 } from "@/lib/empresarial/constants";
+import { Trash2 } from "lucide-react";
 import {
   cancelBilling,
+  deleteBilling,
   generateBilling,
   markBillingPaid,
   previewBilling,
@@ -68,11 +70,14 @@ export function BillingTab({
   companyStatus,
   billings,
   asaasConfigured,
+  isAdminMaster = false,
 }: {
   companyId: string;
   companyStatus: string;
   billings: BillingView[];
   asaasConfigured: boolean;
+  /** Só o Admin Master pode EXCLUIR uma cobrança (limpeza de teste). */
+  isAdminMaster?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -218,9 +223,10 @@ export function BillingTab({
                       ? `${formatBRL(b.splitRisarteCents)} / ${formatBRL(b.splitRislifeCents ?? 0)}`
                       : "—"}
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2">
+                    <span className="flex flex-wrap items-center justify-end gap-1">
                     {b.status !== "PAID" && b.status !== "CANCELLED" && (
-                      <span className="flex flex-wrap justify-end gap-1">
+                      <>
                         <Button
                           variant="outline"
                           size="sm"
@@ -237,8 +243,12 @@ export function BillingTab({
                         </Button>
                         <EditBillingDialog companyId={companyId} billing={b} />
                         <CancelBillingDialog companyId={companyId} billing={b} />
-                      </span>
+                      </>
                     )}
+                    {isAdminMaster && (
+                      <DeleteBillingDialog companyId={companyId} billing={b} />
+                    )}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -423,6 +433,83 @@ function EditBillingDialog({
             </Button>
           </div>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Excluir a cobrança de vez (Admin Master). Diferente de cancelar, que fica no
+ * histórico — usar para limpar cobranças de TESTE.
+ */
+function DeleteBillingDialog({
+  companyId,
+  billing,
+}: {
+  companyId: string;
+  billing: BillingView;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 px-2 text-xs text-destructive"
+        title="Excluir a cobrança (Admin Master)"
+        onClick={() => setOpen(true)}
+      >
+        <Trash2 className="size-3.5" />
+      </Button>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Excluir esta cobrança?</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <p>
+            {BILLING_TYPE_LABELS[billing.billingType]} ·{" "}
+            <strong>{formatBRL(billing.totalCents)}</strong> · vencimento{" "}
+            {dateBR(billing.dueDate)}
+          </p>
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+            A cobrança é <strong>apagada</strong> e não aparece em relatório
+            nenhum. Para manter no histórico, use <strong>Cancelar</strong> em vez
+            de excluir.
+            {billing.status === "PAID" && (
+              <span className="mt-1 block font-medium">
+                Atenção: esta cobrança está PAGA — o registro do split será
+                perdido junto.
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            A exclusão fica registrada na auditoria (quem, quando e o valor).
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isPending}
+              onClick={() =>
+                startTransition(async () => {
+                  const r = await deleteBilling(companyId, billing.id);
+                  if (r.ok) {
+                    toast.success("Cobrança excluída.");
+                    setOpen(false);
+                    router.refresh();
+                  } else toast.error(r.error ?? "Erro.");
+                })
+              }
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
