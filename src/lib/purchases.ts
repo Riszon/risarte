@@ -149,3 +149,114 @@ const STATUS_LABEL: Record<RequestStatus, string> = {
 export function statusLabel(status: RequestStatus): string {
   return STATUS_LABEL[status] ?? status;
 }
+
+// ---------------------------------------------------------------------------
+// C2 — A MESA DE NEGOCIAÇÃO DA FRANQUEADORA
+// ---------------------------------------------------------------------------
+// A rodada é da rede; o pedido é da unidade. Aqui mora só o *item → fornecedor
+// → preço*; os pedidos vêm no C3.
+
+export type RoundStatus = "aberta" | "cotando" | "fechada" | "cancelada";
+
+export function roundStatusLabel(status: RoundStatus): string {
+  const labels: Record<RoundStatus, string> = {
+    aberta: "Aberta",
+    cotando: "Em cotação",
+    fechada: "Fechada",
+    cancelada: "Cancelada",
+  };
+  return labels[status] ?? status;
+}
+
+export type QuotePrice = {
+  supplierId: string;
+  /** `null` = NÃO COTOU. Nunca zero: zero é um preço e ganharia a comparação. */
+  unitCents: number | null;
+};
+
+/**
+ * A melhor cotação de um item.
+ *
+ * Quem não cotou não concorre. Tratar "em branco" como zero faria a mesa premiar
+ * justamente o fornecedor que não respondeu — e o pedido nasceria sem preço.
+ */
+export function bestQuote(quotes: QuotePrice[]): QuotePrice | null {
+  const valid = quotes.filter(
+    (q): q is QuotePrice & { unitCents: number } => q.unitCents !== null
+  );
+  if (valid.length === 0) return null;
+  return valid.reduce((best, q) => (q.unitCents < best.unitCents! ? q : best));
+}
+
+export type Share = { key: string; requested: number };
+
+/**
+ * O rateio de uma quantidade entre as unidades que pediram.
+ *
+ * Proporcional ao pedido, truncado, e **a sobra vai para quem mais pediu** —
+ * mesma lei da última parcela de venda e da última depreciação. Sem ela,
+ * comprar 45 do que 47 foi pedido deixaria fração espalhada e a soma das partes
+ * não bateria com o total comprado.
+ */
+export function allocate(total: number, shares: Share[]): Map<string, number> {
+  const result = new Map<string, number>();
+  const requestedTotal = shares.reduce((s, x) => s + x.requested, 0);
+  if (requestedTotal <= 0 || total <= 0) {
+    for (const s of shares) result.set(s.key, 0);
+    return result;
+  }
+
+  const ordered = [...shares].sort(
+    (a, b) => b.requested - a.requested || a.key.localeCompare(b.key)
+  );
+  let given = 0;
+  for (const s of ordered) {
+    const base = Math.floor((total * s.requested) / requestedTotal);
+    result.set(s.key, base);
+    given += base;
+  }
+  // A sobra dos arredondamentos, para quem mais pediu.
+  if (ordered.length > 0) {
+    const first = ordered[0].key;
+    result.set(first, (result.get(first) ?? 0) + (total - given));
+  }
+  return result;
+}
+
+export type RoundItemSummary = {
+  estimatedTotalCents: number;
+  awardedTotalCents: number;
+  awarded: boolean;
+};
+
+export type RoundSavings = {
+  estimatedCents: number;
+  awardedCents: number;
+  /** Positivo = a negociação economizou. */
+  savedCents: number;
+  percent: number | null;
+  itemsAwarded: number;
+  itemsPending: number;
+};
+
+/**
+ * Quanto a negociação conjunta economizou — o número que prova (ou derruba) a
+ * decisão de centralizar as compras.
+ *
+ * Só entram itens JÁ NEGOCIADOS: comparar previsão de item sem cotação contra
+ * zero mostraria uma economia de 100% que não existe.
+ */
+export function roundSavings(items: RoundItemSummary[]): RoundSavings {
+  const awarded = items.filter((i) => i.awarded);
+  const estimatedCents = awarded.reduce((s, i) => s + i.estimatedTotalCents, 0);
+  const awardedCents = awarded.reduce((s, i) => s + i.awardedTotalCents, 0);
+  const savedCents = estimatedCents - awardedCents;
+  return {
+    estimatedCents,
+    awardedCents,
+    savedCents,
+    percent: estimatedCents > 0 ? savedCents / estimatedCents : null,
+    itemsAwarded: awarded.length,
+    itemsPending: items.length - awarded.length,
+  };
+}

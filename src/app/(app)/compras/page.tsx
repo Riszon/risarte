@@ -3,10 +3,13 @@ import { redirect } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import {
   canManagePurchaseRequests,
   canViewPurchases,
+  isPurchaser,
 } from "@/lib/purchases-access";
+import { canConfigureFinanceNetwork } from "@/lib/finance/access";
 import { todayInBrazil } from "@/lib/dates";
 import type {
   PurchaseRequest,
@@ -133,6 +136,14 @@ export default async function PurchasesPage() {
           <strong>A negociação é da rede; a compra é sua</strong> — cada unidade
           aprova, é faturada e paga a sua parte.
         </p>
+        {(isPurchaser(session) || canConfigureFinanceNetwork(session)) && (
+          <Link
+            href="/compras/rodadas"
+            className="mt-2 inline-block text-sm text-primary underline"
+          >
+            Ir para a mesa de negociação da Franqueadora →
+          </Link>
+        )}
       </div>
 
       <PurchasesView

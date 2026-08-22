@@ -789,7 +789,38 @@ carrega valor.
   escolhida na hora: obrigar tudo a virar item encheria o catálogo de coisa que
   nunca terá saldo.
 
-**Ordem:** C1 ✅ → **C2** (consolidado e cotação) → C3 (aprovação e pedido) →
+**C2 — A MESA DE NEGOCIAÇÃO (0240).** `purchase_rounds` +
+`purchase_round_items` + `purchase_quotes` + `purchase_quote_items`, código
+**`RC-`**. Só o **comprador**, o Admin e o Financeiro da Franqueadora entram: a
+unidade vê a própria parte quando a rodada fecha, e mostrar a cotação dos
+fornecedores ao franqueado seria entregar a negociação da rede para o outro lado
+dela.
+
+- **EM BRANCO NÃO É ZERO.** Fornecedor que não cotou fica com preço **nulo** e
+  não concorre; **zero é um preço de verdade** (bonificação) e concorre.
+  Confundir os dois faria a mesa premiar justamente quem não respondeu — e o
+  pedido nasceria sem preço, por isso `award_round_item` **recusa** escolher
+  quem não cotou.
+- **Requisição entra em UMA rodada** (`REQUEST_NOT_AVAILABLE`): negociar a
+  mesma necessidade duas vezes faria a unidade receber o item em dobro.
+- **Item sem cotação nenhuma NÃO trava a rodada** — volta como não negociado e
+  a unidade resolve local, caminho já medido pelo `is_local` do C1. Travar a
+  mesa por causa de uma gaze a faria parar de existir.
+- **Fechar sem nada escolhido é recusado** (`NOTHING_AWARDED`): isso não é
+  fechar, é cancelar.
+- **A franqueadora pode mudar a quantidade** (decisão 3 do dono), com motivo
+  gravado ao lado do pedido original — a unidade vê a mudança ao aprovar no C3,
+  porque é ela quem paga.
+- **Rateio proporcional ao pedido, sobra para quem mais pediu** — mesma lei da
+  última parcela de venda e da última depreciação. Sem ela, comprar 45 do que 47
+  foi pedido deixaria fração espalhada e a soma das partes não bateria com o
+  total comprado. A regra está em `allocate()` (TS, com teste) e espelhada no
+  `round_allocation` (SQL).
+- **A economia da rodada só conta item JÁ NEGOCIADO:** comparar previsão de item
+  sem cotação contra zero mostraria 100% de economia que não existe. E economia
+  **negativa aparece** — esconder faria o indicador só provar o que se quer.
+
+**Ordem:** C1 ✅ → C2 ✅ → **C3** (aprovação e pedido por unidade/fornecedor) →
 C4 (dashboard, com *economia da negociação* e *compras por fora*).
 
 **O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor

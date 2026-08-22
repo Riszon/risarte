@@ -1,7 +1,32 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.215.0** · Última migração: **0239**_
+_Atualizado em: 21/08/2026 · Versão do sistema: **0.216.0** · Última migração: **0240**_
 
+> **COMPRAS C2 — A MESA DE NEGOCIAÇÃO (v0.216.0, migração 0240).** Em Compras ›
+> mesa da Franqueadora (`/compras/rodadas`), só para o Comprador, o Admin e o
+> Financeiro da Franqueadora.
+>
+> O comprador junta as listas enviadas numa **rodada** e vê tudo **consolidado
+> por item** — *"Resina A2 — 47 tubos, de 6 unidades"* — com a previsão de custo
+> do C1 ao lado. Registra a **cotação de cada fornecedor** (preço por item,
+> prazo, condição) e escolhe de quem comprar **cada item**, podendo dividir.
+>
+> - **Em branco não é zero.** Fornecedor que não cotou fica em branco e **não
+>   concorre**; zero é um preço de verdade (bonificação) e concorre. Tratar os
+>   dois igual faria a mesa premiar quem não respondeu.
+> - **O troféu marca o melhor preço, mas quem decide é você** — prazo e condição
+>   às vezes valem mais que centavos.
+> - **Item sem cotação nenhuma não trava a rodada:** volta para a unidade como
+>   não negociado, e ela resolve local (que já é medido desde o C1).
+> - **A franqueadora pode mudar a quantidade**, com o motivo registrado — a
+>   unidade vê a mudança ao aprovar no C3, porque é ela quem paga.
+> - **O rateio entre as unidades é proporcional ao pedido**, e a sobra dos
+>   arredondamentos vai para quem mais pediu: a soma das partes bate com o total
+>   comprado.
+> - **A economia da rodada** (previsto × negociado) já aparece no topo — é o
+>   número que prova ou derruba a decisão de centralizar.
+>
+> **597 testes** (14 novos). **Próximo: C3 — a unidade aprova e o pedido nasce.**
 > **COMPRAS C1 — A LISTA DA UNIDADE (v0.215.0, migrações 0238 e 0239).** Novo
 > módulo, no menu lateral ao lado do Estoque. Retomada do plano congelado em
 > 12/08 (`docs/COMPRAS.md`), agora que o Financeiro fechou.
