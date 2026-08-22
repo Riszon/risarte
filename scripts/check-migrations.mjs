@@ -16,6 +16,11 @@
 //
 // Uso:  node scripts/check-migrations.mjs [0233]
 // Sem argumento, confere a migração de número mais alto.
+//
+// CASO CONHECIDO E DELIBERADO: a 0176 (`conclude_attendance_partial`) mantém de
+// propósito a assinatura antiga de 3 argumentos ao lado da nova de 4, para não
+// quebrar chamadas em voo — está escrito na própria migração. Uma varredura
+// geral acusa essa; o uso normal (conferir UMA migração nova) não encosta nela.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,7 +40,12 @@ if (!target) {
 const FN =
   /create\s+(?:or\s+replace\s+)?function\s+public\.(\w+)\s*\(([\s\S]*?)\)\s*returns\s+([\s\S]*?)\s+language\s+(\w+)/gi;
 
-const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
+// Comentário sai ANTES de achatar o espaço: uma migração que só acrescenta um
+// `--` explicando um parâmetro não mudou assinatura nenhuma, e comparar com o
+// comentário dentro acusaria as quatro migrações que apenas se documentaram
+// melhor.
+const norm = (s) =>
+  s.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 
 /** Última definição conhecida de cada função, antes da migração alvo. */
 const known = new Map();
@@ -79,6 +89,21 @@ for (const m of sql.matchAll(FN)) {
     );
   }
 
+  // Regra 4 — junção por VÍRGULA seguida de LEFT/RIGHT JOIN no mesmo FROM.
+  // O join binda mais forte que a vírgula: `from a, b left join c on c.x = a.y`
+  // faz o ON enxergar só `b`, e a referência a `a` é recusada. Já aconteceu
+  // duas vezes (0236 e 0237) — as duas achadas na revisão, por sorte.
+  {
+    const body = bodyOf(sql, m.index);
+    if (commaThenJoin(body)) {
+      problems.push(
+        `${name}: tem junção por vírgula seguida de LEFT/RIGHT JOIN no mesmo ` +
+          `FROM. O ON não enxerga a tabela que veio antes da vírgula — passe a ` +
+          `condição para o WHERE ou use subconsulta.`
+      );
+    }
+  }
+
   // Regra 2 — colunas declaradas × colunas selecionadas.
   if (lang.toLowerCase() === "sql" && /^table\s*\(/i.test(norm(returns))) {
     const declared = countColumns(returns);
@@ -90,6 +115,57 @@ for (const m of sql.matchAll(FN)) {
       );
     }
   }
+}
+
+/**
+ * Existe `from ... , ... left join` dentro do mesmo FROM?
+ *
+ * Procura, em cada `from`, uma vírgula de primeiro nível antes de um
+ * LEFT/RIGHT JOIN, parando no `where`/`group`/`order` que fecha a cláusula.
+ * Vírgula DEPOIS do join é outra coisa e não interessa aqui.
+ */
+function commaThenJoin(body) {
+  const clean = body.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ");
+  const re = /\bfrom\b/gi;
+  let m;
+  while ((m = re.exec(clean))) {
+    // Varre UMA passada respeitando parênteses: o `where` que fecha a cláusula
+    // é o do MESMO nível. Sem isso, o `where` de dentro de um lateral (ou de um
+    // `filter (where ...)`) cortaria o texto no meio e o resto viraria ruído —
+    // foi o que fez a primeira versão desta regra acusar código correto.
+    let depth = 0;
+    let comma = -1;
+    for (let i = m.index + 4; i < clean.length; i++) {
+      const ch = clean[i];
+      if (ch === "(") depth++;
+      else if (ch === ")") {
+        if (depth === 0) break; // saiu da subconsulta que continha este FROM
+        depth--;
+      } else if (depth === 0) {
+        // Ponto e vírgula fecha o comando: em corpo plpgsql, continuar depois
+        // dele faz a varredura casar vírgula de um comando com JOIN de outro.
+        if (ch === ";") break;
+        if (ch === "," && comma < 0) comma = i;
+        // `union` fecha a cláusula tanto quanto `where`: sem ele, um `from cte`
+        // seco continuaria lendo o SELECT seguinte e casaria a vírgula da lista
+        // de colunas dele com um JOIN mais adiante.
+        const ahead = clean.slice(i, i + 12).toLowerCase();
+        if (
+          /^\b(where|group by|order|having|limit|union|intersect|except)/.test(
+            ahead
+          )
+        ) {
+          break;
+        }
+        if (comma >= 0 && /^(left|right)\s/.test(ahead)) {
+          if (/^(left|right)\s+(outer\s+)?join\b/i.test(clean.slice(i))) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 /** Colunas de um `returns table (a text, b bigint)` — vírgulas de topo. */

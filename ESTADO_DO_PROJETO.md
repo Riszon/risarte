@@ -1,6 +1,30 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.213.0** · Última migração: **0236**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.214.0** · Última migração: **0237**_
+
+> **FIN8.3 — O PAINEL DA REDE (v0.214.0, migração 0237). O FINANCEIRO FECHA
+> AQUI.** Em Financeiro › Painel da rede, só para a Franqueadora.
+>
+> A tela responde *"em qual unidade eu entro primeiro?"* — o Consolidado
+> responde outra coisa (quanto a rede deu).
+>
+> - **Semáforo por unidade.** Vermelho é só o que já dói: caixa negativo
+>   previsto ou taxa da rede vencida. Amarelo é o que ainda dá para resolver
+>   (orçamento estourando, atrás do ponto de equilíbrio, atraso alto, mês
+>   anterior não fechado). Se tudo fosse vermelho, o painel deixaria de ordenar
+>   prioridade — e a lista já vem ordenada por quem está pior.
+> - **Cobrança das taxas**, por unidade: apurado, recebido, em aberto e
+>   **vencido**. Fecha o ciclo do split — a franqueadora cobrava e não tinha
+>   onde olhar quem pagou.
+> - **Faturamento da rede mês a mês**, últimos 12 meses, com variação e média
+>   por unidade.
+>
+> **Os alertas vêm da última apuração** (o sistema roda às 9h). O painel lê o
+> que o motor já apurou em vez de recalcular: recalcular poderia mostrar número
+> diferente do aviso que a unidade recebeu, e painel que discorda do aviso é
+> confusão. Tem botão para **apurar na hora**.
+>
+> **568 testes** (14 novos).
 
 > **FIN8.2 — CONSOLIDAÇÃO (v0.213.0, migração 0236).** Em Financeiro ›
 > Consolidado, **só para a Franqueadora**.

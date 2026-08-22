@@ -1160,8 +1160,24 @@ no atraso, espelhando o PPR+).
   FIN0 sem interface — sem ela o grupo mostraria só a franqueadora para sempre e
   ninguém saberia por quê. **As três unidades estão como `franchised`.**
 
-**Ordem:** 8.1 taxas e split ✅ → 8.1b catálogo e campanhas ✅ → 8.1c desconto
-por pontualidade ✅ → 8.2 consolidação ✅ → **8.3 painel da rede**. A trava do 7.4 **não pode valer para pagamento e recebimento**:
+**PAINEL DA REDE (FIN8.3, 0237).** Onde os alertas da rede moram desde que ficou
+decidido, no FIN7.3, que a franqueadora não entra na lista do sino.
+
+- **O painel LÊ o que o motor de alertas já apurou**, não recalcula. Recalcular
+  por unidade a cada abertura refaria a projeção diária de caixa — e poderia
+  **divergir do aviso que a unidade recebeu**. Painel que discorda do aviso é
+  confusão. Consequência assumida: mostra o retrato da última apuração, a tela
+  diz isso, e há botão para apurar na hora.
+- **Vermelho é só o que já dói** (caixa negativo previsto, taxa vencida);
+  amarelo é o que ainda dá para resolver. Se tudo fosse vermelho o painel
+  deixaria de ordenar prioridade — e a lista já vem ordenada por quem está pior.
+- **Mês anterior não fechado é amarelo, não vermelho:** é processo atrasado, não
+  dinheiro faltando.
+- **Cobrança das taxas fecha o ciclo do 8.1** — a franqueadora cobrava e não
+  tinha onde olhar quem pagou. **"Em aberto" desconta o abatimento por
+  pontualidade:** cobrá-lo seria cobrar o que a própria rede concedeu.
+
+**FIN8 fechado. O MÓDULO FINANCEIRO ESTÁ COMPLETO** (FIN0 → FIN8). A trava do 7.4 **não pode valer para pagamento e recebimento**:
 pagar hoje uma conta de janeiro não muda o resultado de janeiro (desde a 0226
 essas linhas nem entram na DRE), e travá-las quebraria o trabalho da recepção no
 dia seguinte ao fechamento.

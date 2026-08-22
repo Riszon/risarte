@@ -10,6 +10,7 @@ import {
   BookOpen,
   CreditCard,
   Landmark,
+  LayoutDashboard,
   Lock,
   Network,
   Receipt,
@@ -38,6 +39,12 @@ const TABS = [
   { href: "/financeiro/fechamento", label: "Fechamento", icon: Lock },
   // FIN8.1: o que a rede cobra da unidade — a referência do split.
   { href: "/financeiro/taxas-da-rede", label: "Taxas da rede", icon: Network },
+  // FIN8.3: em qual unidade entrar primeiro. Só a Franqueadora.
+  {
+    href: "/financeiro/painel-da-rede",
+    label: "Painel da rede",
+    icon: LayoutDashboard,
+  },
   // FIN8.2: o resultado do grupo, e a rede lado a lado. Só a Franqueadora.
   { href: "/financeiro/consolidado", label: "Consolidado", icon: Building2 },
   { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
