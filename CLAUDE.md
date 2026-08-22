@@ -747,14 +747,50 @@ prateleira.
 automática → **E4** ✅ compra + razão → **E5** ✅ inventário, reposição e excesso.
 **MÓDULO ESTOQUE COMPLETO** — mais a **leitura do XML da NF-e** (0223).
 
-**MÓDULO COMPRAS — plano aprovado e CONGELADO** em `docs/COMPRAS.md` (12/08/2026).
-Retomar **depois de fechar o Financeiro** (FIN6 → FIN7 → FIN8). A regra que
-organiza o módulo: **a negociação é da rede, o dinheiro é da unidade** — a
-franqueadora consolida e negocia por todas, mas cada unidade aprova, é faturada,
-paga e recebe a sua parte. Etapas C1 (necessidade + previsão pelo histórico) →
-C2 (consolidado e cotação) → C3 (aprovação e pedido) → C4 (dashboard, com
-*economia da negociação* e *compras por fora* como indicadores). **Três decisões
-seguem em aberto** — ler o documento antes de começar.
+**MÓDULO COMPRAS — em construção** (plano em `docs/COMPRAS.md`, 12/08/2026;
+descongelado ao fechar o FIN8). A regra que organiza tudo: **a negociação é da
+rede, o dinheiro é da unidade** — a franqueadora consolida e negocia por todas,
+mas cada unidade aprova, é faturada, paga e recebe a sua parte. Por isso o
+**pedido** (por unidade e por fornecedor), e não a cotação, é o objeto que
+carrega valor.
+
+**AS TRÊS DECISÕES, RESOLVIDAS (17/08/2026):**
+
+- **Papel novo `purchaser`** (Comprador da Franqueadora), não o Financeiro
+  acumulando: **quem compra não é quem paga**, e separar as duas é controle
+  interno básico.
+- **Compra local PERMITIDA e marcada** (`is_local`). Proibir não impede a
+  compra — faz ela sair do sistema, e aí some do estoque, do custo e do
+  dashboard. Marcada, vira **vazamento medido**, que é o único que dá para
+  reduzir.
+- **A franqueadora pode alterar quantidades, com a mudança VISÍVEL** para a
+  unidade aprovar — quem paga é ela. (Vale a partir do C2.)
+
+**C1 — A NECESSIDADE (0238 + 0239).** `purchase_requests` +
+`purchase_request_items`, código **`PC-`**.
+
+- **A 0238 é só o papel**, separada de propósito: o Postgres não deixa
+  adicionar e usar um valor de enum na mesma transação (mesma razão da 0184).
+  **Rodar 0238 antes da 0239.**
+- **A lista vem da `replenishment_list()` da E5** — quem decide o que falta
+  continua sendo o Estoque; uma segunda régua aqui divergiria dele.
+- **PREVISÃO EM TRÊS DEGRAUS, com a origem viajando junto:** última compra
+  desta unidade → última compra da rede → custo médio. **Mostrar a origem do
+  número faz parte do número** (mesma regra do repasse por nível e do custo do
+  kit). Previsão com mais de 6 meses aparece marcada.
+- **O preço é CONGELADO na linha.** É contra ele que a economia da negociação
+  vai ser medida no C4; se ele se recalculasse, a economia mudaria de valor a
+  cada abertura de tela.
+- **Item sem preço NÃO impede o envio:** a franqueadora vai cotar de qualquer
+  jeito, e exigir previsão travaria a primeira compra de um item novo.
+- **Rascunho é da unidade** — a franqueadora só enxerga a partir de `enviada`,
+  senão o gerente perde a liberdade de rascunhar.
+- **Linha livre** (sem `item_id`) para o que não se estoca, com conta de despesa
+  escolhida na hora: obrigar tudo a virar item encheria o catálogo de coisa que
+  nunca terá saldo.
+
+**Ordem:** C1 ✅ → **C2** (consolidado e cotação) → C3 (aprovação e pedido) →
+C4 (dashboard, com *economia da negociação* e *compras por fora*).
 
 **O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor
 escreve `RESINA COMP Z350XT A2 4G 3M`; no cadastro está `Resina composta A2`.

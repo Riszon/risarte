@@ -1,6 +1,38 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/08/2026 · Versão do sistema: **0.214.0** · Última migração: **0237**_
+_Atualizado em: 17/08/2026 · Versão do sistema: **0.215.0** · Última migração: **0239**_
+
+> **COMPRAS C1 — A LISTA DA UNIDADE (v0.215.0, migrações 0238 e 0239).** Novo
+> módulo, no menu lateral ao lado do Estoque. Retomada do plano congelado em
+> 12/08 (`docs/COMPRAS.md`), agora que o Financeiro fechou.
+>
+> **Rode a 0238 ANTES da 0239** — a primeira só cria o papel novo, e o
+> Postgres não deixa criar e usar um papel na mesma transação.
+>
+> **Botão "Gerar lista de compras"**: traz tudo abaixo do mínimo, já na
+> quantidade de embalagens que o Estoque sugere. Você ajusta, acrescenta o que
+> faltar e envia à Franqueadora.
+>
+> **A previsão de custo tem três degraus, e a tela diz qual usou:** última
+> compra desta unidade → última compra da rede → custo médio atual. Um preço
+> de dois anos atrás parece tão sólido quanto o de ontem quando aparece
+> sozinho — por isso a origem e a data vêm junto, e o que passou de seis meses
+> aparece marcado.
+>
+> **Linha livre** para o que não se estoca (uma cadeira, um conserto), com a
+> conta de despesa escolhida na hora.
+>
+> **Suas três decisões:** papel novo de **Comprador da Franqueadora** (quem
+> compra não é quem paga); **compra local permitida e marcada** (proibir não
+> impede a compra, só a tira do sistema — marcada, ela vira vazamento medido);
+> e a franqueadora poderá alterar quantidades **com a mudança visível** para a
+> unidade aprovar, quando chegarmos ao C2.
+>
+> **Item sem preço não impede o envio:** a Franqueadora vai cotar de qualquer
+> jeito, e exigir previsão travaria justamente a primeira compra de um item.
+>
+> **583 testes** (15 novos). **Próximo: C2 — a mesa de negociação da
+> franqueadora.**
 
 > **FIN8.3 — O PAINEL DA REDE (v0.214.0, migração 0237). O FINANCEIRO FECHA
 > AQUI.** Em Financeiro › Painel da rede, só para a Franqueadora.

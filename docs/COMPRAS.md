@@ -1,9 +1,8 @@
-# Módulo Compras — plano aprovado para depois do Financeiro
+# Módulo Compras
 
-_Plano desenhado em 12/08/2026 com o dono. **Congelado**: retomar depois de
-fechar o Financeiro (FIN6 DRE+DFC, FIN7 orçado×realizado, FIN8 consolidação).
-Ler este documento antes de começar; as três decisões do fim ainda estão em
-aberto._
+_Plano desenhado em 12/08/2026 com o dono. **DESCONGELADO em 17/08/2026**, ao
+fechar o FIN8. As três decisões do fim foram **resolvidas** (ver lá). **C1
+entregue** nas migrações 0238+0239._
 
 ## O objetivo, nas palavras do dono
 
@@ -91,18 +90,17 @@ juntar tudo num objeto só faria o faturamento individual virar remendo.
 
 ## Ordem
 
-**C1 → C2 → C3 → C4.** Cada etapa é testável sozinha, e a C1 já entrega valor
+**C1 ✅ → C2 → C3 → C4.** Cada etapa é testável sozinha, e a C1 já entrega valor
 sem as outras: a lista pronta com previsão de custo.
 
-## Três decisões ainda em aberto
+## Três decisões — RESOLVIDAS em 17/08/2026
 
-1. **Papel novo "Comprador da Franqueadora"** ou o Financeiro da Franqueadora
-   acumula? *Recomendação: papel novo* — comprar e pagar são funções diferentes,
+1. **Papel novo "Comprador da Franqueadora"** — **decidido: papel novo**
+   (`purchaser`, migração 0238). *Motivo* — comprar e pagar são funções diferentes,
    e separá-las é controle interno básico.
-2. **A unidade pode comprar direto, sem passar pela franqueadora?**
-   *Recomendação: sim, marcado como **compra local*** — urgência sempre
+2. **A unidade pode comprar direto?** — **decidido: pode, marcada como
+   compra local** (`purchase_requests.is_local`). *Motivo* — urgência sempre
    acontece, e proibir só faz a compra sair do sistema. Marcada, ela aparece no
    dashboard como vazamento medido.
-3. **A franqueadora pode alterar quantidades** (arredondar para fechar caixa
-   fechada)? *Recomendação: sim, mas a alteração fica visível para a unidade
-   aprovar* — ela vai pagar por aquilo.
+3. **A franqueadora pode alterar quantidades?** — **decidido: pode, com a
+   alteração visível para a unidade aprovar** (vale a partir do C2). *Motivo* — ela vai pagar por aquilo.

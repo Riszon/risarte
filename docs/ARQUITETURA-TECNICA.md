@@ -142,5 +142,11 @@ seleção): checagem que erra é pior que checagem que não existe.
   NÃO `extract(day from interval)` (que só devolve o componente "dia").
 - **Nunca editar arquivo-fonte com PowerShell `-replace`** (corrompe acentos
   UTF-8) — reescrever com a ferramenta Write.
+- **`$$` no texto de substituição do `String.replace` do JS vira UM `$`.** Um
+  script de correção que reescrevia `limit 1;\n$$;` trocou o delimitador da
+  função por `$;` e quebrou a migração 0239 **em silêncio** — o arquivo continua
+  parecendo certo de relance. Ao mexer em SQL por script, montar o delimitador
+  (`const D = "$" + "$"`) ou usar função de substituição, e **conferir depois**
+  se o número de `$$` no arquivo continua par.
 - **Recursão de RLS** em policies de `profiles`/`user_clinic_roles`: usar os
   helpers SECURITY DEFINER, nunca subconsultar a própria tabela.

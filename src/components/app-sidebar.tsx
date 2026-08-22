@@ -24,6 +24,7 @@ import {
   Home,
   Boxes,
   Landmark,
+  ShoppingCart,
   LogOut,
   MessagesSquare,
   Route,
@@ -89,6 +90,8 @@ type Props = {
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
   canViewStock: boolean;
+  /** C1: Compras — a lista da unidade e a mesa da franqueadora. */
+  canViewPurchases: boolean;
   clinics: SidebarClinic[];
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
@@ -171,6 +174,15 @@ const STOCK_ITEM = {
   icon: Boxes,
 };
 
+// C1: Compras — a lista nasce do Estoque e vai para a mesa da Franqueadora.
+// Fica ao lado dele por isso, e fora do Financeiro: quem monta a lista é o
+// gerente, que nem sempre mexe em dinheiro.
+const PURCHASES_ITEM = {
+  href: "/compras",
+  label: "Compras",
+  icon: ShoppingCart,
+};
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -198,6 +210,7 @@ export function AppSidebar({
   canViewPpr,
   canViewFinance,
   canViewStock,
+  canViewPurchases,
   clinics,
   activeClinicId,
   activeClinicRoles,
@@ -261,6 +274,9 @@ export function AppSidebar({
   }
   if (canViewStock) {
     navItems = [...navItems, STOCK_ITEM];
+  }
+  if (canViewPurchases) {
+    navItems = [...navItems, PURCHASES_ITEM];
   }
   if (!dentistOnly && canViewFinance) {
     navItems = [...navItems, FINANCE_ITEM];

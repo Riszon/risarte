@@ -3,6 +3,7 @@ import { getSessionContext } from "@/lib/auth";
 import { canViewEmpresarial } from "@/lib/empresarial/access";
 import { canViewFinance } from "@/lib/finance/access";
 import { canViewStock } from "@/lib/stock-access";
+import { canViewPurchases } from "@/lib/purchases-access";
 import { canViewPpr } from "@/lib/ppr/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
@@ -96,6 +97,12 @@ export default async function AppLayout({
   // 0213: Estoque — gestão + quem atende. Fora do Financeiro de propósito:
   // dentista e TSB precisam da tela e não podem ver financeiro.
   const canSeeStock = canViewStock(session, session.activeClinic?.id ?? null);
+  // C1: Compras — gerente monta a lista, franqueadora recebe. Fora do
+  // Financeiro: quem sabe o que falta é quem mexe na prateleira.
+  const canSeePurchases = canViewPurchases(
+    session,
+    session.activeClinic?.id ?? null
+  );
 
   // PPR2: seção do Programa de Prevenção Riso+ (toda a operação enxerga).
   const canSeePpr = canViewPpr(session);
@@ -119,6 +126,7 @@ export default async function AppLayout({
         canViewEmpresarial={canViewEmp}
         canViewFinance={canSeeFinance}
         canViewStock={canSeeStock}
+        canViewPurchases={canSeePurchases}
         canViewPpr={canSeePpr}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
