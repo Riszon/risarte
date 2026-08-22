@@ -136,6 +136,12 @@ export default async function PurchasesPage() {
           <strong>A negociação é da rede; a compra é sua</strong> — cada unidade
           aprova, é faturada e paga a sua parte.
         </p>
+        <Link
+          href="/compras/aprovar"
+          className="mt-2 mr-4 inline-block text-sm text-primary underline"
+        >
+          Ver o que a Franqueadora negociou para a unidade →
+        </Link>
         {(isPurchaser(session) || canConfigureFinanceNetwork(session)) && (
           <Link
             href="/compras/rodadas"

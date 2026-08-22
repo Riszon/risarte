@@ -820,8 +820,32 @@ dela.
   sem cotação contra zero mostraria 100% de economia que não existe. E economia
   **negativa aparece** — esconder faria o indicador só provar o que se quer.
 
-**Ordem:** C1 ✅ → C2 ✅ → **C3** (aprovação e pedido por unidade/fornecedor) →
-C4 (dashboard, com *economia da negociação* e *compras por fora*).
+**C3a — APROVAÇÃO E PEDIDO (0241).** `purchase_allocations` +
+`purchase_orders` + `purchase_order_items`, código **`PD-`**.
+
+- **A PARTE DA UNIDADE PASSA A SER GRAVADA** ao fechar a rodada. No C2 ela era
+  calculada (`round_allocation`), e calculado não serve para aprovar: editar a
+  rodada depois mudaria em silêncio o que a unidade já decidiu. Congelar é a
+  mesma regra do preço previsto (C1), do repasse (0209) e da alçada (0194). A
+  migração **grava também as rodadas já fechadas**, para não refazer teste.
+- **UM PEDIDO POR UNIDADE E POR FORNECEDOR** — é ele que é faturado, pago e
+  entregue naquele endereço.
+- **Silêncio não vira aprovação:** sem decisão, o pedido não nasce. É dinheiro
+  da unidade. `round_pending_approvals` mostra o silêncio para a franqueadora
+  cobrar — mas cobrança é de gente, não automatismo.
+- **Quem decide é o gerente da unidade**, não a franqueadora: ela negociou, mas
+  quem paga é a unidade.
+- **Item que já virou pedido não volta atrás** (`ALREADY_ORDERED`): desfazer
+  exige cancelar o pedido, que é o documento.
+- **Recusa com motivo visível.** Sem esse registro, o volume combinado com o
+  fornecedor cairia sem ninguém saber por quê — e é o que derruba a negociação
+  da rodada seguinte.
+- **Pedido vazio é recusado** (`NOTHING_APPROVED`): criaria documento só para
+  alguém cancelar depois.
+
+**Ordem:** C1 ✅ → C2 ✅ → C3a ✅ → **C3b** (recebimento: nota amarrada ao
+pedido, pedido × recebido, entrada no estoque) → C4 (dashboard, com *economia da
+negociação* e *compras por fora*).
 
 **O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor
 escreve `RESINA COMP Z350XT A2 4G 3M`; no cadastro está `Resina composta A2`.

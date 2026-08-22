@@ -1,6 +1,30 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/08/2026 · Versão do sistema: **0.216.0** · Última migração: **0240**_
+_Atualizado em: 21/08/2026 · Versão do sistema: **0.217.0** · Última migração: **0241**_
+
+> **COMPRAS C3a — A UNIDADE APROVA, E O PEDIDO NASCE (v0.217.0, migração 0241).**
+> Em Compras › *Ver o que a Franqueadora negociou para a unidade*.
+>
+> O gerente vê item a item, com **o preço negociado ao lado da previsão** — a
+> economia fica explícita. Aprova ou recusa cada um; a recusa aceita motivo, e
+> a Franqueadora enxerga.
+>
+> Aprovado, nascem os **pedidos: um por fornecedor** (código `PD-`). Cada um é
+> faturado, pago e entregue separadamente — por isso a rodada e o pedido são
+> coisas diferentes desde o plano.
+>
+> - **A parte da unidade agora fica GRAVADA** quando a rodada fecha. Antes era
+>   calculada na hora; se ficasse assim, editar a rodada depois mudaria em
+>   silêncio o que a unidade já tinha aprovado.
+> - **Silêncio não vira aprovação.** Sem decisão, o pedido não nasce — é
+>   dinheiro da unidade. A Franqueadora vê quem não respondeu.
+> - **Item que já virou pedido não volta atrás** por aqui: desfazer exige
+>   cancelar o pedido, que é o documento.
+> - **A migração grava as partes das rodadas já fechadas**, para o teste
+>   anterior não precisar ser refeito.
+>
+> **Próximo: C3b — o recebimento** (amarrar a nota ao pedido e comparar pedido
+> × recebido, com a entrada no estoque saindo daí).
 
 > **COMPRAS C2 — A MESA DE NEGOCIAÇÃO (v0.216.0, migração 0240).** Em Compras ›
 > mesa da Franqueadora (`/compras/rodadas`), só para o Comprador, o Admin e o
