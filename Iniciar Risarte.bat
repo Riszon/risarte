@@ -26,9 +26,20 @@ echo   [3] Nao fazer nada
 echo ============================================================
 echo.
 choice /c 123 /n /m "Escolha 1, 2 ou 3: "
-if errorlevel 3 exit /b
+rem  NENHUM caminho daqui fecha a janela sozinho. Janela que some por conta
+rem  propria se le como travamento, mesmo quando fez exatamente o que devia —
+rem  foi o que aconteceu duas vezes com o dono.
+if errorlevel 3 goto sair
 if errorlevel 2 goto reiniciar
 start "" http://localhost:3000
+echo.
+echo Sistema aberto no navegador. O servidor continua na OUTRA janela.
+goto sair
+
+:sair
+echo.
+echo Pode fechar esta janela. (Nao feche a do servidor.)
+pause >nul
 exit /b
 
 rem --- Reiniciar: derruba o servidor antigo e sobe outro ----------------------
