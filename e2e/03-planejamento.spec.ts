@@ -13,6 +13,11 @@ import {
   trocarPara,
 } from "./apoio";
 
+// A jornada inteira passa por quatro papéis e três fases. Ela cresceu quando
+// ganhou o envio ao Comercial e estourou o tempo padrão — o limite aqui é do
+// TAMANHO do caminho, não de lentidão do sistema.
+test.setTimeout(300_000);
+
 test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial", async ({
   page,
   context,
@@ -153,6 +158,31 @@ test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial"
   await expect
     .poll(async () => await statusDoPlano(db, paciente.id), { timeout: 20_000 })
     .toBe("approved");
+
+  // ---- e só então o Planner envia ao Comercial ------------------------------
+  // A trava do plano aprovado: o caso não chega à negociação sem a aprovação
+  // clínica, senão o Comercial venderia um tratamento que ninguém validou.
+  await trocarPara(context, PESSOAS.planner);
+  await fecharAvisos(page);
+  await page.goto(`/planejamento/${paciente.id}`);
+  const enviarComercial = page.getByRole("button", {
+    name: /Enviar ao Comercial/,
+  });
+  await expect(enviarComercial).toBeVisible({ timeout: 20_000 });
+  await enviarComercial.click();
+
+  await expect
+    .poll(
+      async () => {
+        const { rows } = await db.query(
+          "select journey_phase from public.clients where id = $1",
+          [paciente.id]
+        );
+        return rows[0]?.journey_phase;
+      },
+      { timeout: 20_000 }
+    )
+    .toBe("commercial_conversion");
 
   await db.end();
 });

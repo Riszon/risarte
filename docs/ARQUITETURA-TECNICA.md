@@ -226,6 +226,59 @@ As regras ficam em `scripts/screen-rules.mjs`, puras e com teste
 responde **200 e renderiza erro** (o React engole a exceção no limite de erro, e
 olhar só o número da resposta deixaria passar).
 
+## Teste ponta a ponta (camada 3)
+
+```bash
+npm run test:e2e
+```
+
+**O app de teste sobe na porta 3100, com o BANCO DE TESTE** (projeto Supabase
+separado, `.env.test.local`, fora do Git). O servidor do dono continua na 3000
+apontando para produção: portas, pastas de compilação (`.next-test`) e bancos
+diferentes. Um teste que criasse paciente no banco de verdade seria pior que
+nenhum teste.
+
+**A trava aparece três vezes de propósito** (`scripts/test-db.mjs`,
+`playwright.config.ts`, `e2e/apoio.ts`): qualquer endereço que contenha o
+projeto de produção derruba tudo antes do primeiro comando. Script que apaga
+dados não pode depender de disciplina.
+
+**A prova de que o app fala com o banco certo não compara endereço:** o
+`global-setup` cria uma sessão assinada pelo projeto de teste e abre uma tela
+protegida. Se o app estivesse apontando para outro projeto, a sessão seria
+recusada e nenhum teste rodaria.
+
+**Ferramentas do banco de teste:**
+
+```bash
+npm run migrar:teste   # aplica as migrações do zero (prova que elas reconstroem o sistema)
+npm run seed:teste     # semeia o cenário: 3 clínicas, 1 usuário por papel, catálogo, kits
+npm run reset:teste    # limpa o MOVIMENTO e mantém o cenário
+```
+
+**A limpeza não é luxo:** cada execução cria um paciente, e a recepção acumula
+avisos modais de "agende a apresentação" que cobrem a tela. Depois de algumas
+rodadas o teste passa a brigar com o próprio lixo que produziu — já travou uma
+execução inteira esperando um botão atrás do modal.
+
+**Regras que o E2E segue:**
+
+- **Entrar por sessão pronta** (link de uso único), menos em UM teste que usa o
+  formulário de login — senão a tela de login vira a parte mais testada do
+  sistema. Trocar de papel **limpa a sessão anterior**: sem isso o teste prova
+  que o coordenador consegue fazer o que é da recepção.
+- **Esperar o BANCO confirmar, nunca o relógio.** Recarregar por tempo derrubou
+  o teste do plano três vezes com tudo salvo corretamente: a tela voltava do
+  servidor antes de o dado chegar lá.
+- **Cada passo termina perguntando ao banco.** Tela que diz "salvo" com o
+  registro errado por trás é o defeito que teste de aparência não pega.
+- **Defeito conhecido vira teste que falha de propósito** (`test.fail()`), não
+  comentário: quando a correção sai, ele fica verde e avisa que o contorno pode
+  ser removido.
+- Achado durante o teste **não interrompe o teste** — vai para
+  `docs/CORRECOES-TESTES.md` com prova, e as correções saem em lote (combinado
+  com o dono em 24/08/2026).
+
 ## Lições que já custaram bug (não repetir)
 
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou

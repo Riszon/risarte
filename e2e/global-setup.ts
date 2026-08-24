@@ -11,6 +11,7 @@
 
 import { chromium } from "@playwright/test";
 import { AMBIENTE, PESSOAS, banco, entrarComo } from "./apoio";
+import { limparMovimento } from "../scripts/reset-test.mjs";
 import { APP_TESTE } from "../playwright.config";
 
 export default async function globalSetup() {
@@ -29,6 +30,18 @@ export default async function globalSetup() {
       "O banco de teste está vazio. Rode `node scripts/seed-test.mjs` antes."
     );
   }
+
+  // COMEÇAR LIMPO É PARTE DO TESTE. Cada execução cria pacientes, e a recepção
+  // acumula avisos modais de "agende a apresentação" que cobrem a tela. Rodando
+  // a suíte inteira sem limpar, o último teste levou DEZ minutos onde sozinho
+  // leva três — brigando com o lixo das rodadas anteriores, não com o sistema.
+  //
+  // Consequência assumida e declarada: quem estiver olhando o app de teste
+  // perde os dados que criou à mão quando a suíte roda.
+  const limpeza = await banco();
+  const { esvaziadas } = await limparMovimento(limpeza);
+  await limpeza.end();
+  console.log(`  Movimento limpo (${esvaziadas} tabelas) — cenário mantido.`);
 
   const browser = await chromium.launch();
   const context = await browser.newContext({ baseURL: APP_TESTE });

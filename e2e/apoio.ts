@@ -257,6 +257,103 @@ export async function levarAoPlanejamento(
   return paciente;
 }
 
+/**
+ * Leva um paciente novo até a Conversão Comercial, com plano aprovado.
+ *
+ * Quem PROVA que este caminho funciona é o `03-planejamento.spec.ts`; aqui ele
+ * é o meio de chegar ao assunto seguinte. O caminho é longo porque o sistema é
+ * assim de propósito: não existe negociação sem aprovação clínica.
+ */
+export async function levarAoComercial(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  prefixo = "Venda"
+): Promise<{ id: string; nome: string; cpf: string }> {
+  const paciente = await levarAoPlanejamento(page, context, prefixo);
+
+  // O Planner monta o plano.
+  await trocarPara(context, PESSOAS.planner);
+  await fecharAvisos(page);
+  await page.goto(`/planejamento/${paciente.id}`);
+  await page.getByRole("button", { name: "Iniciar plano de tratamento" }).click();
+
+  const diagnostico = page.getByRole("textbox", { name: "Diagnóstico" });
+  await diagnostico.waitFor();
+  await diagnostico.fill("Cárie em elemento 26, sem comprometimento pulpar.");
+  await page.getByRole("heading", { name: "Opções de tratamento" }).click();
+
+  await page.getByRole("button", { name: "Adicionar opção de tratamento" }).click();
+  await page
+    .getByRole("textbox", { name: /Título da opção/ })
+    .fill("Plano principal");
+  await page.getByRole("checkbox", { name: /Plano principal/ }).check();
+  await page.getByRole("button", { name: "Adicionar opção", exact: true }).click();
+  await page.getByText("Opção adicionada.").waitFor().catch(() => {});
+
+  await page.reload();
+  await page.getByRole("heading", { name: "Opções de tratamento" }).waitFor();
+  const item = page.getByRole("button", { name: "Procedimento", exact: true }).first();
+  if (!(await item.isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: "Expandir opção" }).first().click();
+  }
+  await item.waitFor({ state: "visible" });
+  await item.click();
+  await page
+    .getByRole("combobox")
+    .first()
+    .selectOption({ label: "Restauração em resina 1 face (R$ 280,00)" });
+  await page.getByRole("button", { name: "Item", exact: true }).click();
+  await page.getByText(/adicionad/i).first().waitFor().catch(() => {});
+
+  await page.reload();
+  await page
+    .locator("select")
+    .filter({ hasText: "Selecione..." })
+    .first()
+    .selectOption({ label: "Saúde" });
+  await page.getByRole("button", { name: "Salvar pilar" }).click();
+  await page.getByText(/Atual: Saúde/).waitFor().catch(() => {});
+
+  await page.reload();
+  const enviarAprovacao = page.getByRole("button", {
+    name: "Enviar para aprovação do Coordenador",
+  });
+  await enviarAprovacao.waitFor();
+  await enviarAprovacao.click();
+  await page.getByText(/Aguardando aprovação/).first().waitFor();
+
+  // O Coordenador aprova (contorno do defeito conhecido: ver item 2 de
+  // docs/CORRECOES-TESTES.md — o primeiro clique não abre a opção).
+  await trocarPara(context, PESSOAS.coordenador);
+  await fecharAvisos(page);
+  await page.goto(`/prontuarios/${paciente.id}`);
+  await esperarEFecharAvisos(page);
+  await page.getByRole("tab", { name: "Plano", exact: true }).click();
+  for (let i = 0; i < 3; i++) {
+    if (await page.getByRole("button", { name: /Aprovar opção/ }).count()) break;
+    await page
+      .getByRole("button", { name: /^(Expandir|Recolher) opção$/ })
+      .first()
+      .click();
+    await page.waitForTimeout(800);
+  }
+  await page.getByRole("button", { name: /Aprovar opção/ }).first().click();
+  await page.getByText(/aprovada/i).first().waitFor();
+
+  // O Planner envia ao Comercial.
+  await trocarPara(context, PESSOAS.planner);
+  await fecharAvisos(page);
+  await page.goto(`/planejamento/${paciente.id}`);
+  const enviarComercial = page.getByRole("button", {
+    name: /Enviar ao Comercial/,
+  });
+  await enviarComercial.waitFor();
+  await enviarComercial.click();
+  await page.getByText(/Conversão Comercial/).first().waitFor();
+
+  return paciente;
+}
+
 /** Conexão com o banco de teste, para perguntar o que a tela não mostra. */
 export async function banco() {
   const client = new pg.Client({

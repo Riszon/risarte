@@ -47,6 +47,10 @@ export default defineConfig({
     baseURL: APP_TESTE,
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
+    // Para ASSISTIR: `--headed` abre o navegador e SLOW_MO deixa o robô lento o
+    // bastante para acompanhar com o olho. Em velocidade normal ele clica mais
+    // rápido do que dá para ler.
+    launchOptions: { slowMo: Number(process.env.SLOW_MO ?? 0) },
     // O rastro só é guardado quando falha: é o que permite ver o que o robô
     // via na hora do erro, sem encher o disco nas passagens boas.
     trace: "retain-on-failure",
