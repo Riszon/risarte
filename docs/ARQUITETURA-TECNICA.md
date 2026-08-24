@@ -163,6 +163,69 @@ que dispara passa por cegueira, não por saúde.
 O script avisa quando um assunto está **sem dados**: invariante que passou por
 ausência não é invariante aprovada.
 
+## Varredura das TELAS (camada 2)
+
+```bash
+npm run check:telas
+```
+
+> Atalho do dono: **`Conferir Telas.bat`** (clique duplo). **Precisa do
+> `Iniciar Risarte` aberto** — a varredura abre as páginas de verdade, pelo
+> servidor local. Se o servidor não responder, o script diz isso em vez de
+> acusar o sistema de quebrado.
+
+Abre **cada rota do sistema** com o acesso de **cada tipo de usuário** e pega a
+classe de defeito que a camada 1 não alcança: página que quebra ao abrir, rota
+que existe respondendo 404 (o caso de `/financeiro/configuracao`), e permissão
+barrando quem devia entrar — ou liberando quem não devia.
+
+**Como ela entra logada.** Era o buraco declarado da camada 1: as funções de
+relatório exigem usuário e um script não é ninguém. O script pede ao Supabase,
+com a chave de serviço, um **link de acesso de uso único** de um usuário que já
+existe e troca o link por uma sessão — o mesmo caminho do "entrar pelo link do
+e-mail", só que o link nunca sai dali. **Nenhuma senha guardada, nenhum usuário
+criado, nada novo no banco.** Os cookies são montados pelo **próprio
+`@supabase/ssr`**, o mesmo pacote que o app usa para lê-los: escrever o formato
+à mão seria adivinhar detalhe interno que muda de versão, e a varredura passaria
+a dizer "caiu no login" em toda tela.
+
+**404 aqui quase nunca é rota faltando** — as telas usam `notFound()` como
+resposta de "você não pode ver isto". Quem separa defeito de permissão é o papel
+de quem pediu: **para o Admin Master, 404 é sempre bug**. Ele varre duas vezes,
+na Franqueadora e na unidade, porque são caminhos diferentes no mesmo código.
+
+**SER MANDADO EMBORA É SER BARRADO** — e a primeira versão da régua não sabia
+disso. As guardas recusam de **três** jeitos: `notFound()`, `redirect("/")` e
+**`redirect` para outra tela** (o gerente que pede o consolidado da rede cai na
+DRE da própria unidade). Conhecendo só os dois primeiros, a varredura acusou
+três telas **corretamente protegidas** de "abriram para quem não devia". Régua
+que erra é pior que régua que não existe: ela manda consertar o que está certo.
+`isBlocked()` cobre os três, e o teste do falso positivo foi provado quebrando a
+função de propósito antes de valer.
+
+**Um usuário por papel, e só serve quem tem AQUELE papel e mais nenhum.** Um
+gerente que também é recepcionista em outra unidade responderia como gerente, e
+a varredura concluiria que a recepção enxerga contas a pagar. Papel sem usuário
+exclusivo aparece como **não conferido** — mesma regra da camada 1.
+
+**Só julga o que está ESCRITO no `CLAUDE.md`** (`PERMISSION_RULES`): recepção
+fora de contas a pagar e compras, dentista fora do financeiro, gerente fora do
+consolidado da rede, comprador dentro da mesa de negociação. O resto é relatado
+como observação. Inventar matriz de permissão aqui seria transformar palpite em
+teste — e ele passaria a "provar" o chute.
+
+`/login` entra na varredura de propósito: logado, ele tem de mandar para dentro.
+É a prova, a cada perfil, de que a sessão do script realmente vale — sem ela
+todas as páginas "passariam" por estarem protegidas.
+
+**Só GET, nenhuma ação executada.** O único rastro é o log de auditoria que as
+fichas já gravam ao serem abertas.
+
+As regras ficam em `scripts/screen-rules.mjs`, puras e com teste
+(`src/lib/__tests__/screens.test.ts`) — inclusive a que reconhece a tela que
+responde **200 e renderiza erro** (o React engole a exceção no limite de erro, e
+olhar só o número da resposta deixaria passar).
+
 ## Lições que já custaram bug (não repetir)
 
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou

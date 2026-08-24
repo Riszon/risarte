@@ -3868,6 +3868,28 @@ backlog (H3.1 em diante).
 > **Roadmap completo com o "como construir" de cada item: `docs/ROADMAP.md`**
 > (criado em 04/07/2026 a pedido do dono — ler antes de iniciar cada lote).
 
+### A fila de HOJE (24/08/2026)
+
+Financeiro (FIN0→FIN8), Estoque (E1→E5) e Compras (C1→C4) estão **completos**.
+Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
+
+1. ~~**Camada 1 — conferência dos dados**~~ ✅ `npm run check:dados` /
+   **`Conferir Sistema.bat`**: 10 invariantes do razão, estoque, compras e taxas.
+2. ~~**Camada 2 — varredura de telas**~~ ✅ `npm run check:telas` /
+   **`Conferir Telas.bat`**: abre todas as rotas com o acesso de cada papel.
+3. **Camada 3 — ponta a ponta (Playwright).** **Depende do dono criar um segundo
+   projeto Supabase, só para teste** — não dá para simular venda, baixa e
+   cancelamento no banco de trabalho. Brinde: prova que as migrações reconstroem
+   o banco do zero.
+4. **Preparar o lançamento:** limpeza dos dados de teste (manter login do admin
+   e catálogo/fichas, com backup antes), ZapSign e ASAAS.
+
+**Testes do dono ainda pendentes:** painel de Compras (C4), recebimento (C3b),
+aprovação (C3a, precisa fechar a RC-0001), Empresarial fases 0–8 (nunca testado),
+Estoque (kit de atendimento, nota manual, inventário, XML).
+
+### Histórico do LOTE H (concluído — mantido como registro)
+
 1. **H3 em ordem numérica** (decisão do dono, 04/07): ~~H3.1~~ ✅ (v0.11.2,
    formulário reordenado); ~~H3.2~~ ✅ (v0.11.3, "Ver agenda" rica — por dia:
    agendamentos, horários livres p/ o contexto do formulário, feriados,
