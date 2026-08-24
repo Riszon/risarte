@@ -88,6 +88,88 @@ export async function entrarComo(
   );
 }
 
+/**
+ * Troca de papel na MESMA aba.
+ *
+ * A jornada passa por cinco pessoas diferentes, e cada uma faz a sua parte no
+ * mesmo paciente. Sem limpar os biscoitos antes, a sessão anterior continuaria
+ * valendo e o teste provaria a coisa errada: que o coordenador consegue fazer o
+ * que a recepção fez.
+ */
+export async function trocarPara(
+  context: BrowserContext,
+  email: string,
+  clinicId?: string
+) {
+  await context.clearCookies();
+  await entrarComo(context, email, clinicId);
+}
+
+/**
+ * Fecha os avisos que aparecem por cima da tela.
+ *
+ * A recepção recebe um aviso MODAL quando há paciente esperando o agendamento
+ * da apresentação comercial — e ele é insistente de propósito: é assim que o
+ * sistema garante que ninguém fica parado no meio da jornada. Para o robô ele é
+ * um obstáculo real, exatamente como é para a pessoa: enquanto está aberto, o
+ * resto da tela não existe.
+ *
+ * Fecha pelo "Fechar", nunca pelo "Já agendei" — este último AFIRMA um fato que
+ * não aconteceu, e o teste passaria a mentir sobre o estado da unidade.
+ *
+ * Fechar UMA vez não resolve: o aviso nasce depois que a página carrega, e a
+ * primeira versão desta função limpava a tela antes de ele existir. Por isso o
+ * tratador fica ARMADO — o Playwright o dispara toda vez que o modal aparecer
+ * na frente de uma ação, quantas vezes for preciso.
+ */
+export async function fecharAvisos(
+  page: import("@playwright/test").Page
+): Promise<void> {
+  await page.addLocatorHandler(
+    page.getByRole("dialog").filter({ hasText: "Agendar apresentação" }),
+    async (aviso) => {
+      await aviso.getByRole("button", { name: "Fechar" }).click();
+    },
+    { times: 20 }
+  );
+}
+
+/**
+ * Cadastra um paciente pela tela da recepção e devolve o que o teste precisa.
+ *
+ * Pela TELA de propósito: é assim que um paciente nasce de verdade. Inserir
+ * direto no banco pularia máscara, duplicidade, fase inicial e auditoria — e o
+ * teste passaria a encenar um começo que não existe.
+ */
+export async function criarPacienteNaRecepcao(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  prefixo = "Paciente"
+): Promise<{ id: string; nome: string; cpf: string }> {
+  await trocarPara(context, PESSOAS.recepcao);
+  const cpf = cpfDeTeste();
+  const nome = nomeDeTeste(prefixo);
+
+  await page.goto("/prontuarios/novo");
+  await fecharAvisos(page);
+  await page.getByLabel("CPF").first().fill(mascaraCpf(cpf));
+  await page.getByLabel("Nome completo").fill(nome);
+  await page.getByLabel("Data de nascimento").fill("1990-05-12");
+  await page.getByLabel("Telefone / WhatsApp").fill("(43) 99999-0001");
+  await page.getByLabel("E-mail").fill("paciente.teste@example.com");
+  await page.getByLabel("Endereço (rua/avenida)").fill("Rua de Teste");
+  await page.getByLabel("Número").fill("100");
+  await page.getByLabel("Bairro").fill("Centro");
+  await page.getByLabel("Cidade").fill("Cambé");
+  await page.getByLabel("UF").fill("PR");
+  await page.getByLabel("CEP").fill("86180-000");
+  await page.getByRole("button", { name: "Cadastrar cliente" }).click();
+
+  await page.waitForURL(/\/prontuarios\/[0-9a-f-]{36}/, { timeout: 30_000 });
+  const id = page.url().split("/prontuarios/")[1].split(/[?#]/)[0];
+  return { id, nome, cpf };
+}
+
 /** Conexão com o banco de teste, para perguntar o que a tela não mostra. */
 export async function banco() {
   const client = new pg.Client({

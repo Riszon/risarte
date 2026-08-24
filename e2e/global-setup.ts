@@ -37,13 +37,23 @@ export default async function globalSetup() {
   const resposta = await page.goto("/prontuarios", { waitUntil: "domcontentloaded" });
 
   const caiuNoLogin = page.url().includes("/login");
-  await browser.close();
 
   if (caiuNoLogin || !resposta || resposta.status() >= 400) {
+    await browser.close();
     throw new Error(
       "O app na porta 3100 NÃO aceitou a sessão do banco de teste. " +
         "Provavelmente está apontando para outro projeto — nenhum teste vai rodar."
     );
   }
-  console.log("  App de teste conferido: sessão do banco de teste aceita.\n");
+  console.log("  App de teste conferido: sessão do banco de teste aceita.");
+
+  // AQUECE AS ROTAS. O servidor de desenvolvimento monta cada tela na primeira
+  // vez que ela é pedida, e uma tela pedida antes de estar pronta responde 404 —
+  // já aconteceu com `/prontuarios/novo`. Sem isto, a primeira execução do dia
+  // falharia por causa do compilador, não do sistema.
+  for (const rota of ["/prontuarios/novo", "/jornada", "/agenda"]) {
+    await page.goto(rota, { waitUntil: "domcontentloaded" }).catch(() => {});
+  }
+  console.log("  Telas principais aquecidas.\n");
+  await browser.close();
 }
