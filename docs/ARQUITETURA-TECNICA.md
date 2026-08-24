@@ -138,6 +138,12 @@ seleção): checagem que erra é pior que checagem que não existe.
 npm run check:dados
 ```
 
+> **O dono NÃO roda isto no Supabase.** Ele confunde com migração, e já
+> aconteceu: colou `npm run check:dados` no SQL Editor e recebeu *syntax
+> error at or near "npm"*. Para ele existe o atalho **`Conferir Sistema.bat`**
+> (clique duplo). Migração vai no Supabase; comando vai no computador — dizer
+> qual é qual faz parte da entrega.
+
 Lê o banco e verifica **10 invariantes** — que o razão está são, que o saldo do
 estoque é a soma dos movimentos, que o rateio da rodada fecha, que a conta da
 taxa bate com os splits. Só leitura; imprime apenas contagens e valores (LGPD).
