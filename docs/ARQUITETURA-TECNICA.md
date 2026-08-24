@@ -132,6 +132,31 @@ causas, e as duas estão cobertas por teste manual documentado no commit:
 O script **cala quando não tem certeza** (union, subconsulta na lista de
 seleção): checagem que erra é pior que checagem que não existe.
 
+## Conferência dos DADOS (camada 1 dos testes)
+
+```bash
+npm run check:dados
+```
+
+Lê o banco e verifica **10 invariantes** — que o razão está são, que o saldo do
+estoque é a soma dos movimentos, que o rateio da rodada fecha, que a conta da
+taxa bate com os splits. Só leitura; imprime apenas contagens e valores (LGPD).
+
+**Por que não confere os relatórios:** `dre_lines`, `cash_flow_series` e
+companhia exigem usuário logado (`can_see_clinic_finance`, 0227). Um script
+fora do navegador não é ninguém, e elas devolveriam vazio — o que passaria como
+"tudo certo" sendo cegueira. As telas ficam para as camadas 2 (varredura de
+rotas) e 3 (Playwright ponta a ponta, com projeto Supabase de teste).
+
+**As regras ficam em `scripts/invariant-rules.mjs`, puras e com teste**
+(`src/lib/__tests__/invariants.test.ts`): cada uma é exercitada com o defeito
+REAL que já chegou ao dono — a venda cancelada que continuava como receita, a
+conta congelada no primeiro recebimento do mês. Conferência que ninguém provou
+que dispara passa por cegueira, não por saúde.
+
+O script avisa quando um assunto está **sem dados**: invariante que passou por
+ausência não é invariante aprovada.
+
 ## Lições que já custaram bug (não repetir)
 
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou
