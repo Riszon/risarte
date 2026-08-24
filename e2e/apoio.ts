@@ -135,6 +135,32 @@ export async function fecharAvisos(
 }
 
 /**
+ * Espera o aviso aparecer e o fecha AGORA, antes de abrir menus.
+ *
+ * O tratador armado resolve o aviso que chega no meio de um clique, mas não
+ * resolve um caso: o aviso aparecendo em cima de um MENU já aberto. Ele fecha o
+ * aviso e o menu junto, e a ação seguinte procura um item que sumiu. Por isso,
+ * antes de mexer em menu, esvazia-se a tela de propósito.
+ */
+export async function esperarEFecharAvisos(
+  page: import("@playwright/test").Page
+): Promise<void> {
+  const aviso = page.getByRole("dialog").filter({ hasText: "Agendar apresentação" });
+  await aviso
+    .first()
+    .waitFor({ state: "visible", timeout: 5_000 })
+    .catch(() => {});
+  for (let i = 0; i < 3 && (await aviso.count()) > 0; i++) {
+    await aviso
+      .first()
+      .getByRole("button", { name: "Fechar" })
+      .click()
+      .catch(() => {});
+    await page.waitForTimeout(400);
+  }
+}
+
+/**
  * Cadastra um paciente pela tela da recepção e devolve o que o teste precisa.
  *
  * Pela TELA de propósito: é assim que um paciente nasce de verdade. Inserir
@@ -168,6 +194,67 @@ export async function criarPacienteNaRecepcao(
   await page.waitForURL(/\/prontuarios\/[0-9a-f-]{36}/, { timeout: 30_000 });
   const id = page.url().split("/prontuarios/")[1].split(/[?#]/)[0];
   return { id, nome, cpf };
+}
+
+/**
+ * Leva um paciente novo da Aquisição até o Centro de Planejamento.
+ *
+ * Vive aqui porque **três testes diferentes precisam de um caso que já chegou
+ * ao Planejamento**, e refazer o caminho em cada um deixaria três cópias que
+ * envelhecem em ritmos diferentes. Quem PROVA que este caminho funciona é o
+ * `02-avaliacao.spec.ts`; aqui ele é só o meio de chegar.
+ *
+ * Sem `expect` de propósito: apoio que afirma esconde a afirmação do teste que
+ * deveria fazê-la.
+ */
+export async function levarAoPlanejamento(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  prefixo = "Jornada"
+): Promise<{ id: string; nome: string; cpf: string }> {
+  const paciente = await criarPacienteNaRecepcao(page, context, prefixo);
+
+  // A recepção move para a Conversão Clínica.
+  await page.goto(`/prontuarios/${paciente.id}`);
+  await esperarEFecharAvisos(page);
+  await page.getByRole("tab", { name: "Jornada" }).click();
+  await page.getByRole("button", { name: "Mover de fase" }).click();
+  await page.getByRole("menuitem", { name: "Conversão Clínica" }).click();
+  await page.getByText("Conversão Clínica").first().waitFor();
+
+  // O Coordenador registra consentimento e anamnese, e envia.
+  await trocarPara(context, PESSOAS.coordenador);
+  await fecharAvisos(page);
+  await page.goto(`/avaliacao/${paciente.id}`);
+  await page.getByRole("button", { name: "Registrar consentimento" }).click();
+  await page.getByText(/Consentimento registrado em/).waitFor();
+
+  await page
+    .getByRole("button", { name: /^Levantamento de informações/ })
+    .click();
+  await page.getByRole("combobox").first().selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Preencher", exact: true }).click();
+  const pergunta = page.getByText(
+    "Está em tratamento ou acompanhamento médico?"
+  );
+  await pergunta.waitFor();
+  await pergunta
+    .locator("xpath=..")
+    .getByRole("button", { name: "Não", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Salvar anamnese" }).click();
+  await page.getByText(/Anamnese/).first().waitFor();
+
+  await page.goto(`/avaliacao/${paciente.id}`);
+  await page.getByRole("button", { name: /^Enviar ao Planejamento/ }).click();
+  const enviar = page.getByRole("button", {
+    name: "Enviar ao Centro de Planejamento",
+  });
+  await enviar.waitFor();
+  await enviar.click();
+  await page.getByText("Centro de Planejamento").first().waitFor();
+
+  return paciente;
 }
 
 /** Conexão com o banco de teste, para perguntar o que a tela não mostra. */

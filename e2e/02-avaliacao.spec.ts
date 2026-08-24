@@ -13,6 +13,7 @@ import {
   PESSOAS,
   banco,
   criarPacienteNaRecepcao,
+  esperarEFecharAvisos,
   trocarPara,
 } from "./apoio";
 
@@ -25,6 +26,7 @@ test("a jornada anda da Aquisição até o Centro de Planejamento", async ({
 
   // ---- passo 1: a recepção move para a Conversão Clínica --------------------
   await page.goto(`/prontuarios/${paciente.id}`);
+  await esperarEFecharAvisos(page);
   await page.getByRole("tab", { name: "Jornada" }).click();
   await page.getByRole("button", { name: "Mover de fase" }).click();
   await page.getByRole("menuitem", { name: "Conversão Clínica" }).click();

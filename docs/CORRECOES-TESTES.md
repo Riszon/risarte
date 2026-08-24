@@ -38,3 +38,41 @@ a produção já tem duplicado dessa forma (se tiver, o índice falha ao ser cri
 e isso também é informação).
 
 **Tamanho:** pequeno. Uma migração, sem mudança de tela.
+
+---
+
+## 2. O Coordenador precisa clicar DUAS vezes para abrir a opção e aprovar o plano
+
+**Achado em:** E2E-1 Fase 3, aprovação do plano (24/08/2026).
+
+**O que é.** Na ficha do paciente, o Coordenador clica na seta para abrir a
+opção de tratamento e **nada acontece**. Só no segundo clique ela abre — e é lá
+dentro que ficam os botões *Aprovar opção* e *Reprovar opção*.
+
+**Como se prova.** Robô na tela do Coordenador, com um plano aguardando
+aprovação: depois do 1º clique, o botão "Aprovar opção" existe **0** vezes;
+depois do 2º, existe **1**. Está preso pelo teste
+`e2e/03-planejamento.spec.ts` → *"um clique devia abrir a opção para o
+Coordenador"*, que **falha de propósito** enquanto o defeito existir e vira
+verde quando ele for corrigido.
+
+**Por que acontece.** Em
+`src/app/(app)/prontuarios/[id]/planning-section.tsx` os dois lados usam
+padrões diferentes para o mesmo estado:
+
+- ao DESENHAR: `openOptions[o.id] ?? (canEditContent ? o.isPrimary : false)`
+- ao CLICAR: `!(prev[o.id] ?? o.isPrimary)`
+
+Para quem não edita (o Coordenador), a tela assume *fechado* e o clique assume
+*aberto* — então o primeiro clique grava "fechado" por cima de "fechado", e a
+tela não muda. Vale para a opção **principal**, que é justamente a que ele
+precisa avaliar.
+
+**O que quebra.** É o gargalo do núcleo clínico: aprovação de plano. Quem não
+descobre o segundo clique conclui que o botão de aprovar não existe — e o caso
+para no Centro de Planejamento, estourando o SLA de 24h.
+
+**Correção.** Usar o MESMO padrão nos dois lugares (passar
+`canEditContent ? o.isPrimary : false` também para o clique). Uma linha.
+
+**Tamanho:** pequeno. Sem migração.
