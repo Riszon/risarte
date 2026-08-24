@@ -148,6 +148,12 @@ export default async function PurchasesPage() {
         >
           Receber uma entrega →
         </Link>
+        <Link
+          href="/compras/painel"
+          className="mt-2 mr-4 inline-block text-sm text-primary underline"
+        >
+          Painel de compras →
+        </Link>
         {(isPurchaser(session) || canConfigureFinanceNetwork(session)) && (
           <Link
             href="/compras/rodadas"

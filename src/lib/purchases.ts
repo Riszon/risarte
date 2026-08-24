@@ -379,3 +379,116 @@ function addMonthsISO(iso: string, months: number): string {
   base.setUTCDate(Math.min(d ?? 1, last));
   return base.toISOString().slice(0, 10);
 }
+
+// ---------------------------------------------------------------------------
+// C4 — O DASHBOARD
+// ---------------------------------------------------------------------------
+
+export type SavingsRow = {
+  roundId: string;
+  roundCode: string;
+  roundName: string;
+  closedAt: string | null;
+  itemsAwarded: number;
+  itemsPending: number;
+  estimatedCents: number;
+  awardedCents: number;
+  savedCents: number;
+};
+
+export type SavingsTotals = {
+  estimatedCents: number;
+  awardedCents: number;
+  savedCents: number;
+  /** Fração sobre a previsão. `null` quando não há previsão para comparar. */
+  percent: number | null;
+  rounds: number;
+  itemsPending: number;
+};
+
+/**
+ * A economia acumulada da negociação conjunta.
+ *
+ * **É contra a PREVISÃO, não contra a realidade.** Se a previsão estava velha,
+ * a economia parece maior do que foi — e a tela precisa dizer isso. Apresentar
+ * este número como dinheiro medido seria provar a tese com a régua da própria
+ * tese.
+ */
+export function savingsTotals(rows: SavingsRow[]): SavingsTotals {
+  const estimatedCents = rows.reduce((s, r) => s + r.estimatedCents, 0);
+  const awardedCents = rows.reduce((s, r) => s + r.awardedCents, 0);
+  const savedCents = estimatedCents - awardedCents;
+  return {
+    estimatedCents,
+    awardedCents,
+    savedCents,
+    percent: estimatedCents > 0 ? savedCents / estimatedCents : null,
+    rounds: rows.length,
+    itemsPending: rows.reduce((s, r) => s + r.itemsPending, 0),
+  };
+}
+
+export type LeakageRow = {
+  clinicId: string;
+  clinicName: string;
+  networkCents: number;
+  localCents: number;
+  localPurchases: number;
+  declaredLocalRequests: number;
+};
+
+/**
+ * A fração comprada por fora da rede.
+ *
+ * `null` quando não houve compra nenhuma no período: zero dividido por zero não
+ * é "0% de vazamento", é ausência de informação — e mostrar 0% faria uma
+ * unidade sem compras parecer exemplar.
+ */
+export function leakagePercent(row: LeakageRow): number | null {
+  const total = row.networkCents + row.localCents;
+  if (total <= 0) return null;
+  return row.localCents / total;
+}
+
+export type LeakageTotals = {
+  networkCents: number;
+  localCents: number;
+  percent: number | null;
+  /** Unidades que compraram por fora no período. */
+  clinicsLeaking: number;
+};
+
+export function leakageTotals(rows: LeakageRow[]): LeakageTotals {
+  const networkCents = rows.reduce((s, r) => s + r.networkCents, 0);
+  const localCents = rows.reduce((s, r) => s + r.localCents, 0);
+  const total = networkCents + localCents;
+  return {
+    networkCents,
+    localCents,
+    percent: total > 0 ? localCents / total : null,
+    clinicsLeaking: rows.filter((r) => r.localCents > 0).length,
+  };
+}
+
+export type SupplierRow = {
+  supplierId: string | null;
+  supplierName: string;
+  orders: number;
+  orderedCents: number;
+  receivedCents: number;
+  priceDiffCents: number;
+  avgDeliveryDays: number | null;
+};
+
+/**
+ * O fornecedor entregou tudo o que foi pedido?
+ *
+ * Compara o valor recebido com o pedido. Fica `null` enquanto nada chegou —
+ * "0% entregue" e "ainda não entregou" são coisas diferentes, e o pedido feito
+ * ontem não é um fornecedor ruim.
+ */
+export function deliveryRate(row: SupplierRow): number | null {
+  if (row.orderedCents <= 0) return null;
+  if (row.receivedCents <= 0) return null;
+  return row.receivedCents / row.orderedCents;
+}

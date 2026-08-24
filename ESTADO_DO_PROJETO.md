@@ -1,6 +1,35 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/08/2026 · Versão do sistema: **0.218.0** · Última migração: **0242**_
+_Atualizado em: 24/08/2026 · Versão do sistema: **0.219.0** · Última migração: **0243**_
+
+> **COMPRAS C4 — O PAINEL (v0.219.0, migração 0243). MÓDULO COMPRAS COMPLETO.**
+> Em Compras › Painel de compras.
+>
+> Ele existe para responder à pergunta que originou o módulo: **centralizar a
+> compra na franqueadora vale a pena?** Daí os dois números principais:
+>
+> - **Economia da negociação** — o preço negociado contra a previsão, por
+>   rodada e acumulado.
+> - **Comprado por fora** — material lançado direto no Estoque, sem passar por
+>   pedido. É o vazamento que corrói o poder de negociação.
+>
+> **Uma ressalva que está escrita na tela:** a economia é medida contra a
+> PREVISÃO, não contra o que teria sido pago. Se a previsão estiver velha, o
+> número engana para mais. Enquanto houver poucas compras registradas, ele
+> serve como direção, não como valor exato.
+>
+> **Economia negativa aparece** — se a negociação saiu pior que a previsão, o
+> painel mostra. Esconder seria o pior uso possível dele.
+>
+> Tem também fornecedores (volume, valor, **prazo médio de entrega** e preço
+> cobrado a mais) e os itens mais comprados.
+>
+> **A franqueadora vê a rede** e pode filtrar por unidade; **gerente e
+> franqueado veem a própria** — mostrar ao franqueado quanto a rede economizou
+> para ele é o argumento que sustenta a centralização.
+>
+> **623 testes** (11 novos).
+
 
 > **COMPRAS C3b — O RECEBIMENTO (v0.218.0, migração 0242).** Em Compras ›
 > Receber entrega. **Fecha o ciclo pedido × recebido × pago.**

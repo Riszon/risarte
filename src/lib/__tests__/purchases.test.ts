@@ -18,6 +18,13 @@ import {
   receiptTotals,
   suggestInstallments,
   type ReceiptLine,
+  deliveryRate,
+  leakagePercent,
+  leakageTotals,
+  savingsTotals,
+  type LeakageRow,
+  type SavingsRow,
+  type SupplierRow,
 } from "@/lib/purchases";
 
 const item = (
@@ -403,5 +410,110 @@ describe("parcelas sugeridas", () => {
 
   it("total zerado não gera parcela", () => {
     expect(suggestInstallments(0, 3, "2026-09-10")).toEqual([]);
+  });
+});
+
+describe("dashboard: a economia da negociação", () => {
+  const round = (
+    estimated: number,
+    awarded: number,
+    pending = 0
+  ): SavingsRow => ({
+    roundId: `r${estimated}`,
+    roundCode: "RC",
+    roundName: "",
+    closedAt: null,
+    itemsAwarded: 1,
+    itemsPending: pending,
+    estimatedCents: estimated,
+    awardedCents: awarded,
+    savedCents: estimated - awarded,
+  });
+
+  it("acumula a economia e o percentual", () => {
+    const t = savingsTotals([round(100_000, 90_000), round(50_000, 45_000)]);
+    expect(t.savedCents).toBe(15_000);
+    expect(t.percent).toBeCloseTo(0.1, 4);
+    expect(t.rounds).toBe(2);
+  });
+
+  it("negociação PIOR que a previsão dá economia negativa", () => {
+    // Precisa aparecer, não ser escondida: é o caso que derruba a tese.
+    const t = savingsTotals([round(100_000, 120_000)]);
+    expect(t.savedCents).toBe(-20_000);
+    expect(t.percent).toBeCloseTo(-0.2, 4);
+  });
+
+  it("sem previsão não inventa percentual", () => {
+    const t = savingsTotals([round(0, 50_000)]);
+    expect(t.percent).toBeNull();
+  });
+
+  it("soma os itens que ficaram sem cotação", () => {
+    expect(savingsTotals([round(100, 90, 3), round(100, 90, 2)]).itemsPending)
+      .toBe(5);
+  });
+});
+
+describe("dashboard: o vazamento", () => {
+  const leak = (
+    network: number,
+    local: number,
+    name = "u"
+  ): LeakageRow => ({
+    clinicId: name,
+    clinicName: name,
+    networkCents: network,
+    localCents: local,
+    localPurchases: local > 0 ? 1 : 0,
+    declaredLocalRequests: 0,
+  });
+
+  it("mede a fração comprada por fora", () => {
+    expect(leakagePercent(leak(75_000, 25_000))).toBeCloseTo(0.25, 4);
+  });
+
+  it("sem compra nenhuma, não é 0% de vazamento — é sem informação", () => {
+    // Mostrar 0% faria uma unidade que não comprou nada parecer exemplar.
+    expect(leakagePercent(leak(0, 0))).toBeNull();
+  });
+
+  it("tudo por fora é 100%", () => {
+    expect(leakagePercent(leak(0, 40_000))).toBe(1);
+  });
+
+  it("conta quantas unidades compraram por fora", () => {
+    const t = leakageTotals([
+      leak(100_000, 0, "a"),
+      leak(50_000, 10_000, "b"),
+      leak(0, 5_000, "c"),
+    ]);
+    expect(t.clinicsLeaking).toBe(2);
+    expect(t.localCents).toBe(15_000);
+    expect(t.percent).toBeCloseTo(15_000 / 165_000, 4);
+  });
+});
+
+describe("dashboard: fornecedores", () => {
+  const sup = (ordered: number, received: number): SupplierRow => ({
+    supplierId: "s",
+    supplierName: "Fornecedor",
+    orders: 1,
+    orderedCents: ordered,
+    receivedCents: received,
+    priceDiffCents: 0,
+    avgDeliveryDays: null,
+  });
+
+  it("mede o quanto já foi entregue", () => {
+    expect(deliveryRate(sup(100_000, 80_000))).toBeCloseTo(0.8, 4);
+  });
+
+  it("nada entregue ainda não é 0% — é cedo demais para julgar", () => {
+    expect(deliveryRate(sup(100_000, 0))).toBeNull();
+  });
+
+  it("sem pedido não há taxa", () => {
+    expect(deliveryRate(sup(0, 0))).toBeNull();
   });
 });

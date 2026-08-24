@@ -865,8 +865,29 @@ e o pedido guarda `received_quantity` por item.
 - **Linha livre não vai para a prateleira** (não é material estocado), mas entra
   na conta a pagar como as demais.
 
-**Ordem:** C1 ✅ → C2 ✅ → C3a ✅ → C3b ✅ → **C4** (dashboard, com *economia da
-negociação* e *compras por fora*).
+**C4 — O PAINEL (0243).** Existe para provar ou derrubar a tese do módulo.
+
+- **A ECONOMIA É CONTRA A PREVISÃO, NÃO CONTRA A REALIDADE**, e a tela diz isso.
+  Previsão velha faz a economia parecer maior do que foi; apresentá-la como
+  dinheiro medido seria provar a tese com a régua da própria tese.
+- **Só item negociado entra na economia** — comparar previsão de item sem
+  cotação contra zero mostraria 100% onde não houve compra.
+- **Economia negativa aparece**: é o caso que derruba a tese, e esconder seria
+  o pior uso possível do painel.
+- **O vazamento tem dois caminhos**, e o segundo é o que importa: requisição
+  marcada como local (declarada) e **compra lançada direto no Estoque sem
+  pedido** (não declarada). O segundo é medido pela ausência de vínculo com
+  recebimento; a diferença entre os dois separa decisão de hábito.
+- **Zero não é ausência:** unidade sem compra nenhuma devolve nulo, não 0% de
+  vazamento — senão ela pareceria exemplar por não ter comprado nada. Mesma
+  regra no prazo de entrega e na taxa de entrega.
+- **Prazo médio só conta o que já chegou:** pedido em aberto como zero faria o
+  fornecedor lento parecer rápido.
+- **Duas visões na mesma tela:** franqueadora vê a rede e escolhe unidade;
+  gerente e franqueado veem só a própria. Mostrar ao franqueado quanto a rede
+  economizou para ele é o argumento que sustenta a centralização.
+
+**Ordem:** C1 ✅ → C2 ✅ → C3a ✅ → C3b ✅ → C4 ✅. **MÓDULO COMPRAS COMPLETO.**
 
 **O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor
 escreve `RESINA COMP Z350XT A2 4G 3M`; no cadastro está `Resina composta A2`.
