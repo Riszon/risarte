@@ -59,9 +59,43 @@ const { rows: dados } = await client.query(`
 `);
 console.log(
   `  Dados: ${dados[0].clinicas} clínicas, ${dados[0].usuarios} usuários, ` +
-    `${dados[0].clientes} clientes, ${dados[0].lancamentos} lançamentos ` +
-    `(banco novo começa zerado — é o esperado).`
+    `${dados[0].clientes} clientes, ${dados[0].lancamentos} lançamentos.`
 );
+
+// ---- o cenário semeado ------------------------------------------------------
+// Estrutura sem cenário não encena nada: o teste ponta a ponta precisa de gente
+// com papel, catálogo e kit. E o kit é o que faz a baixa automática existir —
+// sem o vínculo com o procedimento, a sessão conclui e não consome nada.
+const CENARIO = [
+  ["Clínicas (1 rede + 2 unidades)", "select count(*) as n from clinics", 3],
+  ["Uma unidade PRÓPRIA (consolidado)", "select count(*) as n from clinics where ownership = 'own' and type = 'franchise_unit'", 1],
+  ["Papéis distintos com usuário", "select count(distinct role) as n from user_clinic_roles", 15],
+  ["Ninguém acumula papel", "select case when count(*) = 0 then 1 else 0 end as n from (select user_id from user_clinic_roles group by user_id having count(distinct role) > 1) t", 1],
+  ["Procedimentos no catálogo", "select count(*) as n from procedures", 7],
+  ["Itens de estoque", "select count(*) as n from stock_items", 7],
+  ["Kits", "select count(*) as n from stock_kits", 2],
+  ["Kit ligado a procedimento", "select count(*) as n from procedure_kit_links", 1],
+  ["Itens dentro dos kits", "select count(*) as n from stock_kit_items", 7],
+  ["Fornecedores", "select count(*) as n from suppliers", 4],
+];
+
+if (Number(dados[0].clinicas) === 0) {
+  console.log(
+    "\n  Cenário ainda não semeado (rode `node scripts/seed-test.mjs`)."
+  );
+} else {
+  console.log("");
+  for (const [nome, sql, minimo] of CENARIO) {
+    const { rows } = await client.query(sql);
+    const n = Number(rows[0].n);
+    const ok = n >= minimo;
+    if (!ok) falhas++;
+    console.log(
+      `  ${ok ? "OK   " : "FALHA"}  ${nome.padEnd(34)} ${n}` +
+        (ok ? "" : ` (esperado ao menos ${minimo})`)
+    );
+  }
+}
 
 console.log(falhas === 0 ? "\nEstrutura completa." : `\n${falhas} conferência(s) falharam.`);
 await client.end();

@@ -48,6 +48,24 @@ export function testEnv() {
   return env;
 }
 
+/**
+ * Passa a agir COMO um usuário do sistema, dentro desta conexão.
+ *
+ * `auth.uid()` lê o `sub` da reivindicação do token; definindo a reivindicação
+ * à mão, toda função guardada (`is_admin_master`, `can_manage_stock`…) responde
+ * exatamente como responderia para aquela pessoa no navegador.
+ *
+ * É isso que faz a semeadura **entrar pela porta da frente**: se um cadastro só
+ * funcionasse com o superusuário, ele não funcionaria para ninguém de verdade —
+ * e a gente descobriria isso três telas adiante, num teste que passou por
+ * privilégio em vez de por estar certo.
+ */
+export async function actAs(client, userId) {
+  await client.query("select set_config('request.jwt.claims', $1, false)", [
+    JSON.stringify({ sub: userId, role: "authenticated" }),
+  ]);
+}
+
 /** Conexão aberta com o banco de teste, já com a trava conferida. */
 export async function connect() {
   const env = testEnv();
