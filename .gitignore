@@ -18,6 +18,10 @@
 # Build de verificação do assistente (NEXT_DIST_DIR) — não pode encostar no
 # .next do servidor local do dono.
 /.next-verify/
+# app de teste (porta 3100) e saída do Playwright
+/.next-test/
+/test-results/
+/playwright-report/
 /out/
 
 # production

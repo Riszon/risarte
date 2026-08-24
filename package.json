@@ -10,7 +10,8 @@
     "test": "vitest run",
     "check:dados": "node scripts/check-invariants.mjs",
     "check:telas": "node scripts/check-screens.mjs",
-    "check:migracao": "node scripts/check-migrations.mjs"
+    "check:migracao": "node scripts/check-migrations.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -32,6 +33,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

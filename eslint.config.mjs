@@ -16,6 +16,11 @@ const eslintConfig = defineConfig([
     // lint analisa a saída do build e devolve milhares de problemas que não
     // são do nosso código — e o baseline de zero erro perde o sentido.
     ".next-verify/**",
+    // App de teste da camada 3 (porta 3100) e saída do Playwright — pela mesma
+    // razão: é código gerado, não é nosso.
+    ".next-test/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 
