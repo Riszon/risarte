@@ -142,6 +142,12 @@ export default async function PurchasesPage() {
         >
           Ver o que a Franqueadora negociou para a unidade →
         </Link>
+        <Link
+          href="/compras/receber"
+          className="mt-2 mr-4 inline-block text-sm text-primary underline"
+        >
+          Receber uma entrega →
+        </Link>
         {(isPurchaser(session) || canConfigureFinanceNetwork(session)) && (
           <Link
             href="/compras/rodadas"

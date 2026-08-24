@@ -1,6 +1,28 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/08/2026 · Versão do sistema: **0.217.0** · Última migração: **0241**_
+_Atualizado em: 24/08/2026 · Versão do sistema: **0.218.0** · Última migração: **0242**_
+
+> **COMPRAS C3b — O RECEBIMENTO (v0.218.0, migração 0242).** Em Compras ›
+> Receber entrega. **Fecha o ciclo pedido × recebido × pago.**
+>
+> Quem recebe confirma **o que realmente chegou**, item a item. O campo já vem
+> preenchido com o que falta — digitar de novo o que o sistema sabe é onde o
+> erro entra.
+>
+> - **A nota manda no preço.** O que entra no estoque é o valor da nota, não o
+>   negociado. Quando divergem, o sistema **aceita e avisa**: barrar o material
+>   na porta por causa de centavos deixaria a clínica com saldo errado. A
+>   diferença vira o acompanhamento *"o fornecedor cobrou diferente do
+>   combinado"*.
+> - **Receber em parte é normal.** Pediu 10, vieram 8: entram 8 e o pedido
+>   continua esperando 2. Ele só fecha quando tudo chegou.
+> - **Sobra num item não compensa falta em outro** — compensar esconderia a
+>   pendência com o fornecedor.
+> - **O dinheiro segue o caminho de sempre:** a entrada e a conta a pagar saem
+>   do mesmo caminho da compra avulsa de material. Um caminho só para
+>   "compra vira dívida".
+>
+> **612 testes** (17 novos). **Próximo: C4 — o dashboard de compras.**
 
 > **COMPRAS C3a — A UNIDADE APROVA, E O PEDIDO NASCE (v0.217.0, migração 0241).**
 > Em Compras › *Ver o que a Franqueadora negociou para a unidade*.

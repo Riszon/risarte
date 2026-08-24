@@ -260,3 +260,122 @@ export function roundSavings(items: RoundItemSummary[]): RoundSavings {
     itemsPending: items.length - awarded.length,
   };
 }
+
+// ---------------------------------------------------------------------------
+// C3b — O RECEBIMENTO
+// ---------------------------------------------------------------------------
+
+export type OrderStatus =
+  | "aberto"
+  | "recebido_parcial"
+  | "recebido"
+  | "cancelado";
+
+export function orderStatusLabel(status: OrderStatus): string {
+  const map: Record<OrderStatus, string> = {
+    aberto: "Aguardando entrega",
+    recebido_parcial: "Recebido em parte",
+    recebido: "Recebido",
+    cancelado: "Cancelado",
+  };
+  return map[status] ?? status;
+}
+
+export type ReceiptLine = {
+  orderItemId: string;
+  description: string;
+  orderedQuantity: number;
+  alreadyReceived: number;
+  /** O que está chegando agora. */
+  quantity: number;
+  orderedUnitCents: number;
+  /** O preço da NOTA. Nulo = usar o do pedido. */
+  invoicedUnitCents: number | null;
+};
+
+/** O que ainda falta chegar desta linha. Nunca negativo. */
+export function pendingQuantity(line: {
+  orderedQuantity: number;
+  alreadyReceived: number;
+}): number {
+  return Math.max(0, line.orderedQuantity - line.alreadyReceived);
+}
+
+/**
+ * A diferença de preço desta linha, com sinal.
+ *
+ * Positivo = a nota cobrou MAIS que o combinado. É o número que a franqueadora
+ * leva para a próxima negociação — e o motivo de o preço do pedido ficar
+ * congelado no recebimento: corrigir o pedido depois apagaria a evidência.
+ */
+export function priceDiffCents(line: ReceiptLine): number {
+  const invoiced = line.invoicedUnitCents ?? line.orderedUnitCents;
+  return Math.round(line.quantity * (invoiced - line.orderedUnitCents));
+}
+
+export type ReceiptTotals = {
+  itemsCents: number;
+  priceDiffCents: number;
+  /** Linhas em que veio quantidade diferente da que faltava. */
+  quantityDivergences: number;
+};
+
+export function receiptTotals(lines: ReceiptLine[]): ReceiptTotals {
+  const active = lines.filter((l) => l.quantity > 0);
+  return {
+    itemsCents: active.reduce(
+      (s, l) =>
+        s + Math.round(l.quantity * (l.invoicedUnitCents ?? l.orderedUnitCents)),
+      0
+    ),
+    priceDiffCents: active.reduce((s, l) => s + priceDiffCents(l), 0),
+    quantityDivergences: active.filter(
+      (l) => l.quantity !== pendingQuantity(l)
+    ).length,
+  };
+}
+
+/**
+ * O pedido fica RECEBIDO só quando nada mais falta.
+ *
+ * Quantidade a mais não "compensa" outra linha: veio 12 de um item e faltaram 2
+ * de outro, o pedido continua em aberto. Compensar esconderia a pendência com o
+ * fornecedor justamente onde ela precisa aparecer.
+ */
+export function orderStatusAfter(
+  lines: { orderedQuantity: number; alreadyReceived: number }[]
+): OrderStatus {
+  const pending = lines.reduce((s, l) => s + pendingQuantity(l), 0);
+  const received = lines.reduce((s, l) => s + l.alreadyReceived, 0);
+  if (pending <= 0) return "recebido";
+  return received > 0 ? "recebido_parcial" : "aberto";
+}
+
+/** As parcelas propostas para a conta a pagar do recebimento. */
+export function suggestInstallments(
+  totalCents: number,
+  count: number,
+  firstDueDate: string
+): { amountCents: number; dueDate: string }[] {
+  const n = Math.max(1, Math.round(count));
+  if (totalCents <= 0) return [];
+  const base = Math.floor(totalCents / n);
+  const out: { amountCents: number; dueDate: string }[] = [];
+  for (let i = 0; i < n; i++) {
+    // A ÚLTIMA absorve o resíduo — mesma lei das parcelas de venda e da
+    // depreciação. Sem ela sobrariam centavos órfãos na conta a pagar.
+    const amountCents = i === n - 1 ? totalCents - base * (n - 1) : base;
+    out.push({ amountCents, dueDate: addMonthsISO(firstDueDate, i) });
+  }
+  return out;
+}
+
+function addMonthsISO(iso: string, months: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const base = new Date(Date.UTC(y, (m ?? 1) - 1 + months, 1));
+  const last = new Date(
+    Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+  base.setUTCDate(Math.min(d ?? 1, last));
+  return base.toISOString().slice(0, 10);
+}

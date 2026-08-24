@@ -843,8 +843,29 @@ dela.
 - **Pedido vazio é recusado** (`NOTHING_APPROVED`): criaria documento só para
   alguém cancelar depois.
 
-**Ordem:** C1 ✅ → C2 ✅ → C3a ✅ → **C3b** (recebimento: nota amarrada ao
-pedido, pedido × recebido, entrada no estoque) → C4 (dashboard, com *economia da
+**C3b — O RECEBIMENTO (0242).** `purchase_receipts` + `purchase_receipt_items`,
+e o pedido guarda `received_quantity` por item.
+
+- **O DINHEIRO SEGUE O CAMINHO QUE JÁ EXISTE:** o recebimento chama
+  `register_stock_purchase` (0221) — o mesmo da compra avulsa. Ele já faz a
+  entrada com conversão de embalagem, o custo médio, a compra virando ativo em
+  6.1.01 e a conta a pagar. Um segundo caminho para "compra vira dívida" é como
+  os dois passam a divergir.
+- **A NOTA MANDA NO PREÇO, NÃO O PEDIDO.** Entra no estoque o valor da nota: é
+  o que foi pago. Divergiu, **aceita e registra** — barrar deixaria o material
+  fora do estoque e a clínica com saldo errado. A diferença alimenta
+  `supplier_price_divergence`, que é o que a franqueadora leva para a próxima
+  negociação. O preço do pedido fica **congelado** na linha do recebimento:
+  corrigir o pedido depois apagaria a evidência.
+- **Parcial é normal**; o pedido só fica `recebido` quando nada mais falta. E
+  **sobra num item NÃO compensa falta em outro** — compensar esconderia a
+  pendência com o fornecedor justamente onde ela precisa aparecer.
+- **Quantidade a mais também entra:** o material está na prateleira, e o estoque
+  tem de dizer a verdade.
+- **Linha livre não vai para a prateleira** (não é material estocado), mas entra
+  na conta a pagar como as demais.
+
+**Ordem:** C1 ✅ → C2 ✅ → C3a ✅ → C3b ✅ → **C4** (dashboard, com *economia da
 negociação* e *compras por fora*).
 
 **O PROBLEMA DA NOTA NÃO É LER, É SABER QUE ITEM É AQUELE.** O fornecedor

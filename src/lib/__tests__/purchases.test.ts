@@ -12,6 +12,12 @@ import {
   sendBlockMessage,
   statusLabel,
   type PurchaseRequestItem,
+  orderStatusAfter,
+  pendingQuantity,
+  priceDiffCents,
+  receiptTotals,
+  suggestInstallments,
+  type ReceiptLine,
 } from "@/lib/purchases";
 
 const item = (
@@ -273,5 +279,129 @@ describe("C2 — a economia da rodada", () => {
       { estimatedTotalCents: 0, awardedTotalCents: 50_000, awarded: true },
     ]);
     expect(s.percent).toBeNull();
+  });
+});
+
+describe("recebimento (C3b)", () => {
+  const line = (
+    ordered: number,
+    already: number,
+    quantity: number,
+    orderedUnit: number,
+    invoiced: number | null = null
+  ): ReceiptLine => ({
+    orderItemId: `i${ordered}-${already}-${quantity}`,
+    description: "item",
+    orderedQuantity: ordered,
+    alreadyReceived: already,
+    quantity,
+    orderedUnitCents: orderedUnit,
+    invoicedUnitCents: invoiced,
+  });
+
+  it("o que falta chegar nunca é negativo", () => {
+    expect(pendingQuantity({ orderedQuantity: 10, alreadyReceived: 4 })).toBe(6);
+    // Veio mais do que se pediu: não falta nada, e não sobra "menos dois".
+    expect(pendingQuantity({ orderedQuantity: 10, alreadyReceived: 12 })).toBe(0);
+  });
+
+  it("a nota cobrando mais dá diferença positiva", () => {
+    // 10 embalagens: pedido a R$ 5,00, nota a R$ 5,50 → R$ 5,00 a mais.
+    expect(priceDiffCents(line(10, 0, 10, 500, 550))).toBe(500);
+  });
+
+  it("a nota cobrando menos dá diferença negativa", () => {
+    expect(priceDiffCents(line(10, 0, 10, 500, 450))).toBe(-500);
+  });
+
+  it("sem preço na nota, vale o do pedido e não há diferença", () => {
+    // Zero entraria no estoque como material de graça.
+    expect(priceDiffCents(line(10, 0, 10, 500, null))).toBe(0);
+  });
+
+  it("soma o recebimento pelo preço da NOTA", () => {
+    const t = receiptTotals([
+      line(10, 0, 10, 500, 550),
+      line(4, 0, 4, 1_000, null),
+    ]);
+    expect(t.itemsCents).toBe(5_500 + 4_000);
+    expect(t.priceDiffCents).toBe(500);
+  });
+
+  it("conta as linhas que vieram em quantidade diferente", () => {
+    const t = receiptTotals([
+      line(10, 0, 10, 500), // exatamente o que faltava
+      line(10, 0, 8, 500), // faltaram 2
+      line(10, 0, 12, 500), // vieram 2 a mais
+    ]);
+    expect(t.quantityDivergences).toBe(2);
+  });
+
+  it("linha zerada não entra em nada", () => {
+    const t = receiptTotals([line(10, 0, 0, 500, 900)]);
+    expect(t.itemsCents).toBe(0);
+    expect(t.priceDiffCents).toBe(0);
+    expect(t.quantityDivergences).toBe(0);
+  });
+});
+
+describe("situação do pedido depois de receber", () => {
+  it("nada recebido continua aberto", () => {
+    expect(
+      orderStatusAfter([{ orderedQuantity: 10, alreadyReceived: 0 }])
+    ).toBe("aberto");
+  });
+
+  it("parte recebida fica em parte", () => {
+    expect(
+      orderStatusAfter([{ orderedQuantity: 10, alreadyReceived: 8 }])
+    ).toBe("recebido_parcial");
+  });
+
+  it("tudo recebido fecha", () => {
+    expect(
+      orderStatusAfter([
+        { orderedQuantity: 10, alreadyReceived: 10 },
+        { orderedQuantity: 4, alreadyReceived: 4 },
+      ])
+    ).toBe("recebido");
+  });
+
+  it("sobra num item NÃO compensa falta em outro", () => {
+    // Compensar esconderia a pendência com o fornecedor justamente onde ela
+    // precisa aparecer.
+    expect(
+      orderStatusAfter([
+        { orderedQuantity: 10, alreadyReceived: 12 },
+        { orderedQuantity: 10, alreadyReceived: 8 },
+      ])
+    ).toBe("recebido_parcial");
+  });
+});
+
+describe("parcelas sugeridas", () => {
+  it("a última absorve o resíduo", () => {
+    const p = suggestInstallments(10_000, 3, "2026-09-10");
+    expect(p.map((x) => x.amountCents)).toEqual([3_333, 3_333, 3_334]);
+    expect(p.reduce((s, x) => s + x.amountCents, 0)).toBe(10_000);
+  });
+
+  it("uma parcela é o total", () => {
+    expect(suggestInstallments(10_000, 1, "2026-09-10")).toEqual([
+      { amountCents: 10_000, dueDate: "2026-09-10" },
+    ]);
+  });
+
+  it("avança um mês por parcela, e dia 31 vira o último do mês curto", () => {
+    const p = suggestInstallments(300, 3, "2026-01-31");
+    expect(p.map((x) => x.dueDate)).toEqual([
+      "2026-01-31",
+      "2026-02-28",
+      "2026-03-31",
+    ]);
+  });
+
+  it("total zerado não gera parcela", () => {
+    expect(suggestInstallments(0, 3, "2026-09-10")).toEqual([]);
   });
 });
