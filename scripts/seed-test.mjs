@@ -107,6 +107,17 @@ const ITENS = [
 async function main() {
   console.log("Semeando o cenário de teste...\n");
   const db = await connect();
+  // FECHAR A CONEXÃO MESMO QUANDO DÁ ERRO. Sem isto o programa não termina: uma
+  // conexão aberta segura o processo vivo para sempre, e a primeira semeadura
+  // que falhou ficou horas pendurada na máquina sem estar fazendo nada.
+  try {
+    await semear(db);
+  } finally {
+    await db.end().catch(() => {});
+  }
+}
+
+async function semear(db) {
 
   // ---- usuários ------------------------------------------------------------
   // A senha nasce aleatória e vai para o `.env.test.local`. Senha fixa no
@@ -272,7 +283,6 @@ async function main() {
       `gravada em .env.test.local (TEST_USER_PASSWORD). Todos os usuários ` +
       `usam a MESMA senha.`
   );
-  await db.end();
 }
 
 /** Grava o kit pela porta oficial — a mesma que a tela usa. */

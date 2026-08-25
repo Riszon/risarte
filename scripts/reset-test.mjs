@@ -73,6 +73,16 @@ async function main() {
   );
 
   const db = await connect();
+  // Mesma razão do `seed-test.mjs`: conexão aberta segura o processo vivo para
+  // sempre, e um erro no meio deixaria um programa pendurado na máquina.
+  try {
+    await limpar(db);
+  } finally {
+    await db.end().catch(() => {});
+  }
+}
+
+async function limpar(db) {
   const { esvaziadas, faltando } = await limparMovimento(db);
 
   console.log(`  ${esvaziadas} tabelas de movimento esvaziadas.`);
@@ -96,8 +106,6 @@ async function main() {
       `${s.procedimentos} procedimentos, ${s.itens} itens. ` +
       `Pacientes: ${s.clientes}.`
   );
-
-  await db.end();
 }
 
 main().catch((e) => {
