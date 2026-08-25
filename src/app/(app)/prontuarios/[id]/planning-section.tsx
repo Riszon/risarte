@@ -369,8 +369,19 @@ export function PlanningSection({
   // Recolher/expandir cada opção do plano (default: principal aberta, demais
   // recolhidas — facilita a navegação com vários planos).
   const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
-  const toggleOption = (id: string, fallback: boolean) =>
-    setOpenOptions((prev) => ({ ...prev, [id]: !(prev[id] ?? fallback) }));
+  // O PADRÃO TEM DE SER O MESMO DOS DOIS LADOS. Quem desenha usa
+  // `canEditContent ? isPrimary : false`; se o clique usasse outro padrão, o
+  // primeiro clique gravaria o estado que já estava valendo e a tela não
+  // mudaria. Era o que acontecia com o COORDENADOR na opção principal: ele
+  // clicava para abrir e avaliar o plano, nada acontecia, e os botões de
+  // aprovar ficavam inalcançáveis — no gargalo do núcleo clínico.
+  const optionOpenByDefault = (isPrimary: boolean) =>
+    canEditContent ? isPrimary : false;
+  const toggleOption = (id: string, isPrimary: boolean) =>
+    setOpenOptions((prev) => ({
+      ...prev,
+      [id]: !(prev[id] ?? optionOpenByDefault(isPrimary)),
+    }));
   // O formulário de nova opção começa fechado (abre pelo botão).
   const [addingOption, setAddingOption] = useState(false);
 
@@ -775,9 +786,11 @@ export function PlanningSection({
           ) : (
             <ul className="space-y-2">
               {options.map((o) => {
-                // Padrão: recolhido na visualização; ao editar, o principal abre.
+                // Padrão: recolhido na visualização; ao editar, o principal
+                // abre. A mesma regra vale no clique (`optionOpenByDefault`) —
+                // os dois lados precisam concordar.
                 const optOpen =
-                  openOptions[o.id] ?? (canEditContent ? o.isPrimary : false);
+                  openOptions[o.id] ?? optionOpenByDefault(o.isPrimary);
                 return (
                 <li
                   key={o.id}

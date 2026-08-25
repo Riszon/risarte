@@ -141,11 +141,10 @@ test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial"
   // O Coordenador tem de ABRIR a opção para decidir: aprovar sem ver o que está
   // dentro seria assinar em branco, e a tela impede isso por construção.
   //
-  // ⚠️ CONTORNO DE DEFEITO CONHECIDO (item 2 de docs/CORRECOES-TESTES.md): o
-  // PRIMEIRO clique não abre nada para o Coordenador. Clicamos até abrir para o
-  // teste seguir cobrindo a aprovação; o defeito em si está preso pelo teste
-  // logo abaixo, que falha de propósito enquanto ele existir.
-  await abrirOpcao(page);
+  // Um clique basta desde a correção do item 2 (os dois lados passaram a usar o
+  // mesmo padrão de aberto/fechado). Antes, o primeiro clique do Coordenador
+  // não fazia nada e os botões de aprovar ficavam inalcançáveis.
+  await page.getByRole("button", { name: "Expandir opção" }).first().click();
   const aprovar = page.getByRole("button", { name: /Aprovar opção/ }).first();
   await expect(aprovar).toBeVisible({ timeout: 20_000 });
   await aprovar.click();
@@ -187,15 +186,12 @@ test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial"
   await db.end();
 });
 
-test("um clique devia abrir a opção para o Coordenador", async ({
-  page,
-  context,
-}) => {
-  // ESTE TESTE FALHA DE PROPÓSITO enquanto o defeito existir — e é essa a
-  // graça: quando a correção sair, ele vira verde e AVISA que o contorno lá em
-  // cima pode ser removido. Defeito conhecido sem teste vira defeito esquecido.
-  test.fail();
-
+test("um clique abre a opção para o Coordenador", async ({ page, context }) => {
+  // Nasceu como falha esperada, guardando o defeito do clique duplo (item 2 de
+  // docs/CORRECOES-TESTES.md). A correção saiu, ele ficou verde sozinho e o
+  // marcador foi removido — que é exatamente o serviço que ele devia prestar.
+  // Fica como guarda permanente: se os dois padrões voltarem a divergir, o
+  // Coordenador perde o acesso aos botões de aprovar e este teste acusa.
   const db = await banco();
   const { rows } = await db.query(
     `select client_id from public.treatment_plans
@@ -214,19 +210,6 @@ test("um clique devia abrir a opção para o Coordenador", async ({
     page.getByRole("button", { name: /Aprovar opção/ }).first()
   ).toBeVisible({ timeout: 10_000 });
 });
-
-/** Abre a opção, insistindo enquanto o defeito do primeiro clique existir. */
-async function abrirOpcao(page: import("@playwright/test").Page) {
-  for (let tentativa = 0; tentativa < 3; tentativa++) {
-    const revisao = page.getByRole("button", { name: /Aprovar opção/ });
-    if (await revisao.count()) return;
-    await page
-      .getByRole("button", { name: /^(Expandir|Recolher) opção$/ })
-      .first()
-      .click();
-    await page.waitForTimeout(800);
-  }
-}
 
 /** Quantas linhas daquela tabela existem para o plano deste paciente. */
 async function contar(

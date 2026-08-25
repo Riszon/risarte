@@ -1,5 +1,16 @@
 # Correções achadas pelos testes — fila para o fim da camada 3
 
+> **LOTE 1 ENTREGUE em 25/08/2026 (v0.220.0 · migração 0244).** Os dois itens
+> abaixo estão **corrigidos e provados**. Ficam registrados porque a explicação
+> de *por que* cada um existia é o que impede o mesmo erro de voltar.
+>
+> - **Item 1 (CPF):** migração 0244 aplicada na produção. Conferido depois de
+>   aplicar, não só "rodou sem erro": gravar um CPF existente sem pontuação é
+>   **recusado** pelo índice `clients_cpf_digits_unique`.
+> - **Item 2 (clique duplo):** corrigido em `planning-section.tsx`. O teste que
+>   nascera como *falha esperada* ficou **verde sozinho** e virou guarda
+>   permanente; os contornos foram removidos dos dois lugares onde viviam.
+
 **Regra combinada com o dono (24/08/2026):** achado durante os testes **não
 interrompe os testes**. Ele entra nesta lista com a prova do que acontece, e as
 correções saem **todas juntas** no fim, num lote só. Parar a cada achado

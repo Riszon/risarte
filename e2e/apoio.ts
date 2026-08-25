@@ -221,7 +221,14 @@ export async function criarPacienteNaRecepcao(
   await page.getByLabel("CEP").fill("86180-000");
   await page.getByRole("button", { name: "Cadastrar cliente" }).click();
 
-  await page.waitForURL(/\/prontuarios\/[0-9a-f-]{36}/, { timeout: 30_000 });
+  // `waitUntil: "commit"` — basta o ENDEREÇO ter mudado. O padrão espera a
+  // página terminar de carregar por completo, e no servidor de desenvolvimento
+  // uma tela pesada às vezes nunca declara isso: o paciente estava criado, a
+  // ficha estava na tela, e o teste falhava esperando um sinal que não vinha.
+  await page.waitForURL(/\/prontuarios\/[0-9a-f-]{36}/, {
+    timeout: 30_000,
+    waitUntil: "commit",
+  });
   const id = page.url().split("/prontuarios/")[1].split(/[?#]/)[0];
   return { id, nome, cpf };
 }
@@ -352,21 +359,14 @@ export async function levarAoComercial(
   await enviarAprovacao.click();
   await page.getByText(/Aguardando aprovação/).first().waitFor();
 
-  // O Coordenador aprova (contorno do defeito conhecido: ver item 2 de
-  // docs/CORRECOES-TESTES.md — o primeiro clique não abre a opção).
+  // O Coordenador abre a opção e aprova. Um clique basta desde a correção do
+  // item 2 — antes eram necessários dois, e o contorno vivia aqui.
   await trocarPara(context, PESSOAS.coordenador);
   await fecharAvisos(page);
   await page.goto(`/prontuarios/${paciente.id}`);
   await esperarEFecharAvisos(page);
   await page.getByRole("tab", { name: "Plano", exact: true }).click();
-  for (let i = 0; i < 3; i++) {
-    if (await page.getByRole("button", { name: /Aprovar opção/ }).count()) break;
-    await page
-      .getByRole("button", { name: /^(Expandir|Recolher) opção$/ })
-      .first()
-      .click();
-    await page.waitForTimeout(800);
-  }
+  await page.getByRole("button", { name: "Expandir opção" }).first().click();
   await page.getByRole("button", { name: /Aprovar opção/ }).first().click();
   await page.getByText(/aprovada/i).first().waitFor();
 
