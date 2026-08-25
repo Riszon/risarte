@@ -126,12 +126,28 @@ export async function fecharAvisos(
   page: import("@playwright/test").Page
 ): Promise<void> {
   await page.addLocatorHandler(
-    page.getByRole("dialog").filter({ hasText: "Agendar apresentação" }),
+    avisoInsistente(page),
     async (aviso) => {
-      await aviso.getByRole("button", { name: "Fechar" }).click();
+      await aviso.getByRole("button", { name: "Fechar", exact: true }).click();
     },
-    { times: 20 }
+    { times: 30 }
   );
+}
+
+/**
+ * A FAMÍLIA de avisos, não um deles.
+ *
+ * A recepção tem mais de um aviso insistente — "Agendar apresentação comercial"
+ * quando o caso chega ao Planejamento, "Fechamento! Iniciar tratamento" quando
+ * a venda fecha — e vão nascer outros. A primeira versão desta regra citava um
+ * pelo nome, e o segundo derrubou justamente os testes finais, que são os que
+ * fecham venda. Reconhecer pela FORMA (janela com botão "Fechar") cobre os que
+ * ainda não existem.
+ */
+function avisoInsistente(page: import("@playwright/test").Page) {
+  return page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("button", { name: "Fechar", exact: true }) });
 }
 
 /**
@@ -145,12 +161,12 @@ export async function fecharAvisos(
 export async function esperarEFecharAvisos(
   page: import("@playwright/test").Page
 ): Promise<void> {
-  const aviso = page.getByRole("dialog").filter({ hasText: "Agendar apresentação" });
+  const aviso = avisoInsistente(page);
   await aviso
     .first()
-    .waitFor({ state: "visible", timeout: 5_000 })
+    .waitFor({ state: "visible", timeout: 8_000 })
     .catch(() => {});
-  for (let i = 0; i < 3 && (await aviso.count()) > 0; i++) {
+  for (let i = 0; i < 4 && (await aviso.count()) > 0; i++) {
     await aviso
       .first()
       .getByRole("button", { name: "Fechar" })
@@ -177,7 +193,12 @@ export async function criarPacienteNaRecepcao(
   const nome = nomeDeTeste(prefixo);
 
   await page.goto("/prontuarios/novo");
+  // Armar o tratador não basta aqui: quando a recepção já tem vários pacientes
+  // esperando agendamento, o aviso abre por cima do formulário e o esconde do
+  // começo. Esvaziar a tela ANTES é o que garante que o formulário existe para
+  // ser preenchido.
   await fecharAvisos(page);
+  await esperarEFecharAvisos(page);
   await page.getByLabel("CPF").first().fill(mascaraCpf(cpf));
   await page.getByLabel("Nome completo").fill(nome);
   await page.getByLabel("Data de nascimento").fill("1990-05-12");
@@ -350,6 +371,49 @@ export async function levarAoComercial(
   await enviarComercial.waitFor();
   await enviarComercial.click();
   await page.getByText(/Conversão Comercial/).first().waitFor();
+
+  return paciente;
+}
+
+/**
+ * Fecha uma venda de verdade e devolve o paciente com a cobrança em aberto.
+ *
+ * Quem PROVA que este caminho funciona é o `04-fechamento.spec.ts`. Aqui ele é
+ * o meio de chegar ao dinheiro: sem venda fechada não existe cobrança legítima
+ * para receber — é a regra de ouro, imposta pelo banco.
+ */
+export async function venderEFechar(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  prefixo = "Dinheiro"
+): Promise<{ id: string; nome: string; cpf: string }> {
+  const paciente = await levarAoComercial(page, context, prefixo);
+
+  await trocarPara(context, PESSOAS.consultor);
+  await fecharAvisos(page);
+  await page.goto(`/comercial/${paciente.id}`);
+  await page
+    .getByRole("combobox", { name: /Forma de pagamento/ })
+    .selectOption({ label: "PIX" });
+  await page.getByRole("button", { name: "Salvar negociação" }).click();
+
+  const aceitou = page.getByRole("button", { name: "Cliente aceitou" });
+  await aceitou.waitFor();
+  // O botão só habilita quando o salvamento termina; clicar antes não faz nada.
+  for (let i = 0; i < 60 && (await aceitou.isDisabled()); i++) {
+    await page.waitForTimeout(500);
+  }
+  await aceitou.click();
+
+  await page.goto(`/apresentacao/${paciente.id}`);
+  for (const passo of ["Contrato assinado", "Pagamento confirmado"]) {
+    const cartao = page
+      .locator("div")
+      .filter({ has: page.getByText(passo, { exact: true }) })
+      .last();
+    await cartao.getByRole("button", { name: "Marcar como concluído" }).click();
+    await page.waitForTimeout(1500);
+  }
 
   return paciente;
 }

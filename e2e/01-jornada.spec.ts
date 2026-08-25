@@ -14,6 +14,7 @@ import {
   banco,
   cpfDeTeste,
   entrarComo,
+  esperarEFecharAvisos,
   fecharAvisos,
   mascaraCpf,
   nomeDeTeste,
@@ -61,6 +62,7 @@ test.describe("Fase 1 — Aquisição", () => {
 
     await page.goto("/prontuarios/novo");
     await fecharAvisos(page);
+    await esperarEFecharAvisos(page);
     await expect(page.getByRole("heading", { name: "Novo cliente" })).toBeVisible();
 
     await page.getByLabel("CPF").first().fill(mascaraCpf(cpf));
@@ -121,6 +123,7 @@ test.describe("Fase 1 — Aquisição", () => {
     for (const tentativa of [1, 2]) {
       await page.goto("/prontuarios/novo");
       await fecharAvisos(page);
+      await esperarEFecharAvisos(page);
       await page.getByLabel("CPF").first().fill(mascaraCpf(cpf));
       // O aviso de duplicado nasce ao sair do campo do CPF.
       await page.getByLabel("Nome completo").click();

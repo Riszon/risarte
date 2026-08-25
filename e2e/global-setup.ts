@@ -38,10 +38,34 @@ export default async function globalSetup() {
   //
   // Consequência assumida e declarada: quem estiver olhando o app de teste
   // perde os dados que criou à mão quando a suíte roda.
-  const limpeza = await banco();
-  const { esvaziadas } = await limparMovimento(limpeza);
-  await limpeza.end();
-  console.log(`  Movimento limpo (${esvaziadas} tabelas) — cenário mantido.`);
+  // UMA EXECUÇÃO POR VEZ. Duas suítes no mesmo banco se atropelam: a limpeza da
+  // segunda apaga os dados da primeira no meio do caminho, e a primeira falha
+  // com cara de defeito do sistema. Já aconteceu — a trava existe porque
+  // disciplina não bastou.
+  const tranca = await banco();
+  const { rows: livre } = await tranca.query(
+    "select pg_try_advisory_lock(hashtext('risarte-e2e')) as consegui"
+  );
+  if (!livre[0].consegui) {
+    await tranca.end();
+    throw new Error(
+      "JÁ EXISTE uma execução de testes neste banco. Espere ela terminar."
+    );
+  }
+  // A conexão fica aberta de propósito: a trava vale enquanto ela viver, e o
+  // Node a fecha ao terminar a execução.
+
+  // `SEM_LIMPEZA=1` mantém o que está lá: serve para investigar um caso que
+  // acabou de falhar, ou para olhar o app de teste sem perder o que se criou à
+  // mão. Não é o padrão de propósito — teste que começa sujo mente devagar.
+  if (process.env.SEM_LIMPEZA === "1") {
+    console.log("  Limpeza PULADA (SEM_LIMPEZA=1) — o banco começa como está.");
+  } else {
+    const limpeza = await banco();
+    const { esvaziadas } = await limparMovimento(limpeza);
+    await limpeza.end();
+    console.log(`  Movimento limpo (${esvaziadas} tabelas) — cenário mantido.`);
+  }
 
   const browser = await chromium.launch();
   const context = await browser.newContext({ baseURL: APP_TESTE });
