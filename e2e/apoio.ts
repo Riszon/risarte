@@ -418,6 +418,39 @@ export async function venderEFechar(
   return paciente;
 }
 
+/**
+ * Um cliente do Supabase autenticado COMO AQUELA PESSOA.
+ *
+ * Diferente da conexão direta com o banco (que é dona de tudo e passa por cima
+ * das permissões), este caminho enfrenta a RLS igualzinho ao app. Serve para
+ * preparar cenário sem mentir: se o papel não pode escrever aquilo, aqui também
+ * não vai poder — e o teste descobre na hora, não três telas adiante.
+ */
+export async function comoUsuario(email: string) {
+  const admin = createClient(
+    AMBIENTE.NEXT_PUBLIC_SUPABASE_URL,
+    AMBIENTE.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false } }
+  );
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+  if (error) throw new Error(`link de ${email}: ${error.message}`);
+
+  const cliente = createClient(
+    AMBIENTE.NEXT_PUBLIC_SUPABASE_URL,
+    AMBIENTE.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { auth: { persistSession: false } }
+  );
+  const { error: erroSessao } = await cliente.auth.verifyOtp({
+    token_hash: data.properties!.hashed_token,
+    type: "email",
+  });
+  if (erroSessao) throw new Error(`sessão de ${email}: ${erroSessao.message}`);
+  return cliente;
+}
+
 /** Conexão com o banco de teste, para perguntar o que a tela não mostra. */
 export async function banco() {
   const client = new pg.Client({
