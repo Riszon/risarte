@@ -3877,12 +3877,51 @@ Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
    **`Conferir Sistema.bat`**: 10 invariantes do razão, estoque, compras e taxas.
 2. ~~**Camada 2 — varredura de telas**~~ ✅ `npm run check:telas` /
    **`Conferir Telas.bat`**: abre todas as rotas com o acesso de cada papel.
-3. **Camada 3 — ponta a ponta (Playwright).** **Depende do dono criar um segundo
-   projeto Supabase, só para teste** — não dá para simular venda, baixa e
-   cancelamento no banco de trabalho. Brinde: prova que as migrações reconstroem
-   o banco do zero.
+3. **Camada 3 — ponta a ponta (Playwright).** **EM ANDAMENTO** — banco de teste
+   criado e no ar; 8 testes verdes em 12 min. Detalhe abaixo.
 4. **Preparar o lançamento:** limpeza dos dados de teste (manter login do admin
    e catálogo/fichas, com backup antes), ZapSign e ASAAS.
+
+### Camada 3 — onde paramos (24/08/2026)
+
+**Infraestrutura pronta.** Projeto Supabase de teste `bsnptybalszjjbhxeejo`
+(sa-east-1), com as **249 migrações aplicadas do zero, sem erro** — primeira
+prova de que a pasta de migrações reconstrói o sistema inteiro. Chaves em
+`.env.test.local` (fora do Git). App de teste na **porta 3100**, o do dono
+continua na 3000; portas, pasta de compilação (`.next-test`) e bancos separados.
+
+```bash
+npm run migrar:teste   # aplica as migrações do zero
+npm run seed:teste     # 3 clínicas, 1 usuário por papel, catálogo, kits
+npm run reset:teste    # limpa o movimento, mantém o cenário
+npm run test:e2e       # roda os testes
+```
+
+Atalho para o dono: **`Assistir Testes.bat`** (vê o robô usando o sistema em
+câmera lenta). Login do app de teste: `admin@example.com` (e os 15 papéis em
+`<papel>@example.com`), senha em `.env.test.local`.
+
+**Feito — 8 testes verdes:**
+
+1. Login pela tela de verdade; senha errada não revela se o e-mail existe.
+2. Recepção cadastra o paciente → nasce na Aquisição, na unidade certa.
+3. Mesmo CPF não vira dois pacientes na rede.
+4. Jornada Fase 1 → 2 → 3 (consentimento LGPD antes da coleta, anamnese,
+   envio ao Planejamento) com a linha do tempo das três passagens.
+5. Fase 3: Planner monta plano + orçamento + pilar, Coordenador aprova, Planner
+   envia ao Comercial.
+6. Fase 4: **a regra de ouro nos dois sentidos** — a mesma cobrança é recusada
+   pelo banco antes do fechamento (`SALE_NOT_CLOSED`) e aceita depois.
+7. **O dinheiro:** DRE antes da baixa === DRE depois da baixa (a correção da
+   0226 presa por teste), com o razão guardando competência e caixa separados.
+8. Defeito conhecido preso como **falha esperada** (item 2 das correções).
+
+**Falta (ordem sugerida):** resto do dinheiro (baixa parcial, multa/juros,
+taxa da adquirente, split das taxas da rede) → renegociação e cancelamento →
+clínico/estoque → compras → fechamento de competência.
+
+**Fila de correções em `docs/CORRECOES-TESTES.md`** — combinado com o dono:
+achado não interrompe teste, tudo sai num lote no fim.
 
 **Testes do dono ainda pendentes:** painel de Compras (C4), recebimento (C3b),
 aprovação (C3a, precisa fechar a RC-0001), Empresarial fases 0–8 (nunca testado),
