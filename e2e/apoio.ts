@@ -131,10 +131,16 @@ export async function fecharAvisos(
       // COM PRAZO. Sem ele, um aviso que se redesenha sem parar prende o teste
       // para sempre: o clique fica esperando o botão "ficar estável" e nunca
       // desiste. Já custou uma execução inteira de 15 minutos.
-      await aviso
-        .getByRole("button", { name: "Fechar", exact: true })
-        .click({ timeout: 5_000 })
-        .catch(() => page.keyboard.press("Escape"));
+      // Esc primeiro: fecha o aviso de cima, e é o que funciona quando eles
+      // vêm empilhados. O clique fica como reserva.
+      await page.keyboard.press("Escape").catch(() => {});
+      if (await aviso.count()) {
+        await aviso
+          .last()
+          .getByRole("button", { name: "Fechar", exact: true })
+          .click({ timeout: 4_000 })
+          .catch(() => {});
+      }
     },
     { times: 30 }
   );
@@ -172,15 +178,24 @@ export async function esperarEFecharAvisos(
     .first()
     .waitFor({ state: "visible", timeout: 8_000 })
     .catch(() => {});
-  for (let i = 0; i < 4 && (await aviso.count()) > 0; i++) {
-    // Cada tentativa com prazo curto: insistir é bom, esperar para sempre não.
-    const fechou = await aviso
-      .first()
+  // OS AVISOS VÊM EMPILHADOS. Um paciente que acabou de fechar venda gera dois
+  // ao mesmo tempo — "agendar apresentação" e "iniciar tratamento" —, e
+  // enquanto qualquer um deles estiver aberto o resto da tela não existe.
+  // Fechar um só não adianta; e clicar no botão do de baixo não funciona,
+  // porque o de cima intercepta.
+  //
+  // Esc fecha sempre o de CIMA, que é exatamente a ordem certa. O clique fica
+  // como reserva para o caso de algum aviso não responder ao teclado.
+  for (let i = 0; i < 6; i++) {
+    if ((await aviso.count()) === 0) return;
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(400);
+    if ((await aviso.count()) === 0) return;
+    await aviso
+      .last()
       .getByRole("button", { name: "Fechar", exact: true })
-      .click({ timeout: 5_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!fechou) await page.keyboard.press("Escape").catch(() => {});
+      .click({ timeout: 4_000 })
+      .catch(() => {});
     await page.waitForTimeout(400);
   }
 }

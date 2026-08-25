@@ -32,20 +32,26 @@ test.beforeAll(async () => {
   await db.end();
 });
 
-// ⚠️ INACABADO — e de propósito não está vermelho.
+// ⚠️ INACABADO — falta UM PASSO, e ele está identificado.
 //
-// O caminho até a baixa atravessa QUATRO telas e QUATRO papéis (recepção,
-// painel de atendimento, prontuário, dentista), e o teste ainda tropeça em
-// encontrar o botão de agendar na ficha de um paciente que já está na Fase 5.
+// O QUE JÁ FUNCIONA (provado na execução de 25/08/2026, à noite): agendar,
+// receber o paciente, chamar, escrever o Desenvolvimento Clínico e encerrar o
+// atendimento. E MAIS: o **kit de ATENDIMENTO baixou** — dois movimentos de
+// consumo (gorro e babador) registrados no banco. Metade da baixa automática
+// está provada de ponta a ponta.
 //
-// **Nada indica defeito no sistema**: cada tropeço até aqui foi eu supondo que
-// alguém podia fazer algo que o sistema, corretamente, reserva a outra pessoa —
-// só o dentista escreve o Desenvolvimento Clínico, só o profissional do
-// atendimento chama o paciente, e kit de restauração não sai numa avaliação.
+// O QUE FALTA: usar **"Agendar sessão"** (aba *Sessões & Procedimentos* da
+// ficha) em vez de "Novo agendamento". A diferença é do sistema, e é boa: o
+// ATENDIMENTO é o horário; a SESSÃO é o que vai ser feito nele. Um agendamento
+// genérico reserva a sala e o profissional, mas não carrega sessão nenhuma —
+// então, ao encerrar, não há sessão de tratamento para concluir, e o kit do
+// PROCEDIMENTO não tem por que sair da gaveta.
 //
-// Fica marcado como pendente para não pintar de verde o que não foi provado,
-// nem de vermelho o que não é culpa do sistema. O caminho (agendar, atender,
-// concluir) já está construído em `apoio.ts` e é reaproveitável.
+// Confirmado no código: a tela de conclusão lista apenas as sessões com
+// `appointment_id` daquele atendimento.
+//
+// Retomar é trocar a chamada de `agendarAtendimento` por um apoio novo que
+// agende a sessão do plano. O resto do teste está escrito e conferido.
 test.fixme("concluir a sessão consome o kit do procedimento", async ({
   page,
   context,

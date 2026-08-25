@@ -266,10 +266,17 @@ async function semear(db) {
   // direta nem baixa de estoque. A unidade nascia sem salas e o cenário parecia
   // completo até alguém tentar marcar a primeira consulta.
   for (const codigo of ["CAM", "LON"]) {
+    // A CLÍNICA DE TESTE NÃO TEM HORÁRIO COMERCIAL, de propósito. Com 08h–18h,
+    // o teste do fluxo clínico só passaria de dia: à noite a lista de horários
+    // livres vem vazia e o agendamento não acontece — o sistema certíssimo, o
+    // teste refém do relógio. Aqui a agenda abre todos os dias, o dia inteiro.
     await db.query(
-      `insert into public.clinic_agenda_settings (clinic_id, chairs)
-       values ($1, 3)
-       on conflict (clinic_id) do nothing`,
+      `insert into public.clinic_agenda_settings
+         (clinic_id, chairs, open_time, close_time, weekdays)
+       values ($1, 3, '00:00', '23:59', '{0,1,2,3,4,5,6}')
+       on conflict (clinic_id) do update
+         set open_time = '00:00', close_time = '23:59',
+             weekdays = '{0,1,2,3,4,5,6}'`,
       [clinicas[codigo]]
     );
     for (const [i, nome] of ["Sala 1", "Sala 2", "Sala 3"].entries()) {

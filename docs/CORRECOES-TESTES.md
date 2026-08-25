@@ -22,6 +22,27 @@ corrigido** e **o tamanho da correção**.
 
 ---
 
+## Pendência de TESTE (não é defeito): a baixa do kit do procedimento
+
+`e2e/10-estoque.spec.ts` está marcado como inacabado. **Nada indica defeito no
+sistema** — o que falta é um passo do teste.
+
+**Já provado:** todo o fluxo clínico funciona pela tela (agendar, receber,
+chamar, escrever o Desenvolvimento Clínico, encerrar) e o **kit de ATENDIMENTO
+baixa** — dois movimentos de consumo registrados quando o atendimento encerra.
+
+**O passo que falta:** usar **"Agendar sessão"** (aba *Sessões & Procedimentos*)
+em vez de "Novo agendamento". O **atendimento é o horário**; a **sessão é o que
+vai ser feito nele**. Agendamento genérico não carrega sessão, então não há
+sessão de tratamento para concluir — e o kit do procedimento não tem por que
+sair da gaveta. A tela de conclusão lista só as sessões com `appointment_id`
+daquele atendimento (conferido no código).
+
+**Tamanho:** pequeno — um apoio novo em `e2e/apoio.ts`; o resto do teste está
+escrito e conferido.
+
+---
+
 ## 1. A trava de CPF repetido não enxerga o CPF sem pontuação
 
 **Achado em:** E2E-1, cadastro do paciente (24/08/2026).
