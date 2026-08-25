@@ -128,7 +128,13 @@ export async function fecharAvisos(
   await page.addLocatorHandler(
     avisoInsistente(page),
     async (aviso) => {
-      await aviso.getByRole("button", { name: "Fechar", exact: true }).click();
+      // COM PRAZO. Sem ele, um aviso que se redesenha sem parar prende o teste
+      // para sempre: o clique fica esperando o botão "ficar estável" e nunca
+      // desiste. Já custou uma execução inteira de 15 minutos.
+      await aviso
+        .getByRole("button", { name: "Fechar", exact: true })
+        .click({ timeout: 5_000 })
+        .catch(() => page.keyboard.press("Escape"));
     },
     { times: 30 }
   );
@@ -167,11 +173,14 @@ export async function esperarEFecharAvisos(
     .waitFor({ state: "visible", timeout: 8_000 })
     .catch(() => {});
   for (let i = 0; i < 4 && (await aviso.count()) > 0; i++) {
-    await aviso
+    // Cada tentativa com prazo curto: insistir é bom, esperar para sempre não.
+    const fechou = await aviso
       .first()
-      .getByRole("button", { name: "Fechar" })
-      .click()
-      .catch(() => {});
+      .getByRole("button", { name: "Fechar", exact: true })
+      .click({ timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!fechou) await page.keyboard.press("Escape").catch(() => {});
     await page.waitForTimeout(400);
   }
 }
@@ -449,6 +458,117 @@ export async function comoUsuario(email: string) {
   });
   if (erroSessao) throw new Error(`sessão de ${email}: ${erroSessao.message}`);
   return cliente;
+}
+
+/**
+ * Agenda um atendimento para hoje, pela tela da recepção.
+ *
+ * Existe porque **quase tudo do clínico depende de um atendimento**: a venda
+ * direta recusa sem ele ("toda venda direta precisa estar ligada a um
+ * atendimento"), a conclusão da sessão nasce dele, e é por aí que o estoque
+ * baixa. Sem agendamento, metade do sistema não tem por onde começar.
+ */
+export async function agendarAtendimento(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  clientId: string
+): Promise<void> {
+  await trocarPara(context, PESSOAS.recepcao);
+  await fecharAvisos(page);
+  await page.goto(`/prontuarios/${clientId}`);
+  await esperarEFecharAvisos(page);
+  await page.getByRole("button", { name: /Novo agendamento/ }).click();
+
+  const janela = page.getByRole("dialog");
+  await janela.waitFor();
+
+  // Os campos não têm rótulo associado, então a ordem é o que os identifica:
+  // cliente, tipo, profissional, sala, duração e horário.
+  // QUEM ATENDE DEPENDE DO TIPO. Numa Avaliação o sistema oferece só o
+  // Coordenador — é ele quem avalia na Fase 2 —, e insistir num nome fixo
+  // faria o teste brigar com uma regra que está certa. Pega quem for oferecido.
+  await janela.getByRole("combobox").nth(2).click();
+  await page.getByRole("option").first().click();
+
+  const hoje = new Date().toLocaleDateString("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+  });
+  await janela.getByRole("textbox", { name: "Data" }).fill(hoje);
+
+  // Primeiro horário livre do dia — qual não importa, importa haver um.
+  await janela.getByRole("combobox").last().click();
+  await page.getByRole("option").first().click();
+
+  await janela.getByRole("button", { name: "Agendar", exact: true }).click();
+  await janela.waitFor({ state: "hidden", timeout: 30_000 });
+}
+
+/**
+ * Leva o atendimento do começo ao fim: chegada → chamada → conclusão.
+ *
+ * São três telas porque são três momentos de gente: a recepção recebe, alguém
+ * chama, e o profissional encerra escrevendo o que fez. **O estoque só baixa no
+ * fim** — a conclusão da sessão é o gancho —, então sem este caminho metade do
+ * módulo de estoque não tem como ser testada.
+ *
+ * O Desenvolvimento Clínico é obrigatório para concluir, e isso é regra do
+ * sistema: atendimento sem registro do que foi feito não encerra.
+ */
+export async function atenderEConcluir(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  clientId: string,
+  // QUEM ATENDE MUDA COM O TIPO. Numa avaliação é o Coordenador; numa sessão de
+  // tratamento é o dentista — e **só o dentista escreve o Desenvolvimento
+  // Clínico**, que é o que libera a conclusão. Não é detalhe de tela: é a
+  // diferença entre avaliar e executar.
+  profissional: string = PESSOAS.dentista
+): Promise<void> {
+  // 1. A recepção confirma a chegada e chama o paciente.
+  await trocarPara(context, PESSOAS.recepcao);
+  await fecharAvisos(page);
+  await page.goto("/atendimento");
+  await esperarEFecharAvisos(page);
+
+  // Na lista o botão é "Registrar chegada"; ele abre uma janela de conferência
+  // ("Confirmar chegada") onde a recepção confere profissional, horário e sala
+  // com o paciente na frente antes de registrar.
+  await page.getByRole("button", { name: "Registrar chegada" }).first().click();
+  const janelaChegada = page.getByRole("dialog", { name: "Confirmar chegada" });
+  await janelaChegada.waitFor({ timeout: 30_000 });
+  await janelaChegada
+    .getByRole("button", { name: "Confirmar chegada" })
+    .click();
+  await janelaChegada.waitFor({ state: "hidden", timeout: 30_000 });
+
+  // 2. QUEM CHAMA É O PROFISSIONAL DAQUELE ATENDIMENTO, não a recepção — e faz
+  // sentido: chamar significa "estou pronto para receber agora". A avaliação
+  // foi marcada com o Coordenador, então é ele quem chama.
+  await trocarPara(context, profissional);
+  await fecharAvisos(page);
+  await page.goto("/atendimento");
+  await esperarEFecharAvisos(page);
+
+  const chamar = page.getByRole("button", { name: "Chamar" }).first();
+  await chamar.waitFor({ timeout: 30_000 });
+  await chamar.click();
+
+  // 3. O profissional escreve o que fez e encerra.
+  await page.goto(`/prontuarios/${clientId}`);
+  await page.getByRole("tab", { name: "Desenvolvimento Clínico" }).click();
+
+  const anotacao = page.getByPlaceholder(/Descreva o que foi feito/);
+  await anotacao.waitFor({ timeout: 30_000 });
+  await anotacao.fill(
+    "Procedimento realizado sem intercorrências — registro do teste automatizado."
+  );
+  // O salvamento é automático; esperar a confirmação evita concluir antes de o
+  // texto existir para o sistema.
+  await page.getByText(/Salvo às/).waitFor({ timeout: 30_000 });
+
+  const concluir = page.getByRole("button", { name: "Concluir atendimento" });
+  await concluir.waitFor({ timeout: 30_000 });
+  await concluir.click();
 }
 
 /** Conexão com o banco de teste, para perguntar o que a tela não mostra. */

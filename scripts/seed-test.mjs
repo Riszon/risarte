@@ -261,6 +261,30 @@ async function semear(db) {
   });
   console.log("  2 kits: um de procedimento e um de atendimento.");
 
+  // ---- agenda das unidades -------------------------------------------------
+  // SEM SALA NÃO SE AGENDA, e sem agendamento não existe atendimento, venda
+  // direta nem baixa de estoque. A unidade nascia sem salas e o cenário parecia
+  // completo até alguém tentar marcar a primeira consulta.
+  for (const codigo of ["CAM", "LON"]) {
+    await db.query(
+      `insert into public.clinic_agenda_settings (clinic_id, chairs)
+       values ($1, 3)
+       on conflict (clinic_id) do nothing`,
+      [clinicas[codigo]]
+    );
+    for (const [i, nome] of ["Sala 1", "Sala 2", "Sala 3"].entries()) {
+      await db.query(
+        `insert into public.clinic_rooms (clinic_id, name, sort_order, is_active)
+         select $1, $2, $3, true
+          where not exists (
+            select 1 from public.clinic_rooms
+             where clinic_id = $1 and name = $2 and deleted_at is null)`,
+        [clinicas[codigo], nome, i]
+      );
+    }
+  }
+  console.log("  Agenda configurada: 3 salas em cada unidade.");
+
   // ---- fornecedores --------------------------------------------------------
   for (const codigo of ["CAM", "LON"]) {
     for (const [nome, doc] of [
