@@ -62,8 +62,35 @@ export async function limparMovimento(db) {
   const faltando = MOVIMENTO.filter(
     (t) => !rows.some((r) => r.table_name === t)
   );
-  await db.query(`truncate ${existentes.join(", ")} restart identity cascade`);
-  return { esvaziadas: existentes.length, faltando };
+
+  // ESVAZIAR DISPUTA TRAVA COM O APP. O `truncate` precisa travar as 21 tabelas
+  // de uma vez, e o servidor do sistema ainda tem conexões vivas do teste que
+  // acabou de rodar — cada lado segurando o que o outro quer. O Postgres
+  // detecta e derruba um dos dois: "deadlock detected", que foi como a suíte
+  // falhou entre um teste e outro.
+  //
+  // A saída é insistir: o impasse é momentâneo, e some assim que o app solta o
+  // que estava fazendo. O `lock_timeout` evita esperar para sempre — falhar
+  // rápido e tentar de novo é melhor que travar a suíte inteira.
+  let ultimoErro;
+  for (let tentativa = 1; tentativa <= 5; tentativa++) {
+    try {
+      await db.query("set lock_timeout = '5s'");
+      await db.query(
+        `truncate ${existentes.join(", ")} restart identity cascade`
+      );
+      return { esvaziadas: existentes.length, faltando, tentativas: tentativa };
+    } catch (e) {
+      const transitorio =
+        e.code === "40P01" /* deadlock */ || e.code === "55P03"; /* lock_timeout */
+      if (!transitorio) throw e;
+      ultimoErro = e;
+      await new Promise((r) => setTimeout(r, 1000 * tentativa));
+    }
+  }
+  throw new Error(
+    `não consegui esvaziar depois de 5 tentativas: ${ultimoErro.message}`
+  );
 }
 
 async function main() {
@@ -108,7 +135,20 @@ async function limpar(db) {
   );
 }
 
-main().catch((e) => {
-  console.error("Erro ao limpar:", e.message);
-  process.exitCode = 1;
-});
+// SÓ RODA QUANDO CHAMADO DIRETO. Este arquivo também é IMPORTADO (pelos testes
+// e pelo `global-setup`) para reaproveitar `limparMovimento` — e, sem esta
+// guarda, o simples `import` executava a limpeza inteira de novo, no carregar
+// do módulo. Trabalho dobrado e, pior, um efeito que ninguém pediu.
+// Sem `import.meta`: o Playwright carrega este arquivo pelo compilador dele, e
+// lá `import.meta` não existe — a versão anterior derrubava a suíte inteira
+// antes do primeiro teste.
+const chamadoDireto = Boolean(
+  process.argv[1]?.replace(/\\/g, "/").endsWith("scripts/reset-test.mjs")
+);
+
+if (chamadoDireto) {
+  main().catch((e) => {
+    console.error("Erro ao limpar:", e.message);
+    process.exitCode = 1;
+  });
+}
