@@ -3880,8 +3880,45 @@ Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
 3. ~~**Camada 3 — ponta a ponta (Playwright)**~~ ✅ — banco de teste no ar e os
    **sete fluxos planejados cobertos**, incluindo a baixa automática do estoque.
    Detalhe abaixo.
-4. **Preparar o lançamento:** limpeza dos dados de teste (manter login do admin
-   e catálogo/fichas, com backup antes), ZapSign e ASAAS.
+4. **Preparar o lançamento:** limpeza dos dados de teste — **PLANO PRONTO,
+   AGUARDANDO O DONO RODAR** (detalhe abaixo). Depois: ZapSign e ASAAS.
+
+### Limpeza dos dados de teste — preparada em 26/08/2026, NÃO executada
+
+**Cópia de segurança feita** (`npm run backup:producao`): 175 tabelas dos dois
+schemas + os 9 baldes de armazenamento, gravados **fora do repositório** — o
+script recusa gravar dentro, porque backup de dado de saúde no Git não se desfaz
+pedindo desculpa.
+
+**A ordem, quando o dono quiser** (com ninguém usando o sistema):
+
+1. `npm run backup:producao` — uma cópia imediatamente antes.
+2. `supabase/manutencao/limpeza-dados-de-teste.sql` no SQL Editor. **Não está em
+   `supabase/migrations/` de propósito:** aquela pasta é reaplicada inteira ao
+   reconstruir o sistema, e um arquivo que apaga dados morando lá seria uma
+   bomba de efeito retardado.
+3. `npm run limpar:arquivos -- --confirmar` — o SQL apaga o registro da mídia,
+   nunca o arquivo (82 arquivos).
+
+**Decisões do dono:** numeração dos pacientes recomeça do 1; o Chat perde as
+mensagens e mantém os canais; fornecedores, contas bancárias, cadastro de
+Risartano e o calendário de feriados saem; o **Empresarial é limpo junto** (não
+havia como deixar de fora — `empresarial.employees.client_id` aponta para
+`clients`, então apagar paciente quebraria o vínculo de qualquer jeito);
+treinamento e certificados também saem.
+
+**Conferido antes de entregar:** as 140 tabelas citadas existem, e as 45 que
+ficam de fora são catálogo ou configuração — uma a uma.
+
+**A auditoria dos códigos saiu daqui (migração 0245, aplicada).** O dono pediu
+para verificar se algum código gerado zeraria ou pararia de gerar por causa dos
+dígitos. **Oito dos doze quebravam:** o `lpad` do Postgres TRUNCA, e como esses
+códigos têm índice único, o efeito não é "parar de contar" — é a **operação
+falhar**. O pedido de compra (`PD-`, 4 dígitos) estouraria em pouco mais de um
+ano com 200 unidades; foi para 7. E o cliente que entra pelo PPR+ tinha prefixo
+do programa com contador **da unidade** contra índice único **da rede** — duas
+unidades gerariam o mesmo código, e a limpeza (que zera todos os contadores
+juntos) tornaria isso provável no primeiro cliente.
 
 ### Camada 3 — onde paramos (24/08/2026)
 
