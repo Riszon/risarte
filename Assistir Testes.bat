@@ -27,7 +27,10 @@ echo ============================================================
 echo.
 
 set SLOW_MO=350
-call npx playwright test --headed
+rem  Pelo npm, nunca direto pelo npx: o script apaga a pasta de compilacao do
+rem  teste antes de comecar. Sem isso, sobra de compilacao interrompida faz o
+rem  sistema responder 404 em pagina que existe.
+call npm run test:e2e -- --headed
 
 echo.
 echo ============================================================

@@ -11,7 +11,7 @@
     "check:dados": "node scripts/check-invariants.mjs",
     "check:telas": "node scripts/check-screens.mjs",
     "check:migracao": "node scripts/check-migrations.mjs",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/limpar-build-teste.mjs && playwright test",
     "reset:teste": "node scripts/reset-test.mjs",
     "seed:teste": "node scripts/seed-test.mjs",
     "migrar:teste": "node scripts/apply-migrations.mjs"

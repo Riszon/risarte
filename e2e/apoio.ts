@@ -131,16 +131,18 @@ export async function fecharAvisos(
       // COM PRAZO. Sem ele, um aviso que se redesenha sem parar prende o teste
       // para sempre: o clique fica esperando o botão "ficar estável" e nunca
       // desiste. Já custou uma execução inteira de 15 minutos.
-      // Esc primeiro: fecha o aviso de cima, e é o que funciona quando eles
-      // vêm empilhados. O clique fica como reserva.
-      await page.keyboard.press("Escape").catch(() => {});
-      if (await aviso.count()) {
-        await aviso
-          .last()
-          .getByRole("button", { name: "Fechar", exact: true })
-          .click({ timeout: 4_000 })
-          .catch(() => {});
-      }
+      //
+      // PELO BOTÃO, NUNCA PELO ESCAPE (26/08/2026). Fechar pelo teclado deixa o
+      // invólucro da aplicação com `aria-hidden="true"` — ver
+      // `garantirTelaVisivel` —, e a partir daí a tela inteira some para quem
+      // enxerga pela árvore de acessibilidade. Empilhados não são problema:
+      // enquanto um modal está aberto os de baixo ficam escondidos, então
+      // `.last()` é sempre o de cima, e fechá-lo revela o próximo.
+      await aviso
+        .last()
+        .getByRole("button", { name: "Fechar", exact: true })
+        .click({ timeout: 4_000 })
+        .catch(() => {});
     },
     { times: 30 }
   );
@@ -181,22 +183,63 @@ export async function esperarEFecharAvisos(
   // OS AVISOS VÊM EMPILHADOS. Um paciente que acabou de fechar venda gera dois
   // ao mesmo tempo — "agendar apresentação" e "iniciar tratamento" —, e
   // enquanto qualquer um deles estiver aberto o resto da tela não existe.
-  // Fechar um só não adianta; e clicar no botão do de baixo não funciona,
-  // porque o de cima intercepta.
   //
-  // Esc fecha sempre o de CIMA, que é exatamente a ordem certa. O clique fica
-  // como reserva para o caso de algum aviso não responder ao teclado.
-  for (let i = 0; i < 6; i++) {
-    if ((await aviso.count()) === 0) return;
-    await page.keyboard.press("Escape").catch(() => {});
-    await page.waitForTimeout(400);
-    if ((await aviso.count()) === 0) return;
+  // Fechar um só não adianta, mas fechar o de CIMA revela o de baixo: enquanto
+  // um modal está aberto, o outro fica escondido da árvore de acessibilidade,
+  // então `.last()` é sempre o que está por cima e é sempre clicável.
+  for (let i = 0; i < 8; i++) {
+    if ((await aviso.count()) === 0) break;
     await aviso
       .last()
       .getByRole("button", { name: "Fechar", exact: true })
       .click({ timeout: 4_000 })
       .catch(() => {});
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
+  }
+  await garantirTelaVisivel(page);
+}
+
+/**
+ * Confere que a tela VOLTOU a existir depois que os avisos fecharam.
+ *
+ * Achado em 26/08/2026, e custou uma investigação inteira: quando o aviso é
+ * fechado pelo teclado, o invólucro da aplicação fica com `aria-hidden="true"`
+ * e ninguém o remove. Os elementos continuam lá — dá para ver na tela e no
+ * HTML —, mas somem da **árvore de acessibilidade**, e é por ela que o robô
+ * (e um leitor de tela) enxerga. O sintoma engana: parece página não
+ * carregada, e a foto do erro mostra a tela inteira, como se estivesse tudo
+ * bem.
+ *
+ * Está registrado como defeito em `docs/CORRECOES-TESTES.md`. Aqui o teste faz
+ * o que a pessoa faria: recarrega a página.
+ */
+async function garantirTelaVisivel(
+  page: import("@playwright/test").Page
+): Promise<void> {
+  const escondida = () =>
+    page.evaluate(() => {
+      const main = document.querySelector("main");
+      if (!main) return false;
+      for (let n: Element | null = main; n; n = n.parentElement) {
+        if (n.getAttribute("aria-hidden") === "true") return true;
+      }
+      return false;
+    });
+
+  for (let i = 0; i < 2; i++) {
+    if (!(await escondida().catch(() => false))) return;
+    await page.reload({ waitUntil: "commit" });
+    await page.waitForTimeout(1_500);
+    const aviso = avisoInsistente(page);
+    for (let j = 0; j < 8; j++) {
+      if ((await aviso.count()) === 0) break;
+      await aviso
+        .last()
+        .getByRole("button", { name: "Fechar", exact: true })
+        .click({ timeout: 4_000 })
+        .catch(() => {});
+      await page.waitForTimeout(500);
+    }
   }
 }
 
@@ -493,9 +536,64 @@ export async function agendarAtendimento(
   await page.goto(`/prontuarios/${clientId}`);
   await esperarEFecharAvisos(page);
   await page.getByRole("button", { name: /Novo agendamento/ }).click();
+  await preencherAgendamento(page);
+}
 
-  const janela = page.getByRole("dialog");
-  await janela.waitFor();
+/**
+ * Agenda a SESSÃO do plano — que não é a mesma coisa que agendar um horário.
+ *
+ * **O atendimento é o horário; a sessão é o que vai ser feito nele.** Um
+ * agendamento genérico reserva sala e profissional e não carrega sessão
+ * nenhuma: ao encerrar, não há sessão de tratamento para concluir, e o kit do
+ * PROCEDIMENTO não tem por que sair da gaveta. Era exatamente o passo que
+ * faltava para provar a baixa automática do estoque de ponta a ponta.
+ *
+ * O caminho é o da recepção de verdade: aba *Sessões & Procedimentos* → abrir
+ * o procedimento → "Agendar" na sessão. É esse botão que amarra
+ * `treatment_session_id` ao compromisso.
+ */
+export async function agendarSessao(
+  page: import("@playwright/test").Page,
+  context: BrowserContext,
+  clientId: string
+): Promise<void> {
+  await trocarPara(context, PESSOAS.recepcao);
+  await fecharAvisos(page);
+  await page.goto(`/prontuarios/${clientId}`);
+  await esperarEFecharAvisos(page);
+  await page.getByRole("tab", { name: "Sessões & Procedimentos" }).click();
+
+  // A lista de procedimentos nasce RECOLHIDA, e o botão da sessão vive dentro
+  // dela. Abrir é um clique na linha do procedimento — o mesmo que a recepção
+  // dá para ver quantas sessões faltam.
+  const agendar = page
+    .getByRole("button", { name: "Agendar", exact: true })
+    .first();
+  if (!(await agendar.isVisible().catch(() => false))) {
+    await page
+      .getByRole("button", { name: /Restauração em resina/ })
+      .first()
+      .click();
+  }
+  await agendar.waitFor({ state: "visible", timeout: 30_000 });
+  await agendar.click();
+
+  await preencherAgendamento(page);
+}
+
+/**
+ * Preenche e envia a janela "Novo agendamento" já aberta.
+ *
+ * Uma cópia só, usada pelos dois caminhos (horário avulso e sessão do plano):
+ * duplicar a sequência de campos faria as duas versões envelhecerem em ritmos
+ * diferentes, e a que não fosse usada no dia da mudança de tela quebraria
+ * sozinha semanas depois.
+ */
+async function preencherAgendamento(
+  page: import("@playwright/test").Page
+): Promise<void> {
+  const janela = page.getByRole("dialog", { name: "Novo agendamento" });
+  await janela.waitFor({ timeout: 30_000 });
 
   // Os campos não têm rótulo associado, então a ordem é o que os identifica:
   // cliente, tipo, profissional, sala, duração e horário.

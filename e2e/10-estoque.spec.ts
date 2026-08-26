@@ -17,7 +17,7 @@
 import { expect, test } from "@playwright/test";
 import {
   PESSOAS,
-  agendarAtendimento,
+  agendarSessao,
   atenderEConcluir,
   banco,
   venderEFechar,
@@ -32,27 +32,13 @@ test.beforeAll(async () => {
   await db.end();
 });
 
-// ⚠️ INACABADO — falta UM PASSO, e ele está identificado.
-//
-// O QUE JÁ FUNCIONA (provado na execução de 25/08/2026, à noite): agendar,
-// receber o paciente, chamar, escrever o Desenvolvimento Clínico e encerrar o
-// atendimento. E MAIS: o **kit de ATENDIMENTO baixou** — dois movimentos de
-// consumo (gorro e babador) registrados no banco. Metade da baixa automática
-// está provada de ponta a ponta.
-//
-// O QUE FALTA: usar **"Agendar sessão"** (aba *Sessões & Procedimentos* da
-// ficha) em vez de "Novo agendamento". A diferença é do sistema, e é boa: o
-// ATENDIMENTO é o horário; a SESSÃO é o que vai ser feito nele. Um agendamento
-// genérico reserva a sala e o profissional, mas não carrega sessão nenhuma —
-// então, ao encerrar, não há sessão de tratamento para concluir, e o kit do
-// PROCEDIMENTO não tem por que sair da gaveta.
-//
-// Confirmado no código: a tela de conclusão lista apenas as sessões com
-// `appointment_id` daquele atendimento.
-//
-// Retomar é trocar a chamada de `agendarAtendimento` por um apoio novo que
-// agende a sessão do plano. O resto do teste está escrito e conferido.
-test.fixme("concluir a sessão consome o kit do procedimento", async ({
+// O PASSO QUE FALTAVA (resolvido em 26/08/2026): agendar a **sessão**, não um
+// horário qualquer. "Novo agendamento" reserva sala e profissional sem carregar
+// sessão nenhuma — ao encerrar não há sessão de tratamento para concluir, e o
+// kit do PROCEDIMENTO não tem por que sair da gaveta. A tela de conclusão lista
+// apenas as sessões com `appointment_id` daquele atendimento, e é `agendarSessao`
+// (aba *Sessões & Procedimentos*) que cria esse vínculo.
+test("concluir a sessão consome o kit do procedimento", async ({
   page,
   context,
 }) => {
@@ -98,7 +84,7 @@ test.fixme("concluir a sessão consome o kit do procedimento", async ({
   // tratamento e o profissional é o DENTISTA — quem executa e quem escreve o
   // Desenvolvimento Clínico. Numa avaliação seria o Coordenador, e nenhum kit
   // de restauração sairia da gaveta.
-  await agendarAtendimento(page, context, paciente.id);
+  await agendarSessao(page, context, paciente.id);
   await atenderEConcluir(page, context, paciente.id, PESSOAS.dentista);
 
   await expect

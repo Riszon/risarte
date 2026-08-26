@@ -261,6 +261,28 @@ avisos modais de "agende a apresentação" que cobrem a tela. Depois de algumas
 rodadas o teste passa a brigar com o próprio lixo que produziu — já travou uma
 execução inteira esperando um botão atrás do modal.
 
+**`.next-test` É APAGADA A CADA EXECUÇÃO** (`scripts/limpar-build-teste.mjs`,
+chamado pelo `npm run test:e2e`). No fim da rodada o Playwright **mata** o
+servidor de teste, às vezes no meio de uma compilação, e o que fica gravado não é
+confiável: a execução seguinte responde **404 em páginas que existem** — o mesmo
+sintoma do `.next` do dono, e engana igual (parece permissão negada ou rota que
+sumiu). Custou uma investigação inteira em `/prontuarios/[id]` (26/08/2026).
+
+**A limpeza roda ANTES do Playwright, nunca de dentro dele.** Tentar apagar no
+`playwright.config.ts` derruba a suíte: o config é lido de novo por **cada
+processo de trabalho**, já com o servidor no ar, e a pasta some debaixo dele
+(`ENOENT: build-manifest.json` em tudo). Por isso o `Assistir Testes.bat` chama
+`npm run test:e2e`, não `npx playwright test`.
+
+**AVISO MODAL SE FECHA PELO BOTÃO, NUNCA PELO ESC.** Fechar pelo teclado deixa o
+invólucro da aplicação com `aria-hidden="true"` para sempre: os elementos
+continuam na tela e no HTML, mas somem da **árvore de acessibilidade** — que é
+por onde o Playwright (e um leitor de tela) enxerga. `getByRole` passa a não
+achar nada, com cara de "a página não carregou", e a foto do erro mostra o
+sistema inteiro funcionando. É defeito do app, está na fila
+(`docs/CORRECOES-TESTES.md`, item 3); `garantirTelaVisivel` em `e2e/apoio.ts` é
+o contorno, e sai quando a correção entrar.
+
 **Regras que o E2E segue:**
 
 - **Entrar por sessão pronta** (link de uso único), menos em UM teste que usa o

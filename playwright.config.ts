@@ -28,6 +28,13 @@ if (env.NEXT_PUBLIC_SUPABASE_URL?.includes("hvhbijctanrrkxhemlza")) {
   );
 }
 
+// ⚠️ NÃO APAGAR `.next-test` AQUI. Este arquivo é lido de novo por CADA processo
+// de trabalho do Playwright, já com o servidor no ar: a limpeza aconteceria com
+// o servidor rodando e ele passaria a errar em tudo
+// (`ENOENT: build-manifest.json`). Tentado em 26/08/2026 e derrubou a suíte
+// inteira. A limpeza é feita ANTES, pelo `npm run test:e2e`
+// (`scripts/limpar-build-teste.mjs`).
+
 export const APP_TESTE = "http://localhost:3100";
 
 export default defineConfig({
