@@ -274,14 +274,26 @@ processo de trabalho**, já com o servidor no ar, e a pasta some debaixo dele
 (`ENOENT: build-manifest.json` em tudo). Por isso o `Assistir Testes.bat` chama
 `npm run test:e2e`, não `npx playwright test`.
 
-**AVISO MODAL SE FECHA PELO BOTÃO, NUNCA PELO ESC.** Fechar pelo teclado deixa o
-invólucro da aplicação com `aria-hidden="true"` para sempre: os elementos
-continuam na tela e no HTML, mas somem da **árvore de acessibilidade** — que é
-por onde o Playwright (e um leitor de tela) enxerga. `getByRole` passa a não
-achar nada, com cara de "a página não carregou", e a foto do erro mostra o
-sistema inteiro funcionando. É defeito do app, está na fila
-(`docs/CORRECOES-TESTES.md`, item 3); `garantirTelaVisivel` em `e2e/apoio.ts` é
-o contorno, e sai quando a correção entrar.
+**O AVISO MODAL JÁ DEIXOU A APLICAÇÃO INTEIRA INVISÍVEL.** Fechar dois avisos
+empilhados deixava o invólucro com `aria-hidden="true"` para sempre: os
+elementos continuam na tela e no HTML, mas somem da **árvore de
+acessibilidade** — que é por onde o Playwright (e um leitor de tela) enxerga.
+`getByRole` passava a não achar nada, com cara de "a página não carregou", e a
+foto do erro mostrava o sistema inteiro funcionando.
+
+**Corrigido em 27/08/2026** pelo `AccessibilityGuard` (montado no layout), que
+apaga a marca sobrada **só quando não há nenhuma janela aberta**. A causa é a
+contagem do Base UI (`markOthers.js`) descartando a tabela ao zerar; o
+componente diz isso e sai inteiro quando a biblioteca corrigir. No E2E os avisos
+continuam sendo fechados pelo **botão "Fechar"** e `garantirTelaVisivel` fica
+como segunda rede.
+
+**CRONÔMETRO NÃO SE DESENHA NO SERVIDOR.** `useNow()` (`src/lib/use-now.ts`)
+devolve `null` no servidor e no primeiro desenho do navegador; quem usa mostra
+um traço até lá. Perguntar as horas nos dois lados dá respostas diferentes, o
+React derruba a árvore com *hydration mismatch*, e o console enche de erro em
+toda abertura do Atendimento — **erro que sempre aparece é erro que ninguém
+lê**, e a camada 2 procura exatamente marcas de erro na página.
 
 **Regras que o E2E segue:**
 

@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ChooseClinicWelcome } from "@/components/choose-clinic-welcome";
 import { UrgentSchedulingPopup } from "@/components/urgent-scheduling-popup";
 import { TreatmentStartPopup } from "@/components/treatment-start-popup";
+import { AccessibilityGuard } from "@/components/accessibility-guard";
 
 export default async function AppLayout({
   children,
@@ -151,6 +152,9 @@ export default async function AppLayout({
       <UrgentSchedulingPopup />
       {/* COM4: pop-up forte da recepção quando uma venda é fechada. */}
       <TreatmentStartPopup />
+      {/* Contorno: garante que a tela não fique invisível para leitor de tela
+          depois que os avisos acima fecham. Ver o comentário do componente. */}
+      <AccessibilityGuard />
     </div>
   );
 }

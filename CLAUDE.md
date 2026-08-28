@@ -39,9 +39,22 @@ e o mesmo deploy (Vercel), então **disciplina é obrigatória** para não mistu
    `app-sidebar.tsx`, `roles.ts`, `layout.tsx`): o core é o dono deles; mudanças do
    Empresarial aí devem ser **mínimas e aditivas**. Prefira criar arquivos novos
    dentro do seu módulo em vez de editar os compartilhados.
-6. **Publicação:** hoje tudo vive no `main` (deploy único) — publicar um projeto
-   publica os dois. Para separar o que vai ao ar, migrar o Empresarial para um
-   branch próprio (`feature/empresarial`); combinar com o dono antes.
+6. **Publicação: tudo continua no `main`, deploy único** — publicar um projeto
+   publica os dois. **Combinado com o dono em 27/08/2026: NÃO separar agora.**
+   Um branch próprio para o Empresarial resolveria só um terço do acoplamento e
+   pioraria outro terço:
+   - **Publicação** — resolveria (o Empresarial deixaria de ir ao ar).
+   - **Banco** — NÃO resolve: é um Supabase só, e migração do Empresarial roda no
+     mesmo banco de qualquer jeito.
+   - **Arquivos compartilhados** (menu, `version.ts`, papéis, layout) — PIORA:
+     hoje é combinação entre os dois agentes; em branches vira conflito na hora
+     de juntar, e quanto mais tempo separado, mais cara fica a junção.
+
+   O que protege de verdade já está nas regras 1–5, e o Empresarial vive em
+   rotas próprias atrás de permissão — publicá-lo junto não atrapalha a equipe.
+   **Reabrir a discussão só quando** o riSZon for aberto para a equipe com o
+   Empresarial ainda em obra; aí o branch (`feature/empresarial`) vale, e tem de
+   ser criado pela sessão do Empresarial, com plano combinado entre as duas.
 
 ## 1. Visão geral
 

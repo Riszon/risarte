@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlarmClock, Timer, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNow } from "@/lib/use-now";
 
 export type WaitingClient = {
   clientId: string | null;
@@ -11,16 +11,6 @@ export type WaitingClient = {
   checkedInAt: string;
   providerName: string | null;
 };
-
-/** Segundo a segundo (o cronômetro precisa andar sozinho na tela do dentista). */
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return now;
-}
 
 function fmtElapsed(sec: number): string {
   const s = Math.max(0, sec);
@@ -55,9 +45,13 @@ export function AttendanceClock({
   waitingAlertMinutes: number | null;
 }) {
   const now = useNow();
-  const serviceSec = calledAt
-    ? Math.floor((now - new Date(calledAt).getTime()) / 1000)
-    : null;
+  // O QUE APARECE depende de `calledAt`, não do relógio: assim o servidor e o
+  // navegador desenham a MESMA frase, e só o número chega depois. Trocar a
+  // frase inteira faria a tela piscar de "vai começar" para "em andamento".
+  const serviceSec =
+    now !== null && calledAt
+      ? Math.floor((now - new Date(calledAt).getTime()) / 1000)
+      : null;
   const waitedMin =
     checkedInAt && calledAt
       ? Math.max(
@@ -73,10 +67,11 @@ export function AttendanceClock({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-background p-2.5 text-sm">
-        {serviceSec !== null ? (
+        {calledAt ? (
           <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums text-violet-700">
             <Timer className="size-4" />
-            Em atendimento há {fmtElapsed(serviceSec)}
+            Em atendimento há{" "}
+            {serviceSec === null ? "—" : fmtElapsed(serviceSec)}
           </span>
         ) : (
           <span className="text-muted-foreground">
@@ -100,10 +95,11 @@ export function AttendanceClock({
           </p>
           <ul className="mt-1 space-y-0.5">
             {waiting.map((w) => {
-              const sec = Math.floor(
-                (now - new Date(w.checkedInAt).getTime()) / 1000
-              );
-              const late = alertSec !== null && sec >= alertSec;
+              const sec =
+                now === null
+                  ? null
+                  : Math.floor((now - new Date(w.checkedInAt).getTime()) / 1000);
+              const late = alertSec !== null && sec !== null && sec >= alertSec;
               return (
                 <li
                   key={`${w.clientId ?? w.name}-${w.checkedInAt}`}
@@ -131,7 +127,7 @@ export function AttendanceClock({
                       late ? "font-semibold text-red-600" : "text-amber-800"
                     )}
                   >
-                    aguardando {fmtElapsed(sec)}
+                    aguardando {sec === null ? "—" : fmtElapsed(sec)}
                   </span>
                   {w.providerName && (
                     <span className="text-amber-700">· {w.providerName}</span>

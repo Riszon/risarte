@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -54,6 +54,7 @@ import {
   type AttendanceStatus,
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
+import { useNow } from "@/lib/use-now";
 import {
   checkInAppointment,
   concludeAttendancePartial,
@@ -128,15 +129,6 @@ function fmtElapsed(totalSec: number): string {
   return `${m}:${String(ss).padStart(2, "0")}`;
 }
 
-/** Ticks every second so the elapsed time updates in real time. */
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-}
 
 /** Live count-up timer from a fixed start (Em espera / Em atendimento).
  * H3.4: acima de `alertAfterSec`, o timer vira vermelho com selo "Espera longa". */
@@ -152,8 +144,12 @@ function LiveTimer({
   alertAfterSec?: number;
 }) {
   const now = useNow();
-  const sec = Math.floor((now - new Date(from).getTime()) / 1000);
-  const alerting = alertAfterSec !== undefined && sec >= alertAfterSec;
+  // Traço enquanto o navegador não assume o relógio. Um "0:00" seria um número
+  // errado, e número errado por um instante é pior que ausência declarada.
+  const sec =
+    now === null ? null : Math.floor((now - new Date(from).getTime()) / 1000);
+  const alerting =
+    alertAfterSec !== undefined && sec !== null && sec >= alertAfterSec;
   return (
     <span
       className={`inline-flex items-center gap-1 font-medium tabular-nums ${
@@ -161,7 +157,7 @@ function LiveTimer({
       }`}
     >
       <AlarmClock className="size-3" />
-      {label} {fmtElapsed(sec)}
+      {label} {sec === null ? "—" : fmtElapsed(sec)}
       {alerting && (
         <span className="animate-pulse rounded bg-red-100 px-1 text-[10px] font-semibold text-red-700">
           Espera longa
@@ -174,6 +170,9 @@ function LiveTimer({
 /** "A chegar": before the time shows the schedule; after it, a lateness timer. */
 function LatenessTimer({ startsAt }: { startsAt: string }) {
   const now = useNow();
+  // Nada no servidor: aqui o atraso APARECE ou não aparece, e decidir isso com
+  // um relógio que o navegador vai contradizer é o próprio erro de hidratação.
+  if (now === null) return null;
   const startMs = new Date(startsAt).getTime();
   const lateSec = Math.floor((now - startMs) / 1000);
   // The lateness timer only turns on once the appointment time has passed.
