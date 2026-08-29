@@ -1,5 +1,6 @@
 -- =============================================================================
--- LIMPEZA DOS DADOS DE TESTE — preparação para o lançamento (26/08/2026)
+-- LIMPEZA DOS DADOS DE TESTE — preparação para o lançamento
+-- Reescrito em 28/08/2026 com as decisões novas do dono.
 -- -----------------------------------------------------------------------------
 -- ⚠️ ISTO NÃO É UMA MIGRAÇÃO, E POR ISSO NÃO MORA EM `supabase/migrations/`.
 --
@@ -9,71 +10,108 @@
 -- por engano — esvaziaria a produção inteira. Manutenção fica aqui, é rodada à
 -- mão, uma vez, com decisão de gente.
 --
--- O QUE ELE FAZ: apaga todo o movimento gerado nos testes e mantém o cadastro e
--- a configuração, para o sistema começar pronto para trabalhar e sem paciente
--- nenhum.
---
 -- ⚠️ ANTES DE RODAR: cópia de segurança feita (`npm run backup:producao`).
--- ⚠️ DEPOIS DE RODAR: os ARQUIVOS do armazenamento continuam lá. O banco não os
---    alcança — são apagados à parte, pelo `npm run limpar:arquivos`.
+-- ⚠️ DEPOIS DE RODAR: os ARQUIVOS do armazenamento continuam lá — o banco não
+--    os alcança. Saem pelo `npm run limpar:arquivos -- --confirmar`.
+-- ⚠️ NINGUÉM usando o sistema enquanto roda.
 --
--- Decisões do dono (26/08/2026):
---   1. A numeração dos pacientes RECOMEÇA do 1 (CAM-00001).
---   2. O Chat perde as MENSAGENS e mantém os canais e as regras de contato.
---   3. Fornecedores, contas bancárias, cadastro de Risartano e o calendário de
---      feriados/fechamentos TAMBÉM saem — nenhum deles é dado real ainda.
---   4. O módulo Empresarial é limpo JUNTO. Não havia como deixá-lo de fora:
---      `empresarial.employees.client_id` aponta para `clients`, então apagar
---      paciente quebraria o vínculo de qualquer jeito. Vínculo quebrado em
---      silêncio é pior que registro apagado com decisão.
+-- O QUE FICA DE PÉ, no fim:
+--   • a franqueadora (RF — RISARTE Franchising) e mais nenhuma unidade;
+--   • o Admin Master e mais nenhum usuário;
+--   • o plano de contas, os centros de custo, as taxas da rede, as
+--     especialidades, os níveis de carreira, as categorias de bens, a
+--     configuração de adquirente e as réguas de SLA/inatividade da REDE;
+--   • os modelos de documento, as fichas de anamnese e os 4 planos PPR+;
+--   • no Empresarial, a Agropecuária Inocente com seus colaboradores.
 --
--- Roda tudo em UMA transação: ou apaga tudo, ou não apaga nada. Metade apagada
--- deixaria o razão sem contrapartida e o estoque sem origem — pior que o estado
--- de agora.
+-- O QUE SAI: todo o movimento; as unidades Cambé, Londrina e Roteiro com as
+-- configurações delas; os 19 demais usuários; o catálogo de procedimentos; os
+-- itens e kits de estoque; as outras três empresas.
+--
+-- CONSEQUÊNCIAS ACEITAS PELO DONO (28/08/2026), porque são inevitáveis:
+--   • apagar os procedimentos derruba junto os repasses por procedimento e por
+--     nível, os custos, os vínculos de kit, as **vantagens dos planos PPR+** e
+--     os benefícios do Empresarial que apontam para procedimento. Os 4 planos
+--     PPR+ continuam existindo; as vantagens serão relançadas.
+--   • os colaboradores da Agropecuária ficam **sem vínculo com ficha de
+--     paciente e sem unidade** — as fichas somem todas e as unidades saem.
+--   • a autoria ("criado por") do que fica passa para o Admin Master. Sem isso
+--     o banco recusaria apagar os usuários, e o registro perderia dono.
+--
+-- Roda tudo em UMA transação: ou apaga tudo, ou não apaga nada.
 -- =============================================================================
 
 begin;
 
 -- -----------------------------------------------------------------------------
--- 1. EMPRESARIAL — primeiro, e por DELETE, não por TRUNCATE.
+-- 0. AS TRÊS ÂNCORAS — e a recusa em seguir sem elas.
 -- -----------------------------------------------------------------------------
--- `truncate ... cascade` esvazia a tabela referenciada INTEIRA, ignorando o
--- `on delete` que o autor escreveu. Aqui isso apagaria também o padrão da REDE
--- (as linhas com `company_id` nulo em preço de adesão, split e benefícios), que
--- é configuração e tem de ficar. O DELETE respeita a cascata desenhada pelo
--- outro projeto — que é de quem é essa decisão.
---
--- Filhos antes dos pais, para o efeito ser explícito em vez de arrastado.
+-- Um erro de digitação aqui (código de clínica, nome da empresa) faria o script
+-- apagar exatamente o que devia preservar. Então ele confere ANTES de tocar em
+-- qualquer coisa, e para com uma mensagem em vez de fazer estrago silencioso.
+do $$
+declare
+  v_clinica uuid;
+  v_admin uuid;
+  v_empresa uuid;
+begin
+  select id into v_clinica from public.clinics where code = 'RF';
+  if v_clinica is null then
+    raise exception 'PAREI: não achei a clínica de código RF (a franqueadora).';
+  end if;
+
+  select id into v_admin from public.profiles where is_admin_master limit 1;
+  if v_admin is null then
+    raise exception 'PAREI: não achei nenhum usuário Admin Master.';
+  end if;
+
+  select id into v_empresa from empresarial.companies
+   where trade_name ilike '%Agropecu%Inocente%'
+      or legal_name ilike '%Agropecu%Inocente%';
+  if v_empresa is null then
+    raise exception 'PAREI: não achei a empresa Agropecuária Inocente.';
+  end if;
+
+  raise notice 'Âncoras encontradas. Seguindo.';
+end $$;
+
+-- -----------------------------------------------------------------------------
+-- 1. EMPRESARIAL — fica só a Agropecuária Inocente, com as pessoas dela.
+-- -----------------------------------------------------------------------------
+-- Por DELETE, não por TRUNCATE: `truncate ... cascade` esvazia a tabela
+-- referenciada INTEIRA, ignorando o `on delete` que o autor escreveu — e aqui
+-- isso apagaria os colaboradores que devem ficar, além do padrão da REDE (as
+-- linhas com `company_id` nulo em preço de adesão, split e benefícios).
 delete from empresarial.commercial_lead_activities;
 delete from empresarial.commercial_leads;
-delete from empresarial.benefit_usage;
+delete from empresarial.benefit_usage;      -- uso de benefício por paciente de teste
+delete from empresarial.adhesion_billing;   -- faturamento de teste
 delete from empresarial.social_tokens;
-delete from empresarial.adhesion_billing;
-delete from empresarial.membership_history;
-delete from empresarial.dependents;
-delete from empresarial.employees;
-delete from empresarial.company_files;
-delete from empresarial.company_documents;
-delete from empresarial.companies;
 
--- Só o que era exceção DA EMPRESA. O padrão da rede (`company_id` nulo) fica.
-delete from empresarial.procedure_benefits where company_id is not null;
-delete from empresarial.adhesion_pricing    where company_id is not null;
-delete from empresarial.split_rules         where company_id is not null;
+-- As outras três empresas saem com tudo o que é delas (colaboradores,
+-- dependentes, documentos, benefícios e regras próprias, por cascata).
+delete from empresarial.companies
+ where id <> (
+   select id from empresarial.companies
+    where trade_name ilike '%Agropecu%Inocente%'
+       or legal_name ilike '%Agropecu%Inocente%'
+ );
+
+-- Benefícios por procedimento saem inteiros: os procedimentos vão embora logo
+-- abaixo, e benefício apontando para procedimento que não existe mais é lixo.
+delete from empresarial.procedure_benefits;
 
 -- -----------------------------------------------------------------------------
--- 2. NÚCLEO — todo o movimento.
+-- 2. O MOVIMENTO DO NÚCLEO.
 -- -----------------------------------------------------------------------------
--- Uma lista explícita, e não `truncate clients cascade`: com cascata, o Postgres
--- decide sozinho até onde ir, e uma tabela de configuração que ganhasse uma
--- chave estrangeira amanhã seria esvaziada sem ninguém perceber. A lista é
--- longa de propósito — ela é a decisão, escrita.
+-- Lista explícita, e não `truncate clients cascade`: com cascata o Postgres
+-- decide sozinho até onde ir — e passaria por cima do `on delete set null` de
+-- `empresarial.employees`, apagando os colaboradores que devem ficar.
 --
--- `cascade` continua aqui só para resolver a ORDEM entre as tabelas da própria
--- lista; a esta altura não há mais nada fora dela apontando para cá.
+-- `clients` NÃO entra aqui de propósito. Ele é apagado por DELETE logo depois,
+-- justamente para que o `set null` valha e os colaboradores sobrevivam.
 truncate table
-  -- pacientes e o que pendura neles
-  public.clients,
+  -- o que pendura no paciente
   public.client_changes,
   public.client_clinic_history,
   public.client_consents,
@@ -152,7 +190,7 @@ truncate table
   public.provider_payouts,
   public.payout_closings,
 
-  -- estoque (o CATÁLOGO de itens e os kits ficam; o saldo zera)
+  -- estoque (movimento; o catálogo sai no passo 3)
   public.stock_movements,
   public.stock_balances,
   public.stock_counts,
@@ -174,9 +212,9 @@ truncate table
   public.suppliers,
   public.supplier_item_links,
 
-  -- PPR+ (os PLANOS e os benefícios do plano ficam)
+  -- PPR+ (os PLANOS ficam; as adesões e o uso saem)
+  -- `ppr_memberships` NÃO entra aqui — ver o aviso das duas pontes, abaixo.
   public.ppr_beneficiaries,
-  public.ppr_memberships,
   public.ppr_charges,
   public.ppr_events,
   public.ppr_benefit_usages,
@@ -196,11 +234,11 @@ truncate table
   public.agenda_plan_item_people,
 
   -- RH (Risartanos)
-  public.staff_members,
+  -- `staff_members` NÃO entra aqui — ver o aviso das duas pontes, abaixo.
   public.staff_member_changes,
   public.staff_clinic_schedule,
 
-  -- Chat: só as MENSAGENS (canais, membros e regras de contato ficam)
+  -- Chat: mensagens e o que pendura nelas
   public.chat_messages,
   public.chat_reactions,
   public.chat_reads,
@@ -211,22 +249,208 @@ truncate table
   public.user_presence
 restart identity cascade;
 
+-- ⚠️ AS DUAS PONTES — e por que `staff_members` e `ppr_memberships` ficaram
+-- fora do TRUNCATE acima.
+--
+-- `truncate ... cascade` não para na tabela citada: ele arrasta quem depende
+-- dela, e continua arrastando. A ficha do paciente APONTA para essas duas
+-- (`clients.staff_member_id` e `clients.ppr_membership_id`), então truncar
+-- qualquer uma das duas truncava `clients` junto — e, de `clients`, o Postgres
+-- seguiu para `benefit_usage`, `employees`, `dependents`, `membership_history`,
+-- `social_tokens` e `employee_files`. Ou seja: **apagava os colaboradores da
+-- empresa que devia ficar**, passando por cima do `on delete set null` que
+-- existe justamente para protegê-los.
+--
+-- Achado pelo ensaio no banco de teste, com o Postgres dizendo em voz alta até
+-- onde tinha ido ("truncate cascades to table ..."). É o tipo de estrago que
+-- não dá erro: só some.
+--
+-- Por isso a ordem aqui é: primeiro os pacientes por DELETE (aí o `set null`
+-- vale e os colaboradores sobrevivem), e só depois as duas pontes — que a esta
+-- altura já não têm mais ninguém apontando para elas.
+--
+-- ⚠️ E COM A ADESÃO DO PPR+ HÁ UM ABRAÇO A DESFAZER ANTES. A ficha aponta para
+-- a adesão (`clients.ppr_membership_id`) e a adesão aponta para a ficha
+-- (`ppr_memberships.holder_client_id`), as duas ligações BLOQUEANDO: nenhuma das
+-- duas pode sair primeiro, e o banco recusa as duas ordens. Foi o erro que
+-- apareceu na primeira tentativa de rodar na produção (23503) — o ensaio no
+-- banco de teste não pegou porque lá não havia adesão de PPR+ nenhuma.
+--
+-- Solta-se o laço por um lado: a ficha deixa de apontar para a adesão, a adesão
+-- sai, e aí a ficha sai. Nada se perde — as duas vão embora de qualquer forma.
+update public.clients set ppr_membership_id = null where ppr_membership_id is not null;
+delete from public.ppr_memberships;
+
+delete from public.clients;
+delete from public.staff_members;
+
 -- -----------------------------------------------------------------------------
--- 3. CÓDIGOS DE DOCUMENTO — voltam ao 00001.
+-- 3. O CATÁLOGO — procedimentos e estoque saem para serem relançados.
+-- -----------------------------------------------------------------------------
+-- O que aponta para procedimento e NÃO tem cascata precisa sair antes, senão o
+-- banco recusa. É aqui que as vantagens do PPR+ ligadas a procedimento morrem —
+-- consequência aceita, não descuido.
+delete from public.provider_payout_rates;
+delete from public.procedure_costs;
+delete from public.procedure_cost_items;
+delete from public.clinic_procedure_prices;
+delete from public.procedure_changes;
+delete from public.procedure_kit_links;
+delete from public.procedure_sessions;
+-- As DUAS tabelas do PPR+ que apontam para procedimento: as vantagens
+-- (`perks`) e as coberturas do plano (`plan_benefits`). A segunda faltava, e o
+-- banco recusou a exclusão dos procedimentos na segunda tentativa de rodar na
+-- produção (23503). Os PLANOS continuam de pé; o que aponta para procedimento
+-- sai, e será relançado junto com o catálogo.
+delete from public.ppr_plan_perks;
+delete from public.ppr_plan_benefits;
+delete from public.procedures;
+
+delete from public.stock_kit_items;
+delete from public.stock_kits;
+delete from public.stock_items;
+
+-- -----------------------------------------------------------------------------
+-- 4. TUDO O QUE É DE OUTRA UNIDADE.
+-- -----------------------------------------------------------------------------
+-- REGRA GENÉRICA, de propósito. Listar tabela por tabela deixaria alguma para
+-- trás — e "alguma tabela esquecida" aqui significa configuração fantasma de uma
+-- clínica que não existe mais. O banco sabe quem aponta para `clinics`: o laço
+-- pergunta a ele e apaga, em toda tabela, as linhas de qualquer unidade que não
+-- seja a franqueadora. Linha com unidade em branco é padrão da REDE e fica.
+--
+-- Em VOLTAS porque a ordem importa: apagar a sala antes do que usa a sala é
+-- recusado. Em vez de adivinhar a ordem certa, tenta, deixa falhar o que ainda
+-- tem dependente, e repete — cada volta destrava a seguinte.
+--
+-- ⚠️ SÓ NO SCHEMA `public`, e isto NÃO é detalhe. No `empresarial`, a unidade do
+-- colaborador é um ESPELHO da unidade do paciente (existe para o controle de
+-- acesso), não a dona do registro: o colaborador pertence à EMPRESA. A primeira
+-- versão desta regra varria os dois schemas e apagou os colaboradores da empresa
+-- que devia ficar — achado pelo ensaio no banco de teste, antes de chegar à
+-- produção. Lá o `on delete set null` da chave estrangeira já resolve sozinho:
+-- some a unidade, o colaborador fica sem unidade, e continua existindo.
+do $$
+declare
+  v_clinica uuid := (select id from public.clinics where code = 'RF');
+  r record;
+  sobrou boolean := true;
+  volta int := 0;
+begin
+  while sobrou and volta < 15 loop
+    sobrou := false;
+    volta := volta + 1;
+    for r in
+      select c.conrelid::regclass::text as tabela, a.attname as coluna
+        from pg_constraint c
+        join pg_attribute a
+          on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+        join pg_class t on t.oid = c.conrelid
+        join pg_namespace n on n.oid = t.relnamespace
+       where c.contype = 'f'
+         and c.confrelid = 'public.clinics'::regclass
+         and array_length(c.conkey, 1) = 1
+         and c.conrelid <> 'public.clinics'::regclass
+         and n.nspname = 'public'          -- ⚠️ ver o aviso acima
+    loop
+      begin
+        execute format(
+          'delete from %s where %I is not null and %I <> $1',
+          r.tabela, r.coluna, r.coluna
+        ) using v_clinica;
+      exception when foreign_key_violation then
+        sobrou := true;   -- ainda tem quem dependa; a próxima volta pega
+      end;
+    end loop;
+  end loop;
+  if sobrou then
+    raise exception 'PAREI: não consegui limpar as outras unidades em % voltas.', volta;
+  end if;
+  raise notice 'Outras unidades limpas em % volta(s).', volta;
+end $$;
+
+-- -----------------------------------------------------------------------------
+-- 5. OS OUTROS USUÁRIOS — primeiro o que os aponta como PESSOA.
+-- -----------------------------------------------------------------------------
+-- Papel e participação em canal são vínculos da pessoa: não se transferem para
+-- o Admin Master, apagam-se junto com ela.
+delete from public.user_clinic_roles
+ where user_id <> (select id from public.profiles where is_admin_master limit 1);
+delete from public.chat_channel_members
+ where user_id <> (select id from public.profiles where is_admin_master limit 1);
+delete from public.chat_blocked_users;
+delete from public.chat_contact_rules;
+delete from public.chat_channels;
+
+-- -----------------------------------------------------------------------------
+-- 6. A AUTORIA DO QUE FICA PASSA PARA O ADMIN MASTER.
+-- -----------------------------------------------------------------------------
+-- Outra regra genérica: o banco sabe quem aponta para `profiles`. Toda coluna
+-- que ainda tiver um usuário que vai embora passa a apontar para o Admin
+-- Master. Sem isso o banco recusaria apagar os usuários — e apagar a coluna em
+-- vez de reatribuir deixaria cadastro sem dono, que é pior: "quem cadastrou
+-- este procedimento?" passaria a não ter resposta.
+do $$
+declare
+  v_admin uuid := (select id from public.profiles where is_admin_master limit 1);
+  r record;
+  n bigint;
+  total bigint := 0;
+begin
+  -- Também só no `public`: no `empresarial` toda ligação com usuário já é
+  -- "esvazia quando o usuário sai" (`on delete set null`), e o consultor
+  -- responsável por uma empresa não deve virar o Admin Master por tabela.
+  for r in
+    select c.conrelid::regclass::text as tabela, a.attname as coluna
+      from pg_constraint c
+      join pg_attribute a
+        on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+      join pg_class t on t.oid = c.conrelid
+      join pg_namespace n on n.oid = t.relnamespace
+     where c.contype = 'f'
+       and c.confrelid = 'public.profiles'::regclass
+       and array_length(c.conkey, 1) = 1
+       and c.conrelid <> 'public.profiles'::regclass
+       and n.nspname = 'public'
+  loop
+    execute format(
+      'update %s set %I = $1 where %I is not null and %I <> $1',
+      r.tabela, r.coluna, r.coluna, r.coluna
+    ) using v_admin;
+    get diagnostics n = row_count;
+    if n > 0 then
+      total := total + n;
+      raise notice '  autoria reatribuída: % linhas em %.%', n, r.tabela, r.coluna;
+    end if;
+  end loop;
+  raise notice 'Autoria reatribuída ao Admin Master: % linha(s).', total;
+end $$;
+
+-- -----------------------------------------------------------------------------
+-- 7. AS CLÍNICAS E OS USUÁRIOS.
+-- -----------------------------------------------------------------------------
+delete from public.clinics where code <> 'RF';
+
+-- `profiles.id` aponta para `auth.users` com cascata: apagar o usuário de login
+-- leva o perfil junto. O caminho contrário deixaria login órfão, capaz de
+-- entrar no sistema sem perfil.
+delete from auth.users
+ where id <> (select id from public.profiles where is_admin_master limit 1);
+
+-- -----------------------------------------------------------------------------
+-- 8. CÓDIGOS DE DOCUMENTO — voltam ao 00001.
 -- -----------------------------------------------------------------------------
 -- PT-, VD- e RN- saem todos da MESMA sequência (é o que garante que um número
--- nunca vale para dois documentos diferentes). CN-, RC-, PD- e AT- são contados
--- a partir das próprias tabelas, então recomeçam sozinhos.
---
--- `procedure_code_seq` NÃO entra: o catálogo de procedimentos fica, e reiniciar
--- daria o mesmo código a dois procedimentos diferentes.
+-- nunca vale para dois documentos). CN-, RC-, PD- e AT- são contados a partir
+-- das próprias tabelas, então recomeçam sozinhos.
 alter sequence public.sale_code_seq restart with 1;
 alter sequence public.purchase_request_code_seq restart with 1;
 alter sequence public.staff_member_code_seq restart with 1;
+alter sequence public.procedure_code_seq restart with 1;  -- o catálogo saiu inteiro
 
 -- Contador de rede dos códigos de programa (PPR-, PRE-), criado pela 0245.
--- Condicional de propósito: se a 0245 ainda não tiver sido aplicada, a limpeza
--- segue em vez de falhar inteira por causa de uma sequência que não existe.
+-- Condicional: se a 0245 ainda não tiver sido aplicada, a limpeza segue em vez
+-- de falhar inteira por causa de uma sequência que não existe.
 do $$
 begin
   if exists (
@@ -237,25 +461,72 @@ begin
   end if;
 end $$;
 
+-- -----------------------------------------------------------------------------
+-- 9. A TRAVA FINAL — confere o que tinha de sobreviver, antes de confirmar.
+-- -----------------------------------------------------------------------------
+-- Esta transação ainda não foi confirmada. Se qualquer uma destas afirmações for
+-- falsa, o erro desfaz TUDO e a produção fica exatamente como estava. É a
+-- diferença entre "descobri o estrago depois" e "não houve estrago" — e ela
+-- existe porque o ensaio mostrou que dá para apagar o que se queria preservar
+-- sem receber um único erro pelo caminho.
+do $$
+declare
+  n int;
+begin
+  select count(*) into n from public.clinics;
+  if n <> 1 then raise exception 'PAREI: deveria sobrar 1 clínica, sobraram %.', n; end if;
+
+  if not exists (select 1 from public.clinics where code = 'RF') then
+    raise exception 'PAREI: a clínica que sobrou não é a franqueadora (RF).';
+  end if;
+
+  select count(*) into n from public.profiles;
+  if n <> 1 then raise exception 'PAREI: deveria sobrar 1 usuário, sobraram %.', n; end if;
+
+  if not exists (select 1 from public.profiles where is_admin_master) then
+    raise exception 'PAREI: o usuário que sobrou não é o Admin Master.';
+  end if;
+
+  select count(*) into n from empresarial.companies;
+  if n <> 1 then raise exception 'PAREI: deveria sobrar 1 empresa, sobraram %.', n; end if;
+
+  -- A Agropecuária tem colaboradores cadastrados; se sobraram zero, alguma
+  -- cascata os levou — que foi exatamente o defeito achado no ensaio.
+  select count(*) into n from empresarial.employees;
+  if n = 0 then
+    raise exception 'PAREI: os colaboradores da empresa sumiram (alguma cascata os levou).';
+  end if;
+
+  -- O que fica é o que faz o sistema funcionar: sem plano de contas não há
+  -- financeiro, e um "sobrou zero" aqui seria descoberto tarde demais.
+  select count(*) into n from public.chart_of_accounts;
+  if n = 0 then raise exception 'PAREI: o plano de contas ficou vazio.'; end if;
+
+  raise notice 'Conferência interna passou. Confirmando.';
+end $$;
+
 commit;
 
 -- =============================================================================
 -- CONFERÊNCIA — o que ficou de pé.
 -- =============================================================================
-select 'clínicas'          as cadastro, count(*) from public.clinics
-union all select 'usuários',            count(*) from public.profiles
-union all select 'papéis',              count(*) from public.user_clinic_roles
-union all select 'procedimentos',       count(*) from public.procedures
-union all select 'protocolo de sessões',count(*) from public.procedure_sessions
-union all select 'plano de contas',     count(*) from public.chart_of_accounts
-union all select 'centros de custo',    count(*) from public.cost_centers
-union all select 'itens de estoque',    count(*) from public.stock_items
-union all select 'kits',                count(*) from public.stock_kits
-union all select 'taxas da rede',       count(*) from public.network_fee_types
-union all select 'planos PPR+',         count(*) from public.ppr_plans
-union all select 'modelos de documento',count(*) from public.document_templates
-union all select 'fichas de anamnese',  count(*) from public.anamnesis_templates
-union all select '— PACIENTES',         count(*) from public.clients
-union all select '— agendamentos',      count(*) from public.appointments
-union all select '— lançamentos',       count(*) from public.financial_entries
-union all select '— empresas (Empr.)',  count(*) from empresarial.companies;
+select 'clínicas (esperado 1)'   as item, count(*) from public.clinics
+union all select 'usuários (esperado 1)',      count(*) from public.profiles
+union all select 'plano de contas',            count(*) from public.chart_of_accounts
+union all select 'centros de custo',           count(*) from public.cost_centers
+union all select 'taxas da rede',              count(*) from public.network_fee_types
+union all select 'especialidades',             count(*) from public.specialties
+union all select 'níveis de carreira',         count(*) from public.career_levels
+union all select 'categorias de bens',         count(*) from public.asset_categories
+union all select 'modelos de documento',       count(*) from public.document_templates
+union all select 'fichas de anamnese',         count(*) from public.anamnesis_templates
+union all select 'perguntas de anamnese',      count(*) from public.anamnesis_questions
+union all select 'planos PPR+',                count(*) from public.ppr_plans
+union all select '— PACIENTES (esperado 0)',   count(*) from public.clients
+union all select '— procedimentos (esperado 0)', count(*) from public.procedures
+union all select '— itens de estoque (esp. 0)', count(*) from public.stock_items
+union all select '— agendamentos (esperado 0)', count(*) from public.appointments
+union all select '— lançamentos (esperado 0)',  count(*) from public.financial_entries
+union all select 'empresas (esperado 1)',      count(*) from empresarial.companies
+union all select 'colaboradores (Agropec.)',   count(*) from empresarial.employees
+union all select 'dependentes (Agropec.)',     count(*) from empresarial.dependents;

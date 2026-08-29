@@ -3890,6 +3890,27 @@ schemas + os 9 baldes de armazenamento, gravados **fora do repositório** — o
 script recusa gravar dentro, porque backup de dado de saúde no Git não se desfaz
 pedindo desculpa.
 
+**⚠️ DUAS TENTATIVAS NA PRODUÇÃO PARARAM COM ERRO (28/08/2026), e as duas foram
+corrigidas.** Nada foi apagado nas duas vezes: a transação volta atrás inteira,
+que é exatamente para isso que ela existe.
+
+1. `23503 ppr_memberships_holder_client_id_fkey` — **o abraço**: a ficha aponta
+   para a adesão do PPR+ (`clients.ppr_membership_id`) e a adesão aponta para a
+   ficha (`holder_client_id`), as duas bloqueando. Nenhuma podia sair primeiro.
+   Corrigido soltando o laço por um lado antes (`update clients set
+   ppr_membership_id = null`).
+2. `23503 ppr_plan_benefits_procedure_id_fkey` — faltava apagar as **coberturas
+   do plano** ligadas a procedimento. O script já apagava as *vantagens*
+   (`ppr_plan_perks`) e não as coberturas.
+
+**A lição, e ela vale para a próxima operação destas:** os dois ensaios no banco
+de teste passaram **por ausência** — lá não havia adesão de PPR+ nem cobertura
+ligada a procedimento. *Ensaio que passa porque o caso não existe não é ensaio.*
+Depois do segundo erro, em vez de corrigir e torcer, foi perguntado ao banco
+quem BLOQUEIA a exclusão de cada tabela apagada por inteiro (`pg_constraint`,
+regra `a`/`r`) — a resposta apontou exatamente uma pendência, a que faltava. Os
+ensaios 3 e 4 passaram já com os dois casos montados de propósito.
+
 **A ordem, quando o dono quiser** (com ninguém usando o sistema):
 
 1. `npm run backup:producao` — uma cópia imediatamente antes.
