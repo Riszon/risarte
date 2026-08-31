@@ -3883,6 +3883,52 @@ Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
 4. ~~**Preparar o lançamento:** limpeza dos dados de teste~~ ✅ **EXECUTADA em
    28/08/2026** (detalhe abaixo). Depois: ZapSign e ASAAS, por decisão do dono
    **depois de publicar**.
+5. ~~**Publicar o sistema**~~ ✅ **NO AR desde 31/08/2026** — detalhe abaixo.
+
+### O SISTEMA ESTÁ PUBLICADO (31/08/2026)
+
+**Endereço da equipe: `https://risarte.vercel.app`** — Vercel, projeto `risarte`
+na equipe `ri-sz-on`, servido de **São Paulo (gru1)**, publicando o `main`
+automaticamente a cada push. O plano estava em **Pro Trial**; precisa virar Pro
+antes do fim do teste (o gratuito proíbe uso comercial).
+
+Guia clique a clique e processo de atualização: os dois documentos publicados
+como artefato — *Publicar o riSZon* e *Lançamento do riSZon*.
+
+**Segurança conferida antes de publicar, contra o banco de verdade:**
+com a chave pública não se lê nenhuma tabela (a trava por linha funciona);
+auto-cadastro **fechado** (`Signups not allowed for this instance`); todos os
+baldes de arquivo privados.
+
+**A publicação custou horas por causa de UM caractere — e a lição não é o
+caractere.** O `NEXT_PUBLIC_SUPABASE_URL` foi cadastrado como
+`https://…supabase.co/rest/v1/` (o dono copiou o endereço da API REST, que o
+Supabase mostra colado ao Project URL). O login batia em
+`…/rest/v1/auth/v1/token` e recebia **404**.
+
+O que fez isso durar horas foi a **tela de login, que dizia "e-mail ou senha
+incorretos" para QUALQUER falha** — inclusive 404 de configuração. Eu li a
+mensagem como informação e fui atrás de senha, autopreenchimento e janela
+anônima. Corrigido na **v0.224.0**: só a credencial inválida menciona e-mail e
+senha (e é a mesma resposta para e-mail inexistente, preservando o sigilo);
+tudo o mais diz o que é, e o desconhecido mostra o código. **Assim que a tela
+disse 404, a causa apareceu em dois minutos.** Sete testes prendem a regra.
+
+**Duas armadilhas da Vercel, para a próxima:**
+
+- **Variável `NEXT_PUBLIC_` é embutida no código na MONTAGEM.** Mudar o valor
+  não muda o site: exige republicar — e **com "Use existing Build Cache"
+  desmarcado**, senão ela reaproveita o pacote antigo com o valor velho. Foi o
+  que fez a primeira tentativa de correção não surtir efeito.
+- **Variável marcada como `Secret` não pode ser lida depois**, nem pelo dono.
+  As duas `NEXT_PUBLIC_` foram recriadas como **Config** (elas vão para o
+  navegador por natureza; quem protege o dado é a RLS). Só a
+  `SUPABASE_SERVICE_ROLE_KEY` é `Secret`.
+
+**Pendente antes de abrir para a equipe:** efetivar o plano Pro (Vercel e
+Supabase), backups diários, *leaked password protection*, verificação em duas
+etapas na conta do Supabase, e o **ambiente de treino** (segundo projeto na
+Vercel apontando para o banco de teste, com `NEXT_PUBLIC_AMBIENTE=treino`).
 
 ### Limpeza dos dados de teste — EXECUTADA em 28/08/2026
 
