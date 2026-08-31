@@ -3910,6 +3910,39 @@ pelas 4 empresas — a Agropecuária sempre teve 8. Conferido contra a cópia de
 segurança, empresa por empresa. **Número esperado que sai errado tem de ser
 explicado, não arredondado.**
 
+### ⚠️ O DANO COLATERAL — o Risarte Academy (31/08/2026)
+
+Ao investigar três baldes de arquivo que eu havia chamado de "órfãos", apareceu
+um **terceiro sistema**: o **Risarte Academy**
+(`PROJETOS RISARTE/risarte-academy`), schema `treinamento`, **no mesmo banco**,
+compartilhando os logins pelo `auth.users`. Ver a seção 0 do `CLAUDE.md`.
+
+**O que se perdeu:** a limpeza apagou 19 usuários e a cascata levou junto as
+matrículas, o progresso e 5 dos 7 certificados do Academy. Os **arquivos** (8
+mídias de curso, 7 certificados, 4 capas) eu devolvi do backup; as **linhas**
+não tinham cópia — os três backups anteriores nunca cobriram o `treinamento`.
+
+**Encadeamento dos erros, para não repetir:**
+
+1. Inventariei o banco lendo `supabase/migrations/` **deste** repositório e
+   anunciei "159 tabelas" como se fosse o banco. Eram as nossas.
+2. Vi três baldes sem referência **neste repositório** e concluí "órfãos" — a
+   conclusão certa exigia perguntar *por que existem*, o que levou dez minutos
+   quando finalmente foi feito.
+3. `delete from auth.users` era território comum, e eu não sabia que era.
+
+**Corrigido:** `scripts/backup-producao.mjs` passou a ler o catálogo do próprio
+banco, schema por schema — **202 tabelas contra as 175 de antes**. E
+`scripts/limpar-arquivos-de-teste.mjs` agora declara os três baldes como **de
+outro sistema** e não os toca (o comentário anterior dizia o contrário, e teria
+levado alguém a repetir o estrago).
+
+**Limpeza do Academy (31/08/2026):** decisão do dono ao saber — tudo lá era
+teste; ele recomeça limpo. `supabase/manutencao/limpeza-academy.sql`, ensaiado
+no banco de teste com as 14 migrações do Academy aplicadas do zero. Ficaram de
+pé as configurações (certificado, ranking, mural), o perfil e a permissão de
+admin; conteúdo, atividade e arquivos zerados.
+
 ### Como ela foi preparada (mantido como registro)
 
 **Cópia de segurança feita** (`npm run backup:producao`): 175 tabelas dos dois

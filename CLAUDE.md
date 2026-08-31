@@ -8,7 +8,7 @@ pendências em `docs/BACKLOG.md` (ler antes de iniciar qualquer etapa nova).
 @AGENTS.md
 @docs/ARQUITETURA-TECNICA.md
 
-## 0. ⚠️ Trabalho em PARALELO — dois projetos, um repositório (LER PRIMEIRO)
+## 0. ⚠️ Trabalho em PARALELO — TRÊS sistemas, um banco (LER PRIMEIRO)
 
 Este repositório é usado por **dois fluxos de trabalho em paralelo**, cada um com
 sua própria sessão/agente. Eles compartilham o mesmo repo, o mesmo banco Supabase
@@ -19,6 +19,31 @@ e o mesmo deploy (Vercel), então **disciplina é obrigatória** para não mistu
 - **Risarte Empresarial (B2B)** — schema `empresarial`, rotas `/empresarial`,
   `src/lib/empresarial`. Documentos de estado: `docs/risarte-empresarial/`.
   (Vai integrar ao riSZon; por isso mesmo repo e mesmo banco.)
+
+### ⚠️ E existe um TERCEIRO sistema, FORA deste repositório
+
+**Risarte Academy** — plataforma de treinamento (cursos, trilhas, provas,
+certificados, ranking, mural). Mora em
+`C:\Users\Jeferson\PROJETOS RISARTE\risarte-academy`, no schema **`treinamento`**,
+e **usa o MESMO projeto Supabase** (`hvhbijctanrrkxhemlza`), **compartilhando os
+logins pelo `auth.users`**. Baldes de arquivo: `lms-media`, `certificates`,
+`covers`.
+
+**Isto custou dados reais em 28/08/2026.** A limpeza dos dados de teste do
+riSZon apagou 19 usuários, e quase toda tabela do Academy tem
+`user_id references auth.users on delete cascade` — foram junto as matrículas,
+o progresso e os certificados. O erro anterior a esse foi o inventário: eu listei
+as tabelas lendo `supabase/migrations/` **deste** repositório e tratei o
+resultado como se fosse o banco inteiro.
+
+**REGRA, para qualquer operação em massa:**
+
+1. **Pergunte ao BANCO o que existe nele**, nunca deduza das nossas migrações.
+   `npm run backup:producao` já faz isso (lê o catálogo de cada schema).
+2. **`auth.users` é território comum.** Mexer em usuário afeta os três sistemas.
+3. **Não conclua "órfão" olhando só este repositório.** Um balde ou schema sem
+   referência aqui pode ser de outro sistema. Descubra *por que* existe antes de
+   apagar — no caso do Academy, a resposta apareceu em dez minutos.
 
 **Regras que TODO agente segue (decisão do dono, 10/07/2026):**
 

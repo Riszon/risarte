@@ -38,16 +38,25 @@ const ESVAZIAR = [
   "empresarial-empresa-docs",    // documentos das empresas parceiras
   "empresarial-colaborador-docs",
   "nfe",                         // XML das notas de compra
-  // Treinamento e certificados (decisão do dono, 26/08/2026). Estes três são
-  // ÓRFÃOS: não há tabela nem uma linha de código no sistema que os leia —
-  // nasceram fora das migrações. Conferido antes de apagar, porque apagar o que
-  // não se entende é como se perde trabalho que ninguém lembrava que existia.
-  "lms-media",
-  "certificates",
-  "covers",
 ];
 
-const NAO_TOCAR = [];
+// ⚠️ NÃO SÃO ÓRFÃOS — E EU JÁ ESCREVI AQUI QUE ERAM (31/08/2026).
+//
+// `lms-media`, `certificates` e `covers` pertencem ao **Risarte Academy**, um
+// sistema SEPARADO (`PROJETOS RISARTE/risarte-academy`) que divide o mesmo
+// Supabase, no schema `treinamento`. Guardam os vídeos e materiais das aulas,
+// os certificados emitidos e as capas dos cursos e trilhas.
+//
+// Eu os chamei de órfãos porque procurei referência a eles NESTE repositório e
+// não achei — conclusão tirada do lugar errado. A pergunta certa era por que
+// existem, e ela tinha resposta em dez minutos.
+//
+// Este script é do riSZon e **não apaga arquivo do Academy**. A limpeza de lá
+// tem arquivo próprio: `supabase/manutencao/limpeza-academy.sql`, e os arquivos
+// dela saem à mão, junto com o conteúdo a que pertencem.
+const DE_OUTRO_SISTEMA = ["lms-media", "certificates", "covers"];
+
+const NAO_TOCAR = DE_OUTRO_SISTEMA;
 
 const confirmado = process.argv.includes("--confirmar");
 
@@ -82,7 +91,7 @@ async function main() {
   }
 
   if (NAO_TOCAR.length > 0) {
-    console.log("\n  Intocados:");
+    console.log("\n  Intocados (são do Risarte Academy, não do riSZon):");
     for (const balde of NAO_TOCAR) {
       const caminhos = await listar(balde);
       console.log(
