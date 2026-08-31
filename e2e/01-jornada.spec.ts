@@ -9,7 +9,6 @@
 
 import { expect, test } from "@playwright/test";
 import {
-  AMBIENTE,
   PESSOAS,
   banco,
   cpfDeTeste,
@@ -18,6 +17,7 @@ import {
   fecharAvisos,
   mascaraCpf,
   nomeDeTeste,
+  senhaDe,
 } from "./apoio";
 
 test.describe("A porta da frente", () => {
@@ -27,7 +27,7 @@ test.describe("A porta da frente", () => {
     // em cada teste faria da tela de login a parte mais testada do sistema.
     await page.goto("/login");
     await page.getByLabel("E-mail").fill(PESSOAS.recepcao);
-    await page.getByLabel("Senha").fill(AMBIENTE.TEST_USER_PASSWORD);
+    await page.getByLabel("Senha").fill(senhaDe(PESSOAS.recepcao));
     await page.getByRole("button", { name: "Entrar" }).click();
 
     await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 });

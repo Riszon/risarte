@@ -37,6 +37,28 @@ export const PESSOAS = {
 } as const;
 
 /**
+ * A senha DAQUELE papel.
+ *
+ * Cada usuário de teste tem a sua (decisão do dono, 31/08/2026): com o ambiente
+ * de treino aberto na internet, senha única faria a primeira pessoa que
+ * percebesse o padrão entrar como gerente ou como financeiro — por curiosidade,
+ * não por má intenção, e treinando no papel errado.
+ */
+export function senhaDe(email: string): string {
+  const mapa = JSON.parse(AMBIENTE.TEST_USER_PASSWORDS ?? "{}") as Record<
+    string,
+    string
+  >;
+  const senha = mapa[email];
+  if (!senha) {
+    throw new Error(
+      `sem senha para ${email} — rode 'npm run seed:teste' para gerar`
+    );
+  }
+  return senha;
+}
+
+/**
  * Entra no sistema SEM passar pela tela de login.
  *
  * Pede ao Supabase um link de acesso de uso único e troca por sessão — o mesmo

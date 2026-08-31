@@ -24,7 +24,7 @@
 // Uso:  node scripts/seed-test.mjs
 
 import { createClient } from "@supabase/supabase-js";
-import { appendFileSync, readFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { actAs, connect, testEnv } from "./test-db.mjs";
 
@@ -120,9 +120,9 @@ async function main() {
 async function semear(db) {
 
   // ---- usuários ------------------------------------------------------------
-  // A senha nasce aleatória e vai para o `.env.test.local`. Senha fixa no
+  // Uma senha POR PAPEL, aleatória, gravada no `.env.test.local`. Senha fixa no
   // código acabaria copiada para algum lugar que não é de teste.
-  const senha = lerOuCriarSenha();
+  const senhas = lerOuCriarSenhas();
 
   const { data: existentes } = await auth.listUsers({ perPage: 200 });
   const porEmail = new Map((existentes?.users ?? []).map((u) => [u.email, u]));
@@ -133,7 +133,7 @@ async function semear(db) {
     if (!user) {
       const { data, error } = await auth.createUser({
         email,
-        password: senha,
+        password: senhas[email],
         email_confirm: true,
         user_metadata: { full_name: nomeCompleto },
       });
@@ -310,9 +310,8 @@ async function semear(db) {
   console.log("  2 fornecedores em cada unidade.");
 
   console.log(
-    `\nPronto. Entre no sistema de teste com admin@${dominio} e a senha ` +
-      `gravada em .env.test.local (TEST_USER_PASSWORD). Todos os usuários ` +
-      `usam a MESMA senha.`
+    `\nPronto. CADA PAPEL TEM A SUA SENHA, gravadas em .env.test.local ` +
+      `(TEST_USER_PASSWORDS). Para ver a lista: npm run senhas:treino`
   );
 }
 
@@ -341,15 +340,50 @@ async function kit(db, { clinicId, nome, kind, itens, procedimentos }) {
   );
 }
 
-/** Senha única para os usuários de teste, gerada uma vez e reaproveitada. */
-function lerOuCriarSenha() {
+/**
+ * UMA SENHA POR PAPEL — e não uma para todos (decisão do dono, 31/08/2026).
+ *
+ * O ambiente de treino ficou aberto na internet, e senha única tem um efeito
+ * que só aparece no uso: a primeira pessoa que percebe o padrão entra como
+ * gerente, como financeiro, como quem quiser. Não por má intenção — por
+ * curiosidade. E aí ela treina no papel errado, ou vê número que não é dela.
+ *
+ * Com uma senha por papel, quem recebeu a da recepção só entra na recepção.
+ *
+ * Ficam guardadas em `.env.test.local` (fora do Git) numa linha só, em JSON,
+ * porque o leitor de ambiente parte cada linha no primeiro `=`.
+ */
+function lerOuCriarSenhas() {
   const arquivo = ".env.test.local";
   const texto = readFileSync(arquivo, "utf8");
-  const achada = texto.match(/^TEST_USER_PASSWORD=(.+)$/m);
-  if (achada) return achada[1].trim();
-  const nova = "Teste-" + randomBytes(9).toString("base64url");
-  appendFileSync(arquivo, `\nTEST_USER_PASSWORD=${nova}\n`, "utf8");
-  return nova;
+  const achada = texto.match(/^TEST_USER_PASSWORDS=(.+)$/m);
+  const mapa = achada ? JSON.parse(achada[1].trim()) : {};
+
+  // Só completa o que falta: papel novo no cenário ganha senha própria sem
+  // mexer nas que já foram distribuídas para a equipe.
+  const apelidos = ["admin", ...PAPEIS.map(([, apelido]) => apelido)];
+  let mudou = false;
+  for (const apelido of apelidos) {
+    const email = `${apelido}@${dominio}`;
+    if (!mapa[email]) {
+      mapa[email] = `Treino-${apelido}-${randomBytes(6).toString("base64url")}`;
+      mudou = true;
+    }
+  }
+
+  if (mudou) {
+    const linha = `TEST_USER_PASSWORDS=${JSON.stringify(mapa)}`;
+    if (achada) {
+      writeFileSync(
+        arquivo,
+        texto.replace(/^TEST_USER_PASSWORDS=.+$/m, linha),
+        "utf8"
+      );
+    } else {
+      appendFileSync(arquivo, `\n${linha}\n`, "utf8");
+    }
+  }
+  return mapa;
 }
 
 main().catch((e) => {
