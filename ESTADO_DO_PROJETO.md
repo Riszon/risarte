@@ -3880,10 +3880,37 @@ Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
 3. ~~**Camada 3 — ponta a ponta (Playwright)**~~ ✅ — banco de teste no ar e os
    **sete fluxos planejados cobertos**, incluindo a baixa automática do estoque.
    Detalhe abaixo.
-4. **Preparar o lançamento:** limpeza dos dados de teste — **PLANO PRONTO,
-   AGUARDANDO O DONO RODAR** (detalhe abaixo). Depois: ZapSign e ASAAS.
+4. ~~**Preparar o lançamento:** limpeza dos dados de teste~~ ✅ **EXECUTADA em
+   28/08/2026** (detalhe abaixo). Depois: ZapSign e ASAAS, por decisão do dono
+   **depois de publicar**.
 
-### Limpeza dos dados de teste — preparada em 26/08/2026, NÃO executada
+### Limpeza dos dados de teste — EXECUTADA em 28/08/2026
+
+**Resultado conferido no banco, não só na tela:**
+
+```
+CLÍNICA:      RF — RISARTE Franchising (franchisor, own)
+USUÁRIO:      o Admin Master, e mais nenhum
+EMPRESA:      Agropecuária Inocente — 8 colaboradores, 14 dependentes,
+              todos sem ficha de paciente e sem unidade (como previsto)
+ZERADOS:      pacientes, agendamentos, sessões, razão, parcelas, contas a
+              pagar, estoque, procedimentos, avisos, auditoria, fornecedores,
+              meses fechados, adesões PPR+, Risartanos, contas bancárias
+INTACTOS:     plano de contas (84), centros de custo (5), taxas da rede (6),
+              especialidades (18), níveis de carreira (4), categorias de bens
+              (6), modelos de documento (7), fichas de anamnese (2) com 36
+              perguntas, planos PPR+ (4)
+ARQUIVOS:     82 apagados do armazenamento; zero sobrando nos 9 baldes
+NUMERAÇÃO:    contadores zerados — o próximo paciente será o CAM-00001
+```
+
+**Uma expectativa minha estava errada e vale registrar:** eu disse ao dono que
+sobrariam 17 colaboradores; sobraram 8. Os 17 eram o total da REDE, espalhados
+pelas 4 empresas — a Agropecuária sempre teve 8. Conferido contra a cópia de
+segurança, empresa por empresa. **Número esperado que sai errado tem de ser
+explicado, não arredondado.**
+
+### Como ela foi preparada (mantido como registro)
 
 **Cópia de segurança feita** (`npm run backup:producao`): 175 tabelas dos dois
 schemas + os 9 baldes de armazenamento, gravados **fora do repositório** — o
