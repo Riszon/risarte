@@ -15,7 +15,7 @@
 // Uso:  npm run backup:producao
 
 import { createClient } from "@supabase/supabase-js";
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const env = Object.fromEntries(
@@ -49,24 +49,54 @@ if (destino.startsWith(resolve("."))) {
 }
 
 /**
- * Descobre as tabelas pelas migrações — o banco não expõe o catálogo.
+ * PERGUNTA AO BANCO quais tabelas existem — não deduz das nossas migrações.
  *
- * OS DOIS SCHEMAS. O repositório abriga dois projetos (ver "Trabalho em
- * PARALELO" no CLAUDE.md): o núcleo mora em `public`, o Risarte Empresarial em
- * `empresarial`. Uma cópia que só olhasse `public` seria chamada de "completa"
- * deixando um módulo inteiro de fora — e ninguém descobriria antes de precisar
- * restaurar.
+ * ⚠️ A LIÇÃO QUE CUSTOU CARO (28/08/2026). A primeira versão listava as tabelas
+ * lendo `supabase/migrations/` deste repositório, e o resultado foi anunciado
+ * como "cópia completa". Não era: **o mesmo banco Supabase é usado por TRÊS
+ * sistemas** — o riSZon (`public`), o Risarte Empresarial (`empresarial`) e o
+ * **Risarte Academy** (`treinamento`), que mora em outro repositório e
+ * compartilha os logins pelo `auth.users`.
+ *
+ * O Academy ficou fora de três cópias seguidas, e ninguém percebeu — até a
+ * limpeza dos dados de teste apagar usuários e levar junto, por cascata, as
+ * matrículas e os certificados dele. Backup que se acha completo é pior que
+ * backup declaradamente parcial: ele impede a pergunta.
+ *
+ * Agora a lista de TABELAS vem do próprio banco, pelo catálogo que o PostgREST
+ * publica em cada schema. O que ainda é uma lista escrita à mão são os
+ * SCHEMAS — a API só enxerga os que estão em "Exposed schemas" no painel do
+ * Supabase. Ao criar um schema novo, acrescente aqui.
  */
-function tabelasDoProjeto() {
+const SCHEMAS = ["public", "empresarial", "treinamento"];
+
+async function tabelasDoBanco() {
   const nomes = new Set();
-  for (const f of readdirSync("supabase/migrations")) {
-    if (!f.endsWith(".sql")) continue;
-    const sql = readFileSync(`supabase/migrations/${f}`, "utf8");
-    for (const m of sql.matchAll(
-      /create\s+table\s+(?:if\s+not\s+exists\s+)?(public|empresarial)\.([a-z0-9_]+)/gi
-    )) {
-      nomes.add(`${m[1].toLowerCase()}.${m[2]}`);
+  const semAcesso = [];
+
+  for (const schema of SCHEMAS) {
+    const resposta = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Accept-Profile": schema,
+      },
+    });
+    if (!resposta.ok) {
+      semAcesso.push(`${schema} (${resposta.status})`);
+      continue;
     }
+    const doc = await resposta.json();
+    // O catálogo lista cada tabela como um caminho "/nome".
+    for (const caminho of Object.keys(doc.paths ?? {})) {
+      const nome = caminho.replace(/^\//, "");
+      if (nome && !nome.startsWith("rpc/")) nomes.add(`${schema}.${nome}`);
+    }
+  }
+
+  if (semAcesso.length > 0) {
+    console.log(`  ATENÇÃO — schema(s) sem acesso pela API: ${semAcesso.join(", ")}`);
+    console.log("  Confira 'Exposed schemas' no painel do Supabase.\n");
   }
   return [...nomes].sort();
 }
@@ -121,7 +151,9 @@ async function main() {
 
   const resumo = {};
   const problemas = [];
-  for (const t of tabelasDoProjeto()) {
+  const tabelas = await tabelasDoBanco();
+  console.log(`  ${tabelas.length} tabelas encontradas no banco.\n`);
+  for (const t of tabelas) {
     const { linhas, erro } = await lerTudo(t);
     if (erro) {
       problemas.push(`${t}: ${erro.message}`);
