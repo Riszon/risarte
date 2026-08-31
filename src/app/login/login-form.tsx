@@ -15,6 +15,55 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+/**
+ * A mensagem certa para cada tipo de falha — sem entregar o e-mail.
+ *
+ * ⚠️ ANTES, TODA FALHA VIRAVA "e-mail ou senha incorretos". A intenção estava
+ * certa (nunca revelar se um e-mail existe, para ninguém descobrir quem tem
+ * conta), mas o efeito era esconder tudo o mais: excesso de tentativas,
+ * internet caída, Supabase fora do ar, configuração errada. Custou uma
+ * investigação inteira no dia da publicação — a senha estava certa e a tela
+ * insistia que não.
+ *
+ * Pior no uso real: um soluço do servidor faria a equipe inteira concluir que
+ * esqueceu a senha, e a recepção passaria a manhã pedindo redefinição.
+ *
+ * A regra que mantém o sigilo: só a resposta "credencial inválida" fala de
+ * e-mail e senha, e ela é a MESMA para e-mail que não existe e para senha
+ * errada. As outras falam do problema de verdade, que não diz nada sobre quem
+ * tem conta.
+ */
+export function mensagemDeEntrada(erro: {
+  message?: string;
+  status?: number;
+}): string {
+  const status = erro.status ?? 0;
+  const texto = (erro.message ?? "").toLowerCase();
+
+  if (status === 429 || texto.includes("rate limit")) {
+    return "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.";
+  }
+  if (texto.includes("captcha")) {
+    return "A verificação de segurança bloqueou a entrada. Avise o administrador.";
+  }
+  if (texto.includes("email not confirmed")) {
+    return "Este acesso ainda não foi liberado. Fale com o administrador.";
+  }
+  if (status === 0 || texto.includes("fetch") || texto.includes("network")) {
+    return "Não consegui falar com o servidor. Verifique a internet e tente de novo.";
+  }
+  if (status >= 500) {
+    return "O servidor de acesso está fora do ar no momento. Tente de novo em instantes.";
+  }
+  // O caso comum, e o único que menciona e-mail e senha.
+  if (status === 400 || texto.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos. Verifique e tente novamente.";
+  }
+  // Nada reconhecido: diz que é outra coisa, e mostra o código para o suporte.
+  // Chutar "senha errada" aqui é o que criou o problema.
+  return `Não foi possível entrar agora (código ${status || "?"}). Tente de novo; se insistir, avise o administrador.`;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -34,8 +83,7 @@ export function LoginForm() {
     });
 
     if (signInError) {
-      // Generic message on purpose: never reveal whether the e-mail exists.
-      setError("E-mail ou senha incorretos. Verifique e tente novamente.");
+      setError(mensagemDeEntrada(signInError));
       setLoading(false);
       return;
     }
