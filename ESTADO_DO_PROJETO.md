@@ -3884,6 +3884,52 @@ Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
    28/08/2026** (detalhe abaixo). Depois: ZapSign e ASAAS, por decisão do dono
    **depois de publicar**.
 5. ~~**Publicar o sistema**~~ ✅ **NO AR desde 31/08/2026** — detalhe abaixo.
+6. ~~**Ambiente de treino**~~ ✅ `risarte-treino.vercel.app`, faixa amarela e
+   **uma senha por papel** (`npm run senhas:treino`).
+7. ~~**Matriz de permissões editável**~~ ✅ **v0.225.0 · migração 0246** —
+   detalhe abaixo.
+
+### MATRIZ DE PERMISSÕES EDITÁVEL (01/09/2026, migração 0246)
+
+**`/admin/permissoes`, só o Admin Master.** Quem enxerga cada módulo estava
+escrito dentro do código; agora vem da tabela `permission_matrix`. 23
+capacidades em 4 grupos, 15 papéis.
+
+**O que a matriz governa, e o que não governa.** As permissões vivem em duas
+camadas: o **aplicativo** decide se o módulo abre (o `redirect("/")` no layout);
+o **banco** decide, por RLS, o que a pessoa lê e escreve lá dentro — e essas
+regras estão dentro de centenas de políticas, cada uma com a lista de papéis no
+próprio texto. **A matriz governa a primeira camada.**
+
+Consequência, escrita na própria tela: **desligar sempre funciona**; **ligar**
+uma capacidade marcada com *"o banco também decide"* (Financeiro, Estoque,
+Compras) abre a tela, mas os dados podem vir vazios. Sem esse aviso, o dono
+mexeria achando que mudou a permissão — pior que não ter a tela.
+
+**Decisões de desenho:**
+
+- **A semente reproduz o que o código fazia antes** — ligar a funcionalidade não
+  mudou o comportamento de ninguém. Conferido no banco depois de aplicar: 131
+  linhas, 22 capacidades, **zero divergências** contra o padrão do código.
+- **O Admin Master não entra na matriz.** Passa por cima sempre; poder tirar o
+  próprio acesso criaria a porta trancada com a chave dentro.
+- A matriz entra na **sessão**, carregada uma vez por requisição. Sem a tabela,
+  cai no padrão do código — um sistema que perde todas as permissões porque uma
+  consulta falhou é pior que um que mantém o comportamento antigo.
+- As funções de acesso (`canViewFinance`, `canManageStock`, `isPurchaser`…)
+  mantiveram as assinaturas: **nenhuma tela precisou mudar**.
+- Escrita por `set_permission()`, com a guarda repetida **no banco** (testado: um
+  visitante sem login recebe `NOT_ALLOWED`). Toda alteração vai para a auditoria.
+- **Botão "voltar ao padrão"** por linha: matriz sem volta assusta, e aí ninguém
+  experimenta.
+
+**Erro corrigido junto (era meu, de 31/08):** o manual e a matriz em CSV diziam
+que *Centro de Planejamento* e *Procedimentos* apareciam para todas as funções.
+Sempre foram só do Dentista Planner e do Admin. O erro veio de leitura
+incompleta do menu e apareceu ao montar esta tela.
+
+**⚠️ Permissão é DADO: não viaja entre os ambientes.** Mudar na produção não
+muda no treino. Ver a seção 0b do `CLAUDE.md`.
 
 ### O SISTEMA ESTÁ PUBLICADO (31/08/2026)
 

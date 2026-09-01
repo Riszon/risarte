@@ -31,6 +31,7 @@
 11. [Segurança e boas práticas](#11-segurança-e-boas-práticas)
 12. [Glossário](#12-glossário)
 13. [Perguntas frequentes](#13-perguntas-frequentes)
+13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
 14. [Checklists](#14-checklists)
 
 ---
@@ -968,6 +969,35 @@ Sempre comece o cadastro **pelo CPF** — o sistema avisa se o paciente já exis
 
 **O que é aquele número no rodapé?**
 A versão do sistema. Informe-a ao pedir suporte.
+
+---
+
+## 13b. Para o Admin Master: alterar permissões
+
+**Onde:** Administração → **Permissões** (`/admin/permissoes`). Só você entra.
+
+**Como:** cada linha é uma permissão, cada coluna é uma função. Marque ou
+desmarque e clique em **Salvar** na linha. Vale para toda a rede, e passa a
+valer na próxima tela que a pessoa abrir (peça para ela recarregar).
+
+**Três coisas para saber antes de mexer:**
+
+1. **Você não aparece na matriz.** O Admin Master passa por cima de todas as
+   permissões, sempre — senão daria para trancar a porta com a chave dentro.
+2. **Desligar sempre funciona.** É seguro e imediato.
+3. **Ligar** uma permissão com o selo **"o banco também decide"** (Financeiro,
+   Estoque, Compras) abre a tela para a pessoa, **mas os dados podem vir
+   vazios** — a regra do banco continua a mesma até ser ajustada. Se acontecer,
+   é ajuste de código; peça.
+
+**Se errar:** o botão **↺** ao lado da linha devolve ao padrão de fábrica.
+
+**Fica registrado:** toda alteração vai para a Auditoria, com quem mudou, quando
+e quais funções passaram a ter a permissão.
+
+> ⚠️ **A permissão que você mudar aqui NÃO vai para o ambiente de treino**, e
+> vice-versa. Cada ambiente tem o seu banco. Se a mudança é algo que a equipe
+> vai encontrar, faça **nos dois** — leva o mesmo clique.
 
 ---
 

@@ -81,6 +81,36 @@ resultado como se fosse o banco inteiro.
    Empresarial ainda em obra; aí o branch (`feature/empresarial`) vale, e tem de
    ser criado pela sessão do Empresarial, com plano combinado entre as duas.
 
+## 0b. ⚠️ O QUE VIAJA ENTRE OS AMBIENTES (e o que não viaja)
+
+Existem **dois endereços no ar**, publicando do mesmo `main`:
+
+| | Produção | Treino |
+|---|---|---|
+| Endereço | `risarte.vercel.app` | `risarte-treino.vercel.app` |
+| Banco | `hvhbijctanrrkxhemlza` | `bsnptybalszjjbhxeejo` |
+| Aparência | normal | faixa amarela + aba "TREINO" |
+
+**Três coisas viajam de formas diferentes, e confundi-las gera erro caro:**
+
+1. **CÓDIGO** — automático nos DOIS. Um push no `main` monta os dois projetos.
+2. **MIGRAÇÃO** — manual, **por banco**. O dono roda na produção; o agente roda
+   no teste com `npm run migrar:teste`. **Enquanto um banco não recebeu, a tela
+   nova pode aparecer sem a estrutura que ela precisa** — o código deve tratar
+   essa janela (ver `permission_matrix`: a tela mostra o padrão e desabilita o
+   salvar em vez de fingir que gravou).
+3. **DADOS E CONFIGURAÇÃO** (permissões, SLA, taxas, regras comerciais,
+   procedimentos) — **NUNCA viajam**. Cada ambiente tem o seu banco.
+
+**A consequência prática:** o treino pode divergir da produção sem ninguém
+perceber, e aí a equipe treina num sistema que não é o que vai usar. Ao mudar
+configuração que a equipe encontra, mudar **nos dois**.
+
+**Variável de ambiente é embutida na MONTAGEM** (`NEXT_PUBLIC_*`): mudar o valor
+na Vercel não muda o site sem republicar — e com "Use existing Build Cache"
+desmarcado. Ver `risarte-producao-online` nas memórias e o guia
+*Publicar o riSZon*.
+
 ## 1. Visão geral
 
 Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1
