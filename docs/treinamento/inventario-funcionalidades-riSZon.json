@@ -1,0 +1,3539 @@
+{
+  "gerado_em": "2026-08-31T23:49:22.350Z",
+  "origem": "extraído do repositório risarte (branch main)",
+  "totais": {
+    "rotas": 82,
+    "itens_de_menu": 28,
+    "mensagens_de_tela": 179,
+    "acoes_de_servidor": 384,
+    "erros_financeiros_traduzidos": 8
+  },
+  "rotas": [
+    {
+      "rota": "/admin/agenda",
+      "arquivo": "src/app/(app)/admin/agenda/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/anamnese",
+      "arquivo": "src/app/(app)/admin/anamnese/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/auditoria",
+      "arquivo": "src/app/(app)/admin/auditoria/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/chat",
+      "arquivo": "src/app/(app)/admin/chat/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/clinicas",
+      "arquivo": "src/app/(app)/admin/clinicas/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/documentos",
+      "arquivo": "src/app/(app)/admin/documentos/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/orientacoes",
+      "arquivo": "src/app/(app)/admin/orientacoes/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/regras-comerciais",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/sla",
+      "arquivo": "src/app/(app)/admin/sla/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/usuarios/novo",
+      "arquivo": "src/app/(app)/admin/usuarios/novo/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/usuarios",
+      "arquivo": "src/app/(app)/admin/usuarios/page.tsx",
+      "guardas": [
+        "requireAdminMaster"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/admin/usuarios/[id]",
+      "arquivo": "src/app/(app)/admin/usuarios/[id]/page.tsx",
+      "guardas": [
+        "requireAdminMaster",
+        "notFound"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/agenda/configuracao",
+      "arquivo": "src/app/(app)/agenda/configuracao/page.tsx",
+      "guardas": [
+        "hasRoleInClinic",
+        "redirect"
+      ],
+      "papeisCitados": [
+        "unit_manager",
+        "franchisee"
+      ]
+    },
+    {
+      "rota": "/agenda",
+      "arquivo": "src/app/(app)/agenda/page.tsx",
+      "guardas": [
+        "isAgendaView",
+        "isNaN",
+        "hasRoleInClinic",
+        "isSdrRestricted",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "sdr",
+        "planner_dentist",
+        "commercial_consultant",
+        "unit_manager",
+        "franchisee",
+        "receptionist",
+        "clinical_coordinator",
+        "dentist"
+      ]
+    },
+    {
+      "rota": "/agenda/planejamento-anual",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/page.tsx",
+      "guardas": [
+        "hasRoleInClinic",
+        "redirect"
+      ],
+      "papeisCitados": [
+        "unit_manager",
+        "franchisee"
+      ]
+    },
+    {
+      "rota": "/agenda/retornos",
+      "arquivo": "src/app/(app)/agenda/retornos/page.tsx",
+      "guardas": [
+        "hasRoleInClinic",
+        "redirect"
+      ],
+      "papeisCitados": [
+        "receptionist",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/apresentacao/[clientId]",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/page.tsx",
+      "guardas": [
+        "notFound",
+        "redirect",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "commercial_consultant",
+        "unit_manager",
+        "commercial_assistant"
+      ]
+    },
+    {
+      "rota": "/atendimento",
+      "arquivo": "src/app/(app)/atendimento/page.tsx",
+      "guardas": [
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "commercial_consultant",
+        "receptionist",
+        "sdr",
+        "clinical_coordinator",
+        "dentist",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/avaliacao/[clientId]",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/page.tsx",
+      "guardas": [
+        "notFound",
+        "hasRoleInClinic",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "clinical_coordinator",
+        "dentist",
+        "planner_dentist",
+        "commercial_consultant",
+        "receptionist",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/chat",
+      "arquivo": "src/app/(app)/chat/page.tsx",
+      "guardas": [],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/comercial/dashboard",
+      "arquivo": "src/app/(app)/comercial/dashboard/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "commercial_consultant",
+        "commercial_assistant",
+        "unit_manager",
+        "franchisee",
+        "franchisor_staff"
+      ]
+    },
+    {
+      "rota": "/comercial",
+      "arquivo": "src/app/(app)/comercial/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray",
+        "isHistoryColumn"
+      ],
+      "papeisCitados": [
+        "commercial_consultant",
+        "commercial_assistant",
+        "unit_manager",
+        "franchisee"
+      ]
+    },
+    {
+      "rota": "/comercial/venda-direta",
+      "arquivo": "src/app/(app)/comercial/venda-direta/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "receptionist",
+        "unit_manager",
+        "sdr",
+        "clinical_coordinator",
+        "franchisee",
+        "commercial_consultant",
+        "commercial_assistant",
+        "franchisor_staff"
+      ]
+    },
+    {
+      "rota": "/comercial/[clientId]",
+      "arquivo": "src/app/(app)/comercial/[clientId]/page.tsx",
+      "guardas": [
+        "notFound",
+        "redirect",
+        "hasRoleInClinic",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "commercial_consultant",
+        "commercial_assistant",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/compras/aprovar",
+      "arquivo": "src/app/(app)/compras/aprovar/page.tsx",
+      "guardas": [
+        "canViewPurchases",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/compras",
+      "arquivo": "src/app/(app)/compras/page.tsx",
+      "guardas": [
+        "canViewPurchases",
+        "redirect",
+        "isPurchaser"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/compras/painel",
+      "arquivo": "src/app/(app)/compras/painel/page.tsx",
+      "guardas": [
+        "canViewPurchases",
+        "redirect",
+        "isPurchaser",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/compras/receber",
+      "arquivo": "src/app/(app)/compras/receber/page.tsx",
+      "guardas": [
+        "canViewPurchases",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/compras/rodadas",
+      "arquivo": "src/app/(app)/compras/rodadas/page.tsx",
+      "guardas": [
+        "isPurchaser",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/empresarial/configuracoes",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/page.tsx",
+      "guardas": [
+        "isProgramManager",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/empresarial/funil",
+      "arquivo": "src/app/(app)/empresarial/funil/page.tsx",
+      "guardas": [
+        "canViewEmpresarial",
+        "redirect",
+        "isProgramManager",
+        "isRislifeConsultant"
+      ],
+      "papeisCitados": [
+        "rislife_consultant"
+      ]
+    },
+    {
+      "rota": "/empresarial",
+      "arquivo": "src/app/(app)/empresarial/page.tsx",
+      "guardas": [
+        "canViewEmpresarial",
+        "redirect",
+        "isProgramManager",
+        "isRislifeConsultant"
+      ],
+      "papeisCitados": [
+        "rislife_consultant"
+      ]
+    },
+    {
+      "rota": "/empresarial/painel",
+      "arquivo": "src/app/(app)/empresarial/painel/page.tsx",
+      "guardas": [
+        "isProgramManager",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/empresarial/[companyId]/ficha",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/ficha/page.tsx",
+      "guardas": [
+        "canViewEmpresarial",
+        "redirect",
+        "notFound"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/empresarial/[companyId]",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/page.tsx",
+      "guardas": [
+        "canViewEmpresarial",
+        "redirect",
+        "isProgramManager",
+        "notFound",
+        "isAsaasConfigured",
+        "isZapsignConfigured"
+      ],
+      "papeisCitados": [
+        "sdr",
+        "receptionist",
+        "unit_manager",
+        "franchisee",
+        "franchisor_staff",
+        "clinical_coordinator"
+      ]
+    },
+    {
+      "rota": "/empresarial/[companyId]/relatorio",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/relatorio/page.tsx",
+      "guardas": [
+        "canViewEmpresarial",
+        "redirect",
+        "notFound"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/empresarial/[companyId]/relatorio-beneficios",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/relatorio-beneficios/page.tsx",
+      "guardas": [
+        "redirect",
+        "notFound"
+      ],
+      "papeisCitados": [
+        "franchisor_staff",
+        "unit_manager",
+        "franchisee",
+        "clinical_coordinator"
+      ]
+    },
+    {
+      "rota": "/estoque",
+      "arquivo": "src/app/(app)/estoque/page.tsx",
+      "guardas": [
+        "canViewStock",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/adquirentes",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/financeiro/bens",
+      "arquivo": "src/app/(app)/financeiro/bens/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/centros-de-custo",
+      "arquivo": "src/app/(app)/financeiro/centros-de-custo/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/conciliacao",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "finance_franchisor",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/financeiro/configuracao",
+      "arquivo": "src/app/(app)/financeiro/configuracao/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/consolidado",
+      "arquivo": "src/app/(app)/financeiro/consolidado/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/contas-a-pagar",
+      "arquivo": "src/app/(app)/financeiro/contas-a-pagar/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "finance_franchisor",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/financeiro/dre",
+      "arquivo": "src/app/(app)/financeiro/dre/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/fechamento",
+      "arquivo": "src/app/(app)/financeiro/fechamento/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/fluxo-de-caixa",
+      "arquivo": "src/app/(app)/financeiro/fluxo-de-caixa/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/fornecedores",
+      "arquivo": "src/app/(app)/financeiro/fornecedores/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "finance_franchisor",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/financeiro/orcamento",
+      "arquivo": "src/app/(app)/financeiro/orcamento/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro",
+      "arquivo": "src/app/(app)/financeiro/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/painel-da-rede",
+      "arquivo": "src/app/(app)/financeiro/painel-da-rede/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/plano-de-contas",
+      "arquivo": "src/app/(app)/financeiro/plano-de-contas/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/ponto-de-equilibrio",
+      "arquivo": "src/app/(app)/financeiro/ponto-de-equilibrio/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/financeiro/repasses",
+      "arquivo": "src/app/(app)/financeiro/repasses/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "dentist",
+        "clinical_coordinator",
+        "planner_dentist"
+      ]
+    },
+    {
+      "rota": "/financeiro/taxas-da-rede",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/page.tsx",
+      "guardas": [
+        "canViewFinance",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/jornada",
+      "arquivo": "src/app/(app)/jornada/page.tsx",
+      "guardas": [
+        "redirect",
+        "isSdrRestricted",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "dentist",
+        "planner_dentist",
+        "receptionist",
+        "sdr"
+      ]
+    },
+    {
+      "rota": "/meu-dia",
+      "arquivo": "src/app/(app)/meu-dia/page.tsx",
+      "guardas": [
+        "hasRoleInClinic",
+        "isJoint"
+      ],
+      "papeisCitados": [
+        "dentist"
+      ]
+    },
+    {
+      "rota": "/minha-agenda",
+      "arquivo": "src/app/(app)/minha-agenda/page.tsx",
+      "guardas": [
+        "isFinite"
+      ],
+      "papeisCitados": [
+        "dentist"
+      ]
+    },
+    {
+      "rota": "/notificacoes",
+      "arquivo": "src/app/(app)/notificacoes/page.tsx",
+      "guardas": [],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/page.tsx",
+      "arquivo": "src/app/(app)/page.tsx",
+      "guardas": [
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "receptionist",
+        "unit_manager",
+        "clinical_coordinator"
+      ]
+    },
+    {
+      "rota": "/perfil",
+      "arquivo": "src/app/(app)/perfil/page.tsx",
+      "guardas": [],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/planejamento",
+      "arquivo": "src/app/(app)/planejamento/page.tsx",
+      "guardas": [
+        "redirect",
+        "isSlaExceeded"
+      ],
+      "papeisCitados": [
+        "planner_dentist"
+      ]
+    },
+    {
+      "rota": "/planejamento/[clientId]",
+      "arquivo": "src/app/(app)/planejamento/[clientId]/page.tsx",
+      "guardas": [
+        "redirect",
+        "notFound",
+        "isArray",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "planner_dentist",
+        "commercial_consultant",
+        "dentist",
+        "clinical_coordinator",
+        "receptionist",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/planos",
+      "arquivo": "src/app/(app)/planos/page.tsx",
+      "guardas": [
+        "redirect",
+        "isNewReady"
+      ],
+      "papeisCitados": [
+        "franchisor_staff",
+        "planner_dentist",
+        "commercial_consultant",
+        "franchisee",
+        "unit_manager",
+        "clinical_coordinator",
+        "commercial_assistant"
+      ]
+    },
+    {
+      "rota": "/ppr/adesoes",
+      "arquivo": "src/app/(app)/ppr/adesoes/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr/adesoes/[id]",
+      "arquivo": "src/app/(app)/ppr/adesoes/[id]/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect",
+        "notFound",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr/configuracao",
+      "arquivo": "src/app/(app)/ppr/configuracao/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr/configuracao/[planId]",
+      "arquivo": "src/app/(app)/ppr/configuracao/[planId]/page.tsx",
+      "guardas": [
+        "redirect",
+        "notFound"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr/mensalidades",
+      "arquivo": "src/app/(app)/ppr/mensalidades/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr/novos",
+      "arquivo": "src/app/(app)/ppr/novos/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr",
+      "arquivo": "src/app/(app)/ppr/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/ppr/painel",
+      "arquivo": "src/app/(app)/ppr/painel/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "franchisor_staff",
+        "franchisee"
+      ]
+    },
+    {
+      "rota": "/ppr/validar",
+      "arquivo": "src/app/(app)/ppr/validar/page.tsx",
+      "guardas": [
+        "canViewPpr",
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": []
+    },
+    {
+      "rota": "/procedimentos/especialidades",
+      "arquivo": "src/app/(app)/procedimentos/especialidades/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": [
+        "planner_dentist"
+      ]
+    },
+    {
+      "rota": "/procedimentos",
+      "arquivo": "src/app/(app)/procedimentos/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "planner_dentist",
+        "clinical_coordinator"
+      ]
+    },
+    {
+      "rota": "/procedimentos/precificacao",
+      "arquivo": "src/app/(app)/procedimentos/precificacao/page.tsx",
+      "guardas": [
+        "redirect",
+        "isArray"
+      ],
+      "papeisCitados": [
+        "planner_dentist"
+      ]
+    },
+    {
+      "rota": "/prontuarios/novo",
+      "arquivo": "src/app/(app)/prontuarios/novo/page.tsx",
+      "guardas": [
+        "hasRoleInClinic",
+        "redirect"
+      ],
+      "papeisCitados": [
+        "receptionist",
+        "sdr"
+      ]
+    },
+    {
+      "rota": "/prontuarios",
+      "arquivo": "src/app/(app)/prontuarios/page.tsx",
+      "guardas": [
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "receptionist",
+        "sdr",
+        "clinical_coordinator",
+        "unit_manager",
+        "commercial_consultant",
+        "planner_dentist",
+        "finance_franchisor",
+        "franchisee"
+      ]
+    },
+    {
+      "rota": "/prontuarios/[id]",
+      "arquivo": "src/app/(app)/prontuarios/[id]/page.tsx",
+      "guardas": [
+        "isNaN",
+        "isDentistRestricted",
+        "notFound",
+        "isArray",
+        "isSdrRestricted",
+        "hasRoleInClinic"
+      ],
+      "papeisCitados": [
+        "finance_franchisor",
+        "unit_manager",
+        "receptionist",
+        "franchisee",
+        "sdr",
+        "planner_dentist",
+        "clinical_coordinator",
+        "dentist",
+        "commercial_consultant"
+      ]
+    },
+    {
+      "rota": "/relatorios",
+      "arquivo": "src/app/(app)/relatorios/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": [
+        "franchisor_staff",
+        "planner_dentist",
+        "commercial_consultant",
+        "franchisee",
+        "unit_manager"
+      ]
+    },
+    {
+      "rota": "/risartanos",
+      "arquivo": "src/app/(app)/risartanos/page.tsx",
+      "guardas": [
+        "redirect"
+      ],
+      "papeisCitados": [
+        "franchisor_staff",
+        "unit_manager",
+        "franchisee"
+      ]
+    }
+  ],
+  "menu": {
+    "itens": [
+      {
+        "href": "/",
+        "label": "Início"
+      },
+      {
+        "href": "/jornada",
+        "label": "Jornada"
+      },
+      {
+        "href": "/agenda",
+        "label": "Agenda"
+      },
+      {
+        "href": "/atendimento",
+        "label": "Atendimento"
+      },
+      {
+        "href": "/prontuarios",
+        "label": "Prontuários"
+      },
+      {
+        "href": "/meu-dia",
+        "label": "Meu Dia"
+      },
+      {
+        "href": "/minha-agenda",
+        "label": "Minha Agenda"
+      },
+      {
+        "href": "/planejamento",
+        "label": "Centro de Planejamento"
+      },
+      {
+        "href": "/procedimentos",
+        "label": "Procedimentos"
+      },
+      {
+        "href": "/planos",
+        "label": "Planos de Tratamento"
+      },
+      {
+        "href": "/comercial",
+        "label": "Comercial"
+      },
+      {
+        "href": "/relatorios",
+        "label": "Relatórios"
+      },
+      {
+        "href": "/risartanos",
+        "label": "Risartanos"
+      },
+      {
+        "href": "/empresarial",
+        "label": "Empresarial"
+      },
+      {
+        "href": "/ppr",
+        "label": "PPR+ (Prevenção)"
+      },
+      {
+        "href": "/financeiro",
+        "label": "Financeiro"
+      },
+      {
+        "href": "/estoque",
+        "label": "Estoque"
+      },
+      {
+        "href": "/compras",
+        "label": "Compras"
+      },
+      {
+        "href": "/admin/clinicas",
+        "label": "Clínicas"
+      },
+      {
+        "href": "/admin/usuarios",
+        "label": "Usuários (acesso)"
+      },
+      {
+        "href": "/admin/sla",
+        "label": "Prazos (SLA)"
+      },
+      {
+        "href": "/admin/regras-comerciais",
+        "label": "Regras Comerciais"
+      },
+      {
+        "href": "/admin/agenda",
+        "label": "Config. Agenda"
+      },
+      {
+        "href": "/admin/anamnese",
+        "label": "Fichas de Anamnese"
+      },
+      {
+        "href": "/admin/orientacoes",
+        "label": "Orientações"
+      },
+      {
+        "href": "/admin/documentos",
+        "label": "Modelos de Documentos"
+      },
+      {
+        "href": "/admin/chat",
+        "label": "Chat (contatos)"
+      },
+      {
+        "href": "/admin/auditoria",
+        "label": "Auditoria"
+      }
+    ],
+    "condicoes_usadas": [
+      "isAdminMaster",
+      "isPlanner",
+      "canViewReports",
+      "canViewPlans",
+      "canViewComercial",
+      "canViewStaff",
+      "canViewEmpresarial",
+      "canViewPpr",
+      "canViewFinance",
+      "canViewStock",
+      "canViewPurchases",
+      "isPending",
+      "isActive"
+    ]
+  },
+  "mensagens": [
+    {
+      "tipo": "success",
+      "texto": "Configuração salva.",
+      "arquivo": "src/app/(app)/admin/agenda/agenda-settings-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Orientação salva.",
+      "arquivo": "src/app/(app)/admin/orientacoes/guidance-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cadência salva.",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/followup-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cadência removida — vale o padrão da rede.",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/followup-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Regra comercial salva.",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/rules-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Ajuste removido — vale o padrão da rede.",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/rules-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Prazos salvos.",
+      "arquivo": "src/app/(app)/admin/sla/inactivity-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Status dos clientes recalculado.",
+      "arquivo": "src/app/(app)/admin/sla/inactivity-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Prazos salvos.",
+      "arquivo": "src/app/(app)/admin/sla/sla-editor.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Cadastre uma clínica antes de atribuir funções.",
+      "arquivo": "src/app/(app)/admin/usuarios/novo/new-user-form.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Este usuário já tem função em todas as clínicas.",
+      "arquivo": "src/app/(app)/admin/usuarios/novo/new-user-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Usuário criado com sucesso.",
+      "arquivo": "src/app/(app)/admin/usuarios/novo/new-user-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Senha redefinida.",
+      "arquivo": "src/app/(app)/admin/usuarios/[id]/user-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Acesso às unidades atualizado.",
+      "arquivo": "src/app/(app)/admin/usuarios/[id]/user-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cadastro completo — pode agendar.",
+      "arquivo": "src/app/(app)/agenda/appointment-form-dialog.tsx"
+    },
+    {
+      "tipo": "warning",
+      "texto": "Ainda faltam dados no cadastro.",
+      "arquivo": "src/app/(app)/agenda/appointment-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Fechamento removido. Período reaberto para agendamento.",
+      "arquivo": "src/app/(app)/agenda/closure-controls.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Dia avulso atualizado. Os envolvidos foram notificados.",
+      "arquivo": "src/app/(app)/agenda/configuracao/edit-open-day-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Almoço padrão da rede salvo.",
+      "arquivo": "src/app/(app)/agenda/configuracao/network-lunch-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Agendamento remarcado.",
+      "arquivo": "src/app/(app)/agenda/day-room-grid.tsx"
+    },
+    {
+      "tipo": "warning",
+      "texto": "Não é possível criar agendamento no passado.",
+      "arquivo": "src/app/(app)/agenda/day-room-grid.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Item removido do plano.",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/annual-plan-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Feriado atualizado.",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/annual-plan-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Item da rede removido.",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/network-plan-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Agendamento remarcado.",
+      "arquivo": "src/app/(app)/agenda/week-time-grid.tsx"
+    },
+    {
+      "tipo": "warning",
+      "texto": "Não é possível criar agendamento no passado.",
+      "arquivo": "src/app/(app)/agenda/week-time-grid.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "VENDA CONCLUÍDA! Contrato assinado e pagamento confirmado — a recepção foi acionada para iniciar o tratamento.",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/closing-panel.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Fechamento atualizado.",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/closing-panel.tsx"
+    },
+    {
+      "tipo": "warning",
+      "texto": "Fora da regra comercial — enviado ao Gerente da unidade para autorização.",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-panel.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Negociação salva.",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-panel.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Aceite registrado! O Assistente Comercial foi avisado para o fechamento.",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-panel.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Devolvido ao Centro de Planejamento com suas considerações.",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-panel.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Consentimento registrado.",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/clinical-tools.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Consideração salva.",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/clinical-tools.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Consideração atualizada.",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/clinical-tools.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Link adicionado.",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/clinical-tools.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Nova reavaliação iniciada.",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/clinical-tools.tsx"
+    },
+    {
+      "tipo": "info",
+      "texto": "A mensagem original não está carregada nesta conversa.",
+      "arquivo": "src/app/(app)/chat/chat-hub.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Arquivo vazio.",
+      "arquivo": "src/app/(app)/chat/chat-hub.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Arquivo muito grande (máximo 25 MB).",
+      "arquivo": "src/app/(app)/chat/chat-hub.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Falha ao enviar o arquivo.",
+      "arquivo": "src/app/(app)/chat/chat-hub.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Seu navegador não permite gravar áudio aqui.",
+      "arquivo": "src/app/(app)/chat/chat-hub.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível acessar o microfone.",
+      "arquivo": "src/app/(app)/chat/chat-hub.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cartão atualizado.",
+      "arquivo": "src/app/(app)/comercial/kanban-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Follow-up iniciado.",
+      "arquivo": "src/app/(app)/comercial/kanban-board.tsx"
+    },
+    {
+      "tipo": "warning",
+      "texto": "Tentativas esgotadas — follow-up liberado para a clínica (reforço).",
+      "arquivo": "src/app/(app)/comercial/kanban-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Tentativa registrada.",
+      "arquivo": "src/app/(app)/comercial/kanban-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Pagamento salvo.",
+      "arquivo": "src/app/(app)/comercial/venda-direta/direct-sale-item.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Venda direta CONCLUÍDA! 🎉",
+      "arquivo": "src/app/(app)/comercial/venda-direta/direct-sale-item.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Fechamento atualizado.",
+      "arquivo": "src/app/(app)/comercial/venda-direta/direct-sale-item.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Venda cancelada.",
+      "arquivo": "src/app/(app)/comercial/venda-direta/direct-sale-item.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Apresentação salva.",
+      "arquivo": "src/app/(app)/comercial/[clientId]/presentation-workspace.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Entrega registrada — material no estoque e conta gerada.",
+      "arquivo": "src/app/(app)/compras/receber/receiving-client.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Benefício removido.",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/benefits-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Benefício salvo.",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/benefits-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Preços de adesão salvos.",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/pricing-forms.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Regras de split salvas.",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/pricing-forms.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Lead atualizado.",
+      "arquivo": "src/app/(app)/empresarial/funil/lead-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Lead criado.",
+      "arquivo": "src/app/(app)/empresarial/funil/lead-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cobrança atualizada.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cobrança excluída.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cobrança cancelada.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Colaborador reativado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Colaborador inativado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Colaborador excluído.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Colaborador restaurado (como inativo).",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Dependente removido.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível gerar o modelo.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Nenhuma linha válida (confira Nome e CPF).",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "info",
+      "texto": "A planilha não tem a aba “Dependentes” — só os titulares foram lidos. Baixe o Modelo para incluir dependentes.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível ler a planilha.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/colaboradores-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Contrato criado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contratos-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "A proposta demorou demais. Tente de novo.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contratos-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Falha ao gerar a proposta.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contratos-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Documento principal atualizado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/documentos-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Documento removido.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/documentos-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Modelo de faturamento salvo.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/documentos-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível enviar o arquivo.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/documentos-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Arquivo enviado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/documentos-tab.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Arquivo excluído.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/documentos-tab.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível enviar o arquivo.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-files-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Arquivo enviado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-files-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Arquivo excluído.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-files-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "CNPJ do colaborador atualizado.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-files-dialog.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível gerar a planilha.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/relatorio/report-view.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Telefone inválido — inclua o DDD.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/relatorio-beneficios/benefits-report-view.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível gerar a planilha.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/relatorio-beneficios/benefits-report-view.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Voltou ao padrão da rede.",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/simulator.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não consegui ler este arquivo como XML de NF-e.",
+      "arquivo": "src/app/(app)/estoque/nfe-import.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Nota importada — estoque e conta a pagar lançados.",
+      "arquivo": "src/app/(app)/estoque/nfe-import.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Adquirente salva.",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/acquirer-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Vigência encerrada hoje.",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/acquirer-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Taxa removida.",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/acquirer-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Centro de custo criado.",
+      "arquivo": "src/app/(app)/financeiro/centros-de-custo/cost-center-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Centro renomeado.",
+      "arquivo": "src/app/(app)/financeiro/centros-de-custo/cost-center-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Conciliado.",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/reconciliation-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Conciliação desfeita.",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/reconciliation-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Lançamento criado e conciliado.",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/reconciliation-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Linha ignorada.",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/reconciliation-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Conta bancária salva.",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/reconciliation-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Limites salvos.",
+      "arquivo": "src/app/(app)/financeiro/configuracao/alerts-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Configuração salva.",
+      "arquivo": "src/app/(app)/financeiro/configuracao/settings-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "A unidade voltou a seguir o padrão da rede.",
+      "arquivo": "src/app/(app)/financeiro/configuracao/settings-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Marcação salva.",
+      "arquivo": "src/app/(app)/financeiro/consolidado/consolidated-client.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Regra salva.",
+      "arquivo": "src/app/(app)/financeiro/contas-a-pagar/approval-rules-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Regra removida.",
+      "arquivo": "src/app/(app)/financeiro/contas-a-pagar/approval-rules-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Conta cancelada.",
+      "arquivo": "src/app/(app)/financeiro/contas-a-pagar/payables-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Pagamento estornado.",
+      "arquivo": "src/app/(app)/financeiro/contas-a-pagar/payables-board.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Despesa recorrente salva.",
+      "arquivo": "src/app/(app)/financeiro/contas-a-pagar/recurrences-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Período reaberto.",
+      "arquivo": "src/app/(app)/financeiro/fechamento/closing-client.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Fornecedor salvo.",
+      "arquivo": "src/app/(app)/financeiro/fornecedores/supplier-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Classificação atualizada.",
+      "arquivo": "src/app/(app)/financeiro/plano-de-contas/accounts-table.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Escopo da conta atualizado.",
+      "arquivo": "src/app/(app)/financeiro/plano-de-contas/accounts-table.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Código fiscal salvo.",
+      "arquivo": "src/app/(app)/financeiro/plano-de-contas/accounts-table.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Valor salvo para este nível.",
+      "arquivo": "src/app/(app)/financeiro/repasses/payout-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Nível salvo.",
+      "arquivo": "src/app/(app)/financeiro/repasses/payout-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Valor de repasse salvo.",
+      "arquivo": "src/app/(app)/financeiro/repasses/payout-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Nível atualizado.",
+      "arquivo": "src/app/(app)/financeiro/repasses/payout-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Mês fechado — as contas a pagar dos dentistas foram geradas.",
+      "arquivo": "src/app/(app)/financeiro/repasses/payout-manager.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Todas marcadas como lidas.",
+      "arquivo": "src/app/(app)/notificacoes/notification-list.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Dados salvos.",
+      "arquivo": "src/app/(app)/perfil/profile-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Pedido enviado à recepção.",
+      "arquivo": "src/app/(app)/planos/request-scheduling-button.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Dependente removido do plano.",
+      "arquivo": "src/app/(app)/ppr/adesoes/[id]/membership-actions.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Unidade do dependente atualizada.",
+      "arquivo": "src/app/(app)/ppr/adesoes/[id]/membership-actions.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Adesão atualizada.",
+      "arquivo": "src/app/(app)/ppr/adesoes/[id]/membership-actions.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Adesão cancelada.",
+      "arquivo": "src/app/(app)/ppr/adesoes/[id]/membership-actions.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Dependente incluído.",
+      "arquivo": "src/app/(app)/ppr/adesoes/[id]/membership-actions.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Plano criado. Agora configure os detalhes.",
+      "arquivo": "src/app/(app)/ppr/configuracao/plans-list.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Prazos salvos.",
+      "arquivo": "src/app/(app)/ppr/configuracao/settings-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Ajuste removido — a unidade volta ao padrão da rede.",
+      "arquivo": "src/app/(app)/ppr/configuracao/settings-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Benefício salvo.",
+      "arquivo": "src/app/(app)/ppr/configuracao/[planId]/benefits-editor.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Plano salvo.",
+      "arquivo": "src/app/(app)/ppr/configuracao/[planId]/plan-form.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Faixa salva.",
+      "arquivo": "src/app/(app)/ppr/configuracao/[planId]/tiers-editor.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível gerar o modelo.",
+      "arquivo": "src/app/(app)/procedimentos/import-procedures.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Nenhuma linha válida — confira a coluna “Nome do Procedimento”.",
+      "arquivo": "src/app/(app)/procedimentos/import-procedures.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível ler a planilha.",
+      "arquivo": "src/app/(app)/procedimentos/import-procedures.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Configuração salva.",
+      "arquivo": "src/app/(app)/procedimentos/precificacao/pricing-simulator-client.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Custo salvo.",
+      "arquivo": "src/app/(app)/procedimentos/precificacao/pricing-simulator-client.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cliente compartilhado com a sua unidade.",
+      "arquivo": "src/app/(app)/prontuarios/share-by-cpf.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Compartilhamento encerrado.",
+      "arquivo": "src/app/(app)/prontuarios/shared-clients-list.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Esta ficha não está mais disponível para atualizar.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/anamnesis-fill.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Escolha uma ficha para preencher.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/anamnesis-fill.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Atendimento concluído.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/attendance-conclude-block.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "A gravação ficou vazia.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/audio-recorder.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Gravação salva.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/audio-recorder.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Seu navegador não permite gravar áudio aqui.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/audio-recorder.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível acessar o microfone. Verifique a permissão do navegador.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/audio-recorder.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Termo gerado — confira e colha a assinatura.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/cancel-plan-card.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Solicitação enviada à Recepção.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/client-procedures-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Cliente compartilhado com a unidade.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/client-shares.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Compartilhamento encerrado.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/client-shares.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Imagem salva no prontuário.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-images-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Nova reavaliação iniciada. A coleta agora entra nela.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Consideração salva.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Consideração atualizada.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Link adicionado.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Venda direta lançada! Faça o fechamento na aba “Sessões & Procedimentos”, aqui mesmo.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/direct-sale-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Documento emitido.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/documents-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Arquivo removido.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/media-gallery.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Arquivo atualizado.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/media-gallery.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Decisão registrada.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/pending-decision.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Defina o pilar da Metodologia antes de enviar.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Informação enviada ao Centro de Planejamento.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-supplements.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Recebimento estornado.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Pedido resolvido.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/requests-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Datas sugeridas para a série.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Solicitação enviada à Recepção.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-section.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Datas sugeridas para toda a série.",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-sessions-panel.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Não foi possível enviar a foto.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Foto atualizada.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Foto removida.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Usuário vinculado.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Vínculo desfeito (o login continua existindo).",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Risartano atualizado.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Risartano cadastrado.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "A foto não pôde ser enviada; adicione pela edição.",
+      "arquivo": "src/app/(app)/risartanos/staff-form-dialog.tsx"
+    },
+    {
+      "tipo": "warning",
+      "texto": "Mensagem importante no Chat Hub",
+      "arquivo": "src/components/chat-nav-item.tsx"
+    },
+    {
+      "tipo": "error",
+      "texto": "Informe o nome de todos os dependentes.",
+      "arquivo": "src/components/ppr-offer-dialog.tsx"
+    },
+    {
+      "tipo": "success",
+      "texto": "Adesão registrada! Falta o contrato e a 1ª mensalidade.",
+      "arquivo": "src/components/ppr-offer-dialog.tsx"
+    }
+  ],
+  "erros_financeiros": [
+    {
+      "codigo": "PERIOD_CLOSED",
+      "mensagem": "Este mês já foi fechado — o resultado dele não muda mais. Para lançar aqui, peça à Franqueadora para reabrir o período."
+    },
+    {
+      "codigo": "PERIOD_NOT_ENDED",
+      "mensagem": "O mês ainda não terminou. Só dá para fechar depois do último dia."
+    },
+    {
+      "codigo": "EARLIER_PERIOD_OPEN",
+      "mensagem": "Existe mês anterior ainda aberto com movimento. Feche os meses em ordem."
+    },
+    {
+      "codigo": "REASON_REQUIRED",
+      "mensagem": "Escreva o motivo da reabertura."
+    },
+    {
+      "codigo": "NOT_ALLOWED",
+      "mensagem": "Você não tem permissão para isto."
+    },
+    {
+      "codigo": "ACCOUNT_NOT_ANALYTIC",
+      "mensagem": "Esta conta é um grupo e não recebe lançamento."
+    },
+    {
+      "codigo": "ACCOUNT_NOT_FOUND",
+      "mensagem": "Conta não encontrada no plano de contas."
+    },
+    {
+      "codigo": "UNIT_LOCKED",
+      "mensagem": "O item já tem movimento: a unidade de medida não pode mais mudar."
+    }
+  ],
+  "acoes": [
+    {
+      "acao": "saveAgendaSettings",
+      "arquivo": "src/app/(app)/admin/agenda/actions.ts"
+    },
+    {
+      "acao": "createTemplate",
+      "arquivo": "src/app/(app)/admin/anamnese/actions.ts"
+    },
+    {
+      "acao": "updateTemplate",
+      "arquivo": "src/app/(app)/admin/anamnese/actions.ts"
+    },
+    {
+      "acao": "addNetworkQuestion",
+      "arquivo": "src/app/(app)/admin/anamnese/actions.ts"
+    },
+    {
+      "acao": "updateQuestion",
+      "arquivo": "src/app/(app)/admin/anamnese/actions.ts"
+    },
+    {
+      "acao": "deleteQuestion",
+      "arquivo": "src/app/(app)/admin/anamnese/actions.ts"
+    },
+    {
+      "acao": "setChatContactRule",
+      "arquivo": "src/app/(app)/admin/chat/actions.ts"
+    },
+    {
+      "acao": "createClinic",
+      "arquivo": "src/app/(app)/admin/clinicas/actions.ts"
+    },
+    {
+      "acao": "updateClinic",
+      "arquivo": "src/app/(app)/admin/clinicas/actions.ts"
+    },
+    {
+      "acao": "saveTemplate",
+      "arquivo": "src/app/(app)/admin/documentos/actions.ts"
+    },
+    {
+      "acao": "setTemplateActive",
+      "arquivo": "src/app/(app)/admin/documentos/actions.ts"
+    },
+    {
+      "acao": "saveClinicalGuidance",
+      "arquivo": "src/app/(app)/admin/orientacoes/actions.ts"
+    },
+    {
+      "acao": "saveCommercialRule",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/actions.ts"
+    },
+    {
+      "acao": "saveFollowupSettings",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/actions.ts"
+    },
+    {
+      "acao": "deleteFollowupSettings",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/actions.ts"
+    },
+    {
+      "acao": "deleteCommercialRule",
+      "arquivo": "src/app/(app)/admin/regras-comerciais/actions.ts"
+    },
+    {
+      "acao": "saveInactivitySettings",
+      "arquivo": "src/app/(app)/admin/sla/actions.ts"
+    },
+    {
+      "acao": "recomputeActivity",
+      "arquivo": "src/app/(app)/admin/sla/actions.ts"
+    },
+    {
+      "acao": "saveSlaSettings",
+      "arquivo": "src/app/(app)/admin/sla/actions.ts"
+    },
+    {
+      "acao": "createUser",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "updateUserName",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "resetUserPassword",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "setUserActive",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "addUserRole",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "updateRoleScope",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "removeUserRole",
+      "arquivo": "src/app/(app)/admin/usuarios/actions.ts"
+    },
+    {
+      "acao": "getAgendaFormConfig",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getAppointmentParticipants",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "checkParticipantsBusy",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "createAppointment",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "checkProviderCrossUnit",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "notifyWeeklyForecast",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getClientPendingSessions",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getAppointmentSessionOptions",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getDaySchedule",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getProviderProcedureStats",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "updateAppointment",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "updateAppointmentStatus",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getUnitSchedulingData",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "checkInAppointment",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "updateAttendance",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "concludeAttendancePartial",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "swapAppointmentProvider",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getClientRegistrationGaps",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getClientSchedulingInfo",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getDayBusyTimes",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "createAgendaClosure",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "updateAgendaClosure",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "deleteAgendaClosure",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "openSpecialDays",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "updateSpecialDay",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "saveLunchBreak",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "saveNetworkLunch",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "removeSpecialDay",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "decideHoliday",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "notifyPendingHolidays",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getNextAvailableSlots",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "getMonthAgendaPeek",
+      "arquivo": "src/app/(app)/agenda/actions.ts"
+    },
+    {
+      "acao": "saveAgendaHours",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "addRoom",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "renameRoom",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "setRoomActive",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "deleteRoom",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "setMaxRooms",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "setCoordinatorRoom",
+      "arquivo": "src/app/(app)/agenda/configuracao/actions.ts"
+    },
+    {
+      "acao": "createPlanItem",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/actions.ts"
+    },
+    {
+      "acao": "updatePlanItem",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/actions.ts"
+    },
+    {
+      "acao": "deletePlanItem",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/actions.ts"
+    },
+    {
+      "acao": "createNetworkPlanItem",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/actions.ts"
+    },
+    {
+      "acao": "updateNetworkPlanItem",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/actions.ts"
+    },
+    {
+      "acao": "deleteNetworkPlanItem",
+      "arquivo": "src/app/(app)/agenda/planejamento-anual/actions.ts"
+    },
+    {
+      "acao": "generateGammaDeck",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/actions.ts"
+    },
+    {
+      "acao": "getGammaStatus",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/actions.ts"
+    },
+    {
+      "acao": "openPlanCancellation",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/cancellation-actions.ts"
+    },
+    {
+      "acao": "signPlanCancellation",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/cancellation-actions.ts"
+    },
+    {
+      "acao": "applyPlanCancellation",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/cancellation-actions.ts"
+    },
+    {
+      "acao": "discardPlanCancellation",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/cancellation-actions.ts"
+    },
+    {
+      "acao": "cancelNegotiationSale",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/closing-actions.ts"
+    },
+    {
+      "acao": "markClosingStep",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/closing-actions.ts"
+    },
+    {
+      "acao": "savePlanNegotiation",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-actions.ts"
+    },
+    {
+      "acao": "acceptNegotiation",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-actions.ts"
+    },
+    {
+      "acao": "reviewNegotiationAction",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-actions.ts"
+    },
+    {
+      "acao": "returnToPlanning",
+      "arquivo": "src/app/(app)/apresentacao/[clientId]/negotiation-actions.ts"
+    },
+    {
+      "acao": "setItemQuality",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/quality-actions.ts"
+    },
+    {
+      "acao": "requestItemScheduling",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/quality-actions.ts"
+    },
+    {
+      "acao": "requestQualityScheduling",
+      "arquivo": "src/app/(app)/avaliacao/[clientId]/quality-actions.ts"
+    },
+    {
+      "acao": "listChannels",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "getMessages",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "sendMessage",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "sendAttachment",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "toggleReaction",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "listBlockedChatUsers",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "listBlockedChatDetails",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "amIChatBlocked",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "setChatBlocked",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "markRead",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "getImportantUnread",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "getLastSeen",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "getChannelReads",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "getChannelPeople",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "listColleagues",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "openDirectChannel",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "listReachableUnits",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "openUnitChannel",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "broadcastToUnitMembers",
+      "arquivo": "src/app/(app)/chat/actions.ts"
+    },
+    {
+      "acao": "setCardStage",
+      "arquivo": "src/app/(app)/comercial/actions.ts"
+    },
+    {
+      "acao": "transferFollowup",
+      "arquivo": "src/app/(app)/comercial/actions.ts"
+    },
+    {
+      "acao": "startFollowup",
+      "arquivo": "src/app/(app)/comercial/actions.ts"
+    },
+    {
+      "acao": "logFollowupAttempt",
+      "arquivo": "src/app/(app)/comercial/actions.ts"
+    },
+    {
+      "acao": "savePaymentSchedule",
+      "arquivo": "src/app/(app)/comercial/payment-schedule-actions.ts"
+    },
+    {
+      "acao": "markInstallmentPaid",
+      "arquivo": "src/app/(app)/comercial/payment-schedule-actions.ts"
+    },
+    {
+      "acao": "setDirectSaleConditions",
+      "arquivo": "src/app/(app)/comercial/venda-direta/actions.ts"
+    },
+    {
+      "acao": "closeDirectSaleStep",
+      "arquivo": "src/app/(app)/comercial/venda-direta/actions.ts"
+    },
+    {
+      "acao": "cancelDirectSale",
+      "arquivo": "src/app/(app)/comercial/venda-direta/actions.ts"
+    },
+    {
+      "acao": "saveCommercialPresentation",
+      "arquivo": "src/app/(app)/comercial/[clientId]/actions.ts"
+    },
+    {
+      "acao": "generatePurchaseRequest",
+      "arquivo": "src/app/(app)/compras/actions.ts"
+    },
+    {
+      "acao": "addRequestItem",
+      "arquivo": "src/app/(app)/compras/actions.ts"
+    },
+    {
+      "acao": "updateRequestItem",
+      "arquivo": "src/app/(app)/compras/actions.ts"
+    },
+    {
+      "acao": "removeRequestItem",
+      "arquivo": "src/app/(app)/compras/actions.ts"
+    },
+    {
+      "acao": "sendPurchaseRequest",
+      "arquivo": "src/app/(app)/compras/actions.ts"
+    },
+    {
+      "acao": "cancelPurchaseRequest",
+      "arquivo": "src/app/(app)/compras/actions.ts"
+    },
+    {
+      "acao": "decideItem",
+      "arquivo": "src/app/(app)/compras/aprovar/actions.ts"
+    },
+    {
+      "acao": "generateOrders",
+      "arquivo": "src/app/(app)/compras/aprovar/actions.ts"
+    },
+    {
+      "acao": "receiveOrder",
+      "arquivo": "src/app/(app)/compras/receber/actions.ts"
+    },
+    {
+      "acao": "loadReconciliation",
+      "arquivo": "src/app/(app)/compras/receber/actions.ts"
+    },
+    {
+      "acao": "openRound",
+      "arquivo": "src/app/(app)/compras/rodadas/actions.ts"
+    },
+    {
+      "acao": "saveQuote",
+      "arquivo": "src/app/(app)/compras/rodadas/actions.ts"
+    },
+    {
+      "acao": "saveQuotePrice",
+      "arquivo": "src/app/(app)/compras/rodadas/actions.ts"
+    },
+    {
+      "acao": "awardItem",
+      "arquivo": "src/app/(app)/compras/rodadas/actions.ts"
+    },
+    {
+      "acao": "closeRound",
+      "arquivo": "src/app/(app)/compras/rodadas/actions.ts"
+    },
+    {
+      "acao": "createCompany",
+      "arquivo": "src/app/(app)/empresarial/actions.ts"
+    },
+    {
+      "acao": "updateCompany",
+      "arquivo": "src/app/(app)/empresarial/actions.ts"
+    },
+    {
+      "acao": "setCompanyStatus",
+      "arquivo": "src/app/(app)/empresarial/actions.ts"
+    },
+    {
+      "acao": "saveAdhesionPricing",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/actions.ts"
+    },
+    {
+      "acao": "saveSplitRules",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/actions.ts"
+    },
+    {
+      "acao": "upsertProcedureBenefit",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/actions.ts"
+    },
+    {
+      "acao": "runRetention",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/actions.ts"
+    },
+    {
+      "acao": "removeOverride",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/actions.ts"
+    },
+    {
+      "acao": "deleteProcedureBenefit",
+      "arquivo": "src/app/(app)/empresarial/configuracoes/actions.ts"
+    },
+    {
+      "acao": "createLead",
+      "arquivo": "src/app/(app)/empresarial/funil/actions.ts"
+    },
+    {
+      "acao": "updateLead",
+      "arquivo": "src/app/(app)/empresarial/funil/actions.ts"
+    },
+    {
+      "acao": "moveLeadStage",
+      "arquivo": "src/app/(app)/empresarial/funil/actions.ts"
+    },
+    {
+      "acao": "addLeadActivity",
+      "arquivo": "src/app/(app)/empresarial/funil/actions.ts"
+    },
+    {
+      "acao": "convertLeadToCompany",
+      "arquivo": "src/app/(app)/empresarial/funil/actions.ts"
+    },
+    {
+      "acao": "previewBilling",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "generateBilling",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "updateBilling",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "cancelBilling",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "markBillingPaid",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "deleteBilling",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "runOverdueCheck",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/billing-actions.ts"
+    },
+    {
+      "acao": "createContract",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contract-actions.ts"
+    },
+    {
+      "acao": "sendContract",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contract-actions.ts"
+    },
+    {
+      "acao": "markContractSigned",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contract-actions.ts"
+    },
+    {
+      "acao": "cancelContract",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contract-actions.ts"
+    },
+    {
+      "acao": "generateCompanyProposal",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contract-actions.ts"
+    },
+    {
+      "acao": "getProposalStatus",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/contract-actions.ts"
+    },
+    {
+      "acao": "addCompanyDocument",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "updateCompanyDocument",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "setPrimaryDocument",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "removeCompanyDocument",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "setBillingModel",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "setEmployeeDocument",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "registerCompanyFile",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "deleteCompanyFile",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "registerEmployeeFile",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "deleteEmployeeFile",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "getFileUrl",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/document-actions.ts"
+    },
+    {
+      "acao": "createEmployee",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "updateEmployee",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "completeEmployee",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "setEmployeeStatus",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "deleteEmployee",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "restoreEmployee",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "addDependent",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "updateDependent",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "setDependentStatus",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "linkDependent",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "removeDependent",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "importEmployees",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "lookupClientByCpf",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/employee-actions.ts"
+    },
+    {
+      "acao": "generateSocialToken",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/social-actions.ts"
+    },
+    {
+      "acao": "assignSocialToken",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/social-actions.ts"
+    },
+    {
+      "acao": "markSocialTokenUsed",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/social-actions.ts"
+    },
+    {
+      "acao": "removeSocialToken",
+      "arquivo": "src/app/(app)/empresarial/[companyId]/social-actions.ts"
+    },
+    {
+      "acao": "saveStockItem",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "removeStockItem",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "postMovement",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "resolveNfeItems",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "importNfe",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "openCount",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "saveCountLine",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "applyCount",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "discardCount",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "registerPurchase",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "openPackage",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "saveItemSettings",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "saveKit",
+      "arquivo": "src/app/(app)/estoque/actions.ts"
+    },
+    {
+      "acao": "saveFinanceSettings",
+      "arquivo": "src/app/(app)/financeiro/actions.ts"
+    },
+    {
+      "acao": "clearFinanceSettings",
+      "arquivo": "src/app/(app)/financeiro/actions.ts"
+    },
+    {
+      "acao": "createCostCenter",
+      "arquivo": "src/app/(app)/financeiro/actions.ts"
+    },
+    {
+      "acao": "updateCostCenter",
+      "arquivo": "src/app/(app)/financeiro/actions.ts"
+    },
+    {
+      "acao": "updateChartAccount",
+      "arquivo": "src/app/(app)/financeiro/actions.ts"
+    },
+    {
+      "acao": "saveAcquirer",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/actions.ts"
+    },
+    {
+      "acao": "saveRate",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/actions.ts"
+    },
+    {
+      "acao": "closeRate",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/actions.ts"
+    },
+    {
+      "acao": "deleteRate",
+      "arquivo": "src/app/(app)/financeiro/adquirentes/actions.ts"
+    },
+    {
+      "acao": "saveAsset",
+      "arquivo": "src/app/(app)/financeiro/bens/actions.ts"
+    },
+    {
+      "acao": "runDepreciation",
+      "arquivo": "src/app/(app)/financeiro/bens/actions.ts"
+    },
+    {
+      "acao": "disposeAsset",
+      "arquivo": "src/app/(app)/financeiro/bens/actions.ts"
+    },
+    {
+      "acao": "saveAssetCategory",
+      "arquivo": "src/app/(app)/financeiro/bens/actions.ts"
+    },
+    {
+      "acao": "importStatement",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "reconcileTransaction",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "unreconcileTransaction",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "ignoreTransaction",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "createEntryFromTransaction",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "deleteImport",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "saveBankAccount",
+      "arquivo": "src/app/(app)/financeiro/conciliacao/actions.ts"
+    },
+    {
+      "acao": "saveAlertSettings",
+      "arquivo": "src/app/(app)/financeiro/configuracao/actions.ts"
+    },
+    {
+      "acao": "checkFinanceAlertsNow",
+      "arquivo": "src/app/(app)/financeiro/configuracao/actions.ts"
+    },
+    {
+      "acao": "loadClinicBreakdown",
+      "arquivo": "src/app/(app)/financeiro/consolidado/actions.ts"
+    },
+    {
+      "acao": "setClinicOwnership",
+      "arquivo": "src/app/(app)/financeiro/consolidado/actions.ts"
+    },
+    {
+      "acao": "loadDreEntries",
+      "arquivo": "src/app/(app)/financeiro/dre/actions.ts"
+    },
+    {
+      "acao": "closePeriod",
+      "arquivo": "src/app/(app)/financeiro/fechamento/actions.ts"
+    },
+    {
+      "acao": "reopenPeriod",
+      "arquivo": "src/app/(app)/financeiro/fechamento/actions.ts"
+    },
+    {
+      "acao": "loadCashDetail",
+      "arquivo": "src/app/(app)/financeiro/fluxo-de-caixa/actions.ts"
+    },
+    {
+      "acao": "saveBudgetLine",
+      "arquivo": "src/app/(app)/financeiro/orcamento/actions.ts"
+    },
+    {
+      "acao": "copyBudgetYear",
+      "arquivo": "src/app/(app)/financeiro/orcamento/actions.ts"
+    },
+    {
+      "acao": "fillBudgetFromActual",
+      "arquivo": "src/app/(app)/financeiro/orcamento/actions.ts"
+    },
+    {
+      "acao": "checkAllAlerts",
+      "arquivo": "src/app/(app)/financeiro/painel-da-rede/actions.ts"
+    },
+    {
+      "acao": "savePayable",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "approvePayable",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "registerPayablePayment",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "reversePayablePayment",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "cancelPayable",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "generateRecurringPayables",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "saveRecurrence",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "saveSupplier",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "saveApprovalRule",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "deleteApprovalRule",
+      "arquivo": "src/app/(app)/financeiro/payables-actions.ts"
+    },
+    {
+      "acao": "savePayoutRate",
+      "arquivo": "src/app/(app)/financeiro/repasses/actions.ts"
+    },
+    {
+      "acao": "closePayoutRate",
+      "arquivo": "src/app/(app)/financeiro/repasses/actions.ts"
+    },
+    {
+      "acao": "setProviderLevel",
+      "arquivo": "src/app/(app)/financeiro/repasses/actions.ts"
+    },
+    {
+      "acao": "closePayoutMonth",
+      "arquivo": "src/app/(app)/financeiro/repasses/actions.ts"
+    },
+    {
+      "acao": "saveCareerLevel",
+      "arquivo": "src/app/(app)/financeiro/repasses/actions.ts"
+    },
+    {
+      "acao": "saveFeeType",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "deleteFeeType",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "saveNetworkFee",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "clearNetworkFeeOverride",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "saveCampaign",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "deleteCampaign",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "chargeFixedFeesNow",
+      "arquivo": "src/app/(app)/financeiro/taxas-da-rede/actions.ts"
+    },
+    {
+      "acao": "answerDecision",
+      "arquivo": "src/app/(app)/jornada/actions.ts"
+    },
+    {
+      "acao": "setJourneyStatus",
+      "arquivo": "src/app/(app)/jornada/actions.ts"
+    },
+    {
+      "acao": "setTreatmentPillar",
+      "arquivo": "src/app/(app)/jornada/actions.ts"
+    },
+    {
+      "acao": "moveClientPhase",
+      "arquivo": "src/app/(app)/jornada/actions.ts"
+    },
+    {
+      "acao": "sendToPlanningCenter",
+      "arquivo": "src/app/(app)/jornada/actions.ts"
+    },
+    {
+      "acao": "markNotificationRead",
+      "arquivo": "src/app/(app)/notificacoes/actions.ts"
+    },
+    {
+      "acao": "markNotificationsRead",
+      "arquivo": "src/app/(app)/notificacoes/actions.ts"
+    },
+    {
+      "acao": "markAllNotificationsRead",
+      "arquivo": "src/app/(app)/notificacoes/actions.ts"
+    },
+    {
+      "acao": "updateOwnProfile",
+      "arquivo": "src/app/(app)/perfil/actions.ts"
+    },
+    {
+      "acao": "requestCommercialScheduling",
+      "arquivo": "src/app/(app)/planos/actions.ts"
+    },
+    {
+      "acao": "lookupPprCandidate",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "createPprMembership",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "pprCloseStep",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "cancelPprMembership",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "setPprStatus",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "generatePprCharges",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "markPprChargePaid",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "refreshPprDelinquency",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "addPprDependent",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "setPprBeneficiaryClinic",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "removePprBeneficiary",
+      "arquivo": "src/app/(app)/ppr/actions.ts"
+    },
+    {
+      "acao": "createPprPlan",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "savePprPlan",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "togglePprPlan",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "addPprPerk",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "removePprPerk",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "savePprTier",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "removePprTier",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "savePprBenefit",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "removePprBenefit",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "savePprSettings",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "removePprSettings",
+      "arquivo": "src/app/(app)/ppr/configuracao/actions.ts"
+    },
+    {
+      "acao": "addProcedure",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "editProcedure",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "setProcedureActive",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "deleteProcedure",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "importProcedures",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "readjustPrices",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "setCommissionBulk",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "setProcedureSessions",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "proposeProtocolChange",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "reviewProtocolProposal",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "clearProcedureSessions",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "setUnitPrice",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "saveProcedurePayoutLevels",
+      "arquivo": "src/app/(app)/procedimentos/actions.ts"
+    },
+    {
+      "acao": "addSpecialty",
+      "arquivo": "src/app/(app)/procedimentos/especialidades/actions.ts"
+    },
+    {
+      "acao": "renameSpecialty",
+      "arquivo": "src/app/(app)/procedimentos/especialidades/actions.ts"
+    },
+    {
+      "acao": "setSpecialtyActive",
+      "arquivo": "src/app/(app)/procedimentos/especialidades/actions.ts"
+    },
+    {
+      "acao": "deleteSpecialty",
+      "arquivo": "src/app/(app)/procedimentos/especialidades/actions.ts"
+    },
+    {
+      "acao": "moveSpecialty",
+      "arquivo": "src/app/(app)/procedimentos/especialidades/actions.ts"
+    },
+    {
+      "acao": "saveCostSettings",
+      "arquivo": "src/app/(app)/procedimentos/precificacao/actions.ts"
+    },
+    {
+      "acao": "saveProcedureCost",
+      "arquivo": "src/app/(app)/procedimentos/precificacao/actions.ts"
+    },
+    {
+      "acao": "applySuggestedPrice",
+      "arquivo": "src/app/(app)/procedimentos/precificacao/actions.ts"
+    },
+    {
+      "acao": "lookupClientByCpf",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "lookupCpfForRegistration",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "createClientRecord",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "updateClientRecord",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "transferClientToUnit",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "shareClientByCpf",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "transferClientToActiveClinic",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "notifyUnitBirthdays",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "notifyTreatmentAlerts",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "notifyInsistentRequests",
+      "arquivo": "src/app/(app)/prontuarios/actions.ts"
+    },
+    {
+      "acao": "saveAnamnesisFill",
+      "arquivo": "src/app/(app)/prontuarios/[id]/anamnesis-actions.ts"
+    },
+    {
+      "acao": "recordCameraCapture",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "recordConsent",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "addClinicalNote",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "recordClinicalMedia",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "deleteClinicalMedia",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "updateClinicalMedia",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "editClinicalNote",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "saveAnamnesis",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "openNewEvaluation",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "addExternalMedia",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-actions.ts"
+    },
+    {
+      "acao": "saveProgressNote",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-progress-actions.ts"
+    },
+    {
+      "acao": "concludeFromProgress",
+      "arquivo": "src/app/(app)/prontuarios/[id]/clinical-progress-actions.ts"
+    },
+    {
+      "acao": "createDirectSaleFromChart",
+      "arquivo": "src/app/(app)/prontuarios/[id]/direct-sale-actions.ts"
+    },
+    {
+      "acao": "createDocument",
+      "arquivo": "src/app/(app)/prontuarios/[id]/documents-actions.ts"
+    },
+    {
+      "acao": "addPlanningSupplement",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "markPlanningSupplementsSeen",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "createTreatmentPlan",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "saveDiagnosis",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "savePlanNarrative",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "addPlanOption",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "editPlanOption",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setPrimaryOption",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "removePlanOption",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "reviewTreatmentPlan",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "reviewPlanOption",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "reopenTreatmentPlan",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setPlanLifecycle",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "submitTreatmentPlan",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "addBudgetItem",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "editBudgetItem",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "removeBudgetItem",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "addPlanStage",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "renamePlanStage",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "removePlanStage",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "movePlanStage",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setItemStage",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "projectOptionSessions",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setPlannedSessionGroup",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setSessionMinutes",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setSessionProvider",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "reorderPlannedBlocks",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setItemProvider",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "setItemGut",
+      "arquivo": "src/app/(app)/prontuarios/[id]/planning-actions.ts"
+    },
+    {
+      "acao": "registerReceipt",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "applyAcquirerFee",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "registerBoletoIssue",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "saveRenegotiation",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "authorizeRenegotiation",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "setRenegotiationStep",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "reverseReceipt",
+      "arquivo": "src/app/(app)/prontuarios/[id]/receivables-actions.ts"
+    },
+    {
+      "acao": "createClinicalRequest",
+      "arquivo": "src/app/(app)/prontuarios/[id]/requests-actions.ts"
+    },
+    {
+      "acao": "recordRequestMedia",
+      "arquivo": "src/app/(app)/prontuarios/[id]/requests-actions.ts"
+    },
+    {
+      "acao": "resolveClinicalRequest",
+      "arquivo": "src/app/(app)/prontuarios/[id]/requests-actions.ts"
+    },
+    {
+      "acao": "shareClientWithUnit",
+      "arquivo": "src/app/(app)/prontuarios/[id]/share-actions.ts"
+    },
+    {
+      "acao": "endClientShare",
+      "arquivo": "src/app/(app)/prontuarios/[id]/share-actions.ts"
+    },
+    {
+      "acao": "ensureTreatmentSessions",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-actions.ts"
+    },
+    {
+      "acao": "topupTreatmentSessions",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-actions.ts"
+    },
+    {
+      "acao": "requestSessionScheduling",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-actions.ts"
+    },
+    {
+      "acao": "suggestTreatmentSeries",
+      "arquivo": "src/app/(app)/prontuarios/[id]/treatment-actions.ts"
+    },
+    {
+      "acao": "saveStaffSchedule",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "createStaffMember",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "updateStaffMember",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "setStaffPhoto",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "linkStaffUser",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "unlinkStaffUser",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "setStaffUnitActive",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "setStaffActive",
+      "arquivo": "src/app/(app)/risartanos/actions.ts"
+    },
+    {
+      "acao": "recordLogin",
+      "arquivo": "src/app/login/actions.ts"
+    }
+  ]
+}
