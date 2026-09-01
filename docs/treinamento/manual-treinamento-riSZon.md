@@ -206,14 +206,24 @@ uma regra por linha (chamada RLS) que decide o que cada pessoa consegue ler e
 escrever, mesmo que tente por fora da tela.
 
 **Consequência prática, confirmada na análise:** os itens **Início, Jornada,
-Agenda, Atendimento, Prontuários, Centro de Planejamento e Procedimentos
-aparecem no menu para todas as funções** — não há filtro por papel neles no
-menu. O que muda é **o que você encontra lá dentro**. Um TSB abre
-`/planejamento` e vê a tela, mas os dados e os botões de ação seguem as regras
-do banco.
+Agenda, Atendimento e Prontuários** aparecem no menu para todas as funções — não
+há filtro por papel neles. O que muda é **o que você encontra lá dentro**. Um
+TSB abre `/prontuarios` e vê a tela, mas os dados seguem as regras do banco.
 
-Evidência: `src/components/app-sidebar.tsx` (a lista `NAV_ITEMS` não tem
-condição por papel); `docs/ARQUITETURA-TECNICA.md` §"Autenticação e RBAC".
+> **Correção (01/09/2026).** A primeira versão deste manual dizia que *Centro de
+> Planejamento* e *Procedimentos* também apareciam para todos. **Estava errado:**
+> eles sempre foram só do Dentista Planner e do Admin Master. O erro veio de
+> leitura incompleta do menu, e foi encontrado ao construir a tela da matriz de
+> permissões. A matriz em CSV também foi corrigida.
+
+Evidência: `src/components/app-sidebar.tsx` (`NAV_ITEMS` sem condição por papel;
+`PLANNER_ITEMS` sob a condição do Planner); `docs/ARQUITETURA-TECNICA.md`
+§"Autenticação e RBAC".
+
+> **A partir da migração 0246, isto é editável.** Quem vê cada item passou a vir
+> da **Matriz de permissões** (`/admin/permissoes`), e o Admin Master muda pela
+> tela — sem precisar de alteração no código. Ver
+> [seção 5](#5-matriz-de-permissões).
 
 **Única exceção encontrada no menu:** quem tem **apenas** o papel *Dentista* na
 unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
@@ -377,6 +387,17 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 ---
 
 ## 5. Matriz de permissões
+
+> **Desde 01/09/2026 a matriz é EDITÁVEL no sistema.** Admin Master →
+> **Administração → Permissões** (`/admin/permissoes`). Marque ou desmarque por
+> função e salve; vale para toda a rede.
+>
+> **Duas coisas que a tela avisa, e que valem repetir aqui:**
+> **desligar** uma permissão sempre funciona; **ligar** uma marcada com o selo
+> *"o banco também decide"* abre a tela, mas os dados podem vir vazios — nessas,
+> a regra do banco continua a mesma até ser ajustada. E o **Admin Master não
+> aparece na matriz**: ele passa por cima sempre, para não existir a porta
+> trancada com a chave dentro.
 
 A matriz completa (16 papéis × 27 colunas) está em
 [`matriz-permissoes-riSZon.csv`](matriz-permissoes-riSZon.csv), e foi **calculada

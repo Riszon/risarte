@@ -1,17 +1,17 @@
-﻿Papel;Ambiente;Início;Jornada;Agenda;Atendimento;Prontuários;Meu Dia;Minha Agenda;Centro de Planejamento;Procedimentos;Planos de Tratamento;Comercial;Relatórios;Risartanos;Empresarial;PPR+ (Prevenção);Financeiro;Estoque;Compras;Administração (todo o menu Admin);Lançar/editar dinheiro (canPostFinance);Configurar financeiro da REDE (canConfigureFinanceNetwork);Entrada e inventário de estoque (canManageStock);Consumo avulso de estoque (canConsumeStock);Cadastrar item no catálogo de estoque (canManageStockCatalog);Criar requisição de compra (canManagePurchaseRequests);Mesa de negociação de compras (isPurchaser);Configurar PPR+ (canConfigurePpr)
-Admin Master (flag global);Global;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM
-Encantador(a) (SDR);Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
-Dentista Planner;Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;nao;SIM;nao;nao;SIM;nao;SIM;nao;nao;nao;nao;nao;SIM;nao;nao;nao;nao
-Consultor Comercial;Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
-Assistente Comercial;Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;SIM;nao;nao;nao;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
-Franqueadora/Rede;Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;nao;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
-Consultor Empresarial (RisLife);Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
-Financeiro da Franqueadora;Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;SIM;SIM;SIM;SIM;SIM;nao;SIM;SIM;SIM;SIM;SIM;nao;nao;nao
-Comprador da Franqueadora;Franqueadora;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;nao;nao;nao;SIM;nao
-Recepcionista;Unidade;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
-Coordenador Clínico;Unidade;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;nao;nao;nao;nao;SIM;nao;SIM;nao;nao;nao;nao;nao;SIM;nao;nao;nao;nao
-Dentista;Unidade;SIM;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;SIM;nao;SIM;nao;nao;nao;nao;nao;SIM;nao;nao;nao;nao
-Gerente de Unidade;Unidade;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;SIM;nao;SIM;SIM;nao;SIM;nao;nao
-TSB (Técnica em Saúde Bucal);Unidade;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;SIM;nao;SIM;nao;nao;nao;nao;nao;SIM;nao;nao;nao;nao
-ASB (Auxiliar em Saúde Bucal);Unidade;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;SIM;nao;SIM;nao;nao;nao;nao;nao;SIM;nao;nao;nao;nao
-Franqueado;Unidade;SIM;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao
+﻿Papel;Ambiente;Jornada;Agenda;Atendimento;Prontuários;Centro de Planejamento;Procedimentos;Planos de Tratamento;Comercial;Relatórios;Risartanos;PPR+ (Prevenção);Empresarial (o banco tambem decide);Financeiro (o banco tambem decide);Estoque (o banco tambem decide);Compras (o banco tambem decide);Lançar e editar dinheiro (o banco tambem decide);Configurar o financeiro da REDE (o banco tambem decide);Entrada e inventário de estoque (o banco tambem decide);Consumo avulso de estoque (o banco tambem decide);Cadastrar item no catálogo (o banco tambem decide);Criar requisição de compra (o banco tambem decide);Mesa de negociação (cotação) (o banco tambem decide);Configurar o PPR+
+Admin Master (flag global);Global;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM
+Recepcionista;Unidade;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
+Encantador(a) (SDR);Franqueadora;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
+Coordenador Clínico;Unidade;SIM;SIM;SIM;SIM;nao;nao;SIM;nao;nao;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;SIM;nao;nao;nao;nao
+Dentista Planner;Franqueadora;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;SIM;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;SIM;nao;nao;nao;nao
+Dentista;Unidade;nao;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;SIM;nao;nao;nao;nao
+Consultor Comercial;Franqueadora;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;nao;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
+Assistente Comercial;Franqueadora;SIM;SIM;SIM;SIM;nao;nao;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
+Gerente de Unidade;Unidade;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;SIM;SIM;nao;SIM;nao;nao
+Franqueadora/Rede;Franqueadora;SIM;SIM;SIM;SIM;nao;nao;SIM;nao;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
+Franqueado;Unidade;SIM;SIM;SIM;SIM;nao;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao
+TSB;Unidade;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;SIM;nao;nao;nao;nao
+ASB;Unidade;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;nao;nao;SIM;nao;nao;nao;nao;SIM;nao;nao;nao;nao
+Consultor Empresarial (RisLife);Franqueadora;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;SIM;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao;nao
+Financeiro da Franqueadora;Franqueadora;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;SIM;nao;nao;nao
+Comprador da Franqueadora;Franqueadora;SIM;SIM;SIM;SIM;nao;nao;nao;nao;nao;nao;SIM;nao;nao;nao;SIM;nao;nao;nao;nao;nao;nao;SIM;nao

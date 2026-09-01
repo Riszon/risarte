@@ -3,6 +3,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { ClinicType, UserRole } from "@/lib/roles";
+import {
+  matrizPadrao,
+  podeComPapeis,
+  type MatrizPermissoes,
+} from "@/lib/permissions";
 
 export const ACTIVE_CLINIC_COOKIE = "risarte_active_clinic";
 
@@ -26,6 +31,14 @@ export type SessionContext = {
   /** True when the active clinic came from an explicit choice (cookie), not a
    * fallback default — drives the "choose your unit" welcome screen (H1.7). */
   activeClinicExplicit: boolean;
+  /**
+   * A matriz de permissões vigente (0246): para cada capacidade, os papéis que
+   * a têm. Carregada UMA vez por requisição, junto com a sessão — sem isso,
+   * cada função de acesso faria a sua própria ida ao banco e a tela ficaria
+   * lenta. Cai no padrão do código se a tabela ainda não existir (banco sem a
+   * migração 0246), para o sistema nunca ficar sem permissão nenhuma.
+   */
+  permissoes: MatrizPermissoes;
 };
 
 type RoleRow = {
@@ -52,18 +65,35 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: roleRows }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("full_name, is_admin_master, is_active")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("user_clinic_roles")
-      .select("role, clinics ( id, name, type, is_active )")
-      .eq("user_id", user.id)
-      .returns<RoleRow[]>(),
-  ]);
+  const [{ data: profile }, { data: roleRows }, { data: permRows, error: permErro }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("full_name, is_admin_master, is_active")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("user_clinic_roles")
+        .select("role, clinics ( id, name, type, is_active )")
+        .eq("user_id", user.id)
+        .returns<RoleRow[]>(),
+      supabase
+        .from("permission_matrix")
+        .select("capability, role")
+        .eq("allowed", true)
+        .returns<{ capability: string; role: UserRole }[]>(),
+    ]);
+
+  // Sem a tabela (banco ainda sem a 0246) ou sem linha nenhuma, vale o padrão
+  // escrito no código. É de propósito: um sistema que perde todas as permissões
+  // porque uma consulta falhou é pior que um que mantém o comportamento antigo.
+  const permissoes: MatrizPermissoes =
+    permErro || !permRows || permRows.length === 0
+      ? matrizPadrao()
+      : permRows.reduce<MatrizPermissoes>((acc, r) => {
+          (acc[r.capability] ??= []).push(r.role);
+          return acc;
+        }, {});
 
   const isAdminMaster = profile?.is_admin_master ?? false;
 
@@ -108,8 +138,32 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     rolesByClinic,
     activeClinic,
     activeClinicExplicit: chosen !== null,
+    permissoes,
   };
 });
+
+/**
+ * Esta pessoa pode isto?
+ *
+ * O Admin Master responde SIM sempre, sem consultar a matriz: ele é quem edita
+ * a matriz, e poder tirar o próprio acesso criaria a porta trancada com a chave
+ * dentro.
+ *
+ * `clinicId` restringe a pergunta a uma unidade. Sem ele, vale ter o papel em
+ * QUALQUER unidade — que é como o menu sempre funcionou para módulos como o
+ * Comercial, onde o consultor vive na Franqueadora com escopo sobre as demais.
+ */
+export function pode(
+  session: SessionContext,
+  capacidade: string,
+  clinicId?: string | null
+): boolean {
+  if (session.isAdminMaster) return true;
+  const papeis = clinicId
+    ? (session.rolesByClinic[clinicId] ?? [])
+    : Object.values(session.rolesByClinic).flat();
+  return podeComPapeis(session.permissoes, capacidade, papeis);
+}
 
 /** Guard for Admin Master-only pages and server actions. */
 export async function requireAdminMaster(): Promise<SessionContext> {

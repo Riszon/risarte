@@ -1,4 +1,4 @@
-import type { SessionContext } from "@/lib/auth";
+import { pode, type SessionContext } from "@/lib/auth";
 import type { UserRole } from "@/lib/roles";
 
 // 0213 — quem enxerga e quem mexe no Estoque. Espelha os helpers de RLS
@@ -10,14 +10,6 @@ import type { UserRole } from "@/lib/roles";
 // contar prateleira não é ato de balcão, pela mesma razão que contas a pagar
 // não é.
 
-const CLINICAL_ROLES: UserRole[] = [
-  "dentist",
-  "clinical_coordinator",
-  "planner_dentist",
-  "tsb",
-  "asb",
-];
-
 function hasRoleAnywhere(session: SessionContext, role: UserRole): boolean {
   return Object.values(session.rolesByClinic).some((roles) =>
     roles.includes(role)
@@ -28,14 +20,17 @@ function isFinanceFranchisor(session: SessionContext): boolean {
   return hasRoleAnywhere(session, "finance_franchisor");
 }
 
+// ⚠️ ESTAS REGRAS AGORA VÊM DA MATRIZ DE PERMISSÕES (migração 0246), editável
+// em `/admin/permissoes`. As listas de papéis viraram a SEMENTE da tabela, em
+// `src/lib/permissions.ts` — o comportamento do primeiro dia é idêntico.
+
 /** Lança entrada, define mínimo e faz inventário. */
 export function canManageStock(
   session: SessionContext,
   clinicId: string | null | undefined
 ): boolean {
   if (session.isAdminMaster || isFinanceFranchisor(session)) return true;
-  if (!clinicId) return false;
-  return (session.rolesByClinic[clinicId] ?? []).includes("unit_manager");
+  return pode(session, "acao.estoque.gerir", clinicId);
 }
 
 /** Registra o consumo que fugiu do kit. */
@@ -44,9 +39,7 @@ export function canConsumeStock(
   clinicId: string | null | undefined
 ): boolean {
   if (canManageStock(session, clinicId)) return true;
-  if (!clinicId) return false;
-  const roles = session.rolesByClinic[clinicId] ?? [];
-  return CLINICAL_ROLES.some((r) => roles.includes(r));
+  return pode(session, "acao.estoque.consumir", clinicId);
 }
 
 /** Quem pode ABRIR o módulo (a unidade ativa manda). */
@@ -55,16 +48,10 @@ export function canViewStock(
   clinicId: string | null | undefined
 ): boolean {
   if (session.isAdminMaster || isFinanceFranchisor(session)) return true;
-  if (!clinicId) return false;
-  const roles = session.rolesByClinic[clinicId] ?? [];
-  return (
-    roles.includes("unit_manager") ||
-    roles.includes("franchisee") ||
-    CLINICAL_ROLES.some((r) => roles.includes(r))
-  );
+  return pode(session, "modulo.estoque", clinicId);
 }
 
 /** Só a Franqueadora cadastra o item — o catálogo é da rede. */
 export function canManageStockCatalog(session: SessionContext): boolean {
-  return session.isAdminMaster || isFinanceFranchisor(session);
+  return pode(session, "acao.estoque.catalogo");
 }

@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getSessionContext } from "@/lib/auth";
+import { getSessionContext, pode } from "@/lib/auth";
 import { canViewEmpresarial } from "@/lib/empresarial/access";
 import { canViewFinance } from "@/lib/finance/access";
 import { canViewStock } from "@/lib/stock-access";
@@ -46,50 +46,20 @@ export default async function AppLayout({
   const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );
-  // Relatórios seguem o papel na CLÍNICA ATIVA (mesma regra de /relatorios):
-  // na Franqueadora = staff/planner/consultor; na unidade = gerente/franqueado.
-  const activeRoles = session.activeClinic
-    ? (session.rolesByClinic[session.activeClinic.id] ?? [])
-    : [];
-  const reportRoles =
-    session.activeClinic?.type === "franchisor"
-      ? ["franchisor_staff", "planner_dentist", "commercial_consultant"]
-      : ["unit_manager", "franchisee"];
-  const canViewReports =
-    session.isAdminMaster ||
-    activeRoles.some((r) => reportRoles.includes(r));
 
-  // H4.4: central de Planos de Tratamento — gestão da unidade (coordenador/
-  // gerente/franqueado) e papéis da Franqueadora (planner/staff/consultor).
-  const planRoles =
-    session.activeClinic?.type === "franchisor"
-      ? ["franchisor_staff", "planner_dentist", "commercial_consultant"]
-      : ["unit_manager", "clinical_coordinator", "franchisee"];
-  const canViewPlans =
-    session.isAdminMaster || activeRoles.some((r) => planRoles.includes(r));
-
-  // H4.1: Risartanos (colaboradores) — Admin, Gerente, Franqueadora e Franqueado.
-  const canViewStaff =
-    session.isAdminMaster ||
-    Object.values(session.rolesByClinic)
-      .flat()
-      .some((r) => ["unit_manager", "franchisor_staff", "franchisee"].includes(r));
-
-  // COM2/COM3: funil do Comercial. O time comercial AGE; Gerente/Franqueado da
-  // unidade VISUALIZAM (e ajudam no follow-up liberado). Papel procurado em
-  // TODAS as clínicas (consultor/assistente vivem na Franqueadora com escopo).
-  const canViewComercial =
-    session.isAdminMaster ||
-    Object.values(session.rolesByClinic)
-      .flat()
-      .some((r) =>
-        [
-          "commercial_consultant",
-          "commercial_assistant",
-          "unit_manager",
-          "franchisee",
-        ].includes(r)
-      );
+  // ⚠️ QUEM VÊ O QUÊ VEM DA MATRIZ DE PERMISSÕES (migração 0246), editável pelo
+  // Admin Master em `/admin/permissoes`. As listas de papéis que ficavam aqui
+  // viraram a SEMENTE da tabela (`src/lib/permissions.ts`).
+  //
+  // Relatórios e Planos perguntam pela CLÍNICA ATIVA; os demais perguntam por
+  // qualquer clínica. Essa diferença é de propósito e vem de antes da matriz: o
+  // consultor comercial vive na Franqueadora e atende as unidades, então exigir
+  // o papel na unidade ativa o deixaria sem o Comercial.
+  const clinicaAtiva = session.activeClinic?.id ?? null;
+  const canViewReports = pode(session, "modulo.relatorios", clinicaAtiva);
+  const canViewPlans = pode(session, "modulo.planos", clinicaAtiva);
+  const canViewStaff = pode(session, "modulo.risartanos");
+  const canViewComercial = pode(session, "modulo.comercial");
 
   // Módulo Risarte Empresarial (B2B).
   const canViewEmp = canViewEmpresarial(session);
@@ -119,6 +89,14 @@ export default async function AppLayout({
         fullName={session.fullName}
         email={session.email}
         isAdminMaster={session.isAdminMaster}
+        navPermitido={[
+          "menu.jornada",
+          "menu.agenda",
+          "menu.atendimento",
+          "menu.prontuarios",
+          "menu.planejamento",
+          "menu.procedimentos",
+        ].filter((c) => pode(session, c, clinicaAtiva))}
         isPlanner={isPlanner}
         canViewReports={canViewReports}
         canViewPlans={canViewPlans}

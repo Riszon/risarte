@@ -1,18 +1,25 @@
 // PPR+ — quem enxerga a seção e quem configura o programa.
 // A barreira real é a RLS (migração 0162); aqui é UX (menu e telas).
 
-import type { SessionContext } from "@/lib/auth";
+import { pode, type SessionContext } from "@/lib/auth";
+
+// Vem da matriz de permissões (0246), editável em /admin/permissoes.
 
 /**
- * Vê a seção /ppr: praticamente todo mundo da operação — a equipe precisa saber
- * se o cliente na frente dela é do programa. Fora: ninguém sem clínica.
+ * Vê a seção /ppr: por padrão, todo mundo da operação — a equipe precisa saber
+ * se o cliente na frente dela é do programa.
  */
 export function canViewPpr(session: SessionContext): boolean {
-  if (session.isAdminMaster) return true;
-  return Object.values(session.rolesByClinic).flat().length > 0;
+  return pode(session, "modulo.ppr");
 }
 
-/** Configura planos, valores e benefícios: só o Admin Master (decisão 9). */
+/**
+ * Configura planos, valores e benefícios.
+ *
+ * Padrão: só o Admin Master (decisão 9) — a capacidade nasce com nenhum papel
+ * marcado, e o Admin passa por cima da matriz de qualquer forma. Se um dia o
+ * dono quiser delegar, é só marcar o papel na tela.
+ */
 export function canConfigurePpr(session: SessionContext): boolean {
-  return session.isAdminMaster;
+  return pode(session, "acao.ppr.configurar");
 }

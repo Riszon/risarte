@@ -32,9 +32,11 @@ import {
   Stethoscope,
   Tags,
   Users,
+  ShieldCheck,
   UserCog,
   Contact,
   ChevronsUpDown,
+  type LucideIcon,
 } from "lucide-react";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ChatNavItem } from "@/components/chat-nav-item";
@@ -72,8 +74,16 @@ type Props = {
   fullName: string;
   email: string;
   isAdminMaster: boolean;
+  /** As capacidades de menu que esta pessoa tem, pela matriz (0246). */
+  navPermitido: string[];
   /** The user holds the Dentista Planner role somewhere (Centro de Planejamento). */
-  isPlanner: boolean;
+  /**
+   * Mantido na assinatura porque o layout ainda o calcula e outras telas o
+   * usam. O menu deixou de decidir por ele: "Centro de Planejamento" e
+   * "Procedimentos" agora vêm da matriz de permissões (0246), cada um com a
+   * sua capacidade — e assim podem ser concedidos separadamente.
+   */
+  isPlanner?: boolean;
   /** Management/network roles can see the consolidated Relatórios screen. */
   canViewReports: boolean;
   /** H4.4: gestão/planner podem ver a central de Planos de Tratamento. */
@@ -100,12 +110,24 @@ type Props = {
   initialCollapsed: boolean;
 };
 
-const NAV_ITEMS = [
-  { href: "/", label: "Início", icon: Home },
-  { href: "/jornada", label: "Jornada", icon: Route },
-  { href: "/agenda", label: "Agenda", icon: Calendar },
-  { href: "/atendimento", label: "Atendimento", icon: DoorOpen },
-  { href: "/prontuarios", label: "Prontuários", icon: Users },
+// `cap` liga o item à MATRIZ DE PERMISSÕES (0246): o servidor manda em
+// `navPermitido` quais dessas capacidades a pessoa tem, e o item some quando
+// não tem. Itens sem `cap` são decididos pelas condições próprias abaixo
+// (Comercial, Financeiro, Estoque…), que já consultam a matriz do lado do
+// servidor. "Início" não tem capacidade — é a porta de entrada de todo mundo.
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  cap?: string | null;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "Início", icon: Home, cap: null },
+  { href: "/jornada", label: "Jornada", icon: Route, cap: "menu.jornada" },
+  { href: "/agenda", label: "Agenda", icon: Calendar, cap: "menu.agenda" },
+  { href: "/atendimento", label: "Atendimento", icon: DoorOpen, cap: "menu.atendimento" },
+  { href: "/prontuarios", label: "Prontuários", icon: Users, cap: "menu.prontuarios" },
 ];
 
 // H4.6 B1: painel do dia do Dentista (executor).
@@ -118,9 +140,14 @@ const MINHA_AGENDA_ITEM = {
 };
 
 // Shown to the Dentista Planner and Admin Master (alongside the unit nav).
-const PLANNER_ITEMS = [
-  { href: "/planejamento", label: "Centro de Planejamento", icon: ClipboardList },
-  { href: "/procedimentos", label: "Procedimentos", icon: Tags },
+const PLANNER_ITEMS: (NavItem & { cap: string })[] = [
+  {
+    href: "/planejamento",
+    label: "Centro de Planejamento",
+    icon: ClipboardList,
+    cap: "menu.planejamento",
+  },
+  { href: "/procedimentos", label: "Procedimentos", icon: Tags, cap: "menu.procedimentos" },
 ];
 
 // H4.4: central dos planos de tratamento (gestão + planner + comercial).
@@ -187,6 +214,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
   { href: "/admin/usuarios", label: "Usuários (acesso)", icon: UserCog },
+  { href: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
@@ -201,7 +229,7 @@ export function AppSidebar({
   fullName,
   email,
   isAdminMaster,
-  isPlanner,
+  navPermitido,
   canViewReports,
   canViewPlans,
   canViewComercial,
@@ -244,9 +272,14 @@ export function AppSidebar({
     !isAdminMaster &&
     activeClinicRoles.length > 0 &&
     activeClinicRoles.every((r) => r === "dentist");
-  let navItems = dentistOnly
-    ? NAV_ITEMS.filter((item) => item.href !== "/jornada")
-    : [...NAV_ITEMS];
+  // A MATRIZ DE PERMISSÕES (0246) decide os itens básicos. `dentistOnly`
+  // continua tirando a Jornada de quem só é dentista — é regra de tela, não de
+  // permissão: o dentista tem "Meu Dia" no lugar.
+  let navItems = NAV_ITEMS.filter(
+    (item) =>
+      (!item.cap || navPermitido.includes(item.cap)) &&
+      !(dentistOnly && item.href === "/jornada")
+  );
   // H4.6 B1/E3: "Meu Dia" e "Minha Agenda" logo após Início para o dentista.
   if (activeClinicRoles.includes("dentist")) {
     navItems = [navItems[0], MEU_DIA_ITEM, MINHA_AGENDA_ITEM, ...navItems.slice(1)];
@@ -257,8 +290,13 @@ export function AppSidebar({
   if (!dentistOnly && canViewPlans) {
     navItems = [...navItems, PLANS_ITEM];
   }
-  if (!dentistOnly && (isAdminMaster || isPlanner)) {
-    navItems = [...navItems, ...PLANNER_ITEMS];
+  // Centro de Planejamento e Procedimentos: cada um com a sua capacidade, para
+  // poderem ser concedidos separadamente (antes vinham colados).
+  if (!dentistOnly) {
+    navItems = [
+      ...navItems,
+      ...PLANNER_ITEMS.filter((i) => navPermitido.includes(i.cap)),
+    ];
   }
   if (!dentistOnly && canViewReports) {
     navItems = [...navItems, REPORTS_ITEM];

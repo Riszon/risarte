@@ -1,4 +1,4 @@
-import type { SessionContext } from "@/lib/auth";
+import { pode, type SessionContext } from "@/lib/auth";
 import type { UserRole } from "@/lib/roles";
 
 function allRoles(session: SessionContext): UserRole[] {
@@ -21,10 +21,9 @@ export function isProgramManager(session: SessionContext): boolean {
  * (que enxergam as empresas com colaboradores na sua unidade).
  */
 export function canViewEmpresarial(session: SessionContext): boolean {
+  // Vem da matriz de permissões (0246), editável em /admin/permissoes.
   if (isProgramManager(session)) return true;
-  return allRoles(session).some((r) =>
-    ["unit_manager", "franchisee", "sdr", "receptionist"].includes(r)
-  );
+  return pode(session, "modulo.empresarial");
 }
 
 /** Consultor RisLife "puro" (sem papéis de gestão da rede) — foco no funil/agenda. */

@@ -1,5 +1,4 @@
-import type { SessionContext } from "@/lib/auth";
-import type { UserRole } from "@/lib/roles";
+import { pode, type SessionContext } from "@/lib/auth";
 
 // COMPRAS — quem enxerga e quem mexe.
 //
@@ -12,15 +11,9 @@ import type { UserRole } from "@/lib/roles";
 // O COMPRADOR DA FRANQUEADORA é papel próprio (decisão do dono): quem compra
 // não é quem paga, e separar as duas funções é controle interno básico.
 
-function hasRoleAnywhere(session: SessionContext, role: UserRole): boolean {
-  return Object.values(session.rolesByClinic).some((roles) =>
-    roles.includes(role)
-  );
-}
-
 /** Comprador da Franqueadora — negocia com fornecedor. */
 export function isPurchaser(session: SessionContext): boolean {
-  return session.isAdminMaster || hasRoleAnywhere(session, "purchaser");
+  return pode(session, "acao.compras.negociar");
 }
 
 /** Quem MONTA e envia a lista da unidade. */
@@ -28,9 +21,8 @@ export function canManagePurchaseRequests(
   session: SessionContext,
   clinicId: string | null | undefined
 ): boolean {
-  if (session.isAdminMaster) return true;
-  if (!clinicId) return false;
-  return (session.rolesByClinic[clinicId] ?? []).includes("unit_manager");
+  // Vem da matriz de permissões (0246), editável em /admin/permissoes.
+  return pode(session, "acao.compras.requisitar", clinicId);
 }
 
 /**
@@ -46,7 +38,6 @@ export function canViewPurchases(
   return (
     canManagePurchaseRequests(session, clinicId) ||
     isPurchaser(session) ||
-    hasRoleAnywhere(session, "franchisee") ||
-    hasRoleAnywhere(session, "finance_franchisor")
+    pode(session, "modulo.compras")
   );
 }
