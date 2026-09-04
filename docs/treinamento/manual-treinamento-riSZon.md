@@ -91,7 +91,7 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
 3. **Olhe o menu da esquerda.** Ele é a lista do que você pode abrir.
 4. **Comece pelo "Início".** É a primeira tela e a que resume o seu dia.
 5. **Ache a versão do sistema** no rodapé da barra lateral (ex.: *"Versão
-   0.224.0 · migração 0245"*). É essa informação que o suporte pede quando algo
+   0.225.0 · migração 0246"*). É essa informação que o suporte pede quando algo
    dá errado.
 
 **Se algo não aparecer para você**, não é defeito: é permissão. Ver
