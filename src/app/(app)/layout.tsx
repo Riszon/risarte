@@ -96,6 +96,9 @@ export default async function AppLayout({
           "menu.prontuarios",
           "menu.planejamento",
           "menu.procedimentos",
+          // 0247: o manual e o diário do sistema, para toda a operação.
+          "menu.manual",
+          "menu.sistema",
         ].filter((c) => pode(session, c, clinicaAtiva))}
         isPlanner={isPlanner}
         canViewReports={canViewReports}

@@ -214,8 +214,8 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | Ref. | Assunto | Arquivo principal | Confiança |
 |---|---|---|---|
 | EV-001 | 7 fases da jornada | `CLAUDE.md` §3 | ✅ |
-| EV-002 | 82 rotas | `src/app/(app)/**/page.tsx` | ✅ |
-| EV-003 | 28 itens de menu | `src/components/app-sidebar.tsx` | ✅ |
+| EV-002 | 84 rotas | `src/app/(app)/**/page.tsx` | ✅ |
+| EV-003 | 30 itens de menu | `src/components/app-sidebar.tsx` | ✅ |
 | EV-004 | 15 papéis + Admin | `src/lib/roles.ts` | ✅ |
 | EV-005 | Papel × ambiente | `src/lib/roles.ts` | ✅ |
 | EV-006 | Condições de menu | `src/app/(app)/layout.tsx` | ✅ |
@@ -233,3 +233,8 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-018 | LGPD | `CLAUDE.md` §6 | ✅ |
 | EV-019 | Jornada testada ponta a ponta | `e2e/*.spec.ts` | ✅ |
 | EV-020 | Matriz calculada | script sobre EV-006..009 | ✅ com limite |
+| EV-021 | Manual e Sistema no menu, para todos os papéis | migração 0247 + `src/lib/permissions.ts` | ✅ |
+| EV-022 | Relato de problema: campos e situações | `supabase/migrations/0247_diario_do_sistema.sql` | ✅ |
+| EV-023 | Tela de erro com código e botão de relato | `src/app/(app)/error.tsx` | ✅ |
+| EV-024 | Novidades filtradas por papel | `src/lib/changelog.ts` + `changelog.test.ts` | ✅ |
+| EV-025 | Alertas reunidos sem porta nova | `src/app/(app)/sistema/page.tsx` (lê `finance_alerts` e as RPCs de estoque) | ✅ |

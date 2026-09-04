@@ -122,6 +122,27 @@ export const CAPACIDADES: Capability[] = [
     dependeDoBanco: false,
     padrao: ["planner_dentist"],
   },
+  {
+    id: "menu.manual",
+    rotulo: "Manual",
+    grupo: "Navegação",
+    descricao:
+      "O manual de treinamento dentro do sistema, sempre na versão do dia.",
+    dependeDoBanco: false,
+    // Toda a operação, de propósito: manual que só alguns leem não é manual.
+    padrao: TODOS,
+  },
+  {
+    id: "menu.sistema",
+    rotulo: "Sistema (novidades e problemas)",
+    grupo: "Navegação",
+    descricao:
+      "O que mudou em cada versão, o canal para relatar problema e os alertas.",
+    dependeDoBanco: false,
+    // Desligar isto para alguém devolve o relato de problema para o WhatsApp,
+    // que é exatamente de onde ele está saindo.
+    padrao: TODOS,
+  },
 
   // ---- módulos -------------------------------------------------------------
   {

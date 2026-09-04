@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/08/2026 · Versão do sistema: **0.219.0** · Última migração: **0243**_
+_Atualizado em: 04/09/2026 · Versão do sistema: **0.226.0** · Última migração: **0247**_
 
 > **COMPRAS C4 — O PAINEL (v0.219.0, migração 0243). MÓDULO COMPRAS COMPLETO.**
 > Em Compras › Painel de compras.
@@ -3888,6 +3888,73 @@ Ordem definida pelo dono: **testes automáticos primeiro, lançamento depois.**
    **uma senha por papel** (`npm run senhas:treino`).
 7. ~~**Matriz de permissões editável**~~ ✅ **v0.225.0 · migração 0246** —
    detalhe abaixo.
+8. ~~**Manual dentro do sistema + diário do sistema**~~ ✅ **v0.226.0 ·
+   migração 0247** — detalhe abaixo.
+
+### MANUAL NO SISTEMA E DIÁRIO DO SISTEMA (04/09/2026, migração 0247)
+
+**Ordem do dono:** *"toda alteração que fizermos no sistema a partir de agora
+faça sempre atualização no manual"* + *"crie uma tela de log de atualizações,
+bugs, erros e alertas"*.
+
+**A regra virou a seção 0c do `CLAUDE.md`.** O gatilho é *"a equipe percebe na
+tela?"* — não o tamanho da mudança. Tela, botão, texto, regra, permissão e
+fluxo entram no manual; refatoração e script ficam só aqui.
+
+**E ela deixou de depender de memória.** `src/lib/__tests__/changelog.test.ts`
+recusa `APP_VERSION` sem entrada em `src/lib/changelog.ts`: **bumpar a versão
+sem escrever a novidade quebra o portão de entrega.** Foi de propósito — regra
+que depende de alguém lembrar some na primeira entrega apertada. (Provado ao
+escrever: o teste falhou cobrando o bump de 0.225.0 → 0.226.0.)
+
+**`/manual`** — o manual dentro do sistema, com índice lateral e busca sem
+acento. Lê **o mesmo `.md`** que o Word (`outputFileTracingIncludes` no
+`next.config.ts`): uma fonte, dois destinos, senão divergem e ninguém sabe qual
+está certo. Antes disto o manual só existia como arquivo circulando por
+mensagem — sempre haveria alguém operando pela versão de três meses atrás, sem
+meio de saber disso.
+
+**`/sistema`** — três abas, todas ligadas por link (`?aba=`), não por estado de
+tela: assim a tela de erro manda a pessoa direto ao formulário preenchido.
+
+- **Novidades** — vem do **código** (`changelog.ts`), não do banco. Código
+  viaja sozinho para os dois ambientes; dado não viaja (seção 0b). Numa tabela,
+  o treino mostraria lista vazia ou diferente da produção. Filtrada por papel:
+  lista cheia de coisa que não é sua é lista que ninguém lê.
+- **Problemas** — `system_reports`. **Fecha a lacuna que o próprio manual
+  declarava na §9.6** ("não existe canal de suporte configurado"). E substitui
+  o formulário de doze linhas da §9.4, que ninguém preenchia com paciente
+  esperando: o sistema manda quem, função, unidade, tela, versão e navegador; a
+  pessoa escreve só o que aconteceu. Código `OC-`.
+- **Alertas** — **não calcula nada**: lê o que o FIN7.3 e o Estoque já
+  apuraram. Recalcular criaria uma segunda régua para o mesmo número, e a hora
+  em que as duas discordassem seria a hora em que alguém precisa confiar nelas.
+  **Não abre porta nova:** cada fonte traz a guarda que já tem.
+
+**Decisões do dono (04/09/2026):** os problemas são visíveis para **a unidade
+inteira** (evita cinco relatos do mesmo caso, e o segundo já lê a resposta do
+primeiro); e o manual **entra no sistema**, além do Word.
+
+**Regras que ficaram no banco:** `answer_system_report` **recusa encerrar sem
+resposta escrita** (`ANSWER_REQUIRED`) — encerrar em silêncio é o que faz uma
+equipe parar de relatar. E o `reporter_role` é **congelado** no relato: quem
+relatou como recepcionista e virou gerente não pode aparecer como gerente num
+problema que viu no balcão.
+
+**`src/app/(app)/error.tsx` — o sistema não tinha NENHUMA tela de erro.** Uma
+exceção mostrava a tela crua do Next.js, em inglês, sem registro nenhum. Agora:
+explicação em português, o código do erro (`digest`) e um botão que abre o
+relato já preenchido. **Não grava sozinha** — erro em laço geraria centenas de
+linhas iguais e afogaria os relatos de gente, que são os que têm contexto.
+Captura automática fica para depois, com limite de repetição.
+
+**Duas dívidas minhas, pagas no caminho:** o `lint` tinha 4 problemas que eu
+mesmo introduzi na sessão anterior (o gerador do Word em `.cjs`, fora do padrão
+`.mjs` do projeto). **O baseline do lint agora é ZERO** — antes era "3
+pré-existentes", e três problemas de tolerância escondem o quarto.
+
+**Ainda não tem:** anexar print, captura automática de erro, aviso quando o
+problema muda de situação.
 
 ### MATRIZ DE PERMISSÕES EDITÁVEL (01/09/2026, migração 0246)
 

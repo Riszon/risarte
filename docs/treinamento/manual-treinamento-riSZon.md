@@ -6,9 +6,13 @@
 > Onde não foi possível confirmar, está escrito **"Não identificado no código
 > analisado"** — e não substituído por descrição genérica.
 >
-> Números desta análise: **82 rotas**, **28 itens de menu**, **179 mensagens de
+> Números desta análise: **84 rotas**, **30 itens de menu**, **179 mensagens de
 > tela**, **384 ações de servidor**, **16 papéis**. Ver
 > [`evidencias-riSZon.md`](evidencias-riSZon.md).
+>
+> **Este manual muda junto com o sistema.** Desde 04/09/2026 vale a regra de que
+> toda entrega que a equipe percebe na tela atualiza o manual no mesmo dia — e o
+> texto que está em *Menu → Manual* é sempre o da versão no ar.
 >
 > **Limitação declarada:** a análise é do código, não da aplicação em execução.
 > Posições visuais (onde cada botão fica na tela) **não foram confirmadas** e
@@ -33,6 +37,7 @@
 13. [Perguntas frequentes](#13-perguntas-frequentes)
 13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
 14. [Checklists](#14-checklists)
+15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas)
 
 ---
 
@@ -91,8 +96,15 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
 3. **Olhe o menu da esquerda.** Ele é a lista do que você pode abrir.
 4. **Comece pelo "Início".** É a primeira tela e a que resume o seu dia.
 5. **Ache a versão do sistema** no rodapé da barra lateral (ex.: *"Versão
-   0.225.0 · migração 0246"*). É essa informação que o suporte pede quando algo
+   0.226.0 · migração 0247"*). É essa informação que o suporte pede quando algo
    dá errado.
+
+**No fim do menu existe o bloco "Ajuda", com dois itens que valem conhecer
+antes de precisar deles:**
+
+- **Manual** — este texto, dentro do sistema, sempre na versão que está no ar.
+- **Sistema** — o que mudou em cada versão, onde relatar um problema, e os
+  alertas. Ver [seção 15](#15-novidades-problemas-e-alertas).
 
 **Se algo não aparecer para você**, não é defeito: é permissão. Ver
 [seção 13](#13-perguntas-frequentes).
@@ -146,6 +158,8 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Empresarial | `/empresarial` | Convênio com empresas parceiras |
 | Risartanos | `/risartanos` | Cadastro de colaboradores (RH) |
 | Relatórios | `/relatorios` | Indicadores de agenda, rede e produtividade |
+| Manual | `/manual` | Este manual, sempre na versão do sistema no ar |
+| Sistema | `/sistema` | Novidades, relato de problemas e alertas |
 | Administração | `/admin/*` | Clínicas, usuários, prazos, regras, modelos |
 
 ### 3.3. O que **não** faz parte do escopo
@@ -678,6 +692,8 @@ No rodapé: seu nome, seu e-mail, a **versão do sistema** e o botão **Sair**.
 `/admin/regras-comerciais`, `/admin/agenda`, `/admin/anamnese`,
 `/admin/orientacoes`, `/admin/documentos`, `/admin/chat`, `/admin/auditoria`.
 
+**Ajuda:** `/manual`, `/sistema`.
+
 **Outros:** `/notificacoes`, `/perfil`, `/chat`, `/relatorios`, `/documentos`.
 
 A lista completa das 82 rotas, com as guardas de acesso encontradas em cada
@@ -755,6 +771,15 @@ prontuário. Para procedimentos e itens de estoque, "excluir" significa
 O sistema avisa por **mensagens que aparecem no canto superior direito**
 (sucesso em verde, erro em vermelho) e por mensagens dentro do formulário.
 
+**E existe um terceiro caso, mais raro e mais assustador:** a tela não abre e
+aparece uma caixa vermelha dizendo *"Esta tela não conseguiu abrir"*. Ela
+mostra em que tela você estava, a versão do sistema e um **código do erro** — e
+traz três botões: *Tentar de novo*, *Registrar este problema* (que já abre o
+formulário preenchido com esses dados) e *Voltar ao Início*.
+
+> **Isso não é culpa de quem está olhando, e nada do que já estava salvo se
+> perde.** Se acontecer duas vezes seguidas, registre — é o botão do meio.
+
 ### 9.2. Antes de chamar o suporte — 6 verificações
 
 1. **É preenchimento?** Algum campo obrigatório em branco ou com formato errado?
@@ -777,25 +802,33 @@ O sistema tem travas contra duplicidade em vários pontos (mesma nota fiscal,
 mesma emissão de boleto, mesma sessão consumindo kit duas vezes), mas **conferir
 custa menos que corrigir**.
 
-### 9.4. Checklist de diagnóstico
+### 9.4. Como relatar um problema
 
-Copie e preencha ao registrar um problema:
+**Menu → Sistema → aba Problemas → botão "Relatar um problema".**
 
-```
-Data e hora:
-Usuário (e-mail):
-Função/papel usado:
-Unidade ativa:
-Tela (nome ou endereço):
-O que eu fiz (passo a passo):
-Dados preenchidos:
-Mensagem exibida (texto exato):
-Código do erro (se houver):
-Print da tela: (anexar)
-Acontece sempre ou só uma vez?
-Outras pessoas também?
-Versão do sistema (rodapé da barra lateral):
-```
+> **Você não preenche o que o sistema já sabe.** Quem você é, sua função, a
+> unidade, a tela, a versão e o navegador vão junto automaticamente. Até a
+> versão anterior deste manual mandava copiar um formulário de doze linhas à
+> mão — ninguém preenche isso com paciente esperando, e o relato chegava sem o
+> que o torna encontrável.
+
+**Você escreve três coisas, e só:**
+
+1. **Um resumo em uma linha** — *"a agenda não deixa marcar no sábado"*.
+2. **O que aconteceu** — o passo a passo: o que você fez e o que o sistema
+   respondeu. **Se apareceu uma mensagem, copie o texto exato dela.**
+3. **O que você esperava** — opcional, mas é o que separa **defeito** de
+   **regra do sistema**. Muita coisa que parece erro é o sistema fazendo o que
+   foi combinado.
+
+Você ainda escolhe **o que é** (algo deu errado / dúvida / sugestão) e **quanto
+atrapalha** (atrapalha pouco / atrapalha o trabalho / impede de trabalhar).
+
+**Ao salvar, o relato ganha um código** (ex.: `OC-00012`). É por ele que se fala
+do caso depois, sem recontar tudo.
+
+**Print da tela:** ainda não é possível anexar — guarde o seu e informe no
+relato que você tem.
 
 ### 9.5. Categorias
 
@@ -815,8 +848,13 @@ Escale **imediatamente** se: (a) o problema envolve dinheiro lançado errado;
 (b) alguém viu dado de paciente que não deveria; (c) mais de uma pessoa está
 travada; (d) o sistema inteiro não abre.
 
-❔ **Não identificado no código analisado:** não existe canal de suporte,
-telefone ou e-mail configurado no sistema. **A definir pela operação.**
+**O canal é o próprio sistema:** *Menu → Sistema → Problemas*. Marque a
+gravidade como **"Impede de trabalhar"** nos casos acima — é assim que o seu
+relato sobe na fila.
+
+> **E se o sistema inteiro não abrir?** Aí não dá para relatar por dentro dele.
+> Nesse caso avise a Franqueadora pelo caminho de sempre, com o horário e o que
+> você estava fazendo.
 
 ---
 
@@ -968,7 +1006,17 @@ e **imediatamente** se envolver dinheiro errado ou dado de paciente exposto.
 Sempre comece o cadastro **pelo CPF** — o sistema avisa se o paciente já existe.
 
 **O que é aquele número no rodapé?**
-A versão do sistema. Informe-a ao pedir suporte.
+A versão do sistema. Informe-a ao pedir suporte — e, se quiser saber o que
+mudou nela, está em *Sistema → Novidades*.
+
+**Onde vejo o que mudou no sistema?**
+*Menu → Sistema → Novidades*. Aparece o que muda **para a sua função** — o que
+é de outra função não enche a sua lista.
+
+**Este manual está atualizado?**
+O que está em *Menu → Manual* está, sempre: ele muda junto com o sistema. Um
+arquivo Word que você recebeu há meses, não necessariamente — confira a versão
+na capa dele contra a que aparece no rodapé do menu.
 
 ---
 
@@ -1041,6 +1089,65 @@ e quais funções passaram a ter a permissão.
 ☐ Sei registrar um problema com as informações certas
 ☐ Sei que ação de dinheiro não se apaga
 ☐ Sei a quem pedir ajuda
+
+---
+
+## 15. Novidades, problemas e alertas
+
+*Menu → **Sistema**. Três abas.*
+
+### 15.1. Novidades
+
+O que mudou no sistema, versão por versão, da mais recente para a mais antiga.
+Cada mudança vem marcada como **Novidade**, **Melhoria**, **Correção** ou
+**Atenção**, e traz a seção deste manual que mudou junto.
+
+**Aparece o que alcança a SUA função.** A correção de um botão do financeiro
+não entra na lista de quem trabalha na recepção — lista cheia de coisa que não
+é sua é lista que ninguém lê. O Admin Master vê tudo.
+
+O registro começa em **25/08/2026**, quando o sistema entrou em preparação de
+lançamento.
+
+### 15.2. Problemas
+
+Onde se relata e se acompanha. Como relatar está na
+[seção 9.4](#94-como-relatar-um-problema).
+
+**Quem vê o quê:** você enxerga os problemas relatados **na sua unidade**.
+Assim ninguém abre cinco vezes o mesmo, e quem chegar depois já lê a resposta
+que foi dada ao primeiro. Três filtros: *Em aberto*, *Os meus* e *Todos*.
+
+**As quatro situações:**
+
+| Situação | O que significa |
+|---|---|
+| **Aberto** | Registrado, ainda não olhado |
+| **Em análise** | Alguém está olhando |
+| **Resolvido** | Corrigido — vem com a versão em que a correção saiu |
+| **Não é defeito** | O sistema está fazendo o que foi combinado; a resposta explica |
+
+> **"Não é defeito" não é recusa.** É a resposta mais comum e uma das mais
+> úteis: muita coisa que parece erro é regra do sistema. A explicação fica no
+> relato, para a próxima pessoa que estranhar a mesma coisa.
+
+**Quem responde é o Admin Master**, e ele **não consegue encerrar sem
+escrever** — o sistema recusa. Encerrar em silêncio é o que faz uma equipe
+parar de relatar.
+
+### 15.3. Alertas
+
+O que o sistema está avisando agora, reunido num lugar só: os alertas do
+Financeiro (orçamento perto do limite, caixa projetado negativo, faturamento
+atrás do ponto de equilíbrio, atraso acumulado) e os do Estoque (sessão
+concluída sem kit, embalagem acabando, item acima do máximo).
+
+**Esta tela reúne, não libera.** Você só vê alerta de assunto que já podia ver
+no módulo — quem não enxerga o Financeiro não enxerga alerta financeiro.
+
+**Vermelho** é o que já dói; **amarelo**, o que ainda dá para resolver. Os
+alertas financeiros são apurados **uma vez por dia, às 9h**: a tela mostra o
+retrato da última apuração, e diz isso.
 
 ---
 

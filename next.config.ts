@@ -13,6 +13,18 @@ const nextConfig: NextConfig = {
   // servidor dele. Na Vercel a variável não existe, então continua `.next`.
   distDir: process.env.NEXT_DIST_DIR || ".next",
 
+  // A TELA DO MANUAL LÊ UM ARQUIVO DO REPOSITÓRIO.
+  //
+  // `/manual` serve o próprio `manual-treinamento-riSZon.md` — a mesma fonte do
+  // Word, para os dois nunca divergirem. O Next só empacota para o servidor os
+  // arquivos que ele enxerga sendo importados, e este é lido em tempo de
+  // execução: sem esta linha ele fica de fora da publicação e a tela abre
+  // dizendo que não encontrou o texto (ela trata esse caso, mas o certo é o
+  // arquivo ir junto).
+  outputFileTracingIncludes: {
+    "/manual": ["docs/treinamento/manual-treinamento-riSZon.md"],
+  },
+
   // "Clientes" virou "Prontuários" (rota /clientes → /prontuarios). Mantém
   // links/atalhos antigos funcionando em vez de dar 404.
   async redirects() {

@@ -14,10 +14,12 @@ import {
   ChevronsLeft,
   ChevronsRight,
   BadgePercent,
+  BookMarked,
   ClipboardCheck,
   ClipboardList,
   Clock,
   DoorOpen,
+  LifeBuoy,
   FileText,
   Handshake,
   HeartPulse,
@@ -210,6 +212,14 @@ const PURCHASES_ITEM = {
   icon: ShoppingCart,
 };
 
+// AJUDA — o manual e o diário do sistema. Ficam por último, acima do rodapé:
+// não são trabalho do dia, são o que se procura quando algo não está claro ou
+// não funcionou. Os dois vêm da matriz (0247), como o resto do menu.
+const AJUDA_ITEMS: (NavItem & { cap: string })[] = [
+  { href: "/manual", label: "Manual", icon: BookMarked, cap: "menu.manual" },
+  { href: "/sistema", label: "Sistema", icon: LifeBuoy, cap: "menu.sistema" },
+];
+
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -319,6 +329,11 @@ export function AppSidebar({
   if (!dentistOnly && canViewFinance) {
     navItems = [...navItems, FINANCE_ITEM];
   }
+
+  // Manual e Sistema, no bloco "Ajuda". O dentista também os enxerga: ele é
+  // quem mais precisa saber o que mudou, e é o único papel cujo menu é
+  // diferente de todos os outros.
+  const itensDeAjuda = AJUDA_ITEMS.filter((i) => navPermitido.includes(i.cap));
 
   function switchClinic(clinicId: string) {
     if (clinicId === activeClinicId) return;
@@ -464,6 +479,29 @@ export function AppSidebar({
           linkClass={linkClass("/notificacoes")}
           collapsed={collapsed}
         />
+
+        {itensDeAjuda.length > 0 && (
+          <>
+            {collapsed ? (
+              <div className="my-2 border-t border-sidebar-border/60" />
+            ) : (
+              <p className="px-3 pb-1 pt-5 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
+                Ajuda
+              </p>
+            )}
+            {itensDeAjuda.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={linkClass(href)}
+                title={collapsed ? label : undefined}
+              >
+                <Icon className="size-4 shrink-0" />
+                {!collapsed && <span className="truncate">{label}</span>}
+              </Link>
+            ))}
+          </>
+        )}
 
         {isAdminMaster && (
           <>

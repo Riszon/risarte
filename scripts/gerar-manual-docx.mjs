@@ -1,13 +1,22 @@
 // Converte o manual de treinamento (Markdown) num .docx com a identidade Risarte.
-// Uso: node md2docx.cjs <entrada.md> <saida.docx>
+//
+//   node scripts/gerar-manual-docx.mjs \
+//     docs/treinamento/manual-treinamento-riSZon.md \
+//     docs/treinamento/Manual-de-Treinamento-riSZon.docx
+//
+// ⚠️ RODAR A CADA ENTREGA QUE MEXE NO MANUAL (seção 0c do CLAUDE.md). O Word é
+// o que circula com a equipe; o .md é a fonte. Editar o .docx à mão não adianta:
+// a próxima geração apaga.
+//
+// A tela /manual lê o MESMO .md — um texto só para os dois destinos, senão eles
+// divergem e ninguém sabe qual está certo.
 
-const fs = require("fs");
-const path = require("path");
-const D = require("docx");
+import fs from "node:fs";
+import path from "node:path";
+import * as D from "docx";
 
 // ---------------------------------------------------------------- identidade
 const NAVY = "1F3253";
-const NAVY_DARK = "16253E";
 const GOLD = "B98B2E";
 const TEXT = "23293D";
 const MUTED = "5F6779";

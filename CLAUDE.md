@@ -137,16 +137,29 @@ manual que ninguém lê envelhece igual.
 
 1. **Atualizar a seção do manual que trata daquilo** — nunca um apêndice no
    fim. Um manual com "veja também a seção 15 para o que mudou" já está errado.
-2. **Manter a disciplina da evidência:** afirmação nova entra com a origem em
+2. **Escrever a novidade em `src/lib/changelog.ts`**, na voz de quem opera
+   (*"a tela de login passou a dizer qual foi o problema"*, não *"refatorado o
+   tratamento de erro"*), apontando a seção do manual que mudou junto.
+3. **Manter a disciplina da evidência:** afirmação nova entra com a origem em
    `docs/treinamento/evidencias-riSZon.md`; o que não der para confirmar no
    código vira **"Não identificado no código analisado"**, nunca descrição por
    suposição (regra do dono, 31/08/2026).
-3. **Regerar o Word** (é ele que circula com a equipe):
-   `node scripts/gerar-manual-docx.cjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx`
-4. Bumpar `APP_VERSION`/`LATEST_MIGRATION` como já se faz.
+4. **Regerar o Word** — é ele que circula com a equipe: `npm run manual:docx`.
+5. Bumpar `APP_VERSION`/`LATEST_MIGRATION` como já se faz.
+
+**O passo 2 NÃO depende de ninguém lembrar.** `src/lib/__tests__/changelog.test.ts`
+recusa `APP_VERSION` sem entrada correspondente: bumpar a versão sem escrever a
+novidade **quebra o portão de entrega**. Foi de propósito — regra que depende de
+memória some na primeira entrega apertada, e em um mês o registro vira
+arqueologia. Os passos 1 e 4 ainda dependem de disciplina; se algum dia der para
+prendê-los por teste, prender.
 
 **Nunca editar o `.docx` à mão.** Ele é gerado a partir do `.md`; qualquer
 edição direta desaparece na próxima entrega, sem aviso.
+
+**A tela `/manual` lê o MESMO `.md`** (por `outputFileTracingIncludes` no
+`next.config.ts`). Uma fonte, dois destinos — o que a equipe lê na tela e o que
+ela lê impresso não podem divergir.
 
 ## 1. Visão geral
 
@@ -179,7 +192,7 @@ $env:NEXT_DIST_DIR=".next-verify"; npm run build
 # acusa, e cada uma custou uma ida e volta.
 node scripts/check-migrations.mjs 0233
 npm run test    # testes unitários (Vitest) das regras de negócio em src/lib. Rodar antes de cada commit.
-npm run lint    # eslint (baseline: 3 problemas pré-existentes; não adicionar nenhum novo)
+npm run lint    # eslint — baseline ZERO desde 04/09/2026 (os 3 antigos saíram). Qualquer problema é novo.
 ```
 
 **Portão de cada entrega = `npm run build` + `npm test`.** Os testes unitários
