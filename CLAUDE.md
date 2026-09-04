@@ -111,6 +111,43 @@ na Vercel não muda o site sem republicar — e com "Use existing Build Cache"
 desmarcado. Ver `risarte-producao-online` nas memórias e o guia
 *Publicar o riSZon*.
 
+## 0c. ⚠️ A REGRA DO MANUAL — entrega que a equipe percebe atualiza o manual
+
+**Ordem do dono, 04/09/2026.** O manual de treinamento
+(`docs/treinamento/manual-treinamento-riSZon.md`) é o que a **equipe** lê. Ele
+**não pode envelhecer**: manual desatualizado é pior que manual nenhum — a
+pessoa segue um passo que não existe mais, conclui que o sistema quebrou e abre
+chamado sobre uma tela que mudou de propósito. O custo cai justamente sobre
+quem tem menos condição de perceber que o errado é o papel, não a tela.
+
+**O gatilho é "a equipe percebe?", não o tamanho da mudança:**
+
+| A entrega… | Manual | `ESTADO_DO_PROJETO.md` |
+|---|---|---|
+| muda tela, botão, texto, regra, permissão ou fluxo | **SIM** | sim |
+| acrescenta módulo, papel, mensagem de erro ou aviso | **SIM** | sim |
+| é refatoração, teste, script, correção invisível | não | sim |
+
+Os dois documentos existem para leitores diferentes: o `ESTADO_DO_PROJETO.md`
+é para quem constrói (e registra tudo); o manual é para quem opera (e registra
+só o que se vê). Misturar os dois transforma o manual em diário técnico, e
+manual que ninguém lê envelhece igual.
+
+**O que fazer, no MESMO commit da entrega:**
+
+1. **Atualizar a seção do manual que trata daquilo** — nunca um apêndice no
+   fim. Um manual com "veja também a seção 15 para o que mudou" já está errado.
+2. **Manter a disciplina da evidência:** afirmação nova entra com a origem em
+   `docs/treinamento/evidencias-riSZon.md`; o que não der para confirmar no
+   código vira **"Não identificado no código analisado"**, nunca descrição por
+   suposição (regra do dono, 31/08/2026).
+3. **Regerar o Word** (é ele que circula com a equipe):
+   `node scripts/gerar-manual-docx.cjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx`
+4. Bumpar `APP_VERSION`/`LATEST_MIGRATION` como já se faz.
+
+**Nunca editar o `.docx` à mão.** Ele é gerado a partir do `.md`; qualquer
+edição direta desaparece na próxima entrega, sem aviso.
+
 ## 1. Visão geral
 
 Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1
