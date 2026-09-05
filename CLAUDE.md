@@ -566,6 +566,16 @@ mesmo custo); e a origem `boleto_issue` aponta para a **parcela** no índice
 único do razão, então o webhook futuro do ASAAS cai na mesma porta e não
 duplica. Adiado: **segunda via de boleto** (hoje é uma cobrança por parcela).
 
+**FUSO, A SEGUNDA METADE — HORA também é relógio brasileiro (05/09/2026).** A
+0201 resolveu o *dia*; a *hora* continuou sendo lida no fuso da máquina.
+`new Date("2026-09-05T14:00:00")` dá 14:00 no computador do dono e **11:00** na
+Vercel (UTC). Resultado: a agenda recusava remarcar para as próximas 3 horas
+dizendo "horário no passado", o que passava era gravado 3 horas antes, e os
+horários livres das próximas 3 horas sumiam. Usar **`instantFromBrazil()`** /
+`startOfDayInBrazil()` / `weekdayOf()` (`src/lib/dates.ts`); há teste que varre
+`src/app` e reprova a volta do padrão. **Nada disso aparece rodando local** — só
+onde o sistema está publicado.
+
 **FUSO: data de negócio é data civil brasileira (0201).** `new Date()
 .toISOString().slice(0,10)` devolve a data em **UTC** e, das 21h à meia-noite,
 já é o dia seguinte — parcela do dia virava atrasada e a baixa nascia com data

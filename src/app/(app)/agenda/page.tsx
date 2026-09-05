@@ -33,6 +33,7 @@ import {
 import type { UserRole } from "@/lib/roles";
 import { roomLabel } from "@/lib/rooms";
 import { effectiveDayHours } from "@/lib/agenda-settings";
+import { instantFromBrazil, todayInBrazil } from "@/lib/dates";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import {
@@ -150,8 +151,20 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       ? searchParams.vista
       : "semana";
   const refParam = typeof searchParams.ref === "string" ? searchParams.ref : "";
-  const refBase = refParam ? new Date(`${refParam}T00:00:00`) : new Date();
-  const ref = Number.isNaN(refBase.getTime()) ? new Date() : refBase;
+  // ⚠️ O DIA DE REFERÊNCIA É O DIA BRASILEIRO, e ancorado ao MEIO-DIA.
+  //
+  // Sem isto, `new Date()` no servidor da Vercel (UTC) já virou o dia às 21h no
+  // Brasil: quem abrisse a agenda à noite caía no dia seguinte. É o mesmo
+  // defeito da migração 0201, agora na tela.
+  //
+  // O meio-dia é de propósito: as contas de semana/mês de `agenda-view.ts`
+  // ainda usam o relógio da máquina, e às 12h nenhum deslocamento de 3 horas
+  // consegue empurrar a data para o dia vizinho. Corrigir aquele módulo por
+  // dentro é uma limpeza à parte — ele é compartilhado com o navegador.
+  const refBase = instantFromBrazil(refParam || todayInBrazil(), "12:00");
+  const ref = Number.isNaN(refBase.getTime())
+    ? instantFromBrazil(todayInBrazil(), "12:00")
+    : refBase;
   const range = agendaRange(view, ref);
 
   const periodLabel =

@@ -40,6 +40,7 @@ import {
   ChevronsUpDown,
   type LucideIcon,
 } from "lucide-react";
+import { SystemClock } from "@/components/clock";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -528,6 +529,11 @@ export function AppSidebar({
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
+        {/* O relógio fica ACIMA do perfil: é informação de trabalho (que horas
+            são para o sistema), não informação de conta. */}
+        <div className="mb-2 rounded-md bg-sidebar-accent/40 px-2 py-1.5">
+          <SystemClock collapsed={collapsed} />
+        </div>
         <Link
           href="/perfil"
           className={cn(

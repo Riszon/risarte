@@ -37,7 +37,7 @@
 13. [Perguntas frequentes](#13-perguntas-frequentes)
 13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
 14. [Checklists](#14-checklists)
-15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas)
+15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas) — inclui o **relógio**
 
 ---
 
@@ -98,6 +98,11 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
 5. **Ache a versão do sistema** no rodapé da barra lateral (ex.: *"Versão
    0.226.0 · migração 0247"*). É essa informação que o suporte pede quando algo
    dá errado.
+
+**No rodapé da barra lateral fica a data e a hora**, sempre no **horário de
+Brasília** — é ele que o sistema usa para decidir se um horário já passou,
+quando uma parcela vence e a que mês um lançamento pertence. Se o relógio do
+seu computador mostrar outra coisa, quem manda é este.
 
 **No fim do menu existe o bloco "Ajuda", com dois itens que valem conhecer
 antes de precisar deles:**
@@ -1148,6 +1153,21 @@ no módulo — quem não enxerga o Financeiro não enxerga alerta financeiro.
 **Vermelho** é o que já dói; **amarelo**, o que ainda dá para resolver. Os
 alertas financeiros são apurados **uma vez por dia, às 9h**: a tela mostra o
 retrato da última apuração, e diz isso.
+
+### 15.4. Relógio
+
+No alto da tela Sistema, acima das abas, fica o **relógio**: a data e a hora de
+Brasília por extenso, e — ao lado — o fuso do seu computador e o do servidor.
+
+**Para que serve:** computador com data ou hora erradas faz o sistema parecer
+com defeito. Horários viram "passado" sem terem passado, e ninguém desconfia do
+relógio da própria máquina. Se a diferença passar de 2 minutos, o painel avisa
+e diz o que fazer.
+
+> **Foi exatamente esse tipo de desencontro que causou o defeito corrigido em
+> 05/09/2026** — só que do lado do servidor. A agenda recusava remarcações
+> dizendo que o horário já tinha passado, e não tinha. Este painel existe para
+> que a próxima vez seja visível em vez de misteriosa.
 
 ---
 

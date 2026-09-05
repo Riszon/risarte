@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Info } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { instantFromBrazil } from "@/lib/dates";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -93,8 +94,10 @@ function periodRange(
   }
   if (periodo === "periodo") {
     return {
-      from: de ? new Date(`${de}T00:00:00`).toISOString() : null,
-      to: ate ? new Date(`${ate}T23:59:59`).toISOString() : null,
+      // Dias BRASILEIROS: no servidor em UTC o filtro pegava das 21h do dia
+      // anterior até as 21h do último dia, cortando a tarde inteira dele.
+      from: de ? instantFromBrazil(de, "00:00").toISOString() : null,
+      to: ate ? instantFromBrazil(ate, "23:59:59").toISOString() : null,
     };
   }
   return { from: null, to: null };

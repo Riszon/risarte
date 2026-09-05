@@ -22,6 +22,11 @@ import {
   type AgendaClosureRow,
 } from "@/lib/closures";
 import { toIsoDate } from "@/lib/agenda-view";
+// ⚠️ HORA DE NEGÓCIO É RELÓGIO DE PAREDE BRASILEIRO. Nunca `new Date("...T...")`
+// sem fuso aqui: no servidor da Vercel (UTC) isso nasce 3 horas atrás, e a
+// agenda passa a recusar remarcação dizendo "horário no passado". Ver o
+// comentário grande em `src/lib/dates.ts`.
+import { instantFromBrazil, startOfDayInBrazil, weekdayOf } from "@/lib/dates";
 import {
   missingClientFields,
   missingSummary,
@@ -159,7 +164,7 @@ function parseAppointmentForm(
     return { error: "Escolha o profissional responsável." };
   }
 
-  const startsAt = new Date(`${date}T${time}:00`);
+  const startsAt = instantFromBrazil(date, time);
   if (Number.isNaN(startsAt.getTime())) {
     return { error: "Data ou horário inválido." };
   }
@@ -298,11 +303,11 @@ export async function checkParticipantsBusy(params: {
   await getSessionContext();
   const { clinicId, date, time, durationMin, participantIds, excludeId } = params;
   if (participantIds.length === 0 || !clinicId || !date || !time) return [];
-  const start = new Date(`${date}T${time}:00`);
+  const start = instantFromBrazil(date, time);
   if (Number.isNaN(start.getTime())) return [];
   const end = new Date(start.getTime() + durationMin * 60_000);
   const supabase = await createClient();
-  const dayStart = new Date(`${date}T00:00:00`);
+  const dayStart = startOfDayInBrazil(date);
   const dayEnd = new Date(dayStart.getTime() + 86_400_000);
   const active = (s: string) => s !== "cancelled" && s !== "no_show";
   const overlaps = (s: string, e: string) =>
@@ -366,7 +371,7 @@ async function checkAgendaRules(
   if (!date || !time) return {};
 
   const supabase = await createClient();
-  const startDate = new Date(`${date}T${time}:00`);
+  const startDate = instantFromBrazil(date, time);
   const startMs = startDate.getTime();
   const endMs = startMs + durationMin * 60000;
   // AJ2: acumula um alerta quando o atendimento é permitido mas extrapola.
@@ -464,7 +469,7 @@ async function checkAgendaRules(
 
   // A day is open for scheduling if it's a configured weekday, OR a special
   // open day (G5), OR a holiday the manager decided to attend.
-  const weekday = new Date(`${date}T00:00:00`).getDay();
+  const weekday = weekdayOf(date);
   const dayOpen =
     cfg.weekdays.includes(weekday) ||
     Boolean(openDay) ||
@@ -530,12 +535,12 @@ async function checkAgendaRules(
 
   // Room occupancy: a room attends one client at a time. ONLINE skips this.
   if (!isOnline && roomId) {
-    const startDate = new Date(`${date}T${time}:00`);
+    const startDate = instantFromBrazil(date, time);
     const startISO = startDate.toISOString();
     const endISO = new Date(startDate.getTime() + durationMin * 60000).toISOString();
-    const dayStartIso = new Date(`${date}T00:00:00`).toISOString();
+    const dayStartIso = startOfDayInBrazil(date).toISOString();
     const dayEndIso = new Date(
-      new Date(`${date}T00:00:00`).getTime() + 86400000
+      startOfDayInBrazil(date).getTime() + 86400000
     ).toISOString();
     const { data: appts } = await supabase
       .from("appointments")
@@ -1632,11 +1637,12 @@ export async function getDayBusyTimes(params: {
   await getSessionContext();
   const supabase = await createClient();
 
-  const start = new Date(`${params.date}T00:00:00`);
+  const start = startOfDayInBrazil(params.date);
   if (Number.isNaN(start.getTime()))
     return { providerBusy: [], clientBusy: [], roomBusy: [] };
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+  // 24 horas exatas, não `setDate(+1)`: `setDate` anda no fuso da máquina, que
+  // é justamente o que não pode mandar aqui.
+  const end = new Date(start.getTime() + 86_400_000);
 
   const active = (s: string) => s !== "cancelled" && s !== "no_show";
 
@@ -1945,11 +1951,12 @@ export async function openSpecialDays(
   // horário normal (começar antes ou terminar depois). Não adianta "liberar" o
   // que já é atendido normalmente.
   const noopDate = cleanDates.find((d) => {
-    const wd = new Date(`${d}T00:00:00`).getDay();
+    const wd = weekdayOf(d);
     return cfg.weekdays.includes(wd) && startMin >= normalOpen && endMin <= normalClose;
   });
   if (noopDate) {
-    const dd = new Date(`${noopDate}T00:00:00`).toLocaleDateString("pt-BR");
+    const [aa, mm, dia] = noopDate.split("-");
+    const dd = `${dia}/${mm}/${aa}`;
     return {
       ok: false,
       error: `Em ${dd} esse horário já é atendido normalmente. Para estender, comece antes de ${cfg.openTime} ou termine depois de ${cfg.closeTime}.`,
@@ -2313,8 +2320,10 @@ export async function getNextAvailableSlots(params: {
       ) {
         continue;
       }
-      const startMs = new Date(`${dateOnly}T${minutesToHHMM(m)}:00`).getTime();
+      const startMs = instantFromBrazil(dateOnly, minutesToHHMM(m)).getTime();
       const endMs = startMs + durationMin * 60_000;
+      // Sem a conversão certa, os horários das próximas 3 horas sumiam da lista
+      // de opções — eles nasciam no passado.
       if (startMs < nowMs) continue;
 
       const closed = closures.some((c) =>

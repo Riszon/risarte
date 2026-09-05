@@ -16,6 +16,7 @@ import {
   type PlanItemRow,
 } from "@/lib/annual-plan";
 import { holidayOn } from "@/lib/holidays";
+import { instantFromBrazil, startOfDayInBrazil } from "@/lib/dates";
 import { DayStripView, type StripDay } from "./day-strip-view";
 
 // AJ10: faixa longa — 1 mês de passado (histórico) e ~1 ano à frente; rolável.
@@ -222,9 +223,9 @@ export async function DayStrip({
 
     // AJ10: fechamentos do dia — total da unidade (mostra o MOTIVO, não "lotado")
     // x parcial (sala/profissional/período → alerta de atenção).
-    const dayStartMs = new Date(`${iso}T00:00:00`).getTime();
-    const dayOpenMs = new Date(`${iso}T${minutesToHHMM(openMin)}:00`).getTime();
-    const dayCloseMs = new Date(`${iso}T${minutesToHHMM(closeMin)}:00`).getTime();
+    const dayStartMs = startOfDayInBrazil(iso).getTime();
+    const dayOpenMs = instantFromBrazil(iso, minutesToHHMM(openMin)).getTime();
+    const dayCloseMs = instantFromBrazil(iso, minutesToHHMM(closeMin)).getTime();
     const dayClosures = closures.filter(
       (c) =>
         new Date(c.startsAt).getTime() < dayCloseMs &&
@@ -248,8 +249,10 @@ export async function DayStrip({
       hasFree = false;
       for (let m = openMin; m + 15 <= closeMin && !hasFree; m += 15) {
         if (cfg.lunchEnabled && m < lunchEnd && m + 15 > lunchStart) continue;
-        const startMs = new Date(`${iso}T${minutesToHHMM(m)}:00`).getTime();
+        const startMs = instantFromBrazil(iso, minutesToHHMM(m)).getTime();
         const endMs = startMs + 15 * 60_000;
+        // Sem a conversão certa, a faixa marcava o dia inteiro de hoje como
+        // "sem vaga" — todos os horários nasciam no passado.
         if (startMs < nowMs) continue;
 
         const slotClosures = closures.filter((c) => {

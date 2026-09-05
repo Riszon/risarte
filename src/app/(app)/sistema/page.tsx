@@ -9,6 +9,7 @@ import { canViewStock } from "@/lib/stock-access";
 import { APP_VERSION, LATEST_MIGRATION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { Novidades } from "./novidades";
+import { PainelDoRelogio } from "./relogio";
 import { Problemas, type Relato } from "./problemas";
 import { Alertas, type Alerta } from "./alertas";
 
@@ -194,6 +195,15 @@ export default async function SistemaPage({
           .
         </p>
       </header>
+
+      {/* O relógio fica ACIMA das abas: vale para as três, e foi um defeito de
+          relógio que motivou esta tela existir na versão 0.227.0. */}
+      <PainelDoRelogio
+        servidorIso={new Date().toISOString()}
+        fusoDoServidor={
+          Intl.DateTimeFormat().resolvedOptions().timeZone || "desconhecido"
+        }
+      />
 
       <nav className="mb-6 flex gap-1 rounded-lg border bg-muted/40 p-1">
         {ABAS.map(({ chave, rotulo, icone: Icone }) => (

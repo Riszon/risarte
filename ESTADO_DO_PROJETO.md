@@ -1,6 +1,59 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/09/2026 · Versão do sistema: **0.226.0** · Última migração: **0247**_
+_Atualizado em: 05/09/2026 · Versão do sistema: **0.227.0** · Última migração: **0247**_
+
+> ### ⚠️ O RELÓGIO DA AGENDA ESTAVA 3 HORAS ADIANTADO (v0.227.0, sem migração)
+>
+> Achado pelo dono no ambiente de teste: *"estava tentando mudar horário e o
+> sistema acusando que já era um horário passado, e na verdade não era"*.
+>
+> **A causa.** `new Date("2026-09-05T14:00:00")` — texto sem fuso — é lido no
+> relógio da MÁQUINA. No computador do dono dá 14:00 no Brasil; **na Vercel
+> (UTC) vira 14:00Z, que são 11:00 aqui**. Todo horário digitado nascia 3 horas
+> atrás.
+>
+> **Três sintomas da mesma causa**, e só um tinha sido notado:
+> 1. Agendar/remarcar nas próximas 3 horas → *"data/horário no passado"*.
+> 2. O que passava era **gravado 3 horas antes** do combinado.
+> 3. Os horários livres das próximas 3 horas **sumiam** da lista; e a faixa de
+>    dias marcava o dia de hoje como sem vaga.
+>
+> **O que torna este defeito caro: ele não existe na máquina de quem programa.**
+> Local, tudo funciona. Só quebra publicado — e a 0201 já tinha ensinado metade
+> da lição (o *dia*), sem alcançar a *hora*.
+>
+> **A correção.** `instantFromBrazil()` / `startOfDayInBrazil()` / `weekdayOf()`
+> em `src/lib/dates.ts`, com o deslocamento vindo do `Intl` e **não de um −3
+> cravado** — se o horário de verão voltar, um número fixo erraria por uma hora
+> durante meses. Onze testes, comparando com instantes absolutos, e **a suíte
+> inteira roda também com `TZ=UTC`**.
+>
+> **E um guarda para não voltar:** `dates.test.ts` varre `src/app` e reprova as
+> duas formas do defeito (hora vinda de variável; fronteira de dia virando
+> instante). A primeira versão da régua acusou 10 arquivos, incluindo código
+> correto — foi afiada até acusar só os 2 que quebravam de verdade
+> (`agenda/day-strip.tsx` e `relatorios/page.tsx`, achados por ela).
+>
+> **Sem reparo de dados: a produção tinha ZERO agendamentos** (conferido no
+> banco antes de mexer). O que existia no banco de teste é dado de teste.
+>
+> **Fora da agenda, o mesmo defeito estava nos filtros de período** de
+> Relatórios, Centro de Planejamento e painel do Comercial: começavam às 21h do
+> dia anterior e cortavam a tarde do último dia.
+>
+> **Limite declarado:** `src/lib/agenda-view.ts` (contas de semana/mês) ainda
+> usa o relógio da máquina. Não afeta a operação — a agenda abre entre 8h e 19h,
+> dentro da janela em qualquer dos dois fusos — e o dia de referência passou a
+> ser ancorado ao **meio-dia**, que nenhum deslocamento de 3 horas empurra para
+> o dia vizinho. Limpar aquele módulo é tarefa à parte: ele é compartilhado com
+> o navegador.
+>
+> **E o relógio ficou visível** (pedido do dono no mesmo dia): data e hora no
+> rodapé da barra lateral, **sempre no horário de Brasília** — não no do
+> aparelho, porque é o de Brasília que decide tudo. Em *Sistema* há o painel de
+> relógio, que compara o computador com o servidor e **avisa quando a diferença
+> passa de 2 minutos**: computador com hora errada faz horários parecerem
+> passados sem que o sistema tenha culpa.
 
 > **COMPRAS C4 — O PAINEL (v0.219.0, migração 0243). MÓDULO COMPRAS COMPLETO.**
 > Em Compras › Painel de compras.

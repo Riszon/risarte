@@ -62,6 +62,48 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.227.0",
+    data: "2026-09-05",
+    migracao: null,
+    titulo: "O relógio da agenda estava 3 horas adiantado",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A agenda recusava marcar ou remarcar para as próximas 3 horas dizendo que o horário “já passou” — e não tinha passado. O horário digitado era entendido no fuso do servidor, que fica 3 horas à frente do Brasil.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Pelo mesmo motivo, os horários livres das próximas 3 horas sumiam da lista de opções, e quem abrisse a agenda depois das 21h caía no dia seguinte.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A barra lateral passou a mostrar a data e a hora, sempre no horário de Brasília — que é o que o sistema usa para tudo.",
+        papeis: "todos",
+        manual: "2. Início rápido",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Sistema há agora um painel de relógio que avisa se a hora do SEU computador está errada — computador com relógio torto faz horários parecerem passados sem que o sistema tenha culpa.",
+        papeis: "todos",
+        manual: "15.4. Relógio",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Agendamentos criados antes desta correção podem estar gravados 3 horas antes do combinado. Confira a agenda dos próximos dias antes de confiar nela.",
+        papeis: "todos",
+        manual: "9. Erros, falhas e mau funcionamento",
+      },
+    ],
+  },
+  {
     versao: "0.226.0",
     data: "2026-09-04",
     migracao: "0247",

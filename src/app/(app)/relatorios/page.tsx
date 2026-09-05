@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { instantFromBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
@@ -63,8 +64,10 @@ function periodRange(
   }
   if (periodo === "periodo") {
     return {
-      from: de ? new Date(`${de}T00:00:00`).toISOString() : null,
-      to: ate ? new Date(`${ate}T23:59:59`).toISOString() : null,
+      // Dias BRASILEIROS: no servidor em UTC o período começava às 21h do dia
+      // anterior e terminava às 21h do último dia — cortando a tarde dele.
+      from: de ? instantFromBrazil(de, "00:00").toISOString() : null,
+      to: ate ? instantFromBrazil(ate, "23:59:59").toISOString() : null,
     };
   }
   return { from: null, to: null };

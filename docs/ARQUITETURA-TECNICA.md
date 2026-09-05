@@ -321,6 +321,18 @@ lê**, e a camada 2 procura exatamente marcas de erro na página.
   nome da FK: `clinics!clients_clinic_id_fkey ( name )`.
 - **Contagem de dias inteiros** usa subtração de data `(now()::date - col::date)`,
   NÃO `extract(day from interval)` (que só devolve o componente "dia").
+- **`new Date("2026-09-05T14:00:00")` É LIDO NO FUSO DA MÁQUINA.** No
+  computador do dono dá 14:00 no Brasil; na Vercel (UTC) vira 14:00Z, que é
+  **11:00 aqui**. Achado em 05/09/2026, com três sintomas de uma vez: a agenda
+  recusava remarcar para as próximas 3 horas dizendo *"horário no passado"*, o
+  que passava era **gravado 3 horas antes**, e os horários livres das próximas
+  3 horas sumiam da lista. **O defeito não existe na máquina de quem programa —
+  só onde o sistema roda de verdade**, que é a forma mais cara de defeito.
+  Hora de negócio é **relógio de parede brasileiro**: usar
+  `instantFromBrazil()` / `startOfDayInBrazil()` / `weekdayOf()`
+  (`src/lib/dates.ts`), nunca `new Date` com texto montado. **Há teste que
+  varre `src/app` e reprova as duas formas** (`dates.test.ts`) — só código de
+  servidor, porque no navegador o fuso é o da pessoa.
 - **Nunca editar arquivo-fonte com PowerShell `-replace`** (corrompe acentos
   UTF-8) — reescrever com a ferramenta Write.
 - **`$$` no texto de substituição do `String.replace` do JS vira UM `$`.** Um
