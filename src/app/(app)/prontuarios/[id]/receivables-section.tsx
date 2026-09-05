@@ -62,6 +62,7 @@ import {
   setRenegotiationStep,
 } from "./receivables-actions";
 import { RenegotiationDialog } from "./renegotiation-dialog";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const STATUS_STYLE: Record<InstallmentStatus, string> = {
   em_aberto: "border-border bg-muted text-muted-foreground",
@@ -846,7 +847,7 @@ export function ReceivablesSection({
                     {sale.kind === "direct_sale"
                       ? "Venda direta"
                       : "Plano de tratamento"}{" "}
-                    · {new Date(sale.createdAt).toLocaleDateString("pt-BR")}
+                    · {new Date(sale.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                   </p>
                   <ul className="space-y-1">
                     {sale.items.map((it, i) => (
@@ -943,7 +944,7 @@ export function ReceivablesSection({
                   <p className="text-xs text-muted-foreground">
                     <span className="font-mono">{reneg.code ?? "—"}</span> ·
                     Renegociação ·{" "}
-                    {new Date(reneg.createdAt).toLocaleDateString("pt-BR")}
+                    {new Date(reneg.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     {reneg.byName && ` · ${reneg.byName}`}
                   </p>
                   <ul className="space-y-0.5 text-xs tabular-nums">
@@ -1122,7 +1123,7 @@ export function ReceivablesSection({
                         {r.code}
                       </span>
                     )}
-                    {new Date(r.createdAt).toLocaleDateString("pt-BR")}
+                    {new Date(r.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     {r.byName && ` · ${r.byName}`}
                   </span>
                   <Badge variant="outline" className="text-[10px]">

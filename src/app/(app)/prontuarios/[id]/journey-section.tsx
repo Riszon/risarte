@@ -50,6 +50,7 @@ import {
   setJourneyStatus,
   setTreatmentPillar,
 } from "../../jornada/actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type HistoryEntry = {
   id: string;
@@ -270,7 +271,7 @@ export function JourneySection({
                 <span className="font-medium">{PHASE_LABELS[entry.phase]}</span>{" "}
                 <span className="text-xs text-muted-foreground">
                   —{" "}
-                  {new Date(entry.entered_at).toLocaleString("pt-BR", {
+                  {new Date(entry.entered_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -295,7 +296,7 @@ export function JourneySection({
               <ul className="space-y-1">
                 {futureAppointments.map((a) => (
                   <li key={a.id} className="text-sm">
-                    {new Date(a.starts_at).toLocaleString("pt-BR", {
+                    {new Date(a.starts_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       day: "2-digit",
                       month: "2-digit",
                       hour: "2-digit",
@@ -318,7 +319,7 @@ export function JourneySection({
               <ul className="space-y-1">
                 {pastAppointments.slice(0, 5).map((a) => (
                   <li key={a.id} className="text-sm">
-                    {new Date(a.starts_at).toLocaleDateString("pt-BR")} —{" "}
+                    {new Date(a.starts_at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} —{" "}
                     {APPOINTMENT_TYPE_LABELS[a.type]}{" "}
                     <span className="text-xs text-muted-foreground">
                       ({APPOINTMENT_STATUS_LABELS[a.status]})

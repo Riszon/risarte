@@ -44,6 +44,7 @@ import {
   saveBankAccount,
   unreconcileTransaction,
 } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ImportRow = {
   id: string;
@@ -477,7 +478,7 @@ export function ReconciliationBoard({
                 )}
               >
                 <span>
-                  {new Date(imp.createdAt).toLocaleDateString("pt-BR")} ·{" "}
+                  {new Date(imp.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} ·{" "}
                   {imp.fileName ?? "(sem nome)"} ·{" "}
                   {imp.format.toUpperCase()}
                   <span className="block text-[11px] text-muted-foreground">

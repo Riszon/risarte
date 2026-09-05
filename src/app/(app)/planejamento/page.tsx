@@ -4,7 +4,14 @@ import { redirect } from "next/navigation";
 import { Info } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { instantFromBrazil } from "@/lib/dates";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  instantFromBrazil,
+  startOfDayInBrazil,
+  todayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -73,22 +80,23 @@ function periodRange(
   de: string,
   ate: string
 ): { from: string | null; to: string | null } {
-  const now = new Date();
+  // ⚠️ Dia, semana e mês em datas BRASILEIRAS. `setHours` e
+  // `new Date(ano, mês, 1)` usam o relógio da máquina — UTC no servidor —, e aí
+  // "hoje" começava às 21h de ontem.
+  const hoje = todayInBrazil();
   if (periodo === "dia") {
-    const s = new Date(now);
-    s.setHours(0, 0, 0, 0);
-    return { from: s.toISOString(), to: null };
+    return { from: startOfDayInBrazil(hoje).toISOString(), to: null };
   }
   if (periodo === "semana") {
-    const s = new Date(now);
-    const diff = (s.getDay() + 6) % 7; // days since Monday
-    s.setDate(s.getDate() - diff);
-    s.setHours(0, 0, 0, 0);
-    return { from: s.toISOString(), to: null };
+    const desdeSegunda = (weekdayOf(hoje) + 6) % 7;
+    return {
+      from: startOfDayInBrazil(addDaysIso(hoje, -desdeSegunda)).toISOString(),
+      to: null,
+    };
   }
   if (periodo === "mes") {
     return {
-      from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      from: startOfDayInBrazil(`${hoje.slice(0, 7)}-01`).toISOString(),
       to: null,
     };
   }
@@ -104,7 +112,7 @@ function periodRange(
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

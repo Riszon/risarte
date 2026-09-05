@@ -60,6 +60,7 @@ import {
   useCardDrag,
   type DropTarget,
 } from "./agenda-drag";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const SLOT_MIN = 15; // 15-minute granularity (ticks).
 const SLOT_PX = 18; // height of one 15-min slot.
@@ -306,7 +307,7 @@ export function DayRoomGrid({
 
   function closureTimeLabel(c: AgendaClosure): string {
     const fmt = (iso: string) =>
-      new Date(iso).toLocaleString("pt-BR", {
+      new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
         day: "2-digit",
         month: "2-digit",
         hour: "2-digit",
@@ -572,7 +573,7 @@ export function DayRoomGrid({
             {appointment.needs_reschedule && (
               <AlertTriangle className="size-3 shrink-0 text-red-600" />
             )}
-            {new Date(appointment.starts_at).toLocaleTimeString("pt-BR", {
+            {new Date(appointment.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
               hour: "2-digit",
               minute: "2-digit",
             })}
@@ -705,7 +706,7 @@ export function DayRoomGrid({
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">
-        {day.toLocaleDateString("pt-BR", {
+        {day.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
           weekday: "long",
           day: "2-digit",
           month: "long",
@@ -907,7 +908,7 @@ export function DayRoomGrid({
                           toast.warning(
                             `Agenda fechada (${CLOSURE_REASON_LABELS[blocking.reason]}) até ${new Date(
                               blocking.endsAt
-                            ).toLocaleString("pt-BR", {
+                            ).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                               day: "2-digit",
                               month: "2-digit",
                               hour: "2-digit",
@@ -985,7 +986,7 @@ export function DayRoomGrid({
                 clientName: pending.appt.clients?.full_name ?? "Cliente",
                 fromLabel: `${new Date(
                   pending.appt.starts_at
-                ).toLocaleTimeString("pt-BR", {
+                ).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                   hour: "2-digit",
                   minute: "2-digit",
                 })} · ${placeLabel(pending.appt)}`,

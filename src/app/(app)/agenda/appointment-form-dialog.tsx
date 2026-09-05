@@ -56,6 +56,7 @@ import {
   type SchedulingInfo,
 } from "./actions";
 import { AgendaPeekDialog } from "./agenda-peek-dialog";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const DURATION_ITEMS = [
   { value: "15", label: "15 minutos" },
@@ -1254,7 +1255,7 @@ export function AppointmentFormDialog({
                       onClick={() => doSubmit(s.date, s.time)}
                       className="rounded-full border bg-background px-2.5 py-1 text-xs hover:border-primary hover:bg-primary/5"
                     >
-                      {new Date(`${s.date}T00:00:00`).toLocaleDateString("pt-BR", {
+                      {new Date(`${s.date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                         weekday: "short",
                         day: "2-digit",
                         month: "2-digit",

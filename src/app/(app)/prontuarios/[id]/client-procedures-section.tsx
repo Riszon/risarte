@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { requestSessionScheduling } from "./treatment-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProcedureSession = {
   id: string;
@@ -45,10 +46,10 @@ const selectClass =
   "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR");
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

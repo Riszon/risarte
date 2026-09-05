@@ -16,7 +16,11 @@ import {
   type PlanItemRow,
 } from "@/lib/annual-plan";
 import { holidayOn } from "@/lib/holidays";
-import { instantFromBrazil, startOfDayInBrazil } from "@/lib/dates";
+import {
+  instantFromBrazil,
+  startOfDayInBrazil,
+  startOfTodayInBrazil,
+} from "@/lib/dates";
 import { DayStripView, type StripDay } from "./day-strip-view";
 
 // AJ10: faixa longa — 1 mês de passado (histórico) e ~1 ano à frente; rolável.
@@ -46,8 +50,7 @@ export async function DayStrip({
   selectedIso: string | null;
   salas?: string;
 }) {
-  const winStart = new Date();
-  winStart.setHours(0, 0, 0, 0);
+  const winStart = startOfTodayInBrazil();
   winStart.setDate(winStart.getDate() - PAST_DAYS);
   const winEnd = new Date(winStart);
   winEnd.setDate(winEnd.getDate() + TOTAL_DAYS);

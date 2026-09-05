@@ -4,6 +4,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PPR_STATUS_LABELS, type PprStatus } from "@/lib/ppr/constants";
 import { PrintButton } from "../../adesoes/[id]/contrato/print-button";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cartão do beneficiário — PPR+" };
 
@@ -121,7 +122,7 @@ export default async function PprCardPage(
 
           <p className="mt-2 text-[9px] leading-tight text-white/50">
             {membership?.activated_at
-              ? `Beneficiário desde ${new Date(membership.activated_at).toLocaleDateString("pt-BR")}`
+              ? `Beneficiário desde ${new Date(membership.activated_at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`
               : "Aguardando ativação"}{" "}
             · benefícios válidos em toda a rede Risarte
           </p>

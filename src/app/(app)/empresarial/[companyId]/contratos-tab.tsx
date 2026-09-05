@@ -24,6 +24,7 @@ import {
   markContractSigned,
   sendContract,
 } from "./contract-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ContractView = {
   id: string;
@@ -111,7 +112,7 @@ export function ContratosTab({
                 <p className="text-xs text-muted-foreground">
                   {c.signerName ? `Assinante: ${c.signerName}` : "Sem assinante"}
                   {c.signedAt &&
-                    ` · assinado em ${new Date(c.signedAt).toLocaleDateString("pt-BR")}`}
+                    ` · assinado em ${new Date(c.signedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
                 </p>
                 {c.zapsignUrl && (
                   <a

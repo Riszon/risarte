@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { registrarProblema, responderProblema } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type Relato = {
   id: string;
@@ -61,7 +62,7 @@ const GRAVIDADE: Record<Relato["severity"], string> = {
 };
 
 function quando(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

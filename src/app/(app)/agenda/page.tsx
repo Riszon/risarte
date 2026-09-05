@@ -33,7 +33,13 @@ import {
 import type { UserRole } from "@/lib/roles";
 import { roomLabel } from "@/lib/rooms";
 import { effectiveDayHours } from "@/lib/agenda-settings";
-import { instantFromBrazil, todayInBrazil } from "@/lib/dates";
+import {
+  addDaysIso,
+  instantFromBrazil,
+  isoDateIn,
+  startOfDayInBrazil,
+  todayInBrazil,
+} from "@/lib/dates";
 import type { JourneyPhase, MethodologyPillar } from "@/lib/journey";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import {
@@ -725,10 +731,15 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
     const cur = new Date(
       Math.max(new Date(c.startsAt).getTime(), range.start.getTime())
     );
-    cur.setHours(0, 0, 0, 0);
-    while (cur.getTime() < ce && cur.getTime() < range.end.getTime()) {
-      closedDates.push(toIsoDate(cur));
-      cur.setDate(cur.getDate() + 1);
+    // Os dias percorridos são dias BRASILEIROS: `setHours` + `toIsoDate` usam
+    // o relógio da máquina, e no servidor (UTC) o fechamento podia marcar o dia
+    // errado — ou marcar um dia a mais no fim.
+    let dia = isoDateIn(cur);
+    let inicio = startOfDayInBrazil(dia);
+    while (inicio.getTime() < ce && inicio.getTime() < range.end.getTime()) {
+      closedDates.push(dia);
+      dia = addDaysIso(dia, 1);
+      inicio = startOfDayInBrazil(dia);
     }
   }
 
@@ -736,14 +747,12 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   // overrides that date.
   const unitPlan = planItems.filter((i) => UNIT_BLOCKING_TYPES.includes(i.type));
   {
-    const cur = new Date(range.start);
-    cur.setHours(0, 0, 0, 0);
-    while (cur.getTime() < range.end.getTime()) {
-      const iso = toIsoDate(cur);
+    let iso = isoDateIn(range.start);
+    while (startOfDayInBrazil(iso).getTime() < range.end.getTime()) {
       if (!openDayDates.includes(iso) && unitPlan.some((i) => itemCoversDate(i, iso))) {
         closedDates.push(iso);
       }
-      cur.setDate(cur.getDate() + 1);
+      iso = addDaysIso(iso, 1);
     }
   }
   const dayPlanItem = unitPlan.find((i) => itemCoversDate(i, dayIso));

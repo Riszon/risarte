@@ -47,6 +47,7 @@ import {
   PresentationWorkspace,
   type PresentationData,
 } from "./presentation-workspace";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cockpit do Consultor Comercial" };
 
@@ -362,7 +363,7 @@ export default async function CommercialCockpitPage(
                           Plano {plans.length - i}
                         </span>{" "}
                         <span className="text-xs text-muted-foreground">
-                          · {new Date(p.createdAt).toLocaleDateString("pt-BR")} ·{" "}
+                          · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} ·{" "}
                           {p.options.find((o) => o.isPrimary)?.items.length ?? 0}{" "}
                           procedimento(s)
                         </span>

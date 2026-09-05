@@ -22,6 +22,7 @@ import type { AgendaAppointment } from "../../agenda/week-grid";
 import type { AgendaFormConfig } from "../../agenda/actions";
 import type { StaffOption } from "@/lib/appointments";
 import { suggestTreatmentSeries } from "./treatment-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type TreatmentSession = {
   id: string;
@@ -76,8 +77,8 @@ function todayIso(): string {
 /** H3.14: "DD/MM às HH:MM" a partir do horário do agendamento. */
 function formatWhen(iso: string): string {
   const d = new Date(iso);
-  const day = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-  const time = d.toLocaleTimeString("pt-BR", {
+  const day = d.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" });
+  const time = d.toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });

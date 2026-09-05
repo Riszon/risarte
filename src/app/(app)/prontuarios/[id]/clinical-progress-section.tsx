@@ -23,6 +23,7 @@ import {
   type ExtraSession,
 } from "./attendance-conclude-block";
 import { AttendanceClock, type WaitingClient } from "./attendance-clock";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProgressNoteItem = {
   id: string;
@@ -62,7 +63,7 @@ export type OpenAttendance = {
 };
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -72,7 +73,7 @@ function fmtDateTime(iso: string): string {
 }
 
 function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", {
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -179,7 +180,7 @@ export function ClinicalProgressSection({
             <p className="text-xs text-muted-foreground">
               Atendimento de{" "}
               <strong>
-                {new Date(attendance.startsAt).toLocaleString("pt-BR", {
+                {new Date(attendance.startsAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                   day: "2-digit",
                   month: "2-digit",
                   hour: "2-digit",

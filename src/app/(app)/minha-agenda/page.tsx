@@ -17,6 +17,15 @@ import {
   type AppointmentType,
   type AttendanceStatus,
 } from "@/lib/appointments";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  isoDateIn,
+  startOfDayInBrazil,
+  startOfDayOf,
+  startOfTodayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Minha Agenda" };
 
@@ -56,16 +65,15 @@ const ATTENDANCE_LABEL: Record<AttendanceStatus, string> = {
   gave_up: "Desistiu",
 };
 
+// A semana em dias BRASILEIROS: `setHours` zerava o relógio da máquina, e no
+// servidor (UTC) a semana começava às 21h de domingo.
 function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // segunda como início
-  d.setDate(d.getDate() + diff);
-  return d;
+  const iso = isoDateIn(date);
+  const dia = weekdayOf(iso);
+  return startOfDayInBrazil(addDaysIso(iso, dia === 0 ? -6 : 1 - dia));
 }
 function time(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", {
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -143,22 +151,25 @@ export default async function MinhaAgendaPage(props: PageProps<"/minha-agenda">)
     days.push({ date: d, items: [] });
   }
   for (const r of shown) {
+    // Em que coluna o agendamento cai: pelo DIA BRASILEIRO dele. Com
+    // `setHours` no servidor, um horário das 22h caía na coluna do dia
+    // seguinte.
     const idx = Math.floor(
-      (new Date(r.starts_at).setHours(0, 0, 0, 0) - weekStart.getTime()) /
+      (startOfDayOf(new Date(r.starts_at)).getTime() - weekStart.getTime()) /
         86400000
     );
     if (idx >= 0 && idx < 7) days[idx].items.push(r);
   }
 
-  const weekLabel = `${weekStart.toLocaleDateString("pt-BR", {
+  const weekLabel = `${weekStart.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
-  })} a ${new Date(weekEnd.getTime() - 864e5).toLocaleDateString("pt-BR", {
+  })} a ${new Date(weekEnd.getTime() - 864e5).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   })}`;
-  const todayKey = new Date().setHours(0, 0, 0, 0);
+  const todayKey = startOfTodayInBrazil().getTime();
   const params = (o: number, u: string) => {
     const sp = new URLSearchParams();
     if (o !== 0) sp.set("semana", String(o));
@@ -232,12 +243,12 @@ export default async function MinhaAgendaPage(props: PageProps<"/minha-agenda">)
 
       <div className="space-y-3">
         {days.map((d) => {
-          const isToday = d.date.setHours(0, 0, 0, 0) === todayKey;
+          const isToday = startOfDayOf(d.date).getTime() === todayKey;
           return (
             <Card key={d.date.toISOString()}>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm">
-                  {d.date.toLocaleDateString("pt-BR", {
+                  {d.date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     weekday: "long",
                     day: "2-digit",
                     month: "2-digit",

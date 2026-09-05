@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { PprBillingToolbar, PprChargeRow } from "./billing-client";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Mensalidades do PPR+" };
 
@@ -213,16 +214,16 @@ export default async function PprChargesPage(
                       competência{" "}
                       {new Date(`${c.reference_month}T00:00:00`).toLocaleDateString(
                         "pt-BR",
-                        { month: "2-digit", year: "numeric" }
+                        { timeZone: BRAZIL_TIME_ZONE, month: "2-digit", year: "numeric" }
                       )}
                     </span>
                     <span>
                       vence{" "}
-                      {new Date(`${c.due_date}T00:00:00`).toLocaleDateString("pt-BR")}
+                      {new Date(`${c.due_date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     </span>
                     {c.paid_at && (
                       <span className="text-emerald-700">
-                        pago em {new Date(c.paid_at).toLocaleDateString("pt-BR")}
+                        pago em {new Date(c.paid_at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                       </span>
                     )}
                   </p>

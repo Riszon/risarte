@@ -26,15 +26,16 @@ import { RisarteMark } from "@/components/risarte-logo";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { PprDrill, type PprDrillItem } from "./ppr-drill";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Painel do PPR+" };
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const monthKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
 const monthLabel = (d: Date) => `${MONTHS[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
-const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 const fmtDateTime = (s: string) =>
-  new Date(s).toLocaleString("pt-BR", {
+  new Date(s).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

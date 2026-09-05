@@ -24,6 +24,7 @@ import {
   registerEmployeeFile,
 } from "./document-actions";
 import { OpenFileButton } from "./documentos-tab";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -193,7 +194,7 @@ export function EmployeeFilesDialog({
                       f.fileType as keyof typeof EMPLOYEE_FILE_TYPE_LABELS
                     ] ?? f.fileType}{" "}
                     · {ownerLabel(f)} ·{" "}
-                    {new Date(f.createdAt).toLocaleDateString("pt-BR")}
+                    {new Date(f.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                   </p>
                 </div>
                 <span className="flex items-center gap-1">

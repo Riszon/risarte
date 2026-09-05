@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { AlertTriangle, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { agendaHref } from "@/lib/agenda-view";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type StripState =
   | "normal"
@@ -134,7 +135,7 @@ export function DayStripView({
               </span>
               {/* AJ10: mês em TODOS os dias (facilita saber o mês ao rolar). */}
               <span className="text-[9px] capitalize leading-tight text-muted-foreground">
-                {date.toLocaleDateString("pt-BR", { month: "short" })}
+                {date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, month: "short" })}
               </span>
               {blocked ? (
                 <span className="mt-0.5 flex max-w-[3.2rem] items-center gap-0.5 truncate text-[9px] font-medium leading-tight">

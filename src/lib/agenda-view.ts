@@ -1,5 +1,25 @@
 // Agenda views (B1): Dia / Semana / Mês. Shared range + navigation helpers used
 // by the unit agenda and the consolidated network agenda.
+//
+// ⚠️ OS RÓTULOS SAEM NO FUSO DE BRASÍLIA, sempre. Este módulo roda nos dois
+// lados: no navegador (fuso da pessoa) e no servidor (UTC, na Vercel). Sem o
+// `timeZone` explícito o mesmo período viraria dois textos diferentes — e foi
+// assim que a Auditoria mostrou "15:07" às 12:07 (05/09/2026).
+//
+// As FRONTEIRAS de dia/semana/mês também são brasileiras. Antes vinham de
+// `setHours(0,0,0,0)`, que zera o relógio da máquina: no servidor em UTC a
+// janela do dia ia das 21h de ontem às 21h de hoje, então um atendimento às
+// 21h30 não aparecia na agenda daquele dia. No navegador da equipe o valor não
+// muda — meia-noite em Brasília é a mesma meia-noite —, então o desenho da
+// grade continua idêntico.
+
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  isoDateIn,
+  startOfDayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 
 export type AgendaView = "dia" | "semana" | "mes";
 
@@ -13,20 +33,16 @@ export function isAgendaView(v: string): v is AgendaView {
   return v === "dia" || v === "semana" || v === "mes";
 }
 
+/** A data civil BRASILEIRA deste instante, "AAAA-MM-DD". */
 export function toIsoDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
+  return isoDateIn(d);
 }
 
-/** Monday as the first day of the week. */
+/** Monday as the first day of the week — em dias brasileiros. */
 export function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0 = sunday
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d;
+  const iso = isoDateIn(date);
+  const dia = weekdayOf(iso); // 0 = domingo
+  return startOfDayInBrazil(addDaysIso(iso, dia === 0 ? -6 : 1 - dia));
 }
 
 /** Total de semanas ISO no ano (52 ou 53). 28/dez está sempre na última semana. */
@@ -57,22 +73,21 @@ export type AgendaRange = {
 };
 
 export function agendaRange(view: AgendaView, ref: Date): AgendaRange {
+  const meiaNoite = (iso: string) => startOfDayInBrazil(iso);
+
   if (view === "dia") {
-    const start = new Date(ref);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    const prev = new Date(start);
-    prev.setDate(prev.getDate() - 1);
-    const next = new Date(start);
-    next.setDate(next.getDate() + 1);
+    const iso = isoDateIn(ref);
+    const start = meiaNoite(iso);
+    const end = meiaNoite(addDaysIso(iso, 1));
+    const prev = meiaNoite(addDaysIso(iso, -1));
+    const next = meiaNoite(addDaysIso(iso, 1));
     return {
       start,
       end,
       prev,
       next,
       dayCount: 1,
-      label: start.toLocaleDateString("pt-BR", {
+      label: start.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
         weekday: "long",
         day: "2-digit",
         month: "long",
@@ -82,17 +97,23 @@ export function agendaRange(view: AgendaView, ref: Date): AgendaRange {
     };
   }
   if (view === "mes") {
-    const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
-    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
-    const prev = new Date(ref.getFullYear(), ref.getMonth() - 1, 1);
-    const next = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
+    // O dia 1 do mês, do anterior e do seguinte — sempre em data brasileira.
+    // Somar 31 dias e voltar ao dia 1 acerta em qualquer mês, fevereiro
+    // inclusive; recuar 1 dia a partir do dia 1 cai no mês anterior.
+    const primeiro = `${isoDateIn(ref).slice(0, 7)}-01`;
+    const seguinte = `${addDaysIso(primeiro, 31).slice(0, 7)}-01`;
+    const anterior = `${addDaysIso(primeiro, -1).slice(0, 7)}-01`;
+    const start = meiaNoite(primeiro);
+    const end = meiaNoite(seguinte);
+    const prev = meiaNoite(anterior);
+    const next = meiaNoite(seguinte);
     return {
       start,
       end,
       prev,
       next,
       dayCount: 0,
-      label: start.toLocaleDateString("pt-BR", {
+      label: start.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
         month: "long",
         year: "numeric",
       }),
@@ -100,24 +121,22 @@ export function agendaRange(view: AgendaView, ref: Date): AgendaRange {
     };
   }
   // semana
-  const start = startOfWeek(ref);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 7);
-  const prev = new Date(start);
-  prev.setDate(prev.getDate() - 7);
-  const next = new Date(start);
-  next.setDate(next.getDate() + 7);
-  const last = new Date(end.getTime() - 86400000);
+  const segunda = isoDateIn(startOfWeek(ref));
+  const start = meiaNoite(segunda);
+  const end = meiaNoite(addDaysIso(segunda, 7));
+  const prev = meiaNoite(addDaysIso(segunda, -7));
+  const next = meiaNoite(addDaysIso(segunda, 7));
+  const last = meiaNoite(addDaysIso(segunda, 6));
   return {
     start,
     end,
     prev,
     next,
     dayCount: 7,
-    label: `${start.toLocaleDateString("pt-BR", {
+    label: `${start.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       day: "2-digit",
       month: "short",
-    })} – ${last.toLocaleDateString("pt-BR", {
+    })} – ${last.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       day: "2-digit",
       month: "short",
     })}`,

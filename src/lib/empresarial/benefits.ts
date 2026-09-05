@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "./db";
 import type { BenefitType } from "./constants";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProgramBenefit = {
   procedureId: string;
@@ -36,7 +37,7 @@ function addMonths(date: Date, months: number): Date {
   return d;
 }
 function fmt(d: Date): string {
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 
 type BenefitRow = {

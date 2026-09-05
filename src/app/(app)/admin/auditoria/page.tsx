@@ -11,6 +11,7 @@ import {
   auditActionLabel,
   auditEntityLabel,
 } from "@/lib/audit-labels";
+import { BRAZIL_TIME_ZONE, startOfTodayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Auditoria" };
 
@@ -34,9 +35,11 @@ const PERIODS: Record<string, number | null> = {
 function sinceFor(period: string): string | null {
   const days = PERIODS[period];
   if (days === null || days === undefined) return null;
-  const d = new Date();
+  // "Hoje" é o dia BRASILEIRO: `setHours` zera o relógio da máquina, e no
+  // servidor (UTC) o filtro pegava desde as 21h de ontem.
+  const d = startOfTodayInBrazil();
   if (days === 0) {
-    d.setHours(0, 0, 0, 0);
+    // já é o começo de hoje
   } else {
     d.setDate(d.getDate() - days);
   }
@@ -44,7 +47,7 @@ function sinceFor(period: string): string | null {
 }
 
 function fmt(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",

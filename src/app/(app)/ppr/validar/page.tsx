@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Validar cartão do PPR+" };
 
@@ -194,7 +195,7 @@ export default async function PprValidatePage(
               <strong>{PPR_STATUS_LABELS[result.status]}</strong>
               {result.left && " · este beneficiário saiu do plano"}
               {result.activatedAt &&
-                ` · ativo desde ${new Date(result.activatedAt).toLocaleDateString("pt-BR")}`}
+                ` · ativo desde ${new Date(result.activatedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
             </p>
 
             {ok && result.perks.length > 0 && (

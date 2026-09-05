@@ -32,6 +32,7 @@ import {
   PprMembershipActions,
   PprRemoveDependentButton,
 } from "./membership-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Adesão do PPR+" };
 
@@ -158,7 +159,7 @@ export default async function PprMembershipPage(
   const canManage = canManagePpr(roles, session.isAdminMaster);
 
   const day = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString("pt-BR") : null;
+    iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE }) : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 px-4 py-6">
@@ -409,7 +410,7 @@ export default async function PprMembershipPage(
                   <span className="flex flex-wrap items-center gap-2">
                     {new Date(
                       `${c.reference_month}T00:00:00`
-                    ).toLocaleDateString("pt-BR", {
+                    ).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       month: "2-digit",
                       year: "numeric",
                     })}
@@ -429,7 +430,7 @@ export default async function PprMembershipPage(
                       vence{" "}
                       {new Date(`${c.due_date}T00:00:00`).toLocaleDateString(
                         "pt-BR"
-                      )}
+                      , { timeZone: BRAZIL_TIME_ZONE })}
                     </span>
                   </span>
                   <span className="flex items-center gap-2">
@@ -470,7 +471,7 @@ export default async function PprMembershipPage(
               return (
                 <li key={e.id as string} className="flex flex-wrap gap-x-2">
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    {new Date(e.created_at as string).toLocaleString("pt-BR", {
+                    {new Date(e.created_at as string).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       dateStyle: "short",
                       timeStyle: "short",
                     })}

@@ -45,6 +45,7 @@ import { phaseTintStyle } from "@/components/phase-badge";
 import { updateAppointmentStatus, type AgendaFormConfig } from "./actions";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 import { AppointmentInfoDialog } from "./appointment-info-dialog";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type AgendaAppointment = {
   id: string;
@@ -257,12 +258,12 @@ export function WeekGrid({
             appointment.status === "cancelled" && "line-through"
           )}
         >
-          {new Date(appointment.starts_at).toLocaleTimeString("pt-BR", {
+          {new Date(appointment.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
             hour: "2-digit",
             minute: "2-digit",
           })}
           –
-          {new Date(appointment.ends_at).toLocaleTimeString("pt-BR", {
+          {new Date(appointment.ends_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
             hour: "2-digit",
             minute: "2-digit",
           })}{" "}
@@ -503,7 +504,7 @@ export function WeekGrid({
                   {WEEKDAY_LABELS[(date.getDay() + 6) % 7]}
                 </span>{" "}
                 <span className={isToday ? "" : "text-muted-foreground"}>
-                  {date.toLocaleDateString("pt-BR", {
+                  {date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     day: "2-digit",
                     month: "2-digit",
                   })}

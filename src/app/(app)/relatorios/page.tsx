@@ -10,7 +10,13 @@ import {
 } from "lucide-react";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { instantFromBrazil } from "@/lib/dates";
+import {
+  addDaysIso,
+  instantFromBrazil,
+  startOfDayInBrazil,
+  todayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
@@ -43,22 +49,22 @@ function periodRange(
   de: string,
   ate: string
 ): { from: string | null; to: string | null } {
-  const now = new Date();
+  // ⚠️ Dia, semana e mês em datas BRASILEIRAS — ver o comentário grande em
+  // `src/lib/dates.ts`. No servidor em UTC, "hoje" começava às 21h de ontem.
+  const hoje = todayInBrazil();
   if (periodo === "dia") {
-    const s = new Date(now);
-    s.setHours(0, 0, 0, 0);
-    return { from: s.toISOString(), to: null };
+    return { from: startOfDayInBrazil(hoje).toISOString(), to: null };
   }
   if (periodo === "semana") {
-    const s = new Date(now);
-    const diff = (s.getDay() + 6) % 7;
-    s.setDate(s.getDate() - diff);
-    s.setHours(0, 0, 0, 0);
-    return { from: s.toISOString(), to: null };
+    const desdeSegunda = (weekdayOf(hoje) + 6) % 7;
+    return {
+      from: startOfDayInBrazil(addDaysIso(hoje, -desdeSegunda)).toISOString(),
+      to: null,
+    };
   }
   if (periodo === "mes" || periodo === "") {
     return {
-      from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      from: startOfDayInBrazil(`${hoje.slice(0, 7)}-01`).toISOString(),
       to: null,
     };
   }

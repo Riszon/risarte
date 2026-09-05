@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientForm, type ClientFormValues } from "../client-form";
 import type { GuardianInput } from "../actions";
 import { genderLabel } from "@/lib/gender";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /** Rótulo de sub-seção dos dados (ícone dourado + título em maiúsculas). */
 function SectionLabel({
@@ -126,7 +127,7 @@ export function ClientDataSection({
                 client.birth_date
                   ? new Date(
                       `${client.birth_date}T00:00:00`
-                    ).toLocaleDateString("pt-BR")
+                    ).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
                   : "—"
               }
             />

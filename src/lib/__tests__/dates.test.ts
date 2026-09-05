@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { agendaRange } from "@/lib/agenda-view";
 import {
   brazilClock,
   instantFromBrazil,
@@ -154,6 +155,141 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
     // E não acusa o que é seguro: ler e escrever no mesmo fuso.
     expect(FORMAS[0].padrao.test('new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR")')).toBe(false);
     expect(FORMAS[1].padrao.test('new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR")')).toBe(false);
+  });
+});
+
+// ⚠️ O SEGUNDO GUARDA: exibir também tem fuso.
+//
+// Corrigir a CONTA não bastou. `data.toLocaleString("pt-BR")` formata no fuso da
+// máquina — e no servidor da Vercel isso é UTC. Foi assim que a Auditoria
+// mostrou "15:07" às 12:07, com o relógio novo da barra lateral ao lado
+// marcando a hora certa (achado do dono em 05/09/2026, com print).
+//
+// Aqui a régua vale para `src` INTEIRO, servidor e navegador. No navegador da
+// equipe o fuso já é o certo, mas deixar explícito protege quem abrir o sistema
+// de um computador configurado em outro lugar — e uma régua sem exceção é uma
+// régua que ninguém precisa lembrar de aplicar pela metade.
+describe("nenhuma data é exibida no fuso da máquina", () => {
+  const CHAVES_DE_DATA =
+    /\b(?:day|month|year|hour|minute|second|weekday|era|dateStyle|timeStyle|hour12|hourCycle)\s*:/;
+  const CHAVES_DE_NUMERO =
+    /\b(?:style\s*:\s*["'](?:currency|percent|decimal)["']|minimumFractionDigits|maximumFractionDigits|currency\s*:)/;
+
+  /** Índice do parêntese que fecha o que abre em `abre` (pulando textos). */
+  function fechamento(src: string, abre: number): number {
+    let nivel = 0;
+    for (let i = abre; i < src.length; i++) {
+      const c = src[i];
+      if (c === "'" || c === '"' || c === "`") {
+        const aspas = c;
+        i++;
+        while (i < src.length && src[i] !== aspas) {
+          if (src[i] === "\\") i++;
+          i++;
+        }
+        continue;
+      }
+      if (c === "(") nivel++;
+      else if (c === ")" && --nivel === 0) return i;
+    }
+    return -1;
+  }
+
+  function todosOsArquivos(raiz: string, achados: string[] = []): string[] {
+    for (const nome of readdirSync(raiz)) {
+      const caminho = join(raiz, nome);
+      if (statSync(caminho).isDirectory()) {
+        todosOsArquivos(caminho, achados);
+        continue;
+      }
+      if (/\.tsx?$/.test(nome) && !/__tests__/.test(caminho)) achados.push(caminho);
+    }
+    return achados;
+  }
+
+  function faltandoFuso(src: string): string[] {
+    const faltas: string[] = [];
+    const alvos = [
+      ".toLocaleDateString(",
+      ".toLocaleTimeString(",
+      "new Intl.DateTimeFormat(",
+      ".toLocaleString(",
+    ];
+    for (const alvo of alvos) {
+      let de = 0;
+      for (;;) {
+        const i = src.indexOf(alvo, de);
+        if (i === -1) break;
+        const abre = i + alvo.length - 1;
+        const fecha = fechamento(src, abre);
+        if (fecha === -1) break;
+        const args = src.slice(abre + 1, fecha);
+        de = fecha;
+
+        if (/timeZone/.test(args)) continue;
+        // `toLocaleString` também formata número (moeda) — aquilo não tem fuso.
+        const ehData =
+          alvo !== ".toLocaleString("
+            ? true
+            : CHAVES_DE_DATA.test(args) && !CHAVES_DE_NUMERO.test(args);
+        if (!ehData) continue;
+        faltas.push(`${alvo}${args.slice(0, 50).replace(/\s+/g, " ")}…`);
+      }
+    }
+    return faltas;
+  }
+
+  it("toda formatação de data/hora declara o fuso", () => {
+    const culpados: string[] = [];
+    for (const arquivo of todosOsArquivos("src")) {
+      for (const falta of faltandoFuso(readFileSync(arquivo, "utf8"))) {
+        culpados.push(`${arquivo.replace(/\\/g, "/")} → ${falta}`);
+      }
+    }
+    expect(
+      culpados,
+      `Use formatBrDateTime()/formatInBrazil() de @/lib/dates, ou passe timeZone:\n${culpados.join("\n")}`
+    ).toEqual([]);
+  });
+
+  it("a régua acusa o defeito e poupa a moeda", () => {
+    expect(faltandoFuso(`d.toLocaleString("pt-BR", { hour: "2-digit" })`)).toHaveLength(1);
+    expect(faltandoFuso(`d.toLocaleDateString("pt-BR")`)).toHaveLength(1);
+    expect(faltandoFuso(`v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })`)).toHaveLength(0);
+    expect(faltandoFuso(`d.toLocaleTimeString("pt-BR", { timeZone: X, hour: "2-digit" })`)).toHaveLength(0);
+  });
+});
+
+// A janela que a agenda consulta no banco. Antes vinha de `setHours(0,0,0,0)`
+// e, no servidor em UTC, ia das 21h de ontem às 21h de hoje: um atendimento às
+// 21h30 não aparecia na agenda daquele dia, e um das 22h de ontem aparecia.
+describe("a janela da agenda é o dia brasileiro", () => {
+  const refDoDia = instantFromBrazil("2026-09-05", "12:00");
+
+  it("o dia vai de meia-noite a meia-noite no Brasil", () => {
+    const r = agendaRange("dia", refDoDia);
+    expect(r.start.toISOString()).toBe("2026-09-05T03:00:00.000Z");
+    expect(r.end.toISOString()).toBe("2026-09-06T03:00:00.000Z");
+  });
+
+  it("a semana começa na segunda brasileira", () => {
+    // 05/09/2026 é sábado; a segunda daquela semana é 31/08.
+    const r = agendaRange("semana", refDoDia);
+    expect(r.start.toISOString()).toBe("2026-08-31T03:00:00.000Z");
+    expect(r.end.toISOString()).toBe("2026-09-07T03:00:00.000Z");
+  });
+
+  it("o mês começa no dia 1 brasileiro e fecha no dia 1 seguinte", () => {
+    const r = agendaRange("mes", refDoDia);
+    expect(r.start.toISOString()).toBe("2026-09-01T03:00:00.000Z");
+    expect(r.end.toISOString()).toBe("2026-10-01T03:00:00.000Z");
+  });
+
+  it("fevereiro não escapa da conta do mês seguinte", () => {
+    // O "+31 dias e volta ao dia 1" precisa acertar no mês mais curto.
+    const r = agendaRange("mes", instantFromBrazil("2026-02-10", "12:00"));
+    expect(r.start.toISOString()).toBe("2026-02-01T03:00:00.000Z");
+    expect(r.end.toISOString()).toBe("2026-03-01T03:00:00.000Z");
   });
 });
 

@@ -14,6 +14,7 @@ import {
 import { decideHoliday } from "../actions";
 import { deletePlanItem } from "./actions";
 import { PlanItemDialog } from "./plan-item-dialog";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 type ManagedItem = {
   id: string;
@@ -72,7 +73,7 @@ export function AnnualPlanManager({
   }
 
   const fmt = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR", {
+    new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

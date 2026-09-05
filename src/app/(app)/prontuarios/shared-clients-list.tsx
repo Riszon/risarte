@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { endClientShare } from "./[id]/share-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const REASON_LABELS: Record<string, string> = {
   urgency: "Urgência",
@@ -31,7 +32,7 @@ export type SharedEntry = {
 };
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

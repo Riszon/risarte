@@ -29,6 +29,7 @@ import {
   useCardDrag,
   type DropTarget,
 } from "./agenda-drag";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const SLOT_MIN = 15;
 const SLOT_PX = 16;
@@ -60,10 +61,10 @@ function isoOf(d: Date): string {
 /** Rótulo "Ter 12/07 14:00" para a confirmação de remarcação. */
 function dayTimeLabel(iso: string): string {
   const d = new Date(iso);
-  return `${WEEKDAY_LABELS[(d.getDay() + 6) % 7]} ${d.toLocaleDateString("pt-BR", {
+  return `${WEEKDAY_LABELS[(d.getDay() + 6) % 7]} ${d.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
-  })} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  })} ${d.toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function assignLanes(appts: AgendaAppointment[]) {
@@ -332,7 +333,7 @@ export function WeekTimeGrid({
           )}
         >
           <span className="shrink-0 font-medium">
-            {new Date(a.starts_at).toLocaleTimeString("pt-BR", {
+            {new Date(a.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
               hour: "2-digit",
               minute: "2-digit",
             })}
@@ -503,7 +504,7 @@ export function WeekTimeGrid({
                   {WEEKDAY_LABELS[(date.getDay() + 6) % 7]}
                 </span>{" "}
                 <span className="text-muted-foreground">
-                  {date.toLocaleDateString("pt-BR", {
+                  {date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     day: "2-digit",
                     month: "2-digit",
                   })}
@@ -562,7 +563,7 @@ export function WeekTimeGrid({
           const droppable = canManage;
           const dayLabel = `${WEEKDAY_LABELS[(date.getDay() + 6) % 7]} ${date.toLocaleDateString(
             "pt-BR",
-            { day: "2-digit", month: "2-digit" }
+            { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" }
           )}`;
           return (
             <div
@@ -609,7 +610,7 @@ export function WeekTimeGrid({
                         toast.warning(
                           `Agenda fechada (${CLOSURE_REASON_LABELS[blocking.reason]}) até ${new Date(
                             blocking.endsAt
-                          ).toLocaleString("pt-BR", {
+                          ).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             hour: "2-digit",

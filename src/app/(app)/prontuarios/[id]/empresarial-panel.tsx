@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL } from "@/lib/pricing";
 import type { ClientUsageSummary } from "@/lib/empresarial/benefits";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /** Painel "uso e economia" do cliente no Risarte Empresarial (Fase 7). */
 export function EmpresarialPanel({
@@ -82,7 +83,7 @@ export function EmpresarialPanel({
                   <span>
                     {u.procedureName}{" "}
                     <span className="text-xs text-muted-foreground">
-                      {new Date(u.usedAt).toLocaleDateString("pt-BR")}
+                      {new Date(u.usedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     </span>
                   </span>
                   <span className="text-gold">

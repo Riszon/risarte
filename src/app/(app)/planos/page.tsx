@@ -18,6 +18,7 @@ import {
   type JourneyStatus,
 } from "@/lib/journey";
 import type { TreatmentPlanStatus } from "@/lib/planning";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Planos de Tratamento" };
 
@@ -132,7 +133,7 @@ type PlanRow = {
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR");
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 
 export default async function PlansPage(props: PageProps<"/planos">) {

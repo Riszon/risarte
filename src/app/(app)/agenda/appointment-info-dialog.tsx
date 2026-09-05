@@ -28,6 +28,7 @@ import {
   type PendingSession,
 } from "./actions";
 import { STATUS_DOT, type AgendaAppointment } from "./week-grid";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 // Cada situação com sua cor (borda + texto), consistente com os blocos da agenda.
 const STATUS_BTN: Record<AppointmentStatus, string> = {
@@ -100,11 +101,11 @@ export function AppointmentInfoDialog({
   }, [open, sessions, appointment.id]);
 
   const time = (iso: string) =>
-    new Date(iso).toLocaleTimeString("pt-BR", {
+    new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       hour: "2-digit",
       minute: "2-digit",
     });
-  const date = new Date(appointment.starts_at).toLocaleDateString("pt-BR", {
+  const date = new Date(appointment.starts_at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     weekday: "long",
     day: "2-digit",
     month: "long",

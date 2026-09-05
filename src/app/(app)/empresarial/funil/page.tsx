@@ -12,6 +12,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import type { LeadStage } from "@/lib/empresarial/constants";
 import { LeadBoard, type LeadView } from "./lead-board";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  startOfDayInBrazil,
+  todayInBrazil,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Funil · Risarte Empresarial" };
 
@@ -119,8 +125,11 @@ export default async function FunilPage() {
   }));
 
   // "Hoje do consultor": leads com próxima ação vencida/para hoje, ainda abertos.
-  const endToday = new Date();
-  endToday.setHours(23, 59, 59, 999);
+  // O fim do dia BRASILEIRO: `setHours(23,59,...)` no servidor (UTC) marcava
+  // 20:59 daqui, e a lista perdia as últimas horas do dia.
+  const endToday = new Date(
+    startOfDayInBrazil(addDaysIso(todayInBrazil(), 1)).getTime() - 1
+  );
   const todayLeads = leadViews.filter(
     (l) =>
       l.nextActionAt != null &&
@@ -175,7 +184,7 @@ export default async function FunilPage() {
                   <span className="font-medium">{l.companyName}</span>
                   <span className="text-xs text-muted-foreground">
                     {l.nextActionNote || "próxima ação"} ·{" "}
-                    {new Date(l.nextActionAt!).toLocaleString("pt-BR", {
+                    {new Date(l.nextActionAt!).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       day: "2-digit",
                       month: "2-digit",
                       hour: "2-digit",

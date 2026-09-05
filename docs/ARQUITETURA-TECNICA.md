@@ -333,6 +333,16 @@ lê**, e a camada 2 procura exatamente marcas de erro na página.
   (`src/lib/dates.ts`), nunca `new Date` com texto montado. **Há teste que
   varre `src/app` e reprova as duas formas** (`dates.test.ts`) — só código de
   servidor, porque no navegador o fuso é o da pessoa.
+- **EXIBIR TAMBÉM TEM FUSO, e este é o irmão silencioso do de cima.**
+  `data.toLocaleString("pt-BR")` formata no relógio da MÁQUINA: no servidor da
+  Vercel, a Auditoria mostrou **15:07 quando eram 12:07** — o dono viu com o
+  relógio novo da barra lateral ao lado, marcando a hora certa (05/09/2026).
+  Mesma raiz do item acima, terceira aparição do assunto. Toda formatação leva
+  **`timeZone` explícito** (ou usa `formatBrDateTime()` / `formatInBrazil()`),
+  e `d.setHours(0,0,0,0)` vira **`startOfTodayInBrazil()` /
+  `startOfDayOf(d)`** — zerar o relógio da máquina fazia "hoje" começar às 21h
+  de ontem em toda tela com filtro de período. **Três testes varrem `src`** e
+  reprovam a volta: a conta, a exibição e a janela do dia da agenda.
 - **Nunca editar arquivo-fonte com PowerShell `-replace`** (corrompe acentos
   UTF-8) — reescrever com a ferramenta Write.
 - **`$$` no texto de substituição do `String.replace` do JS vira UM `$`.** Um

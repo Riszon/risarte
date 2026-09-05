@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type FunnelEvent = {
   id: string;
@@ -77,7 +78,7 @@ export function FunnelHistoryDialog({ events }: { events: FunnelEvent[] }) {
                     {e.description ?? e.type}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(e.at).toLocaleString("pt-BR", {
+                    {new Date(e.at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",

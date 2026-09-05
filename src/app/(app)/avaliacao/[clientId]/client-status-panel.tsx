@@ -7,6 +7,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /**
  * Bloco A do cockpit — painel de status do cliente (topo). Um resumo rápido que
@@ -25,7 +26,7 @@ export type ClientStatus = {
 };
 
 function fmtDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
   });
@@ -33,9 +34,9 @@ function fmtDay(iso: string): string {
 function fmtDayTime(iso: string): string {
   const d = new Date(iso);
   return (
-    d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) +
+    d.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" }) +
     " " +
-    d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    d.toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, hour: "2-digit", minute: "2-digit" })
   );
 }
 

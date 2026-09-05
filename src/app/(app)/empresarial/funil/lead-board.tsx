@@ -30,6 +30,7 @@ import {
   moveLeadStage,
   updateLead,
 } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const selectClass =
   "h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs";
@@ -352,7 +353,7 @@ function LeadDetailDialog({
                 <li key={a.id} className="border-b pb-1 last:border-0">
                   <span className="font-medium">{a.kind}</span> — {a.note}
                   <span className="block text-muted-foreground">
-                    {new Date(a.createdAt).toLocaleString("pt-BR")}
+                    {new Date(a.createdAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     {a.authorName ? ` · ${a.authorName}` : ""}
                   </span>
                 </li>

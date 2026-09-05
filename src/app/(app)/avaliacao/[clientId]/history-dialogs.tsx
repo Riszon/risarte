@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProgressHistory = {
   id: string;
@@ -37,7 +38,7 @@ export type PlanHistory = {
 };
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -46,7 +47,7 @@ function fmtDateTime(iso: string): string {
   });
 }
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR");
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 
 /**

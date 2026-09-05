@@ -43,7 +43,7 @@ import {
 } from "@/components/commercial/payment-fields";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { savePaymentSchedule } from "../payment-schedule-actions";
-import { todayInBrazil } from "@/lib/dates";
+import { todayInBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type DirectSaleRow = {
   id: string;
@@ -470,7 +470,7 @@ export function SaleItem({
           </p>
           <p className="text-xs text-muted-foreground">
             {sale.clinicName ? `${sale.clinicName} · ` : ""}
-            {new Date(sale.createdAt).toLocaleDateString("pt-BR")}
+            {new Date(sale.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
             {sale.createdByName ? ` · por ${sale.createdByName}` : ""} ·{" "}
             {sale.items.length} proc.
           </p>

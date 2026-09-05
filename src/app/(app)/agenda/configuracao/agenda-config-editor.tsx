@@ -23,7 +23,7 @@ import Link from "next/link";
 import { CalendarSearch } from "lucide-react";
 import { openSpecialDays, removeSpecialDay, saveLunchBreak } from "../actions";
 import { EditOpenDayDialog } from "./edit-open-day-dialog";
-import { todayInBrazil } from "@/lib/dates";
+import { todayInBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const TIME_OPTIONS: string[] = [];
 for (let h = 6; h <= 22; h++) {
@@ -402,7 +402,7 @@ export function AgendaConfigEditor({
                     <span className="text-xs">
                       excluída em{" "}
                       {room.deletedAt
-                        ? new Date(room.deletedAt).toLocaleDateString("pt-BR")
+                        ? new Date(room.deletedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
                         : "—"}
                     </span>
                   </li>
@@ -516,7 +516,7 @@ export function AgendaConfigEditor({
                   key={d}
                   className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs"
                 >
-                  {new Date(`${d}T00:00:00`).toLocaleDateString("pt-BR", {
+                  {new Date(`${d}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     weekday: "short",
                     day: "2-digit",
                     month: "2-digit",
@@ -645,7 +645,7 @@ export function AgendaConfigEditor({
                         <span className="font-medium">
                           {new Date(`${d.date}T00:00:00`).toLocaleDateString(
                             "pt-BR",
-                            { weekday: "long", day: "2-digit", month: "long" }
+                            { timeZone: BRAZIL_TIME_ZONE, weekday: "long", day: "2-digit", month: "long" }
                           )}
                         </span>
                         <span className="text-muted-foreground">
@@ -669,7 +669,7 @@ export function AgendaConfigEditor({
                         )}
                         <p className="text-[11px] text-muted-foreground">
                           Liberado em{" "}
-                          {new Date(d.createdAt).toLocaleDateString("pt-BR", {
+                          {new Date(d.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",

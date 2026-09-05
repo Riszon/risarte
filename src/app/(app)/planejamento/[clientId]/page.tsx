@@ -55,11 +55,12 @@ import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { TreatmentSummary } from "./treatment-summary";
 import { SessionJoinPlanner } from "./session-join-planner";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cockpit de Planejamento" };
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -615,7 +616,7 @@ export default async function PlanningCockpitPage(
               Apresentação comercial marcada — plano ainda não está pronto
             </p>
             <p className="text-xs text-red-700/90">
-              {new Date(presentationAt).toLocaleString("pt-BR", {
+              {new Date(presentationAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                 weekday: "long",
                 day: "2-digit",
                 month: "long",
@@ -645,7 +646,7 @@ export default async function PlanningCockpitPage(
               <li key={i} className="flex flex-wrap items-baseline gap-x-2">
                 <span className="font-medium">• {it.description}</span>
                 <span className="text-xs text-amber-800/80">
-                  ({new Date(it.when).toLocaleDateString("pt-BR")}
+                  ({new Date(it.when).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                   {it.reason ? ` — motivo: ${it.reason}` : ""})
                 </span>
               </li>
@@ -673,7 +674,7 @@ export default async function PlanningCockpitPage(
                     {e.description}
                   </p>
                   <p className="mt-1 text-xs text-rose-700/80">
-                    {new Date(e.at).toLocaleString("pt-BR", {
+                    {new Date(e.at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",

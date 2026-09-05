@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { PlanEvent } from "@/lib/planning";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /**
  * Histórico próprio de UM plano de tratamento (linha do tempo completa, com
@@ -76,7 +77,7 @@ export function PlanHistoryDialog({
                   {e.description ?? e.type}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(e.at).toLocaleString("pt-BR", {
+                  {new Date(e.at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",

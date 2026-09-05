@@ -62,6 +62,34 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.228.0",
+    data: "2026-09-05",
+    migracao: null,
+    titulo: "Todos os horários do sistema agora batem com o relógio de Brasília",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A Auditoria mostrava 3 horas a mais (15:07 quando eram 12:07). O mesmo acontecia em toda data e hora escrita pelo sistema — o texto era montado no relógio do servidor, que fica 3 horas à frente.",
+        papeis: "todos",
+        manual: "15.4. Relógio",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Filtros de “hoje”, “esta semana” e “este mês” começavam às 21h do dia anterior. Painel do Dentista, Atendimento, Auditoria, Relatórios, Centro de Planejamento e Comercial pegavam um pedaço do dia errado.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na agenda, um atendimento marcado depois das 21h não aparecia no dia dele — a janela do dia terminava três horas cedo.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.227.0",
     data: "2026-09-05",
     migracao: null,

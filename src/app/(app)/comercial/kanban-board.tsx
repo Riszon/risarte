@@ -56,6 +56,7 @@ import {
   startFollowup,
   transferFollowup,
 } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type BoardCard = {
   clientId: string;
@@ -436,7 +437,7 @@ export function CommercialKanban({
                   {(c.outcomeAt || c.outcomeByName) && (
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {c.outcomeAt
-                        ? new Date(c.outcomeAt).toLocaleString("pt-BR", {
+                        ? new Date(c.outcomeAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
@@ -558,7 +559,7 @@ function BoardCardView({
           <p className="text-[11px] text-amber-700">
             {card.followupAttempts} tentativa(s)
             {card.nextAttemptAt
-              ? ` · próxima ${new Date(card.nextAttemptAt).toLocaleDateString("pt-BR")}`
+              ? ` · próxima ${new Date(card.nextAttemptAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`
               : ""}
           </p>
         </div>

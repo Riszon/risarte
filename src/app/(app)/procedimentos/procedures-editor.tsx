@@ -45,6 +45,7 @@ import {
   setUnitPrice,
   type ProcedureInput,
 } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProcedureKit = {
   id: string;
@@ -114,7 +115,7 @@ function toInput(p: Procedure): ProcedureInput {
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

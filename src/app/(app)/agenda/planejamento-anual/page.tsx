@@ -25,6 +25,7 @@ import {
 } from "@/lib/annual-plan";
 import { AnnualPlanManager } from "./annual-plan-manager";
 import { NetworkPlanManager } from "./network-plan-manager";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Planejamento anual" };
 
@@ -263,7 +264,7 @@ export default async function AnnualPlanPage(
       (h) => h.date >= mStart && h.date <= mEnd
     ).length;
     return {
-      label: new Date(year, m, 1).toLocaleDateString("pt-BR", {
+      label: new Date(year, m, 1).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
         month: "short",
       }),
       items: monthItems,
@@ -419,10 +420,10 @@ export default async function AnnualPlanPage(
                     <span className="ml-1.5 font-medium">
                       {new Date(`${it.startsDate}T00:00:00`).toLocaleDateString(
                         "pt-BR",
-                        { day: "2-digit", month: "2-digit" }
+                        { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" }
                       )}
                       {it.endsDate !== it.startsDate
-                        ? ` – ${new Date(`${it.endsDate}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+                        ? ` – ${new Date(`${it.endsDate}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" })}`
                         : ""}
                     </span>
                     {it.title && (

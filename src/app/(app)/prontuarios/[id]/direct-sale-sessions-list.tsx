@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { DirectSaleSession } from "./direct-sale-loader";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const STATE_STYLE: Record<DirectSaleSession["state"], string> = {
   done: "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -19,7 +20,7 @@ const STATE_LABEL: Record<DirectSaleSession["state"], string> = {
 };
 
 function fmt(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

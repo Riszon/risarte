@@ -1,6 +1,43 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/09/2026 · Versão do sistema: **0.227.0** · Última migração: **0247**_
+_Atualizado em: 05/09/2026 · Versão do sistema: **0.228.0** · Última migração: **0247**_
+
+> ### O FUSO, A SEGUNDA METADE: EXIBIR (v0.228.0, sem migração)
+>
+> Achado pelo dono **com o relógio novo ao lado**: a Auditoria mostrava
+> **15:07** enquanto a barra lateral marcava **12:07**. A 0.227.0 tinha
+> corrigido a CONTA; faltava a EXIBIÇÃO — e o filtro de período.
+>
+> **Três famílias, uma raiz.** `toLocaleString` formata no relógio da máquina;
+> `setHours(0,0,0,0)` zera o relógio da máquina; `new Date(ano, mês, 1)` idem.
+> No servidor da Vercel, tudo isso é UTC.
+>
+> | O quê | Onde | O que a equipe via |
+> |---|---|---|
+> | **158** formatações | 82 arquivos | toda data/hora escrita pelo servidor, 3h a mais |
+> | **24** fronteiras de dia | 11 arquivos | "hoje" começando às 21h de ontem |
+> | **janela da agenda** | `agenda-view.ts` | atendimento após as 21h sumia do dia |
+>
+> **As 158 saíram por script**, com contador de parênteses em vez de regex — a
+> lista de opções tem várias linhas, e regex nisso erra calado. O script
+> distingue **data de moeda** (`toLocaleString` formata os dois) e roda em
+> ensaio antes de gravar; o diff foi conferido à mão em três amostras difíceis
+> (template literal, multilinha, aninhada). **As 24 fronteiras foram à mão** —
+> são semânticas, não mecânicas.
+>
+> **`agenda-view.ts` eu tinha declarado como limite e voltei atrás.** O
+> raciocínio que mudou: no NAVEGADOR o valor não muda (meia-noite em Brasília é
+> a mesma meia-noite), então o desenho da grade fica idêntico e só a consulta do
+> servidor é corrigida. Risco baixo, e quatro testes prendem as janelas de
+> dia/semana/mês contra instantes absolutos.
+>
+> **Guardas novos:** além do que varre a CONTA, agora há um que varre a
+> EXIBIÇÃO em `src` inteiro (com o cuidado de poupar moeda) e um que prende a
+> janela da agenda. A suíte roda também com **`TZ=UTC`**.
+>
+> **Ficou visível:** o relógio da barra lateral foi o que permitiu o dono ver o
+> defeito — dois números lado a lado, um certo e um errado. Antes disso o
+> sistema errava sozinho e ninguém tinha contra o que comparar.
 
 > ### ⚠️ O RELÓGIO DA AGENDA ESTAVA 3 HORAS ADIANTADO (v0.227.0, sem migração)
 >

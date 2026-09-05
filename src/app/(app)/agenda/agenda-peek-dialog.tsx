@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { startOfWeek, toIsoDate } from "@/lib/agenda-view";
 import { getMonthAgendaPeek, type PeekDay } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
@@ -119,7 +120,7 @@ export function AgendaPeekDialog({
             ← Anterior
           </Button>
           <span className="text-sm font-medium capitalize">
-            {monthStart.toLocaleDateString("pt-BR", {
+            {monthStart.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
               month: "long",
               year: "numeric",
             })}

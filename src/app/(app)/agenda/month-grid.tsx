@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { agendaHref, startOfWeek, toIsoDate } from "@/lib/agenda-view";
 import { APPOINTMENT_TYPE_LABELS } from "@/lib/appointments";
 import type { AgendaAppointment } from "./week-grid";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
@@ -102,7 +103,7 @@ export function MonthView({
                   className="truncate rounded bg-muted px-1 py-0.5 text-[10px]"
                   title={`${APPOINTMENT_TYPE_LABELS[a.type]} — ${a.clients?.full_name ?? ""}`}
                 >
-                  {new Date(a.starts_at).toLocaleTimeString("pt-BR", {
+                  {new Date(a.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     hour: "2-digit",
                     minute: "2-digit",
                   })}{" "}

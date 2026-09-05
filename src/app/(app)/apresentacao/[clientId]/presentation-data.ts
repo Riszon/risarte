@@ -11,6 +11,7 @@ import {
   type BudgetItem,
 } from "@/lib/pricing";
 import type { PresentationData } from "./presentation-view";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type LoadResult =
   | { ok: true; data: PresentationData; clinicId: string; hasApprovedPlan: boolean }
@@ -301,7 +302,7 @@ export async function loadPresentationData(
     clientCode: client.code,
     clinicName,
     pillarLabel: pillar ? PILLAR_LABELS[pillar] : null,
-    dateLabel: new Date().toLocaleDateString("pt-BR"),
+    dateLabel: new Date().toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE }),
     diagnosis,
     objectives,
     planningNotes,

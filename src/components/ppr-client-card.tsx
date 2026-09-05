@@ -9,6 +9,7 @@ import type {
   PprClientBadge,
   PprPastMembership,
 } from "@/lib/ppr/client-badge-loader";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const TONE: Record<PprStatus, string> = {
   aguardando_ativacao: "border-amber-300 bg-amber-50 text-amber-800",
@@ -61,7 +62,7 @@ export function PprClientCard({
               <li key={i}>
                 Fez parte do <strong>{p.planName}</strong>
                 {p.cancelledAt &&
-                  ` até ${new Date(p.cancelledAt).toLocaleDateString("pt-BR")}`}
+                  ` até ${new Date(p.cancelledAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
                 {p.reason && ` — ${p.reason}`}
               </li>
             ))}
@@ -94,7 +95,7 @@ export function PprClientCard({
         <p className="text-sm text-muted-foreground">
           {isHolder ? "Titular do plano" : `Dependente${badge.relationship ? ` · ${badge.relationship}` : ""}`}
           {badge.activatedAt &&
-            ` · ativo desde ${new Date(badge.activatedAt).toLocaleDateString("pt-BR")}`}
+            ` · ativo desde ${new Date(badge.activatedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
           {isHolder && ` · ${formatBRL(badge.monthlyCents)}/mês`}
         </p>
       </CardHeader>
@@ -180,7 +181,7 @@ export function PprClientCard({
             {past
               .map(
                 (p) =>
-                  `${p.planName}${p.cancelledAt ? ` (até ${new Date(p.cancelledAt).toLocaleDateString("pt-BR")})` : ""}`
+                  `${p.planName}${p.cancelledAt ? ` (até ${new Date(p.cancelledAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })})` : ""}`
               )
               .join(" · ")}
           </p>

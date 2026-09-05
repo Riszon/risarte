@@ -33,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type BillingView = {
   id: string;
@@ -62,7 +63,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function dateBR(iso: string | null): string {
-  return iso ? new Date(iso + "T00:00:00").toLocaleDateString("pt-BR") : "—";
+  return iso ? new Date(iso + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE }) : "—";
 }
 
 export function BillingTab({
@@ -195,14 +196,14 @@ export function BillingTab({
                     {b.referenceMonth
                       ? new Date(b.referenceMonth + "T00:00:00").toLocaleDateString(
                           "pt-BR",
-                          { month: "2-digit", year: "numeric" }
+                          { timeZone: BRAZIL_TIME_ZONE, month: "2-digit", year: "numeric" }
                         )
                       : "—"}
                   </td>
                   <td className="px-3 py-2 font-medium">{formatBRL(b.totalCents)}</td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {b.dueDate
-                      ? new Date(b.dueDate + "T00:00:00").toLocaleDateString("pt-BR")
+                      ? new Date(b.dueDate + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
                       : "—"}
                   </td>
                   <td className="px-3 py-2">

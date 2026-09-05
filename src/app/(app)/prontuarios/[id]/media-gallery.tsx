@@ -34,6 +34,7 @@ import {
   type ClinicalMediaKind,
 } from "@/lib/clinical";
 import { deleteClinicalMedia, updateClinicalMedia } from "./clinical-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const CATEGORY_ORDER: ClinicalMediaKind[] = [
   "photo",
@@ -56,7 +57,7 @@ const CATEGORY_HEADINGS: Record<ClinicalMediaKind, string> = {
 };
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

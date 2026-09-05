@@ -4,6 +4,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DOCUMENT_KIND_LABELS, type DocumentKind } from "@/lib/documents";
 import { PrintButton } from "./print-button";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Documento" };
 
@@ -38,7 +39,7 @@ export default async function DocumentPrintPage(
   const authorRaw = doc.author;
   const authorName =
     (Array.isArray(authorRaw) ? authorRaw[0] : authorRaw)?.full_name ?? null;
-  const dateStr = new Date(doc.created_at).toLocaleDateString("pt-BR", {
+  const dateStr = new Date(doc.created_at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "long",
     year: "numeric",

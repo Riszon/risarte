@@ -9,6 +9,7 @@ import { PPR_STATUS_LABELS, type PprStatus } from "@/lib/ppr/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Novos beneficiários do PPR+" };
 
@@ -218,7 +219,7 @@ export default async function PprNewBeneficiariesPage() {
                     {since && (
                       <span className="text-muted-foreground">
                         · entrou em{" "}
-                        {new Date(since).toLocaleDateString("pt-BR")}
+                        {new Date(since).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                       </span>
                     )}
                   </p>

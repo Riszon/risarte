@@ -52,6 +52,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type { ConsentInfo, ClinicalNoteItem, ClinicalMediaItem };
 
@@ -119,7 +120,7 @@ async function maybeConvertHeic(
 }
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

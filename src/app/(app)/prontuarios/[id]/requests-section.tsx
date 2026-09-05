@@ -33,6 +33,7 @@ import {
   recordRequestMedia,
   resolveClinicalRequest,
 } from "./requests-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 function randomId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -50,7 +51,7 @@ function guessKind(type: string): string {
 }
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

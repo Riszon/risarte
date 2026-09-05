@@ -19,6 +19,7 @@ import {
   type InactivitySettingRow,
 } from "@/lib/sla";
 import { FilterForm } from "@/components/filter-form";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Retornos e controles" };
 
@@ -198,7 +199,7 @@ export default async function ReturnsPage(
   );
 
   const fmtDateTime = (iso: string) =>
-    new Date(iso).toLocaleString("pt-BR", {
+    new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -206,7 +207,7 @@ export default async function ReturnsPage(
       minute: "2-digit",
     });
   const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("pt-BR", {
+    new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

@@ -153,7 +153,11 @@ import type {
   JourneyStatus,
   MethodologyPillar,
 } from "@/lib/journey";
-import { todayInBrazil } from "@/lib/dates";
+import {
+  BRAZIL_TIME_ZONE,
+  startOfTodayInBrazil,
+  todayInBrazil,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Prontuário do cliente" };
 
@@ -354,7 +358,7 @@ export default async function ClientDetailPage(
               O compartilhamento deste cliente com a sua unidade
               {es.clinics?.name ? ` (${es.clinics.name})` : ""} foi encerrado em{" "}
               <span className="font-medium">
-                {new Date(es.ended_at).toLocaleString("pt-BR", {
+                {new Date(es.ended_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",
@@ -677,7 +681,7 @@ export default async function ClientDetailPage(
     : "";
   const shortAgeText = client.birth_date ? shortAge(client.birth_date) : "";
   const birthText = client.birth_date
-    ? new Date(`${client.birth_date}T00:00:00`).toLocaleDateString("pt-BR")
+    ? new Date(`${client.birth_date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
     : "";
   const clientTime = clientDuration(client.created_at);
   // H3.8: aniversário HOJE (compara mês/dia, sem fuso).
@@ -1524,8 +1528,8 @@ export default async function ClientDetailPage(
   }[] = [];
   let waitingAlertMinutes: number | null = null;
   if (canViewProgress) {
-    const dayStart = new Date();
-    dayStart.setHours(0, 0, 0, 0);
+    // Dia BRASILEIRO: `setHours` no servidor (UTC) começava às 21h de ontem.
+    const dayStart = startOfTodayInBrazil();
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
     const { data: todayAppts } = await supabase
@@ -2567,7 +2571,7 @@ export default async function ClientDetailPage(
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Cliente desde{" "}
-                  {new Date(client.created_at).toLocaleDateString("pt-BR")}
+                  {new Date(client.created_at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                   {clientTime && (
                     <span className="text-foreground/70"> ({clientTime})</span>
                   )}
@@ -3027,7 +3031,7 @@ export default async function ClientDetailPage(
                   <span className="text-xs font-normal text-muted-foreground">
                     {new Date(todayAttendance.startsAt).toLocaleTimeString(
                       "pt-BR",
-                      { hour: "2-digit", minute: "2-digit" }
+                      { timeZone: BRAZIL_TIME_ZONE, hour: "2-digit", minute: "2-digit" }
                     )}
                     {todayAttendance.providerName
                       ? ` · ${todayAttendance.providerName}`
@@ -3319,7 +3323,7 @@ export default async function ClientDetailPage(
                         </Badge>
                         <div className="text-xs text-muted-foreground">
                           Início:{" "}
-                          {new Date(s.started_at).toLocaleString("pt-BR", {
+                          {new Date(s.started_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
@@ -3329,7 +3333,7 @@ export default async function ClientDetailPage(
                           {s.ended_at
                             ? ` · Encerrado: ${new Date(
                                 s.ended_at
-                              ).toLocaleString("pt-BR", {
+                              ).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                                 day: "2-digit",
                                 month: "2-digit",
                                 year: "numeric",
@@ -3365,7 +3369,7 @@ export default async function ClientDetailPage(
                         </span>{" "}
                         <span className="text-xs text-muted-foreground">
                           — de{" "}
-                          {new Date(entry.started_at).toLocaleString("pt-BR", {
+                          {new Date(entry.started_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
@@ -3375,7 +3379,7 @@ export default async function ClientDetailPage(
                           {entry.ended_at
                             ? ` até ${new Date(entry.ended_at).toLocaleString(
                                 "pt-BR",
-                                {
+                                { timeZone: BRAZIL_TIME_ZONE,
                                   day: "2-digit",
                                   month: "2-digit",
                                   year: "numeric",
@@ -3409,7 +3413,7 @@ export default async function ClientDetailPage(
                         <span>{change.description}</span>{" "}
                         <span className="text-xs text-muted-foreground">
                           —{" "}
-                          {new Date(change.changed_at).toLocaleString("pt-BR", {
+                          {new Date(change.changed_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
@@ -3441,7 +3445,7 @@ export default async function ClientDetailPage(
                         <span>Alterou: {change.fields}</span>{" "}
                         <span className="text-xs text-muted-foreground">
                           —{" "}
-                          {new Date(change.changed_at).toLocaleString("pt-BR", {
+                          {new Date(change.changed_at).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",

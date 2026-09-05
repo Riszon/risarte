@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { instantFromBrazil } from "@/lib/dates";
+import { instantFromBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -411,7 +411,7 @@ export default async function DashboardComercialPage(
     };
   };
   const fmtDay = (iso: string | null | undefined) =>
-    iso ? new Date(iso).toLocaleDateString("pt-BR") : null;
+    iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE }) : null;
 
   const NEG_BADGE: Record<string, { label: string; tone: DrillItem["badgeTone"] }> =
     {

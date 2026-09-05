@@ -8,6 +8,7 @@ import {
   type PprRecurringMethod,
 } from "@/lib/ppr/constants";
 import { PrintButton } from "./print-button";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Contrato de adesão — PPR+" };
 
@@ -76,7 +77,7 @@ export default async function PprContractPage(
       | null;
   }[];
 
-  const today = new Date().toLocaleDateString("pt-BR", {
+  const today = new Date().toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -114,7 +115,7 @@ export default async function PprContractPage(
             <strong>{holder?.full_name}</strong>
             {holder?.cpf ? `, CPF ${holder.cpf}` : ""}
             {holder?.birth_date
-              ? `, nascido(a) em ${new Date(`${holder.birth_date}T00:00:00`).toLocaleDateString("pt-BR")}`
+              ? `, nascido(a) em ${new Date(`${holder.birth_date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`
               : ""}
             {holder?.phone ? `, telefone ${holder.phone}` : ""}.
           </p>

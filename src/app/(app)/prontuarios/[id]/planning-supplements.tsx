@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { addPlanningSupplement } from "./planning-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type PlanningSupplement = {
   id: string;
@@ -18,7 +19,7 @@ export type PlanningSupplement = {
 };
 
 function fmt(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

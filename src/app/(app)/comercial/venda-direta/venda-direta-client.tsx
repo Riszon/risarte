@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { SaleItem, type DirectSaleRow } from "./direct-sale-item";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type { DirectSaleRow } from "./direct-sale-item";
 
@@ -52,7 +53,7 @@ export function VendaDiretaClient({
                   <span>
                     {s.clientName ?? "Cliente"}
                     {s.clinicName ? ` · ${s.clinicName}` : ""} ·{" "}
-                    {new Date(s.createdAt).toLocaleDateString("pt-BR")}
+                    {new Date(s.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                   </span>
                   <span className="tabular-nums">{formatBRL(s.finalCents)}</span>
                 </li>

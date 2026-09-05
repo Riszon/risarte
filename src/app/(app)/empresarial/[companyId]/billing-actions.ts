@@ -11,6 +11,7 @@ import {
   type AdhesionPricing,
 } from "@/lib/empresarial/pricing";
 import type { DependentPlan } from "@/lib/empresarial/constants";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -79,7 +80,7 @@ export async function previewBilling(
   const { dueDate, referenceMonth } = nextDue(company.due_day);
   const monthLabel = new Date(referenceMonth + "T00:00:00").toLocaleDateString(
     "pt-BR",
-    { month: "long", year: "numeric" }
+    { timeZone: BRAZIL_TIME_ZONE, month: "long", year: "numeric" }
   );
   const description =
     billingType === "IMPLANTATION"

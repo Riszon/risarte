@@ -11,6 +11,7 @@ import {
   type PprSaleOrigin,
   type PprStatus,
 } from "./constants";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 // ---------------------------------------------------------------------------
 // Formatos usados pelas regras (subconjunto das tabelas da migração 0162)
@@ -358,7 +359,7 @@ export function benefitAvailability(opts: {
   if (graceDays > 0 && now < graceEnd) {
     return {
       available: false,
-      reason: `Em carência até ${graceEnd.toLocaleDateString("pt-BR")}.`,
+      reason: `Em carência até ${graceEnd.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}.`,
       availableFrom: graceEnd,
     };
   }
@@ -368,7 +369,7 @@ export function benefitAvailability(opts: {
     if (next && now < next) {
       return {
         available: false,
-        reason: `Já utilizado. Libera em ${next.toLocaleDateString("pt-BR")}.`,
+        reason: `Já utilizado. Libera em ${next.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}.`,
         availableFrom: next,
       };
     }

@@ -1,5 +1,6 @@
 import { TIPO_ROTULO, type TipoDeMudanca, type Versao } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /**
  * O que mudou, por versão.
@@ -19,7 +20,7 @@ const COR: Record<TipoDeMudanca, string> = {
 function dataLonga(iso: string): string {
   // `T12:00` evita o pulo de um dia: `new Date("2026-09-04")` é meia-noite em
   // UTC, que no Brasil ainda é dia 3. É a mesma armadilha da migração 0201.
-  return new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "long",
     year: "numeric",

@@ -17,6 +17,15 @@ import {
   type AttendanceStatus,
 } from "@/lib/appointments";
 import { WeeklyForecastNotifier } from "./weekly-forecast-notifier";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  formatBrDate,
+  startOfDayInBrazil,
+  startOfTodayInBrazil,
+  todayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Meu Dia" };
 
@@ -63,13 +72,13 @@ const PERIOD_LABELS: Record<Period, string> = {
 };
 
 function time(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", {
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 function dayLabel(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
@@ -82,18 +91,19 @@ function fmtMin(min: number): string {
   const r = m % 60;
   return r > 0 ? `${h}h ${r}min` : `${h}h`;
 }
-function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d;
+// ⚠️ TODO O PERÍODO É CONTADO EM DIAS BRASILEIROS.
+//
+// Antes, `setHours(0,0,0,0)` e `new Date(ano, mês, dia)` zeravam o relógio da
+// MÁQUINA — que no servidor da Vercel é UTC. A "semana" começava às 21h de
+// domingo e o "dia" às 21h de ontem, então o painel do dentista misturava o fim
+// do dia anterior e perdia o fim do dia atual.
+function primeiroDoMes(iso: string): string {
+  return `${iso.slice(0, 7)}-01`;
 }
-function parseYmd(s: string | undefined): Date | null {
-  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
+
+function startOfWeek(iso: string): string {
+  const dia = weekdayOf(iso);
+  return addDaysIso(iso, dia === 0 ? -6 : 1 - dia);
 }
 
 function periodRange(
@@ -101,36 +111,43 @@ function periodRange(
   de?: string,
   ate?: string
 ): { start: Date; end: Date; label: string } {
-  const base = new Date();
+  const hoje = todayInBrazil();
+  const valida = (s: string | undefined) =>
+    s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+
   if (period === "semana") {
-    const start = startOfWeek(base);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return { start, end, label: PERIOD_LABELS.semana };
-  }
-  if (period === "mes") {
-    const start = new Date(base.getFullYear(), base.getMonth(), 1);
-    const end = new Date(base.getFullYear(), base.getMonth() + 1, 1);
-    return { start, end, label: PERIOD_LABELS.mes };
-  }
-  if (period === "periodo") {
-    const s = parseYmd(de) ?? new Date(base.getFullYear(), base.getMonth(), 1);
-    const eRaw = parseYmd(ate) ?? new Date();
-    const end = new Date(eRaw);
-    end.setDate(end.getDate() + 1);
-    end.setHours(0, 0, 0, 0);
-    s.setHours(0, 0, 0, 0);
+    const inicio = startOfWeek(hoje);
     return {
-      start: s,
-      end,
-      label: `${s.toLocaleDateString("pt-BR")} a ${eRaw.toLocaleDateString("pt-BR")}`,
+      start: startOfDayInBrazil(inicio),
+      end: startOfDayInBrazil(addDaysIso(inicio, 7)),
+      label: PERIOD_LABELS.semana,
     };
   }
-  const start = new Date(base);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  return { start, end, label: PERIOD_LABELS.dia };
+  if (period === "mes") {
+    const inicio = primeiroDoMes(hoje);
+    return {
+      start: startOfDayInBrazil(inicio),
+      // O primeiro dia do mês seguinte: somar 31 dias e voltar ao dia 1 acerta
+      // em qualquer mês, inclusive fevereiro.
+      end: startOfDayInBrazil(primeiroDoMes(addDaysIso(inicio, 31))),
+      label: PERIOD_LABELS.mes,
+    };
+  }
+  if (period === "periodo") {
+    const inicio = valida(de) ?? primeiroDoMes(hoje);
+    const fim = valida(ate) ?? hoje;
+    return {
+      start: startOfDayInBrazil(inicio),
+      // O fim é INCLUSIVO: a janela vai até o começo do dia seguinte.
+      end: startOfDayInBrazil(addDaysIso(fim, 1)),
+      label: `${formatBrDate(startOfDayInBrazil(inicio))} a ${formatBrDate(startOfDayInBrazil(fim))}`,
+    };
+  }
+  return {
+    start: startOfDayInBrazil(hoje),
+    end: startOfDayInBrazil(addDaysIso(hoje, 1)),
+    label: PERIOD_LABELS.dia,
+  };
 }
 
 function StatTile({
@@ -194,8 +211,7 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
 
   const supabase = await createClient();
   const now = new Date();
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = startOfTodayInBrazil();
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setDate(tomorrowStart.getDate() + 1);
   const horizon = new Date(todayStart);

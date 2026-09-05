@@ -22,6 +22,7 @@ import type { ProgramBenefit } from "@/lib/empresarial/benefits";
 import { PlanningSection } from "./planning-section";
 import { PlanLifecycleBar, type LifecycleCaps } from "./plan-lifecycle-bar";
 import { createTreatmentPlan } from "./planning-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /**
  * Dono da seleção de plano: mostra a lista de TODOS os planos do cliente (nenhum
@@ -128,7 +129,7 @@ export function PlanEditorSwitcher({
                   aria-hidden
                 />
                 Plano {plans.length - i} · {PLAN_STAGE_LABELS[st]} ·{" "}
-                {new Date(pl.createdAt).toLocaleDateString("pt-BR")}
+                {new Date(pl.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
               </button>
             );
           })}
@@ -164,7 +165,7 @@ export function PlanEditorSwitcher({
                   em{" "}
                   {new Date(selected.commercialReturnedAt).toLocaleDateString(
                     "pt-BR"
-                  )}
+                  , { timeZone: BRAZIL_TIME_ZONE })}
                 </span>
               )}
             </p>

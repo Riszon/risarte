@@ -27,6 +27,7 @@ import {
   type ClosureScope,
 } from "@/lib/closures";
 import { createAgendaClosure, updateAgendaClosure } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -174,14 +175,14 @@ export function CloseAgendaDialog({
             <p className="font-medium">Fechamento atual:</p>
             <p className="text-muted-foreground">
               {CLOSURE_REASON_LABELS[closure.reason]} ·{" "}
-              {new Date(closure.startsAt).toLocaleString("pt-BR", {
+              {new Date(closure.startsAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                 day: "2-digit",
                 month: "2-digit",
                 hour: "2-digit",
                 minute: "2-digit",
               })}{" "}
               →{" "}
-              {new Date(closure.endsAt).toLocaleString("pt-BR", {
+              {new Date(closure.endsAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                 day: "2-digit",
                 month: "2-digit",
                 hour: "2-digit",

@@ -74,6 +74,7 @@ import {
   type ChatMessage,
   type ChatPerson,
 } from "./actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "✅", "🔥"];
 
@@ -138,16 +139,16 @@ function personSub(p?: ChatPerson): string | null {
 function lastSeenLabel(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
-  const hm = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const hm = d.toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, hour: "2-digit", minute: "2-digit" });
   if (d.toDateString() === now.toDateString()) return `hoje às ${hm}`;
   const yst = new Date(now);
   yst.setDate(now.getDate() - 1);
   if (d.toDateString() === yst.toDateString()) return `ontem às ${hm}`;
-  return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${hm}`;
+  return `${d.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" })} às ${hm}`;
 }
 
 function time(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", {
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -1591,7 +1592,7 @@ export function ChatHub({
                     <p className="truncate text-sm font-medium">{b.name}</p>
                     <p className="text-xs text-muted-foreground">
                       Bloqueado em{" "}
-                      {new Date(b.blockedAt).toLocaleDateString("pt-BR")}
+                      {new Date(b.blockedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     </p>
                   </div>
                   <Button

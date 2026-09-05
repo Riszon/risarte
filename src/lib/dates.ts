@@ -135,6 +135,29 @@ export function startOfDayInBrazil(isoDate: string): Date {
   return instantFromBrazil(isoDate, "00:00");
 }
 
+/** O começo do dia brasileiro de HOJE. */
+export function startOfTodayInBrazil(): Date {
+  return startOfDayInBrazil(todayInBrazil());
+}
+
+/**
+ * O começo do dia brasileiro em que este instante caiu.
+ *
+ * Substitui `d.setHours(0, 0, 0, 0)`, que zera o relógio da MÁQUINA: no
+ * servidor em UTC isso dá 21h do dia anterior no Brasil.
+ */
+export function startOfDayOf(instant: Date): Date {
+  return startOfDayInBrazil(isoDateIn(instant));
+}
+
+/** Soma (ou subtrai) dias numa data civil "AAAA-MM-DD", sem passar por fuso. */
+export function addDaysIso(isoDate: string, days: number): string {
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!d) return isoDate;
+  const base = Date.UTC(Number(d[1]), Number(d[2]) - 1, Number(d[3]));
+  return new Date(base + days * 86_400_000).toISOString().slice(0, 10);
+}
+
 /**
  * O dia da semana (0 = domingo) de uma data civil, por aritmética pura.
  *
@@ -148,6 +171,50 @@ export function weekdayOf(isoDate: string): number {
     Date.UTC(Number(d[1]), Number(d[2]) - 1, Number(d[3]))
   ).getUTCDay();
 }
+
+// -----------------------------------------------------------------------------
+// EXIBIÇÃO
+// -----------------------------------------------------------------------------
+//
+// `data.toLocaleString("pt-BR")` formata no fuso da MÁQUINA. No navegador da
+// equipe isso dá certo por acaso (o computador está em Brasília); no SERVIDOR
+// da Vercel dá 3 horas a mais — foi assim que a tela de Auditoria mostrou
+// "15:07" às 12:07 (achado do dono em 05/09/2026, com o relógio novo da barra
+// lateral ao lado, marcando a hora certa).
+//
+// Regra: **toda formatação de data/hora leva `timeZone` explícito**. Não é só
+// para o servidor — deixar explícito também protege quem abrir o sistema de um
+// computador configurado em outro fuso.
+
+/** Formata um instante SEMPRE no horário de Brasília. */
+export function formatInBrazil(
+  instant: Date | string | number,
+  options: Intl.DateTimeFormatOptions
+): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    ...options,
+    timeZone: BRAZIL_TIME_ZONE,
+  }).format(new Date(instant));
+}
+
+/** "05/09/2026" */
+export const formatBrDate = (instant: Date | string | number) =>
+  formatInBrazil(instant, { day: "2-digit", month: "2-digit", year: "numeric" });
+
+/** "12:07" */
+export const formatBrTime = (instant: Date | string | number) =>
+  formatInBrazil(instant, { hour: "2-digit", minute: "2-digit", hour12: false });
+
+/** "05/09/2026, 12:07" */
+export const formatBrDateTime = (instant: Date | string | number) =>
+  formatInBrazil(instant, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 
 /** O relógio de parede brasileiro agora: `{ date: "2026-09-05", time: "14:32" }`. */
 export function brazilClock(instant: Date = new Date()): {

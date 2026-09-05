@@ -21,6 +21,7 @@ import type {
   SellableProcedure,
 } from "./direct-sale-loader";
 import { createDirectSaleFromChart } from "./direct-sale-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const inputClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -150,7 +151,7 @@ export function DirectSaleDialog({
               <option value="">Escolher o atendimento...</option>
               {appointments.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {new Date(a.startsAt).toLocaleString("pt-BR", {
+                  {new Date(a.startsAt).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                     day: "2-digit",
                     month: "2-digit",
                     year: "2-digit",

@@ -35,13 +35,14 @@ import {
   type TreatmentSession,
 } from "./treatment-sessions-panel";
 import { type ProcedureRow } from "./client-procedures-section";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 // -- Helpers de data --------------------------------------------------------
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR");
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -516,7 +517,7 @@ export function TreatmentSection({
                   <span className="text-xs text-muted-foreground">
                     {t.count} procedimento(s)
                     {t.at
-                      ? ` · aprovado em ${new Date(t.at).toLocaleDateString("pt-BR")}`
+                      ? ` · aprovado em ${new Date(t.at).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`
                       : ""}
                   </span>
                 </li>

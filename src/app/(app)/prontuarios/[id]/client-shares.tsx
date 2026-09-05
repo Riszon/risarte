@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { endClientShare, shareClientWithUnit } from "./share-actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const REASONS: { value: string; label: string }[] = [
   { value: "urgency", label: "Urgência" },
@@ -29,7 +30,7 @@ export type ActiveShare = {
 };
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

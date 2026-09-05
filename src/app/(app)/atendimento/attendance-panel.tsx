@@ -62,6 +62,7 @@ import {
   updateAppointmentStatus,
   updateAttendance,
 } from "../agenda/actions";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type PanelAppointment = {
   id: string;
@@ -191,7 +192,7 @@ function arrivalNote(a: PanelAppointment): string | null {
   const diffMin = Math.round(
     (new Date(a.starts_at).getTime() - new Date(a.checkedInAt).getTime()) / 60000
   );
-  const checkInTime = new Date(a.checkedInAt).toLocaleTimeString("pt-BR", {
+  const checkInTime = new Date(a.checkedInAt).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -232,7 +233,7 @@ function AttendanceTimers({
         {a.doneAt && (
           <>
             Concluído às{" "}
-            {new Date(a.doneAt).toLocaleTimeString("pt-BR", {
+            {new Date(a.doneAt).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
               hour: "2-digit",
               minute: "2-digit",
             })}
@@ -482,7 +483,7 @@ export function AttendancePanel({
   );
 
   function time(iso: string) {
-    return new Date(iso).toLocaleTimeString("pt-BR", {
+    return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -498,7 +499,7 @@ export function AttendancePanel({
     accent?: string;
   }) {
     const pendingSince = a.pendingSinceIso
-      ? new Date(`${a.pendingSinceIso}T00:00:00`).toLocaleDateString("pt-BR", {
+      ? new Date(`${a.pendingSinceIso}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
           day: "2-digit",
           month: "2-digit",
         })

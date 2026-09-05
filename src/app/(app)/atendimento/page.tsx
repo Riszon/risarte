@@ -29,6 +29,16 @@ import {
   type AttendanceMetrics,
   type MetricPerson,
 } from "./attendance-indicators";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  formatBrDate,
+  formatInBrazil,
+  startOfDayInBrazil,
+  startOfTodayInBrazil,
+  todayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Atendimento" };
 
@@ -61,51 +71,45 @@ const PERIOD_LABELS: Record<Period, string> = {
   mes: "Mês",
 };
 
-function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0 = sunday
-  const diff = day === 0 ? -6 : 1 - day; // monday as first day
-  d.setDate(d.getDate() + diff);
-  return d;
+// ⚠️ PERÍODO EM DIAS BRASILEIROS. `setHours(0,0,0,0)` zerava o relógio da
+// máquina — UTC no servidor —, então "hoje" começava às 21h de ontem.
+function startOfWeekIso(iso: string): string {
+  const dia = weekdayOf(iso);
+  return addDaysIso(iso, dia === 0 ? -6 : 1 - dia);
 }
 
 function periodRange(period: Period): { start: Date; end: Date; label: string } {
-  const base = new Date();
+  const hoje = todayInBrazil();
+  const meiaNoite = (iso: string) => startOfDayInBrazil(iso);
+
   if (period === "semana") {
-    const start = startOfWeek(base);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    const last = new Date(end.getTime() - 864e5);
+    const inicio = startOfWeekIso(hoje);
+    const ultimo = addDaysIso(inicio, 6);
+    const curto = (iso: string) =>
+      formatInBrazil(meiaNoite(iso), { day: "2-digit", month: "2-digit" });
     return {
-      start,
-      end,
-      label: `semana de ${start.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-      })} a ${last.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-      })}`,
+      start: meiaNoite(inicio),
+      end: meiaNoite(addDaysIso(inicio, 7)),
+      label: `semana de ${curto(inicio)} a ${curto(ultimo)}`,
     };
   }
   if (period === "mes") {
-    const start = new Date(base.getFullYear(), base.getMonth(), 1);
-    const end = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+    const primeiro = `${hoje.slice(0, 7)}-01`;
+    const proximo = `${addDaysIso(primeiro, 31).slice(0, 7)}-01`;
     return {
-      start,
-      end,
-      label: base.toLocaleDateString("pt-BR", {
+      start: meiaNoite(primeiro),
+      end: meiaNoite(proximo),
+      label: formatInBrazil(meiaNoite(primeiro), {
         month: "long",
         year: "numeric",
       }),
     };
   }
-  const start = new Date(base);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  return { start, end, label: `hoje, ${start.toLocaleDateString("pt-BR")}` };
+  return {
+    start: meiaNoite(hoje),
+    end: meiaNoite(addDaysIso(hoje, 1)),
+    label: `hoje, ${formatBrDate(meiaNoite(hoje))}`,
+  };
 }
 
 type MetricsRow = {
@@ -160,7 +164,7 @@ async function computeAttendanceMetrics(
   const person = (r: MetricsRow): MetricPerson => ({
     id: r.clients?.id ?? null,
     name: r.clients?.full_name ?? "—",
-    detail: new Date(r.starts_at).toLocaleTimeString("pt-BR", {
+    detail: new Date(r.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
       hour: "2-digit",
       minute: "2-digit",
     }),
@@ -444,8 +448,7 @@ export default async function AtendimentoPage(
   const SELECT =
     "id, type, status, starts_at, attendance, checked_in_at, called_at, done_at, checked_in_by, called_by, done_by, provider_user_id, clinic_id, is_online, provider:profiles!appointments_provider_user_id_fkey ( full_name ), clinics ( name ), room:clinic_rooms ( name ), clients ( id, full_name, journey_phase )";
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = startOfTodayInBrazil();
 
   // H3.4: dispara os alertas de espera longa / pendências de dias anteriores
   // (idempotente — dedupe no banco) e resolve o limite de espera da unidade.
@@ -734,7 +737,7 @@ export default async function AtendimentoPage(
     const person = (r: Row): MetricPerson => ({
       id: r.clients?.id ?? null,
       name: r.clients?.full_name ?? "—",
-      detail: new Date(r.starts_at).toLocaleTimeString("pt-BR", {
+      detail: new Date(r.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
         hour: "2-digit",
         minute: "2-digit",
       }),

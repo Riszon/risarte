@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 /**
  * Os alertas, reunidos.
@@ -90,7 +91,7 @@ export function Alertas({
                 {a.desde && (
                   <span className="text-muted-foreground">
                     desde{" "}
-                    {new Date(a.desde).toLocaleDateString("pt-BR", {
+                    {new Date(a.desde).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
                       day: "2-digit",
                       month: "2-digit",
                     })}

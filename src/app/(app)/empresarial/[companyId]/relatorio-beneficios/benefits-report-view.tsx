@@ -23,6 +23,7 @@ import {
   RELATIONSHIP_LABELS,
 } from "@/lib/empresarial/constants";
 import type { BenefitsReport, MemberStats } from "./data";
+import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const PRINT_CSS = `
 @media print {
@@ -45,12 +46,12 @@ type Options = {
 function d(iso: string | null): string {
   if (!iso) return "—";
   const date = iso.length <= 10 ? new Date(iso + "T00:00:00") : new Date(iso);
-  return date.toLocaleDateString("pt-BR");
+  return date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 
 function hm(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("pt-BR", {
+  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });
