@@ -41,6 +41,8 @@ import { loadNegotiationBlock } from "../../apresentacao/[clientId]/negotiation-
 import { NegotiationPanel } from "../../apresentacao/[clientId]/negotiation-panel";
 import { ClosingPanel } from "../../apresentacao/[clientId]/closing-panel";
 import { FunnelHistoryDialog, type FunnelEvent } from "./funnel-history";
+import { FAILED_ATTEMPT_KINDS } from "../actions";
+import { PresentationTracker } from "../presentation-tracker";
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
 import { PprOfferButton } from "@/components/ppr-offer-dialog";
 import {
@@ -194,6 +196,55 @@ export default async function CommercialCockpitPage(
     at: e.created_at,
   }));
 
+  // 0248 — as tentativas de apresentação saem dos MESMOS eventos que o
+  // histórico já carregou: nenhuma consulta a mais, e nenhuma chance de os dois
+  // contarem números diferentes.
+  const tentativas = { failed: 0, noShow: 0, lastLabel: null as string | null,
+    lastAt: null as string | null, requestedAt: null as string | null };
+  for (const e of [...evtRows].reverse()) {
+    if (FAILED_ATTEMPT_KINDS.includes(e.event_type)) {
+      tentativas.failed += 1;
+      if (e.event_type === "apresentacao_nao_compareceu") tentativas.noShow += 1;
+      tentativas.lastLabel = e.description;
+      tentativas.lastAt = e.created_at;
+    }
+    if (e.event_type === "apresentacao_pedido_agendamento") {
+      tentativas.requestedAt = e.created_at;
+    }
+  }
+
+  const [{ data: cardRow }, { data: apptRow }] = await Promise.all([
+    supabase
+      .from("commercial_cards")
+      .select("stage")
+      .eq("client_id", clientId)
+      .maybeSingle(),
+    supabase
+      .from("appointments")
+      .select(
+        "starts_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+      )
+      .eq("client_id", clientId)
+      .eq("type", "commercial_presentation")
+      .in("status", ["scheduled", "confirmed"])
+      .gte("starts_at", new Date().toISOString())
+      .order("starts_at")
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const cardStage = (cardRow as { stage: string } | null)?.stage ?? null;
+  const apptProvider = (
+    apptRow as { provider: { full_name: string } | { full_name: string }[] | null } | null
+  )?.provider;
+  const nextPresentation = apptRow
+    ? {
+        at: (apptRow as { starts_at: string }).starts_at,
+        withName:
+          (Array.isArray(apptProvider) ? apptProvider[0] : apptProvider)?.full_name ??
+          null,
+      }
+    : null;
+
   // Pendências do cliente (controle de qualidade + procedimentos em aberto).
   const qcRevisao = qcRows.filter((r) => r.status === "revisao").length;
   const qcReprovado = qcRows.filter((r) => r.status === "reprovado").length;
@@ -320,6 +371,29 @@ export default async function CommercialCockpitPage(
           </div>
         </div>
       </div>
+
+      {/* 0248 — enquanto a apresentação não aconteceu, é aqui que o consultor
+          registra o que houve e pede novo agendamento. O mesmo bloco do cartão
+          do quadro: obrigá-lo a voltar ao quadro para registrar seria garantir
+          que ele não registre. */}
+      {cardStage === "a_apresentar" && (
+        <div className="rounded-xl border px-4 py-3">
+          <PresentationTracker
+            info={{
+              clientId,
+              clientName: client.full_name as string,
+              presentationAt: nextPresentation?.at ?? null,
+              presentationWith: nextPresentation?.withName ?? null,
+              attemptCount: tentativas.failed,
+              noShowCount: tentativas.noShow,
+              lastAttemptLabel: tentativas.lastLabel,
+              lastAttemptAt: tentativas.lastAt,
+              schedulingRequestedAt: tentativas.requestedAt,
+              podeAgir: canClose,
+            }}
+          />
+        </div>
+      )}
 
       {!inCommercialPhase && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">

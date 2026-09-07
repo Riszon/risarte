@@ -521,6 +521,14 @@ trabalha. **Duração estimada:** 60 minutos.
    paciente na frente → **Confirmar chegada**.
 3. **Quem chama é o profissional**, não a recepção.
 
+**Tarefa 4 — Atender o pedido do Comercial**
+
+Quando o Consultor não consegue realizar a apresentação (o cliente não
+compareceu, pediu para remarcar), ele envia um pedido que chega no **seu sino de
+avisos**: *"Agendar apresentação: «nome do cliente»"*, com o motivo. Clique no
+aviso, abra a ficha e agende — o Comercial vê a nova data no cartão dele
+automaticamente, e não precisa ser avisado de volta.
+
 **Erros frequentes:** tentar cadastrar sem CPF; agendar fora do horário da
 unidade; fechar o aviso modal de "agendar apresentação" clicando em *"Já
 agendei"* sem ter agendado — isso afirma um fato que não aconteceu.
@@ -598,6 +606,36 @@ estoque** e o repasse do procedimento é apurado. Você não digita nada disso.
 ### 6.5. Consultor Comercial
 
 **Objetivo:** negociar e fechar. **Duração:** 60 minutos.
+
+**Tarefa 1 — Enquanto a apresentação ainda não aconteceu**
+
+Na coluna **A apresentar**, cada cartão mostra:
+
+- **quando é a apresentação** e com quem — ou, em **vermelho**, *"Sem
+  apresentação marcada"*, que é o caso que trava o funil;
+- **quantas tentativas** já houve e **o que aconteceu da última vez**.
+
+Quando o cliente não comparece, pede para remarcar, ou você fala com ele sem
+conseguir remarcar: **Registrar acontecimento**. Escolha o tipo, escreva o que
+houve, e pronto — entra no *Histórico do funil* com data, hora e o seu nome.
+
+> **O tipo é o que faz o sistema contar.** É por ele que o cartão diz *"3ª
+> tentativa · 2 não comparecimentos"*. Se tudo fosse texto livre, ninguém
+> saberia quais casos mais falham.
+
+**Registro não se apaga.** Errou? Registre outro corrigindo — o histórico é a
+memória do caso, e memória que se reescreve não serve de prova.
+
+**Precisa de uma nova data?** Botão **Pedir agendamento**: o aviso vai para a
+**Recepção da unidade do cliente**, que tem a agenda e o telefone dele. Escreva
+o motivo — é o que ela vai usar ao ligar. Enquanto ela não marcar, o cartão
+mostra *"Aguardando a Recepção agendar"*. **Um pedido por dia por cliente:**
+clicar de novo não gera um segundo aviso.
+
+Quando a Recepção marcar, **o cartão mostra sozinho** e o histórico ganha a
+linha *"Apresentação remarcada para …"*.
+
+**Tarefa 2 — Negociar e fechar**
 
 1. Menu **Comercial** → seu funil.
 2. Abra o caso (`/comercial/[clientId]`) → escolha a **forma de pagamento** →

@@ -62,6 +62,47 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.229.0",
+    data: "2026-09-07",
+    migracao: "0248",
+    titulo: "As tentativas de realizar a apresentação passam a ter registro",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na coluna “A apresentar”, o cartão mostra quando é a apresentação e com quem — e avisa em vermelho quando NÃO há nenhuma marcada, que é o caso que trava o funil.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager", "franchisee"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Botão “Registrar acontecimento”: cliente não compareceu, pediu para remarcar, falei com ele. Fica no histórico do funil com data, hora e autor — e o cartão passa a contar “3ª tentativa · 2 não comparecimentos”.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Botão “Pedir agendamento”: o Consultor pede uma nova data e o aviso chega à Recepção da unidade do cliente, com o motivo. Um pedido por dia por cliente.",
+        papeis: ["commercial_consultant", "commercial_assistant", "receptionist"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quando a Recepção marca ou remarca a apresentação, o cartão do Comercial mostra sozinho e o histórico registra a nova data. Ninguém precisa avisar ninguém.",
+        papeis: ["commercial_consultant", "commercial_assistant", "receptionist"],
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Acontecimento registrado não se apaga. Para corrigir, registre outro — o histórico é a memória do caso.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+      },
+    ],
+  },
+  {
     versao: "0.228.0",
     data: "2026-09-05",
     migracao: null,

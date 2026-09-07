@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { FAILED_ATTEMPT_KINDS } from "./actions";
 import { cn } from "@/lib/utils";
 import {
   commercialColumnOf,
@@ -185,6 +186,93 @@ export default async function ComercialKanbanPage(
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // A APRESENTAÇÃO DE CADA CLIENTE (0248)
+  // ---------------------------------------------------------------------------
+  // O cartão precisa responder a três perguntas que ele não respondia: quando é
+  // a apresentação, quantas vezes já se tentou, e o que aconteceu da última vez.
+  //
+  // **A ausência é a informação mais importante daqui.** Cliente parado em "A
+  // apresentar" SEM nada agendado é o caso que trava o funil — e era justamente
+  // o que não aparecia em lugar nenhum.
+  const presentationByClient = new Map<
+    string,
+    { at: string; withName: string | null }
+  >();
+  const attemptsByClient = new Map<
+    string,
+    { failed: number; noShow: number; lastLabel: string | null; lastAt: string | null;
+      requestedAt: string | null }
+  >();
+
+  if (ids.length > 0) {
+    const [{ data: appts }, { data: events }] = await Promise.all([
+      supabase
+        .from("appointments")
+        .select(
+          "client_id, starts_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+        )
+        .in("client_id", ids)
+        .eq("type", "commercial_presentation")
+        .in("status", ["scheduled", "confirmed"])
+        .gte("starts_at", new Date().toISOString())
+        .order("starts_at"),
+      supabase
+        .from("commercial_card_events")
+        .select("client_id, event_type, description, created_at")
+        .in("client_id", ids)
+        .like("event_type", "apresentacao_%")
+        .order("created_at", { ascending: false }),
+    ]);
+
+    // A PRÓXIMA apresentação de cada um: a consulta já vem ordenada, então a
+    // primeira que aparece é a mais próxima.
+    for (const a of (appts ?? []) as unknown as {
+      client_id: string;
+      starts_at: string;
+      provider: { full_name: string } | { full_name: string }[] | null;
+    }[]) {
+      if (presentationByClient.has(a.client_id)) continue;
+      const p = Array.isArray(a.provider) ? a.provider[0] : a.provider;
+      presentationByClient.set(a.client_id, {
+        at: a.starts_at,
+        withName: p?.full_name ?? null,
+      });
+    }
+
+    for (const e of (events ?? []) as {
+      client_id: string;
+      event_type: string;
+      description: string | null;
+      created_at: string;
+    }[]) {
+      const atual = attemptsByClient.get(e.client_id) ?? {
+        failed: 0,
+        noShow: 0,
+        lastLabel: null,
+        lastAt: null,
+        requestedAt: null,
+      };
+      if (FAILED_ATTEMPT_KINDS.includes(e.event_type)) {
+        atual.failed += 1;
+        if (e.event_type === "apresentacao_nao_compareceu") atual.noShow += 1;
+        // Como a lista vem do mais novo para o mais antigo, o primeiro que
+        // cair aqui é o último acontecido.
+        if (atual.lastLabel === null) {
+          atual.lastLabel = e.description;
+          atual.lastAt = e.created_at;
+        }
+      }
+      if (
+        e.event_type === "apresentacao_pedido_agendamento" &&
+        atual.requestedAt === null
+      ) {
+        atual.requestedAt = e.created_at;
+      }
+      attemptsByClient.set(e.client_id, atual);
+    }
+  }
+
   // Nomes de quem marcou perdido/cancelado (detalhe nos botões).
   const outcomeByIds = [
     ...new Set(
@@ -228,6 +316,13 @@ export default async function ComercialKanbanPage(
       outcomeReason: card?.reason ?? null,
       outcomeAt: card?.outcomeAt ?? null,
       outcomeByName: card?.outcomeBy ? (outcomeNames.get(card.outcomeBy) ?? null) : null,
+      presentationAt: presentationByClient.get(c.id)?.at ?? null,
+      presentationWith: presentationByClient.get(c.id)?.withName ?? null,
+      attemptCount: attemptsByClient.get(c.id)?.failed ?? 0,
+      noShowCount: attemptsByClient.get(c.id)?.noShow ?? 0,
+      lastAttemptLabel: attemptsByClient.get(c.id)?.lastLabel ?? null,
+      lastAttemptAt: attemptsByClient.get(c.id)?.lastAt ?? null,
+      schedulingRequestedAt: attemptsByClient.get(c.id)?.requestedAt ?? null,
     };
   });
 

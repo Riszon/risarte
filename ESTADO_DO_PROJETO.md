@@ -1,6 +1,47 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/09/2026 · Versão do sistema: **0.228.0** · Última migração: **0247**_
+_Atualizado em: 07/09/2026 · Versão do sistema: **0.229.0** · Última migração: **0248**_
+
+> ### AS TENTATIVAS DE APRESENTAÇÃO (v0.229.0, migração 0248)
+>
+> Pedido do dono: entre "o plano foi enviado ao Comercial" e "a apresentação
+> aconteceu" existe um pedaço de vida que o sistema não enxergava — o cliente
+> não comparece, pede para remarcar, some. O cartão ficava parado em *A
+> apresentar* sem contar nada, e a memória do caso morava na cabeça do consultor.
+>
+> **Três das quatro peças já existiam** e foram reaproveitadas: o histórico do
+> funil (`commercial_card_events`), o caminho de avisar a Recepção (`0107`, que
+> o Dentista já usa para sessões) e o aviso ao consultor quando a apresentação é
+> marcada (`0075`). O que faltava era a **porta de escrita** para o consultor, a
+> **contagem** e a **exibição no cartão**.
+>
+> **Decisões (dono, 07/09/2026):**
+>
+> - **Tipo + texto, não só texto.** Cinco tipos, sendo três "tentativa
+>   frustrada". É o tipo que deixa o sistema CONTAR — o cartão diz "3ª tentativa
+>   · 2 não comparecimentos". Texto livre registra e não conta.
+> - **Não comparecer NÃO move o cartão.** O caso continua dependendo do
+>   consultor até a apresentação acontecer; é a fila dele. Mandar para Follow-up
+>   misturaria "não fechou depois de ouvir" com "nem chegou a ouvir", e o
+>   indicador de conversão passaria a mentir.
+>
+> **Nenhum histórico novo:** os acontecimentos entram no histórico do funil que
+> já existe. Duas linhas do tempo para o mesmo cliente divergiriam exatamente na
+> hora de explicar o caso para alguém.
+>
+> **A ausência é a informação.** O cartão avisa em **vermelho** quando não há
+> apresentação marcada — o estado que trava o funil e que não aparecia em lugar
+> nenhum.
+>
+> **O gatilho ouve INSERT e UPDATE** (lição da 0218: há fluxo que nasce pronto),
+> mas no UPDATE só reage quando o **horário** mudou — confirmar presença não é
+> remarcação, e registrar tudo encheria o histórico de linhas vazias.
+>
+> **Provado no banco de teste, não só compilado:** um script exercitou o caminho
+> inteiro — o gatilho gerando "agendada" e "remarcada" com a hora certa de
+> Brasília, a observação que NÃO vira remarcação, as duas portas recusando quem
+> não é do time comercial, e o tipo inválido recusado. O script desfez o que
+> criou e foi apagado.
 
 > ### O FUSO, A SEGUNDA METADE: EXIBIR (v0.228.0, sem migração)
 >

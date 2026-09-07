@@ -37,6 +37,7 @@ import {
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
+import { PresentationTracker } from "./presentation-tracker";
 import {
   BOARD_COLUMNS,
   COMMERCIAL_COLUMN_COLORS,
@@ -75,6 +76,18 @@ export type BoardCard = {
   outcomeReason: string | null;
   outcomeAt: string | null;
   outcomeByName: string | null;
+  // ---- 0248: a vida entre "enviado ao Comercial" e "apresentação feita" ----
+  /** Próxima apresentação marcada. `null` = NÃO HÁ NADA AGENDADO — é o estado
+   *  que trava o funil, e o cartão precisa gritar isso. */
+  presentationAt: string | null;
+  presentationWith: string | null;
+  /** Tentativas frustradas (não compareceu + remarcações). */
+  attemptCount: number;
+  noShowCount: number;
+  lastAttemptLabel: string | null;
+  lastAttemptAt: string | null;
+  /** Último pedido de agendamento enviado à Recepção. */
+  schedulingRequestedAt: string | null;
 };
 
 /** Como o usuário enxerga o funil: comercial (age) × unidade (visualiza). */
@@ -546,6 +559,26 @@ function BoardCardView({
 
       {card.finalCents != null && card.finalCents > 0 && (
         <p className="mt-1 text-xs font-medium tabular-nums">{formatBRL(card.finalCents)}</p>
+      )}
+
+      {/* 0248 — só na coluna "A apresentar": é o trecho da vida do cliente em
+          que a apresentação ainda não aconteceu. Depois dela o assunto passa a
+          ser o follow-up, que é outra fila e tem os próprios controles. */}
+      {card.column === "a_apresentar" && (
+        <PresentationTracker
+          info={{
+            clientId: card.clientId,
+            clientName: card.fullName,
+            presentationAt: card.presentationAt,
+            presentationWith: card.presentationWith,
+            attemptCount: card.attemptCount,
+            noShowCount: card.noShowCount,
+            lastAttemptLabel: card.lastAttemptLabel,
+            lastAttemptAt: card.lastAttemptAt,
+            schedulingRequestedAt: card.schedulingRequestedAt,
+            podeAgir: isCommercial,
+          }}
+        />
       )}
 
       {inFollowup && (
