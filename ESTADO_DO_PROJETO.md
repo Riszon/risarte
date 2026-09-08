@@ -22,9 +22,17 @@ _Atualizado em: 08/09/2026 · Versão do sistema: **0.234.0** · Última migraç
 > projetos** (é por projeto, e exige deploy novo) e **medir de novo** — o
 > procedimento está no `CLAUDE.md` §0d.
 >
-> **Segundo plano pendente, sem data:** o **Supabase**. No gratuito não há
-> backup diário e projeto parado é pausado — para dado de paciente, isso é
-> sério.
+> **Supabase: PRO, vigência até 29/09/2026** (dono, 08/09/2026). São **duas
+> datas seguidas** — 14/09 a Vercel, 29/09 o Supabase.
+>
+> O Pro do Supabase inclui **backup diário automático**. ⚠️ **Continua em aberto
+> conferir no painel que eles estão realmente acontecendo** — pendência aberta
+> desde 31/08 e nunca fechada. Backup que ninguém viu funcionar é backup que não
+> se sabe se existe.
+>
+> **Backup manual, do repositório:** `npm run backup:producao` — lê o catálogo
+> de cada schema (não deduz das migrações, lição do Academy) e grava **fora do
+> repositório**. **Rodar antes e depois do recadastro.**
 
 > ### O SISTEMA FICOU 6,5× MAIS RÁPIDO (08/09/2026, v0.234.0, sem migração)
 >
