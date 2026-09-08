@@ -161,6 +161,66 @@ edição direta desaparece na próxima entrega, sem aviso.
 `next.config.ts`). Uma fonte, dois destinos — o que a equipe lê na tela e o que
 ela lê impresso não podem divergir.
 
+## 0d. ⚠️ ONDE O CÓDIGO RODA IMPORTA TANTO QUANTO O CÓDIGO
+
+**08/09/2026.** O dono relatou "o sistema está lento, todas as telas mais ou
+menos igual". A média por clique era **1421 ms**. Terminou em **220 ms** — o
+sistema ficou **6,5× mais rápido**, e quase nada disso foi otimizar consulta.
+
+**A causa maior: as funções da Vercel rodavam em `iad1` (Washington) e o banco
+está em `sa-east-1` (São Paulo).** Cada consulta atravessava 8.000 km. Uma tela
+com quatro consultas em sequência pagava ~760 ms só em viagem.
+
+| | média por clique |
+|---|---|
+| Como estava | 1421 ms |
+| Sem as duas idas à rede da autenticação | 1043 ms |
+| **Com a função em São Paulo** | **220 ms** |
+
+**A REGIÃO DA FUNÇÃO É CONFIGURAÇÃO DE PAINEL, NÃO ESTÁ NO REPOSITÓRIO** (não
+há `vercel.json`). Vercel → *Settings → Functions → Function Regions* → só
+**São Paulo (gru1)**, e **exige deploy novo depois de salvar**. Conferir nos
+DOIS projetos: mudar num não muda no outro (o treino ficou para trás e só foi
+notado ao medir separadamente).
+
+### ⚠️ COMO MEDIR — e o erro que eu cometi
+
+Eu afirmei ao dono que o servidor estava em São Paulo e **descartei a hipótese
+certa**. Tinha lido `x-vercel-id` de `/login` — que é **estática** — e de rotas
+que o proxy redireciona **na borda**. Nenhuma delas executa função, então o
+cabeçalho só mostrava `gru1`, que é de onde o DONO está.
+
+- **Só requisição LOGADA numa rota dinâmica revela a região da função.**
+- Formato: `borda::função::id` (`gru1::iad1::abc`). **Duas partes = a função não
+  rodou** — está medindo a borda, não o servidor.
+- O instrumento pronto: `RISARTE_URL=... RISARTE_ENV_FILE=.env.test.local
+  npm run check:telas` (entra logado, mede cada tela).
+
+**A lição para toda investigação de lentidão:** medir a coisa errada com
+confiança é pior que não medir — leva a descartar a causa verdadeira. Antes de
+concluir "não é X", conferir se o que foi medido chega a exercitar X.
+
+### O que mais cortou tempo
+
+**`getClaims()` no lugar de `getUser()`** (`src/proxy.ts` e `src/lib/auth.ts`).
+`getUser()` vai à rede a cada chamada, e o sistema perguntava **duas vezes por
+clique** — proxy e página. Os dois projetos usam chave assimétrica (conferir em
+`/.well-known/jwks.json`), então a assinatura é verificada localmente.
+
+**O preço disso, e como está pago:** token já emitido vale até vencer (1h),
+então banir no Supabase deixou de cortar na hora. `profiles.is_active` era
+buscado a cada requisição e **nunca conferido** — agora é exigido, e desativar
+corta no clique seguinte, por decisão do banco. Quem cai lá vai para
+`/conta-desativada`, que fica **fora do grupo `(app)`** de propósito: lá dentro
+toda tela chama `getSessionContext()`, que é quem manda para lá — seria laço.
+
+**Fluid Compute LIGADO** (uma cópia atende várias requisições). Combina com este
+sistema, que passa o tempo esperando o banco. O risco é estado de módulo
+compartilhado entre pessoas — varrido em 08/09/2026: só há cache de feriados, do
+texto do manual e a presença do chat (que roda no navegador). Nenhum dado de
+pessoa. **Ao criar estado no nível do módulo em código de servidor, verificar de
+novo.**
+
 ## 1. Visão geral
 
 Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1

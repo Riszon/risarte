@@ -1,6 +1,42 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/09/2026 · Versão do sistema: **0.229.0** · Última migração: **0248**_
+_Atualizado em: 08/09/2026 · Versão do sistema: **0.234.0** · Última migração: **0251**_
+
+> ### O SISTEMA FICOU 6,5× MAIS RÁPIDO (08/09/2026, v0.234.0, sem migração)
+>
+> Relato do dono: *"todas as telas mais ou menos igual"* — e essa frase foi a
+> pista, porque aponta para custo fixo, não para tela pesada.
+>
+> | | média por clique |
+> |---|---|
+> | Como estava | **1421 ms** |
+> | Sem as duas idas à rede da autenticação | 1043 ms |
+> | **Com a função em São Paulo** | **220 ms** (produção: **182 ms**) |
+>
+> **A medida que abriu o caso:** a DRE (a tela mais pesada) levava 1196 ms e o
+> `/perfil` (que quase não consulta nada) levava 1385 ms. Tela vazia mais lenta
+> que relatório diz onde o problema **não** está.
+>
+> **Duas causas.** (1) O sistema perguntava "quem é você?" **duas vezes por
+> clique** — proxy e página —, e `getUser()` vai à rede. (2) **As funções
+> rodavam em Washington e o banco está em São Paulo**: 8.000 km por consulta.
+>
+> **⚠️ E EU DESCARTEI A SEGUNDA, COM CONFIANÇA.** Li `x-vercel-id` de `/login`
+> (estática) e de rotas que o proxy redireciona na borda — nenhuma executa
+> função, então o cabeçalho mostrava `gru1`, que é onde o DONO está. Disse a ele
+> "não é distância". **Foi ele abrir o painel da Vercel e ver `iad1` marcado.**
+> Sem isso, o sistema ficaria 6× mais lento para sempre.
+>
+> A região é configuração de painel, exige deploy novo, e é **por projeto** — o
+> treino ficou para trás e só apareceu ao medir os dois separadamente.
+>
+> **De quebra, uma falha de segurança:** `profiles.is_active` era buscado a cada
+> requisição e **nunca conferido**. O corte de acesso dependia do banimento no
+> Supabase ser notado na ida à rede. Agora a regra é exigida no app — desativar
+> corta no clique seguinte, por decisão do banco, e o acesso deixou de depender
+> do relógio de um token.
+>
+> Detalhe em `CLAUDE.md` §0d, inclusive **como medir sem repetir o meu erro**.
 
 > ### AS TENTATIVAS DE APRESENTAÇÃO (v0.229.0, migração 0248)
 >
