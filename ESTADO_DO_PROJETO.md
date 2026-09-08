@@ -2,6 +2,30 @@
 
 _Atualizado em: 08/09/2026 · Versão do sistema: **0.234.0** · Última migração: **0251**_
 
+> ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
+>
+> *(17:00 em Los Angeles, informado pelo dono em 08/09/2026.)*
+>
+> **Lembrar o dono no início de cada sessão até estar resolvido.**
+>
+> ⚠️ **O que está em jogo é o ganho de desempenho de 08/09.** A escolha da
+> região da função — que levou o sistema de 1421 ms para 220 ms por clique — é
+> recurso de plano pago ("up to 5 regions on your current **Pro** plan"). Caindo
+> para o gratuito, há risco real de a função voltar a `iad1` (Washington) e o
+> sistema ficar **6× mais lento outra vez**, sem aviso, e sem ninguém ligar uma
+> coisa à outra.
+>
+> **E o motivo que não é técnico:** o plano gratuito da Vercel é para uso **não
+> comercial**. Uma rede de clínicas operando nele fica fora dos termos.
+>
+> **Depois de qualquer mudança de plano:** conferir a região **nos dois
+> projetos** (é por projeto, e exige deploy novo) e **medir de novo** — o
+> procedimento está no `CLAUDE.md` §0d.
+>
+> **Segundo plano pendente, sem data:** o **Supabase**. No gratuito não há
+> backup diário e projeto parado é pausado — para dado de paciente, isso é
+> sério.
+
 > ### O SISTEMA FICOU 6,5× MAIS RÁPIDO (08/09/2026, v0.234.0, sem migração)
 >
 > Relato do dono: *"todas as telas mais ou menos igual"* — e essa frase foi a
