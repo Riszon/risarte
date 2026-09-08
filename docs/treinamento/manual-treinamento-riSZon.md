@@ -827,13 +827,26 @@ Nem todo cliente que some some para sempre. Este é o caminho de volta.
 4. **Coordenador** reavalia e envia ao **Centro de Planejamento**.
 5. Novo plano, nova aprovação, e o cliente **volta ao Comercial** — agora com um
    orçamento que reflete a boca dele hoje, não a de um ano atrás.
+6. **O cartão reabre sozinho** e o cliente reaparece em **A apresentar**,
+   começando uma **rodada nova**: sem o motivo da perda e com as tentativas
+   zeradas.
 
 > **Por que passar de novo pela avaliação.** Quando muito tempo se passa desde a
 > última, o plano antigo já não descreve o paciente. Reapresentar aquele
 > orçamento seria negociar sobre uma fotografia vencida.
 
-**Se o cliente voltar logo**, sem necessidade de nova avaliação: fale com o
-Admin Master — só ele move um cliente entre fases livremente.
+> **A fase manda no cartão.** Sair do funil encerra o cartão; entrar no funil
+> reabre. Não existe botão para isso, e é de propósito — dois jeitos de dizer a
+> mesma coisa acabariam discordando.
+>
+> **Rodada nova não apaga história:** as tentativas e o motivo da perda anterior
+> continuam no **Histórico do funil**. O que zera é o contador da rodada, para o
+> cartão não abrir dizendo *"4ª tentativa"* sobre um cliente com quem ninguém
+> falou ainda desta vez.
+
+**Se o cliente voltar logo**, sem necessidade de nova avaliação: o Admin Master
+move a fase direto para a Conversão Comercial — e o cartão reabre do mesmo
+jeito.
 
 ### Fluxos com evidência parcial
 

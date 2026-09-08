@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.232.0",
+    data: "2026-09-08",
+    migracao: "0250",
+    titulo: "O cliente que volta ao Comercial reaparece em “A apresentar”",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem tinha sido dado por perdido e voltava para a Conversão Comercial continuava marcado como perdido — ficava na fase certa e invisível no quadro. Agora o cartão reabre sozinho ao entrar na fase.",
+        papeis: "todos",
+        manual: "8. Fluxo 4 — o cliente que volta depois de perdido",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quem volta começa uma rodada nova: o cartão não abre mais dizendo “4ª tentativa” para um cliente com quem ninguém falou ainda desta vez. As tentativas antigas continuam no Histórico do funil.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.231.0",
     data: "2026-09-08",
     migracao: "0249",

@@ -240,12 +240,34 @@ export default async function ComercialKanbanPage(
       });
     }
 
+    // 0250 — A CONTAGEM É DA RODADA ATUAL, não da vida inteira do cliente.
+    //
+    // Quem volta ao funil depois de ter sido dado por perdido começa uma rodada
+    // nova. Contar as tentativas antigas faria o cartão abrir dizendo "4ª
+    // tentativa" para um cliente com quem ninguém falou ainda desta vez — e o
+    // consultor tomaria a decisão errada por causa do número.
+    //
+    // A lista vem do mais NOVO para o mais antigo, então o primeiro "reaberto"
+    // que aparece é a fronteira: o que vier depois dele é da rodada anterior.
+    const rodadaAnterior = new Set<string>();
+    for (const e of (events ?? []) as { client_id: string; event_type: string }[]) {
+      if (e.event_type === "reaberto") rodadaAnterior.add(e.client_id);
+    }
+    const jaReaberto = new Set<string>();
+
     for (const e of (events ?? []) as {
       client_id: string;
       event_type: string;
       description: string | null;
       created_at: string;
     }[]) {
+      if (rodadaAnterior.has(e.client_id)) {
+        if (e.event_type === "reaberto") {
+          jaReaberto.add(e.client_id);
+          continue;
+        }
+        if (jaReaberto.has(e.client_id)) continue; // é da rodada anterior
+      }
       const atual = attemptsByClient.get(e.client_id) ?? {
         failed: 0,
         noShow: 0,

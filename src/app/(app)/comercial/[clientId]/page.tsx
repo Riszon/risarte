@@ -204,7 +204,13 @@ export default async function CommercialCockpitPage(
   // contarem números diferentes.
   const tentativas = { failed: 0, noShow: 0, lastLabel: null as string | null,
     lastAt: null as string | null, requestedAt: null as string | null };
-  for (const e of [...evtRows].reverse()) {
+  // 0250 — só a RODADA ATUAL. Quem voltou ao funil depois de perdido começa do
+  // zero: contar as tentativas da rodada anterior faria o cockpit abrir com um
+  // número que não descreve este momento. A história inteira continua logo
+  // abaixo, no Histórico do funil.
+  const doInicio = [...evtRows].reverse();
+  const reabertura = doInicio.map((e) => e.event_type).lastIndexOf("reaberto");
+  for (const e of reabertura === -1 ? doInicio : doInicio.slice(reabertura + 1)) {
     if (FAILED_ATTEMPT_KINDS.includes(e.event_type)) {
       tentativas.failed += 1;
       if (e.event_type === "apresentacao_nao_compareceu") tentativas.noShow += 1;
