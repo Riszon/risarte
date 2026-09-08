@@ -41,7 +41,10 @@ import { loadNegotiationBlock } from "../../apresentacao/[clientId]/negotiation-
 import { NegotiationPanel } from "../../apresentacao/[clientId]/negotiation-panel";
 import { ClosingPanel } from "../../apresentacao/[clientId]/closing-panel";
 import { FunnelHistoryDialog, type FunnelEvent } from "./funnel-history";
-import { FAILED_ATTEMPT_KINDS } from "../actions";
+// ⚠️ De `@/lib/commercial`, NUNCA de `../actions`: aquele arquivo é
+// `"use server"` e só pode exportar função assíncrona. Uma constante lá derruba
+// a montagem — e derrubou (07/09/2026).
+import { FAILED_ATTEMPT_KINDS } from "@/lib/commercial";
 import { PresentationTracker } from "../presentation-tracker";
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
 import { PprOfferButton } from "@/components/ppr-offer-dialog";

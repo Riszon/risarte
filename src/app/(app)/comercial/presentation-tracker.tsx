@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
-import {
-  PRESENTATION_EVENT_KINDS,
-  logPresentationEvent,
-  requestPresentationScheduling,
-} from "./actions";
+// A lista de tipos vem do módulo puro; de `./actions` vêm SÓ as ações. Um
+// arquivo `"use server"` não pode exportar constante — ver o comentário em
+// `@/lib/commercial`.
+import { PRESENTATION_EVENT_KINDS } from "@/lib/commercial";
+import { logPresentationEvent, requestPresentationScheduling } from "./actions";
 
 /**
  * O QUE ACONTECE ENTRE O ENVIO AO COMERCIAL E A APRESENTAÇÃO.

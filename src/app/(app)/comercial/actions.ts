@@ -91,31 +91,11 @@ export async function startFollowup(
   return { ok: true };
 }
 
-/**
- * Os acontecimentos entre "enviado ao Comercial" e "apresentação feita".
- *
- * ⚠️ NÃO CONFUNDIR COM O FOLLOW-UP (abaixo). Follow-up é o que se faz DEPOIS de
- * apresentar e o cliente não fechar. Isto aqui é antes: a apresentação ainda
- * não aconteceu. São duas filas diferentes, e juntá-las faria o indicador de
- * conversão contar como "não fechou" quem nunca chegou a ouvir a proposta.
- */
-export const PRESENTATION_EVENT_KINDS = [
-  { value: "apresentacao_nao_compareceu", label: "Cliente não compareceu" },
-  { value: "apresentacao_cliente_remarcou", label: "Cliente pediu para remarcar" },
-  {
-    value: "apresentacao_consultor_remarcou",
-    label: "Precisei remarcar (consultor)",
-  },
-  { value: "apresentacao_contato", label: "Falei com o cliente (sem remarcar)" },
-  { value: "apresentacao_observacao", label: "Outra observação" },
-] as const;
-
-/** Os três que contam como TENTATIVA FRUSTRADA de apresentar. */
-export const FAILED_ATTEMPT_KINDS = [
-  "apresentacao_nao_compareceu",
-  "apresentacao_cliente_remarcou",
-  "apresentacao_consultor_remarcou",
-];
+// ⚠️ As listas de tipos de acontecimento moram em `src/lib/commercial.ts`, e
+// NÃO aqui. Um arquivo "use server" só pode exportar FUNÇÕES ASSÍNCRONAS —
+// exportar uma constante daqui derruba a montagem inteira com
+// "a use server file can only export async functions, found object".
+// Ver o comentário lá.
 
 export async function logPresentationEvent(
   clientId: string,

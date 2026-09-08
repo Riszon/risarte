@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "verificar": "node scripts/verificar-build.mjs",
     "check:dados": "node scripts/check-invariants.mjs",
     "check:telas": "node scripts/check-screens.mjs",
     "check:migracao": "node scripts/check-migrations.mjs",

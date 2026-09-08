@@ -408,6 +408,50 @@ export function commercialColumnOf(input: {
   return "a_apresentar";
 }
 
+// =============================================================================
+// AS TENTATIVAS DE APRESENTAR (0248)
+// =============================================================================
+//
+// Os acontecimentos entre "o plano foi enviado ao Comercial" e "a apresentação
+// aconteceu": o cliente não compareceu, pediu para remarcar, o consultor
+// precisou remarcar.
+//
+// ⚠️ NÃO CONFUNDIR COM O FOLLOW-UP. Follow-up é o que se faz DEPOIS de
+// apresentar e o cliente não fechar. Isto é ANTES: a apresentação ainda não
+// aconteceu. São duas filas diferentes, e juntá-las faria o indicador de
+// conversão contar como "não fechou" quem nunca chegou a ouvir a proposta.
+//
+// ⚠️ E MORAM AQUI, NÃO EM `comercial/actions.ts`. Aquele arquivo é "use server",
+// e um módulo "use server" só pode exportar FUNÇÕES ASSÍNCRONAS. Exportar esta
+// lista de lá derruba a montagem inteira — e o erro não aparece ao compilar,
+// só ao "coletar os dados das páginas", que é a fase que a Vercel roda e o
+// build local pula quando reaproveita cache (07/09/2026).
+
+export const PRESENTATION_EVENT_KINDS = [
+  { value: "apresentacao_nao_compareceu", label: "Cliente não compareceu" },
+  { value: "apresentacao_cliente_remarcou", label: "Cliente pediu para remarcar" },
+  {
+    value: "apresentacao_consultor_remarcou",
+    label: "Precisei remarcar (consultor)",
+  },
+  { value: "apresentacao_contato", label: "Falei com o cliente (sem remarcar)" },
+  { value: "apresentacao_observacao", label: "Outra observação" },
+] as const;
+
+/**
+ * Os três que contam como TENTATIVA FRUSTRADA de apresentar.
+ *
+ * "Falei com o cliente" e "outra observação" ficam de fora de propósito: elas
+ * registram, mas não são uma apresentação que deixou de acontecer. Contá-las
+ * inflaria o número que o cartão mostra, e um número inflado vira número que
+ * ninguém olha.
+ */
+export const FAILED_ATTEMPT_KINDS: string[] = [
+  "apresentacao_nao_compareceu",
+  "apresentacao_cliente_remarcou",
+  "apresentacao_consultor_remarcou",
+];
+
 /** Nota GUT (G×U×T, 1..125) de um item — null quando não priorizado. */
 export function gutScore(
   g: number | null | undefined,

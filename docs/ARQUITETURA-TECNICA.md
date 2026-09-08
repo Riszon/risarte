@@ -93,13 +93,22 @@ incluindo o token `--gold` exposto como utilitário `bg-gold`.
   exception when others then null; end $$`. Regra: ao re-rodar, "already exists"
   = aquela parte já foi aplicada (seguir); qualquer OUTRO erro = reportar.
 
-## Portão de entrega — SEMPRE em pasta separada
-
-`npm test` e o build. **O build de verificação roda com `NEXT_DIST_DIR`:**
+## Portão de entrega — SEMPRE em pasta separada, SEMPRE do zero
 
 ```bash
-NEXT_DIST_DIR=.next-verify npm run build
+npm run verificar   # apaga .next-verify e monta do zero
+npm test
+npm run lint
 ```
+
+**⚠️ `npm run verificar`, nunca `npm run build` direto.** A v0.229.0 passou no
+build local e **quebrou na Vercel**: o Turbopack reaproveitou a compilação
+anterior de `/comercial` e nunca reexecutou a parte que falhava (uma constante
+exportada de um arquivo `"use server"`). O portão disse verde sem ter olhado —
+**portão que passa por ausência não é portão**, a mesma lição das invariantes e
+dos ensaios de limpeza. A Vercel monta do zero; o portão precisa montar do zero
+também. O script (`scripts/verificar-build.mjs`) também define o
+`NEXT_DIST_DIR`, então não há como esquecê-lo.
 
 `next build` e `next dev` gravam na MESMA pasta `.next`. O dono deixa o servidor
 local aberto (`Iniciar Risarte.bat` → `next dev`) enquanto testa; rodar o build

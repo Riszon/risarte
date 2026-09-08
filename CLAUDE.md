@@ -182,11 +182,14 @@ multi-tenant. Projeto Supabase `hvhbijctanrrkxhemlza`.
 
 ```powershell
 npm run dev     # servidor dev em http://localhost:3000 (Turbopack, hot reload)
-# Portão de verificação. SEMPRE com NEXT_DIST_DIR: `next build` e `next dev`
-# gravam na MESMA pasta `.next`, e buildar enquanto o dono está com o servidor
-# aberto QUEBRA o servidor dele — o sistema passa a dar 404 em página que
-# existe, com cara de bug da tela nova. Já aconteceu em /financeiro/configuracao.
-$env:NEXT_DIST_DIR=".next-verify"; npm run build
+# Portão de verificação. SEMPRE este comando — ele apaga a pasta e monta do
+# ZERO. A v0.229.0 passou aqui e quebrou na Vercel: o cache do Turbopack pulou
+# justamente a rota com defeito. Portão que passa por ausência não é portão.
+# O script também define NEXT_DIST_DIR, que existe porque `next build` e
+# `next dev` gravam na MESMA pasta `.next`: buildar com o servidor do dono
+# aberto QUEBRA o servidor dele (404 em página que existe, com cara de bug da
+# tela nova — já aconteceu em /financeiro/configuracao).
+npm run verificar
 # Migração nova: conferir ANTES de mandar rodar. O build compila TypeScript e
 # NÃO enxerga SQL — 0232 e 0233 chegaram ao dono com erro que só o Postgres
 # acusa, e cada uma custou uma ida e volta.

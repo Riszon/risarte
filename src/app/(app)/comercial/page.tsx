@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { FAILED_ATTEMPT_KINDS } from "./actions";
 import { cn } from "@/lib/utils";
 import {
+  FAILED_ATTEMPT_KINDS,
   commercialColumnOf,
   isHistoryColumn,
   type CardStage,
