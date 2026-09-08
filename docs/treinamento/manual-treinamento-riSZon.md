@@ -1178,6 +1178,35 @@ que foi dada ao primeiro. Três filtros: *Em aberto*, *Os meus* e *Todos*.
 escrever** — o sistema recusa. Encerrar em silêncio é o que faz uma equipe
 parar de relatar.
 
+**Para quem relata, isso significa uma coisa prática:** quanto melhor o seu
+relato, mais rápido vem a resposta. O sistema manda junto a tela, a versão, a
+unidade, a sua função e o navegador — o que falta é só o que **você** viu.
+
+#### Só para o Admin Master: preparar para correção
+
+Ao lado de *Responder* existe **Preparar para correção**. Ele reúne o relato e
+todo o contexto que o sistema coletou num texto pronto para pedir o conserto —
+sem ninguém reescrever o caso à mão, que é onde a informação se perde.
+
+Antes de gerar, há um campo para as **suas considerações**: o que você sabe e o
+sistema não sabe (*"acontece só na Cambé"*, *"eu reproduzi"*, *"acho que é
+permissão, não defeito"*).
+
+E há dois caminhos:
+
+| Botão | Serve para |
+|---|---|
+| **Corrigir o problema** | pedir diagnóstico e conserto |
+| **Responder a quem relatou** | quando **não é defeito** — pede uma explicação em linguagem simples, para você revisar e colar no campo *Resposta* |
+
+> ⚠️ **O texto aparece para revisão antes de ser copiado, e isso é de
+> propósito.** O relato é texto livre: se alguém escreveu o nome de um paciente,
+> copiar tira esse dado de dentro do sistema. Troque por *"o paciente"* — quem
+> vai consertar não precisa saber de quem é a ficha.
+>
+> **O nome de quem relatou nunca entra no texto.** A função e a unidade dizem
+> tudo o que importa para corrigir.
+
 ### 15.3. Alertas
 
 O que o sistema está avisando agora, reunido num lugar só: os alertas do

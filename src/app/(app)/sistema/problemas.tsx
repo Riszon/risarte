@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { registrarProblema, responderProblema } from "./actions";
+import { PrepararBriefing } from "./preparar-briefing";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type Relato = {
@@ -28,6 +29,8 @@ export type Relato = {
   screen: string | null;
   appVersion: string | null;
   errorDigest: string | null;
+  /** O navegador de quem relatou — só o Admin Master vê, no briefing. */
+  userAgent: string | null;
   status: "aberto" | "em_analise" | "resolvido" | "nao_e_defeito";
   answer: string | null;
   answeredAt: string | null;
@@ -348,7 +351,12 @@ export function Problemas({
                   </div>
                 )}
 
-                {isAdminMaster && <Resposta relato={r} />}
+                {isAdminMaster && (
+                  <div className="flex flex-wrap gap-2">
+                    <Resposta relato={r} />
+                    <PrepararBriefing relato={r} />
+                  </div>
+                )}
               </div>
             </li>
           ))}
@@ -403,7 +411,9 @@ function Resposta({ relato }: { relato: Relato }) {
   }
 
   return (
-    <form action={salvar} className="space-y-3 rounded-md border bg-muted/20 p-3">
+    // `w-full` porque o formulário divide a linha com o botão do briefing:
+    // sem isso ele encolheria até o tamanho do conteúdo.
+    <form action={salvar} className="w-full space-y-3 rounded-md border bg-muted/20 p-3">
       <input type="hidden" name="id" value={relato.id} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">

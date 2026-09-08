@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.230.0",
+    data: "2026-09-07",
+    migracao: null,
+    titulo: "O problema relatado vira pedido de correção em dois cliques",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Em Sistema → Problemas, o Admin Master ganhou o botão “Preparar para correção”: ele transforma o relato — com tela, versão, unidade, função e navegador — num texto pronto para pedir o conserto.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O mesmo botão serve para o caminho oposto: quando não é defeito, gera o pedido de uma resposta em linguagem simples para quem relatou.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O texto aparece para revisão antes de ser copiado — é onde se troca o nome de um paciente por “o paciente”. O nome de quem relatou nunca entra.",
+        papeis: "todos",
+        manual: "11.1. Regras do sistema",
+      },
+    ],
+  },
+  {
     versao: "0.229.0",
     data: "2026-09-07",
     migracao: "0248",

@@ -67,7 +67,9 @@ export default async function SistemaPage({
     const { data, error } = await supabase
       .from("system_reports")
       .select(
-        "id, code, kind, severity, title, what_happened, expected, screen, app_version, error_digest, status, answer, answered_at, resolved_version, created_at, reporter_role, reporter_id, clinic_id, profiles!system_reports_reporter_id_fkey ( full_name ), clinics ( name )"
+        // `user_agent` era gravado e nunca lido: é no briefing para correção
+        // que ele responde "só acontece no navegador dela".
+        "id, code, kind, severity, title, what_happened, expected, screen, app_version, error_digest, user_agent, status, answer, answered_at, resolved_version, created_at, reporter_role, reporter_id, clinic_id, profiles!system_reports_reporter_id_fkey ( full_name ), clinics ( name )"
       )
       .order("created_at", { ascending: false })
       .limit(200);
@@ -86,6 +88,7 @@ export default async function SistemaPage({
       screen: r.screen,
       appVersion: r.app_version,
       errorDigest: r.error_digest,
+      userAgent: r.user_agent,
       status: r.status,
       answer: r.answer,
       answeredAt: r.answered_at,
@@ -265,6 +268,7 @@ type RelatoBruto = {
   screen: string | null;
   app_version: string | null;
   error_digest: string | null;
+  user_agent: string | null;
   status: Relato["status"];
   answer: string | null;
   answered_at: string | null;
