@@ -25,14 +25,37 @@ _Atualizado em: 08/09/2026 · Versão do sistema: **0.234.0** · Última migraç
 > **Supabase: PRO, vigência até 29/09/2026** (dono, 08/09/2026). São **duas
 > datas seguidas** — 14/09 a Vercel, 29/09 o Supabase.
 >
-> O Pro do Supabase inclui **backup diário automático**. ⚠️ **Continua em aberto
-> conferir no painel que eles estão realmente acontecendo** — pendência aberta
-> desde 31/08 e nunca fechada. Backup que ninguém viu funcionar é backup que não
-> se sabe se existe.
+> ✅ **BACKUP DIÁRIO CONFERIDO NO PAINEL em 08/09/2026** — pendência aberta
+> desde 31/08, agora fechada. Os **dois** projetos têm backup diário com **8
+> dias** de retenção (produção `hvhbijctanrrkxhemlza` e treino
+> `bsnptybalszjjbhxeejo`), em *Database → Backups → Scheduled backups*.
+>
+> ### ⚠️ O QUE O BACKUP NÃO COBRE: OS ARQUIVOS
+>
+> A própria tela avisa: *"Storage objects are not included"*. O backup é do
+> BANCO. Os nove baldes do Storage ficam de fora — e é neles que vão morar
+> **fotos, exames, áudios e vídeos da avaliação** (`clinical-media`), os
+> documentos do Empresarial, os XMLs de NF-e e os anexos do chat.
+>
+> **Foto de paciente faz parte do prontuário, com guarda legal.**
+>
+> **Hoje o risco é ZERO: os nove baldes estão vazios** (conferido em 08/09 — a
+> limpeza de 28/08 esvaziou tudo e o recadastro não começou). **Passa a existir
+> na primeira avaliação clínica que a equipe fizer.**
+>
+> É a lição do Academy invertida: lá os arquivos sobreviveram e as linhas do
+> banco não; aqui é o contrário. **Retomar este assunto logo depois do
+> recadastro**, antes de a equipe começar a fotografar.
 >
 > **Backup manual, do repositório:** `npm run backup:producao` — lê o catálogo
 > de cada schema (não deduz das migrações, lição do Academy) e grava **fora do
-> repositório**. **Rodar antes e depois do recadastro.**
+> repositório**. **Rodar antes e depois do recadastro.** ⚠️ Ele também cobre só
+> o banco.
+>
+> **Custo a conferir (não é risco):** o treino também está no Pro, com backup
+> diário de dado de teste. Se a cobrança for por projeto, vale ver em
+> *Organization → Billing* se ele soma valor — o treino é reconstruível com
+> `npm run migrar:teste` + `npm run seed:teste`.
 
 > ### O SISTEMA FICOU 6,5× MAIS RÁPIDO (08/09/2026, v0.234.0, sem migração)
 >
