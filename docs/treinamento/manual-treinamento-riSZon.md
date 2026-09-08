@@ -99,6 +99,16 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
    0.226.0 · migração 0247"*). É essa informação que o suporte pede quando algo
    dá errado.
 
+**No alto da barra lateral fica "Procurar paciente".** É o caminho mais curto
+para uma ficha, de qualquer tela: clique (ou **Ctrl + K**), digite, escolha com
+as setas e abra com **Enter**.
+
+Procura por **nome**, pelo **código** do paciente (ex.: `CAM-00001`) e pelo
+**CPF** — inclusive digitando só os números, sem pontos nem traço.
+
+> **Dois pacientes com o mesmo nome?** A lista mostra o código e a unidade de
+> cada um, para você escolher sem precisar abrir as duas fichas.
+
 **No rodapé da barra lateral fica a data e a hora**, sempre no **horário de
 Brasília** — é ele que o sistema usa para decidir se um horário já passou,
 quando uma parcela vence e a que mês um lançamento pertence. Se o relógio do
@@ -489,6 +499,11 @@ Cada roteiro segue a mesma estrutura. Comece pelo da sua função.
 **Objetivo:** cadastrar pacientes, organizar a agenda e conduzir a chegada.
 **Pré-requisitos:** acesso criado pelo administrador; saber em que unidade
 trabalha. **Duração estimada:** 60 minutos.
+
+> **Antes de cadastrar, procure.** Use **Procurar paciente** no alto do menu
+> (ou **Ctrl + K**) e digite o CPF, o nome ou o código. Se a pessoa já existe na
+> rede, você a abre em dois segundos — e evita o cadastro repetido, que é o erro
+> mais comum do balcão. A mesma busca funciona na lista de Prontuários.
 
 **Tarefa 1 — Cadastrar um paciente**
 

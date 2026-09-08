@@ -199,6 +199,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       is: (col: string, val: boolean) => T;
       not: (col: string, op: string, val: null) => T;
       in: (col: string, vals: string[]) => T;
+      or: (filter: string) => T;
     },
   >(request: T): T {
     let r = request;
@@ -211,7 +212,27 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       r = r.not("empresarial_company_id", "is", null);
     else if (programFilter === "ppr")
       r = r.not("ppr_membership_id", "is", null);
-    if (query) r = r.ilike("full_name", `%${query}%`);
+    // 0251 — a lista procura pelo mesmo que a busca rápida: NOME, CÓDIGO e CPF.
+    //
+    // Antes era só o nome, então quem tinha o CPF na mão (que é o identificador
+    // canônico deste sistema) ou o código do paciente não achava nada aqui e
+    // achava na busca rápida — duas buscas discordando na mesma tela.
+    //
+    // O CPF é guardado com máscara, então precisa passar pela função do banco;
+    // os ids já vêm resolvidos de fora (`cpfIds`), porque esta função é
+    // síncrona. Como CPF é único, a lista nunca é longa.
+    if (query) {
+      if (cpfIds !== null) {
+        r = r.in("id", cpfIds.length > 0 ? cpfIds : [NO_MATCH_ID]);
+      } else {
+        // Vírgula e parênteses são a sintaxe do filtro do PostgREST: deixá-los
+        // passar deixaria o texto do usuário reescrever a consulta.
+        const limpo = query.replace(/[(),*]/g, " ").trim();
+        r = limpo
+          ? r.or(`full_name.ilike.%${limpo}%,code.ilike.%${limpo}%`)
+          : r;
+      }
+    }
     if (phaseFilter) r = r.eq("journey_phase", phaseFilter);
     if (pillarFilter) r = r.eq("methodology_pillar", pillarFilter);
     // I4: cadastro incompleto (quem entrou pré-cadastrado por um programa).
@@ -263,6 +284,26 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
     }
   }
   const overdueIds = [...overdueByClient.keys()];
+
+  // 0251 — quando o que foi digitado PARECE UM CPF, os ids vêm da função do
+  // banco, que sabe comparar por dígitos (o CPF é guardado com máscara).
+  //
+  // "Parece um CPF" = três ou mais números e quase nada além deles. Assim
+  // "Ana 2" continua sendo busca por nome, e "123.456" vira busca por
+  // documento. `null` quer dizer "não é CPF" — diferente de "é CPF e não achei
+  // ninguém", que é uma lista vazia e precisa devolver nada.
+  let cpfIds: string[] | null = null;
+  if (query) {
+    const digitos = query.replace(/\D/g, "");
+    const letras = query.replace(/[\d\s.\-/]/g, "").length;
+    if (digitos.length >= 3 && letras === 0) {
+      const { data: achados } = await supabase.rpc("search_clients", {
+        p_term: query,
+        p_limit: 20,
+      });
+      cpfIds = ((achados ?? []) as { id: string }[]).map((c) => c.id);
+    }
+  }
 
   let clients: ClientRow[] = [];
   let transferred: TransferredRow[] = [];

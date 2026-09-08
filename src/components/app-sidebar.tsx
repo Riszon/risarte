@@ -41,6 +41,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SystemClock } from "@/components/clock";
+import { QuickSearch } from "@/components/quick-search";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -336,6 +337,11 @@ export function AppSidebar({
   // diferente de todos os outros.
   const itensDeAjuda = AJUDA_ITEMS.filter((i) => navPermitido.includes(i.cap));
 
+  // A busca rápida abre prontuário: quem não pode ver prontuário não a vê.
+  // (A barreira de verdade está na RLS, dentro de `search_clients` — isto aqui
+  // é para não oferecer um caminho que terminaria em porta fechada.)
+  const podeBuscar = navPermitido.includes("menu.prontuarios");
+
   function switchClinic(clinicId: string) {
     if (clinicId === activeClinicId) return;
     startTransition(async () => {
@@ -405,6 +411,16 @@ export function AppSidebar({
           >
             <ChevronsLeft className="size-4" />
           </button>
+        </div>
+      )}
+
+      {/* A busca fica ACIMA do seletor de unidade e do menu: é o que mais se
+          usa, e o olho já vai ao alto da barra procurando por onde começar.
+          Aparece minimizada também — quem minimiza o menu é justamente quem
+          quer a tela livre e o atalho à mão. */}
+      {podeBuscar && (
+        <div className={cn("pb-3", collapsed ? "px-2" : "px-3")}>
+          <QuickSearch collapsed={collapsed} />
         </div>
       )}
 

@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.233.0",
+    data: "2026-09-08",
+    migracao: "0251",
+    titulo: "Procurar um paciente de qualquer tela, sem abrir Prontuários",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No alto da barra lateral há agora “Procurar paciente”. Abre um campo, você digita, escolhe com as setas e abre o prontuário com Enter — de qualquer tela do sistema. O atalho é Ctrl + K.",
+        papeis: "todos",
+        manual: "2. Início rápido",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A busca acha por nome, pelo código do paciente (ex.: CAM-00001) e pelo CPF — inclusive digitando só os números, sem pontos nem traço.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista da tela Prontuários passou a procurar do mesmo jeito. Antes ela só encontrava por nome: quem tinha o CPF ou o código na mão não achava nada ali.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.232.0",
     data: "2026-09-08",
     migracao: "0250",
