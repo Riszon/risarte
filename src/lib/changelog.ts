@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.234.0",
+    data: "2026-09-08",
+    migracao: null,
+    titulo: "O sistema ficou mais rápido em todas as telas",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Cada clique perdia cerca de um segundo antes de a tela começar a aparecer, porque o sistema perguntava duas vezes pela rede quem era você. Agora essa conferência é feita no próprio servidor.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Usuário desativado passa a ser barrado pelo sistema, e não só pelo login: ao abrir qualquer tela, ele vê um aviso e é convidado a sair. Antes o campo “ativo” era consultado e nunca verificado.",
+        papeis: "todos",
+        manual: "11.1. Regras do sistema",
+      },
+    ],
+  },
+  {
     versao: "0.233.0",
     data: "2026-09-08",
     migracao: "0251",

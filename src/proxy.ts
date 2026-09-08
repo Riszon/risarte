@@ -36,11 +36,29 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: do not run code between createServerClient and auth.getUser(),
+  // IMPORTANT: do not run code between createServerClient and the auth call,
   // otherwise sessions may be terminated unexpectedly.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  //
+  // ⚠️ `getClaims()` E NÃO `getUser()`, e a diferença é de SEGUNDOS por clique.
+  //
+  // `getUser()` vai à REDE perguntar ao servidor de autenticação a cada
+  // requisição. Como o porteiro roda em toda navegação e a página pergunta de
+  // novo, eram DUAS idas à rede antes de qualquer tela começar a se desenhar —
+  // e o sistema inteiro ficava com o mesmo ~1 segundo de piso, da tela mais
+  // pesada à mais simples (medido em 08/09/2026: /perfil, que quase não
+  // consulta nada, levava 1385ms; a DRE, 1196ms).
+  //
+  // `getClaims()` confere a ASSINATURA do token localmente, por criptografia,
+  // usando a chave pública do projeto (que os dois projetos usam — conferido no
+  // `/.well-known/jwks.json`). Ele continua renovando a sessão quando o token
+  // está para vencer, que é a outra razão de o porteiro existir.
+  //
+  // O QUE ISTO CUSTA, e como está pago: o token continua válido até vencer
+  // (até 1h), então banir alguém no Supabase deixa de cortar o acesso na hora.
+  // Por isso `getSessionContext()` passou a EXIGIR `profiles.is_active` a cada
+  // requisição — desativar corta no clique seguinte, por decisão do banco.
+  const { data: claims } = await supabase.auth.getClaims();
+  const user = claims?.claims ?? null;
 
   const { pathname } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));

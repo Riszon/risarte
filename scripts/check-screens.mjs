@@ -48,8 +48,26 @@ const CONCURRENCY = 3;
 const TIMEOUT_MS = 60_000;
 const SLOW_MS = 8_000;
 
+// Qual banco/ambiente varrer. Padrão: a produção com o servidor local. Para
+// medir o sistema PUBLICADO (que é onde o dono sente a lentidão):
+//   RISARTE_URL=https://risarte-treino.vercel.app
+//   RISARTE_ENV_FILE=.env.test.local
+// As chaves têm de ser as do MESMO projeto do endereço, senão a sessão criada
+// aqui é recusada lá e toda tela "cai no login".
+const ENV_FILE = process.env.RISARTE_ENV_FILE || ".env.local";
+const MARCA_DE_BOM = new RegExp("^\\uFEFF");
+
 const env = Object.fromEntries(
-  readFileSync(".env.local", "utf8")
+  readFileSync(ENV_FILE, "utf8")
+    // Arquivo salvo pelo Windows costuma trazer a marca de ordem de bytes (BOM)
+    // invisível no começo. Sem tirá-la, a PRIMEIRA chave do arquivo ganha um
+    // caractere fantasma no nome e some — e o erro que aparece é
+    // "supabaseUrl is required", que não diz nada sobre a causa.
+    //
+    // Escrita como ESCAPE, nunca como o caractere literal: colado no arquivo
+    // ele é invisível, e qualquer ferramenta que reescreva o texto pode comê-lo
+    // sem ninguém ver.
+    .replace(MARCA_DE_BOM, "")
     .split(/\r?\n/)
     .filter(Boolean)
     .map((l) => {

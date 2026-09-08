@@ -1032,6 +1032,9 @@ precisa estar em endereço seguro (https).
 ### 11.1. Regras do sistema (impostas, não sugeridas)
 
 - **Não existe auto-cadastro.** Todo acesso nasce de um administrador.
+- **Acesso desativado é barrado na hora.** Quem for desativado vê um aviso ao
+  abrir qualquer tela e é convidado a sair — o que ele já registrou continua no
+  sistema; o que muda é a entrada.
 - **Consentimento antes da coleta.** Gravação e coleta de dados clínicos só
   começam depois do consentimento registrado, com data e hora.
 - **Paciente não se apaga.** A exclusão é anonimização — guarda legal do

@@ -57,31 +57,50 @@ type RoleRow = {
  */
 export const getSessionContext = cache(async function getSessionContext(): Promise<SessionContext> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
+  // ⚠️ `getClaims()` confere o token LOCALMENTE (ver o comentário longo em
+  // `src/proxy.ts`). `getUser()` ia à rede a cada requisição, e como o porteiro
+  // já perguntava antes, eram duas viagens antes de qualquer tela aparecer.
+  const { data: claims } = await supabase.auth.getClaims();
+  const user = claims?.claims;
+
+  if (!user?.sub) {
     redirect("/login");
   }
+  const userId = user.sub;
 
-  const [{ data: profile }, { data: roleRows }, { data: permRows, error: permErro }] =
-    await Promise.all([
+  const [
+    { data: profile },
+    { data: roleRows },
+    { data: permRows, error: permErro },
+    { data: allClinics },
+  ] = await Promise.all([
       supabase
         .from("profiles")
         .select("full_name, is_admin_master, is_active")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single(),
       supabase
         .from("user_clinic_roles")
         .select("role, clinics ( id, name, type, is_active )")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .returns<RoleRow[]>(),
       supabase
         .from("permission_matrix")
         .select("capability, role")
         .eq("allowed", true)
         .returns<{ capability: string; role: UserRole }[]>(),
+      // As clínicas ENTRAM NO MESMO LOTE, mesmo que só o Admin Master use a
+      // lista completa. Antes esta consulta esperava as três de cima
+      // terminarem, só para descobrir se ele era admin — uma ida ao banco em
+      // fila, paga por ele em toda tela. Para os demais a RLS já devolve só as
+      // clínicas deles, então o custo é uma consulta paralela, não um atraso.
+      supabase
+        .from("clinics")
+        .select("id, name, type, is_active")
+        .order("type")
+        .order("name")
+        .returns<Clinic[]>(),
     ]);
 
   // Sem a tabela (banco ainda sem a 0246) ou sem linha nenhuma, vale o padrão
@@ -95,6 +114,20 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
           return acc;
         }, {});
 
+  // ⚠️ USUÁRIO DESATIVADO NÃO ENTRA — e agora quem decide isto é o BANCO.
+  //
+  // Até 08/09/2026 `is_active` era buscado e nunca conferido: o corte dependia
+  // do banimento no Supabase, que só era notado porque o sistema perguntava ao
+  // servidor de autenticação a cada clique. Com a conferência local do token,
+  // um token já emitido continuaria valendo até vencer — então a regra passa a
+  // ser aplicada aqui, onde é lida do banco a cada requisição.
+  //
+  // Resultado: desativar alguém corta no clique seguinte, como antes; e o
+  // sistema deixou de depender do relógio do token para uma decisão de acesso.
+  if (profile && profile.is_active === false) {
+    redirect("/conta-desativada");
+  }
+
   const isAdminMaster = profile?.is_admin_master ?? false;
 
   const rolesByClinic: Record<string, UserRole[]> = {};
@@ -107,12 +140,6 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
 
   let clinics: Clinic[];
   if (isAdminMaster) {
-    const { data: allClinics } = await supabase
-      .from("clinics")
-      .select("id, name, type, is_active")
-      .order("type")
-      .order("name")
-      .returns<Clinic[]>();
     clinics = allClinics ?? [];
   } else {
     clinics = [...memberClinics.values()].sort((a, b) =>
@@ -130,7 +157,9 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
   const activeClinic = chosen ?? franchisor ?? clinics[0] ?? null;
 
   return {
-    userId: user.id,
+    userId,
+    // O e-mail vem do próprio token (`email`), assinado pelo Supabase — é o
+    // mesmo valor que `getUser()` devolvia, sem a ida à rede.
     email: user.email ?? "",
     fullName: profile?.full_name || (user.email ?? ""),
     isAdminMaster,
