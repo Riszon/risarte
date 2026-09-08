@@ -62,6 +62,34 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.231.0",
+    data: "2026-09-08",
+    migracao: "0249",
+    titulo: "Cliente perdido no Comercial deixa de ficar preso na Fase 4",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Marcar um cliente como perdido ou cancelado no Comercial agora o move para o Acompanhamento (Fase 7) e o marca como inativo. O motivo, a data e quem marcou continuam no Histórico do Comercial.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A recepção não conseguia agendar uma reavaliação para quem tinha sido dado por perdido — só apresentação comercial ou urgência. Agora consegue, e o cliente volta a ser ativo assim que o horário é marcado.",
+        papeis: ["receptionist", "sdr"],
+        manual: "8. Fluxo 4 — o cliente que volta depois de perdido",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quem já estava em tratamento não volta para trás quando o cartão comercial é encerrado — o clínico já aconteceu.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.230.0",
     data: "2026-09-07",
     migracao: null,

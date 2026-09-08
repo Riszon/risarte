@@ -65,4 +65,23 @@ describe("appointmentTypeOptions", () => {
     const opts = appointmentTypeOptions("follow_up");
     expect(opts.filter((t) => t === "return_visit")).toHaveLength(1);
   });
+
+  // 0249 — o caminho de volta de quem foi dado por perdido no Comercial.
+  //
+  // O check-in já sabia mover `Fase 7 + Reavaliação → Fase 6` desde a 0018; o
+  // tipo é que nunca era oferecido, então a recepção só conseguia marcar
+  // "Retorno" — o cliente vinha e a jornada não andava. Se este teste cair, o
+  // resgate volta a ser um beco sem saída.
+  it("Acompanhamento oferece REAVALIAÇÃO — é o que faz o resgate andar", () => {
+    expect(appointmentTypeOptions("follow_up")).toContain("reevaluation");
+  });
+
+  it("Reavaliação NÃO é oferecida onde não faz sentido", () => {
+    // Na Fase 4 o que se marca é a apresentação; oferecer reavaliação ali
+    // deixaria a recepção escolher um caminho que a jornada não segue.
+    expect(appointmentTypeOptions("commercial_conversion")).not.toContain(
+      "reevaluation"
+    );
+    expect(appointmentTypeOptions("acquisition")).not.toContain("reevaluation");
+  });
 });

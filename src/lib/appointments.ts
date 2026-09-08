@@ -119,6 +119,17 @@ export function appointmentTypeOptions(
   const auto = PHASE_APPOINTMENT_TYPE[phase];
   const options = [auto];
   if (phase === "treatment_start") options.push("treatment_session");
+  // 0249 — REAVALIAÇÃO NA FASE 7, e é ela que fecha o círculo do resgate.
+  //
+  // O banco já sabia disto desde o check-in (0018/0032): `Fase 7 + Reavaliação
+  // → move para a Fase 6`. A regra existia e a tela nunca ofereceu o tipo, então
+  // a recepção só conseguia marcar "Retorno" — o cliente vinha e a jornada não
+  // andava.
+  //
+  // Com o tipo na lista, quem foi dado por perdido no Comercial (e agora é
+  // movido para cá) tem caminho de volta: agenda Reavaliação → o check-in leva à
+  // Fase 6 → o Coordenador avalia → Planejamento → novo plano → Comercial.
+  if (phase === "follow_up") options.push("reevaluation");
   for (const t of EXCEPTIONAL_TYPES) {
     if (!options.includes(t)) options.push(t);
   }

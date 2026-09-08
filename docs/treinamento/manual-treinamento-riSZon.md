@@ -29,7 +29,7 @@
 5. [Matriz de permissões](#5-matriz-de-permissões)
 6. [Scripts de treinamento por função](#6-scripts-de-treinamento-por-função)
 7. [Mapeamento da interface](#7-mapeamento-da-interface)
-8. [Fluxos principais de uso](#8-fluxos-principais-de-uso)
+8. [Fluxos principais de uso](#8-fluxos-principais-de-uso) — inclui **o cliente que volta depois de perdido**
 9. [Erros, falhas e mau funcionamento](#9-erros-falhas-e-mau-funcionamento)
 10. [Mensagens do sistema](#10-mensagens-do-sistema)
 11. [Segurança e boas práticas](#11-segurança-e-boas-práticas)
@@ -623,6 +623,20 @@ houve, e pronto — entra no *Histórico do funil* com data, hora e o seu nome.
 > tentativa · 2 não comparecimentos"*. Se tudo fosse texto livre, ninguém
 > saberia quais casos mais falham.
 
+**Quando não há mais o que tentar: Marcar como perdido** (ou *cancelado*), com o
+motivo — que é obrigatório.
+
+> ⚠️ **Isso move o cliente para o Acompanhamento (Fase 7)** e o marca como
+> **inativo**. Não é um efeito colateral: é o objetivo.
+>
+> Enquanto ele ficasse parado na Fase 4, a recepção **não conseguiria nem
+> agendar uma reavaliação** se ele ligasse meses depois — só uma apresentação
+> comercial ou uma urgência. Na Fase 7 ele volta a ser agendável pelo caminho
+> certo. Ver [Fluxo 4](#fluxo-4--o-cliente-que-volta-depois-de-perdido).
+>
+> **Nada se perde:** o caso continua no *Histórico* do Comercial, com o motivo,
+> a data e quem marcou, e a passagem de fase fica registrada na jornada.
+
 **Registro não se apaga.** Errou? Registre outro corrigindo — o histórico é a
 memória do caso, e memória que se reescreve não serve de prova.
 
@@ -797,6 +811,29 @@ orientações); o cliente pode **não aceitar** (vai para follow-up).
 ### Fluxo 3 — Encerrar a sessão
 
 Botão **Sair** no rodapé da barra lateral.
+
+### Fluxo 4 — O cliente que volta depois de perdido
+
+**Papéis:** Consultor Comercial, Recepção, Coordenador Clínico.
+
+Nem todo cliente que some some para sempre. Este é o caminho de volta.
+
+1. **Consultor** marca **perdido** (ou cancelado), com o motivo. O sistema move
+   o cliente para o **Acompanhamento (Fase 7)** e o marca como **inativo**.
+2. Meses depois, **o cliente liga**. A **recepção** agenda uma **Reavaliação** —
+   que é um tipo disponível na Fase 7.
+3. O cliente **comparece**, e o **check-in sozinho** o leva para a **Reavaliação
+   (Fase 6)**. No mesmo instante ele volta a ser **ativo**.
+4. **Coordenador** reavalia e envia ao **Centro de Planejamento**.
+5. Novo plano, nova aprovação, e o cliente **volta ao Comercial** — agora com um
+   orçamento que reflete a boca dele hoje, não a de um ano atrás.
+
+> **Por que passar de novo pela avaliação.** Quando muito tempo se passa desde a
+> última, o plano antigo já não descreve o paciente. Reapresentar aquele
+> orçamento seria negociar sobre uma fotografia vencida.
+
+**Se o cliente voltar logo**, sem necessidade de nova avaliação: fale com o
+Admin Master — só ele move um cliente entre fases livremente.
 
 ### Fluxos com evidência parcial
 
