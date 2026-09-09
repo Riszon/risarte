@@ -124,12 +124,23 @@ coisa, quem manda é este.
 | Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
-| Boia | **Problemas** — relatar e acompanhar; abre o formulário direto |
+| Boia | **Problemas** — relatar e acompanhar; abre o formulário direto. **Tem número** (veja abaixo) |
 | Livro | **Manual** — este texto, sempre na versão que está no ar |
+
+> **O número da boia não quer dizer a mesma coisa para todo mundo.** Para o
+> **Admin Master** ele é a fila dele: os relatos abertos e em análise, de todas
+> as unidades. Ele some quando ele responde.
+>
+> Para **todo o resto**, ele conta as **respostas que você ainda não leu** nos
+> relatos que **você** abriu — e some assim que você abre a tela de Problemas.
+> Contar a fila inteira para quem não responde seria pendurar no seu ícone um
+> número sobre o qual você não pode fazer nada.
 
 > **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
 > alertas do financeiro disparam notificação. O triângulo é para consultar a
-> lista completa quando você quiser.
+> lista completa quando você quiser. (Contar tudo o que ele mostra sairia caro e
+> daria um número diferente do que a tela apresenta — número que não bate com a
+> tela é pior que número nenhum.)
 
 **As novidades do sistema ficam na tela de Início** — a primeira que você vê ao
 entrar. Ver [seção 15](#15-novidades-problemas-e-alertas).
@@ -1254,6 +1265,10 @@ lançamento.
 
 Onde se relata e se acompanha. Como relatar está na
 [seção 9.4](#94-como-relatar-um-problema).
+
+**O ícone avisa quando há algo esperando.** Se você relatou e foi respondido, a
+boia mostra um número até você abrir esta tela. Se você é Admin Master, ela
+mostra quantos relatos ainda dependem de você.
 
 **Quem vê o quê:** você enxerga os problemas relatados **na sua unidade**.
 Assim ninguém abre cinco vezes o mesmo, e quem chegar depois já lê a resposta

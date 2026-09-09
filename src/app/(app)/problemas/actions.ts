@@ -162,3 +162,32 @@ export async function responderProblema(
   revalidatePath("/problemas");
   return { ok: true };
 }
+
+/**
+ * Marcar como lidas as respostas dos relatos de quem chamou.
+ *
+ * ⚠️ É O QUE FAZ O INDICADOR DA BOIA ZERAR — e sem ele o número da equipe não
+ * zeraria nunca: relato respondido continuaria contando para sempre. Alerta que
+ * não zera é alerta que ninguém lê, a lição que `finance_alerts` (0230) já tinha
+ * pago uma vez.
+ *
+ * A escrita passa por `mark_system_reports_seen()` (0252) porque a política de
+ * UPDATE da 0247 é do Admin Master e SÓ dele, de propósito. Afrouxá-la para
+ * caber esta marca devolveria a quem relatou o poder de fechar o próprio relato,
+ * e a fila viraria uma lista que se resolve sozinha. A função é a porta
+ * estreita: uma coluna, e só nas linhas de quem chamou.
+ *
+ * Não há `logAudit` aqui de propósito: "abri a tela e li a resposta do meu
+ * próprio relato" não é acesso a dado de ninguém, e registrar isso encheria a
+ * trilha de linhas sem valor investigativo — a trilha existe para o que toca
+ * ficha de paciente.
+ */
+export async function marcarRespostasVistas(): Promise<void> {
+  await getSessionContext();
+  const supabase = await createClient();
+  // Banco ainda sem a 0252: a função não existe e o erro morre aqui. Deixar de
+  // marcar como lido é um número teimoso no ícone; derrubar a tela de Problemas
+  // por causa de migração pendente seria bem pior.
+  await supabase.rpc("mark_system_reports_seen");
+  revalidatePath("/problemas");
+}

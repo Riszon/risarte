@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { registrarProblema, responderProblema } from "./actions";
+import {
+  marcarRespostasVistas,
+  registrarProblema,
+  responderProblema,
+} from "./actions";
+import { RELATOS_VISTOS } from "@/components/report-nav-item";
 import { PrepararBriefing } from "./preparar-briefing";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
@@ -97,6 +102,20 @@ export function Problemas({
   const [filtro, setFiltro] = useState<"todos" | "abertos" | "meus">("abertos");
   const [enviando, iniciar] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+
+  // ABRIR ESTA TELA É LER AS RESPOSTAS — é o que zera o indicador da boia para
+  // quem relatou (0252). Chama sempre, mesmo sem nada para marcar: a alternativa
+  // seria a página trazer a coluna `reporter_seen_answer_at` no `select` para
+  // decidir, e aí um banco sem a 0252 derrubaria a consulta inteira e a LISTA
+  // sumiria em silêncio. Um `update` que acerta zero linhas custa quase nada;
+  // uma tela vazia sem explicação custa um chamado.
+  useEffect(() => {
+    marcarRespostasVistas()
+      .then(() => window.dispatchEvent(new Event(RELATOS_VISTOS)))
+      .catch(() => {
+        /* migração pendente: o número fica teimoso, a tela não quebra */
+      });
+  }, []);
 
   const lista = relatos.filter((r) => {
     if (filtro === "meus") return r.meu;
@@ -396,6 +415,10 @@ function Resposta({ relato }: { relato: Relato }) {
       if (r.ok) {
         toast.success("Resposta registrada.");
         setAberto(false);
+        // A fila do Admin Master acabou de encolher. Sem este aviso o número na
+        // boia só cairia na consulta seguinte — até um minuto contando um
+        // relato que ele acabou de fechar.
+        window.dispatchEvent(new Event(RELATOS_VISTOS));
       } else {
         toast.error(r.error ?? "Não foi possível salvar.");
       }

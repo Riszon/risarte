@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.237.0",
+    data: "2026-09-08",
+    migracao: "0252",
+    titulo: "A boia passou a avisar quando há algo esperando",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O ícone da boia, na barra de cima, ganhou um número. Se você relatou um problema e foi respondido, ele avisa — e some quando você abre a tela de Problemas para ler.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Para o Admin Master o mesmo número mostra a fila dele: quantos relatos ainda estão abertos ou em análise, de todas as unidades. Some conforme ele responde.",
+        papeis: "todos",
+        manual: "2. Início rápido",
+      },
+    ],
+  },
+  {
     versao: "0.236.0",
     data: "2026-09-08",
     migracao: null,
