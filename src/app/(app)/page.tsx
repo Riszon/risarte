@@ -2,7 +2,7 @@ import { BadgeCheck, Building2, Sparkles } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { novidadesPara } from "@/lib/changelog";
-import { Novidades } from "./sistema/novidades";
+import { Novidades } from "@/components/novidades";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
 import { Badge } from "@/components/ui/badge";

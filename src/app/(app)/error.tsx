@@ -23,7 +23,7 @@ import { APP_VERSION } from "@/lib/version";
  * 2. **Mostra o código do erro** (`digest`). É o que liga esta tela ao registro
  *    do servidor; sem ele, investigar depois é adivinhação.
  * 3. **Leva o código junto para o relato.** Um clique abre o formulário de
- *    /sistema já com a tela e o código preenchidos: o erro que evaporava vira
+ *    /problemas já com a tela e o código preenchidos: o erro que evaporava vira
  *    registro com rastro técnico.
  *
  * ⚠️ NÃO grava sozinha. Um erro em laço geraria centenas de linhas iguais e
@@ -90,7 +90,7 @@ export default function ErroDaTela({
               <Button
                 variant="outline"
                 nativeButton={false}
-                render={<Link href={`/sistema?${paraRelato.toString()}`} />}
+                render={<Link href={`/problemas?${paraRelato.toString()}`} />}
               >
                 Registrar este problema
               </Button>

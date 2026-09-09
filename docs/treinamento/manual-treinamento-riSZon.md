@@ -123,8 +123,8 @@ coisa, quem manda é este.
 |---|---|
 | Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
 | Sino | **Notificações**, com o número de avisos não lidos |
-| Triângulo | **Alertas** do sistema (financeiro e estoque) |
-| Boia | **Relatar um problema** — abre o formulário direto |
+| Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
+| Boia | **Problemas** — relatar e acompanhar; abre o formulário direto |
 | Livro | **Manual** — este texto, sempre na versão que está no ar |
 
 > **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
@@ -188,7 +188,8 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Risartanos | `/risartanos` | Cadastro de colaboradores (RH) |
 | Relatórios | `/relatorios` | Indicadores de agenda, rede e produtividade |
 | Manual | `/manual` | Este manual, sempre na versão do sistema no ar |
-| Sistema | `/sistema` | Novidades, relato de problemas e alertas |
+| Alertas | `/alertas` | O que o sistema está avisando, e o relógio |
+| Problemas | `/problemas` | Relatar e acompanhar problemas, dúvidas e sugestões |
 | Administração | `/admin/*` | Clínicas, usuários, prazos, regras, modelos |
 
 ### 3.3. O que **não** faz parte do escopo
@@ -209,7 +210,7 @@ Confirmado no código como **previsto mas não conectado**:
 | Arquivo | Elemento | Conclusão |
 |---|---|---|
 | `CLAUDE.md` | §3 Jornada | As 7 fases e quem move cada uma [EV-001] |
-| `src/app/(app)/**/page.tsx` | 82 rotas | Lista completa de telas [EV-002] |
+| `src/app/(app)/**/page.tsx` | 87 rotas | Lista completa de telas [EV-002] |
 | `src/components/app-sidebar.tsx` | 28 itens | Menu e condições [EV-003] |
 | `.env.example`, código | `ZAPSIGN_*`, `ASAAS_*` | Variáveis existem, integração não [EV-011] |
 
@@ -778,11 +779,11 @@ No rodapé: seu nome, seu e-mail, a **versão do sistema** e o botão **Sair**.
 `/admin/regras-comerciais`, `/admin/agenda`, `/admin/anamnese`,
 `/admin/orientacoes`, `/admin/documentos`, `/admin/chat`, `/admin/auditoria`.
 
-**Ajuda:** `/manual`, `/sistema`.
+**Ajuda:** `/manual`, `/alertas`, `/problemas`.
 
 **Outros:** `/notificacoes`, `/perfil`, `/chat`, `/relatorios`, `/documentos`.
 
-A lista completa das 82 rotas, com as guardas de acesso encontradas em cada
+A lista completa das 87 rotas, com as guardas de acesso encontradas em cada
 página, está em
 [`inventario-funcionalidades-riSZon.json`](inventario-funcionalidades-riSZon.json).
 
@@ -926,7 +927,7 @@ custa menos que corrigir**.
 
 ### 9.4. Como relatar um problema
 
-**Menu → Sistema → aba Problemas → botão "Relatar um problema".**
+**Barra de cima → a boia (Problemas) → botão "Relatar um problema".**
 
 > **Você não preenche o que o sistema já sabe.** Quem você é, sua função, a
 > unidade, a tela, a versão e o navegador vão junto automaticamente. Até a
@@ -1219,7 +1220,16 @@ e quais funções passaram a ter a permissão.
 
 ## 15. Novidades, problemas e alertas
 
-*Menu → **Sistema**. Três abas.*
+*Duas telas separadas, cada uma no seu desenho da barra de cima: o **triângulo**
+abre os Alertas, a **boia** abre os Problemas.*
+
+> **Elas eram uma só, com abas, até 08/09/2026.** Os dois desenhos abriam a
+> mesma tela e mudavam apenas a aba selecionada — quem clicava em Alertas
+> encontrava "Relatar um problema" do lado. Agora cada desenho leva ao seu
+> assunto e nada mais.
+>
+> Se você tiver um atalho antigo para `/sistema`, ele continua funcionando: o
+> sistema o encaminha para a tela certa.
 
 ### 15.1. Novidades — agora na tela de Início
 
@@ -1239,6 +1249,8 @@ O registro começa em **25/08/2026**, quando o sistema entrou em preparação de
 lançamento.
 
 ### 15.2. Problemas
+
+*Tela `/problemas` — a **boia** na barra de cima.*
 
 Onde se relata e se acompanha. Como relatar está na
 [seção 9.4](#94-como-relatar-um-problema).
@@ -1295,6 +1307,8 @@ E há dois caminhos:
 
 ### 15.3. Alertas
 
+*Tela `/alertas` — o **triângulo** na barra de cima.*
+
 O que o sistema está avisando agora, reunido num lugar só: os alertas do
 Financeiro (orçamento perto do limite, caixa projetado negativo, faturamento
 atrás do ponto de equilíbrio, atraso acumulado) e os do Estoque (sessão
@@ -1309,7 +1323,7 @@ retrato da última apuração, e diz isso.
 
 ### 15.4. Relógio
 
-No alto da tela Sistema, acima das abas, fica o **relógio**: a data e a hora de
+No alto da tela de **Alertas** fica o **relógio**: a data e a hora de
 Brasília por extenso, e — ao lado — o fuso do seu computador e o do servidor.
 
 **Para que serve:** computador com data ou hora erradas faz o sistema parecer

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatBrDateTime } from "@/lib/dates";
-import type { Relato } from "./problemas";
+import type { Relato } from "./lista";
 
 /**
  * TRANSFORMAR UM RELATO EM BRIEFING — só para o Admin Master.

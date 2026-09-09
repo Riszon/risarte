@@ -37,7 +37,7 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 ### [EV-002] Inventário de rotas ✅
 
 - **Extração:** todos os `src/app/(app)/**/page.tsx`.
-- **Resultado:** **82 rotas**.
+- **Resultado:** **87 rotas** (conferido em 08/09/2026; uma delas, `/sistema`, é apenas um encaminhamento para `/alertas` ou `/problemas`).
 - **Conclusão:** é a lista completa de telas do sistema. Para cada uma, o
   inventário JSON registra também as guardas encontradas no arquivo
   (`requireAdminMaster`, `hasRoleInClinic`, `notFound`, `redirect`, `canView*`).
@@ -214,7 +214,7 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | Ref. | Assunto | Arquivo principal | Confiança |
 |---|---|---|---|
 | EV-001 | 7 fases da jornada | `CLAUDE.md` §3 | ✅ |
-| EV-002 | 84 rotas | `src/app/(app)/**/page.tsx` | ✅ |
+| EV-002 | 87 rotas | `src/app/(app)/**/page.tsx` | ✅ |
 | EV-003 | 30 itens de menu | `src/components/app-sidebar.tsx` | ✅ |
 | EV-004 | 15 papéis + Admin | `src/lib/roles.ts` | ✅ |
 | EV-005 | Papel × ambiente | `src/lib/roles.ts` | ✅ |

@@ -106,7 +106,7 @@ export async function registrarProblema(
     clinicId,
   });
 
-  revalidatePath("/sistema");
+  revalidatePath("/problemas");
   return { ok: true, code: data.code };
 }
 
@@ -159,6 +159,6 @@ export async function responderProblema(
     details: { status },
   });
 
-  revalidatePath("/sistema");
+  revalidatePath("/problemas");
   return { ok: true };
 }

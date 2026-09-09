@@ -134,10 +134,15 @@ export const CAPACIDADES: Capability[] = [
   },
   {
     id: "menu.sistema",
-    rotulo: "Sistema (novidades e problemas)",
+    rotulo: "Alertas e problemas",
     grupo: "Navegação",
+    // As duas telas (`/alertas` e `/problemas`) dividem esta permissão: separar
+    // os ÍCONES foi o pedido do dono; separar quem PODE ver cada uma é outra
+    // decisão, que ele deixou para uma entrega própria. Enquanto for uma só, o
+    // rótulo tem de nomear as duas — permissão com nome de uma tela faz quem
+    // configura desligar sem saber o que mais está desligando.
     descricao:
-      "O que mudou em cada versão, o canal para relatar problema e os alertas.",
+      "Os alertas que o sistema levanta e o canal para relatar um problema.",
     dependeDoBanco: false,
     // Desligar isto para alguém devolve o relato de problema para o WhatsApp,
     // que é exatamente de onde ele está saindo.

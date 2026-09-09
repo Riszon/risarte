@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.236.0",
+    data: "2026-09-08",
+    migracao: null,
+    titulo: "Alertas e Problemas agora são duas telas separadas",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Os dois desenhos da barra de cima abriam a mesma tela e só mudavam a aba: quem clicava no triângulo (Alertas) encontrava “Relatar um problema” do lado. Agora o triângulo abre só os alertas e a boia abre só os problemas — cada desenho leva ao seu assunto.",
+        papeis: "todos",
+        manual: "15. Novidades, problemas e alertas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O relógio do sistema (que compara a hora do seu computador com a do servidor) passou a ficar na tela de Alertas. Hora fora do lugar é o sistema avisando, não alguém relatando defeito.",
+        papeis: "todos",
+        manual: "15.4. Relógio",
+      },
+    ],
+  },
+  {
     versao: "0.235.1",
     data: "2026-09-08",
     migracao: null,

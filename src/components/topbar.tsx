@@ -49,13 +49,13 @@ export function Topbar({
         {podeVerSistema && (
           <>
             <TopbarItem
-              href="/sistema?aba=alertas"
+              href="/alertas"
               label="Alertas do sistema"
               icon={<AlertTriangle className="size-[18px]" />}
               destaque
             />
             <TopbarItem
-              href="/sistema?aba=problemas&relatar=1"
+              href="/problemas?relatar=1"
               label="Relatar um problema"
               icon={<LifeBuoy className="size-[18px]" />}
             />

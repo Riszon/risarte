@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { montarBriefing } from "@/app/(app)/sistema/preparar-briefing";
-import type { Relato } from "@/app/(app)/sistema/problemas";
+import { montarBriefing } from "@/app/(app)/problemas/preparar-briefing";
+import type { Relato } from "@/app/(app)/problemas/lista";
 
 const RELATO: Relato = {
   id: "abc",
