@@ -96,30 +96,44 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
 3. **Olhe o menu da esquerda.** Ele é a lista do que você pode abrir.
 4. **Comece pelo "Início".** É a primeira tela e a que resume o seu dia.
 5. **Ache a versão do sistema** no rodapé da barra lateral (ex.: *"Versão
-   0.226.0 · migração 0247"*). É essa informação que o suporte pede quando algo
+   0.235.0 · migração 0251"*). É essa informação que o suporte pede quando algo
    dá errado.
 
-**No alto da barra lateral fica "Procurar paciente".** É o caminho mais curto
-para uma ficha, de qualquer tela: clique (ou **Ctrl + K**), digite, escolha com
-as setas e abra com **Enter**.
+## A barra de cima
 
-Procura por **nome**, pelo **código** do paciente (ex.: `CAM-00001`) e pelo
-**CPF** — inclusive digitando só os números, sem pontos nem traço.
+**O que você usa de dentro de qualquer tela mora no alto**, e não no menu
+lateral. O menu da esquerda é só o caminho entre os módulos.
+
+**À esquerda: "Procurar paciente".** O caminho mais curto para uma ficha:
+clique (ou **Ctrl + K**), digite, escolha com as setas e abra com **Enter**.
+Procura por **nome**, pelo **código** (ex.: `CAM-00001`) e pelo **CPF** —
+inclusive digitando só os números, sem pontos nem traço.
 
 > **Dois pacientes com o mesmo nome?** A lista mostra o código e a unidade de
 > cada um, para você escolher sem precisar abrir as duas fichas.
 
-**No rodapé da barra lateral fica a data e a hora**, sempre no **horário de
-Brasília** — é ele que o sistema usa para decidir se um horário já passou,
-quando uma parcela vence e a que mês um lançamento pertence. Se o relógio do
-seu computador mostrar outra coisa, quem manda é este.
+**À direita, a data e a hora** — sempre no **horário de Brasília**, que é o que
+o sistema usa para decidir se um horário já passou, quando uma parcela vence e a
+que mês um lançamento pertence. Se o relógio do seu computador mostrar outra
+coisa, quem manda é este.
 
-**No fim do menu existe o bloco "Ajuda", com dois itens que valem conhecer
-antes de precisar deles:**
+**E cinco desenhos:**
 
-- **Manual** — este texto, dentro do sistema, sempre na versão que está no ar.
-- **Sistema** — o que mudou em cada versão, onde relatar um problema, e os
-  alertas. Ver [seção 15](#15-novidades-problemas-e-alertas).
+| | O que é |
+|---|---|
+| Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
+| Sino | **Notificações**, com o número de avisos não lidos |
+| Triângulo | **Alertas** do sistema (financeiro e estoque) |
+| Boia | **Relatar um problema** — abre o formulário direto |
+| Livro | **Manual** — este texto, sempre na versão que está no ar |
+
+> **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
+> alertas do financeiro disparam notificação. O triângulo é para consultar a
+> lista completa quando você quiser.
+
+**As novidades do sistema ficam na tela de Início** — a primeira que você vê ao
+entrar. Ver [seção 15](#15-novidades-problemas-e-alertas).
+
 
 **Se algo não aparecer para você**, não é defeito: é permissão. Ver
 [seção 13](#13-perguntas-frequentes).
@@ -1207,7 +1221,11 @@ e quais funções passaram a ter a permissão.
 
 *Menu → **Sistema**. Três abas.*
 
-### 15.1. Novidades
+### 15.1. Novidades — agora na tela de Início
+
+> **Elas saíram desta tela.** Desde 08/09/2026 as novidades aparecem na
+> **Início**, que é a primeira que você vê ao entrar. Novidade escondida atrás
+> de dois cliques não é lida por ninguém.
 
 O que mudou no sistema, versão por versão, da mais recente para a mais antiga.
 Cada mudança vem marcada como **Novidade**, **Melhoria**, **Correção** ou

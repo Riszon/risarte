@@ -14,12 +14,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   BadgePercent,
-  BookMarked,
   ClipboardCheck,
   ClipboardList,
   Clock,
   DoorOpen,
-  LifeBuoy,
   FileText,
   Handshake,
   HeartPulse,
@@ -40,10 +38,6 @@ import {
   ChevronsUpDown,
   type LucideIcon,
 } from "lucide-react";
-import { SystemClock } from "@/components/clock";
-import { QuickSearch } from "@/components/quick-search";
-import { NotificationNavItem } from "@/components/notification-nav-item";
-import { ChatNavItem } from "@/components/chat-nav-item";
 import { RisarteMark } from "@/components/risarte-logo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -214,14 +208,6 @@ const PURCHASES_ITEM = {
   icon: ShoppingCart,
 };
 
-// AJUDA — o manual e o diário do sistema. Ficam por último, acima do rodapé:
-// não são trabalho do dia, são o que se procura quando algo não está claro ou
-// não funcionou. Os dois vêm da matriz (0247), como o resto do menu.
-const AJUDA_ITEMS: (NavItem & { cap: string })[] = [
-  { href: "/manual", label: "Manual", icon: BookMarked, cap: "menu.manual" },
-  { href: "/sistema", label: "Sistema", icon: LifeBuoy, cap: "menu.sistema" },
-];
-
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
   // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
@@ -332,16 +318,6 @@ export function AppSidebar({
     navItems = [...navItems, FINANCE_ITEM];
   }
 
-  // Manual e Sistema, no bloco "Ajuda". O dentista também os enxerga: ele é
-  // quem mais precisa saber o que mudou, e é o único papel cujo menu é
-  // diferente de todos os outros.
-  const itensDeAjuda = AJUDA_ITEMS.filter((i) => navPermitido.includes(i.cap));
-
-  // A busca rápida abre prontuário: quem não pode ver prontuário não a vê.
-  // (A barreira de verdade está na RLS, dentro de `search_clients` — isto aqui
-  // é para não oferecer um caminho que terminaria em porta fechada.)
-  const podeBuscar = navPermitido.includes("menu.prontuarios");
-
   function switchClinic(clinicId: string) {
     if (clinicId === activeClinicId) return;
     startTransition(async () => {
@@ -414,16 +390,6 @@ export function AppSidebar({
         </div>
       )}
 
-      {/* A busca fica ACIMA do seletor de unidade e do menu: é o que mais se
-          usa, e o olho já vai ao alto da barra procurando por onde começar.
-          Aparece minimizada também — quem minimiza o menu é justamente quem
-          quer a tela livre e o atalho à mão. */}
-      {podeBuscar && (
-        <div className={cn("pb-3", collapsed ? "px-2" : "px-3")}>
-          <QuickSearch collapsed={collapsed} />
-        </div>
-      )}
-
       {clinics.length > 0 && !collapsed && (
         <div className="px-3 pb-3">
           <DropdownMenu>
@@ -491,34 +457,10 @@ export function AppSidebar({
             {!collapsed && <span className="truncate">{label}</span>}
           </Link>
         ))}
-        <ChatNavItem linkClass={linkClass("/chat")} collapsed={collapsed} />
-        <NotificationNavItem
-          linkClass={linkClass("/notificacoes")}
-          collapsed={collapsed}
-        />
-
-        {itensDeAjuda.length > 0 && (
-          <>
-            {collapsed ? (
-              <div className="my-2 border-t border-sidebar-border/60" />
-            ) : (
-              <p className="px-3 pb-1 pt-5 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
-                Ajuda
-              </p>
-            )}
-            {itensDeAjuda.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={linkClass(href)}
-                title={collapsed ? label : undefined}
-              >
-                <Icon className="size-4 shrink-0" />
-                {!collapsed && <span className="truncate">{label}</span>}
-              </Link>
-            ))}
-          </>
-        )}
+        {/* Chat, avisos, busca, manual e o diário do sistema saíram daqui em
+            08/09/2026 e foram para a BARRA DE CIMA: não são caminho entre
+            módulos, são coisas que se usa de dentro de qualquer tela. A lateral
+            voltou a ser só navegação. */}
 
         {isAdminMaster && (
           <>
@@ -545,11 +487,7 @@ export function AppSidebar({
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        {/* O relógio fica ACIMA do perfil: é informação de trabalho (que horas
-            são para o sistema), não informação de conta. */}
-        <div className="mb-2 rounded-md bg-sidebar-accent/40 px-2 py-1.5">
-          <SystemClock collapsed={collapsed} />
-        </div>
+        {/* O relógio foi para a barra de cima (08/09/2026, decisão do dono). */}
         <Link
           href="/perfil"
           className={cn(

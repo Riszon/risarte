@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.235.0",
+    data: "2026-09-08",
+    migracao: null,
+    titulo: "Barra de cima: o que se usa em qualquer tela saiu do menu lateral",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A busca de paciente, o Chat, as Notificações, o Manual, o relato de problema e os Alertas passaram para uma barra no alto da tela — junto com a data e a hora. O menu lateral ficou só com a navegação entre módulos.",
+        papeis: "todos",
+        manual: "2. Início rápido",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "As novidades do sistema (esta lista) passaram a aparecer na tela de Início. Antes ficavam escondidas numa aba, e novidade que precisa de dois cliques ninguém lê.",
+        papeis: "todos",
+        manual: "15.1. Novidades",
+      },
+    ],
+  },
+  {
     versao: "0.234.0",
     data: "2026-09-08",
     migracao: null,

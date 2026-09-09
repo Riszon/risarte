@@ -1,6 +1,8 @@
-import { BadgeCheck, Building2 } from "lucide-react";
+import { BadgeCheck, Building2, Sparkles } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import { novidadesPara } from "@/lib/changelog";
+import { Novidades } from "./sistema/novidades";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +71,13 @@ export default async function HomePage() {
   // bloquear o render da home, o disparo vai para segundo plano
   // (<BirthdayNotifier/>), mantendo o mesmo gate de papel abaixo.
   const homeClinic = session.activeClinic;
+
+  // As novidades saem filtradas por papel. Uso os papéis de TODAS as clínicas,
+  // não só o da ativa: quem atende em duas unidades continua sendo consultor
+  // comercial nas duas, e uma novidade do Comercial não deveria sumir só porque
+  // a pessoa está com a outra unidade selecionada no momento.
+  const papeisDaPessoa = [...new Set(Object.values(session.rolesByClinic).flat())];
+
   const shouldNotifyBirthdays =
     !!homeClinic &&
     homeClinic.type !== "franchisor" &&
@@ -250,6 +259,19 @@ export default async function HomePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* AS NOVIDADES MORAM AQUI (decisão do dono, 08/09/2026).
+          Antes ficavam numa aba da tela Sistema, e uma novidade que exige dois
+          cliques para ser encontrada não é lida por ninguém. Aqui ela está no
+          caminho: é a primeira tela do dia de toda a equipe.
+          Continua filtrada por papel — ver `novidadesPara`. */}
+      <section className="pt-2">
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+          <Sparkles className="size-5 text-gold" />
+          O que mudou no sistema
+        </h2>
+        <Novidades versoes={novidadesPara(papeisDaPessoa, session.isAdminMaster)} />
+      </section>
     </div>
   );
 }

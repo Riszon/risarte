@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bell, ListChecks, Sparkles } from "lucide-react";
+import { Bell, ListChecks } from "lucide-react";
 import { getSessionContext, pode } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { novidadesPara } from "@/lib/changelog";
 import { canViewStock } from "@/lib/stock-access";
 import { APP_VERSION, LATEST_MIGRATION } from "@/lib/version";
 import { cn } from "@/lib/utils";
-import { Novidades } from "./novidades";
 import { PainelDoRelogio } from "./relogio";
 import { Problemas, type Relato } from "./problemas";
 import { Alertas, type Alerta } from "./alertas";
@@ -28,8 +26,12 @@ export const metadata: Metadata = { title: "Sistema" };
  * colado numa conversa.
  */
 
+// ⚠️ AS NOVIDADES SAÍRAM DAQUI em 08/09/2026 (decisão do dono): moraram numa
+// aba desta tela e passaram a viver na tela de INÍCIO. Uma novidade que exige
+// dois cliques para ser encontrada não é lida — na Início ela está no caminho de
+// todo mundo, todo dia. **Não trazer de volta para cá:** em dois lugares,
+// surgiria a dúvida de qual é a boa.
 const ABAS = [
-  { chave: "novidades", rotulo: "Novidades", icone: Sparkles },
   { chave: "problemas", rotulo: "Problemas", icone: ListChecks },
   { chave: "alertas", rotulo: "Alertas", icone: Bell },
 ] as const;
@@ -50,10 +52,9 @@ export default async function SistemaPage({
   const pedida = um(params.aba) as Chave | undefined;
   const aba: Chave = ABAS.some((a) => a.chave === pedida)
     ? (pedida as Chave)
-    : "novidades";
+    : "problemas";
 
   const clinicId = session.activeClinic?.id ?? null;
-  const papeis = clinicId ? (session.rolesByClinic[clinicId] ?? []) : [];
 
   const supabase = await createClient();
 
@@ -225,10 +226,6 @@ export default async function SistemaPage({
           </Link>
         ))}
       </nav>
-
-      {aba === "novidades" && (
-        <Novidades versoes={novidadesPara(papeis, session.isAdminMaster)} />
-      )}
 
       {aba === "problemas" && (
         <Problemas

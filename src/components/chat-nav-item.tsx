@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { setPresence, type PresenceStatus } from "@/lib/presence-store";
-import { cn } from "@/lib/utils";
+import { TopbarItem } from "@/components/topbar-item";
 
 // Sem atividade por este tempo → "ausente".
 const AWAY_AFTER_MS = 5 * 60 * 1000;
@@ -43,13 +42,17 @@ function beepUrgent() {
  * H4.9 Chat Hub: item do menu com contador de não lidas em tempo real +
  * gerência da presença (online/ausente) do usuário para todo o app.
  */
-export function ChatNavItem({
-  linkClass,
-  collapsed,
-}: {
-  linkClass: string;
-  collapsed?: boolean;
-}) {
+/**
+ * O Chat Hub na barra de cima — e o dono do canal de presença.
+ *
+ * ⚠️ ESTE COMPONENTE PRECISA FICAR MONTADO EM TODA TELA. É ele que mantém o
+ * canal "online-users" do Realtime, e é por isso que ele vive no layout e não
+ * dentro de uma página. Ao mover a barra lateral para cá (08/09/2026) essa
+ * propriedade foi preservada de propósito: a barra de cima também está no
+ * layout. Tirá-lo dali derrubaria a presença de todo mundo sem erro nenhum
+ * aparecer.
+ */
+export function ChatNavItem() {
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
   const meRef = useRef<string | null>(null);
@@ -213,25 +216,11 @@ export function ChatNavItem({
   }, [pathname]);
 
   return (
-    <Link
+    <TopbarItem
       href="/chat"
-      className={linkClass}
-      title={collapsed ? "Chat Hub" : undefined}
-    >
-      <MessagesSquare className="size-4 shrink-0" />
-      {!collapsed && <span className="flex-1">Chat Hub</span>}
-      {unread > 0 &&
-        (collapsed ? (
-          <span className="absolute right-1 top-1 size-2 rounded-full bg-gold" />
-        ) : (
-          <span
-            className={cn(
-              "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-xs font-medium text-gold-foreground"
-            )}
-          >
-            {unread > 99 ? "99+" : unread}
-          </span>
-        ))}
-    </Link>
+      label="Chat Hub"
+      icon={MessagesSquare}
+      badge={unread}
+    />
   );
 }

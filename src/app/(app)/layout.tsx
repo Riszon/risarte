@@ -8,6 +8,7 @@ import { canViewPpr } from "@/lib/ppr/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
 import { AppSidebar } from "@/components/app-sidebar";
+import { Topbar } from "@/components/topbar";
 import { ChooseClinicWelcome } from "@/components/choose-clinic-welcome";
 import { UrgentSchedulingPopup } from "@/components/urgent-scheduling-popup";
 import { TreatmentStartPopup } from "@/components/treatment-start-popup";
@@ -123,12 +124,20 @@ export default async function AppLayout({
         }
         initialCollapsed={sidebarCollapsed}
       />
-      {/* overflow-x-auto força overflow-y:auto → o <main> é quem rola na
+      {/* A coluna da direita: barra de cima fixa + conteúdo que rola por baixo.
+          overflow-x-auto força overflow-y:auto → o <main> é quem rola na
           vertical; scrollbar-gutter:stable reserva o espaço da barra para o
           conteúdo não "pular" na horizontal ao trocar de aba/tela. */}
-      <main className="flex-1 overflow-x-auto bg-background [scrollbar-gutter:stable]">
-        {children}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar
+          podeBuscar={pode(session, "menu.prontuarios")}
+          podeVerManual={pode(session, "menu.manual")}
+          podeVerSistema={pode(session, "menu.sistema")}
+        />
+        <main className="flex-1 overflow-x-auto bg-background [scrollbar-gutter:stable]">
+          {children}
+        </main>
+      </div>
       {/* AJ4: pop-up da recepção para pedidos de agendamento de apresentação. */}
       <UrgentSchedulingPopup />
       {/* COM4: pop-up forte da recepção quando uma venda é fechada. */}

@@ -27,7 +27,7 @@ import { buscarProntuarios, type ClienteEncontrado } from "@/app/(app)/busca-act
  *    errado. Cada busca leva um número, e só a mais recente pode escrever na
  *    tela.
  */
-export function QuickSearch({ collapsed = false }: { collapsed?: boolean }) {
+export function QuickSearch() {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [termo, setTermo] = useState("");
@@ -96,25 +96,23 @@ export function QuickSearch({ collapsed = false }: { collapsed?: boolean }) {
 
   return (
     <>
+      {/* Parece um campo, mas é um botão: o campo de verdade vive na janela que
+          abre, com foco automático. Assim não há dois lugares para digitar. */}
       <button
         type="button"
         onClick={() => setAberto(true)}
         title="Procurar prontuário (Ctrl + K)"
-        className={cn(
-          "flex w-full items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/40 text-sm text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-foreground",
-          collapsed ? "justify-center p-2" : "px-2.5 py-2"
-        )}
+        className="flex w-full max-w-sm items-center gap-2 rounded-md border bg-muted/40 px-2.5 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
       >
         <Search className="size-4 shrink-0" />
-        {!collapsed && (
-          <>
-            <span className="truncate">Procurar paciente</span>
-            {/* O atalho fica escrito: atalho que ninguém descobre não existe. */}
-            <kbd className="ml-auto shrink-0 rounded border border-sidebar-border px-1 text-[10px] text-sidebar-foreground/50">
-              Ctrl K
-            </kbd>
-          </>
-        )}
+        <span className="truncate">
+          Procurar paciente
+          <span className="hidden sm:inline"> — nome, código ou CPF</span>
+        </span>
+        {/* O atalho fica escrito: atalho que ninguém descobre não existe. */}
+        <kbd className="ml-auto hidden shrink-0 rounded border px-1 text-[10px] md:inline">
+          Ctrl K
+        </kbd>
       </button>
 
       <Dialog open={aberto} onOpenChange={setAberto}>

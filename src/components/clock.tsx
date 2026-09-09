@@ -2,7 +2,6 @@
 
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { useNow } from "@/lib/use-now";
-import { cn } from "@/lib/utils";
 
 /**
  * O RELÓGIO DO SISTEMA, na barra lateral.
@@ -22,18 +21,14 @@ import { cn } from "@/lib/utils";
  * lá mostra um traço, nunca um horário parado — horário errado por um instante
  * é pior que ausência declarada.
  */
-export function SystemClock({ collapsed = false }: { collapsed?: boolean }) {
+export function SystemClock() {
   const agora = useNow();
 
   if (agora === null) {
+    // Um traço, nunca um horário parado: número errado por um instante é pior
+    // que ausência declarada.
     return (
-      <p
-        className={cn(
-          "text-center text-xs text-sidebar-foreground/50",
-          collapsed && "sr-only"
-        )}
-        aria-hidden
-      >
+      <p className="hidden text-xs tabular-nums text-muted-foreground sm:block" aria-hidden>
         —
       </p>
     );
@@ -55,25 +50,15 @@ export function SystemClock({ collapsed = false }: { collapsed?: boolean }) {
     hour12: false,
   }).format(instante);
 
-  if (collapsed) {
-    return (
-      <p
-        className="text-center text-xs font-medium tabular-nums text-sidebar-foreground/80"
-        title={`${data} · ${hora} (horário de Brasília)`}
-      >
-        {hora.slice(0, 5)}
-      </p>
-    );
-  }
-
   return (
     <p
-      className="text-center text-xs text-sidebar-foreground/70"
-      title="Horário de Brasília — é ele que o sistema usa para tudo"
+      className="hidden whitespace-nowrap text-xs text-muted-foreground sm:block"
+      title="Horário de Brasília — é ele que o sistema usa para tudo: agenda, vencimentos e competência"
     >
-      <span className="capitalize">{data}</span>
-      <br />
-      <span className="font-medium tabular-nums text-gold">{hora}</span>
+      {/* A DATA some antes da hora quando a tela aperta: quem olha o relógio no
+          meio do expediente quer saber a HORA; o dia ele já sabe. */}
+      <span className="hidden capitalize lg:inline">{data} · </span>
+      <span className="font-medium tabular-nums text-foreground">{hora}</span>
     </p>
   );
 }
