@@ -198,6 +198,18 @@ criado, nada novo no banco.** Os cookies são montados pelo **próprio
 à mão seria adivinhar detalhe interno que muda de versão, e a varredura passaria
 a dizer "caiu no login" em toda tela.
 
+**O BUILD COMPILA; ELE NÃO DESENHA — e por isso esta camada não é opcional.**
+Todas as rotas do sistema são **dinâmicas** (`ƒ` na saída do build): o Next as
+compila e para por aí, porque elas só são desenhadas quando alguém as abre. Um
+defeito que só acontece **ao desenhar** atravessa o portão inteiro sem um ruído.
+Foi assim em 08/09/2026: a barra de cima (servidor) passava o **componente** do
+ícone para um componente de navegador; função não atravessa essa fronteira, e
+**todas as telas do treino** responderam *"A server error occurred"* com
+`npm run verificar`, `npm test` e `npm run lint` verdes. A varredura pegaria na
+primeira tela. **Regra: entrega que mexe no layout, no proxy ou em qualquer
+coisa montada em toda tela passa por `npm run check:telas` antes de ir ao ar** —
+o build atesta que o código compila, não que o sistema abre.
+
 **404 aqui quase nunca é rota faltando** — as telas usam `notFound()` como
 resposta de "você não pode ver isto". Quem separa defeito de permissão é o papel
 de quem pediu: **para o Admin Master, 404 é sempre bug**. Ele varre duas vezes,
