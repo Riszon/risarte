@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.235.1",
+    data: "2026-09-08",
+    migracao: null,
+    titulo: "Correção: o sistema não abria depois da barra de cima",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Logo depois da entrega da barra de cima, qualquer tela do sistema respondia “ocorreu um erro no servidor” e nada abria. Era um defeito nos ícones da barra nova, e foi corrigido. Nenhum dado foi afetado.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.235.0",
     data: "2026-09-08",
     migracao: null,

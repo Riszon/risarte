@@ -42,7 +42,7 @@ export function NotificationNavItem() {
     <TopbarItem
       href="/notificacoes"
       label="Notificações"
-      icon={Bell}
+      icon={<Bell className="size-[18px]" />}
       badge={unread}
     />
   );

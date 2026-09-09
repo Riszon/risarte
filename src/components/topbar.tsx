@@ -51,18 +51,22 @@ export function Topbar({
             <TopbarItem
               href="/sistema?aba=alertas"
               label="Alertas do sistema"
-              icon={AlertTriangle}
+              icon={<AlertTriangle className="size-[18px]" />}
               destaque
             />
             <TopbarItem
               href="/sistema?aba=problemas&relatar=1"
               label="Relatar um problema"
-              icon={LifeBuoy}
+              icon={<LifeBuoy className="size-[18px]" />}
             />
           </>
         )}
         {podeVerManual && (
-          <TopbarItem href="/manual" label="Manual de treinamento" icon={BookMarked} />
+          <TopbarItem
+            href="/manual"
+            label="Manual de treinamento"
+            icon={<BookMarked className="size-[18px]" />}
+          />
         )}
       </div>
     </header>

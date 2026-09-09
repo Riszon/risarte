@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,13 +18,25 @@ import { cn } from "@/lib/utils";
 export function TopbarItem({
   href,
   label,
-  icon: Icon,
+  icon,
   badge,
   destaque,
 }: {
   href: string;
   label: string;
-  icon: LucideIcon;
+  /**
+   * ⚠️ O ÍCONE JÁ DESENHADO (`<Bell className="size-[18px]" />`), nunca o
+   * componente (`Bell`).
+   *
+   * A barra de cima roda no SERVIDOR e este componente roda no NAVEGADOR.
+   * Componente é função, e função não atravessa essa fronteira: passar `Bell`
+   * derruba a página inteira com "A server error occurred", e **o build não
+   * pega** — as telas do sistema são desenhadas sob demanda, então o erro só
+   * aparece ao abrir. Foi assim que o treino caiu em 08/09/2026.
+   *
+   * Elemento pronto atravessa; por isso o tipo é `ReactNode`.
+   */
+  icon: ReactNode;
   /** Número no canto. `0` ou ausente não desenha nada. */
   badge?: number;
   /** Para o que pede atenção (alertas), sem gritar. */
@@ -39,7 +51,7 @@ export function TopbarItem({
         destaque && "text-amber-600 hover:text-amber-700"
       )}
     >
-      <Icon className="size-[18px]" />
+      {icon}
       <span className="sr-only">{label}</span>
       {badge !== undefined && badge > 0 && (
         <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium tabular-nums text-gold-foreground">

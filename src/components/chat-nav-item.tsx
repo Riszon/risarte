@@ -219,7 +219,7 @@ export function ChatNavItem() {
     <TopbarItem
       href="/chat"
       label="Chat Hub"
-      icon={MessagesSquare}
+      icon={<MessagesSquare className="size-[18px]" />}
       badge={unread}
     />
   );
