@@ -124,3 +124,61 @@ console.log(
   `\n${AMBIENTES.length * 2 * 9} combinações medidas, ${falhas} abaixo de ${MINIMO}:1.`
 );
 if (falhas) process.exit(1);
+
+// =============================================================================
+// SEGUNDA PARTE: O PAR FUNDO × TEXTO EM CADA ELEMENTO
+//
+// ⚠️ A PRIMEIRA PARTE MEDE OS TOKENS; ESTA MEDE O USO. Ter os tokens certos não
+// impede alguém de pôr o token errado no elemento errado — e foi exatamente
+// isso que aconteceu em 10/09/2026, no botão "Painel" do Programa de Prevenção.
+//
+// A varredura que trocou `text-gold-foreground` por `text-gold-tinta` procurava
+// `bg-gold/` na linha e encontrou **`hover:bg-gold/90`**. Concluiu que o fundo
+// era esmaecido quando ele é SÓLIDO, e o botão virou marinho sobre marinho na
+// Franqueadora: 1,00:1, invisível. Variante (`hover:`, `dark:`, `sm:`) não diz
+// nada sobre o fundo em repouso.
+//
+// A regra que esta parte cobra:
+//   fundo SÓLIDO   (`bg-gold`)     → texto `text-gold-foreground`
+//   fundo ESMAECIDO(`bg-gold/NN`)  → texto `text-gold-tinta`
+// =============================================================================
+
+import { readdirSync } from "node:fs";
+import { join as unir } from "node:path";
+
+function arquivos(d, a = []) {
+  for (const e of readdirSync(d, { withFileTypes: true })) {
+    const f = unir(d, e.name);
+    if (e.isDirectory()) arquivos(f, a);
+    else if (/\.tsx?$/.test(e.name)) a.push(f);
+  }
+  return a;
+}
+
+/** Classes sem prefixo de variante — só elas valem para o estado em repouso. */
+const semVariante = (linha) =>
+  (linha.match(/[\w:/[\]-]+/g) ?? []).filter((c) => !c.includes(":"));
+
+let pares = 0;
+for (const f of arquivos("src")) {
+  const L = readFileSync(f, "utf8").split("\n");
+  for (let i = 0; i < L.length; i++) {
+    const cls = semVariante(L[i]);
+    const solido = cls.includes("bg-gold");
+    const esmaecido = cls.some((c) => /^bg-gold\/\d+$/.test(c));
+    const temTinta = L[i].includes("text-gold-tinta");
+    const temSolido = L[i].includes("text-gold-foreground");
+
+    if (solido && temTinta) {
+      console.log(`  PAR ERRADO ${f}:${i + 1} — fundo SÓLIDO com texto de fundo esmaecido`);
+      pares++;
+    }
+    if (esmaecido && temSolido) {
+      console.log(`  PAR ERRADO ${f}:${i + 1} — fundo ESMAECIDO com texto de fundo sólido`);
+      pares++;
+    }
+  }
+}
+
+console.log(pares ? `\n${pares} par(es) fundo × texto errado(s).` : "\nNenhum par fundo × texto errado.");
+if (pares) process.exit(1);

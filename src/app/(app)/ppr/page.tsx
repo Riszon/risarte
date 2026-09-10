@@ -132,7 +132,7 @@ export default async function PprPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
-              className="bg-gold text-gold-tinta hover:bg-gold/90"
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
               nativeButton={false}
               render={<Link href="/ppr/painel" />}
             >

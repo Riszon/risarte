@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.3",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "Correção: o botão “Painel” sumia no Programa de Prevenção",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Na Franqueadora, o botão “Painel” do Programa de Prevenção ficava da mesma cor do próprio fundo e desaparecia, nas duas luzes. Corrigido.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.2",
     data: "2026-09-10",
     migracao: null,
