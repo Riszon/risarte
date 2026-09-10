@@ -209,3 +209,101 @@ for (const f of arquivos("src")) {
 
 console.log(pares ? `\n${pares} par(es) fundo × texto errado(s).` : "\nNenhum par fundo × texto errado.");
 if (pares) process.exit(1);
+
+// =============================================================================
+// TERCEIRA PARTE: A ESCADA DE OPACIDADE DA BARRA LATERAL
+//
+// ⚠️ OPACIDADE SOBRE COR É O JEITO SILENCIOSO DE PERDER CONTRASTE. `text-…/80`
+// não é uma cor: é uma mistura com o fundo, e o resultado muda conforme a
+// lateral do ambiente. Medido em 10/09/2026: o mesmo `/80` dá 7,75:1 sobre a
+// lateral marinho das unidades e **4,38:1 sobre a turquesa da Franqueadora** —
+// a mesma classe, uma passa e a outra reprova. E os rótulos de seção, a `/50`,
+// davam 2,44:1.
+//
+// Nada no código denuncia isso: a classe é a mesma nos três ambientes. Só a
+// conta denuncia. Esta parte faz a conta para CADA nível de opacidade que a
+// lateral usa, no ambiente de lateral mais clara — o pior caso.
+// =============================================================================
+
+const LATERAL = readFileSync("src/components/app-sidebar.tsx", "utf8");
+const niveis = [
+  ...new Set(
+    [...LATERAL.matchAll(/text-sidebar-foreground\/(\d{1,3})/g)].map((m) => Number(m[1]))
+  ),
+].sort((a, b) => a - b);
+
+if (!niveis.length) {
+  throw new Error("RÉGUA VAZIA: nenhum `text-sidebar-foreground/NN` encontrado");
+}
+
+let opacidadesRuins = 0;
+console.log("\nOpacidade do texto sobre a barra lateral, no pior ambiente:\n");
+
+for (const nivel of niveis) {
+  let pior = { razao: Infinity, onde: "" };
+  for (const luz of ["claro", "escuro"]) {
+    for (const [nome, seletor] of AMBIENTES) {
+      const camadas = [RAIZ];
+      if (luz === "escuro") camadas.push(ESCURO);
+      const esp = seletor ? (luz === "escuro" ? ".dark " : "") + seletor : null;
+      const doAmb = [];
+      if (esp) doAmb.push([ordemNoArquivo(esp), bloco(esp)]);
+      doAmb.push([ordemNoArquivo("[data-ambiente] {"), GENERICO]);
+      doAmb.sort((a, b) => a[0] - b[0]);
+      for (const [, b] of doAmb) camadas.push(b);
+
+      const fundo = cor("--sidebar", ...camadas);
+      const texto = cor("--sidebar-foreground", ...camadas);
+      const r = razao(fundo, sobre(texto, nivel / 100, fundo));
+      if (r < pior.razao) pior = { razao: r, onde: `${nome} ${luz}` };
+    }
+  }
+  const ok = pior.razao >= MINIMO;
+  if (!ok) opacidadesRuins++;
+  console.log(
+    `  ${ok ? "OK   " : "FALHA"} /${String(nivel).padEnd(3)} ${pior.razao.toFixed(2).padStart(5)}:1  (pior: ${pior.onde})`
+  );
+}
+
+console.log(
+  `\n${niveis.length} nível(is) de opacidade na lateral, ${opacidadesRuins} abaixo de ${MINIMO}:1.`
+);
+if (opacidadesRuins) process.exit(1);
+
+// =============================================================================
+// QUARTA PARTE: OPACIDADE ANINHADA — a que a terceira parte NÃO enxerga
+//
+// ⚠️ A conta acima mede `text-sidebar-foreground/NN`. Uma classe `opacity-NN`
+// posta por FORA do texto **multiplica** aquele valor, e o resultado não
+// aparece em classe nenhuma: `/85` dentro de um `opacity-80` vale 0,68, e a
+// terceira parte continuaria imprimindo "OK /85 4,78:1".
+//
+// Achado em 10/09/2026, no rodapé da lateral — logo depois de a terceira parte
+// ficar verde. É o mesmo defeito de sempre: régua que mede a coisa certa, mas
+// não a coisa toda. Em vez de tentar adivinhar a árvore de ancestrais (a
+// heurística que já errou quatro vezes na varredura do `text-gold`), a regra
+// aqui é grosseira de propósito: **elemento de TEXTO na lateral não usa
+// `opacity-NN`**. Hierarquia se faz com peso, tamanho e posição — todos
+// visíveis para quem lê o código e para quem lê a tela.
+//
+// Ícone continua livre: ele é gráfico, mede-se por 3:1, e apagar levemente uma
+// seta de menu não esconde informação nenhuma.
+// =============================================================================
+
+const TEXTO_COM_OPACIDADE = [
+  ...LATERAL.matchAll(/<(span|p|div|h[1-6])\b[^>]*\bopacity-(\d{1,3})\b[^>]*>/g),
+];
+
+if (TEXTO_COM_OPACIDADE.length) {
+  console.log("\nOpacidade ANINHADA em elemento de texto da lateral:\n");
+  for (const m of TEXTO_COM_OPACIDADE) {
+    console.log(`  FALHA <${m[1]}> com opacity-${m[2]}`);
+  }
+  console.log(
+    `\n${TEXTO_COM_OPACIDADE.length} elemento(s) de texto com opacidade por fora.` +
+      "\nUse peso, tamanho ou posição para hierarquia — opacidade multiplica em silêncio."
+  );
+  process.exit(1);
+}
+
+console.log("\nNenhuma opacidade aninhada em texto da lateral.");

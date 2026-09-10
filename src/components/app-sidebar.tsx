@@ -344,9 +344,14 @@ export function AppSidebar({
     cn(
       "relative flex items-center rounded-md text-sm transition-colors",
       collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2",
+      // ⚠️ HIERARQUIA POR PESO, NÃO POR OPACIDADE. Texto a 80% sobre a lateral
+      // TURQUESA da Franqueadora dá 4,38:1 e reprova; sobre a marinho das
+      // unidades dá 7,75:1 e passa. A mesma classe, dois resultados — e o que
+      // reprova é justamente o ambiente de cor clara. Opacidade sobre cor é o
+      // jeito silencioso de perder contraste: nada no código denuncia.
       isActive(href)
-        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-[inset_2px_0_0_var(--gold)]"
-        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-[inset_3px_0_0_var(--sidebar-primary)]"
+        : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     );
 
   return (
@@ -366,7 +371,7 @@ export function AppSidebar({
             onClick={toggleCollapsed}
             title="Expandir menu"
             aria-label="Expandir menu"
-            className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="rounded-md p-1.5 text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <ChevronsRight className="size-4" />
           </button>
@@ -382,7 +387,7 @@ export function AppSidebar({
             onClick={toggleCollapsed}
             title="Minimizar menu"
             aria-label="Minimizar menu"
-            className="rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="rounded-md p-1.5 text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <ChevronsLeft className="size-4" />
           </button>
@@ -431,7 +436,7 @@ export function AppSidebar({
           </DropdownMenu>
           {/* The user's role AT THIS clinic — people with several clinics
               and different roles need this anchor. */}
-          <p className="mt-1.5 px-1 text-xs text-sidebar-foreground/70">
+          <p className="mt-1.5 px-1 text-xs text-sidebar-foreground/85">
             Sua função aqui:{" "}
             <span className="font-medium text-sidebar-primary">
               {isAdminMaster
@@ -466,7 +471,7 @@ export function AppSidebar({
             {collapsed ? (
               <div className="my-2 border-t border-sidebar-border/60" />
             ) : (
-              <p className="px-3 pb-1 pt-5 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
+              <p className="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85">
                 Administração
               </p>
             )}
@@ -501,19 +506,22 @@ export function AppSidebar({
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{fullName}</p>
-              <p className="truncate text-xs text-sidebar-foreground/60">
+              <p className="truncate text-[11px] text-sidebar-foreground/85">
                 {email}
               </p>
             </div>
           )}
         </Link>
         {!collapsed && (
-          <p className="mb-2 text-center text-xs text-sidebar-foreground/50">
+          <p className="mb-2 text-center text-[11px] text-sidebar-foreground/85">
             Versão {APP_VERSION} · migração {LATEST_MIGRATION}
+            {/* ⚠️ AQUI HAVIA UM `opacity-80` ANINHADO, e ele era invisível para a
+                régua. Ela mede `text-sidebar-foreground/NN`; uma opacidade posta
+                por fora MULTIPLICA (0,85 × 0,80 = 0,68) e o resultado não aparece
+                em classe nenhuma. Esta linha é secundária pela POSIÇÃO e pela
+                palavra "Empresarial" — não precisa de tom mais fraco para isso. */}
             <br />
-            <span className="opacity-80">
-              Empresarial {EMPRESARIAL_VERSION} · migr. {EMPRESARIAL_MIGRATION}
-            </span>
+            Empresarial {EMPRESARIAL_VERSION} · migr. {EMPRESARIAL_MIGRATION}
           </p>
         )}
         <Button

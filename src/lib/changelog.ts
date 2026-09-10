@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.239.2",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "A barra lateral da Franqueadora ficou mais legível",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Na Franqueadora, o texto da barra lateral escureceu e ganhou peso: os nomes dos módulos, os rótulos das seções, o seu e-mail e a versão do sistema deixaram de ser cinza-claro sobre turquesa. O módulo em que você está agora é marcado por uma faixa na borda, e não mais só por uma diferença de tom.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.239.1",
     data: "2026-09-10",
     migracao: null,

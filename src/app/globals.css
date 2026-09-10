@@ -246,7 +246,14 @@
   --gold-forte: var(--risarte-marinho);
   --marca-central: var(--risarte-turquesa);
   --marca-detalhe: var(--risarte-marinho);
-  --marca-sobre-central: var(--risarte-marinho);
+  /* ⚠️ MARINHO PROFUNDO, NÃO MARINHO. O texto sobre a turquesa da
+     Franqueadora dava **4,51:1** — o pior contraste de toda a paleta, passando
+     no mínimo por dois centésimos. Trocando só o TEXTO (e não o fundo) por
+     #061b2c, sobe para **5,99:1** sem tocar na cor que identifica o ambiente.
+     Escurecer o FUNDO teria sido o caminho óbvio e o errado: aproximaria a
+     lateral da Franqueadora do marinho das unidades, que é justamente a
+     distinção que o dono pediu para reforçar. */
+  --marca-sobre-central: var(--risarte-profundo);
   --marca-sobre-detalhe: var(--risarte-offwhite);
   --marca-pattern: url("/marca/pattern-franchising.svg");
 }
@@ -319,7 +326,11 @@
   --sidebar-primary: var(--risarte-marinho);
   --marca-central: var(--risarte-turquesa);
   --marca-detalhe: var(--risarte-turquesa-clara);
-  --marca-sobre-central: var(--risarte-marinho);
+  /* Mesma correção do modo claro, pelo mesmo motivo: a lateral da Franqueadora
+     é turquesa nas DUAS luzes, então o texto sobre ela precisa do marinho
+     profundo nas duas. Corrigir só uma foi o meu erro na primeira tentativa,
+     e a régua da opacidade pegou. */
+  --marca-sobre-central: var(--risarte-profundo);
   --marca-sobre-detalhe: var(--risarte-profundo);
   --marca-pattern: url("/marca/pattern-franchising-escuro.svg");
   --primary: var(--risarte-turquesa);
