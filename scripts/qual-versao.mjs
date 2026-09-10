@@ -80,4 +80,25 @@ if (!achou) {
       )}`
   );
 }
-console.log(`${BASE} está com a versão ${achou[1]}`);
+// ⚠️ E A VERSÃO DO EMPRESARIAL TAMBÉM, porque ela é a ÚNICA que se move numa
+// entrega daquele projeto.
+//
+// Achado em 10/09/2026, medindo o próprio erro: publiquei a tela de cobranças
+// do Empresarial, perguntei a esta régua se tinha subido, e ela respondeu
+// "0.241.0" — a versão do core, que a entrega não bumpa por regra (§0 do
+// CLAUDE.md: cada projeto mexe só nas SUAS duas linhas). A resposta estava
+// certa e não servia para a pergunta, que é a forma mais convincente de uma
+// régua enganar: ela não falha, ela responde outra coisa.
+const empresarial = html.match(
+  /Empresarial\s*(?:<!--\s*-->\s*)?([0-9]+\.[0-9]+\.[0-9]+)/
+);
+if (!empresarial) {
+  throw new Error(
+    `RÉGUA VAZIA: achei a versão do core (${achou[1]}) mas nenhuma "Empresarial x.y.z". ` +
+      `Entrega do Empresarial não move a versão do core, então sem este número eu ` +
+      `não sei dizer se ela subiu.`
+  );
+}
+console.log(
+  `${BASE} está com a versão ${achou[1]} (core) · ${empresarial[1]} (Empresarial)`
+);
