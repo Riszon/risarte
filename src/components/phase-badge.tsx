@@ -6,13 +6,21 @@ import {
 } from "@/lib/journey";
 import { cn } from "@/lib/utils";
 
-/** Estilo suave (fundo levinho + texto escurecido) na cor oficial da fase.
- * Reaproveitável em pílulas, células de tabela e selos que mostram a fase. */
+/** Estilo suave (fundo levinho + texto contrastado) na cor oficial da fase.
+ * Reaproveitável em pílulas, células de tabela e selos que mostram a fase.
+ *
+ * ⚠️ A MATIZ DA FASE NÃO MUDA NUNCA. As sete cores de `PHASE_COLORS` foram
+ * definidas pelo dono e a mudança de identidade visual de 09/09/2026 passou por
+ * cima do sistema inteiro SEM tocar nelas, por ordem dele.
+ *
+ * O que muda com o tema é só para que lado o texto é puxado: contra o preto no
+ * claro, contra o branco no escuro (`--fase-contraste`). Fixar em `black`
+ * deixaria letra escura sobre fundo escuro — a cor certa, ilegível. */
 export function phaseTintStyle(phase: JourneyPhase): React.CSSProperties {
   const c = PHASE_COLORS[phase];
   return {
     backgroundColor: `color-mix(in oklab, ${c} 15%, transparent)`,
-    color: `color-mix(in oklab, ${c} 58%, black)`,
+    color: `color-mix(in oklab, ${c} 58%, var(--fase-contraste, black))`,
     borderColor: `color-mix(in oklab, ${c} 30%, transparent)`,
   };
 }

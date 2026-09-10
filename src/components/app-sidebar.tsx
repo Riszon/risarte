@@ -38,7 +38,7 @@ import {
   ChevronsUpDown,
   type LucideIcon,
 } from "lucide-react";
-import { RisarteMark } from "@/components/risarte-logo";
+import { AssinaturaDoAmbiente, RisarteMark } from "@/components/risarte-logo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
@@ -371,13 +371,10 @@ export function AppSidebar({
         </div>
       ) : (
         <div className="flex items-center gap-2.5 px-4 py-5">
-          <RisarteMark className="h-8 shrink-0 text-gold" />
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="text-base font-semibold tracking-tight">Risarte</p>
-            <p className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50">
-              Odontologia
-            </p>
-          </div>
+          {/* A assinatura DESENHADA, não o nome digitado ao lado do símbolo.
+              Ela muda com o ambiente: Odontologia, Franchising ou Empresarial.
+              Ver `risarte-logo` para a variante escolhida em cada um. */}
+          <AssinaturaDoAmbiente className="h-6 w-auto min-w-0 flex-1 object-contain object-left" />
           <button
             type="button"
             onClick={toggleCollapsed}

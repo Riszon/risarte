@@ -1,9 +1,14 @@
+"use client";
+
 import type { CSSProperties } from "react";
+import { useAmbiente, type Ambiente } from "@/components/ambiente";
 import { cn } from "@/lib/utils";
 
-// A logo/símbolo vêm em PNG BRANCO (fundo transparente). Usamos o desenho como
-// MÁSCARA e pintamos com a cor atual (bg-current ← text-*), então a mesma arte
-// aparece em branco (fundo navy), navy ou dourado (fundo claro) sem novo arquivo.
+// O SÍMBOLO continua sendo usado como MÁSCARA: o desenho recorta e a cor vem do
+// `text-*` de quem o usa. É o que permite ele aparecer em off-white sobre a
+// lateral, em turquesa num cabeçalho e a 10% de opacidade como marca d'água,
+// tudo com um arquivo só. O sorriso é vazado, então assume a cor do fundo —
+// exatamente como a arte da agência faz.
 function maskStyle(url: string): CSSProperties {
   return {
     WebkitMaskImage: `url(${url})`,
@@ -23,20 +28,72 @@ export function RisarteMark({ className }: { className?: string }) {
     <span
       role="img"
       aria-label="Risarte"
-      className={cn("inline-block aspect-[728/917] bg-current", className)}
-      style={maskStyle("/risarte-simbolo-branco.png")}
+      className={cn("inline-block aspect-[115/125] bg-current", className)}
+      style={maskStyle("/marca/simbolo-claro.svg")}
     />
   );
 }
 
-/** Logomarca completa (símbolo + "Risarte Odontologia"). Altura + cor via `text-*`. */
-export function RisarteWordmark({ className }: { className?: string }) {
+/**
+ * ⚠️ QUAL VARIANTE DA ASSINATURA VAI SOBRE A BARRA LATERAL — e por quê.
+ *
+ * A agência entrega, para cada frente, uma versão "para fundo escuro": o nome
+ * RISARTE em off-white e o complemento (ODONTOLOGIA / FRANCHISING /
+ * EMPRESARIAL) na cor de detalhe. Isso funciona enquanto a lateral não for da
+ * cor do complemento.
+ *
+ * **No Empresarial passou a ser.** Quando o dono pediu a lateral em bordô, o
+ * complemento bordô ficou bordô sobre bordô e a palavra EMPRESARIAL sumiu — ele
+ * viu na amostra: *"a palavra empresarial não aparece por ser a mesma cor da
+ * barra lateral"*. Ali entra a versão **monocromática**, toda em off-white.
+ *
+ * A Franqueadora é o caso oposto e por isso é exceção declarada: a lateral dela
+ * é turquesa, e off-white sobre turquesa dá 2,4:1. A versão toda branca deixaria
+ * a assinatura INTEIRA ilegível; a normal mantém o complemento em marinho, que
+ * dá 4,6:1. Aqui a regra "toda branca no escuro" cede para o contraste.
+ */
+const ASSINATURA: Record<Ambiente, { claro: string; escuro: string; nome: string }> = {
+  unidades: {
+    claro: "/marca/odontologia-horizontal-claro.svg",
+    escuro: "/marca/odontologia-horizontal-branco.svg",
+    nome: "Risarte Odontologia",
+  },
+  franchising: {
+    // Exceção: lateral turquesa nas duas luzes — ver o comentário acima.
+    claro: "/marca/franchising-horizontal-claro.svg",
+    escuro: "/marca/franchising-horizontal-claro.svg",
+    nome: "Risarte Franchising",
+  },
+  empresarial: {
+    // Lateral bordô nas duas luzes: sempre a monocromática.
+    claro: "/marca/empresarial-horizontal-branco.svg",
+    escuro: "/marca/empresarial-horizontal-branco.svg",
+    nome: "Risarte Empresarial",
+  },
+};
+
+/**
+ * A assinatura completa do ambiente, para a barra lateral.
+ *
+ * As duas luzes são DESENHADAS e alternadas por CSS, em vez de trocadas por
+ * JavaScript: assim a versão certa já vem no primeiro quadro, sem piscar a
+ * errada enquanto o navegador decide. São arquivos de ~9 KB.
+ */
+export function AssinaturaDoAmbiente({ className }: { className?: string }) {
+  const ambiente = useAmbiente();
+  const { claro, escuro, nome } = ASSINATURA[ambiente];
+
+  if (claro === escuro) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={claro} alt={nome} className={className} />;
+  }
+
   return (
-    <span
-      role="img"
-      aria-label="Risarte Odontologia"
-      className={cn("inline-block aspect-[1465/548] bg-current", className)}
-      style={maskStyle("/risarte-logo-branca.png")}
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={claro} alt={nome} className={cn(className, "dark:hidden")} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={escuro} alt="" aria-hidden className={cn(className, "hidden dark:block")} />
+    </>
   );
 }

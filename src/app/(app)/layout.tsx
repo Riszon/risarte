@@ -13,6 +13,7 @@ import { ChooseClinicWelcome } from "@/components/choose-clinic-welcome";
 import { UrgentSchedulingPopup } from "@/components/urgent-scheduling-popup";
 import { TreatmentStartPopup } from "@/components/treatment-start-popup";
 import { AccessibilityGuard } from "@/components/accessibility-guard";
+import { Ambiente } from "@/components/ambiente";
 
 export default async function AppLayout({
   children,
@@ -85,7 +86,12 @@ export default async function AppLayout({
     cookieStore.get("risarte_sidebar_collapsed")?.value === "1";
 
   return (
-    <div className="flex min-h-screen w-full">
+    // A casca do AMBIENTE envolve tudo — lateral, barra de cima e conteúdo —
+    // para os três mudarem juntos. Ver o comentário em `components/ambiente`.
+    <Ambiente
+      tipoDaClinica={session.activeClinic?.type ?? null}
+      className="flex min-h-screen w-full"
+    >
       <AppSidebar
         fullName={session.fullName}
         email={session.email}
@@ -134,7 +140,9 @@ export default async function AppLayout({
           podeVerManual={pode(session, "menu.manual")}
           podeVerSistema={pode(session, "menu.sistema")}
         />
-        <main className="flex-1 overflow-x-auto bg-background [scrollbar-gutter:stable]">
+        {/* `marca-dagua`: o pattern entra grande pelo canto e some antes de
+            chegar ao texto. Forma escolhida pelo dono entre três (09/09/2026). */}
+        <main className="marca-dagua flex-1 overflow-x-auto bg-background [scrollbar-gutter:stable]">
           {children}
         </main>
       </div>
@@ -145,6 +153,6 @@ export default async function AppLayout({
       {/* Contorno: garante que a tela não fique invisível para leitor de tela
           depois que os avisos acima fecham. Ver o comentário do componente. */}
       <AccessibilityGuard />
-    </div>
+    </Ambiente>
   );
 }

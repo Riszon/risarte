@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.0",
+    data: "2026-09-09",
+    migracao: null,
+    titulo: "A identidade visual nova da Risarte entrou no sistema",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O sistema passou a usar a marca nova: a logomarca, as cores e a tipografia do manual da Risarte. A assinatura no alto do menu muda conforme onde você está — Odontologia numa unidade, Franchising na Franqueadora, Empresarial no módulo de empresas.",
+        papeis: "todos",
+        manual: "2.1. A cor da tela diz onde você está",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada ambiente ganhou a sua cor: azul-marinho nas unidades, turquesa na Franqueadora e bordô no Empresarial. É para você saber onde está sem precisar ler nada.",
+        papeis: "todos",
+        manual: "2.1. A cor da tela diz onde você está",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Entrou o botão de lua/sol na barra de cima: dá para usar o sistema no modo claro ou escuro. A escolha fica guardada no seu computador.",
+        papeis: "todos",
+        manual: "2. Início rápido",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "As cores das sete fases da Jornada NÃO mudaram — continuam exatamente as mesmas. Só o texto sobre elas clareia no modo escuro, para continuar legível.",
+        papeis: "todos",
+        manual: "2.1. A cor da tela diz onde você está",
+      },
+    ],
+  },
+  {
     versao: "0.237.0",
     data: "2026-09-08",
     migracao: "0252",

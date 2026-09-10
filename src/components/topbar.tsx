@@ -4,6 +4,7 @@ import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ReportNavItem } from "@/components/report-nav-item";
 import { QuickSearch } from "@/components/quick-search";
 import { SystemClock } from "@/components/clock";
+import { BotaoDeTema } from "@/components/tema";
 import { TopbarItem } from "@/components/topbar-item";
 
 /**
@@ -51,6 +52,7 @@ export function Topbar({
       <SystemClock />
 
       <div className="flex shrink-0 items-center gap-0.5">
+        <BotaoDeTema />
         <ChatNavItem />
         <NotificationNavItem />
         {podeVerSistema && (

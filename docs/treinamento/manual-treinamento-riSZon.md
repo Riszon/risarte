@@ -91,13 +91,42 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
    por um administrador (evidência: `src/app/login/login-form.tsx`,
    `src/app/(app)/admin/usuarios/actions.ts` → `createUser`).
 2. **Confira em que unidade você está.** No alto da barra lateral esquerda
-   aparece o nome da clínica ativa e, logo abaixo, *"Sua função aqui: …"*. Se
-   você atende em mais de uma unidade, é por ali que se troca.
+   aparece a **assinatura da Risarte** e, logo abaixo, o nome da clínica ativa e
+   *"Sua função aqui: …"*. Se você atende em mais de uma unidade, é por ali que
+   se troca.
+   > **A cor da tela diz onde você está.** Ver [seção 2.1](#21-a-cor-da-tela-diz-onde-voce-esta).
 3. **Olhe o menu da esquerda.** Ele é a lista do que você pode abrir.
 4. **Comece pelo "Início".** É a primeira tela e a que resume o seu dia.
 5. **Ache a versão do sistema** no rodapé da barra lateral (ex.: *"Versão
-   0.235.0 · migração 0251"*). É essa informação que o suporte pede quando algo
+   0.238.0 · migração 0252"*). É essa informação que o suporte pede quando algo
    dá errado.
+
+### 2.1. A cor da tela diz onde você está
+
+O sistema tem **três ambientes**, e cada um tem a sua cor. Não é enfeite: é para
+você saber, sem ler nada, em que parte da Risarte está trabalhando.
+
+| Onde você está | Assinatura | Cor |
+|---|---|---|
+| Numa **unidade** (Cambé, Londrina…) | Risarte **Odontologia** | azul-marinho |
+| Na **Franqueadora** | Risarte **Franchising** | turquesa |
+| No **Risarte Empresarial** | Risarte **Empresarial** | bordô |
+
+A cor segue a **unidade ativa**, e as telas do **Empresarial** usam a cor delas
+mesmo quando você está com uma unidade escolhida — o Empresarial é um lugar, não
+um chapéu.
+
+> **O aviso de TREINO continua mandando mais que a cor.** Se você estiver no
+> ambiente de treino, a faixa amarela e o nome da aba avisam, e isso vale acima
+> de qualquer cor. Errar entre treino e produção custa mais caro que errar entre
+> Franqueadora e unidade.
+
+**As cores das fases da Jornada não mudaram.** As sete continuam exatamente como
+eram — vermelho na Aquisição, laranja na Conversão Clínica, e assim por diante.
+
+**Claro ou escuro.** O botão de lua/sol na barra de cima troca a aparência. A
+escolha fica guardada **no seu computador**: se você entrar de outra máquina,
+escolhe de novo.
 
 ## A barra de cima
 
@@ -117,10 +146,11 @@ o sistema usa para decidir se um horário já passou, quando uma parcela vence e
 que mês um lançamento pertence. Se o relógio do seu computador mostrar outra
 coisa, quem manda é este.
 
-**E cinco desenhos:**
+**E seis desenhos:**
 
 | | O que é |
 |---|---|
+| Lua / Sol | **Claro ou escuro** — troca a aparência do sistema. A escolha fica no seu computador |
 | Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |

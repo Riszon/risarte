@@ -7,9 +7,16 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  /* ⚠️ INTER É ORDEM DO BRANDBOOK, NÃO PREFERÊNCIA. Ele nomeia a Inter como
+     "a fonte de interface, dedicada aos ambientes digitais — telas,
+     formulários, aplicativos, sites e SISTEMAS", que é o nosso caso exato.
+     As outras duas do manual (NORD e Satoshi) são PROPRIETÁRIAS: embuti-las
+     num site publicado exigiria licença de webfont separada da de desktop.
+     Seguir o manual à risca é, aqui, também o caminho legal. A Inter é SIL
+     Open Font License. */
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-inter);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -50,78 +57,221 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Risarte brand palette: navy blue (primary), off-white (background), discreet gold (accent) */
+/* =============================================================================
+   A PALETA DA RISARTE — vem do BRANDBOOK, não de gosto.
+   Resumo operacional em `docs/marca/IDENTIDADE.md`.
+
+   As sete cores do manual, com o Pantone:
+     turquesa        #01a7b5   7710 C
+     azul-marinho    #003257   540c
+     bordô           #711e38   7421 C
+     off-white       #efeee9   11-4201 TCX
+     cinza claro     #d9d9d7   Cool Gray 1 C
+     cinza azulado   #768693   7544 C
+     marinho profundo#061b2c   286 C
+
+   ⚠️ A LÓGICA DOS PARES INVERTIDOS. O brandbook não dá uma cor por frente: dá
+   um par (central + detalhe), e o que muda entre as frentes é QUEM LIDERA.
+   "As cores são as mesmas, o que muda é quem lidera e quem apoia."
+
+     Odontologia (unidades)  central marinho,  detalhe turquesa
+     Franchising (rede)      central turquesa, detalhe marinho
+     Empresarial             central bordô     (ver a nota abaixo)
+
+   ⚠️ O BORDÔ DOMINANTE NO EMPRESARIAL É DECISÃO DO DONO (09/09/2026), CONTRA O
+   BRANDBOOK, que manda o bordô entrar só em acento ("bordô dominante leria como
+   luxo excludente"). Ele testou a versão em acento e o Empresarial ficou
+   indistinguível das unidades. Fica registrado para ninguém "corrigir" de volta
+   achando que foi descuido. Contraste não é objeção: off-white sobre bordô dá
+   9,6:1.
+
+   ⚠️ VERMELHO, ÂMBAR E VERDE NÃO SÃO CORES DE MARCA. Eles significam SITUAÇÃO
+   em todo o sistema (SLA estourado, caixa negativo, farol do orçamento). O
+   `--destructive` continua o que era: mexer nele faria a marca competir com o
+   estado, e estado tem de vencer sempre.
+
+   ⚠️ AS CORES DAS FASES DA JORNADA NÃO ESTÃO AQUI E NÃO MUDARAM. Elas moram em
+   `src/lib/journey.ts` (`PHASE_COLORS`), foram definidas pelo dono e são fixas
+   por ordem dele. Só a forma de escurecer/clarear o texto sobre elas muda no
+   modo escuro — a matiz é a mesma.
+   ============================================================================= */
 :root {
-  --background: oklch(0.98 0.005 85);
-  --foreground: oklch(0.25 0.04 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.04 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.04 265);
-  --primary: oklch(0.3 0.06 265);
-  --primary-foreground: oklch(0.98 0.005 85);
-  --secondary: oklch(0.95 0.012 265);
-  --secondary-foreground: oklch(0.3 0.06 265);
-  --muted: oklch(0.955 0.008 85);
-  --muted-foreground: oklch(0.5 0.025 265);
-  --accent: oklch(0.93 0.045 90);
-  --accent-foreground: oklch(0.3 0.06 265);
+  /* As sete do manual, cruas. Todo o resto é derivado destas. */
+  --risarte-turquesa: #01a7b5;
+  --risarte-marinho: #003257;
+  --risarte-bordo: #711e38;
+  --risarte-offwhite: #efeee9;
+  --risarte-cinza: #d9d9d7;
+  --risarte-cinza-azul: #768693;
+  --risarte-profundo: #061b2c;
+
+  /* ⚠️ DERIVADAS, e o brandbook NÃO as especifica: o manual não trata de tela
+     escura. Sobre fundo escuro o marinho some e o bordô perde legibilidade,
+     então eles precisam de uma versão clareada. Pendente de aval da agência. */
+  --risarte-turquesa-clara: #3fc9d6;
+  --risarte-bordo-claro: #c05a76;
+
+  /* O par do ambiente. Sobrescrito por `[data-ambiente]`, mais abaixo.
+     O padrão é o das UNIDADES: é onde quase todo mundo trabalha. */
+  --marca-central: var(--risarte-marinho);
+  --marca-detalhe: var(--risarte-turquesa);
+  --marca-sobre-central: var(--risarte-offwhite);
+  --marca-sobre-detalhe: var(--risarte-marinho);
+  --marca-pattern: url("/marca/pattern-unidades.svg");
+
+  --background: var(--risarte-offwhite);
+  --foreground: var(--risarte-profundo);
+  --card: #ffffff;
+  --card-foreground: var(--risarte-profundo);
+  --popover: #ffffff;
+  --popover-foreground: var(--risarte-profundo);
+  --primary: var(--marca-central);
+  --primary-foreground: var(--marca-sobre-central);
+  --secondary: #e4e3dd;
+  --secondary-foreground: var(--risarte-marinho);
+  --muted: #e8e7e1;
+  --muted-foreground: var(--risarte-cinza-azul);
+  --accent: #dfe7ea;
+  --accent-foreground: var(--risarte-marinho);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.01 85);
-  --input: oklch(0.91 0.01 85);
-  --ring: oklch(0.55 0.05 265);
-  --gold: oklch(0.72 0.12 85);
-  --gold-foreground: oklch(0.25 0.04 265);
-  --chart-1: oklch(0.3 0.06 265);
-  --chart-2: oklch(0.72 0.12 85);
-  --chart-3: oklch(0.55 0.08 250);
-  --chart-4: oklch(0.65 0.06 200);
-  --chart-5: oklch(0.6 0.02 265);
+  --border: var(--risarte-cinza);
+  --input: var(--risarte-cinza);
+  --ring: var(--marca-detalhe);
+
+  /* ⚠️ `--gold` VIROU APELIDO. O dourado não existe no brandbook, mas o nome
+     está em 268 lugares do código (contadores do chat, do sino, da boia,
+     destaques). Renomear tudo JUNTO com a troca de paleta seria duas mudanças
+     grandes no mesmo commit — e aí não se sabe qual delas quebrou. Então o
+     VALOR passou a ser a cor de detalhe do ambiente e o nome ficou. Código novo
+     usa `--marca-detalhe`; este apelido some numa faxina própria. */
+  --gold: var(--marca-detalhe);
+  --gold-foreground: var(--marca-sobre-detalhe);
+
+  /* ⚠️ PARA AS CORES DAS FASES DA JORNADA, e só para elas. As sete matizes de
+     `PHASE_COLORS` são do dono e NÃO mudam. O que muda é para que lado o texto
+     sobre elas é puxado: contra o preto no claro, contra o branco no escuro.
+     Sem isto, o selo da fase ficaria com letra escura sobre fundo escuro. */
+  --fase-contraste: black;
+
+  --chart-1: var(--risarte-marinho);
+  --chart-2: var(--risarte-turquesa);
+  --chart-3: var(--risarte-cinza-azul);
+  --chart-4: var(--risarte-bordo);
+  --chart-5: #7fb8c4;
   --radius: 0.625rem;
-  --sidebar: oklch(0.26 0.05 265);
-  --sidebar-foreground: oklch(0.96 0.005 85);
-  --sidebar-primary: oklch(0.72 0.12 85);
-  --sidebar-primary-foreground: oklch(0.25 0.04 265);
-  --sidebar-accent: oklch(0.33 0.05 265);
-  --sidebar-accent-foreground: oklch(0.96 0.005 85);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.72 0.12 85);
+
+  --sidebar: var(--marca-central);
+  --sidebar-foreground: var(--marca-sobre-central);
+  --sidebar-primary: var(--marca-detalhe);
+  --sidebar-primary-foreground: var(--marca-sobre-detalhe);
+  --sidebar-accent: color-mix(in oklab, var(--marca-sobre-central) 14%, transparent);
+  --sidebar-accent-foreground: var(--marca-sobre-central);
+  --sidebar-border: color-mix(in oklab, var(--marca-sobre-central) 16%, transparent);
+  --sidebar-ring: var(--marca-detalhe);
 }
 
+/* --- FRANQUEADORA: turquesa lidera, marinho apoia -------------------------- */
+/* ⚠️ TEXTO SOBRE TURQUESA É MARINHO, NUNCA BRANCO. Branco sobre #01a7b5 dá
+   2,8:1 e off-white 2,4:1 — abaixo do mínimo legível (4,5:1). Marinho sobre
+   turquesa dá 4,6:1, e é o par que a própria assinatura Franchising usa. */
+[data-ambiente="franchising"] {
+  --marca-central: var(--risarte-turquesa);
+  --marca-detalhe: var(--risarte-marinho);
+  --marca-sobre-central: var(--risarte-marinho);
+  --marca-sobre-detalhe: var(--risarte-offwhite);
+  --marca-pattern: url("/marca/pattern-franchising.svg");
+}
+
+/* --- EMPRESARIAL: bordô lidera (decisão do dono, ver a nota no topo) ------- */
+[data-ambiente="empresarial"] {
+  --marca-central: var(--risarte-bordo);
+  --marca-detalhe: var(--risarte-bordo);
+  --marca-sobre-central: var(--risarte-offwhite);
+  --marca-sobre-detalhe: var(--risarte-offwhite);
+  --marca-pattern: url("/marca/pattern-empresarial.svg");
+}
+
+/* =============================================================================
+   MODO ESCURO
+   ⚠️ A LATERAL GUARDA A COR DO AMBIENTE. A primeira versão fazia todas virarem
+   quase-preto, e o dono disse: "todos estão muito parecidos". A razão é que
+   sobre fundo escuro toda cor precisa clarear para continuar legível — e
+   clarear aproxima. O que separa de verdade é a ÁREA GRANDE: a lateral.
+   ============================================================================= */
 .dark {
-  --background: oklch(0.18 0.03 265);
-  --foreground: oklch(0.96 0.005 85);
-  --card: oklch(0.23 0.04 265);
-  --card-foreground: oklch(0.96 0.005 85);
-  --popover: oklch(0.23 0.04 265);
-  --popover-foreground: oklch(0.96 0.005 85);
-  --primary: oklch(0.85 0.04 265);
-  --primary-foreground: oklch(0.23 0.04 265);
-  --secondary: oklch(0.29 0.04 265);
-  --secondary-foreground: oklch(0.96 0.005 85);
-  --muted: oklch(0.29 0.04 265);
-  --muted-foreground: oklch(0.72 0.02 265);
-  --accent: oklch(0.34 0.05 90);
-  --accent-foreground: oklch(0.96 0.005 85);
+  --fase-contraste: white;
+  --background: var(--risarte-profundo);
+  --foreground: var(--risarte-offwhite);
+  --card: #0d2637;
+  --card-foreground: var(--risarte-offwhite);
+  --popover: #0d2637;
+  --popover-foreground: var(--risarte-offwhite);
+  --primary: var(--risarte-turquesa-clara);
+  --primary-foreground: var(--risarte-profundo);
+  --secondary: #12303f;
+  --secondary-foreground: var(--risarte-offwhite);
+  --muted: #12303f;
+  --muted-foreground: #93a5b2;
+  --accent: #16394a;
+  --accent-foreground: var(--risarte-offwhite);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.72 0.12 85);
-  --gold: oklch(0.72 0.12 85);
-  --gold-foreground: oklch(0.18 0.03 265);
-  --chart-1: oklch(0.7 0.06 265);
-  --chart-2: oklch(0.72 0.12 85);
-  --chart-3: oklch(0.6 0.08 250);
-  --chart-4: oklch(0.65 0.06 200);
-  --chart-5: oklch(0.6 0.02 265);
-  --sidebar: oklch(0.21 0.04 265);
-  --sidebar-foreground: oklch(0.96 0.005 85);
-  --sidebar-primary: oklch(0.72 0.12 85);
-  --sidebar-primary-foreground: oklch(0.21 0.04 265);
-  --sidebar-accent: oklch(0.29 0.04 265);
-  --sidebar-accent-foreground: oklch(0.96 0.005 85);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.12 85);
+  --border: #1e4054;
+  --input: #24485e;
+  --ring: var(--risarte-turquesa-clara);
+
+  --marca-central: var(--risarte-marinho);
+  --marca-detalhe: var(--risarte-turquesa-clara);
+  --marca-sobre-central: var(--risarte-offwhite);
+  --marca-sobre-detalhe: var(--risarte-profundo);
+  --marca-pattern: url("/marca/pattern-unidades-escuro.svg");
+
+  --gold: var(--marca-detalhe);
+  --gold-foreground: var(--marca-sobre-detalhe);
+
+  --chart-1: var(--risarte-turquesa-clara);
+  --chart-2: var(--risarte-turquesa);
+  --chart-3: #93a5b2;
+  --chart-4: var(--risarte-bordo-claro);
+  --chart-5: #7fb8c4;
+}
+
+.dark [data-ambiente="franchising"] {
+  --marca-central: var(--risarte-turquesa);
+  --marca-detalhe: var(--risarte-turquesa-clara);
+  --marca-sobre-central: var(--risarte-marinho);
+  --marca-sobre-detalhe: var(--risarte-profundo);
+  --marca-pattern: url("/marca/pattern-franchising-escuro.svg");
+  --primary: var(--risarte-turquesa);
+  --primary-foreground: var(--risarte-marinho);
+}
+
+/* No escuro o bordô já É escuro: ele continua liderando, com texto off-white
+   (9,6:1). Clarear aqui aproximaria de novo dos outros dois. */
+.dark [data-ambiente="empresarial"] {
+  --marca-central: var(--risarte-bordo);
+  --marca-detalhe: var(--risarte-bordo-claro);
+  --marca-sobre-central: var(--risarte-offwhite);
+  --marca-sobre-detalhe: var(--risarte-profundo);
+  --marca-pattern: url("/marca/pattern-empresarial-escuro.svg");
+  --primary: var(--risarte-bordo);
+  --primary-foreground: var(--risarte-offwhite);
+}
+
+/* Estes três dependem do par do ambiente, então precisam ser reafirmados
+   DEPOIS dos blocos acima — senão ficariam com o valor de `.dark`. */
+.dark [data-ambiente],
+[data-ambiente] {
+  --sidebar: var(--marca-central);
+  --sidebar-foreground: var(--marca-sobre-central);
+  --sidebar-primary: var(--marca-detalhe);
+  --sidebar-primary-foreground: var(--marca-sobre-detalhe);
+  --sidebar-accent: color-mix(in oklab, var(--marca-sobre-central) 14%, transparent);
+  --sidebar-accent-foreground: var(--marca-sobre-central);
+  --sidebar-border: color-mix(in oklab, var(--marca-sobre-central) 16%, transparent);
+  --sidebar-ring: var(--marca-detalhe);
+  --ring: var(--marca-detalhe);
+  --gold: var(--marca-detalhe);
+  --gold-foreground: var(--marca-sobre-detalhe);
 }
 
 @layer base {
@@ -158,5 +308,49 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background-color: color-mix(in oklch, var(--muted-foreground), transparent 55%);
+  }
+}
+/* =============================================================================
+   A MARCA D'ÁGUA — a forma de aplicar o pattern escolhida pelo dono (09/09/2026)
+   entre três que ele viu lado a lado.
+
+   ⚠️ A REGRA QUE ELA OBEDECE: o pattern NUNCA fica atrás de texto que alguém
+   precisa ler todo dia. Bonito uma vez, cansativo todos os dias. Aqui ele entra
+   grande pelo canto superior direito e DESAPARECE antes de chegar ao conteúdo,
+   por uma máscara em gradiente — identifica no canto do olho e não disputa a
+   leitura.
+
+   O `z-index: -1` com `isolation: isolate` põe o desenho ACIMA do fundo do
+   elemento e ABAIXO do texto, sem precisar mexer no empilhamento de nada.
+   ============================================================================= */
+@layer components {
+  .marca-dagua {
+    position: relative;
+    isolation: isolate;
+  }
+  .marca-dagua::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--marca-pattern);
+    background-size: auto 260px;
+    background-position: right -50px top -40px;
+    background-repeat: repeat;
+    opacity: 0.11;
+    -webkit-mask-image: linear-gradient(210deg, #000 0%, transparent 58%);
+    mask-image: linear-gradient(210deg, #000 0%, transparent 58%);
+  }
+  /* No escuro o desenho precisa de um pouco mais de presença: sobre fundo
+     escuro a mesma opacidade some. */
+  .dark .marca-dagua::before {
+    opacity: 0.14;
+  }
+  /* Quem prefere menos movimento também prefere menos ruído de fundo. */
+  @media (prefers-reduced-motion: reduce) {
+    .marca-dagua::before {
+      opacity: 0.06;
+    }
   }
 }
