@@ -62,6 +62,32 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.239.0",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "Compras mostra o caminho de uma compra, com o que espera por você",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Os links soltos no alto da tela de Compras viraram as três etapas do caminho: Pedir, Aprovar e Receber, numeradas e com uma linha explicando cada uma. A etapa em que você está fica marcada.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada etapa mostra quantos itens esperam por você — quantas aprovações pendentes e quantas entregas em aberto. Etapa sem nada pendente não mostra número.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O Painel de compras e a Mesa de negociação saíram da fila de etapas: nenhum dos dois é passo da compra. O painel é onde se mede depois; a mesa é uma sala da Franqueadora.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.8",
     data: "2026-09-10",
     migracao: null,

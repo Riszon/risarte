@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import {
   canManagePurchaseRequests,
   canViewPurchases,
@@ -17,6 +16,7 @@ import type {
 } from "@/lib/purchases";
 import { PurchasesView } from "./purchases-client";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
+import { TrilhaDaCompra } from "./trilha";
 
 export const metadata: Metadata = { title: "Compras" };
 
@@ -42,8 +42,17 @@ export default async function PurchasesPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: requestRows }, { data: itemRows }, { data: stockRows }, { data: accountRows }] =
-    await Promise.all([
+  // ⚠️ AS DUAS CONTAGENS ENTRAM NA MESMA LEVA. Em sequência elas somariam duas
+  // idas ao banco ao tempo de abrir a tela — o custo que o dia 08/09/2026 foi
+  // gasto removendo. Com `head: true` o banco devolve só o número, sem linha.
+  const [
+    { data: requestRows },
+    { data: itemRows },
+    { data: stockRows },
+    { data: accountRows },
+    { count: aguardandoAprovacao },
+    { count: entregasAbertas },
+  ] = await Promise.all([
       supabase
         .from("purchase_requests")
         .select("id, code, clinic_id, status, is_local, notes, sent_at, created_at")
@@ -67,6 +76,18 @@ export default async function PurchasesPage() {
         .eq("active", true)
         .in("scope", ["unit", "both"])
         .order("code"),
+      // Os mesmos filtros que as telas de destino usam. Régua diferente da
+      // tela para onde o número leva seria pior que número nenhum.
+      supabase
+        .from("purchase_allocations")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId)
+        .eq("status", "pendente"),
+      supabase
+        .from("purchase_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId)
+        .in("status", ["aberto", "recebido_parcial"]),
     ]);
 
   const requests: PurchaseRequest[] = (
@@ -130,34 +151,14 @@ export default async function PurchasesPage() {
         icone={ShoppingCart}
         titulo={`Compras — ${session.activeClinic?.name ?? "unidade"}`}
         descricao="O que falta na sua unidade vira lista, e a lista vira negociação da rede."
-      >
-        <Link
-          href="/compras/aprovar"
-          className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
-        >
-          Ver o que a Franqueadora negociou para a unidade →
-        </Link>
-        <Link
-          href="/compras/receber"
-          className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
-        >
-          Receber uma entrega →
-        </Link>
-        <Link
-          href="/compras/painel"
-          className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
-        >
-          Painel de compras →
-        </Link>
-        {(isPurchaser(session) || canConfigureFinanceNetwork(session)) && (
-          <Link
-            href="/compras/rodadas"
-            className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
-          >
-            Ir para a mesa de negociação da Franqueadora →
-          </Link>
-        )}
-      </CabecalhoDeModulo>
+      />
+
+      <TrilhaDaCompra
+        aguardandoAprovacao={aguardandoAprovacao ?? 0}
+        entregasAbertas={entregasAbertas ?? 0}
+        podeVerMesa={isPurchaser(session) || canConfigureFinanceNetwork(session)}
+      />
+
 
       <PurchasesView
         clinicId={clinicId}
