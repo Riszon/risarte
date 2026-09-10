@@ -273,7 +273,7 @@ export function AcquirerManager({
                       </Badge>
                     )}
                     {a.isDefault && (
-                      <Badge className="bg-gold/20 text-[10px] text-gold-foreground">
+                      <Badge className="bg-gold/20 text-[10px] text-gold-tinta">
                         <Star className="mr-1 size-3" />
                         Padrão
                       </Badge>

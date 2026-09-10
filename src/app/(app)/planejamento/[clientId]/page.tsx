@@ -534,7 +534,7 @@ export default async function PlanningCockpitPage(
               </h1>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {client.code && (
-                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
+                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-tinta">
                     {client.code}
                   </span>
                 )}
@@ -558,7 +558,7 @@ export default async function PlanningCockpitPage(
                 {/* I6: o Planner precisa saber POR QUAL EMPRESA o cliente vem
                     (a empresa define os benefícios do orçamento). */}
                 {client.empresarial_company_id && (
-                  <Badge className="bg-gold/20 text-gold-foreground">
+                  <Badge className="bg-gold/20 text-gold-tinta">
                     ★ Risarte Empresarial
                     {client.empresarial_company_name
                       ? ` · ${client.empresarial_company_name}`
@@ -567,7 +567,7 @@ export default async function PlanningCockpitPage(
                   </Badge>
                 )}
                 {client.ppr_membership_id && client.ppr_active !== false && (
-                  <Badge className="bg-gold/20 text-gold-foreground">
+                  <Badge className="bg-gold/20 text-gold-tinta">
                     ★ PPR+
                   </Badge>
                 )}

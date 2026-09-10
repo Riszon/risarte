@@ -117,7 +117,7 @@ export function DocumentosTab({
                             {d.docType}
                           </Badge>
                           {d.isPrimary && (
-                            <Badge className="bg-gold/20 text-[10px] text-gold-foreground">
+                            <Badge className="bg-gold/20 text-[10px] text-gold-tinta">
                               ★ Principal
                             </Badge>
                           )}

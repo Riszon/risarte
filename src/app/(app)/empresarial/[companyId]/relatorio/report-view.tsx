@@ -366,7 +366,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
                         {e.status === "INACTIVE" ? (
                           <Badge variant="outline">Inativo</Badge>
                         ) : e.registrationStage === "COMPLETED" ? (
-                          <Badge className="bg-gold/20 text-gold-foreground">
+                          <Badge className="bg-gold/20 text-gold-tinta">
                             ★ Cliente vinculado
                           </Badge>
                         ) : (

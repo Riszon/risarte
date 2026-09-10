@@ -191,3 +191,32 @@ para no Centro de Planejamento, estourando o SLA de 24h.
 `canEditContent ? o.isPrimary : false` também para o clique). Uma linha.
 
 **Tamanho:** pequeno. Sem migração.
+
+---
+
+## `text-gold` como cor de TEXTO sobre fundo claro (09/09/2026)
+
+**Achado ao corrigir o contraste do Programa de Prevenção**, que o dono relatou.
+A pílula esmaecida foi consertada com o token `--gold-tinta`; este é o **irmão
+não corrigido** do mesmo problema.
+
+**O que é.** Há **84 usos de `text-gold`** desenhando texto. O token `--gold` é o
+realce vivo do ambiente (turquesa numa unidade), feito para ser **fundo**, não
+letra:
+
+| Onde | Contraste | |
+|---|---|---|
+| `text-gold` sobre fundo escuro (`bg-primary`, lateral) | 4,6:1 | passa |
+| `text-gold` sobre card ou fundo claro | **2,8:1** | falha (mínimo 4,5:1) |
+
+**Por que não foi corrigido junto.** Os dois casos usam a MESMA classe, e
+distingui-los exige olhar o fundo de cada um — nenhuma busca por texto resolve.
+Uma troca em massa consertaria metade e **quebraria a outra metade**, que hoje
+está certa. Fazer isso no meio de uma correção que o dono ia testar misturaria
+um defeito novo com um defeito consertado.
+
+**Correção.** Passar caso a caso: onde o fundo é claro, `text-gold` →
+`text-gold-tinta`; onde é escuro, fica como está. O token já existe e as seis
+combinações de ambiente × luz já foram medidas (pior caso 5,42:1).
+
+**Tamanho:** médio (84 pontos, revisão visual de cada um). Sem migração.

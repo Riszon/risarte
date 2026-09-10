@@ -312,7 +312,7 @@ export default async function CommercialCockpitPage(
               </h1>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {client.code && (
-                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
+                  <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-tinta">
                     {client.code}
                   </span>
                 )}
@@ -326,7 +326,7 @@ export default async function CommercialCockpitPage(
                   {pillar ? PILLAR_LABELS[pillar] : "Pilar a definir"}
                 </Badge>
                 {isProgramMember && (
-                  <Badge className="bg-gold/20 text-gold-foreground">
+                  <Badge className="bg-gold/20 text-gold-tinta">
                     ★ Risarte Empresarial
                   </Badge>
                 )}

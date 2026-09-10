@@ -49,7 +49,7 @@ export function EmpresarialPanel({
             </p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {summary.available.map((a, i) => (
-                <Badge key={i} className="bg-gold/15 text-gold-foreground">
+                <Badge key={i} className="bg-gold/15 text-gold-tinta">
                   {a.procedureName} · {a.description}
                 </Badge>
               ))}

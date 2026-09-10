@@ -54,7 +54,7 @@ export function StepGuide({
                 className="flex w-full items-start gap-2 p-2.5 text-left"
               >
                 <span
-                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold-foreground"
+                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold-tinta"
                   aria-hidden
                 >
                   {step.n}
@@ -64,7 +64,7 @@ export function StepGuide({
                     <span className="text-sm font-medium">{step.title}</span>
                     <span className="flex items-center gap-1.5">
                       {tools != null && (
-                        <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-medium text-gold-foreground">
+                        <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-medium text-gold-tinta">
                           ferramentas
                         </span>
                       )}

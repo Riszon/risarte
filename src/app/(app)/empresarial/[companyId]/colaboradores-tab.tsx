@@ -239,7 +239,7 @@ function EmployeeRow({
             ) : employee.status === "INACTIVE" ? (
               <Badge variant="outline">Inativo</Badge>
             ) : employee.registrationStage === "COMPLETED" ? (
-              <Badge className="bg-gold/20 text-gold-foreground">
+              <Badge className="bg-gold/20 text-gold-tinta">
                 ★ Cliente vinculado
               </Badge>
             ) : (
@@ -567,7 +567,7 @@ function DependentsBlock({
                   </Badge>
                 )}
                 {d.clientId && (
-                  <Badge className="ml-1 bg-gold/20 text-gold-foreground">
+                  <Badge className="ml-1 bg-gold/20 text-gold-tinta">
                     ★ vinculado
                   </Badge>
                 )}

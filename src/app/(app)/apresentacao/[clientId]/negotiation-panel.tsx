@@ -920,7 +920,7 @@ export function NegotiationPanel({
           {/* J7: cliente de programa não recebe desconto manual — o do
               programa é automático (mesma regra da venda direta, §7.5). */}
           {isProgramMember ? (
-            <p className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px] text-gold-foreground">
+            <p className="rounded-lg border border-gold/40 bg-gold/5 p-2 text-[11px] text-gold-tinta">
               ★ Cliente de programa — o desconto é aplicado automaticamente
               {programHasTerms
                 ? " conforme as parcelas escolhidas"

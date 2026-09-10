@@ -2496,7 +2496,7 @@ export default async function ClientDetailPage(
                     {client.full_name}
                   </h1>
                   {client.code && (
-                    <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-foreground">
+                    <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold-tinta">
                       {client.code}
                     </span>
                   )}
@@ -2516,7 +2516,7 @@ export default async function ClientDetailPage(
                         ★ Ex-Risartano (inativo)
                       </Badge>
                     ) : (
-                      <Badge className="bg-gold/20 text-gold-foreground">
+                      <Badge className="bg-gold/20 text-gold-tinta">
                         ★ É um Risartano
                       </Badge>
                     ))}
@@ -2533,7 +2533,7 @@ export default async function ClientDetailPage(
                           : ""}
                       </Badge>
                     ) : (
-                      <Badge className="bg-gold/20 text-gold-foreground">
+                      <Badge className="bg-gold/20 text-gold-tinta">
                         ★ Risarte Empresarial
                         {client.empresarial_company_name
                           ? ` · ${client.empresarial_company_name}`
@@ -2645,7 +2645,7 @@ export default async function ClientDetailPage(
               Fase: {PHASE_LABELS[client.journey_phase as JourneyPhase]}
             </span>
             {client.methodology_pillar && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold-tinta">
                 <Sparkles className="size-3.5 shrink-0 text-gold" />
                 Pilar:{" "}
                 {PILLAR_LABELS[client.methodology_pillar as MethodologyPillar]}
@@ -2679,7 +2679,7 @@ export default async function ClientDetailPage(
 
           {isBirthdayToday && (
             <div className="flex items-center gap-2">
-              <Badge className="bg-gold/20 text-gold-foreground">
+              <Badge className="bg-gold/20 text-gold-tinta">
                 🎉 Aniversário hoje
               </Badge>
               <BirthdayWhatsAppButton

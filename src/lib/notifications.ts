@@ -31,7 +31,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   plano: "bg-primary/10 text-primary",
   comercial: "bg-violet-100 text-violet-800",
   vendas_diretas: "bg-teal-100 text-teal-800",
-  ppr: "bg-gold/20 text-gold-foreground",
+  ppr: "bg-gold/20 text-gold-tinta",
   compartilhamento: "bg-emerald-100 text-emerald-800",
   inicio_tratamento: "bg-gold text-gold-foreground",
   agenda: "bg-red-100 text-red-800",

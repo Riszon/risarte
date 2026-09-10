@@ -304,7 +304,7 @@ export default async function PprMembershipPage(
                       {b.role === "titular" ? "titular" : (b.relationship ?? "dependente")}
                     </span>
                     {b.is_extra && (
-                      <span className="rounded-full border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[10px] text-gold-foreground">
+                      <span className="rounded-full border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[10px] text-gold-tinta">
                         extra
                       </span>
                     )}

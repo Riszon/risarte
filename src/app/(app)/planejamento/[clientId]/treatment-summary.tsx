@@ -28,7 +28,7 @@ function StatCard({
 }) {
   return (
     <div className="flex items-center gap-2.5 rounded-lg border bg-muted/30 px-3 py-2">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-foreground">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-tinta">
         {icon}
       </span>
       <div className="leading-tight">

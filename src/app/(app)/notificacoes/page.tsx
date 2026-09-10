@@ -180,7 +180,7 @@ export default async function NotificationsPage(
             href={chipHref(categoria || null, !onlyUnread)}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors hover:bg-muted/60",
-              onlyUnread && "border-gold bg-gold/10 text-gold-foreground"
+              onlyUnread && "border-gold bg-gold/10 text-gold-tinta"
             )}
           >
             <span className="size-2 rounded-full bg-gold" />

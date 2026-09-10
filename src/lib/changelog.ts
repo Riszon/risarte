@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.1",
+    data: "2026-09-09",
+    migracao: null,
+    titulo: "Correção: selos e ícones claros demais para ler",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Depois da mudança visual, os selos e ícones coloridos (como o “Riso+ Social” no Programa de Prevenção) ficaram com a letra quase da mesma cor do fundo. Foi corrigido em todas as telas, nos três ambientes e nas duas luzes.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.0",
     data: "2026-09-09",
     migracao: null,

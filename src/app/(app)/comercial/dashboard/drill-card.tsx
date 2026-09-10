@@ -65,7 +65,7 @@ const TONE_ACCENT: Record<Tone, string> = {
   muted: "bg-muted-foreground/40",
 };
 const TONE_ICON: Record<Tone, string> = {
-  gold: "bg-gold/15 text-gold-foreground",
+  gold: "bg-gold/15 text-gold-tinta",
   emerald: "bg-emerald-500/10 text-emerald-700",
   sky: "bg-sky-500/10 text-sky-700",
   violet: "bg-violet-500/10 text-violet-700",

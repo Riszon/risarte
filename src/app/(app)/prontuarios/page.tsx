@@ -807,7 +807,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                         {/* I6: selo com a empresa parceira do cliente. */}
                         {client.empresarial_company_id && (
                           <Badge
-                            className="shrink-0 bg-gold/20 text-[10px] text-gold-foreground"
+                            className="shrink-0 bg-gold/20 text-[10px] text-gold-tinta"
                             title={
                               client.empresarial_active === false
                                 ? "Vínculo encerrado com a empresa"
@@ -821,7 +821,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                         {/* J8: selo do PPR+ (o do Empresarial já existia). */}
                         {client.ppr_membership_id && (
                           <Badge
-                            className="shrink-0 bg-gold/20 text-[10px] text-gold-foreground"
+                            className="shrink-0 bg-gold/20 text-[10px] text-gold-tinta"
                             title={
                               client.ppr_active === false
                                 ? "Adesão do PPR+ suspensa"
@@ -921,7 +921,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
               >
                 {BIRTHDAY_SCOPE_LABELS[s]}
                 {s === "hoje" && birthdayTodayCount > 0 ? (
-                  <span className="ml-1.5 rounded-full bg-gold/20 px-1.5 text-xs text-gold-foreground">
+                  <span className="ml-1.5 rounded-full bg-gold/20 px-1.5 text-xs text-gold-tinta">
                     {birthdayTodayCount}
                   </span>
                 ) : null}

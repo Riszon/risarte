@@ -33,6 +33,7 @@
   --color-ring: var(--ring);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-gold-tinta: var(--gold-tinta);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
@@ -110,6 +111,10 @@
      então eles precisam de uma versão clareada. Pendente de aval da agência. */
   --risarte-turquesa-clara: #3fc9d6;
   --risarte-bordo-claro: #c05a76;
+  /* Mais duas derivadas, pelo mesmo motivo e com o mesmo aviso: são o realce
+     em versão LEGÍVEL COMO TEXTO. Ver `--gold-tinta`, logo abaixo. */
+  --risarte-turquesa-escura: #016a74;
+  --risarte-bordo-suave: #e396ab;
 
   /* O par do ambiente. Sobrescrito por `[data-ambiente]`, mais abaixo.
      O padrão é o das UNIDADES: é onde quase todo mundo trabalha. */
@@ -146,6 +151,21 @@
      usa `--marca-detalhe`; este apelido some numa faxina própria. */
   --gold: var(--marca-detalhe);
   --gold-foreground: var(--marca-sobre-detalhe);
+  /* ⚠️ `--gold-foreground` É PARA FUNDO SÓLIDO; `--gold-tinta` É PARA FUNDO
+     ESMAECIDO — e confundir as duas foi defeito real, achado pelo dono em
+     09/09/2026 na tela do Programa de Prevenção: "contraste muito ruim dos
+     ícones e das pílulas".
+
+     A pílula desenha o realce a 10% e escrevia por cima com a cor de texto do
+     fundo SÓLIDO. Isso só funcionava por acidente com o dourado antigo, que
+     era claro e tinha texto escuro — texto escuro serve nos dois casos. Com a
+     paleta nova o realce pode ser escuro (marinho, bordô) OU o fundo pode ser
+     escuro, e o par desmorona: medido, **5 das 6 combinações falhavam**, de
+     1,03:1 a 1,37:1 — o mínimo legível é 4,5:1.
+
+     `--gold-tinta` é o realce numa versão que se lê sobre o fundo da página.
+     As seis combinações foram medidas: pior caso 5,42:1. */
+  --gold-tinta: var(--risarte-turquesa-escura);
 
   /* ⚠️ PARA AS CORES DAS FASES DA JORNADA, e só para elas. As sete matizes de
      `PHASE_COLORS` são do dono e NÃO mudam. O que muda é para que lado o texto
@@ -175,6 +195,7 @@
    2,8:1 e off-white 2,4:1 — abaixo do mínimo legível (4,5:1). Marinho sobre
    turquesa dá 4,6:1, e é o par que a própria assinatura Franchising usa. */
 [data-ambiente="franchising"] {
+  --gold-tinta: var(--risarte-marinho);
   --marca-central: var(--risarte-turquesa);
   --marca-detalhe: var(--risarte-marinho);
   --marca-sobre-central: var(--risarte-marinho);
@@ -184,6 +205,7 @@
 
 /* --- EMPRESARIAL: bordô lidera (decisão do dono, ver a nota no topo) ------- */
 [data-ambiente="empresarial"] {
+  --gold-tinta: var(--risarte-bordo);
   --marca-central: var(--risarte-bordo);
   --marca-detalhe: var(--risarte-bordo);
   --marca-sobre-central: var(--risarte-offwhite);
@@ -200,6 +222,7 @@
    ============================================================================= */
 .dark {
   --fase-contraste: white;
+  --gold-tinta: var(--risarte-turquesa-clara);
   --background: var(--risarte-profundo);
   --foreground: var(--risarte-offwhite);
   --card: #0d2637;
@@ -236,6 +259,7 @@
 }
 
 .dark [data-ambiente="franchising"] {
+  --gold-tinta: var(--risarte-turquesa-clara);
   --marca-central: var(--risarte-turquesa);
   --marca-detalhe: var(--risarte-turquesa-clara);
   --marca-sobre-central: var(--risarte-marinho);
@@ -248,6 +272,7 @@
 /* No escuro o bordô já É escuro: ele continua liderando, com texto off-white
    (9,6:1). Clarear aqui aproximaria de novo dos outros dois. */
 .dark [data-ambiente="empresarial"] {
+  --gold-tinta: var(--risarte-bordo-suave);
   --marca-central: var(--risarte-bordo);
   --marca-detalhe: var(--risarte-bordo-claro);
   --marca-sobre-central: var(--risarte-offwhite);

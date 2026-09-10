@@ -132,7 +132,7 @@ export default async function PprPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
+              className="bg-gold text-gold-tinta hover:bg-gold/90"
               nativeButton={false}
               render={<Link href="/ppr/painel" />}
             >
@@ -213,7 +213,7 @@ export default async function PprPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {GOALS.map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-xl border p-3">
-                <span className="mb-2 grid size-8 place-items-center rounded-lg bg-gold/15 text-gold-foreground">
+                <span className="mb-2 grid size-8 place-items-center rounded-lg bg-gold/15 text-gold-tinta">
                   <Icon className="size-4" />
                 </span>
                 <p className="text-sm font-medium">{title}</p>
@@ -340,7 +340,7 @@ function Tag({
       className={cn(
         "rounded-full border px-2 py-0.5 text-[11px]",
         tone === "gold"
-          ? "border-gold/40 bg-gold/10 text-gold-foreground"
+          ? "border-gold/40 bg-gold/10 text-gold-tinta"
           : "border-border bg-muted text-muted-foreground"
       )}
     >
