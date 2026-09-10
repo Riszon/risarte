@@ -3,7 +3,8 @@ import type { LucideIcon } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 
 /**
- * O CABEÇALHO DAS TELAS DO RISARTE EMPRESARIAL.
+ * O CABEÇALHO DE UMA TELA DE MÓDULO — Empresarial, rede da Franqueadora, e o
+ * que vier depois.
  *
  * ⚠️ POR QUE UM COMPONENTE, E NÃO A MESMA MARCAÇÃO COPIADA CINCO VEZES. Antes
  * do refinamento de 10/09/2026 cada tela do módulo desenhava o próprio
@@ -21,7 +22,7 @@ import { RisarteMark } from "@/components/risarte-logo";
  * não à paleta de realce, então acompanha o contraste do cabeçalho em vez de
  * precisar de um token próprio.
  */
-export function CabecalhoEmpresarial({
+export function CabecalhoDeModulo({
   chapeu,
   icone: Icone,
   titulo,

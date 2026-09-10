@@ -20,7 +20,7 @@ import {
   type LeadStage,
 } from "@/lib/empresarial/constants";
 import { BarChart3 } from "lucide-react";
-import { CabecalhoEmpresarial } from "../cabecalho";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Painel · Risarte Empresarial" };
 
@@ -181,7 +181,7 @@ export default async function PainelPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-      <CabecalhoEmpresarial
+      <CabecalhoDeModulo
         chapeu="Programa corporativo"
         icone={BarChart3}
         titulo="Painel do programa"

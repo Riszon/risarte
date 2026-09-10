@@ -13,6 +13,7 @@ import {
   type UnitSummary,
 } from "@/lib/finance/consolidation";
 import { ConsolidatedView } from "./consolidated-client";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Consolidado" };
 
@@ -115,18 +116,41 @@ export default async function ConsolidatedPage(
     }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <Building2 className="size-6 text-primary" />
-          Consolidado
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          <strong>Resultado do Grupo</strong> é a franqueadora mais as unidades
-          próprias — o resultado de quem é dono do negócio.{" "}
-          <strong>Faturamento da Rede</strong> são todas as unidades lado a lado,
-          só para comparar. Os dois não se somam: a franqueadora ganha o royalty
-          da franqueada, não a receita da cadeira dela.
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Rede Risarte"
+        icone={Building2}
+        titulo="Consolidado"
+        descricao="O resultado de quem é dono do negócio, e o faturamento da rede inteira lado a lado."
+      />
+
+      {/* ⚠️ ESTA EXPLICAÇÃO NÃO É DECORAÇÃO, E POR ISSO SAIU DE BAIXO DO TÍTULO.
+          Ela era um parágrafo corrido de cinco linhas em letra cinza — o formato
+          que ninguém lê. Mas o que ela diz é a regra que impede o erro mais caro
+          desta tela: somar os dois números. Em duas colunas, com o nome de cada
+          visão em destaque, ela vira consulta rápida em vez de muralha. */}
+      <div className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Resultado do Grupo
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A franqueadora mais as unidades <strong>próprias</strong> — o
+            resultado de quem é dono do negócio.
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Faturamento da Rede
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Todas as unidades lado a lado, <strong>só para comparar</strong>.
+          </p>
+        </div>
+        <p className="border-t pt-3 text-sm text-muted-foreground sm:col-span-2">
+          <strong className="text-foreground">Os dois não se somam.</strong> A
+          franqueadora ganha o royalty da franqueada, não a receita da cadeira
+          dela.
         </p>
       </div>
 

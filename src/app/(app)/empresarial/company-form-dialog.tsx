@@ -16,7 +16,7 @@ import {
   type DocType,
 } from "@/lib/empresarial/documents";
 import { Button } from "@/components/ui/button";
-import { BOTAO_NO_CABECALHO } from "./cabecalho";
+import { BOTAO_NO_CABECALHO } from "@/components/cabecalho-modulo";
 import {
   Dialog,
   DialogContent,

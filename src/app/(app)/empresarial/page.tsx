@@ -11,7 +11,7 @@ import {
 } from "@/lib/empresarial/access";
 import { FilterForm } from "@/components/filter-form";
 import { BarChart3, Building2, KanbanSquare, Settings } from "lucide-react";
-import { CabecalhoEmpresarial, BOTAO_NO_CABECALHO } from "./cabecalho";
+import { CabecalhoDeModulo, BOTAO_NO_CABECALHO } from "@/components/cabecalho-modulo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -186,7 +186,7 @@ export default async function EmpresarialPage(props: {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-      <CabecalhoEmpresarial
+      <CabecalhoDeModulo
         chapeu="Programa corporativo"
         icone={Building2}
         titulo="Risarte Empresarial"
@@ -229,7 +229,7 @@ export default async function EmpresarialPage(props: {
           <CompanyFormDialog consultants={consultants} noCabecalho />
           </>
         )}
-      </CabecalhoEmpresarial>
+      </CabecalhoDeModulo>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (

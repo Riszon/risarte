@@ -12,7 +12,7 @@ import { BenefitsEditor } from "./benefits-editor";
 import { loadBenefits, loadPricing, loadProcedures, loadSplit } from "./data";
 import { RetentionButton } from "./retention-button";
 import { Settings } from "lucide-react";
-import { CabecalhoEmpresarial } from "../cabecalho";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = {
   title: "Configurações · Risarte Empresarial",
@@ -47,7 +47,7 @@ export default async function EmpresarialConfigPage(props: {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
-      <CabecalhoEmpresarial
+      <CabecalhoDeModulo
         chapeu="Programa corporativo"
         icone={Settings}
         titulo="Configurações do programa"

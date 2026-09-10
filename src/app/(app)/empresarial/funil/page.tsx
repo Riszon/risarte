@@ -18,7 +18,7 @@ import {
   todayInBrazil,
 } from "@/lib/dates";
 import { KanbanSquare } from "lucide-react";
-import { CabecalhoEmpresarial } from "../cabecalho";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Funil · Risarte Empresarial" };
 
@@ -158,7 +158,7 @@ export default async function FunilPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-8">
-      <CabecalhoEmpresarial
+      <CabecalhoDeModulo
         chapeu="Programa corporativo"
         icone={KanbanSquare}
         titulo="Funil comercial"

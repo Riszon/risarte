@@ -125,7 +125,9 @@ export function ConsolidatedView({
       <Card>
         <CardContent className="flex flex-wrap items-end gap-3 p-4">
           <label className="block">
-            <Label className="text-[11px]">De</Label>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              De
+            </Label>
             <Input
               className="h-8 w-40"
               type="date"
@@ -134,7 +136,9 @@ export function ConsolidatedView({
             />
           </label>
           <label className="block">
-            <Label className="text-[11px]">Até</Label>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Até
+            </Label>
             <Input
               className="h-8 w-40"
               type="date"
@@ -142,7 +146,11 @@ export function ConsolidatedView({
               onChange={(e) => apply({ ate: e.target.value })}
             />
           </label>
-          <div className="ml-auto flex gap-1">
+          {/* As duas visões andam juntas: encostadas, elas se leem como uma
+              escolha entre duas; separadas, como dois botões que fazem coisas
+              diferentes — e a confusão entre as duas é o erro que esta tela
+              existe para impedir. */}
+          <div className="ml-auto flex gap-1 rounded-lg border bg-muted/40 p-1">
             <Button
               size="sm"
               variant={scope === "grupo" ? "default" : "outline"}
@@ -164,29 +172,33 @@ export function ConsolidatedView({
       {scope === "grupo" ? (
         <>
           <Card>
-            <CardContent className="grid gap-3 p-4 sm:grid-cols-4">
-              <div>
-                <p className="text-[11px] text-muted-foreground">
+            <CardContent className="grid gap-3 p-4 sm:grid-cols-4 sm:divide-x sm:divide-border">
+              <div className="sm:pr-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Receita líquida
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
                   {formatBRL(dre.receitaLiquidaCents)}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground">Lucro bruto</p>
+              <div className="sm:px-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Lucro bruto
+                </p>
                 <p className="text-lg font-semibold tabular-nums">
                   {formatBRL(dre.lucroBrutoCents)}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground">EBITDA</p>
+              <div className="sm:px-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  EBITDA
+                </p>
                 <p className="text-lg font-semibold tabular-nums">
                   {formatBRL(dre.ebitdaCents)}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground">
+              <div className="sm:pl-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Lucro líquido do grupo
                 </p>
                 <p
@@ -204,8 +216,8 @@ export function ConsolidatedView({
           </Card>
 
           {consolidated.fullyEliminated.length > 0 && (
-            <p className="flex items-start gap-2 rounded-lg border bg-muted/30 p-2 text-xs">
-              <Info className="mt-0.5 size-3.5 shrink-0" />
+            <p className="flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3 text-xs leading-relaxed">
+              <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
               <span>
                 Contas eliminadas por inteiro:{" "}
                 <strong>{consolidated.fullyEliminated.join(", ")}</strong>. Era
@@ -217,8 +229,12 @@ export function ConsolidatedView({
           )}
 
           <Card>
-            <CardContent className="space-y-1 p-4 text-sm">
-              <div className="flex justify-between pb-1 text-[10px] uppercase text-muted-foreground">
+            {/* ⚠️ AS COLUNAS TÊM LARGURA FIXA (w-16/w-32/w-28), e num monitor
+                estreito elas empurram o nome da conta para fora do cartão. A
+                caixa que rola resolve sem mexer no alinhamento dos números, que
+                é o que faz uma coluna de dinheiro ser lida de relance. */}
+            <CardContent className="space-y-1 overflow-x-auto p-4 text-sm">
+              <div className="flex min-w-[34rem] justify-between pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <span>Conta</span>
                 <span className="flex gap-4">
                   <span className="w-16 text-right">% RL</span>
@@ -347,7 +363,7 @@ export function ConsolidatedView({
                 strong
               />
 
-              <p className="pt-2 text-[10px] text-muted-foreground">
+              <p className="mt-2 border-t pt-2 text-xs leading-relaxed text-muted-foreground">
                 Cada linha abre por <strong>unidade</strong>, não por lançamento:
                 aqui a pergunta é quem trouxe o número. O caminho até o documento
                 continua na DRE da unidade. Lançamento entre empresas feito à mão,
@@ -361,8 +377,8 @@ export function ConsolidatedView({
         <>
           <Card>
             <CardContent className="grid gap-3 p-4 sm:grid-cols-4">
-              <div>
-                <p className="text-[11px] text-muted-foreground">Unidades</p>
+              <div className="sm:pl-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Unidades</p>
                 <p className="text-lg font-semibold tabular-nums">
                   {totals.units}
                   <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -370,24 +386,24 @@ export function ConsolidatedView({
                   </span>
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground">
+              <div className="sm:pl-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Faturamento da rede
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
                   {formatBRL(totals.grossRevenueCents)}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground">
+              <div className="sm:pl-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Média por unidade
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
                   {formatBRL(totals.averageGrossCents)}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground">
+              <div className="sm:pl-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Resultado somado
                 </p>
                 <p
@@ -413,8 +429,12 @@ export function ConsolidatedView({
           </p>
 
           <Card>
-            <CardContent className="space-y-1 p-4 text-sm">
-              <div className="flex justify-between pb-1 text-[10px] uppercase text-muted-foreground">
+            {/* ⚠️ AS COLUNAS TÊM LARGURA FIXA (w-16/w-32/w-28), e num monitor
+                estreito elas empurram o nome da conta para fora do cartão. A
+                caixa que rola resolve sem mexer no alinhamento dos números, que
+                é o que faz uma coluna de dinheiro ser lida de relance. */}
+            <CardContent className="space-y-1 overflow-x-auto p-4 text-sm">
+              <div className="flex min-w-[34rem] justify-between pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <span>Unidade</span>
                 <span className="flex gap-4">
                   <span className="w-32 text-right">Faturamento</span>

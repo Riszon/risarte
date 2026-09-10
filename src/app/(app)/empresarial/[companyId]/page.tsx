@@ -51,7 +51,7 @@ import { Button } from "@/components/ui/button";
 import { formatCnpj } from "@/lib/masks";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
-import { CabecalhoEmpresarial, BOTAO_NO_CABECALHO } from "../cabecalho";
+import { CabecalhoDeModulo, BOTAO_NO_CABECALHO } from "@/components/cabecalho-modulo";
 import {
   COMPANY_STATUS_LABELS,
   PAYMENT_MODEL_LABELS,
@@ -766,7 +766,7 @@ export default async function CompanyDetailPage(props: {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <CabecalhoEmpresarial
+      <CabecalhoDeModulo
         chapeu="Empresa parceira"
         icone={Building2}
         voltar={{ href: "/empresarial", rotulo: "Empresas" }}
@@ -807,7 +807,7 @@ export default async function CompanyDetailPage(props: {
               }
             />
           )}
-      </CabecalhoEmpresarial>
+      </CabecalhoDeModulo>
 
       <div className="flex flex-wrap gap-1 border-b">
         {TABS.map((t) => (

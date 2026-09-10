@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.7",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "A tela do Consolidado ficou mais fácil de ler",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O Consolidado ganhou o cabeçalho com a marca, e a explicação de “Resultado do Grupo” e “Faturamento da Rede” saiu de um parágrafo corrido para duas colunas — com o aviso de que os dois não se somam em destaque.",
+        papeis: "todos",
+        manual: "Financeiro",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na tabela de contas do Consolidado, o nome da conta era empurrado para fora do cartão em telas estreitas. Agora a tabela rola dentro do próprio cartão, sem desalinhar as colunas de valores.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.6",
     data: "2026-09-10",
     migracao: null,
