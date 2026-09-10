@@ -19,6 +19,8 @@ import {
   type DependentPlan,
   type LeadStage,
 } from "@/lib/empresarial/constants";
+import { BarChart3 } from "lucide-react";
+import { CabecalhoEmpresarial } from "../cabecalho";
 
 export const metadata: Metadata = { title: "Painel · Risarte Empresarial" };
 
@@ -179,17 +181,13 @@ export default async function PainelPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-      <div>
-        <Link href="/empresarial" className="text-xs text-muted-foreground hover:underline">
-          ← Empresas
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          Painel do programa
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Visão consolidada da rede.
-        </p>
-      </div>
+      <CabecalhoEmpresarial
+        chapeu="Programa corporativo"
+        icone={BarChart3}
+        titulo="Painel do programa"
+        descricao="Visão consolidada da rede: empresas, colaboradores e economia gerada."
+        voltar={{ href: "/empresarial", rotulo: "Empresas" }}
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (

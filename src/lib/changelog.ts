@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.5",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "As telas de dentro do Empresarial ficaram iguais entre si",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Funil, Painel, Configurações e a ficha da empresa ganharam o mesmo cabeçalho com a marca da tela principal. Antes cada uma tinha um desenho um pouco diferente, e a diferença aparecia justamente ao trocar de tela.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na ficha da empresa, a situação (Ativa, Suspensa, Encerrada) passou a aparecer com um ponto colorido ao lado do nome. A cor continua dizendo o estado, e o texto ficou legível sobre o cabeçalho.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.4",
     data: "2026-09-10",
     migracao: null,

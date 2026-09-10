@@ -11,7 +11,7 @@ import {
 } from "@/lib/empresarial/access";
 import { FilterForm } from "@/components/filter-form";
 import { BarChart3, Building2, KanbanSquare, Settings } from "lucide-react";
-import { RisarteMark } from "@/components/risarte-logo";
+import { CabecalhoEmpresarial, BOTAO_NO_CABECALHO } from "./cabecalho";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -186,31 +186,17 @@ export default async function EmpresarialPage(props: {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-      {/* O cabeçalho com a marca — o mesmo desenho que o Programa de Prevenção
-          e o Comercial já usam. O Empresarial era o único módulo com só um
-          título solto, e a diferença aparecia justamente ao trocar de tela.
-          Aqui ele vem no bordô do ambiente, sem precisar de cor própria. */}
-      <div className="relative overflow-hidden rounded-2xl border bg-primary text-primary-foreground">
-        <RisarteMark className="pointer-events-none absolute -top-4 -right-6 h-40 text-primary-foreground/10" />
-        <div className="relative flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
-          <div>
-            <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-primary-foreground/60">
-              <Building2 className="size-3.5" />
-              Programa corporativo
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Risarte Empresarial
-            </h1>
-            <p className="mt-0.5 text-sm text-primary-foreground/70">
-              Empresas parceiras, colaboradores e mensalidades do programa.
-            </p>
-          </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <CabecalhoEmpresarial
+        chapeu="Programa corporativo"
+        icone={Building2}
+        titulo="Risarte Empresarial"
+        descricao="Empresas parceiras, colaboradores e mensalidades do programa."
+      >
           {canFunnel && (
             <Button
               variant="outline"
               size="sm"
-              className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              className={BOTAO_NO_CABECALHO}
               nativeButton={false}
               render={<Link href="/empresarial/funil" />}
             >
@@ -223,7 +209,7 @@ export default async function EmpresarialPage(props: {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className={BOTAO_NO_CABECALHO}
                 nativeButton={false}
                 render={<Link href="/empresarial/painel" />}
               >
@@ -233,19 +219,17 @@ export default async function EmpresarialPage(props: {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className={BOTAO_NO_CABECALHO}
                 nativeButton={false}
                 render={<Link href="/empresarial/configuracoes" />}
               >
                 <Settings className="mr-1 size-4" />
                 Configurações
               </Button>
-              <CompanyFormDialog consultants={consultants} />
-            </>
-          )}
-          </div>
-        </div>
-      </div>
+          <CompanyFormDialog consultants={consultants} />
+          </>
+        )}
+      </CabecalhoEmpresarial>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (

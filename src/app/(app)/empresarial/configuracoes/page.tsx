@@ -11,6 +11,8 @@ import { AdhesionPricingForm, SplitRulesForm } from "./pricing-forms";
 import { BenefitsEditor } from "./benefits-editor";
 import { loadBenefits, loadPricing, loadProcedures, loadSplit } from "./data";
 import { RetentionButton } from "./retention-button";
+import { Settings } from "lucide-react";
+import { CabecalhoEmpresarial } from "../cabecalho";
 
 export const metadata: Metadata = {
   title: "Configurações · Risarte Empresarial",
@@ -45,20 +47,13 @@ export default async function EmpresarialConfigPage(props: {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
-      <div>
-        <Link
-          href="/empresarial"
-          className="text-xs text-muted-foreground hover:underline"
-        >
-          ← Empresas
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          Configurações do programa
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Padrão da rede. Cada empresa pode ter regras próprias na sua tela.
-        </p>
-      </div>
+      <CabecalhoEmpresarial
+        chapeu="Programa corporativo"
+        icone={Settings}
+        titulo="Configurações do programa"
+        descricao="Padrão da rede. Cada empresa pode ter regras próprias na sua tela."
+        voltar={{ href: "/empresarial", rotulo: "Empresas" }}
+      />
 
       <div className="flex flex-wrap gap-1 border-b">
         {TABS.map((t) => (

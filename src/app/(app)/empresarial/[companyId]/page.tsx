@@ -45,13 +45,13 @@ import {
   type AdhesionPricing,
   type SplitRules,
 } from "@/lib/empresarial/pricing";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { FileText, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCnpj } from "@/lib/masks";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { CabecalhoEmpresarial, BOTAO_NO_CABECALHO } from "../cabecalho";
 import {
   COMPANY_STATUS_LABELS,
   PAYMENT_MODEL_LABELS,
@@ -66,13 +66,23 @@ import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Empresa · Risarte Empresarial" };
 
-const STATUS_VARIANT: Record<
-  CompanyStatus,
-  "secondary" | "destructive" | "outline"
-> = {
-  ACTIVE: "secondary",
-  SUSPENDED: "destructive",
-  TERMINATED: "outline",
+/**
+ * A COR DA SITUAÇÃO NO CABEÇALHO COLORIDO.
+ *
+ * ⚠️ O selo comum não serve aqui. Ele é desenhado para fundo claro, e sobre o
+ * bordô do Empresarial as cores de estado (verde, vermelho) perdem contraste e
+ * ainda brigam com a marca. A saída é separar os papéis: o **ponto** carrega o
+ * significado — verde é ativo, vermelho é suspenso — e o **rótulo** usa a cor
+ * do próprio cabeçalho, então se lê sempre.
+ *
+ * Os tons são as versões claras das cores de situação, as mesmas que o modo
+ * escuro já usa: sobre o bordô elas dão 3,8:1 ou mais, acima do mínimo de 3:1
+ * que um elemento gráfico pede.
+ */
+const PONTO_DA_SITUACAO: Record<CompanyStatus, string> = {
+  ACTIVE: "#4bbd8b",
+  SUSPENDED: "#ef6b63",
+  TERMINATED: "#c9c9c4",
 };
 
 const TABS = [
@@ -756,29 +766,30 @@ export default async function CompanyDetailPage(props: {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <Link
-            href="/empresarial"
-            className="text-xs text-muted-foreground hover:underline"
-          >
-            ← Empresas
-          </Link>
-          <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold tracking-tight">
+      <CabecalhoEmpresarial
+        chapeu="Empresa parceira"
+        icone={Building2}
+        voltar={{ href: "/empresarial", rotulo: "Empresas" }}
+        descricao={formatCnpj(company.cnpj)}
+        titulo={
+          <>
             {company.tradeName || company.legalName}
-            <Badge variant={STATUS_VARIANT[company.status]}>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/12 px-2.5 py-1 text-xs font-medium">
+              <span
+                aria-hidden
+                className="size-2 rounded-full"
+                style={{ backgroundColor: PONTO_DA_SITUACAO[company.status] }}
+              />
               {COMPANY_STATUS_LABELS[company.status]}
-            </Badge>
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {formatCnpj(company.cnpj)}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+            </span>
+          </>
+        }
+      >
           {/* Ficha completa da empresa, pronta para imprimir/PDF. */}
           <Button
             variant="outline"
             size="sm"
+            className={BOTAO_NO_CABECALHO}
             nativeButton={false}
             render={<Link href={`/empresarial/${company.id}/ficha`} />}
           >
@@ -795,8 +806,7 @@ export default async function CompanyDetailPage(props: {
               }
             />
           )}
-        </div>
-      </div>
+      </CabecalhoEmpresarial>
 
       <div className="flex flex-wrap gap-1 border-b">
         {TABS.map((t) => (

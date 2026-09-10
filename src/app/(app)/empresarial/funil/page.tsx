@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +17,8 @@ import {
   startOfDayInBrazil,
   todayInBrazil,
 } from "@/lib/dates";
+import { KanbanSquare } from "lucide-react";
+import { CabecalhoEmpresarial } from "../cabecalho";
 
 export const metadata: Metadata = { title: "Funil · Risarte Empresarial" };
 
@@ -157,20 +158,13 @@ export default async function FunilPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-8">
-      <div>
-        <Link
-          href="/empresarial"
-          className="text-xs text-muted-foreground hover:underline"
-        >
-          ← Empresas
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          Funil comercial
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Do primeiro contato ao fechamento. Ao fechar (ganho), a empresa é criada.
-        </p>
-      </div>
+      <CabecalhoEmpresarial
+        chapeu="Programa corporativo"
+        icone={KanbanSquare}
+        titulo="Funil comercial"
+        descricao="Do primeiro contato ao fechamento. Ao fechar (ganho), a empresa é criada."
+        voltar={{ href: "/empresarial", rotulo: "Empresas" }}
+      />
 
       {todayLeads.length > 0 && (
         <Card className="border-gold/40 bg-gold/5">
