@@ -225,6 +225,20 @@ como definição; a guarda olhou só a presença e pulou o trabalho.
 confiança é pior que não medir — leva a descartar a causa verdadeira. Antes de
 concluir "não é X", conferir se o que foi medido chega a exercitar X.
 
+**A quarta vez virou instrumento (10/09/2026):**
+
+```bash
+RISARTE_URL=... RISARTE_ENV_FILE=.env.test.local RISARTE_EMAIL=... npm run qual:versao
+```
+
+Ele entra logado e lê a versão da barra lateral. **Não achou a versão = ERRO,
+nunca "versão velha"** — e o erro imprime o trecho do HTML em volta de "Vers",
+para o diagnóstico começar com a evidência em vez de com um palpite. Foi assim
+que se descobriu, na primeira execução, que **o React parte o texto**:
+`Versão {APP_VERSION}` sai como `Versão<!-- -->0.239.2`, e procurar a frase
+inteira não acha nada. O deploy estava no ar; quem estava errado era a régua —
+que foi exatamente o diagnóstico das três vezes anteriores.
+
 ### O que mais cortou tempo
 
 **`getClaims()` no lugar de `getUser()`** (`src/proxy.ts` e `src/lib/auth.ts`).

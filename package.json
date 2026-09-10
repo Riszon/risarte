@@ -22,7 +22,8 @@
     "manual:docx": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx",
     "marca:svg": "node scripts/ai-para-svg.mjs",
     "marca:conferir": "node scripts/conferir-marca.mjs",
-    "marca:contraste": "node scripts/conferir-contraste.mjs"
+    "marca:contraste": "node scripts/conferir-contraste.mjs",
+    "qual:versao": "node scripts/qual-versao.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
