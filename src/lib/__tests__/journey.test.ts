@@ -6,7 +6,10 @@ import {
   displayedPillar,
   isSlaExceeded,
   slaAppliesTo,
+  slaPrefilter,
+  PHASE_SLA_KEY,
 } from "@/lib/journey";
+import type { SlaKey } from "@/lib/sla";
 
 // A matriz "quem move o cliente de fase" é regra de negócio central (também
 // imposta no banco em move_client_phase) — estes testes travam o contrato.
@@ -123,5 +126,70 @@ describe("slaAppliesTo — o prazo desliga quando o passo já aconteceu", () => 
   it("as outras fases não mudam", () => {
     expect(slaAppliesTo("planning_center", "in_planning")).toBe(true);
     expect(slaAppliesTo("commercial_conversion", null)).toBe(true);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// A PENEIRA DO PRAZO (slaPrefilter) — usada pela tela de início para não ler
+// todo cliente ativo da unidade só para contar os atrasados.
+//
+// ⚠️ ESTES TESTES EXISTEM PORQUE UMA PENEIRA ERRADA ERRA EM SILÊNCIO. Se ela
+// descartar um caso já estourado, o número da home fica MENOR que o da Jornada —
+// e para menos ninguém reclama, que é o pior lado para um indicador errar.
+// -----------------------------------------------------------------------------
+
+const semPrazo: Record<SlaKey, number | null> = {
+  evaluation: null,
+  planning: null,
+  evaluation_to_commercial_scheduling: null,
+  presentation_to_closing: null,
+  closing_to_treatment_start: null,
+};
+
+describe("slaPrefilter", () => {
+  it("devolve nada quando nenhuma fase tem prazo configurado", () => {
+    expect(slaPrefilter(semPrazo)).toBeNull();
+  });
+
+  it("só inclui as fases que TÊM prazo", () => {
+    const peneira = slaPrefilter({ ...semPrazo, planning: 1440 });
+    expect(peneira?.phases).toEqual(["planning_center"]);
+    // Aquisição e Acompanhamento não têm prazo — e é onde a base se acumula.
+    expect(peneira?.phases).not.toContain("acquisition");
+    expect(peneira?.phases).not.toContain("follow_up");
+  });
+
+  it("usa o MENOR prazo, nunca o maior", () => {
+    const sla = { ...semPrazo, planning: 1440, evaluation: 60 };
+    expect(slaPrefilter(sla)?.olderThanMinutes).toBe(60);
+  });
+
+  it("NÃO descarta um caso já estourado na fase de prazo mais curto", () => {
+    // O caso que a peneira errada perderia: prazo curto (60 min) estourado há
+    // 90 minutos, num sistema em que a outra fase tem prazo de um dia. Com o
+    // MAIOR prazo como corte, este caso não seria nem lido.
+    const sla = { ...semPrazo, planning: 1440, evaluation: 60 };
+    const peneira = slaPrefilter(sla)!;
+    const entrouHa90min = new Date(Date.now() - 90 * 60 * 1000);
+
+    // 1) a fase entra na peneira e a data passa do corte (vira candidato)
+    expect(peneira.phases).toContain("reevaluation");
+    const corte = new Date(Date.now() - peneira.olderThanMinutes * 60 * 1000);
+    expect(entrouHa90min.getTime()).toBeLessThan(corte.getTime());
+
+    // 2) e a régua de verdade confirma que ele está estourado
+    const chave = PHASE_SLA_KEY.reevaluation!;
+    expect(isSlaExceeded(entrouHa90min.toISOString(), sla[chave])).toBe(true);
+  });
+
+  it("quem a peneira corta não estourou em fase nenhuma", () => {
+    // É esta propriedade que torna a poda segura: o corte é uma condição
+    // NECESSÁRIA para estar estourado, então nada de verdadeiro fica de fora.
+    const sla = { ...semPrazo, planning: 1440, evaluation: 60 };
+    const peneira = slaPrefilter(sla)!;
+    const agora = new Date().toISOString();
+    for (const fase of peneira.phases) {
+      expect(isSlaExceeded(agora, sla[PHASE_SLA_KEY[fase]!])).toBe(false);
+    }
   });
 });

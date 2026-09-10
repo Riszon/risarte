@@ -9,10 +9,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ROLE_LABELS } from "@/lib/roles";
+import {
+  ROLE_LABELS,
+  CLINIC_TYPE_LABELS,
+  type UnitScope,
+  type UserRole,
+} from "@/lib/roles";
 import { ProfileForm } from "./profile-form";
 
 export const metadata: Metadata = { title: "Meu perfil" };
+
+type FranchisorRoleRow = {
+  role: UserRole;
+  unit_scope: UnitScope | null;
+  clinics: { type: string } | null;
+  role_unit_access: { clinics: { id: string; name: string } | null }[] | null;
+};
 
 export default async function ProfilePage() {
   const session = await getSessionContext();
@@ -22,6 +34,46 @@ export default async function ProfilePage() {
     .select("full_name, phone, email")
     .eq("id", session.userId)
     .single();
+
+  // Quais unidades estão sob a responsabilidade desta pessoa, por função da
+  // Franqueadora. Só quem TEM função na Franqueadora chega a fazer a segunda
+  // consulta — para quem trabalha numa unidade, esta tela continua com o mesmo
+  // custo de antes.
+  const { data: franchisorRoles } = await supabase
+    .from("user_clinic_roles")
+    .select(
+      "role, unit_scope, clinics!inner ( type ), role_unit_access ( clinics ( id, name ) )"
+    )
+    .eq("user_id", session.userId)
+    .returns<FranchisorRoleRow[]>();
+
+  const franchisorEntries = (franchisorRoles ?? []).filter(
+    (r) => r.clinics?.type === "franchisor"
+  );
+
+  let allUnits: { id: string; name: string }[] = [];
+  if (franchisorEntries.some((r) => r.unit_scope === "all")) {
+    const { data } = await supabase
+      .from("clinics")
+      .select("id, name")
+      .eq("type", "franchise_unit")
+      .eq("is_active", true)
+      .order("name");
+    allUnits = data ?? [];
+  }
+
+  function unitsFor(entry: FranchisorRoleRow): {
+    scope: UnitScope;
+    units: { id: string; name: string }[];
+  } {
+    const scope = entry.unit_scope ?? "all";
+    if (scope === "all") return { scope, units: allUnits };
+    if (scope === "none") return { scope, units: [] };
+    const units = (entry.role_unit_access ?? [])
+      .map((a) => a.clinics)
+      .filter((c): c is { id: string; name: string } => Boolean(c));
+    return { scope, units };
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
@@ -39,28 +91,106 @@ export default async function ProfilePage() {
         email={profile?.email ?? session.email}
       />
 
+      {/* ⚠️ ESTE BLOCO VEIO DA TELA DE INÍCIO (10/09/2026). Lá ele era uma das
+          três listas que o dono chamou de confusas — e com razão: é informação
+          de CADASTRO, que não muda, na tela em que se cai ao entrar no sistema.
+          Aqui ela está no caminho de quem foi PROCURAR por ela. A home ficou
+          com uma linha ("Cambé · Gerente de Unidade") e o link para cá. */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Suas funções</CardTitle>
+          <CardTitle className="text-base">Suas clínicas e funções</CardTitle>
           <CardDescription>
-            Definidas pelo Admin Master, por clínica.
+            Definidas pelo Admin Master. Para trocar de clínica, use o seletor
+            no menu lateral.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           {session.isAdminMaster && (
-            <Badge className="mr-1 bg-gold text-gold-foreground">
-              Admin Master
-            </Badge>
-          )}
-          {session.clinics.map((clinic) =>
-            (session.rolesByClinic[clinic.id] ?? []).map((role) => (
-              <Badge key={`${clinic.id}-${role}`} variant="secondary" className="mr-1 mb-1">
-                {ROLE_LABELS[role]} · {clinic.name}
+            <p className="text-sm text-muted-foreground">
+              <Badge className="mr-1.5 bg-gold text-gold-foreground">
+                Admin Master
               </Badge>
-            ))
+              Você tem acesso a todas as clínicas da rede.
+            </p>
+          )}
+          {session.clinics.length > 0 ? (
+            <ul className="space-y-2">
+              {session.clinics.map((clinic) => (
+                <li
+                  key={clinic.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{clinic.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {CLINIC_TYPE_LABELS[clinic.type]}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(session.rolesByClinic[clinic.id] ?? []).map((role) => (
+                      <Badge key={role} variant="secondary">
+                        {ROLE_LABELS[role]}
+                      </Badge>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            !session.isAdminMaster && (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma função atribuída ainda. Fale com o administrador.
+              </p>
+            )
           )}
         </CardContent>
       </Card>
+
+      {franchisorEntries.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Unidades sob sua responsabilidade
+            </CardTitle>
+            <CardDescription>
+              Unidades franqueadas que você atende, por função.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {franchisorEntries.map((entry) => {
+              const { scope, units } = unitsFor(entry);
+              return (
+                <div key={entry.role} className="rounded-md border p-3">
+                  <p className="text-sm font-medium">{ROLE_LABELS[entry.role]}</p>
+                  {scope === "none" ? (
+                    <p className="text-xs text-muted-foreground">
+                      Sem unidades atribuídas.
+                    </p>
+                  ) : (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {scope === "all" && (
+                        <Badge className="bg-gold text-gold-foreground">
+                          Todas as unidades
+                        </Badge>
+                      )}
+                      {units.map((u) => (
+                        <Badge key={u.id} variant="secondary">
+                          {u.name}
+                        </Badge>
+                      ))}
+                      {units.length === 0 && scope === "specific" && (
+                        <p className="text-xs text-muted-foreground">
+                          Nenhuma unidade selecionada.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

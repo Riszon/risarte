@@ -1,24 +1,36 @@
-import { BadgeCheck, Building2, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { novidadesPara } from "@/lib/changelog";
 import { Novidades } from "@/components/novidades";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
+import { montarPendencias, atalhosPara, type Pendencia } from "./inicio-dados";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ROLE_LABELS,
-  CLINIC_TYPE_LABELS,
-  type UnitScope,
-  type UserRole,
-} from "@/lib/roles";
+import { cn } from "@/lib/utils";
+import { ROLE_LABELS } from "@/lib/roles";
+
+/**
+ * A TELA DE INÍCIO — "o que espera por mim agora?".
+ *
+ * Reformulada em 10/09/2026, a pedido do dono: *"está confuso e virou uma longa
+ * lista"*. Estava mesmo, e a causa não era arrumação. A tela respondia à
+ * pergunta errada: mostrava clínicas, funções e unidades sob responsabilidade —
+ * três blocos de CADASTRO, que não mudam, que a barra lateral e o Perfil já
+ * diziam, e que ninguém precisa reler todo dia. Três blocos de peso igual, um
+ * embaixo do outro, é a definição de lista.
+ *
+ * Agora ela tem uma hierarquia de verdade, em três faixas:
+ *
+ *   1. **quem está falando e onde** — uma linha, não um bloco;
+ *   2. **o que espera por você** — o miolo, montado pelo seu papel (ver
+ *      `inicio-dados.ts`, onde moram as três regras dos números);
+ *   3. **o que mudou no sistema** — embaixo, que é o lugar dele.
+ *
+ * A informação de cadastro foi para `/perfil`, que é onde se vai quando se quer
+ * conferir função e unidade — e não onde se cai ao entrar no sistema.
+ */
 
 /** Saudação pela hora do dia (fuso de São Paulo) + data por extenso. */
 function greetingAndDate(): { greeting: string; dateLabel: string } {
@@ -55,12 +67,53 @@ function initialsOf(name: string): string {
   );
 }
 
-type FranchisorRoleRow = {
-  role: UserRole;
-  unit_scope: UnitScope | null;
-  clinics: { type: string } | null;
-  role_unit_access: { clinics: { id: string; name: string } | null }[] | null;
-};
+/**
+ * O CARTÃO DE UMA PENDÊNCIA.
+ *
+ * O número é o que se lê de longe, então ele é o maior elemento do cartão. O
+ * título diz do que se trata e a linha diz o que fazer — nessa ordem, porque é
+ * a ordem em que a pergunta aparece na cabeça de quem chega.
+ *
+ * `tom="atencao"` NÃO é "urgente": é "alguém ou algum prazo está esperando".
+ * Se tudo fosse destacado, o destaque deixaria de ordenar prioridade — a mesma
+ * razão pela qual o painel da rede (FIN8.3) reserva o vermelho para o que já
+ * dói.
+ */
+function CartaoDePendencia({ p }: { p: Pendencia }) {
+  const atencao = p.tom === "atencao";
+  return (
+    <Link
+      href={p.href}
+      className={cn(
+        "group flex flex-col rounded-xl border p-4 transition hover:shadow-sm",
+        atencao
+          ? "border-gold/40 bg-gold/5 hover:border-gold"
+          : "bg-card hover:border-primary/40"
+      )}
+    >
+      <div className="flex items-baseline gap-2">
+        <span
+          className={cn(
+            "text-3xl font-semibold tabular-nums leading-none",
+            atencao ? "text-gold-tinta" : "text-primary"
+          )}
+        >
+          {p.numero}
+        </span>
+        <span className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+          {p.titulo}
+        </span>
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+        {p.linha}
+      </p>
+      <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
+        Abrir
+        <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
 
 export default async function HomePage() {
   const session = await getSessionContext();
@@ -88,184 +141,117 @@ export default async function HomePage() {
         "clinical_coordinator",
       ]));
 
-  // For franchisor-role users: which units are under their responsibility?
-  const { data: franchisorRoles } = await supabase
-    .from("user_clinic_roles")
-    .select(
-      "role, unit_scope, clinics!inner ( type ), role_unit_access ( clinics ( id, name ) )"
-    )
-    .eq("user_id", session.userId)
-    .returns<FranchisorRoleRow[]>();
-
-  const franchisorEntries = (franchisorRoles ?? []).filter(
-    (r) => r.clinics?.type === "franchisor"
-  );
-
-  let allUnits: { id: string; name: string }[] = [];
-  if (franchisorEntries.some((r) => r.unit_scope === "all")) {
-    const { data } = await supabase
-      .from("clinics")
-      .select("id, name")
-      .eq("type", "franchise_unit")
-      .eq("is_active", true)
-      .order("name");
-    allUnits = data ?? [];
-  }
-
-  function unitsFor(entry: FranchisorRoleRow): {
-    scope: UnitScope;
-    units: { id: string; name: string }[];
-  } {
-    const scope = entry.unit_scope ?? "all";
-    if (scope === "all") return { scope, units: allUnits };
-    if (scope === "none") return { scope, units: [] };
-    const units = (entry.role_unit_access ?? [])
-      .map((a) => a.clinics)
-      .filter((c): c is { id: string; name: string } => Boolean(c));
-    return { scope, units };
-  }
+  const pendencias = await montarPendencias(supabase, session);
+  const atalhos = atalhosPara(session);
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
 
+  // A função NESTA unidade, em uma linha. A lista completa (todas as clínicas,
+  // todos os papéis, as unidades sob responsabilidade) mora no Perfil.
+  const papeisAqui = homeClinic
+    ? (session.rolesByClinic[homeClinic.id] ?? [])
+    : [];
+  const funcaoAqui = session.isAdminMaster
+    ? "Admin Master"
+    : papeisAqui.map((r) => ROLE_LABELS[r]).join(", ");
+
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       {shouldNotifyBirthdays && homeClinic && (
         <BirthdayNotifier clinicId={homeClinic.id} />
       )}
 
-      {/* Boas-vindas */}
-      <section className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">
+      {/* ---------------------------------------------- 1. quem, onde, quando */}
+      <section className="marca-dagua relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">
         <div className="absolute inset-x-0 top-0 h-1 bg-gold" />
-        <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-gold/10 blur-3xl" />
         <RisarteMark className="pointer-events-none absolute -bottom-6 right-6 hidden h-36 text-primary-foreground/10 sm:block" />
         <div className="relative flex flex-wrap items-center gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gold text-lg font-bold text-primary">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gold text-lg font-bold text-gold-foreground">
             {initialsOf(session.fullName)}
           </span>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-primary-foreground/60">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs uppercase tracking-wide text-primary-foreground/70">
               {dateLabel}
             </p>
             <h1 className="text-2xl font-semibold tracking-tight">
               {greeting}, {firstName}!
             </h1>
-            <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-primary-foreground/75">
-              {session.activeClinic
-                ? `Você está em ${session.activeClinic.name}`
-                : "Nenhuma clínica cadastrada ainda."}
-              {session.isAdminMaster && (
-                <Badge className="bg-gold text-gold-foreground">Admin Master</Badge>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-primary-foreground/80">
+              {homeClinic ? (
+                <>
+                  <span>{homeClinic.name}</span>
+                  {funcaoAqui && (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span>{funcaoAqui}</span>
+                    </>
+                  )}
+                  <Link
+                    href="/perfil"
+                    className="underline underline-offset-2 opacity-90 hover:opacity-100"
+                  >
+                    ver minhas funções
+                  </Link>
+                </>
+              ) : (
+                "Nenhuma clínica cadastrada ainda."
+              )}
+              {session.isAdminMaster && !funcaoAqui && (
+                <Badge className="bg-gold text-gold-foreground">
+                  Admin Master
+                </Badge>
               )}
             </p>
           </div>
         </div>
+
+        {atalhos.length > 0 && (
+          <div className="relative mt-5 flex flex-wrap gap-2">
+            {atalhos.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className="rounded-lg bg-primary-foreground/15 px-3 py-1.5 text-sm font-medium text-primary-foreground ring-1 ring-inset ring-primary-foreground/25 transition hover:bg-primary-foreground/25"
+              >
+                {a.rotulo}
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
-      {franchisorEntries.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="size-4 text-primary" />
-              Unidades sob sua responsabilidade
-            </CardTitle>
-            <CardDescription>
-              Unidades franqueadas que você atende, por função.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {franchisorEntries.map((entry) => {
-              const { scope, units } = unitsFor(entry);
-              return (
-                <div key={entry.role} className="rounded-md border p-3">
-                  <p className="text-sm font-medium">
-                    {ROLE_LABELS[entry.role]}
-                  </p>
-                  {scope === "none" ? (
-                    <p className="text-xs text-muted-foreground">
-                      Sem unidades atribuídas.
-                    </p>
-                  ) : (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {scope === "all" && (
-                        <Badge className="bg-gold text-gold-foreground">
-                          Todas as unidades
-                        </Badge>
-                      )}
-                      {units.map((u) => (
-                        <Badge key={u.id} variant="secondary">
-                          {u.name}
-                        </Badge>
-                      ))}
-                      {units.length === 0 && scope === "specific" && (
-                        <p className="text-xs text-muted-foreground">
-                          Nenhuma unidade selecionada.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BadgeCheck className="size-4 text-primary" />
-            Suas clínicas e funções
-          </CardTitle>
-          <CardDescription>
-            Use o seletor no menu lateral para trocar de clínica.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {session.isAdminMaster && (
-            <p className="mb-3 text-sm text-muted-foreground">
-              Como Admin Master, você tem acesso a todas as clínicas da rede.
-            </p>
-          )}
-          {session.clinics.length > 0 ? (
-            <ul className="space-y-2">
-              {session.clinics.map((clinic) => (
-                <li
-                  key={clinic.id}
-                  className="flex items-center justify-between rounded-md border p-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{clinic.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {CLINIC_TYPE_LABELS[clinic.type]}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {(session.rolesByClinic[clinic.id] ?? []).map((role) => (
-                      <Badge key={role} variant="secondary">
-                        {ROLE_LABELS[role]}
-                      </Badge>
-                    ))}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            !session.isAdminMaster && (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma função atribuída ainda. Fale com o administrador.
+      {/* ------------------------------------------ 2. o que espera por você */}
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">O que espera por você</h2>
+        {pendencias.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {pendencias.map((p) => (
+              <CartaoDePendencia key={p.chave} p={p} />
+            ))}
+          </div>
+        ) : (
+          // ⚠️ TELA VAZIA NÃO É RESPOSTA. Sem esta linha, quem não tem nada
+          // pendente veria um título solto e concluiria que a tela quebrou.
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-5">
+            <CheckCircle2 className="size-5 shrink-0 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Nada esperando por você agora.</p>
+              <p className="text-xs text-muted-foreground">
+                Quando algo precisar da sua decisão, aparece aqui — com o número
+                e o caminho.
               </p>
-            )
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* AS NOVIDADES MORAM AQUI (decisão do dono, 08/09/2026).
           Antes ficavam numa aba da tela Sistema, e uma novidade que exige dois
           cliques para ser encontrada não é lida por ninguém. Aqui ela está no
           caminho: é a primeira tela do dia de toda a equipe.
           Continua filtrada por papel — ver `novidadesPara`. */}
-      <section className="pt-2">
+      <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
           <Sparkles className="size-5 text-gold-tinta" />
           O que mudou no sistema

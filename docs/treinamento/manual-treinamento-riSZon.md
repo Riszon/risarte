@@ -96,7 +96,8 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
    se troca.
    > **A cor da tela diz onde você está.** Ver [seção 2.1](#21-a-cor-da-tela-diz-onde-voce-esta).
 3. **Olhe o menu da esquerda.** Ele é a lista do que você pode abrir.
-4. **Comece pelo "Início".** É a primeira tela e a que resume o seu dia.
+4. **Comece pelo "Início".** É a primeira tela, e ela responde a uma pergunta
+   só: **o que espera por você agora**. Ver [seção 2.2](#22-a-tela-de-inicio).
 5. **Ache a versão do sistema** no rodapé da barra lateral (ex.: *"Versão
    0.238.0 · migração 0252"*). É essa informação que o suporte pede quando algo
    dá errado.
@@ -127,6 +128,47 @@ eram — vermelho na Aquisição, laranja na Conversão Clínica, e assim por di
 **Claro ou escuro.** O botão de lua/sol na barra de cima troca a aparência. A
 escolha fica guardada **no seu computador**: se você entrar de outra máquina,
 escolhe de novo.
+
+### 2.2. A tela de Início
+
+A tela de Início responde a **uma pergunta**: *o que espera por você agora?*
+Ela tem três partes, sempre nesta ordem.
+
+**No alto:** a saudação, a data, a unidade em que você está e a sua função ali
+— tudo numa linha só. Ao lado, **dois ou três atalhos** do que você mais faz
+para começar o dia (a recepção vê *Cadastrar cliente* e *Abrir a agenda*; o
+dentista vê *Meu Dia*). Para ver a lista completa das suas clínicas e funções,
+clique em **"ver minhas funções"** — ela mora no seu Perfil.
+
+**No meio: "O que espera por você".** Cartões com um número, o que aquele número
+significa e o caminho para resolver. Eles mudam conforme a sua função:
+
+| Se você é… | Pode ver, por exemplo |
+|---|---|
+| Recepção | Agendamentos de hoje, quem já fez check-in e ainda está esperando |
+| Dentista | Os seus atendimentos de hoje |
+| Coordenador Clínico | Planos aguardando a sua aprovação, casos com prazo estourado |
+| Dentista Planner | A fila do Centro de Planejamento |
+| Consultor Comercial | Follow-ups com a data de retorno vencida |
+| Gerente / Franqueado | Prazo estourado, compras a aprovar, entregas a receber, itens abaixo do mínimo |
+| Comprador da Franqueadora | Listas das unidades esperando, rodadas de negociação abertas |
+
+> **Cartão zerado não aparece.** Se não há nada esperando naquele assunto, o
+> cartão some — em vez de mostrar um "0". Um zero pendurado em todo cartão vira
+> paisagem, e aí ninguém repara mais nos que **não** são zero. Quando não há
+> nada pendente em nada, a tela diz isso com todas as letras.
+
+> **O número do cartão é o mesmo da tela para onde ele leva.** Se o cartão diz
+> "3 esperando", ao abrir você encontra três. Cada contagem usa a mesma régua da
+> tela de destino, nunca uma conta separada.
+
+**Embaixo: "O que mudou no sistema"** — as novidades da sua função. Ver
+[seção 15](#15-novidades-problemas-e-alertas).
+
+**O que NÃO está mais aqui:** a lista das suas clínicas, das suas funções e das
+unidades sob sua responsabilidade. Isso é cadastro, não muda de um dia para o
+outro, e agora fica no **Perfil** (clique no seu nome, no rodapé do menu
+lateral). A primeira tela do dia é para o trabalho que espera por você.
 
 ## A barra de cima
 

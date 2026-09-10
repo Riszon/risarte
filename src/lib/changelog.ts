@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.240.0",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "A tela de Início mostra o que espera por você",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Início ganhou o bloco \"O que espera por você\": cartões com um número, o que ele significa e o caminho para resolver — os agendamentos de hoje, quem já fez check-in e está esperando, os planos aguardando a sua aprovação, os casos com prazo estourado, as compras a aprovar, os itens abaixo do mínimo. Cada pessoa vê os cartões da SUA função.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Cartão sem nada pendente não aparece, em vez de mostrar um \"0\". E quando não há nada esperando em nada, a tela diz isso com todas as letras.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O alto da tela ganhou dois ou três atalhos do que você mais faz para começar o dia — a recepção tem \"Cadastrar cliente\" e \"Abrir a agenda\"; o dentista, \"Meu Dia\".",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista das suas clínicas, funções e unidades sob responsabilidade saiu do Início e foi para o Perfil (clique no seu nome, no rodapé do menu). No Início ficou uma linha com a unidade e a sua função ali. Seção 2.2 do manual.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.239.2",
     data: "2026-09-10",
     migracao: null,

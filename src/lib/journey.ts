@@ -268,3 +268,44 @@ export function slaAppliesTo(
   }
   return true;
 }
+
+/**
+ * A PENEIRA QUE O BANCO PODE APLICAR ANTES — sem mudar quem decide.
+ *
+ * A tela de início precisa do NÚMERO de casos com prazo estourado numa unidade.
+ * Ler todo cliente ativo para contá-los funciona hoje (dezenas) e fica caro
+ * sozinho em três anos (milhares), sem nada na tela denunciando — o jeito
+ * silencioso de uma tela ficar lenta.
+ *
+ * Esta função devolve as duas condições **necessárias** para um caso estar
+ * estourado, que é o que dá para pedir ao banco:
+ *
+ *   - `phases`: só as fases que têm prazo configurado. Aquisição e
+ *     Acompanhamento não têm — e é onde a base se acumula com o tempo.
+ *   - `olderThanMinutes`: o MENOR prazo configurado. Quem entrou na fase há
+ *     menos que isso não pode ter estourado prazo nenhum, em fase alguma.
+ *
+ * ⚠️ O MENOR, NUNCA O MAIOR. Com o maior, um caso estourado numa fase de prazo
+ * curto seria descartado antes de ser olhado, e o número da home ficaria menor
+ * que o da Jornada — errado justamente para o lado que não incomoda ninguém,
+ * que é o pior lado para um indicador errar.
+ *
+ * Quem DECIDE continua sendo `slaAppliesTo` + `isSlaExceeded`, sobre o que
+ * voltar. Esta função só evita ler o que não tem chance nenhuma.
+ *
+ * Devolve `null` quando nenhuma fase tem prazo: aí não há o que contar.
+ */
+export function slaPrefilter(
+  sla: Record<SlaKey, number | null>
+): { phases: JourneyPhase[]; olderThanMinutes: number } | null {
+  const phases = JOURNEY_PHASES.filter((phase) => {
+    const key = PHASE_SLA_KEY[phase];
+    return !!key && !!sla[key];
+  });
+  if (phases.length === 0) return null;
+
+  const olderThanMinutes = Math.min(
+    ...phases.map((phase) => sla[PHASE_SLA_KEY[phase]!] as number)
+  );
+  return { phases, olderThanMinutes };
+}
