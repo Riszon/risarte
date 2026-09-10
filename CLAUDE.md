@@ -196,6 +196,31 @@ cabeçalho só mostrava `gru1`, que é de onde o DONO está.
 - O instrumento pronto: `RISARTE_URL=... RISARTE_ENV_FILE=.env.test.local
   npm run check:telas` (entra logado, mede cada tela).
 
+### ⚠️ RÉGUA QUE NÃO ACHA NADA TEM DE GRITAR, NUNCA RESPONDER "NÃO"
+
+**09/09/2026 — três vezes no mesmo dia, e a terceira custou 20 minutos do dono.**
+O padrão é sempre o mesmo: um script procura algo, o padrão de busca não casa com
+NADA, e o script conclui **"não existe"** em vez de **"não consegui medir"**.
+
+| O que eu media | O que o padrão procurava | Por que não achou | O que eu conclui (errado) |
+|---|---|---|---|
+| se o deploy saiu | `/_next/static/...buildManifest` | o Next 16 não gera esse nome | "não publicou" (tinha publicado) |
+| se a correção subiu | `/_next/static/css/` | o Next 16 põe CSS em `chunks/` | "não chegou" (tinha chegado) |
+| se o token já existia no arquivo | a string `--pat-branco` | ela existia como USO, não como DEFINIÇÃO | "já está lá" (não estava) |
+
+**A regra:** todo instrumento tem de **falhar alto quando não encontra o que
+medir**. Zero resultados é ausência de medição, não medição de ausência — e as
+duas produzem a mesma frase na tela se ninguém separar.
+
+Na prática: antes de comparar, conferir que a busca achou **pelo menos um**
+candidato, e levantar erro quando achou zero. `check-screens.mjs` já faz isso
+("se o servidor não responder, o script diz isso em vez de acusar o sistema de
+quebrado"); scripts de uma vez só precisam do mesmo cuidado.
+
+**E o parente disso:** perguntar se uma string existe no arquivo quando o que
+importa é se ela existe **naquele papel**. `--pat-branco` aparecia como uso e
+como definição; a guarda olhou só a presença e pulou o trabalho.
+
 **A lição para toda investigação de lentidão:** medir a coisa errada com
 confiança é pior que não medir — leva a descartar a causa verdadeira. Antes de
 concluir "não é X", conferir se o que foi medido chega a exercitar X.
