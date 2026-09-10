@@ -85,7 +85,7 @@ export function MonthlySimulator({ pricing }: { pricing: AdhesionPricing }) {
       </div>
       <div className="flex items-baseline justify-between border-t pt-3">
         <span className="text-sm text-muted-foreground">Mensalidade estimada</span>
-        <span className="text-2xl font-semibold text-gold">{formatBRL(total)}</span>
+        <span className="text-2xl font-semibold text-gold-tinta">{formatBRL(total)}</span>
       </div>
     </div>
   );

@@ -175,7 +175,7 @@ export default async function FunilPage() {
       {todayLeads.length > 0 && (
         <Card className="border-gold/40 bg-gold/5">
           <CardContent className="p-4">
-            <p className="text-sm font-medium text-gold">
+            <p className="text-sm font-medium text-gold-tinta">
               ★ Hoje do consultor ({todayLeads.length})
             </p>
             <ul className="mt-2 space-y-1 text-sm">

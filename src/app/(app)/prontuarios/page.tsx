@@ -964,7 +964,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                       <span className="inline-flex items-center gap-1.5">
                         {p.daysUntil === 0 && (
                           <Gift
-                            className="size-4 shrink-0 text-gold"
+                            className="size-4 shrink-0 text-gold-tinta"
                             aria-label="Aniversário hoje"
                           />
                         )}
@@ -974,7 +974,7 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
                     <TableCell>
                       {ddmm(p.birthDate)}
                       {p.daysUntil === 0 ? (
-                        <span className="ml-1 text-xs font-medium text-gold">
+                        <span className="ml-1 text-xs font-medium text-gold-tinta">
                           hoje
                         </span>
                       ) : p.daysUntil === 1 ? (

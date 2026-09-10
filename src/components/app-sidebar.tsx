@@ -358,7 +358,7 @@ export function AppSidebar({
     >
       {collapsed ? (
         <div className="flex flex-col items-center gap-3 px-2 py-4">
-          <RisarteMark className="h-7 text-gold" />
+          <RisarteMark className="h-7 text-sidebar-primary" />
           <button
             type="button"
             onClick={toggleCollapsed}
@@ -431,7 +431,7 @@ export function AppSidebar({
               and different roles need this anchor. */}
           <p className="mt-1.5 px-1 text-xs text-sidebar-foreground/70">
             Sua função aqui:{" "}
-            <span className="font-medium text-gold">
+            <span className="font-medium text-sidebar-primary">
               {isAdminMaster
                 ? "Admin Master"
                 : activeClinicRoles.length > 0
@@ -493,7 +493,7 @@ export function AppSidebar({
           )}
           title={collapsed ? `${fullName} — Meu perfil` : "Meu perfil"}
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-gold">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-primary">
             {initials}
           </span>
           {!collapsed && (

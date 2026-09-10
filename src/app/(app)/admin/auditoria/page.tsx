@@ -169,7 +169,7 @@ export default async function AuditoriaPage(
               >
                 <span className="min-w-0 truncate">
                   {l.code && (
-                    <span className="mr-1 font-mono text-xs text-gold">
+                    <span className="mr-1 font-mono text-xs text-gold-tinta">
                       {l.code}
                     </span>
                   )}
@@ -249,7 +249,7 @@ export default async function AuditoriaPage(
                     <td className="px-2 py-1.5">
                       <span className="flex items-center gap-1.5">
                         {r.user_id && staffCodeByUser.get(r.user_id) && (
-                          <span className="font-mono text-xs text-gold">
+                          <span className="font-mono text-xs text-gold-tinta">
                             {staffCodeByUser.get(r.user_id)}
                           </span>
                         )}

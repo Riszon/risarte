@@ -440,7 +440,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
       {readyToPresent.length > 0 && (
         <div className="rounded-lg border border-gold/50 bg-gold/5 p-3">
           <div className="mb-2 flex items-center gap-2">
-            <Sparkles className="size-4 text-gold" />
+            <Sparkles className="size-4 text-gold-tinta" />
             <h2 className="text-sm font-semibold">
               Prontos para apresentar ({readyToPresent.length})
             </h2>

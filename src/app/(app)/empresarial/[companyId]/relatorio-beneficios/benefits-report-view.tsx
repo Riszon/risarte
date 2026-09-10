@@ -73,7 +73,7 @@ function Kpi({ label, value, gold }: { label: string; value: string; gold?: bool
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className={`mt-0.5 text-lg font-semibold${gold ? " text-gold" : ""}`}>
+      <p className={`mt-0.5 text-lg font-semibold${gold ? " text-gold-tinta" : ""}`}>
         {value}
       </p>
     </div>
@@ -426,7 +426,7 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
                           <td className="px-3 py-2">{u.linkedMembers}</td>
                           <td className="px-3 py-2">{u.attendedMembers}</td>
                           <td className="px-3 py-2">{u.sessionsDone}</td>
-                          <td className="px-3 py-2 text-gold">
+                          <td className="px-3 py-2 text-gold-tinta">
                             {formatBRL(u.savedCents)}
                           </td>
                         </tr>
@@ -485,7 +485,7 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
                         <td className="px-2 py-1.5 text-muted-foreground">
                           {m.clinicName ?? "—"}
                         </td>
-                        <td className="px-2 py-1.5 font-medium text-gold">
+                        <td className="px-2 py-1.5 font-medium text-gold-tinta">
                           {formatBRL(m.savedCents)}
                         </td>
                         {opt.showFull && (

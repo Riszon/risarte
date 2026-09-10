@@ -90,7 +90,7 @@ export function TreatmentSummary({ options }: { options: PlanOption[] }) {
       <div className="flex items-center justify-between gap-2">
         <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
           {option.isPrimary && (
-            <Star className="size-3.5 shrink-0 fill-gold text-gold" />
+            <Star className="size-3.5 shrink-0 fill-gold text-gold-tinta" />
           )}
           <span className="truncate">{option.title}</span>
           {option.isPrimary && (

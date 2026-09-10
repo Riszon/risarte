@@ -23,7 +23,7 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -bottom-32 -left-20 size-96 rounded-full bg-white/5 blur-3xl" />
 
         <div className="relative flex items-center gap-3">
-          <RisarteMark className="h-11 shrink-0 text-gold" />
+          <RisarteMark className="h-11 shrink-0 text-gold-forte" />
           <span className="text-lg font-semibold tracking-tight">
             Risarte Odontologia
           </span>
@@ -48,7 +48,7 @@ export default function LoginPage() {
       <div className="flex w-full flex-col items-center justify-center bg-background p-6 md:w-1/2 lg:w-2/5">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center gap-2 text-center md:hidden">
-            <RisarteMark className="h-12 text-gold" />
+            <RisarteMark className="h-12 text-gold-tinta" />
             <h1 className="text-xl font-semibold tracking-tight text-primary">
               Risarte Odontologia
             </h1>

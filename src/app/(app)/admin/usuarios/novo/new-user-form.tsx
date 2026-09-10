@@ -145,7 +145,7 @@ export function NewUserForm({
         <Card className="border-gold">
           <CardContent className="pt-4 text-sm">
             Criando acesso para o Risartano{" "}
-            <span className="font-mono font-medium text-gold">
+            <span className="font-mono font-medium text-gold-tinta">
               {initialStaff.code ?? ""}
             </span>{" "}
             <span className="font-medium">{initialStaff.fullName}</span>

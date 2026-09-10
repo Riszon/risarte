@@ -221,7 +221,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
                         {doc.docType}
                       </span>
                       {doc.isPrimary && (
-                        <span className="ml-1 text-[10px] text-gold">
+                        <span className="ml-1 text-[10px] text-gold-tinta">
                           ★ principal
                         </span>
                       )}

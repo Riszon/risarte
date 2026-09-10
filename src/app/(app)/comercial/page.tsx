@@ -375,7 +375,7 @@ export default async function ComercialKanbanPage(
       <div className="mb-3 shrink-0">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <Handshake className="size-6 text-gold" />
+            <Handshake className="size-6 text-gold-tinta" />
             Comercial
           </h1>
           <div className="flex gap-2">

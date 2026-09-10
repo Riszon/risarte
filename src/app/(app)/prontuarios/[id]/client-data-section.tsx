@@ -20,7 +20,7 @@ function SectionLabel({
 }) {
   return (
     <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-      <span className="text-gold">{icon}</span>
+      <span className="text-gold-tinta">{icon}</span>
       {children}
     </p>
   );
@@ -100,7 +100,7 @@ export function ClientDataSection({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-base">
-          <User className="size-4 text-gold" />
+          <User className="size-4 text-gold-tinta" />
           Dados do cliente
         </CardTitle>
         {canEdit && (

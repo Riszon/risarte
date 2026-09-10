@@ -71,7 +71,7 @@ function Blocos({ blocos }: { blocos: Bloco[] }) {
                 id={b.id}
                 className={cn(
                   "scroll-mt-6 font-semibold text-foreground",
-                  b.nivel <= 3 ? "mt-8 text-lg" : "mt-6 text-base text-gold"
+                  b.nivel <= 3 ? "mt-8 text-lg" : "mt-6 text-base text-gold-tinta"
                 )}
               >
                 <Trechos trechos={b.texto} />
@@ -110,7 +110,7 @@ function Blocos({ blocos }: { blocos: Bloco[] }) {
               <ul key={i} className="mt-3 space-y-1.5 text-muted-foreground">
                 {b.itens.map((item, j) => (
                   <li key={j} className="flex gap-2 leading-relaxed">
-                    <span aria-hidden className="text-gold">
+                    <span aria-hidden className="text-gold-tinta">
                       ☐
                     </span>
                     <span>
@@ -212,7 +212,7 @@ export function ManualReader({
     <div className="mx-auto max-w-6xl px-4 py-6">
       <header className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
-          <BookOpen className="size-6 text-gold" />
+          <BookOpen className="size-6 text-gold-tinta" />
           Manual de Treinamento
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">

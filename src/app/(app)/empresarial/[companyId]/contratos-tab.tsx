@@ -119,7 +119,7 @@ export function ContratosTab({
                     href={c.zapsignUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-gold hover:underline"
+                    className="text-xs text-gold-tinta hover:underline"
                   >
                     Link de assinatura
                   </a>
@@ -320,7 +320,7 @@ function ProposalGenerator({
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-medium text-gold hover:underline"
+                  className="text-sm font-medium text-gold-tinta hover:underline"
                 >
                   Abrir proposta no Gamma →
                 </a>

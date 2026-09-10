@@ -807,7 +807,7 @@ export default async function CompanyDetailPage(props: {
             nativeButton={false}
             className={cn(
               "rounded-b-none border-b-2 border-transparent",
-              aba === t.key && "border-gold font-medium text-gold"
+              aba === t.key && "border-gold font-medium text-gold-tinta"
             )}
             render={
               <Link
@@ -864,7 +864,7 @@ export default async function CompanyDetailPage(props: {
               <p className="text-[10px] uppercase text-muted-foreground">
                 Economia gerada
               </p>
-              <p className="mt-0.5 text-xl font-semibold text-gold">
+              <p className="mt-0.5 text-xl font-semibold text-gold-tinta">
                 {formatBRL(resumo.savedCents)}
               </p>
             </CardContent>
@@ -1009,7 +1009,7 @@ export default async function CompanyDetailPage(props: {
                 <CardTitle className="text-base">Mensalidade atual</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-semibold text-gold">
+                <p className="text-3xl font-semibold text-gold-tinta">
                   {formatBRL(plano.monthly.totalCents)}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -1092,7 +1092,7 @@ export default async function CompanyDetailPage(props: {
                 <p className="text-xs uppercase text-muted-foreground">
                   Economia gerada aos colaboradores
                 </p>
-                <p className="mt-1 text-2xl font-semibold text-gold">
+                <p className="mt-1 text-2xl font-semibold text-gold-tinta">
                   {formatBRL(financeiro.savedTotal)}
                 </p>
               </CardContent>

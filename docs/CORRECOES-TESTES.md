@@ -220,3 +220,8 @@ um defeito novo com um defeito consertado.
 combinações de ambiente × luz já foram medidas (pior caso 5,42:1).
 
 **Tamanho:** médio (84 pontos, revisão visual de cada um). Sem migração.
+
+**RESOLVIDO em 10/09/2026 (v0.238.2).** Os 84 pontos foram classificados pelo
+fundo em que vivem — 75 sobre a página (`text-gold-tinta`), 6 sobre painel forte
+(`text-gold-forte`) e 3 na barra lateral (`text-sidebar-primary`). A régua que
+faltava virou `npm run marca:contraste`: 54 combinações medidas a cada execução.

@@ -83,7 +83,7 @@ export function ProntuarioTabs({ children }: { children: ReactNode }) {
                   <Icon
                     className={cn(
                       "size-4 shrink-0",
-                      isActive ? "text-gold" : "text-muted-foreground"
+                      isActive ? "text-gold-tinta" : "text-muted-foreground"
                     )}
                   />
                 )}

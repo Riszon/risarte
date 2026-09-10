@@ -138,7 +138,7 @@ function FieldHead({
         htmlFor={htmlFor}
         className="flex items-center gap-1.5 text-sm font-medium"
       >
-        <span className="text-gold">{icon}</span>
+        <span className="text-gold-tinta">{icon}</span>
         {label}
       </Label>
       {status}
@@ -160,7 +160,7 @@ function ReadBlock({
   return (
     <div className="rounded-lg border bg-muted/30 p-3">
       <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-        <span className="text-gold">{icon}</span>
+        <span className="text-gold-tinta">{icon}</span>
         {label}
       </p>
       <div className="text-sm whitespace-pre-wrap">{children}</div>
@@ -250,7 +250,7 @@ function EditorCollapse({
         aria-expanded={open}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium"
       >
-        <span className="text-gold">{icon}</span>
+        <span className="text-gold-tinta">{icon}</span>
         {title}
         <span className="ml-auto flex items-center gap-2">
           {aside}
@@ -601,7 +601,7 @@ export function PlanningSection({
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <ClipboardList className="size-4 text-gold" />
+            <ClipboardList className="size-4 text-gold-tinta" />
             Plano de Tratamento
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -762,8 +762,8 @@ export function PlanningSection({
         {/* Risarte Empresarial: selo discreto (só quando o cliente é do programa). */}
         {programActive && (
           <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-gold/5 px-2.5 py-1.5 text-xs">
-            <Star className="size-3.5 shrink-0 fill-gold text-gold" />
-            <span className="font-medium text-gold">Risarte Empresarial</span>
+            <Star className="size-3.5 shrink-0 fill-gold text-gold-tinta" />
+            <span className="font-medium text-gold-tinta">Risarte Empresarial</span>
             {programCompanyName && (
               <span className="text-muted-foreground">· {programCompanyName}</span>
             )}
@@ -776,7 +776,7 @@ export function PlanningSection({
         {/* Opções do plano (principal + alternativos) */}
         <div className="space-y-2">
           <h3 className="flex items-center gap-1.5 text-sm font-medium">
-            <ListChecks className="size-4 text-gold" />
+            <ListChecks className="size-4 text-gold-tinta" />
             Opções de tratamento
           </h3>
           {options.length === 0 ? (
@@ -858,7 +858,7 @@ export function PlanningSection({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">
                           {o.isPrimary && (
-                            <Star className="mr-1 inline size-3.5 fill-gold text-gold" />
+                            <Star className="mr-1 inline size-3.5 fill-gold text-gold-tinta" />
                           )}
                           {o.title}
                         </p>
@@ -1071,7 +1071,7 @@ export function PlanningSection({
           <div className="space-y-3 border-t pt-3">
             <div className="space-y-1.5 rounded-md border p-2">
               <p className="flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles className="size-3.5 text-gold" />
+                <Sparkles className="size-3.5 text-gold-tinta" />
                 Pilar da Metodologia
               </p>
               <p className="text-xs text-muted-foreground">
@@ -1277,7 +1277,7 @@ function ProgramSavings({
 }) {
   if (!program || program.savedCents <= 0) return null;
   return (
-    <div className="mt-1 flex items-center justify-between rounded bg-gold/10 px-1.5 py-1 text-xs text-gold">
+    <div className="mt-1 flex items-center justify-between rounded bg-gold/10 px-1.5 py-1 text-xs text-gold-tinta">
       <span>★ Com Risarte Empresarial</span>
       <span className="font-semibold">
         {formatBRL(program.chargedCents)} · economia {formatBRL(program.savedCents)}
@@ -1361,7 +1361,7 @@ function OptionSummaryChips({
         {formatBRL(total)}
       </span>
       {program && program.savedCents > 0 && (
-        <span className="rounded-md bg-gold/10 px-2 py-0.5 font-medium text-gold">
+        <span className="rounded-md bg-gold/10 px-2 py-0.5 font-medium text-gold-tinta">
           economia {formatBRL(program.savedCents)}
         </span>
       )}
@@ -1505,7 +1505,7 @@ function OptionBudget({
                   <div key={g.stage?.id ?? "none"}>
                     {(g.stage || stages.length > 0) && (
                       <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                        <Layers className="size-3.5 text-gold" />
+                        <Layers className="size-3.5 text-gold-tinta" />
                         {g.stage ? g.stage.name : "Sem etapa"}
                       </p>
                     )}
@@ -1704,7 +1704,7 @@ function OptionBudget({
                 <div key={g.stage?.id ?? "none"}>
                   {(g.stage || stages.length > 0) && (
                     <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                      <Layers className="size-3.5 text-gold" />
+                      <Layers className="size-3.5 text-gold-tinta" />
                       {g.stage ? g.stage.name : "Sem etapa"}
                     </p>
                   )}

@@ -267,7 +267,7 @@ export default async function HomePage() {
           Continua filtrada por papel — ver `novidadesPara`. */}
       <section className="pt-2">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-          <Sparkles className="size-5 text-gold" />
+          <Sparkles className="size-5 text-gold-tinta" />
           O que mudou no sistema
         </h2>
         <Novidades versoes={novidadesPara(papeisDaPessoa, session.isAdminMaster)} />

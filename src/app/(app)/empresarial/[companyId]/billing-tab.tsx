@@ -300,7 +300,7 @@ export function BillingTab({
                         {i.payerDoc} · {i.employees} colaborador(es)
                       </p>
                     </div>
-                    <p className="text-lg font-semibold text-gold">
+                    <p className="text-lg font-semibold text-gold-tinta">
                       {formatBRL(i.totalCents)}
                     </p>
                   </div>

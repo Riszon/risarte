@@ -2482,7 +2482,7 @@ export default async function ClientDetailPage(
             <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               <div
                 className={cn(
-                  "flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold",
+                  "flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold-forte",
                   isBirthdayToday &&
                     "ring-2 ring-gold ring-offset-2 ring-offset-card"
                 )}
@@ -2646,7 +2646,7 @@ export default async function ClientDetailPage(
             </span>
             {client.methodology_pillar && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold-tinta">
-                <Sparkles className="size-3.5 shrink-0 text-gold" />
+                <Sparkles className="size-3.5 shrink-0 text-gold-tinta" />
                 Pilar:{" "}
                 {PILLAR_LABELS[client.methodology_pillar as MethodologyPillar]}
               </span>
@@ -2845,7 +2845,7 @@ export default async function ClientDetailPage(
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="size-4 text-gold" />
+                  <Users className="size-4 text-gold-tinta" />
                   Responsáveis
                 </CardTitle>
               </CardHeader>
@@ -2903,7 +2903,7 @@ export default async function ClientDetailPage(
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Baby className="size-4 text-gold" />
+                  <Baby className="size-4 text-gold-tinta" />
                   Dependentes
                 </CardTitle>
               </CardHeader>
@@ -3212,7 +3212,7 @@ export default async function ClientDetailPage(
               clientDirectSales.sales.length > 0) && (
               <div className="mb-4 space-y-2 rounded-xl border bg-muted/20 p-3">
                 <p className="flex items-center gap-1.5 text-sm font-semibold">
-                  <span className="text-gold">●</span> Vendas diretas deste cliente
+                  <span className="text-gold-tinta">●</span> Vendas diretas deste cliente
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Procedimentos vendidos direto na clínica. A recepção/gerente

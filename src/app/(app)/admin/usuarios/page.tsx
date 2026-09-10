@@ -146,7 +146,7 @@ export default async function UsersPage() {
                               query: s.code ? { busca: s.code } : undefined,
                             }}
                             title={s.clinics?.name ?? undefined}
-                            className="font-mono text-xs text-gold underline-offset-2 hover:underline"
+                            className="font-mono text-xs text-gold-tinta underline-offset-2 hover:underline"
                           >
                             {s.code ?? "RH"}
                             {!s.is_active && (

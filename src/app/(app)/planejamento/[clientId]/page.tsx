@@ -520,7 +520,7 @@ export default async function PlanningCockpitPage(
         <div className="relative flex flex-wrap items-start justify-between gap-x-4 gap-y-3 p-4 sm:p-5">
           <div className="flex min-w-0 items-start gap-3 sm:gap-4">
             <div
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-gold-forte"
               aria-hidden
             >
               {initialsOf(client.full_name)}

@@ -452,7 +452,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
                     }));
                   return (
                     <tr key={r.id} className="border-b last:border-0">
-                      <td className="px-2 py-1.5 font-mono text-xs text-gold">
+                      <td className="px-2 py-1.5 font-mono text-xs text-gold-tinta">
                         {r.code ?? "—"}
                       </td>
                       <td className="px-2 py-1.5">

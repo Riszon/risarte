@@ -507,7 +507,7 @@ export function ClientForm({
                   <p className="text-sm font-medium">
                     Responsável {index + 1}
                     {guardian.guardianClientId && (
-                      <span className="ml-2 text-xs text-gold">
+                      <span className="ml-2 text-xs text-gold-tinta">
                         ★ cliente Risarte
                       </span>
                     )}

@@ -401,7 +401,7 @@ export default async function PlanningCenterPage(
                       </span>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {c.code && (
-                          <span className="font-mono text-xs text-gold">
+                          <span className="font-mono text-xs text-gold-tinta">
                             {c.code}
                           </span>
                         )}

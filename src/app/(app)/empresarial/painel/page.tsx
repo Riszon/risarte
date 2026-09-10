@@ -248,7 +248,7 @@ export default async function PainelPage() {
                     </td>
                     <td className="px-2 py-1.5">{c.employees}</td>
                     <td className="px-2 py-1.5">{formatBRL(c.monthly)}</td>
-                    <td className="px-2 py-1.5 text-gold">{formatBRL(c.saved)}</td>
+                    <td className="px-2 py-1.5 text-gold-tinta">{formatBRL(c.saved)}</td>
                   </tr>
                 ))}
                 {companyRows.length === 0 && (

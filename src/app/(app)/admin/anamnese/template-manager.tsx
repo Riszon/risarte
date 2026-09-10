@@ -511,7 +511,7 @@ export function TemplateManager({
                 <span className="truncate">
                   {t.name}
                   {t.isDefault && (
-                    <span className="ml-1 text-xs text-gold">★</span>
+                    <span className="ml-1 text-xs text-gold-tinta">★</span>
                   )}
                 </span>
                 <span className="ml-2 shrink-0 text-xs text-muted-foreground">

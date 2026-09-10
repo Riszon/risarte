@@ -1593,7 +1593,7 @@ export default async function DashboardComercialPage(
           <CardHeader className="gap-2">
             <div>
               <CardTitle className="flex items-center gap-1.5 text-base">
-                <Trophy className="size-4 text-gold" />
+                <Trophy className="size-4 text-gold-tinta" />
                 Procedimentos mais vendidos
               </CardTitle>
               <p className="text-xs text-muted-foreground">

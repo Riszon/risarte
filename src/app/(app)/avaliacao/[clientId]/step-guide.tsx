@@ -32,7 +32,7 @@ export function StepGuide({
   return (
     <div className="rounded-xl border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <ClipboardList className="size-4 text-gold" />
+        <ClipboardList className="size-4 text-gold-tinta" />
         <span className="text-sm font-semibold">Roteiro da {FLOW_LABELS[kind]}</span>
         <span className="hidden text-xs text-muted-foreground sm:inline">
           {steps.length} momentos da consulta

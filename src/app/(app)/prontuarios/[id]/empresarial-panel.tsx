@@ -16,7 +16,7 @@ export function EmpresarialPanel({
     <Card className="border-gold/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <span className="text-gold">★</span> Programa Empresarial
+          <span className="text-gold-tinta">★</span> Programa Empresarial
           {summary.companyName && (
             <span className="text-sm font-normal text-muted-foreground">
               · {summary.companyName}
@@ -30,7 +30,7 @@ export function EmpresarialPanel({
             <p className="text-xs uppercase text-muted-foreground">
               Economia acumulada
             </p>
-            <p className="text-2xl font-semibold text-gold">
+            <p className="text-2xl font-semibold text-gold-tinta">
               {formatBRL(summary.totalSavedCents)}
             </p>
           </div>
@@ -86,7 +86,7 @@ export function EmpresarialPanel({
                       {new Date(u.usedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
                     </span>
                   </span>
-                  <span className="text-gold">
+                  <span className="text-gold-tinta">
                     economizou {formatBRL(u.savedCents)}
                   </span>
                 </li>

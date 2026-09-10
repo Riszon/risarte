@@ -789,7 +789,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               </span>
               {range.weekNumber !== null && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 font-medium text-foreground">
-                  <CalendarDays className="size-3.5 text-gold" />
+                  <CalendarDays className="size-3.5 text-gold-tinta" />
                   Semana {range.weekNumber}/
                   {isoWeeksInYear(range.start.getFullYear())}
                 </span>

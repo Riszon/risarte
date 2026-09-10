@@ -370,7 +370,7 @@ export function MediaGallery({
             <p className="text-xs text-muted-foreground">{metaLine(m)}</p>
             {m.note && (
               <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground">
-                <StickyNote className="mt-0.5 size-3 shrink-0 text-gold" />
+                <StickyNote className="mt-0.5 size-3 shrink-0 text-gold-tinta" />
                 <span className="whitespace-pre-wrap">{m.note}</span>
               </p>
             )}
@@ -491,7 +491,7 @@ export function MediaGallery({
                         />
                         {m.note && (
                           <StickyNote
-                            className="absolute right-0.5 top-0.5 size-3.5 rounded bg-white/80 p-0.5 text-gold"
+                            className="absolute right-0.5 top-0.5 size-3.5 rounded bg-white/80 p-0.5 text-gold-tinta"
                             aria-label="Tem anotação"
                           />
                         )}

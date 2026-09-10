@@ -1066,7 +1066,7 @@ function ProcedureRow({
             )}
           </p>
           <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-            {p.code && <span className="font-mono text-gold">{p.code}</span>}
+            {p.code && <span className="font-mono text-gold-tinta">{p.code}</span>}
             {p.tussCode && <span>TUSS {p.tussCode}</span>}
             {p.specialty && <span>{p.specialty}</span>}
             <span>Padrão: {formatBRL(p.defaultPriceCents)}</span>

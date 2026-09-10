@@ -76,7 +76,7 @@ export default async function EditUserPage(
                 pathname: "/risartanos",
                 query: s.code ? { busca: s.code } : undefined,
               }}
-              className="font-mono font-medium text-gold underline-offset-2 hover:underline"
+              className="font-mono font-medium text-gold-tinta underline-offset-2 hover:underline"
             >
               {s.code ?? "RH"}
             </Link>{" "}

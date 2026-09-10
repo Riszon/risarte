@@ -69,7 +69,7 @@ export default async function EmpresarialConfigPage(props: {
             nativeButton={false}
             className={cn(
               "rounded-b-none border-b-2 border-transparent",
-              aba === t.key && "border-gold font-medium text-gold"
+              aba === t.key && "border-gold font-medium text-gold-tinta"
             )}
             render={
               <Link

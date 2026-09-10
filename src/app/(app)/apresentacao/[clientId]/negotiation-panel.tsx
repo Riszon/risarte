@@ -776,7 +776,7 @@ export function NegotiationPanel({
                     {i.quantity > 1 ? ` ×${i.quantity}` : ""}
                     {/* J7: benefício do programa neste procedimento. */}
                     {(i.programDiscountCents ?? 0) > 0 && (
-                      <span className="ml-1 text-[11px] font-medium text-gold">
+                      <span className="ml-1 text-[11px] font-medium text-gold-tinta">
                         ★ −{formatBRL(i.programDiscountCents)}
                       </span>
                     )}

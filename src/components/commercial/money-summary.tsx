@@ -12,7 +12,7 @@ export type MoneyRow = {
 
 const TONE: Record<NonNullable<MoneyRow["tone"]>, string> = {
   muted: "text-muted-foreground",
-  program: "text-gold",
+  program: "text-gold-tinta",
   discount: "text-muted-foreground",
   surcharge: "text-muted-foreground",
 };

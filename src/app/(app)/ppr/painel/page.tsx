@@ -898,7 +898,7 @@ export default async function PprDashboardPage(
         <Card>
           <CardHeader className="gap-0.5">
             <CardTitle className="flex items-center gap-1.5 text-base">
-              <Wallet className="size-4 text-gold" />
+              <Wallet className="size-4 text-gold-tinta" />
               Receita mensal por mês
             </CardTitle>
             <p className="text-xs text-muted-foreground">
@@ -929,7 +929,7 @@ export default async function PprDashboardPage(
         <Card>
           <CardHeader className="gap-0.5">
             <CardTitle className="flex items-center gap-1.5 text-base">
-              <Sparkles className="size-4 text-gold" />
+              <Sparkles className="size-4 text-gold-tinta" />
               Por plano
             </CardTitle>
             <p className="text-xs text-muted-foreground">
@@ -1142,7 +1142,7 @@ export default async function PprDashboardPage(
         <Card>
           <CardHeader className="gap-0.5">
             <CardTitle className="flex items-center gap-1.5 text-base">
-              <Trophy className="size-4 text-gold" />
+              <Trophy className="size-4 text-gold-tinta" />
               Ranking das unidades
             </CardTitle>
             <p className="text-xs text-muted-foreground">

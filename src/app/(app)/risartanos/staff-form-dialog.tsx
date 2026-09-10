@@ -363,7 +363,7 @@ export function StaffFormDialog({
                           >
                             <span>
                               {u.clinicName}
-                              <span className="ml-1 font-medium text-gold">
+                              <span className="ml-1 font-medium text-gold-tinta">
                                 {u.roleLabel}
                               </span>
                             </span>

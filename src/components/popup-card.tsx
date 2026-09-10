@@ -48,7 +48,7 @@ export function PopupCard({
                 : "hover:bg-muted/60"
             )}
           >
-            {icon && <span className="text-gold">{icon}</span>}
+            {icon && <span className="text-gold-tinta">{icon}</span>}
             {label}
             {badge}
             <ChevronRight className="size-4 text-muted-foreground" aria-hidden />

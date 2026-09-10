@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.2",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "Correção: o resto dos textos e ícones claros demais",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Números, códigos e ícones em destaque ficavam apagados demais para ler — e, no Empresarial e no menu lateral, alguns ficavam da mesma cor do fundo, sumindo por completo. Foram corrigidos os 84 pontos do sistema, nos três ambientes e nas duas luzes.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.1",
     data: "2026-09-09",
     migracao: null,

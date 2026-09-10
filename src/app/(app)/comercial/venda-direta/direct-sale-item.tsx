@@ -506,7 +506,7 @@ export function SaleItem({
                       {i.description}
                       {i.quantity > 1 ? ` ×${i.quantity}` : ""}
                       {hasProg && (
-                        <span className="ml-1 text-gold">
+                        <span className="ml-1 text-gold-tinta">
                           ★ −{formatBRL(i.programDiscountCents)}
                         </span>
                       )}

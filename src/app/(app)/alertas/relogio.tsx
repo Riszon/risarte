@@ -65,7 +65,7 @@ export function PainelDoRelogio({
   return (
     <div className="mb-6 rounded-lg border">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/40 px-4 py-3">
-        <Clock className="size-5 shrink-0 text-gold" />
+        <Clock className="size-5 shrink-0 text-gold-tinta" />
         <div>
           <p className="text-sm font-medium capitalize tabular-nums">
             {formatar(instante, BRAZIL_TIME_ZONE)}

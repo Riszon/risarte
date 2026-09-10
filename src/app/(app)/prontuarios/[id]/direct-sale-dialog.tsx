@@ -292,7 +292,7 @@ export function DirectSaleDialog({
                             <span className="line-through opacity-60">
                               {formatBRL(lineFull)}
                             </span>{" "}
-                            <span className="font-medium text-gold">
+                            <span className="font-medium text-gold-tinta">
                               {formatBRL(lineFull - lineDisc)}
                             </span>
                           </>
@@ -334,7 +334,7 @@ export function DirectSaleDialog({
                 <span className="tabular-nums">{formatBRL(totals.full)}</span>
               </div>
               {totals.discount > 0 && (
-                <div className="flex justify-between text-gold">
+                <div className="flex justify-between text-gold-tinta">
                   <span>
                     ★ Desconto {programName ? `(${programName})` : "do programa"}
                   </span>

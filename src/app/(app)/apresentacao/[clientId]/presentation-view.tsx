@@ -93,7 +93,7 @@ function CoverSlide({
       )}
     >
       <div className="absolute inset-x-0 top-0 h-1.5 bg-gold" />
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">
+      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-forte">
         Risarte Odontologia
       </p>
       <p className="mt-6 text-sm uppercase tracking-wide opacity-70">
