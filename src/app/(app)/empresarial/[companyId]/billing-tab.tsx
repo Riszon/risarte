@@ -151,10 +151,17 @@ export function BillingTab({
           >
             Checar inadimplência
           </Button>
+          {/* ⚠️ ESTE TEXTO DIZIA "ASAAS conectado" e MENTIA (achado em
+              10/09/2026, no relato OC-00004). Ele olhava só a variável de
+              ambiente; mas `createAsaasCharge` existe no código e **não é
+              chamada por lugar nenhum** — gerar cobrança apenas grava a linha.
+              Quem lia "conectado" concluía que o boleto tinha sido emitido e
+              ia procurar onde imprimir. A chave configurada é condição para
+              emitir, não prova de que se emitiu. */}
           <span className="ml-auto text-xs text-muted-foreground">
             {asaasConfigured
-              ? "ASAAS conectado."
-              : "ASAAS não conectado — use a baixa manual para testar."}
+              ? "Chave do ASAAS configurada, mas a emissão automática ainda não foi ligada: a baixa é manual."
+              : "ASAAS não conectado — a cobrança fica registrada aqui e a baixa é manual."}
           </span>
         </CardContent>
       </Card>

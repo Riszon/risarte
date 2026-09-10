@@ -10,7 +10,7 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { FilterForm } from "@/components/filter-form";
-import { BarChart3, Building2, KanbanSquare, Settings } from "lucide-react";
+import { BarChart3, Building2, KanbanSquare, Receipt, Settings } from "lucide-react";
 import { CabecalhoDeModulo, BOTAO_NO_CABECALHO } from "@/components/cabecalho-modulo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -206,6 +206,18 @@ export default async function EmpresarialPage(props: {
           )}
           {canManage && (
             <>
+              {/* OC-00004: o caminho para as cobranças de TODAS as empresas.
+                  Sem este botão a tela existiria e ninguém a encontraria. */}
+              <Button
+                variant="outline"
+                size="sm"
+                className={BOTAO_NO_CABECALHO}
+                nativeButton={false}
+                render={<Link href="/empresarial/cobrancas" />}
+              >
+                <Receipt className="mr-1 size-4" />
+                Cobranças
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

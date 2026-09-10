@@ -95,6 +95,45 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
     inadimplência** após o vencimento — a empresa vira **Suspensa** e os benefícios
     ficam bloqueados (aparece o aviso na ficha/orçamento).
 
+### 9.1. Cobranças de TODAS as empresas (relato OC-00004)
+
+32a. Em **Empresarial**, clique em **Cobranças** (no alto). Abre a lista de todas
+     as empresas juntas — era isto que faltava: antes só dava para ver empresa
+     por empresa.
+
+32b. Confira os quatro quadros (**Em aberto**, **Vencidas**, **Pagas**, e quantas
+     cobranças estão na tela). Eles somam **o que está na lista**, com os filtros
+     aplicados — mude a situação e veja os números acompanharem.
+
+32c. Filtre por **situação** e por **período de vencimento**, e busque pelo nome
+     da empresa.
+
+32d. Marque duas ou três cobranças pendentes e clique **Dar baixa**. Ao terminar
+     aparece um aviso dizendo **quantas entraram e quais ficaram de fora, com o
+     motivo** (já paga, cancelada, ou o banco recusou). Cobrança já paga não pode
+     ser marcada — a caixa de escolher vem desabilitada.
+
+32e. Clique **Gerar mensalidades**, escolha as empresas e confirme. Empresa que
+     **já tem cobrança do mês é pulada**, e o aviso do fim diz quais. Gere duas
+     vezes seguidas para ver a segunda não duplicar nada.
+
+32f. **Imprimir a lista** manda a tabela para o papel (as caixas de escolher
+     saem).
+
+> ⚠️ **São cobranças, não boletos.** O sistema registra valor, vencimento e
+> pagador; a baixa é **manual**. A emissão de boleto pelo ASAAS ainda **não está
+> ligada** — a função existe no código e não é chamada por lugar nenhum. A tela
+> declara isso no alto. Quando a emissão for ligada, o link do boleto entra
+> nesta mesma tela.
+>
+> ⚠️ **Falta uma trava no banco.** Nada impede, no banco, criar duas
+> mensalidades do mesmo mês para a mesma empresa. A tela nova evita isso ao
+> gerar em lote, mas duas pessoas gerando ao mesmo tempo ainda passariam. A
+> trava de verdade é um índice único e precisa de migração — decisão do dono.
+> **Conferido em 10/09/2026: não há duplicata nos dados de teste**; as duas
+> linhas da Xamacudo no mesmo mês são o modelo "um boleto por CNPJ", que é o
+> comportamento certo.
+
 ## 10. Contratos e proposta (Fase 5)
 
 33. Na empresa, aba **Contratos** → **Novo contrato** (título + assinante). **Enviar**
