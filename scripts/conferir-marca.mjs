@@ -253,6 +253,11 @@ const PATTERNS = {
   "unidades-escuro":    ["#3fc9d6", "#01a7b5"],
   "franchising-escuro": ["#3fc9d6", "#01a7b5"],
   "empresarial-escuro": ["#3fc9d6", "#c05a76"],
+  // ⚠️ MONOCROMÁTICO, para o pattern aplicado SOBRE a barra lateral. Ali o
+  // fundo é a própria cor do ambiente, e o pattern colorido desapareceria
+  // justamente na cor que identifica aquele ambiente. Em off-white e baixa
+  // opacidade ele funciona sobre marinho, turquesa ou bordô, sem exceção.
+  "branco": ["#efeee9", "#efeee9"],
 };
 
 for (const [nome, [central, detalhe]] of Object.entries(PATTERNS)) {
