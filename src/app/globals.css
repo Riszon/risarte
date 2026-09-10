@@ -423,3 +423,66 @@
     }
   }
 }
+
+/* =============================================================================
+   IMPRESSÃO — o que sai no papel e no "Salvar como PDF".
+
+   ⚠️ ISTO SUBSTITUI O TRUQUE DE `visibility` + `position: absolute` que cada
+   relatório carregava. Ele escondia a moldura deixando-a OCUPAR ESPAÇO
+   (`visibility: hidden` não tira do fluxo) e depois arrancava o relatório do
+   fluxo com `position: absolute`.
+
+   As duas metades causavam o defeito que o dono relatou em 10/09/2026,
+   "desalinhados e cortando parte do conteúdo":
+
+   1. **Elemento fora do fluxo não pagina.** O navegador não sabe onde quebrar
+      um bloco absoluto, então tudo o que passa da primeira página SOME. Era o
+      "cortando parte do conteúdo".
+   2. **`left: 0` é relativo ao ancestral posicionado**, não à folha. Com a
+      barra lateral ainda ocupando lugar, o relatório nascia deslocado e
+      transbordava pela direita. Era o "desalinhado".
+
+   A correção é deixar o relatório em FLUXO NORMAL e tirar a moldura com
+   `display: none`, que remove de verdade.
+   ============================================================================= */
+@page {
+  size: A4 portrait;
+  margin: 14mm 12mm;
+}
+
+@media print {
+  /* A moldura do sistema sai inteira: barra lateral, barra de cima e tudo o
+     que a tela marcou como "não imprimir". */
+  [data-moldura],
+  .no-print {
+    display: none !important;
+  }
+
+  /* O `main` é uma caixa de rolagem na tela (`overflow-x-auto`), e caixa de
+     rolagem RECORTA no papel. No print ele volta a ser bloco comum. */
+  main {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Papel é branco; fundo colorido é tinta desperdiçada e piora a leitura. */
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  /* O pattern não vai para o papel: ele se repetiria em toda página. */
+  .marca-dagua::before {
+    display: none !important;
+  }
+
+  /* O que não pode ser partido no meio, e o cabeçalho que se repete a cada
+     página numa tabela longa. */
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+}

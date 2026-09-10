@@ -226,7 +226,7 @@ export default async function EmpresarialPage(props: {
                 <Settings className="mr-1 size-4" />
                 Configurações
               </Button>
-          <CompanyFormDialog consultants={consultants} />
+          <CompanyFormDialog consultants={consultants} noCabecalho />
           </>
         )}
       </CabecalhoEmpresarial>

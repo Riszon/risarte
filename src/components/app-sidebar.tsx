@@ -351,6 +351,8 @@ export function AppSidebar({
 
   return (
     <aside
+      // `data-moldura`: sai na impressão. Ver o bloco @media print do globals.
+      data-moldura
       className={cn(
         "sticky top-0 flex h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
         collapsed ? "w-16" : "w-64"

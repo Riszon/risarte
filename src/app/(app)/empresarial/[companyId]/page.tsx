@@ -798,6 +798,7 @@ export default async function CompanyDetailPage(props: {
           </Button>
           {canManage && (
             <CompanyFormDialog
+              noCabecalho
               company={company}
               consultants={
                 row.assigned_consultant_id && consultantName

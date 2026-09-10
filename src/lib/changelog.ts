@@ -62,6 +62,32 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.6",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "Relatórios do Empresarial com a logomarca, e dois botões que sumiam",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Os arquivos gerados no Risarte Empresarial (ficha, relatório e extrato) saíam desalinhados e cortavam parte do conteúdo a partir da segunda página. Corrigido: agora o documento ocupa a folha inteira e quebra as páginas corretamente.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Esses mesmos arquivos passaram a levar a logomarca do Risarte Empresarial no topo, no lugar da linha de texto que havia antes.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Os botões “Nova empresa” e “Editar” ficavam quase da mesma cor do cabeçalho e não davam para ler. Corrigidos.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.5",
     data: "2026-09-10",
     migracao: null,

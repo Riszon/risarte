@@ -21,15 +21,20 @@ import {
 } from "@/lib/empresarial/documents";
 import type { CompanySheet } from "./data";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { TopoDoRelatorio } from "../../topo-do-relatorio";
 
 const PRINT_CSS = `
 @media print {
-  body * { visibility: hidden !important; }
-  #ficha-empresa, #ficha-empresa * { visibility: visible !important; }
-  #ficha-empresa { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
-  .no-print { display: none !important; }
-  .avoid-break { break-inside: avoid; page-break-inside: avoid; }
-  thead { display: table-header-group; }
+  /* ATENCAO: nada de position absolute aqui. Bloco fora do fluxo nao pagina, e
+     tudo o que passasse da primeira pagina sumia do PDF. A moldura do sistema
+     e removida pelo @media print global (globals.css), que usa display none —
+     este bloco so cuida do que e proprio do relatorio. */
+  #ficha-empresa {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 }
 `;
 
@@ -133,10 +138,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
       </div>
 
       <div id="ficha-empresa" className="space-y-5">
-        <header className="avoid-break border-b pb-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Risarte Empresarial — ficha da empresa
-          </p>
+        <TopoDoRelatorio tipo="Ficha da empresa">
           <h2 className="mt-0.5 flex flex-wrap items-center gap-2 text-2xl font-semibold">
             {name}
             <Badge
@@ -149,7 +151,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
           <p className="text-sm text-muted-foreground">
             {formatCnpj(c.cnpj)} · gerado em {d(sheet.generatedAt)}
           </p>
-        </header>
+        </TopoDoRelatorio>
 
         {/* Números do programa */}
         <Section title="O programa nesta empresa">

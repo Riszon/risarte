@@ -16,6 +16,7 @@ import {
   type DocType,
 } from "@/lib/empresarial/documents";
 import { Button } from "@/components/ui/button";
+import { BOTAO_NO_CABECALHO } from "./cabecalho";
 import {
   Dialog,
   DialogContent,
@@ -42,9 +43,23 @@ const selectClass =
 export function CompanyFormDialog({
   company,
   consultants,
+  noCabecalho = false,
 }: {
   company?: Company;
   consultants: { id: string; label: string }[];
+  /**
+   * ⚠️ O BOTÃO VIVE SOBRE O CABEÇALHO COLORIDO?
+   *
+   * Os dois estilos padrão do sistema são desenhados para fundo CLARO. Sobre o
+   * bordô do Empresarial eles somem, e sumiram de verdade (achado do dono,
+   * 10/09/2026): o "Nova empresa" usa a cor primária, que ali é a cor do
+   * próprio fundo — bordô sobre bordô; e o "Editar", de contorno, fica com
+   * borda e letra escuras sobre escuro.
+   *
+   * Com isto ligado, a ação principal vira um botão CLARO SÓLIDO (off-white com
+   * letra bordô, 9,6:1) e a secundária usa o contorno claro do cabeçalho.
+   */
+  noCabecalho?: boolean;
 }) {
   const router = useRouter();
   const isEdit = Boolean(company);
@@ -101,11 +116,26 @@ export function CompanyFormDialog({
       <DialogTrigger
         render={
           isEdit ? (
-            <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className={
+                noCabecalho
+                  ? `h-8 px-3 text-xs ${BOTAO_NO_CABECALHO}`
+                  : "h-7 px-2 text-xs"
+              }
+            >
               Editar
             </Button>
           ) : (
-            <Button size="sm">
+            <Button
+              size="sm"
+              className={
+                noCabecalho
+                  ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  : undefined
+              }
+            >
               <Plus className="mr-1 size-4" />
               Nova empresa
             </Button>
