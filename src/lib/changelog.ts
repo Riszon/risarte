@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.241.0",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "O Financeiro abre num painel, não na configuração",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Entrar no Financeiro deixou de cair na tela de Configuração. Agora abre um Painel com os três números do mês da sua unidade — resultado (comparado com o mês anterior), receita líquida com a margem, e o saldo em caixa de hoje.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Painel traz \"O que precisa de você\": o dia em que o caixa fica negativo, o que está vencido a receber e a pagar, as contas aguardando autorização e os alertas em aberto. Cartão sem nada pendente não aparece.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na Franqueadora, o Painel abre com o resumo da rede: quantas unidades estão no vermelho e no amarelo, quais pedem atenção primeiro e por quê, e quanto das taxas está em aberto.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A barra de abas do Financeiro tinha 18 entradas iguais. As telas de todo dia ficaram à mostra (Painel, DRE, Fluxo de caixa, Contas a pagar, Conciliação) e o resto entrou em três menus: Análise, Rede e Cadastros. Seção 2.3 do manual.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.240.0",
     data: "2026-09-10",
     migracao: null,

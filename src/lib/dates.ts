@@ -235,3 +235,25 @@ export function brazilClock(instant: Date = new Date()): {
   const hora = String(Number(p.hour) % 24).padStart(2, "0");
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${hora}:${p.minute}` };
 }
+
+/**
+ * O primeiro e o último dia do mês de uma data ISO ("2026-09-14" → 01..30).
+ *
+ * ⚠️ EXISTE PARA SER UMA CONTA SÓ. A DRE e o painel do Financeiro mostram o
+ * "mês corrente" e precisam mostrar o MESMO mês: se cada tela calculasse o seu,
+ * bastaria alguém arrumar o último dia de fevereiro num lugar para o painel
+ * dizer um número e a DRE outro, sobre o mesmo período. E divergência de um dia
+ * no fim do mês é justamente a que ninguém percebe até fechar o exercício.
+ *
+ * Usa UTC na aritmética de propósito: `Date.UTC(y, m, 0)` é o último dia do mês
+ * `m` (1-based) sem passar pelo fuso da máquina — a data já vem em ISO civil
+ * brasileiro de `todayInBrazil()`.
+ */
+export function monthRangeOf(iso: string): { from: string; to: string } {
+  const [y, m] = iso.split("-").map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return {
+    from: `${iso.slice(0, 7)}-01`,
+    to: `${iso.slice(0, 7)}-${String(last).padStart(2, "0")}`,
+  };
+}

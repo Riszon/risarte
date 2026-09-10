@@ -4,21 +4,15 @@ import { BarChart3 } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinance } from "@/lib/finance/access";
-import { todayInBrazil } from "@/lib/dates";
+import { todayInBrazil, monthRangeOf } from "@/lib/dates";
 import { buildDre, previousPeriod, type DreLine } from "@/lib/finance/dre";
 import { DreView } from "./dre-client";
 
 export const metadata: Metadata = { title: "DRE" };
 
-/** Primeiro e último dia do mês de uma data ISO. */
-function monthRange(iso: string): { from: string; to: string } {
-  const [y, m] = iso.split("-").map(Number);
-  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return {
-    from: `${iso.slice(0, 7)}-01`,
-    to: `${iso.slice(0, 7)}-${String(last).padStart(2, "0")}`,
-  };
-}
+// A conta do "mês corrente" mora em `monthRangeOf` (src/lib/dates.ts) desde
+// 10/09/2026: o painel do Financeiro mostra o mesmo mês, e duas cópias da mesma
+// régua é como as duas telas passam a discordar sobre o mesmo período.
 
 /**
  * FIN6.1 — a DRE.
@@ -49,7 +43,7 @@ export default async function DrePage(props: PageProps<"/financeiro/dre">) {
   };
 
   const today = todayInBrazil();
-  const defaults = monthRange(today);
+  const defaults = monthRangeOf(today);
   const from = pick("de") ?? defaults.from;
   const to = pick("ate") ?? defaults.to;
   const costCenterId = pick("centro") ?? "";

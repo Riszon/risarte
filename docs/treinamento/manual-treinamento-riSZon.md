@@ -170,6 +170,49 @@ unidades sob sua responsabilidade. Isso é cadastro, não muda de um dia para o
 outro, e agora fica no **Perfil** (clique no seu nome, no rodapé do menu
 lateral). A primeira tela do dia é para o trabalho que espera por você.
 
+### 2.3. A porta do Financeiro
+
+**O Financeiro abre num Painel**, não na Configuração. Ele responde às duas
+perguntas que o módulo separa de propósito — e que são diferentes:
+
+- **"O mês deu lucro?"** é competência: a venda de março conta em março, mesmo
+  que o cliente pague em junho.
+- **"Tenho dinheiro?"** é caixa: o que entrou e o que ainda vai entrar, por dia.
+
+É por serem diferentes que existe clínica lucrativa que quebra.
+
+**No alto, três números** da sua unidade no mês: resultado (com a comparação
+contra o mês anterior de mesmo tamanho), receita líquida com a margem, e o
+saldo em caixa de hoje.
+
+**No meio, "O que precisa de você"** — só o que existe:
+
+| Cartão | O que ele diz |
+|---|---|
+| O caixa fica negativo | O primeiro dia em que a projeção fica no vermelho |
+| A receber vencido | O que passou do vencimento (não entra na projeção) |
+| A pagar vencido | Contas da unidade em atraso |
+| Contas aguardando autorização | Não são pagas antes da decisão de quem tem alçada |
+| Alertas em aberto | Avisos do acompanhamento diário ainda não resolvidos |
+
+**Embaixo, os caminhos agrupados** pela pergunta que respondem: *O mês deu
+lucro?*, *Tenho dinheiro?*, *A rede* e *Cadastros*.
+
+> **O número do painel é o mesmo da tela para onde ele leva.** O resultado do
+> mês no painel é o mesmo lucro líquido da DRE, do mesmo período — as duas usam
+> a mesma conta, não duas parecidas.
+
+**Na Franqueadora a tela é outra:** em vez do resultado de uma unidade, o
+**resumo da rede** — quantas unidades estão no vermelho e no amarelo, quais
+pedem atenção primeiro e por quê, e quanto das taxas está em aberto. Esse
+resumo mostra o **retrato da última apuração dos alertas**, e diz na tela
+quando ela foi; apurar na hora é botão do Painel da rede.
+
+**A barra de abas encolheu.** As telas de todo dia ficaram à mostra (Painel,
+DRE, Fluxo de caixa, Contas a pagar, Conciliação) e o resto entrou em três
+menus: **Análise**, **Rede** (só na Franqueadora) e **Cadastros**. O menu fica
+aceso quando você está numa tela dele.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu
@@ -263,7 +306,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Procedimentos | `/procedimentos` | Catálogo: preço, protocolo de sessões, comissionamento |
 | Planos de Tratamento | `/planos` | Visão gerencial dos planos |
 | Comercial | `/comercial` | Funil de negociação e fechamento |
-| Financeiro | `/financeiro` | Contas, DRE, fluxo de caixa, taxas, repasses |
+| Financeiro | `/financeiro` | Abre no **Painel** (ver [seção 2.3](#23-a-porta-do-financeiro)); dentro dele, DRE, fluxo de caixa, contas, taxas, repasses |
 | Estoque | `/estoque` | Itens, kits, saldo, inventário |
 | Compras | `/compras` | Requisição, cotação, pedido, recebimento |
 | PPR+ | `/ppr` | Programa de prevenção |

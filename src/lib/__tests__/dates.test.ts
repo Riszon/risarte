@@ -9,6 +9,7 @@ import {
   startOfDayInBrazil,
   todayInBrazil,
   weekdayOf,
+  monthRangeOf,
 } from "@/lib/dates";
 
 // ⚠️ O TESTE QUE PRENDE O DEFEITO DE 05/09/2026.
@@ -308,5 +309,56 @@ describe("hoje no Brasil", () => {
     expect(isoDateIn(maisTarde)).toBe("2026-09-05");
     // E aqui está a diferença que custou o dia inteiro:
     expect(maisTarde.toISOString().slice(0, 10)).toBe("2026-09-06");
+  });
+});
+
+// -----------------------------------------------------------------------------
+// O INTERVALO DO MÊS — uma conta só para a DRE e para o painel do Financeiro.
+//
+// ⚠️ ELE EXISTE PORQUE DUAS TELAS MOSTRAM "O MÊS CORRENTE". Enquanto cada uma
+// calculava o seu, bastava alguém arrumar o último dia num lugar para o painel
+// dizer um número e a DRE outro sobre o mesmo período — e um dia a mais ou a
+// menos no fim do mês é a divergência que ninguém percebe até fechar o ano.
+//
+// Fevereiro e a virada de dezembro são os casos que erram calados.
+// -----------------------------------------------------------------------------
+
+describe("monthRangeOf", () => {
+  it("mês de 30 dias", () => {
+    expect(monthRangeOf("2026-09-14")).toEqual({
+      from: "2026-09-01",
+      to: "2026-09-30",
+    });
+  });
+
+  it("mês de 31 dias", () => {
+    expect(monthRangeOf("2026-01-01")).toEqual({
+      from: "2026-01-01",
+      to: "2026-01-31",
+    });
+  });
+
+  it("fevereiro comum tem 28", () => {
+    expect(monthRangeOf("2026-02-10").to).toBe("2026-02-28");
+  });
+
+  it("fevereiro bissexto tem 29", () => {
+    expect(monthRangeOf("2028-02-10").to).toBe("2028-02-29");
+  });
+
+  it("dezembro não escorrega para o ano seguinte", () => {
+    // `Date.UTC(y, 12, 0)` é 31/12 do mesmo ano — quem escrevesse `y+1` aqui
+    // veria o intervalo certo em 11 meses e errado no décimo segundo.
+    expect(monthRangeOf("2026-12-25")).toEqual({
+      from: "2026-12-01",
+      to: "2026-12-31",
+    });
+  });
+
+  it("não depende do fuso da máquina: o dia 1º nunca vira o dia 31 anterior", () => {
+    // A armadilha do projeto inteiro. Se a conta passasse por `new Date(iso)`
+    // sem fuso e por `toISOString()`, rodar em UTC-3 devolveria o mês anterior.
+    expect(monthRangeOf("2026-03-01").from).toBe("2026-03-01");
+    expect(monthRangeOf("2026-01-01").from).toBe("2026-01-01");
   });
 });
