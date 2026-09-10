@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.8",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "As telas da rede ficaram iguais entre si",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Taxas da rede, Compras, Rodadas de compra, Painel de compras e Relatórios ganharam o mesmo cabeçalho com a marca do Consolidado. Antes cada uma abria de um jeito.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "As explicações que ficavam num parágrafo cinza embaixo do título viraram um painel próprio, com o que importa em destaque. São as regras de cada módulo — quem as perde, erra.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.7",
     data: "2026-09-10",
     migracao: null,

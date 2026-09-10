@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isPurchaser } from "@/lib/purchases-access";
 import { canConfigureFinanceNetwork } from "@/lib/finance/access";
 import { RoundsView, type RoundItemRow, type RoundRow } from "./rounds-client";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Rodadas de compra" };
 
@@ -218,17 +219,29 @@ export default async function RoundsPage(
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <Handshake className="size-6 text-primary" />
-          Rodadas de compra
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          As listas das unidades, juntas, viram poder de negociação. Aqui a
-          franqueadora cota com os fornecedores e escolhe de quem comprar{" "}
-          <strong>cada item</strong> — podendo dividir. A rodada é da rede;{" "}
-          <strong>o pedido é da unidade</strong>, e nasce depois que ela aprova.
+    <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Rede Risarte"
+        icone={Handshake}
+        titulo="Rodadas de compra"
+        descricao="As listas das unidades, juntas, viram poder de negociação."
+      />
+
+      {/* ⚠️ A EXPLICAÇÃO SAIU DE BAIXO DO TÍTULO. Ela era um parágrafo corrido em
+          letra cinza — o formato que ninguém lê. E o que ela diz é a regra do
+          módulo, não enfeite: quem a perde, erra. Num painel próprio, com o que
+          importa em destaque, ela vira consulta em vez de muralha. */}
+      <div className="rounded-xl border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
+        <p>
+          A franqueadora cota com os fornecedores e escolhe de quem comprar{" "}
+          <strong className="text-foreground">cada item</strong> — podendo
+          dividir entre mais de um.
+        </p>
+        <p className="mt-2 border-t pt-2">
+          <strong className="text-foreground">
+            A rodada é da rede; o pedido é da unidade
+          </strong>{" "}
+          — e ele só nasce depois que ela aprova.
         </p>
       </div>
 

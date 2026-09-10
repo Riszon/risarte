@@ -6,6 +6,7 @@ import {
   FilePlus2,
   Send,
   Undo2,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
@@ -37,6 +38,7 @@ import {
 } from "@/lib/journey";
 import { phaseTintStyle } from "@/components/phase-badge";
 import type { TreatmentPlanStatus } from "@/lib/planning";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Relatórios" };
 
@@ -338,14 +340,19 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
       : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Rede Risarte"
+        icone={BarChart3}
+        titulo="Relatórios"
+        descricao="Agenda, rede por fase e produtividade do Centro de Planejamento."
+      />
+
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
-          <p className="text-sm text-muted-foreground">
-            Quadros-resumo de agendamentos, visão da rede por fase (sem nomes de
-            pacientes) e produtividade do Centro de Planejamento.
-          </p>
+        <div className="text-sm text-muted-foreground">
+          A visão da rede por fase{" "}
+          <strong className="text-foreground">não mostra nomes</strong> de
+          pacientes.
         </div>
         <FilterForm className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
         <label className="text-sm text-muted-foreground">Período:</label>

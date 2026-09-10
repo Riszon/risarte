@@ -16,6 +16,7 @@ import type {
   PurchaseRequestItem,
 } from "@/lib/purchases";
 import { PurchasesView } from "./purchases-client";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Compras" };
 
@@ -123,46 +124,40 @@ export default async function PurchasesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <ShoppingCart className="size-6 text-primary" />
-          Compras — {session.activeClinic?.name ?? "unidade"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          A lista nasce do <strong>Estoque</strong>: o que está abaixo do mínimo,
-          já na quantidade de embalagens. Você ajusta, acrescenta o que faltar e
-          envia à Franqueadora, que negocia com os fornecedores.{" "}
-          <strong>A negociação é da rede; a compra é sua</strong> — cada unidade
-          aprova, é faturada e paga a sua parte.
-        </p>
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Suprimentos"
+        icone={ShoppingCart}
+        titulo={`Compras — ${session.activeClinic?.name ?? "unidade"}`}
+        descricao="O que falta na sua unidade vira lista, e a lista vira negociação da rede."
+      >
         <Link
           href="/compras/aprovar"
-          className="mt-2 mr-4 inline-block text-sm text-primary underline"
+          className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
         >
           Ver o que a Franqueadora negociou para a unidade →
         </Link>
         <Link
           href="/compras/receber"
-          className="mt-2 mr-4 inline-block text-sm text-primary underline"
+          className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
         >
           Receber uma entrega →
         </Link>
         <Link
           href="/compras/painel"
-          className="mt-2 mr-4 inline-block text-sm text-primary underline"
+          className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
         >
           Painel de compras →
         </Link>
         {(isPurchaser(session) || canConfigureFinanceNetwork(session)) && (
           <Link
             href="/compras/rodadas"
-            className="mt-2 inline-block text-sm text-primary underline"
+            className="text-sm text-primary-foreground/85 underline underline-offset-2 hover:text-primary-foreground"
           >
             Ir para a mesa de negociação da Franqueadora →
           </Link>
         )}
-      </div>
+      </CabecalhoDeModulo>
 
       <PurchasesView
         clinicId={clinicId}

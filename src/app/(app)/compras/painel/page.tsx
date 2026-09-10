@@ -13,6 +13,7 @@ import type {
   SupplierRow,
 } from "@/lib/purchases";
 import { PurchaseDashboard, type TopItemRow } from "./dashboard-client";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Painel de compras" };
 
@@ -179,19 +180,21 @@ export default async function PurchaseDashboardPage(
     .map((c) => ({ id: c.id, name: c.name }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <TrendingUp className="size-6 text-primary" />
-          Painel de compras
-          {!isNetwork && ` — ${session.activeClinic?.name ?? "unidade"}`}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {isNetwork
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu={isNetwork ? "Rede Risarte" : "Suprimentos"}
+        icone={TrendingUp}
+        titulo={
+          isNetwork
+            ? "Painel de compras"
+            : `Painel de compras — ${session.activeClinic?.name ?? "unidade"}`
+        }
+        descricao={
+          isNetwork
             ? "Os dois números que medem a tese do módulo: quanto a negociação conjunta economizou, e quanto está sendo comprado por fora."
-            : "Quanto a rede negociou para a sua unidade, e quanto você comprou por fora dela."}
-        </p>
-      </div>
+            : "Quanto a rede negociou para a sua unidade, e quanto você comprou por fora dela."
+        }
+      />
 
       <PurchaseDashboard
         isNetwork={isNetwork}

@@ -14,6 +14,7 @@ import type {
   NetworkFeeType,
 } from "@/lib/finance/network-fees";
 import { NetworkFeesView, type FeeSummaryRow } from "./fees-client";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Taxas da rede" };
 
@@ -227,19 +228,28 @@ export default async function NetworkFeesPage(
   ).map((a) => ({ code: a.code, name: a.name, scope: a.scope }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <Network className="size-6 text-primary" />
-          Taxas da rede
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          O que a Franqueadora cobra das unidades. Os percentuais incidem sobre{" "}
-          <strong>o dinheiro que entra</strong> — cada baixa de parcela cobra na
-          hora, sobre o valor recebido. As taxas fixas são mensais, independem
-          de faturamento.{" "}
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Rede Risarte"
+        icone={Network}
+        titulo="Taxas da rede"
+        descricao="O que a Franqueadora cobra das unidades."
+      />
+
+      {/* ⚠️ A EXPLICAÇÃO SAIU DE BAIXO DO TÍTULO. Ela era um parágrafo corrido em
+          letra cinza — o formato que ninguém lê. E o que ela diz é a regra do
+          módulo, não enfeite: quem a perde, erra. Num painel próprio, com o que
+          importa em destaque, ela vira consulta em vez de muralha. */}
+      <div className="rounded-xl border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
+        <p>
+          Os percentuais incidem sobre{" "}
+          <strong className="text-foreground">o dinheiro que entra</strong> —
+          cada baixa de parcela cobra na hora, sobre o valor recebido. As taxas
+          fixas são mensais e independem de faturamento.
+        </p>
+        <p className="mt-2 border-t pt-2">
           {isNetworkAdmin
-            ? "Campanha vigente ganha do acordo da unidade, que ganha do padrão da rede."
+            ? "Na hora de valer, a ordem é: campanha vigente ganha do acordo da unidade, que ganha do padrão da rede."
             : "Quem define é a Franqueadora."}
         </p>
       </div>
