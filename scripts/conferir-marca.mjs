@@ -188,3 +188,90 @@ for (const [origem, nome] of SIMBOLOS) {
   writeFileSync(join(DESTINO, `${nome}.svg`), svg);
   console.log(`  símbolo ${nome.padEnd(18)} ${melhor.c[2]}  ${l.toFixed(0)}×${a.toFixed(0)}`);
 }
+
+// ------------------------------------------------- versão TODA BRANCA (escuro)
+// Pedido do dono (09/09/2026): "a logo no modo escuro deve ser toda branca".
+// A variante da agência para fundo escuro mantém o complemento colorido
+// (turquesa/marinho/bordô); sobre o marinho profundo do modo escuro isso fica
+// apagado. A versão monocromática negativa resolve — e é operação de marca
+// prevista, não invenção: é a mesma arte, numa cor só.
+for (const [nome, texto] of aprovados) {
+  if (!nome.endsWith("-claro")) continue;
+  const branco = texto.replace(/fill="#[0-9a-f]{6}"/g, `fill="${"#efeee9"}"`);
+  writeFileSync(join(DESTINO, `${nome.replace("-claro", "-branco")}.svg`), branco);
+}
+console.log("  versões monocromáticas (toda branca) geradas");
+
+// ------------------------------------------------------------- o PATTERN
+// ⚠️ O PATTERN É RECONSTRUÍDO EM VETOR, não copiado do PNG. O PNG da agência
+// tem cor fixa: serviria para UM ambiente numa luz só, e o sistema precisa de
+// seis combinações. Reconstruído a partir do símbolo, ele é recolorível, pesa
+// menos de 2 KB e não serrilha.
+//
+// A regra de cor vem do próprio pattern oficial, conferida nas três artes:
+// **o losango COM sorriso leva a cor CENTRAL; o losango liso leva o DETALHE.**
+const simbolo = readFileSync(join(DESTINO, "simbolo-marinho.svg"), "utf8");
+const dCheio = simbolo.match(/ d="([^"]+)"/)[1];
+const gTransf = simbolo.match(/<g transform="([^"]+)"/)[1];
+// O losango liso é o sub-caminho de maior ÁREA — não o de texto mais longo.
+// ⚠️ A primeira versão escolhia pelo comprimento da string e pegava o SORRISO:
+// ele é uma curva, tem 478 caracteres, enquanto o losango tem 261. O pattern
+// saiu com meia-luas soltas no lugar dos losangos, e só a conferência visual
+// pegou. Medida errada escolhe com confiança a coisa errada.
+const subs = dCheio.split(/(?=M)/).filter(Boolean);
+const area = (d) => {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const m of d.matchAll(/(-?\d*\.?\d+)\s+(-?\d*\.?\d+)/g)) {
+    const x = Number(m[1]), y = Number(m[2]);
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  return (x1 - x0) * (y1 - y0);
+};
+const dLiso = subs.reduce((a, b) => (area(a) >= area(b) ? a : b));
+const vb = simbolo.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+const [lw, lh] = [Number(vb[1]), Number(vb[2])];
+
+// ⚠️ A PROPORÇÃO FOI MEDIDA, NÃO ESTIMADA A OLHO. Eu havia lido "42% da
+// largura do ladrilho" olhando a arte oficial, e o pattern saiu ralo demais.
+// A régua que resolveu foi a FRAÇÃO DE ÁREA COBERTA: o oficial cobre 61,8% e a
+// primeira tentativa cobria 26,0% — daí o fator. Densidade é o que o olho
+// percebe num padrão; distância entre centros, não.
+const T = 100;                       // largura do ladrilho
+const esc = (T * 0.648) / lw;        // losango ≈ 65% da largura do ladrilho
+const TH = T * (297 / 365);          // altura do ladrilho, na razão do original
+const dx = (lw * esc) / 2, dy = (lh * esc) / 2;
+
+const PATTERNS = {
+  "unidades":    ["#003257", "#01a7b5"],
+  "franchising": ["#01a7b5", "#003257"],
+  "empresarial": ["#003257", "#711e38"],
+  // No escuro o marinho some contra o fundo: quem vai ao pattern é a versão
+  // clara de cada cor. Sem isso, metade do desenho desapareceria.
+  "unidades-escuro":    ["#3fc9d6", "#01a7b5"],
+  "franchising-escuro": ["#3fc9d6", "#01a7b5"],
+  "empresarial-escuro": ["#3fc9d6", "#c05a76"],
+};
+
+for (const [nome, [central, detalhe]] of Object.entries(PATTERNS)) {
+  const peca = (d, cor, cx, cy) =>
+    `<g transform="translate(${(cx - dx).toFixed(2)} ${(cy - dy).toFixed(2)}) scale(${esc.toFixed(5)})">` +
+    `<g transform="${gTransf}"><path d="${d}" fill="${cor}"/></g></g>`;
+
+  const pecas = [
+    // Os quatro cantos fazem o ladrilho fechar sem emenda.
+    peca(dCheio, central, 0, 0),
+    peca(dCheio, central, T, 0),
+    peca(dCheio, central, 0, TH),
+    peca(dCheio, central, T, TH),
+    peca(dLiso, detalhe, T / 2, TH / 2),
+  ].join("");
+
+  writeFileSync(
+    join(DESTINO, `pattern-${nome}.svg`),
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${T} ${TH.toFixed(2)}" width="${T}" height="${TH.toFixed(2)}">${pecas}</svg>`
+  );
+}
+console.log(`  ${Object.keys(PATTERNS).length} pattern(s) reconstruído(s) em vetor`);
