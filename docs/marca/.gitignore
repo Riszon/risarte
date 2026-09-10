@@ -1,0 +1,29 @@
+# ⚠️ OS ORIGINAIS DE MARCA NÃO ENTRAM NO GIT.
+#
+# O brandbook chegou com 762 MB — em PDF e em .ai. O GitHub recusa arquivo
+# acima de 100 MB, e um `git add -A` distraído travaria o envio inteiro do
+# projeto. Pior que travar: se um arquivo desse tamanho ENTRASSE, ele ficaria no
+# histórico para sempre, e todo mundo que clonasse o repositório baixaria os
+# 762 MB — inclusive a montagem da Vercel, a cada publicação.
+#
+# Os originais são a FONTE, e fonte de marca mora onde marca mora (o Drive do
+# dono). O que entra aqui é o DERIVADO: os poucos arquivos leves que o sistema
+# realmente desenha na tela, e o registro escrito das decisões.
+
+# Tudo, por padrão.
+*
+
+# Menos o que é leve e precisa viajar com o projeto:
+!.gitignore
+!LEIA-ME.md
+!*.md
+
+# ⚠️ `extraido/` NÃO ENTRA, e não é só por tamanho: ali estão os arquivos das
+# fontes NORD (Designova®, "todos os direitos reservados") e Satoshi (Indian
+# Type Foundry). Fonte proprietária dentro de repositório é cópia distribuída —
+# quem clonar leva junto, e a licença de desktop não permite isso. O sistema não
+# precisa delas: o brandbook manda usar **Inter** (SIL Open Font License) nos
+# ambientes digitais, e é ela que vai para a montagem.
+#
+# O que o sistema realmente desenha são os SVGs derivados, e eles moram em
+# `public/marca/` — conferidos contra os PNGs oficiais por `npm run marca:conferir`.

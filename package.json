@@ -19,7 +19,9 @@
     "seed:teste": "node scripts/seed-test.mjs",
     "senhas:treino": "node scripts/senhas-treino.mjs",
     "migrar:teste": "node scripts/apply-migrations.mjs",
-    "manual:docx": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx"
+    "manual:docx": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx",
+    "marca:svg": "node scripts/ai-para-svg.mjs",
+    "marca:conferir": "node scripts/conferir-marca.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
