@@ -26,7 +26,20 @@ import { cn } from "@/lib/utils";
  * O NÚMERO EM CADA ETAPA É O QUE ESPERA POR VOCÊ, e vem do banco. Etapa sem
  * nada pendente não mostra número nenhum: um "0" pendurado em toda etapa vira
  * ruído, e em duas semanas ninguém olha mais para os que não são zero.
+ *
+ * ⚠️ E ELA APARECE EM TODAS AS TELAS DO FLUXO, não só na primeira. O dono
+ * apontou o que faltava (10/09/2026): *"quando clica em qualquer botão, abre a
+ * tela, mas não tem um fluxo legal ainda, pois não tem um voltar; deve ter uma
+ * sensação de continuidade mesmo quando está dentro de uma etapa"*.
+ *
+ * Uma trilha que some assim que você entra numa etapa não é trilha — é um menu
+ * que aparece uma vez. Presente em toda tela, com a etapa atual marcada, ela
+ * responde três perguntas ao mesmo tempo: onde estou, o que vem antes e o que
+ * vem depois. E o caminho de volta deixa de precisar de um botão próprio,
+ * porque toda etapa é clicável.
  */
+
+export type EtapaAtual = "pedir" | "aprovar" | "receber" | "painel" | "mesa";
 
 type Etapa = {
   n: number;
@@ -99,11 +112,49 @@ function Cartao({ etapa }: { etapa: Etapa }) {
   );
 }
 
+/**
+ * Painel e Mesa: fora da sequência, mas parte do mesmo lugar.
+ *
+ * Eles seguem a mesma regra das etapas — quando você ESTÁ neles, deixam de ser
+ * link e se marcam. Sem isso, a pessoa dentro do Painel clicaria em "Painel de
+ * compras" e não sairia do lugar, que é o jeito mais rápido de fazer alguém
+ * desconfiar de todos os outros cartões da tela.
+ */
+function ForaDaTrilha({
+  href,
+  atual,
+  className,
+  children,
+}: {
+  href: string;
+  atual: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const classe = cn(
+    "flex items-center gap-3 rounded-xl border px-4 py-3 transition",
+    atual
+      ? "border-primary/40 bg-primary/5"
+      : "hover:border-primary/40 hover:shadow-sm",
+    className
+  );
+  return atual ? (
+    <div className={classe}>{children}</div>
+  ) : (
+    <Link href={href} className={classe}>
+      {children}
+    </Link>
+  );
+}
+
 export function TrilhaDaCompra({
+  atual,
   aguardandoAprovacao,
   entregasAbertas,
   podeVerMesa,
 }: {
+  /** Em que ponto do caminho esta tela está. */
+  atual: EtapaAtual;
   aguardandoAprovacao: number;
   entregasAbertas: number;
   podeVerMesa: boolean;
@@ -116,7 +167,7 @@ export function TrilhaDaCompra({
       titulo: "Pedir",
       linha:
         "O que está abaixo do mínimo vira lista. Você ajusta e envia à Franqueadora.",
-      atual: true,
+      atual: atual === "pedir",
     },
     {
       n: 2,
@@ -126,6 +177,7 @@ export function TrilhaDaCompra({
       linha:
         "O que a rede negociou para a sua unidade. Sem a sua aprovação o pedido não nasce.",
       esperando: aguardandoAprovacao,
+      atual: atual === "aprovar",
     },
     {
       n: 3,
@@ -135,6 +187,7 @@ export function TrilhaDaCompra({
       linha:
         "A entrega chega, você confere pela nota e o material entra no estoque.",
       esperando: entregasAbertas,
+      atual: atual === "receber",
     },
   ];
 
@@ -147,9 +200,10 @@ export function TrilhaDaCompra({
       </div>
 
       <div className={cn("grid gap-3", podeVerMesa && "sm:grid-cols-2")}>
-        <Link
+        <ForaDaTrilha
           href="/compras/painel"
-          className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 transition hover:border-primary/40 hover:shadow-sm"
+          atual={atual === "painel"}
+          className="bg-card"
         >
           <TrendingUp className="size-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1">
@@ -160,12 +214,13 @@ export function TrilhaDaCompra({
               Quanto a rede economizou para você, e quanto foi comprado por fora.
             </span>
           </span>
-        </Link>
+        </ForaDaTrilha>
 
         {podeVerMesa && (
-          <Link
+          <ForaDaTrilha
             href="/compras/rodadas"
-            className="flex items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition hover:border-primary/40 hover:bg-card"
+            atual={atual === "mesa"}
+            className="border-dashed"
           >
             <Handshake className="size-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1">
@@ -180,7 +235,7 @@ export function TrilhaDaCompra({
                 quem comprar cada item.
               </span>
             </span>
-          </Link>
+          </ForaDaTrilha>
         )}
       </div>
     </div>

@@ -225,6 +225,7 @@ export default async function RoundsPage(
         icone={Handshake}
         titulo="Rodadas de compra"
         descricao="As listas das unidades, juntas, viram poder de negociação."
+        voltar={{ href: "/compras", rotulo: "Compras" }}
       />
 
       {/* ⚠️ A EXPLICAÇÃO SAIU DE BAIXO DO TÍTULO. Ela era um parágrafo corrido em

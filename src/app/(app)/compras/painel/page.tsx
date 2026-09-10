@@ -14,6 +14,8 @@ import type {
 } from "@/lib/purchases";
 import { PurchaseDashboard, type TopItemRow } from "./dashboard-client";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
+import { TrilhaDaCompra } from "../trilha";
+import { contarEtapasDaCompra } from "../trilha-dados";
 
 export const metadata: Metadata = { title: "Painel de compras" };
 
@@ -59,6 +61,11 @@ export default async function PurchaseDashboardPage(
   const scopeClinic = isNetwork ? (pick("unidade") || null) : clinicId;
 
   const supabase = await createClient();
+  // Na visão de UNIDADE a trilha aparece; na da rede, não — o painel da rede
+  // não é etapa de compra de ninguém.
+  const etapas = clinicId
+    ? await contarEtapasDaCompra(supabase, clinicId)
+    : { aguardandoAprovacao: 0, entregasAbertas: 0 };
   const [
     { data: savingsRows },
     { data: leakageRows },
@@ -194,7 +201,12 @@ export default async function PurchaseDashboardPage(
             ? "Os dois números que medem a tese do módulo: quanto a negociação conjunta economizou, e quanto está sendo comprado por fora."
             : "Quanto a rede negociou para a sua unidade, e quanto você comprou por fora dela."
         }
+        voltar={isNetwork ? undefined : { href: "/compras", rotulo: "Compras" }}
       />
+
+      {!isNetwork && clinicId && (
+        <TrilhaDaCompra atual="painel" {...etapas} podeVerMesa={false} />
+      )}
 
       <PurchaseDashboard
         isNetwork={isNetwork}

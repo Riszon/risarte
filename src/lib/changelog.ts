@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.239.1",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "O caminho da compra acompanha você dentro de cada etapa",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A trilha das etapas (Pedir, Aprovar, Receber) passou a aparecer também DENTRO de cada etapa, com a atual marcada. Você sempre vê onde está, o que veio antes e o que vem depois — e volta clicando na etapa, sem precisar do botão do navegador.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "As telas de Aprovar e Receber ganharam o cabeçalho com a marca e o caminho de volta para Compras, como as demais.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.239.0",
     data: "2026-09-10",
     migracao: null,

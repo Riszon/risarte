@@ -6,8 +6,13 @@ import { createClient } from "@/lib/supabase/server";
 import {
   canManagePurchaseRequests,
   canViewPurchases,
+  isPurchaser,
 } from "@/lib/purchases-access";
+import { canConfigureFinanceNetwork } from "@/lib/finance/access";
 import { ApprovalView, type AllocationRow, type OrderRow } from "./approval-client";
+import { TrilhaDaCompra } from "../trilha";
+import { contarEtapasDaCompra } from "../trilha-dados";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Aprovar compra" };
 
@@ -33,6 +38,9 @@ export default async function ApprovalPage() {
   }
 
   const supabase = await createClient();
+  // Os números da trilha, da mesma fonte que todas as telas do fluxo usam.
+  const etapas = await contarEtapasDaCompra(supabase, clinicId);
+  const podeVerMesa = isPurchaser(session) || canConfigureFinanceNetwork(session);
   const [{ data: allocRows }, { data: orderRows }] = await Promise.all([
     supabase
       .from("purchase_allocations")
@@ -126,17 +134,25 @@ export default async function ApprovalPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <ClipboardCheck className="size-6 text-primary" />
-          Aprovar compra — {session.activeClinic?.name ?? "unidade"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          O que a Franqueadora negociou para a sua unidade, com{" "}
-          <strong>o preço negociado ao lado da previsão</strong>. Você aprova ou
-          recusa item a item; o que for aprovado vira <strong>pedido</strong> —
-          um por fornecedor, faturado e entregue aqui.
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Suprimentos"
+        icone={ClipboardCheck}
+        titulo={`Aprovar compra — ${session.activeClinic?.name ?? "unidade"}`}
+        descricao="O que a Franqueadora negociou para a sua unidade."
+        voltar={{ href: "/compras", rotulo: "Compras" }}
+      />
+
+      <TrilhaDaCompra atual="aprovar" {...etapas} podeVerMesa={podeVerMesa} />
+
+      <div className="rounded-xl border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
+        <p>
+          O <strong className="text-foreground">preço negociado aparece ao lado da previsão</strong>,
+          para você ver o que a rede conseguiu. Aprova ou recusa item a item.
+        </p>
+        <p className="mt-2 border-t pt-2">
+          O que for aprovado vira <strong className="text-foreground">pedido</strong> — um por
+          fornecedor, faturado e entregue aqui. O que você não decidir não vira pedido nenhum.
         </p>
       </div>
 

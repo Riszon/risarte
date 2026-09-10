@@ -17,6 +17,7 @@ import type {
 import { PurchasesView } from "./purchases-client";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { TrilhaDaCompra } from "./trilha";
+import { contarEtapasDaCompra } from "./trilha-dados";
 
 export const metadata: Metadata = { title: "Compras" };
 
@@ -42,16 +43,14 @@ export default async function PurchasesPage() {
   }
 
   const supabase = await createClient();
-  // ⚠️ AS DUAS CONTAGENS ENTRAM NA MESMA LEVA. Em sequência elas somariam duas
-  // idas ao banco ao tempo de abrir a tela — o custo que o dia 08/09/2026 foi
-  // gasto removendo. Com `head: true` o banco devolve só o número, sem linha.
+  // As contagens da trilha entram na MESMA leva das outras consultas: em
+  // sequência somariam duas idas ao banco ao tempo de abrir a tela.
   const [
     { data: requestRows },
     { data: itemRows },
     { data: stockRows },
     { data: accountRows },
-    { count: aguardandoAprovacao },
-    { count: entregasAbertas },
+    etapas,
   ] = await Promise.all([
       supabase
         .from("purchase_requests")
@@ -76,18 +75,10 @@ export default async function PurchasesPage() {
         .eq("active", true)
         .in("scope", ["unit", "both"])
         .order("code"),
-      // Os mesmos filtros que as telas de destino usam. Régua diferente da
-      // tela para onde o número leva seria pior que número nenhum.
-      supabase
-        .from("purchase_allocations")
-        .select("id", { count: "exact", head: true })
-        .eq("clinic_id", clinicId)
-        .eq("status", "pendente"),
-      supabase
-        .from("purchase_orders")
-        .select("id", { count: "exact", head: true })
-        .eq("clinic_id", clinicId)
-        .in("status", ["aberto", "recebido_parcial"]),
+      // ⚠️ A CONTA VEM DO LUGAR COMUM, não de uma cópia aqui: a trilha aparece
+      // em cinco telas, e duas versões do mesmo número divergiriam no dia em
+      // que alguém mexesse numa delas.
+      contarEtapasDaCompra(supabase, clinicId),
     ]);
 
   const requests: PurchaseRequest[] = (
@@ -154,8 +145,8 @@ export default async function PurchasesPage() {
       />
 
       <TrilhaDaCompra
-        aguardandoAprovacao={aguardandoAprovacao ?? 0}
-        entregasAbertas={entregasAbertas ?? 0}
+        atual="pedir"
+        {...etapas}
         podeVerMesa={isPurchaser(session) || canConfigureFinanceNetwork(session)}
       />
 

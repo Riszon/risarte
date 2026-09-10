@@ -6,10 +6,15 @@ import { createClient } from "@/lib/supabase/server";
 import {
   canManagePurchaseRequests,
   canViewPurchases,
+  isPurchaser,
 } from "@/lib/purchases-access";
+import { canConfigureFinanceNetwork } from "@/lib/finance/access";
 import { todayInBrazil } from "@/lib/dates";
 import type { OrderStatus } from "@/lib/purchases";
 import { ReceivingView, type OrderCard } from "./receiving-client";
+import { TrilhaDaCompra } from "../trilha";
+import { contarEtapasDaCompra } from "../trilha-dados";
+import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Receber entrega" };
 
@@ -36,6 +41,9 @@ export default async function ReceivingPage() {
   }
 
   const supabase = await createClient();
+  // Os números da trilha, da mesma fonte que todas as telas do fluxo usam.
+  const etapas = await contarEtapasDaCompra(supabase, clinicId);
+  const podeVerMesa = isPurchaser(session) || canConfigureFinanceNetwork(session);
   const { data: orderRows } = await supabase
     .from("purchase_orders")
     .select(
@@ -88,17 +96,26 @@ export default async function ReceivingPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <PackageCheck className="size-6 text-primary" />
-          Receber entrega
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Confirme <strong>o que realmente chegou</strong>. O material entra no
-          estoque e a conta a pagar nasce pelo mesmo caminho de qualquer compra.
-          O preço que vale é o <strong>da nota</strong> — se ele estiver
-          diferente do negociado, o sistema aceita e registra a diferença.
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <CabecalhoDeModulo
+        chapeu="Suprimentos"
+        icone={PackageCheck}
+        titulo="Receber entrega"
+        descricao="Confirme o que realmente chegou."
+        voltar={{ href: "/compras", rotulo: "Compras" }}
+      />
+
+      <TrilhaDaCompra atual="receber" {...etapas} podeVerMesa={podeVerMesa} />
+
+      <div className="rounded-xl border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
+        <p>
+          O material entra no estoque e a conta a pagar nasce pelo mesmo caminho de
+          qualquer compra.
+        </p>
+        <p className="mt-2 border-t pt-2">
+          O preço que vale é o <strong className="text-foreground">da nota</strong>. Se ele estiver
+          diferente do negociado, o sistema <strong className="text-foreground">aceita e registra a
+          diferença</strong> — barrar deixaria o material fora do estoque.
         </p>
       </div>
 
