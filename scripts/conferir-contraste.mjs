@@ -35,6 +35,23 @@ function bloco(seletor) {
 const RAIZ = bloco(":root {");
 const ESCURO = bloco(".dark {");
 
+/**
+ * ⚠️ O BLOCO GENÉRICO `[data-ambiente]` FAZ PARTE DA CASCATA, e esquecê-lo fez
+ * esta régua aprovar um defeito real (10/09/2026): o símbolo da Risarte sumia
+ * na barra lateral encolhida do Empresarial.
+ *
+ * Ele existe porque propriedade personalizada declarada no `:root` já chega
+ * SUBSTITUÍDA aos descendentes — `--sidebar: var(--marca-central)` resolve com o
+ * `--marca-central` DA RAIZ, não com o do ambiente. Por isso os tokens que
+ * dependem do par precisam ser reafirmados no elemento que tem o ambiente.
+ *
+ * O problema é que ele tem a MESMA especificidade dos blocos específicos
+ * (`[data-ambiente="empresarial"]`), então quem vier depois no arquivo vence.
+ * A régua tem de empilhar as camadas na mesma ordem que o navegador.
+ */
+const GENERICO = bloco("[data-ambiente] {");
+const ordemNoArquivo = (sel) => CSS.indexOf("\n" + sel);
+
 /** Resolve `var(--x)` em cadeia até chegar num `#rrggbb`. */
 function cor(nome, ...camadas) {
   let v = null;
@@ -90,7 +107,17 @@ for (const luz of ["claro", "escuro"]) {
   for (const [nome, seletor] of AMBIENTES) {
     const camadas = [RAIZ];
     if (luz === "escuro") camadas.push(ESCURO);
-    if (seletor) camadas.push(bloco((luz === "escuro" ? ".dark " : "") + seletor));
+
+    // Genérico e específico têm a mesma especificidade: vence quem vier DEPOIS
+    // no arquivo. A régua empilha na mesma ordem que o navegador resolveria.
+    const especifico = seletor ? (luz === "escuro" ? ".dark " : "") + seletor : null;
+    const doAmbiente = [];
+    if (especifico) {
+      doAmbiente.push([ordemNoArquivo(especifico), bloco(especifico)]);
+    }
+    doAmbiente.push([ordemNoArquivo("[data-ambiente] {"), GENERICO]);
+    doAmbiente.sort((a, b) => a[0] - b[0]);
+    for (const [, b] of doAmbiente) camadas.push(b);
 
     const card = cor("--card", ...camadas);
     const fundo = cor("--background", ...camadas);

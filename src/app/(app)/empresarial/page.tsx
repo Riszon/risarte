@@ -10,7 +10,8 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { FilterForm } from "@/components/filter-form";
-import { BarChart3, KanbanSquare, Settings } from "lucide-react";
+import { BarChart3, Building2, KanbanSquare, Settings } from "lucide-react";
+import { RisarteMark } from "@/components/risarte-logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -177,28 +178,39 @@ export default async function EmpresarialPage(props: {
   const activeEmployees = empRows?.length ?? 0;
 
   const kpis = [
-    { label: "Empresas", value: total },
-    { label: "Ativas", value: active },
-    { label: "Suspensas", value: suspended },
-    { label: "Colaboradores ativos", value: activeEmployees },
+    { label: "Empresas", value: total, destaque: false },
+    { label: "Ativas", value: active, destaque: true },
+    { label: "Suspensas", value: suspended, destaque: false },
+    { label: "Colaboradores ativos", value: activeEmployees, destaque: true },
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Risarte Empresarial
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Empresas parceiras do programa.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
+      {/* O cabeçalho com a marca — o mesmo desenho que o Programa de Prevenção
+          e o Comercial já usam. O Empresarial era o único módulo com só um
+          título solto, e a diferença aparecia justamente ao trocar de tela.
+          Aqui ele vem no bordô do ambiente, sem precisar de cor própria. */}
+      <div className="relative overflow-hidden rounded-2xl border bg-primary text-primary-foreground">
+        <RisarteMark className="pointer-events-none absolute -top-4 -right-6 h-40 text-primary-foreground/10" />
+        <div className="relative flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
+          <div>
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-primary-foreground/60">
+              <Building2 className="size-3.5" />
+              Programa corporativo
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Risarte Empresarial
+            </h1>
+            <p className="mt-0.5 text-sm text-primary-foreground/70">
+              Empresas parceiras, colaboradores e mensalidades do programa.
+            </p>
+          </div>
+        <div className="flex flex-wrap items-center gap-2">
           {canFunnel && (
             <Button
               variant="outline"
               size="sm"
+              className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               nativeButton={false}
               render={<Link href="/empresarial/funil" />}
             >
@@ -211,6 +223,7 @@ export default async function EmpresarialPage(props: {
               <Button
                 variant="outline"
                 size="sm"
+                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 nativeButton={false}
                 render={<Link href="/empresarial/painel" />}
               >
@@ -220,6 +233,7 @@ export default async function EmpresarialPage(props: {
               <Button
                 variant="outline"
                 size="sm"
+                className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 nativeButton={false}
                 render={<Link href="/empresarial/configuracoes" />}
               >
@@ -229,15 +243,22 @@ export default async function EmpresarialPage(props: {
               <CompanyFormDialog consultants={consultants} />
             </>
           )}
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (
-          <Card key={k.label}>
+          <Card key={k.label} className={k.destaque ? "border-primary/35" : undefined}>
             <CardContent className="p-4">
-              <p className="text-xs uppercase text-muted-foreground">{k.label}</p>
-              <p className="mt-1 text-2xl font-semibold">{k.value}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                {k.label}
+              </p>
+              {/* `tabular-nums`: sem isso os algarismos têm larguras diferentes e
+                  os quatro números dançam de lugar a cada atualização. */}
+              <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">
+                {k.value}
+              </p>
             </CardContent>
           </Card>
         ))}

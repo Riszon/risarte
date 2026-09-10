@@ -206,6 +206,37 @@
   --sidebar-ring: var(--marca-detalhe);
 }
 
+/* ⚠️ ESTE BLOCO VEM ANTES DOS ESPECÍFICOS, E A ORDEM É A CORREÇÃO.
+   Ele reafirma no elemento do ambiente os tokens que dependem do par —
+   propriedade personalizada declarada no `:root` chega aos descendentes já
+   SUBSTITUÍDA (`--sidebar: var(--marca-central)` resolve com o `--marca-central`
+   DA RAIZ), então sem esta reafirmação a lateral ficaria sempre marinho.
+
+   ⚠️ MAS ELE TEM A MESMA ESPECIFICIDADE DOS BLOCOS ESPECÍFICOS. Enquanto
+   ficou DEPOIS deles, desfazia as exceções: no Empresarial o realce da
+   lateral voltava a ser bordô sobre lateral bordô — **1,00:1, invisível** —,
+   e foi assim que o símbolo da Risarte sumiu na lateral encolhida
+   (achado do dono, 10/09/2026). Vindo ANTES, a exceção vence.
+
+   `npm run marca:contraste` agora empilha as camadas nesta mesma ordem; sem
+   isso a régua aprovava o defeito. */
+/* Dependem do par do ambiente, então precisam ser reafirmados
+   DEPOIS dos blocos acima — senão ficariam com o valor de `.dark`. */
+.dark [data-ambiente],
+[data-ambiente] {
+  --sidebar: var(--marca-central);
+  --sidebar-foreground: var(--marca-sobre-central);
+  --sidebar-primary: var(--marca-detalhe);
+  --sidebar-primary-foreground: var(--marca-sobre-detalhe);
+  --sidebar-accent: color-mix(in oklab, var(--marca-sobre-central) 14%, transparent);
+  --sidebar-accent-foreground: var(--marca-sobre-central);
+  --sidebar-border: color-mix(in oklab, var(--marca-sobre-central) 16%, transparent);
+  --sidebar-ring: var(--marca-detalhe);
+  --ring: var(--marca-detalhe);
+  --gold: var(--marca-detalhe);
+  --gold-foreground: var(--marca-sobre-detalhe);
+}
+
 /* --- FRANQUEADORA: turquesa lidera, marinho apoia -------------------------- */
 /* ⚠️ TEXTO SOBRE TURQUESA É MARINHO, NUNCA BRANCO. Branco sobre #01a7b5 dá
    2,8:1 e off-white 2,4:1 — abaixo do mínimo legível (4,5:1). Marinho sobre
@@ -310,22 +341,7 @@
   --primary-foreground: var(--risarte-offwhite);
 }
 
-/* Estes três dependem do par do ambiente, então precisam ser reafirmados
-   DEPOIS dos blocos acima — senão ficariam com o valor de `.dark`. */
-.dark [data-ambiente],
-[data-ambiente] {
-  --sidebar: var(--marca-central);
-  --sidebar-foreground: var(--marca-sobre-central);
-  --sidebar-primary: var(--marca-detalhe);
-  --sidebar-primary-foreground: var(--marca-sobre-detalhe);
-  --sidebar-accent: color-mix(in oklab, var(--marca-sobre-central) 14%, transparent);
-  --sidebar-accent-foreground: var(--marca-sobre-central);
-  --sidebar-border: color-mix(in oklab, var(--marca-sobre-central) 16%, transparent);
-  --sidebar-ring: var(--marca-detalhe);
-  --ring: var(--marca-detalhe);
-  --gold: var(--marca-detalhe);
-  --gold-foreground: var(--marca-sobre-detalhe);
-}
+
 
 @layer base {
   * {

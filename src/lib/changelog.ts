@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.238.4",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "O símbolo voltou na barra encolhida, e o Empresarial ganhou cabeçalho",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Ao encolher o menu lateral no Risarte Empresarial, o símbolo da Risarte no topo sumia — ele ficava da mesma cor do fundo. Corrigido.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A tela do Risarte Empresarial ganhou o mesmo cabeçalho com a marca que o Programa de Prevenção e o Comercial já têm. Era o único módulo com só um título solto, e a diferença aparecia justamente ao trocar de tela.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.238.3",
     data: "2026-09-10",
     migracao: null,
