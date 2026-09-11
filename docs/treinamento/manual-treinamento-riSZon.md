@@ -370,7 +370,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Estoque | `/estoque` | Itens, kits, saldo, inventário |
 | Compras | `/compras` | Requisição, cotação, pedido, recebimento |
 | PPR+ | `/ppr` | Programa de prevenção |
-| Empresarial | `/empresarial` | Convênio com empresas parceiras; **Cobranças** reúne as de todas as empresas numa tela |
+| Empresarial | `/empresarial` | Convênio com empresas parceiras; **Cobranças** reúne as de todas as empresas, e **Boas-vindas** é a fila de ligação da recepção/SDR em cada empresa |
 | Risartanos | `/risartanos` | Cadastro de colaboradores (RH) |
 | Relatórios | `/relatorios` | Indicadores de agenda, rede e produtividade |
 | Manual | `/manual` | Este manual, sempre na versão do sistema no ar |

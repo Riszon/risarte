@@ -4,7 +4,15 @@ import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Download, FileText, FileUp, PiggyBank, Plus, UserPlus } from "lucide-react";
+import {
+  Download,
+  FileText,
+  FileUp,
+  HandHeart,
+  PiggyBank,
+  Plus,
+  UserPlus,
+} from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { reportFileName } from "@/lib/empresarial/filenames";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +141,17 @@ export function ColaboradoresTab({
       <div className="flex flex-wrap items-center justify-between gap-2">
         {canManage && <EmployeeFormDialog companyId={companyId} />}
         <div className="flex flex-wrap items-center gap-2">
+          {/* A FILA DE LIGAÇÃO (11/09/2026). Vem primeiro de propósito: é a
+              tela do trabalho do dia da recepção e da SDR, enquanto as duas
+              seguintes são relatórios para conferir. */}
+          <Button
+            size="sm"
+            nativeButton={false}
+            render={<Link href={`/empresarial/${companyId}/boas-vindas`} />}
+          >
+            <HandHeart className="mr-1 size-4" />
+            Boas-vindas
+          </Button>
           {/* Relatório detalhado (empresa + colaboradores + dependentes). */}
           <Button
             variant="outline"

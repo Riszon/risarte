@@ -51,6 +51,11 @@ export const ROUTE_FIXTURES = {
   "/empresarial/[companyId]/ficha": "company",
   "/empresarial/[companyId]/relatorio": "company",
   "/empresarial/[companyId]/relatorio-beneficios": "company",
+  // A fila de ligação de boas-vindas (1006). Sem esta linha a varredura
+  // respondia "rota variável sem registro previsto na regra" e **pulava a
+  // tela** — cobertura que não existe é pior que cobertura que falha, porque
+  // o relatório final continua dizendo "nenhuma tela falhou".
+  "/empresarial/[companyId]/boas-vindas": "company",
   "/ppr/adesoes/[id]": "pprMembership",
   "/ppr/adesoes/[id]/contrato": "pprMembership",
   "/ppr/configuracao/[planId]": "pprPlan",

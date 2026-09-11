@@ -95,6 +95,41 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
     inadimplência** após o vencimento — a empresa vira **Suspensa** e os benefícios
     ficam bloqueados (aparece o aviso na ficha/orçamento).
 
+### 8.1. Boas-vindas — a fila de ligação (pedido do dono, 11/09/2026)
+
+Serve a **recepção e a SDR**: ligar para quem entrou no programa, dar as
+boas-vindas, completar o cadastro e marcar a primeira consulta.
+
+29a. Na empresa, aba **Colaboradores** → botão **Boas-vindas** (o primeiro).
+
+29b. A lista traz **uma linha por pessoa** — titular e cada dependente —
+     agrupadas por família, com telefone, o que falta no cadastro e **a partir
+     de quando cada um pode agendar**. Dependente sem telefone próprio mostra o
+     do titular.
+
+29c. No alto, o bloco **Carências desta empresa**: a da empresa (contada do
+     início do contrato), a do colaborador (contada da entrada de cada um) e a
+     lista de **procedimentos com carência própria**.
+
+29d. Clique em **Registrar** numa pessoa e escolha o resultado. **"Não atendeu"
+     e "pediu para ligar depois" CONTINUAM na aba "Falta ligar"**; "falei com a
+     pessoa" e "não quer agora" saem. Registre de novo na mesma pessoa: o
+     registro é **atualizado**, não duplicado.
+
+29e. O botão de desfazer (seta) apaga o registro e a pessoa volta para a fila.
+
+29f. Troque para a aba **Todas as pessoas** para ver quem já foi contatado, com
+     a data, quem ligou e a observação.
+
+> ⚠️ **A carência mostrada é a GERAL** (empresa + colaborador, vale a mais
+> longa). Os procedimentos com carência própria aparecem na lista do topo e
+> **não** entram na data de cada pessoa: como o prazo é diferente por
+> procedimento, uma data única estaria errada para quase todos os casos. Quem
+> decide na hora do orçamento continua sendo o motor de benefícios.
+
+> ⚠️ **A lista traz só quem está ATIVO** no programa. Quem saiu não recebe
+> boas-vindas.
+
 ### 9.1. Cobranças de TODAS as empresas (relato OC-00004)
 
 32a. Em **Empresarial**, clique em **Cobranças** (no alto). Abre a lista de todas
