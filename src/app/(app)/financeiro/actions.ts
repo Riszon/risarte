@@ -22,6 +22,12 @@ export async function saveFinanceSettings(input: {
   monthlyInterestPercent: number;
   graceDays: number;
   roundingMode: "half_up" | "half_even";
+  /**
+   * Teto da taxa de inadimplência (%). `null` na linha da UNIDADE significa
+   * "segue a rede" — é o que faz a cascata existir (lição da 0230: cascata só
+   * funciona com coluna anulável na linha que sobrescreve).
+   */
+  overduePercent?: number | null;
 }): Promise<FinanceResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
@@ -38,6 +44,23 @@ export async function saveFinanceSettings(input: {
   if (!Number.isInteger(input.graceDays) || input.graceDays < 0) {
     return { ok: false, error: "A carência precisa ser um número de dias." };
   }
+  const teto = input.overduePercent ?? null;
+  if (teto !== null && (!Number.isFinite(teto) || teto < 0 || teto > 100)) {
+    return {
+      ok: false,
+      error: "O teto da inadimplência precisa ser um percentual entre 0 e 100.",
+    };
+  }
+  // ⚠️ A REDE NÃO PODE FICAR SEM TETO. Vazio na unidade quer dizer "segue a
+  // rede"; vazio NA REDE não teria a quem seguir, e as telas de Recebíveis
+  // ficariam sem linha de referência — o indicador viraria um número solto.
+  if (input.clinicId === null && teto === null) {
+    return {
+      ok: false,
+      error:
+        "O padrão da rede precisa de um teto de inadimplência — é ele que a unidade segue quando não tem o próprio.",
+    };
+  }
 
   const { error } = await supabase.from("finance_settings").upsert(
     {
@@ -46,6 +69,7 @@ export async function saveFinanceSettings(input: {
       monthly_interest_percent: input.monthlyInterestPercent,
       grace_days: input.graceDays,
       rounding_mode: input.roundingMode,
+      alert_overdue_percent: teto,
       updated_at: new Date().toISOString(),
       updated_by: session.userId,
     },

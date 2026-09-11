@@ -21,6 +21,7 @@ type RawSettingsRow = {
   monthly_interest_percent: number | null;
   grace_days: number | null;
   rounding_mode: "half_up" | "half_even" | null;
+  alert_overdue_percent: number | null;
 };
 
 /**
@@ -39,7 +40,7 @@ export default async function FinanceSettingsPage() {
       supabase
         .from("finance_settings")
         .select(
-          "clinic_id, late_fee_percent, monthly_interest_percent, grace_days, rounding_mode"
+          "clinic_id, late_fee_percent, monthly_interest_percent, grace_days, rounding_mode, alert_overdue_percent"
         )
         .returns<RawSettingsRow[]>(),
       supabase
@@ -59,6 +60,7 @@ export default async function FinanceSettingsPage() {
     monthly_interest_percent: rawNetwork?.monthly_interest_percent ?? 1,
     grace_days: rawNetwork?.grace_days ?? 0,
     rounding_mode: rawNetwork?.rounding_mode ?? "half_up",
+    alert_overdue_percent: rawNetwork?.alert_overdue_percent ?? 5,
   };
 
   // Campo nulo na unidade = herdado da rede. Mostrar o valor que VALE evita a
@@ -72,6 +74,12 @@ export default async function FinanceSettingsPage() {
         s.monthly_interest_percent ?? network.monthly_interest_percent,
       grace_days: s.grace_days ?? network.grace_days,
       rounding_mode: s.rounding_mode ?? network.rounding_mode,
+      // ⚠️ ESTE NÃO HERDA NA EXIBIÇÃO, de propósito. Nos outros campos mostrar
+      // o valor da rede ajuda; aqui o VAZIO é a informação — ele diz que a
+      // unidade não tem teto próprio. Preenchendo com o da rede, salvar
+      // gravaria uma exceção que ninguém pediu, e a unidade deixaria de
+      // acompanhar a rede sem nada na tela denunciando.
+      alert_overdue_percent: s.alert_overdue_percent ?? null,
     }));
 
   const cfg = (

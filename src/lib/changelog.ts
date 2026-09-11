@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.243.1",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "O teto da inadimplência agora tem onde ser configurado",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "As telas de Recebíveis já comparavam a inadimplência com um teto, mas o campo para definir esse teto não existia — o valor ficava preso no padrão. Agora ele está em Financeiro → Cadastros → Configuração, no mesmo bloco de multa, juros e carência.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na unidade, deixar o campo vazio quer dizer 'sigo o padrão da rede'. Preencher cria uma exceção só para ela. O padrão da rede não pode ficar vazio — é ele que as unidades seguem.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.243.0",
     data: "2026-09-10",
     migracao: "0254",

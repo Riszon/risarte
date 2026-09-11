@@ -239,8 +239,10 @@ que não chega.
 
 **A taxa de inadimplência** é o **vencido dividido pelo que há a receber** —
 não sobre o faturamento, senão ela cairia em todo mês de venda forte mesmo com
-a cobrança piorando. Ela é comparada com um limite definido pela **rede**, em
-**Financeiro → Configuração**.
+a cobrança piorando. Ela é comparada com um limite definido pela **rede**, no campo **Teto da
+inadimplência (%)** em **Financeiro → Cadastros → Configuração** — no mesmo
+bloco de multa, juros e carência. Na unidade, deixar o campo **vazio** quer
+dizer *"sigo o padrão da rede"*; preencher cria uma exceção só para ela.
 
 > ⚠️ **O limite não é um índice de mercado.** Nenhum sistema sabe qual taxa é
 > "saudável" para a sua clínica: depende do ticket, do meio de pagamento e da

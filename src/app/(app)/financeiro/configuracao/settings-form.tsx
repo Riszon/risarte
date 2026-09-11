@@ -18,6 +18,8 @@ export type SettingsRow = {
   monthly_interest_percent: number;
   grace_days: number;
   rounding_mode: "half_up" | "half_even";
+  /** Teto da taxa de inadimplência (%). Nulo na unidade = segue a rede. */
+  alert_overdue_percent: number | null;
 };
 
 type ClinicOption = {
@@ -57,10 +59,16 @@ function SettingsBlock({
   );
   const [grace, setGrace] = useState(String(value.grace_days));
   const [rounding, setRounding] = useState(value.rounding_mode);
+  const [teto, setTeto] = useState(
+    value.alert_overdue_percent === null ? "" : String(value.alert_overdue_percent)
+  );
 
   const lateFeeNum = Number(lateFee.replace(",", ".")) || 0;
   const interestNum = Number(interest.replace(",", ".")) || 0;
   const graceNum = Number.parseInt(grace, 10) || 0;
+  // ⚠️ VAZIO É NULO, NÃO ZERO. Na unidade, vazio significa "segue a rede";
+  // gravar 0 diria "esta unidade não tolera nenhum atraso", que é o oposto.
+  const tetoNum = teto.trim() === "" ? null : Number(teto.replace(",", "."));
   const overLimit = lateFeeNum > 2;
 
   // Exemplo ao vivo: R$ 1.000,00 com 30 dias de atraso.
@@ -144,6 +152,33 @@ function SettingsBlock({
           </label>
         </div>
 
+        {/* ⚠️ ESTE CAMPO FALTAVA (10/09/2026). As telas de Recebíveis liam o
+            limite, o manual mandava configurá-lo aqui — e o controle nunca foi
+            construído: o valor ficava preso no que a migração 0253 semeou. O
+            dono achou tentando usar. Lição: entregar a tela que LÊ sem a tela
+            que ESCREVE é entregar meia funcionalidade com cara de inteira. */}
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="block">
+            <span className={labelClass}>
+              Teto da inadimplência (%)
+              {inherited && " — vazio segue a rede"}
+            </span>
+            <input
+              value={teto}
+              onChange={(e) => setTeto(e.target.value)}
+              disabled={!canEdit}
+              inputMode="decimal"
+              placeholder={inherited ? "segue a rede" : "ex.: 5"}
+              className={fieldClass}
+            />
+          </label>
+          <p className="self-end text-[11px] leading-relaxed text-muted-foreground">
+            Acima disso a unidade acende em <strong>Recebíveis</strong> e no
+            painel da rede. <strong>Não é um índice de mercado</strong> — é a
+            decisão da rede sobre o que considera aceitável.
+          </p>
+        </div>
+
         {overLimit && (
           <p className="flex items-start gap-1.5 rounded-lg border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
@@ -182,6 +217,7 @@ function SettingsBlock({
                   monthly_interest_percent: interestNum,
                   grace_days: graceNum,
                   rounding_mode: rounding,
+                  alert_overdue_percent: tetoNum,
                 })
               }
             >
@@ -226,6 +262,7 @@ export function FinanceSettingsForm({
         monthlyInterestPercent: next.monthly_interest_percent,
         graceDays: next.grace_days,
         roundingMode: next.rounding_mode,
+        overduePercent: next.alert_overdue_percent,
       });
       if (r.ok) {
         toast.success("Configuração salva.");
