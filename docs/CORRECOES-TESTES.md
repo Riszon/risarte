@@ -225,3 +225,38 @@ combinações de ambiente × luz já foram medidas (pior caso 5,42:1).
 fundo em que vivem — 75 sobre a página (`text-gold-tinta`), 6 sobre painel forte
 (`text-gold-forte`) e 3 na barra lateral (`text-sidebar-primary`). A régua que
 faltava virou `npm run marca:contraste`: 54 combinações medidas a cada execução.
+
+---
+
+## `10-estoque` falha no botão "Chamar" — ANTERIOR à mudança da limpeza (11/09/2026)
+
+**O que acontece.** A suíte completa rodou em 11/09/2026: **15 testes passaram e
+1 falhou** — `10-estoque.spec.ts` › *"concluir a sessão consome o kit do
+procedimento"*. Em duas execuções ele falhou em **pontos diferentes**:
+
+| Execução | Onde parou |
+|---|---|
+| suíte completa | o botão **Agendar** ficou desabilitado (1294 tentativas, 15 min) |
+| execução isolada | o botão **Chamar** nunca ficou visível (30 s) |
+
+Falhar em pontos diferentes é assinatura de **instabilidade de tempo**, não de
+defeito determinístico.
+
+**Não foi a mudança da limpeza, e isto foi MEDIDO, não suposto.** Eu troquei
+`limparMovimento` no mesmo dia (o `truncate cascade` que apagava o cadastro do
+Empresarial). Para separar as duas coisas, rodei o mesmo teste com a versão
+ANTERIOR do script, buscada do histórico (`git show 66dfa39~1:…`): **falhou
+exatamente igual**, no mesmo botão "Chamar". A causa é anterior.
+
+**Descartado também:** horário. A hipótese óbvia era não haver slot livre no fim
+da tarde — mas a agenda das duas unidades de teste está configurada de
+**00:00 às 23:59, todos os dias**. Havia horário de sobra.
+
+**Onde procurar.** O caminho é recepção → check-in → *Chamar* → concluir. O
+`AccessibilityGuard` (27/08/2026) existe justamente porque avisos modais
+empilhados deixavam a aplicação inteira fora da árvore de acessibilidade — o
+`getByRole` passa a não achar nada, com cara de "a página não carregou". Este
+é o primeiro suspeito.
+
+**Tamanho:** pequeno a médio. Sem migração. Não bloqueia entrega: o fluxo é
+exercitado à mão e as outras 15 fatias cobrem o resto.
