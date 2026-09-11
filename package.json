@@ -22,6 +22,7 @@
     "manual:docx": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx",
     "marca:svg": "node scripts/ai-para-svg.mjs",
     "marca:conferir": "node scripts/conferir-marca.mjs",
+    "marca:lockup": "node scripts/gerar-lockup.mjs",
     "marca:assinaturas": "node scripts/conferir-assinaturas.mjs",
     "marca:contraste": "node scripts/conferir-contraste.mjs",
     "qual:versao": "node scripts/qual-versao.mjs"

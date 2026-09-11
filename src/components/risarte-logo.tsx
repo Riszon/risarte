@@ -54,23 +54,47 @@ export function RisarteMark({ className }: { className?: string }) {
  */
 const ASSINATURA: Record<Ambiente, { claro: string; escuro: string; nome: string }> = {
   unidades: {
-    claro: "/marca/odontologia-horizontal-claro.svg",
-    escuro: "/marca/odontologia-horizontal-branco.svg",
+    claro: "/marca/odontologia-lockup-claro.svg",
+    escuro: "/marca/odontologia-lockup-branco.svg",
     nome: "Risarte Odontologia",
   },
   franchising: {
     // Exceção: lateral turquesa nas duas luzes — ver o comentário acima.
-    claro: "/marca/franchising-horizontal-claro.svg",
-    escuro: "/marca/franchising-horizontal-claro.svg",
+    claro: "/marca/franchising-lockup.svg",
+    escuro: "/marca/franchising-lockup.svg",
     nome: "Risarte Franchising",
   },
   empresarial: {
     // Lateral bordô nas duas luzes: sempre a monocromática.
-    claro: "/marca/empresarial-horizontal-branco.svg",
-    escuro: "/marca/empresarial-horizontal-branco.svg",
+    claro: "/marca/empresarial-lockup.svg",
+    escuro: "/marca/empresarial-lockup.svg",
     nome: "Risarte Empresarial",
   },
 };
+
+/**
+ * ⚠️ POR QUE `-lockup` E NÃO O ARQUIVO OFICIAL (10/09/2026).
+ *
+ * O manual da marca constrói as três assinaturas com proporções DIFERENTES: em
+ * Franchising e Empresarial a palavra "Risarte" tem 0,386 da altura do símbolo;
+ * em Odontologia, 0,565. As duas primeiras concordam entre si até a terceira
+ * casa decimal — é a de Odontologia que é diferente. Não é erro de conversão:
+ * `npm run marca:conferir` mede 0,00% de diferença de forma contra a arte
+ * original nas doze.
+ *
+ * Na tela isso aparece do pior jeito: a barra lateral fica parada e só a marca
+ * troca ao mudar de ambiente, então o pulo de tamanho salta aos olhos. O dono
+ * viu e disse o que precisa acontecer: *"o símbolo e a palavra Risarte devem
+ * casar"*.
+ *
+ * Os `-lockup` são DERIVADOS gerados por `npm run marca:lockup`: mesmo desenho,
+ * com o bloco de texto reposicionado para a proporção de Odontologia — a que
+ * ele aprovou. **Os doze arquivos oficiais continuam intocados e continuam
+ * sendo conferidos contra a arte original**; mexer neles quebraria a régua que
+ * garante que a marca do sistema é a marca de verdade, e essa régua vale mais
+ * que a conveniência de uma tela. Para abandonar o ajuste, basta voltar a
+ * apontar para os `-horizontal-`.
+ */
 
 /**
  * A assinatura completa do ambiente, para a barra lateral.

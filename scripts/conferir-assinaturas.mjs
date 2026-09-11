@@ -23,10 +23,10 @@
 import { readFileSync } from "node:fs";
 
 const NO_SIDEBAR = [
-  ["unidades (claro)", "public/marca/odontologia-horizontal-claro.svg"],
-  ["unidades (escuro)", "public/marca/odontologia-horizontal-branco.svg"],
-  ["franqueadora", "public/marca/franchising-horizontal-claro.svg"],
-  ["empresarial", "public/marca/empresarial-horizontal-branco.svg"],
+  ["unidades (claro)", "public/marca/odontologia-lockup-claro.svg"],
+  ["unidades (escuro)", "public/marca/odontologia-lockup-branco.svg"],
+  ["franqueadora", "public/marca/franchising-lockup.svg"],
+  ["empresarial", "public/marca/empresarial-lockup.svg"],
 ];
 
 /**
@@ -75,33 +75,94 @@ function viewBoxDe(svg, arquivo) {
   return { w, h };
 }
 
-/** A caixa de cada caminho do desenho (aproximada — ver nota abaixo). */
+/**
+ * A caixa de cada caminho — JÁ COM AS TRANSFORMAÇÕES APLICADAS.
+ *
+ * ⚠️ A PRIMEIRA VERSÃO DESTA FUNÇÃO LIA SÓ OS NÚMEROS DO `d="…"` E IGNORAVA OS
+ * `<g transform>`. Para os arquivos oficiais isso não mudava nada (todos têm um
+ * único grupo de espelhamento); assim que o lockup passou a escalar o texto
+ * dentro de um grupo próprio, a régua continuou medindo o desenho **de antes**
+ * da escala — e acusou 34% de diferença num arquivo que já estava certo.
+ *
+ * É a mesma família de erro do dia inteiro: a conta estava certa, a entrada é
+ * que não era o que a tela desenha.
+ *
+ * ⚠️ E SÓ ENTENDE `translate` E `scale`. Qualquer outra transformação
+ * (`rotate`, `matrix`, `skew`) levanta erro em vez de ser ignorada — ignorar
+ * seria voltar exatamente ao defeito acima, medindo o desenho errado com
+ * confiança.
+ */
 function caixas(svg, arquivo) {
-  const ds = [...svg.matchAll(/\bd\s*=\s*"([^"]+)"/g)].map((m) => m[1]);
-  if (ds.length === 0) {
+  const pedacos = [...svg.matchAll(/<g\b([^>]*)>|<\/g>|<path\b[^>]*\bd="([^"]+)"/g)];
+  if (pedacos.length === 0) {
     throw new Error(`RÉGUA VAZIA: ${arquivo} não tem caminhos para medir.`);
   }
-  // ⚠️ APROXIMAÇÃO DECLARADA: os pontos de controle das curvas entram na conta,
-  // então a caixa sai igual ou MAIOR que a real, nunca menor. Para comparar
-  // proporções entre arquivos do mesmo desenhista, o erro é o mesmo dos dois
-  // lados e não muda a conclusão.
-  return ds
-    .map((d) => {
-      const n = (d.match(/-?\d*\.?\d+/g) ?? []).map(Number);
-      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-      for (let k = 0; k + 1 < n.length; k += 2) {
-        const x = n[k];
-        const y = n[k + 1];
-        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-        if (x < x0) x0 = x;
-        if (x > x1) x1 = x;
-        if (y < y0) y0 = y;
-        if (y > y1) y1 = y;
-      }
-      return { x0, x1, y0, y1, h: y1 - y0 };
-    })
-    .filter((c) => Number.isFinite(c.h))
-    .sort((a, b) => a.x0 - b.x0);
+
+  // Transformação acumulada: x' = sx·x + tx, y' = sy·y + ty.
+  const pilha = [{ sx: 1, sy: 1, tx: 0, ty: 0 }];
+  const atual = () => pilha[pilha.length - 1];
+  const compor = (fora, dentro) => ({
+    sx: fora.sx * dentro.sx,
+    sy: fora.sy * dentro.sy,
+    tx: fora.sx * dentro.tx + fora.tx,
+    ty: fora.sy * dentro.ty + fora.ty,
+  });
+
+  function lerTransform(attrs, arquivo) {
+    const m = /transform\s*=\s*"([^"]*)"/.exec(attrs);
+    if (!m) return { sx: 1, sy: 1, tx: 0, ty: 0 };
+    const texto = m[1];
+    const desconhecida = texto.replace(/(translate|scale)\s*\([^)]*\)/g, "").trim();
+    if (desconhecida) {
+      throw new Error(
+        `RÉGUA VAZIA: ${arquivo} tem transformação que eu não sei aplicar: "${desconhecida}".`
+      );
+    }
+    let t = { sx: 1, sy: 1, tx: 0, ty: 0 };
+    for (const parte of texto.matchAll(/(translate|scale)\s*\(([^)]*)\)/g)) {
+      const n = parte[2].trim().split(/[\s,]+/).map(Number);
+      const passo =
+        parte[1] === "translate"
+          ? { sx: 1, sy: 1, tx: n[0] ?? 0, ty: n[1] ?? 0 }
+          : { sx: n[0] ?? 1, sy: n[1] ?? n[0] ?? 1, tx: 0, ty: 0 };
+      t = compor(t, passo);
+    }
+    return t;
+  }
+
+  const out = [];
+  for (const p of pedacos) {
+    if (p[0].startsWith("</g")) {
+      pilha.pop();
+      continue;
+    }
+    if (p[0].startsWith("<g")) {
+      pilha.push(compor(atual(), lerTransform(p[1], arquivo)));
+      continue;
+    }
+    // ⚠️ APROXIMAÇÃO DECLARADA: os pontos de controle das curvas entram na
+    // conta, então a caixa sai igual ou MAIOR que a real, nunca menor. Para
+    // comparar proporções entre desenhos da mesma família, o erro é o mesmo dos
+    // dois lados e não muda a conclusão.
+    const n = (p[2].match(/-?\d*\.?\d+/g) ?? []).map(Number);
+    const t = atual();
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let k = 0; k + 1 < n.length; k += 2) {
+      const x = t.sx * n[k] + t.tx;
+      const y = t.sy * n[k + 1] + t.ty;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+    if (Number.isFinite(y1 - y0)) out.push({ x0, x1, y0, y1, h: y1 - y0 });
+  }
+
+  if (out.length === 0) {
+    throw new Error(`RÉGUA VAZIA: ${arquivo} não tem caminhos medíveis.`);
+  }
+  return out.sort((a, b) => a.x0 - b.x0);
 }
 
 /**
@@ -140,30 +201,51 @@ for (const [nome, arquivo] of NO_SIDEBAR) {
   const alturaFinal = Math.min(ALTURA_DA_CLASSE, alturaPelaLargura);
   const letraNaTela = (mediana / vb.h) * alturaFinal;
 
-  medidas.push({ nome, letraNaTela, alturaFinal });
+  // ⚠️ O SÍMBOLO TAMBÉM É MEDIDO, e essa foi a lição de 10/09/2026. A primeira
+  // correção igualou a PALAVRA esticando a altura — e, ao fazer isso,
+  // desigualou o SÍMBOLO. O dono viu na hora: *"o símbolo e a palavra devem
+  // casar, pois se não casarem, quando faz a mudança da franqueadora para uma
+  // unidade já dá pra perceber a diferença"*. A barra fica parada e só a marca
+  // troca: qualquer um dos dois fora de escala aparece.
+  const simboloNaTela = (cs[0].h / vb.h) * alturaFinal;
+
+  medidas.push({ nome, letraNaTela, simboloNaTela, alturaFinal });
   console.log(
-    `  ${nome.padEnd(20)} letras ${((mediana / vb.h) * 100).toFixed(0).padStart(3)}% do quadro` +
-      ` · desenha ${alturaFinal.toFixed(1).padStart(4)}px de altura` +
-      ` → palavra com ${letraNaTela.toFixed(1)}px  (${quantas} letras medidas)`
+    `  ${nome.padEnd(20)} desenha ${alturaFinal.toFixed(1).padStart(4)}px` +
+      ` → símbolo ${simboloNaTela.toFixed(1).padStart(4)}px` +
+      ` · palavra ${letraNaTela.toFixed(1).padStart(4)}px  (${quantas} letras medidas)`
   );
 }
 
-const maior = Math.max(...medidas.map((m) => m.letraNaTela));
-const menor = Math.min(...medidas.map((m) => m.letraNaTela));
-const diferenca = ((maior - menor) / maior) * 100;
+function espalhamento(valores) {
+  const maior = Math.max(...valores);
+  const menor = Math.min(...valores);
+  return { maior, menor, pct: ((maior - menor) / maior) * 100 };
+}
+
+const daPalavra = espalhamento(medidas.map((m) => m.letraNaTela));
+const doSimbolo = espalhamento(medidas.map((m) => m.simboloNaTela));
 
 console.log(
-  `\nMaior palavra ${maior.toFixed(1)}px, menor ${menor.toFixed(1)}px — diferença de ${diferenca.toFixed(0)}%.`
+  `\n  palavra: ${daPalavra.menor.toFixed(1)}–${daPalavra.maior.toFixed(1)}px` +
+    ` → diferença de ${daPalavra.pct.toFixed(0)}%` +
+    `\n  símbolo: ${doSimbolo.menor.toFixed(1)}–${doSimbolo.maior.toFixed(1)}px` +
+    ` → diferença de ${doSimbolo.pct.toFixed(0)}%`
 );
 
 // Acima de 10% a diferença deixa de ser ajuste fino e passa a ser lida como
-// "esta marca é menor que a outra" — que foi o que o dono viu, com 32%.
+// "esta marca é menor que a outra" — que foi o que o dono viu, com 31%.
 const LIMITE = 10;
-if (diferenca > LIMITE) {
+const falhas = [];
+if (daPalavra.pct > LIMITE) falhas.push(`a PALAVRA varia ${daPalavra.pct.toFixed(0)}%`);
+if (doSimbolo.pct > LIMITE) falhas.push(`o SÍMBOLO varia ${doSimbolo.pct.toFixed(0)}%`);
+
+if (falhas.length > 0) {
   console.log(
-    `\nFALHA: acima de ${LIMITE}% as assinaturas parecem de tamanhos diferentes.` +
-      `\nAjustar a altura em \`app-sidebar.tsx\` ou recompor o arquivo.`
+    `\nFALHA: ${falhas.join(" e ")} (limite ${LIMITE}%).` +
+      `\nTrocar de ambiente mostraria o pulo. Se a arte tiver proporções` +
+      `\ndiferentes, altura nenhuma resolve — rode \`npm run marca:lockup\`.`
   );
   process.exit(1);
 }
-console.log("\nAs três assinaturas leem no mesmo tamanho.");
+console.log("\nSímbolo e palavra casam nos três ambientes.");

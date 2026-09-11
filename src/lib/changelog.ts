@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.243.3",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "A logomarca não muda de tamanho ao trocar de ambiente",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O símbolo e a palavra 'Risarte' agora casam nos três ambientes. Antes, ao ir da Franqueadora para uma unidade, dava para ver a marca mudar de tamanho — a barra fica parada e só a logo troca, então o pulo aparecia.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A causa está no próprio manual da marca: nas assinaturas de Franchising e Empresarial o símbolo é proporcionalmente maior que na de Odontologia. Os arquivos oficiais NÃO foram alterados — a barra lateral passou a usar uma versão de tela, com a proporção da assinatura de Odontologia.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.243.2",
     data: "2026-09-10",
     migracao: null,

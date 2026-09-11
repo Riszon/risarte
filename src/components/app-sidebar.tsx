@@ -382,19 +382,19 @@ export function AppSidebar({
               Ela muda com o ambiente: Odontologia, Franchising ou Empresarial.
               Ver `risarte-logo` para a variante escolhida em cada um.
 
-              ⚠️ `h-8` E NÃO `h-6`, e o motivo não é gosto (10/09/2026). Os três
-              arquivos NÃO são o mesmo desenho em escalas diferentes: na
-              assinatura de Odontologia a palavra ocupa 57% da altura do quadro;
-              nas de Franchising e Empresarial, 38%, porque o símbolo ali é
-              proporcionalmente maior. Com a mesma altura de quadro, a palavra
-              "Risarte" saía **31% menor** nos dois — foi o que o dono viu.
+              ⚠️ A ALTURA VOLTOU A SER `h-6` porque o conserto foi feito no lugar
+              certo: nos ARQUIVOS, não aqui (10/09/2026). A primeira tentativa
+              usou `h-8` para igualar a palavra — e isso igualava a palavra às
+              custas de desigualar o símbolo. O dono apontou o que faltava:
+              *"o símbolo e a palavra Risarte devem casar, pois se não casarem,
+              quando faz a mudança da franqueadora para uma unidade já dá pra
+              perceber a diferença"*. Com arte de proporções diferentes, altura
+              nenhuma iguala os dois ao mesmo tempo.
 
-              A altura maior deixa as três lerem no mesmo tamanho (8% de
-              diferença). Como `object-contain` encaixa pela MENOR restrição, a
-              de Odontologia — que é mais larga — continua limitada pela largura
-              e desenha os mesmos 23px de antes: ela não cresce, as outras
-              alcançam. `npm run marca:assinaturas` mede e reprova acima de 10%. */}
-          <AssinaturaDoAmbiente className="h-8 w-auto min-w-0 flex-1 object-contain object-left" />
+              Agora as três apontam para os `-lockup`, que têm a MESMA proporção
+              interna (ver `risarte-logo`), e a mesma altura serve para todas.
+              `npm run marca:assinaturas` mede palavra E símbolo. */}
+          <AssinaturaDoAmbiente className="h-6 w-auto min-w-0 flex-1 object-contain object-left" />
           <button
             type="button"
             onClick={toggleCollapsed}
