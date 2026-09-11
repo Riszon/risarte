@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 08/09/2026 · Versão do sistema: **0.234.0** · Última migração: **0251**_
+_Atualizado em: 10/09/2026 · Versão do sistema: **0.243.0** · Última migração: **0254** (aplicada em produção pelo dono) · Empresarial **0.43.0** / migração **1005**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3671,6 +3671,60 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### RODADA DE REFINAMENTO VISUAL E RELATOS (10/09/2026, v0.239.2 → 0.243.0)
+
+Tudo entregue, no ar no treino, varredura de telas limpa (752 aberturas).
+
+**Visual (sem migração):**
+- **0.239.2** — barra lateral da Franqueadora: o texto sobre a turquesa dava
+  **4,51:1**, o pior da paleta. Corrigido no claro **e** no escuro trocando o
+  TEXTO (não o fundo, que aproximaria a Franqueadora do marinho das unidades).
+  Hierarquia passou a ser por peso, não por opacidade. `npm run marca:contraste`
+  ganhou duas partes: a escada de opacidade da lateral e a recusa de
+  `opacity-NN` em elemento de texto (opacidade aninhada, invisível para a régua).
+- **0.240.0** — tela de **Início** reformulada: respondia "quem é você"
+  (clínicas, funções, unidades) e passou a responder "o que espera por você",
+  por papel. Zero não vira cartão. A lista de cadastro foi para `/perfil`.
+  `slaPrefilter` (src/lib/journey.ts) evita ler todo cliente ativo só para
+  contar os atrasados.
+- **0.241.0** — **`/financeiro` deixou de ser um `redirect` para a
+  Configuração** e virou painel. A barra do módulo saiu de 18 abas iguais para
+  5 diretas + 3 menus (Análise, Rede, Cadastros). `monthRangeOf` unificou o
+  "mês corrente" que a DRE e o painel calculavam separado.
+
+**Relatos dos usuários:**
+- **OC-00004** (Empresarial 0.43.0, sem migração) — `/empresarial/cobrancas`:
+  as cobranças de TODAS as empresas numa tela, baixa e geração em lote. **O
+  sistema não emite boleto**: `createAsaasCharge` existe e não é chamada por
+  lugar nenhum; a tela declara isso e o texto "ASAAS conectado" (que mentia)
+  foi corrigido. **Achado em aberto:** não há índice único em (empresa, tipo,
+  mês) — nada no BANCO impede duplicar a mensalidade. A guarda é do aplicativo
+  e não cobre dois cliques simultâneos. **Decisão do dono pendente.**
+- **OC-00005** (0.242.0 + 0.243.0, migrações **0253** e **0254**) — recebíveis
+  e inadimplência. O Financeiro tinha *Contas a pagar* e não tinha o outro
+  lado; a régua da inadimplência existia desde o FIN1 e vivia dentro da ficha
+  de um paciente. Agora: `/financeiro/recebiveis` (unidade) e
+  `/financeiro/recebiveis-da-rede` (Franqueadora).
+  - **A taxa "saudável" NÃO é inventada pelo sistema.** O limite é
+    configurável (`finance_settings.alert_overdue_percent`, cascata
+    rede→unidade, padrão 5%) e a tela declara que é decisão da rede, não índice
+    de mercado. Percentual e não reais, porque reais não comparam unidades de
+    tamanhos diferentes.
+  - **A taxa da REDE é soma/soma, nunca a média das taxas** — a média daria o
+    mesmo peso a uma unidade com R$ 500 e a outra com R$ 500 mil.
+  - **A ordem da rede é por quem estourou o limite e, entre essas, por VALOR
+    vencido** — não pela maior taxa.
+  - **Antecipação:** mostra quanto EXISTE por prazo; não mostra líquido,
+    porque o desconto do banco não está cadastrado.
+  - ⚠️ **Risco assumido, com trava:** as faixas de prazo existem em TypeScript
+    (`finance/aging.ts`) e em SQL (0254). Há teste que LÊ a migração e compara
+    os cortes — mexer num lado sem o outro quebra o portão.
+
+**Instrumento novo:** `npm run qual:versao` diz qual versão está no ar (core
+**e** Empresarial) e **grita** quando não consegue medir — quarta variação do
+defeito do §0d, e a primeira em que o instrumento respondia com confiança a
+pergunta errada.
 
 **LOTE G — Agenda (em curso).** Entregue e aguardando teste do dono:
 - **G1 — Salas + configuração na unidade:** nova tabela `clinic_rooms` (salas com
