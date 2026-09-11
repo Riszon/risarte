@@ -66,13 +66,43 @@ async function cenario() {
   return companyId;
 }
 
+/**
+ * ⚠️ O TESTE RECOLHE O PRÓPRIO LIXO.
+ *
+ * A primeira versão não fazia isso, e oito execuções deixaram oito "Empresa de
+ * Teste E2E" na lista do dono — ele abriu o sistema e encontrou a bagunça.
+ * Dado de teste que fica é dado de teste que alguém um dia confunde com o de
+ * verdade.
+ */
+async function desfazerCenario(companyId: string) {
+  const db = await banco();
+  // `on delete cascade` leva colaboradores, dependentes e contatos junto.
+  await db.query("delete from empresarial.companies where id = $1", [companyId]);
+  await db.end();
+}
+
+/**
+ * ⚠️ A LIMPEZA RODA MESMO QUANDO O TESTE FALHA. Pô-la só no fim do teste
+ * deixaria lixo justamente nas execuções que quebram — que são as mais
+ * frequentes enquanto se constrói.
+ */
+let criada: string | null = null;
+
+test.afterEach(async () => {
+  if (criada) {
+    await desfazerCenario(criada);
+    criada = null;
+  }
+});
+
 test("a fila de boas-vindas registra a ligação e a pessoa sai da lista", async ({
   page,
   context,
 }) => {
   const companyId = await cenario();
+  criada = companyId;
 
-  //  grava os biscoitos no contexto; a aba vem do próprio teste.
+  // `entrarComo` grava os biscoitos no contexto; a aba vem do próprio teste.
   await entrarComo(context, PESSOAS.admin);
   await page.goto(`/empresarial/${companyId}/boas-vindas`);
   await esperarEFecharAvisos(page);
@@ -140,4 +170,5 @@ test("a fila de boas-vindas registra a ligação e a pessoa sai da lista", async
     .toBe("1:CONTACTED");
 
   await db.end();
+  // A limpeza fica com o `afterEach` — ver o comentário acima.
 });

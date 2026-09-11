@@ -225,6 +225,45 @@ como definição; a guarda olhou só a presença e pulou o trabalho.
 confiança é pior que não medir — leva a descartar a causa verdadeira. Antes de
 concluir "não é X", conferir se o que foi medido chega a exercitar X.
 
+### ⚠️ O COMENTÁRIO DESCREVIA A LISTA, NÃO O EFEITO (11/09/2026)
+
+**Eu apaguei os dados de teste do dono.** A limpeza da suíte
+(`limparMovimento`) tinha uma lista de **21 tabelas** e um comentário ao lado
+dizendo *"nenhuma tabela de cadastro entra aqui"*. Verdade sobre a lista; falso
+sobre o efeito: o `truncate ... cascade` alcançava **87 tabelas**, sete delas no
+schema `empresarial` — colaboradores, dependentes, arquivos, uso de benefício.
+
+**Terceira aparição da mesma armadilha** (§0: o truncate que levou junto o
+Risarte Academy). A lição de lá era "pergunte ao BANCO o que existe". Aqui ela
+volta em outra roupa: **pergunte ao BANCO o que o comando ALCANÇA, não à lista
+que você escreveu.**
+
+```bash
+npm run check:alcance      # o que o cascade da limpeza realmente esvazia
+npm run check:destrutivo   # que comando de migração apaga dado (e se foi declarado)
+```
+
+**As três correções, nesta ordem de importância:**
+
+1. **`TRUNCATE CASCADE` ignora a regra da chave estrangeira; `DELETE` respeita.**
+   `empresarial.employees.client_id` é `on delete set null` — e o truncate
+   apagava os colaboradores mesmo assim. `public.clients` saiu do truncate e
+   passou a ser apagada por `delete`: agora o vínculo fica nulo e o cadastro
+   fica de pé. Mais lento, e a troca é certa.
+2. **A limpeza mede o próprio alcance antes de apagar** e RECUSA quando ele sai
+   do schema `public`. Tabela nova que entre no caminho derruba a limpeza até
+   alguém declarar, de propósito, que pode ser apagada.
+3. **`npm run check:destrutivo` lê toda migração** e reprova comando que apaga
+   dado sem um `-- DESTRUTIVO: <motivo>` na linha de cima. Comando dentro de
+   corpo de função não conta — aquilo é comportamento, não execução; a primeira
+   versão da régua acusou 40 e viraria ruído.
+
+**Para responder "a atualização pode perder dado?":** rodar
+`npm run check:destrutivo`. As 261 migrações do histórico foram conferidas uma a
+uma em 11/09/2026 — as 7 destrutivas são estreitas e justificadas no próprio
+arquivo (de-duplicar papéis, limpar aviso corrompido, órfãos do PPR, derrubar
+tabela antiga **depois** de copiar).
+
 **A quarta vez virou instrumento (10/09/2026):**
 
 ```bash
