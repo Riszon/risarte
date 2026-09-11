@@ -309,6 +309,8 @@ async function semear(db) {
   }
   console.log("  2 fornecedores em cada unidade.");
 
+  await semearEmpresarial(db, clinicas);
+
   console.log(
     `\nPronto. CADA PAPEL TEM A SUA SENHA, gravadas em .env.test.local ` +
       `(TEST_USER_PASSWORDS). Para ver a lista: npm run senhas:treino`
@@ -337,6 +339,224 @@ async function kit(db, { clinicId, nome, kind, itens, procedimentos }) {
       procedimentos,
       kind,
     ]
+  );
+}
+
+/**
+ * O RISARTE EMPRESARIAL — duas empresas, gente dentro.
+ *
+ * ⚠️ ACRESCENTADO EM 11/09/2026, e a razão é um estrago meu. A limpeza da suíte
+ * apagava o cadastro do Empresarial (o `truncate cascade` que atravessava
+ * schema) e o seed não sabia recriá-lo: o módulo ficava vazio depois de todo
+ * `reset`, e o teste de boas-vindas tinha de montar o próprio cenário. Cenário
+ * que só um teste sabe montar é cenário que ninguém mais consegue usar.
+ *
+ * ⚠️ AS DUAS EMPRESAS SÃO DIFERENTES DE PROPÓSITO, porque a tela de boas-vindas
+ * tem dois estados e um cenário com um só deles esconde metade dos defeitos:
+ *
+ *   - **Bom Sabor** entrou há 6 meses e não tem carência: todo mundo aparece
+ *     como "Pode agendar".
+ *   - **Nova Era** assinou ontem, com 30 dias de carência de empresa e 15 do
+ *     colaborador: todo mundo aparece como "Carência até …".
+ *
+ * E a mistura de cadastro é igualmente deliberada: gente com ficha de paciente
+ * ligada e gente ainda pré-cadastrada, que é justamente quem a recepção precisa
+ * chamar. Um cenário só com cadastro completo mostraria a tela sempre limpa.
+ */
+const EMPRESAS_DO_PROGRAMA = [
+  {
+    cnpj: "11222333000181",
+    legal_name: "Bom Sabor Alimentos LTDA",
+    trade_name: "Bom Sabor",
+    // Contrato antigo e sem carência: pessoal liberado para agendar.
+    mesesDeContrato: 6,
+    grace_period_days: 0,
+    employee_grace_period_days: 0,
+    pessoas: [
+      {
+        cpf: "52998224725",
+        nome: "Marina AlvesPrado",
+        fone: "43999110011",
+        unidade: "CAM",
+        cadastro: "COMPLETED",
+        comFicha: true,
+        dependentes: [
+          { cpf: "16899535009", nome: "Théo Alves Prado", parentesco: "CHILD" },
+          { cpf: "40532176871", nome: "Rita Alves", parentesco: "SPOUSE" },
+        ],
+      },
+      {
+        cpf: "22233344456",
+        nome: "Joaquim Bezerra Lima",
+        fone: "43999220022",
+        unidade: "CAM",
+        // ⚠️ Sem ficha de paciente: é quem a recepção PRECISA chamar, porque
+        // sem ficha não há como agendar. A tela mostra isso na coluna do que
+        // falta.
+        cadastro: "PRE_REGISTERED",
+        comFicha: false,
+        dependentes: [],
+      },
+      {
+        cpf: "33344455567",
+        nome: "Cláudia Moreira Sato",
+        fone: "43999330033",
+        unidade: "LON",
+        cadastro: "PRE_REGISTERED",
+        comFicha: false,
+        dependentes: [
+          { cpf: "44455566678", nome: null, parentesco: "CHILD" },
+        ],
+      },
+    ],
+  },
+  {
+    cnpj: "44555666000172",
+    legal_name: "Nova Era Serviços ME",
+    trade_name: "Nova Era",
+    // Assinou ontem: a carência ainda corre para todo mundo.
+    diasDeContrato: 1,
+    grace_period_days: 30,
+    employee_grace_period_days: 15,
+    pessoas: [
+      {
+        cpf: "55566677789",
+        nome: "Rafael Toledo Pires",
+        fone: "43999440044",
+        unidade: "CAM",
+        cadastro: "PRE_REGISTERED",
+        comFicha: false,
+        dependentes: [],
+      },
+      {
+        cpf: "66677788890",
+        nome: "Sônia Braga Nunes",
+        fone: "43999550055",
+        unidade: "LON",
+        cadastro: "COMPLETED",
+        comFicha: true,
+        dependentes: [
+          { cpf: "77788899901", nome: "Ivo Braga", parentesco: "PARENT" },
+        ],
+      },
+    ],
+  },
+];
+
+async function semearEmpresarial(db, clinicas) {
+  let empresas = 0;
+  let pessoas = 0;
+  let dependentes = 0;
+
+  for (const e of EMPRESAS_DO_PROGRAMA) {
+    // Idempotente pelo CNPJ, como o resto do seed: rodar de novo completa o que
+    // falta em vez de duplicar.
+    let { rows } = await db.query(
+      "select id from empresarial.companies where cnpj = $1",
+      [e.cnpj]
+    );
+    if (rows.length === 0) {
+      const inicio = e.mesesDeContrato
+        ? `now() - interval '${e.mesesDeContrato} months'`
+        : `now() - interval '${e.diasDeContrato ?? 1} days'`;
+      ({ rows } = await db.query(
+        `insert into empresarial.companies
+           (cnpj, legal_name, trade_name, contract_started_at,
+            grace_period_days, employee_grace_period_days)
+         values ($1, $2, $3, ${inicio}, $4, $5)
+         returning id`,
+        [
+          e.cnpj,
+          e.legal_name,
+          e.trade_name,
+          e.grace_period_days,
+          e.employee_grace_period_days,
+        ]
+      ));
+      empresas++;
+    }
+    const companyId = rows[0].id;
+
+    for (const p of e.pessoas) {
+      const { rows: jaTem } = await db.query(
+        "select id from empresarial.employees where company_id = $1 and cpf = $2",
+        [companyId, p.cpf]
+      );
+      let employeeId = jaTem[0]?.id;
+
+      if (!employeeId) {
+        // A ficha de paciente, quando a pessoa já foi cadastrada de verdade.
+        // É ela que separa "dá para agendar" de "ainda precisa de cadastro".
+        let clientId = null;
+        if (p.comFicha) {
+          // ⚠️ PROCURA ANTES DE INSERIR, sem `on conflict`. O CPF do paciente
+          // NÃO é único sozinho na tabela — o mesmo CPF pode existir em
+          // unidades diferentes, que é como a rede compartilha um cliente. Um
+          // `on conflict (cpf)` foi recusado pelo banco na primeira tentativa,
+          // e a recusa estava certa.
+          const { rows: existente } = await db.query(
+            "select id from public.clients where cpf = $1 limit 1",
+            [p.cpf]
+          );
+          if (existente.length) {
+            clientId = existente[0].id;
+          } else {
+            const { rows: ficha } = await db.query(
+              `insert into public.clients
+                 (clinic_id, full_name, cpf, empresarial_company_id)
+               values ($1, $2, $3, $4) returning id`,
+              [clinicas[p.unidade], p.nome, p.cpf, companyId]
+            );
+            clientId = ficha[0].id;
+          }
+        }
+
+        const { rows: novo } = await db.query(
+          `insert into empresarial.employees
+             (company_id, cpf, full_name, phone, status, registration_stage,
+              dependent_plan, joined_at, clinic_id, client_id)
+           values ($1, $2, $3, $4, 'ACTIVE', $5, $6,
+                   now() - interval '2 days', $7, $8)
+           returning id`,
+          [
+            companyId,
+            p.cpf,
+            p.nome,
+            p.fone,
+            p.cadastro,
+            p.dependentes.length ? "FAMILY" : "NONE",
+            clinicas[p.unidade],
+            clientId,
+          ]
+        );
+        employeeId = novo[0].id;
+        pessoas++;
+      }
+
+      for (const d of p.dependentes) {
+        const { rows: temDep } = await db.query(
+          "select id from empresarial.dependents where employee_id = $1 and cpf = $2",
+          [employeeId, d.cpf]
+        );
+        if (temDep.length) continue;
+        await db.query(
+          `insert into empresarial.dependents
+             (employee_id, cpf, full_name, relationship, status, clinic_id)
+           values ($1, $2, $3, $4, 'ACTIVE', $5)`,
+          // ⚠️ Um dependente SEM NOME de propósito (o filho da Cláudia): é o
+          // cadastro pela metade que a recepção tem de completar na ligação, e
+          // a tela precisa saber mostrar isso sem quebrar.
+          [employeeId, d.cpf, d.nome, d.parentesco, clinicas[p.unidade]]
+        );
+        dependentes++;
+      }
+    }
+  }
+
+  console.log(
+    `  Empresarial: ${EMPRESAS_DO_PROGRAMA.length} empresas ` +
+      `(${empresas} criada(s) agora), ${pessoas} colaborador(es) e ` +
+      `${dependentes} dependente(s) novos — uma empresa em carência, outra liberada.`
   );
 }
 
