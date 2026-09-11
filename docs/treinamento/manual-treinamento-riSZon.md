@@ -254,6 +254,23 @@ cliente — aqui ela inflaria o total sem ser dívida. E **cartão não conta co
 atrasado enquanto não liquidou**: a adquirente paga em D+30, e cobrar antes
 disso acusaria de inadimplência o que é só prazo combinado.
 
+**Na Franqueadora há a visão da rede:** menu **Rede → Recebíveis da rede**. Ela
+mostra todas as unidades lado a lado — a receber, vencido, a taxa de cada uma e
+o limite dela — mais os totais da rede e as duas escadas de prazo somadas.
+
+> **A ordem da lista é "quem pede atenção primeiro".** Quem estourou o limite
+> vem na frente e, entre essas, **quem tem mais dinheiro vencido** — não quem
+> tem a maior taxa. Uma unidade com R$ 300 vencidos e 100% de inadimplência
+> aparece pior que uma com R$ 80 mil e 12%, e é atrás dos R$ 80 mil que se vai
+> primeiro. A taxa diz se a unidade está doente; o valor diz o tamanho do
+> problema.
+
+> **A inadimplência da REDE não é a média das taxas das unidades.** É o vencido
+> de todas dividido pelo que todas têm a receber. Na média, uma unidade pequena
+> com tudo vencido pesaria igual a uma grande em dia, e a rede pareceria muito
+> pior do que é. Se você conferir somando com o dedo, some os dois totais — não
+> tire a média das colunas.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu

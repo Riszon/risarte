@@ -82,3 +82,54 @@ describe("groupByAging", () => {
     expect(faixas.every((f) => f.cents === 0 && f.quantidade === 0)).toBe(true);
   });
 });
+
+// -----------------------------------------------------------------------------
+// A MESMA RÉGUA NOS DOIS LADOS — TypeScript e SQL.
+//
+// ⚠️ ESTE TESTE EXISTE PORQUE EU DUPLIQUEI UMA REGRA DE PROPÓSITO. A tela da
+// UNIDADE agrupa por prazo em TypeScript (as funções acima); a tela da REDE
+// agrupa no banco (`network_receivables`, migração 0254), porque roda sobre
+// todas as unidades sem trazer parcela nenhuma para o aplicativo.
+//
+// Duas implementações da mesma régua é exatamente como elas passam a divergir —
+// e a divergência aqui é invisível: o TOTAL continua batendo quando a faixa
+// está errada, só troca de coluna. A unidade diria uma coisa e a rede outra
+// sobre a mesma parcela, e ninguém descobriria.
+//
+// Então o teste LÊ O ARQUIVO DA MIGRAÇÃO e confere que os cortes são os mesmos.
+// Mudar um lado sem o outro quebra o portão de entrega.
+// -----------------------------------------------------------------------------
+
+import { readFileSync } from "node:fs";
+import { AGING_LIMITS } from "@/lib/finance/aging";
+
+describe("as faixas do SQL batem com as do TypeScript", () => {
+  const sql = readFileSync(
+    "supabase/migrations/0254_recebiveis_da_rede.sql",
+    "utf8"
+  );
+
+  it("a migração usa exatamente os mesmos cortes", () => {
+    // Os cortes aparecem como `dias <= N` e `dias > N` nos filtros.
+    const cortes = [
+      ...new Set(
+        [...sql.matchAll(/dias\s*(?:<=|>)\s*(\d+)/g)].map((m) => Number(m[1]))
+      ),
+    ].sort((a, b) => a - b);
+
+    // ⚠️ RÉGUA VAZIA GRITA: se o padrão não achar corte nenhum, isto é "não
+    // consegui medir", nunca "está tudo certo".
+    expect(cortes.length).toBeGreaterThan(0);
+    expect(cortes).toEqual([...AGING_LIMITS]);
+  });
+
+  it("a convenção 'até N inclui o dia N' vale no SQL também", () => {
+    // No SQL, a primeira faixa é `dias <= 30` (inclui o 30) e a seguinte abre
+    // em `dias > 30`. Se alguém trocasse para `dias < 30`, o dia 30 cairia na
+    // faixa seguinte no banco e na primeira no TypeScript.
+    for (const limite of AGING_LIMITS) {
+      expect(sql).toContain(`dias <= ${limite}`);
+      expect(sql).toContain(`dias > ${limite}`);
+    }
+  });
+});

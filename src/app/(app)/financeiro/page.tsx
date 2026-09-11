@@ -206,6 +206,12 @@ const GRUPOS: { titulo: string; itens: Caminho[]; soRede?: boolean }[] = [
         linha: "Em qual unidade entrar primeiro.",
       },
       {
+        href: "/financeiro/recebiveis-da-rede",
+        label: "Recebíveis da rede",
+        icon: HandCoins,
+        linha: "Atrás de qual unidade ir primeiro para cobrar.",
+      },
+      {
         href: "/financeiro/consolidado",
         label: "Consolidado",
         icon: Building2,

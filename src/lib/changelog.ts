@@ -62,6 +62,32 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.243.0",
+    data: "2026-09-10",
+    migracao: "0254",
+    titulo: "A Franqueadora vê os recebíveis da rede inteira",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Rede → Recebíveis da rede: quanto todas as unidades têm a receber, quanto já venceu e a inadimplência de cada uma, comparada com o limite dela. A lista vem ordenada por quem pede atenção primeiro.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A ordem não é pela maior taxa: quem estourou o limite vem na frente e, entre essas, quem tem mais dinheiro vencido. Uma unidade com R$ 300 vencidos e 100% aparece pior que uma com R$ 80 mil e 12% — e é atrás dos R$ 80 mil que se vai primeiro.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A inadimplência da rede é o vencido de todas dividido pelo que todas têm a receber, e não a média das taxas. Na média, uma unidade pequena com tudo vencido pesaria igual a uma grande em dia.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.242.0",
     data: "2026-09-10",
     migracao: "0253",

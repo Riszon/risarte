@@ -97,6 +97,7 @@ const ABAS: Aba[] = [
     soRede: true,
     itens: [
       { href: "/financeiro/painel-da-rede", label: "Painel da rede" },
+      { href: "/financeiro/recebiveis-da-rede", label: "Recebíveis da rede" },
       { href: "/financeiro/consolidado", label: "Consolidado" },
       { href: "/financeiro/taxas-da-rede", label: "Taxas da rede" },
     ],
