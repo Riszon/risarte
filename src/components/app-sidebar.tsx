@@ -380,8 +380,21 @@ export function AppSidebar({
         <div className="flex items-center gap-2.5 px-4 py-5">
           {/* A assinatura DESENHADA, não o nome digitado ao lado do símbolo.
               Ela muda com o ambiente: Odontologia, Franchising ou Empresarial.
-              Ver `risarte-logo` para a variante escolhida em cada um. */}
-          <AssinaturaDoAmbiente className="h-6 w-auto min-w-0 flex-1 object-contain object-left" />
+              Ver `risarte-logo` para a variante escolhida em cada um.
+
+              ⚠️ `h-8` E NÃO `h-6`, e o motivo não é gosto (10/09/2026). Os três
+              arquivos NÃO são o mesmo desenho em escalas diferentes: na
+              assinatura de Odontologia a palavra ocupa 57% da altura do quadro;
+              nas de Franchising e Empresarial, 38%, porque o símbolo ali é
+              proporcionalmente maior. Com a mesma altura de quadro, a palavra
+              "Risarte" saía **31% menor** nos dois — foi o que o dono viu.
+
+              A altura maior deixa as três lerem no mesmo tamanho (8% de
+              diferença). Como `object-contain` encaixa pela MENOR restrição, a
+              de Odontologia — que é mais larga — continua limitada pela largura
+              e desenha os mesmos 23px de antes: ela não cresce, as outras
+              alcançam. `npm run marca:assinaturas` mede e reprova acima de 10%. */}
+          <AssinaturaDoAmbiente className="h-8 w-auto min-w-0 flex-1 object-contain object-left" />
           <button
             type="button"
             onClick={toggleCollapsed}

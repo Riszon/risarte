@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.243.2",
+    data: "2026-09-10",
+    migracao: null,
+    titulo: "A logomarca no alto do menu ficou do mesmo tamanho nos três ambientes",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Na Franqueadora e no Risarte Empresarial a palavra 'Risarte' aparecia 31% menor que nas unidades. Os três desenhos não são a mesma arte em escalas diferentes — nos dois primeiros o símbolo é proporcionalmente maior, então a mesma altura desenhava a palavra menor. Agora as três leem no mesmo tamanho.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.243.1",
     data: "2026-09-10",
     migracao: null,
