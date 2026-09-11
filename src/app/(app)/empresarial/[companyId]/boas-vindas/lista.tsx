@@ -16,13 +16,15 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatBrDate } from "@/lib/dates";
 import { formatCpf } from "@/lib/masks";
+import { limparContato, registrarContato } from "./actions";
+// ⚠️ OS VALORES VÊM DE `constantes.ts`, NÃO DE `actions.ts`. Importá-los do
+// arquivo `"use server"` foi o que derrubou esta tela no clique (11/09/2026):
+// constante exportada de lá não chega ao navegador como constante.
 import {
-  limparContato,
-  registrarContato,
   RESULTADOS,
   RESULTADO_ROTULO,
   type Resultado,
-} from "./actions";
+} from "./constantes";
 import type { FamiliaParaContatar, PessoaParaContatar } from "./dados";
 
 /**
@@ -174,6 +176,11 @@ export function ListaDeBoasVindas({
 
                 {/* `data-moldura` sai na impressão: no papel não há botão. */}
                 <div data-moldura className="flex gap-1">
+                  {/* ⚠️ O BOTÃO SEMPRE TEM TEXTO. Ele já foi só um ícone
+                      quando havia contato — sem nome para leitor de tela, e sem
+                      dizer o que faz para quem enxerga. "Atualizar" também é
+                      mais honesto que repetir "Registrar": a ligação já foi
+                      anotada, o que se faz agora é corrigir o resultado. */}
                   <Button
                     size="sm"
                     variant={p.contato ? "ghost" : "outline"}
@@ -181,11 +188,11 @@ export function ListaDeBoasVindas({
                     disabled={pendente}
                   >
                     {p.contato ? (
-                      <Check className="size-4" />
+                      <Check className="mr-1 size-4" />
                     ) : (
                       <PhoneCall className="mr-1 size-4" />
                     )}
-                    {p.contato ? "" : "Registrar"}
+                    {p.contato ? "Atualizar" : "Registrar"}
                   </Button>
                   {p.contato && (
                     <Button
@@ -217,9 +224,14 @@ export function ListaDeBoasVindas({
                   key={r}
                   className="flex items-center gap-2 rounded-md border p-2 text-sm hover:bg-muted/50"
                 >
+                  {/* ⚠️ `aria-label` porque o texto está SOLTO ao lado do
+                      input, não ligado a ele por `htmlFor` — sem isto o botão
+                      não tem nome nenhum para quem usa leitor de tela, e o
+                      teste também não consegue apontá-lo sem ambiguidade. */}
                   <input
                     type="radio"
                     name="resultado"
+                    aria-label={RESULTADO_ROTULO[r]}
                     checked={resultado === r}
                     onChange={() => setResultado(r)}
                   />

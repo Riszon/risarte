@@ -6,22 +6,17 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { canViewEmpresarial } from "@/lib/empresarial/access";
 
+// ⚠️ NADA DE CONSTANTE EXPORTADA AQUI. Este arquivo é `"use server"`: todo
+// export dele tem de ser função async. `RESULTADOS` e `RESULTADO_ROTULO` moravam
+// nesta altura e quebravam a tela no clique — moraram até 11/09/2026 e foram
+// para `constantes.ts`, que explica o estrago. O tipo pode ficar (tipo some na
+// compilação), mas o valor não.
+import {
+  RESULTADOS,
+  type Resultado,
+} from "./constantes";
+
 export type ResultadoDoContato = { ok: boolean; error?: string };
-
-export const RESULTADOS = [
-  "CONTACTED",
-  "NO_ANSWER",
-  "CALL_LATER",
-  "DECLINED",
-] as const;
-export type Resultado = (typeof RESULTADOS)[number];
-
-export const RESULTADO_ROTULO: Record<Resultado, string> = {
-  CONTACTED: "Falei com a pessoa",
-  NO_ANSWER: "Não atendeu",
-  CALL_LATER: "Pediu para ligar depois",
-  DECLINED: "Não quer agora",
-};
 
 /**
  * Registra a ligação de boas-vindas.

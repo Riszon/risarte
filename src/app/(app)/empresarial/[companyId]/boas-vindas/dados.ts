@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { liberacaoDaPessoa, type Liberacao } from "@/lib/empresarial/carencia";
 import { RELATIONSHIP_LABELS, type Relationship } from "@/lib/empresarial/constants";
+import { VOLTAM_PARA_A_FILA } from "./constantes";
 
 /**
  * A LISTA DE BOAS-VINDAS DE UMA EMPRESA (pedido do dono, 11/09/2026).
@@ -319,5 +320,5 @@ export async function carregarBoasVindas(
  */
 export function precisaDeContato(p: PessoaParaContatar): boolean {
   if (!p.contato) return true;
-  return p.contato.resultado === "NO_ANSWER" || p.contato.resultado === "CALL_LATER";
+  return VOLTAM_PARA_A_FILA.includes(p.contato.resultado);
 }
