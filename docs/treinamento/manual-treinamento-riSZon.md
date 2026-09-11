@@ -209,9 +209,50 @@ resumo mostra o **retrato da última apuração dos alertas**, e diz na tela
 quando ela foi; apurar na hora é botão do Painel da rede.
 
 **A barra de abas encolheu.** As telas de todo dia ficaram à mostra (Painel,
-DRE, Fluxo de caixa, Contas a pagar, Conciliação) e o resto entrou em três
-menus: **Análise**, **Rede** (só na Franqueadora) e **Cadastros**. O menu fica
-aceso quando você está numa tela dele.
+DRE, Fluxo de caixa, Recebíveis, Contas a pagar, Conciliação) e o resto entrou
+em três menus: **Análise**, **Rede** (só na Franqueadora) e **Cadastros**. O
+menu fica aceso quando você está numa tela dele.
+
+### 2.4. Recebíveis e inadimplência
+
+A aba **Recebíveis** é o outro lado do Contas a pagar: o que a unidade tem **a
+receber**.
+
+**No alto:** quanto há a receber, quanto já venceu (com multa e juros), a
+**taxa de inadimplência** e quanto foi recebido no mês.
+
+**Duas escadas de prazo**, e elas não se misturam de propósito:
+
+| Escada | Responde | Para que serve |
+|---|---|---|
+| **A vencer, por prazo** | o que vence em 30, 60, 90 dias | é o que existe para **antecipar** |
+| **Vencido, por tempo de atraso** | há quanto tempo cada parte venceu | é o que existe para **cobrar** |
+
+> **Por que separadas.** O que vence semana que vem e o que está parado há seis
+> meses pedem decisões opostas: uma é sentar com o banco, a outra é ligar para
+> o cliente. Numa escada só, as duas apareceriam lado a lado.
+
+**Sobre antecipar:** a tela mostra **quanto existe**, não quanto entraria na
+conta. O desconto que o banco cobra para antecipar depende de negociação e não
+está cadastrado no sistema — mostrar um valor líquido seria prometer dinheiro
+que não chega.
+
+**A taxa de inadimplência** é o **vencido dividido pelo que há a receber** —
+não sobre o faturamento, senão ela cairia em todo mês de venda forte mesmo com
+a cobrança piorando. Ela é comparada com um limite definido pela **rede**, em
+**Financeiro → Configuração**.
+
+> ⚠️ **O limite não é um índice de mercado.** Nenhum sistema sabe qual taxa é
+> "saudável" para a sua clínica: depende do ticket, do meio de pagamento e da
+> praça. O número é uma decisão da rede, e serve para comparar unidades na
+> mesma régua — não para dizer que a Risarte está certa ou errada diante do
+> mercado.
+
+**Cartão a cartão, o que entra na conta:** só cobranças que ainda devem alguma
+coisa. Paga, cancelada ou substituída por renegociação fica na ficha do
+cliente — aqui ela inflaria o total sem ser dívida. E **cartão não conta como
+atrasado enquanto não liquidou**: a adquirente paga em D+30, e cobrar antes
+disso acusaria de inadimplência o que é só prazo combinado.
 
 ## A barra de cima
 

@@ -170,6 +170,12 @@ const GRUPOS: { titulo: string; itens: Caminho[]; soRede?: boolean }[] = [
         linha: "O que já entrou e o que ainda vai entrar, dia a dia.",
       },
       {
+        href: "/financeiro/recebiveis",
+        label: "Recebíveis",
+        icon: HandCoins,
+        linha: "O que a unidade tem a receber, o que venceu e a inadimplência.",
+      },
+      {
         href: "/financeiro/contas-a-pagar",
         label: "Contas a pagar",
         icon: Receipt,

@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.242.0",
+    data: "2026-09-10",
+    migracao: "0253",
+    titulo: "Recebíveis e inadimplência ganharam tela própria",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Financeiro tinha Contas a pagar e não tinha o outro lado. Agora tem Recebíveis: quanto a unidade tem a receber, quanto já venceu (com multa e juros) e quanto foi recebido no mês.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Duas escadas de prazo na mesma tela: o que está A VENCER por prazo (30, 60, 90 dias) — que é o que existe para antecipar — e o que está VENCIDO por tempo de atraso, que é o que existe para cobrar. Quanto mais velho o atraso, menor a chance de receber.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A taxa de inadimplência virou indicador: vencido dividido pelo que há a receber, comparada com um limite que a REDE define em Financeiro → Configuração. O limite não é índice de mercado, e a tela diz isso — o que é saudável depende do ticket, do meio de pagamento e da praça de cada unidade.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No Painel do Financeiro, o cartão de vencido passou a levar para a tela de Recebíveis (antes levava ao fluxo de caixa, que só mostrava o total), e aparece um cartão novo quando a inadimplência passa do limite.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.241.0",
     data: "2026-09-10",
     migracao: null,

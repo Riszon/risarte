@@ -194,7 +194,7 @@ export async function montarPendenciasFinanceiras(
   // o painel avisar de um buraco que a tela não mostra, ou o contrário.
   const ate = addDaysIso(hoje, 90);
 
-  const [serie, saldoInicial, vencidos, autorizacao, alertas] =
+  const [serie, saldoInicial, vencidos, autorizacao, alertas, taxa] =
     await Promise.all([
       supabase.rpc("cash_flow_series", {
         p_clinic_id: clinicId,
@@ -216,6 +216,10 @@ export async function montarPendenciasFinanceiras(
         .select("rule, detail")
         .eq("clinic_id", clinicId)
         .is("cleared_at", null),
+      // A MESMA função da tela de recebíveis (0253). O painel não recalcula a
+      // taxa: duas contas para o mesmo indicador é como as duas telas passam a
+      // discordar sobre ele.
+      supabase.rpc("clinic_overdue_rate", { p_clinic_id: clinicId }),
     ]);
 
   const rows: CashSeriesRow[] = (
@@ -280,7 +284,9 @@ export async function montarPendenciasFinanceiras(
       valor: reais(aReceber),
       titulo: "A receber vencido",
       linha: `${atraso?.receivable_count ?? 0} cobrança(s) passaram do vencimento. Não entram na projeção.`,
-      href: "/financeiro/fluxo-de-caixa",
+      // Antes apontava para o fluxo de caixa, que só mostrava o total. Desde a
+      // 0253 existe a tela que lista quem deve e há quanto tempo (OC-00005).
+      href: "/financeiro/recebiveis",
       tom: "atencao",
     });
   }
@@ -304,6 +310,30 @@ export async function montarPendenciasFinanceiras(
       titulo: "Contas aguardando autorização",
       linha: "Não são pagas antes da decisão de quem tem alçada.",
       href: "/financeiro/contas-a-pagar",
+      tom: "atencao",
+    });
+  }
+
+  // ⚠️ O CARTÃO SÓ APARECE QUANDO A TAXA PASSA DO LIMITE — não é mais um número
+  // no painel, é uma pendência. Mostrar a taxa sempre, mesmo saudável, faria
+  // dela paisagem junto com os cartões que exigem ação.
+  const t = ((taxa.data ?? []) as {
+    overdue_percent: number | null;
+    limit_percent: number | null;
+  }[])[0];
+  if (
+    t?.overdue_percent !== null &&
+    t?.overdue_percent !== undefined &&
+    t?.limit_percent !== null &&
+    t?.limit_percent !== undefined &&
+    Number(t.overdue_percent) > Number(t.limit_percent)
+  ) {
+    lista.push({
+      chave: "inadimplencia",
+      valor: `${Number(t.overdue_percent).toLocaleString("pt-BR")}%`,
+      titulo: "Inadimplência acima do limite",
+      linha: `A rede considera aceitável até ${Number(t.limit_percent).toLocaleString("pt-BR")}%.`,
+      href: "/financeiro/recebiveis",
       tom: "atencao",
     });
   }

@@ -6,6 +6,7 @@ import {
   BarChart3,
   ChevronDown,
   Gauge,
+  HandCoins,
   Landmark,
   Network,
   Receipt,
@@ -58,6 +59,13 @@ const ABAS: Aba[] = [
     href: "/financeiro/fluxo-de-caixa",
     label: "Fluxo de caixa",
     icon: Wallet,
+  },
+  // OC-00005: o Financeiro tinha "Contas a pagar" e não tinha o outro lado.
+  {
+    tipo: "direta",
+    href: "/financeiro/recebiveis",
+    label: "Recebíveis",
+    icon: HandCoins,
   },
   {
     tipo: "direta",
