@@ -136,6 +136,8 @@ export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
   CANCELLED: "Cancelada",
 };
 
+// A ordem aqui espelha o CHECK da migração 1007. A ordem das COLUNAS do quadro
+// mora em `funnel.ts` — lá Fechamento é uma coluna só, com ganho e perda dentro.
 export const LEAD_STAGES = [
   "CAPTURE",
   "CONTACT",
@@ -145,6 +147,7 @@ export const LEAD_STAGES = [
   "FOLLOW_UP",
   "CLOSED_WON",
   "CLOSED_LOST",
+  "IMPLEMENTATION",
 ] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
@@ -154,8 +157,34 @@ export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
   PRESENTED: "Apresentado",
   PROPOSAL_SENT: "Proposta enviada",
   FOLLOW_UP: "Follow-up",
-  CLOSED_WON: "Fechado (ganho)",
-  CLOSED_LOST: "Perdido",
+  CLOSED_WON: "Fechamento (ganho)",
+  CLOSED_LOST: "Fechamento (perda)",
+  IMPLEMENTATION: "Implantação",
+};
+
+// De onde veio a empresa. LISTA FECHADA de propósito: em texto livre,
+// "indicação", "Indicação" e "indicacao" viram três canais no relatório, e o
+// painel deixa de responder de onde vêm os clientes.
+export const CAPTURE_CHANNELS = [
+  "INDICACAO",
+  "PROSPECCAO",
+  "EVENTO",
+  "REDES_SOCIAIS",
+  "SITE",
+  "PARCERIA",
+  "CLIENTE",
+  "OUTRO",
+] as const;
+export type CaptureChannel = (typeof CAPTURE_CHANNELS)[number];
+export const CAPTURE_CHANNEL_LABELS: Record<CaptureChannel, string> = {
+  INDICACAO: "Indicação",
+  PROSPECCAO: "Prospecção ativa",
+  EVENTO: "Evento ou feira",
+  REDES_SOCIAIS: "Redes sociais",
+  SITE: "Site ou formulário",
+  PARCERIA: "Parceria (sindicato, associação, contador)",
+  CLIENTE: "Paciente da Risarte",
+  OUTRO: "Outro",
 };
 
 export const SOCIAL_TRIGGER_TYPES = [

@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { agendaRange } from "@/lib/agenda-view";
 import {
   brazilClock,
+  brazilInputValue,
   instantFromBrazil,
+  instantFromInputValue,
   isoDateIn,
   startOfDayInBrazil,
   todayInBrazil,
@@ -360,5 +362,44 @@ describe("monthRangeOf", () => {
     // sem fuso e por `toISOString()`, rodar em UTC-3 devolveria o mês anterior.
     expect(monthRangeOf("2026-03-01").from).toBe("2026-03-01");
     expect(monthRangeOf("2026-01-01").from).toBe("2026-01-01");
+  });
+});
+
+// ⚠️ O CAMPO DE DATA/HORA QUE EMPURRAVA O COMPROMISSO +3h A CADA EDIÇÃO.
+//
+// `new Date(iso).toISOString().slice(0, 16)` mostra a hora em UTC. O campo
+// voltava preenchido três horas à frente, e salvar sem tocar nele gravava
+// aquela hora errada — de novo, e de novo. Achado no funil do Empresarial
+// (14/09/2026); é a terceira roupa do mesmo defeito de fuso do projeto.
+describe("campo datetime-local fala o relógio brasileiro", () => {
+  it("mostra a hora DAQUI, não a de Greenwich", () => {
+    // 17:00Z é 14:00 em Brasília.
+    const instante = new Date("2026-09-14T17:00:00.000Z");
+    expect(brazilInputValue(instante)).toBe("2026-09-14T14:00");
+    expect(instante.toISOString().slice(0, 16)).toBe("2026-09-14T17:00"); // o errado
+  });
+
+  it("aceita o texto ISO que vem do banco", () => {
+    expect(brazilInputValue("2026-09-14T17:00:00+00:00")).toBe("2026-09-14T14:00");
+  });
+
+  it("o que a pessoa digita é hora de Brasília", () => {
+    const lido = instantFromInputValue("2026-09-14T14:00");
+    expect(lido?.toISOString()).toBe("2026-09-14T17:00:00.000Z");
+  });
+
+  it("IDA E VOLTA NÃO ANDA UM MINUTO — que era o estrago de verdade", () => {
+    // Abrir e salvar dez vezes tem de devolver o mesmo instante.
+    let instante = new Date("2026-09-14T17:00:00.000Z");
+    for (let i = 0; i < 10; i += 1) {
+      instante = instantFromInputValue(brazilInputValue(instante))!;
+    }
+    expect(instante.toISOString()).toBe("2026-09-14T17:00:00.000Z");
+  });
+
+  it("texto que não presta devolve nulo, nunca um horário inventado", () => {
+    expect(instantFromInputValue("")).toBeNull();
+    expect(instantFromInputValue("amanhã cedo")).toBeNull();
+    expect(instantFromInputValue("2026-13-45T99:99")).toBeNull();
   });
 });

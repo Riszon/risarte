@@ -216,6 +216,41 @@ export const formatBrDateTime = (instant: Date | string | number) =>
     hour12: false,
   });
 
+/**
+ * O valor de um `<input type="datetime-local">` no relógio BRASILEIRO:
+ * `"2026-09-05T14:32"`.
+ *
+ * ⚠️ O caminho óbvio — `new Date(iso).toISOString().slice(0, 16)` — mostra a
+ * hora em **UTC**, três horas à frente daqui. E o estrago não para no visual:
+ * o campo volta preenchido com a hora errada, então **cada vez que alguém abre
+ * e salva o registro, o compromisso anda +3h**. Era assim no funil do
+ * Empresarial até 14/09/2026.
+ */
+export function brazilInputValue(instant: Date | string | number): string {
+  const { date, time } = brazilClock(new Date(instant));
+  return `${date}T${time}`;
+}
+
+/**
+ * O instante correspondente ao que a pessoa digitou num `datetime-local`
+ * (`"2026-09-05T14:32"`), lido como relógio de parede brasileiro.
+ * Devolve `null` quando o texto não presta — inventar horário seria pior.
+ */
+export function instantFromInputValue(value: string): Date | null {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(value.trim());
+  if (!m) return null;
+  const instante = instantFromBrazil(m[1], m[2]);
+  if (Number.isNaN(instante.getTime())) return null;
+
+  // O formato pode estar certo e o VALOR não existir ("2026-13-45T99:99").
+  // `Date.UTC` rola o excesso para a frente em silêncio e devolveria um
+  // instante plausível — que é exatamente o tipo de resposta errada com cara
+  // de certa. Quem confirma é a volta: o relógio brasileiro deste instante tem
+  // de ser o que foi digitado.
+  const volta = brazilClock(instante);
+  return volta.date === m[1] && volta.time === m[2] ? instante : null;
+}
+
 /** O relógio de parede brasileiro agora: `{ date: "2026-09-05", time: "14:32" }`. */
 export function brazilClock(instant: Date = new Date()): {
   date: string;

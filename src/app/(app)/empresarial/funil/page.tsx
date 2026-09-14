@@ -9,7 +9,8 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { Card, CardContent } from "@/components/ui/card";
-import type { LeadStage } from "@/lib/empresarial/constants";
+import type { CaptureChannel, LeadStage } from "@/lib/empresarial/constants";
+import { tempoNaFaseAtual, type StagePeriod } from "@/lib/empresarial/funnel";
 import { LeadBoard, type LeadView } from "./lead-board";
 import {
   BRAZIL_TIME_ZONE,
@@ -36,7 +37,18 @@ type LeadRow = {
   next_action_at: string | null;
   next_action_note: string | null;
   notes: string | null;
+  capture_channel: CaptureChannel | null;
+  referral_name: string | null;
+  referral_contact: string | null;
   updated_at: string;
+};
+
+type StageHistoryRow = {
+  lead_id: string;
+  stage: LeadStage;
+  entered_at: string;
+  left_at: string | null;
+  is_initial: boolean;
 };
 
 export default async function FunilPage() {
@@ -49,7 +61,7 @@ export default async function FunilPage() {
   const { data: leadRows } = await db
     .from("commercial_leads")
     .select(
-      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, lost_reason, company_id, estimated_value_cents, next_action_at, next_action_note, notes, updated_at"
+      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, lost_reason, company_id, estimated_value_cents, next_action_at, next_action_note, notes, capture_channel, referral_name, referral_contact, updated_at"
     )
     .order("updated_at", { ascending: false })
     .returns<LeadRow[]>();
@@ -73,6 +85,34 @@ export default async function FunilPage() {
           }[]
         >()
     : { data: [] };
+
+  // O relógio de cada fase (migração 1007). A conta é feita AQUI, no servidor,
+  // e o cartão recebe um número de dias pronto — cronômetro que se desenha nos
+  // dois lados dá horas diferentes e derruba a árvore do React.
+  const { data: histRows, error: histErr } = leadIds.length
+    ? await db
+        .from("commercial_lead_stage_history")
+        .select("lead_id, stage, entered_at, left_at, is_initial")
+        .in("lead_id", leadIds)
+        .order("entered_at", { ascending: true })
+        .returns<StageHistoryRow[]>()
+    : { data: [], error: null };
+  // Régua vazia grita: se a tabela ainda não existe (migração não rodada), o
+  // quadro continua abrindo — mas sem inventar "0 dias" para todo mundo.
+  if (histErr) console.error("histórico de fases indisponível:", histErr.message);
+
+  const historyByLead = new Map<string, StagePeriod[]>();
+  for (const h of histRows ?? []) {
+    const list = historyByLead.get(h.lead_id) ?? [];
+    list.push({
+      stage: h.stage,
+      enteredAt: h.entered_at,
+      leftAt: h.left_at,
+      isInitial: h.is_initial,
+    });
+    historyByLead.set(h.lead_id, list);
+  }
+  const agora = new Date();
 
   // Nomes (consultores + autores de atividade).
   const userIds = [
@@ -122,6 +162,10 @@ export default async function FunilPage() {
     nextActionAt: l.next_action_at,
     nextActionNote: l.next_action_note,
     notes: l.notes,
+    captureChannel: l.capture_channel,
+    referralName: l.referral_name,
+    referralContact: l.referral_contact,
+    tempoNaFase: tempoNaFaseAtual(historyByLead.get(l.id) ?? [], agora),
     activities: activitiesByLead.get(l.id) ?? [],
   }));
 

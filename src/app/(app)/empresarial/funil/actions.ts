@@ -7,7 +7,14 @@ import { logAudit } from "@/lib/audit";
 import { formatPhone } from "@/lib/masks";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
-import { LEAD_STAGES, type LeadStage } from "@/lib/empresarial/constants";
+import {
+  CAPTURE_CHANNELS,
+  LEAD_STAGES,
+  LEAD_STAGE_LABELS,
+  type LeadStage,
+} from "@/lib/empresarial/constants";
+import { ENTRY_STAGES } from "@/lib/empresarial/funnel";
+import { instantFromInputValue } from "@/lib/dates";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -18,6 +25,24 @@ function canUseFunnel(session: SessionContext): boolean {
 function field(formData: FormData, key: string): string | null {
   const v = String(formData.get(key) ?? "").trim();
   return v || null;
+}
+
+/** Canal da captação: só o que está na lista fechada entra (ver migração 1007). */
+function captureChannel(formData: FormData): string | null {
+  const v = field(formData, "capture_channel");
+  return v && (CAPTURE_CHANNELS as readonly string[]).includes(v) ? v : null;
+}
+
+/**
+ * O campo de data/hora chega como relógio de parede ("2026-09-14T14:00") e vira
+ * instante NO FUSO DO BRASIL. Mandar o texto cru para o banco funcionava por
+ * sorte (o banco está em America/Sao_Paulo desde a 0201) — e deixaria de
+ * funcionar no dia em que alguém mudasse o fuso da conexão.
+ */
+function nextActionAt(formData: FormData): string | null {
+  const v = field(formData, "next_action_at");
+  if (!v) return null;
+  return instantFromInputValue(v)?.toISOString() ?? null;
 }
 
 function reaisToCents(value: string | null): number | null {
@@ -40,6 +65,13 @@ export async function createLead(formData: FormData): Promise<ActionResult> {
     consultantId = session.userId;
   }
 
+  // A fase de entrada é escolhida no cadastro; sem escolha, Captação.
+  const pedida = field(formData, "stage");
+  const stage =
+    pedida && (ENTRY_STAGES as readonly string[]).includes(pedida)
+      ? pedida
+      : "CAPTURE";
+
   const db = await empresarialDb();
   const { data, error } = await db
     .from("commercial_leads")
@@ -51,11 +83,14 @@ export async function createLead(formData: FormData): Promise<ActionResult> {
         ? formatPhone(field(formData, "contact_phone")!)
         : null,
       estimated_value_cents: reaisToCents(field(formData, "estimated_value")),
-      next_action_at: field(formData, "next_action_at"),
+      next_action_at: nextActionAt(formData),
       next_action_note: field(formData, "next_action_note"),
       notes: field(formData, "notes"),
+      capture_channel: captureChannel(formData),
+      referral_name: field(formData, "referral_name"),
+      referral_contact: field(formData, "referral_contact"),
       consultant_id: consultantId,
-      stage: "CAPTURE",
+      stage,
     })
     .select("id")
     .single();
@@ -92,9 +127,12 @@ export async function updateLead(
         ? formatPhone(field(formData, "contact_phone")!)
         : null,
       estimated_value_cents: reaisToCents(field(formData, "estimated_value")),
-      next_action_at: field(formData, "next_action_at"),
+      next_action_at: nextActionAt(formData),
       next_action_note: field(formData, "next_action_note"),
       notes: field(formData, "notes"),
+      capture_channel: captureChannel(formData),
+      referral_name: field(formData, "referral_name"),
+      referral_contact: field(formData, "referral_contact"),
     })
     .eq("id", leadId);
   if (error) {
@@ -115,9 +153,15 @@ export async function moveLeadStage(
   if (!(LEAD_STAGES as readonly string[]).includes(stage)) {
     return { ok: false, error: "Etapa inválida." };
   }
+  // Ordem do dono: perda SEMPRE com motivo escrito. Sem ele, seis meses depois
+  // ninguém sabe por que a empresa não entrou — e é essa lista que diz o que
+  // corrigir na oferta.
+  if (stage === "CLOSED_LOST" && !lostReason?.trim()) {
+    return { ok: false, error: "Escreva o motivo da perda." };
+  }
   const db = await empresarialDb();
   const patch: Record<string, unknown> = { stage };
-  if (stage === "CLOSED_LOST") patch.lost_reason = lostReason ?? null;
+  if (stage === "CLOSED_LOST") patch.lost_reason = lostReason!.trim();
   const { error } = await db
     .from("commercial_leads")
     .update(patch)
@@ -126,11 +170,16 @@ export async function moveLeadStage(
     console.error("moveLeadStage failed:", error.message);
     return { ok: false, error: "Não foi possível mover o lead." };
   }
+  // O relógio da fase é gravado por GATILHO (migração 1007). Esta anotação é a
+  // linha do tempo que a pessoa lê — e vai em português: "Movido para
+  // PROPOSAL_SENT" era interface em inglês escapando para a tela.
   await db.from("commercial_lead_activities").insert({
     lead_id: leadId,
     author_id: session.userId,
     kind: "STAGE_CHANGE",
-    note: `Movido para ${stage}${lostReason ? ` (${lostReason})` : ""}`,
+    note: `Movido para ${LEAD_STAGE_LABELS[stage]}${
+      lostReason?.trim() ? ` — motivo: ${lostReason.trim()}` : ""
+    }`,
   });
   revalidatePath("/empresarial/funil");
   return { ok: true };
