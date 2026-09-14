@@ -25,8 +25,13 @@ import {
   startOfDayInBrazil,
   todayInBrazil,
 } from "@/lib/dates";
-import { KanbanSquare } from "lucide-react";
-import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
+import Link from "next/link";
+import { BarChart3, CalendarDays, KanbanSquare } from "lucide-react";
+import {
+  CabecalhoDeModulo,
+  BOTAO_NO_CABECALHO,
+} from "@/components/cabecalho-modulo";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Funil · Risarte Empresarial" };
 
@@ -161,6 +166,15 @@ export default async function FunilPage() {
     meetingsByLead.set(m.lead_id, [...(meetingsByLead.get(m.lead_id) ?? []), m]);
   }
 
+  // Os limites por fase (1012): e o que faz o cartao ficar vermelho.
+  const { data: limitRows } = await db
+    .from("funnel_stage_limits")
+    .select("stage, max_days")
+    .returns<{ stage: string; max_days: number }[]>();
+  const limites = Object.fromEntries(
+    (limitRows ?? []).map((l) => [l.stage, l.max_days])
+  );
+
   const historyByLead = new Map<string, StagePeriod[]>();
   for (const h of histRows ?? []) {
     const list = historyByLead.get(h.lead_id) ?? [];
@@ -287,7 +301,28 @@ export default async function FunilPage() {
         titulo="Funil comercial"
         descricao="Do primeiro contato ao fechamento. Ao fechar (ganho), a empresa é criada."
         voltar={{ href: "/empresarial", rotulo: "Empresas" }}
-      />
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          className={BOTAO_NO_CABECALHO}
+          nativeButton={false}
+          render={<Link href="/empresarial/funil/painel" />}
+        >
+          <BarChart3 className="mr-1 size-4" />
+          Painel
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className={BOTAO_NO_CABECALHO}
+          nativeButton={false}
+          render={<Link href="/empresarial/agenda" />}
+        >
+          <CalendarDays className="mr-1 size-4" />
+          Agenda
+        </Button>
+      </CabecalhoDeModulo>
 
       {todayLeads.length > 0 && (
         <Card className="border-gold/40 bg-gold/5">
@@ -320,6 +355,7 @@ export default async function FunilPage() {
         consultants={consultants}
         canManage={isProgramManager(session)}
         currentUserId={session.userId}
+        limites={limites}
       />
     </div>
   );

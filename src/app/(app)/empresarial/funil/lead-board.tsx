@@ -117,11 +117,14 @@ export function LeadBoard({
   leads,
   consultants,
   canManage,
+  limites,
 }: {
   leads: LeadView[];
   consultants: { id: string; label: string }[];
   canManage: boolean;
   currentUserId: string;
+  /** Dias por fase antes de o cartao ficar vermelho (migracao 1012). */
+  limites: Record<string, number>;
 }) {
   // Filtro da coluna de Fechamento (pedido do dono): Todos / Ganhos / Perdas.
   const [closingFilter, setClosingFilter] = useState<ClosingFilter>("ALL");
@@ -187,7 +190,12 @@ export function LeadBoard({
               </div>
               <div className="flex-1 space-y-2 p-2">
                 {cards.map((l) => (
-                  <LeadCard key={l.id} lead={l} consultants={consultants} />
+                  <LeadCard
+                    key={l.id}
+                    lead={l}
+                    consultants={consultants}
+                    limite={limites[l.stage] ?? null}
+                  />
                 ))}
                 {cards.length === 0 && (
                   <p className="py-4 text-center text-xs text-muted-foreground">
@@ -206,9 +214,12 @@ export function LeadBoard({
 function LeadCard({
   lead,
   consultants,
+  limite,
 }: {
   lead: LeadView;
   consultants: { id: string; label: string }[];
+  /** null = fase sem limite cadastrado; o cartao nao acusa nada. */
+  limite: number | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -262,7 +273,7 @@ function LeadCard({
         )}
       </div>
 
-      <TempoNaFaseLinha tempo={lead.tempoNaFase} />
+      <TempoNaFaseLinha tempo={lead.tempoNaFase} limite={limite} />
 
       {lead.stage === "CLOSED_LOST" && lead.lostReason && (
         <p className="mt-1 text-xs text-muted-foreground">
@@ -350,7 +361,13 @@ function LeadCard({
  * últimos seria inventar medição — e o painel passaria a tratar lead antigo
  * como recém-chegado.
  */
-function TempoNaFaseLinha({ tempo }: { tempo: TempoNaFase | null }) {
+function TempoNaFaseLinha({
+  tempo,
+  limite,
+}: {
+  tempo: TempoNaFase | null;
+  limite: number | null;
+}) {
   if (!tempo) {
     return (
       <p className="mt-1 text-xs text-muted-foreground">
@@ -358,7 +375,10 @@ function TempoNaFaseLinha({ tempo }: { tempo: TempoNaFase | null }) {
       </p>
     );
   }
-  const alerta = tempo.dias >= 15;
+  // Fase SEM limite cadastrado nao acusa nada: e ausencia de configuracao,
+  // nao empresa saudavel. O 15 fixo de antes cobrava por uma regua que
+  // ninguem tinha definido.
+  const alerta = limite != null && tempo.dias > limite;
   return (
     <p
       className={`mt-1 text-xs ${alerta ? "font-medium text-destructive" : "text-muted-foreground"}`}

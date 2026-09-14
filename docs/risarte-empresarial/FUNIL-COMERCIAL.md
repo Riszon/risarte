@@ -189,9 +189,48 @@ a frase inteira não existe no HTML cru — é a mesma armadilha do `qual:versao
 Quem estava errado era o instrumento. Régua que procura texto renderizado tem de
 tirar essas marcas antes de comparar.
 
-### Bloco D — painel e alertas (a fazer)
+### Bloco D — painel e alertas ✅ (migração 1012, v0.50.0)
 
-- Dashboard: conversão fase a fase, tempo médio em cada fase, quem está parado,
-  desempenho por consultor e **por canal de captação**.
-- Alertas visuais no cartão e aviso no sino, por **inatividade** e por **tempo
-  demais na fase**.
+**O painel** (`/empresarial/funil/painel`), com quatro perguntas e uma
+disciplina em todas: **régua vazia grita**.
+
+- **Conversão fase a fase** conta quem **já passou** por cada fase (lendo o
+  relógio), não quem está nela agora. Fase sem ninguém antes devolve **nulo**,
+  não 0% — "0%" seria afirmar sobre uma etapa que ninguém percorreu. E as
+  empresas que já existiam quando o relógio ligou **ficam de fora da conta**,
+  com o número delas escrito na tela: contá-las como "não passaram" faria a
+  conversão parecer pior do que é.
+- **Tempo médio por fase** conta só as passagens que **terminaram**. Incluir a
+  aberta puxaria a média para baixo e faria a fase parecer mais rápida
+  justamente onde há empresa empacada — o oposto do que o painel existe para
+  mostrar. Sem passagem concluída, a resposta é "sem passagem concluída".
+- **Quem está parado**, pior primeiro.
+- **Por consultor e por canal.** Sem nenhum fechamento, a taxa de ganho é
+  **nula**: "0%" diria que o consultor perdeu tudo quando ele ainda não fechou
+  nada. *"Sem consultor"* é um recorte de verdade — é a fila que ninguém assumiu.
+
+**Os alertas** (`funnel_alerts`), apurados às 9h por `pg_cron` e com botão de
+apurar na hora.
+
+- **O limite é POR FASE** (`funnel_stage_limits`), ajustável pelo gestor do
+  programa no próprio painel. Três dias tentando contato é normal; três dias com
+  a proposta na mesa sem retorno já não é. Um limite único gritaria na fase
+  errada — e alerta que grita no lugar errado é o primeiro que a equipe aprende
+  a ignorar. **Fase sem limite cadastrado não vira alerta**: é ausência de
+  configuração, não empresa saudável.
+- **Inatividade** olha o último movimento de QUALQUER tipo — anotação, tentativa
+  de contato, envio, reunião. Olhar só a linha do tempo cobraria justamente quem
+  está trabalhando.
+- **Alerta que repete todo dia é alerta que ninguém lê**: o aviso sai **uma
+  vez** e só rearma quando a condição some e volta (mesma disciplina do FIN7.3).
+  Provado: apurar três vezes seguidas manda um aviso só.
+- **Roda sem usuário** — a conta fica na função `_raw` (revogada do público) e a
+  porta pública leva a guarda de gestor do programa.
+- **Lead sem consultor gera alerta mas não avisa ninguém** — não há a quem
+  avisar; ele aparece no painel, que é onde o gestor cobra a atribuição.
+
+**Uma armadilha evitada a tempo:** a apuração ia usar uma tabela temporária, e
+dentro de função com `search_path = ''` ela não resolve — o erro só apareceria
+na primeira execução do cron, de madrugada, sem ninguém olhando. Virou uma
+**visão** (`funnel_lead_state`), não exposta a `authenticated` porque
+atravessaria a RLS dos leads.
