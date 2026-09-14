@@ -62,13 +62,28 @@ precisa poder dizer "está na 4" sem abrir a tela.
   a linha do tempo escrevia "Movido para PROPOSAL_SENT" em inglês; e lead ganho
   sem empresa virava **cartão morto**, sem nenhum botão.
 
-### Bloco B — os registros de cada fase (a fazer)
+### Bloco B — os registros de cada fase ✅ (migração 1008, v0.46.0)
 
-- **Contato:** histórico de toda tentativa (e-mail, WhatsApp, ligação,
-  presencial) com resultado e próxima tentativa.
-- **Agenda do programa** com os status do comercial (agendada, confirmada,
-  remarcada, cancelada, não compareceu, realizada). **"Realizada" empurra o
-  cartão sozinho para Apresentado.** Botão "adicionar à minha agenda".
+- **Tentativas de contato** (`lead_contact_attempts`), no cartão da empresa:
+  canal (ligação, WhatsApp, e-mail, presencial) e resultado, os dois em **lista
+  fechada**. É isto que permite contar depois quantas ligações foram precisas
+  até marcar a reunião — número que anotação livre nunca daria. A linha do
+  tempo continua existindo, para o que é texto.
+- **Agenda do programa** (`/empresarial/agenda`), com as 6 situações do
+  comercial. Três listas, e **a do meio é a que importa**: reunião cuja hora já
+  passou e ninguém disse o que houve — é ela que trava o funil em silêncio.
+- **O cartão anda sozinho, e quem manda é o BANCO** (gatilho, não tela):
+  marcar a reunião leva para *Reunião agendada*; dar por **realizada** leva
+  para *Apresentado*. **Nunca para trás** — registrar hoje uma reunião antiga
+  de quem já está em Follow-up não desfaz o avanço.
+- **Remarcar cria uma reunião NOVA apontando para a anterior.** Duas linhas, não
+  uma com a data trocada: é a corrente que revela a empresa que já adiou três
+  vezes, e sobrescrever apagaria justamente esse sinal. O cartão mostra
+  "remarcada 3×".
+- **Cancelar, remarcar e faltar exigem motivo escrito.**
+- **"Adicionar à minha agenda"** baixa o arquivo `.ics` (rota
+  `/empresarial/agenda/[id]/ics`), que Google Agenda, Outlook e o celular
+  abrem. **Tudo em UTC** — é o que faz o compromisso cair na hora certa.
 
 ### Bloco C — do Apresentado à Implantação (a fazer)
 

@@ -21,9 +21,20 @@ import { Label } from "@/components/ui/label";
 import {
   CAPTURE_CHANNELS,
   CAPTURE_CHANNEL_LABELS,
+  CONTACT_CHANNELS,
+  CONTACT_CHANNEL_LABELS,
+  CONTACT_OUTCOMES,
+  CONTACT_OUTCOME_LABELS,
   LEAD_STAGE_LABELS,
+  MEETING_MODES,
+  MEETING_MODE_LABELS,
+  MEETING_STATUS_LABELS,
   type CaptureChannel,
+  type ContactChannel,
+  type ContactOutcome,
   type LeadStage,
+  type MeetingMode,
+  type MeetingStatus,
 } from "@/lib/empresarial/constants";
 import {
   CLOSING_FILTERS,
@@ -41,9 +52,16 @@ import {
   convertLeadToCompany,
   createLead,
   moveLeadStage,
+  registerContactAttempt,
   updateLead,
 } from "./actions";
-import { BRAZIL_TIME_ZONE, brazilInputValue } from "@/lib/dates";
+import { scheduleMeeting } from "../agenda/actions";
+import {
+  BRAZIL_TIME_ZONE,
+  brazilInputValue,
+  formatBrDate,
+  formatBrTime,
+} from "@/lib/dates";
 
 const selectClass =
   "h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs";
@@ -74,6 +92,24 @@ export type LeadView = {
     note: string | null;
     createdAt: string;
     authorName: string | null;
+  }[];
+  contactAttempts: {
+    id: string;
+    channel: ContactChannel;
+    outcome: ContactOutcome;
+    note: string | null;
+    attemptedAt: string;
+    authorName: string | null;
+  }[];
+  meetings: {
+    id: string;
+    title: string | null;
+    mode: MeetingMode;
+    location: string | null;
+    startsAt: string;
+    endsAt: string;
+    status: MeetingStatus;
+    statusNote: string | null;
   }[];
 };
 
@@ -429,6 +465,9 @@ function LeadDetailDialog({
           </div>
         )}
 
+        <TentativasDeContato lead={lead} />
+        <ReunioesDoLead lead={lead} />
+
         <div className="space-y-2 rounded-lg border p-3">
           <p className="text-sm font-medium">Linha do tempo</p>
           <div className="flex flex-wrap items-center gap-2">
@@ -484,6 +523,229 @@ function LeadDetailDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Fase 2 — toda tentativa de falar com a empresa.
+ *
+ * Canal e resultado são escolhidos numa lista, não escritos: é o que permite
+ * contar depois quantas ligações foram precisas até marcar a reunião. A
+ * anotação livre fica no campo de observação, ao lado.
+ */
+function TentativasDeContato({ lead }: { lead: LeadView }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    startTransition(async () => {
+      const r = await registerContactAttempt(lead.id, formData);
+      if (r.ok) {
+        toast.success("Tentativa registrada.");
+        form.reset();
+        router.refresh();
+      } else toast.error(r.error ?? "Erro.");
+    });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border p-3">
+      <p className="text-sm font-medium">
+        Tentativas de contato ({lead.contactAttempts.length})
+      </p>
+
+      <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
+        <select name="channel" className={`${selectClass} w-auto`} required>
+          {CONTACT_CHANNELS.map((c) => (
+            <option key={c} value={c}>
+              {CONTACT_CHANNEL_LABELS[c]}
+            </option>
+          ))}
+        </select>
+        <select name="outcome" className={`${selectClass} w-auto`} required>
+          {CONTACT_OUTCOMES.map((o) => (
+            <option key={o} value={o}>
+              {CONTACT_OUTCOME_LABELS[o]}
+            </option>
+          ))}
+        </select>
+        <Input
+          name="note"
+          placeholder="Observação (opcional)"
+          className="h-8 min-w-40 flex-1 text-xs"
+        />
+        <Button type="submit" size="sm" disabled={isPending}>
+          Registrar
+        </Button>
+      </form>
+
+      {lead.contactAttempts.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Nenhuma tentativa registrada ainda.
+        </p>
+      ) : (
+        <ul className="max-h-40 space-y-1.5 overflow-y-auto text-xs">
+          {lead.contactAttempts.map((a) => (
+            <li key={a.id} className="border-b pb-1 last:border-0">
+              <span className="font-medium">
+                {CONTACT_CHANNEL_LABELS[a.channel]}
+              </span>{" "}
+              — {CONTACT_OUTCOME_LABELS[a.outcome]}
+              {a.note ? ` · ${a.note}` : ""}
+              <span className="block text-muted-foreground">
+                {formatBrDate(a.attemptedAt)} {formatBrTime(a.attemptedAt)}
+                {a.authorName ? ` · ${a.authorName}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Fase 3 — as reuniões desta empresa.
+ *
+ * Marcar aqui move o cartão para "Reunião agendada" sozinho; quem faz isso é o
+ * banco (migração 1008), então vale por qualquer caminho. O desfecho de cada
+ * reunião é dado na Agenda do programa, que é onde elas aparecem todas juntas.
+ */
+function ReunioesDoLead({ lead }: { lead: LeadView }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [aberto, setAberto] = useState(false);
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    startTransition(async () => {
+      const r = await scheduleMeeting(lead.id, formData);
+      if (r.ok) {
+        toast.success("Reunião marcada.");
+        form.reset();
+        setAberto(false);
+        router.refresh();
+      } else toast.error(r.error ?? "Erro.");
+    });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">Reuniões ({lead.meetings.length})</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => setAberto((v) => !v)}
+        >
+          {aberto ? "Fechar" : "Marcar reunião"}
+        </Button>
+      </div>
+
+      {aberto && (
+        <form onSubmit={onSubmit} className="space-y-2 rounded-md bg-muted/30 p-2">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <Label htmlFor={`starts_at-${lead.id}`} className="text-xs">
+                Data e hora *
+              </Label>
+              <Input
+                id={`starts_at-${lead.id}`}
+                name="starts_at"
+                type="datetime-local"
+                className="h-8 text-xs"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor={`duration-${lead.id}`} className="text-xs">
+                Duração (minutos)
+              </Label>
+              <Input
+                id={`duration-${lead.id}`}
+                name="duration"
+                type="number"
+                min={15}
+                step={15}
+                defaultValue={60}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div>
+              <Label htmlFor={`mode-${lead.id}`} className="text-xs">
+                Como
+              </Label>
+              <select
+                id={`mode-${lead.id}`}
+                name="mode"
+                className={selectClass}
+                defaultValue="ONLINE"
+              >
+                {MEETING_MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {MEETING_MODE_LABELS[m]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor={`location-${lead.id}`} className="text-xs">
+                Link ou endereço
+              </Label>
+              <Input
+                id={`location-${lead.id}`}
+                name="location"
+                className="h-8 text-xs"
+              />
+            </div>
+          </div>
+          <Input
+            name="title"
+            placeholder="Assunto (opcional)"
+            className="h-8 text-xs"
+          />
+          <Button type="submit" size="sm" disabled={isPending}>
+            Marcar
+          </Button>
+        </form>
+      )}
+
+      {lead.meetings.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Nenhuma reunião marcada ainda.
+        </p>
+      ) : (
+        <ul className="max-h-40 space-y-1.5 overflow-y-auto text-xs">
+          {lead.meetings.map((m) => (
+            <li key={m.id} className="border-b pb-1 last:border-0">
+              <span className="font-medium">
+                {formatBrDate(m.startsAt)} {formatBrTime(m.startsAt)}
+              </span>{" "}
+              — {MEETING_STATUS_LABELS[m.status]} ·{" "}
+              {MEETING_MODE_LABELS[m.mode]}
+              {m.statusNote ? (
+                <span className="block text-muted-foreground">
+                  {m.statusNote}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-muted-foreground">
+        O desfecho de cada reunião é dado na{" "}
+        <Link href="/empresarial/agenda" className="underline">
+          Agenda do programa
+        </Link>
+        .
+      </p>
+    </div>
   );
 }
 

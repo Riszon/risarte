@@ -187,6 +187,72 @@ export const CAPTURE_CHANNEL_LABELS: Record<CaptureChannel, string> = {
   OUTRO: "Outro",
 };
 
+// ---------------------------------------------------------------------------
+// Fase 2 do funil: tentativa de contato (migração 1008)
+// ---------------------------------------------------------------------------
+export const CONTACT_CHANNELS = [
+  "CALL",
+  "WHATSAPP",
+  "EMAIL",
+  "IN_PERSON",
+] as const;
+export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
+export const CONTACT_CHANNEL_LABELS: Record<ContactChannel, string> = {
+  CALL: "Ligação",
+  WHATSAPP: "WhatsApp",
+  EMAIL: "E-mail",
+  IN_PERSON: "Presencial",
+};
+
+// No que deu a tentativa. Lista fechada porque é isto que se conta depois:
+// quantas ligações foram precisas até marcar a reunião.
+export const CONTACT_OUTCOMES = [
+  "NO_ANSWER",
+  "ANSWERED",
+  "WRONG_CONTACT",
+  "CALLBACK_REQUESTED",
+  "NOT_INTERESTED",
+  "MEETING_SCHEDULED",
+] as const;
+export type ContactOutcome = (typeof CONTACT_OUTCOMES)[number];
+export const CONTACT_OUTCOME_LABELS: Record<ContactOutcome, string> = {
+  NO_ANSWER: "Não atendeu",
+  ANSWERED: "Falei com a pessoa",
+  WRONG_CONTACT: "Contato errado",
+  CALLBACK_REQUESTED: "Pediu para retornar depois",
+  NOT_INTERESTED: "Sem interesse por enquanto",
+  MEETING_SCHEDULED: "Consegui marcar a reunião",
+};
+
+// ---------------------------------------------------------------------------
+// Fase 3 do funil: a agenda do programa (migração 1008)
+// ---------------------------------------------------------------------------
+export const MEETING_MODES = ["ONLINE", "IN_PERSON", "PHONE"] as const;
+export type MeetingMode = (typeof MEETING_MODES)[number];
+export const MEETING_MODE_LABELS: Record<MeetingMode, string> = {
+  ONLINE: "Online",
+  IN_PERSON: "Presencial",
+  PHONE: "Por telefone",
+};
+
+export const MEETING_STATUSES = [
+  "SCHEDULED",
+  "CONFIRMED",
+  "DONE",
+  "RESCHEDULED",
+  "CANCELLED",
+  "NO_SHOW",
+] as const;
+export type MeetingStatus = (typeof MEETING_STATUSES)[number];
+export const MEETING_STATUS_LABELS: Record<MeetingStatus, string> = {
+  SCHEDULED: "Agendada",
+  CONFIRMED: "Confirmada pela empresa",
+  DONE: "Realizada",
+  RESCHEDULED: "Remarcada",
+  CANCELLED: "Cancelada",
+  NO_SHOW: "Não compareceu",
+};
+
 export const SOCIAL_TRIGGER_TYPES = [
   "EMPLOYEE_COUNT",
   "TIME_IN_PROGRAM",

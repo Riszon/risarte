@@ -9,6 +9,8 @@ import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import {
   CAPTURE_CHANNELS,
+  CONTACT_CHANNELS,
+  CONTACT_OUTCOMES,
   LEAD_STAGES,
   LEAD_STAGE_LABELS,
   type LeadStage,
@@ -206,6 +208,53 @@ export async function addLeadActivity(
   if (error) {
     console.error("addLeadActivity failed:", error.message);
     return { ok: false, error: "Não foi possível registrar." };
+  }
+  revalidatePath("/empresarial/funil");
+  return { ok: true };
+}
+
+/**
+ * Registra uma tentativa de contato (fase 2 do funil).
+ *
+ * Canal e resultado são listas fechadas: é isto que permite contar depois
+ * quantas ligações foram precisas até marcar a reunião — número que a anotação
+ * livre da linha do tempo nunca daria.
+ */
+export async function registerContactAttempt(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const canal = field(formData, "channel");
+  const resultado = field(formData, "outcome");
+  if (!canal || !(CONTACT_CHANNELS as readonly string[]).includes(canal)) {
+    return { ok: false, error: "Escolha por onde tentou o contato." };
+  }
+  if (!resultado || !(CONTACT_OUTCOMES as readonly string[]).includes(resultado)) {
+    return { ok: false, error: "Escolha no que deu a tentativa." };
+  }
+
+  // Sem data digitada, é agora — o normal é registrar logo após tentar.
+  const quando = field(formData, "attempted_at");
+  const attemptedAt = quando
+    ? instantFromInputValue(quando)?.toISOString() ?? null
+    : new Date().toISOString();
+  if (!attemptedAt) return { ok: false, error: "Data ou hora inválida." };
+
+  const db = await empresarialDb();
+  const { error } = await db.from("lead_contact_attempts").insert({
+    lead_id: leadId,
+    channel: canal,
+    outcome: resultado,
+    note: field(formData, "note"),
+    attempted_at: attemptedAt,
+    author_id: session.userId,
+  });
+  if (error) {
+    console.error("registerContactAttempt failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a tentativa." };
   }
   revalidatePath("/empresarial/funil");
   return { ok: true };

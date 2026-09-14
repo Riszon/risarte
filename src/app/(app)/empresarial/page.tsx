@@ -10,7 +10,14 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { FilterForm } from "@/components/filter-form";
-import { BarChart3, Building2, KanbanSquare, Receipt, Settings } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  CalendarDays,
+  KanbanSquare,
+  Receipt,
+  Settings,
+} from "lucide-react";
 import { CabecalhoDeModulo, BOTAO_NO_CABECALHO } from "@/components/cabecalho-modulo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -202,6 +209,18 @@ export default async function EmpresarialPage(props: {
             >
               <KanbanSquare className="mr-1 size-4" />
               Funil
+            </Button>
+          )}
+          {canFunnel && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={BOTAO_NO_CABECALHO}
+              nativeButton={false}
+              render={<Link href="/empresarial/agenda" />}
+            >
+              <CalendarDays className="mr-1 size-4" />
+              Agenda
             </Button>
           )}
           {canManage && (

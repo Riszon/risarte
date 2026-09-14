@@ -9,7 +9,14 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { Card, CardContent } from "@/components/ui/card";
-import type { CaptureChannel, LeadStage } from "@/lib/empresarial/constants";
+import type {
+  CaptureChannel,
+  ContactChannel,
+  ContactOutcome,
+  LeadStage,
+  MeetingMode,
+  MeetingStatus,
+} from "@/lib/empresarial/constants";
 import { tempoNaFaseAtual, type StagePeriod } from "@/lib/empresarial/funnel";
 import { LeadBoard, type LeadView } from "./lead-board";
 import {
@@ -49,6 +56,28 @@ type StageHistoryRow = {
   entered_at: string;
   left_at: string | null;
   is_initial: boolean;
+};
+
+type ContactAttemptRow = {
+  id: string;
+  lead_id: string;
+  channel: ContactChannel;
+  outcome: ContactOutcome;
+  note: string | null;
+  attempted_at: string;
+  author_id: string | null;
+};
+
+type MeetingRow = {
+  id: string;
+  lead_id: string;
+  title: string | null;
+  mode: MeetingMode;
+  location: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: MeetingStatus;
+  status_note: string | null;
 };
 
 export default async function FunilPage() {
@@ -101,6 +130,37 @@ export default async function FunilPage() {
   // quadro continua abrindo — mas sem inventar "0 dias" para todo mundo.
   if (histErr) console.error("histórico de fases indisponível:", histErr.message);
 
+  // Fase 2 e fase 3 do funil (migração 1008): o que já foi tentado e o que
+  // está marcado. As duas consultas vão juntas para não somar ida e volta ao
+  // banco — cada viagem daqui até São Paulo custa no relógio de quem abre.
+  const [{ data: attemptRows }, { data: meetingRows }] = leadIds.length
+    ? await Promise.all([
+        db
+          .from("lead_contact_attempts")
+          .select("id, lead_id, channel, outcome, note, attempted_at, author_id")
+          .in("lead_id", leadIds)
+          .order("attempted_at", { ascending: false })
+          .returns<ContactAttemptRow[]>(),
+        db
+          .from("lead_meetings")
+          .select(
+            "id, lead_id, title, mode, location, starts_at, ends_at, status, status_note"
+          )
+          .in("lead_id", leadIds)
+          .order("starts_at", { ascending: false })
+          .returns<MeetingRow[]>(),
+      ])
+    : [{ data: [] }, { data: [] }];
+
+  const attemptsByLead = new Map<string, ContactAttemptRow[]>();
+  for (const a of attemptRows ?? []) {
+    attemptsByLead.set(a.lead_id, [...(attemptsByLead.get(a.lead_id) ?? []), a]);
+  }
+  const meetingsByLead = new Map<string, MeetingRow[]>();
+  for (const m of meetingRows ?? []) {
+    meetingsByLead.set(m.lead_id, [...(meetingsByLead.get(m.lead_id) ?? []), m]);
+  }
+
   const historyByLead = new Map<string, StagePeriod[]>();
   for (const h of histRows ?? []) {
     const list = historyByLead.get(h.lead_id) ?? [];
@@ -120,6 +180,7 @@ export default async function FunilPage() {
       [
         ...leads.map((l) => l.consultant_id),
         ...(actRows ?? []).map((a) => a.author_id),
+        ...(attemptRows ?? []).map((a) => a.author_id),
       ].filter((x): x is string => Boolean(x))
     ),
   ];
@@ -167,6 +228,24 @@ export default async function FunilPage() {
     referralContact: l.referral_contact,
     tempoNaFase: tempoNaFaseAtual(historyByLead.get(l.id) ?? [], agora),
     activities: activitiesByLead.get(l.id) ?? [],
+    contactAttempts: (attemptsByLead.get(l.id) ?? []).map((a) => ({
+      id: a.id,
+      channel: a.channel,
+      outcome: a.outcome,
+      note: a.note,
+      attemptedAt: a.attempted_at,
+      authorName: a.author_id ? nameById.get(a.author_id) ?? null : null,
+    })),
+    meetings: (meetingsByLead.get(l.id) ?? []).map((m) => ({
+      id: m.id,
+      title: m.title,
+      mode: m.mode,
+      location: m.location,
+      startsAt: m.starts_at,
+      endsAt: m.ends_at,
+      status: m.status,
+      statusNote: m.status_note,
+    })),
   }));
 
   // "Hoje do consultor": leads com próxima ação vencida/para hoje, ainda abertos.
