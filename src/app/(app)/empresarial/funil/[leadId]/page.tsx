@@ -10,10 +10,18 @@ import {
 } from "@/lib/empresarial/access";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { DEFAULT_ADHESION_PRICING } from "@/lib/empresarial/pricing";
-import type { LeadStage, PaymentModel } from "@/lib/empresarial/constants";
+import { createClient } from "@/lib/supabase/server";
+import type {
+  DispatchChannel,
+  DispatchItem,
+  LeadStage,
+  PaymentModel,
+} from "@/lib/empresarial/constants";
 import type { BillingBasis, InterestLevel } from "@/lib/empresarial/proposta";
 import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
+import { ApresentacaoEditor } from "./apresentacao-editor";
+import { EnvioESelos, type EnvioView } from "./envio-e-selos";
 
 export const metadata: Metadata = { title: "Levantamento · Risarte Empresarial" };
 
@@ -24,6 +32,25 @@ type LeadRow = {
   contact_name: string | null;
   contact_phone: string | null;
   stage: LeadStage;
+  consultant_id: string | null;
+  contract_signed_at: string | null;
+  implantation_paid_at: string | null;
+};
+
+type TemplateRow = {
+  lead_id: string | null;
+  title: string;
+  subtitle: string | null;
+  sections: { titulo: string; corpo: string }[];
+};
+
+type DispatchRow = {
+  id: string;
+  channel: DispatchChannel;
+  items: DispatchItem[];
+  note: string | null;
+  sent_at: string;
+  sent_by: string | null;
 };
 
 type QualRow = {
@@ -73,7 +100,9 @@ export default async function FichaDoLeadPage({
   const db = await empresarialDb();
   const { data: lead } = await db
     .from("commercial_leads")
-    .select("id, company_name, cnpj, contact_name, contact_phone, stage")
+    .select(
+      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, contract_signed_at, implantation_paid_at"
+    )
     .eq("id", leadId)
     .maybeSingle<LeadRow>();
   // A RLS já decide o que este consultor enxerga; aqui "não achou" é
@@ -91,6 +120,53 @@ export default async function FichaDoLeadPage({
       "Não foi possível ler o levantamento. Confirme se a migração 1009 foi aplicada neste banco."
     );
   }
+
+  // C2: a apresentação (cascata rede → empresa) e o que já foi enviado.
+  const [{ data: templates }, { data: dispatches }] = await Promise.all([
+    db
+      .from("presentation_templates")
+      .select("lead_id, title, subtitle, sections")
+      .or(`lead_id.eq.${leadId},lead_id.is.null`)
+      .returns<TemplateRow[]>(),
+    db
+      .from("lead_dispatches")
+      .select("id, channel, items, note, sent_at, sent_by")
+      .eq("lead_id", leadId)
+      .order("sent_at", { ascending: false })
+      .returns<DispatchRow[]>(),
+  ]);
+
+  const daEmpresa = templates?.find((t) => t.lead_id === leadId);
+  const daRede = templates?.find((t) => !t.lead_id);
+  const template = daEmpresa ?? daRede;
+
+  // Nomes de quem enviou e do consultor responsável.
+  const userIds = [
+    ...new Set(
+      [lead.consultant_id, ...(dispatches ?? []).map((d) => d.sent_by)].filter(
+        (x): x is string => Boolean(x)
+      )
+    ),
+  ];
+  const nomePorId = new Map<string, string>();
+  if (userIds.length) {
+    const supabase = await createClient();
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+    for (const p of profs ?? [])
+      nomePorId.set(p.id, p.full_name || p.email || "—");
+  }
+
+  const envios: EnvioView[] = (dispatches ?? []).map((d) => ({
+    id: d.id,
+    channel: d.channel,
+    items: d.items,
+    note: d.note,
+    sentAt: d.sent_at,
+    authorName: d.sent_by ? nomePorId.get(d.sent_by) ?? null : null,
+  }));
 
   // Valores de partida quando ainda não há levantamento: os preços padrão da
   // rede. É sugestão declarada, não número inventado — a tela diz de onde vêm.
@@ -142,6 +218,31 @@ export default async function FichaDoLeadPage({
         leadId={lead.id}
         cnpj={lead.cnpj}
         qualificacao={view}
+      />
+
+      {/* Fora do formulário do levantamento de propósito: são formulários
+          próprios, e aninhar <form> dentro de <form> não funciona. */}
+      {template && (
+        <ApresentacaoEditor
+          leadId={lead.id}
+          title={template.title}
+          subtitle={template.subtitle}
+          blocos={template.sections}
+          personalizada={Boolean(daEmpresa)}
+        />
+      )}
+
+      <EnvioESelos
+        leadId={lead.id}
+        empresa={lead.company_name}
+        contato={lead.contact_name}
+        telefone={lead.contact_phone}
+        consultor={
+          lead.consultant_id ? nomePorId.get(lead.consultant_id) ?? null : null
+        }
+        envios={envios}
+        contractSignedAt={lead.contract_signed_at}
+        implantationPaidAt={lead.implantation_paid_at}
       />
     </div>
   );

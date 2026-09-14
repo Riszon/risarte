@@ -253,6 +253,39 @@ export const MEETING_STATUS_LABELS: Record<MeetingStatus, string> = {
   NO_SHOW: "Não compareceu",
 };
 
+// ---------------------------------------------------------------------------
+// Fase 5 do funil: o envio do pacote (migração 1010)
+// ---------------------------------------------------------------------------
+export const DISPATCH_CHANNELS = [
+  "WHATSAPP",
+  "EMAIL",
+  "IN_PERSON",
+  "OTHER",
+] as const;
+export type DispatchChannel = (typeof DISPATCH_CHANNELS)[number];
+export const DISPATCH_CHANNEL_LABELS: Record<DispatchChannel, string> = {
+  WHATSAPP: "WhatsApp",
+  EMAIL: "E-mail",
+  IN_PERSON: "Entregue em mãos",
+  OTHER: "Outro",
+};
+
+export const DISPATCH_ITEMS = [
+  "PROPOSAL",
+  "CONTRACT",
+  "PRESENTATION",
+  "BOLETO",
+  "EXTRA",
+] as const;
+export type DispatchItem = (typeof DISPATCH_ITEMS)[number];
+export const DISPATCH_ITEM_LABELS: Record<DispatchItem, string> = {
+  PROPOSAL: "Proposta comercial",
+  CONTRACT: "Contrato",
+  PRESENTATION: "Apresentação do programa",
+  BOLETO: "Boleto da implantação",
+  EXTRA: "Documentos adicionais",
+};
+
 export const SOCIAL_TRIGGER_TYPES = [
   "EMPLOYEE_COUNT",
   "TIME_IN_PROGRAM",

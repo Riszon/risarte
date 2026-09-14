@@ -57,6 +57,7 @@ export const ROUTE_FIXTURES = {
   // o relatório final continua dizendo "nenhuma tela falhou".
   "/empresarial/[companyId]/boas-vindas": "company",
   "/empresarial/funil/[leadId]": "lead",
+  "/empresarial/funil/[leadId]/apresentacao": "lead",
   "/ppr/adesoes/[id]": "pprMembership",
   "/ppr/adesoes/[id]/contrato": "pprMembership",
   "/ppr/configuracao/[planId]": "pprPlan",

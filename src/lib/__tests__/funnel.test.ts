@@ -165,3 +165,56 @@ describe("o TypeScript e o banco falam das mesmas fases", () => {
     expect([...doBanco].sort()).toEqual([...LEAD_STAGES].sort());
   });
 });
+
+// ⚠️ O DEFEITO DE 14/09/2026: O RELÓGIO NÃO OUVIA O QUE PRECISAVA OUVIR.
+//
+// O gatilho do relógio nasceu como `after update OF stage` — e `UPDATE OF
+// <coluna>` dispara pelas colunas que o COMANDO nomeia, não pelo que um
+// gatilho BEFORE mudou depois. Quando os dois selos do follow-up passaram a
+// fechar o lead (1010, gatilho BEFORE que muda `new.stage`), o comando só
+// nomeava `contract_signed_at`: a fase virava CLOSED_WON e o histórico
+// continuava aberto em Follow-up, para sempre.
+//
+// O estrago era silencioso: o tempo do fechamento seria contado como tempo de
+// negociação e o painel mediria errado sem nada na tela denunciando.
+describe("o gatilho do relógio ouve QUALQUER mudança de fase", () => {
+  function ultimaDefinicao(): string {
+    // A definição que vale é a ÚLTIMA — migração posterior redefine a anterior.
+    const arquivos = [
+      "supabase/migrations/1007_funil_fases_e_relogio.sql",
+      "supabase/migrations/1010_funil_apresentacao_envio_e_selos.sql",
+    ];
+    let achado: string | null = null;
+    for (const f of arquivos) {
+      const sql = readFileSync(join(process.cwd(), f), "utf8");
+      const m = [
+        ...sql.matchAll(
+          /create trigger commercial_leads_track_stage([\s\S]*?);/g
+        ),
+      ];
+      if (m.length) achado = m[m.length - 1][1];
+    }
+    // Régua vazia grita: não achar a definição é falha de medição, não aprovação.
+    expect(achado, "não achei a definição do gatilho do relógio").toBeTruthy();
+    return achado!;
+  }
+
+  it("não está preso a `update of stage`", () => {
+    expect(ultimaDefinicao()).not.toMatch(/update\s+of\s+stage/i);
+  });
+
+  it("continua ouvindo a criação do lead", () => {
+    // Lead que nasce numa fase escolhida no cadastro precisa abrir o relógio.
+    expect(ultimaDefinicao()).toMatch(/after\s+insert\s+or\s+update/i);
+  });
+
+  it("e a guarda contra linha repetida continua na função", () => {
+    // É ela, e não a cláusula do gatilho, que impede o relógio de gravar duas
+    // vezes quando alguém edita outro campo qualquer.
+    const sql = readFileSync(
+      join(process.cwd(), "supabase/migrations/1007_funil_fases_e_relogio.sql"),
+      "utf8"
+    );
+    expect(sql).toMatch(/new\.stage is distinct from old\.stage/);
+  });
+});

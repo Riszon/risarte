@@ -121,14 +121,37 @@ cartão. Três blocos e um simulador que recalcula enquanto o consultor digita.
 **Ficha em branco não impede o fechamento** — o levantamento é ajuda, não
 pedágio.
 
-#### C2 — apresentação, envio e follow-up (a fazer)
+#### C2 — apresentação, envio e follow-up ✅ (migração 1010, v0.48.0)
 
-- **Apresentação padrão** editável por empresa, com download em PDF.
-- **Envio do pacote** — escolher o que vai (proposta, contrato, apresentação,
-  boleto de implantação, documentos adicionais). Registrar o envio **move o
-  cartão sozinho para Follow-up**.
-- **Follow-up** com os dois selos: **contrato assinado** e **boleto de
-  implantação pago**. Os dois verdes → o cartão avança.
+- **Apresentação padrão, personalizável** (`presentation_templates`), na
+  **cascata** do projeto: a linha sem lead é o padrão da REDE, a linha com lead
+  sobrescreve. Mexer no padrão melhora a apresentação de todos que ainda não
+  personalizaram; quem personalizou fica com a sua. Conteúdo em blocos (JSONB),
+  não colunas fixas — a apresentação de um sindicato tem blocos diferentes da
+  de uma metalúrgica. Sai em PDF pela impressão, e os botões somem no papel.
+  **Mexer no padrão da rede é ato de gestor do programa**, não de qualquer
+  consultor (a RLS separa os dois casos).
+- **Registro do envio** (`lead_dispatches`) — o que foi, por onde e quando,
+  mais a **mensagem pronta** e o link do WhatsApp já montado. A tela **declara
+  que o sistema não envia**: quem envia é a pessoa.
+  **Só o envio que inclui a PROPOSTA move o cartão** para Follow-up; mandar só
+  a apresentação é conversa, não negociação.
+- **Os dois selos** (`contract_signed_at`, `implantation_paid_at`). Os dois
+  verdes → Fechamento (ganho), por gatilho. **Um selo sozinho não fecha nada**:
+  contrato sem pagamento é promessa, pagamento sem contrato é dinheiro sem
+  amarração. A empresa **não** é criada aí — exige CNPJ válido e é ato do
+  consultor, pelo botão no cartão.
+
+**⚠️ O defeito que apareceu aqui, e a lição:** o gatilho do relógio (1007)
+nasceu como `after update OF stage`, e **`UPDATE OF <coluna>` dispara pelas
+colunas que o COMANDO nomeia, não pelo que um gatilho BEFORE mudou depois**.
+Quando os selos passaram a fechar o lead, a fase virava `CLOSED_WON` e o
+relógio **não via**: o histórico ficava aberto em Follow-up para sempre, e o
+tempo do fechamento seria contado como tempo de negociação — errado e
+silencioso. Achado ao **perguntar ao banco** se a passagem tinha sido gravada;
+no arquivo, os dois gatilhos pareciam conversar. A 1010 tira o `OF stage` (a
+guarda `is distinct from` dentro da função é quem evita linha repetida, e ela
+nunca dependeu da cláusula), e há teste que reprova a volta.
 
 #### C3 — fechamento e implantação (a fazer)
 
