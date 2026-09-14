@@ -228,7 +228,12 @@ function LeadCard({
   return (
     <div className="rounded-md border bg-background p-2 shadow-sm">
       <div className="flex items-start justify-between gap-1">
-        <p className="text-sm font-medium leading-tight">{lead.companyName}</p>
+        <Link
+          href={`/empresarial/funil/${lead.id}`}
+          className="text-sm font-medium leading-tight hover:underline"
+        >
+          {lead.companyName}
+        </Link>
         <LeadDetailDialog lead={lead} consultants={consultants} />
       </div>
       {lead.contactName && (
@@ -415,6 +420,16 @@ function LeadDetailDialog({
         <DialogHeader>
           <DialogTitle>{lead.companyName}</DialogTitle>
         </DialogHeader>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          nativeButton={false}
+          render={<Link href={`/empresarial/funil/${lead.id}`} />}
+        >
+          Abrir levantamento e proposta
+        </Button>
 
         <form onSubmit={onSubmit} className="space-y-3">
           <LeadFields lead={lead} consultants={consultants} showConsultant={false} />

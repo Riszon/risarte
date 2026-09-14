@@ -100,6 +100,8 @@ const FIXTURE_SOURCES = {
   user: () => admin.from("profiles").select("id").limit(1),
   company: () =>
     admin.schema("empresarial").from("companies").select("id").limit(1),
+  lead: () =>
+    admin.schema("empresarial").from("commercial_leads").select("id").limit(1),
   pprMembership: () => admin.from("ppr_memberships").select("id").limit(1),
   pprPlan: () => admin.from("ppr_plans").select("id").limit(1),
   pprBeneficiary: () => admin.from("ppr_beneficiaries").select("id").limit(1),

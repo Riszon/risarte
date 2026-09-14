@@ -16,6 +16,10 @@ import {
   type LeadStage,
 } from "@/lib/empresarial/constants";
 import { ENTRY_STAGES } from "@/lib/empresarial/funnel";
+import {
+  camposDaEmpresa,
+  type QualificacaoDoLead,
+} from "@/lib/empresarial/proposta";
 import { instantFromInputValue } from "@/lib/dates";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -285,13 +289,24 @@ export async function convertLeadToCompany(
     };
   }
 
+  // O LEVANTAMENTO VIAJA PARA A EMPRESA. Sem isto, o consultor digitaria tudo
+  // de novo — razão social, quem assina, quem paga, quantos colaboradores — e a
+  // segunda digitação é onde os dados divergem.
+  const { data: qual } = await db
+    .from("lead_qualification")
+    .select(
+      "legal_name, category, billing_model, payment_model, subsidy_type, subsidy_value, employee_count, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone, notes"
+    )
+    .eq("lead_id", leadId)
+    .maybeSingle<QualificacaoDoLead>();
+
+  // A regra de como o levantamento vira cadastro mora em `camposDaEmpresa`,
+  // pura e com teste. Aqui só se liga o resultado ao banco: regra dentro da
+  // action só seria exercitada por um clique.
   const { data: company, error: cErr } = await db
     .from("companies")
     .insert({
-      cnpj,
-      legal_name: lead.company_name,
-      trade_name: lead.company_name,
-      payment_model: "EMPLOYEE_PAYS",
+      ...camposDaEmpresa(qual, { company_name: lead.company_name, cnpj }),
       status: "ACTIVE",
       assigned_consultant_id: lead.consultant_id,
     })

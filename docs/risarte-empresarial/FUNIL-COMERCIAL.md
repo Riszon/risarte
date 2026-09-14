@@ -85,21 +85,53 @@ precisa poder dizer "está na 4" sem abrir a tela.
   `/empresarial/agenda/[id]/ics`), que Google Agenda, Outlook e o celular
   abrem. **Tudo em UTC** — é o que faz o compromisso cair na hora certa.
 
-### Bloco C — do Apresentado à Implantação (a fazer)
+### Bloco C — do Apresentado à Implantação
 
-- **Levantamento do consultor:** convênio odontológico atual e quanto paga hoje;
-  outros benefícios; participação em ações/projetos sociais (é diferencial do
-  programa); nível de interesse; chance de sucesso na percepção do consultor.
-- **Dados comerciais da proposta e do contrato:** quem paga (empresa integral,
-  parcial ou colaborador); quantos colaboradores entram; dependentes nesta fase;
-  um CNPJ ou conjunto; cobrança por colaborador (padrão) **ou valor fixo por
-  empresa** (regra alternativa, necessária para sindicato e associação).
-- **Apresentação padrão** editável, com download em PDF.
+Grande demais para uma entrega só; sai em **três partes**, cada uma testável.
+
+#### C1 — levantamento e proposta ✅ (migração 1009, v0.47.0)
+
+Tela nova: **`/empresarial/funil/[leadId]`**, aberta pelo nome da empresa no
+cartão. Três blocos e um simulador que recalcula enquanto o consultor digita.
+
+- **O que a empresa tem hoje:** convênio e quanto paga, outros benefícios,
+  ações e projetos sociais (o diferencial frente a um convênio comum).
+- **Leitura do consultor:** nível de interesse e chance de fechar (0–100),
+  declarados como percepção, não medição.
+- **Como a proposta será montada:** quem paga (integral, parcial em % ou em R$
+  por colaborador, ou o colaborador), quantos colaboradores, dependentes nesta
+  fase, um CNPJ ou conjunto, e **por colaborador ou valor fixo por empresa** —
+  a regra alternativa para sindicato e associação.
+- **Dados de proposta e contrato**, que **viajam para o cadastro da empresa no
+  fechamento** (`camposDaEmpresa`, pura e testada). Sem isso o consultor
+  digitaria tudo duas vezes, e é na segunda que os dados divergem.
+
+**Três decisões que valem lembrar:**
+
+1. **Caixa de TRÊS estados** (sim / não / não perguntei). "Não investiguei" e
+   "não tem convênio" são coisas diferentes; tratá-las como iguais faria o
+   painel contar como respondida toda ficha em branco.
+2. **Sem saber o que a empresa paga hoje, a economia é NULA, nunca R$ 0,00** —
+   e **economia negativa aparece**: esconder faria a proposta só provar o que
+   ela quer provar. Sem colaborador, o valor por cabeça também é nulo (dividir
+   por zero não tem resposta).
+3. **A tela LISTA o que falta** para a proposta e para o contrato, em vez de só
+   bloquear: o consultor precisa saber o que perguntar na próxima conversa.
+
+**Ficha em branco não impede o fechamento** — o levantamento é ajuda, não
+pedágio.
+
+#### C2 — apresentação, envio e follow-up (a fazer)
+
+- **Apresentação padrão** editável por empresa, com download em PDF.
 - **Envio do pacote** — escolher o que vai (proposta, contrato, apresentação,
   boleto de implantação, documentos adicionais). Registrar o envio **move o
   cartão sozinho para Follow-up**.
 - **Follow-up** com os dois selos: **contrato assinado** e **boleto de
   implantação pago**. Os dois verdes → o cartão avança.
+
+#### C3 — fechamento e implantação (a fazer)
+
 - **Fechamento** com a conferência do consultor responsável: está tudo certo?
   há consideração a fazer? houve combinado específico que não podemos esquecer?
   Confirmado o ganho → **vai sozinho para Implantação**.

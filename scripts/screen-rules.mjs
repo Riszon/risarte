@@ -56,6 +56,7 @@ export const ROUTE_FIXTURES = {
   // tela** — cobertura que não existe é pior que cobertura que falha, porque
   // o relatório final continua dizendo "nenhuma tela falhou".
   "/empresarial/[companyId]/boas-vindas": "company",
+  "/empresarial/funil/[leadId]": "lead",
   "/ppr/adesoes/[id]": "pprMembership",
   "/ppr/adesoes/[id]/contrato": "pprMembership",
   "/ppr/configuracao/[planId]": "pprPlan",
