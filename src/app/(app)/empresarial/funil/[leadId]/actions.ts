@@ -16,6 +16,12 @@ import {
 } from "@/lib/empresarial/constants";
 import { BILLING_BASES, INTEREST_LEVELS } from "@/lib/empresarial/proposta";
 import { COMPANY_CATEGORIES } from "@/lib/empresarial/documents";
+import {
+  IMPLEMENTATION_STEPS,
+  impedimentosDaConferencia,
+  podeNaoSeAplicar,
+  type ImplementationStep,
+} from "@/lib/empresarial/implantacao";
 import { formatPhone } from "@/lib/masks";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -334,5 +340,155 @@ export async function setLeadSeal(
   });
   revalidatePath(`/empresarial/funil/${leadId}`);
   revalidatePath("/empresarial/funil");
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// C3 — a conferência do fechamento e a implantação
+// -----------------------------------------------------------------------------
+
+/**
+ * A conferência do consultor responsável, antes da implantação.
+ *
+ * Confirmar move o cartão para Implantação e **leva o combinado específico para
+ * o cadastro da empresa** — as duas coisas por GATILHO (migração 1011). O
+ * combinado é o que mais se perde: quem vende não é quem atende.
+ */
+export async function confirmClosing(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const db = await empresarialDb();
+  const { data: lead } = await db
+    .from("commercial_leads")
+    .select("id, company_id, stage")
+    .eq("id", leadId)
+    .maybeSingle<{ id: string; company_id: string | null; stage: string }>();
+  if (!lead) return { ok: false, error: "Lead não encontrado." };
+
+  const everythingOk = texto(formData, "everything_ok") === "SIM";
+  const considerations = texto(formData, "considerations");
+
+  const impedimentos = impedimentosDaConferencia({
+    companyId: lead.company_id,
+    everythingOk,
+    considerations,
+  });
+  if (impedimentos.length > 0) {
+    return { ok: false, error: `Antes de confirmar: ${impedimentos.join("; ")}.` };
+  }
+
+  const dados = {
+    lead_id: leadId,
+    confirmed_by: session.userId,
+    everything_ok: everythingOk,
+    considerations,
+    special_agreements: texto(formData, "special_agreements"),
+  };
+
+  const { data: existente } = await db
+    .from("lead_closing_reviews")
+    .select("id")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+
+  const { error } = existente
+    ? await db.from("lead_closing_reviews").update(dados).eq("id", existente.id)
+    : await db.from("lead_closing_reviews").insert(dados);
+
+  if (error) {
+    console.error("confirmClosing failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a conferência." };
+  }
+
+  await db.from("commercial_lead_activities").insert({
+    lead_id: leadId,
+    author_id: session.userId,
+    kind: "NOTE",
+    note: everythingOk
+      ? "Fechamento conferido pelo consultor — empresa liberada para implantação."
+      : `Fechamento conferido COM pendência: ${considerations}`,
+  });
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_lead_closing_review",
+    entityId: leadId,
+  });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  revalidatePath("/empresarial/funil");
+  return { ok: true };
+}
+
+/**
+ * Marca um passo da implantação como feito, não feito, ou "não se aplica".
+ *
+ * A linha é ESPARSA: desmarcar apaga o registro, porque "não feito" é a
+ * ausência dele — guardar uma linha dizendo "não" encheria a tabela de nada.
+ */
+export async function setImplementationStep(
+  leadId: string,
+  step: ImplementationStep,
+  estado: "DONE" | "NOT_APPLICABLE" | "PENDING",
+  note?: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  if (!(IMPLEMENTATION_STEPS as readonly string[]).includes(step)) {
+    return { ok: false, error: "Passo inválido." };
+  }
+  if (estado === "NOT_APPLICABLE" && !podeNaoSeAplicar(step)) {
+    return {
+      ok: false,
+      error: "Este passo vale para toda empresa — não dá para dispensar.",
+    };
+  }
+
+  const db = await empresarialDb();
+
+  if (estado === "PENDING") {
+    const { error } = await db
+      .from("lead_implementation_steps")
+      .delete()
+      .eq("lead_id", leadId)
+      .eq("step", step);
+    if (error) {
+      console.error("setImplementationStep (limpar) failed:", error.message);
+      return { ok: false, error: "Não foi possível desmarcar." };
+    }
+    revalidatePath(`/empresarial/funil/${leadId}`);
+    return { ok: true };
+  }
+
+  const dados = {
+    lead_id: leadId,
+    step,
+    done_at: estado === "DONE" ? new Date().toISOString() : null,
+    done_by: session.userId,
+    not_applicable: estado === "NOT_APPLICABLE",
+    note: note?.trim() || null,
+  };
+
+  const { data: existente } = await db
+    .from("lead_implementation_steps")
+    .select("id")
+    .eq("lead_id", leadId)
+    .eq("step", step)
+    .maybeSingle();
+
+  const { error } = existente
+    ? await db
+        .from("lead_implementation_steps")
+        .update(dados)
+        .eq("id", existente.id)
+    : await db.from("lead_implementation_steps").insert(dados);
+
+  if (error) {
+    console.error("setImplementationStep failed:", error.message);
+    return { ok: false, error: "Não foi possível marcar o passo." };
+  }
+  revalidatePath(`/empresarial/funil/${leadId}`);
   return { ok: true };
 }

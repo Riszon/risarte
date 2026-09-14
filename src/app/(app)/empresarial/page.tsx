@@ -88,6 +88,8 @@ function toCompany(r: CompanyRow): Company {
     gracePeriodDays: r.grace_period_days,
     employeeGracePeriodDays: r.employee_grace_period_days,
     notes: r.notes,
+    // A lista não mostra o combinado (é detalhe da ficha), mas o tipo é um só.
+    specialAgreements: null,
     createdAt: r.created_at,
     category: r.category,
     billingModel: r.billing_model,

@@ -153,15 +153,41 @@ no arquivo, os dois gatilhos pareciam conversar. A 1010 tira o `OF stage` (a
 guarda `is distinct from` dentro da função é quem evita linha repetida, e ela
 nunca dependeu da cláusula), e há teste que reprova a volta.
 
-#### C3 — fechamento e implantação (a fazer)
+#### C3 — fechamento e implantação ✅ (migração 1011, v0.49.0)
 
-- **Fechamento** com a conferência do consultor responsável: está tudo certo?
-  há consideração a fazer? houve combinado específico que não podemos esquecer?
-  Confirmado o ganho → **vai sozinho para Implantação**.
-- **Implantação:** upload da lista de colaboradores (nome completo, CPF,
-  telefone, e-mail) criando **pré-cadastro** — os dados são completados no
-  agendamento da primeira consulta. Encaixa na tela de **Boas-vindas** (1006).
-  Alguma empresa pede apresentação para todos os colaboradores: é aqui.
+- **A conferência do consultor** (`lead_closing_reviews`), que só aparece a
+  partir do Fechamento: está tudo certo? há consideração? houve **combinado
+  específico**? Confirmado com tudo certo → **vai sozinho para Implantação**.
+  Confirmar com pendência **não** move, e exige escrever o que não está certo —
+  registro que só diz "tem problema" não serve para ninguém resolver nada.
+- **⚠️ O COMBINADO VIAJA PARA A EMPRESA, POR GATILHO**, e aparece em destaque no
+  cadastro dela ("Combinado na venda — não esquecer"). *"Os dependentes entram
+  só no segundo mês"* é exatamente o acerto que se perde: quem vende não é quem
+  atende, e o consultor sai de férias. A cópia acontece **antes** de mover a
+  fase, e **mesmo quando há pendência** — é o que não pode se perder. Limpar o
+  campo depois **não apaga** o que já foi gravado na empresa.
+- **Sem empresa criada não dá para confirmar**: implantação é cadastrar os
+  colaboradores nela.
+- **Os cinco passos da implantação** (`lead_implementation_steps`): cadastrar
+  os colaboradores, enviar as orientações, dar as boas-vindas, a apresentação
+  para todos e o primeiro agendamento pelo SDR. Linha **esparsa** — "não feito"
+  é a ausência de registro. Só a **apresentação coletiva** pode ser marcada
+  como *não se aplica*, e ela **sai dos dois lados da conta**: se ficasse no
+  denominador, quem não pediu nunca chegaria a 100%, e barra que nunca fecha é
+  barra que ninguém olha.
+
+**O upload da lista de colaboradores NÃO foi construído aqui — ele já existia.**
+A tela da empresa importa Excel com planilha-modelo e aba de dependentes, e cria
+o pré-cadastro (nome, CPF, telefone, e-mail) que a fase pede. O que faltava era
+**o caminho do funil até ele** e o registro de que foi feito. Um segundo
+importador criaria duas portas para a mesma coisa — e é assim que as duas passam
+a divergir.
+
+**Régua errada, de novo:** a conferência da tela procurou "0 de 5 passos" e
+acusou a tela. O React **parte o texto** com `<!-- -->` entre expressões, então
+a frase inteira não existe no HTML cru — é a mesma armadilha do `qual:versao`.
+Quem estava errado era o instrumento. Régua que procura texto renderizado tem de
+tirar essas marcas antes de comparar.
 
 ### Bloco D — painel e alertas (a fazer)
 

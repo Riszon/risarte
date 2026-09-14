@@ -20,8 +20,13 @@ import type {
 import type { BillingBasis, InterestLevel } from "@/lib/empresarial/proposta";
 import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
+import type {
+  ImplementationStep,
+  PassoRegistrado,
+} from "@/lib/empresarial/implantacao";
 import { ApresentacaoEditor } from "./apresentacao-editor";
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
+import { FechamentoEImplantacao } from "./fechamento-e-implantacao";
 
 export const metadata: Metadata = { title: "Levantamento · Risarte Empresarial" };
 
@@ -33,8 +38,25 @@ type LeadRow = {
   contact_phone: string | null;
   stage: LeadStage;
   consultant_id: string | null;
+  company_id: string | null;
   contract_signed_at: string | null;
   implantation_paid_at: string | null;
+};
+
+type ReviewRow = {
+  confirmed_at: string;
+  confirmed_by: string | null;
+  everything_ok: boolean;
+  considerations: string | null;
+  special_agreements: string | null;
+};
+
+type StepRow = {
+  step: ImplementationStep;
+  done_at: string | null;
+  done_by: string | null;
+  not_applicable: boolean;
+  note: string | null;
 };
 
 type TemplateRow = {
@@ -101,7 +123,7 @@ export default async function FichaDoLeadPage({
   const { data: lead } = await db
     .from("commercial_leads")
     .select(
-      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, contract_signed_at, implantation_paid_at"
+      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, company_id, contract_signed_at, implantation_paid_at"
     )
     .eq("id", leadId)
     .maybeSingle<LeadRow>();
@@ -136,6 +158,22 @@ export default async function FichaDoLeadPage({
       .returns<DispatchRow[]>(),
   ]);
 
+  // C3: a conferência do fechamento e os passos da implantação.
+  const [{ data: review }, { data: stepRows }] = await Promise.all([
+    db
+      .from("lead_closing_reviews")
+      .select(
+        "confirmed_at, confirmed_by, everything_ok, considerations, special_agreements"
+      )
+      .eq("lead_id", leadId)
+      .maybeSingle<ReviewRow>(),
+    db
+      .from("lead_implementation_steps")
+      .select("step, done_at, done_by, not_applicable, note")
+      .eq("lead_id", leadId)
+      .returns<StepRow[]>(),
+  ]);
+
   const daEmpresa = templates?.find((t) => t.lead_id === leadId);
   const daRede = templates?.find((t) => !t.lead_id);
   const template = daEmpresa ?? daRede;
@@ -143,9 +181,12 @@ export default async function FichaDoLeadPage({
   // Nomes de quem enviou e do consultor responsável.
   const userIds = [
     ...new Set(
-      [lead.consultant_id, ...(dispatches ?? []).map((d) => d.sent_by)].filter(
-        (x): x is string => Boolean(x)
-      )
+      [
+        lead.consultant_id,
+        review?.confirmed_by ?? null,
+        ...(dispatches ?? []).map((d) => d.sent_by),
+        ...(stepRows ?? []).map((s) => s.done_by),
+      ].filter((x): x is string => Boolean(x))
     ),
   ];
   const nomePorId = new Map<string, string>();
@@ -243,6 +284,34 @@ export default async function FichaDoLeadPage({
         envios={envios}
         contractSignedAt={lead.contract_signed_at}
         implantationPaidAt={lead.implantation_paid_at}
+      />
+
+      <FechamentoEImplantacao
+        leadId={lead.id}
+        stage={lead.stage}
+        companyId={lead.company_id}
+        conferencia={
+          review
+            ? {
+                confirmedAt: review.confirmed_at,
+                confirmedByName: review.confirmed_by
+                  ? nomePorId.get(review.confirmed_by) ?? null
+                  : null,
+                everythingOk: review.everything_ok,
+                considerations: review.considerations,
+                specialAgreements: review.special_agreements,
+              }
+            : null
+        }
+        passos={(stepRows ?? []).map(
+          (s): PassoRegistrado => ({
+            step: s.step,
+            doneAt: s.done_at,
+            notApplicable: s.not_applicable,
+            note: s.note,
+            doneByName: s.done_by ? nomePorId.get(s.done_by) ?? null : null,
+          })
+        )}
       />
     </div>
   );

@@ -370,7 +370,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Estoque | `/estoque` | Itens, kits, saldo, inventário |
 | Compras | `/compras` | Requisição, cotação, pedido, recebimento |
 | PPR+ | `/ppr` | Programa de prevenção |
-| Empresarial | `/empresarial` | Convênio com empresas parceiras; **Funil** é o quadro comercial de 8 fases (da captação à implantação) — clicar no nome da empresa abre o **levantamento, a simulação da proposta, a apresentação em PDF e o registro do envio** —, **Agenda** reúne as reuniões do programa, **Cobranças** as de todas as empresas, e **Boas-vindas** é a fila de ligação da recepção/SDR em cada empresa |
+| Empresarial | `/empresarial` | Convênio com empresas parceiras; **Funil** é o quadro comercial de 8 fases (da captação à implantação) — clicar no nome da empresa abre o **levantamento, a simulação da proposta, a apresentação em PDF, o registro do envio e, no fechamento, a conferência do consultor e os passos da implantação** —, **Agenda** reúne as reuniões do programa, **Cobranças** as de todas as empresas, e **Boas-vindas** é a fila de ligação da recepção/SDR em cada empresa |
 | Risartanos | `/risartanos` | Cadastro de colaboradores (RH) |
 | Relatórios | `/relatorios` | Indicadores de agenda, rede e produtividade |
 | Manual | `/manual` | Este manual, sempre na versão do sistema no ar |

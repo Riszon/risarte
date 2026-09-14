@@ -44,6 +44,12 @@ export type Company = {
   gracePeriodDays: number;
   employeeGracePeriodDays: number;
   notes: string | null;
+  /**
+   * Combinados específicos feitos NA VENDA que não podem ser esquecidos.
+   * Vem da conferência do fechamento, no funil, copiado por gatilho (1011) —
+   * quem vendeu não é quem atende.
+   */
+  specialAgreements: string | null;
   createdAt: string;
   /** Categoria da empresa (define o documento sugerido). */
   category: CompanyCategory;

@@ -115,6 +115,7 @@ type CompanyRow = {
   grace_period_days: number;
   employee_grace_period_days: number;
   notes: string | null;
+  special_agreements: string | null;
   created_at: string;
   category: CompanyCategory;
   billing_model: BillingModel;
@@ -146,6 +147,7 @@ function toCompany(r: CompanyRow): Company {
     gracePeriodDays: r.grace_period_days,
     employeeGracePeriodDays: r.employee_grace_period_days,
     notes: r.notes,
+    specialAgreements: r.special_agreements,
     createdAt: r.created_at,
     category: r.category,
     billingModel: r.billing_model,
@@ -183,7 +185,7 @@ export default async function CompanyDetailPage(props: {
   const { data: row } = await db
     .from("companies")
     .select(
-      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, created_at, category, billing_model, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone"
+      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, special_agreements, created_at, category, billing_model, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone"
     )
     .eq("id", companyId)
     .maybeSingle<CompanyRow>();
@@ -979,6 +981,19 @@ export default async function CompanyDetailPage(props: {
                 label="Carência do colaborador"
                 value={`${company.employeeGracePeriodDays} dias`}
               />
+              {/* O combinado feito na VENDA, trazido do funil pelo gatilho da
+                  1011. Fica em destaque de propósito: quem vendeu não é quem
+                  atende, e é justamente este acerto que costuma se perder. */}
+              {company.specialAgreements && (
+                <div className="col-span-2 rounded-md border border-gold/40 bg-gold/5 p-3">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-gold-tinta">
+                    Combinado na venda — não esquecer
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">
+                    {company.specialAgreements}
+                  </p>
+                </div>
+              )}
               {company.notes && (
                 <div className="col-span-2">
                   <Info label="Observações" value={company.notes} />
