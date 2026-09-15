@@ -62,6 +62,44 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.244.0",
+    data: "2026-09-15",
+    migracao: "0255",
+    titulo: "Aba de Inadimplentes: com telefone e registro da cobrança",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Financeiro ganhou a aba Inadimplentes, dentro de Recebíveis. Ela mostra UMA linha por pessoa — não uma por cobrança —, com o telefone do cadastro, o total devido e há quantos dias está o atraso mais antigo. Quem deve cinco parcelas aparece uma vez só, porque ninguém liga cinco vezes para a mesma pessoa.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O telefone é clicável: um toque disca, e o ícone ao lado abre a conversa no WhatsApp. Quem está sem telefone no cadastro aparece em vermelho, dizendo isso — é o que impede a ligação de acontecer.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Dá para registrar o retorno de cada tentativa: não atendeu, falei com a pessoa, prometeu pagar, diz que já pagou, contesta, pediu para renegociar, número errado, sem condições agora. Quem escolhe 'prometeu pagar' informa a data — e quando o dia passa sem pagamento, a pessoa volta destacada na lista.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O registro do contato não se edita nem se apaga. É a sequência de tentativas que prova que a unidade cobrou. Errou ao digitar? Registre de novo — a correção também fica no histórico.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na visão geral de Recebíveis, o quadro 'Vencido' dizia que o valor já vinha com multa e juros. Não vinha: aquele número é o principal, e é ele que a taxa de inadimplência compara com o total a receber. O texto foi corrigido, e o valor de cobrança — com multa e juros — está na aba Inadimplentes.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.243.3",
     data: "2026-09-10",
     migracao: null,

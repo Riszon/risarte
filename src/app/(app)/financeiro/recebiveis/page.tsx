@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import type { AgingBand } from "@/lib/finance/aging";
 import { carregarRecebiveis, type LinhaRecebivel } from "./dados";
+import { AbasDeRecebiveis } from "./abas";
 
 export const metadata: Metadata = { title: "Recebíveis e inadimplência" };
 
@@ -151,6 +152,8 @@ export default async function RecebiveisPage(
         </p>
       </div>
 
+      <AbasDeRecebiveis ativa="geral" />
+
       <section className="grid gap-3 sm:grid-cols-4">
         <Card>
           <CardContent className="p-4">
@@ -179,8 +182,24 @@ export default async function RecebiveisPage(
             >
               {formatBRL(resumo.vencidoCents)}
             </p>
+            {/* ⚠️ ESTE NÚMERO É O PRINCIPAL, SEM MULTA NEM JUROS — e o texto
+                aqui dizia o contrário até 15/09/2026 (achado ao conferir a aba
+                de Inadimplentes contra esta tela, OC-00009).
+
+                A conta certa é esta mesma: a taxa de inadimplência é
+                `vencido ÷ a receber`, e os dois lados têm de ser a mesma
+                coisa. Somar multa e juros só em cima inflaria a taxa — a
+                unidade pareceria pior quanto mais tempo a dívida ficasse
+                parada, mesmo sem nenhuma cobrança nova atrasando.
+
+                O valor DE COBRANÇA (com encargos) é outro, e vive na aba
+                Inadimplentes e na coluna "Com multa e juros" abaixo. */}
             <p className="text-xs text-muted-foreground">
-              {resumo.vencidoQuantidade} cobrança(s) · já com multa e juros
+              {resumo.vencidoQuantidade} cobrança(s) · só o principal; o valor a
+              cobrar, com multa e juros, está em{" "}
+              <Link href="/financeiro/recebiveis/inadimplentes" className="underline">
+                Inadimplentes
+              </Link>
             </p>
           </CardContent>
         </Card>

@@ -30,6 +30,14 @@ import { daysApart, groupByAging, type AgingBand } from "@/lib/finance/aging";
 export type LinhaRecebivel = InstallmentView & {
   clientId: string | null;
   cliente: string;
+  /**
+   * Telefone do cadastro do cliente (OC-00009).
+   *
+   * ⚠️ Nulo quando não há telefone — e isso É a informação: é exatamente o que
+   * impede a ligação de acontecer. Trocar por texto vazio faria a tela
+   * silenciar o problema que ela existe para resolver.
+   */
+  telefone: string | null;
   /** Data que vale para o vencimento: a de liquidação, quando existe. */
   dataEfetiva: string;
 };
@@ -76,7 +84,7 @@ type LinhaBruta = {
   renegotiation_id: string | null;
   renegotiated_by_id: string | null;
   client_id: string | null;
-  clients: { full_name: string } | null;
+  clients: { full_name: string; phone: string | null } | null;
 };
 
 /**
@@ -102,7 +110,7 @@ export async function carregarRecebiveis(
     supabase
       .from("payment_installments")
       .select(
-        "id, seq, kind, due_date, expected_settlement_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id, client_id, clients ( full_name )"
+        "id, seq, kind, due_date, expected_settlement_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id, client_id, clients ( full_name, phone )"
       )
       .eq("clinic_id", clinicId)
       // Só o que ainda deve. Cancelada não é dívida; renegociada foi
@@ -159,6 +167,7 @@ export async function carregarRecebiveis(
       ...viewInstallment(inst, hoje),
       clientId: r.client_id,
       cliente: r.clients?.full_name ?? "—",
+      telefone: r.clients?.phone ?? null,
       // ⚠️ CARTÃO NÃO ESTÁ ATRASADO ENQUANTO NÃO LIQUIDOU. A adquirente paga em
       // D+30; usar o vencimento aqui acusaria de inadimplência o que é só prazo
       // combinado. Mesma data que a projeção de caixa usa.

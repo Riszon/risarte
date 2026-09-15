@@ -218,8 +218,23 @@ menu fica aceso quando você está numa tela dele.
 A aba **Recebíveis** é o outro lado do Contas a pagar: o que a unidade tem **a
 receber**.
 
-**No alto:** quanto há a receber, quanto já venceu (com multa e juros), a
-**taxa de inadimplência** e quanto foi recebido no mês.
+Ela tem **duas abas**, e elas respondem perguntas diferentes:
+
+| Aba | Uma linha por | Serve para |
+|---|---|---|
+| **Visão geral** | cobrança | conferir o financeiro |
+| **Inadimplentes** | pessoa | **ligar e cobrar** |
+
+**No alto da visão geral:** quanto há a receber, quanto já venceu, a **taxa de
+inadimplência** e quanto foi recebido no mês.
+
+> ⚠️ **O quadro "Vencido" mostra só o principal**, sem multa e juros. É de
+> propósito: a taxa de inadimplência divide o vencido pelo que há a receber, e
+> os dois lados precisam ser a mesma coisa — somar encargos só em cima faria a
+> unidade parecer pior a cada dia que a dívida ficasse parada, mesmo sem
+> nenhuma cobrança nova atrasando. **O valor que se cobra da pessoa**, esse sim
+> com multa e juros, está na aba **Inadimplentes** e na coluna *Com multa e
+> juros* da tabela.
 
 **Duas escadas de prazo**, e elas não se misturam de propósito:
 
@@ -255,6 +270,38 @@ coisa. Paga, cancelada ou substituída por renegociação fica na ficha do
 cliente — aqui ela inflaria o total sem ser dívida. E **cartão não conta como
 atrasado enquanto não liquidou**: a adquirente paga em D+30, e cobrar antes
 disso acusaria de inadimplência o que é só prazo combinado.
+
+#### A aba Inadimplentes — a fila de ligação
+
+É a lista de quem cobrar hoje. **Uma linha por pessoa**: quem deve cinco
+parcelas aparece **uma vez**, com a soma — ninguém liga cinco vezes para a mesma
+pessoa.
+
+Cada linha traz o **nome**, o **telefone** (clicar disca; o ícone ao lado abre o
+WhatsApp), o **valor devedor com multa e juros**, há quantos dias está o
+**atraso mais antigo** e o **último contato**. Quem tem parcela ainda a vencer
+mostra isso ao lado, para dar a dívida inteira na mesma conversa.
+
+**Quatro quadros no alto:** pessoas a cobrar, quantas ainda **não foram
+contatadas**, quantas **prometeram e não pagaram**, e quantas estão **sem
+telefone no cadastro**.
+
+**Registrar contato** abre a janela do retorno. Escolha o que aconteceu:
+
+| Resposta | O que acontece |
+|---|---|
+| Não atendeu · Falei com a pessoa · Sem condições agora · Número errado | fica registrado |
+| **Prometeu pagar** | pede a **data**; passado o dia sem pagamento, a pessoa volta **destacada em vermelho** |
+| Diz que já pagou | a tela lembra de conferir na **Conciliação** antes de cobrar de novo |
+| Contesta a dívida · Pediu para renegociar | acordo não se fecha no telefone: quem decide é o **Gerente**, em Renegociações |
+
+> ⚠️ **O registro não se edita nem se apaga.** É a sequência de tentativas que
+> prova que a unidade cobrou. Errou ao digitar? **Registre de novo** — a
+> correção também entra no histórico, e a tela sempre mostra o último.
+
+**Quem não aparece na lista:** quem só tem parcela **a vencer** (a vencer não é
+atraso) e as cobranças **sem paciente vinculado** — sem pessoa não há para quem
+ligar. Essas últimas aparecem contadas num aviso, para não sumirem em silêncio.
 
 **Na Franqueadora há a visão da rede:** menu **Rede → Recebíveis da rede**. Ela
 mostra todas as unidades lado a lado — a receber, vencido, a taxa de cada uma e
