@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { carregarRecebiveis } from "../dados";
 import {
   agruparInadimplentes,
+  noPeriodo,
   type CollectionOutcome,
   type Inadimplente,
   type UltimoContato,
@@ -41,9 +42,15 @@ export type FilaDeCobranca = {
 
 export async function carregarFilaDeCobranca(
   supabase: SupabaseClient,
-  clinicId: string
+  clinicId: string,
+  periodo: { de: string | null; ate: string | null } = { de: null, ate: null }
 ): Promise<FilaDeCobranca> {
-  const { linhas } = await carregarRecebiveis(supabase, clinicId);
+  const { linhas: todas } = await carregarRecebiveis(supabase, clinicId);
+
+  // O período filtra pelo VENCIMENTO (a data efetiva, que no cartão é a da
+  // liquidação). Filtrar pela data do contato ou do cadastro responderia outra
+  // pergunta — quem pede "as vencidas em março" quer as que venceram em março.
+  const linhas = todas.filter((l) => noPeriodo(l.dataEfetiva, periodo.de, periodo.ate));
 
   const { data: contatoRows, error } = await supabase
     .from("collection_contacts")

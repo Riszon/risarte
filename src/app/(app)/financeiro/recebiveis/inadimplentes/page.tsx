@@ -4,15 +4,24 @@ import { redirect } from "next/navigation";
 import { PhoneCall } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canViewFinance } from "@/lib/finance/access";
+import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
 import { formatBRL } from "@/lib/pricing";
-import { todayInBrazil } from "@/lib/dates";
+import { formatBrDate, formatBrDateTime, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { cobertura, promessasVencidas } from "@/lib/finance/collection";
+import { Input } from "@/components/ui/input";
+import { FilterForm } from "@/components/filter-form";
+import {
+  cobertura,
+  dataDoFiltro,
+  promessasVencidas,
+  rotuloDoPeriodo,
+  situacaoDaMargem,
+} from "@/lib/finance/collection";
 import { AbasDeRecebiveis } from "../abas";
 import { carregarFilaDeCobranca } from "./dados";
 import { ListaDeCobranca } from "./lista";
+import { ExportarCobranca } from "./exportar";
 
 export const metadata: Metadata = { title: "Inadimplentes" };
 
@@ -32,11 +41,44 @@ export const metadata: Metadata = { title: "Inadimplentes" };
  * anonimizada não serviria para nada. Fica atrás da mesma permissão do resto
  * do Financeiro da unidade, e cada registro de contato entra na auditoria.
  */
-export default async function InadimplentesPage() {
+export default async function InadimplentesPage(
+  props: PageProps<"/financeiro/recebiveis/inadimplentes">
+) {
   const session = await getSessionContext();
   if (!canViewFinance(session)) redirect("/");
 
-  const clinicId = session.activeClinic?.id ?? null;
+  const params = await props.searchParams;
+  const pick = (k: string) => {
+    const v = params[k];
+    const s = Array.isArray(v) ? v[0] : v;
+    return (s ?? "").trim() || null;
+  };
+  const de = dataDoFiltro(pick("de"));
+  const ate = dataDoFiltro(pick("ate"));
+
+  // ⚠️ A FRANQUEADORA ESCOLHE A UNIDADE (pedido do Admin Master). Quem não é
+  // rede fica preso à clínica ativa — e a RLS recusaria de qualquer jeito;
+  // isto é para a tela não oferecer uma porta que o banco vai fechar.
+  const podeEscolherUnidade =
+    session.isAdminMaster || isFinanceFranchisor(session);
+  const supabase = await createClient();
+
+  let unidades: { id: string; name: string }[] = [];
+  if (podeEscolherUnidade) {
+    const { data } = await supabase
+      .from("clinics")
+      .select("id, name")
+      .order("name")
+      .returns<{ id: string; name: string }[]>();
+    unidades = data ?? [];
+  }
+
+  const escolhida = pick("unidade");
+  const clinicId =
+    (podeEscolherUnidade && escolhida
+      ? unidades.find((u) => u.id === escolhida)?.id
+      : null) ?? session.activeClinic?.id ?? null;
+
   if (!clinicId) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8">
@@ -47,30 +89,80 @@ export default async function InadimplentesPage() {
     );
   }
 
-  const supabase = await createClient();
+  const nomeDaUnidade =
+    unidades.find((u) => u.id === clinicId)?.name ??
+    session.activeClinic?.name ??
+    "Unidade";
+
   const { fila, semCliente, contatosIndisponiveis } =
-    await carregarFilaDeCobranca(supabase, clinicId);
+    await carregarFilaDeCobranca(supabase, clinicId, { de, ate });
+
+  // A taxa e o limite vêm do BANCO (`clinic_overdue_rate`), a mesma função que
+  // a visão geral usa — e ela olha a unidade INTEIRA, não o filtro. É de
+  // propósito: taxa de inadimplência de um recorte de datas não é taxa de
+  // inadimplência de ninguém.
+  const { data: taxaRows } = await supabase.rpc("clinic_overdue_rate", {
+    p_clinic_id: clinicId,
+  });
+  const t = ((taxaRows ?? []) as {
+    overdue_percent: number | null;
+    limit_percent: number | null;
+  }[])[0];
+  const taxaPercent =
+    t?.overdue_percent == null ? null : Number(t.overdue_percent);
+  const limitePercent =
+    t?.limit_percent == null ? null : Number(t.limit_percent);
 
   const hoje = todayInBrazil();
   const atrasadas = promessasVencidas(fila, hoje);
   const cob = cobertura(fila);
   const total = fila.reduce((s, p) => s + p.vencidoCents, 0);
   const semTelefone = fila.filter((p) => !p.telefone).length;
+  const periodo = rotuloDoPeriodo(de, ate, (iso) =>
+    formatBrDate(`${iso}T12:00:00`)
+  );
+  const filtrando = Boolean(de || ate);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <PhoneCall className="size-6 text-primary" />
-          Inadimplentes
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {session.activeClinic?.name} · quem ligar hoje, para qual número, e
-          quanto cobrar. Uma linha por pessoa — não por cobrança.
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <PhoneCall className="size-6 text-primary print:hidden" />
+            Inadimplentes
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {nomeDaUnidade} · quem ligar hoje, para qual número, e quanto
+            cobrar. Uma linha por pessoa — não por cobrança.
+          </p>
+        </div>
+        <ExportarCobranca
+          fila={fila}
+          unidade={nomeDaUnidade}
+          periodo={periodo}
+          totalCents={total}
+          taxaPercent={taxaPercent}
+          limitePercent={limitePercent}
+        />
+      </div>
+
+      {/* SÓ NO PAPEL: o cabeçalho que explica o relatório fora da tela. */}
+      <div className="hidden space-y-1 border-b pb-3 text-sm print:block">
+        <p>
+          <strong>Relatório de inadimplentes</strong> · {nomeDaUnidade}
+        </p>
+        <p>{periodo}</p>
+        <p>Gerado em {formatBrDateTime(new Date())}</p>
+        <p>
+          Inadimplência da unidade:{" "}
+          {taxaPercent === null ? "sem base para calcular" : `${taxaPercent}%`} ·{" "}
+          {situacaoDaMargem(taxaPercent, limitePercent)}
         </p>
       </div>
 
-      <AbasDeRecebiveis ativa="inadimplentes" />
+      <div className="print:hidden">
+        <AbasDeRecebiveis ativa="inadimplentes" />
+      </div>
 
       {contatosIndisponiveis && (
         <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
@@ -81,11 +173,36 @@ export default async function InadimplentesPage() {
         </p>
       )}
 
+      <FilterForm className="grid gap-3 sm:grid-cols-4 print:hidden">
+        {podeEscolherUnidade && unidades.length > 0 && (
+          <label className="text-sm">
+            <span className="mb-1 block text-muted-foreground">Unidade</span>
+            <select
+              name="unidade"
+              defaultValue={clinicId}
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            >
+              {unidades.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className="text-sm">
+          <span className="mb-1 block text-muted-foreground">
+            Vencimento de
+          </span>
+          <Input type="date" name="de" defaultValue={de ?? ""} />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-muted-foreground">até</span>
+          <Input type="date" name="ate" defaultValue={ate ?? ""} />
+        </label>
+      </FilterForm>
+
       <section className="grid gap-3 sm:grid-cols-4">
-        {/* ⚠️ Este total é MAIOR que o "Vencido" da visão geral, de propósito:
-            aqui entram multa e juros, porque é o que se cobra da pessoa; lá é
-            só o principal, porque é o que a taxa de inadimplência compara
-            contra o principal a receber. Dois números para duas perguntas. */}
         <Numero
           rotulo="Pessoas a cobrar"
           valor={String(fila.length)}
@@ -95,8 +212,6 @@ export default async function InadimplentesPage() {
         <Numero
           rotulo="Ainda sem contato"
           valor={String(cob.semContato)}
-          // Régua vazia grita: fila vazia não vira "0% contatado", que acusaria
-          // de omissão quem não tem o que cobrar.
           detalhe={
             cob.percentual === null
               ? "Nada a cobrar nesta unidade."
@@ -111,12 +226,37 @@ export default async function InadimplentesPage() {
           alerta={atrasadas.length > 0}
         />
         <Numero
-          rotulo="Sem telefone"
-          valor={String(semTelefone)}
-          detalhe="não dá para ligar até completar a ficha"
-          alerta={semTelefone > 0}
+          rotulo="Inadimplência da unidade"
+          valor={taxaPercent === null ? "—" : `${taxaPercent}%`}
+          detalhe={situacaoDaMargem(taxaPercent, limitePercent)}
+          alerta={
+            taxaPercent !== null &&
+            limitePercent !== null &&
+            taxaPercent > limitePercent
+          }
         />
       </section>
+
+      {filtrando && (
+        // ⚠️ O RECORTE NÃO É O TOTAL DA UNIDADE, e a tela precisa dizer isso.
+        // Sem esta linha, alguém exporta "março" e lê o número como se fosse a
+        // inadimplência inteira — e a taxa dos quadros continua sendo da
+        // unidade toda, o que tornaria a leitura errada ainda mais plausível.
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <strong>Isto é um recorte por período</strong> ({periodo.toLowerCase()}
+          ): {fila.length} pessoa(s) e {formatBRL(total)}. A{" "}
+          <strong>taxa de inadimplência</strong> acima continua sendo a da
+          unidade inteira — taxa de um recorte de datas não é taxa de ninguém.
+        </p>
+      )}
+
+      {semTelefone > 0 && (
+        <p className="text-sm text-destructive print:text-black">
+          <strong>{semTelefone}</strong>{" "}
+          {semTelefone === 1 ? "pessoa está" : "pessoas estão"} sem telefone no
+          cadastro — não dá para ligar até alguém completar a ficha.
+        </p>
+      )}
 
       {semCliente > 0 && (
         <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm">

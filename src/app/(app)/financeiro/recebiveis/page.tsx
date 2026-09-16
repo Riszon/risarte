@@ -14,6 +14,13 @@ import { FilterForm } from "@/components/filter-form";
 import type { AgingBand } from "@/lib/finance/aging";
 import { carregarRecebiveis, type LinhaRecebivel } from "./dados";
 import { AbasDeRecebiveis } from "./abas";
+import { ExportarRecebiveis } from "./exportar-recebiveis";
+import {
+  dataDoFiltro,
+  noPeriodo,
+  rotuloDoPeriodo,
+} from "@/lib/finance/collection";
+import { formatBrDateTime } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Recebíveis e inadimplência" };
 
@@ -117,6 +124,8 @@ export default async function RecebiveisPage(
   };
   const filtro = (pick("mostrar") ?? "") as Filtro;
   const busca = (pick("cliente") ?? "").trim();
+  const de = dataDoFiltro(pick("de"));
+  const ate = dataDoFiltro(pick("ate"));
 
   const supabase = await createClient();
   const { linhas, resumo } = await carregarRecebiveis(supabase, clinicId);
@@ -132,7 +141,13 @@ export default async function RecebiveisPage(
     )
     .filter((l) =>
       busca ? l.cliente.toLowerCase().includes(busca.toLowerCase()) : true
-    );
+    )
+    // O período olha o VENCIMENTO (a data efetiva). Ver OC-00009.
+    .filter((l) => noPeriodo(l.dataEfetiva, de, ate));
+
+  const periodo = rotuloDoPeriodo(de, ate, (iso) =>
+    formatBrDate(`${iso}T12:00:00`)
+  );
 
   const acimaDoLimite =
     resumo.taxaPercent !== null &&
@@ -141,18 +156,48 @@ export default async function RecebiveisPage(
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <HandCoins className="size-6 text-primary" />
-          Recebíveis e inadimplência
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {session.activeClinic?.name} · o que a unidade tem a receber, o que já
-          venceu e quanto isso representa.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <HandCoins className="size-6 text-primary print:hidden" />
+            Recebíveis e inadimplência
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {session.activeClinic?.name} · o que a unidade tem a receber, o que
+            já venceu e quanto isso representa.
+          </p>
+        </div>
+        <ExportarRecebiveis
+          linhas={visiveis.map((l) => ({
+            cliente: l.cliente,
+            dataEfetiva: l.dataEfetiva,
+            balanceCents: l.balanceCents,
+            updatedBalanceCents: l.updatedBalanceCents,
+            isLate: l.isLate,
+            daysLate: l.daysLate,
+          }))}
+          unidade={session.activeClinic?.name ?? "Unidade"}
+          periodo={periodo}
+          abertoCents={resumo.abertoCents}
+          vencidoCents={resumo.vencidoCents}
+          taxaPercent={resumo.taxaPercent}
+          limitePercent={resumo.limitePercent}
+        />
       </div>
 
-      <AbasDeRecebiveis ativa="geral" />
+      {/* SÓ NO PAPEL. */}
+      <div className="hidden space-y-1 border-b pb-3 text-sm print:block">
+        <p>
+          <strong>Relatório de recebíveis</strong> ·{" "}
+          {session.activeClinic?.name}
+        </p>
+        <p>{periodo}</p>
+        <p>Gerado em {formatBrDateTime(new Date())}</p>
+      </div>
+
+      <div className="print:hidden">
+        <AbasDeRecebiveis ativa="geral" />
+      </div>
 
       <section className="grid gap-3 sm:grid-cols-4">
         <Card>
@@ -277,7 +322,7 @@ export default async function RecebiveisPage(
         />
       </section>
 
-      <FilterForm className="grid gap-3 sm:grid-cols-3">
+      <FilterForm className="grid gap-3 sm:grid-cols-4 print:hidden">
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Mostrar</span>
           <select
@@ -290,9 +335,17 @@ export default async function RecebiveisPage(
             <option value="a_vencer">Só as a vencer</option>
           </select>
         </label>
-        <label className="text-sm sm:col-span-2">
+        <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Cliente</span>
           <Input name="cliente" defaultValue={busca} placeholder="Nome do cliente" />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-muted-foreground">Vencimento de</span>
+          <Input type="date" name="de" defaultValue={de ?? ""} />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-muted-foreground">até</span>
+          <Input type="date" name="ate" defaultValue={ate ?? ""} />
         </label>
       </FilterForm>
 

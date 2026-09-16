@@ -62,6 +62,44 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.245.0",
+    data: "2026-09-15",
+    migracao: null,
+    titulo: "Relatórios de inadimplentes e recebíveis, em PDF e planilha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Recebíveis e Inadimplentes ganharam os botões PDF e Planilha. O relatório sai com os valores individuais, os totais e a situação frente ao limite de inadimplência que a rede definiu.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "As duas telas ganharam filtro por período de vencimento. Ao filtrar, a tela avisa que aquilo é um recorte — a taxa de inadimplência continua sendo a da unidade inteira, porque taxa de um pedaço de calendário não é taxa de ninguém.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na Franqueadora, a aba Inadimplentes tem um seletor de unidade: dá para abrir a fila de cobrança de qualquer unidade sem trocar a unidade ativa. E Recebíveis da rede exporta o quadro de todas elas, com quem passou do próprio limite.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O relatório diz 'dentro do limite', nunca 'saudável'. O limite é um número que a rede escolheu, não uma referência de mercado — e um relatório que se dá nota não serve para decidir nada.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Um endereço com data inválida (um favorito antigo, um link colado pela metade) derrubava a tela de Recebíveis com erro. Agora um filtro que não dá para ler é tratado como filtro nenhum: a tela abre mostrando tudo.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.244.0",
     data: "2026-09-15",
     migracao: "0255",

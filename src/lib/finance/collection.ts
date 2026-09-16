@@ -203,6 +203,82 @@ export function promessasVencidas(
   );
 }
 
+/**
+ * A cobrança venceu dentro do período pedido?
+ *
+ * Extremos INCLUSOS: quem escolhe "de 01/03 a 31/03" espera o dia 31 dentro.
+ * Ponta em branco é ponta aberta — "de 01/03 em diante" é um filtro legítimo,
+ * e exigir as duas datas obrigaria a inventar um fim.
+ */
+export function noPeriodo(
+  data: string,
+  de: string | null,
+  ate: string | null
+): boolean {
+  if (de && data < de) return false;
+  if (ate && data > ate) return false;
+  return true;
+}
+
+/**
+ * O texto do período, para o cabeçalho do relatório e o nome do arquivo.
+ *
+ * ⚠️ Sem filtro, diz "tudo em aberto" — nunca uma data inventada. Relatório
+ * que declara um período que ninguém escolheu faz quem lê acreditar num
+ * recorte que não existe.
+ */
+export function rotuloDoPeriodo(
+  de: string | null,
+  ate: string | null,
+  formatar: (iso: string) => string
+): string {
+  if (!de && !ate) return "Tudo em aberto";
+  if (de && ate) return `Vencimento de ${formatar(de)} a ${formatar(ate)}`;
+  if (de) return `Vencimento a partir de ${formatar(de)}`;
+  return `Vencimento até ${formatar(ate!)}`;
+}
+
+/**
+ * A frase da margem, para a tela e para o relatório.
+ *
+ * ⚠️ MORA AQUI, e não no componente de exportação, porque o SERVIDOR também a
+ * usa (no cabeçalho de impressão). Exportar uma função de um arquivo
+ * `"use client"` e chamá-la do servidor **compila e quebra ao abrir a tela** —
+ * a mesma armadilha que derrubou a v0.229.0, na direção oposta.
+ *
+ * ⚠️ "Dentro do limite", nunca "saudável". O número é uma decisão da rede, não
+ * uma referência de mercado — chamar de saudável seria o relatório se dar nota.
+ */
+export function situacaoDaMargem(
+  taxaPercent: number | null,
+  limitePercent: number | null
+): string {
+  if (taxaPercent === null) return "Nada a receber — não há taxa para comparar.";
+  if (limitePercent === null) {
+    return "A rede não definiu limite de inadimplência.";
+  }
+  return taxaPercent > limitePercent
+    ? `ACIMA do limite de ${limitePercent}% definido pela rede.`
+    : `Dentro do limite de ${limitePercent}% definido pela rede.`;
+}
+
+/**
+ * A data que veio da URL, ou nulo.
+ *
+ * ⚠️ TEXTO QUE NÃO É DATA VIRA NULO, NUNCA ERRO DE TELA. Um endereço com
+ * `?de=ontem` — link velho, favorito estragado, alguém digitando — chegava até
+ * o formatador e derrubava a página inteira com erro 500. **Filtro ilegível é
+ * filtro ausente**: a tela mostra tudo, que é a resposta honesta.
+ */
+export function dataDoFiltro(valor: string | null | undefined): string | null {
+  const v = (valor ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  // Formato certo não garante data que existe: "2026-02-31" passa no molde.
+  const d = new Date(`${v}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10) === v ? v : null;
+}
+
 /** O endereço que abre a conversa no WhatsApp. `null` sem telefone utilizável. */
 export function linkDoWhatsApp(telefone: string | null): string | null {
   const digitos = (telefone ?? "").replace(/\D/g, "");

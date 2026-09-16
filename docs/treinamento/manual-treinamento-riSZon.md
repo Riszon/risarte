@@ -303,6 +303,37 @@ telefone no cadastro**.
 atraso) e as cobranças **sem paciente vinculado** — sem pessoa não há para quem
 ligar. Essas últimas aparecem contadas num aviso, para não sumirem em silêncio.
 
+#### Relatórios: PDF e planilha
+
+As duas abas têm os botões **PDF** e **Planilha**, no alto à direita.
+
+- **PDF** é a impressão do navegador (*Salvar como PDF* na janela de impressão).
+  Sai o que está na tela, sem os botões e sem os filtros, com um cabeçalho que
+  diz a unidade, o período e quando foi gerado.
+- **Planilha** baixa um `.xlsx` com os **valores individuais e os totais**. O
+  dinheiro vai como **número**, não como texto — dá para somar e filtrar no
+  Excel sem redigitar nada.
+
+**Filtro por período**, nas duas abas: escolha *vencimento de* e *até*. Quando
+há filtro, aparece um aviso de que aquilo é **um recorte**.
+
+> ⚠️ **O recorte não é o total da unidade.** Os quadros do alto e a **taxa de
+> inadimplência** continuam sendo da unidade inteira, sempre. Taxa de um pedaço
+> de calendário não é taxa de ninguém — e um relatório de março lido como se
+> fosse a inadimplência toda leva a decisão errada.
+
+**Todo relatório traz a linha da margem:** *"Dentro do limite de 7% definido
+pela rede"* ou *"ACIMA do limite…"*.
+
+> ⚠️ Ele diz **"dentro do limite"**, nunca **"saudável"**. O número é a decisão
+> que a rede tomou, não uma referência de mercado — um relatório que se dá nota
+> não ajuda a decidir nada.
+
+**Na Franqueadora há um seletor de unidade** na aba Inadimplentes: dá para abrir
+a fila de cobrança de qualquer unidade **sem trocar a unidade ativa**. E em
+**Rede → Recebíveis da rede** os mesmos dois botões exportam o quadro de todas
+as unidades, com quem passou do próprio limite.
+
 **Na Franqueadora há a visão da rede:** menu **Rede → Recebíveis da rede**. Ela
 mostra todas as unidades lado a lado — a receber, vencido, a taxa de cada uma e
 o limite dela — mais os totais da rede e as duas escadas de prazo somadas.

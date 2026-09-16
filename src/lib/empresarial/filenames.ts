@@ -1,4 +1,5 @@
 import { todayInBrazil } from "@/lib/dates";
+import { slugify as slugGenerico } from "@/lib/print";
 
 /**
  * Nome dos arquivos gerados pelo módulo (Excel e PDF).
@@ -8,20 +9,22 @@ import { todayInBrazil } from "@/lib/dates";
  *
  * Assim o arquivo se explica sozinho na pasta de Downloads: dá para achar por
  * empresa, por tipo de relatório ou por data, sem abrir.
+ *
+ * ⚠️ `slugify` e `printAs` MUDARAM DE ENDEREÇO (15/09/2026, OC-00009), não de
+ * comportamento: quando o Financeiro passou a exportar também, manter as duas
+ * cópias faria elas divergirem no dia em que alguém mexesse só numa. Agora
+ * moram em `src/lib/print.ts`, que não pertence a módulo nenhum.
  */
 
-/** Texto → pedaço de nome de arquivo (sem acento, espaço ou símbolo). */
+export { printAs } from "@/lib/print";
+
+/**
+ * O `slugify` do módulo mantém o padrão `"empresa"` para nome que vira vazio —
+ * o genérico usa `"relatorio"`. A diferença parece cosmética e não é: é o nome
+ * do arquivo que a pessoa vai procurar na pasta de Downloads.
+ */
 export function slugify(text: string): string {
-  return (
-    text
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/[^\w\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-      .slice(0, 60) || "empresa"
-  );
+  return slugGenerico(text, "empresa");
 }
 
 /** Monta o nome (sem extensão). `extra` entra antes da data — ex.: o filtro. */
@@ -39,27 +42,4 @@ export function reportFileName(
     todayInBrazil(),
   ].filter(Boolean);
   return parts.join("_");
-}
-
-/**
- * Imprime com um nome de arquivo sugerido. O navegador usa o TÍTULO da página
- * como nome padrão em "Salvar como PDF" — então trocamos o título, imprimimos e
- * devolvemos o título original.
- */
-export function printAs(fileName: string, delayMs = 120): void {
-  if (typeof document === "undefined") return;
-  const original = document.title;
-  document.title = fileName;
-
-  const restore = () => {
-    document.title = original;
-    window.removeEventListener("afterprint", restore);
-  };
-  window.addEventListener("afterprint", restore);
-
-  window.setTimeout(() => {
-    window.print();
-    // Rede de segurança: nem todo navegador dispara "afterprint".
-    window.setTimeout(restore, 1000);
-  }, delayMs);
 }

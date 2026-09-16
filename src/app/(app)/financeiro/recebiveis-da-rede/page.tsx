@@ -5,7 +5,9 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
 import { formatBRL } from "@/lib/pricing";
+import { formatBrDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { ExportarRede } from "./exportar";
 import { Card, CardContent } from "@/components/ui/card";
 import { AGING_LABELS } from "@/lib/finance/aging";
 import {
@@ -178,14 +180,46 @@ export default async function RecebiveisDaRedePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <HandCoins className="size-6 text-primary" />
-          Recebíveis da rede
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          O que as unidades têm a receber, o que já venceu e atrás de qual ir
-          primeiro.
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <HandCoins className="size-6 text-primary print:hidden" />
+            Recebíveis da rede
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            O que as unidades têm a receber, o que já venceu e atrás de qual ir
+            primeiro.
+          </p>
+        </div>
+        <ExportarRede
+          unidades={ordenadas.map((u) => ({
+            nome: u.nome,
+            ownership: u.ownership,
+            abertoCents: u.abertoCents,
+            vencidoCents: u.vencidoCents,
+            vencidoQuantidade: u.vencidoQuantidade,
+            taxaPercent: u.taxaPercent,
+            limitePercent: u.limitePercent,
+          }))}
+          totalAbertoCents={totais.abertoCents}
+          totalVencidoCents={totais.vencidoCents}
+          taxaDaRede={totais.taxaPercent}
+          acimaDoLimite={totais.acimaDoLimite}
+        />
+      </div>
+
+      {/* SÓ NO PAPEL: o relatório da rede precisa dizer quando foi tirado. */}
+      <div className="hidden space-y-1 border-b pb-3 text-sm print:block">
+        <p>
+          <strong>Relatório de recebíveis da rede</strong>
+        </p>
+        <p>Gerado em {formatBrDateTime(new Date())}</p>
+        <p>
+          Inadimplência da rede:{" "}
+          {totais.taxaPercent === null
+            ? "sem base para calcular"
+            : `${totais.taxaPercent.toLocaleString("pt-BR")}%`}{" "}
+          · {totais.acimaDoLimite} unidade(s) acima do próprio limite
         </p>
       </div>
 
