@@ -62,6 +62,53 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.247.0",
+    data: "2026-09-16",
+    migracao: "0256",
+    titulo: "Problemas: a resposta vira conversa, e a lista mostra há quanto tempo cada relato espera",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Responder de novo um relato apagava a resposta anterior. Agora cada relato tem uma conversa: toda resposta fica guardada, uma embaixo da outra, com quem escreveu e quando. As mudanças de situação também aparecem nela.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Problemas ganhou abas (Fila, Os meus, Respondidos, Encerrados, Todos) com a quantidade de cada uma, busca pelo código ou pelo texto e filtros por tipo, parte do sistema e unidade. As respostas que você recebeu ficam juntas na aba Respondidos.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada relato mostra há quanto tempo está aberto, e a cor muda com a idade: amarelo a partir de 3 dias, vermelho depois de 7. Encerrado mostra quanto tempo levou.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada relato tem página própria (ex.: /problemas/OC-00012). Nela, quem relatou pode acrescentar informação enquanto está aberto, e reabrir pelo botão Não resolveu quando a solução não funcionou — contando o que falhou.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A etiqueta Resposta nova fica no relato até você abrir aquele relato, e uma segunda resposta volta a acender a boia. Antes, entrar na lista apagava o aviso de todos, e a segunda resposta nunca avisava.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao relatar, escolha em que parte do sistema aconteceu. Quem chega pela tela de erro já encontra a parte sugerida.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.246.0",
     data: "2026-09-15",
     migracao: null,

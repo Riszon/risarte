@@ -15,7 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatBrDateTime } from "@/lib/dates";
-import type { Relato } from "./lista";
+import {
+  MODULO_ROTULO,
+  SITUACAO_ROTULO,
+  type MensagemDeRelato,
+  type Relato,
+} from "@/lib/system-reports";
 
 /**
  * TRANSFORMAR UM RELATO EM BRIEFING — só para o Admin Master.
@@ -66,7 +71,8 @@ const TIPO: Record<Relato["kind"], string> = {
 export function montarBriefing(
   r: Relato,
   objetivo: Objetivo,
-  consideracoes: string
+  consideracoes: string,
+  mensagens: MensagemDeRelato[] = []
 ): string {
   const linhas: string[] = [];
   const bloco = (titulo: string, corpo: string) => {
@@ -78,9 +84,35 @@ export function montarBriefing(
   bloco("O QUE A PESSOA ESPERAVA", r.expected ?? "");
   bloco("CONSIDERAÇÕES DO ADMIN MASTER", consideracoes);
 
+  // A CONVERSA ENTRA INTEIRA (0256): o complemento de quem relatou e o motivo
+  // de uma reabertura são, muitas vezes, a parte do caso que faltava — e uma
+  // correção que já foi tentada e não funcionou é o dado mais importante de
+  // todos. Sem nomes: "quem relatou" e "suporte" bastam para entender.
+  const falas = mensagens.filter((m) => m.body || m.kind === "situacao");
+  if (falas.length > 0) {
+    linhas.push("A CONVERSA ATÉ AQUI (mais antiga primeiro)");
+    for (const m of falas) {
+      const quando = formatBrDateTime(m.createdAt);
+      if (m.kind === "situacao") {
+        const para = m.statusTo ? SITUACAO_ROTULO[m.statusTo] : "?";
+        linhas.push(`- [${quando}] situação mudou para: ${para}`);
+      } else {
+        const quem =
+          m.kind === "reabertura"
+            ? "Quem relatou REABRIU (a solução não funcionou)"
+            : m.kind === "complemento"
+              ? "Quem relatou acrescentou"
+              : "Suporte respondeu";
+        linhas.push(`- [${quando}] ${quem}: ${m.body}`);
+      }
+    }
+    linhas.push("");
+  }
+
   linhas.push("CONTEXTO (preenchido pelo próprio sistema)");
   const contexto: [string, string | null][] = [
     ["Resumo", r.title],
+    ["Parte do sistema", r.module ? MODULO_ROTULO[r.module] : null],
     ["Tela", r.screen],
     ["Versão do sistema", r.appVersion],
     ["Unidade", r.clinicName],
@@ -90,6 +122,14 @@ export function montarBriefing(
     ["Código do erro", r.errorDigest],
     ["Navegador", r.userAgent],
     ["Registrado em", formatBrDateTime(r.createdAt)],
+    [
+      "Reaberto",
+      r.reopenedCount === 0
+        ? null
+        : r.reopenedCount === 1
+          ? "1 vez"
+          : `${r.reopenedCount} vezes`,
+    ],
   ];
   for (const [rotulo, valor] of contexto) {
     if (valor) linhas.push(`- ${rotulo}: ${valor}`);
@@ -125,7 +165,13 @@ export function montarBriefing(
   return linhas.join("\n");
 }
 
-export function PrepararBriefing({ relato }: { relato: Relato }) {
+export function PrepararBriefing({
+  relato,
+  mensagens = [],
+}: {
+  relato: Relato;
+  mensagens?: MensagemDeRelato[];
+}) {
   const [objetivo, setObjetivo] = useState<Objetivo>(
     // Dúvida e sugestão quase nunca são conserto; o padrão segue o que a pessoa
     // marcou, para o caminho mais provável exigir menos cliques.
@@ -136,7 +182,7 @@ export function PrepararBriefing({ relato }: { relato: Relato }) {
   const [copiado, setCopiado] = useState(false);
 
   function gerar() {
-    setTexto(montarBriefing(relato, objetivo, consideracoes));
+    setTexto(montarBriefing(relato, objetivo, consideracoes, mensagens));
     setCopiado(false);
   }
 

@@ -390,7 +390,7 @@ coisa, quem manda é este.
 | Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
-| Boia | **Problemas** — relatar e acompanhar; abre o formulário direto. **Tem número** (veja abaixo) |
+| Boia | **Problemas** — relatar e acompanhar a resposta. **Tem número** (veja abaixo) |
 | Livro | **Manual** — este texto, sempre na versão que está no ar |
 
 > **O número da boia não quer dizer a mesma coisa para todo mundo.** Para o
@@ -398,7 +398,8 @@ coisa, quem manda é este.
 > as unidades. Ele some quando ele responde.
 >
 > Para **todo o resto**, ele conta as **respostas que você ainda não leu** nos
-> relatos que **você** abriu — e some assim que você abre a tela de Problemas.
+> relatos que **você** abriu. Cada uma deixa de contar quando você abre
+> **aquele relato** — não basta entrar na lista.
 > Contar a fila inteira para quem não responde seria pendurar no seu ícone um
 > número sobre o qual você não pode fazer nada.
 
@@ -1221,11 +1222,20 @@ custa menos que corrigir**.
    **regra do sistema**. Muita coisa que parece erro é o sistema fazendo o que
    foi combinado.
 
-Você ainda escolhe **o que é** (algo deu errado / dúvida / sugestão) e **quanto
-atrapalha** (atrapalha pouco / atrapalha o trabalho / impede de trabalhar).
+Você ainda escolhe **o que é** (algo deu errado / dúvida / sugestão), **em que
+parte do sistema** aconteceu e **quanto atrapalha** (atrapalha pouco /
+atrapalha o trabalho / impede de trabalhar).
 
-**Ao salvar, o relato ganha um código** (ex.: `OC-00012`). É por ele que se fala
-do caso depois, sem recontar tudo.
+> **A parte do sistema já vem sugerida** quando você chega pelo botão
+> *Registrar este problema* da tela de erro — o sistema sabe de que tela você
+> veio. Confira mesmo assim: às vezes o problema é da tela anterior. Essa
+> escolha é obrigatória porque é ela que permite contar, por exemplo, quantas
+> sugestões a Agenda recebeu.
+
+**Ao salvar, o relato ganha um código** (ex.: `OC-00012`) e o sistema abre a
+página dele. É por esse código que se fala do caso depois, sem recontar tudo —
+e a página tem endereço próprio (`/problemas/OC-00012`), que pode ser enviado
+a quem precisa ver.
 
 **Print da tela:** ainda não é possível anexar — guarde o seu e informe no
 relato que você tem.
@@ -1533,12 +1543,85 @@ Onde se relata e se acompanha. Como relatar está na
 [seção 9.4](#94-como-relatar-um-problema).
 
 **O ícone avisa quando há algo esperando.** Se você relatou e foi respondido, a
-boia mostra um número até você abrir esta tela. Se você é Admin Master, ela
+boia mostra um número até você abrir aquele relato. Se você é Admin Master, ela
 mostra quantos relatos ainda dependem de você.
 
 **Quem vê o quê:** você enxerga os problemas relatados **na sua unidade**.
 Assim ninguém abre cinco vezes o mesmo, e quem chegar depois já lê a resposta
-que foi dada ao primeiro. Três filtros: *Em aberto*, *Os meus* e *Todos*.
+que foi dada ao primeiro.
+
+#### A lista
+
+Cinco abas, cada uma com a quantidade ao lado:
+
+| Aba | O que mostra | Ordem |
+|---|---|---|
+| **Fila** | Abertos e em análise | Quem espera há mais tempo primeiro |
+| **Os meus** | Os que **você** relatou | Mais recente primeiro |
+| **Respondidos** | Os que já receberam resposta — **é aqui que se acham as respostas** | Resposta mais recente primeiro |
+| **Encerrados** | Resolvidos e "não é defeito" | Mais recente primeiro |
+| **Todos** | Tudo | Mais recente primeiro |
+
+A tela abre em **Os meus** para quem já relatou alguma coisa, e na **Fila** para
+o Admin Master.
+
+**Busca:** pelo código (`OC-00012`, `oc-12` ou só `12`), pelo resumo, pelo
+texto ou pelo nome de quem relatou. Acentos e maiúsculas não importam.
+**Filtros:** tipo, parte do sistema e unidade. Os números das abas passam a
+contar só o que o filtro deixou.
+
+**Etiquetas na linha:**
+
+| Etiqueta | Quer dizer |
+|---|---|
+| **Resposta nova** (dourada) | Há resposta que você ainda não leu. Some quando você abre o relato |
+| **Reaberto** | Quem relatou disse que a solução não funcionou |
+| **Sem resposta** / **Aguarda você** | Só o Admin Master vê: ninguém respondeu ainda, ou a última palavra é de quem relatou |
+
+**Há quanto tempo está parado.** Todo relato em aberto mostra *"aberto há 4
+dias"*. A cor muda com a idade:
+
+| Idade | Cor |
+|---|---|
+| Até 2 dias | Normal |
+| De 3 a 7 dias | Amarelo |
+| Mais de 7 dias | Vermelho |
+
+> A cor segue o tempo **total** desde o registro. Passar para *Em análise* não
+> zera a conta — senão bastaria mudar a situação para um relato de dez dias
+> parecer novo. Em análise aparece também *"em análise há 2 dias"*, embaixo.
+
+Encerrado mostra **quanto levou** (*"resolvido em 3 dias"*), sem cor.
+
+#### A página do relato — a conversa
+
+Clique numa linha para abrir. Em cima ficam o relato e os dados que o sistema
+coletou; embaixo, a **conversa**:
+
+- **Respostas do suporte** à esquerda, com a borda dourada;
+- **o que quem relatou acrescentou** à direita;
+- **as mudanças de situação** como uma linha fina no meio (*"mudou para Em
+  análise"*), com quem mudou e quando.
+
+> **Nada da conversa se apaga nem se edita.** A resposta de ontem continua
+> embaixo da de hoje. Até a versão 0.246.0 cada relato guardava uma resposta
+> só, e responder de novo apagava a anterior.
+
+No rodapé do relato: quando foi aberto, **quando veio a primeira resposta** (e
+quanto tempo depois), quando foi encerrado e em que versão saiu a correção.
+
+**Quem relatou pode:**
+
+- **Acrescentar informação** enquanto o relato está aberto ou em análise
+  (*"aconteceu de novo agora"*);
+- **Reabrir** um relato encerrado pelo botão **Não resolveu** — com a
+  obrigação de contar o que não funcionou. O relato volta para **Aberto** e
+  para a fila, marcado como *Reaberto*.
+
+> Reabrir exige motivo porque sem ele quem vai corrigir recebe de volta o mesmo
+> problema que achava ter resolvido, sem pista do que faltou. E quem relatou
+> **não consegue encerrar** — só reabrir. Depois de uma reabertura, a
+> versão informada passa a aparecer como *"Correção tentada na versão"*.
 
 **As quatro situações:**
 
@@ -1555,7 +1638,9 @@ que foi dada ao primeiro. Três filtros: *Em aberto*, *Os meus* e *Todos*.
 
 **Quem responde é o Admin Master**, e ele **não consegue encerrar sem
 escrever** — o sistema recusa. Encerrar em silêncio é o que faz uma equipe
-parar de relatar.
+parar de relatar. Cada resposta entra **como mensagem nova** na conversa; o
+campo vem vazio de propósito, para escrever só o que é novo. Mudar apenas a
+situação, sem texto, também fica registrado na conversa.
 
 **Para quem relata, isso significa uma coisa prática:** quanto melhor o seu
 relato, mais rápido vem a resposta. O sistema manda junto a tela, a versão, a
@@ -1563,9 +1648,12 @@ unidade, a sua função e o navegador — o que falta é só o que **você** viu
 
 #### Só para o Admin Master: preparar para correção
 
-Ao lado de *Responder* existe **Preparar para correção**. Ele reúne o relato e
-todo o contexto que o sistema coletou num texto pronto para pedir o conserto —
-sem ninguém reescrever o caso à mão, que é onde a informação se perde.
+Na página do relato, ao lado do título *Conversa*, existe **Preparar para
+correção**. Ele reúne o relato e todo o contexto que o sistema coletou num
+texto pronto para pedir o conserto — sem ninguém reescrever o caso à mão, que é
+onde a informação se perde. **A conversa vai junto**, na ordem, sem nomes: o
+complemento de quem relatou e o motivo de uma reabertura costumam ser
+justamente a parte que faltava.
 
 Antes de gerar, há um campo para as **suas considerações**: o que você sabe e o
 sistema não sabe (*"acontece só na Cambé"*, *"eu reproduzi"*, *"acho que é

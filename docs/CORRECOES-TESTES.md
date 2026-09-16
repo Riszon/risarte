@@ -260,3 +260,29 @@ empilhados deixavam a aplicação inteira fora da árvore de acessibilidade — 
 
 **Tamanho:** pequeno a médio. Sem migração. Não bloqueia entrega: o fluxo é
 exercitado à mão e as outras 15 fatias cobrem o resto.
+
+## No celular, a barra lateral não recolhe e o conteúdo fica com 134 px (16/09/2026)
+
+**Achado ao conferir a tela de Problemas (0256), e ANTERIOR a ela.** Num
+celular de 390 px (Playwright com `isMobile`), toda tela logada tem a página
+com **506 px de largura** (rolagem lateral) e o `<main>` com **134 px**. A
+barra lateral continua ocupando o espaço dela em vez de virar gaveta.
+
+**Medido em várias telas, não suposto** — o mesmo número em todas:
+
+| tela | largura da página | `<main>` |
+|---|---|---|
+| `/notificacoes` | 506 | 134 |
+| `/manual` | 506 | 134 |
+| `/alertas` | 506 | 134 |
+| `/problemas` | 506 | 134 |
+
+Por ser igual em telas que não mudaram, a causa é a **moldura**
+(`src/app/(app)/layout.tsx` / `app-sidebar.tsx`), não o conteúdo.
+
+**Onde procurar.** Se a barra é a do shadcn, ela decide "é celular?" por
+`matchMedia` no navegador; conferir se o desenho do servidor já não fixa a
+largura, e se a barra de cima tem algum item com largura mínima que empurra a
+página para 506 px (o número é estranho demais para ser só a barra lateral).
+
+**Tamanho:** médio. Sem migração. Mexe em layout → passa por `check:telas`.

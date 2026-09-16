@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 10/09/2026 · Versão do sistema: **0.243.0** · Última migração: **0254** (aplicada em produção pelo dono) · Empresarial **0.43.0** / migração **1005**_
+_Atualizado em: 16/09/2026 · Versão do sistema: **0.247.0** · Última migração: **0256** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3671,6 +3671,45 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### PROBLEMAS 2.0 (16/09/2026) — Parte A entregue (v0.247.0, migração 0256)
+
+Pedido do dono: respostas difíceis de achar, tempo parado invisível, painel de
+indicadores, anexo e captura de tela. Plano em três partes, decisões na tela de
+perguntas: **painel para Admin + Franqueadora** (gerente/franqueado só a própria
+unidade, sem ranking de pessoas), **quem relatou reabre com motivo**, **captura
+real** (`getDisplayMedia` + colar + anexar) e ordem **A → B → C**.
+
+**A — conversa, organização e relógio (0256):**
+- **A causa da queixa era estrutural:** `system_reports.answer` era UM campo, e
+  responder de novo apagava a anterior; a 0252 não zerava a marca de leitura na
+  segunda resposta. Agora `system_report_messages` (sem política de escrita —
+  só funções e gatilho), ordenada por `seq` (`now()` é o início da transação).
+- Situação → linha na conversa por **gatilho** (vale para qualquer caminho de
+  UPDATE); o motivo da reabertura chega por `set_config` LOCAL e vira uma linha
+  só. Relógio: `status_changed_at`, `analysis_started_at`,
+  `first_response_at`, `closed_at`, `reopened_count`.
+- `module` em lista fechada (check), espelhada em `MODULOS` com teste que lê a
+  migração. `moduloDaTela()` sugere pelo endereço.
+- Portas novas: `add_system_report_comment` (só quem relatou, só aberto),
+  `reopen_system_report` (só quem relatou, só encerrado, motivo ≥ 10),
+  `mark_system_report_seen` (por relato). `answer_system_report` manteve a
+  assinatura e passou a acrescentar; recusa `NOTHING_TO_SAVE`.
+- Tela: `/problemas` virou índice (abas com contagem, busca por código em
+  qualquer forma, filtros, cor da idade 0–2 / 3–7 / 8+ dias pelo tempo TOTAL);
+  `/problemas/[codigo]` é o detalhe com a conversa. O instante do pedido vem do
+  servidor como propriedade (`instanteDoPedido`).
+- **Banco sem a 0256** (produção até o dono rodar): a leitura cai para as
+  colunas da 0247 e a tela funciona como antes (`problemas-dados.test.ts`).
+- Provado: 28 checagens no banco de teste (transação desfeita), telas logadas
+  como Admin e recepção, registro ponta a ponta pelo formulário, varredura
+  93/93 na produção.
+- **Achado fora do escopo:** no celular (390 px) TODA tela fica com 506 px e o
+  `<main>` com 134 px — a barra lateral não recolhe. Registrado em
+  `docs/CORRECOES-TESTES.md`.
+
+**Pendente:** B (anexos + captura, painel lateral por cima da tela) e C (painel
+de indicadores).
 
 ### RODADA DE REFINAMENTO VISUAL E RELATOS (10/09/2026, v0.239.2 → 0.243.0)
 

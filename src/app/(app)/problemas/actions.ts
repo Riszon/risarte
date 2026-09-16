@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { APP_VERSION } from "@/lib/version";
 import { ROLE_LABELS } from "@/lib/roles";
+import { ehModulo } from "@/lib/system-reports";
 
 type Resultado = { ok: boolean; error?: string; code?: string };
 
@@ -40,6 +41,7 @@ export async function registrarProblema(
   const tela = String(formData.get("screen") ?? "").trim();
   const digest = String(formData.get("error_digest") ?? "").trim();
   const navegador = String(formData.get("user_agent") ?? "").trim();
+  const modulo = String(formData.get("module") ?? "").trim();
 
   if (titulo.length < 5) {
     return { ok: false, error: "Escreva um resumo com pelo menos 5 letras." };
@@ -58,6 +60,11 @@ export async function registrarProblema(
   if (!["baixa", "media", "alta"].includes(gravidade)) {
     return { ok: false, error: "Gravidade inválida." };
   }
+  // O módulo é o que permite contar "sugestões por módulo" no painel. Sem ele
+  // o relato cai em "Sem módulo" e some da conta que o dono pediu.
+  if (!ehModulo(modulo)) {
+    return { ok: false, error: "Escolha em que parte do sistema aconteceu." };
+  }
 
   // O papel CONGELADO: quem relata hoje como recepcionista e vira gerente em
   // outubro não pode aparecer como gerente num problema que viu no balcão.
@@ -67,32 +74,43 @@ export async function registrarProblema(
     : papeis.map((p) => ROLE_LABELS[p]).join(", ") || null;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const registro = {
+    clinic_id: clinicId,
+    reporter_id: session.userId,
+    reporter_role: papel,
+    kind: tipo,
+    severity: gravidade,
+    title: titulo,
+    what_happened: oQueAconteceu,
+    expected: esperado || null,
+    screen: tela || null,
+    app_version: APP_VERSION,
+    error_digest: digest || null,
+    // Cortado: o navegador manda uma linha longa e só os primeiros campos
+    // dizem alguma coisa (sistema e versão do navegador).
+    user_agent: navegador ? navegador.slice(0, 300) : null,
+  };
+  let { data, error } = await supabase
     .from("system_reports")
-    .insert({
-      clinic_id: clinicId,
-      reporter_id: session.userId,
-      reporter_role: papel,
-      kind: tipo,
-      severity: gravidade,
-      title: titulo,
-      what_happened: oQueAconteceu,
-      expected: esperado || null,
-      screen: tela || null,
-      app_version: APP_VERSION,
-      error_digest: digest || null,
-      // Cortado: o navegador manda uma linha longa e só os primeiros campos
-      // dizem alguma coisa (sistema e versão do navegador).
-      user_agent: navegador ? navegador.slice(0, 300) : null,
-    })
+    .insert({ ...registro, module: modulo })
     .select("code")
     .single<{ code: string }>();
 
-  if (error) {
+  // Banco ainda sem a 0256: a coluna `module` não existe. Grava sem ela em vez
+  // de perder o relato — o texto da pessoa vale mais que a categoria.
+  if (error && (error.code === "PGRST204" || error.code === "42703")) {
+    ({ data, error } = await supabase
+      .from("system_reports")
+      .insert(registro)
+      .select("code")
+      .single<{ code: string }>());
+  }
+
+  if (error || !data) {
     return {
       ok: false,
       error:
-        error.code === "42P01"
+        error?.code === "42P01"
           ? "Esta tela precisa da migração 0247, ainda não aplicada neste banco."
           : "Não foi possível registrar agora. Tente de novo em instantes.",
     };
@@ -145,6 +163,12 @@ export async function responderProblema(
         error: "Escreva a resposta antes de encerrar — quem relatou vai lê-la.",
       };
     }
+    if (error.message.includes("NOTHING_TO_SAVE")) {
+      return {
+        ok: false,
+        error: "Escreva uma resposta ou mude a situação — não havia nada para salvar.",
+      };
+    }
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Você não tem permissão para isto." };
     }
@@ -159,22 +183,126 @@ export async function responderProblema(
     details: { status },
   });
 
-  revalidatePath("/problemas");
+  revalidatePath("/problemas", "layout");
   return { ok: true };
 }
 
 /**
- * Marcar como lidas as respostas dos relatos de quem chamou.
+ * Complementar o próprio relato enquanto está aberto (0256).
+ *
+ * A regra — só quem relatou, só enquanto aberto — mora no banco
+ * (`add_system_report_comment`). Aqui só se traduz a recusa.
+ */
+export async function complementarProblema(
+  formData: FormData
+): Promise<Resultado> {
+  const session = await getSessionContext();
+  const id = String(formData.get("id") ?? "");
+  const texto = String(formData.get("body") ?? "").trim();
+
+  if (texto.length < 3) {
+    return { ok: false, error: "Escreva o que quer acrescentar." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("add_system_report_comment", {
+    p_report_id: id,
+    p_body: texto,
+  });
+
+  if (error) {
+    if (error.message.includes("REPORT_CLOSED")) {
+      return {
+        ok: false,
+        error: "Este relato já foi encerrado. Se não resolveu, use \"Não resolveu\".",
+      };
+    }
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Só quem relatou pode complementar." };
+    }
+    return { ok: false, error: mensagemDeMigracao(error) };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "system_reports",
+    entityId: id,
+    clinicId: session.activeClinic?.id,
+    details: { acao: "complemento" },
+  });
+
+  revalidatePath("/problemas", "layout");
+  return { ok: true };
+}
+
+/**
+ * Reabrir o próprio relato quando a solução não funcionou (decisão do dono,
+ * 16/09/2026). Sempre com motivo: reabrir sem dizer o que falhou devolve a
+ * quem vai corrigir o mesmo problema, sem pista do que faltou.
+ */
+export async function reabrirProblema(formData: FormData): Promise<Resultado> {
+  const session = await getSessionContext();
+  const id = String(formData.get("id") ?? "");
+  const motivo = String(formData.get("reason") ?? "").trim();
+
+  if (motivo.length < 10) {
+    return {
+      ok: false,
+      error: "Conte o que não funcionou (pelo menos 10 letras) — é por aí que a correção recomeça.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reopen_system_report", {
+    p_report_id: id,
+    p_reason: motivo,
+  });
+
+  if (error) {
+    if (error.message.includes("REPORT_NOT_CLOSED")) {
+      return { ok: false, error: "Este relato ainda está aberto — use o complemento." };
+    }
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Só quem relatou pode reabrir." };
+    }
+    if (error.message.includes("REASON_REQUIRED")) {
+      return { ok: false, error: "Conte o que não funcionou." };
+    }
+    return { ok: false, error: mensagemDeMigracao(error) };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "system_reports",
+    entityId: id,
+    clinicId: session.activeClinic?.id,
+    details: { acao: "reabertura" },
+  });
+
+  revalidatePath("/problemas", "layout");
+  return { ok: true };
+}
+
+function mensagemDeMigracao(error: { code?: string; message: string }): string {
+  // Função inexistente = banco sem a 0256.
+  return error.code === "PGRST202" || error.message.includes("Could not find the function")
+    ? "Esta ação precisa da migração 0256, ainda não aplicada neste banco."
+    : "Não foi possível salvar agora. Tente de novo em instantes.";
+}
+
+/**
+ * Marcar como lida a resposta de um relato de quem chamou.
  *
  * ⚠️ É O QUE FAZ O INDICADOR DA BOIA ZERAR — e sem ele o número da equipe não
  * zeraria nunca: relato respondido continuaria contando para sempre. Alerta que
  * não zera é alerta que ninguém lê, a lição que `finance_alerts` (0230) já tinha
  * pago uma vez.
  *
- * A escrita passa por `mark_system_reports_seen()` (0252) porque a política de
- * UPDATE da 0247 é do Admin Master e SÓ dele, de propósito. Afrouxá-la para
- * caber esta marca devolveria a quem relatou o poder de fechar o próprio relato,
- * e a fila viraria uma lista que se resolve sozinha. A função é a porta
+ * A escrita passa por `mark_system_report_seen()` (0256; a 0252 marcava
+ * todos) porque a política de UPDATE da 0247 é do Admin Master e SÓ dele, de
+ * propósito. Afrouxá-la para caber esta marca devolveria a quem relatou o poder
+ * de fechar o próprio relato, e a fila viraria uma lista que se resolve
+ * sozinha. A função é a porta
  * estreita: uma coluna, e só nas linhas de quem chamou.
  *
  * Não há `logAudit` aqui de propósito: "abri a tela e li a resposta do meu
@@ -182,12 +310,19 @@ export async function responderProblema(
  * trilha de linhas sem valor investigativo — a trilha existe para o que toca
  * ficha de paciente.
  */
-export async function marcarRespostasVistas(): Promise<void> {
+export async function marcarRelatoVisto(reportId: string): Promise<void> {
   await getSessionContext();
   const supabase = await createClient();
-  // Banco ainda sem a 0252: a função não existe e o erro morre aqui. Deixar de
-  // marcar como lido é um número teimoso no ícone; derrubar a tela de Problemas
-  // por causa de migração pendente seria bem pior.
-  await supabase.rpc("mark_system_reports_seen");
+  // ⚠️ POR RELATO (0256): a etiqueta "Resposta nova" fica no relato até a
+  // pessoa abrir AQUELE relato. Banco sem a 0256 não tem esta função: cai
+  // na da 0252, que marca todos — o comportamento de antes, não um erro.
+  const { error } = await supabase.rpc("mark_system_report_seen", {
+    p_report_id: reportId,
+  });
+  if (error) {
+    // Sem a 0252 também: o número fica teimoso, a tela não quebra.
+    await supabase.rpc("mark_system_reports_seen");
+  }
+  // A lista precisa apagar a etiqueta "Resposta nova" quando a pessoa voltar.
   revalidatePath("/problemas");
 }

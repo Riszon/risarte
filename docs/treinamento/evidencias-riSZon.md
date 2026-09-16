@@ -242,3 +242,8 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-027 | Moldura do sistema não sai no papel | `src/app/globals.css` (bloco `@media print`, `[data-moldura]`) + `finance-nav.tsx` | ✅ conferido no navegador em modo impressão |
 | EV-028 | Planilha formatada, com número e data de verdade | `src/lib/finance/relatorio-xlsx.ts` + `relatorio.test.ts` | ✅ conferido abrindo o `.xlsx` gerado |
 | EV-029 | PDF e planilha leem o MESMO modelo | `src/lib/finance/relatorio.ts` + `recebiveis/relatorio-dados.ts` | ✅ |
+| EV-030 | Conversa do relato: nada se apaga, situação registrada por gatilho | `supabase/migrations/0256_relatos_conversa_e_tempo.sql` | ✅ provado no banco de teste (28 checagens) |
+| EV-031 | Abas, busca, cores de idade (até 2 / 3–7 / mais de 7 dias) | `src/lib/system-reports.ts` + `system-reports.test.ts` | ✅ |
+| EV-032 | Quem relatou complementa (aberto) e reabre com motivo (encerrado); não encerra | 0256 (`add_system_report_comment`, `reopen_system_report`) | ✅ |
+| EV-033 | "Resposta nova" por relato; resposta seguinte reacende a boia | 0256 (`mark_system_report_seen`, `answer_system_report`) | ✅ conferido logado |
+| EV-034 | Tela funciona em banco sem a 0256 (lista como antes) | `src/app/(app)/problemas/dados.ts` + `problemas-dados.test.ts` | ✅ |

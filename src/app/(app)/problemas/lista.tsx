@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { AlertTriangle, MessageSquarePlus } from "lucide-react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  MessageSquarePlus,
+  MessagesSquare,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -14,179 +19,160 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  marcarRespostasVistas,
-  registrarProblema,
-  responderProblema,
-} from "./actions";
-import { RELATOS_VISTOS } from "@/components/report-nav-item";
-import { PrepararBriefing } from "./preparar-briefing";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  ABAS,
+  MODULOS,
+  MODULO_ROTULO,
+  TIPO_ROTULO,
+  aguardaSuporte,
+  casaBusca,
+  contarAbas,
+  naAba,
+  ordenar,
+  relogioDoRelato,
+  temRespostaNova,
+  type Aba,
+  type Relato,
+} from "@/lib/system-reports";
+import type { NivelDoBanco } from "./dados";
+import { FormularioDeRelato } from "./formulario";
+import { CorDaIdade, SeloDeSituacao } from "./selos";
 
-export type Relato = {
-  id: string;
-  code: string;
-  kind: "erro" | "duvida" | "sugestao";
-  severity: "baixa" | "media" | "alta";
-  title: string;
-  whatHappened: string;
-  expected: string | null;
-  screen: string | null;
-  appVersion: string | null;
-  errorDigest: string | null;
-  /** O navegador de quem relatou — só o Admin Master vê, no briefing. */
-  userAgent: string | null;
-  status: "aberto" | "em_analise" | "resolvido" | "nao_e_defeito";
-  answer: string | null;
-  answeredAt: string | null;
-  resolvedVersion: string | null;
-  createdAt: string;
-  reporterRole: string | null;
-  reporterName: string;
-  clinicName: string;
-  meu: boolean;
-};
-
-const TIPO: Record<Relato["kind"], string> = {
-  erro: "Algo deu errado",
-  duvida: "Dúvida",
-  sugestao: "Sugestão",
-};
-
-const SITUACAO: Record<Relato["status"], { rotulo: string; cor: string }> = {
-  aberto: { rotulo: "Aberto", cor: "bg-amber-500/15 text-amber-700 dark:text-amber-500" },
-  em_analise: { rotulo: "Em análise", cor: "bg-sky-500/15 text-sky-700 dark:text-sky-400" },
-  resolvido: {
-    rotulo: "Resolvido",
-    cor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-  },
-  nao_e_defeito: { rotulo: "Não é defeito", cor: "bg-muted text-muted-foreground" },
-};
-
-const GRAVIDADE: Record<Relato["severity"], string> = {
-  baixa: "Atrapalha pouco",
-  media: "Atrapalha o trabalho",
-  alta: "Impede de trabalhar",
-};
+// Reexportado para quem já importava daqui (o teste do briefing).
+export type { Relato } from "@/lib/system-reports";
 
 function quando(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: BRAZIL_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
-    year: "numeric",
+    year: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
+const TODOS = "todos";
+
 export function Problemas({
   relatos,
   isAdminMaster,
-  semTabela,
+  nivel,
   semUnidade,
+  abaDeInicio,
   abrirFormulario,
   telaSugerida,
   digestSugerido,
   versaoAtual,
+  agora,
 }: {
   relatos: Relato[];
   isAdminMaster: boolean;
-  semTabela: boolean;
+  nivel: NivelDoBanco;
   semUnidade: boolean;
+  abaDeInicio: Aba;
   abrirFormulario: boolean;
   telaSugerida: string;
   digestSugerido: string;
   versaoAtual: string;
+  /** O instante do servidor: o navegador usa o MESMO, e o desenho não diverge. */
+  agora: number;
 }) {
+  const router = useRouter();
   const [aberto, setAberto] = useState(abrirFormulario);
-  const [filtro, setFiltro] = useState<"todos" | "abertos" | "meus">("abertos");
-  const [enviando, iniciar] = useTransition();
-  const formRef = useRef<HTMLFormElement>(null);
+  const [aba, setAba] = useState<Aba>(abaDeInicio);
+  const [busca, setBusca] = useState("");
+  const [tipo, setTipo] = useState<string>(TODOS);
+  const [modulo, setModulo] = useState<string>(TODOS);
+  const [unidade, setUnidade] = useState<string>(TODOS);
 
-  // ABRIR ESTA TELA É LER AS RESPOSTAS — é o que zera o indicador da boia para
-  // quem relatou (0252). Chama sempre, mesmo sem nada para marcar: a alternativa
-  // seria a página trazer a coluna `reporter_seen_answer_at` no `select` para
-  // decidir, e aí um banco sem a 0252 derrubaria a consulta inteira e a LISTA
-  // sumiria em silêncio. Um `update` que acerta zero linhas custa quase nada;
-  // uma tela vazia sem explicação custa um chamado.
-  useEffect(() => {
-    marcarRespostasVistas()
-      .then(() => window.dispatchEvent(new Event(RELATOS_VISTOS)))
-      .catch(() => {
-        /* migração pendente: o número fica teimoso, a tela não quebra */
-      });
-  }, []);
+  const unidades = useMemo(() => {
+    const mapa = new Map<string, string>();
+    for (const r of relatos) mapa.set(r.clinicId, r.clinicName);
+    return [...mapa].map(([value, label]) => ({ value, label }));
+  }, [relatos]);
 
-  const lista = relatos.filter((r) => {
-    if (filtro === "meus") return r.meu;
-    if (filtro === "abertos") return r.status === "aberto" || r.status === "em_analise";
-    return true;
-  });
+  // Os filtros valem ANTES das abas: o número de cada aba responde "quantos
+  // relatos deste recorte estão ali", e não muda de sentido ao filtrar.
+  const filtrados = useMemo(
+    () =>
+      relatos.filter(
+        (r) =>
+          casaBusca(r, busca) &&
+          (tipo === TODOS || r.kind === tipo) &&
+          (modulo === TODOS || (r.module ?? "sem") === modulo) &&
+          (unidade === TODOS || r.clinicId === unidade)
+      ),
+    [relatos, busca, tipo, modulo, unidade]
+  );
+  const contagem = contarAbas(filtrados);
+  const lista = ordenar(
+    filtrados.filter((r) => naAba(r, aba)),
+    aba
+  );
+  const filtrando =
+    busca.trim() !== "" || tipo !== TODOS || modulo !== TODOS || unidade !== TODOS;
 
-  function enviar(fd: FormData) {
-    // Lido na hora do envio, não guardado em estado: o navegador só existe do
-    // lado do cliente, e perguntar por ele durante o desenho faria o servidor e
-    // o navegador discordarem (a lição do `useNow`).
-    fd.set("user_agent", navigator.userAgent);
-    iniciar(async () => {
-      const r = await registrarProblema(fd);
-      if (r.ok) {
-        toast.success(
-          `Registrado como ${r.code}. Você acompanha a resposta por aqui.`
-        );
-        formRef.current?.reset();
-        setAberto(false);
-        setFiltro("meus");
-      } else {
-        toast.error(r.error ?? "Não foi possível registrar.");
-      }
-    });
-  }
+  const itensTipo = [
+    { value: TODOS, label: "Todos os tipos" },
+    ...Object.entries(TIPO_ROTULO).map(([value, label]) => ({ value, label })),
+  ];
+  const itensModulo = [
+    { value: TODOS, label: "Todas as partes" },
+    ...MODULOS.map((m) => ({ value: m.value, label: m.label })),
+    { value: "sem", label: "Sem parte informada" },
+  ];
+  const itensUnidade = [{ value: TODOS, label: "Todas as unidades" }, ...unidades];
 
   return (
-    <div className="space-y-5">
-      {semTabela && (
-        <div className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:bg-amber-950/30">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-          <div>
-            <p className="font-medium">
-              Esta parte ainda não foi ligada neste banco.
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Falta aplicar a <strong>migração 0247</strong>. Até lá o registro
-              de problemas não grava — e é melhor dizer isso do que aceitar o
-              texto e perdê-lo.
-            </p>
-          </div>
-        </div>
+    <div className="space-y-4">
+      {nivel === "sem_tabela" && (
+        <Aviso titulo="Esta parte ainda não foi ligada neste banco.">
+          Falta aplicar a <strong>migração 0247</strong>. Até lá o registro de
+          problemas não grava — e é melhor dizer isso do que aceitar o texto e
+          perdê-lo.
+        </Aviso>
+      )}
+      {nivel === "sem_0256" && isAdminMaster && (
+        <Aviso titulo="A conversa e o relógio ainda não estão ligados neste banco.">
+          Falta aplicar a <strong>migração 0256</strong>. A lista funciona como
+          antes: cada relato com uma resposta só, sem o tempo de cada fase.
+        </Aviso>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-lg border bg-muted/40 p-1 text-sm">
-          {(
-            [
-              ["abertos", "Em aberto"],
-              ["meus", "Os meus"],
-              ["todos", "Todos"],
-            ] as const
-          ).map(([chave, rotulo]) => (
+        <nav className="flex flex-wrap gap-1 rounded-lg border bg-muted/40 p-1 text-sm">
+          {ABAS.map((a) => (
             <button
-              key={chave}
+              key={a.value}
               type="button"
-              onClick={() => setFiltro(chave)}
+              onClick={() => setAba(a.value)}
+              aria-current={aba === a.value ? "page" : undefined}
               className={cn(
-                "rounded-md px-3 py-1.5",
-                filtro === chave
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5",
+                aba === a.value
                   ? "bg-primary font-medium text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted"
               )}
             >
-              {rotulo}
+              {a.label}
+              <span
+                className={cn(
+                  "rounded-full px-1.5 text-[11px] tabular-nums",
+                  aba === a.value ? "bg-primary-foreground/20" : "bg-muted"
+                )}
+              >
+                {contagem[a.value]}
+              </span>
             </button>
           ))}
-        </div>
+        </nav>
 
-        <Button onClick={() => setAberto((v) => !v)} disabled={semTabela || semUnidade}>
+        <Button
+          onClick={() => setAberto((v) => !v)}
+          disabled={nivel === "sem_tabela" || semUnidade}
+        >
           <MessageSquarePlus className="mr-2 size-4" />
           Relatar um problema
         </Button>
@@ -199,185 +185,62 @@ export function Problemas({
         </p>
       )}
 
-      {aberto && !semTabela && !semUnidade && (
-        <form
-          ref={formRef}
-          action={enviar}
-          className="space-y-4 rounded-lg border bg-muted/20 p-4"
-        >
-          <p className="text-sm text-muted-foreground">
-            Você não precisa informar quem é, a função, a unidade nem a versão —
-            o sistema já sabe e envia junto (versão {versaoAtual}). Escreva só o
-            que aconteceu.
-          </p>
-
-          {/* `user_agent` é acrescentado no envio, não aqui. */}
-          <input type="hidden" name="error_digest" defaultValue={digestSugerido} />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="kind">O que é</Label>
-              <Select items={ITENS_TIPO} defaultValue="erro" name="kind">
-                <SelectTrigger id="kind" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ITENS_TIPO.map((i) => (
-                    <SelectItem key={i.value} value={i.value}>
-                      {i.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="severity">Quanto atrapalha</Label>
-              <Select items={ITENS_GRAVIDADE} defaultValue="media" name="severity">
-                <SelectTrigger id="severity" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ITENS_GRAVIDADE.map((i) => (
-                    <SelectItem key={i.value} value={i.value}>
-                      {i.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="title">Resumo em uma linha</Label>
-            <Input
-              id="title"
-              name="title"
-              required
-              maxLength={140}
-              placeholder="Ex.: a agenda não deixa marcar no sábado"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="screen">Em que tela</Label>
-            <Input
-              id="screen"
-              name="screen"
-              defaultValue={telaSugerida}
-              maxLength={120}
-              placeholder="Ex.: Agenda · Financeiro → Contas a pagar"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="what_happened">O que aconteceu</Label>
-            <textarea
-              id="what_happened"
-              name="what_happened"
-              required
-              rows={4}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              placeholder="Conte o passo a passo: o que você fez, e o que o sistema respondeu. Se apareceu uma mensagem, copie o texto dela."
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="expected">O que você esperava que acontecesse</Label>
-            <textarea
-              id="expected"
-              name="expected"
-              rows={2}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              placeholder="Opcional — mas é o que separa defeito de regra do sistema."
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button type="submit" disabled={enviando}>
-              {enviando ? "Registrando…" : "Registrar"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setAberto(false)}
-              disabled={enviando}
-            >
-              Cancelar
-            </Button>
-          </div>
-        </form>
+      {aberto && nivel !== "sem_tabela" && !semUnidade && (
+        <FormularioDeRelato
+          telaSugerida={telaSugerida}
+          digestSugerido={digestSugerido}
+          versaoAtual={versaoAtual}
+          aoCancelar={() => setAberto(false)}
+          aoRegistrar={(codigo) => {
+            setAberto(false);
+            // Abre o relato recém-criado: é ali que a resposta vai aparecer.
+            router.push(`/problemas/${codigo}`);
+          }}
+        />
       )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-56 flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por código (OC-00009), título, texto ou pessoa"
+            className="pl-8"
+            aria-label="Buscar relatos"
+          />
+        </div>
+        <Filtro rotulo="Tipo" itens={itensTipo} valor={tipo} aoMudar={setTipo} />
+        <Filtro rotulo="Parte do sistema" itens={itensModulo} valor={modulo} aoMudar={setModulo} />
+        {unidades.length > 1 && (
+          <Filtro rotulo="Unidade" itens={itensUnidade} valor={unidade} aoMudar={setUnidade} />
+        )}
+        {filtrando && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setBusca("");
+              setTipo(TODOS);
+              setModulo(TODOS);
+              setUnidade(TODOS);
+            }}
+          >
+            Limpar
+          </Button>
+        )}
+      </div>
 
       {lista.length === 0 ? (
         <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
-          {filtro === "abertos"
-            ? "Nenhum problema em aberto na sua unidade."
-            : "Nada registrado ainda."}
+          {filtrando
+            ? "Nenhum relato com esses filtros nesta aba."
+            : VAZIO[aba]}
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y rounded-lg border">
           {lista.map((r) => (
-            <li key={r.id} className="rounded-lg border">
-              <div className="flex flex-wrap items-start justify-between gap-2 border-b px-4 py-3">
-                <div className="min-w-0">
-                  <p className="font-medium">{r.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {/* O código nunca some — é por ele que se conversa sobre a
-                        ocorrência sem recontar o caso inteiro. */}
-                    <span className="font-mono">{r.code}</span> · {TIPO[r.kind]} ·{" "}
-                    {GRAVIDADE[r.severity]} · {r.reporterName}
-                    {r.reporterRole && ` (${r.reporterRole})`} · {quando(r.createdAt)}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    SITUACAO[r.status].cor
-                  )}
-                >
-                  {SITUACAO[r.status].rotulo}
-                </span>
-              </div>
-
-              <div className="space-y-2 px-4 py-3 text-sm">
-                <p className="whitespace-pre-wrap text-muted-foreground">
-                  {r.whatHappened}
-                </p>
-                {r.expected && (
-                  <p className="text-muted-foreground">
-                    <strong className="font-medium text-foreground">Esperava:</strong>{" "}
-                    {r.expected}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {r.clinicName}
-                  {r.screen && ` · tela: ${r.screen}`}
-                  {r.appVersion && ` · versão ${r.appVersion}`}
-                  {r.errorDigest && ` · código do erro ${r.errorDigest}`}
-                </p>
-
-                {r.answer && (
-                  <div className="rounded-r-md border-l-4 border-gold bg-muted/50 px-3 py-2">
-                    <p className="text-xs font-medium">
-                      Resposta
-                      {r.answeredAt && ` · ${quando(r.answeredAt)}`}
-                      {r.resolvedVersion && ` · corrigido na versão ${r.resolvedVersion}`}
-                    </p>
-                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-                      {r.answer}
-                    </p>
-                  </div>
-                )}
-
-                {isAdminMaster && (
-                  <div className="flex flex-wrap gap-2">
-                    <Resposta relato={r} />
-                    <PrepararBriefing relato={r} />
-                  </div>
-                )}
-              </div>
-            </li>
+            <Linha key={r.id} relato={r} agora={agora} isAdminMaster={isAdminMaster} />
           ))}
         </ul>
       )}
@@ -385,110 +248,116 @@ export function Problemas({
   );
 }
 
-const ITENS_TIPO = [
-  { value: "erro", label: TIPO.erro },
-  { value: "duvida", label: TIPO.duvida },
-  { value: "sugestao", label: TIPO.sugestao },
-];
+const VAZIO: Record<Aba, string> = {
+  fila: "Nenhum relato em aberto.",
+  meus: "Você ainda não registrou nenhum relato.",
+  respondidos: "Nenhum relato recebeu resposta ainda.",
+  encerrados: "Nenhum relato encerrado ainda.",
+  todos: "Nada registrado ainda.",
+};
 
-const ITENS_GRAVIDADE = [
-  { value: "baixa", label: GRAVIDADE.baixa },
-  { value: "media", label: GRAVIDADE.media },
-  { value: "alta", label: GRAVIDADE.alta },
-];
-
-const ITENS_SITUACAO = [
-  { value: "aberto", label: SITUACAO.aberto.rotulo },
-  { value: "em_analise", label: SITUACAO.em_analise.rotulo },
-  { value: "resolvido", label: SITUACAO.resolvido.rotulo },
-  { value: "nao_e_defeito", label: SITUACAO.nao_e_defeito.rotulo },
-];
-
-/** A resposta do Admin Master. A guarda de verdade está no banco. */
-function Resposta({ relato }: { relato: Relato }) {
-  const [salvando, iniciar] = useTransition();
-  const [aberto, setAberto] = useState(false);
-
-  function salvar(fd: FormData) {
-    iniciar(async () => {
-      const r = await responderProblema(fd);
-      if (r.ok) {
-        toast.success("Resposta registrada.");
-        setAberto(false);
-        // A fila do Admin Master acabou de encolher. Sem este aviso o número na
-        // boia só cairia na consulta seguinte — até um minuto contando um
-        // relato que ele acabou de fechar.
-        window.dispatchEvent(new Event(RELATOS_VISTOS));
-      } else {
-        toast.error(r.error ?? "Não foi possível salvar.");
-      }
-    });
-  }
-
-  if (!aberto) {
-    return (
-      <Button variant="outline" size="sm" onClick={() => setAberto(true)}>
-        Responder
-      </Button>
-    );
-  }
+function Linha({
+  relato: r,
+  agora,
+  isAdminMaster,
+}: {
+  relato: Relato;
+  agora: number;
+  isAdminMaster: boolean;
+}) {
+  const relogio = relogioDoRelato(r, agora);
+  const novo = temRespostaNova(r);
+  const esperando = isAdminMaster && aguardaSuporte(r);
 
   return (
-    // `w-full` porque o formulário divide a linha com o botão do briefing:
-    // sem isso ele encolheria até o tamanho do conteúdo.
-    <form action={salvar} className="w-full space-y-3 rounded-md border bg-muted/20 p-3">
-      <input type="hidden" name="id" value={relato.id} />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor={`status-${relato.id}`}>Situação</Label>
-          <Select items={ITENS_SITUACAO} defaultValue={relato.status} name="status">
-            <SelectTrigger id={`status-${relato.id}`} className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ITENS_SITUACAO.map((i) => (
-                <SelectItem key={i.value} value={i.value}>
-                  {i.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <li>
+      <Link
+        href={`/problemas/${r.code}`}
+        className={cn(
+          "flex flex-wrap items-start gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-muted/50",
+          novo && "bg-gold/10"
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <SeloDeSituacao situacao={r.status} />
+            <span className="font-mono text-xs text-muted-foreground">{r.code}</span>
+            {novo && (
+              <span className="rounded-full bg-gold px-2 py-0.5 text-[11px] font-semibold text-gold-foreground">
+                Resposta nova
+              </span>
+            )}
+            {esperando && (
+              <span className="rounded-full border border-primary/30 px-2 py-0.5 text-[11px] font-medium text-primary">
+                {r.respostas === 0 ? "Sem resposta" : "Aguarda você"}
+              </span>
+            )}
+            {r.reopenedCount > 0 && (
+              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                Reaberto{r.reopenedCount > 1 ? ` ${r.reopenedCount}×` : ""}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 font-medium">{r.title}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {TIPO_ROTULO[r.kind]} · {r.module ? MODULO_ROTULO[r.module] : "Sem parte informada"} ·{" "}
+            {r.clinicName} · {r.reporterName}
+            {r.reporterRole && ` (${r.reporterRole})`} · {quando(r.createdAt)}
+          </p>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor={`versao-${relato.id}`}>Corrigido na versão</Label>
-          <Input
-            id={`versao-${relato.id}`}
-            name="resolved_version"
-            defaultValue={relato.resolvedVersion ?? ""}
-            placeholder="Ex.: 0.227.0"
-          />
+
+        <div className="flex shrink-0 flex-col items-end gap-1 text-xs">
+          <CorDaIdade faixa={relogio.faixa}>{relogio.principal}</CorDaIdade>
+          {relogio.secundario && (
+            <span className="text-muted-foreground">{relogio.secundario}</span>
+          )}
+          {r.respostas > 0 && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <MessagesSquare className="size-3.5" />
+              {r.respostas === 1 ? "1 resposta" : `${r.respostas} respostas`}
+            </span>
+          )}
         </div>
+      </Link>
+    </li>
+  );
+}
+
+function Filtro({
+  rotulo,
+  itens,
+  valor,
+  aoMudar,
+}: {
+  rotulo: string;
+  itens: { value: string; label: string }[];
+  valor: string;
+  aoMudar: (v: string) => void;
+}) {
+  return (
+    <Select items={itens} value={valor} onValueChange={(v) => aoMudar(v ?? TODOS)}>
+      <SelectTrigger aria-label={rotulo} className="h-9 min-w-40">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {itens.map((i) => (
+          <SelectItem key={i.value} value={i.value}>
+            {i.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function Aviso({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:bg-amber-950/30">
+      <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
+      <div>
+        <p className="font-medium">{titulo}</p>
+        <p className="mt-1 text-muted-foreground">{children}</p>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`resposta-${relato.id}`}>Resposta</Label>
-        <textarea
-          id={`resposta-${relato.id}`}
-          name="answer"
-          rows={3}
-          defaultValue={relato.answer ?? ""}
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          placeholder="Quem relatou vai ler isto. Encerrar sem explicar é o que faz a equipe parar de relatar."
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={salvando}>
-          {salvando ? "Salvando…" : "Salvar"}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => setAberto(false)}
-          disabled={salvando}
-        >
-          Cancelar
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }

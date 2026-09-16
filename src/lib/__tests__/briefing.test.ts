@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { montarBriefing } from "@/app/(app)/problemas/preparar-briefing";
-import type { Relato } from "@/app/(app)/problemas/lista";
+import type { MensagemDeRelato, Relato } from "@/lib/system-reports";
 
 const RELATO: Relato = {
   id: "abc",
@@ -11,6 +11,7 @@ const RELATO: Relato = {
   whatHappened: "Escolhi sábado e o sistema disse que a unidade está fechada.",
   expected: "Que deixasse marcar, porque atendemos sábado agora.",
   screen: "/agenda",
+  module: "agenda",
   appVersion: "0.229.0",
   errorDigest: "1a2b3c",
   userAgent: "Mozilla/5.0 (Windows NT 10.0) Edg/141",
@@ -19,10 +20,18 @@ const RELATO: Relato = {
   answeredAt: null,
   resolvedVersion: null,
   createdAt: "2026-09-07T17:32:00.000Z",
+  statusChangedAt: null,
+  closedAt: null,
+  firstResponseAt: null,
+  reopenedCount: 0,
   reporterRole: "Recepcionista",
   reporterName: "Maria da Silva",
+  clinicId: "c1",
   clinicName: "Risarte Cambé",
   meu: false,
+  respostaLida: false,
+  respostas: 0,
+  ultimaFalaDoRelator: false,
 };
 
 describe("briefing de um relato", () => {
@@ -89,5 +98,53 @@ describe("os dois objetivos pedem coisas diferentes", () => {
     expect(t).toContain("sem jargão");
     expect(t).toContain("pronto para eu colar");
     expect(t).not.toContain("Diagnostique a causa e corrija.");
+  });
+});
+
+describe("a conversa entra no briefing (0256)", () => {
+  const msg = (p: Partial<MensagemDeRelato>): MensagemDeRelato => ({
+    id: String(p.seq),
+    seq: 1,
+    kind: "resposta",
+    body: null,
+    statusFrom: null,
+    statusTo: null,
+    createdAt: "2026-09-08T12:00:00.000Z",
+    authorName: "Maria da Silva",
+    doRelator: false,
+    ...p,
+  });
+  const conversa = [
+    msg({ seq: 1, kind: "situacao", statusTo: "resolvido", authorName: "Jeferson" }),
+    msg({ seq: 2, kind: "resposta", body: "Liberei o sábado.", authorName: "Jeferson" }),
+    msg({ seq: 3, kind: "reabertura", body: "Continua recusando às 8h.", doRelator: true }),
+  ];
+  const t = montarBriefing({ ...RELATO, reopenedCount: 1 }, "corrigir", "", conversa);
+
+  it("leva cada fala e a mudança de situação, na ordem", () => {
+    const a = t.indexOf("situação mudou para: Resolvido");
+    const b = t.indexOf("Liberei o sábado.");
+    const c = t.indexOf("Continua recusando às 8h.");
+    expect(a).toBeGreaterThan(-1);
+    expect(a).toBeLessThan(b);
+    expect(b).toBeLessThan(c);
+  });
+
+  it("a reabertura aparece como correção que NÃO funcionou", () => {
+    expect(t).toContain("REABRIU (a solução não funcionou)");
+    expect(t).toContain("Reaberto: 1 vez");
+  });
+
+  it("⚠️ nenhum nome viaja na conversa — nem de quem relatou, nem do suporte", () => {
+    expect(t).not.toContain("Maria");
+    expect(t).not.toContain("Jeferson");
+  });
+
+  it("sem conversa, o bloco não aparece", () => {
+    expect(montarBriefing(RELATO, "corrigir", "")).not.toContain("A CONVERSA ATÉ AQUI");
+  });
+
+  it("leva a parte do sistema", () => {
+    expect(t).toContain("Parte do sistema: Agenda e Atendimento");
   });
 });
