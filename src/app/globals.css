@@ -474,6 +474,10 @@
   main {
     overflow: visible !important;
     height: auto !important;
+    /* O fundo do sistema é off-white. Com "gráficos de fundo" ligado na caixa
+       de impressão, ele saía como uma moldura bege em volta do relatório —
+       parecendo, de novo, a tela fotografada. */
+    background: #ffffff !important;
   }
 
   /* Papel é branco; fundo colorido é tinta desperdiçada e piora a leitura. */

@@ -238,3 +238,7 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-023 | Tela de erro com código e botão de relato | `src/app/(app)/error.tsx` | ✅ |
 | EV-024 | Novidades filtradas por papel | `src/lib/changelog.ts` + `changelog.test.ts` | ✅ |
 | EV-025 | Alertas reunidos sem porta nova | `src/app/(app)/sistema/page.tsx` (lê `finance_alerts` e as RPCs de estoque) | ✅ |
+| EV-026 | Relatório é página própria, não a tela impressa | `src/components/relatorio-impresso.tsx` + `src/app/(app)/financeiro/recebiveis/**/relatorio/page.tsx` | ✅ |
+| EV-027 | Moldura do sistema não sai no papel | `src/app/globals.css` (bloco `@media print`, `[data-moldura]`) + `finance-nav.tsx` | ✅ conferido no navegador em modo impressão |
+| EV-028 | Planilha formatada, com número e data de verdade | `src/lib/finance/relatorio-xlsx.ts` + `relatorio.test.ts` | ✅ conferido abrindo o `.xlsx` gerado |
+| EV-029 | PDF e planilha leem o MESMO modelo | `src/lib/finance/relatorio.ts` + `recebiveis/relatorio-dados.ts` | ✅ |

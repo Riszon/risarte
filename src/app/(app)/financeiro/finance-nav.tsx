@@ -125,7 +125,14 @@ export function FinanceNav({ veRede }: { veRede: boolean }) {
   const router = useRouter();
 
   return (
-    <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div
+      // ⚠️ `data-moldura`: SAI NA IMPRESSÃO (bloco @media print do globals).
+      // Era a única parte da moldura do sistema sem a marca — a barra lateral
+      // e a de cima já saíam — e por isso "Painel, DRE, Fluxo de caixa…"
+      // apareceu dentro do PDF do relatório (OC-00009).
+      data-moldura
+      className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+    >
       <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
         {ABAS.filter((a) => a.tipo !== "grupo" || !a.soRede || veRede).map(
           (aba) => {

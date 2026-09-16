@@ -6,7 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
 import { formatBRL } from "@/lib/pricing";
-import { formatBrDate, formatBrDateTime, todayInBrazil } from "@/lib/dates";
+import { formatBrDate, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import {
 import { AbasDeRecebiveis } from "../abas";
 import { carregarFilaDeCobranca } from "./dados";
 import { ListaDeCobranca } from "./lista";
-import { ExportarCobranca } from "./exportar";
+import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
 
 export const metadata: Metadata = { title: "Inadimplentes" };
 
@@ -136,32 +136,18 @@ export default async function InadimplentesPage(
             cobrar. Uma linha por pessoa — não por cobrança.
           </p>
         </div>
-        <ExportarCobranca
-          fila={fila}
-          unidade={nomeDaUnidade}
-          periodo={periodo}
-          totalCents={total}
-          taxaPercent={taxaPercent}
-          limitePercent={limitePercent}
+        <BotoesDeRelatorio
+          base="/financeiro/recebiveis/inadimplentes"
+          filtros={{ de, ate, unidade: clinicId }}
+          desabilitado={fila.length === 0}
         />
       </div>
 
-      {/* SÓ NO PAPEL: o cabeçalho que explica o relatório fora da tela. */}
-      <div className="hidden space-y-1 border-b pb-3 text-sm print:block">
-        <p>
-          <strong>Relatório de inadimplentes</strong> · {nomeDaUnidade}
-        </p>
-        <p>{periodo}</p>
-        <p>Gerado em {formatBrDateTime(new Date())}</p>
-        <p>
-          Inadimplência da unidade:{" "}
-          {taxaPercent === null ? "sem base para calcular" : `${taxaPercent}%`} ·{" "}
-          {situacaoDaMargem(taxaPercent, limitePercent)}
-        </p>
-      </div>
-
       <div className="print:hidden">
-        <AbasDeRecebiveis ativa="inadimplentes" />
+        <AbasDeRecebiveis
+          ativa="inadimplentes"
+          veRede={podeEscolherUnidade}
+        />
       </div>
 
       {contatosIndisponiveis && (

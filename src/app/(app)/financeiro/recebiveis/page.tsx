@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { HandCoins } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canViewFinance } from "@/lib/finance/access";
+import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
 import { formatBRL } from "@/lib/pricing";
 import { todayInBrazil, formatBrDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -14,13 +14,8 @@ import { FilterForm } from "@/components/filter-form";
 import type { AgingBand } from "@/lib/finance/aging";
 import { carregarRecebiveis, type LinhaRecebivel } from "./dados";
 import { AbasDeRecebiveis } from "./abas";
-import { ExportarRecebiveis } from "./exportar-recebiveis";
-import {
-  dataDoFiltro,
-  noPeriodo,
-  rotuloDoPeriodo,
-} from "@/lib/finance/collection";
-import { formatBrDateTime } from "@/lib/dates";
+import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
+import { dataDoFiltro, noPeriodo } from "@/lib/finance/collection";
 
 export const metadata: Metadata = { title: "Recebíveis e inadimplência" };
 
@@ -145,9 +140,6 @@ export default async function RecebiveisPage(
     // O período olha o VENCIMENTO (a data efetiva). Ver OC-00009.
     .filter((l) => noPeriodo(l.dataEfetiva, de, ate));
 
-  const periodo = rotuloDoPeriodo(de, ate, (iso) =>
-    formatBrDate(`${iso}T12:00:00`)
-  );
 
   const acimaDoLimite =
     resumo.taxaPercent !== null &&
@@ -167,36 +159,18 @@ export default async function RecebiveisPage(
             já venceu e quanto isso representa.
           </p>
         </div>
-        <ExportarRecebiveis
-          linhas={visiveis.map((l) => ({
-            cliente: l.cliente,
-            dataEfetiva: l.dataEfetiva,
-            balanceCents: l.balanceCents,
-            updatedBalanceCents: l.updatedBalanceCents,
-            isLate: l.isLate,
-            daysLate: l.daysLate,
-          }))}
-          unidade={session.activeClinic?.name ?? "Unidade"}
-          periodo={periodo}
-          abertoCents={resumo.abertoCents}
-          vencidoCents={resumo.vencidoCents}
-          taxaPercent={resumo.taxaPercent}
-          limitePercent={resumo.limitePercent}
+        <BotoesDeRelatorio
+          base="/financeiro/recebiveis"
+          filtros={{ de, ate, mostrar: filtro || null, cliente: busca || null }}
+          desabilitado={visiveis.length === 0}
         />
       </div>
 
-      {/* SÓ NO PAPEL. */}
-      <div className="hidden space-y-1 border-b pb-3 text-sm print:block">
-        <p>
-          <strong>Relatório de recebíveis</strong> ·{" "}
-          {session.activeClinic?.name}
-        </p>
-        <p>{periodo}</p>
-        <p>Gerado em {formatBrDateTime(new Date())}</p>
-      </div>
-
       <div className="print:hidden">
-        <AbasDeRecebiveis ativa="geral" />
+        <AbasDeRecebiveis
+          ativa="geral"
+          veRede={session.isAdminMaster || isFinanceFranchisor(session)}
+        />
       </div>
 
       <section className="grid gap-3 sm:grid-cols-4">

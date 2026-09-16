@@ -218,12 +218,16 @@ menu fica aceso quando você está numa tela dele.
 A aba **Recebíveis** é o outro lado do Contas a pagar: o que a unidade tem **a
 receber**.
 
-Ela tem **duas abas**, e elas respondem perguntas diferentes:
+Ela tem uma **barra de abas**, e cada aba responde uma pergunta diferente:
 
 | Aba | Uma linha por | Serve para |
 |---|---|---|
 | **Visão geral** | cobrança | conferir o financeiro |
 | **Inadimplentes** | pessoa | **ligar e cobrar** |
+| **Rede inteira** | unidade | comparar as unidades (só na Franqueadora) |
+
+A terceira aba é a mesma tela que fica em **Rede → Recebíveis da rede**; ela
+ganhou um atalho aqui porque é aqui que a pergunta aparece.
 
 **No alto da visão geral:** quanto há a receber, quanto já venceu, a **taxa de
 inadimplência** e quanto foi recebido no mês.
@@ -305,14 +309,23 @@ ligar. Essas últimas aparecem contadas num aviso, para não sumirem em silênci
 
 #### Relatórios: PDF e planilha
 
-As duas abas têm os botões **PDF** e **Planilha**, no alto à direita.
+As abas têm os botões **Relatório (PDF)** e **Planilha**, no alto à direita.
+Os dois levam junto o filtro que estiver na tela: o relatório é sempre o que
+você está vendo.
 
-- **PDF** é a impressão do navegador (*Salvar como PDF* na janela de impressão).
-  Sai o que está na tela, sem os botões e sem os filtros, com um cabeçalho que
-  diz a unidade, o período e quando foi gerado.
-- **Planilha** baixa um `.xlsx` com os **valores individuais e os totais**. O
-  dinheiro vai como **número**, não como texto — dá para somar e filtrar no
-  Excel sem redigitar nada.
+- **Relatório (PDF)** abre uma **página de relatório** — um documento, não a
+  tela. No alto vêm a marca, a unidade, o período, quem gerou e quando; depois
+  a linha da margem, os números de destaque, a tabela com a linha de **TOTAL**
+  e as notas de rodapé. Nessa página há o botão **Salvar em PDF**, que chama a
+  janela de impressão do navegador.
+- **Planilha** baixa um `.xlsx` formatado: cabeçalho fixo ao rolar, filtro nas
+  colunas, larguras certas e a linha de total. O dinheiro e as datas vão como
+  **número e data de verdade**, não como texto — dá para somar, ordenar e
+  filtrar no Excel sem redigitar nada.
+
+> **Na janela de impressão, marque *Gráficos de fundo***. Sem isso o navegador
+> imprime só o texto e o cabeçalho da tabela sai sem a faixa azul. A barra do
+> Financeiro e o menu lateral **nunca** saem no papel.
 
 **Filtro por período**, nas duas abas: escolha *vencimento de* e *até*. Quando
 há filtro, aparece um aviso de que aquilo é **um recorte**.
@@ -330,9 +343,9 @@ pela rede"* ou *"ACIMA do limite…"*.
 > não ajuda a decidir nada.
 
 **Na Franqueadora há um seletor de unidade** na aba Inadimplentes: dá para abrir
-a fila de cobrança de qualquer unidade **sem trocar a unidade ativa**. E em
-**Rede → Recebíveis da rede** os mesmos dois botões exportam o quadro de todas
-as unidades, com quem passou do próprio limite.
+a fila de cobrança de qualquer unidade **sem trocar a unidade ativa**. E na aba
+**Rede inteira** os mesmos dois botões exportam o quadro de todas as unidades,
+com quem passou do próprio limite.
 
 **Na Franqueadora há a visão da rede:** menu **Rede → Recebíveis da rede**. Ela
 mostra todas as unidades lado a lado — a receber, vencido, a taxa de cada uma e

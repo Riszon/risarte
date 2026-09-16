@@ -62,6 +62,44 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.246.0",
+    data: "2026-09-15",
+    migracao: null,
+    titulo: "O relatório virou documento — e a planilha, planilha",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O botão PDF abre agora uma página de relatório, feita para o papel: marca no alto, unidade, período, quem gerou e quando, os números de destaque, a tabela com a linha de TOTAL e as notas de rodapé. Antes ele mandava imprimir a própria tela, e o papel saía com a barra do Financeiro dentro.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A planilha passou a sair formatada: título, cabeçalho fixo ao rolar, filtro nas colunas, larguras certas e linha de total. Os valores vão como número, não como texto — dá para somar, ordenar e fazer conta em cima deles.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na planilha, a coluna Vencimento saía no formato do banco (2026-09-11) e ordenava como palavra. Agora é data de verdade, no formato brasileiro.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Recebíveis, Inadimplentes e Rede inteira agora ficam na mesma barra de abas. A tela da rede existia desde sempre, escondida no menu Rede — quem procurava o relatório da rede não a encontrava.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O PDF sai pelo botão Salvar em PDF da própria página do relatório. Na caixa de impressão do navegador, marque Gráficos de fundo para o cabeçalho da tabela sair pintado.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.245.0",
     data: "2026-09-15",
     migracao: null,

@@ -5,9 +5,9 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
 import { formatBRL } from "@/lib/pricing";
-import { formatBrDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { ExportarRede } from "./exportar";
+import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
+import { AbasDeRecebiveis } from "../recebiveis/abas";
 import { Card, CardContent } from "@/components/ui/card";
 import { AGING_LABELS } from "@/lib/finance/aging";
 import {
@@ -191,43 +191,25 @@ export default async function RecebiveisDaRedePage() {
             primeiro.
           </p>
         </div>
-        <ExportarRede
-          unidades={ordenadas.map((u) => ({
-            nome: u.nome,
-            ownership: u.ownership,
-            abertoCents: u.abertoCents,
-            vencidoCents: u.vencidoCents,
-            vencidoQuantidade: u.vencidoQuantidade,
-            taxaPercent: u.taxaPercent,
-            limitePercent: u.limitePercent,
-          }))}
-          totalAbertoCents={totais.abertoCents}
-          totalVencidoCents={totais.vencidoCents}
-          taxaDaRede={totais.taxaPercent}
-          acimaDoLimite={totais.acimaDoLimite}
+        <BotoesDeRelatorio
+          base="/financeiro/recebiveis-da-rede"
+          desabilitado={ordenadas.length === 0}
         />
       </div>
 
-      {/* SÓ NO PAPEL: o relatório da rede precisa dizer quando foi tirado. */}
-      <div className="hidden space-y-1 border-b pb-3 text-sm print:block">
-        <p>
-          <strong>Relatório de recebíveis da rede</strong>
-        </p>
-        <p>Gerado em {formatBrDateTime(new Date())}</p>
-        <p>
-          Inadimplência da rede:{" "}
-          {totais.taxaPercent === null
-            ? "sem base para calcular"
-            : `${totais.taxaPercent.toLocaleString("pt-BR")}%`}{" "}
-          · {totais.acimaDoLimite} unidade(s) acima do próprio limite
-        </p>
+      {/* A mesma barra das telas de recebíveis da unidade: quem procura
+          relatório de recebíveis procura aqui, não no menu suspenso "Rede". */}
+      <div className="print:hidden">
+        <AbasDeRecebiveis ativa="rede" veRede />
       </div>
 
       <section className="grid gap-3 sm:grid-cols-4">
         <Numero
           rotulo="A receber na rede"
           valor={formatBRL(totais.abertoCents)}
-          detalhe={`${totais.unidades} unidade(s)`}
+          detalhe={
+            totais.unidades === 1 ? "1 unidade" : `${totais.unidades} unidades`
+          }
         />
         <Numero
           rotulo="Vencido na rede"
@@ -254,7 +236,9 @@ export default async function RecebiveisDaRedePage() {
           detalhe={
             totais.semReceber > 0
               ? `${totais.semReceber} sem nada a receber`
-              : "unidade(s) passaram do próprio teto"
+              : totais.acimaDoLimite === 1
+                ? "unidade passou do próprio teto"
+                : "unidades passaram do próprio teto"
           }
           alerta={totais.acimaDoLimite > 0}
         />
