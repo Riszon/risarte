@@ -41,7 +41,10 @@ export function fillRoute(route, id) {
  * abriria a tela do prontuário com o id de uma adesão — 404 com cara de bug.
  */
 export const ROUTE_FIXTURES = {
-  "/admin/usuarios/[id]": "user",
+  // A ficha do Risartano é endereçada pelo CÓDIGO (RIS-0007), não pelo id; o
+  // acesso sem cadastro é endereçado pelo login.
+  "/risartanos/[codigo]": "staffMember",
+  "/risartanos/acesso/[userId]": "user",
   "/apresentacao/[clientId]": "client",
   "/avaliacao/[clientId]": "client",
   "/comercial/[clientId]": "client",

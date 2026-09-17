@@ -184,7 +184,7 @@ export const CAPACIDADES: Capability[] = [
     id: "modulo.risartanos",
     rotulo: "Risartanos",
     grupo: "Módulos",
-    descricao: "Cadastro de colaboradores (RH).",
+    descricao: "A equipe: cadastro, unidades e acesso ao sistema.",
     dependeDoBanco: false,
     padrao: ["unit_manager", "franchisor_staff", "franchisee"],
   },

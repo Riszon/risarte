@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/09/2026 · Versão do sistema: **0.250.0** · Última migração: **0258** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 17/09/2026 · Versão do sistema: **0.251.0** · Última migração: **0258** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3779,6 +3779,55 @@ própria página).
   aberto direto na produção sem a 0258 (mostra o aviso da migração).
 
 **PROBLEMAS 2.0 COMPLETO** (A, B, B.2, C).
+
+### RISARTANOS + ACESSO NUMA TELA SÓ (17/09/2026, v0.251.0, SEM migração)
+
+Pedido do dono: *"tem dois itens que precisamos unir num único: Risartanos e
+Usuários (acesso), pois todo acesso é para um Risartano — preserve as permissões
+e faça o refino estético"*.
+
+**O que era:** `/risartanos` (cadastro de RH, `staff_members`) e
+`/admin/usuarios` (login, `profiles` + `user_clinic_roles`). Mesma pessoa em
+duas telas, ligadas só por um vínculo criado na 0079. A pergunta cara — *quem
+saiu da equipe e continua entrando?* — exigia abrir as duas e comparar de cabeça.
+
+**O que ficou:**
+- **`/risartanos`** — uma linha por pessoa, com o selo da situação do acesso
+  (com acesso / sem acesso / acesso desativado / **login ainda ativo** / cadastro
+  incompleto), quatro atalhos-contador e filtros (busca, unidade, regime,
+  situação, acesso).
+- **`/risartanos/[codigo]`** — a ficha, endereçada pelo CÓDIGO (`RIS-000001`),
+  com três seções: **Acesso ao sistema**, **Unidades e situação**, **Cadastro**.
+  Saiu da janela pop-up: o formulário é longo e dividia rolagem com o acesso.
+- **`/risartanos/novo`** e **`/risartanos/acesso/[userId]`** (login sem cadastro,
+  só Admin — "Completar cadastro" abre o formulário preenchido e liga os dois).
+- `/admin/usuarios`, `/novo` e `/[id]` **deixaram de existir**; as ações foram
+  para `risartanos/acesso-actions.ts`, inteiras, com `requireAdminMaster()`.
+
+**Regras preservadas (o pedido central):** ver a lista = Admin, Franqueadora/RH,
+Gerente, Franqueado (matriz `modulo.risartanos` + RLS `can_see_staff`); editar
+cadastro = RLS `can_manage_staff`; **login, senha e função continuam só do Admin
+Master**. Quem não é Admin passou a VER o acesso (não a mexer) — é informação
+que já estava na outra tela, agora no lugar certo.
+
+**Decisões:**
+- **Login sem cadastro não some da lista** — aparece com selo e botão de
+  completar. Esconder deixaria a união pela metade (produção tem 1 caso: o
+  próprio dono; o treino, 16 usuários de teste).
+- **Ordem em três degraus:** login órfão (risco) no topo, equipe por nome no
+  meio, cadastro incompleto no fim. Um "precisa de atenção" único faria a equipe
+  de verdade começar embaixo de uma lista de pendências.
+- **"Desligar da equipe"** (o `is_active` do cadastro) ganhou botão: a ação
+  existia em `setStaffActive` desde a H4.1 e **não tinha interface** — sem ela,
+  quem não tinha login nunca saía das listas.
+
+**Conferido:** 23 testes novos (`src/lib/risartanos.ts`); portão verde (build do
+zero, 1092 testes, lint); logado no treino como Admin, Franqueadora, Gerente e
+Recepção (gerente: acesso em leitura, **404** em cadastro de outra unidade,
+mandado ao Início em `/risartanos/acesso/[userId]`; recepção: fora das duas);
+ponta a ponta no banco de teste: cadastrar → criar acesso (função gravada) →
+completar cadastro de um login existente (vínculo gravado) → desligar e ver o
+selo "Login ainda ativo". Dados de teste apagados depois.
 
 ### RODADA DE REFINAMENTO VISUAL E RELATOS (10/09/2026, v0.239.2 → 0.243.0)
 

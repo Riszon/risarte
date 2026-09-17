@@ -159,7 +159,7 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 ### [EV-015] Não existe auto-cadastro ✅
 
 - **Arquivos:** `src/app/login/` (só `page.tsx`, `login-form.tsx`,
-  `actions.ts`); `src/app/(app)/admin/usuarios/actions.ts` → `createUser` com
+  `actions.ts`); `src/app/(app)/risartanos/acesso-actions.ts` → `createUser` com
   `email_confirm: true`.
 - **Conclusão:** o administrador cria o usuário **já com a senha definida**.
   Não há tela de cadastro nem de "esqueci minha senha".
@@ -257,3 +257,7 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-042 | "Como usar o print" junto dos botões | `src/app/(app)/problemas/anexos.tsx` (`AjudaDoPrint`) | ✅ |
 | EV-043 | Painel de indicadores e o escopo por papel (rede com ranking de pessoas × unidade sem) | `supabase/migrations/0258_painel_de_relatos.sql` + `src/app/(app)/problemas/painel/page.tsx` | ✅ provado no banco (26 checagens, números conferidos à mão) e na tela (Admin, Rede, Gerente, Recepção) |
 | EV-044 | Regras: período pela data de registro; mediana; aproveitado = resolvido; Admin fora do ranking; parados sem título | 0258 (comentário) + quadro "Como ler este painel" | ✅ |
+| EV-045 | Risartanos e "Usuários (acesso)" viraram uma tela: cada pessoa é uma linha com cadastro e login | `src/app/(app)/risartanos/page.tsx` + `src/app/(app)/risartanos/dados.ts` | ✅ conferido logado (Admin, Franqueadora, Gerente, Recepção) |
+| EV-046 | As 5 situações de acesso, a ordem (risco no topo, pendência no fim) e os filtros | `src/lib/risartanos.ts` + `risartanos.test.ts` (23 testes) | ✅ |
+| EV-047 | Permissões preservadas: acesso (login/senha/função) só do Admin Master; cadastro segue a RLS `can_manage_staff` | `src/app/(app)/risartanos/acesso-actions.ts` (`requireAdminMaster` em todas) + `[codigo]/page.tsx` | ✅ provado logado: gerente vê o acesso sem botões, 404 em cadastro de outra unidade, `/risartanos/acesso/[userId]` devolve o gerente para o Início |
+| EV-048 | Criar acesso a partir do cadastro e completar cadastro a partir de um login | `risartanos/acesso.tsx` (`CriarAcesso`) + `risartanos/novo/page.tsx` + gatilhos da 0079 | ✅ provado ponta a ponta no banco de teste (cadastro sem login → acesso criado com função; login do TSB → cadastro ligado a ele) |

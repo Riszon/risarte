@@ -1,379 +1,161 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
+import { Plus, UserPlus } from "lucide-react";
+import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   CONTRACT_LABELS,
   CONTRACT_TYPES,
-  STAFF_PHOTO_BUCKET,
-  staffDisplayName,
   type ContractType,
-  type StaffAccess,
-  type StaffMember,
 } from "@/lib/staff";
-import { ROLE_LABELS, type UserRole } from "@/lib/roles";
-import { StaffFormDialog } from "./staff-form-dialog";
 import {
-  StaffScheduleDialog,
-  type StaffScheduleData,
-} from "./staff-schedule-dialog";
+  FILTROS_DE_ACESSO,
+  SITUACOES_DE_CADASTRO,
+  contarEquipe,
+  lerFiltros,
+  ordenar,
+  passaNoFiltro,
+  situacaoDeAcesso,
+  type PessoaDaEquipe,
+} from "@/lib/risartanos";
+import { alcanceDoUsuario, carregarEquipe, podeVerEquipe } from "./dados";
+import { SeloDeAcesso, SeloDeUnidade } from "./selos";
 
 export const metadata: Metadata = { title: "Risartanos" };
 
-type StaffRow = {
-  id: string;
-  clinic_id: string;
-  code: string | null;
-  full_name: string;
-  preferred_name: string | null;
-  cpf: string | null;
-  birth_date: string | null;
-  gender: string | null;
-  marital_status: string | null;
-  spouse_name: string | null;
-  spouse_phone: string | null;
-  whatsapp: string | null;
-  email: string | null;
-  zip_code: string | null;
-  address: string | null;
-  address_number: string | null;
-  complement: string | null;
-  neighborhood: string | null;
-  city: string | null;
-  state: string | null;
-  contract_type: string | null;
-  role_title: string | null;
-  photo_path: string | null;
-  notes: string | null;
-  is_active: boolean;
-  user_id: string | null;
-  inactive_unit_ids: string[] | null;
-  specialties: string[] | null;
-  clinics: { name: string } | null;
-};
+const selectClass =
+  "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
-function toStaff(r: StaffRow): StaffMember {
-  return {
-    id: r.id,
-    clinicId: r.clinic_id,
-    code: r.code,
-    fullName: r.full_name,
-    preferredName: r.preferred_name,
-    cpf: r.cpf,
-    birthDate: r.birth_date,
-    gender: (r.gender as StaffMember["gender"]) ?? null,
-    maritalStatus: (r.marital_status as StaffMember["maritalStatus"]) ?? null,
-    spouseName: r.spouse_name,
-    spousePhone: r.spouse_phone,
-    whatsapp: r.whatsapp,
-    email: r.email,
-    zipCode: r.zip_code,
-    address: r.address,
-    addressNumber: r.address_number,
-    complement: r.complement,
-    neighborhood: r.neighborhood,
-    city: r.city,
-    state: r.state,
-    contractType: (r.contract_type as ContractType) ?? null,
-    roleTitle: r.role_title,
-    photoPath: r.photo_path,
-    notes: r.notes,
-    isActive: r.is_active,
-    userId: r.user_id,
-    inactiveUnitIds: r.inactive_unit_ids ?? [],
-    specialties: r.specialties ?? [],
-  };
-}
-
+/**
+ * RISARTANOS — a equipe num lugar só.
+ *
+ * Antes eram duas telas: o cadastro de RH aqui e o login em "Usuários
+ * (acesso)". A mesma pessoa vivia partida ao meio, e a pergunta que mais
+ * importa — *quem ainda entra no sistema?* — exigia abrir as duas e comparar de
+ * cabeça. Agora cada Risartano é UMA linha, que carrega o cadastro e o acesso.
+ *
+ * O que NÃO mudou: quem pode o quê. Ver a lista continua sendo Admin,
+ * Franqueadora/RH, Gerente e Franqueado (matriz 0246 + RLS da 0080); mexer em
+ * login, senha e função continua sendo só do Admin Master.
+ */
 export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   const session = await getSessionContext();
+  if (!podeVerEquipe(session)) redirect("/");
 
-  const allRoles = Object.values(session.rolesByClinic).flat();
-  const isRH = allRoles.includes("franchisor_staff");
-  const canView =
-    session.isAdminMaster ||
-    isRH ||
-    allRoles.some((r) => ["unit_manager", "franchisee"].includes(r));
-  if (!canView) redirect("/");
-
-  const scopeIds = session.isAdminMaster ? null : await fullAccessClinicIds();
-  if (scopeIds !== null && scopeIds.length === 0) redirect("/");
-
-  // Onde este usuário pode CADASTRAR/EDITAR: Gerente/Franqueado na sua unidade +
-  // Franqueadora/RH nas unidades do escopo. Admin gere tudo.
-  const manageClinicIds = new Set<string>();
-  for (const [cid, rs] of Object.entries(session.rolesByClinic)) {
-    if (rs.some((r) => r === "unit_manager" || r === "franchisee")) {
-      manageClinicIds.add(cid);
-    }
-  }
-  if (isRH) for (const id of scopeIds ?? []) manageClinicIds.add(id);
-
-  // Admin e Franqueadora/RH escolhem a unidade ao cadastrar; Gerente/Franqueado
-  // cadastram só na unidade ativa (a que estão logados).
-  const canPickUnit = session.isAdminMaster || isRH;
-  const activeClinicId = session.activeClinic?.id ?? null;
-  const activeClinicName = session.activeClinic?.name ?? null;
-  const canCreate =
-    session.isAdminMaster ||
-    isRH ||
-    (activeClinicId != null &&
-      (session.rolesByClinic[activeClinicId] ?? []).some(
-        (r) => r === "unit_manager" || r === "franchisee"
-      ));
-  const canManageAny = session.isAdminMaster || manageClinicIds.size > 0;
-
-  const searchParams = await props.searchParams;
-  const busca = typeof searchParams.busca === "string" ? searchParams.busca : "";
-  const unidade =
-    typeof searchParams.unidade === "string" ? searchParams.unidade : "";
-  const contrato = CONTRACT_TYPES.includes(searchParams.contrato as ContractType)
-    ? (searchParams.contrato as ContractType)
-    : "";
-  const ativo =
-    typeof searchParams.ativo === "string" ? searchParams.ativo : "ativos";
+  const alcance = await alcanceDoUsuario(session);
+  if (alcance.escopoIds !== null && alcance.escopoIds.length === 0) redirect("/");
 
   const supabase = await createClient();
+  const { pessoas, unidades } = await carregarEquipe(supabase, session, alcance);
 
-  let unitsQuery = supabase
-    .from("clinics")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("name");
-  if (scopeIds) unitsQuery = unitsQuery.in("id", scopeIds);
+  const searchParams = await props.searchParams;
+  const filtros = lerFiltros(searchParams, CONTRACT_TYPES);
+  const contagem = contarEquipe(pessoas);
+  const lista = ordenar(pessoas.filter((p) => passaNoFiltro(p, filtros)));
 
-  // NÃO filtramos por clinic_id: a barreira é a RLS (`can_see_staff`), que já
-  // mostra o Risartano a quem gere QUALQUER unidade onde ele tem acesso. Filtrar
-  // pela "unidade de origem" aqui escondia os profissionais multi-unidade.
-  let staffQuery = supabase
-    .from("staff_members")
-    .select(
-      "id, clinic_id, code, full_name, preferred_name, cpf, birth_date, gender, marital_status, spouse_name, spouse_phone, whatsapp, email, zip_code, address, address_number, complement, neighborhood, city, state, contract_type, role_title, photo_path, notes, is_active, user_id, inactive_unit_ids, specialties, clinics ( name )"
-    )
-    .order("full_name")
-    .limit(2000);
-  if (contrato) staffQuery = staffQuery.eq("contract_type", contrato);
-  if (ativo === "ativos") staffQuery = staffQuery.eq("is_active", true);
-  else if (ativo === "inativos") staffQuery = staffQuery.eq("is_active", false);
-
-  const [{ data: units }, { data: staffRows }, { data: specRows }] =
-    await Promise.all([
-      unitsQuery,
-      staffQuery.returns<StaffRow[]>(),
-      // H4.13: lista PADRÃO (gerenciável) de especialidades, na ordem definida.
-      supabase
-        .from("specialties")
-        .select("name")
-        .eq("is_active", true)
-        .order("sort_order")
-        .returns<{ name: string }[]>(),
-    ]);
-  // Opções = lista ativa + qualquer especialidade já marcada num Risartano (para
-  // não perder marcações de itens que porventura foram desativados).
-  const activeSpecs = (specRows ?? []).map((s) => s.name);
-  const staffSpecs = new Set<string>();
-  for (const r of staffRows ?? []) {
-    for (const s of r.specialties ?? []) {
-      if (s?.trim()) staffSpecs.add(s.trim());
+  // Os atalhos do topo trocam SÓ o recorte de acesso; o resto do filtro fica.
+  function comAcesso(valor: string): string {
+    const params = new URLSearchParams();
+    if (filtros.busca) params.set("busca", filtros.busca);
+    if (filtros.unidade) params.set("unidade", filtros.unidade);
+    if (filtros.contrato) params.set("contrato", filtros.contrato);
+    if (valor === "atencao" || valor === "acesso_desativado") {
+      params.set("situacao", "todos");
+    } else if (filtros.situacao !== "ativos") {
+      params.set("situacao", filtros.situacao);
     }
+    if (valor) params.set("acesso", valor);
+    const qs = params.toString();
+    return qs ? `/risartanos?${qs}` : "/risartanos";
   }
-  const specialtyOptions = [
-    ...activeSpecs,
-    ...[...staffSpecs]
-      .filter((s) => !activeSpecs.includes(s))
-      .sort((a, b) => a.localeCompare(b, "pt-BR")),
+
+  const atalhos = [
+    { valor: "", rotulo: "Toda a equipe", numero: contagem.total },
+    { valor: "com_acesso", rotulo: "Com acesso", numero: contagem.comAcesso },
+    { valor: "sem_acesso", rotulo: "Sem acesso", numero: contagem.semAcesso },
+    { valor: "atencao", rotulo: "Precisa de atenção", numero: contagem.atencao },
   ];
-
-  const term = busca.trim().toLowerCase();
-  const rows = (staffRows ?? []).filter((r) => {
-    if (!term) return true;
-    return (
-      r.full_name.toLowerCase().includes(term) ||
-      (r.preferred_name ?? "").toLowerCase().includes(term) ||
-      (r.cpf ?? "").includes(term) ||
-      (r.code ?? "").toLowerCase().includes(term)
-    );
-  });
-
-  const unitOptions = (units ?? []).map((u) => ({ id: u.id, name: u.name }));
-
-  // H4.6 E1: dias de atendimento por unidade (dos colaboradores mostrados).
-  const schedulesByStaff = new Map<string, Record<string, StaffScheduleData>>();
-  const shownStaffIds = rows.map((r) => r.id);
-  if (shownStaffIds.length > 0) {
-    const { data: schedRows } = await supabase
-      .from("staff_clinic_schedule")
-      .select("staff_member_id, clinic_id, weekdays, specific_dates, note")
-      .in("staff_member_id", shownStaffIds)
-      .returns<
-        {
-          staff_member_id: string;
-          clinic_id: string;
-          weekdays: number[] | null;
-          specific_dates: string[] | null;
-          note: string | null;
-        }[]
-      >();
-    for (const s of schedRows ?? []) {
-      const m = schedulesByStaff.get(s.staff_member_id) ?? {};
-      m[s.clinic_id] = {
-        weekdays: s.weekdays ?? [],
-        dates: s.specific_dates ?? [],
-        note: s.note ?? "",
-      };
-      schedulesByStaff.set(s.staff_member_id, m);
-    }
-  }
-
-  // H4.1 Lote 1b: URLs assinadas das fotos (bucket privado).
-  const photoUrls = new Map<string, string>();
-  const photoPaths = rows
-    .filter((r) => r.photo_path)
-    .map((r) => r.photo_path as string);
-  if (photoPaths.length > 0) {
-    const { data: signed } = await supabase.storage
-      .from(STAFF_PHOTO_BUCKET)
-      .createSignedUrls(photoPaths, 3600);
-    for (const s of signed ?? []) {
-      if (s.path && s.signedUrl) photoUrls.set(s.path, s.signedUrl);
-    }
-  }
-
-  // H4.1 Lote 2b: resumo do acesso (login) dos colaboradores vinculados. O RLS
-  // pode esconder perfis de outras unidades — nesses casos mostramos só "com
-  // acesso", sem e-mail/funções.
-  const accessByUser = new Map<string, StaffAccess>();
-  const linkedUserIds = [
-    ...new Set(rows.filter((r) => r.user_id).map((r) => r.user_id as string)),
-  ];
-  if (linkedUserIds.length > 0) {
-    const [{ data: profs }, { data: roleRows }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, email, is_active, is_admin_master")
-        .in("id", linkedUserIds),
-      supabase
-        .from("user_clinic_roles")
-        .select("user_id, role, clinic_id, clinics ( name )")
-        .in("user_id", linkedUserIds)
-        .returns<
-          {
-            user_id: string;
-            role: UserRole;
-            clinic_id: string;
-            clinics: { name: string } | null;
-          }[]
-        >(),
-    ]);
-    const unitsByUser = new Map<
-      string,
-      { clinicName: string; roleLabel: string; clinicId: string }[]
-    >();
-    for (const rr of roleRows ?? []) {
-      const list = unitsByUser.get(rr.user_id) ?? [];
-      list.push({
-        clinicName: rr.clinics?.name ?? "—",
-        roleLabel: ROLE_LABELS[rr.role],
-        clinicId: rr.clinic_id,
-      });
-      unitsByUser.set(rr.user_id, list);
-    }
-    for (const p of profs ?? []) {
-      const units = unitsByUser.get(p.id) ?? [];
-      const parts = units.map((u) => `${u.roleLabel} · ${u.clinicName}`);
-      if (p.is_admin_master) parts.unshift("Admin Master");
-      accessByUser.set(p.id, {
-        userId: p.id,
-        email: p.email,
-        loginActive: p.is_active,
-        rolesText: parts.join(", "),
-        units: units.map((u) => ({
-          clinicId: u.clinicId,
-          clinicName: u.clinicName,
-          roleLabel: u.roleLabel,
-        })),
-        unitClinicIds: units.map((u) => u.clinicId),
-      });
-    }
-  }
-
-  // Admin: usuários disponíveis para o vínculo manual (e-mails diferentes).
-  let linkableUsers: { id: string; label: string }[] = [];
-  if (session.isAdminMaster) {
-    const { data: allUsers } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .eq("is_active", true)
-      .order("full_name");
-    linkableUsers = (allUsers ?? []).map((u) => ({
-      id: u.id,
-      label: `${u.full_name || u.email || "—"}${u.email ? ` (${u.email})` : ""}`,
-    }));
-  }
-
-  // Filtro por unidade escolhida no seletor: a unidade de origem OU uma unidade
-  // onde o Risartano tem acesso (multi-unidade).
-  const shownRows = unidade
-    ? rows.filter(
-        (r) =>
-          r.clinic_id === unidade ||
-          (r.user_id &&
-            (accessByUser.get(r.user_id)?.unitClinicIds ?? []).includes(unidade))
-      )
-    : rows;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Risartanos</h1>
           <p className="text-sm text-muted-foreground">
-            Cadastro dos colaboradores da{" "}
-            {scopeIds && scopeIds.length === 1 ? "unidade" : "rede"}.
+            A equipe da{" "}
+            {alcance.escopoIds && alcance.escopoIds.length === 1
+              ? "unidade"
+              : "rede"}
+            : cadastro, unidades e acesso ao sistema — tudo na mesma ficha.
           </p>
         </div>
-        {canCreate && (canPickUnit ? unitOptions.length > 0 : !!activeClinicId) && (
-          <StaffFormDialog
-            units={unitOptions}
-            canPickUnit={canPickUnit}
-            activeClinicName={activeClinicName}
-            isAdmin={session.isAdminMaster}
-            linkableUsers={linkableUsers}
-            specialtyOptions={specialtyOptions}
-          />
+        {alcance.podeCriar && (
+          <Button
+            nativeButton={false}
+            render={<Link href="/risartanos/novo" />}
+            className="shrink-0"
+          >
+            <Plus className="mr-1 size-4" />
+            Novo Risartano
+          </Button>
         )}
-      </div>
+      </header>
+
+      <nav className="flex flex-wrap gap-2">
+        {atalhos.map((a) => {
+          const ativo =
+            filtros.acesso === a.valor ||
+            (a.valor === "" && filtros.acesso === "");
+          const alerta = a.valor === "atencao" && a.numero > 0;
+          return (
+            <Link
+              key={a.valor || "todos"}
+              href={comAcesso(a.valor)}
+              className={[
+                "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                ativo
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : alerta
+                    ? "border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive/10"
+                    : "border-border bg-card text-foreground hover:bg-muted",
+              ].join(" ")}
+            >
+              {a.rotulo}
+              <span
+                className={[
+                  "ml-1.5 tabular-nums",
+                  ativo ? "opacity-90" : "text-muted-foreground",
+                ].join(" ")}
+              >
+                {a.numero}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <FilterForm className="flex flex-wrap items-center gap-2">
         <Input
           name="busca"
-          defaultValue={busca}
-          placeholder="Buscar por nome, CPF ou código..."
-          className="h-9 w-64"
+          defaultValue={filtros.busca}
+          placeholder="Buscar por nome, e-mail, CPF ou código..."
+          className="h-9 w-full sm:w-72"
         />
-        {unitOptions.length > 1 && (
-          <select
-            name="unidade"
-            defaultValue={unidade}
-            className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-          >
+        {unidades.length > 1 && (
+          <select name="unidade" defaultValue={filtros.unidade} className={selectClass}>
             <option value="">Todas as unidades</option>
-            {unitOptions.map((u) => (
+            {unidades.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
               </option>
             ))}
           </select>
         )}
-        <select
-          name="contrato"
-          defaultValue={contrato}
-          className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-        >
+        <select name="contrato" defaultValue={filtros.contrato} className={selectClass}>
           <option value="">Todos os regimes</option>
           {CONTRACT_TYPES.map((c) => (
             <option key={c} value={c}>
@@ -381,228 +163,137 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
             </option>
           ))}
         </select>
-        <select
-          name="ativo"
-          defaultValue={ativo}
-          className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-        >
-          <option value="ativos">Ativos</option>
-          <option value="inativos">Inativos</option>
-          <option value="todos">Todos</option>
+        <select name="situacao" defaultValue={filtros.situacao} className={selectClass}>
+          {SITUACOES_DE_CADASTRO.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <select name="acesso" defaultValue={filtros.acesso} className={selectClass}>
+          {FILTROS_DE_ACESSO.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
         </select>
       </FilterForm>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Colaboradores ({shownRows.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {shownRows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhum Risartano encontrado.
-            </p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-2 py-1.5 font-medium">Código</th>
-                  <th className="px-2 py-1.5 font-medium">Nome</th>
-                  <th className="px-2 py-1.5 font-medium">Unidades e situação</th>
-                  <th className="px-2 py-1.5 font-medium">Regime</th>
-                  <th className="px-2 py-1.5 font-medium">Acesso</th>
-                  {canManageAny && <th className="px-2 py-1.5 font-medium" />}
-                </tr>
-              </thead>
-              <tbody>
-                {shownRows.map((r) => {
-                  const s = toStaff(r);
-                  const access = r.user_id
-                    ? accessByUser.get(r.user_id) ?? {
-                        userId: r.user_id,
-                        email: null,
-                        loginActive: true,
-                        rolesText: "",
-                        units: [],
-                        unitClinicIds: [],
-                      }
-                    : null;
-                  const accessUnits = access?.units ?? [];
-                  const inactiveSet = new Set(r.inactive_unit_ids ?? []);
-                  const canManageRow =
-                    session.isAdminMaster ||
-                    manageClinicIds.has(r.clinic_id) ||
-                    (access?.unitClinicIds ?? []).some((id) =>
-                      manageClinicIds.has(id)
-                    );
-                  // H4.6 E1: dias de atendimento — só para dentistas, nas
-                  // unidades que este gestor administra.
-                  const isDentistStaff = accessUnits.some(
-                    (u) => u.roleLabel === ROLE_LABELS.dentist
-                  );
-                  const scheduleUnits = accessUnits
-                    .filter(
-                      (u) =>
-                        session.isAdminMaster || manageClinicIds.has(u.clinicId)
-                    )
-                    .map((u) => ({
-                      clinicId: u.clinicId,
-                      clinicName: u.clinicName,
-                    }));
-                  return (
-                    <tr key={r.id} className="border-b last:border-0">
-                      <td className="px-2 py-1.5 font-mono text-xs text-gold-tinta">
-                        {r.code ?? "—"}
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <span className="flex items-center gap-2">
-                          {r.photo_path && photoUrls.get(r.photo_path) ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={photoUrls.get(r.photo_path)}
-                              alt=""
-                              className="size-8 shrink-0 rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                              {staffDisplayName(s).slice(0, 2).toUpperCase()}
-                            </span>
-                          )}
-                          <span className="min-w-0">
-                            <span className="block font-medium">
-                              {staffDisplayName(s)}
-                            </span>
-                            {r.preferred_name && (
-                              <span className="block text-xs text-muted-foreground">
-                                {r.full_name}
-                              </span>
-                            )}
-                          </span>
-                        </span>
-                      </td>
-                      <td className="px-2 py-1.5">
-                        {accessUnits.length > 0 ? (
-                          <ul className="space-y-0.5">
-                            {accessUnits.map((u) => {
-                              const managed =
-                                session.isAdminMaster ||
-                                manageClinicIds.has(u.clinicId);
-                              const unitInactive = inactiveSet.has(u.clinicId);
-                              return (
-                                <li
-                                  key={u.clinicId}
-                                  className="flex flex-wrap items-center gap-1.5"
-                                >
-                                  <span
-                                    className={
-                                      managed
-                                        ? "font-medium"
-                                        : "text-muted-foreground"
-                                    }
-                                  >
-                                    {u.clinicName}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    · {u.roleLabel}
-                                  </span>
-                                  {managed ? (
-                                    unitInactive ? (
-                                      <Badge variant="outline">Inativo</Badge>
-                                    ) : (
-                                      <Badge variant="secondary">Ativo</Badge>
-                                    )
-                                  ) : (
-                                    <span className="text-xs italic text-muted-foreground">
-                                      (outra unidade{unitInactive ? " · inativo" : ""})
-                                    </span>
-                                  )}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <span>{r.clinics?.name ?? "—"}</span>
-                            {r.is_active ? (
-                              <Badge variant="secondary">Ativo</Badge>
-                            ) : (
-                              <Badge variant="outline">Inativo</Badge>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-muted-foreground">
-                        {r.contract_type
-                          ? CONTRACT_LABELS[r.contract_type as ContractType]
-                          : "—"}
-                      </td>
-                      <td className="px-2 py-1.5">
-                        {!access ? (
-                          <span
-                            className="text-xs text-muted-foreground"
-                            title="Sem acesso ao sistema"
-                          >
-                            Sem acesso
-                          </span>
-                        ) : !r.is_active && access.loginActive ? (
-                          <Badge
-                            variant="destructive"
-                            title="Colaborador inativo, mas o login ainda está ativo"
-                          >
-                            Login ainda ativo
-                          </Badge>
-                        ) : !access.loginActive ? (
-                          <Badge variant="outline">Acesso desativado</Badge>
-                        ) : (
-                          <Badge
-                            variant="secondary"
-                            title={access.rolesText || access.email || undefined}
-                          >
-                            ✓ Com acesso
-                          </Badge>
-                        )}
-                      </td>
-                      {canManageAny && (
-                        <td className="px-2 py-1.5 text-right">
-                          <span className="inline-flex items-center gap-1">
-                            {canManageRow &&
-                              isDentistStaff &&
-                              scheduleUnits.length > 0 && (
-                                <StaffScheduleDialog
-                                  staffMemberId={r.id}
-                                  staffName={staffDisplayName(s)}
-                                  units={scheduleUnits}
-                                  schedules={schedulesByStaff.get(r.id) ?? {}}
-                                />
-                              )}
-                            {canManageRow && (
-                              <StaffFormDialog
-                                units={unitOptions}
-                                staff={s}
-                                photoUrl={
-                                  r.photo_path
-                                    ? photoUrls.get(r.photo_path)
-                                    : undefined
-                                }
-                                access={access}
-                                isAdmin={session.isAdminMaster}
-                                linkableUsers={linkableUsers}
-                                manageClinicIds={Array.from(manageClinicIds)}
-                                specialtyOptions={specialtyOptions}
-                              />
-                            )}
-                          </span>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
+      <section className="overflow-hidden rounded-xl border bg-card">
+        <p className="border-b px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {lista.length === contagem.total
+            ? `${lista.length} pessoa${lista.length === 1 ? "" : "s"}`
+            : `${lista.length} de ${contagem.total}`}
+        </p>
+        {lista.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            Ninguém por aqui com esse recorte. Tente “Toda a equipe”.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {lista.map((p) => (
+              <Linha key={`${p.tipo}-${p.chave}`} pessoa={p} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p className="text-xs text-muted-foreground">
+        Cada linha é uma pessoa: o cadastro de RH e o login do sistema vivem na
+        mesma ficha. Quem cria login, redefine senha e muda função continua sendo
+        o Admin Master.
+      </p>
     </div>
+  );
+}
+
+function Linha({ pessoa }: { pessoa: PessoaDaEquipe }) {
+  const situacao = situacaoDeAcesso(pessoa);
+  const iniciais = pessoa.nome.slice(0, 2).toUpperCase();
+
+  return (
+    <li>
+      <Link
+        href={pessoa.href}
+        className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-muted/50"
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-3">
+          {pessoa.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={pessoa.fotoUrl}
+              alt=""
+              className="size-10 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <span
+              className={[
+                "flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                pessoa.tipo === "login"
+                  ? "bg-gold/15 text-gold-tinta"
+                  : "bg-muted text-muted-foreground",
+              ].join(" ")}
+            >
+              {pessoa.tipo === "login" ? (
+                <UserPlus className="size-4" />
+              ) : (
+                iniciais
+              )}
+            </span>
+          )}
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{pessoa.nome}</span>
+              {pessoa.code && (
+                <span className="font-mono text-xs text-gold-tinta">
+                  {pessoa.code}
+                </span>
+              )}
+              {!pessoa.ativo && pessoa.tipo === "risartano" && (
+                <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+                  Fora da equipe
+                </span>
+              )}
+              {pessoa.isAdminMaster && (
+                <span className="rounded-full bg-gold px-2 py-0.5 text-[11px] font-medium text-gold-foreground">
+                  Admin Master
+                </span>
+              )}
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {pessoa.email ?? "sem e-mail no cadastro"}
+            </span>
+          </span>
+        </span>
+
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+          {pessoa.unidades.length > 0 ? (
+            pessoa.unidades.map((u) => (
+              <SeloDeUnidade
+                key={u.clinicId}
+                nome={u.clinicName}
+                funcao={u.roleLabel}
+                inativo={u.inativo}
+                gerida={u.gerida}
+              />
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {pessoa.unidadeOrigem ?? "sem unidade"}
+              {pessoa.tipo === "risartano" && " · sem função definida"}
+            </span>
+          )}
+        </span>
+
+        <span className="flex shrink-0 items-center gap-2">
+          {pessoa.regime && (
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              {CONTRACT_LABELS[pessoa.regime as ContractType]}
+            </span>
+          )}
+          <SeloDeAcesso situacao={situacao} />
+        </span>
+      </Link>
+    </li>
   );
 }

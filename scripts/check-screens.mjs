@@ -111,6 +111,8 @@ const FIXTURE_SOURCES = {
     admin.from("payment_renegotiations").select("id").limit(1),
   // `id:code` — a rota usa o código, e o resto do script lê `.id`.
   systemReport: () => admin.from("system_reports").select("id:code").limit(1),
+  staffMember: () =>
+    admin.from("staff_members").select("id:code").not("code", "is", null).limit(1),
 };
 
 async function loadFixtures() {

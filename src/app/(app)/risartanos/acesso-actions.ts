@@ -16,7 +16,21 @@ import {
   type UserRole,
 } from "@/lib/roles";
 
+/**
+ * O ACESSO AO SISTEMA (login, senha e funções) — antes a tela
+ * `/admin/usuarios`, hoje a seção "Acesso ao sistema" da ficha do Risartano.
+ *
+ * Mudou o lugar, NÃO mudou quem pode: **toda** ação aqui continua exigindo
+ * Admin Master, exatamente como antes. Gerente, Franqueado e Franqueadora/RH
+ * cuidam do cadastro; criar login, trocar senha e dar função é do Admin.
+ */
+
 export type ActionResult = { ok: boolean; error?: string };
+
+/** A ficha e a lista vivem sob /risartanos — a subárvore inteira reaquece. */
+function reaquecer(): void {
+  revalidatePath("/risartanos", "layout");
+}
 
 /**
  * Persists the franchisor unit-access scope for a role assignment (the row in
@@ -181,7 +195,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          "Usuário criado, mas houve erro ao atribuir funções. Edite o usuário para atribuí-las.",
+          "Acesso criado, mas houve erro ao atribuir funções. Atribua-as na ficha do Risartano.",
       };
     }
     // Save the unit-access scope for franchisor-role assignments.
@@ -191,8 +205,8 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     }
   }
 
-  // H4.1 Lote 2b: acesso criado a partir de um Risartano → vincula o cadastro
-  // de RH ao novo login (além do vínculo automático por e-mail no banco).
+  // Acesso criado a partir de um Risartano → vincula o cadastro de RH ao novo
+  // login (além do vínculo automático por e-mail no banco, 0079).
   const staffMemberId = String(formData.get("staff_member_id") ?? "").trim();
   if (staffMemberId) {
     const { error: linkError } = await supabase
@@ -210,8 +224,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     entityType: "user",
     entityId: created.user.id,
   });
-  revalidatePath("/admin/usuarios");
-  revalidatePath("/risartanos");
+  reaquecer();
   return { ok: true };
 }
 
@@ -235,7 +248,7 @@ export async function updateUserName(
   }
 
   await logAudit({ action: "update", entityType: "user", entityId: userId });
-  revalidatePath("/admin/usuarios");
+  reaquecer();
   return { ok: true };
 }
 
@@ -311,7 +324,7 @@ export async function setUserActive(
     entityId: userId,
     details: { field: "is_active", value: active },
   });
-  revalidatePath("/admin/usuarios");
+  reaquecer();
   return { ok: true };
 }
 
@@ -339,7 +352,7 @@ export async function addUserRole(
 
   if (error) {
     const friendly = error.code === "23505"
-      ? "Este usuário já tem uma função nesta clínica. Remova a atual antes de adicionar outra."
+      ? "Esta pessoa já tem uma função nesta clínica. Remova a atual antes de adicionar outra."
       : "Não foi possível atribuir a função.";
     if (error.code !== "23505") {
       console.error("addUserRole failed:", error.message);
@@ -356,8 +369,7 @@ export async function addUserRole(
     clinicId,
     details: { added: role },
   });
-  revalidatePath(`/admin/usuarios/${userId}`);
-  revalidatePath("/admin/usuarios");
+  reaquecer();
   return { ok: true };
 }
 
@@ -389,7 +401,7 @@ export async function updateRoleScope(
     entityId: userId,
     details: { unit_scope: unitScope, units: unitIds.length },
   });
-  revalidatePath(`/admin/usuarios/${userId}`);
+  reaquecer();
   return { ok: true };
 }
 
@@ -407,7 +419,7 @@ export async function removeUserRole(
 
   if (error) {
     console.error("removeUserRole failed:", error.message);
-    return { ok: false, error: "Não foi possível remover o papel." };
+    return { ok: false, error: "Não foi possível remover a função." };
   }
 
   await logAudit({
@@ -416,7 +428,6 @@ export async function removeUserRole(
     entityId: userId,
     details: { removedRowId: roleRowId },
   });
-  revalidatePath(`/admin/usuarios/${userId}`);
-  revalidatePath("/admin/usuarios");
+  reaquecer();
   return { ok: true };
 }

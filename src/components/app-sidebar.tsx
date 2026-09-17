@@ -33,7 +33,6 @@ import {
   Tags,
   Users,
   ShieldCheck,
-  UserCog,
   Contact,
   ChevronsUpDown,
   type LucideIcon,
@@ -165,7 +164,9 @@ const COMERCIAL_ITEM = {
 
 const REPORTS_ITEM = { href: "/relatorios", label: "Relatórios", icon: BarChart3 };
 
-// H4.1: cadastro de colaboradores (RH) — Admin, Gerente e Franqueadora.
+// A EQUIPE, num item só — Admin, Gerente, Franqueado e Franqueadora/RH.
+// Até a v0.250.0 eram dois: "Risartanos" (o cadastro de RH) e "Usuários
+// (acesso)" (o login). Mesma pessoa em duas telas que não se falavam.
 const RISARTANOS_ITEM = { href: "/risartanos", label: "Risartanos", icon: Contact };
 
 // Módulo Risarte Empresarial (B2B) — empresas parceiras.
@@ -210,8 +211,8 @@ const PURCHASES_ITEM = {
 
 const ADMIN_ITEMS = [
   { href: "/admin/clinicas", label: "Clínicas", icon: Building2 },
-  // /admin/usuarios cuida do ACESSO (login); o cadastro de colaborador é /risartanos.
-  { href: "/admin/usuarios", label: "Usuários (acesso)", icon: UserCog },
+  // O ACESSO (login, senha, função) mora na ficha do Risartano desde a
+  // v0.251.0 — não há mais uma tela de "Usuários" separada do cadastro.
   { href: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },

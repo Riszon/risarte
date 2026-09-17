@@ -17,8 +17,9 @@ Esperado**. Marque ao lado: ✅ ok / ⚠️ problema (anote o que viu).
 4. (Opcional, só para testar o **Gamma no ar**) cadastrar `GAMMA_API_KEY` nas
    *Environment Variables* da Vercel e refazer o deploy. No computador local já
    funciona.
-5. **Usuários de teste** — como **Admin Master**, em `/admin/usuarios`, crie um
-   usuário para cada papel abaixo (pode usar e-mails fictícios da sua equipe):
+5. **Usuários de teste** — como **Admin Master**, em `/risartanos` (cadastre a
+   pessoa e use **Criar acesso** na ficha dela), crie um acesso para cada papel
+   abaixo (pode usar e-mails fictícios da sua equipe):
    Recepcionista, SDR, Coordenador Clínico, Dentista Planner, Dentista (executor),
    Consultor Comercial, Assistente Comercial, Gerente de Unidade. As funções da
    Franqueadora (SDR/Planner/Consultor/Assistente) têm **escopo de unidades** —
@@ -42,8 +43,8 @@ Esperado**. Marque ao lado: ✅ ok / ⚠️ problema (anote o que viu).
 - Passos: crie/edite uma unidade; ative/desative.
 - Esperado: a unidade aparece no seletor de "clínica ativa".
 
-**1.3 Usuários** (`/admin/usuarios`)
-- Passos: crie um usuário, atribua **papel** + (se for da franqueadora) **escopo
+**1.3 Risartanos e acesso** (`/risartanos`)
+- Passos: cadastre a pessoa, abra a ficha, **Criar acesso**, atribua **papel** + (se for da franqueadora) **escopo
   de unidades**; redefina a senha; ative/desative.
 - Esperado: o usuário entra com as permissões certas; desativado não entra.
 

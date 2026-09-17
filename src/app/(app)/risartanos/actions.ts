@@ -69,16 +69,20 @@ export async function saveStaffSchedule(input: {
     entityId: input.staffMemberId,
     clinicId: input.clinicId,
   });
-  revalidatePath("/risartanos");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
 export type ActionResult = { ok: boolean; error?: string };
 
-/** Cadastro devolve o id/unidade do novo Risartano p/ subir a foto em seguida. */
+/**
+ * Cadastro devolve o id/unidade do novo Risartano p/ subir a foto em seguida —
+ * e o CÓDIGO, que é o endereço da ficha para onde a tela leva quem cadastrou.
+ */
 export type CreateStaffResult = ActionResult & {
   staffId?: string;
   clinicId?: string;
+  code?: string | null;
 };
 
 /**
@@ -260,10 +264,22 @@ export async function createStaffMember(
     };
   }
 
+  // "Completar cadastro" de um login que existe sem Risartano: o vínculo pelo
+  // e-mail já acontece sozinho no banco (0079); este campo cobre o caso de o
+  // e-mail do cadastro ser diferente do e-mail do login. Só o Admin vincula.
+  const vincularUsuario = session.isAdminMaster
+    ? String(formData.get("vincular_usuario") ?? "").trim()
+    : "";
+
   const { data, error } = await supabase
     .from("staff_members")
-    .insert({ ...parsed.values, clinic_id: clinicId, created_by: session.userId })
-    .select("id")
+    .insert({
+      ...parsed.values,
+      clinic_id: clinicId,
+      created_by: session.userId,
+      ...(vincularUsuario ? { user_id: vincularUsuario } : {}),
+    })
+    .select("id, code")
     .single();
   if (error) {
     console.error("createStaffMember failed:", error.message);
@@ -276,8 +292,8 @@ export async function createStaffMember(
     entityId: data.id,
     clinicId,
   });
-  revalidatePath("/risartanos");
-  return { ok: true, staffId: data.id, clinicId };
+  revalidatePath("/risartanos", "layout");
+  return { ok: true, staffId: data.id, clinicId, code: data.code };
 }
 
 export async function updateStaffMember(
@@ -327,7 +343,7 @@ export async function updateStaffMember(
     entityId: staffId,
     clinicId: existing.clinic_id,
   });
-  revalidatePath("/risartanos");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
@@ -383,7 +399,7 @@ export async function setStaffPhoto(
     clinicId: existing.clinic_id,
     details: { photo: clean ? "set" : "removed" },
   });
-  revalidatePath("/risartanos");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
@@ -420,8 +436,7 @@ export async function linkStaffUser(
     clinicId: existing.clinic_id,
     details: { access: "linked" },
   });
-  revalidatePath("/risartanos");
-  revalidatePath("/admin/usuarios");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
@@ -451,8 +466,7 @@ export async function unlinkStaffUser(staffId: string): Promise<ActionResult> {
     clinicId: existing.clinic_id,
     details: { access: "unlinked" },
   });
-  revalidatePath("/risartanos");
-  revalidatePath("/admin/usuarios");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
@@ -504,7 +518,7 @@ export async function setStaffUnitActive(
     clinicId,
     details: { unit_active: active },
   });
-  revalidatePath("/risartanos");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
@@ -548,6 +562,6 @@ export async function setStaffActive(
     clinicId: existing.clinic_id,
     details: { active },
   });
-  revalidatePath("/risartanos");
+  revalidatePath("/risartanos", "layout");
   return { ok: true };
 }

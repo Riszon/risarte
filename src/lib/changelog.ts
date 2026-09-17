@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.251.0",
+    data: "2026-09-17",
+    migracao: null,
+    titulo: "Risartanos e acesso ao sistema viraram uma tela só",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As telas Risartanos e Usuários (acesso) viraram uma só: Risartanos. Cada pessoa é uma linha, e abrir a linha mostra o cadastro, as unidades e o acesso ao sistema na mesma ficha — não é mais preciso olhar duas telas para saber se alguém que saiu ainda entra no sistema.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista avisa quem precisa de decisão: quem saiu da equipe e continua com login aparece em vermelho, no topo, como \"Login ainda ativo\". Quem entra no sistema sem ficha de Risartano aparece como \"Cadastro incompleto\", com o botão de completar.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Quem pode o quê não mudou: criar login, redefinir senha e mudar função continuam sendo do Admin Master; gerente, franqueado e Franqueadora/RH cuidam do cadastro e agora enxergam o acesso, sem poder alterá-lo. O endereço /admin/usuarios deixou de existir — o caminho é Risartanos.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.250.0",
     data: "2026-09-17",
     migracao: "0258",

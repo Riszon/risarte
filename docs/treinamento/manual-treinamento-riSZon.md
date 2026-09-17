@@ -88,8 +88,9 @@ função (ver [seção 6](#6-scripts-de-treinamento-por-função)).
 
 1. **Entrar.** Abra o endereço do sistema, informe o e-mail e a senha que o
    administrador cadastrou. **Não existe "criar conta"** — todo acesso é criado
-   por um administrador (evidência: `src/app/login/login-form.tsx`,
-   `src/app/(app)/admin/usuarios/actions.ts` → `createUser`).
+   por um administrador, na ficha do Risartano (evidência:
+   `src/app/login/login-form.tsx`,
+   `src/app/(app)/risartanos/acesso-actions.ts` → `createUser`).
 2. **Confira em que unidade você está.** No alto da barra lateral esquerda
    aparece a **assinatura da Risarte** e, logo abaixo, o nome da clínica ativa e
    *"Sua função aqui: …"*. Se você atende em mais de uma unidade, é por ali que
@@ -364,6 +365,50 @@ o limite dela — mais os totais da rede e as duas escadas de prazo somadas.
 > pior do que é. Se você conferir somando com o dedo, some os dois totais — não
 > tire a média das colunas.
 
+### 2.5. Risartanos: a equipe e o acesso na mesma ficha
+
+Antes havia **duas** telas para a mesma pessoa: *Risartanos* (o cadastro de RH)
+e *Usuários (acesso)* (o login). Quem quisesse saber **se alguém que saiu ainda
+entra no sistema** precisava abrir as duas e comparar de cabeça. Agora é uma só:
+**Risartanos**.
+
+**A lista.** Cada linha é uma pessoa: foto, código (`RIS-000001`), unidades com
+a função em cada uma, regime e, à direita, o **selo do acesso**:
+
+| Selo | O que quer dizer |
+|---|---|
+| **Com acesso** | entra no sistema normalmente |
+| **Sem acesso** | está no cadastro, mas não tem login |
+| **Acesso desativado** | tem login, e ele está bloqueado |
+| **Login ainda ativo** | 🔴 **saiu da equipe e continua entrando** — resolva |
+| **Cadastro incompleto** | entra no sistema, mas não tem ficha de Risartano |
+
+Os quatro atalhos no alto (*Toda a equipe*, *Com acesso*, *Sem acesso*,
+*Precisa de atenção*) são filtros de um clique. A lista vem ordenada por risco:
+quem saiu e continua com login aparece **em cima**; os cadastros incompletos
+ficam no fim, como lista de pendências.
+
+**A ficha** (clique em qualquer linha) tem três partes, nesta ordem:
+
+1. **Acesso ao sistema** — o e-mail de entrada, as funções por unidade, a senha
+   provisória e os botões de ativar/desativar. **Só o Admin Master mexe aqui**;
+   Gerente, Franqueado e Franqueadora/RH veem para saber o que está valendo.
+2. **Unidades e situação** — ativar ou inativar a pessoa **em cada unidade**
+   (ela pode ter parado em Londrina e continuar em Cambé) e **desligar da
+   equipe**, que é o cadastro inteiro.
+3. **Cadastro** — dados pessoais, contato, endereço, contrato e especialidades.
+
+**Cadastrar alguém novo:** botão **Novo Risartano**. O acesso não é pedido aí —
+depois de salvar, a ficha abre com o botão **Criar acesso** (do Admin). Assim o
+cadastro nunca fica esperando um login.
+
+> **O e-mail é o que amarra os dois lados.** Ao cadastrar um Risartano com o
+> mesmo e-mail de um login que já existe, o sistema liga os dois sozinho.
+
+**Quem já tinha login e não tinha cadastro** aparece com o selo *Cadastro
+incompleto* e o botão **Completar cadastro**, que abre o formulário já com nome
+e e-mail preenchidos.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu
@@ -463,12 +508,12 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Compras | `/compras` | Requisição, cotação, pedido, recebimento |
 | PPR+ | `/ppr` | Programa de prevenção |
 | Empresarial | `/empresarial` | Convênio com empresas parceiras. **Funil**: o quadro comercial de 8 fases, da captação à implantação — clicar no nome da empresa abre o levantamento, a simulação da proposta, a apresentação em PDF, o registro do envio e, no fechamento, a conferência do consultor e os passos da implantação. **Painel**: conversão fase a fase, tempo em cada fase, quem está parado e o desempenho por consultor e por canal. **Agenda**: as reuniões do programa. **Cobranças**: as de todas as empresas. **Boas-vindas**: a fila de ligação da recepção/SDR em cada empresa |
-| Risartanos | `/risartanos` | Cadastro de colaboradores (RH) |
+| Risartanos | `/risartanos` | A equipe: cadastro, unidades e **acesso ao sistema** na mesma ficha (ver [seção 2.5](#25-risartanos-a-equipe-e-o-acesso-na-mesma-ficha)) |
 | Relatórios | `/relatorios` | Indicadores de agenda, rede e produtividade |
 | Manual | `/manual` | Este manual, sempre na versão do sistema no ar |
 | Alertas | `/alertas` | O que o sistema está avisando, e o relógio |
 | Problemas | `/problemas` | Relatar e acompanhar problemas, dúvidas e sugestões |
-| Administração | `/admin/*` | Clínicas, usuários, prazos, regras, modelos |
+| Administração | `/admin/*` | Clínicas, permissões, prazos, regras, modelos (o **acesso** de cada pessoa saiu daqui: mora na ficha do Risartano) |
 
 ### 3.3. O que **não** faz parte do escopo
 
@@ -1033,7 +1078,9 @@ No rodapé: seu nome, seu e-mail, a **versão do sistema** e o botão **Sair**.
 ### 7.3. Telas por área
 
 **Cadastros e consultas:** `/prontuarios`, `/prontuarios/novo`,
-`/prontuarios/[id]`, `/procedimentos`, `/risartanos`.
+`/prontuarios/[id]`, `/procedimentos`, `/risartanos`, `/risartanos/novo`,
+`/risartanos/[codigo]` (a ficha), `/risartanos/acesso/[userId]` (login sem
+cadastro, só Admin).
 
 **Jornada e clínico:** `/jornada`, `/avaliacao/[clientId]`, `/planejamento`,
 `/planejamento/[clientId]`, `/planos`, `/atendimento`, `/meu-dia`,
@@ -1052,10 +1099,11 @@ No rodapé: seu nome, seu e-mail, a **versão do sistema** e o botão **Sair**.
 
 **Programas:** `/ppr`, `/empresarial`.
 
-**Administração (10 telas):** `/admin/clinicas`, `/admin/usuarios`,
-`/admin/usuarios/novo`, `/admin/usuarios/[id]`, `/admin/sla`,
-`/admin/regras-comerciais`, `/admin/agenda`, `/admin/anamnese`,
+**Administração (9 telas):** `/admin/clinicas`, `/admin/permissoes`,
+`/admin/sla`, `/admin/regras-comerciais`, `/admin/agenda`, `/admin/anamnese`,
 `/admin/orientacoes`, `/admin/documentos`, `/admin/chat`, `/admin/auditoria`.
+O antigo `/admin/usuarios` **não existe mais**: o acesso de cada pessoa mora na
+ficha dela, em `/risartanos`.
 
 **Ajuda:** `/manual`, `/alertas`, `/problemas`.
 
