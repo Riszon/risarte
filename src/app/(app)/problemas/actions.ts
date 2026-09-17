@@ -8,7 +8,13 @@ import { APP_VERSION } from "@/lib/version";
 import { ROLE_LABELS } from "@/lib/roles";
 import { ehModulo } from "@/lib/system-reports";
 
-type Resultado = { ok: boolean; error?: string; code?: string };
+type Resultado = {
+  ok: boolean;
+  error?: string;
+  code?: string;
+  /** O id do relato ou da mensagem criada — é nele que os anexos se prendem. */
+  id?: string | null;
+};
 
 /**
  * Registrar um problema.
@@ -93,8 +99,8 @@ export async function registrarProblema(
   let { data, error } = await supabase
     .from("system_reports")
     .insert({ ...registro, module: modulo })
-    .select("code")
-    .single<{ code: string }>();
+    .select("id, code")
+    .single<{ id: string; code: string }>();
 
   // Banco ainda sem a 0256: a coluna `module` não existe. Grava sem ela em vez
   // de perder o relato — o texto da pessoa vale mais que a categoria.
@@ -102,8 +108,8 @@ export async function registrarProblema(
     ({ data, error } = await supabase
       .from("system_reports")
       .insert(registro)
-      .select("code")
-      .single<{ code: string }>());
+      .select("id, code")
+      .single<{ id: string; code: string }>());
   }
 
   if (error || !data) {
@@ -125,7 +131,7 @@ export async function registrarProblema(
   });
 
   revalidatePath("/problemas");
-  return { ok: true, code: data.code };
+  return { ok: true, code: data.code, id: data.id };
 }
 
 /** Responder e mudar a situação — Admin Master, conferido também no banco. */
@@ -147,7 +153,7 @@ export async function responderProblema(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("answer_system_report", {
+  const { data: mensagemId, error } = await supabase.rpc("answer_system_report", {
     p_report_id: id,
     p_status: status,
     p_answer: resposta || null,
@@ -184,7 +190,9 @@ export async function responderProblema(
   });
 
   revalidatePath("/problemas", "layout");
-  return { ok: true };
+  // A 0256 devolvia nada; a 0257 devolve o id da mensagem (nulo quando só a
+  // situação mudou).
+  return { ok: true, id: typeof mensagemId === "string" ? mensagemId : null };
 }
 
 /**
@@ -205,7 +213,7 @@ export async function complementarProblema(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("add_system_report_comment", {
+  const { data: mensagemId, error } = await supabase.rpc("add_system_report_comment", {
     p_report_id: id,
     p_body: texto,
   });
@@ -232,7 +240,7 @@ export async function complementarProblema(
   });
 
   revalidatePath("/problemas", "layout");
-  return { ok: true };
+  return { ok: true, id: typeof mensagemId === "string" ? mensagemId : null };
 }
 
 /**
@@ -325,4 +333,113 @@ export async function marcarRelatoVisto(reportId: string): Promise<void> {
   }
   // A lista precisa apagar a etiqueta "Resposta nova" quando a pessoa voltar.
   revalidatePath("/problemas");
+}
+
+// -----------------------------------------------------------------------------
+// Anexos (0257)
+// -----------------------------------------------------------------------------
+
+/**
+ * Registrar um anexo que o NAVEGADOR já enviou ao Storage.
+ *
+ * O arquivo sobe direto do navegador (a política do bucket decide quem pode) e
+ * só depois é registrado aqui. A ordem é essa porque arquivo grande passando
+ * pelo servidor estouraria o limite de tamanho de uma ação. O banco confere que
+ * o arquivo existe mesmo (`FILE_NOT_FOUND`) antes de aceitar o registro.
+ */
+export async function registrarAnexo(input: {
+  reportId: string;
+  messageId: string | null;
+  path: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  kind: "captura" | "arquivo";
+}): Promise<Resultado> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("add_system_report_attachment", {
+    p_report_id: input.reportId,
+    p_message_id: input.messageId,
+    p_path: input.path,
+    p_file_name: input.fileName || "arquivo",
+    p_mime_type: input.mimeType,
+    p_size_bytes: input.sizeBytes,
+    p_kind: input.kind,
+  });
+
+  if (error) {
+    const m = error.message;
+    const texto = m.includes("TOO_MANY_ATTACHMENTS")
+      ? "Este relato já tem 10 anexos. Remova um para enviar outro."
+      : m.includes("NOT_ALLOWED")
+        ? "Só quem relatou (com o relato aberto) e o suporte podem anexar."
+        : m.includes("FILE_NOT_FOUND")
+          ? "O arquivo não chegou ao servidor. Tente anexar de novo."
+          : mensagemDeMigracao(error);
+    return { ok: false, error: texto };
+  }
+
+  // Sem nome de arquivo no registro: ele pode citar paciente.
+  await logAudit({
+    action: "create",
+    entityType: "system_report_attachments",
+    entityId: String(data),
+    clinicId: session.activeClinic?.id,
+    details: { relato: input.reportId, tipo: input.kind },
+  });
+
+  revalidatePath("/problemas", "layout");
+  return { ok: true, id: String(data) };
+}
+
+/**
+ * Remover um anexo — quem enviou ou o Admin Master.
+ *
+ * Existe por causa da LGPD: um print com dado de paciente enviado por engano
+ * tem de poder sair. O banco grava a lápide (quem e quando) e devolve o
+ * caminho; o arquivo é apagado pela API do Storage, com a sessão da própria
+ * pessoa — a política do bucket confere de novo quem pode.
+ */
+export async function removerAnexo(attachmentId: string): Promise<Resultado> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: caminho, error } = await supabase.rpc(
+    "remove_system_report_attachment",
+    { p_attachment_id: attachmentId }
+  );
+
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes("NOT_ALLOWED")
+        ? "Só quem enviou o anexo ou o suporte podem removê-lo."
+        : error.message.includes("ATTACHMENT_NOT_FOUND")
+          ? "Este anexo já foi removido."
+          : mensagemDeMigracao(error),
+    };
+  }
+
+  const { error: erroArquivo } = await supabase.storage
+    .from("system-reports")
+    .remove([String(caminho)]);
+
+  await logAudit({
+    // A trilha não tem "delete": o registro não some, vira lápide.
+    action: "update",
+    entityType: "system_report_attachments",
+    entityId: attachmentId,
+    clinicId: session.activeClinic?.id,
+    details: { acao: "remocao", arquivo_apagado: !erroArquivo },
+  });
+
+  revalidatePath("/problemas", "layout");
+  if (erroArquivo) {
+    // A lápide já está gravada, então o link não é mais oferecido a ninguém.
+    return {
+      ok: true,
+      error: "O anexo saiu da conversa, mas o arquivo não foi apagado do servidor. Avise o suporte.",
+    };
+  }
+  return { ok: true };
 }

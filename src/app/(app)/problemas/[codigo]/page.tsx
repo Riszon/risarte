@@ -13,11 +13,13 @@ import {
   rotuloDeDuracao,
 } from "@/lib/system-reports";
 import {
+  carregarAnexos,
   carregarConversa,
   carregarRelatos,
   instanteDoPedido,
   reporterDoRelato,
 } from "../dados";
+import { GaleriaDeAnexos } from "../anexos";
 import { CorDaIdade, SeloDeSituacao } from "../selos";
 import { Conversa } from "./conversa";
 
@@ -55,7 +57,14 @@ export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">
   if (!relato) notFound();
 
   const reporterId = await reporterDoRelato(supabase, relato.id);
-  const conversa = await carregarConversa(supabase, relato, reporterId);
+  const [conversa, anexos] = await Promise.all([
+    carregarConversa(supabase, relato, reporterId),
+    carregarAnexos(supabase, relato, {
+      userId: session.userId,
+      isAdminMaster: session.isAdminMaster,
+      reporterId,
+    }),
+  ]);
   const agora = instanteDoPedido();
   const relogio = relogioDoRelato(relato, agora);
   const criado = Date.parse(relato.createdAt);
@@ -165,6 +174,14 @@ export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">
               <p className="mt-1 whitespace-pre-wrap">{relato.expected}</p>
             </div>
           )}
+          {anexos.doRelato.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Anexos
+              </p>
+              <GaleriaDeAnexos anexos={anexos.doRelato} />
+            </div>
+          )}
         </div>
         <dl className="flex flex-wrap gap-x-6 gap-y-1 border-t bg-muted/30 px-4 py-2 text-xs">
           {marcos.map((m) => (
@@ -181,6 +198,8 @@ export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">
         mensagens={conversa}
         isAdminMaster={session.isAdminMaster}
         conversaLigada={nivel === "completo"}
+        anexosLigados={anexos.ligados}
+        anexosPorMensagem={anexos.porMensagem}
       />
     </div>
   );

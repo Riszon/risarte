@@ -247,3 +247,8 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-032 | Quem relatou complementa (aberto) e reabre com motivo (encerrado); não encerra | 0256 (`add_system_report_comment`, `reopen_system_report`) | ✅ |
 | EV-033 | "Resposta nova" por relato; resposta seguinte reacende a boia | 0256 (`mark_system_report_seen`, `answer_system_report`) | ✅ conferido logado |
 | EV-034 | Tela funciona em banco sem a 0256 (lista como antes) | `src/app/(app)/problemas/dados.ts` + `problemas-dados.test.ts` | ✅ |
+| EV-035 | Anexos em pasta privada; tipo e tamanho travados no bucket; só quem relatou (aberto) e o suporte anexam | `supabase/migrations/0257_relatos_anexos.sql` | ✅ provado pelo Storage com 4 sessões (31 checagens) |
+| EV-036 | Remoção por quem enviou ou suporte, com lápide e arquivo apagado | 0257 (`remove_system_report_attachment`) + `problemas/actions.ts` | ✅ |
+| EV-037 | Captura real da aba, com o painel escondido na hora da foto; sem captura no celular | `src/lib/captura-de-tela.ts` | ✅ conferido no Chromium (imagem inspecionada) |
+| EV-038 | Boia abre painel ao lado da tela atual, com tela e parte do sistema preenchidas | `src/components/report-nav-item.tsx` | ✅ conferido logado |
+| EV-039 | Limites 5 por envio / 10 MB / 10 por relato; recusa com motivo | `src/lib/anexos-de-relato.ts` + teste | ✅ |

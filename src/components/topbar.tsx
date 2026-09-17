@@ -37,10 +37,14 @@ export function Topbar({
   podeBuscar,
   podeVerManual,
   podeVerSistema,
+  temUnidade,
+  isAdminMaster,
 }: {
   podeBuscar: boolean;
   podeVerManual: boolean;
   podeVerSistema: boolean;
+  temUnidade: boolean;
+  isAdminMaster: boolean;
 }) {
   return (
     <header
@@ -68,7 +72,7 @@ export function Topbar({
             {/* A boia tem número, o triângulo não — ver o comentário abaixo:
                 a diferença não é descuido, é o que cada um consegue contar sem
                 mentir. */}
-            <ReportNavItem />
+            <ReportNavItem temUnidade={temUnidade} isAdminMaster={isAdminMaster} />
           </>
         )}
         {podeVerManual && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,12 @@ import {
   moduloDaTela,
 } from "@/lib/system-reports";
 import { registrarProblema } from "./actions";
+import {
+  SeletorDeAnexos,
+  avisarEnvio,
+  enviarAnexos,
+  type AnexoPendente,
+} from "./anexos";
 
 const ITENS_TIPO = (Object.keys(TIPO_ROTULO) as (keyof typeof TIPO_ROTULO)[]).map(
   (v) => ({ value: v, label: TIPO_ROTULO[v] })
@@ -31,9 +37,11 @@ const ITENS_MODULO = MODULOS.map((m) => ({ value: m.value, label: m.label }));
 /**
  * O FORMULÁRIO DE RELATO.
  *
- * Mora em arquivo próprio porque vai ser aberto de dois lugares: a tela de
- * Problemas e, na Parte B, o painel lateral que abre POR CIMA da tela do
- * problema (é lá que a captura de tela precisa estar).
+ * Mora em arquivo próprio porque é aberto de dois lugares: a tela de Problemas
+ * e o painel lateral da boia, que abre POR CIMA da tela do problema (é lá que
+ * a captura de tela precisa estar). Por isso as colunas seguem a largura do
+ * PRÓPRIO formulário (`@container`), não a da janela, e os ids dos campos são
+ * únicos — os dois podem estar na mesma página.
  *
  * O MÓDULO VEM SUGERIDO pela tela de onde a pessoa veio, mas é ela quem
  * confirma: o sistema sabe o endereço, não sabe se o problema é daquela tela
@@ -45,15 +53,27 @@ export function FormularioDeRelato({
   versaoAtual,
   aoRegistrar,
   aoCancelar,
+  esconder,
+  mostrar,
+  silencioso = false,
 }: {
   telaSugerida: string;
   digestSugerido: string;
   versaoAtual: string;
   aoRegistrar: (codigo: string) => void;
   aoCancelar: () => void;
+  /** O painel lateral sai da frente durante a captura de tela. */
+  esconder?: () => void;
+  mostrar?: () => void;
+  /** Quem abriu o formulário dá o próprio aviso de sucesso (o painel dá um com link). */
+  silencioso?: boolean;
 }) {
   const [enviando, iniciar] = useTransition();
+  const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
+  const [etapa, setEtapa] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const uid = useId();
+  const campo = (nome: string) => `${uid}-${nome}`;
   const moduloSugerido = moduloDaTela(telaSugerida);
 
   function enviar(fd: FormData) {
@@ -62,19 +82,32 @@ export function FormularioDeRelato({
     // o navegador discordarem (a lição do `useNow`).
     fd.set("user_agent", navigator.userAgent);
     iniciar(async () => {
+      setEtapa("Registrando…");
       const r = await registrarProblema(fd);
       if (r.ok && r.code) {
-        toast.success(`Registrado como ${r.code}. Você acompanha a resposta por aqui.`);
+        // O relato vem antes dos anexos: é o id dele que dá o endereço do
+        // arquivo. Se um anexo falhar, o relato continua registrado — o texto
+        // da pessoa não se perde por causa de um print.
+        if (anexos.length > 0 && r.id) {
+          setEtapa(`Enviando ${anexos.length === 1 ? "o anexo" : `${anexos.length} anexos`}…`);
+          avisarEnvio(await enviarAnexos(r.id, null, anexos));
+          setAnexos([]);
+        }
+        setEtapa(null);
+        if (!silencioso) {
+          toast.success(`Registrado como ${r.code}. Você acompanha a resposta por aqui.`);
+        }
         formRef.current?.reset();
         aoRegistrar(r.code);
       } else {
+        setEtapa(null);
         toast.error(r.error ?? "Não foi possível registrar.");
       }
     });
   }
 
   return (
-    <form ref={formRef} action={enviar} className="space-y-4 rounded-lg border bg-muted/20 p-4">
+    <form ref={formRef} action={enviar} className="@container space-y-4 rounded-lg border bg-muted/20 p-4">
       <p className="text-sm text-muted-foreground">
         Você não precisa informar quem é, a função, a unidade nem a versão — o
         sistema já sabe e envia junto (versão {versaoAtual}). Escreva só o que
@@ -84,11 +117,11 @@ export function FormularioDeRelato({
       {/* `user_agent` é acrescentado no envio, não aqui. */}
       <input type="hidden" name="error_digest" defaultValue={digestSugerido} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 @xl:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="kind">O que é</Label>
+          <Label htmlFor={campo("kind")}>O que é</Label>
           <Select items={ITENS_TIPO} defaultValue="erro" name="kind">
-            <SelectTrigger id="kind" className="w-full">
+            <SelectTrigger id={campo("kind")} className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -102,14 +135,14 @@ export function FormularioDeRelato({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="module">Parte do sistema</Label>
+          <Label htmlFor={campo("module")}>Parte do sistema</Label>
           <Select
             items={ITENS_MODULO}
             defaultValue={moduloSugerido ?? undefined}
             name="module"
             required
           >
-            <SelectTrigger id="module" className="w-full">
+            <SelectTrigger id={campo("module")} className="w-full">
               <SelectValue placeholder="Escolha…" />
             </SelectTrigger>
             <SelectContent>
@@ -123,9 +156,9 @@ export function FormularioDeRelato({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="severity">Quanto atrapalha</Label>
+          <Label htmlFor={campo("severity")}>Quanto atrapalha</Label>
           <Select items={ITENS_GRAVIDADE} defaultValue="media" name="severity">
-            <SelectTrigger id="severity" className="w-full">
+            <SelectTrigger id={campo("severity")} className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -140,9 +173,9 @@ export function FormularioDeRelato({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="title">Resumo em uma linha</Label>
+        <Label htmlFor={campo("title")}>Resumo em uma linha</Label>
         <Input
-          id="title"
+          id={campo("title")}
           name="title"
           required
           maxLength={140}
@@ -151,9 +184,9 @@ export function FormularioDeRelato({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="screen">Em que tela</Label>
+        <Label htmlFor={campo("screen")}>Em que tela</Label>
         <Input
-          id="screen"
+          id={campo("screen")}
           name="screen"
           defaultValue={telaSugerida}
           maxLength={120}
@@ -162,9 +195,9 @@ export function FormularioDeRelato({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="what_happened">O que aconteceu</Label>
+        <Label htmlFor={campo("what_happened")}>O que aconteceu</Label>
         <textarea
-          id="what_happened"
+          id={campo("what_happened")}
           name="what_happened"
           required
           rows={4}
@@ -174,9 +207,9 @@ export function FormularioDeRelato({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="expected">O que você esperava que acontecesse</Label>
+        <Label htmlFor={campo("expected")}>O que você esperava que acontecesse</Label>
         <textarea
-          id="expected"
+          id={campo("expected")}
           name="expected"
           rows={2}
           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -184,9 +217,20 @@ export function FormularioDeRelato({
         />
       </div>
 
+      <div className="space-y-1.5">
+        <Label>Mostrar o problema</Label>
+        <SeletorDeAnexos
+          pendentes={anexos}
+          aoMudar={setAnexos}
+          esconder={esconder}
+          mostrar={mostrar}
+          desabilitado={enviando}
+        />
+      </div>
+
       <div className="flex gap-2">
         <Button type="submit" disabled={enviando}>
-          {enviando ? "Registrando…" : "Registrar"}
+          {enviando ? (etapa ?? "Registrando…") : "Registrar"}
         </Button>
         <Button type="button" variant="outline" onClick={aoCancelar} disabled={enviando}>
           Cancelar

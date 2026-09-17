@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.248.0",
+    data: "2026-09-17",
+    migracao: "0257",
+    titulo: "Problemas: print da tela e anexos no relato",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A boia agora abre o relato num painel ao lado da tela em que você está, já com a tela e a parte do sistema preenchidas. Você não sai do que estava fazendo.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Dá para mostrar o problema: o botão Capturar a tela tira uma foto da tela do sistema (o navegador pede permissão), e também dá para anexar imagem, PDF ou vídeo, colar um print com Ctrl+V ou arrastar o arquivo. Até 5 por envio, 10 MB cada.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Complementos e respostas também aceitam anexos, que aparecem dentro da mensagem na conversa.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O print mostra o que estava na tela, inclusive dado de paciente, e quem vê o relato vê os anexos. Confira a miniatura antes de enviar. Enviou por engano? O botão Remover apaga o arquivo e deixa só o registro de que ele foi removido.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "No celular não há Capturar a tela: tire o print pelo próprio aparelho e use Anexar arquivo.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.247.0",
     data: "2026-09-16",
     migracao: "0256",

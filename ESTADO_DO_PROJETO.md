@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/09/2026 · Versão do sistema: **0.247.0** · Última migração: **0256** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 17/09/2026 · Versão do sistema: **0.248.0** · Última migração: **0257** (0256 e 0257 pendentes em produção; aplicadas no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3708,8 +3708,33 @@ real** (`getDisplayMedia` + colar + anexar) e ordem **A → B → C**.
   `<main>` com 134 px — a barra lateral não recolhe. Registrado em
   `docs/CORRECOES-TESTES.md`.
 
-**Pendente:** B (anexos + captura, painel lateral por cima da tela) e C (painel
-de indicadores).
+**B — anexos e captura (0257, v0.248.0):**
+- Bucket privado `system-reports` com **tipo e tamanho travados no bucket**
+  (10 MB; imagem, PDF, MP4/WebM). Caminho `<relato>/<uuid>.<ext>` — o nome
+  original NÃO entra (pode citar paciente). Lista espelhada em
+  `TIPOS_ACEITOS` com teste que lê a migração.
+- `can_attach_to_system_report` é a régua única (Storage + função): quem
+  relatou com o relato aberto, ou o Admin. Colega da unidade VÊ, não anexa.
+  `system_report_of_path` compara o primeiro segmento por regex antes do
+  cast (caminho malformado não derruba a política).
+- `add_system_report_attachment` confere caminho do mesmo relato, arquivo
+  existente em `storage.objects`, mensagem do próprio autor e teto de 10
+  ativos. Remoção = lápide (`removed_at/removed_by`) + arquivo apagado pela
+  API do Storage com a sessão da pessoa (SQL não apaga arquivo).
+- `add_system_report_comment` e `answer_system_report` passaram a devolver o
+  id da mensagem (drop + create) para o anexo se prender a ela.
+- A boia virou **painel lateral** (Base UI Dialog) por cima da tela atual;
+  durante a captura o painel fica `invisible` (não fecha, para não perder o
+  texto). Captura = `getDisplayMedia` com `preferCurrentTab`, PNG; some no
+  celular (`useSyncExternalStore`, sem divergir no servidor).
+- Provado: 31 checagens pelo Storage com 4 sessões reais; fluxo inteiro no
+  Chromium logado (captura inspecionada: mostra a agenda, sem o painel);
+  varredura 93/93 na produção sem 0256/0257.
+- ⚠️ `.next-telas` (pasta do servidor da varredura) NÃO está no ignore do
+  eslint: com ela presente o lint acusa ~800 problemas que não são do código.
+  Apagar depois de usar.
+
+**Pendente:** C (painel de indicadores).
 
 ### RODADA DE REFINAMENTO VISUAL E RELATOS (10/09/2026, v0.239.2 → 0.243.0)
 

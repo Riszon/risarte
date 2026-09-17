@@ -6,6 +6,7 @@ import {
   type Relato,
   type SituacaoDeRelato,
 } from "@/lib/system-reports";
+import type { AnexoExibido } from "./anexos";
 
 /**
  * QUEM CARREGA OS RELATOS — a lista e o detalhe leem daqui.
@@ -241,4 +242,95 @@ export async function reporterDoRelato(
  */
 export function instanteDoPedido(): number {
   return Date.now();
+}
+
+// -----------------------------------------------------------------------------
+// Anexos (0257)
+// -----------------------------------------------------------------------------
+
+type AnexoBruto = {
+  id: string;
+  message_id: string | null;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  kind: "captura" | "arquivo";
+  created_at: string;
+  storage_path: string;
+  uploaded_by: string | null;
+  removed_at: string | null;
+  removed_by: string | null;
+  // Duas chaves para `profiles` (quem enviou, quem removeu): o embed precisa
+  // do nome da chave, senão o PostgREST recusa por ambiguidade.
+  removedor: { full_name: string } | null;
+};
+
+export type AnexosDoRelato = {
+  /** `false` = banco sem a 0257: a tela esconde os seletores. */
+  ligados: boolean;
+  doRelato: AnexoExibido[];
+  porMensagem: Record<string, AnexoExibido[]>;
+};
+
+/**
+ * Os anexos de um relato, com link temporário de UMA hora. O link nasce aqui,
+ * no servidor, com a sessão de quem abriu: a política do bucket decide de novo
+ * se a pessoa pode ver cada arquivo.
+ */
+export async function carregarAnexos(
+  supabase: SupabaseClient,
+  relato: Relato,
+  quem: { userId: string; isAdminMaster: boolean; reporterId: string | null }
+): Promise<AnexosDoRelato> {
+  const { data, error } = await supabase
+    .from("system_report_attachments")
+    .select(
+      "id, message_id, file_name, mime_type, size_bytes, kind, created_at, storage_path, uploaded_by, removed_at, removed_by, removedor:profiles!system_report_attachments_removed_by_fkey ( full_name )"
+    )
+    .eq("report_id", relato.id)
+    .order("created_at", { ascending: true });
+
+  if (error) return { ligados: false, doRelato: [], porMensagem: {} };
+
+  const linhas = data as unknown as AnexoBruto[];
+  const vivos = linhas.filter((a) => !a.removed_at).map((a) => a.storage_path);
+  const urls = new Map<string, string>();
+  if (vivos.length > 0) {
+    const { data: assinados } = await supabase.storage
+      .from("system-reports")
+      .createSignedUrls(vivos, 3600);
+    for (const s of assinados ?? []) {
+      if (s.path && s.signedUrl) urls.set(s.path, s.signedUrl);
+    }
+  }
+
+  const doRelato: AnexoExibido[] = [];
+  const porMensagem: Record<string, AnexoExibido[]> = {};
+  for (const a of linhas) {
+    const exibido: AnexoExibido = {
+      id: a.id,
+      fileName: a.file_name,
+      mimeType: a.mime_type,
+      sizeBytes: Number(a.size_bytes),
+      kind: a.kind,
+      createdAt: a.created_at,
+      url: a.removed_at ? null : (urls.get(a.storage_path) ?? null),
+      removido: a.removed_at
+        ? {
+            quando: a.removed_at,
+            // Mesmo raciocínio da conversa: a RLS de `profiles` pode esconder
+            // o nome do Admin Master de quem é da unidade.
+            quem:
+              a.removedor?.full_name ??
+              (a.removed_by === quem.reporterId ? relato.reporterName : "o suporte"),
+          }
+        : null,
+      podeRemover:
+        !a.removed_at && (quem.isAdminMaster || a.uploaded_by === quem.userId),
+    };
+    if (a.message_id) (porMensagem[a.message_id] ??= []).push(exibido);
+    else doRelato.push(exibido);
+  }
+
+  return { ligados: true, doRelato, porMensagem };
 }

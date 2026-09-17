@@ -30,6 +30,14 @@ import {
   responderProblema,
 } from "../actions";
 import { PrepararBriefing } from "../preparar-briefing";
+import {
+  GaleriaDeAnexos,
+  SeletorDeAnexos,
+  avisarEnvio,
+  enviarAnexos,
+  type AnexoExibido,
+  type AnexoPendente,
+} from "../anexos";
 
 const ITENS_SITUACAO = (
   Object.keys(SITUACAO_ROTULO) as (keyof typeof SITUACAO_ROTULO)[]
@@ -54,12 +62,17 @@ export function Conversa({
   mensagens,
   isAdminMaster,
   conversaLigada,
+  anexosLigados,
+  anexosPorMensagem,
 }: {
   relato: Relato;
   mensagens: MensagemDeRelato[];
   isAdminMaster: boolean;
   /** Banco sem a 0256: não há complemento nem reabertura. */
   conversaLigada: boolean;
+  /** Banco sem a 0257: não há anexo. */
+  anexosLigados: boolean;
+  anexosPorMensagem: Record<string, AnexoExibido[]>;
 }) {
   const encerrado = estaEncerrado(relato.status);
   const naoLida = relato.meu && relato.respostas > 0 && !relato.respostaLida;
@@ -92,20 +105,28 @@ export function Conversa({
       ) : (
         <ol className="space-y-3">
           {mensagens.map((m) => (
-            <Mensagem key={m.id} mensagem={m} />
+            <Mensagem key={m.id} mensagem={m} anexos={anexosPorMensagem[m.id] ?? []} />
           ))}
         </ol>
       )}
 
-      {isAdminMaster && <Responder relato={relato} />}
+      {isAdminMaster && <Responder relato={relato} comAnexos={anexosLigados} />}
 
-      {relato.meu && conversaLigada && !encerrado && <Complementar relato={relato} />}
+      {relato.meu && conversaLigada && !encerrado && (
+        <Complementar relato={relato} comAnexos={anexosLigados} />
+      )}
       {relato.meu && conversaLigada && encerrado && <Reabrir relato={relato} />}
     </section>
   );
 }
 
-function Mensagem({ mensagem: m }: { mensagem: MensagemDeRelato }) {
+function Mensagem({
+  mensagem: m,
+  anexos,
+}: {
+  mensagem: MensagemDeRelato;
+  anexos: AnexoExibido[];
+}) {
   const quando = formatBrDateTime(m.createdAt);
 
   if (m.kind === "situacao") {
@@ -148,20 +169,35 @@ function Mensagem({ mensagem: m }: { mensagem: MensagemDeRelato }) {
           <span className="font-normal text-muted-foreground"> · {quando}</span>
         </p>
         <p className="mt-1 whitespace-pre-wrap">{m.body}</p>
+        {anexos.length > 0 && (
+          <div className="mt-2">
+            <GaleriaDeAnexos anexos={anexos} />
+          </div>
+        )}
       </div>
     </li>
   );
 }
 
 /** A resposta do Admin Master. A guarda de verdade está no banco. */
-function Responder({ relato }: { relato: Relato }) {
+function Responder({ relato, comAnexos }: { relato: Relato; comAnexos: boolean }) {
   const router = useRouter();
   const [salvando, iniciar] = useTransition();
+  const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
   function salvar(fd: FormData) {
+    if (anexos.length > 0 && !String(fd.get("answer") ?? "").trim()) {
+      // O anexo se prende a uma MENSAGEM; mudar só a situação não cria uma.
+      toast.error("Escreva uma mensagem para enviar os anexos junto.");
+      return;
+    }
     iniciar(async () => {
       const r = await responderProblema(fd);
+      if (r.ok && anexos.length > 0 && r.id) {
+        avisarEnvio(await enviarAnexos(relato.id, r.id, anexos));
+        setAnexos([]);
+      }
       if (r.ok) {
         toast.success("Resposta registrada.");
         formRef.current?.reset();
@@ -219,6 +255,9 @@ function Responder({ relato }: { relato: Relato }) {
           placeholder="Quem relatou vai ler isto. As mensagens anteriores continuam na conversa — escreva só o que é novo."
         />
       </div>
+      {comAnexos && (
+        <SeletorDeAnexos pendentes={anexos} aoMudar={setAnexos} desabilitado={salvando} />
+      )}
       <Button type="submit" size="sm" disabled={salvando}>
         <Send className="mr-1.5 size-4" />
         {salvando ? "Enviando…" : "Enviar"}
@@ -227,14 +266,19 @@ function Responder({ relato }: { relato: Relato }) {
   );
 }
 
-function Complementar({ relato }: { relato: Relato }) {
+function Complementar({ relato, comAnexos }: { relato: Relato; comAnexos: boolean }) {
   const router = useRouter();
   const [salvando, iniciar] = useTransition();
+  const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
   function salvar(fd: FormData) {
     iniciar(async () => {
       const r = await complementarProblema(fd);
+      if (r.ok && anexos.length > 0 && r.id) {
+        avisarEnvio(await enviarAnexos(relato.id, r.id, anexos));
+        setAnexos([]);
+      }
       if (r.ok) {
         toast.success("Complemento registrado.");
         formRef.current?.reset();
@@ -257,6 +301,9 @@ function Complementar({ relato }: { relato: Relato }) {
         className={CAIXA_DE_TEXTO}
         placeholder="Aconteceu de novo? Descobriu mais algum detalhe? Escreva aqui — fica na conversa."
       />
+      {comAnexos && (
+        <SeletorDeAnexos pendentes={anexos} aoMudar={setAnexos} desabilitado={salvando} />
+      )}
       <Button type="submit" size="sm" variant="outline" disabled={salvando}>
         {salvando ? "Enviando…" : "Acrescentar"}
       </Button>

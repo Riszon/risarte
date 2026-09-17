@@ -139,6 +139,8 @@ export default async function AppLayout({
           podeBuscar={pode(session, "menu.prontuarios")}
           podeVerManual={pode(session, "menu.manual")}
           podeVerSistema={pode(session, "menu.sistema")}
+          temUnidade={Boolean(session.activeClinic)}
+          isAdminMaster={session.isAdminMaster}
         />
         {/* `marca-dagua`: o pattern entra grande pelo canto e some antes de
             chegar ao texto. Forma escolhida pelo dono entre três (09/09/2026). */}

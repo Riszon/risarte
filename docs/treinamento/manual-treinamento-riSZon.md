@@ -390,7 +390,7 @@ coisa, quem manda é este.
 | Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
-| Boia | **Problemas** — relatar e acompanhar a resposta. **Tem número** (veja abaixo) |
+| Boia | **Relatar um problema** — abre um painel ao lado da tela em que você está. Dali também se chega aos relatos e respostas. **Tem número** (veja abaixo) |
 | Livro | **Manual** — este texto, sempre na versão que está no ar |
 
 > **O número da boia não quer dizer a mesma coisa para todo mundo.** Para o
@@ -1205,7 +1205,10 @@ custa menos que corrigir**.
 
 ### 9.4. Como relatar um problema
 
-**Barra de cima → a boia (Problemas) → botão "Relatar um problema".**
+**Barra de cima → a boia.** Abre um painel **ao lado** da tela em que você
+está — ela continua à vista, e é ela que a captura de tela vai fotografar. O
+painel já traz a tela e a parte do sistema preenchidas. Na própria tela de
+Problemas, o botão é **"Relatar um problema"**.
 
 > **Você não preenche o que o sistema já sabe.** Quem você é, sua função, a
 > unidade, a tela, a versão e o navegador vão junto automaticamente. Até a
@@ -1232,13 +1235,33 @@ atrapalha o trabalho / impede de trabalhar).
 > escolha é obrigatória porque é ela que permite contar, por exemplo, quantas
 > sugestões a Agenda recebeu.
 
-**Ao salvar, o relato ganha um código** (ex.: `OC-00012`) e o sistema abre a
-página dele. É por esse código que se fala do caso depois, sem recontar tudo —
-e a página tem endereço próprio (`/problemas/OC-00012`), que pode ser enviado
-a quem precisa ver.
+**Mostrar o problema — anexos e captura de tela.** No fim do formulário:
 
-**Print da tela:** ainda não é possível anexar — guarde o seu e informe no
-relato que você tem.
+| Botão / gesto | O que faz |
+|---|---|
+| **Capturar a tela** | O navegador pergunta se o sistema pode ver a aba. Ao permitir, o painel sai da frente por um instante e a tela vira imagem, do jeito que estava |
+| **Anexar arquivo** | Escolhe imagem, PDF ou vídeo (MP4/WebM) do computador ou do celular |
+| **Ctrl+V** | Cola um print que você já tirou (tecla Print Screen, ferramenta de recorte) |
+| **Arrastar** | Solta o arquivo em cima da área dos anexos |
+
+Até **5 por envio**, **10 MB cada**, e no máximo **10 por relato**. Cada anexo
+aparece como miniatura antes de enviar, com um **X** para tirar da lista. O que
+não pode entrar é recusado **com o motivo** (tipo ou tamanho).
+
+> **No celular não existe "Capturar a tela"** — o navegador do telefone não
+> oferece isso para páginas. Tire o print pelo próprio aparelho e use **Anexar
+> arquivo**.
+
+> ⚠️ **O print mostra o que estava na tela, inclusive dado de paciente.** Quem
+> vê o relato vê os anexos (a sua unidade e o suporte). Se aparecer paciente que
+> não tem a ver com o problema, tire da lista antes de enviar. Enviou por
+> engano? **Remover** tira o anexo — veja a seção 15.2.
+
+**Ao salvar, o relato ganha um código** (ex.: `OC-00012`). Pela boia, você
+continua na tela em que estava e o aviso traz o botão **Abrir**; pela tela de
+Problemas, o sistema abre a página do relato. É por esse código que se fala do
+caso depois, sem recontar tudo — e a página tem endereço próprio
+(`/problemas/OC-00012`), que pode ser enviado a quem precisa ver.
 
 ### 9.5. Categorias
 
@@ -1607,13 +1630,24 @@ coletou; embaixo, a **conversa**:
 > embaixo da de hoje. Até a versão 0.246.0 cada relato guardava uma resposta
 > só, e responder de novo apagava a anterior.
 
+**Anexos na página:** os que vieram com o relato ficam no quadro dele; os que
+vieram com uma mensagem ficam dentro da mensagem. Imagem abre em tamanho real ao
+clicar; vídeo toca ali mesmo; PDF abre em outra aba. Os links valem por uma
+hora — se a página ficou aberta muito tempo, recarregue.
+
+**Remover um anexo:** quem enviou, ou o suporte. No lugar dele fica *"Anexo
+removido por … em …"* — o arquivo é apagado do servidor, a lápide fica para a
+conversa continuar fazendo sentido. Quem só enxerga o relato (colegas da
+unidade) vê os anexos, mas não anexa nem remove.
+
 No rodapé do relato: quando foi aberto, **quando veio a primeira resposta** (e
 quanto tempo depois), quando foi encerrado e em que versão saiu a correção.
 
 **Quem relatou pode:**
 
 - **Acrescentar informação** enquanto o relato está aberto ou em análise
-  (*"aconteceu de novo agora"*);
+  (*"aconteceu de novo agora"*), **com anexos**, que ficam presos àquela
+  mensagem;
 - **Reabrir** um relato encerrado pelo botão **Não resolveu** — com a
   obrigação de contar o que não funcionou. O relato volta para **Aberto** e
   para a fila, marcado como *Reaberto*.
@@ -1639,7 +1673,9 @@ quanto tempo depois), quando foi encerrado e em que versão saiu a correção.
 **Quem responde é o Admin Master**, e ele **não consegue encerrar sem
 escrever** — o sistema recusa. Encerrar em silêncio é o que faz uma equipe
 parar de relatar. Cada resposta entra **como mensagem nova** na conversa; o
-campo vem vazio de propósito, para escrever só o que é novo. Mudar apenas a
+campo vem vazio de propósito, para escrever só o que é novo. A resposta também
+aceita anexos (um print mostrando onde fica a configuração, por exemplo) — mas
+só junto com texto: mudar apenas a situação não cria mensagem para prendê-los. Mudar apenas a
 situação, sem texto, também fica registrado na conversa.
 
 **Para quem relata, isso significa uma coisa prática:** quanto melhor o seu
