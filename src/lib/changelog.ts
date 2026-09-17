@@ -62,6 +62,34 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.250.0",
+    data: "2026-09-17",
+    migracao: "0258",
+    titulo: "Painel de indicadores dos relatos",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Problemas ganhou o Painel de indicadores: problemas relatados × solucionados, sugestões por parte do sistema × implantadas, respostas enviadas, tempo até a primeira resposta e até concluir, o que está esperando há mais tempo, e as unidades e pessoas que mais contribuem para melhorar o sistema.",
+        papeis: [
+          "unit_manager",
+          "franchisee",
+          "franchisor_staff",
+          "finance_franchisor",
+          "purchaser",
+        ],
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Gerente e franqueado veem os números da própria unidade, sem ranking de pessoas. A rede inteira e o ranking de pessoas ficam com o Admin Master e a Franqueadora.",
+        papeis: ["unit_manager", "franchisee"],
+        manual: "15.2. Problemas",
+      },
+    ],
+  },
+  {
     versao: "0.249.0",
     data: "2026-09-17",
     migracao: null,

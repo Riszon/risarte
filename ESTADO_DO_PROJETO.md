@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/09/2026 · Versão do sistema: **0.249.0** · Última migração: **0257** (aplicada em produção pelo dono) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 17/09/2026 · Versão do sistema: **0.250.0** · Última migração: **0258** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3756,7 +3756,29 @@ própria página).
   via `--auto-select-tab-capture-source-by-title`); captura inspecionada sem a
   barra; varredura 93/93.
 
-**Pendente:** C (painel de indicadores).
+**C — painel de indicadores (0258, v0.250.0).** `/problemas/painel`.
+- A conta inteira mora em `system_reports_dashboard(de, até, unidade)`
+  (`security definer`, devolve jsonb) porque a RLS da 0247 mostraria à
+  Franqueadora só a própria clínica, e o ranking precisa de nomes que a RLS de
+  `profiles` esconde. **O escopo é decidido na função:** Admin ou qualquer
+  papel numa clínica `franchisor` = rede com ranking de pessoas;
+  `unit_manager`/`franchisee` = as próprias unidades, `por_pessoa` nulo;
+  resto = `NOT_ALLOWED`. `podeVerPainelDeRelatos` (TS) só esconde o link.
+- Réguas: período pela data de REGISTRO no fuso de Brasília; "solucionados" =
+  dos relatados, quantos resolvidos hoje; respostas = mensagens escritas no
+  período; tempos com mediana e média só de quem chegou lá; aproveitado =
+  resolvido; relatos do Admin fora dos rankings; parados = abertos agora, sem
+  título (LGPD); série semanal até 120 dias, mensal acima.
+- Provado: 26 checagens com números calculados à mão (inclusive fronteira de
+  fuso 23:30 do dia 31) e tela logada como Admin, Rede, Gerente e Recepção.
+- Achados do teste visual, corrigidos: as barras usavam `bg-gold`, que no
+  tema da Franqueadora vira marinho (duas barras iguais) — agora cores fixas;
+  coluna "Pessoas" cortada no ranking de unidades — foi para baixo do nome.
+- A 1ª varredura acusou 1 falha: `EPERM` no rename de manifesto do `next dev`
+  (trava de arquivo do Windows), não código. A 2ª abriu 94/94, e o painel foi
+  aberto direto na produção sem a 0258 (mostra o aviso da migração).
+
+**PROBLEMAS 2.0 COMPLETO** (A, B, B.2, C).
 
 ### RODADA DE REFINAMENTO VISUAL E RELATOS (10/09/2026, v0.239.2 → 0.243.0)
 

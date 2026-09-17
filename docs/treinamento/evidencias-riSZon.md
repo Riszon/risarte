@@ -255,3 +255,5 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-040 | Três caminhos de captura (esta tela / ir até a tela do problema / outra aba ou janela) e rascunho guardado ao navegar | `src/components/report-nav-item.tsx` + `src/lib/captura-de-tela.ts` | ✅ conferido logado (27 checagens; captura inspecionada sem a barra) |
 | EV-041 | Tela e parte do sistema seguem a captura, salvo se editadas à mão; nome do arquivo leva a tela, sem id de ficha | `report-nav-item.tsx` + `anexos-de-relato.ts` + teste | ✅ |
 | EV-042 | "Como usar o print" junto dos botões | `src/app/(app)/problemas/anexos.tsx` (`AjudaDoPrint`) | ✅ |
+| EV-043 | Painel de indicadores e o escopo por papel (rede com ranking de pessoas × unidade sem) | `supabase/migrations/0258_painel_de_relatos.sql` + `src/app/(app)/problemas/painel/page.tsx` | ✅ provado no banco (26 checagens, números conferidos à mão) e na tela (Admin, Rede, Gerente, Recepção) |
+| EV-044 | Regras: período pela data de registro; mediana; aproveitado = resolvido; Admin fora do ranking; parados sem título | 0258 (comentário) + quadro "Como ler este painel" | ✅ |

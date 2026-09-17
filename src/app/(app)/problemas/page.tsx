@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BarChart3 } from "lucide-react";
 import { getSessionContext, pode } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { APP_VERSION, LATEST_MIGRATION } from "@/lib/version";
 import { abaInicial, ehAba } from "@/lib/system-reports";
+import { podeVerPainelDeRelatos } from "@/lib/painel-de-relatos";
 import { Problemas } from "./lista";
 import { carregarRelatos, instanteDoPedido } from "./dados";
 
@@ -47,7 +50,18 @@ export default async function ProblemasPage({
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold">Problemas</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-semibold">Problemas</h1>
+          {podeVerPainelDeRelatos(session) && (
+            <Link
+              href="/problemas/painel"
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              <BarChart3 className="size-4" />
+              Painel de indicadores
+            </Link>
+          )}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Onde avisar que algo deu errado, tirar uma dúvida ou sugerir uma
           melhoria — e acompanhar a resposta. Você está na versão{" "}

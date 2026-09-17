@@ -1707,6 +1707,65 @@ situação, sem texto, também fica registrado na conversa.
 relato, mais rápido vem a resposta. O sistema manda junto a tela, a versão, a
 unidade, a sua função e o navegador — o que falta é só o que **você** viu.
 
+#### O painel de indicadores
+
+*Tela `/problemas/painel` — botão **Painel de indicadores**, no alto da tela de
+Problemas.*
+
+**Quem vê:**
+
+| Quem | O que vê |
+|---|---|
+| **Admin Master** e **equipe da Franqueadora** | A rede inteira (ou uma unidade escolhida), com o ranking de **unidades** e de **pessoas** |
+| **Gerente de unidade** e **Franqueado** | Só a(s) própria(s) unidade(s). **Sem ranking de pessoas** |
+| O resto da operação | Não abre o painel (o botão não aparece) |
+
+**Período:** *Últimos 30 dias*, *Últimos 90 dias* (o padrão), *Este mês*,
+*Este ano*, ou datas escolhidas em **De** e **Até**.
+
+**Os quadros:**
+
+| Quadro | O que mostra |
+|---|---|
+| **Relatados** | Quantos relatos foram registrados, separados em problemas, dúvidas e sugestões |
+| **Problemas solucionados** | Dos problemas relatados no período, quantos já estão resolvidos (e quantos não eram defeito) |
+| **Sugestões implantadas** | Das sugestões do período, quantas viraram melhoria (e quantas não seguiram adiante) |
+| **Respostas enviadas** | Quantas mensagens do suporte foram escritas no período |
+| **Tempo até a 1ª resposta** | A **mediana**: metade dos relatos foi respondida em até esse tempo. A média aparece embaixo |
+| **Tempo até concluir** | O mesmo, até o relato ser encerrado |
+| **Ainda em aberto** | Dos relatados no período, quantos continuam abertos — e quantos nem resposta tiveram |
+| **Reabertos** | Quantos voltaram porque a solução não funcionou |
+
+Abaixo vêm:
+
+- o gráfico **Relatados × concluídos** (por semana; por mês em períodos
+  longos);
+- a tabela **Por parte do sistema** — onde estão os problemas e quantas
+  sugestões de cada parte viraram melhoria;
+- **Unidades que mais contribuem** e **Pessoas mais colaborativas**;
+- **Esperando há mais tempo**: o que está aberto **agora**, de qualquer data,
+  com a mesma cor de idade da lista (amarelo a partir de 3 dias, vermelho
+  depois de 7).
+
+> **Como o ranking conta.** Vem primeiro quem teve mais relatos
+> **aproveitados** — problema corrigido, sugestão implantada ou dúvida
+> esclarecida. "Não é defeito" conta como participação, mas não como
+> aproveitado: o ranking premia o relato que melhorou o sistema, não a
+> quantidade. Os relatos do próprio Admin Master ficam de fora (é quem
+> corrige). Unidade maior tende a relatar mais — por isso a tabela mostra
+> quantas pessoas relataram em cada uma.
+
+> **Por que mediana e não só média?** Um relato esquecido por um mês puxa a
+> média para cima e esconde que o resto foi respondido no mesmo dia. A mediana
+> diz o que aconteceu com a maioria. E relato ainda sem resposta **não entra**
+> na conta — contá-lo como zero o faria parecer o mais rápido de todos.
+
+> A lista *Esperando há mais tempo* **não mostra o título** do relato: ele é
+> texto livre e pode citar paciente. Mostra o código, que abre o relato para
+> quem tem acesso a ele.
+
+O painel tem, no fim, o quadro **Como ler este painel** com essas regras.
+
 #### Só para o Admin Master: preparar para correção
 
 Na página do relato, ao lado do título *Conversa*, existe **Preparar para
