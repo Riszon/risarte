@@ -11,6 +11,12 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { pedeEspecialidades } from "@/lib/risartanos";
+import {
+  rolesForClinicType,
+  type ClinicType,
+  type UserRole,
+} from "@/lib/roles";
 import {
   CONTRACT_TYPES,
   GENDERS,
@@ -139,8 +145,8 @@ function oneOf<T extends readonly string[]>(
 }
 
 // Campos de texto obrigatórios (cadastro completo — o dono exige). Complemento,
-// observações e cônjuge (condicional) ficam de fora. Cargo/função NÃO é mais
-// campo: vem do acesso do Risartano (user_clinic_roles).
+// observações e cônjuge (condicional) ficam de fora. A FUNÇÃO é exigida logo
+// abaixo, contra a lista de funções da clínica (não é texto livre).
 const REQUIRED_TEXT: [string, string][] = [
   ["full_name", "Nome completo"],
   ["preferred_name", "Como quer ser chamado(a)"],
@@ -155,7 +161,21 @@ const REQUIRED_TEXT: [string, string][] = [
   ["state", "UF"],
 ];
 
-function parseStaffForm(formData: FormData):
+/** Que funções a clínica do cadastro aceita (a Franqueadora não tem recepção). */
+async function funcoesDaClinica(clinicId: string): Promise<UserRole[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("clinics")
+    .select("type")
+    .eq("id", clinicId)
+    .maybeSingle<{ type: ClinicType }>();
+  return rolesForClinicType(data?.type ?? "franchise_unit");
+}
+
+function parseStaffForm(
+  formData: FormData,
+  funcoesPermitidas: readonly UserRole[]
+):
   | { error: string }
   | { values: Record<string, unknown> } {
   for (const [name, label] of REQUIRED_TEXT) {
@@ -176,6 +196,15 @@ function parseStaffForm(formData: FormData):
   const contractType = oneOf(formData, "contract_type", CONTRACT_TYPES);
   if (!contractType) return { error: "Selecione o regime de contrato." };
 
+  // A FUNÇÃO PREVISTA (`role_title`): dita o que a pessoa vem fazer e chega
+  // pronta na hora de liberar o acesso. Quem decide o que ela ABRE continua
+  // sendo `user_clinic_roles` — por isso a função é validada contra a mesma
+  // lista que o acesso usa, e não contra texto livre.
+  const roleTitle = oneOf(formData, "role_title", funcoesPermitidas);
+  if (!roleTitle) {
+    return { error: "Selecione a função desta pessoa na unidade." };
+  }
+
   // Cônjuge só é exigido (e guardado) quando casado(a) ou união estável.
   const married =
     maritalStatus === "married" || maritalStatus === "stable_union";
@@ -187,14 +216,18 @@ function parseStaffForm(formData: FormData):
 
   // H4.5 Lote 3: especialidades marcadas (checkbox múltiplo). Sem obrigatório —
   // sem especialidade, a sugestão cai na continuidade/histórico.
-  const specialties = [
-    ...new Set(
-      formData
-        .getAll("specialty")
-        .map((s) => String(s).trim())
-        .filter(Boolean)
-    ),
-  ];
+  // Só dentista tem especialidade: quem deixou de ser dentista não pode
+  // continuar sendo sugerido para uma sessão de Endodontia.
+  const specialties = pedeEspecialidades(roleTitle)
+    ? [
+        ...new Set(
+          formData
+            .getAll("specialty")
+            .map((s) => String(s).trim())
+            .filter(Boolean)
+        ),
+      ]
+    : [];
 
   return {
     values: {
@@ -217,6 +250,7 @@ function parseStaffForm(formData: FormData):
       city: field(formData, "city"),
       state: field(formData, "state")!.toUpperCase(),
       contract_type: contractType,
+      role_title: roleTitle,
       notes: field(formData, "notes"),
     },
   };
@@ -247,7 +281,7 @@ export async function createStaffMember(
     };
   }
 
-  const parsed = parseStaffForm(formData);
+  const parsed = parseStaffForm(formData, await funcoesDaClinica(clinicId));
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -311,7 +345,10 @@ export async function updateStaffMember(
   if (!(await canManageStaff(staffId))) {
     return { ok: false, error: "Você não tem permissão nesta unidade." };
   }
-  const parsed = parseStaffForm(formData);
+  const parsed = parseStaffForm(
+    formData,
+    await funcoesDaClinica(existing.clinic_id)
+  );
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   // Histórico: registra os campos que mudaram.

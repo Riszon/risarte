@@ -33,6 +33,27 @@ function reaquecer(): void {
 }
 
 /**
+ * A função foi dada FORA da unidade do cadastro?
+ *
+ * A tela pede a autorização do Admin nesse caso (decisão do dono, 17/09/2026);
+ * aqui a resposta é recalculada no servidor, porque quem responde "era fora da
+ * unidade?" para a auditoria não pode ser a mesma tela que fez o pedido.
+ */
+async function foraDaUnidadeDoCadastro(
+  userId: string,
+  clinicId: string
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("staff_members")
+    .select("clinic_id")
+    .eq("user_id", userId)
+    .returns<{ clinic_id: string }[]>();
+  if (!data || data.length === 0) return false;
+  return !data.some((s) => s.clinic_id === clinicId);
+}
+
+/**
  * Persists the franchisor unit-access scope for a role assignment (the row in
  * user_clinic_roles). For 'specific', stores the chosen units; otherwise clears
  * them. No-op for non-franchisor roles.
@@ -219,10 +240,23 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // Depois do vínculo: aí sim dá para dizer, do lado do servidor, se alguma
+  // função saiu da unidade do cadastro (a tela pede autorização para isso).
+  const fora: string[] = [];
+  for (const a of assignments) {
+    if (await foraDaUnidadeDoCadastro(created.user.id, a.clinicId)) {
+      fora.push(a.clinicId);
+    }
+  }
+
   await logAudit({
     action: "create",
     entityType: "user",
     entityId: created.user.id,
+    details: {
+      funcoes: assignments.length,
+      fora_da_unidade_do_cadastro: fora.length > 0,
+    },
   });
   reaquecer();
   return { ok: true };
@@ -367,7 +401,10 @@ export async function addUserRole(
     entityType: "user_clinic_roles",
     entityId: userId,
     clinicId,
-    details: { added: role },
+    details: {
+      added: role,
+      fora_da_unidade_do_cadastro: await foraDaUnidadeDoCadastro(userId, clinicId),
+    },
   });
   reaquecer();
   return { ok: true };

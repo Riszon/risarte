@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { KeyRound, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -61,6 +62,9 @@ export function AcessoDoRisartano({
   staffNome,
   staffEmail,
   staffAtivo,
+  unidadeDoCadastro,
+  funcaoPrevista,
+  senhaSugerida,
   acesso,
   funcoes,
   clinicas,
@@ -73,6 +77,12 @@ export function AcessoDoRisartano({
   staffNome: string;
   staffEmail: string | null;
   staffAtivo: boolean;
+  /** A unidade do cadastro — dar função FORA dela pede autorização na hora. */
+  unidadeDoCadastro: { id: string; name: string } | null;
+  /** A função escolhida no cadastro: chega pronta na ficha do acesso. */
+  funcaoPrevista: UserRole | null;
+  /** Sugestão vinda do servidor (sorteio não pode acontecer no desenho). */
+  senhaSugerida: string;
   acesso: StaffAccess | null;
   funcoes: FuncaoDoAcesso[];
   clinicas: Clinica[];
@@ -132,6 +142,9 @@ export function AcessoDoRisartano({
             nome={staffNome}
             email={staffEmail}
             clinicas={clinicas}
+            unidadeDoCadastro={unidadeDoCadastro}
+            funcaoPrevista={funcaoPrevista}
+            senhaSugerida={senhaSugerida}
             onCancelar={() => setCriando(false)}
           />
         )}
@@ -271,6 +284,8 @@ export function AcessoDoRisartano({
             )}
             unidades={clinicas.filter((c) => c.type === "franchise_unit")}
             jaTemTodas={funcoes.length > 0}
+            unidadeDoCadastro={unidadeDoCadastro}
+            nome={staffNome}
             onFeito={() => router.refresh()}
           />
         )}
@@ -389,17 +404,48 @@ function CriarAcesso({
   nome,
   email,
   clinicas,
+  unidadeDoCadastro,
+  funcaoPrevista,
+  senhaSugerida,
   onCancelar,
 }: {
   staffId: string;
   nome: string;
   email: string | null;
   clinicas: Clinica[];
+  unidadeDoCadastro: { id: string; name: string } | null;
+  funcaoPrevista: UserRole | null;
+  senhaSugerida: string;
   onCancelar: () => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [funcoes, setFuncoes] = useState<RoleAssignment[]>([]);
+  // A FICHA JÁ CHEGA PREENCHIDA com o que o cadastro disse: a unidade dele e a
+  // função escolhida lá. Ao Admin sobra conferir e liberar — que é o pedido.
+  const [funcoes, setFuncoes] = useState<RoleAssignment[]>(
+    unidadeDoCadastro && funcaoPrevista
+      ? [
+          {
+            clinicId: unidadeDoCadastro.id,
+            role: funcaoPrevista,
+            unitScope:
+              clinicas.find((c) => c.id === unidadeDoCadastro.id)?.type ===
+              "franchisor"
+                ? "all"
+                : undefined,
+            unitIds: [],
+          },
+        ]
+      : []
+  );
+  const [autorizado, setAutorizado] = useState(false);
+
+  // Unidades FORA da unidade do cadastro: liberar acesso nelas é decisão à
+  // parte, e o Admin autoriza no ato (decisão do dono, 17/09/2026).
+  const foraDoCadastro = funcoes
+    .filter((f) => f.clinicId !== unidadeDoCadastro?.id)
+    .map((f) => clinicas.find((c) => c.id === f.clinicId)?.name ?? "outra unidade");
+  const precisaAutorizar = foraDoCadastro.length > 0;
 
   function tipoDa(clinicId: string): ClinicType | undefined {
     return clinicas.find((c) => c.id === clinicId)?.type;
@@ -472,8 +518,8 @@ function CriarAcesso({
       className="space-y-3 rounded-lg border border-gold/40 bg-gold/5 p-3"
     >
       <p className="text-xs text-muted-foreground">
-        O login nasce ligado a este cadastro. O nome vem dele; o e-mail vem do
-        cadastro e pode ser trocado.
+        Tudo aqui já veio do cadastro de <b>{nome}</b>, inclusive uma senha
+        provisória sorteada. Confira e libere — ou mude o que precisar.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
@@ -494,8 +540,13 @@ function CriarAcesso({
             type="text"
             required
             minLength={6}
+            defaultValue={senhaSugerida}
             placeholder="Mín. 6 caracteres, letras e números"
           />
+          <p className="text-xs text-muted-foreground">
+            Sugerida pelo sistema, sem letras e números que se confundem ao
+            ditar. A pessoa troca depois de entrar.
+          </p>
         </div>
       </div>
 
@@ -566,8 +617,28 @@ function CriarAcesso({
         </Button>
       </div>
 
+      {precisaAutorizar && (
+        <label className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-sm">
+          <input
+            type="checkbox"
+            checked={autorizado}
+            onChange={(e) => setAutorizado(e.target.checked)}
+            className="mt-0.5 accent-primary"
+          />
+          <span>
+            <b>Autorizo o acesso fora da unidade do cadastro.</b> Isto libera{" "}
+            {nome} também em {[...new Set(foraDoCadastro)].join(", ")}. Fica
+            registrado na auditoria.
+          </span>
+        </label>
+      )}
+
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isPending || (precisaAutorizar && !autorizado)}
+        >
           {isPending ? "Criando..." : "Criar acesso"}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onCancelar}>
@@ -587,12 +658,16 @@ function NovaFuncao({
   clinicas,
   unidades,
   jaTemTodas,
+  unidadeDoCadastro,
+  nome,
   onFeito,
 }: {
   userId: string;
   clinicas: Clinica[];
   unidades: { id: string; name: string }[];
   jaTemTodas: boolean;
+  unidadeDoCadastro: { id: string; name: string } | null;
+  nome: string;
   onFeito: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -629,6 +704,21 @@ function NovaFuncao({
     value: r,
     label: ROLE_LABELS[r],
   }));
+  const nomeDaClinica =
+    clinicas.find((c) => c.id === clinicId)?.name ?? "outra unidade";
+  const foraDoCadastro = Boolean(
+    unidadeDoCadastro && clinicId && clinicId !== unidadeDoCadastro.id
+  );
+
+  function atribuir() {
+    return addUserRole(
+      userId,
+      clinicId,
+      role,
+      tipo === "franchisor" ? scope : undefined,
+      tipo === "franchisor" ? unitIds : undefined
+    );
+  }
 
   return (
     <div className="space-y-2 rounded-lg border border-dashed p-3">
@@ -649,29 +739,47 @@ function NovaFuncao({
             aoMudar={(v) => setRole(v as UserRole)}
           />
         </div>
-        <Button
-          variant="outline"
-          disabled={isPending || !clinicId}
-          onClick={() =>
-            startTransition(async () => {
-              const r = await addUserRole(
-                userId,
-                clinicId,
-                role,
-                tipo === "franchisor" ? scope : undefined,
-                tipo === "franchisor" ? unitIds : undefined
-              );
-              if (r.ok) {
-                toast.success("Função atribuída.");
-                onFeito();
-              } else {
-                toast.error(r.error ?? "Algo deu errado.");
-              }
-            })
-          }
-        >
-          Adicionar
-        </Button>
+        {/* Fora da unidade do cadastro, o Admin autoriza no ato — é acesso a
+            dados de outra unidade, não um detalhe do mesmo cadastro. */}
+        {foraDoCadastro ? (
+          <ConfirmDialog
+            trigger={
+              <Button variant="outline" disabled={isPending || !clinicId}>
+                Adicionar
+              </Button>
+            }
+            title="Liberar acesso em outra unidade?"
+            description={
+              <>
+                Isto dá a <b>{nome}</b> a função de{" "}
+                <b>{ROLE_LABELS[role]}</b> em <b>{nomeDaClinica}</b>, fora de{" "}
+                {unidadeDoCadastro?.name ?? "a unidade do cadastro"}. Ela passa a
+                ver os dados dessa unidade. Fica registrado na auditoria.
+              </>
+            }
+            confirmLabel="Autorizar e liberar"
+            successMessage="Função atribuída."
+            onConfirm={() => atribuir()}
+          />
+        ) : (
+          <Button
+            variant="outline"
+            disabled={isPending || !clinicId}
+            onClick={() =>
+              startTransition(async () => {
+                const r = await atribuir();
+                if (r.ok) {
+                  toast.success("Função atribuída.");
+                  onFeito();
+                } else {
+                  toast.error(r.error ?? "Algo deu errado.");
+                }
+              })
+            }
+          >
+            Adicionar
+          </Button>
+        )}
       </div>
       {tipo === "franchisor" && (
         <UnitAccessControl

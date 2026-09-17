@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.252.0",
+    data: "2026-09-17",
+    migracao: null,
+    titulo: "Cadastro do Risartano: máscara ao digitar, função e abas",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "CPF, CEP e WhatsApp agora mostram os pontos e traços enquanto você digita, e não só depois de salvar. Número a mais ou a menos salta aos olhos na hora.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O cadastro passou a pedir a função da pessoa na unidade, e é ela que chega pronta na hora de liberar o acesso. As especialidades só aparecem quando a função é Dentista.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha virou duas abas: Cadastro e Acesso. A aba Acesso traz também as unidades e a situação, e a ficha do login já vem preenchida (e-mail, função e uma senha provisória sugerida) — o Admin só confere e libera.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Não se cria acesso sem cadastro completo: enquanto faltar algum dado, a aba Acesso diz o que falta em vez de oferecer o login. E liberar acesso numa unidade diferente da unidade do cadastro passa a exigir uma autorização na hora, registrada na auditoria.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.251.0",
     data: "2026-09-17",
     migracao: null,

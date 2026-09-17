@@ -228,6 +228,90 @@ export function ordenar(pessoas: PessoaDaEquipe[]): PessoaDaEquipe[] {
 }
 
 // -----------------------------------------------------------------------------
+// A função prevista, o cadastro completo e a senha sugerida
+// -----------------------------------------------------------------------------
+
+/**
+ * A FUNÇÃO ESCOLHIDA NO CADASTRO (`staff_members.role_title`).
+ *
+ * Quem manda no que a pessoa ABRE continua sendo o acesso
+ * (`user_clinic_roles`) — é ele que a RLS lê. O campo do cadastro é a função
+ * **prevista**: serve para dizer, na hora de cadastrar, o que a pessoa vem
+ * fazer, e para chegar pronta na ficha do acesso. Guardar a função em dois
+ * lugares sem essa distinção faria a tela afirmar um cargo que o banco não
+ * reconhece.
+ */
+export const FUNCOES_DE_DENTISTA = ["dentist", "planner_dentist"] as const;
+
+/** Só dentista tem especialidade — para os outros o bloco nem aparece. */
+export function pedeEspecialidades(funcao: string | null | undefined): boolean {
+  return (FUNCOES_DE_DENTISTA as readonly string[]).includes(funcao ?? "");
+}
+
+/**
+ * O cadastro está completo? É o que libera a aba do Acesso.
+ *
+ * Um cadastro salvo hoje já nasce completo (todos estes campos são
+ * obrigatórios no formulário). A régua existe para o cadastro ANTIGO, feito
+ * antes de algum campo virar obrigatório: em vez de oferecer um acesso sobre
+ * uma ficha pela metade, a tela diz o que falta.
+ */
+export const CAMPOS_DO_CADASTRO: { campo: string; rotulo: string }[] = [
+  { campo: "fullName", rotulo: "Nome completo" },
+  { campo: "preferredName", rotulo: "Como quer ser chamado(a)" },
+  { campo: "cpf", rotulo: "CPF" },
+  { campo: "birthDate", rotulo: "Nascimento" },
+  { campo: "gender", rotulo: "Gênero" },
+  { campo: "maritalStatus", rotulo: "Estado civil" },
+  { campo: "whatsapp", rotulo: "WhatsApp" },
+  { campo: "email", rotulo: "E-mail" },
+  { campo: "zipCode", rotulo: "CEP" },
+  { campo: "address", rotulo: "Logradouro" },
+  { campo: "addressNumber", rotulo: "Número" },
+  { campo: "neighborhood", rotulo: "Bairro" },
+  { campo: "city", rotulo: "Cidade" },
+  { campo: "state", rotulo: "UF" },
+  { campo: "contractType", rotulo: "Regime de contrato" },
+  { campo: "roleTitle", rotulo: "Função na unidade" },
+];
+
+/** O que ainda falta no cadastro — lista vazia = completo. */
+export function faltaNoCadastro(staff: Record<string, unknown>): string[] {
+  return CAMPOS_DO_CADASTRO.filter(({ campo }) => {
+    const v = staff[campo];
+    return v === null || v === undefined || String(v).trim() === "";
+  }).map((c) => c.rotulo);
+}
+
+export function cadastroCompleto(staff: Record<string, unknown>): boolean {
+  return faltaNoCadastro(staff).length === 0;
+}
+
+// Sem 0/O, 1/l/I: senha provisória é DITADA por telefone ou copiada de um
+// bilhete, e esses pares são os que viram chamado de "não consigo entrar".
+const LETRAS = "abcdefghjkmnpqrstuvwxyz";
+const NUMEROS = "23456789";
+
+/**
+ * Uma senha provisória pronta para o Admin só conferir e liberar: três letras,
+ * quatro números, três letras. Atende a regra do sistema (6+, com letra e
+ * número) sem obrigar ninguém a inventar senha na hora — que é como nascem as
+ * senhas iguais para a equipe inteira.
+ *
+ * `bytes` vem de fora (`crypto.getRandomValues`) para a função ser pura e
+ * testável; ela nunca sorteia nada por conta própria.
+ */
+export function senhaSugerida(bytes: ArrayLike<number>): string {
+  const pega = (i: number, alfabeto: string) =>
+    alfabeto[(bytes[i] ?? 0) % alfabeto.length];
+  const parte = (inicio: number, tamanho: number, alfabeto: string) =>
+    Array.from({ length: tamanho }, (_, k) => pega(inicio + k, alfabeto)).join("");
+  return parte(0, 3, LETRAS) + parte(3, 4, NUMEROS) + parte(7, 3, LETRAS);
+}
+
+export const TAMANHO_DA_SENHA_SUGERIDA = 10;
+
+// -----------------------------------------------------------------------------
 // Endereço da ficha
 // -----------------------------------------------------------------------------
 

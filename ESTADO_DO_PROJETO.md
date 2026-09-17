@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/09/2026 · Versão do sistema: **0.251.0** · Última migração: **0258** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 17/09/2026 · Versão do sistema: **0.252.0** · Última migração: **0258** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3820,6 +3820,32 @@ que já estava na outra tela, agora no lugar certo.
 - **"Desligar da equipe"** (o `is_active` do cadastro) ganhou botão: a ação
   existia em `setStaffActive` desde a H4.1 e **não tinha interface** — sem ela,
   quem não tinha login nunca saía das listas.
+
+**Refino pedido pelo dono no mesmo dia (v0.252.0, sem migração):**
+- **Máscara ao digitar** em CPF, CEP e WhatsApp (o formulário veio do pop-up
+  antigo sem ela; o servidor já mascarava, mas só depois de salvar).
+- **Função na unidade virou campo do cadastro** (`staff_members.role_title`,
+  coluna que existia sem uso), validada contra `rolesForClinicType` — a mesma
+  lista do acesso, não texto livre. É a **função prevista**: quem decide o que a
+  pessoa ABRE continua sendo `user_clinic_roles`.
+- **Especialidades só para dentista** (`pedeEspecialidades`); trocar a função
+  para não-dentista **limpa** as marcações no servidor — senão a pessoa
+  continuaria sendo sugerida para uma sessão de Endodontia.
+- **Ficha em duas abas** (`?aba=acesso`): Cadastro | Acesso, com "Unidades e
+  situação" dentro do Acesso. **Sem cadastro completo não se cria acesso**
+  (`faltaNoCadastro`); quem JÁ tem login não é escondido — recebe aviso, porque
+  esconder não impediria nada e tiraria da tela quem entra no sistema hoje.
+- **Ficha do acesso pré-preenchida**: unidade e função vêm do cadastro, e a
+  senha provisória é sorteada **no servidor** (`crypto.getRandomValues` +
+  `senhaSugerida`, sem 0/O e 1/l — senha é ditada por telefone). Sortear no
+  desenho daria senha diferente entre servidor e navegador.
+- **Acesso fora da unidade do cadastro pede autorização no ato** (decisão do
+  dono entre três opções; a alternativa era um fluxo de aprovação pelo gerente
+  da outra unidade). A auditoria recalcula `fora_da_unidade_do_cadastro` **no
+  servidor** — quem responde isso não pode ser a tela que fez o pedido.
+- Conferido ponta a ponta no treino: máscara, função gravada, especialidades
+  condicionais, abas, ficha preenchida, botão travado sem autorização e a trava
+  do cadastro incompleto. 31 testes puros.
 
 **Conferido:** 23 testes novos (`src/lib/risartanos.ts`); portão verde (build do
 zero, 1092 testes, lint); logado no treino como Admin, Franqueadora, Gerente e

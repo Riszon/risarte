@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, CalendarDays, Lock } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { chaveDaFicha, situacaoDeAcesso } from "@/lib/risartanos";
-import { ROLE_LABELS } from "@/lib/roles";
+import {
+  TAMANHO_DA_SENHA_SUGERIDA,
+  chaveDaFicha,
+  faltaNoCadastro,
+  senhaSugerida,
+  situacaoDeAcesso,
+} from "@/lib/risartanos";
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { CONTRACT_LABELS, type ContractType } from "@/lib/staff";
 import {
   alcanceDoUsuario,
@@ -33,7 +39,12 @@ export async function generateMetadata(
 }
 
 /**
- * A FICHA DO RISARTANO — cadastro e acesso na mesma tela.
+ * A FICHA DO RISARTANO — duas abas: Cadastro e Acesso.
+ *
+ * A ordem é a do mundo real, e a tela impõe: primeiro a pessoa existe no
+ * cadastro, depois ela ganha acesso ao sistema. Enquanto o cadastro estiver
+ * incompleto, a aba do Acesso diz o que falta em vez de oferecer um login sobre
+ * uma ficha pela metade — e não há outro caminho para criar acesso.
  *
  * O endereço prefere o CÓDIGO (`/risartanos/RIS-0007`): é ele que a equipe lê e
  * escreve. Quem pode ver é a RLS quem decide (`can_see_staff`, 0080) — cadastro
@@ -57,6 +68,9 @@ export default async function FichaDoRisartanoPage(
   if (!ficha) notFound();
 
   const { staff, acesso, podeGerir } = ficha;
+  const searchParams = await props.searchParams;
+  const aba = searchParams.aba === "acesso" ? "acesso" : "cadastro";
+
   const inativasAqui = new Set(staff.inactiveUnitIds);
   const unidadesDoAcesso = (acesso?.units ?? []).map((u) => ({
     ...u,
@@ -79,6 +93,7 @@ export default async function FichaDoRisartanoPage(
     temAcesso: Boolean(acesso),
     acessoAtivo: acesso?.loginActive ?? false,
   });
+  const falta = faltaNoCadastro(staff as unknown as Record<string, unknown>);
 
   // Dias de atendimento: só faz sentido para quem é dentista em alguma unidade
   // que este gestor administra (H4.6 E1).
@@ -88,6 +103,17 @@ export default async function FichaDoRisartanoPage(
   const unidadesDaAgenda = unidadesDoAcesso
     .filter((u) => u.gerida)
     .map((u) => ({ clinicId: u.clinicId, clinicName: u.clinicName }));
+
+  // A senha provisória é sorteada AQUI, no servidor: sortear no desenho faria o
+  // navegador mostrar uma senha diferente da que o servidor montou.
+  const sorteio = new Uint8Array(TAMANHO_DA_SENHA_SUGERIDA);
+  crypto.getRandomValues(sorteio);
+
+  const funcaoPrevista = (staff.roleTitle ?? null) as UserRole | null;
+  const funcaoRotulo =
+    funcaoPrevista && funcaoPrevista in ROLE_LABELS
+      ? ROLE_LABELS[funcaoPrevista]
+      : staff.roleTitle;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
@@ -128,9 +154,7 @@ export default async function FichaDoRisartanoPage(
             {staff.preferredName || staff.fullName}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {staff.preferredName && staff.preferredName !== staff.fullName
-              ? `${staff.fullName} · `
-              : ""}
+            {funcaoRotulo ? `${funcaoRotulo} · ` : ""}
             {ficha.unidadeOrigem ?? "—"}
             {staff.contractType
               ? ` · ${CONTRACT_LABELS[staff.contractType as ContractType]}`
@@ -139,58 +163,141 @@ export default async function FichaDoRisartanoPage(
         </div>
       </header>
 
-      <AcessoDoRisartano
-        staffId={staff.id}
-        staffNome={staff.preferredName || staff.fullName}
-        staffEmail={staff.email}
-        staffAtivo={staff.isActive}
-        acesso={acesso}
-        funcoes={funcoes}
-        clinicas={clinicas}
-        loginsLivres={loginsLivres}
-        isAdmin={session.isAdminMaster}
-        isSelf={acesso?.userId === session.userId}
-      />
+      <nav className="flex gap-1 border-b">
+        <Aba href={`/risartanos/${codigo}`} ativa={aba === "cadastro"}>
+          Cadastro
+        </Aba>
+        <Aba href={`/risartanos/${codigo}?aba=acesso`} ativa={aba === "acesso"}>
+          Acesso
+          {falta.length === 0 && situacao === "sem_acesso" && (
+            <span className="ml-1.5 rounded-full bg-gold/20 px-1.5 text-[10px] font-medium text-gold-tinta">
+              a liberar
+            </span>
+          )}
+        </Aba>
+      </nav>
 
-      <UnidadesDoRisartano
-        staffId={staff.id}
-        ativo={staff.isActive}
-        unidadeOrigem={ficha.unidadeOrigem}
-        unidades={unidadesDoAcesso}
-        podeGerir={podeGerir}
-      />
-
-      {ehDentista && unidadesDaAgenda.length > 0 && (
-        <section className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-4">
-          <div>
-            <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-              <CalendarDays className="size-4 text-gold-tinta" />
-              Dias de atendimento
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Em que dias este dentista atende em cada unidade.
-            </p>
-          </div>
-          <StaffScheduleDialog
-            staffMemberId={staff.id}
-            staffName={staff.preferredName || staff.fullName}
-            units={unidadesDaAgenda}
-            schedules={ficha.agendas}
+      {aba === "cadastro" ? (
+        <section className="space-y-4 rounded-xl border bg-card p-4">
+          <FormularioDoRisartano
+            units={[]}
+            staff={staff}
+            photoUrl={ficha.fotoUrl}
+            specialtyOptions={especialidades}
+            podeGerir={podeGerir}
           />
         </section>
-      )}
+      ) : falta.length > 0 && !acesso ? (
+        // A TRAVA: sem cadastro completo não se cria acesso, e não há outro
+        // caminho para criar. Quem JÁ tem login não cai aqui — esconder o
+        // acesso existente não impediria nada e ainda tiraria da tela quem
+        // pode entrar no sistema agora (ver o bloco de aviso abaixo).
+        <section className="space-y-3 rounded-xl border border-gold/40 bg-gold/5 p-4">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+            <Lock className="size-4 text-gold-tinta" />
+            Finalize o cadastro para liberar o acesso
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Ninguém entra no sistema sem ficha completa. Falta preencher:{" "}
+            <b>{falta.join(", ")}</b>.
+          </p>
+          <Link
+            href={`/risartanos/${codigo}`}
+            className="inline-block text-sm font-medium underline underline-offset-2"
+          >
+            Ir para o cadastro
+          </Link>
+        </section>
+      ) : (
+        <>
+          {falta.length > 0 && (
+            <p className="rounded-xl border border-gold/40 bg-gold/5 px-4 py-3 text-sm">
+              Esta pessoa já entra no sistema, mas o cadastro está incompleto —
+              falta <b>{falta.join(", ")}</b>.{" "}
+              <Link
+                href={`/risartanos/${codigo}`}
+                className="font-medium underline underline-offset-2"
+              >
+                Completar agora
+              </Link>
+              .
+            </p>
+          )}
 
-      <section className="space-y-4 rounded-xl border bg-card p-4">
-        <h2 className="text-sm font-semibold">Cadastro</h2>
-        <FormularioDoRisartano
-          units={[]}
-          staff={staff}
-          photoUrl={ficha.fotoUrl}
-          specialtyOptions={especialidades}
-          podeGerir={podeGerir}
-        />
-      </section>
+          <AcessoDoRisartano
+            staffId={staff.id}
+            staffNome={staff.preferredName || staff.fullName}
+            staffEmail={staff.email}
+            staffAtivo={staff.isActive}
+            unidadeDoCadastro={{
+              id: staff.clinicId,
+              name: ficha.unidadeOrigem ?? "a unidade do cadastro",
+            }}
+            funcaoPrevista={funcaoPrevista}
+            senhaSugerida={senhaSugerida(sorteio)}
+            acesso={acesso}
+            funcoes={funcoes}
+            clinicas={clinicas}
+            loginsLivres={loginsLivres}
+            isAdmin={session.isAdminMaster}
+            isSelf={acesso?.userId === session.userId}
+          />
+
+          <UnidadesDoRisartano
+            staffId={staff.id}
+            ativo={staff.isActive}
+            unidadeOrigem={ficha.unidadeOrigem}
+            unidades={unidadesDoAcesso}
+            podeGerir={podeGerir}
+          />
+
+          {ehDentista && unidadesDaAgenda.length > 0 && (
+            <section className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-4">
+              <div>
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                  <CalendarDays className="size-4 text-gold-tinta" />
+                  Dias de atendimento
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Em que dias este dentista atende em cada unidade.
+                </p>
+              </div>
+              <StaffScheduleDialog
+                staffMemberId={staff.id}
+                staffName={staff.preferredName || staff.fullName}
+                units={unidadesDaAgenda}
+                schedules={ficha.agendas}
+              />
+            </section>
+          )}
+        </>
+      )}
     </div>
+  );
+}
+
+function Aba({
+  href,
+  ativa,
+  children,
+}: {
+  href: string;
+  ativa: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={ativa ? "page" : undefined}
+      className={[
+        "-mb-px border-b-2 px-4 py-2 text-sm transition-colors",
+        ativa
+          ? "border-primary font-medium text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground",
+      ].join(" ")}
+    >
+      {children}
+    </Link>
   );
 }
 

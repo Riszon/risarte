@@ -124,6 +124,9 @@ export default async function AcessoSemCadastroPage(
         staffNome={perfil.full_name || perfil.email || "—"}
         staffEmail={perfil.email}
         staffAtivo
+        unidadeDoCadastro={null}
+        funcaoPrevista={null}
+        senhaSugerida=""
         acesso={acesso}
         funcoes={funcoes}
         clinicas={clinicas}

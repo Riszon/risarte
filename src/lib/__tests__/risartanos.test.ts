@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   ACESSO_ROTULO,
+  CAMPOS_DO_CADASTRO,
+  cadastroCompleto,
   casaBusca,
   chaveDaFicha,
+  faltaNoCadastro,
+  pedeEspecialidades,
+  senhaSugerida,
   contarEquipe,
   enderecoDaFicha,
   lerFiltros,
@@ -195,6 +200,87 @@ describe("contadores e ordem", () => {
       "Davi",
     ]);
     expect(precisaDeAtencao(lista[0])).toBe(false);
+  });
+});
+
+describe("função prevista e especialidades", () => {
+  it("só dentista abre as especialidades", () => {
+    expect(pedeEspecialidades("dentist")).toBe(true);
+    expect(pedeEspecialidades("planner_dentist")).toBe(true);
+    for (const outro of ["receptionist", "unit_manager", "tsb", "", null]) {
+      expect(pedeEspecialidades(outro)).toBe(false);
+    }
+  });
+});
+
+describe("cadastro completo (o que libera a aba do Acesso)", () => {
+  const completo = {
+    fullName: "Ana Souza",
+    preferredName: "Ana",
+    cpf: "111.222.333-44",
+    birthDate: "1990-01-01",
+    gender: "female",
+    maritalStatus: "single",
+    whatsapp: "(43) 99999-0000",
+    email: "ana@risarte.com",
+    zipCode: "86000-000",
+    address: "Rua A",
+    addressNumber: "10",
+    neighborhood: "Centro",
+    city: "Londrina",
+    state: "PR",
+    contractType: "clt",
+    roleTitle: "receptionist",
+  };
+
+  it("cadastro cheio libera", () => {
+    expect(cadastroCompleto(completo)).toBe(true);
+    expect(faltaNoCadastro(completo)).toEqual([]);
+  });
+
+  it("diz o que falta, com o nome que está na tela", () => {
+    expect(faltaNoCadastro({ ...completo, roleTitle: null })).toEqual([
+      "Função na unidade",
+    ]);
+    expect(faltaNoCadastro({ ...completo, cpf: "   ", city: "" })).toEqual([
+      "CPF",
+      "Cidade",
+    ]);
+  });
+
+  it("⚠️ cadastro antigo, sem os campos novos, NÃO passa por ausência", () => {
+    expect(cadastroCompleto({ fullName: "Só o nome" })).toBe(false);
+    expect(faltaNoCadastro({}).length).toBe(CAMPOS_DO_CADASTRO.length);
+  });
+});
+
+describe("senha provisória sugerida", () => {
+  const bytes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  it("sai no formato combinado e não sorteia nada sozinha", () => {
+    const senha = senhaSugerida(bytes);
+    expect(senha).toBe(senhaSugerida(bytes));
+    expect(senha).toHaveLength(10);
+    expect(senha).toMatch(/^[a-z]{3}[2-9]{4}[a-z]{3}$/);
+  });
+
+  it("atende a regra do sistema: 6+, com letra e número", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = senhaSugerida(Array.from({ length: 10 }, (_, k) => (i * 7 + k * 13) % 256));
+      expect(s.length).toBeGreaterThanOrEqual(6);
+      expect(/[a-zA-Z]/.test(s)).toBe(true);
+      expect(/[0-9]/.test(s)).toBe(true);
+    }
+  });
+
+  it("⚠️ sem 0/O e 1/l — senha ditada por telefone vira chamado", () => {
+    for (let i = 0; i < 256; i++) {
+      expect(senhaSugerida(Array(10).fill(i))).not.toMatch(/[0o1li]/);
+    }
+  });
+
+  it("bytes faltando não derrubam (cai no primeiro caractere)", () => {
+    expect(senhaSugerida([]).length).toBe(10);
   });
 });
 

@@ -8,7 +8,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { enderecoDaFicha } from "@/lib/risartanos";
+import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { enderecoDaFicha, pedeEspecialidades } from "@/lib/risartanos";
+import { ROLE_LABELS, rolesForClinicType, type ClinicType } from "@/lib/roles";
 import {
   CONTRACT_LABELS,
   CONTRACT_TYPES,
@@ -37,17 +39,20 @@ export function FormularioDoRisartano({
   photoUrl,
   canPickUnit = false,
   activeClinicName = null,
+  activeClinicType = "franchise_unit",
   specialtyOptions = [],
   podeGerir = true,
   prefill,
   vincularUsuario,
 }: {
-  units: { id: string; name: string }[];
+  units: { id: string; name: string; type: ClinicType }[];
   staff?: StaffMember;
   photoUrl?: string | null;
   /** Admin/RH escolhem a unidade; Gerente/Franqueado usam a unidade ativa. */
   canPickUnit?: boolean;
   activeClinicName?: string | null;
+  /** Tipo da unidade onde o cadastro nasce — decide as funções oferecidas. */
+  activeClinicType?: ClinicType;
   specialtyOptions?: string[];
   /** Só quem gere edita; os demais leem. */
   podeGerir?: boolean;
@@ -68,6 +73,22 @@ export function FormularioDoRisartano({
   const [maritalStatus, setMaritalStatus] = useState(staff?.maritalStatus ?? "");
   const showSpouse =
     maritalStatus === "married" || maritalStatus === "stable_union";
+
+  // A UNIDADE decide as funções possíveis (a da Franqueadora não tem
+  // recepcionista; a da unidade não tem Planner), então as duas andam juntas.
+  const [clinicId, setClinicId] = useState(
+    staff?.clinicId ?? units[0]?.id ?? ""
+  );
+  const tipoDaUnidade =
+    units.find((u) => u.id === clinicId)?.type ?? activeClinicType;
+  const funcoesPossiveis = rolesForClinicType(tipoDaUnidade);
+  const [funcao, setFuncao] = useState(staff?.roleTitle ?? "");
+  // Trocou de unidade e a função não existe lá: limpa em vez de gravar uma
+  // função que aquela clínica não aceita.
+  const funcaoValida = funcoesPossiveis.includes(
+    funcao as (typeof funcoesPossiveis)[number]
+  );
+  const mostrarEspecialidades = funcaoValida && pedeEspecialidades(funcao);
 
   useEffect(() => {
     if (!preview) return;
@@ -156,8 +177,9 @@ export function FormularioDoRisartano({
       if (photoFailed) {
         toast.error("A foto não pôde ser enviada; adicione pela ficha.");
       }
+      // Cadastro feito, a próxima pergunta é o acesso — a ficha já abre nela.
       router.push(
-        enderecoDaFicha({ code: result.code ?? null, id: result.staffId! })
+        `${enderecoDaFicha({ code: result.code ?? null, id: result.staffId! })}?aba=acesso`
       );
       router.refresh();
     });
@@ -233,7 +255,14 @@ export function FormularioDoRisartano({
           (canPickUnit ? (
             <div>
               <Label htmlFor="clinic_id">Unidade *</Label>
-              <select id="clinic_id" name="clinic_id" required className={selectClass}>
+              <select
+                id="clinic_id"
+                name="clinic_id"
+                required
+                value={clinicId}
+                onChange={(e) => setClinicId(e.target.value)}
+                className={selectClass}
+              >
                 {units.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -267,12 +296,16 @@ export function FormularioDoRisartano({
               />
             </Campo>
             <Campo id="cpf" rotulo="CPF *">
+              {/* A máscara aparece ENQUANTO se digita: com os pontos na tela,
+                  falta ou sobra de número salta aos olhos antes de salvar. */}
               <Input
                 id="cpf"
                 name="cpf"
                 required
+                inputMode="numeric"
                 placeholder="000.000.000-00"
                 defaultValue={staff?.cpf ?? ""}
+                onChange={(e) => (e.target.value = formatCpf(e.target.value))}
               />
             </Campo>
             <Campo id="birth_date" rotulo="Nascimento *">
@@ -331,7 +364,9 @@ export function FormularioDoRisartano({
                   <Input
                     id="spouse_phone"
                     name="spouse_phone"
+                    inputMode="numeric"
                     defaultValue={staff?.spousePhone ?? ""}
+                    onChange={(e) => (e.target.value = formatPhone(e.target.value))}
                   />
                 </Campo>
               </>
@@ -346,8 +381,10 @@ export function FormularioDoRisartano({
                 id="whatsapp"
                 name="whatsapp"
                 required
+                inputMode="numeric"
                 placeholder="(00) 00000-0000"
                 defaultValue={staff?.whatsapp ?? ""}
+                onChange={(e) => (e.target.value = formatPhone(e.target.value))}
               />
             </Campo>
             <Campo
@@ -373,8 +410,10 @@ export function FormularioDoRisartano({
                 id="zip_code"
                 name="zip_code"
                 required
+                inputMode="numeric"
                 placeholder="00000-000"
                 defaultValue={staff?.zipCode ?? ""}
+                onChange={(e) => (e.target.value = formatCep(e.target.value))}
               />
             </Campo>
             <Campo id="address" rotulo="Logradouro *" className="sm:col-span-3">
@@ -436,38 +475,59 @@ export function FormularioDoRisartano({
                 ))}
               </select>
             </Campo>
-            <p className="self-end text-xs text-muted-foreground">
-              O cargo vem do <b>acesso</b> (uma função por unidade), logo abaixo
-              nesta mesma ficha.
-            </p>
+            <Campo
+              id="role_title"
+              rotulo="Função na unidade *"
+              ajuda="É ela que vai preencher o acesso ao sistema depois."
+            >
+              <select
+                id="role_title"
+                name="role_title"
+                required
+                value={funcaoValida ? funcao : ""}
+                onChange={(e) => setFuncao(e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Selecione...</option>
+                {funcoesPossiveis.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </Campo>
           </div>
         </Secao>
 
-        <Secao
-          titulo="Especialidades"
-          ajuda="Ajudam o sistema a sugerir o profissional certo em cada sessão."
-        >
-          {specialtyOptions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              Nenhuma especialidade cadastrada ainda.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-              {specialtyOptions.map((sp) => (
-                <label key={sp} className="flex items-center gap-1.5 text-sm">
-                  <input
-                    type="checkbox"
-                    name="specialty"
-                    value={sp}
-                    defaultChecked={staff?.specialties?.includes(sp) ?? false}
-                    className="accent-primary"
-                  />
-                  {sp}
-                </label>
-              ))}
-            </div>
-          )}
-        </Secao>
+        {/* Especialidade é assunto de dentista: para recepção, TSB ou gerente a
+            lista não diz nada e só atrapalha o preenchimento. */}
+        {mostrarEspecialidades && (
+          <Secao
+            titulo="Especialidades do dentista"
+            ajuda="Ajudam o sistema a sugerir o profissional certo em cada sessão."
+          >
+            {specialtyOptions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma especialidade cadastrada ainda.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {specialtyOptions.map((sp) => (
+                  <label key={sp} className="flex items-center gap-1.5 text-sm">
+                    <input
+                      type="checkbox"
+                      name="specialty"
+                      value={sp}
+                      defaultChecked={staff?.specialties?.includes(sp) ?? false}
+                      className="accent-primary"
+                    />
+                    {sp}
+                  </label>
+                ))}
+              </div>
+            )}
+          </Secao>
+        )}
 
         <Campo id="notes" rotulo="Observações">
           <textarea

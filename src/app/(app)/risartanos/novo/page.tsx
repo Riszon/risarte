@@ -36,11 +36,10 @@ export default async function NovoRisartanoPage(
     carregarEspecialidades(supabase),
     carregarClinicas(supabase),
   ]);
-  const unidades = (
-    alcance.escopoIds
-      ? clinicas.filter((c) => alcance.escopoIds!.includes(c.id))
-      : clinicas
-  ).map((c) => ({ id: c.id, name: c.name }));
+  const unidades = alcance.escopoIds
+    ? clinicas.filter((c) => alcance.escopoIds!.includes(c.id))
+    : clinicas;
+  const unidadeAtiva = clinicas.find((c) => c.id === session.activeClinic?.id);
 
   // "Completar cadastro" de um login que existe sem Risartano (só o Admin
   // chega aqui por esse caminho — é ele quem enxerga esses logins).
@@ -90,6 +89,7 @@ export default async function NovoRisartanoPage(
           units={unidades}
           canPickUnit={alcance.podeEscolherUnidade}
           activeClinicName={session.activeClinic?.name ?? null}
+          activeClinicType={unidadeAtiva?.type ?? "franchise_unit"}
           specialtyOptions={especialidades}
           prefill={prefill}
           vincularUsuario={vincular}

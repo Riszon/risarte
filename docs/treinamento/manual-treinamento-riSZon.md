@@ -388,19 +388,38 @@ Os quatro atalhos no alto (*Toda a equipe*, *Com acesso*, *Sem acesso*,
 quem saiu e continua com login aparece **em cima**; os cadastros incompletos
 ficam no fim, como lista de pendências.
 
-**A ficha** (clique em qualquer linha) tem três partes, nesta ordem:
+**A ficha** (clique em qualquer linha) tem **duas abas**:
 
-1. **Acesso ao sistema** — o e-mail de entrada, as funções por unidade, a senha
-   provisória e os botões de ativar/desativar. **Só o Admin Master mexe aqui**;
-   Gerente, Franqueado e Franqueadora/RH veem para saber o que está valendo.
-2. **Unidades e situação** — ativar ou inativar a pessoa **em cada unidade**
-   (ela pode ter parado em Londrina e continuar em Cambé) e **desligar da
-   equipe**, que é o cadastro inteiro.
-3. **Cadastro** — dados pessoais, contato, endereço, contrato e especialidades.
+**Aba Cadastro** — dados pessoais, contato, endereço, contrato e a **função na
+unidade**. Três coisas ajudam a errar menos:
 
-**Cadastrar alguém novo:** botão **Novo Risartano**. O acesso não é pedido aí —
-depois de salvar, a ficha abre com o botão **Criar acesso** (do Admin). Assim o
-cadastro nunca fica esperando um login.
+- **CPF, CEP e WhatsApp mostram a máscara enquanto você digita.** Os pontos e
+  traços aparecem sozinhos; dígito a mais ou a menos fica visível na hora.
+- **A função é obrigatória** e é ela que vai preencher o acesso depois.
+- **As especialidades só aparecem para Dentista.** Para recepção, TSB ou
+  gerente a lista nem é mostrada — e quem deixa de ser dentista perde as
+  marcações (senão continuaria sendo sugerido para uma sessão de Endodontia).
+
+**Aba Acesso** — o e-mail de entrada, as funções por unidade, a senha
+provisória, os botões de ativar/desativar e as **unidades e situação** (ativar
+ou inativar a pessoa **em cada unidade** — ela pode ter parado em Londrina e
+continuar em Cambé — e **desligar da equipe**, que é o cadastro inteiro).
+**Só o Admin Master mexe no acesso**; Gerente, Franqueado e Franqueadora/RH veem
+para saber o que está valendo.
+
+**Primeiro o cadastro, depois o acesso.** Enquanto faltar dado no cadastro, a
+aba Acesso diz **o que falta** em vez de oferecer um login — e não existe outro
+caminho para criar acesso sem a ficha completa.
+
+**Cadastrar alguém novo:** botão **Novo Risartano**. Ao salvar, a ficha já abre
+na aba **Acesso**, com tudo preenchido a partir do cadastro: e-mail, a unidade,
+a função escolhida e uma **senha provisória sugerida** pelo sistema (sem letras
+e números que se confundem ao ditar por telefone). Ao Admin sobra conferir e
+clicar em **Criar acesso**.
+
+> ⚠️ **Acesso em outra unidade pede autorização.** Dar função numa unidade
+> diferente da unidade do cadastro exige que o Admin autorize no ato — a pessoa
+> passa a ver os dados daquela unidade, e o registro vai para a Auditoria.
 
 > **O e-mail é o que amarra os dois lados.** Ao cadastrar um Risartano com o
 > mesmo e-mail de um login que já existe, o sistema liga os dois sozinho.
