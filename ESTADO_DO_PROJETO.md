@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/09/2026 · Versão do sistema: **0.248.0** · Última migração: **0257** (0256 e 0257 pendentes em produção; aplicadas no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 17/09/2026 · Versão do sistema: **0.249.0** · Última migração: **0257** (aplicada em produção pelo dono) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3733,6 +3733,28 @@ real** (`getDisplayMedia` + colar + anexar) e ordem **A → B → C**.
 - ⚠️ `.next-telas` (pasta do servidor da varredura) NÃO está no ignore do
   eslint: com ela presente o lint acusa ~800 problemas que não são do código.
   Apagar depois de usar.
+
+**B.2 — captura da tela ONDE o problema está (v0.249.0, sem migração).**
+Queixa do dono após testar: *"vai capturar sempre a tela de onde relata o
+problema"*. Três caminhos: **Capturar esta tela** (a aba atrás do painel),
+**Ir até a tela do problema** (o painel fecha, uma barra no rodapé captura em
+qualquer tela e volta ao relato) e **Outra aba ou janela** (lista do
+navegador; único caminho nas páginas de relato, onde "esta tela" seria a
+própria página).
+- O rascunho mora no `ReportNavItem` (barra de cima, montada em toda tela) e
+  o formulário virou controlável (`controle`). `Portal keepMounted`: fechar
+  no X não apaga; Cancelar descarta.
+- Tela e módulo seguem a última captura, salvo se editados à mão
+  (`telaEditada`/`moduloEditado`).
+- ⚠️ A barra é desenhada por `createPortal` no `body`: dentro do `<header>`
+  com `backdrop-blur`, o `position: fixed` tomava o header como referência e
+  a barra "do rodapé" apareceu cortada no alto. **Filtro/backdrop-filter cria
+  bloco de contenção para fixed.**
+- `nomeDaCaptura(data, tela)` leva a tela e troca segmento com cara de id
+  por "ficha". `AjudaDoPrint` ("Como usar o print") junto dos botões.
+- Provado logado no Chromium (27 checagens, inclusive a captura de outra aba
+  via `--auto-select-tab-capture-source-by-title`); captura inspecionada sem a
+  barra; varredura 93/93.
 
 **Pendente:** C (painel de indicadores).
 

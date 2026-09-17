@@ -113,10 +113,32 @@ export function caminhoDoAnexo(reportId: string, uuid: string, tipo: TipoAceito)
   return `${reportId}/${uuid}.${extensaoDo(tipo)}`;
 }
 
-/** Nome mostrado na tela para a captura (o arquivo não tem nome próprio). */
-export function nomeDaCaptura(instante: Date): string {
+/**
+ * Nome da captura (o arquivo não tem nome próprio). Leva a TELA de onde veio:
+ * no modo "ir até a tela do problema" a pessoa tira prints de telas
+ * diferentes, e quem lê o relato precisa saber qual é qual. O endereço é do
+ * sistema (`/financeiro/dre`), nunca dado de paciente — mas o id que alguns
+ * endereços carregam é trocado por "ficha", para não viajar no nome.
+ */
+export function nomeDaCaptura(instante: Date, tela?: string | null): string {
   const p = (n: number) => String(n).padStart(2, "0");
-  return `captura-${instante.getFullYear()}${p(instante.getMonth() + 1)}${p(
+  const quando = `${instante.getFullYear()}${p(instante.getMonth() + 1)}${p(
     instante.getDate()
-  )}-${p(instante.getHours())}${p(instante.getMinutes())}${p(instante.getSeconds())}.png`;
+  )}-${p(instante.getHours())}${p(instante.getMinutes())}${p(instante.getSeconds())}`;
+  return `captura${rotuloDaTela(tela)}-${quando}.png`;
+}
+
+const PARECE_ID = /^(?:[0-9a-f]{8}-[0-9a-f-]{27}|\d+|[A-Z]{2,3}-\d+)$/i;
+
+function rotuloDaTela(tela?: string | null): string {
+  if (!tela) return "";
+  const partes = tela
+    .split(/[?#]/)[0]
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => (PARECE_ID.test(seg) ? "ficha" : seg))
+    .map((seg) => seg.normalize("NFD").replace(/[^a-zA-Z0-9-]/g, "").toLowerCase())
+    .filter(Boolean)
+    .slice(0, 3);
+  return partes.length ? `-${partes.join("-")}` : "-inicio";
 }

@@ -96,4 +96,22 @@ describe("caminho e nomes", () => {
   it("nome da captura com data e hora", () => {
     expect(nomeDaCaptura(new Date(2026, 8, 17, 9, 5, 3))).toBe("captura-20260917-090503.png");
   });
+
+  it("o nome diz de que tela veio a captura", () => {
+    const d = new Date(2026, 8, 17, 9, 5, 3);
+    expect(nomeDaCaptura(d, "/financeiro/dre")).toBe("captura-financeiro-dre-20260917-090503.png");
+    expect(nomeDaCaptura(d, "/")).toBe("captura-inicio-20260917-090503.png");
+    expect(nomeDaCaptura(d, "/agenda?dia=2026-09-17")).toBe("captura-agenda-20260917-090503.png");
+  });
+
+  it("⚠️ id da ficha não viaja no nome do arquivo", () => {
+    const d = new Date(2026, 8, 17, 9, 5, 3);
+    expect(nomeDaCaptura(d, "/prontuarios/0d303d4b-e456-427b-ba65-d35962229f5e")).toBe(
+      "captura-prontuarios-ficha-20260917-090503.png"
+    );
+    expect(nomeDaCaptura(d, "/problemas/OC-00012")).toBe("captura-problemas-ficha-20260917-090503.png");
+    expect(nomeDaCaptura(d, "/empresarial/123/ficha")).toBe(
+      "captura-empresarial-ficha-ficha-20260917-090503.png"
+    );
+  });
 });

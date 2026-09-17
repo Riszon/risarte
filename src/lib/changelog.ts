@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.249.0",
+    data: "2026-09-17",
+    migracao: null,
+    titulo: "Print da tela onde o problema está — mesmo que seja outra tela",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O botão de captura fotografava sempre a tela onde o relato estava aberto. Agora há três caminhos: Capturar esta tela; Ir até a tela do problema (o painel vira uma barra no rodapé, você navega pelo sistema e captura onde o problema está); e Outra aba ou janela (o navegador mostra a lista do que está aberto).",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Enquanto você navega para capturar, o relato fica guardado. Ao voltar, a tela e a parte do sistema passam a ser as da captura, a menos que você as tenha mudado à mão. Fechar o painel no X também não apaga mais o que foi escrito — para desistir, use Cancelar.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Junto dos botões há o passo a passo Como usar o print, e cada captura recebe o nome da tela de onde veio.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.248.0",
     data: "2026-09-17",
     migracao: "0257",

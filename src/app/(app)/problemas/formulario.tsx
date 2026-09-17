@@ -47,6 +47,20 @@ const ITENS_MODULO = MODULOS.map((m) => ({ value: m.value, label: m.label }));
  * confirma: o sistema sabe o endereço, não sabe se o problema é daquela tela
  * ou de outra que ela tinha acabado de usar.
  */
+export type ControleDoFormulario = {
+  anexos: AnexoPendente[];
+  aoMudarAnexos: (lista: AnexoPendente[]) => void;
+  tela: string;
+  aoMudarTela: (tela: string) => void;
+  modulo: string | null;
+  aoMudarModulo: (modulo: string) => void;
+  aoIrAteATela: () => void;
+  /** A tela que está atrás do painel AGORA (pode não ser a de origem). */
+  telaAtual: string;
+  /** Uma captura desta tela foi tirada — o painel decide se atualiza tela e módulo. */
+  aoCapturarEstaTela: () => void;
+};
+
 export function FormularioDeRelato({
   telaSugerida,
   digestSugerido,
@@ -56,6 +70,7 @@ export function FormularioDeRelato({
   esconder,
   mostrar,
   silencioso = false,
+  controle,
 }: {
   telaSugerida: string;
   digestSugerido: string;
@@ -67,9 +82,17 @@ export function FormularioDeRelato({
   mostrar?: () => void;
   /** Quem abriu o formulário dá o próprio aviso de sucesso (o painel dá um com link). */
   silencioso?: boolean;
+  /**
+   * O painel da boia GUARDA o rascunho fora do formulário: no modo "ir até a
+   * tela do problema" a pessoa navega pelo sistema, e os prints tirados lá
+   * (e a tela onde foram tirados) precisam voltar para cá.
+   */
+  controle?: ControleDoFormulario;
 }) {
   const [enviando, iniciar] = useTransition();
-  const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
+  const [anexosLocais, setAnexosLocais] = useState<AnexoPendente[]>([]);
+  const anexos = controle?.anexos ?? anexosLocais;
+  const setAnexos = controle?.aoMudarAnexos ?? setAnexosLocais;
   const [etapa, setEtapa] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const uid = useId();
@@ -138,7 +161,12 @@ export function FormularioDeRelato({
           <Label htmlFor={campo("module")}>Parte do sistema</Label>
           <Select
             items={ITENS_MODULO}
-            defaultValue={moduloSugerido ?? undefined}
+            {...(controle
+              ? {
+                  value: controle.modulo,
+                  onValueChange: (v: string | null) => v && controle.aoMudarModulo(v),
+                }
+              : { defaultValue: moduloSugerido ?? undefined })}
             name="module"
             required
           >
@@ -188,7 +216,13 @@ export function FormularioDeRelato({
         <Input
           id={campo("screen")}
           name="screen"
-          defaultValue={telaSugerida}
+          {...(controle
+            ? {
+                value: controle.tela,
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                  controle.aoMudarTela(e.target.value),
+              }
+            : { defaultValue: telaSugerida })}
           maxLength={120}
           placeholder="Ex.: Agenda · Financeiro → Contas a pagar"
         />
@@ -225,6 +259,10 @@ export function FormularioDeRelato({
           esconder={esconder}
           mostrar={mostrar}
           desabilitado={enviando}
+          modo={controle ? "painel" : "pagina"}
+          aoIrAteATela={controle?.aoIrAteATela}
+          telaAtual={controle?.telaAtual ?? telaSugerida}
+          aoCapturarEstaTela={controle?.aoCapturarEstaTela}
         />
       </div>
 

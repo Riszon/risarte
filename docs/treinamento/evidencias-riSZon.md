@@ -252,3 +252,6 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-037 | Captura real da aba, com o painel escondido na hora da foto; sem captura no celular | `src/lib/captura-de-tela.ts` | ✅ conferido no Chromium (imagem inspecionada) |
 | EV-038 | Boia abre painel ao lado da tela atual, com tela e parte do sistema preenchidas | `src/components/report-nav-item.tsx` | ✅ conferido logado |
 | EV-039 | Limites 5 por envio / 10 MB / 10 por relato; recusa com motivo | `src/lib/anexos-de-relato.ts` + teste | ✅ |
+| EV-040 | Três caminhos de captura (esta tela / ir até a tela do problema / outra aba ou janela) e rascunho guardado ao navegar | `src/components/report-nav-item.tsx` + `src/lib/captura-de-tela.ts` | ✅ conferido logado (27 checagens; captura inspecionada sem a barra) |
+| EV-041 | Tela e parte do sistema seguem a captura, salvo se editadas à mão; nome do arquivo leva a tela, sem id de ficha | `report-nav-item.tsx` + `anexos-de-relato.ts` + teste | ✅ |
+| EV-042 | "Como usar o print" junto dos botões | `src/app/(app)/problemas/anexos.tsx` (`AjudaDoPrint`) | ✅ |

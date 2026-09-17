@@ -37,8 +37,20 @@ const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const proximoQuadro = () =>
   new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
+/**
+ * DE ONDE VEM A FOTO (pedido do dono, 17/09/2026: "vai capturar sempre a tela
+ * de onde relata o problema").
+ *
+ * - `esta-aba`: a aba em que a pessoa está — o navegador já oferece ela
+ *   primeiro. É o caso do painel da boia e do modo "ir até a tela do problema".
+ * - `escolher`: o navegador mostra a lista inteira (abas, janelas, tela
+ *   toda), para quem abriu o problema em outra aba ou outro programa.
+ */
+export type OrigemDaCaptura = "esta-aba" | "escolher";
+
 export async function capturarTela(opcoes: {
   nome: string;
+  origem?: OrigemDaCaptura;
   esconder?: () => void;
   mostrar?: () => void;
 }): Promise<ResultadoDaCaptura> {
@@ -47,15 +59,27 @@ export async function capturarTela(opcoes: {
   let stream: MediaStream;
   try {
     // Precisa ser chamado DIRETO do clique: o navegador exige o gesto.
-    stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { displaySurface: "browser" },
-      audio: false,
-      // Opções do Chrome/Edge que oferecem a aba atual primeiro. Navegador que
-      // não conhece simplesmente ignora.
-      preferCurrentTab: true,
-      selfBrowserSurface: "include",
-      surfaceSwitching: "exclude",
-    } as DisplayMediaStreamOptions);
+    const estaAba = (opcoes.origem ?? "esta-aba") === "esta-aba";
+    stream = await navigator.mediaDevices.getDisplayMedia(
+      (estaAba
+        ? {
+            video: { displaySurface: "browser" },
+            audio: false,
+            // Opções do Chrome/Edge que oferecem a aba atual primeiro.
+            // Navegador que não conhece simplesmente ignora.
+            preferCurrentTab: true,
+            selfBrowserSurface: "include",
+            surfaceSwitching: "exclude",
+          }
+        : {
+            video: true,
+            audio: false,
+            // Lista completa, começando pelas outras abas.
+            preferCurrentTab: false,
+            selfBrowserSurface: "include",
+            surfaceSwitching: "include",
+          }) as unknown as DisplayMediaStreamOptions
+    );
   } catch (e) {
     const nome = e instanceof DOMException ? e.name : "";
     return { ok: false, motivo: nome === "NotAllowedError" ? "cancelado" : "falhou" };

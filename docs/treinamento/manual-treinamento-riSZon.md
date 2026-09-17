@@ -1235,21 +1235,46 @@ atrapalha o trabalho / impede de trabalhar).
 > escolha é obrigatória porque é ela que permite contar, por exemplo, quantas
 > sugestões a Agenda recebeu.
 
-**Mostrar o problema — anexos e captura de tela.** No fim do formulário:
+**Mostrar o problema — anexos e captura de tela.** No fim do formulário há
+três jeitos de capturar, porque o problema nem sempre está na tela atrás do
+painel:
 
-| Botão / gesto | O que faz |
-|---|---|
-| **Capturar a tela** | O navegador pergunta se o sistema pode ver a aba. Ao permitir, o painel sai da frente por um instante e a tela vira imagem, do jeito que estava |
-| **Anexar arquivo** | Escolhe imagem, PDF ou vídeo (MP4/WebM) do computador ou do celular |
-| **Ctrl+V** | Cola um print que você já tirou (tecla Print Screen, ferramenta de recorte) |
-| **Arrastar** | Solta o arquivo em cima da área dos anexos |
+| Botão / gesto | Quando usar | O que faz |
+|---|---|---|
+| **Capturar esta tela** | O problema está na tela atrás do painel | O painel sai da frente por um instante e a tela vira imagem, do jeito que estava |
+| **Ir até a tela do problema** | O problema está em **outra tela do sistema** | O painel vira uma **barra no rodapé**. Navegue pelo menu até a tela do problema e clique em **Capturar** (pode tirar vários prints, de telas diferentes). Depois, **Voltar ao relato** |
+| **Outra aba ou janela** | O problema está aberto em **outra aba** do navegador ou em **outro programa** | O navegador mostra a lista do que está aberto; escolha e clique em **Compartilhar** |
+| **Anexar arquivo** | Você já tem o arquivo | Imagem, PDF ou vídeo (MP4/WebM), do computador ou do celular |
+| **Ctrl+V** | Você já tirou o print | Cola em qualquer campo do formulário (tecla **Print Screen**, ou **Win+Shift+S** para recortar um pedaço) |
+| **Arrastar** | — | Solta o arquivo em cima da área dos anexos |
+
+> **No modo "Ir até a tela do problema" nada se perde.** O que você escreveu e
+> os prints ficam guardados enquanto você navega. E, se você não tiver mudado
+> à mão os campos *Em que tela* e *Parte do sistema*, eles passam a ser os da
+> tela onde você capturou — é lá que o problema está.
+
+> **Fechar o painel no X não apaga o relato**: ao abrir a boia de novo, ele
+> está lá (o painel avisa *"Relato começado em …"*). Para desistir de vez, use
+> **Cancelar**.
+
+**Na primeira captura o navegador pede permissão** para ver a tela. É só
+permitir: o sistema tira uma única foto e para de ver na mesma hora. O arquivo
+recebe o nome da tela de onde veio (ex.: *captura-agenda-20260917-0930.png*).
+
+**Não sabe por onde começar?** Clique em **Como usar o print**, logo abaixo dos
+botões — o passo a passo está ali.
+
+**Na página de um relato** (para acrescentar informação ou responder), o botão
+é **Capturar de outra aba ou janela**: "esta tela" ali seria a própria página
+do relato. Abra a tela do problema numa aba nova antes (botão direito no menu →
+*Abrir em nova aba*) e escolha essa aba na lista do navegador.
 
 Até **5 por envio**, **10 MB cada**, e no máximo **10 por relato**. Cada anexo
 aparece como miniatura antes de enviar, com um **X** para tirar da lista. O que
 não pode entrar é recusado **com o motivo** (tipo ou tamanho).
 
-> **No celular não existe "Capturar a tela"** — o navegador do telefone não
-> oferece isso para páginas. Tire o print pelo próprio aparelho e use **Anexar
+> **No celular não existem os botões de captura** — o navegador do telefone
+> não oferece isso para páginas. Tire o print pelo próprio aparelho e use **Anexar
 > arquivo**.
 
 > ⚠️ **O print mostra o que estava na tela, inclusive dado de paciente.** Quem
