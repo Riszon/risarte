@@ -39,12 +39,16 @@ export function Topbar({
   podeVerSistema,
   temUnidade,
   isAdminMaster,
+  modoPortal = false,
 }: {
   podeBuscar: boolean;
   podeVerManual: boolean;
   podeVerSistema: boolean;
   temUnidade: boolean;
   isAdminMaster: boolean;
+  /** 0259: quem ainda não tem o sistema real liberado. A barra fica mínima —
+   *  chat e avisos de um sistema que a pessoa não usa seriam ruído. */
+  modoPortal?: boolean;
 }) {
   return (
     <header
@@ -59,8 +63,12 @@ export function Topbar({
 
       <div className="flex shrink-0 items-center gap-0.5">
         <BotaoDeTema />
-        <ChatNavItem />
-        <NotificationNavItem />
+        {!modoPortal && (
+          <>
+            <ChatNavItem />
+            <NotificationNavItem />
+          </>
+        )}
         {podeVerSistema && (
           <>
             <TopbarItem

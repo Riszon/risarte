@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/09/2026 · Versão do sistema: **0.252.0** · Última migração: **0258** (pendente em produção; aplicada no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 17/09/2026 · Versão do sistema: **0.253.0** · Última migração: **0259** (0258 e 0259 pendentes em produção; aplicadas no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
 >
@@ -3779,6 +3779,70 @@ própria página).
   aberto direto na produção sem a 0258 (mostra o aviso da migração).
 
 **PROBLEMAS 2.0 COMPLETO** (A, B, B.2, C).
+
+### TRÊS AMBIENTES, UM LOGIN (17/09/2026, v0.253.0, migração 0259)
+
+Pedido do dono: o Risartano acessa o **sistema real**, o **treino** e o
+**Risarte Academy** com um login só; a tela de Início é o ponto de partida; quem
+ainda não foi liberado no real vê só o Início; e todo recém-chegado treina antes.
+
+**A correção de premissa, primeiro.** O Academy divide o MESMO projeto Supabase
+da produção (schema `treinamento`, `auth.users` comum) — ali o login já é o
+mesmo. O **treino tem banco próprio**: nenhuma linha da produção alcança o login
+de lá. "Um login só" para o treino é **construído**: ao liberar, a produção cria
+a pessoa naquele banco; ao trocar a senha, troca lá; ao retirar, bane lá.
+
+**0259:** `environments` (rótulo + **endereço**, configuração editável em
+`/admin/ambientes`) e `user_environments` (quem pode cada um), mais
+`environment_allowed`, `set_user_environment` e `set_environment_url`.
+- **Padrão:** treino e Academy **abertos**; sistema **fechado** (é o que se
+  libera de propósito). Admin Master nunca se tranca para fora.
+- **Backfill:** todo mundo que já tem função ganha `sistema` — sem isso a
+  migração trancaria a equipe inteira no minuto em que subisse.
+
+**Modo portal.** Sem `sistema`, só `/`, `/perfil` e `/manual` abrem. A barreira
+fica em `getSessionContext()` (por onde TODA tela passa) e o caminho chega nela
+por um cabeçalho `x-risarte-path` posto pelo **proxy** — componente de servidor
+não enxerga o endereço, e ler o banco no proxy custaria uma consulta por clique
+(lição do §0d). O layout desenha a casca reduzida; o Início vira portal (sem
+pendências e sem o changelog, que tomava a tela inteira — achado olhando a foto).
+
+**O treino, na prática** (`src/lib/treino.ts`): `liberarNoTreino` cria ou
+reativa, dá a função do cadastro casando a unidade **pelo NOME** (os ids das
+clínicas diferem entre bancos) e marca `sistema` lá; `bloquearNoTreino` bane;
+`sincronizarSenhaNoTreino` espelha a senha. Exige `TREINO_SUPABASE_URL` e
+`TREINO_SERVICE_ROLE_KEY` na Vercel da produção — **sem elas, liberar o treino
+falha com mensagem clara em vez de marcar o acesso sem criar ninguém**.
+
+**Senha própria** (`/perfil` → Minha senha): exige a **senha atual** (conferida
+num cliente à parte, sem biscoitos) e troca pela **chave de serviço**.
+`auth.updateUser()` girava os tokens no meio da resposta: a tela seguinte caía
+sem sessão e o Perfil abria com "esta tela não conseguiu abrir" **com a senha
+não trocada** — achado no teste logado.
+
+**Limites declarados:** o Academy obedece ao código do Academy (outro
+repositório); enquanto ele não ler `user_environments`, a marcação controla o
+atalho, não a porta de lá. E recuperação de senha por link do Supabase não passa
+pelo sistema, então não se espelha.
+
+**Conferido:** 10 testes puros novos; portão verde; **varredura 103 telas × 8
+perfis = 824 aberturas, zero falhas**; ponta a ponta logado no treino (modo
+portal barra /agenda, /prontuarios, /financeiro e /risartanos; liberar o sistema
+abre; retirar/liberar o treino grava e devolve a senha; troca de senha pelo
+Perfil recusa a senha atual errada, aceita a certa e mantém a sessão).
+
+⚠️ **A varredura acusou 5 falhas na primeira passada e elas eram do
+instrumento**: eu editei arquivos (e rodei `npm run verificar`) com o servidor
+de desenvolvimento no ar, e o Turbopack passou a servir *"module factory is not
+available"* — 500 em telas sãs. Servidor reiniciado limpo, sem editar nada
+durante: 824/824. **Régua medida durante obra não vale**; a próxima varredura
+começa depois do último salvamento.
+
+⚠️ **O provisionamento foi exercitado com UM banco fazendo os dois papéis** (o
+treino apontando para si mesmo): cria login, dá função pelo nome da unidade,
+marca o ambiente e bane. O que isso NÃO prova é o caso de dois projetos
+distintos — e ali apareceu um efeito colateral só do teste: provisionar trocou a
+senha da própria pessoa e derrubou a sessão dela.
 
 ### RISARTANOS + ACESSO NUMA TELA SÓ (17/09/2026, v0.251.0, SEM migração)
 

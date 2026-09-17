@@ -7,9 +7,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   carregarAcessos,
+  carregarAmbientesDoUsuario,
   carregarClinicas,
   carregarFuncoes,
 } from "../../dados";
+import { treinoConfigurado } from "@/lib/treino";
 import { AcessoDoRisartano } from "../../acesso";
 import { SeloDeAcesso } from "../../selos";
 
@@ -53,10 +55,11 @@ export default async function AcessoSemCadastroPage(
     .eq("user_id", perfil.id)
     .maybeSingle<{ id: string; code: string | null }>();
 
-  const [acessos, clinicas, funcoes] = await Promise.all([
+  const [acessos, clinicas, funcoes, ambientes] = await Promise.all([
     carregarAcessos(supabase, [perfil.id]),
     carregarClinicas(supabase),
     carregarFuncoes(supabase, perfil.id),
+    carregarAmbientesDoUsuario(supabase, perfil.id),
   ]);
   const acesso = acessos.get(perfil.id) ?? null;
 
@@ -127,6 +130,8 @@ export default async function AcessoSemCadastroPage(
         unidadeDoCadastro={null}
         funcaoPrevista={null}
         senhaSugerida=""
+        ambientes={ambientes}
+        treinoConfigurado={treinoConfigurado()}
         acesso={acesso}
         funcoes={funcoes}
         clinicas={clinicas}

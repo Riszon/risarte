@@ -19,6 +19,7 @@ import {
   Clock,
   DoorOpen,
   FileText,
+  Globe,
   Handshake,
   HeartPulse,
   Home,
@@ -214,6 +215,8 @@ const ADMIN_ITEMS = [
   // O ACESSO (login, senha, função) mora na ficha do Risartano desde a
   // v0.251.0 — não há mais uma tela de "Usuários" separada do cadastro.
   { href: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+  // 0259: os endereços dos três ambientes (sistema, treino e Academy).
+  { href: "/admin/ambientes", label: "Ambientes", icon: Globe },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },

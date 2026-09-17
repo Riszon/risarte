@@ -19,8 +19,10 @@ import {
   carregarEspecialidades,
   carregarFicha,
   carregarFuncoes,
+  carregarAmbientesDoUsuario,
   podeVerEquipe,
 } from "../dados";
+import { treinoConfigurado } from "@/lib/treino";
 import { AcessoDoRisartano } from "../acesso";
 import { FormularioDoRisartano } from "../formulario";
 import { SeloDeAcesso } from "../selos";
@@ -86,6 +88,10 @@ export default async function FichaDoRisartanoPage(
   const clinicas = session.isAdminMaster ? await carregarClinicas(supabase) : [];
   const loginsLivres =
     session.isAdminMaster && !acesso ? await loginsSemCadastro(supabase) : [];
+  // 0259: os três ambientes desta pessoa.
+  const ambientes = acesso
+    ? await carregarAmbientesDoUsuario(supabase, acesso.userId)
+    : {};
 
   const situacao = situacaoDeAcesso({
     tipo: "risartano",
@@ -235,6 +241,8 @@ export default async function FichaDoRisartanoPage(
             }}
             funcaoPrevista={funcaoPrevista}
             senhaSugerida={senhaSugerida(sorteio)}
+            ambientes={ambientes}
+            treinoConfigurado={treinoConfigurado()}
             acesso={acesso}
             funcoes={funcoes}
             clinicas={clinicas}

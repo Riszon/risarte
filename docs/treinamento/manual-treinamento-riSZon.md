@@ -428,6 +428,45 @@ clicar em **Criar acesso**.
 incompleto* e o botão **Completar cadastro**, que abre o formulário já com nome
 e e-mail preenchidos.
 
+### 2.6. Os três ambientes
+
+O Risartano usa **um login só** em três lugares:
+
+| Ambiente | O que é |
+|---|---|
+| **riSZon** | o sistema do dia a dia — agenda, prontuário, jornada, financeiro |
+| **riSZon Treino** | o mesmo sistema com **dados de mentira**, para aprender sem medo |
+| **Risarte Academy** | cursos, vídeos, provas e certificados |
+
+**O ponto de partida é sempre a tela de Início do riSZon.** Lá aparecem os
+atalhos para o treino e para o Academy — eles abrem em outra aba.
+
+**Quem chega novo entra antes de ser liberado no sistema de verdade.** Nesse
+período ele vê **só a tela de Início**, com os atalhos: o menu dos módulos nem
+aparece, e digitar o endereço de outra tela devolve para o Início. É assim que
+o treinamento começa: primeiro o treino, depois o sistema real.
+
+**Para quem libera (Admin Master):** na ficha do Risartano, aba **Acesso**, há
+os três ambientes com **Liberar** / **Retirar**.
+
+- **riSZon** — sem ele, a pessoa fica só no Início.
+- **riSZon Treino** — liberar **cria o login dela no treino**, com o mesmo
+  e-mail. O sistema mostra uma **senha provisória do treino** para você anotar e
+  passar por um canal seguro. Retirar **bloqueia** o login de lá (não apaga
+  nada do que ela fez treinando).
+- **Risarte Academy** — libera os cursos.
+
+> **O treino e o Academy já vêm liberados** para quem ganha acesso: são os
+> lugares de aprender. O que se libera caso a caso é o sistema de verdade.
+
+**Trocar a senha:** em **Perfil → Minha senha**, informando a senha atual. A
+nova vale no riSZon **e no treino**. (Recuperação por link de e-mail, se um dia
+existir, não se espelha.)
+
+**Endereços:** ficam em **Administração → Ambientes** (só o Admin Master). O
+Risarte Academy só mostra o atalho depois que o endereço dele for preenchido —
+enquanto estiver em branco, o cartão não aparece.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu

@@ -5,6 +5,14 @@ import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
+import { AMBIENTES, type Ambiente } from "@/lib/ambientes";
+import { TAMANHO_DA_SENHA_SUGERIDA, senhaSugerida } from "@/lib/risartanos";
+import {
+  bloquearNoTreino,
+  liberarNoTreino,
+  sincronizarSenhaNoTreino,
+  treinoConfigurado,
+} from "@/lib/treino";
 import {
   USER_ROLES,
   UNIT_SCOPES,
@@ -25,7 +33,7 @@ import {
  * cuidam do cadastro; criar login, trocar senha e dar função é do Admin.
  */
 
-export type ActionResult = { ok: boolean; error?: string };
+export type ActionResult = { ok: boolean; error?: string; aviso?: string };
 
 /** A ficha e a lista vivem sob /risartanos — a subárvore inteira reaquece. */
 function reaquecer(): void {
@@ -240,6 +248,44 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // OS AMBIENTES escolhidos na hora de liberar o acesso (0259). O treino nasce
+  // com a MESMA senha daqui — é o único momento em que dá para igualar as duas,
+  // porque depois a senha vira um embaralhado que ninguém lê de volta.
+  const ambientesPedidos = AMBIENTES.filter(
+    (a) => String(formData.get(`ambiente_${a}`) ?? "") === "on"
+  );
+  const avisos: string[] = [];
+  for (const ambiente of ambientesPedidos) {
+    if (ambiente === "treino") {
+      if (!treinoConfigurado()) {
+        avisos.push(
+          "o login do treino não foi criado: falta configurar o ambiente de treino no servidor"
+        );
+        continue;
+      }
+      const r = await liberarNoTreino({
+        email,
+        senha: password,
+        nome: fullName,
+        funcao: String(formData.get("funcao_prevista") ?? "") || null,
+        unidade: String(formData.get("unidade_do_cadastro") ?? "") || null,
+      });
+      if (!r.ok) {
+        avisos.push(r.error ?? "o login do treino não foi criado");
+        continue;
+      }
+    }
+    const { error: erroAmbiente } = await supabase.rpc("set_user_environment", {
+      p_user_id: created.user.id,
+      p_environment: ambiente,
+      p_allowed: true,
+    });
+    if (erroAmbiente) {
+      console.error("ambiente na criação falhou:", erroAmbiente.message);
+      avisos.push(`o ambiente "${ambiente}" não foi marcado`);
+    }
+  }
+
   // Depois do vínculo: aí sim dá para dizer, do lado do servidor, se alguma
   // função saiu da unidade do cadastro (a tela pede autorização para isso).
   const fora: string[] = [];
@@ -256,10 +302,154 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     details: {
       funcoes: assignments.length,
       fora_da_unidade_do_cadastro: fora.length > 0,
+      ambientes: ambientesPedidos,
     },
   });
   reaquecer();
-  return { ok: true };
+  revalidatePath("/", "layout");
+  return {
+    ok: true,
+    aviso:
+      avisos.length > 0 ? `Acesso criado, mas ${avisos.join("; ")}.` : undefined,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Os três ambientes (0259)
+// -----------------------------------------------------------------------------
+
+/** Dados do cadastro que o treino precisa para a pessoa entrar com função. */
+async function dadosParaOTreino(userId: string): Promise<{
+  email: string | null;
+  nome: string;
+  funcao: string | null;
+  unidade: string | null;
+}> {
+  const supabase = await createClient();
+  const [{ data: perfil }, { data: staff }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", userId)
+      .maybeSingle<{ full_name: string; email: string | null }>(),
+    supabase
+      .from("staff_members")
+      .select("full_name, email, role_title, clinics ( name )")
+      .eq("user_id", userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle<{
+        full_name: string;
+        email: string | null;
+        role_title: string | null;
+        clinics: { name: string } | null;
+      }>(),
+  ]);
+  return {
+    email: perfil?.email ?? staff?.email ?? null,
+    nome: staff?.full_name || perfil?.full_name || "",
+    funcao: staff?.role_title ?? null,
+    unidade: staff?.clinics?.name ?? null,
+  };
+}
+
+export type ResultadoDeAmbiente = ActionResult & {
+  /** Senha provisória criada no treino, quando o login nasceu agora. */
+  senhaDoTreino?: string;
+  aviso?: string;
+};
+
+/**
+ * Liga ou desliga um ambiente para a pessoa.
+ *
+ * O `sistema` e o `academy` são uma linha no banco — este banco responde por
+ * eles. O `treino` é outro banco: ligar é **criar a pessoa lá**, desligar é
+ * **bani-la lá**. Por isso a ordem importa: o trabalho no outro banco acontece
+ * ANTES de marcar aqui. Marcar primeiro e falhar depois deixaria a tela dizendo
+ * "liberado" sobre um login que não existe.
+ */
+export async function definirAmbiente(
+  userId: string,
+  ambiente: Ambiente,
+  liberar: boolean
+): Promise<ResultadoDeAmbiente> {
+  await requireAdminMaster();
+  if (!AMBIENTES.includes(ambiente)) {
+    return { ok: false, error: "Ambiente desconhecido." };
+  }
+
+  let senhaDoTreino: string | undefined;
+  if (ambiente === "treino") {
+    if (!treinoConfigurado()) {
+      return {
+        ok: false,
+        error:
+          "O ambiente de treino ainda não está ligado neste servidor. Falta cadastrar TREINO_SUPABASE_URL e TREINO_SERVICE_ROLE_KEY nas variáveis da Vercel.",
+      };
+    }
+    const dados = await dadosParaOTreino(userId);
+    if (!dados.email) {
+      return { ok: false, error: "Esta pessoa não tem e-mail no cadastro." };
+    }
+    if (liberar) {
+      // O login do treino nasce com senha própria: a senha daqui é guardada
+      // embaralhada e não dá para lê-la. A partir da primeira troca no Perfil,
+      // as duas andam juntas.
+      senhaDoTreino = senhaSugerida(sorteio());
+      const r = await liberarNoTreino({
+        email: dados.email,
+        senha: senhaDoTreino,
+        nome: dados.nome,
+        funcao: dados.funcao,
+        unidade: dados.unidade,
+      });
+      if (!r.ok) return { ok: false, error: r.error };
+    } else {
+      const r = await bloquearNoTreino(dados.email);
+      if (!r.ok) return { ok: false, error: r.error };
+    }
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_user_environment", {
+    p_user_id: userId,
+    p_environment: ambiente,
+    p_allowed: liberar,
+  });
+  if (error) {
+    console.error("definirAmbiente falhou:", error.message);
+    return {
+      ok: false,
+      error:
+        error.code === "PGRST202"
+          ? "O banco ainda não recebeu a migração 0259 (ambientes)."
+          : "Não foi possível salvar o ambiente.",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "user_environments",
+    entityId: userId,
+    details: { ambiente, liberado: liberar },
+  });
+  reaquecer();
+  revalidatePath("/", "layout");
+  return {
+    ok: true,
+    senhaDoTreino,
+    aviso:
+      ambiente === "academy"
+        ? "O Risarte Academy roda em outro sistema: a marcação controla o atalho do Início; o bloqueio lá depende de ajuste no Academy."
+        : undefined,
+  };
+}
+
+/** Bytes de sorteio para a senha provisória (a conta em si é pura e testada). */
+function sorteio(): Uint8Array {
+  const bytes = new Uint8Array(TAMANHO_DA_SENHA_SUGERIDA);
+  crypto.getRandomValues(bytes);
+  return bytes;
 }
 
 export async function updateUserName(
@@ -308,13 +498,25 @@ export async function resetUserPassword(
     return { ok: false, error: "Não foi possível redefinir a senha." };
   }
 
+  // A MESMA SENHA VALE NO TREINO (decisão do dono, 17/09/2026). Se falhar, a
+  // senha daqui já mudou — então o aviso é devolvido em vez de fingir que os
+  // dois ambientes continuam iguais.
+  let aviso: string | undefined;
+  if (treinoConfigurado()) {
+    const { email } = await dadosParaOTreino(userId);
+    if (email) {
+      const r = await sincronizarSenhaNoTreino(email, password);
+      if (!r.ok) aviso = r.error;
+    }
+  }
+
   await logAudit({
     action: "update",
     entityType: "user",
     entityId: userId,
     details: { field: "password" },
   });
-  return { ok: true };
+  return { ok: true, aviso };
 }
 
 export async function setUserActive(

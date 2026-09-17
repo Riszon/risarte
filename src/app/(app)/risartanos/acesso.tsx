@@ -4,7 +4,14 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { Globe, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  AMBIENTES,
+  AMBIENTE_AJUDA,
+  AMBIENTE_ROTULO,
+  ambientePermitido,
+  type PermissoesDeAmbiente,
+} from "@/lib/ambientes";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -29,6 +36,7 @@ import type { StaffAccess } from "@/lib/staff";
 import {
   addUserRole,
   createUser,
+  definirAmbiente,
   removeUserRole,
   resetUserPassword,
   setUserActive,
@@ -65,6 +73,8 @@ export function AcessoDoRisartano({
   unidadeDoCadastro,
   funcaoPrevista,
   senhaSugerida,
+  ambientes,
+  treinoConfigurado,
   acesso,
   funcoes,
   clinicas,
@@ -83,6 +93,9 @@ export function AcessoDoRisartano({
   funcaoPrevista: UserRole | null;
   /** Sugestão vinda do servidor (sorteio não pode acontecer no desenho). */
   senhaSugerida: string;
+  /** Os três ambientes desta pessoa (0259) e se o treino está ligado no servidor. */
+  ambientes: PermissoesDeAmbiente;
+  treinoConfigurado: boolean;
   acesso: StaffAccess | null;
   funcoes: FuncaoDoAcesso[];
   clinicas: Clinica[];
@@ -145,6 +158,7 @@ export function AcessoDoRisartano({
             unidadeDoCadastro={unidadeDoCadastro}
             funcaoPrevista={funcaoPrevista}
             senhaSugerida={senhaSugerida}
+            treinoConfigurado={treinoConfigurado}
             onCancelar={() => setCriando(false)}
           />
         )}
@@ -291,6 +305,14 @@ export function AcessoDoRisartano({
         )}
       </div>
 
+      <Ambientes
+        userId={acesso.userId}
+        nome={staffNome}
+        ambientes={ambientes}
+        treinoConfigurado={treinoConfigurado}
+        isAdmin={isAdmin}
+      />
+
       {isAdmin && (
         <>
           <form
@@ -375,6 +397,111 @@ export function AcessoDoRisartano({
   );
 }
 
+/**
+ * OS TRÊS AMBIENTES (0259).
+ *
+ * O `sistema` e o `academy` são uma decisão guardada neste banco. O `treino` é
+ * outro banco: ligar cria a pessoa lá, desligar bane o login de lá — por isso
+ * ele é o único que pode devolver uma senha nova para o Admin anotar.
+ */
+function Ambientes({
+  userId,
+  nome,
+  ambientes,
+  treinoConfigurado,
+  isAdmin,
+}: {
+  userId: string;
+  nome: string;
+  ambientes: PermissoesDeAmbiente;
+  treinoConfigurado: boolean;
+  isAdmin: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [senhaDoTreino, setSenhaDoTreino] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-2 rounded-lg border p-3">
+      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <Globe className="size-3.5" />
+        Ambientes que esta pessoa acessa
+      </p>
+      <ul className="space-y-1.5">
+        {AMBIENTES.map((a) => {
+          const ligado = ambientePermitido(ambientes, a);
+          return (
+            <li
+              key={a}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2"
+            >
+              <span className="min-w-0">
+                <span className="text-sm font-medium">{AMBIENTE_ROTULO[a]}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {AMBIENTE_AJUDA[a]}
+                </span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span
+                  className={
+                    ligado
+                      ? "text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                      : "text-xs text-muted-foreground"
+                  }
+                >
+                  {ligado ? "Liberado" : "Sem acesso"}
+                </span>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    disabled={isPending || (a === "treino" && !treinoConfigurado)}
+                    onClick={() =>
+                      startTransition(async () => {
+                        const r = await definirAmbiente(userId, a, !ligado);
+                        if (!r.ok) {
+                          toast.error(r.error ?? "Algo deu errado.");
+                          return;
+                        }
+                        setSenhaDoTreino(r.senhaDoTreino ?? null);
+                        toast.success(
+                          ligado
+                            ? `${AMBIENTE_ROTULO[a]} retirado de ${nome}.`
+                            : `${AMBIENTE_ROTULO[a]} liberado para ${nome}.`
+                        );
+                        if (r.aviso) toast.warning(r.aviso);
+                        router.refresh();
+                      })
+                    }
+                  >
+                    {ligado ? "Retirar" : "Liberar"}
+                  </Button>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {isAdmin && !treinoConfigurado && (
+        <p className="text-xs text-muted-foreground">
+          O treino ainda não está ligado neste servidor: falta cadastrar
+          <b> TREINO_SUPABASE_URL</b> e <b>TREINO_SERVICE_ROLE_KEY</b> nas
+          variáveis da Vercel.
+        </p>
+      )}
+      {senhaDoTreino && (
+        <p className="rounded-lg border border-gold/40 bg-gold/5 px-3 py-2 text-sm">
+          Login do treino criado. Senha provisória de lá:{" "}
+          <b className="font-mono">{senhaDoTreino}</b> — anote e passe por um
+          canal seguro. Quando {nome} trocar a senha no Perfil, ela passa a valer
+          nos dois ambientes.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Bloco({ children }: { children: React.ReactNode }) {
   return (
     <section
@@ -407,6 +534,7 @@ function CriarAcesso({
   unidadeDoCadastro,
   funcaoPrevista,
   senhaSugerida,
+  treinoConfigurado,
   onCancelar,
 }: {
   staffId: string;
@@ -416,6 +544,7 @@ function CriarAcesso({
   unidadeDoCadastro: { id: string; name: string } | null;
   funcaoPrevista: UserRole | null;
   senhaSugerida: string;
+  treinoConfigurado: boolean;
   onCancelar: () => void;
 }) {
   const router = useRouter();
@@ -504,10 +633,18 @@ function CriarAcesso({
         formData.set("full_name", nome);
         formData.set("assignments", JSON.stringify(funcoes));
         formData.set("staff_member_id", staffId);
+        // O treino precisa saber COM QUE função e em que unidade a pessoa entra
+        // lá — os ids das clínicas são diferentes em cada banco, então vai o
+        // nome da unidade.
+        if (funcaoPrevista) formData.set("funcao_prevista", funcaoPrevista);
+        if (unidadeDoCadastro) {
+          formData.set("unidade_do_cadastro", unidadeDoCadastro.name);
+        }
         startTransition(async () => {
           const r = await createUser(formData);
           if (r.ok) {
             toast.success("Acesso criado. Passe a senha por um canal seguro.");
+            if (r.aviso) toast.warning(r.aviso);
             onCancelar();
             router.refresh();
           } else {
@@ -615,6 +752,35 @@ function CriarAcesso({
         <Button type="button" variant="outline" size="sm" onClick={adicionar}>
           Adicionar função
         </Button>
+      </div>
+
+      {/* OS AMBIENTES, escolhidos no mesmo ato de liberar o acesso (0259). O
+          treino vem marcado de propósito: todo Risartano recém-chegado passa
+          primeiro por lá. O sistema real é o que se decide caso a caso. */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Ambientes liberados
+        </p>
+        {AMBIENTES.map((a) => (
+          <label key={a} className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              name={`ambiente_${a}`}
+              defaultChecked={a !== "sistema"}
+              disabled={a === "treino" && !treinoConfigurado}
+              className="mt-0.5 accent-primary"
+            />
+            <span>
+              <b>{AMBIENTE_ROTULO[a]}</b>
+              <span className="block text-xs text-muted-foreground">
+                {AMBIENTE_AJUDA[a]}
+                {a === "treino" && !treinoConfigurado
+                  ? " (ainda não ligado neste servidor)"
+                  : ""}
+              </span>
+            </span>
+          </label>
+        ))}
       </div>
 
       {precisaAutorizar && (

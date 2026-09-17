@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  GraduationCap,
+  MonitorPlay,
+  Sparkles,
+} from "lucide-react";
+import { cartoesDoInicio } from "@/lib/ambientes";
+import { ambienteAtual, carregarEnderecos } from "@/lib/ambientes-db";
 import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { novidadesPara } from "@/lib/changelog";
@@ -141,8 +150,20 @@ export default async function HomePage() {
         "clinical_coordinator",
       ]));
 
-  const pendencias = await montarPendencias(supabase, session);
-  const atalhos = atalhosPara(session);
+  // 0259: OS OUTROS AMBIENTES. O Início é o ponto de partida dos três — daqui
+  // se vai para o treino e para o Academy, com o mesmo login.
+  const portal = !session.ambientes.sistema;
+  const cartoes = cartoesDoInicio({
+    permissoes: session.ambientes,
+    urls: await carregarEnderecos(supabase),
+    atual: ambienteAtual(),
+    isAdminMaster: session.isAdminMaster,
+  });
+
+  // No modo portal ninguém tem função em unidade nenhuma: procurar pendências
+  // seria varrer o banco para devolver zero.
+  const pendencias = portal ? [] : await montarPendencias(supabase, session);
+  const atalhos = portal ? [] : atalhosPara(session);
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
@@ -221,7 +242,59 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* ------------------------------------------- 1b. os outros ambientes */}
+      {(cartoes.length > 0 || portal) && (
+        <section>
+          <h2 className="mb-1 text-lg font-semibold">
+            {portal ? "Por onde começar" : "Outros ambientes"}
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            {portal
+              ? "O sistema do dia a dia ainda não foi liberado para você. Enquanto isso, o treinamento já está aqui — é o mesmo login."
+              : "O mesmo login vale nos três. Abre em outra aba."}
+          </p>
+          {cartoes.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {cartoes.map((c) => (
+                <a
+                  key={c.ambiente}
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-3 rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-muted/40"
+                >
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-gold/15 text-gold-tinta">
+                    {c.ambiente === "academy" ? (
+                      <GraduationCap className="size-5" />
+                    ) : (
+                      <MonitorPlay className="size-5" />
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1 font-semibold">
+                      {c.rotulo}
+                      <ExternalLink className="size-3.5 opacity-60 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                      {c.descricao}
+                    </span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            // Régua vazia grita: sem atalho nenhum, a tela diz POR QUE — e a
+            // quem pedir — em vez de deixar um título solto.
+            <div className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
+              Nenhum ambiente liberado para você ainda. Fale com a Franqueadora
+              para liberarem o treino ou o Risarte Academy.
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ------------------------------------------ 2. o que espera por você */}
+      {!portal && (
       <section>
         <h2 className="mb-3 text-lg font-semibold">O que espera por você</h2>
         {pendencias.length > 0 ? (
@@ -245,19 +318,25 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+      )}
 
       {/* AS NOVIDADES MORAM AQUI (decisão do dono, 08/09/2026).
           Antes ficavam numa aba da tela Sistema, e uma novidade que exige dois
           cliques para ser encontrada não é lida por ninguém. Aqui ela está no
           caminho: é a primeira tela do dia de toda a equipe.
           Continua filtrada por papel — ver `novidadesPara`. */}
-      <section>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-          <Sparkles className="size-5 text-gold-tinta" />
-          O que mudou no sistema
-        </h2>
-        <Novidades versoes={novidadesPara(papeisDaPessoa, session.isAdminMaster)} />
-      </section>
+      {/* No modo portal esta seção sai: quem ainda não usa o sistema não tem o
+          que fazer com o que mudou nele — e a lista é longa, então ela viraria
+          a tela inteira de quem veio só encontrar o caminho do treino. */}
+      {!portal && (
+        <section>
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+            <Sparkles className="size-5 text-gold-tinta" />
+            O que mudou no sistema
+          </h2>
+          <Novidades versoes={novidadesPara(papeisDaPessoa, session.isAdminMaster)} />
+        </section>
+      )}
     </div>
   );
 }

@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.253.0",
+    data: "2026-09-17",
+    migracao: "0259",
+    titulo: "Um login, três ambientes: sistema, treino e Academy",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Início virou o ponto de partida dos três ambientes: dela você entra no riSZon Treino (para aprender sem medo de errar) e no Risarte Academy (cursos, vídeos e provas), com o mesmo login.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quem ainda não foi liberado no sistema do dia a dia já pode entrar: vê a tela de Início com os atalhos do treino e do Academy, e mais nada. É por aí que começa o treinamento de quem chega.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha do Risartano, aba Acesso, cada pessoa tem os três ambientes com Liberar/Retirar. Liberar o treino cria o login dela lá, com o mesmo e-mail — e o sistema mostra a senha provisória do treino para você anotar.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Perfil ganhou Minha senha: você troca a sua senha informando a atual, e a nova passa a valer também no ambiente de treino.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.252.0",
     data: "2026-09-17",
     migracao: null,

@@ -45,6 +45,33 @@ export default async function AppLayout({
     );
   }
 
+  // MODO PORTAL (0259): quem ainda não foi liberado no sistema real entra e vê
+  // só a tela de Início, com os atalhos para o treino e para o Academy. A casca
+  // some junto com os módulos — menu lateral cheio de itens que não abrem seria
+  // uma porta pintada na parede. (Quem BARRA é `getSessionContext`; aqui é só
+  // o que se desenha.)
+  if (!session.ambientes.sistema) {
+    return (
+      <Ambiente
+        tipoDaClinica={session.activeClinic?.type ?? null}
+        className="flex min-h-screen w-full flex-col"
+      >
+        <Topbar
+          podeBuscar={false}
+          podeVerManual={pode(session, "menu.manual")}
+          podeVerSistema={false}
+          temUnidade={false}
+          isAdminMaster={false}
+          modoPortal
+        />
+        <main className="marca-dagua flex-1 overflow-x-auto bg-background [scrollbar-gutter:stable]">
+          {children}
+        </main>
+        <AccessibilityGuard />
+      </Ambiente>
+    );
+  }
+
   const isPlanner = Object.values(session.rolesByClinic).some((roles) =>
     roles.includes("planner_dentist")
   );

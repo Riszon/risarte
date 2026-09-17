@@ -1,7 +1,13 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  AMBIENTES,
+  ambientePermitido,
+  type Ambiente,
+  type PermissoesDeAmbiente,
+} from "@/lib/ambientes";
 import type { ClinicType, UserRole } from "@/lib/roles";
 import {
   matrizPadrao,
@@ -10,6 +16,18 @@ import {
 } from "@/lib/permissions";
 
 export const ACTIVE_CLINIC_COOKIE = "risarte_active_clinic";
+
+/**
+ * O que abre no MODO PORTAL (sem o sistema real liberado): a tela de Início, o
+ * Perfil (onde se troca a própria senha) e o Manual. Nada mais — nem por link
+ * direto, nem por endereço digitado à mão.
+ */
+const PORTAL_PATHS = ["/", "/perfil", "/manual", "/conta-desativada"];
+
+export function caminhoDoPortal(caminho: string): boolean {
+  const limpo = caminho.split("?")[0].replace(/\/+$/, "") || "/";
+  return PORTAL_PATHS.includes(limpo);
+}
 
 export type Clinic = {
   id: string;
@@ -39,6 +57,12 @@ export type SessionContext = {
    * migração 0246), para o sistema nunca ficar sem permissão nenhuma.
    */
   permissoes: MatrizPermissoes;
+  /**
+   * Os AMBIENTES liberados para esta pessoa (0259): o sistema real, o treino e
+   * o Academy. `sistema: false` = modo portal — ela entra, vê a tela de Início
+   * com os atalhos e nada mais.
+   */
+  ambientes: Record<Ambiente, boolean>;
 };
 
 type RoleRow = {
@@ -74,6 +98,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     { data: roleRows },
     { data: permRows, error: permErro },
     { data: allClinics },
+    { data: envRows, error: envErro },
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -101,6 +126,13 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
         .order("type")
         .order("name")
         .returns<Clinic[]>(),
+      // 0259: os ambientes liberados. Entra no MESMO lote das outras — é uma
+      // consulta paralela numa tabela minúscula, não um atraso a mais.
+      supabase
+        .from("user_environments")
+        .select("environment, allowed")
+        .eq("user_id", userId)
+        .returns<{ environment: Ambiente; allowed: boolean }[]>(),
     ]);
 
   // Sem a tabela (banco ainda sem a 0246) ou sem linha nenhuma, vale o padrão
@@ -129,6 +161,40 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
   }
 
   const isAdminMaster = profile?.is_admin_master ?? false;
+
+  // ⚠️ BANCO AINDA SEM A 0259: o código viaja sozinho, a migração não (CLAUDE.md
+  // §0b). Nessa janela a consulta falha — e a resposta certa é **manter todo
+  // mundo com o sistema**, nunca trancar a equipe para fora por causa de uma
+  // tabela que ainda não existe.
+  const registradas: PermissoesDeAmbiente = {};
+  if (!envErro) {
+    for (const row of envRows ?? []) registradas[row.environment] = row.allowed;
+  }
+  const ambientes = Object.fromEntries(
+    AMBIENTES.map((a) => [
+      a,
+      envErro ? true : ambientePermitido(registradas, a, isAdminMaster),
+    ])
+  ) as Record<Ambiente, boolean>;
+
+  // MODO PORTAL: sem o sistema real liberado, só a tela de Início e o Perfil
+  // abrem. A barreira é aqui, no lugar por onde TODA tela passa — e não em cada
+  // página, que é como uma delas ficaria de fora.
+  //
+  // O caminho vem do porteiro (`src/proxy.ts`), que é quem enxerga o endereço.
+  // Sem o cabeçalho não dá para saber onde a pessoa está: o sistema segue (as
+  // telas têm as próprias guardas e a RLS), mas grita no log em vez de fingir
+  // que mediu.
+  if (!ambientes.sistema) {
+    const caminho = (await headers()).get("x-risarte-path");
+    if (!caminho) {
+      console.error(
+        "modo portal sem x-risarte-path: o porteiro não informou o caminho"
+      );
+    } else if (!caminhoDoPortal(caminho)) {
+      redirect("/");
+    }
+  }
 
   const rolesByClinic: Record<string, UserRole[]> = {};
   const memberClinics = new Map<string, Clinic>();
@@ -168,6 +234,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     activeClinic,
     activeClinicExplicit: chosen !== null,
     permissoes,
+    ambientes,
   };
 });
 

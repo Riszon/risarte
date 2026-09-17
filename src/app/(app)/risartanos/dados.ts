@@ -8,6 +8,7 @@ import {
   type UserRole,
 } from "@/lib/roles";
 import { enderecoDaFicha, type PessoaDaEquipe } from "@/lib/risartanos";
+import type { Ambiente, PermissoesDeAmbiente } from "@/lib/ambientes";
 import {
   STAFF_PHOTO_BUCKET,
   staffDisplayName,
@@ -513,6 +514,25 @@ export async function carregarFuncoes(
     unitScope: r.unit_scope,
     unitIds: (r.role_unit_access ?? []).map((u) => u.clinic_id),
   }));
+}
+
+/**
+ * Os ambientes liberados para uma pessoa (0259). Banco sem a migração devolve
+ * o padrão — a ficha continua abrindo, com os três no estado de fábrica.
+ */
+export async function carregarAmbientesDoUsuario(
+  supabase: Supa,
+  userId: string
+): Promise<PermissoesDeAmbiente> {
+  const { data, error } = await supabase
+    .from("user_environments")
+    .select("environment, allowed")
+    .eq("user_id", userId)
+    .returns<{ environment: Ambiente; allowed: boolean }[]>();
+  if (error) return {};
+  const mapa: PermissoesDeAmbiente = {};
+  for (const row of data ?? []) mapa[row.environment] = row.allowed;
+  return mapa;
 }
 
 /** Clínicas ativas (o Admin escolhe entre elas ao dar uma função). */

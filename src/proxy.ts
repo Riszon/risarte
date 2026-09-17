@@ -13,7 +13,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  // O CAMINHO VIAJA NUM CABEÇALHO até o servidor (0259).
+  //
+  // Componente de servidor não enxerga o endereço da tela, e o modo portal
+  // (quem ainda não tem o sistema real liberado) precisa saber se a pessoa
+  // pediu o Início ou a Agenda. O porteiro é o único que já tem isso em mãos —
+  // e informar custa um cabeçalho, não uma ida ao banco.
+  const cabecalhos = new Headers(request.headers);
+  cabecalhos.set("x-risarte-path", request.nextUrl.pathname);
+  const comCaminho = { request: { headers: cabecalhos } };
+
+  let supabaseResponse = NextResponse.next(comCaminho);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -27,7 +37,11 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          // Recriar a resposta aqui APAGA os cabeçalhos da requisição, então o
+          // caminho é reposto junto — sem isto o modo portal perderia a régua
+          // exatamente nas requisições que renovam a sessão.
+          cabecalhos.set("cookie", request.cookies.toString());
+          supabaseResponse = NextResponse.next(comCaminho);
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

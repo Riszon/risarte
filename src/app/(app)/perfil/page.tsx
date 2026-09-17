@@ -15,7 +15,7 @@ import {
   type UnitScope,
   type UserRole,
 } from "@/lib/roles";
-import { ProfileForm } from "./profile-form";
+import { FormularioDeSenha, ProfileForm } from "./profile-form";
 
 export const metadata: Metadata = { title: "Meu perfil" };
 
@@ -90,6 +90,8 @@ export default async function ProfilePage() {
         phone={profile?.phone ?? ""}
         email={profile?.email ?? session.email}
       />
+
+      <FormularioDeSenha />
 
       {/* ⚠️ ESTE BLOCO VEIO DA TELA DE INÍCIO (10/09/2026). Lá ele era uma das
           três listas que o dono chamou de confusas — e com razão: é informação
