@@ -299,6 +299,58 @@ texto do manual e a presença do chat (que roda no navegador). Nenhum dado de
 pessoa. **Ao criar estado no nível do módulo em código de servidor, verificar de
 novo.**
 
+## 0e. ⚠️ Ambiente de trabalho: DOIS PCs sincronizados
+
+- Este projeto é desenvolvido em **dois computadores**. A pasta
+  `Risarte riSZon` é sincronizada pelo SyncTrayzor (Syncthing) e o código é
+  versionado no GitHub.
+- **A fonte oficial do código é o GitHub.** O Syncthing sincroniza apenas o que
+  fica fora do Git (`.env.local`, `.env.test.local`, documentos, backups).
+- O `.stignore` na raiz da pasta sincronizada (`Risarte riSZon/.stignore`) tira
+  do Syncthing `.git`, `node_modules`, `.next*`, `test-results`. **Ele não é
+  sincronizado pelo próprio Syncthing**: cada PC tem o seu, com o mesmo
+  conteúdo. Sincronizar `.git` pelos dois lados corrompe o repositório.
+- Cada PC tem a **sua** chave SSH cadastrada no GitHub (título = nome do PC).
+  PC "Administrador": `risarte-pc-administrador`.
+- Node **24** nos dois PCs (é o que o CI usa) e `core.autocrlf = true` nos dois.
+
+### Ao iniciar uma sessão
+
+1. Rodar `git status` e `git pull` antes de qualquer alteração.
+2. Procurar arquivos `*.sync-conflict-*`. Se existirem, **avisar o dono e NÃO
+   apagá-los sem a confirmação dele**.
+3. Se o `package.json` mudou desde a última vez, rodar `npm install`
+   (`node_modules` não é sincronizado; cada PC tem o seu).
+
+### Ao encerrar uma sessão
+
+1. Commit e push de todo o trabalho, mesmo incompleto (usar um branch se for
+   trabalho em andamento).
+2. Atualizar "Estado da última sessão" abaixo: o que foi feito, o que está
+   pendente e o próximo passo.
+
+### Regras
+
+- **Nunca trabalhar no mesmo projeto nos dois PCs ao mesmo tempo.**
+- Não depender de memórias locais do Claude (`~/.claude`): tudo que for
+  importante para a continuidade fica registrado neste arquivo ou em `docs/`.
+
+### Estado da última sessão
+
+*(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
+`ESTADO_DO_PROJETO.md`)*
+
+**18/09/2026 — PC Administrador (preparação do ambiente, sem mudança de código)**
+
+- Feito: instalados Git 2.55 e Node 24.19 (via winget); criada e cadastrada no
+  GitHub a chave SSH `risarte-pc-administrador`; criado o `.stignore` neste PC;
+  `git pull` em dia (último commit: 6529b82, 17/09). O `node_modules` que veio
+  pelo Syncthing funciona, então não houve `npm install`.
+- Pendente: criar o **mesmo `.stignore` no outro PC**; conferir lá
+  `git config --global core.autocrlf` (tem de ser `true`) e `node -v` (24).
+- Próximo passo: no outro PC, fazer os pendentes acima antes de retomar o
+  trabalho.
+
 ## 1. Visão geral
 
 Sistema de gestão da rede de franquias **Risarte Odontologia** (hoje 1
@@ -343,7 +395,7 @@ plano); ao mudar uma dessas regras de propósito, atualizar o teste junto. Há C
 no GitHub Actions (`.github/workflows/ci.yml`): a cada push no `main` roda
 testes + build na nuvem (aba Actions mostra ✅/❌). E2E (Playwright + banco de
 teste) fica para a preparação de lançamento.
-**Particularidades da máquina (Windows 10, repo só existe aqui):**
+**Particularidades das máquinas (Windows, dois PCs — ver §0e):**
 
 - Node não está no PATH dos shells. Prefixar comandos PowerShell com:
   `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`
