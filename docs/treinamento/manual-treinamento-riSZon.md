@@ -435,7 +435,7 @@ O Risartano usa **um login só** em três lugares:
 | Ambiente | O que é |
 |---|---|
 | **riSZon** | o sistema do dia a dia — agenda, prontuário, jornada, financeiro |
-| **riSZon Treino** | o mesmo sistema com **dados de mentira**, para aprender sem medo |
+| **riSZon Treino** | o mesmo sistema com **dados de mentira**, para aprender sem medo. A **faixa amarela fica no topo o tempo todo**, mesmo rolando a tela — se ela estiver lá, você não está no sistema de verdade |
 | **Risarte Academy** | cursos, vídeos, provas e certificados |
 
 **O ponto de partida é sempre a tela de Início do riSZon.** Lá aparecem os

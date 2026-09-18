@@ -456,6 +456,25 @@
    A correção é deixar o relatório em FLUXO NORMAL e tirar a moldura com
    `display: none`, que remove de verdade.
    ============================================================================= */
+/* =============================================================================
+   A FAIXA DO TREINO OCUPA ESPAÇO NO TOPO — e quem gruda embaixo precisa saber.
+
+   A faixa amarela é `sticky top-0`: ela fica visível o tempo todo, inclusive
+   rolando a página (sem isso, o único aviso de que aquilo não é o sistema de
+   verdade some justamente quando alguém está trabalhando).
+
+   Como a barra de cima também gruda no topo, ela desce a altura da faixa. A
+   medida vive AQUI, num lugar só: no sistema real a variável é zero e a barra
+   volta para o topo sem nenhuma condição no código da tela.
+   ============================================================================= */
+:root {
+  --faixa-treino: 0px;
+}
+
+body[data-ambiente="treino"] {
+  --faixa-treino: 1.75rem;
+}
+
 @page {
   size: A4 portrait;
   margin: 14mm 12mm;

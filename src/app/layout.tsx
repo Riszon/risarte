@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { EnvironmentBanner } from "@/components/environment-banner";
-import { isTreino } from "@/lib/environment";
+import { ambiente, isTreino } from "@/lib/environment";
 import { RoteiroDoTema } from "@/components/tema";
 import "./globals.css";
 
@@ -52,7 +52,10 @@ export default function RootLayout({
       <head>
         <RoteiroDoTema />
       </head>
-      <body className="min-h-full flex flex-col">
+      {/* `data-ambiente` liga a altura da faixa do treino (--faixa-treino, em
+          globals.css): é ela que faz a barra de cima descer para as duas não se
+          cobrirem. No sistema real a medida é zero. */}
+      <body className="min-h-full flex flex-col" data-ambiente={ambiente()}>
         <EnvironmentBanner />
         {children}
         <Toaster richColors position="top-right" />

@@ -53,7 +53,7 @@ export function Topbar({
   return (
     <header
       data-moldura
-      className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      className="sticky top-[var(--faixa-treino,0px)] z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       {/* A busca ocupa o espaço livre; os ícones ficam colados à direita. */}
       <div className="min-w-0 flex-1">
         {podeBuscar && <QuickSearch />}

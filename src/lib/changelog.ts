@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.253.2",
+    data: "2026-09-17",
+    migracao: null,
+    titulo: "A faixa do treino não some mais ao rolar a tela",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "No ambiente de treino, a faixa amarela ficava só no alto da página e sumia assim que você rolava — e aí nada na tela dizia que aquele não era o sistema de verdade. Agora ela fica grudada no topo o tempo todo, com a barra de cima e o menu logo abaixo dela.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.253.1",
     data: "2026-09-17",
     migracao: null,

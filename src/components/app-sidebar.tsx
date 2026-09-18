@@ -363,7 +363,10 @@ export function AppSidebar({
       // `data-moldura`: sai na impressão. Ver o bloco @media print do globals.
       data-moldura
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
+        // A lateral também gruda no topo — e no treino ela desce a altura da
+        // faixa amarela (que agora fica visível o tempo todo). Sem isto, a
+        // faixa cobriria a assinatura no alto da lateral ao rolar a página.
+        "sticky top-[var(--faixa-treino,0px)] flex h-[calc(100vh-var(--faixa-treino,0px))] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
         collapsed ? "w-16" : "w-64"
       )}
     >
