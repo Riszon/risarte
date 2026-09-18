@@ -359,7 +359,12 @@ Syncthing se comportarem de forma estranha.**
 - Pendente: **no Notebook, seguir a seção 4 de `docs/DOIS-PCS.md`** (criar o
   `.stignore`, `git pull`, conferir autocrlf/Node, completar a tabela de PCs,
   levar a memória `risarte-producao-online` para `docs/PRODUCAO-ONLINE.md`).
-- Próximo passo: o item acima, antes de qualquer trabalho no Notebook.
+- Pendente no PC Administrador: fechar e reabrir o app do Claude (até lá, o
+  Git e o Node só funcionam com o prefixo de PATH do §2). O npm avisa que
+  existe a versão 12 — **não atualizar** num PC só.
+- Próximo passo: o item do Notebook, antes de qualquer trabalho lá. Sessão
+  encerrada com a árvore limpa e tudo no GitHub; nenhum trabalho de produto em
+  andamento.
 
 ## 1. Visão geral
 
