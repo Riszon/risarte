@@ -1,29 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 17/09/2026 · Versão do sistema: **0.253.0** · Última migração: **0259** (0258 e 0259 pendentes em produção; aplicadas no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.253.2** · Última migração: **0259** (aplicada na produção e no treino — medido em 18/09) · Empresarial **0.50.0** / migração **1012**_
 
-> ## ⏰ PRAZO DURO — VERCEL PRO TRIAL VENCE EM 14/09/2026, 21:00 (BRASÍLIA)
+> ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
-> *(17:00 em Los Angeles, informado pelo dono em 08/09/2026.)*
+> - **Vercel: plano Pro** (confirmado pelo dono no painel — o prazo do trial
+>   de 14/09 está resolvido).
+> - **Função em São Paulo nos dois projetos**, medido com requisição logada:
+>   `x-vercel-id` = `gru1::gru1::…` na produção e no treino. Mediana ao abrir
+>   o Início (só essa tela, da rede do PC Administrador): 372 ms produção /
+>   448 ms treino — não comparável com os 220 ms de 08/09 (média de todas as
+>   telas pela varredura).
+> - **Versão no ar 0.253.2** nos dois = código do `main`.
+> - **Migrações 0257, 0258 e 0259 existem nos dois bancos** (perguntado ao
+>   banco, não deduzido).
+> - **`TREINO_SUPABASE_URL` e `TREINO_SERVICE_ROLE_KEY`** presentes na Vercel
+>   da produção (confirmado pelo dono) — o "liberar no treino" pode funcionar
+>   de verdade; ainda não exercitado entre os dois bancos distintos.
 >
-> **Lembrar o dono no início de cada sessão até estar resolvido.**
+> **Depois de qualquer mudança de plano ou de região:** conferir a região **nos
+> dois projetos** e **medir de novo** — procedimento no `CLAUDE.md` §0d.
 >
-> ⚠️ **O que está em jogo é o ganho de desempenho de 08/09.** A escolha da
-> região da função — que levou o sistema de 1421 ms para 220 ms por clique — é
-> recurso de plano pago ("up to 5 regions on your current **Pro** plan"). Caindo
-> para o gratuito, há risco real de a função voltar a `iad1` (Washington) e o
-> sistema ficar **6× mais lento outra vez**, sem aviso, e sem ninguém ligar uma
-> coisa à outra.
+> ## ⏰ SUPABASE PRO: VIGÊNCIA ATÉ 29/09/2026
 >
-> **E o motivo que não é técnico:** o plano gratuito da Vercel é para uso **não
-> comercial**. Uma rede de clínicas operando nele fica fora dos termos.
->
-> **Depois de qualquer mudança de plano:** conferir a região **nos dois
-> projetos** (é por projeto, e exige deploy novo) e **medir de novo** — o
-> procedimento está no `CLAUDE.md` §0d.
->
-> **Supabase: PRO, vigência até 29/09/2026** (dono, 08/09/2026). São **duas
-> datas seguidas** — 14/09 a Vercel, 29/09 o Supabase.
+> (dono, 08/09/2026). **Lembrar o dono no início de cada sessão até renovar.**
 >
 > ✅ **BACKUP DIÁRIO CONFERIDO NO PAINEL em 08/09/2026** — pendência aberta
 > desde 31/08, agora fechada. Os **dois** projetos têm backup diário com **8
