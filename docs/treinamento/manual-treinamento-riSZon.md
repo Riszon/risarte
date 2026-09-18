@@ -439,7 +439,9 @@ O Risartano usa **um login só** em três lugares:
 | **Risarte Academy** | cursos, vídeos, provas e certificados |
 
 **O ponto de partida é sempre a tela de Início do riSZon.** Lá aparecem os
-atalhos para o treino e para o Academy — eles abrem em outra aba.
+atalhos para o treino e para o Academy — cada um abre em **uma aba própria**.
+Clicar de novo volta para a aba que já está aberta, em vez de abrir outra: dá
+para ir e voltar o dia inteiro sem encher o navegador.
 
 **Quem chega novo entra antes de ser liberado no sistema de verdade.** Nesse
 período ele vê **só a tela de Início**, com os atalhos: o menu dos módulos nem

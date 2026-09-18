@@ -91,6 +91,19 @@ export function cartoesDoInicio(entrada: {
 }
 
 /**
+ * O NOME DA ABA de cada ambiente.
+ *
+ * Sem nome, todo clique no atalho abre uma aba nova — e em cinco idas e voltas
+ * a pessoa está com seis abas do mesmo sistema (relato do dono, 17/09/2026).
+ * Com nome, o navegador **reaproveita** a aba daquele ambiente e a traz para a
+ * frente. Cada aba também assume o próprio nome ao carregar (`NomeDaAba`), para
+ * o atalho de volta encontrar a aba de origem em vez de criar outra.
+ */
+export function nomeDaAba(ambiente: Ambiente): string {
+  return `risarte-${ambiente}`;
+}
+
+/**
  * O endereço é digitado por gente, então é conferido antes de virar link:
  * só `http`/`https`, e o resto vira "sem endereço" em vez de um link quebrado
  * (ou de um `javascript:` colado por engano).

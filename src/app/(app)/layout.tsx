@@ -14,6 +14,9 @@ import { UrgentSchedulingPopup } from "@/components/urgent-scheduling-popup";
 import { TreatmentStartPopup } from "@/components/treatment-start-popup";
 import { AccessibilityGuard } from "@/components/accessibility-guard";
 import { Ambiente } from "@/components/ambiente";
+import { NomeDaAba } from "@/components/nome-da-aba";
+import { nomeDaAba } from "@/lib/ambientes";
+import { ambienteAtual } from "@/lib/ambientes-db";
 
 export default async function AppLayout({
   children,
@@ -68,6 +71,7 @@ export default async function AppLayout({
           {children}
         </main>
         <AccessibilityGuard />
+        <NomeDaAba nome={nomeDaAba(ambienteAtual())} />
       </Ambiente>
     );
   }
@@ -182,6 +186,9 @@ export default async function AppLayout({
       {/* Contorno: garante que a tela não fique invisível para leitor de tela
           depois que os avisos acima fecham. Ver o comentário do componente. */}
       <AccessibilityGuard />
+      {/* 0259: a aba assume o nome do ambiente, para o atalho de volta
+          reaproveitá-la em vez de abrir outra. */}
+      <NomeDaAba nome={nomeDaAba(ambienteAtual())} />
     </Ambiente>
   );
 }

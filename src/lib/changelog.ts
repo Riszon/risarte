@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.253.1",
+    data: "2026-09-17",
+    migracao: null,
+    titulo: "Ir e voltar entre os ambientes sem encher o navegador de abas",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Os atalhos do Início abriam uma aba nova a cada clique — em poucas idas e voltas o navegador ficava cheio de abas do mesmo sistema. Agora cada ambiente tem a SUA aba: clicar de novo volta para a que já está aberta, em vez de criar outra.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.253.0",
     data: "2026-09-17",
     migracao: "0259",

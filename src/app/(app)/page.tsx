@@ -7,7 +7,7 @@ import {
   MonitorPlay,
   Sparkles,
 } from "lucide-react";
-import { cartoesDoInicio } from "@/lib/ambientes";
+import { cartoesDoInicio, nomeDaAba } from "@/lib/ambientes";
 import { ambienteAtual, carregarEnderecos } from "@/lib/ambientes-db";
 import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
@@ -256,11 +256,14 @@ export default async function HomePage() {
           {cartoes.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {cartoes.map((c) => (
+                // A aba tem NOME (e por isso não leva `noopener`: ele faria o
+                // navegador ignorar o nome e abrir uma aba nova a cada clique,
+                // que é justamente o que o dono relatou). O destino é sistema
+                // nosso, nos dois casos.
                 <a
                   key={c.ambiente}
                   href={c.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target={nomeDaAba(c.ambiente)}
                   className="group flex items-start gap-3 rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-muted/40"
                 >
                   <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-gold/15 text-gold-tinta">

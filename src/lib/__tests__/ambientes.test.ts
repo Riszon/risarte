@@ -4,6 +4,7 @@ import {
   ambientePermitido,
   cartoesDoInicio,
   enderecoValido,
+  nomeDaAba,
 } from "@/lib/ambientes";
 
 describe("quem entra em cada ambiente (espelho do banco)", () => {
@@ -75,6 +76,26 @@ describe("os atalhos da tela de Início", () => {
     expect(treino.rotulo).toBe("riSZon Treino");
     expect(treino.descricao).toContain("dados de mentira");
     expect(treino.url).toBe(urls.treino);
+  });
+});
+
+describe("nome da aba (para não abrir uma pilha de abas)", () => {
+  it("cada ambiente tem o SEU nome, e ele não muda entre chamadas", () => {
+    expect(nomeDaAba("treino")).toBe("risarte-treino");
+    expect(nomeDaAba("sistema")).toBe("risarte-sistema");
+    expect(nomeDaAba("academy")).toBe("risarte-academy");
+    expect(nomeDaAba("treino")).toBe(nomeDaAba("treino"));
+  });
+
+  it("⚠️ nomes distintos: um nome repetido faria o treino roubar a aba do Academy", () => {
+    const nomes = AMBIENTES.map(nomeDaAba);
+    expect(new Set(nomes).size).toBe(AMBIENTES.length);
+  });
+
+  it("serve como alvo de link (sem espaço, que o navegador recusaria)", () => {
+    for (const a of AMBIENTES) {
+      expect(nomeDaAba(a)).toMatch(/^[a-z-]+$/);
+    }
   });
 });
 
