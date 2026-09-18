@@ -301,37 +301,43 @@ novo.**
 
 ## 0e. ⚠️ Ambiente de trabalho: DOIS PCs sincronizados
 
-- Este projeto é desenvolvido em **dois computadores**. A pasta
-  `Risarte riSZon` é sincronizada pelo SyncTrayzor (Syncthing) e o código é
-  versionado no GitHub.
-- **A fonte oficial do código é o GitHub.** O Syncthing sincroniza apenas o que
-  fica fora do Git (`.env.local`, `.env.test.local`, documentos, backups).
-- O `.stignore` na raiz da pasta sincronizada (`Risarte riSZon/.stignore`) tira
-  do Syncthing `.git`, `node_modules`, `.next*`, `test-results`. **Ele não é
-  sincronizado pelo próprio Syncthing**: cada PC tem o seu, com o mesmo
-  conteúdo. Sincronizar `.git` pelos dois lados corrompe o repositório.
-- Cada PC tem a **sua** chave SSH cadastrada no GitHub (título = nome do PC).
-  PC "Administrador": `risarte-pc-administrador`.
-- Node **24** nos dois PCs (é o que o CI usa) e `core.autocrlf = true` nos dois.
+**Guia completo, `.stignore` oficial e o que fazer quando algo dá errado:
+`docs/DOIS-PCS.md`. Ler na primeira sessão de cada PC e sempre que o Git ou o
+Syncthing se comportarem de forma estranha.**
+
+- Dois computadores: **PC Administrador** (`DESKTOP-4CFTCVB`) e **Notebook do
+  Jeferson**. A pasta `Risarte riSZon` é sincronizada pelo SyncTrayzor
+  (Syncthing); o código é versionado no GitHub.
+- **O código viaja SÓ pelo GitHub.** O `.stignore` (igual nos dois PCs, não
+  sincronizado) tira `risarte/` inteira do Syncthing, exceto os `.env*.local` e
+  os arquivos pesados de `docs/marca/`. Se o Syncthing copiasse código, o
+  `git pull` do outro PC recusaria atualizar.
+- Cada PC tem a **sua** chave SSH no GitHub, Node **24** e
+  `core.autocrlf = true`.
 
 ### Ao iniciar uma sessão
 
-1. Rodar `git status` e `git pull` antes de qualquer alteração.
-2. Procurar arquivos `*.sync-conflict-*`. Se existirem, **avisar o dono e NÃO
+1. `git status` (tem de estar limpo; se não estiver, PARAR e mostrar ao dono)
+   e `git pull` antes de qualquer alteração.
+2. Ler "Estado da última sessão" abaixo: se o outro PC não registrou o
+   encerramento, o trabalho dele pode estar sem push — resolver lá primeiro.
+3. Procurar arquivos `*.sync-conflict-*`. Se existirem, **avisar o dono e NÃO
    apagá-los sem a confirmação dele**.
-3. Se o `package.json` mudou desde a última vez, rodar `npm install`
+4. Se o pull mudou `package.json`/`package-lock.json`, rodar `npm install`
    (`node_modules` não é sincronizado; cada PC tem o seu).
 
 ### Ao encerrar uma sessão
 
-1. Commit e push de todo o trabalho, mesmo incompleto (usar um branch se for
-   trabalho em andamento).
-2. Atualizar "Estado da última sessão" abaixo: o que foi feito, o que está
-   pendente e o próximo passo.
+1. Commit e push de todo o trabalho, mesmo incompleto (trabalho em andamento
+   que não pode ir ao ar vai num branch — o `main` publica sozinho). Conferir
+   `git status -sb` sem `[ahead N]`.
+2. Atualizar "Estado da última sessão" abaixo (data, PC, feito, pendente,
+   próximo passo) e incluir no push.
 
 ### Regras
 
 - **Nunca trabalhar no mesmo projeto nos dois PCs ao mesmo tempo.**
+- `.env.local` se edita num PC só por vez (não tem Git por trás).
 - Não depender de memórias locais do Claude (`~/.claude`): tudo que for
   importante para a continuidade fica registrado neste arquivo ou em `docs/`.
 
@@ -343,18 +349,17 @@ novo.**
 **18/09/2026 — PC Administrador (preparação do ambiente, sem mudança de código)**
 
 - Feito: instalados Git 2.55 e Node 24.19 (via winget); criada e cadastrada no
-  GitHub a chave SSH `risarte-pc-administrador`; criado o `.stignore` neste PC;
-  `git pull` em dia (último commit: 6529b82, 17/09). O `node_modules` que veio
-  pelo Syncthing funciona, então não houve `npm install`.
-- Feito também: a memória local `risarte-producao-online` virou
-  `docs/PRODUCAO-ONLINE.md` (montado com o que o repositório registrava; a
-  memória original está só no outro PC).
-- Pendente: criar o **mesmo `.stignore` no outro PC**; conferir lá
-  `git config --global core.autocrlf` (tem de ser `true`) e `node -v` (24);
-  comparar a memória `risarte-producao-online` de lá com
-  `docs/PRODUCAO-ONLINE.md`, completar o documento e apagar a memória.
-- Próximo passo: no outro PC, fazer os pendentes acima antes de retomar o
-  trabalho.
+  GitHub a chave SSH `risarte-pc-administrador`; `.stignore` definitivo criado
+  e conferido pela API do Syncthing (código ignorado; `.env` e marca
+  sincronizados); `git pull` em dia. O `node_modules` que veio pelo Syncthing
+  funciona, então não houve `npm install` (daqui em diante cada PC tem o seu).
+- Feito também: `docs/DOIS-PCS.md` (guia completo) e `docs/PRODUCAO-ONLINE.md`
+  (substitui a memória local `risarte-producao-online`, montado com o que o
+  repositório registrava; a memória original está só no Notebook).
+- Pendente: **no Notebook, seguir a seção 4 de `docs/DOIS-PCS.md`** (criar o
+  `.stignore`, `git pull`, conferir autocrlf/Node, completar a tabela de PCs,
+  levar a memória `risarte-producao-online` para `docs/PRODUCAO-ONLINE.md`).
+- Próximo passo: o item acima, antes de qualquer trabalho no Notebook.
 
 ## 1. Visão geral
 
