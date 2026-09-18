@@ -108,8 +108,8 @@ configuração que a equipe encontra, mudar **nos dois**.
 
 **Variável de ambiente é embutida na MONTAGEM** (`NEXT_PUBLIC_*`): mudar o valor
 na Vercel não muda o site sem republicar — e com "Use existing Build Cache"
-desmarcado. Ver `risarte-producao-online` nas memórias e o guia
-*Publicar o riSZon*.
+desmarcado. Ver `docs/PRODUCAO-ONLINE.md` (endereços, variáveis, armadilhas e
+os guias *Publicar o riSZon* / *Lançamento do riSZon*).
 
 ## 0c. ⚠️ A REGRA DO MANUAL — entrega que a equipe percebe atualiza o manual
 
@@ -346,8 +346,13 @@ novo.**
   GitHub a chave SSH `risarte-pc-administrador`; criado o `.stignore` neste PC;
   `git pull` em dia (último commit: 6529b82, 17/09). O `node_modules` que veio
   pelo Syncthing funciona, então não houve `npm install`.
+- Feito também: a memória local `risarte-producao-online` virou
+  `docs/PRODUCAO-ONLINE.md` (montado com o que o repositório registrava; a
+  memória original está só no outro PC).
 - Pendente: criar o **mesmo `.stignore` no outro PC**; conferir lá
-  `git config --global core.autocrlf` (tem de ser `true`) e `node -v` (24).
+  `git config --global core.autocrlf` (tem de ser `true`) e `node -v` (24);
+  comparar a memória `risarte-producao-online` de lá com
+  `docs/PRODUCAO-ONLINE.md`, completar o documento e apagar a memória.
 - Próximo passo: no outro PC, fazer os pendentes acima antes de retomar o
   trabalho.
 
