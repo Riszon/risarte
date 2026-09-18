@@ -7,7 +7,7 @@
 
 // Core (MVP / riSZon) — faixa de migração 0106+ (0–999).
 export const APP_VERSION = "0.254.0";
-export const LATEST_MIGRATION = "0260";
+export const LATEST_MIGRATION = "0261";
 
 // Risarte Empresarial (B2B) — faixa de migração 1000+.
 export const EMPRESARIAL_VERSION = "0.50.0";

@@ -64,7 +64,7 @@ export const CHANGELOG: Versao[] = [
   {
     versao: "0.254.0",
     data: "2026-09-18",
-    migracao: "0260",
+    migracao: "0261",
     titulo: "No treino, a equipe é cópia do sistema real",
     mudancas: [
       {
@@ -86,6 +86,13 @@ export const CHANGELOG: Versao[] = [
         texto:
           "Senha, nome e telefone se trocam no Perfil do sistema real e passam a valer no treino também. Dentro do treino essa troca não é feita.",
         papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "No treino, o nível de carreira do dentista (Financeiro → Repasses) continua sendo definido lá mesmo, como as tabelas de repasse: ele não vem do sistema real e a cópia não apaga o que você definiu.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
         manual: "2.6. Os três ambientes",
       },
       {

@@ -485,6 +485,9 @@ inclusive o Admin Master:
   poder salvar. Cada função vê no treino exatamente o que veria no real.
 - Na aba **Acesso** da ficha, os três ambientes aparecem **como estão no
   sistema real**.
+- **Exceção: o nível de carreira do dentista** (Financeiro → Repasses) é do
+  treino, como as tabelas de repasse: define-se lá mesmo, e a cópia não apaga o
+  que foi definido.
 - Os **usuários de treino por função** (a senha da recepção, a do gerente…)
   continuam entrando normalmente, mas **não aparecem** na lista de Risartanos:
   eles não são pessoas da equipe.

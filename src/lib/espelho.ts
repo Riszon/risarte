@@ -153,3 +153,30 @@ export function linhaDoRisartanoNoTreino(
  */
 export const SOMENTE_CONSULTA_NO_TREINO =
   "No treino, Risartanos, acessos e permissões são só para consulta. Faça a alteração no sistema real — ela chega aqui sozinha.";
+
+/**
+ * O NÍVEL DE CARREIRA DO DENTISTA É DO TREINO (0261).
+ *
+ * Ele mora no registro da função, que a cópia regrava inteiro — mas não é
+ * acesso, é configuração financeira de cada ambiente (como as tabelas de
+ * repasse). Antes de regravar, a cópia guarda o nível de cada função que já
+ * existe lá; a função que volta igual (mesma unidade, mesmo papel) volta com
+ * ele. Função que mudou de papel não herda: o nível era de outro papel.
+ */
+export function niveisDeCarreiraDoTreino(
+  linhas: { clinic_id: string; role: string; career_level_id: string | null }[]
+): Map<string, string> {
+  const mapa = new Map<string, string>();
+  for (const l of linhas) {
+    if (l.career_level_id) mapa.set(`${l.clinic_id}|${l.role}`, l.career_level_id);
+  }
+  return mapa;
+}
+
+export function nivelPreservado(
+  niveis: ReadonlyMap<string, string>,
+  clinicId: string,
+  role: string
+): string | null {
+  return niveis.get(`${clinicId}|${role}`) ?? null;
+}

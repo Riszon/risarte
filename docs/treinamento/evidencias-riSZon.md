@@ -279,3 +279,4 @@ pelos resumos do `CLAUDE.md` e por buscas dirigidas, não linha a linha.
 | EV-064 | Lista do treino mostra só quem veio da produção; usuários de teste por função ficam fora | `dados.ts` (`mirrored_at`, `loginsEspelhados`) + 0260 | ⏳ falta provar na tela |
 | EV-065 | Botão "Sincronizar treino agora" e aviso de pendência para o Admin | `/admin/ambientes` (`sincronizarTreinoAgora`) + `aviso-espelho-pendente.tsx` | ⏳ falta provar na tela |
 | EV-066 | A ficha do treino mostra os ambientes do sistema REAL | `mirror_user_map.source_environments` (0260) + `carregarAmbientesDoUsuario` | ⏳ falta provar na tela |
+| EV-067 | No treino, o nível de carreira do dentista continua editável (só ele); a cópia preserva o nível de lá | `0261` (`block_mirror_role_writes`) + `espelho.ts` (`nivelPreservado`, 3 testes) | ✅ provado no banco do treino: nível muda; função sozinha ou com nível recusada; estado restaurado |

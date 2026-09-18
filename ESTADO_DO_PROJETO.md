@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migração: **0260** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migração: **0261** (0260 e 0261 aplicadas no treino; **pendentes na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3672,7 +3672,7 @@ Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 p
 
 ## 2. O que está em andamento agora
 
-### O TREINO É ESPELHO DA PRODUÇÃO (18/09/2026, v0.254.0, migração 0260)
+### O TREINO É ESPELHO DA PRODUÇÃO (18/09/2026, v0.254.0, migrações 0260–0261)
 
 Pedido do dono: o único lugar que cria acessos de verdade é a produção. No
 treino, a lista e os acessos dos Risartanos aparecem (para quem tem permissão
@@ -3714,12 +3714,24 @@ grava; estado restaurado).
 
 **⚠️ NÃO provado ainda:** a cópia de ponta a ponta (produção → treino) e as
 telas no treino. Dependem da **0260 na produção** e do deploy. Ordem combinada:
-1) dono roda a 0260 na produção; 2) push; 3) **Sincronizar treino agora**;
+1) dono roda a 0260 e a 0261 na produção; 2) push; 3) **Sincronizar treino agora**;
 4) conferir no treino (lista, ficha, permissões, aviso, login de teste fora da
 lista). Entre o push e a primeira cópia, a lista do treino fica vazia.
 
-**Limites declarados:** o nível de carreira da função (`career_level_id`) não é
-copiado (é configuração financeira); ficha não se apaga na produção (desliga-se),
+**Exceção do nível de carreira (0261, OK do dono):** `career_level_id` mora no
+registro da função, mas é configuração financeira de cada ambiente (como as
+tabelas de repasse). No treino a trava deixa passar a mudança que mexe SÓ nele
+(Financeiro → Repasses), e a cópia **preserva** o nível de lá. Provado no banco
+do treino.
+
+**O que continua livre no treino (conferido no código):** clientes, jornada,
+avaliação, planejamento, orçamento, vendas, agenda, atendimento, prontuário,
+financeiro, estoque, compras — nenhuma dessas telas grava nas tabelas
+trancadas. Efeitos esperados: dias de atendimento dos dentistas REAIS ficam
+trancados no treino (fazem parte da ficha), e os profissionais reais passam a
+aparecer nas agendas e listas das unidades do treino.
+
+**Limites declarados:** ficha não se apaga na produção (desliga-se),
 então nada é apagado no treino; depois de `npm run migrar:teste`/`seed:teste` no
 banco do treino, rodar **Sincronizar** de novo.
 

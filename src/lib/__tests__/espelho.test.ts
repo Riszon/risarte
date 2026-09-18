@@ -5,6 +5,8 @@ import {
   falhaSemDados,
   linhaDoRisartanoNoTreino,
   loginAbertoNoTreino,
+  niveisDeCarreiraDoTreino,
+  nivelPreservado,
   permitidoNaProducao,
   traduzirIds,
 } from "../espelho";
@@ -155,5 +157,23 @@ describe("linhaDoRisartanoNoTreino", () => {
     expect(linha.user_id).toBeNull();
     expect(linha.photo_path).toBeNull();
     expect(linha.inactive_unit_ids).toEqual([]);
+  });
+});
+
+describe("nível de carreira preservado no treino (0261)", () => {
+  const niveis = niveisDeCarreiraDoTreino([
+    { clinic_id: "cam", role: "dentist", career_level_id: "nivel-2" },
+    { clinic_id: "lon", role: "dentist", career_level_id: null },
+    { clinic_id: "cam", role: "receptionist", career_level_id: "estranho" },
+  ]);
+
+  it("a mesma função na mesma unidade volta com o nível", () => {
+    expect(nivelPreservado(niveis, "cam", "dentist")).toBe("nivel-2");
+  });
+  it("sem nível lá, continua sem nível", () => {
+    expect(nivelPreservado(niveis, "lon", "dentist")).toBeNull();
+  });
+  it("papel diferente não herda o nível de outro papel", () => {
+    expect(nivelPreservado(niveis, "cam", "unit_manager")).toBeNull();
   });
 });

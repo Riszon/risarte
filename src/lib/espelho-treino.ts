@@ -11,6 +11,8 @@ import {
   falhaSemDados,
   linhaDoRisartanoNoTreino,
   loginAbertoNoTreino,
+  niveisDeCarreiraDoTreino,
+  nivelPreservado,
   permitidoNaProducao,
   type LinhaDeAmbiente,
 } from "@/lib/espelho";
@@ -295,8 +297,19 @@ async function espelharPessoaCtx(ctx: Ctx, idProd: string): Promise<string | nul
     throw new FalhaDoEspelho(falhaSemDados("abrir/fechar o login no treino", erroBan.code));
   }
 
-  // As funções: o conjunto de lá passa a ser EXATAMENTE o daqui.
+  // As funções: o conjunto de lá passa a ser EXATAMENTE o daqui — menos o
+  // nível de carreira do dentista, que é do treino (0261) e é preservado.
   await carregarPonteDasUnidades(ctx);
+  const niveis = niveisDeCarreiraDoTreino(
+    exigir(
+      await ctx.treino
+        .from("user_clinic_roles")
+        .select("clinic_id, role, career_level_id")
+        .eq("user_id", local)
+        .returns<{ clinic_id: string; role: string; career_level_id: string | null }[]>(),
+      "ler os níveis de carreira no treino"
+    ) ?? []
+  );
   exigir(
     await ctx.treino.from("user_clinic_roles").delete().eq("user_id", local),
     "limpar as funções antigas no treino"
@@ -315,6 +328,7 @@ async function espelharPessoaCtx(ctx: Ctx, idProd: string): Promise<string | nul
           clinic_id: unidade,
           role: f.role,
           unit_scope: f.unit_scope,
+          career_level_id: nivelPreservado(niveis, unidade, f.role),
         })
         .select("id")
         .single<{ id: string }>(),
