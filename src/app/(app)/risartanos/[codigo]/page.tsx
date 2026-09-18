@@ -23,6 +23,8 @@ import {
   podeVerEquipe,
 } from "../dados";
 import { treinoConfigurado } from "@/lib/treino";
+import { isTreino } from "@/lib/environment";
+import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { AcessoDoRisartano } from "../acesso";
 import { FormularioDoRisartano } from "../formulario";
 import { SeloDeAcesso } from "../selos";
@@ -70,6 +72,8 @@ export default async function FichaDoRisartanoPage(
   if (!ficha) notFound();
 
   const { staff, acesso, podeGerir } = ficha;
+  // O Admin mexe em acesso — menos no treino, onde tudo é cópia (0260).
+  const adminEdita = session.isAdminMaster && !isTreino();
   const searchParams = await props.searchParams;
   const aba = searchParams.aba === "acesso" ? "acesso" : "cadastro";
 
@@ -77,7 +81,7 @@ export default async function FichaDoRisartanoPage(
   const unidadesDoAcesso = (acesso?.units ?? []).map((u) => ({
     ...u,
     inativo: inativasAqui.has(u.clinicId),
-    gerida: session.isAdminMaster || alcance.gerirIds.has(u.clinicId),
+    gerida: adminEdita || alcance.gerirIds.has(u.clinicId),
   }));
 
   const [especialidades, funcoes] = await Promise.all([
@@ -85,9 +89,9 @@ export default async function FichaDoRisartanoPage(
     acesso ? carregarFuncoes(supabase, acesso.userId) : Promise.resolve([]),
   ]);
   // Clínicas e logins livres só servem ao Admin (é ele quem mexe em acesso).
-  const clinicas = session.isAdminMaster ? await carregarClinicas(supabase) : [];
+  const clinicas = adminEdita ? await carregarClinicas(supabase) : [];
   const loginsLivres =
-    session.isAdminMaster && !acesso ? await loginsSemCadastro(supabase) : [];
+    adminEdita && !acesso ? await loginsSemCadastro(supabase) : [];
   // 0259: os três ambientes desta pessoa.
   const ambientes = acesso
     ? await carregarAmbientesDoUsuario(supabase, acesso.userId)
@@ -169,6 +173,8 @@ export default async function FichaDoRisartanoPage(
         </div>
       </header>
 
+      <AvisoSomenteConsulta />
+
       <nav className="flex gap-1 border-b">
         <Aba href={`/risartanos/${codigo}`} ativa={aba === "cadastro"}>
           Cadastro
@@ -247,7 +253,8 @@ export default async function FichaDoRisartanoPage(
             funcoes={funcoes}
             clinicas={clinicas}
             loginsLivres={loginsLivres}
-            isAdmin={session.isAdminMaster}
+            isAdmin={adminEdita}
+            modoTreino={isTreino()}
             isSelf={acesso?.userId === session.userId}
           />
 

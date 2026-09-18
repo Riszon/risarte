@@ -5,6 +5,8 @@ import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { AMBIENTES, enderecoValido, type Ambiente } from "@/lib/ambientes";
+import { isTreino } from "@/lib/environment";
+import { espelharTudo } from "@/lib/espelho-treino";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -55,4 +57,34 @@ export async function salvarEnderecoDoAmbiente(
   revalidatePath("/admin/ambientes");
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+export type ResultadoDaSincronizacao = ActionResult & {
+  avisos?: string[];
+  resumo?: { pessoas: number; risartanos: number; permissoes: number };
+};
+
+/**
+ * COPIA TUDO PARA O TREINO AGORA (0260): permissões, todas as pessoas e todas
+ * as fichas. Serve para a primeira carga e para consertar o que ficou pendente
+ * — a cópia do dia a dia acontece sozinha, a cada alteração.
+ *
+ * Só na produção e só o Admin Master. Aqui a espera é de propósito (não vai
+ * para depois da resposta): quem clicou quer ver o resultado.
+ */
+export async function sincronizarTreinoAgora(): Promise<ResultadoDaSincronizacao> {
+  if (isTreino()) {
+    return { ok: false, error: "O treino é a cópia: a sincronização se faz no sistema real." };
+  }
+  await requireAdminMaster();
+  const r = await espelharTudo();
+  await logAudit({
+    action: "update",
+    entityType: "mirror_state",
+    entityId: "treino",
+    details: { ok: r.ok, ...(r.resumo ?? {}), avisos: r.avisos.length },
+  });
+  revalidatePath("/admin/ambientes");
+  revalidatePath("/risartanos", "layout");
+  return { ok: r.ok, error: r.error, avisos: r.avisos, resumo: r.resumo };
 }

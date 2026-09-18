@@ -12,6 +12,8 @@ import {
   carregarFuncoes,
 } from "../../dados";
 import { treinoConfigurado } from "@/lib/treino";
+import { isTreino } from "@/lib/environment";
+import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { AcessoDoRisartano } from "../../acesso";
 import { SeloDeAcesso } from "../../selos";
 
@@ -93,6 +95,8 @@ export default async function AcessoSemCadastroPage(
         </div>
       </header>
 
+      <AvisoSomenteConsulta />
+
       {vinculado ? (
         <p className="rounded-xl border bg-card p-4 text-sm">
           Este login já tem cadastro de Risartano.{" "}
@@ -113,12 +117,14 @@ export default async function AcessoSemCadastroPage(
               nenhum dado de contato, contrato ou unidade de origem.
             </p>
           </div>
-          <Button
-            nativeButton={false}
-            render={<Link href={`/risartanos/novo?acesso=${perfil.id}`} />}
-          >
-            Completar cadastro
-          </Button>
+          {!isTreino() && (
+            <Button
+              nativeButton={false}
+              render={<Link href={`/risartanos/novo?acesso=${perfil.id}`} />}
+            >
+              Completar cadastro
+            </Button>
+          )}
         </section>
       )}
 
@@ -136,7 +142,8 @@ export default async function AcessoSemCadastroPage(
         funcoes={funcoes}
         clinicas={clinicas}
         loginsLivres={[]}
-        isAdmin
+        isAdmin={!isTreino()}
+        modoTreino={isTreino()}
         isSelf={session.userId === perfil.id}
       />
     </div>

@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { CAPACIDADES_POR_ID, matrizPadrao } from "@/lib/permissions";
 import type { UserRole } from "@/lib/roles";
+import { isTreino } from "@/lib/environment";
+import { SOMENTE_CONSULTA_NO_TREINO } from "@/lib/espelho";
+import { agendarEspelho } from "@/lib/espelho-treino";
 
 type Resultado = { ok: boolean; error?: string };
 
@@ -24,6 +27,7 @@ export async function salvarPermissao(
   capacidade: string,
   papeis: UserRole[]
 ): Promise<Resultado> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
 
   const cap = CAPACIDADES_POR_ID.get(capacidade);
@@ -57,6 +61,8 @@ export async function salvarPermissao(
     details: { rotulo: cap.rotulo, papeis },
   });
 
+  // A matriz do treino é cópia desta (0260): cada gravação aqui vai para lá.
+  agendarEspelho({ permissoes: true });
   revalidatePath("/admin/permissoes");
   revalidatePath("/", "layout");
   return { ok: true };
@@ -69,6 +75,7 @@ export async function salvarPermissao(
  * com medo de não saber desfazer, e aí a tela não cumpre o que prometeu.
  */
 export async function restaurarPadrao(capacidade: string): Promise<Resultado> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   const padrao = matrizPadrao()[capacidade];
   if (!padrao) return { ok: false, error: "Permissão desconhecida." };

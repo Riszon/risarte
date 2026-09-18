@@ -25,15 +25,21 @@ export function PermissionsMatrix({
   atual,
   padrao,
   aindaSemTabela,
+  somenteLeitura = false,
+  aviso,
 }: {
   capacidades: Capability[];
   papeis: UserRole[];
   atual: Record<string, UserRole[]>;
   padrao: Record<string, UserRole[]>;
   aindaSemTabela: boolean;
+  /** No treino a matriz é cópia da produção (0260): só consulta. */
+  somenteLeitura?: boolean;
+  aviso?: React.ReactNode;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const travada = aindaSemTabela || somenteLeitura;
   const [rascunho, setRascunho] = useState<Record<string, UserRole[]>>(atual);
   const [salvando, setSalvando] = useState<string | null>(null);
 
@@ -115,6 +121,8 @@ export function PermissionsMatrix({
           passa a valer na próxima tela que a pessoa abrir.
         </p>
       </header>
+
+      {aviso}
 
       {aindaSemTabela && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
@@ -214,7 +222,7 @@ export function PermissionsMatrix({
                               type="checkbox"
                               className="size-4 cursor-pointer"
                               checked={marcado(cap.id, p)}
-                              disabled={isPending || aindaSemTabela}
+                              disabled={isPending || travada}
                               onChange={() => alternar(cap.id, p)}
                               aria-label={`${ROLE_LABELS[p]} — ${cap.rotulo}`}
                             />
@@ -228,7 +236,7 @@ export function PermissionsMatrix({
                                 variant="ghost"
                                 size="sm"
                                 title="Voltar ao padrão do sistema"
-                                disabled={isPending || aindaSemTabela}
+                                disabled={isPending || travada}
                                 onClick={() => voltarAoPadrao(cap)}
                               >
                                 <RotateCcw className="size-3.5" />
@@ -237,7 +245,7 @@ export function PermissionsMatrix({
                             <Button
                               size="sm"
                               disabled={
-                                !alterada(cap.id) || isPending || aindaSemTabela
+                                !alterada(cap.id) || isPending || travada
                               }
                               onClick={() => salvar(cap)}
                             >

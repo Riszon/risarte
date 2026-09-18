@@ -81,6 +81,7 @@ export function AcessoDoRisartano({
   loginsLivres,
   isAdmin,
   isSelf,
+  modoTreino = false,
 }: {
   /** null quando é um login sem cadastro de Risartano. */
   staffId: string | null;
@@ -102,6 +103,8 @@ export function AcessoDoRisartano({
   loginsLivres: { id: string; label: string }[];
   isAdmin: boolean;
   isSelf: boolean;
+  /** No treino tudo é cópia do sistema real (0260): só consulta, para todos. */
+  modoTreino?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -131,7 +134,10 @@ export function AcessoDoRisartano({
         <Cabecalho />
         <p className="text-sm text-muted-foreground">
           {staffNome} está no cadastro, mas <b>não entra no sistema</b>.
-          {!isAdmin && " Fale com o Admin Master para criar o acesso."}
+          {!isAdmin &&
+            (modoTreino
+              ? " O acesso se cria no sistema real."
+              : " Fale com o Admin Master para criar o acesso.")}
         </p>
         {isAdmin && staffId && !criando && !vinculando && (
           <div className="flex flex-wrap gap-2">
@@ -286,8 +292,9 @@ export function AcessoDoRisartano({
         ))}
         {!isAdmin && (
           <p className="text-xs text-muted-foreground">
-            Quem cria login, redefine senha e muda função é o Admin Master. Aqui
-            você vê o acesso para saber com quem falar — e o que já está valendo.
+            {modoTreino
+              ? "No treino o acesso é cópia do sistema real: login, senha, funções e ambientes se alteram lá."
+              : "Quem cria login, redefine senha e muda função é o Admin Master. Aqui você vê o acesso para saber com quem falar — e o que já está valendo."}
           </p>
         )}
         {isAdmin && (

@@ -428,6 +428,11 @@ clicar em **Criar acesso**.
 incompleto* e o botão **Completar cadastro**, que abre o formulário já com nome
 e e-mail preenchidos.
 
+> **Cadastrar e alterar Risartanos é SÓ no sistema real.** No treino a tela
+> Risartanos mostra a mesma equipe, com as mesmas fichas e os mesmos acessos,
+> mas **só para consulta** — veja "No treino, a equipe é cópia do sistema real",
+> na seção 2.6.
+
 ### 2.6. Os três ambientes
 
 O Risartano usa **um login só** em três lugares:
@@ -452,18 +457,52 @@ o treinamento começa: primeiro o treino, depois o sistema real.
 os três ambientes com **Liberar** / **Retirar**.
 
 - **riSZon** — sem ele, a pessoa fica só no Início.
-- **riSZon Treino** — liberar **cria o login dela no treino**, com o mesmo
-  e-mail. O sistema mostra uma **senha provisória do treino** para você anotar e
-  passar por um canal seguro. Retirar **bloqueia** o login de lá (não apaga
+- **riSZon Treino** — liberar **abre o login dela no treino**, com o mesmo
+  e-mail, e o sistema mostra uma **senha provisória do treino** para você anotar
+  e passar por um canal seguro. Retirar **bloqueia** o login de lá (não apaga
   nada do que ela fez treinando).
 - **Risarte Academy** — libera os cursos.
 
 > **O treino e o Academy já vêm liberados** para quem ganha acesso: são os
 > lugares de aprender. O que se libera caso a caso é o sistema de verdade.
 
-**Trocar a senha:** em **Perfil → Minha senha**, informando a senha atual. A
-nova vale no riSZon **e no treino**. (Recuperação por link de e-mail, se um dia
-existir, não se espelha.)
+**Trocar a senha:** em **Perfil → Minha senha**, **no riSZon**, informando a
+senha atual. A nova vale no riSZon **e no treino**. Dentro do treino a troca de
+senha, nome e telefone não é feita: lá eles vêm do sistema real. (Recuperação
+por link de e-mail, se um dia existir, não se espelha.)
+
+#### No treino, a equipe é cópia do sistema real
+
+**Quem cadastra e altera Risartanos, logins, funções, ambientes e permissões é
+só o sistema real.** O treino recebe uma **cópia** de tudo, sozinho, a cada
+alteração — e lá dentro essas telas são **só para consulta**, para todo mundo,
+inclusive o Admin Master:
+
+- **Risartanos** mostra a mesma equipe, com as mesmas fichas, fotos, unidades e
+  acessos. Não há botão de novo cadastro, de editar nem de mexer no acesso. No
+  alto aparece o aviso **Só consulta no treino**, com a hora da última cópia.
+- **Matriz de permissões** mostra as mesmas permissões do sistema real, sem
+  poder salvar. Cada função vê no treino exatamente o que veria no real.
+- Na aba **Acesso** da ficha, os três ambientes aparecem **como estão no
+  sistema real**.
+- Os **usuários de treino por função** (a senha da recepção, a do gerente…)
+  continuam entrando normalmente, mas **não aparecem** na lista de Risartanos:
+  eles não são pessoas da equipe.
+
+**O seu login no treino** é criado junto com a cópia, com o **mesmo e-mail**.
+Enquanto a senha não for definida no sistema real, você não consegue entrar lá:
+troque a sua em **Perfil → Minha senha** (no riSZon) ou peça ao Admin Master
+para redefinir — a senha nova passa a valer nos dois. Quem está **desativado**
+no sistema real, ou teve o **treino retirado**, fica com o login do treino
+bloqueado.
+
+**Para o Admin Master:** em **Administração → Ambientes** fica o quadro **O
+treino é cópia deste sistema**, com a hora da última cópia e o botão
+**Sincronizar treino agora**, que copia tudo de uma vez. Use-o na primeira vez e
+sempre que aparecer o aviso amarelo **"Alguma alteração de Risartanos ou
+acessos não chegou ao treino"** na tela Risartanos. A cópia nunca atrapalha o
+que você salvou no sistema real: se o treino estiver fora do ar, o seu cadastro
+fica salvo e só a cópia fica pendente.
 
 **Endereços:** ficam em **Administração → Ambientes** (só o Admin Master). O
 Risarte Academy só mostra o atalho depois que o endereço dele for preenchido —

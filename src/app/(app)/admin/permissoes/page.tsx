@@ -3,6 +3,8 @@ import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CAPACIDADES, matrizPadrao } from "@/lib/permissions";
 import { USER_ROLES, type UserRole } from "@/lib/roles";
+import { isTreino } from "@/lib/environment";
+import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { PermissionsMatrix } from "./permissions-matrix";
 
 export const metadata: Metadata = { title: "Matriz de permissões" };
@@ -41,6 +43,8 @@ export default async function PermissoesPage() {
       atual={atual}
       padrao={matrizPadrao()}
       aindaSemTabela={semDados}
+      somenteLeitura={isTreino()}
+      aviso={<AvisoSomenteConsulta />}
     />
   );
 }

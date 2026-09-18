@@ -5,6 +5,8 @@ import { Plus, UserPlus } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
+import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
+import { AvisoEspelhoPendente } from "@/components/aviso-espelho-pendente";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -104,6 +106,9 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
           </Button>
         )}
       </header>
+
+      <AvisoSomenteConsulta />
+      <AvisoEspelhoPendente isAdmin={session.isAdminMaster} />
 
       <nav className="flex flex-wrap gap-2">
         {atalhos.map((a) => {

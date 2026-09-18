@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.254.0",
+    data: "2026-09-18",
+    migracao: "0260",
+    titulo: "No treino, a equipe é cópia do sistema real",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Risartanos, logins, funções, ambientes e permissões agora se cadastram e se alteram só no sistema real. O treino recebe uma cópia sozinho, a cada alteração: lá você encontra a mesma equipe, com as mesmas fichas e os mesmos acessos.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "No treino, as telas Risartanos e Matriz de permissões são só para consulta — para todo mundo, inclusive o Admin Master. Um aviso no alto da tela diz isso e mostra a hora da última cópia.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Senha, nome e telefone se trocam no Perfil do sistema real e passam a valer no treino também. Dentro do treino essa troca não é feita.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Administração → Ambientes, o Admin vê quando foi a última cópia para o treino e tem o botão Sincronizar treino agora. Se alguma alteração não chegar lá, a tela Risartanos avisa.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.253.2",
     data: "2026-09-17",
     migracao: null,

@@ -7,6 +7,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { AMBIENTES, type Ambiente } from "@/lib/ambientes";
 import { TAMANHO_DA_SENHA_SUGERIDA, senhaSugerida } from "@/lib/risartanos";
+import { isTreino } from "@/lib/environment";
+import { SOMENTE_CONSULTA_NO_TREINO } from "@/lib/espelho";
+import { agendarEspelho } from "@/lib/espelho-treino";
 import {
   bloquearNoTreino,
   liberarNoTreino,
@@ -161,6 +164,7 @@ function parseAssignments(raw: string): RoleAssignment[] | null {
 }
 
 export async function createUser(formData: FormData): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
 
   const fullName = String(formData.get("full_name") ?? "").trim();
@@ -267,8 +271,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
         email,
         senha: password,
         nome: fullName,
-        funcao: String(formData.get("funcao_prevista") ?? "") || null,
-        unidade: String(formData.get("unidade_do_cadastro") ?? "") || null,
+        idDaProducao: created.user.id,
       });
       if (!r.ok) {
         avisos.push(r.error ?? "o login do treino não foi criado");
@@ -305,6 +308,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       ambientes: ambientesPedidos,
     },
   });
+  agendarEspelho({ pessoa: created.user.id });
   reaquecer();
   revalidatePath("/", "layout");
   return {
@@ -373,6 +377,7 @@ export async function definirAmbiente(
   ambiente: Ambiente,
   liberar: boolean
 ): Promise<ResultadoDeAmbiente> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   if (!AMBIENTES.includes(ambiente)) {
     return { ok: false, error: "Ambiente desconhecido." };
@@ -400,8 +405,7 @@ export async function definirAmbiente(
         email: dados.email,
         senha: senhaDoTreino,
         nome: dados.nome,
-        funcao: dados.funcao,
-        unidade: dados.unidade,
+        idDaProducao: userId,
       });
       if (!r.ok) return { ok: false, error: r.error };
     } else {
@@ -433,6 +437,7 @@ export async function definirAmbiente(
     entityId: userId,
     details: { ambiente, liberado: liberar },
   });
+  agendarEspelho({ pessoa: userId });
   reaquecer();
   revalidatePath("/", "layout");
   return {
@@ -456,6 +461,7 @@ export async function updateUserName(
   userId: string,
   formData: FormData
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   const fullName = String(formData.get("full_name") ?? "").trim();
   if (!fullName) return { ok: false, error: "Informe o nome completo." };
@@ -472,6 +478,7 @@ export async function updateUserName(
   }
 
   await logAudit({ action: "update", entityType: "user", entityId: userId });
+  agendarEspelho({ pessoa: userId });
   reaquecer();
   return { ok: true };
 }
@@ -480,6 +487,7 @@ export async function resetUserPassword(
   userId: string,
   formData: FormData
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   const password = String(formData.get("password") ?? "");
   const passwordError = validatePassword(password);
@@ -523,6 +531,7 @@ export async function setUserActive(
   userId: string,
   active: boolean
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await requireAdminMaster();
   if (userId === session.userId) {
     return { ok: false, error: "Você não pode desativar a si mesmo." };
@@ -560,6 +569,7 @@ export async function setUserActive(
     entityId: userId,
     details: { field: "is_active", value: active },
   });
+  agendarEspelho({ pessoa: userId });
   reaquecer();
   return { ok: true };
 }
@@ -571,6 +581,7 @@ export async function addUserRole(
   unitScope?: UnitScope,
   unitIds?: string[]
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   if (!USER_ROLES.includes(role)) {
     return { ok: false, error: "Função inválida." };
@@ -608,6 +619,7 @@ export async function addUserRole(
       fora_da_unidade_do_cadastro: await foraDaUnidadeDoCadastro(userId, clinicId),
     },
   });
+  agendarEspelho({ pessoa: userId });
   reaquecer();
   return { ok: true };
 }
@@ -619,6 +631,7 @@ export async function updateRoleScope(
   unitScope: UnitScope,
   unitIds: string[]
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   if (!UNIT_SCOPES.includes(unitScope)) {
     return { ok: false, error: "Escopo inválido." };
@@ -640,6 +653,7 @@ export async function updateRoleScope(
     entityId: userId,
     details: { unit_scope: unitScope, units: unitIds.length },
   });
+  agendarEspelho({ pessoa: userId });
   reaquecer();
   return { ok: true };
 }
@@ -648,6 +662,7 @@ export async function removeUserRole(
   roleRowId: string,
   userId: string
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
 
   const supabase = await createClient();
@@ -667,6 +682,7 @@ export async function removeUserRole(
     entityId: userId,
     details: { removedRowId: roleRowId },
   });
+  agendarEspelho({ pessoa: userId });
   reaquecer();
   return { ok: true };
 }

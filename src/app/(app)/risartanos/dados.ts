@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fullAccessClinicIds, type SessionContext } from "@/lib/auth";
+import { isTreino } from "@/lib/environment";
 import {
   ROLE_LABELS,
   type ClinicType,
@@ -126,6 +127,19 @@ export async function alcanceDoUsuario(session: SessionContext): Promise<Alcance
       (session.rolesByClinic[activeClinicId] ?? []).some(
         (r) => r === "unit_manager" || r === "franchisee"
       ));
+
+  // NO TREINO NINGUÉM EDITA (0260) — nem o Admin. O que se VÊ continua igual
+  // (escopoIds); o que some é tudo o que grava.
+  if (isTreino()) {
+    return {
+      escopoIds,
+      gerirIds: new Set<string>(),
+      isRH,
+      podeEscolherUnidade: false,
+      podeCriar: false,
+      podeGerirAlguma: false,
+    };
+  }
 
   return {
     escopoIds,
@@ -264,14 +278,17 @@ export async function carregarEquipe(
   // NÃO filtramos por clinic_id: a barreira é a RLS (`can_see_staff`), que já
   // mostra o Risartano a quem gere QUALQUER unidade onde ele tem acesso.
   // Filtrar pela "unidade de origem" aqui esconderia os multi-unidade.
+  // No treino a lista é a da produção: só o cadastro que veio de lá (0260).
+  let cadastrosQuery = supabase
+    .from("staff_members")
+    .select(COLUNAS)
+    .order("full_name")
+    .limit(2000);
+  if (isTreino()) cadastrosQuery = cadastrosQuery.not("mirrored_at", "is", null);
+
   const [{ data: unidades }, { data: linhas }] = await Promise.all([
     unidadesQuery.returns<{ id: string; name: string }[]>(),
-    supabase
-      .from("staff_members")
-      .select(COLUNAS)
-      .order("full_name")
-      .limit(2000)
-      .returns<StaffRow[]>(),
+    cadastrosQuery.returns<StaffRow[]>(),
   ]);
 
   const cadastros = linhas ?? [];
@@ -301,7 +318,12 @@ export async function carregarEquipe(
       .select("id, full_name, email, is_active, is_admin_master")
       .order("full_name")
       .returns<PerfilRow[]>();
-    const soltos = (perfis ?? []).filter((p) => !vinculados.has(p.id));
+    // No treino, só os logins que vieram da produção: os usuários de teste por
+    // função continuam entrando, mas não são Risartanos (decisão do dono).
+    const daProducao = isTreino() ? await loginsEspelhados(supabase) : null;
+    const soltos = (perfis ?? []).filter(
+      (p) => !vinculados.has(p.id) && (!daProducao || daProducao.has(p.id))
+    );
     const acessosSoltos = await carregarAcessos(
       supabase,
       soltos.map((p) => p.id)
@@ -323,14 +345,14 @@ export async function carregarEquipe(
         unidades: (acesso?.units ?? []).map((u) => ({
           ...u,
           inativo: false,
-          gerida: true,
+          gerida: !isTreino(),
         })),
         regime: null,
         ativo: p.is_active,
         temAcesso: true,
         acessoAtivo: p.is_active,
         isAdminMaster: p.is_admin_master,
-        podeGerir: true,
+        podeGerir: !isTreino(),
       });
     }
     loginsSemCadastro = soltos
@@ -342,6 +364,15 @@ export async function carregarEquipe(
   }
 
   return { pessoas, unidades: unidades ?? [], loginsSemCadastro };
+}
+
+/** Os logins do treino que são cópia de alguém da produção (0260). */
+async function loginsEspelhados(supabase: Supa): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("mirror_user_map")
+    .select("local_id")
+    .returns<{ local_id: string }[]>();
+  return new Set((data ?? []).map((m) => m.local_id));
 }
 
 function pessoaDoCadastro(
@@ -366,7 +397,7 @@ function pessoaDoCadastro(
     : null;
   const inativasAqui = new Set(r.inactive_unit_ids ?? []);
   const podeGerir =
-    session.isAdminMaster ||
+    (session.isAdminMaster && !isTreino()) ||
     alcance.gerirIds.has(r.clinic_id) ||
     (resumo?.unitClinicIds ?? []).some((id) => alcance.gerirIds.has(id));
 
@@ -388,7 +419,8 @@ function pessoaDoCadastro(
     unidades: (resumo?.units ?? []).map((u) => ({
       ...u,
       inativo: inativasAqui.has(u.clinicId),
-      gerida: session.isAdminMaster || alcance.gerirIds.has(u.clinicId),
+      gerida:
+        (session.isAdminMaster && !isTreino()) || alcance.gerirIds.has(u.clinicId),
     })),
     regime: r.contract_type,
     ativo: r.is_active,
@@ -471,7 +503,7 @@ export async function carregarFicha(
     acesso,
     fotoUrl: (row.photo_path && fotos.get(row.photo_path)) || null,
     agendas,
-    podeGerir: podeRpc === true,
+    podeGerir: podeRpc === true && !isTreino(),
   };
 }
 
@@ -524,6 +556,16 @@ export async function carregarAmbientesDoUsuario(
   supabase: Supa,
   userId: string
 ): Promise<PermissoesDeAmbiente> {
+  // No treino, os ambientes que importam são os do SISTEMA REAL, guardados na
+  // cópia (0260) — os de lá dizem só quem entra no próprio treino.
+  if (isTreino()) {
+    const { data } = await supabase
+      .from("mirror_user_map")
+      .select("source_environments")
+      .eq("local_id", userId)
+      .maybeSingle<{ source_environments: PermissoesDeAmbiente | null }>();
+    return data?.source_environments ?? {};
+  }
   const { data, error } = await supabase
     .from("user_environments")
     .select("environment, allowed")

@@ -12,6 +12,9 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
 import { pedeEspecialidades } from "@/lib/risartanos";
+import { isTreino } from "@/lib/environment";
+import { SOMENTE_CONSULTA_NO_TREINO } from "@/lib/espelho";
+import { agendarEspelho } from "@/lib/espelho-treino";
 import {
   rolesForClinicType,
   type ClinicType,
@@ -33,6 +36,7 @@ export async function saveStaffSchedule(input: {
   dates: string[];
   note: string;
 }): Promise<{ ok: boolean; error?: string }> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await getSessionContext();
   const canManage =
     session.isAdminMaster ||
@@ -75,6 +79,7 @@ export async function saveStaffSchedule(input: {
     entityId: input.staffMemberId,
     clinicId: input.clinicId,
   });
+  agendarEspelho({ risartano: input.staffMemberId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
@@ -259,6 +264,7 @@ function parseStaffForm(
 export async function createStaffMember(
   formData: FormData
 ): Promise<CreateStaffResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await getSessionContext();
 
   // Admin e Franqueadora/RH escolhem a unidade; Gerente/Franqueado cadastram
@@ -326,6 +332,7 @@ export async function createStaffMember(
     entityId: data.id,
     clinicId,
   });
+  agendarEspelho({ risartano: data.id });
   revalidatePath("/risartanos", "layout");
   return { ok: true, staffId: data.id, clinicId, code: data.code };
 }
@@ -334,6 +341,7 @@ export async function updateStaffMember(
   staffId: string,
   formData: FormData
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await getSessionContext();
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -380,6 +388,7 @@ export async function updateStaffMember(
     entityId: staffId,
     clinicId: existing.clinic_id,
   });
+  agendarEspelho({ risartano: staffId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
@@ -393,6 +402,7 @@ export async function setStaffPhoto(
   staffId: string,
   path: string
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await getSessionContext();
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -436,6 +446,7 @@ export async function setStaffPhoto(
     clinicId: existing.clinic_id,
     details: { photo: clean ? "set" : "removed" },
   });
+  agendarEspelho({ risartano: staffId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
@@ -448,6 +459,7 @@ export async function linkStaffUser(
   staffId: string,
   userId: string
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   if (!userId) return { ok: false, error: "Escolha o usuário." };
   const supabase = await createClient();
@@ -473,12 +485,14 @@ export async function linkStaffUser(
     clinicId: existing.clinic_id,
     details: { access: "linked" },
   });
+  agendarEspelho({ risartano: staffId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
 
 /** H4.1 Lote 2b: desfaz o vínculo com o usuário de acesso (não apaga o login). */
 export async function unlinkStaffUser(staffId: string): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -503,6 +517,7 @@ export async function unlinkStaffUser(staffId: string): Promise<ActionResult> {
     clinicId: existing.clinic_id,
     details: { access: "unlinked" },
   });
+  agendarEspelho({ risartano: staffId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
@@ -516,6 +531,7 @@ export async function setStaffUnitActive(
   clinicId: string,
   active: boolean
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await getSessionContext();
   if (!clinicId) return { ok: false, error: "Unidade inválida." };
   if (!(await canManage(session, clinicId))) {
@@ -555,6 +571,7 @@ export async function setStaffUnitActive(
     clinicId,
     details: { unit_active: active },
   });
+  agendarEspelho({ risartano: staffId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }
@@ -563,6 +580,7 @@ export async function setStaffActive(
   staffId: string,
   active: boolean
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await getSessionContext();
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -599,6 +617,7 @@ export async function setStaffActive(
     clinicId: existing.clinic_id,
     details: { active },
   });
+  agendarEspelho({ risartano: staffId });
   revalidatePath("/risartanos", "layout");
   return { ok: true };
 }

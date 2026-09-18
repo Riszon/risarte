@@ -37,7 +37,7 @@ export function treinoConfigurado(): boolean {
 const FALTA_CHAVE =
   "O ambiente de treino ainda não está configurado no servidor (TREINO_SUPABASE_URL e TREINO_SERVICE_ROLE_KEY). Sem isso não dá para criar o login lá.";
 
-function clienteDoTreino(): SupabaseClient | null {
+export function clienteDoTreino(): SupabaseClient | null {
   if (!treinoConfigurado()) return null;
   return createClient(
     process.env.TREINO_SUPABASE_URL!,
@@ -47,11 +47,13 @@ function clienteDoTreino(): SupabaseClient | null {
 }
 
 /** Acha a pessoa no treino pelo e-mail (é a chave entre os dois bancos). */
-async function acharNoTreino(
+export async function acharNoTreino(
   treino: SupabaseClient,
   email: string
 ): Promise<{ id: string } | null> {
-  const alvo = email.trim().toLowerCase();
+  // `ilike` para ignorar maiúsculas — com `_` e `%` escapados, senão
+  // "ana_silva@" casaria também com "anaXsilva@".
+  const alvo = email.trim().toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`);
   const { data } = await treino
     .from("profiles")
     .select("id, email")
@@ -61,18 +63,22 @@ async function acharNoTreino(
 }
 
 /**
- * Libera a pessoa no treino: cria o login (ou reativa o que já existe), dá a
- * ela a MESMA função da unidade do cadastro — a unidade é casada pelo NOME,
- * porque os ids das clínicas são diferentes em cada banco — e marca o sistema
- * como liberado lá dentro. Sem função, a pessoa entraria no treino e não teria
- * o que treinar.
+ * Libera a pessoa no treino: cria o login (ou reativa o que já existe) com a
+ * senha dada.
+ *
+ * Função, unidade e ambientes NÃO se decidem mais aqui: desde a 0260 o treino
+ * é espelho da produção, e quem copia tudo isso é `espelho-treino.ts`, logo
+ * depois da ação (a unidade é casada pelo CÓDIGO, e o que falhar fica pendente
+ * com aviso na tela, em vez de sumir).
+ *
+ * O login novo nasce com o MESMO id da produção — deixa as duas pontas fáceis
+ * de ligar. O que já existia continua com o id que tinha.
  */
 export async function liberarNoTreino(entrada: {
   email: string;
   senha: string;
   nome: string;
-  funcao: string | null;
-  unidade: string | null;
+  idDaProducao?: string;
 }): Promise<ResultadoDoTreino> {
   const treino = clienteDoTreino();
   if (!treino) return { ok: false, error: FALTA_CHAVE };
@@ -80,65 +86,32 @@ export async function liberarNoTreino(entrada: {
   const email = entrada.email.trim().toLowerCase();
   if (!email.includes("@")) return { ok: false, error: "E-mail inválido." };
 
-  let userId: string;
   const existente = await acharNoTreino(treino, email);
   if (existente) {
-    userId = existente.id;
-    const { error } = await treino.auth.admin.updateUserById(userId, {
+    const { error } = await treino.auth.admin.updateUserById(existente.id, {
       ban_duration: "none",
       password: entrada.senha,
     });
     if (error) {
-      console.error("liberarNoTreino (reativar) falhou:", error.message);
+      console.error("liberarNoTreino (reativar) falhou:", error.code ?? error.status);
       return { ok: false, error: "Não foi possível reativar o login no treino." };
     }
-    await treino.from("profiles").update({ is_active: true }).eq("id", userId);
-  } else {
-    const { data, error } = await treino.auth.admin.createUser({
-      email,
-      password: entrada.senha,
-      email_confirm: true,
-      user_metadata: { full_name: entrada.nome },
-    });
-    if (error || !data.user) {
-      console.error("liberarNoTreino (criar) falhou:", error?.message);
-      return { ok: false, error: "Não foi possível criar o login no treino." };
-    }
-    userId = data.user.id;
+    // Pela chave de serviço: a trava da 0260 deixa passar a cópia.
+    await treino.from("profiles").update({ is_active: true }).eq("id", existente.id);
+    return { ok: true };
   }
 
-  // A função, casada pelo NOME da unidade. Se aquela unidade não existir no
-  // treino, a pessoa entra sem função — e o treino avisa isso na própria tela
-  // (modo portal), em vez de o sistema inventar uma unidade para ela.
-  if (entrada.funcao && entrada.unidade) {
-    const { data: clinica } = await treino
-      .from("clinics")
-      .select("id")
-      .ilike("name", entrada.unidade)
-      .maybeSingle<{ id: string }>();
-    if (clinica) {
-      await treino
-        .from("user_clinic_roles")
-        .upsert(
-          { user_id: userId, clinic_id: clinica.id, role: entrada.funcao },
-          { onConflict: "user_id,clinic_id" }
-        );
-    }
+  const { error } = await treino.auth.admin.createUser({
+    ...(entrada.idDaProducao ? { id: entrada.idDaProducao } : {}),
+    email,
+    password: entrada.senha,
+    email_confirm: true,
+    user_metadata: { full_name: entrada.nome },
+  });
+  if (error) {
+    console.error("liberarNoTreino (criar) falhou:", error.code ?? error.status);
+    return { ok: false, error: "Não foi possível criar o login no treino." };
   }
-
-  // No treino o sistema é o que se vem usar: liberar lá é o ponto do ambiente.
-  const { error: erroAmbiente } = await treino
-    .from("user_environments")
-    .upsert(
-      { user_id: userId, environment: "sistema", allowed: true },
-      { onConflict: "user_id,environment" }
-    );
-  if (erroAmbiente) {
-    // Banco de treino ainda sem a 0259: não é motivo para falhar a liberação —
-    // lá, sem a tabela, o sistema continua aberto como sempre foi.
-    console.error("liberarNoTreino (ambiente) avisou:", erroAmbiente.message);
-  }
-
   return { ok: true };
 }
 

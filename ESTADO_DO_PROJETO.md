@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.253.2** · Última migração: **0259** (aplicada na produção e no treino — medido em 18/09) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migração: **0260** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3671,6 +3671,57 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### O TREINO É ESPELHO DA PRODUÇÃO (18/09/2026, v0.254.0, migração 0260)
+
+Pedido do dono: o único lugar que cria acessos de verdade é a produção. No
+treino, a lista e os acessos dos Risartanos aparecem (para quem tem permissão
+de ver), mas **ninguém altera nada lá, nem o Admin**. Cadastra na produção e o
+treino recebe a cópia de cada Risartano.
+
+**Decisões do dono (tela de perguntas):** usuários de teste por função
+**continuam entrando, mas fora da lista**; a ficha vai **inteira** (CPF e
+endereço inclusive); a **matriz de permissões também é espelhada**.
+
+**Como funciona** (`src/lib/espelho-treino.ts`, regras puras em
+`src/lib/espelho.ts`):
+- Cada ação da produção que mexe em Risartano, acesso, ambiente, perfil ou
+  permissão agenda a cópia **daquela pessoa inteira** com `after()` — depois da
+  resposta, nunca derruba o que foi salvo. Falha vira `mirror_state.pending` na
+  produção, com aviso amarelo em Risartanos para o Admin.
+- **Sincronizar treino agora** (`/admin/ambientes`, produção, Admin) copia tudo:
+  permissões, todos os perfis, todas as fichas. É a primeira carga e o conserto.
+- Pontes: pessoa pelo **e-mail** (gravada em `mirror_user_map`; login novo nasce
+  com o **mesmo id** da produção); unidade pelo **código**, depois nome — a que
+  falta é criada lá com o mesmo id; ficha/histórico/agenda com o **mesmo id**.
+- No treino, `sistema` = "treino liberado" na produção (o recém-chegado tem de
+  encontrar o sistema aberto lá). A ficha do treino mostra os ambientes **da
+  produção** (`mirror_user_map.source_environments`).
+- Login no treino: criado para todos, **aberto só se ativo e com treino
+  liberado**; senha desconhecida até ser definida na produção (Redefinir senha /
+  Perfil → Minha senha copiam).
+- **Três barreiras de só-consulta no treino:** tela (`alcanceDoUsuario`,
+  `adminEdita`, `somenteLeitura`), ações (`SOMENTE_CONSULTA_NO_TREINO`) e banco
+  (gatilho `mirror_read_only`, ligado por `mirror_state.is_mirror`, que a
+  primeira cópia liga). SQL Editor e scripts por conexão direta passam.
+- Perfil no treino: nome, telefone e senha **não se trocam lá** (vêm do real).
+
+**Conferido:** 14 testes puros novos (1127 no total); portão verde
+(`npm run verificar`, lint, `check:destrutivo`); 0260 aplicada no treino;
+**trava provada no banco do treino** (Admin logado recusado em
+`set_permission`, `set_user_environment` e no próprio nome; chave de serviço
+grava; estado restaurado).
+
+**⚠️ NÃO provado ainda:** a cópia de ponta a ponta (produção → treino) e as
+telas no treino. Dependem da **0260 na produção** e do deploy. Ordem combinada:
+1) dono roda a 0260 na produção; 2) push; 3) **Sincronizar treino agora**;
+4) conferir no treino (lista, ficha, permissões, aviso, login de teste fora da
+lista). Entre o push e a primeira cópia, a lista do treino fica vazia.
+
+**Limites declarados:** o nível de carreira da função (`career_level_id`) não é
+copiado (é configuração financeira); ficha não se apaga na produção (desliga-se),
+então nada é apagado no treino; depois de `npm run migrar:teste`/`seed:teste` no
+banco do treino, rodar **Sincronizar** de novo.
 
 ### PROBLEMAS 2.0 (16/09/2026) — Parte A entregue (v0.247.0, migração 0256)
 

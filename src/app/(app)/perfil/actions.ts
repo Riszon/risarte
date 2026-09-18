@@ -7,6 +7,16 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatPhone } from "@/lib/masks";
 import { sincronizarSenhaNoTreino, treinoConfigurado } from "@/lib/treino";
+import { isTreino } from "@/lib/environment";
+import { agendarEspelho } from "@/lib/espelho-treino";
+
+/**
+ * No TREINO, nome, telefone e senha vêm do sistema real (0260): trocar aqui
+ * seria desfeito na próxima cópia. O Perfil do sistema real abre para todo
+ * mundo, até para quem ainda só tem o treino (modo portal).
+ */
+const NO_TREINO_TROCA_NO_REAL =
+  "No treino, seus dados e sua senha vêm do sistema real. Troque lá, em Perfil — passa a valer aqui também.";
 
 export type ActionResult = { ok: boolean; error?: string; aviso?: string };
 
@@ -23,6 +33,7 @@ export type ActionResult = { ok: boolean; error?: string; aviso?: string };
 export async function trocarMinhaSenha(
   formData: FormData
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: NO_TREINO_TROCA_NO_REAL };
   const session = await getSessionContext();
   const atual = String(formData.get("current_password") ?? "");
   const senha = String(formData.get("password") ?? "");
@@ -96,6 +107,7 @@ export async function trocarMinhaSenha(
 export async function updateOwnProfile(
   formData: FormData
 ): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: NO_TREINO_TROCA_NO_REAL };
   const session = await getSessionContext();
   const fullName = String(formData.get("full_name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
@@ -113,6 +125,7 @@ export async function updateOwnProfile(
     return { ok: false, error: "Não foi possível salvar seus dados." };
   }
 
+  agendarEspelho({ pessoa: session.userId });
   revalidatePath("/perfil");
   revalidatePath("/", "layout");
   return { ok: true };
