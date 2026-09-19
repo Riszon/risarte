@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.255.0** · Última migração: **0262** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.255.1** · Última migração: **0262** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,22 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### O CAMINHO DO RECÉM-CHEGADO (19/09/2026, v0.255.1, sem migração)
+
+Fluxo do dono: cadastra no REAL, treina no TREINO, e só depois libera o REAL.
+- **Defeito: sem o real, a pessoa não conseguia sair.** O modo portal não tem
+  menu lateral, onde morava o Sair — e nem caminho para o Perfil (trocar a
+  senha). Agora os dois ficam na barra de cima no modo portal (`BotaoSair`).
+- **Defeito: desmarcar treino/Academy na criação do acesso não tinha efeito**
+  (sem linha = liberado, 0259). `createUser` passa a gravar o "não".
+- **Conferido com dado real (RIS-000002, consultora, sem o real e com treino):**
+  no treino, login aberto, mesmas funções, sistema aberto (não cai no portal),
+  Agenda/Jornada/Atendimento/Prontuários abrem.
+- Já era assim: o formulário de criar acesso vem com o **treino marcado** e o
+  login do treino nasce com a **mesma senha** (0.254).
+- **Pendente do dono:** clicar Sincronizar treino com a página RECARREGADA —
+  o Admin Principal ainda não chegou ao treino (conferido às 13:3x: `false`).
 
 ### ADMIN PRINCIPAL — outros Admins sempre abaixo do dono (19/09/2026, v0.255.0, migração 0262)
 

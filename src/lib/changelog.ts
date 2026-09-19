@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.255.1",
+    data: "2026-09-19",
+    migracao: null,
+    titulo: "Quem ainda está só no Início consegue sair",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem ainda não tem o sistema real liberado entrava na tela de Início e não tinha como sair — o botão Sair ficava no menu lateral, que nessa tela não aparece. Agora, no alto da tela, há o Perfil (para trocar a senha) e o botão Sair.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ao criar um acesso, desmarcar o riSZon Treino ou o Risarte Academy não tinha efeito — a pessoa ficava liberada do mesmo jeito. Agora o que fica desmarcado fica sem acesso.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.255.0",
     data: "2026-09-19",
     migracao: "0262",

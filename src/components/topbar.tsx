@@ -1,4 +1,5 @@
-import { AlertTriangle, BookMarked } from "lucide-react";
+import { AlertTriangle, BookMarked, UserRound } from "lucide-react";
+import { BotaoSair } from "@/components/botao-sair";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ReportNavItem } from "@/components/report-nav-item";
@@ -89,6 +90,18 @@ export function Topbar({
             label="Manual de treinamento"
             icon={<BookMarked className="size-[18px]" />}
           />
+        )}
+        {/* No modo portal não há menu lateral: o Perfil (trocar a senha) e o
+            Sair moram aqui, senão a pessoa entra e não tem como sair. */}
+        {modoPortal && (
+          <>
+            <TopbarItem
+              href="/perfil"
+              label="Meu perfil e senha"
+              icon={<UserRound className="size-[18px]" />}
+            />
+            <BotaoSair />
+          </>
         )}
       </div>
     </header>

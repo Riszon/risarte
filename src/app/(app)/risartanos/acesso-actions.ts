@@ -276,6 +276,12 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
   const ambientesPedidos = AMBIENTES.filter(
     (a) => String(formData.get(`ambiente_${a}`) ?? "") === "on"
   );
+  // O "NÃO" também tem de ficar gravado: treino e Academy nascem liberados
+  // quando não há linha (0259), então desmarcá-los aqui sem gravar nada os
+  // deixaria abertos do mesmo jeito.
+  const ambientesNegados = AMBIENTES.filter(
+    (a) => a !== "sistema" && !ambientesPedidos.includes(a)
+  );
   const avisos: string[] = [];
   for (const ambiente of ambientesPedidos) {
     if (ambiente === "treino") {
@@ -304,6 +310,18 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     if (erroAmbiente) {
       console.error("ambiente na criação falhou:", erroAmbiente.message);
       avisos.push(`o ambiente "${ambiente}" não foi marcado`);
+    }
+  }
+
+  for (const ambiente of ambientesNegados) {
+    const { error: erroNegado } = await supabase.rpc("set_user_environment", {
+      p_user_id: created.user.id,
+      p_environment: ambiente,
+      p_allowed: false,
+    });
+    if (erroNegado) {
+      console.error("ambiente negado na criação falhou:", erroNegado.code);
+      avisos.push(`o ambiente "${ambiente}" ficou liberado (não foi possível gravar o não)`);
     }
   }
 

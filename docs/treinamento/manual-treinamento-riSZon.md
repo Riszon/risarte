@@ -465,8 +465,23 @@ para ir e voltar o dia inteiro sem encher o navegador.
 
 **Quem chega novo entra antes de ser liberado no sistema de verdade.** Nesse
 período ele vê **só a tela de Início**, com os atalhos: o menu dos módulos nem
-aparece, e digitar o endereço de outra tela devolve para o Início. É assim que
-o treinamento começa: primeiro o treino, depois o sistema real.
+aparece, e digitar o endereço de outra tela devolve para o Início. No alto, à
+direita, ficam o **Perfil** (para trocar a senha) e o botão **Sair**. É assim
+que o treinamento começa: primeiro o treino, depois o sistema real.
+
+**O caminho de quem chega:**
+
+1. O Admin **cadastra** a pessoa no sistema real e **cria o acesso** com o
+   **riSZon Treino marcado** (já vem marcado) e o **riSZon desmarcado**. O login
+   do treino nasce com a **mesma senha**.
+2. No treino, a pessoa entra com **tudo o que a função dela permite** — agenda,
+   jornada, atendimento, o que for da função. No sistema real ela vê só o
+   Início.
+3. Terminado o treinamento, o Admin clica **Liberar** no **riSZon** (ficha →
+   aba Acesso). A partir daí ela usa o sistema real.
+
+> Desmarcar o treino ou o Academy na hora de criar o acesso agora vale: a
+> pessoa fica **sem** aquele ambiente até alguém liberar.
 
 **Para quem libera (Admin Master):** na ficha do Risartano, aba **Acesso**, há
 os três ambientes com **Liberar** / **Retirar**.
