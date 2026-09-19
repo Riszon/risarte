@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migração: **0261** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.2** · Última migração: **0261** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3730,8 +3730,8 @@ treino logado (aviso de só consulta, nenhum botão de gravar, matriz travada,
 fichas antigas e logins de teste fora da lista). Observação: RIS-000001 está
 "fora da equipe" nos dois bancos, então só aparece com o filtro "todos".
 
-**Pendência pequena (texto):** no treino, o rodapé da aba Cadastro diz "quem
-edita é a gestão da unidade dele" — deveria dizer que se edita no sistema real.
+**Texto do rodapé da ficha no treino corrigido (v0.254.2):** diz que a ficha é
+cópia do sistema real e que se edita lá.
 
 **Exceção do nível de carreira (0261, OK do dono):** `career_level_id` mora no
 registro da função, mas é configuração financeira de cada ambiente (como as

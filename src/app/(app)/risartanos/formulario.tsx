@@ -42,6 +42,7 @@ export function FormularioDoRisartano({
   activeClinicType = "franchise_unit",
   specialtyOptions = [],
   podeGerir = true,
+  modoTreino = false,
   prefill,
   vincularUsuario,
 }: {
@@ -56,6 +57,8 @@ export function FormularioDoRisartano({
   specialtyOptions?: string[];
   /** Só quem gere edita; os demais leem. */
   podeGerir?: boolean;
+  /** No treino a ficha é cópia do sistema real (0260): lá ninguém edita. */
+  modoTreino?: boolean;
   /** Nome e e-mail vindos de um login sem cadastro ("Completar cadastro"). */
   prefill?: { fullName?: string; email?: string };
   /** Login a vincular ao novo cadastro (Admin, vindo de "Completar cadastro"). */
@@ -549,7 +552,9 @@ export function FormularioDoRisartano({
       )}
       {!podeGerir && (
         <p className="text-xs text-muted-foreground">
-          Você pode ver este cadastro, mas quem edita é a gestão da unidade dele.
+          {modoTreino
+            ? "No treino esta ficha é uma cópia do sistema real: para alterar, edite no sistema real — a mudança chega aqui sozinha."
+            : "Você pode ver este cadastro, mas quem edita é a gestão da unidade dele."}
         </p>
       )}
     </form>

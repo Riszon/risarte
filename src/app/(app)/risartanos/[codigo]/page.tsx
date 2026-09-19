@@ -197,6 +197,7 @@ export default async function FichaDoRisartanoPage(
             photoUrl={ficha.fotoUrl}
             specialtyOptions={especialidades}
             podeGerir={podeGerir}
+            modoTreino={isTreino()}
           />
         </section>
       ) : falta.length > 0 && !acesso ? (

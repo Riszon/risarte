@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.254.2",
+    data: "2026-09-19",
+    migracao: null,
+    titulo: "No treino, a ficha diz onde se altera o cadastro",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "No treino, o rodapé da ficha do Risartano dizia que quem edita é a gestão da unidade. Agora diz a verdade: a ficha é uma cópia do sistema real, e a alteração se faz lá.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.254.1",
     data: "2026-09-19",
     migracao: null,
