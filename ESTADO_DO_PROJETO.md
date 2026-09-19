@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migração: **0261** (0260 e 0261 aplicadas no treino; **pendentes na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migração: **0261** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3722,11 +3722,16 @@ endereço inclusive); a **matriz de permissões também é espelhada**.
 `set_permission`, `set_user_environment` e no próprio nome; chave de serviço
 grava; estado restaurado).
 
-**⚠️ NÃO provado ainda:** a cópia de ponta a ponta (produção → treino) e as
-telas no treino. Dependem da **0260 na produção** e do deploy. Ordem combinada:
-1) dono roda a 0260 e a 0261 na produção; 2) push; 3) **Sincronizar treino agora**;
-4) conferir no treino (lista, ficha, permissões, aviso, login de teste fora da
-lista). Entre o push e a primeira cópia, a lista do treino fica vazia.
+**✅ NO AR E PROVADO (19/09, v0.254.1):** 0260/0261 rodadas na produção pelo
+dono; primeira sincronização completa pela tela (3 logins, 2 fichas, 161 linhas
+de permissão). Conferido comparando os dois bancos (fichas com campos iguais,
+funções por unidade iguais, matriz idêntica, produção sem pendência) e abrindo o
+treino logado (aviso de só consulta, nenhum botão de gravar, matriz travada,
+fichas antigas e logins de teste fora da lista). Observação: RIS-000001 está
+"fora da equipe" nos dois bancos, então só aparece com o filtro "todos".
+
+**Pendência pequena (texto):** no treino, o rodapé da aba Cadastro diz "quem
+edita é a gestão da unidade dele" — deveria dizer que se edita no sistema real.
 
 **Exceção do nível de carreira (0261, OK do dono):** `career_level_id` mora no
 registro da função, mas é configuração financeira de cada ambiente (como as
