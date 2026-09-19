@@ -180,3 +180,22 @@ export function nivelPreservado(
 ): string | null {
   return niveis.get(`${clinicId}|${role}`) ?? null;
 }
+
+/**
+ * NUMERAÇÃO QUE JÁ ESTÁ OCUPADA NO TREINO (achado na primeira cópia, 19/09).
+ *
+ * Antes da 0260 o treino aceitava cadastro, e a sequência de lá gerou os
+ * mesmos `RIS-00000x` da produção para OUTRAS pessoas (fichas de teste). O
+ * código é único, então a ficha da produção não entrava. A ficha local — que
+ * não aparece mais na lista do treino — é renomeada para liberar o número;
+ * nada é apagado. Se até o nome novo estiver ocupado, entra um pedaço do id.
+ */
+export function codigoAfastado(
+  codigo: string,
+  idLocal: string,
+  ocupados: ReadonlySet<string>
+): string {
+  const primeiro = `${codigo}-TREINO`;
+  if (!ocupados.has(primeiro)) return primeiro;
+  return `${codigo}-TREINO-${idLocal.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}

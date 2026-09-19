@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.254.1",
+    data: "2026-09-19",
+    migracao: null,
+    titulo: "Sincronizar o treino não para mais em fichas antigas de lá",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O botão Sincronizar treino agora parava com o aviso \"gravar a ficha no treino\": fichas de teste criadas no treino antes da mudança usavam os mesmos números (RIS-000001…) das fichas do sistema real. Agora a ficha antiga do treino ganha o final -TREINO e a do sistema real entra com o número certo. Nada é apagado.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.254.0",
     data: "2026-09-18",
     migracao: "0261",

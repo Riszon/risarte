@@ -8,6 +8,7 @@ import { acharNoTreino, clienteDoTreino, treinoConfigurado } from "@/lib/treino"
 import {
   AMBIENTES_DO_ESPELHO,
   ambientesNoTreino,
+  codigoAfastado,
   falhaSemDados,
   linhaDoRisartanoNoTreino,
   loginAbertoNoTreino,
@@ -445,6 +446,9 @@ async function espelharRisartanoCtx(ctx: Ctx, staffId: string): Promise<void> {
     }
   }
 
+  // O número (RIS-…) ocupado no treino por uma ficha LOCAL: afasta a local.
+  if (noTreino.code) await liberarNumeracao(ctx, noTreino.code as string, staffId);
+
   exigir(
     await ctx.treino.from("staff_members").upsert(noTreino, { onConflict: "id" }),
     "gravar a ficha no treino"
@@ -511,6 +515,38 @@ async function espelharRisartanoCtx(ctx: Ctx, staffId: string): Promise<void> {
       "gravar os dias de atendimento no treino"
     );
   }
+}
+
+async function liberarNumeracao(ctx: Ctx, codigo: string, staffId: string): Promise<void> {
+  const ocupante = exigir(
+    await ctx.treino
+      .from("staff_members")
+      .select("id, mirrored_at")
+      .eq("code", codigo)
+      .neq("id", staffId)
+      .maybeSingle<{ id: string; mirrored_at: string | null }>(),
+    "conferir a numeração no treino"
+  );
+  if (!ocupante) return;
+  if (ocupante.mirrored_at) {
+    // Outra ficha QUE VEIO DA PRODUÇÃO com o mesmo número: não é caso de
+    // afastar — a produção não repete código. Parar e avisar é mais seguro.
+    throw new FalhaDoEspelho("numeração repetida entre duas fichas copiadas");
+  }
+  const parecidos = exigir(
+    await ctx.treino
+      .from("staff_members")
+      .select("code")
+      .like("code", `${codigo}-TREINO%`)
+      .returns<{ code: string }[]>(),
+    "conferir a numeração no treino"
+  );
+  const novo = codigoAfastado(codigo, ocupante.id, new Set((parecidos ?? []).map((p) => p.code)));
+  exigir(
+    await ctx.treino.from("staff_members").update({ code: novo }).eq("id", ocupante.id),
+    "renomear a ficha local do treino"
+  );
+  ctx.avisos.push("uma ficha antiga do treino foi renumerada para liberar o número da produção");
 }
 
 // -----------------------------------------------------------------------------

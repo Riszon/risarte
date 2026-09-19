@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ambientesNoTreino,
   caminhoDaFotoNoTreino,
+  codigoAfastado,
   falhaSemDados,
   linhaDoRisartanoNoTreino,
   loginAbertoNoTreino,
@@ -175,5 +176,20 @@ describe("nível de carreira preservado no treino (0261)", () => {
   });
   it("papel diferente não herda o nível de outro papel", () => {
     expect(nivelPreservado(niveis, "cam", "unit_manager")).toBeNull();
+  });
+});
+
+describe("codigoAfastado — numeração ocupada por ficha local do treino", () => {
+  it("renomeia a ficha local com o sufixo -TREINO", () => {
+    expect(codigoAfastado("RIS-000001", "abc", new Set())).toBe("RIS-000001-TREINO");
+  });
+  it("se o nome novo também estiver ocupado, entra um pedaço do id", () => {
+    expect(
+      codigoAfastado(
+        "RIS-000001",
+        "1a2b3c4d-0000-0000-0000-000000000000",
+        new Set(["RIS-000001-TREINO"])
+      )
+    ).toBe("RIS-000001-TREINO-1A2B3C");
   });
 });

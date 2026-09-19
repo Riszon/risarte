@@ -491,6 +491,9 @@ inclusive o Admin Master:
 - Os **usuários de treino por função** (a senha da recepção, a do gerente…)
   continuam entrando normalmente, mas **não aparecem** na lista de Risartanos:
   eles não são pessoas da equipe.
+- **Fichas criadas no treino antes desta mudança** (cadastros de teste) também
+  saem da lista. Se o número delas coincidia com uma ficha do sistema real, elas
+  ganharam o final **-TREINO** (ex.: `RIS-000001-TREINO`); nada foi apagado.
 
 **O seu login no treino** é criado junto com a cópia, com o **mesmo e-mail**.
 Enquanto a senha não for definida no sistema real, você não consegue entrar lá:

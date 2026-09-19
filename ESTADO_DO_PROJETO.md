@@ -840,7 +840,17 @@ _Atualizado em: 18/09/2026 · Versão do sistema: **0.254.0** · Última migraç
 > entradas, o estoque subiria sem a obrigação e a conferência nunca mais
 > fecharia. As parcelas têm de fechar com o total da nota.
 >
-> **Limites declarados:** nota com serviço junto (frete) → só as linhas de
+> **Achado na primeira sincronização (19/09):** o treino tinha 5 fichas criadas
+lá mesmo antes da 0260, com a mesma numeração `RIS-00000x` da produção para
+pessoas DIFERENTES (conferido: nem CPF nem e-mail batem; nenhum cliente ligado).
+O código é único e a cópia parou em "gravar a ficha no treino (código 23505)".
+Conserto na rotina (não remendo): a ficha LOCAL que ocupa o número é renomeada
+para `RIS-00000x-TREINO` e a da produção entra com o número certo — nada é
+apagado, e o caso futuro (`000003`, `000007`, `000009`) se resolve sozinho.
+Duas fichas COPIADAS com o mesmo número param a cópia com aviso (não deveria
+acontecer: a produção não repete código).
+
+**Limites declarados:** nota com serviço junto (frete) → só as linhas de
 > estoque aqui · devolução ao fornecedor fica de fora · **entrada manual não
 > contabiliza** (não há documento nem obrigação), e a conferência mostra a
 > diferença em vez de escondê-la · nada retroativo.
