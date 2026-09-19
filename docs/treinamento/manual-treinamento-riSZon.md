@@ -469,6 +469,11 @@ aparece, e digitar o endereço de outra tela devolve para o Início. No alto, à
 direita, ficam o **Perfil** (para trocar a senha) e o botão **Sair**. É assim
 que o treinamento começa: primeiro o treino, depois o sistema real.
 
+**Boas-vindas.** No **primeiro login** no riSZon aparece uma janela de
+boas-vindas: o que é o sistema, o próximo passo (para quem ainda está só no
+Início, é o **riSZon Treino**), onde trocar a senha e onde está o Manual. Ela
+aparece **uma vez só** — fechou, não volta.
+
 **O caminho de quem chega:**
 
 1. O Admin **cadastra** a pessoa no sistema real e **cria o acesso** com o
@@ -500,6 +505,22 @@ os três ambientes com **Liberar** / **Retirar**.
 senha atual. A nova vale no riSZon **e no treino**. Dentro do treino a troca de
 senha, nome e telefone não é feita: lá eles vêm do sistema real. (Recuperação
 por link de e-mail, se um dia existir, não se espelha.)
+
+#### Como usar o riSZon Treino
+
+Na tela de Início do treino há sempre o quadro **"Este é o riSZon Treino —
+aqui é para testar"** (dá para recolher com um clique). O recado dele:
+
+- **É o mesmo sistema**, com as mesmas telas e regras, só que com **dados de
+  mentira**. Nada do que se faz no treino chega ao sistema real, a um paciente
+  ou ao caixa de uma unidade.
+- **Fique à vontade e teste os limites:** cadastre pacientes inventados,
+  agende, remarque, avalie, planeje, venda, dê baixa, cancele — e tente o
+  caminho errado de propósito para ver o que o sistema responde.
+- **O treino fica sempre disponível**, não só no treinamento inicial. Na dúvida,
+  ou antes de fazer algo novo no real, faça primeiro no treino.
+- ⚠️ **Nunca use dados de pacientes reais no treino** (nome, CPF, telefone,
+  fotos, exames): são dados de saúde protegidos pela LGPD. Invente tudo.
 
 #### No treino, a equipe é cópia do sistema real
 

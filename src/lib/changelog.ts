@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.256.0",
+    data: "2026-09-19",
+    migracao: "0263",
+    titulo: "Boas-vindas no primeiro login e o guia do treino",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quem entra no riSZon pela primeira vez é recebido com uma mensagem de boas-vindas: o que é o sistema, qual é o próximo passo (para quem está começando, o riSZon Treino), onde trocar a senha e onde está o Manual. Aparece uma vez só.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Início do riSZon Treino ganhou um guia: é o mesmo sistema com dados de mentira, fique à vontade para testar tudo — inclusive o caminho errado — e ele continua disponível para tirar dúvidas mesmo depois do treinamento. Lembrete importante: nunca use dados de pacientes reais no treino.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.255.1",
     data: "2026-09-19",
     migracao: null,

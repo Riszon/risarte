@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.255.1** · Última migração: **0262** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.256.0** · Última migração: **0263** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,22 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### BOAS-VINDAS E GUIA DO TREINO (19/09/2026, v0.256.0, migração 0263)
+
+Pedido do dono: boas-vindas no primeiro login e, no Início do treino, como
+usar o ambiente (à vontade, testar limites, sempre disponível).
+- **Boas-vindas** (`BoasVindas`, janela): uma vez, no Início do sistema REAL;
+  `profiles.welcomed_at` (0263) guarda quando fechou (`marcarBoasVindasVistas`,
+  a própria pessoa). Texto muda: só-Início → "comece pelo treino"; liberado →
+  "módulos no menu". A 0263 marca como vistas as de quem JÁ tinha entrado
+  (`auth.users.last_sign_in_at`), para não receber veterano como novo.
+- **Guia do treino** (`ComoUsarOTreino`): sempre no Início do treino, em
+  `<details>` aberto (recolhe com um clique). Acrescentado por conta própria e
+  dito ao dono: **nunca usar dados de pacientes reais no treino (LGPD)**.
+- **Não conferido visualmente antes do deploy**: a janela só aparece a quem
+  ainda não entrou; conferir com o primeiro Risartano novo (ou zerando o
+  `welcomed_at` do dono, se ele quiser ver).
 
 ### O CAMINHO DO RECÉM-CHEGADO (19/09/2026, v0.255.1, sem migração)
 

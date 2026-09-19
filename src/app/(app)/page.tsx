@@ -13,6 +13,9 @@ import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { novidadesPara } from "@/lib/changelog";
 import { Novidades } from "@/components/novidades";
+import { BoasVindas } from "@/components/boas-vindas";
+import { ComoUsarOTreino } from "@/components/como-usar-o-treino";
+import { isTreino } from "@/lib/environment";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
 import { montarPendencias, atalhosPara, type Pendencia } from "./inicio-dados";
@@ -165,6 +168,20 @@ export default async function HomePage() {
   const pendencias = portal ? [] : await montarPendencias(supabase, session);
   const atalhos = portal ? [] : atalhosPara(session);
 
+  // BOAS-VINDAS (0263): só no sistema real, só enquanto a pessoa não fechou.
+  // Banco sem a 0263 (erro na consulta) = não mostra: melhor faltar a
+  // mensagem do que ela reaparecer a cada entrada.
+  const treino = isTreino();
+  const { data: perfilDeBoasVindas, error: erroBoasVindas } = treino
+    ? { data: null, error: null }
+    : await supabase
+        .from("profiles")
+        .select("welcomed_at")
+        .eq("id", session.userId)
+        .maybeSingle<{ welcomed_at: string | null }>();
+  const mostrarBoasVindas =
+    !treino && !erroBoasVindas && perfilDeBoasVindas?.welcomed_at === null;
+
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
 
@@ -179,6 +196,10 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      {mostrarBoasVindas && (
+        <BoasVindas primeiroNome={firstName} soInicio={portal} />
+      )}
+
       {shouldNotifyBirthdays && homeClinic && (
         <BirthdayNotifier clinicId={homeClinic.id} />
       )}
@@ -241,6 +262,10 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {/* No treino, o recado de como usar o ambiente vem logo depois da saudação
+          (pedido do dono, 19/09/2026): fique à vontade, e ele é para sempre. */}
+      {treino && <ComoUsarOTreino />}
 
       {/* ------------------------------------------- 1b. os outros ambientes */}
       {(cartoes.length > 0 || portal) && (
