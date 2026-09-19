@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.255.0** · Última migração: **0262** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.255.0** · Última migração: **0262** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3706,7 +3706,13 @@ permissões qualquer Admin edita**.
   sobre funções e permissões. Reabrir se o dono quiser a ficha dele travada.
 
 **Conferido:** 8 testes puros; 0262 no treino; 16 checagens no banco com dois
-Admins logados. **Falta:** 0262 na produção, deploy e conferir na tela.
+Admins logados. **No ar (19/09):** 0262 rodada pelo dono na produção — marcou
+exatamente um Principal (o único Admin ativo). Tela da produção conferida como
+o dono (só leitura): a ficha dele mostra "Admin Principal", sem "Retirar
+Admin", com os botões de acesso; a ficha RIS-000002 mostra "Tornar Admin".
+(A primeira leitura, logo após a publicação, ainda não mostrou o bloco — a
+segunda, minutos depois, sim.) **Pendente:** clicar Sincronizar treino para o
+treino receber o Admin Principal.
 
 ### EXCLUSÃO DA FICHA DE TESTE RIS-000001 (19/09/2026, a pedido do dono)
 
