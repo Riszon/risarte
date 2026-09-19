@@ -13,6 +13,8 @@ import {
 } from "../../dados";
 import { treinoConfigurado } from "@/lib/treino";
 import { isTreino } from "@/lib/environment";
+import { podeDarOuTirarAdmin, podeMexerNoAcessoDe } from "@/lib/admins";
+import { carregarHierarquia } from "@/lib/admins-db";
 import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { AcessoDoRisartano } from "../../acesso";
 import { SeloDeAcesso } from "../../selos";
@@ -64,6 +66,10 @@ export default async function AcessoSemCadastroPage(
     carregarAmbientesDoUsuario(supabase, perfil.id),
   ]);
   const acesso = acessos.get(perfil.id) ?? null;
+  // 0262: o acesso de um Admin só o Admin Principal altera.
+  const hierarquia = await carregarHierarquia(supabase, session, perfil.id);
+  const edita = !isTreino();
+  const mexeNoAcesso = edita && podeMexerNoAcessoDe(hierarquia);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
@@ -142,8 +148,14 @@ export default async function AcessoSemCadastroPage(
         funcoes={funcoes}
         clinicas={clinicas}
         loginsLivres={[]}
-        isAdmin={!isTreino()}
+        isAdmin={mexeNoAcesso}
         modoTreino={isTreino()}
+        admin={{
+          alvoEAdmin: hierarquia.alvoEAdmin,
+          alvoEPrincipal: hierarquia.alvoEPrincipal,
+          podeDarOuTirar: edita && podeDarOuTirarAdmin(hierarquia),
+          bloqueadoPorHierarquia: edita && !mexeNoAcesso,
+        }}
         isSelf={session.userId === perfil.id}
       />
     </div>

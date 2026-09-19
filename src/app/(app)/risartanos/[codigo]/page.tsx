@@ -24,6 +24,8 @@ import {
 } from "../dados";
 import { treinoConfigurado } from "@/lib/treino";
 import { isTreino } from "@/lib/environment";
+import { podeDarOuTirarAdmin, podeMexerNoAcessoDe } from "@/lib/admins";
+import { carregarHierarquia } from "@/lib/admins-db";
 import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { AcessoDoRisartano } from "../acesso";
 import { FormularioDoRisartano } from "../formulario";
@@ -96,6 +98,12 @@ export default async function FichaDoRisartanoPage(
   const ambientes = acesso
     ? await carregarAmbientesDoUsuario(supabase, acesso.userId)
     : {};
+  // 0262: o acesso de um Admin só o Admin Principal altera.
+  const hierarquia = acesso
+    ? await carregarHierarquia(supabase, session, acesso.userId)
+    : null;
+  const mexeNoAcesso =
+    adminEdita && (!hierarquia || podeMexerNoAcessoDe(hierarquia));
 
   const situacao = situacaoDeAcesso({
     tipo: "risartano",
@@ -254,8 +262,18 @@ export default async function FichaDoRisartanoPage(
             funcoes={funcoes}
             clinicas={clinicas}
             loginsLivres={loginsLivres}
-            isAdmin={adminEdita}
+            isAdmin={mexeNoAcesso}
             modoTreino={isTreino()}
+            admin={
+              hierarquia
+                ? {
+                    alvoEAdmin: hierarquia.alvoEAdmin,
+                    alvoEPrincipal: hierarquia.alvoEPrincipal,
+                    podeDarOuTirar: adminEdita && podeDarOuTirarAdmin(hierarquia),
+                    bloqueadoPorHierarquia: adminEdita && !mexeNoAcesso,
+                  }
+                : undefined
+            }
             isSelf={acesso?.userId === session.userId}
           />
 

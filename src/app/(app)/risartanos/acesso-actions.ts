@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminMaster } from "@/lib/auth";
+import {
+  SO_O_ADMIN_PRINCIPAL,
+  podeDarOuTirarAdmin,
+  podeMexerNoAcessoDe,
+} from "@/lib/admins";
+import { carregarHierarquia } from "@/lib/admins-db";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
@@ -37,6 +43,18 @@ import {
  */
 
 export type ActionResult = { ok: boolean; error?: string; aviso?: string };
+
+/**
+ * ADMIN PRINCIPAL (0262): o acesso de um Admin só o Admin Principal altera.
+ * Senha e bloqueio passam pela chave de serviço, que o banco não sabe de quem
+ * veio — então a guarda mora aqui, antes de qualquer gravação.
+ */
+async function bloqueioDeHierarquia(alvoId: string): Promise<string | null> {
+  const session = await requireAdminMaster();
+  const supabase = await createClient();
+  const h = await carregarHierarquia(supabase, session, alvoId);
+  return podeMexerNoAcessoDe(h) ? null : SO_O_ADMIN_PRINCIPAL;
+}
 
 /** A ficha e a lista vivem sob /risartanos — a subárvore inteira reaquece. */
 function reaquecer(): void {
@@ -379,6 +397,8 @@ export async function definirAmbiente(
 ): Promise<ResultadoDeAmbiente> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
   if (!AMBIENTES.includes(ambiente)) {
     return { ok: false, error: "Ambiente desconhecido." };
   }
@@ -463,6 +483,8 @@ export async function updateUserName(
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
   const fullName = String(formData.get("full_name") ?? "").trim();
   if (!fullName) return { ok: false, error: "Informe o nome completo." };
 
@@ -489,6 +511,8 @@ export async function resetUserPassword(
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
   const password = String(formData.get("password") ?? "");
   const passwordError = validatePassword(password);
   if (passwordError) return { ok: false, error: passwordError };
@@ -533,6 +557,8 @@ export async function setUserActive(
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   const session = await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
   if (userId === session.userId) {
     return { ok: false, error: "Você não pode desativar a si mesmo." };
   }
@@ -583,6 +609,8 @@ export async function addUserRole(
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
   if (!USER_ROLES.includes(role)) {
     return { ok: false, error: "Função inválida." };
   }
@@ -633,6 +661,8 @@ export async function updateRoleScope(
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
   if (!UNIT_SCOPES.includes(unitScope)) {
     return { ok: false, error: "Escopo inválido." };
   }
@@ -658,12 +688,63 @@ export async function updateRoleScope(
   return { ok: true };
 }
 
+/**
+ * DAR OU TIRAR O ADMIN (0262). Só o Admin Principal, e nunca em si mesmo — o
+ * banco repete as duas travas. O Admin novo fica abaixo do Principal: não
+ * altera o acesso dele nem o de outros Admins.
+ */
+export async function definirAdmin(
+  userId: string,
+  admin: boolean
+): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
+  const session = await requireAdminMaster();
+  const supabase = await createClient();
+  const h = await carregarHierarquia(supabase, session, userId);
+  if (!podeDarOuTirarAdmin(h)) {
+    return {
+      ok: false,
+      error: h.ehVoceMesmo
+        ? "O Admin Principal não tira o próprio Admin."
+        : "Só o Admin Principal dá ou tira o Admin.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_admin_master: admin })
+    .eq("id", userId);
+  if (error) {
+    console.error("definirAdmin falhou:", error.code);
+    return {
+      ok: false,
+      error:
+        error.message === "OWNER_ONLY"
+          ? "Só o Admin Principal dá ou tira o Admin."
+          : "Não foi possível alterar o Admin.",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "user",
+    entityId: userId,
+    details: { field: "is_admin_master", value: admin },
+  });
+  agendarEspelho({ pessoa: userId });
+  reaquecer();
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function removeUserRole(
   roleRowId: string,
   userId: string
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
 
   const supabase = await createClient();
   const { error } = await supabase

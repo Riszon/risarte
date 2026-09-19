@@ -180,6 +180,8 @@ type Perfil = {
   email: string | null;
   is_active: boolean;
   is_admin_master: boolean;
+  /** Admin Principal (0262). */
+  is_owner: boolean;
 };
 
 /** Garante o login da pessoa no treino e devolve o id de lá. */
@@ -239,7 +241,7 @@ async function espelharPessoaCtx(ctx: Ctx, idProd: string): Promise<string | nul
   const perfil = exigir(
     await ctx.prod
       .from("profiles")
-      .select("id, full_name, phone, email, is_active, is_admin_master")
+      .select("id, full_name, phone, email, is_active, is_admin_master, is_owner")
       .eq("id", idProd)
       .maybeSingle<Perfil>(),
     "ler o perfil na produção"
@@ -280,6 +282,7 @@ async function espelharPessoaCtx(ctx: Ctx, idProd: string): Promise<string | nul
         phone: perfil.phone,
         is_active: perfil.is_active,
         is_admin_master: perfil.is_admin_master,
+        is_owner: perfil.is_owner,
       })
       .eq("id", local),
     "atualizar o perfil no treino"

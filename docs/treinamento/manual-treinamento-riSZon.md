@@ -407,6 +407,21 @@ continuar em Cambé — e **desligar da equipe**, que é o cadastro inteiro).
 **Só o Admin Master mexe no acesso**; Gerente, Franqueado e Franqueadora/RH veem
 para saber o que está valendo.
 
+**Admin Principal e outros Admins.** O dono do sistema é o **Admin Principal**.
+Ele pode tornar outras pessoas **Admin** — na aba **Acesso** da ficha, botão
+**Tornar Admin** (e **Retirar Admin**). Um Admin faz tudo no sistema, em todas as
+unidades, mas fica **sempre abaixo do Admin Principal**:
+
+- só o **Admin Principal** dá ou tira o Admin de alguém;
+- o **acesso de qualquer Admin** — login, senha, funções, ambientes, desativar —
+  só o Admin Principal altera. Um Admin não mexe no acesso de outro Admin, nem
+  no próprio, e nunca no do Admin Principal. Na ficha de um Admin, os botões de
+  acesso só aparecem para o Admin Principal;
+- a **matriz de permissões** qualquer Admin pode alterar.
+
+A trava não é só da tela: o sistema recusa a alteração mesmo que alguém tente
+por outro caminho.
+
 **Primeiro o cadastro, depois o acesso.** Enquanto faltar dado no cadastro, a
 aba Acesso diz **o que falta** em vez de oferecer um login — e não existe outro
 caminho para criar acesso sem a ficha completa.

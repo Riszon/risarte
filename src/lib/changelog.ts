@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.255.0",
+    data: "2026-09-19",
+    migracao: "0262",
+    titulo: "Outros Admins, sempre abaixo do Admin Principal",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O dono do sistema passou a ser o Admin Principal e pode tornar outras pessoas Admin, pelo botão Tornar Admin na aba Acesso da ficha do Risartano.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Um Admin faz tudo no sistema, mas não altera o acesso de outros Admins nem o do Admin Principal — login, senha, funções e ambientes de um Admin só o Admin Principal muda. Só ele também dá ou tira o Admin de alguém.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.254.2",
     data: "2026-09-19",
     migracao: null,

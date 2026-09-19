@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.254.2** · Última migração: **0261** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.255.0** · Última migração: **0262** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,42 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ADMIN PRINCIPAL — outros Admins sempre abaixo do dono (19/09/2026, v0.255.0, migração 0262)
+
+Pedido do dono: poder colocar mais alguém como Admin, sempre abaixo dele —
+nunca altera as funções/permissões dele. Decisões (tela de perguntas): **só o
+Principal dá/tira Admin**; **o acesso de qualquer Admin só o Principal altera**
+(um Admin comum não mexe em outro Admin nem no próprio acesso); **a matriz de
+permissões qualquer Admin edita**.
+
+- `profiles.is_owner` (no máximo um, índice único). A 0262 marca o dono só se
+  houver exatamente um Admin Master ativo; senão, marcar no SQL Editor.
+  Transferir o posto só pelo SQL Editor (pela tela é recusado até para o dono).
+- Travas no banco (`proteger_admins` em profiles, user_clinic_roles,
+  role_unit_access, user_environments) para o que passa pela tela. Senha e
+  bloqueio de login vão pela chave de serviço → guarda no servidor
+  (`bloqueioDeHierarquia` em todas as ações de acesso que recebem a pessoa).
+- Tela: bloco **Admin / Admin Principal** na aba Acesso, **Tornar/Retirar Admin**
+  (com confirmação) só para o Principal; na ficha de um Admin, quem não é o
+  Principal vê o acesso sem botões e a frase "só o Admin Principal altera".
+- O treino recebe `is_owner` pela cópia (0260) e o trava.
+- **Não coberto de propósito:** a FICHA de RH de um Admin (dados pessoais,
+  unidade, desligar da equipe) segue a regra normal da ficha — o pedido foi
+  sobre funções e permissões. Reabrir se o dono quiser a ficha dele travada.
+
+**Conferido:** 8 testes puros; 0262 no treino; 16 checagens no banco com dois
+Admins logados. **Falta:** 0262 na produção, deploy e conferir na tela.
+
+### EXCLUSÃO DA FICHA DE TESTE RIS-000001 (19/09/2026, a pedido do dono)
+
+Levantamento antes (219 tabelas da produção, 3 schemas, e 195 do treino, pelo
+catálogo): só a ficha, 1 histórico, o login (inativo, não Admin), 1 função e 2
+ambientes; **Academy limpo**. Cópia de segurança em
+`backup-exclusao-RIS-000001-2026-09-19T15-53-10-945Z/` (fora do projeto).
+Apagados na produção e no treino (ficha, histórico, login com função/ambientes,
+ponte e presença do chat); **Auditoria mantida** e a exclusão registrada nela.
+Varredura depois: nenhuma referência nos dois bancos.
 
 ### O TREINO É ESPELHO DA PRODUÇÃO (18/09/2026, v0.254.0, migrações 0260–0261)
 

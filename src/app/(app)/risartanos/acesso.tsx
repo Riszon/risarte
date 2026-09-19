@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Globe, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { Crown, Globe, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { SO_O_ADMIN_PRINCIPAL } from "@/lib/admins";
 import {
   AMBIENTES,
   AMBIENTE_AJUDA,
@@ -36,6 +37,7 @@ import type { StaffAccess } from "@/lib/staff";
 import {
   addUserRole,
   createUser,
+  definirAdmin,
   definirAmbiente,
   removeUserRole,
   resetUserPassword,
@@ -82,6 +84,7 @@ export function AcessoDoRisartano({
   isAdmin,
   isSelf,
   modoTreino = false,
+  admin,
 }: {
   /** null quando é um login sem cadastro de Risartano. */
   staffId: string | null;
@@ -105,6 +108,14 @@ export function AcessoDoRisartano({
   isSelf: boolean;
   /** No treino tudo é cópia do sistema real (0260): só consulta, para todos. */
   modoTreino?: boolean;
+  /** Admin Principal (0262): quem esta pessoa é e o que quem vê pode fazer. */
+  admin?: {
+    alvoEAdmin: boolean;
+    alvoEPrincipal: boolean;
+    podeDarOuTirar: boolean;
+    /** Quem vê é Admin, mas o alvo é outro Admin e quem vê não é o Principal. */
+    bloqueadoPorHierarquia: boolean;
+  };
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -243,6 +254,57 @@ export function AcessoDoRisartano({
         )}
       </div>
 
+      {admin && (admin.alvoEAdmin || (admin.podeDarOuTirar && !modoTreino)) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-sm font-medium">
+              <Crown className="size-4 text-gold-tinta" />
+              {admin.alvoEPrincipal
+                ? "Admin Principal"
+                : admin.alvoEAdmin
+                  ? "Admin"
+                  : "Não é Admin"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {admin.alvoEPrincipal
+                ? "O dono do sistema. Ninguém mais altera o acesso, as funções ou o Admin dele."
+                : admin.alvoEAdmin
+                  ? "Faz tudo no sistema, mas não altera o acesso de outros Admins nem o do Admin Principal."
+                  : "Tornar Admin dá acesso a tudo no sistema. Só o Admin Principal faz isso."}
+            </p>
+          </div>
+          {admin.podeDarOuTirar && !modoTreino && (
+            <ConfirmDialog
+              trigger={
+                <Button variant="outline" size="sm" disabled={isPending}>
+                  {admin.alvoEAdmin ? "Retirar Admin" : "Tornar Admin"}
+                </Button>
+              }
+              title={admin.alvoEAdmin ? `Retirar o Admin de ${staffNome}?` : `Tornar ${staffNome} Admin?`}
+              description={
+                admin.alvoEAdmin ? (
+                  <>
+                    {staffNome} volta a ter só as funções por unidade. Fica
+                    registrado na auditoria.
+                  </>
+                ) : (
+                  <>
+                    <b>{staffNome}</b> passa a ver e fazer <b>tudo</b> no sistema,
+                    em todas as unidades. Fica sempre abaixo de você: não altera
+                    o seu acesso nem o de outros Admins. Fica registrado na
+                    auditoria.
+                  </>
+                )
+              }
+              destructive={admin.alvoEAdmin}
+              confirmLabel={admin.alvoEAdmin ? "Retirar Admin" : "Tornar Admin"}
+              successMessage={admin.alvoEAdmin ? "Admin retirado." : "Agora é Admin."}
+              onConfirm={() => definirAdmin(acesso.userId, !admin.alvoEAdmin)}
+            />
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Funções por unidade
@@ -294,7 +356,9 @@ export function AcessoDoRisartano({
           <p className="text-xs text-muted-foreground">
             {modoTreino
               ? "No treino o acesso é cópia do sistema real: login, senha, funções e ambientes se alteram lá."
-              : "Quem cria login, redefine senha e muda função é o Admin Master. Aqui você vê o acesso para saber com quem falar — e o que já está valendo."}
+              : admin?.bloqueadoPorHierarquia
+                ? SO_O_ADMIN_PRINCIPAL
+                : "Quem cria login, redefine senha e muda função é o Admin Master. Aqui você vê o acesso para saber com quem falar — e o que já está valendo."}
           </p>
         )}
         {isAdmin && (
