@@ -182,14 +182,14 @@ export default async function HomePage() {
         .select("welcomed_at, welcome_count")
         .eq("id", session.userId)
         .maybeSingle<{ welcomed_at: string | null; welcome_count: number | null }>();
-  const jaViuHoje =
-    perfilDeBoasVindas?.welcomed_at != null &&
-    isoDateIn(new Date(perfilDeBoasVindas.welcomed_at)) === todayInBrazil();
-  const mostrarBoasVindas =
-    !treino &&
-    !erroBoasVindas &&
-    (perfilDeBoasVindas?.welcome_count ?? 0) < 3 &&
-    !jaViuHoje;
+  const mostrarBoasVindas = deveMostrarBoasVindas({
+    vezes: perfilDeBoasVindas?.welcome_count ?? 0,
+    ultimaVezEm: perfilDeBoasVindas?.welcomed_at ?? null,
+    hoje: todayInBrazil(),
+    diaDe: (iso) => isoDateIn(new Date(iso)),
+    noTreino: treino,
+    erroAoLer: Boolean(erroBoasVindas),
+  });
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
