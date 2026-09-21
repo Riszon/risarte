@@ -505,7 +505,21 @@ unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
 - Dados odontológicos = **dados sensíveis de saúde**: consentimento registrado
   (TCLE + termo LGPD com data/hora) **antes** de tratar; menor privilégio via RLS.
 - **Gravação de consulta/apresentação só inicia após o consentimento estar
-  registrado** no sistema.
+  registrado** no sistema — **com uma exceção, aberta pelo dono em 21/09/2026
+  com orientação do jurídico dele:** o **áudio da avaliação e da reavaliação**
+  (fases 2 e 6) não depende do consentimento registrado. A razão é o relato
+  OC-00060: a gravação precisa começar junto com o atendimento, senão o
+  avaliador esquece de ligar e não há o que transcrever.
+
+  **A exceção é estreita e está presa por teste** (`dispensaConsentimento` em
+  `src/lib/gravacao.ts`, com `gravacao.test.ts`): vale para UM tipo de arquivo
+  (áudio) e DUAS fases. Foto, exame, vídeo, documento e anamnese continuam
+  exigindo o consentimento, e o áudio fora dessas fases também. Ao mexer nisso,
+  mexa na função pura — dispensa de LGPD espalhada em `if`s cresce sozinha.
+
+  **E dispensar a papelada não é gravar escondido:** enquanto grava, uma faixa
+  fixa mostra "Gravando" com o tempo correndo, de onde o paciente na cadeira
+  enxerga (mesma decisão, mesmo dia).
 - Exclusão de cliente = **anonimização** (status `anonymized`), nunca apagamento
   físico (guarda legal do prontuário). Não existe DELETE policy em `clients` de
   propósito.

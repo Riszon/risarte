@@ -1103,10 +1103,14 @@ fase do paciente ☐ sei que não sou eu quem chama
 **Objetivo:** avaliar e preparar o caso. **Duração:** 60 minutos.
 
 1. Menu **Atendimento** → **Chamar** o paciente (é você quem chama numa
-   avaliação).
+   avaliação). **A gravação da consulta começa neste clique** — uma faixa
+   aparece no rodapé mostrando o tempo correndo.
 2. Abra a ficha → tela de avaliação (`/avaliacao/[clientId]`).
-3. **Registrar consentimento** — obrigatório. **Nada de gravação ou coleta
-   acontece antes disso** (exigência de LGPD imposta pelo sistema).
+3. **Registrar consentimento** — obrigatório para **fotos, exames, vídeos e
+   anamnese**. **Nada disso é coletado antes** (exigência de LGPD imposta pelo
+   sistema). A **gravação de áudio da avaliação e da reavaliação** é a única
+   exceção: ela não espera o consentimento, por orientação do jurídico da
+   Risarte (decisão de 21/09/2026).
 4. **Levantamento de informações** → escolher a ficha de anamnese → preencher →
    **Salvar anamnese**.
 5. Subir fotos e exames.
@@ -1120,6 +1124,25 @@ fase do paciente ☐ sei que não sou eu quem chama
 
 **Cuidado:** você vê **o total** de cada opção, não o preço item a item. Isso é
 proposital: sua aprovação é clínica, não comercial.
+
+> **A gravação cuida de si mesma.** Ela **começa** quando você chama o paciente
+> para uma avaliação ou reavaliação e **para** quando você conclui o
+> atendimento — não existe mais o risco de esquecer de ligar ou de desligar. A
+> faixa do rodapé mostra o tempo e continua lá enquanto você navega: pode abrir
+> a anamnese, subir fotos, ver o histórico, que a gravação não é cortada.
+>
+> **Na primeira vez em cada computador**, o navegador pede permissão para o
+> microfone — permita. Se você negar (ou se o microfone estiver desligado), o
+> sistema avisa **em destaque** que a consulta não está sendo gravada; ele não
+> finge que gravou. Nesse caso, resolva o microfone e use o botão **Gravar a
+> consulta**, na tela de avaliação.
+>
+> **Se o paciente pedir para parar**, use **Parar e salvar** na faixa: o que já
+> foi gravado é guardado na ficha, e nada mais é registrado a partir dali.
+>
+> **Sessões de tratamento, urgências e retornos não são gravados
+> automaticamente** — só avaliação e reavaliação, que são as que viram
+> transcrição e resumo para o planejamento.
 
 **Terceira tarefa — a reavaliação:** quando o paciente volta para a revisão e
 **não precisa de plano novo**, use **Concluir a reavaliação** na mesma tela de

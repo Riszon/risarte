@@ -1,5 +1,6 @@
 "use server";
 
+import { dispensaConsentimento } from "@/lib/gravacao";
 import { revalidatePath } from "next/cache";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -168,6 +169,40 @@ async function hasConsent(clientId: string): Promise<boolean> {
   return Boolean(data && data.length > 0);
 }
 
+/**
+ * ⚠️ A ÚNICA EXCEÇÃO À TRAVA DO CONSENTIMENTO — e ela é estreita de propósito.
+ *
+ * **Decisão do dono, 21/09/2026, com orientação do jurídico dele:** o ÁUDIO da
+ * avaliação e da reavaliação não depende do consentimento registrado. A razão
+ * prática está no relato OC-00060 — a gravação precisa começar junto com o
+ * atendimento, senão o avaliador esquece de ligar e a transcrição não existe.
+ *
+ * O que NÃO mudou, e não pode mudar por descuido: foto, exame, vídeo e
+ * anamnese continuam exigindo o consentimento, aqui e nas outras três portas
+ * (`saveClinicalImages`, `addClinicalData`, anamnese). A dispensa vale para um
+ * tipo de arquivo e para duas fases da jornada — fora disso, a regra do §6 do
+ * `CLAUDE.md` segue valendo inteira.
+ *
+ * E dispensar a papelada não é gravar escondido: a faixa "Gravando" fica à
+ * vista durante toda a consulta, de onde o paciente enxerga (mesma decisão).
+ */
+async function podeGuardarSemConsentimento(
+  clientId: string,
+  kind: ClinicalMediaInput["kind"]
+): Promise<boolean> {
+  // A régua em si é pura e tem teste (`dispensaConsentimento`); aqui só se
+  // busca a fase. Deixar a condição escrita neste arquivo faria a dispensa
+  // crescer com o tempo sem nenhum teste reprovando.
+  if (kind !== "audio") return false;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("clients")
+    .select("journey_phase")
+    .eq("id", clientId)
+    .maybeSingle<{ journey_phase: string }>();
+  return dispensaConsentimento(kind, data?.journey_phase);
+}
+
 /** LGPD: register the patient's consent before any clinical data is collected. */
 export async function recordConsent(clientId: string): Promise<ClinicalResult> {
   const guard = await requireCoordinator(clientId);
@@ -240,7 +275,7 @@ export async function recordClinicalMedia(
 ): Promise<ClinicalResult> {
   const guard = await requireCoordinator(clientId);
   if ("error" in guard) return { ok: false, error: guard.error };
-  if (!(await hasConsent(clientId))) {
+  if (!(await podeGuardarSemConsentimento(clientId, input.kind)) && !(await hasConsent(clientId))) {
     return {
       ok: false,
       error: "Registre o consentimento do paciente antes de enviar arquivos.",

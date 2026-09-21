@@ -2704,3 +2704,27 @@ export async function buscarClientesParaAgendar(
       inactive: c.status === "inactive",
     }));
 }
+
+/**
+ * O ATENDIMENTO AINDA ESTÁ ABERTO? (relato OC-00060, 21/09/2026)
+ *
+ * A gravação da consulta para sozinha quando o atendimento termina — mas o
+ * "concluir" pode ser clicado no painel de Atendimento, em outra aba ou por
+ * outra pessoa, e nada disso chega à aba que está gravando. De minuto em
+ * minuto ela pergunta aqui.
+ *
+ * Devolve `true` em caso de dúvida (registro não encontrado, erro de rede):
+ * parar uma gravação por engano perde consulta; continuar gravando um minuto a
+ * mais só gasta um minuto — e o teto de 2 horas fecha o pior caso.
+ */
+export async function atendimentoAindaAberto(appointmentId: string): Promise<boolean> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("attendance")
+    .eq("id", appointmentId)
+    .maybeSingle<{ attendance: string | null }>();
+  if (error || !data) return true;
+  return data.attendance === "in_service";
+}

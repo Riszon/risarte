@@ -37,7 +37,7 @@ import {
 } from "../../prontuarios/[id]/clinical-actions";
 import { concluirReavaliacao, sendToPlanningCenter } from "../../jornada/actions";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { AudioRecorder } from "../../prontuarios/[id]/audio-recorder";
+import { BotaoDeGravacao } from "@/components/botao-de-gravacao";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 
 const selectClass =
@@ -422,27 +422,32 @@ export function MediaCollectionBlock({
 }
 
 // ---- Gravação da consulta --------------------------------------------------
+/**
+ * A GRAVAÇÃO NA TELA DA AVALIAÇÃO (relato OC-00060, 21/09/2026).
+ *
+ * Começa sozinha quando o Coordenador chama o paciente; este bloco é a porta
+ * manual — para quem entrou direto na ficha, ou para recomeçar se algo deu
+ * errado com o microfone.
+ *
+ * ⚠️ AQUI NÃO SE EXIGE MAIS O CONSENTIMENTO REGISTRADO, e só aqui. Decisão do
+ * dono com o jurídico dele, 21/09/2026: o áudio da avaliação e da reavaliação
+ * não depende dele. Foto, exame, vídeo e anamnese continuam exigindo — e quem
+ * impõe isso é o servidor, não esta tela (`podeGuardarSemConsentimento`).
+ */
 export function AudioBlock({
   clientId,
   clinicId,
-  hasConsent,
+  clientName,
 }: {
   clientId: string;
   clinicId: string;
-  hasConsent: boolean;
+  clientName: string;
 }) {
-  const router = useRouter();
-  if (!hasConsent) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        A gravação fica disponível após registrar o consentimento.
-      </p>
-    );
-  }
   return (
     <div className="space-y-1.5">
-      <AudioRecorder clientId={clientId} clinicId={clinicId} onDone={() => router.refresh()} />
+      <BotaoDeGravacao clientId={clientId} clinicId={clinicId} clientName={clientName} />
       <p className="text-xs text-muted-foreground">
+        Começa sozinha ao chamar o paciente e para ao concluir o atendimento.
         Fica guardada de forma privada, junto dos demais arquivos.
       </p>
     </div>

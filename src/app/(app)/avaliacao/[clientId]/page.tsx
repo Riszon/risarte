@@ -605,7 +605,7 @@ export default async function EvaluationCockpitPage(
                 <AudioBlock
                   clientId={client.id}
                   clinicId={clinicId}
-                  hasConsent={hasConsent}
+                  clientName={client.full_name}
                 />
               </div>
               {flowKind === "reavaliacao" && (

@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/09/2026 · Versão do sistema: **0.266.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 21/09/2026 · Versão do sistema: **0.267.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,46 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### A GRAVAÇÃO DA CONSULTA CUIDA DE SI MESMA (21/09/2026, v0.267.0, sem migração)
+
+Relato **OC-00060** (Coordenador Clínico). A razão dada pelo dono é o que
+organizou o desenho: *"como está agora corre o risco de o avaliador esquecer de
+ligar o gravador"* — e sem áudio não há transcrição nem resumo, que é o que
+alimenta o planejamento. **Gravador que depende de memória humana falha
+justamente no dia cheio.**
+
+**Não era defeito — era ausência de automatismo.** A trava que existia e
+precisava ser conferida antes era outra: o consentimento.
+
+**A decisão de regra (dono + jurídico dele, 21/09/2026):** o **áudio da
+avaliação e da reavaliação** não depende do consentimento registrado. Foto,
+exame, vídeo, documento e anamnese continuam exigindo, e o áudio fora dessas
+fases também. A exceção virou **função pura com teste**
+(`dispensaConsentimento`, 7 casos) em vez de um `if` no meio da ação: dispensa
+de LGPD espalhada em código cresce sozinha. Está registrada no **CLAUDE.md §6**
+com data e autoria — regra que muda sem rastro vira mistério em dois meses.
+
+**Onde a gravação mora: na barra de cima.** Foi a escolha do dono entre as duas
+possíveis, e é a única que cumpre o pedido ao pé da letra — a consulta inteira
+é trocar de tela (ficha, anamnese, fotos), e um gravador preso à tela seria
+cortado em pedaços a cada clique de menu. **Provado no treino: a gravação
+atravessou a navegação** (avaliação → prontuários) com o tempo correndo.
+
+**Começa no clique de "Chamar"**, e não na abertura da tela seguinte, por uma
+razão do navegador: `getUserMedia` só pergunta pela permissão do microfone a
+partir de um gesto da pessoa. Para ao concluir o atendimento (pelos três
+caminhos: conclusão simples, parcial e desistência), com **rede de segurança**
+— de minuto em minuto pergunta ao banco se o atendimento ainda está aberto,
+porque o "concluir" pode ser clicado em outra aba — e **teto de 2 horas**, que
+salva o que gravou em vez de gravar a noite inteira.
+
+**Um caminho só:** o gravador antigo de cada tela (`audio-recorder.tsx`) foi
+**removido**. Mantê-lo deixaria o Coordenador gravar pela barra e pela tela ao
+mesmo tempo, gerando dois arquivos com metade da conversa cada.
+
+**Permissão negada agora FALA:** *"a consulta NÃO está sendo gravada"*, em vez
+de silêncio com cara de normalidade.
 
 ### AGENDAR: PROCURAR O PACIENTE DIGITANDO (21/09/2026, v0.266.0, sem migração)
 

@@ -38,7 +38,7 @@ import {
   recordClinicalMedia,
   recordConsent,
 } from "./clinical-actions";
-import { AudioRecorder } from "./audio-recorder";
+import { BotaoDeGravacao } from "@/components/botao-de-gravacao";
 import { MediaGallery } from "./media-gallery";
 import { sendToPlanningCenter } from "../../jornada/actions";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
@@ -494,10 +494,10 @@ export function ClinicalSection({
             {/* Audio recording. */}
             <div className="space-y-2">
               <Label>Gravação da consulta</Label>
-              <AudioRecorder
+              <BotaoDeGravacao
                 clientId={clientId}
                 clinicId={clinicId}
-                onDone={() => router.refresh()}
+                clientName={clientName}
               />
               <p className="text-xs text-muted-foreground">
                 Permitida após o consentimento. Fica guardada de forma privada,

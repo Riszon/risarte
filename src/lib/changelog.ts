@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.267.0",
+    data: "2026-09-21",
+    migracao: null,
+    titulo: "A gravação da consulta começa e termina sozinha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao chamar o paciente para uma avaliação ou reavaliação, a gravação da consulta começa sozinha — e para sozinha quando você conclui o atendimento. Não é mais preciso lembrar de ligar o gravador.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Enquanto grava, aparece uma faixa no rodapé com o tempo correndo e o botão Parar e salvar. Ela fica visível de propósito, para o paciente saber que a consulta está sendo gravada — e continua lá enquanto você navega pelo sistema, porque a gravação não é interrompida ao trocar de tela.",
+        papeis: "todos",
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na primeira vez em cada computador, o navegador pede permissão para usar o microfone. Se a permissão for negada, o sistema avisa em destaque que a consulta NÃO está sendo gravada — antes ele poderia ficar em silêncio.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.266.0",
     data: "2026-09-21",
     migracao: null,

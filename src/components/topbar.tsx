@@ -6,6 +6,7 @@ import { ReportNavItem } from "@/components/report-nav-item";
 import { QuickSearch } from "@/components/quick-search";
 import { SystemClock } from "@/components/clock";
 import { BotaoDeTema } from "@/components/tema";
+import { GravacaoDaConsulta } from "@/components/gravacao-da-consulta";
 import { TopbarItem } from "@/components/topbar-item";
 
 /**
@@ -59,6 +60,12 @@ export function Topbar({
       <div className="min-w-0 flex-1">
         {podeBuscar && <QuickSearch />}
       </div>
+
+      {/* A GRAVAÇÃO DA CONSULTA mora aqui porque a barra de cima é o único
+          lugar que continua montado quando o Coordenador troca de tela — e a
+          consulta inteira é trocar de tela. A faixa em si é desenhada no
+          rodapé, por portal (relato OC-00060). */}
+      <GravacaoDaConsulta />
 
       <SystemClock />
 

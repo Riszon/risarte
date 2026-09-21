@@ -63,6 +63,7 @@ import {
   updateAttendance,
 } from "../agenda/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { TIPOS_QUE_GRAVAM, pedirGravacao, pedirParaParar } from "@/lib/gravacao";
 
 export type PanelAppointment = {
   id: string;
@@ -77,6 +78,8 @@ export type PanelAppointment = {
   calledBy: string | null;
   /** Set in the Consultor view (clients spread across units). */
   clinicName?: string | null;
+  /** A unidade do atendimento — a gravação da consulta precisa saber onde guardar. */
+  clinicId?: string | null;
   /** Sala/cadeira do atendimento (ou "ONLINE") — confirmação de check-in (H3.5). */
   roomName?: string | null;
   /** H3.4b: dia (YYYY-MM-DD) desde quando está pendente, se veio de dia anterior. */
@@ -855,6 +858,9 @@ export function AttendancePanel({
                   () => concludeAttendancePartial(a.id, doneIds, reasons),
                   `Atendimento de ${a.clientName} concluído.`,
                   () => {
+                    // O outro caminho de encerrar: a gravação para por aqui
+                    // também, senão sobraria um jeito de sair gravando.
+                    pedirParaParar(a.id);
                     setConcludeFor(null);
                     router.refresh();
                   }
@@ -973,10 +979,28 @@ export function AttendancePanel({
                           run(
                             () => updateAttendance(a.id, "in_service"),
                             `${a.clientName} chamado(a).`,
-                            () =>
-                              a.clientId
-                                ? router.push(`/prontuarios/${a.clientId}`)
-                                : router.refresh()
+                            () => {
+                              // ⚠️ A GRAVAÇÃO COMEÇA AQUI, NESTE CLIQUE, e não
+                              // ao abrir a tela seguinte: o navegador só abre o
+                              // microfone a partir de um gesto da pessoa. É
+                              // também o que o relato OC-00060 pediu — gravar
+                              // junto com o início do atendimento, para não
+                              // depender de alguém lembrar de ligar.
+                              if (
+                                a.clientId &&
+                                a.clinicId &&
+                                (TIPOS_QUE_GRAVAM as readonly string[]).includes(a.type)
+                              ) {
+                                pedirGravacao({
+                                  clientId: a.clientId,
+                                  clinicId: a.clinicId,
+                                  clientName: a.clientName,
+                                  appointmentId: a.id,
+                                });
+                              }
+                              if (a.clientId) router.push(`/prontuarios/${a.clientId}`);
+                              else router.refresh();
+                            }
                           )
                         }
                       >
@@ -1016,7 +1040,8 @@ export function AttendancePanel({
                                 onClick={() =>
                                   run(
                                     () => updateAttendance(a.id, "gave_up"),
-                                    `${a.clientName}: desistência registrada.`
+                                    `${a.clientName}: desistência registrada.`,
+                                    () => pedirParaParar(a.id)
                                   )
                                 }
                               >
@@ -1068,7 +1093,12 @@ export function AttendancePanel({
                       onClick={() =>
                         run(
                           () => updateAttendance(a.id, "done"),
-                          `Atendimento de ${a.clientName} concluído.`
+                          `Atendimento de ${a.clientName} concluído.`,
+                          // Fim do atendimento = fim da gravação, sem ninguém
+                          // precisar lembrar de parar (a outra metade do
+                          // relato OC-00060). Se a gravação for de outro
+                          // atendimento, a barra ignora o pedido.
+                          () => pedirParaParar(a.id)
                         )
                       }
                     >

@@ -630,6 +630,8 @@ export default async function AtendimentoPage(
       providerUserId: a.provider_user_id,
       calledBy: a.called_by,
       clinicName: consultantView ? (a.clinics?.name ?? null) : null,
+      // A gravação da consulta precisa saber em que unidade guardar o áudio.
+      clinicId: a.clinic_id ?? null,
       roomName: a.is_online ? "ONLINE" : (a.room?.name ?? null),
       // H3.4b: carregado de um dia anterior ainda sem resolução.
       pendingSinceIso: apptDate < todayIsoDate ? apptDate : null,
