@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/09/2026 · Versão do sistema: **0.263.0** · Última migração: **0266** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 21/09/2026 · Versão do sistema: **0.264.0** · Última migração: **0267** (aplicadas no treino; **0266 e 0267 pendentes na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,48 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### RESPONDER UM RELATO VOLTOU A FUNCIONAR (21/09/2026, v0.264.0, migração 0267)
+
+Achado do dono: em `/problemas`, responder ou mudar a situação devolvia **"Você
+não tem permissão para isto."** — com ele sendo Admin Master, **nos dois
+ambientes**. Estava assim **desde a 0264 (19/09)**: responder pela tela nunca
+funcionou depois daquela entrega.
+
+**A causa, medida e não deduzida.** Sob o login dele, `is_admin_master()`
+devolvia `true` e mesmo assim `answer_system_report` recusava. A recusa vinha de
+dentro, em `answer_system_report_como`, que perguntava o **papel da requisição**
+(`mirror_writer_role()`) para saber por qual porta a chamada entrou — e o papel
+continua `authenticated` quando uma função chama outra, **inclusive em security
+definer**. A porta legítima batia na própria trava.
+
+**Mais uma da série do §0d:** a régua media uma coisa *parecida* com a que
+importava, e respondeu "não" com confiança.
+
+**A separação certa já existia e não dependia de palpite:** `_como` nunca foi
+concedida a `authenticated`. A 0267 tira a trava por papel e deixa o
+**privilégio** explícito — inclusive tirando `anon`, que tinha execute por
+herança e, sem a trava, poderia responder em nome de um Admin sem estar logado.
+
+Provado no treino, 9 checagens (`prova-responder.mjs`): responde pela tela,
+grava o autor certo, encerrar sem resposta continua recusado, a porta do
+servidor não abre para usuário logado nem para quem não está logado, e o caminho
+produção → treino continua funcionando.
+
+**No mesmo lote, o print que faltava.** Relatando pela tela de Problemas só
+havia "outra aba ou janela" e "anexar arquivo" — faltava justamente **"Ir até a
+tela do problema"**, que é o caso de quem relata pela lista. O caminho existia
+só no painel da boia, porque só ele sobrevive à navegação; agora a página
+**entrega** o que já foi escrito (texto e anexos) para a barra da boia e sai de
+cena — dois rascunhos vivos acabariam discordando. `levar-relato.ts`, 3 testes.
+
+**Varredura de telas feita** (a boia mora na barra de cima, que está em toda
+tela): 101 das 104 telas abriram para o Admin Master. As 6 falhas são de
+permissão/dados do treino, sem relação com esta entrega — mas **duas merecem
+conferência**: o Dentista não abriu `/estoque` e o Gerente não abriu
+`/financeiro/dre`.
+
+⚠️ **Migrações 0266 e 0267 pendentes na produção.**
 
 ### A JORNADA ANDA SOZINHA; À MÃO, SÓ O ADMIN (21/09/2026, v0.263.0, migração 0266)
 

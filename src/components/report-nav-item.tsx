@@ -15,6 +15,11 @@ import { APP_VERSION } from "@/lib/version";
 import { moduloDaTela } from "@/lib/system-reports";
 import { MAXIMO_POR_ENVIO, nomeDaCaptura } from "@/lib/anexos-de-relato";
 import { capturarTela } from "@/lib/captura-de-tela";
+import {
+  LEVAR_RELATO,
+  type RelatoParaLevar,
+  type ValoresDoRelato,
+} from "@/lib/levar-relato";
 import { Button } from "@/components/ui/button";
 import { FormularioDeRelato } from "@/app/(app)/problemas/formulario";
 import {
@@ -41,6 +46,8 @@ type Rascunho = {
   telaEditada: boolean;
   modulo: string | null;
   moduloEditado: boolean;
+  /** Preenchido quando o relato veio da PÁGINA de Problemas (21/09/2026). */
+  iniciais?: ValoresDoRelato;
 };
 
 function novoRascunho(origem: string): Rascunho {
@@ -140,6 +147,38 @@ export function ReportNavItem({
       window.removeEventListener(RELATOS_VISTOS, atualizar);
     };
   }, [consultar, pathname]); // reconsulta ao navegar (ex.: depois de responder)
+
+  /**
+   * O RELATO QUE CHEGA DA PÁGINA DE PROBLEMAS (21/09/2026).
+   *
+   * Lá o formulário morre na navegação; aqui a barra de cima continua montada.
+   * Então a página entrega o que já foi escrito e esta barra assume, entrando
+   * direto no modo de captura — que é o que a pessoa foi buscar.
+   */
+  useEffect(() => {
+    function receber(evento: Event) {
+      const { valores, anexos } = (evento as CustomEvent<RelatoParaLevar>).detail;
+      const tela = valores.screen || pathname;
+      setRascunho({
+        origem: tela,
+        chave: Date.now(),
+        anexos,
+        tela,
+        // Veio digitado por gente: a captura numa outra tela não sobrescreve.
+        telaEditada: Boolean(valores.screen),
+        modulo: valores.module,
+        moduloEditado: Boolean(valores.module),
+        iniciais: valores,
+      });
+      setAberto(false);
+      setModoCaptura(true);
+      toast.info("Vá até a tela do problema e clique em Capturar.", {
+        description: "O que você escreveu está guardado na barra de baixo.",
+      });
+    }
+    window.addEventListener(LEVAR_RELATO, receber);
+    return () => window.removeEventListener(LEVAR_RELATO, receber);
+  }, [pathname]);
 
   function abrir(proximo: boolean) {
     if (proximo && !rascunho) setRascunho(novoRascunho(pathname));
@@ -311,6 +350,7 @@ export function ReportNavItem({
                   telaSugerida={rascunho.origem}
                   digestSugerido=""
                   versaoAtual={APP_VERSION}
+                  iniciais={rascunho.iniciais}
                   silencioso
                   esconder={() => setEscondido(true)}
                   mostrar={() => setEscondido(false)}

@@ -18,6 +18,12 @@ import {
   TIPO_ROTULO,
   moduloDaTela,
 } from "@/lib/system-reports";
+import {
+  LEVAR_RELATO,
+  valoresDoFormulario,
+  type RelatoParaLevar,
+  type ValoresDoRelato,
+} from "@/lib/levar-relato";
 import { registrarProblema } from "./actions";
 import {
   SeletorDeAnexos,
@@ -71,6 +77,7 @@ export function FormularioDeRelato({
   mostrar,
   silencioso = false,
   controle,
+  iniciais,
 }: {
   telaSugerida: string;
   digestSugerido: string;
@@ -88,6 +95,12 @@ export function FormularioDeRelato({
    * (e a tela onde foram tirados) precisam voltar para cá.
    */
   controle?: ControleDoFormulario;
+  /**
+   * O que já foi escrito antes — usado quando o relato CHEGA de outro lugar
+   * (da página de Problemas para a barra da boia). Sem isto, ir capturar a
+   * tela custaria redigitar tudo.
+   */
+  iniciais?: ValoresDoRelato;
 }) {
   const [enviando, iniciar] = useTransition();
   const [anexosLocais, setAnexosLocais] = useState<AnexoPendente[]>([]);
@@ -97,7 +110,28 @@ export function FormularioDeRelato({
   const formRef = useRef<HTMLFormElement>(null);
   const uid = useId();
   const campo = (nome: string) => `${uid}-${nome}`;
-  const moduloSugerido = moduloDaTela(telaSugerida);
+  const moduloSugerido = iniciais?.module ?? moduloDaTela(telaSugerida);
+
+  /**
+   * ENTREGAR O RELATO À BARRA DA BOIA — só quando o formulário está na PÁGINA.
+   *
+   * No painel quem cuida disso é o próprio painel (`controle.aoIrAteATela`),
+   * que vira a barra sem sair do lugar. Aqui o formulário morre na navegação,
+   * então ele passa adiante o que já foi escrito (texto e anexos) e sai de
+   * cena: dois rascunhos vivos acabariam discordando, e a pessoa enviaria o
+   * errado.
+   */
+  function levarParaABoia() {
+    const form = formRef.current;
+    if (!form) return;
+    const recado: RelatoParaLevar = {
+      valores: valoresDoFormulario(form),
+      anexos,
+    };
+    window.dispatchEvent(new CustomEvent(LEVAR_RELATO, { detail: recado }));
+    setAnexos([]); // já foram junto: limpar aqui evita enviar duas vezes
+    aoCancelar();
+  }
 
   function enviar(fd: FormData) {
     // Lido na hora do envio, não guardado em estado: o navegador só existe do
@@ -143,7 +177,7 @@ export function FormularioDeRelato({
       <div className="grid gap-4 @xl:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor={campo("kind")}>O que é</Label>
-          <Select items={ITENS_TIPO} defaultValue="erro" name="kind">
+          <Select items={ITENS_TIPO} defaultValue={iniciais?.kind ?? "erro"} name="kind">
             <SelectTrigger id={campo("kind")} className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -185,7 +219,7 @@ export function FormularioDeRelato({
 
         <div className="space-y-1.5">
           <Label htmlFor={campo("severity")}>Quanto atrapalha</Label>
-          <Select items={ITENS_GRAVIDADE} defaultValue="media" name="severity">
+          <Select items={ITENS_GRAVIDADE} defaultValue={iniciais?.severity ?? "media"} name="severity">
             <SelectTrigger id={campo("severity")} className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -206,6 +240,7 @@ export function FormularioDeRelato({
           id={campo("title")}
           name="title"
           required
+          defaultValue={iniciais?.title}
           maxLength={140}
           placeholder="Ex.: a agenda não deixa marcar no sábado"
         />
@@ -222,7 +257,7 @@ export function FormularioDeRelato({
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
                   controle.aoMudarTela(e.target.value),
               }
-            : { defaultValue: telaSugerida })}
+            : { defaultValue: iniciais?.screen || telaSugerida })}
           maxLength={120}
           placeholder="Ex.: Agenda · Financeiro → Contas a pagar"
         />
@@ -234,6 +269,7 @@ export function FormularioDeRelato({
           id={campo("what_happened")}
           name="what_happened"
           required
+          defaultValue={iniciais?.what_happened}
           rows={4}
           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
           placeholder="Conte o passo a passo: o que você fez, e o que o sistema respondeu. Se apareceu uma mensagem, copie o texto dela."
@@ -245,6 +281,7 @@ export function FormularioDeRelato({
         <textarea
           id={campo("expected")}
           name="expected"
+          defaultValue={iniciais?.expected}
           rows={2}
           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
           placeholder="Opcional — mas é o que separa defeito de regra do sistema."
@@ -260,7 +297,7 @@ export function FormularioDeRelato({
           mostrar={mostrar}
           desabilitado={enviando}
           modo={controle ? "painel" : "pagina"}
-          aoIrAteATela={controle?.aoIrAteATela}
+          aoIrAteATela={controle ? controle.aoIrAteATela : levarParaABoia}
           telaAtual={controle?.telaAtual ?? telaSugerida}
           aoCapturarEstaTela={controle?.aoCapturarEstaTela}
         />

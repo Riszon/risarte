@@ -98,9 +98,10 @@ export function avisarFalhaDaCaptura(motivo: "cancelado" | "indisponivel" | "fal
  *
  * - **Capturar esta tela** (só no painel da boia): a tela que está atrás do
  *   painel.
- * - **Ir até a tela do problema** (só no painel): o painel vira uma barra, a
+ * - **Ir até a tela do problema**: o formulário vira uma barra no rodapé, a
  *   pessoa navega pelo sistema e captura onde o problema está. O rascunho fica
- *   guardado.
+ *   guardado. Vale nos dois modos — na página de Problemas o relato é entregue
+ *   à barra da boia, que é a única que sobrevive à navegação (21/09/2026).
  * - **Outra aba ou janela**: o navegador mostra a lista. Nas páginas de relato
  *   é o único caminho — "esta tela" ali seria a própria página do relato.
  *
@@ -126,7 +127,10 @@ export function SeletorDeAnexos({
   desabilitado?: boolean;
   /** `painel` = formulário da boia, por cima da tela do problema. */
   modo?: "painel" | "pagina";
-  /** Só no painel: entra no modo "ir até a tela do problema". */
+  /**
+   * Entra no modo "ir até a tela do problema". No painel, ele vira uma barra;
+   * na página, entrega o relato à barra da boia (só ela sobrevive à navegação).
+   */
   aoIrAteATela?: () => void;
   /** A tela atrás do painel — vai no nome da captura. */
   telaAtual?: string;
@@ -239,14 +243,25 @@ export function SeletorDeAnexos({
             {capturando ? "Capturando…" : "Capturar esta tela"}
           </Button>
         )}
-        {captura && noPainel && aoIrAteATela && (
+        {/*
+          "Ir até a tela do problema" vale nos DOIS modos (21/09/2026). No
+          painel, ele vira uma barra; na PÁGINA de Problemas, o relato é
+          entregue à barra da boia e o formulário daqui sai de cena — porque é
+          ela que sobrevive à navegação. Era o caminho que faltava justamente a
+          quem relata pela lista, onde "esta tela" nunca é a tela do defeito.
+        */}
+        {captura && aoIrAteATela && (
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={aoIrAteATela}
             disabled={bloqueado}
-            title="O painel vira uma barra; vá até a tela do problema e capture lá"
+            title={
+              noPainel
+                ? "O painel vira uma barra; vá até a tela do problema e capture lá"
+                : "Leva o que você já escreveu para a barra de captura; navegue até a tela do problema e capture lá"
+            }
           >
             <Navigation className="mr-1.5 size-4" />
             Ir até a tela do problema
@@ -295,7 +310,7 @@ export function SeletorDeAnexos({
         Até {MAXIMO_POR_ENVIO} por envio, 10 MB cada.
       </p>
 
-      <AjudaDoPrint modo={modo} captura={captura} />
+      <AjudaDoPrint modo={modo} captura={captura} temIrAteATela={Boolean(aoIrAteATela)} />
 
       {pendentes.length > 0 && (
         <ul className="flex flex-wrap gap-2">
@@ -354,9 +369,12 @@ export function SeletorDeAnexos({
 function AjudaDoPrint({
   modo,
   captura,
+  temIrAteATela,
 }: {
   modo: "painel" | "pagina";
   captura: boolean;
+  /** O botão existe nesta instância? A dica só vale se ele estiver lá. */
+  temIrAteATela: boolean;
 }) {
   return (
     <details className="group rounded-md bg-muted/40 px-3 py-2 text-xs">
@@ -372,20 +390,23 @@ function AjudaDoPrint({
           que não bate.
         </li>
         {captura && modo === "painel" && (
-          <>
-            <li>
-              <strong className="text-foreground">Capturar esta tela</strong>{" "}
-              fotografa a tela que está atrás deste painel. O painel sai da
-              frente sozinho na hora da foto.
-            </li>
-            <li>
-              <strong className="text-foreground">O problema está em outra tela?</strong>{" "}
-              Use <em>Ir até a tela do problema</em>: o painel vira uma barra no
-              rodapé, você navega pelo sistema e clica em{" "}
-              <em>Capturar</em> onde o problema está (pode tirar várias). Depois,{" "}
-              <em>Voltar ao relato</em> — o que você já escreveu continua lá.
-            </li>
-          </>
+          <li>
+            <strong className="text-foreground">Capturar esta tela</strong>{" "}
+            fotografa a tela que está atrás deste painel. O painel sai da
+            frente sozinho na hora da foto.
+          </li>
+        )}
+        {captura && temIrAteATela && (
+          <li>
+            <strong className="text-foreground">O problema está em outra tela?</strong>{" "}
+            Use <em>Ir até a tela do problema</em>:{" "}
+            {modo === "painel"
+              ? "o painel vira uma barra no rodapé"
+              : "o que você já escreveu vai para uma barra no rodapé"}
+            , você navega pelo sistema e clica em <em>Capturar</em> onde o
+            problema está (pode tirar várias). Depois, <em>Voltar ao relato</em>{" "}
+            — o que você já escreveu continua lá.
+          </li>
         )}
         {captura && (
           <li>

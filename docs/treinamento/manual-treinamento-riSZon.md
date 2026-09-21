@@ -1576,10 +1576,19 @@ recebe o nome da tela de onde veio (ex.: *captura-agenda-20260917-0930.png*).
 **Não sabe por onde começar?** Clique em **Como usar o print**, logo abaixo dos
 botões — o passo a passo está ali.
 
-**Na página de um relato** (para acrescentar informação ou responder), o botão
-é **Capturar de outra aba ou janela**: "esta tela" ali seria a própria página
-do relato. Abra a tela do problema numa aba nova antes (botão direito no menu →
-*Abrir em nova aba*) e escolha essa aba na lista do navegador.
+**Relatando pela tela de Problemas** (menu → **Problemas** → *Relatar um
+problema*), você tem **três** caminhos, não dois:
+
+- **Ir até a tela do problema** — o mais direto. O que você já escreveu vai
+  para a **barra no rodapé**, o formulário sai de cena, você navega até a tela
+  com defeito, clica em **Capturar** (quantas telas quiser) e depois em
+  **Voltar ao relato**. Nada do que você digitou se perde.
+- **Capturar de outra aba ou janela** — quando o problema está em outra aba do
+  navegador ou em outro programa.
+- **Anexar arquivo** — quando você já tem o print salvo.
+
+Não existe **Capturar esta tela** aqui, e é de propósito: "esta tela" seria a
+própria página do relato.
 
 Até **5 por envio**, **10 MB cada**, e no máximo **10 por relato**. Cada anexo
 aparece como miniatura antes de enviar, com um **X** para tirar da lista. O que

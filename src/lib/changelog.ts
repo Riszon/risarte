@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.264.0",
+    data: "2026-09-21",
+    migracao: "0267",
+    titulo: "Responder um relato voltou a funcionar; e o print da tela certa",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Em Problemas, responder ou mudar a situação de um relato dizia 'Você não tem permissão para isto.' mesmo para o Admin Master — nos dois ambientes, desde 19/09. Voltou a funcionar, e as regras de sempre continuam: não dá para encerrar um relato sem escrever a resposta que quem relatou vai ler.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Relatando pela tela de Problemas, faltava o caminho mais útil: Ir até a tela do problema. Agora ele está lá — o que você já escreveu vai para a barra do rodapé, você navega até a tela com defeito, captura quantas quiser e volta ao relato sem redigitar nada.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.263.0",
     data: "2026-09-21",
     migracao: "0266",
