@@ -761,7 +761,7 @@ export function NegotiationPanel({
                   key={i.id}
                   className={cn(
                     "flex flex-wrap items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm",
-                    out && "border-rose-200 bg-rose-50/60"
+                    out && "border-rose-200 bg-rose-50/60 dark:border-rose-500/40 dark:bg-rose-500/10"
                   )}
                 >
                   <input

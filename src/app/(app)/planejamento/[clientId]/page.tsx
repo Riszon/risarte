@@ -607,6 +607,7 @@ export default async function PlanningCockpitPage(
       {/* AJ3: apresentação marcada mas plano ainda não pronto — destaque +
           cronômetro para pressionar o Centro de Planejamento. */}
       {presentationAt && treatmentPlan?.status !== "approved" && (
+        // tema-ok: todo o texto desta caixa declara a própria cor — fica clara no escuro, mas legível
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
             <AlarmClock className="size-5" />

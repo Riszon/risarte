@@ -773,7 +773,9 @@ function SummaryTile({
     <div
       className={cn(
         "rounded-lg border px-3 py-2",
-        alert ? "border-rose-300 bg-rose-50" : "bg-muted/40"
+        alert
+          ? "border-rose-300 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-500/15"
+          : "bg-muted/40"
       )}
     >
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">

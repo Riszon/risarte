@@ -80,13 +80,32 @@ export type AgendaAppointment = {
 
 const WEEKDAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
-// One color per status, applied to the card's left border + background tint.
+/**
+ * One color per status, applied to the card's left border + background tint.
+ *
+ * ⚠️ O FUNDO CLARO PRECISA DO PAR ESCURO (relato OC-00061, 21/09/2026).
+ * Estas manchas (`bg-sky-50` e companhia) foram escolhidas para papel branco,
+ * e o texto do cartão **não declara cor** — ele herda a do tema, que no escuro
+ * é quase branca. Resultado: branco sobre quase-branco, e a agenda ficava
+ * ilegível justamente para quem trabalha nela o dia inteiro.
+ *
+ * No escuro a mancha vira a MESMA cor, translúcida sobre o fundo escuro
+ * (`/15`): o cartão continua dizendo o status pela cor, e a letra clara do
+ * tema volta a ter contraste. A tarja da esquerda não muda — ela já era forte
+ * o bastante nos dois temas.
+ *
+ * O `opacity` de "realizado" e "cancelado" também foi refeito: apagar 40% de
+ * um texto que já está claro sobre escuro apaga o texto, não o cartão. No
+ * escuro o recuo é menor e vem do fundo, não da opacidade do conteúdo.
+ */
 export const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  scheduled: "border-l-4 border-l-sky-400 bg-sky-50",
-  confirmed: "border-l-4 border-l-emerald-500 bg-emerald-50",
-  completed: "border-l-4 border-l-zinc-400 bg-zinc-100 opacity-75",
-  cancelled: "border-l-4 border-l-red-400 bg-red-50 opacity-60",
-  no_show: "border-l-4 border-l-orange-500 bg-orange-50",
+  scheduled: "border-l-4 border-l-sky-400 bg-sky-50 dark:bg-sky-500/15",
+  confirmed: "border-l-4 border-l-emerald-500 bg-emerald-50 dark:bg-emerald-500/15",
+  completed:
+    "border-l-4 border-l-zinc-400 bg-zinc-100 opacity-75 dark:bg-zinc-400/10 dark:opacity-100 dark:text-muted-foreground",
+  cancelled:
+    "border-l-4 border-l-red-400 bg-red-50 opacity-60 dark:bg-red-500/10 dark:opacity-100 dark:text-muted-foreground",
+  no_show: "border-l-4 border-l-orange-500 bg-orange-50 dark:bg-orange-500/15",
 };
 
 export const STATUS_DOT: Record<AppointmentStatus, string> = {

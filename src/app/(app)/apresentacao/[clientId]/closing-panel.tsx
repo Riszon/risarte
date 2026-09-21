@@ -246,7 +246,7 @@ function StepToggle({
     <div
       className={cn(
         "rounded-lg border p-3",
-        done ? "border-emerald-300 bg-emerald-50" : "bg-card"
+        done ? "border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/15" : "bg-card"
       )}
     >
       <p className="flex items-center gap-1.5 text-sm font-medium">

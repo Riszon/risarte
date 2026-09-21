@@ -132,6 +132,11 @@
   --marca-sobre-detalhe: var(--risarte-marinho);
   --marca-pattern: url("/marca/pattern-unidades.svg");
 
+  /* O par do `color-scheme: dark` lá embaixo: dito aqui, o navegador desenha os
+     controles dele no claro mesmo quando o Windows está no escuro — senão a
+     lista do select viria escura por cima do nosso tema claro. */
+  color-scheme: light;
+
   --background: var(--risarte-offwhite);
   --foreground: var(--risarte-profundo);
   --card: #ffffff;
@@ -279,6 +284,19 @@
    clarear aproxima. O que separa de verdade é a ÁREA GRANDE: a lateral.
    ============================================================================= */
 .dark {
+  /* ⚠️ QUEM DESENHA A LISTA DO `<select>` É O NAVEGADOR, NÃO NÓS (21/09/2026).
+     Relato OC-00053: no modo escuro, ao abrir uma caixa de seleção as opções
+     ficavam invisíveis. A causa não estava em classe nenhuma: o sistema
+     trocava o tema pela classe `.dark` e NUNCA dizia ao navegador que estava
+     no escuro. Sem `color-scheme`, ele desenha a listinha com o fundo CLARO do
+     sistema operacional — e a letra, que herda a cor do nosso tema, é quase
+     branca. Branco sobre branco.
+
+     Uma linha conserta a família inteira dos controles nativos: a lista do
+     select, o calendário do campo de data, a barra de rolagem e o autofill.
+     Nada disso tem classe para arrumar; o navegador só precisava ser avisado. */
+  color-scheme: dark;
+
   --fase-contraste: white;
   --gold-tinta: var(--risarte-turquesa-clara);
   /* no escuro a `--primary` das unidades e a turquesa clara: o texto sobre

@@ -62,6 +62,34 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.265.0",
+    data: "2026-09-21",
+    migracao: null,
+    titulo: "Modo escuro: a letra voltou a aparecer",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "No modo escuro, ao abrir uma caixa de seleção as opções apareciam apagadas, quase invisíveis. Agora a lista abre escura, como o resto do sistema — e o mesmo conserto vale para o calendário dos campos de data e para a barra de rolagem.",
+        papeis: "todos",
+        manual: "2.1. A cor da tela diz onde você está",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na agenda, o nome do paciente e o horário sumiam no modo escuro: os cartões usavam um fundo claro feito para o tema claro. Foram refeitos — a cor continua dizendo a situação do agendamento, agora com a letra legível.",
+        papeis: "todos",
+        manual: "2.1. A cor da tela diz onde você está",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O mesmo problema foi procurado no sistema inteiro: mais 20 avisos e cartões (estoque, financeiro, prontuário, atendimento, comercial) ganharam a versão escura. O que sobrou é legível — só fica mais claro que o resto.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.264.0",
     data: "2026-09-21",
     migracao: "0267",

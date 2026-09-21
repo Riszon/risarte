@@ -507,7 +507,9 @@ function StepBox({
     <div
       className={cn(
         "flex items-center gap-2 rounded-xl border p-3",
-        done ? "border-emerald-300 bg-emerald-50/50" : "border-dashed"
+        done
+            ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-500/40 dark:bg-emerald-500/10"
+            : "border-dashed"
       )}
     >
       <span

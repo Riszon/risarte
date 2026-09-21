@@ -749,7 +749,7 @@ export function StockManager({
     <div className={cn("space-y-5", isPending && "opacity-70")}>
       {/* -- ALERTAS ----------------------------------------------------- */}
       {(withAlerts.length > 0 || expiring.length > 0) && (
-        <Card className="border-amber-300 bg-amber-50/60">
+        <Card className="border-amber-300 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/10">
           <CardContent className="space-y-2 p-4">
             {withAlerts.length > 0 && (
               <>
@@ -1350,7 +1350,7 @@ export function StockManager({
 
       {/* -- ACIMA DO MÁXIMO (0222) ---------------------------------------- */}
       {overstocked.length > 0 && (
-        <Card className="border-amber-300 bg-amber-50/40">
+        <Card className="border-amber-300 bg-amber-50/40 dark:border-amber-500/40 dark:bg-amber-500/10">
           <CardContent className="space-y-1 p-4">
             <h2 className="flex items-center gap-1 text-sm font-medium text-amber-900">
               <TriangleAlert className="size-4" />
@@ -1391,7 +1391,7 @@ export function StockManager({
 
       {/* -- SEM KIT: o furo da baixa automática (0217) -------------------- */}
       {withoutKit.length > 0 && (
-        <Card className="border-amber-300 bg-amber-50/40">
+        <Card className="border-amber-300 bg-amber-50/40 dark:border-amber-500/40 dark:bg-amber-500/10">
           <CardContent className="space-y-1 p-4">
             <h2 className="flex items-center gap-1 text-sm font-medium text-amber-900">
               <TriangleAlert className="size-4" />

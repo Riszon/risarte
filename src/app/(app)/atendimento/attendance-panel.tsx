@@ -509,7 +509,7 @@ export function AttendancePanel({
         className={cn(
           "flex flex-col gap-2 rounded-md border p-3",
           pendingSince
-            ? "border-red-300 bg-red-50"
+            ? "border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-500/15"
             : accent
               ? cn("border-l-2 bg-card", accent)
               : "bg-card"

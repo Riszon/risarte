@@ -121,7 +121,7 @@ export function CancelPlanCard({
       openCancellation.status === "assinado")
   ) {
     return (
-      <Card className="border-amber-300 bg-amber-50/50">
+      <Card className="border-amber-300 bg-amber-50/50 dark:border-amber-500/40 dark:bg-amber-500/10">
         <CardContent className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
           <span>
             <strong>Cancelamento em andamento</strong>

@@ -151,7 +151,7 @@ export function AttendanceConcludeBlock({
         {extras.map((e) => (
           <li
             key={e.id}
-            className="flex items-start gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-sm"
+            className="flex items-start gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-sm dark:border-emerald-500/40 dark:bg-emerald-500/15"
           >
             <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
             <span className="min-w-0 flex-1">

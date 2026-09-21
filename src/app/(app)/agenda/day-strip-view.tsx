@@ -116,9 +116,9 @@ export function DayStripView({
                 d.closedReason ||
                   d.state === "holiday_closed" ||
                   d.state === "plan_block"
-                  ? "bg-red-50 text-red-700"
+                  ? "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-200"
                   : d.state === "holiday_pending"
-                    ? "bg-amber-50"
+                    ? "bg-amber-50 dark:bg-amber-500/15"
                     : d.state === "open_day"
                       ? "border-gold/60 bg-gold/10"
                       : "",

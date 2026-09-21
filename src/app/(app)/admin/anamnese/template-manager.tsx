@@ -312,7 +312,7 @@ function QuestionEditor({
       </div>
 
       {d.kind !== "short_text" && d.kind !== "long_text" && (
-        <div className="space-y-2 rounded-md border border-amber-300/60 bg-amber-50/40 p-2">
+        <div className="space-y-2 rounded-md border border-amber-300/60 bg-amber-50/40 p-2 dark:border-amber-500/40 dark:bg-amber-500/10">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
               type="checkbox"

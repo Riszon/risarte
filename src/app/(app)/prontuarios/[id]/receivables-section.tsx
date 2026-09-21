@@ -1112,7 +1112,7 @@ export function ReceivablesSection({
                 className={cn(
                   "rounded-lg border p-2.5 text-xs",
                   r.status === "aguardando_autorizacao" &&
-                    "border-amber-300 bg-amber-50",
+                    "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/15",
                   r.status === "recusada" && "opacity-60"
                 )}
               >

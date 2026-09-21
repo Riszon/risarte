@@ -130,6 +130,14 @@ eram — vermelho na Aquisição, laranja na Conversão Clínica, e assim por di
 escolha fica guardada **no seu computador**: se você entrar de outra máquina,
 escolhe de novo.
 
+> **Se alguma letra sumir no modo escuro, é defeito — relate.** Até setembro de
+> 2026 isso acontecia em dois lugares: as opções das caixas de seleção e os
+> cartões da agenda apareciam apagados, porque a cor tinha sido escolhida para
+> o tema claro. Os dois foram corrigidos, e o sistema passou a ter uma
+> verificação automática que impede o problema de voltar. Se você encontrar
+> outro canto assim, use a **boia** — é exatamente o tipo de coisa que só quem
+> usa o sistema todo dia percebe.
+
 ### 2.2. A tela de Início
 
 A tela de Início responde a **uma pergunta**: *o que espera por você agora?*

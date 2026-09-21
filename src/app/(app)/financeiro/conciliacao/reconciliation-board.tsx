@@ -616,7 +616,8 @@ export function ReconciliationBoard({
                 key={t.id}
                 className={cn(
                   "rounded-lg border p-2.5 text-sm",
-                  t.status === "pendente" && "border-amber-300 bg-amber-50/40"
+                  t.status === "pendente" &&
+      "border-amber-300 bg-amber-50/40 dark:border-amber-500/40 dark:bg-amber-500/10"
                 )}
               >
                 <div className="flex flex-wrap items-center gap-2">

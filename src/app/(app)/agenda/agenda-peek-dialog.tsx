@@ -24,7 +24,10 @@ const STATE_CELL: Record<PeekDay["state"], string> = {
   closed: "bg-muted/60 text-muted-foreground",
   holiday_closed: "bg-red-50 text-red-700",
   holiday_pending: "bg-amber-50 text-amber-800",
-  holiday_open: "bg-emerald-50/60",
+  // Esta era a única sem cor de letra declarada: no escuro a letra herdava o
+  // tema (quase branca) e sumia sobre a mancha clara. As irmãs acima já diziam
+  // a cor delas, e foi por isso que o defeito passou despercebido.
+  holiday_open: "bg-emerald-50/60 text-emerald-800",
   open_day: "bg-gold/10 border-gold/50",
   plan_block: "bg-red-50 text-red-700",
 };

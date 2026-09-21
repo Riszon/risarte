@@ -554,7 +554,7 @@ export function PayablesBoard({
                   "rounded-lg border p-2.5 text-sm",
                   v.isOverdue && "border-destructive/40 bg-destructive/5",
                   v.status === "aguardando_autorizacao" &&
-                    "border-amber-300 bg-amber-50/50"
+                    "border-amber-300 bg-amber-50/50 dark:border-amber-500/40 dark:bg-amber-500/10"
                 )}
               >
                 <div className="flex flex-wrap items-center gap-2">

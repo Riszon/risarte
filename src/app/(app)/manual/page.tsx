@@ -61,7 +61,7 @@ export default async function ManualPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
         <h1 className="text-2xl font-semibold">Manual de Treinamento</h1>
-        <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+        <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-500/40 dark:bg-amber-500/10">
           O texto do manual não foi encontrado nesta publicação. O conteúdo
           continua disponível no arquivo Word que a Franqueadora distribui.
           Avise pela tela <strong>Sistema → Problemas</strong>, informando a

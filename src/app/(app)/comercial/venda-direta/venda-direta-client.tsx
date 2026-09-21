@@ -94,7 +94,7 @@ function Stat({
     <div
       className={cn(
         "rounded-lg border p-3",
-        amber && "border-amber-300 bg-amber-50"
+        amber && "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/15"
       )}
     >
       <p className="text-xl font-semibold tabular-nums">{value}</p>

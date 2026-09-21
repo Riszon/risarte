@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/09/2026 · Versão do sistema: **0.264.0** · Última migração: **0267** (aplicadas no treino; **0266 e 0267 pendentes na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 21/09/2026 · Versão do sistema: **0.265.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,41 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### MODO ESCURO: A LETRA VOLTOU A APARECER (21/09/2026, v0.265.0, sem migração)
+
+Dois relatos no mesmo dia — **OC-00053** (opções da caixa de seleção invisíveis)
+e **OC-00061** (a agenda ilegível no escuro). O dono achou que fossem o mesmo
+defeito; são a mesma **família** (cor escolhida para um tema, aplicada no
+outro), com causas diferentes.
+
+**OC-00053 — quem desenha a lista do `<select>` é o NAVEGADOR.** O sistema
+trocava o tema pela classe `.dark` e **nunca declarava `color-scheme`**. Sem
+isso o navegador desenha a listinha com o fundo claro do sistema operacional, e
+a letra, que herda a cor do nosso tema, é quase branca. Branco sobre branco. Uma
+linha em `globals.css` conserta a família inteira dos controles nativos: lista
+do select, calendário do campo de data, barra de rolagem e autofill.
+
+**OC-00061 — a agenda pintava mancha de papel branco.** `STATUS_STYLES` fixava
+`bg-sky-50` e companhia, e o texto do cartão **não declara cor**. Medido no
+navegador, pixel a pixel: **contraste 1.06** (1.0 é "cores idênticas"). Depois
+do conserto, **5.9 a 11.8** — o mínimo recomendado para texto é 4.5.
+
+**O defeito foi procurado no sistema inteiro**, não só onde o relato apontava:
+**25 pontos** tinham mancha clara com letra herdada; 20 foram corrigidos com o
+par escuro, 2 ganharam cor de letra, 1 é página de impressão (papel branco) e 1
+foi declarado legítimo na própria linha (`tema-ok:`). Os outros **226 casos**
+com letra escura declarada **não** foram tocados: são legíveis, só mais claros.
+
+**Preso por teste** (`tema-escuro.test.ts`), e a régua foi provada quebrando a
+agenda de propósito. **A primeira versão dela NÃO disparou** — olhava as linhas
+vizinhas, e num mapa de estilos a vizinha é outro status, com o `dark:` dela.
+Corrigida antes de valer: mais uma da série do §0d.
+
+**De quebra, a varredura de telas explicou-se:** as 6 falhas de ontem eram os
+usuários de teste do treino em **modo portal** (sem o ambiente "sistema"
+liberado), não permissão errada no código — conferido entrando como Gerente e
+Recepcionista no treino.
 
 ### RESPONDER UM RELATO VOLTOU A FUNCIONAR (21/09/2026, v0.264.0, migração 0267)
 

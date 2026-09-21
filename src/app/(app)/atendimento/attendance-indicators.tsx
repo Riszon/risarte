@@ -54,7 +54,7 @@ export type AttendanceMetrics = {
 
 const RATE_TONE = {
   emerald: {
-    card: "border-emerald-200 bg-emerald-50/60",
+    card: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/40 dark:bg-emerald-500/10",
     bar: "bg-emerald-500",
     val: "text-emerald-800",
   },

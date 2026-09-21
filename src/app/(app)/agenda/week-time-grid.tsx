@@ -424,7 +424,7 @@ export function WeekTimeGrid({
     const height = Math.max(8, (e - s) * PX_PER_MIN);
     return (
       <div
-        className="pointer-events-none absolute inset-x-0 z-[1] border-y border-amber-200 bg-amber-100/50"
+        className="pointer-events-none absolute inset-x-0 z-[1] border-y border-amber-200 bg-amber-100/50 dark:border-amber-500/30 dark:bg-amber-500/10"
         style={{ top, height }}
       />
     );
