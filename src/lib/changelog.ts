@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.257.0",
+    data: "2026-09-19",
+    migracao: null,
+    titulo: "Tela de novidades com busca, e a Administração recolhe",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A tela de Início ficou mais curta: em vez de todas as entregas, ela mostra as três últimas. A lista completa agora tem tela própria, com busca por palavra, filtro por tipo e por ano, e páginas — pelo botão Ver todas as novidades ou pelo ícone de brilho na barra de cima.",
+        papeis: "todos",
+        manual: "15.1. Novidades",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No menu da esquerda, o bloco Administração agora abre e fecha num clique, e vem fechado — são onze telas de configuração que o dia a dia não usa. O sistema lembra a sua escolha, e numa tela de administração o bloco abre sozinho.",
+        papeis: "todos",
+        manual: "7.2. Barra lateral (o menu)",
+      },
+    ],
+  },
+  {
     versao: "0.256.0",
     data: "2026-09-19",
     migracao: "0263",
@@ -1508,4 +1530,91 @@ export function novidadesPara(
       (m) => m.papeis === "todos" || m.papeis.some((p) => papeis.includes(p))
     ),
   })).filter((v) => v.mudancas.length > 0);
+}
+
+// -----------------------------------------------------------------------------
+// A TELA DE NOVIDADES (19/09/2026) — busca, filtros e páginas.
+//
+// O Início mostrava as 57 entregas inteiras, uma embaixo da outra: "uma lista
+// muito extensa", nas palavras do dono. Lá ficaram as ÚLTIMAS; a lista completa
+// ganhou tela própria, com as réguas abaixo — puras, para terem teste.
+// -----------------------------------------------------------------------------
+
+export const NOVIDADES_NO_INICIO = 3;
+export const NOVIDADES_POR_PAGINA = 10;
+
+export type FiltroDeNovidades = {
+  /** Texto livre: procura no título da entrega e no texto de cada mudança. */
+  busca?: string;
+  /** Um dos tipos, ou nada para todos. */
+  tipo?: TipoDeMudanca | "";
+  /** Ano (aaaa), ou nada para todos. */
+  ano?: string;
+};
+
+/** Os anos que existem na lista, do mais novo para o mais velho. */
+export function anosDasNovidades(versoes: Versao[]): string[] {
+  return [...new Set(versoes.map((v) => v.data.slice(0, 4)))].sort().reverse();
+}
+
+function contem(texto: string, busca: string): boolean {
+  // Sem acento e sem caixa: quem procura "correcao" acha "correção".
+  const limpa = (s: string) =>
+    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return limpa(texto).includes(limpa(busca));
+}
+
+/**
+ * Aplica os filtros. A busca e o tipo valem por MUDANÇA (a entrega fica com as
+ * linhas que casam, e some quando não sobra nenhuma) — senão procurar "estoque"
+ * devolveria a entrega inteira, com dez linhas que não têm nada a ver.
+ */
+export function filtrarNovidades(
+  versoes: Versao[],
+  filtro: FiltroDeNovidades
+): Versao[] {
+  const busca = (filtro.busca ?? "").trim();
+  const tipo = filtro.tipo ?? "";
+  const ano = (filtro.ano ?? "").trim();
+
+  return versoes
+    .filter((v) => !ano || v.data.startsWith(ano))
+    .map((v) => ({
+      ...v,
+      mudancas: v.mudancas.filter(
+        (m) =>
+          (!tipo || m.tipo === tipo) &&
+          (!busca || contem(m.texto, busca) || contem(v.titulo, busca))
+      ),
+    }))
+    .filter((v) => v.mudancas.length > 0);
+}
+
+export type Pagina = {
+  versoes: Versao[];
+  pagina: number;
+  totalDePaginas: number;
+  total: number;
+};
+
+/**
+ * Uma página da lista. Página fora do intervalo volta para a primeira (ou para
+ * a última): endereço digitado errado não pode devolver tela vazia — foi a
+ * lição das réguas que respondiam "não existe" quando não conseguiam medir.
+ */
+export function paginarNovidades(
+  versoes: Versao[],
+  pagina: number,
+  porPagina = NOVIDADES_POR_PAGINA
+): Pagina {
+  const total = versoes.length;
+  const totalDePaginas = Math.max(1, Math.ceil(total / porPagina));
+  const atual = Math.min(Math.max(1, Math.trunc(pagina) || 1), totalDePaginas);
+  const inicio = (atual - 1) * porPagina;
+  return {
+    versoes: versoes.slice(inicio, inicio + porPagina),
+    pagina: atual,
+    totalDePaginas,
+    total,
+  };
 }

@@ -11,7 +11,7 @@ import { cartoesDoInicio, nomeDaAba } from "@/lib/ambientes";
 import { ambienteAtual, carregarEnderecos } from "@/lib/ambientes-db";
 import { RisarteMark } from "@/components/risarte-logo";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
-import { novidadesPara } from "@/lib/changelog";
+import { NOVIDADES_NO_INICIO, novidadesPara } from "@/lib/changelog";
 import { Novidades } from "@/components/novidades";
 import { BoasVindas } from "@/components/boas-vindas";
 import { ComoUsarOTreino } from "@/components/como-usar-o-treino";
@@ -358,11 +358,28 @@ export default async function HomePage() {
           a tela inteira de quem veio só encontrar o caminho do treino. */}
       {!portal && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-            <Sparkles className="size-5 text-gold-tinta" />
-            O que mudou no sistema
-          </h2>
-          <Novidades versoes={novidadesPara(papeisDaPessoa, session.isAdminMaster)} />
+          {/* SÓ AS ÚLTIMAS AQUI (pedido do dono, 19/09/2026): as 57 entregas
+              inteiras faziam do Início "uma lista muito extensa". A lista
+              completa, com busca e filtros, mora em /novidades. */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Sparkles className="size-5 text-gold-tinta" />
+              O que mudou no sistema
+            </h2>
+            <Link
+              href="/novidades"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              Ver todas as novidades
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+          <Novidades
+            versoes={novidadesPara(papeisDaPessoa, session.isAdminMaster).slice(
+              0,
+              NOVIDADES_NO_INICIO
+            )}
+          />
         </section>
       )}
     </div>

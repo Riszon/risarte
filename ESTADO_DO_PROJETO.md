@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.256.0** · Última migração: **0263** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.257.0** · Última migração: **0263** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,25 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### INÍCIO MAIS CURTO E ADMINISTRAÇÃO QUE RECOLHE (19/09/2026, v0.257.0, sem migração)
+
+Pedido do dono: botão para ocultar os itens da Administração na lateral; e o
+Início "virou uma lista muito extensa" — paginar, categorizar, filtrar.
+- A causa da lista: as **57 entregas** do changelog apareciam INTEIRAS no
+  Início. Agora ele mostra as **3 últimas** (`NOVIDADES_NO_INICIO`).
+- **Tela nova `/novidades`**: busca por palavra (sem acento/caixa, e filtrando
+  LINHA a linha, não a entrega inteira), filtro por tipo e por ano, páginas de
+  10. Regras puras em `changelog.ts` com 11 testes (`novidades.test.ts`).
+  Filtros pelo `FilterForm` (aplicam sozinhos) e no endereço — link
+  compartilhável. Atalho: botão no Início + ícone ✨ na barra de cima (fora do
+  modo portal, que não abre outras telas).
+- **Lateral:** "Administração" virou botão que abre/fecha (cookie
+  `risarte_admin_aberto`), **fechada por padrão** (decisão do dono), aberta
+  sozinha em `/admin/*` e quando a barra está minimizada (lá não há cabeçalho
+  onde clicar).
+- **Decisão do dono:** os cartões de pendências do Início NÃO foram agrupados
+  por área — hoje são poucos e já vêm na ordem de urgência.
 
 ### BOAS-VINDAS E GUIA DO TREINO (19/09/2026, v0.256.0, migração 0263)
 

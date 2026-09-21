@@ -1,4 +1,4 @@
-import { AlertTriangle, BookMarked, UserRound } from "lucide-react";
+import { AlertTriangle, BookMarked, Sparkles, UserRound } from "lucide-react";
 import { BotaoSair } from "@/components/botao-sair";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { NotificationNavItem } from "@/components/notification-nav-item";
@@ -83,6 +83,15 @@ export function Topbar({
                 mentir. */}
             <ReportNavItem temUnidade={temUnidade} isAdminMaster={isAdminMaster} />
           </>
+        )}
+        {/* As novidades têm tela própria desde 19/09/2026 (o Início mostra só
+            as últimas). No modo portal ela não abre — como as demais. */}
+        {!modoPortal && (
+          <TopbarItem
+            href="/novidades"
+            label="Novidades do sistema"
+            icon={<Sparkles className="size-[18px]" />}
+          />
         )}
         {podeVerManual && (
           <TopbarItem

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   BarChart3,
   BookOpen,
@@ -106,6 +107,8 @@ type Props = {
   activeClinicRoles: UserRole[];
   /** Sidebar minimizada? Vem do cookie (server) para não "piscar" ao carregar. */
   initialCollapsed: boolean;
+  /** Grupo Administração aberto? Também vem do cookie, pelo mesmo motivo. */
+  initialAdminAberto: boolean;
 };
 
 // `cap` liga o item à MATRIZ DE PERMISSÕES (0246): o servidor manda em
@@ -245,11 +248,16 @@ export function AppSidebar({
   activeClinicId,
   activeClinicRoles,
   initialCollapsed,
+  initialAdminAberto,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  // ADMINISTRAÇÃO: 11 itens que o dia a dia não usa. Começa fechada (pedido do
+  // dono, 19/09/2026) e lembra a escolha; numa tela de administração ela abre
+  // sozinha, senão o item em que você está ficaria escondido.
+  const [adminAberto, setAdminAberto] = useState(initialAdminAberto);
 
   const activeClinic = clinics.find((c) => c.id === activeClinicId) ?? null;
   const initials =
@@ -260,6 +268,10 @@ export function AppSidebar({
       .map((w) => w[0])
       .join("")
       .toUpperCase() || "?";
+
+  // Minimizada, os itens viram só ícones e o grupo não tem cabeçalho para
+  // clicar: ali eles aparecem sempre. Em /admin/... também.
+  const adminVisivel = adminAberto || collapsed || pathname.startsWith("/admin");
 
   function toggleCollapsed() {
     setCollapsed((v) => {
@@ -491,21 +503,43 @@ export function AppSidebar({
             {collapsed ? (
               <div className="my-2 border-t border-sidebar-border/60" />
             ) : (
-              <p className="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85">
-                Administração
-              </p>
-            )}
-            {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={linkClass(href)}
-                title={collapsed ? label : undefined}
+              // O CABEÇALHO VIROU BOTÃO (19/09/2026): 11 itens de configuração
+              // que o dia a dia não abre deixavam a lateral comprida. Numa tela
+              // de administração o grupo abre sozinho — esconder o item em que
+              // a pessoa está seria pior que a lista comprida.
+              <button
+                type="button"
+                onClick={() => {
+                  const proximo = !adminVisivel;
+                  setAdminAberto(proximo);
+                  document.cookie = `risarte_admin_aberto=${
+                    proximo ? "1" : "0"
+                  };path=/;max-age=31536000`;
+                }}
+                aria-expanded={adminVisivel}
+                className="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85 hover:text-sidebar-foreground"
               >
-                <Icon className="size-4 shrink-0" />
-                {!collapsed && <span className="truncate">{label}</span>}
-              </Link>
-            ))}
+                Administração
+                <ChevronDown
+                  className={cn(
+                    "size-3.5 transition-transform",
+                    !adminVisivel && "-rotate-90"
+                  )}
+                />
+              </button>
+            )}
+            {adminVisivel &&
+              ADMIN_ITEMS.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={linkClass(href)}
+                  title={collapsed ? label : undefined}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {!collapsed && <span className="truncate">{label}</span>}
+                </Link>
+              ))}
           </>
         )}
       </nav>

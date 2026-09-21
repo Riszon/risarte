@@ -113,6 +113,10 @@ export default async function AppLayout({
 
   // Estado da sidebar (minimizada?) vem do cookie para não "piscar" no load.
   const cookieStore = await cookies();
+  // 0.257.0: o grupo Administração começa FECHADO (pedido do dono) e lembra a
+  // escolha de quem abriu.
+  const adminAberto =
+    cookieStore.get("risarte_admin_aberto")?.value === "1";
   const sidebarCollapsed =
     cookieStore.get("risarte_sidebar_collapsed")?.value === "1";
 
@@ -160,6 +164,7 @@ export default async function AppLayout({
             : []
         }
         initialCollapsed={sidebarCollapsed}
+        initialAdminAberto={adminAberto}
       />
       {/* A coluna da direita: barra de cima fixa + conteúdo que rola por baixo.
           overflow-x-auto força overflow-y:auto → o <main> é quem rola na

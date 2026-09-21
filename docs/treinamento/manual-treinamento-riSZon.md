@@ -163,7 +163,9 @@ significa e o caminho para resolver. Eles mudam conforme a sua função:
 > "3 esperando", ao abrir você encontra três. Cada contagem usa a mesma régua da
 > tela de destino, nunca uma conta separada.
 
-**Embaixo: "O que mudou no sistema"** — as novidades da sua função. Ver
+**Embaixo: "O que mudou no sistema"** — as **três últimas** entregas que
+alcançam a sua função. A lista completa, com busca e filtros, está em **Ver
+todas as novidades** (ou no ícone ✨ da barra de cima). Ver
 [seção 15](#15-novidades-problemas-e-alertas).
 
 **O que NÃO está mais aqui:** a lista das suas clínicas, das suas funções e das
@@ -1225,9 +1227,12 @@ Para essas funções, os passos seguem os módulos descritos na
 
 ### 7.2. Barra lateral (o menu)
 
-28 itens, agrupados. O bloco **Administração** só aparece para o Admin Master.
-Há um botão para **minimizar** a barra (a preferência fica guardada), e o
-**seletor de unidade** no alto para quem atende em mais de uma.
+28 itens, agrupados. O bloco **Administração** só aparece para o Admin Master e
+vem **fechado**: clique no título "Administração" para abrir ou fechar (a seta
+mostra como está), e o sistema lembra a sua escolha. Numa tela de administração
+ele abre sozinho. Há também um botão para **minimizar** a barra (a preferência
+fica guardada), e o **seletor de unidade** no alto para quem atende em mais de
+uma.
 
 No rodapé: seu nome, seu e-mail, a **versão do sistema** e o botão **Sair**.
 
@@ -1779,6 +1784,20 @@ abre os Alertas, a **boia** abre os Problemas.*
 O que mudou no sistema, versão por versão, da mais recente para a mais antiga.
 Cada mudança vem marcada como **Novidade**, **Melhoria**, **Correção** ou
 **Atenção**, e traz a seção deste manual que mudou junto.
+
+**Onde procurar (desde 19/09/2026).** O Início mostra só as **três últimas**
+entregas — antes mostrava todas, e a tela virava uma lista enorme. A lista
+completa fica na tela **Novidades**, pelo botão **Ver todas as novidades** ou
+pelo ícone ✨ da barra de cima. Lá você tem:
+
+- **busca por palavra** (ignora acento e maiúscula: "correcao" acha "correção"),
+  que mostra só as linhas que casam, não a entrega inteira;
+- **filtro por tipo** (Novidade, Melhoria, Correção, Atenção);
+- **filtro por ano**;
+- **páginas** de 10 entregas, com "Mais recentes" e "Mais antigas".
+
+Os filtros aplicam-se sozinhos e ficam no endereço: dá para mandar o link de
+uma busca para outra pessoa.
 
 **Aparece o que alcança a SUA função.** A correção de um botão do financeiro
 não entra na lista de quem trabalha na recepção — lista cheia de coisa que não
