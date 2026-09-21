@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.260.0",
+    data: "2026-09-20",
+    migracao: "0265",
+    titulo: "Boas-vindas nos 3 primeiros acessos, e os textos à vista do Admin",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A mensagem de boas-vindas passou a aparecer nos 3 primeiros acessos de cada pessoa (uma vez por dia), e não só no primeiro: quem chega tem muita coisa nova na frente e fecha a janela sem ler.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Administração → Orientações, o Admin Master passou a ver os textos que o sistema mostra sozinho: a mensagem de boas-vindas (nas duas versões) e o guia do riSZon Treino. É só consulta — serve para saber o que a equipe está recebendo.",
+        papeis: "todos",
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.259.1",
     data: "2026-09-20",
     migracao: null,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { GuidanceEditor } from "./guidance-editor";
+import { TextosDoSistema } from "./textos-do-sistema";
 
 export const metadata: Metadata = { title: "Orientações" };
 
@@ -51,6 +52,11 @@ export default async function OrientacoesPage() {
         Em breve: orientações para outras funções (recepção, comercial, dentista
         executor).
       </p>
+
+      {/* O que o sistema diz sozinho — só consulta (pedido do dono,
+          20/09/2026): o texto é lido da fonte, nunca copiado. */}
+      <hr className="border-dashed" />
+      <TextosDoSistema />
     </div>
   );
 }

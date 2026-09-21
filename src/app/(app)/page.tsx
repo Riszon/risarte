@@ -16,6 +16,7 @@ import { Novidades } from "@/components/novidades";
 import { BoasVindas } from "@/components/boas-vindas";
 import { ComoUsarOTreino } from "@/components/como-usar-o-treino";
 import { isTreino } from "@/lib/environment";
+import { isoDateIn, todayInBrazil } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
 import { montarPendencias, atalhosPara, type Pendencia } from "./inicio-dados";
@@ -168,19 +169,26 @@ export default async function HomePage() {
   const pendencias = portal ? [] : await montarPendencias(supabase, session);
   const atalhos = portal ? [] : atalhosPara(session);
 
-  // BOAS-VINDAS (0263): só no sistema real, só enquanto a pessoa não fechou.
-  // Banco sem a 0263 (erro na consulta) = não mostra: melhor faltar a
-  // mensagem do que ela reaparecer a cada entrada.
+  // BOAS-VINDAS (0263 + 0265): só no sistema real, nos 3 PRIMEIROS ACESSOS e
+  // no máximo uma vez por dia — contar cada abertura do Início gastaria as três
+  // em dez minutos do primeiro dia. Banco sem a migração (erro na consulta) =
+  // não mostra: melhor faltar a mensagem do que ela voltar a cada entrada.
   const treino = isTreino();
   const { data: perfilDeBoasVindas, error: erroBoasVindas } = treino
     ? { data: null, error: null }
     : await supabase
         .from("profiles")
-        .select("welcomed_at")
+        .select("welcomed_at, welcome_count")
         .eq("id", session.userId)
-        .maybeSingle<{ welcomed_at: string | null }>();
+        .maybeSingle<{ welcomed_at: string | null; welcome_count: number | null }>();
+  const jaViuHoje =
+    perfilDeBoasVindas?.welcomed_at != null &&
+    isoDateIn(new Date(perfilDeBoasVindas.welcomed_at)) === todayInBrazil();
   const mostrarBoasVindas =
-    !treino && !erroBoasVindas && perfilDeBoasVindas?.welcomed_at === null;
+    !treino &&
+    !erroBoasVindas &&
+    (perfilDeBoasVindas?.welcome_count ?? 0) < 3 &&
+    !jaViuHoje;
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";

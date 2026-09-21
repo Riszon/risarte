@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.259.0** · Última migração: **0264** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 20/09/2026 · Versão do sistema: **0.260.0** · Última migração: **0265** (0001–0264 aplicadas na produção e no treino; **0265 pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,38 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### QUEM ESTÁ SÓ NO INÍCIO RELATA (20/09/2026, v0.259.1) — achado por teste
+
+Ao provar a régua de visibilidade com um login NÃO-Admin (pedido do dono), a
+tela devolveu **307**: a pessoa em modo portal não abria /problemas. Ou seja, o
+recém-chegado — que é quem mais tropeça — relatava no treino e não conseguia
+acompanhar no sistema real. Corrigido: /problemas e /problemas/OC-xxxxx no
+PORTAL_PATHS; a guarda das telas aceita quem está no portal; a **boia** entra na
+barra de cima do modo portal; e a unidade do relato vem da FICHA quando não há
+unidade ativa. O painel continua fora.
+
+**Provado depois da correção** (login não-Admin, na produção): vê o próprio
+relato do treino, **não** vê o de outra pessoa (404 no detalhe), painel barrado
+(307). Os relatos de teste foram apagados no fim (EV-076).
+
+### BOAS-VINDAS 3× E OS TEXTOS À VISTA (20/09/2026, v0.260.0, migração 0265)
+
+Pedidos do dono: boas-vindas nos 3 primeiros logins, e os textos automáticos
+visíveis em Orientações — *"daqui 2 semanas não vou lembrar mais o que eles
+estão recebendo"*.
+- **0265:** profiles.welcome_count. Mostra enquanto < 3, **no máximo uma vez por
+  dia** (welcomed_at): o sistema não guarda contagem de logins, e contar cada
+  abertura do Início gastaria as três no primeiro dia. Quem já tinha visto
+  (0263) ficou com a contagem cheia — a equipe atual não recebe de novo.
+- **src/lib/textos-automaticos.ts** virou a FONTE dos textos (boas-vindas nas
+  duas versões + guia do treino), com negrito desenhado por <ComNegrito>. A
+  janela, o guia e a tela de Orientações leem daí — uma cópia em Orientações
+  divergiria na primeira correção, e a tela que existe para o dono conferir
+  passaria a mentir. 8 testes novos, um deles prendendo o aviso de LGPD do
+  treino contra reescritas.
+- Em **Administração → Orientações**, bloco *O que o sistema já diz sozinho*, só
+  leitura, dizendo QUANDO cada texto aparece.
 
 ### RELATAR PROBLEMA VALE NOS DOIS AMBIENTES (20/09/2026, v0.258.0, migração 0264)
 

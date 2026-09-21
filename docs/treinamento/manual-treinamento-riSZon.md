@@ -471,10 +471,15 @@ aparece, e digitar o endereço de outra tela devolve para o Início. No alto, à
 direita, ficam o **Perfil** (para trocar a senha) e o botão **Sair**. É assim
 que o treinamento começa: primeiro o treino, depois o sistema real.
 
-**Boas-vindas.** No **primeiro login** no riSZon aparece uma janela de
-boas-vindas: o que é o sistema, o próximo passo (para quem ainda está só no
-Início, é o **riSZon Treino**), onde trocar a senha e onde está o Manual. Ela
-aparece **uma vez só** — fechou, não volta.
+**Boas-vindas.** Nos **3 primeiros acessos** ao riSZon (uma vez por dia)
+aparece uma janela de boas-vindas: o que é o sistema, o próximo passo (para
+quem ainda está só no Início, é o **riSZon Treino**), onde trocar a senha e
+onde está o Manual. Depois do terceiro, ela não volta.
+
+> **Para o Admin Master:** o texto exato dessas mensagens fica em
+> **Administração → Orientações**, no bloco *O que o sistema já diz sozinho* —
+> junto com o guia do treino. É só consulta, para você saber o que a equipe
+> está recebendo sem precisar lembrar de cabeça.
 
 **O caminho de quem chega:**
 
