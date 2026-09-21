@@ -3700,6 +3700,11 @@ Início "virou uma lista muito extensa" — paginar, categorizar, filtrar.
   onde clicar).
 - **Decisão do dono:** os cartões de pendências do Início NÃO foram agrupados
   por área — hoje são poucos e já vêm na ordem de urgência.
+- **Conferido no ar (treino, 18 checagens).** ⚠️ E a régua errou TRÊS vezes
+  antes de acertar — todas do lado do instrumento, não da tela: contei "Versão
+  x.y.z" no HTML cru (o React parte o texto, §0d), depois contei junto o
+  rodapé da lateral, e por fim busquei "estoque", palavra que não existe no
+  changelog (ele começa em 25/08). Conferir a fonte ANTES de acusar a tela.
 
 ### BOAS-VINDAS E GUIA DO TREINO (19/09/2026, v0.256.0, migração 0263)
 
