@@ -3682,6 +3682,24 @@ Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 p
 
 ## 2. O que está em andamento agora
 
+### ENVIO DO ACESSO, PERFIL E FUNÇÃO PREVISTA (21/09/2026, v0.261.0–0.262.0)
+
+Três pedidos do dono, sem migração:
+1. **Mensagem pronta com os dados de acesso** na aba Acesso (copiar / WhatsApp /
+   e-mail): endereço, login, senha provisória e TODAS as unidades com a função
+   de cada uma. Texto em `mensagem-de-acesso.ts` (puro, 13 testes). A senha só
+   entra quando acabou de ser criada/redefinida — o banco guarda o embaralhado,
+   e a tela diz isso quando a mensagem sai sem senha. Recém-chegado recebe o
+   endereço do TREINO (mandar o link do real que ele não abre seria começar
+   errado).
+2. **Perfil → Meu cadastro**: a pessoa vê a própria ficha (foto, código,
+   unidade, função, regime, contato, endereço, dados pessoais). Só leitura:
+   ficha de RH não se autodeclara. Conferido na produção.
+3. **Lista de Risartanos**: quem ainda não tem função de ACESSO aparecia como
+   "sem função definida" mesmo com a função escolhida no cadastro. Agora sai
+   "Unidade · Função (prevista)". ⚠️ **Não observado no ar**: as 4 fichas da
+   produção já têm função de acesso. Conferir no próximo cadastro sem acesso.
+
 ### QUEM ESTÁ SÓ NO INÍCIO RELATA (20/09/2026, v0.259.1) — achado por teste
 
 Ao provar a régua de visibilidade com um login NÃO-Admin (pedido do dono), a
