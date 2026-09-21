@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BOAS_VINDAS,
+  deveMostrarBoasVindas,
   GUIA_DO_TREINO,
   pedacos,
   semMarcas,
@@ -58,5 +59,37 @@ describe("os textos que a equipe recebe", () => {
     for (const t of textos) {
       expect((t.match(/\*\*/g) ?? []).length % 2).toBe(0);
     }
+  });
+});
+
+describe("deveMostrarBoasVindas — os 3 primeiros acessos (0265)", () => {
+  const diaDe = (iso: string) => iso.slice(0, 10);
+  const base = {
+    vezes: 0,
+    ultimaVezEm: null as string | null,
+    hoje: "2026-09-20",
+    diaDe,
+    noTreino: false,
+    erroAoLer: false,
+  };
+
+  it("quem nunca viu, vê", () => {
+    expect(deveMostrarBoasVindas(base)).toBe(true);
+  });
+  it("na segunda e na terceira vez, ainda vê", () => {
+    expect(deveMostrarBoasVindas({ ...base, vezes: 1, ultimaVezEm: "2026-09-19" })).toBe(true);
+    expect(deveMostrarBoasVindas({ ...base, vezes: 2, ultimaVezEm: "2026-09-19" })).toBe(true);
+  });
+  it("na quarta, não vê mais", () => {
+    expect(deveMostrarBoasVindas({ ...base, vezes: 3, ultimaVezEm: "2026-09-19" })).toBe(false);
+  });
+  it("no mesmo dia não repete — senão as três se gastariam num dia só", () => {
+    expect(deveMostrarBoasVindas({ ...base, vezes: 1, ultimaVezEm: "2026-09-20" })).toBe(false);
+  });
+  it("no treino nunca aparece (lá o Início tem o guia do treino)", () => {
+    expect(deveMostrarBoasVindas({ ...base, noTreino: true })).toBe(false);
+  });
+  it("banco sem a migração: esconde em vez de repetir toda entrada", () => {
+    expect(deveMostrarBoasVindas({ ...base, erroAoLer: true })).toBe(false);
   });
 });

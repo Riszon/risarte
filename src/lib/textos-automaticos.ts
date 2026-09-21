@@ -89,3 +89,34 @@ export function pedacos(texto: string): Pedaco[] {
 export function semMarcas(texto: string): string {
   return texto.replace(/\*\*/g, "");
 }
+
+/**
+ * A REGRA DOS 3 PRIMEIROS ACESSOS (0265), pura para ter teste.
+ *
+ * Mostra enquanto a pessoa viu menos de 3 vezes e ainda não viu HOJE. O "uma
+ * vez por dia" existe porque o sistema não guarda contagem de logins: ele vê a
+ * tela de Início abrindo, e contar cada abertura gastaria as três em dez
+ * minutos do primeiro dia.
+ *
+ * `erroAoLer = true` (banco sem a migração) esconde a janela: melhor faltar a
+ * mensagem do que ela voltar a cada entrada.
+ */
+export const VEZES_DE_BOAS_VINDAS = 3;
+
+export function deveMostrarBoasVindas(entrada: {
+  vezes: number | null;
+  ultimaVezEm: string | null;
+  /** Hoje, no relógio brasileiro ("YYYY-MM-DD"). */
+  hoje: string;
+  /** O dia brasileiro de um instante — injetado para o teste não ter fuso. */
+  diaDe: (iso: string) => string;
+  noTreino: boolean;
+  erroAoLer: boolean;
+}): boolean {
+  if (entrada.noTreino || entrada.erroAoLer) return false;
+  if ((entrada.vezes ?? 0) >= VEZES_DE_BOAS_VINDAS) return false;
+  if (entrada.ultimaVezEm && entrada.diaDe(entrada.ultimaVezEm) === entrada.hoje) {
+    return false;
+  }
+  return true;
+}

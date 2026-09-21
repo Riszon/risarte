@@ -17,6 +17,7 @@ import { BoasVindas } from "@/components/boas-vindas";
 import { ComoUsarOTreino } from "@/components/como-usar-o-treino";
 import { isTreino } from "@/lib/environment";
 import { isoDateIn, todayInBrazil } from "@/lib/dates";
+import { deveMostrarBoasVindas } from "@/lib/textos-automaticos";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
 import { montarPendencias, atalhosPara, type Pendencia } from "./inicio-dados";
