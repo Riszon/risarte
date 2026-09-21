@@ -502,6 +502,10 @@ export default async function EvaluationCockpitPage(
             canSend={canSendToPlanning}
             blocked={anamnesisBlocksPlanning}
             blockMessage={anamnesisBlockMessage}
+            // 0266: na REAVALIAÇÃO há duas saídas, e as duas são atos — não
+            // precisa de novo plano, conclui aqui mesmo (o cartão anda para o
+            // Acompanhamento sozinho).
+            podeConcluirReavaliacao={phase === "reevaluation" && canSendToPlanning}
           />
         ),
       }

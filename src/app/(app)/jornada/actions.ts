@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import {
   JOURNEY_PHASES,
   JOURNEY_STATUSES,
@@ -220,6 +221,101 @@ export async function sendToPlanningCenter(
     console.error("send_to_planning_followup failed:", error.message);
   }
   revalidatePath("/atendimento");
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
+/**
+ * CONCLUIR A REAVALIAÇÃO, SEM NOVO PLANO (21/09/2026, decisão do dono).
+ *
+ * Era a única passagem da jornada que dependia de alguém EMPURRAR o cartão: o
+ * Coordenador terminava a reavaliação, não havia novo plano a fazer, e a fase
+ * só andava se ele arrastasse. Virou ato: ele conclui, e a fase anda como
+ * consequência — igual ao "Enviar ao Centro de Planejamento", que é a outra
+ * saída da mesma tela.
+ */
+export async function concluirReavaliacao(
+  clientId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: client } = await supabase
+    .from("clients")
+    .select("journey_phase")
+    .eq("id", clientId)
+    .single<{ journey_phase: JourneyPhase }>();
+
+  // A trava de verdade é a 0266; aqui a mensagem é amigável.
+  if (client?.journey_phase !== "reevaluation") {
+    return {
+      ok: false,
+      error: "Este cliente não está na Reavaliação.",
+    };
+  }
+  return moveClientPhase(clientId, "follow_up");
+}
+
+/**
+ * DEVOLVER AO COORDENADOR (21/09/2026, decisão do dono).
+ *
+ * O Planner precisa de mais dados (ou de uma reavaliação) antes de planejar. Já
+ * existia como movimentação solta no kanban; virou ato com MOTIVO, porque
+ * devolver sem dizer o porquê faz o caso voltar igual — e o tempo perdido
+ * aparece no SLA como se fosse lentidão do Coordenador.
+ */
+export async function devolverAoCoordenador(
+  clientId: string,
+  destino: "clinical_conversion" | "reevaluation",
+  motivo: string
+): Promise<ActionResult> {
+  const texto = motivo.trim();
+  if (texto.length < 10) {
+    return {
+      ok: false,
+      error: "Escreva o que falta para o caso ser planejado (mín. 10 letras).",
+    };
+  }
+
+  const moved = await moveClientPhase(clientId, destino);
+  if (!moved.ok) return moved;
+
+  const supabase = await createClient();
+  const session = await getSessionContext();
+  const { data: client } = await supabase
+    .from("clients")
+    .select("full_name, clinic_id")
+    .eq("id", clientId)
+    .single<{ full_name: string; clinic_id: string }>();
+
+  // O motivo vai para quem recebe o caso de volta — senão ele volta igual.
+  if (client) {
+    const { data: coordenadores } = await supabase
+      .from("user_clinic_roles")
+      .select("user_id")
+      .eq("clinic_id", client.clinic_id)
+      .eq("role", "clinical_coordinator")
+      .returns<{ user_id: string }[]>();
+    const avisos = (coordenadores ?? [])
+      .filter((c) => c.user_id !== session.userId)
+      .map((c) => ({
+        user_id: c.user_id,
+        clinic_id: client.clinic_id,
+        title: "Caso devolvido pelo Centro de Planejamento",
+        body: `${client.full_name} — ${texto}`,
+        link: `/prontuarios/${clientId}`,
+      }));
+    if (avisos.length > 0) await supabase.from("notifications").insert(avisos);
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "client_phase",
+    entityId: clientId,
+    clinicId: client?.clinic_id,
+    details: { devolvido_para: destino, com_motivo: true },
+  });
+
+  revalidatePath("/jornada");
+  revalidatePath("/planejamento");
   revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
 }

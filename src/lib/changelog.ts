@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.263.0",
+    data: "2026-09-21",
+    migracao: "0266",
+    titulo: "A fase do cliente anda sozinha; à mão, só o Admin",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O botão de mover o cliente de fase, no quadro da Jornada e na ficha, agora só aparece para o Admin Master. A fase passou a ser consequência do trabalho: ela anda com o check-in, com a venda fechada, com as decisões do fim do tratamento e com os botões do fluxo. Se ela parecer travada, o que falta é um passo — não o botão.",
+        papeis: "todos",
+        manual: "8. Fluxos principais de uso — Fluxo 2b",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Coordenador Clínico ganhou o botão Concluir a reavaliação: quando o paciente volta para a revisão e não precisa de plano novo, ele vai direto para o Acompanhamento, sem passar pelo Centro de Planejamento.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Dentista Planner ganhou o botão Devolver ao Coordenador, com o motivo obrigatório: escolha se o caso volta para a Conversão Clínica (faltou dado) ou para a Reavaliação (precisa ser examinado de novo). O Coordenador recebe o aviso com o que falta — antes o caso voltava sem explicação e voltava igual.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Toda mudança de fase passou a ficar registrada na auditoria dizendo se foi consequência do trabalho ou se foi o Admin movendo à mão.",
+        papeis: "todos",
+        manual: "8. Fluxos principais de uso — Fluxo 2b",
+      },
+    ],
+  },
+  {
     versao: "0.262.0",
     data: "2026-09-21",
     migracao: null,

@@ -48,6 +48,16 @@ export const PHASE_SLA_KEY: Record<JourneyPhase, SlaKey | null> = {
 };
 
 /**
+ * A MATRIZ DOS ATOS — quem move o cliente à mão, e só fazendo o trabalho.
+ *
+ * ⚠️ Decisão do dono (21/09/2026): *o único que pode FORÇAR é o Admin*, e o
+ * resto da jornada anda sozinho. Saíram daqui as passagens que o sistema já
+ * faz por evento (check-in, venda fechada, decisões do fim do tratamento):
+ * mantê-las à mão era oferecer um atalho para pular o trabalho que as dispara
+ * — e fase movida à mão apaga o tempo real de cada fase, que é o que o SLA
+ * mede. O que ficou são ATOS: mover é a consequência do que a pessoa acabou
+ * de fazer.
+ *
  * Owner-defined transition matrix: who moves a client between phases.
  * The same matrix is enforced inside the database (move_client_phase);
  * here it only drives which buttons appear.
@@ -59,21 +69,19 @@ export const PHASE_TRANSITIONS: {
   to: JourneyPhase;
   roles: UserRole[];
 }[] = [
-  // SDR no longer moves clients between phases (owner rule, LOTE E): the only
-  // SDR transitions were here; removed. Acquisition→Conversão Clínica happens by
-  // reception or automatically at check-in; Acompanhamento→Reavaliação at check-in.
-  { from: "acquisition", to: "clinical_conversion", roles: ["receptionist"] },
+  // Coordenador Clínico: "Enviar ao Centro de Planejamento", da avaliação
+  // (Fase 2) ou da reavaliação (Fase 6) — é a mesma tela e o mesmo ato.
   { from: "clinical_conversion", to: "planning_center", roles: ["clinical_coordinator"] },
+  { from: "reevaluation", to: "planning_center", roles: ["clinical_coordinator"] },
+  // Coordenador: "Concluir a reavaliação" quando não precisa de novo plano.
+  { from: "reevaluation", to: "follow_up", roles: ["clinical_coordinator"] },
+  // Planner: "Enviar ao Comercial" (a tela exige pilar e plano aprovado) e
+  // "Devolver ao Coordenador", com motivo.
   { from: "planning_center", to: "commercial_conversion", roles: ["planner_dentist"] },
   { from: "planning_center", to: "clinical_conversion", roles: ["planner_dentist"] },
   { from: "planning_center", to: "reevaluation", roles: ["planner_dentist"] },
-  { from: "commercial_conversion", to: "treatment_start", roles: ["commercial_consultant"] },
-  { from: "treatment_start", to: "reevaluation", roles: ["receptionist"] },
-  { from: "treatment_start", to: "follow_up", roles: ["receptionist"] },
-  { from: "treatment_start", to: "planning_center", roles: ["clinical_coordinator"] },
-  { from: "reevaluation", to: "follow_up", roles: ["clinical_coordinator"] },
-  { from: "reevaluation", to: "planning_center", roles: ["clinical_coordinator"] },
 ];
+
 
 export function allowedNextPhases(
   phase: JourneyPhase,

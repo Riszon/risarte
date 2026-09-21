@@ -110,11 +110,17 @@ export function KanbanBoard({
           slaAppliesTo(phase, c.journey_status) &&
           isSlaExceeded(c.phase_entered_at, slaMinutes);
         const exceededCount = phaseClients.filter(exceededOf).length;
-        const nextOptions = allowedNextPhases(phase, {
-          isAdminMaster,
-          clinicRoles,
-          isPlannerAnywhere,
-        });
+        // MOVER À MÃO É SÓ DO ADMIN (21/09/2026, decisão do dono). As demais
+        // funções movem o cliente FAZENDO o trabalho: o check-in, a venda
+        // fechada, as decisões do fim do tratamento, e os dois atos com botão
+        // próprio (enviar ao Planejamento e enviar ao Comercial).
+        const nextOptions = isAdminMaster
+          ? allowedNextPhases(phase, {
+              isAdminMaster,
+              clinicRoles,
+              isPlannerAnywhere,
+            })
+          : [];
         const color = PHASE_COLORS[phase];
 
         return (

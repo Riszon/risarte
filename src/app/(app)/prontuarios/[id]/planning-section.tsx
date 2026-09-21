@@ -83,6 +83,7 @@ import {
   setPrimaryOption,
   submitTreatmentPlan,
 } from "./planning-actions";
+import { DevolverAoCoordenador } from "./devolver-ao-coordenador";
 import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
@@ -1212,6 +1213,17 @@ export function PlanningSection({
               <ArrowRight className="mr-1 size-4" />
               Enviar ao Comercial (Fase 4)
             </Button>
+          </div>
+        )}
+
+        {/* 0266: a outra saída do Centro de Planejamento — devolver com motivo.
+            Era uma movimentação solta no kanban; virou ato. */}
+        {canEdit && inPlanningPhase && (
+          <div className="border-t pt-3">
+            <DevolverAoCoordenador clientId={clientId} clientName={clientName} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Faltou informação para planejar? Devolva dizendo o que falta.
+            </p>
           </div>
         )}
       </CardContent>

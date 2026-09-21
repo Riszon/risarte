@@ -45,24 +45,59 @@ Campo `clients.journey_status` (enum), definido automaticamente pelas ações:
 - Fase 6: `awaiting_send_to_planning` (se "Necessita novo planejamento" = SIM).
 - Fases 1/4/7: status operacionais conforme os módulos forem construídos.
 
-## 4. Check-in e gatilhos de transição (decisão 3)
+## 4. Como e quando o cliente anda na jornada (0266)
 
-Cada agendamento ganha `checked_in_at` (chegada/check-in pela Recepcionista).
-Transições **automáticas por check-in**:
-- Fase 1 → Fase 2: check-in numa avaliação (agendamento tipo Avaliação).
-- Fase 1 → Fase 5: check-in quando o agendamento é Urgência/Emergência.
-- Fase 4 → Fase 5: check-in na 1ª sessão de tratamento.
-- Fase 7 → Fase 6: check-in numa reavaliação (após decisão "Necessita
-  reavaliação" = SIM).
-- Fase 7 → Fase 5: check-in numa sessão (após decisão = NÃO).
+**A fase é CONSEQUÊNCIA do trabalho, nunca um campo que alguém arrasta.** Desde
+a 0266 existem só três maneiras de o cliente mudar de fase, nesta ordem de
+importância:
 
-Transições por **ação de função** (não check-in):
-- Fase 2 → Fase 3: Coordenador envia os dados ao Centro de Planejamento.
-- Fase 3 → Fase 4: Planner finaliza → Coordenador **aprova** → orçamento →
-  Planner envia ao Consultor (Etapa 5).
-- Fase 3 → Fase 2 / Fase 6: Planner devolve (com campo de orientações).
-- Fase 5 → Fase 6 / Fase 7 / Fase 3: pelas decisões obrigatórias (abaixo).
-- Fase 6 → Fase 7 / Fase 3: decisão "Necessita novo planejamento".
+### 4.1. Sozinho, por um fato que aconteceu (a regra)
+
+| De → Para | O que faz acontecer | Onde mora |
+|---|---|---|
+| 1 → 2 | check-in num agendamento de **Avaliação** | `check_in_appointment` |
+| 1 → 5 | check-in em **Urgência/Emergência** | `check_in_appointment` |
+| 4 → 5 | **venda fechada** (contrato assinado **e** pagamento confirmado) | `commercial_close_step` |
+| 4 → 5 | check-in na **1ª sessão** de tratamento | `check_in_appointment` |
+| 4 → 7 | negociação marcada como **perdida/cancelada** | `commercial_lost_moves_to_followup` |
+| 5 → 6 | decisão "**necessita reavaliação?**" = SIM | `answer_decision` |
+| 5 → 3 | decisão "**necessita novo planejamento?**" = SIM | `answer_decision` |
+| 5 → 7 | decisão "**necessita novo planejamento?**" = NÃO | `answer_decision` |
+| 7 → 6 | check-in numa **Reavaliação** | `check_in_appointment` |
+| 7 → 5 | check-in numa **sessão** de tratamento | `check_in_appointment` |
+| → 6 ou 7 | **cancelamento de plano efetivado** (destino escolhido pelo Gerente) | `apply_plan_cancellation` |
+
+Ninguém aperta "mover" em nenhuma dessas linhas — e é por isso que elas saíram
+da matriz. Enquanto estavam lá, existia um atalho para pular justamente o
+trabalho que as dispara: dava para pôr o cliente em "Início de Tratamento" sem
+venda fechada, ou em "Reavaliação" sem ninguém ter chegado à clínica.
+
+### 4.2. Pelos ATOS do fluxo (a exceção, e são só quatro)
+
+Aqui mover **é** o botão, porque a passagem é a consequência imediata do que a
+pessoa acabou de fazer na tela:
+
+| Ato | De → Para | Quem |
+|---|---|---|
+| **Enviar ao Centro de Planejamento** | 2 → 3 e 6 → 3 | Coordenador Clínico |
+| **Concluir a reavaliação** | 6 → 7 | Coordenador Clínico |
+| **Enviar ao Comercial** (exige pilar e plano aprovado) | 3 → 4 | Dentista Planner |
+| **Devolver ao Coordenador** (exige motivo) | 3 → 2 e 3 → 6 | Dentista Planner |
+| **Devolver ao Planejamento** (exige considerações) | 4 → 3 | Consultor Comercial |
+
+O último é diferente dos outros e merece atenção: **quem move é o ato, não a
+pessoa**. `return_commercial_to_planning` reabre o plano, encerra a negociação,
+avisa o Planner e só então marca a transação (`risarte.ato`) para que o
+`move_client_phase` aceite o 4 → 3. Chamar o movimento cru continua recusado —
+ele moveria a fase e deixaria o plano aprovado e a negociação de pé.
+
+### 4.3. Forçado pelo Admin Master (a válvula)
+
+**Só o Admin Master força qualquer passagem** (ordem do dono, 21/09/2026), e o
+botão de mover no kanban e na ficha só aparece para ele. Toda passagem vai para
+a auditoria com `{from, to, forcado}` — `forcado = true` é exatamente "não foi
+trabalho, foi mão". É o que permite descobrir depois que uma fase andou sem o
+fato que deveria tê-la movido.
 
 Fluxo de atendimento (sala de espera): check-in → "Em espera" → Coordenador/
 Dentista "chama" → "Em atendimento" → conclui. (Tela de painel da unidade.)

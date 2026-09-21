@@ -25,14 +25,50 @@ describe("allowedNextPhases", () => {
     expect(next).not.toContain("acquisition");
   });
 
-  it("Recepcionista move Aquisição → Conversão Clínica", () => {
+  // 0266: a recepção não move mais fase nenhuma à mão — o CHECK-IN faz. Mover
+  // à mão era um atalho para pular o trabalho que dispara a passagem.
+  it("Recepcionista não move fase nenhuma (o check-in é que move)", () => {
+    for (const phase of JOURNEY_PHASES) {
+      expect(
+        allowedNextPhases(phase, {
+          isAdminMaster: false,
+          clinicRoles: ["receptionist"],
+          isPlannerAnywhere: false,
+        })
+      ).toEqual([]);
+    }
+  });
+
+  it("Consultor Comercial não move fase nenhuma (a venda fechada é que move)", () => {
+    for (const phase of JOURNEY_PHASES) {
+      expect(
+        allowedNextPhases(phase, {
+          isAdminMaster: false,
+          clinicRoles: ["commercial_consultant"],
+          isPlannerAnywhere: false,
+        })
+      ).toEqual([]);
+    }
+  });
+
+  it("Coordenador envia ao Planejamento a partir da avaliação", () => {
     expect(
-      allowedNextPhases("acquisition", {
+      allowedNextPhases("clinical_conversion", {
         isAdminMaster: false,
-        clinicRoles: ["receptionist"],
+        clinicRoles: ["clinical_coordinator"],
         isPlannerAnywhere: false,
       })
-    ).toEqual(["clinical_conversion"]);
+    ).toEqual(["planning_center"]);
+  });
+
+  it("Coordenador não move o cliente que está em tratamento (a decisão do fim do tratamento move)", () => {
+    expect(
+      allowedNextPhases("treatment_start", {
+        isAdminMaster: false,
+        clinicRoles: ["clinical_coordinator"],
+        isPlannerAnywhere: false,
+      })
+    ).toEqual([]);
   });
 
   it("Coordenador move Reavaliação → Acompanhamento ou Planejamento", () => {
@@ -42,7 +78,7 @@ describe("allowedNextPhases", () => {
         clinicRoles: ["clinical_coordinator"],
         isPlannerAnywhere: false,
       })
-    ).toEqual(["follow_up", "planning_center"]);
+    ).toEqual(["planning_center", "follow_up"]);
   });
 
   it("Planner (papel na Franqueadora) move a partir do Centro de Planejamento", () => {

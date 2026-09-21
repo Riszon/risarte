@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/09/2026 · Versão do sistema: **0.260.0** · Última migração: **0265** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 21/09/2026 · Versão do sistema: **0.263.0** · Última migração: **0266** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,49 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### A JORNADA ANDA SOZINHA; À MÃO, SÓ O ADMIN (21/09/2026, v0.263.0, migração 0266)
+
+Ordem do dono: *"na jornada do cliente o único que pode forçar o cliente mover
+de uma fase é o admin"* + *"mover o cliente na jornada deve ser automático"*.
+
+**O que mudou.** A matriz do `move_client_phase` perdeu tudo o que o sistema já
+faz sozinho (1→2, 4→5, 5→6, 5→7, 5→3, 7→6) e ficou só com os **atos**, onde
+mover é a consequência do trabalho recém-feito. Mantê-las à mão era oferecer um
+atalho para pular justamente o trabalho que as dispara — dava para pôr o cliente
+em "Início de Tratamento" sem venda fechada. O botão de mover, no kanban e na
+ficha, agora só aparece para o Admin Master.
+
+**A migração é matriz-only.** O corpo da 0266 é o da 0148 copiado verbatim (9
+blocos de notificação, que uma reescrita minha já tinha perdido uma vez); a
+igualdade fora da matriz foi provada por `diff`.
+
+**Três buracos fechados na mesma entrega** (o dono aprovou: *"Sim, na mesma
+entrega"*):
+1. **Concluir a reavaliação** (6→7) — botão novo do Coordenador.
+2. **Devolver ao Coordenador** (3→2 / 3→6) — botão novo do Planner, com motivo
+   obrigatório (≥10 caracteres) que vira o aviso de quem recebe o caso de volta.
+3. **Devolver ao Planejamento** (4→3) — **regressão achada medindo, não
+   supondo**: `return_commercial_to_planning` move por dentro chamando o
+   `move_client_phase`, e o Consultor passou a receber NOT_ALLOWED. O conserto
+   **não** foi devolver 4→3 à matriz (aí ele moveria a fase pela API sem reabrir
+   o plano, deixando o caso pela metade): a função marca a transação
+   (`set_config('risarte.ato', …, true)`) e a matriz reconhece a marca. **O ato
+   é autorizado; o movimento cru continua recusado** — provado nos dois sentidos.
+
+**A auditoria passou a dizer se foi trabalho ou se foi mão** (`forcado`), o que
+permite descobrir depois que uma fase andou sem o fato que deveria tê-la movido.
+
+**Provado no treino com logins reais** (`prova-jornada.mjs`, 16/16; e
+`prova-devolucao.mjs`, 2/2). **A régua errou primeiro**: procurava
+`entity_type='client_phase'` e `details.para`, quando a auditoria grava
+`client_journey` com `{from,to}` — mais uma da série do §0d.
+
+**O mapa completo de quem move o cliente** (pedido do dono: *"mostre como e
+quando o cliente se move em cada etapa"*) está em `docs/JORNADA.md` §4, montado
+**perguntando ao banco** função por função, e no manual (Fluxo 2b).
+
+⚠️ **Migração 0266 pendente na produção.**
 
 ### ENVIO DO ACESSO, PERFIL E FUNÇÃO PREVISTA (21/09/2026, v0.261.0–0.262.0)
 

@@ -104,11 +104,17 @@ export function JourneySection({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const nextOptions = allowedNextPhases(phase, {
-    isAdminMaster,
-    clinicRoles,
-    isPlannerAnywhere,
-  });
+  // MOVER À MÃO É SÓ DO ADMIN (21/09/2026). Para as demais funções a fase anda
+  // pelo trabalho: check-in, venda fechada, decisões do fim do tratamento — e
+  // os atos com botão próprio (Enviar ao Planejamento / ao Comercial, na tela
+  // de cada um). O banco recusa de novo, na 0266.
+  const nextOptions = isAdminMaster
+    ? allowedNextPhases(phase, {
+        isAdminMaster,
+        clinicRoles,
+        isPlannerAnywhere,
+      })
+    : [];
 
   function move(next: JourneyPhase) {
     startTransition(async () => {

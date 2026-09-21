@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowRight,
+  CheckCircle2,
   Paperclip,
   Pencil,
   Plus,
@@ -34,7 +35,8 @@ import {
   recordClinicalMedia,
   recordConsent,
 } from "../../prontuarios/[id]/clinical-actions";
-import { sendToPlanningCenter } from "../../jornada/actions";
+import { concluirReavaliacao, sendToPlanningCenter } from "../../jornada/actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AudioRecorder } from "../../prontuarios/[id]/audio-recorder";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 
@@ -502,15 +504,39 @@ export function SendToPlanningBlock({
   canSend,
   blocked,
   blockMessage,
+  podeConcluirReavaliacao = false,
 }: {
   clientId: string;
   clientName: string;
   canSend: boolean;
   blocked: boolean;
   blockMessage: string;
+  /** Fase 6: a outra saída da reavaliação — sem novo plano (0266). */
+  podeConcluirReavaliacao?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const concluir = (
+    <ConfirmDialog
+      trigger={
+        <Button variant="outline" disabled={isPending}>
+          <CheckCircle2 className="mr-1 size-4" />
+          Concluir a reavaliação
+        </Button>
+      }
+      title={`Concluir a reavaliação de ${clientName}?`}
+      description={
+        <>
+          Use quando a reavaliação <b>não</b> exigir um plano novo. O cliente vai
+          para o <b>Acompanhamento</b>, e volta ao Planejamento quando precisar.
+        </>
+      }
+      confirmLabel="Concluir"
+      successMessage={`${clientName} foi para o Acompanhamento.`}
+      onConfirm={() => concluirReavaliacao(clientId)}
+    />
+  );
 
   if (!canSend) {
     return (
@@ -521,32 +547,38 @@ export function SendToPlanningBlock({
   }
   if (blocked) {
     return (
-      <div className="space-y-1">
-        <Button disabled>
-          <ArrowRight className="mr-1 size-4" />
-          Enviar ao Centro de Planejamento
-        </Button>
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <Button disabled>
+            <ArrowRight className="mr-1 size-4" />
+            Enviar ao Centro de Planejamento
+          </Button>
+          {podeConcluirReavaliacao && concluir}
+        </div>
         <p className="text-xs text-destructive">{blockMessage}</p>
       </div>
     );
   }
   return (
-    <Button
-      disabled={isPending}
-      onClick={() =>
-        startTransition(async () => {
-          const r = await sendToPlanningCenter(clientId);
-          if (r.ok) {
-            toast.success(`${clientName} enviado(a) ao Centro de Planejamento.`);
-            router.refresh();
-          } else {
-            toast.error(r.error ?? "Algo deu errado.");
-          }
-        })
-      }
-    >
-      <ArrowRight className="mr-1 size-4" />
-      Enviar ao Centro de Planejamento
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      <Button
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            const r = await sendToPlanningCenter(clientId);
+            if (r.ok) {
+              toast.success(`${clientName} enviado(a) ao Centro de Planejamento.`);
+              router.refresh();
+            } else {
+              toast.error(r.error ?? "Algo deu errado.");
+            }
+          })
+        }
+      >
+        <ArrowRight className="mr-1 size-4" />
+        Enviar ao Centro de Planejamento
+      </Button>
+      {podeConcluirReavaliacao && concluir}
+    </div>
   );
 }

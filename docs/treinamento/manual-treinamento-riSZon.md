@@ -1004,6 +1004,7 @@ diferença.
 | Criar requisição de compra | Admin, **Gerente** |
 | Mesa de negociação de compras | Admin, **Comprador** |
 | Configurar PPR+ | **Só Admin** |
+| **Mover o cliente de fase à mão** | **Só Admin** (as demais funções movem pelos atos do fluxo — seção 8, Fluxo 2b) |
 
 **Repare na diferença que mais confunde:** o Franqueado **vê** o Financeiro mas
 **não lança** nada; o Gerente vê e lança. É proposital.
@@ -1109,6 +1110,12 @@ fase do paciente ☐ sei que não sou eu quem chama
 **Cuidado:** você vê **o total** de cada opção, não o preço item a item. Isso é
 proposital: sua aprovação é clínica, não comercial.
 
+**Terceira tarefa — a reavaliação:** quando o paciente volta para a revisão e
+**não precisa de plano novo**, use **Concluir a reavaliação** na mesma tela de
+avaliação. Ele vai para o **Acompanhamento** sem passar pelo Planejamento.
+Precisando de plano novo, o botão é o mesmo de sempre: **Enviar ao Centro de
+Planejamento**.
+
 ### 6.3. Dentista Planner
 
 **Objetivo:** montar plano e orçamento. **Duração:** 75 minutos.
@@ -1127,6 +1134,12 @@ proposital: sua aprovação é clínica, não comercial.
 plano de tratamento **não tem acréscimo** (o preço vem do orçamento aprovado);
 depois de aprovado o plano fica em leitura — há **Reabrir para edição**, que
 exige nova aprovação.
+
+**Quando faltar informação para planejar**, não devolva o caso em silêncio: use
+**Devolver ao Coordenador**, na aba Plano, e escreva o que falta (foto, exame,
+consideração). Escolha **Conversão Clínica** quando for só dado faltando, ou
+**Reavaliação** quando o caso precisar ser examinado de novo. O Coordenador
+recebe o aviso com o seu motivo — sem ele, o caso volta igual.
 
 ### 6.4. Dentista (executor)
 
@@ -1207,6 +1220,13 @@ linha *"Apresentação remarcada para …"*.
 
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
 e a cobrança não muda até alguém autorizar.
+
+**Quando o plano não serve para a negociação** — o paciente pediu algo mais
+barato, mudou de ideia sobre o escopo, ou o orçamento não cabe no que ele pode
+pagar —, use **Devolver ao Planejamento** e escreva as considerações. O plano
+**reabre** para o Planner com o seu texto em destaque, a negociação é encerrada,
+e o cliente volta para o **Centro de Planejamento**. É o único jeito de fazer
+esse caminho: a fase não se move à mão.
 
 ### 6.6. Gerente de Unidade
 
@@ -1339,7 +1359,9 @@ Registrado nas lacunas.
 **Papéis:** cinco pessoas diferentes. **Este é o fluxo central do sistema.**
 
 1. **Recepção** cadastra o paciente → nasce na **Aquisição**.
-2. **Recepção** move para **Conversão Clínica**.
+2. **Recepção** agenda a avaliação e faz o **check-in** quando o paciente chega
+   → o sistema move sozinho para **Conversão Clínica**. (Não existe mais botão
+   para mover aqui: quem move é a chegada do paciente.)
 3. **Coordenador** registra consentimento → anamnese → fotos → **Enviar ao
    Centro de Planejamento** → paciente vai para a **Fase 3**.
 4. **Planner** monta plano + orçamento + pilar → **Enviar para aprovação**.
@@ -1357,6 +1379,54 @@ passo funciona como descrito.
 
 **Pontos de decisão:** o Coordenador pode **reprovar** (volta ao Planner com
 orientações); o cliente pode **não aceitar** (vai para follow-up).
+
+### Fluxo 2b — Quem move o cliente de fase (e quando)
+
+**A fase anda sozinha.** Ela é a consequência do trabalho que acabou de ser
+feito — não é um campo que alguém arrasta quando lembra. Se a fase pudesse ser
+mudada à mão, ela passaria a dizer o que a pessoa achou, e não o que aconteceu.
+
+**O sistema move sozinho quando:**
+
+| O cliente vai de | para | quando |
+|---|---|---|
+| Aquisição | Conversão Clínica | a recepção faz o **check-in** da **avaliação** |
+| Aquisição | Início de Tratamento | check-in de **urgência/emergência** |
+| Conversão Comercial | Início de Tratamento | a **venda fecha** (contrato assinado **e** pagamento confirmado) |
+| Conversão Comercial | Início de Tratamento | check-in da **1ª sessão** |
+| Conversão Comercial | Acompanhamento | o consultor marca a negociação como **perdida** |
+| Início de Tratamento | Reavaliação | resposta **SIM** em "necessita reavaliação?" |
+| Início de Tratamento | Centro de Planejamento | resposta **SIM** em "necessita novo planejamento?" |
+| Início de Tratamento | Acompanhamento | resposta **NÃO** em "necessita novo planejamento?" |
+| Acompanhamento | Reavaliação | check-in de uma **reavaliação** |
+| Acompanhamento | Início de Tratamento | check-in de uma **sessão** |
+| qualquer fase | Reavaliação ou Acompanhamento | **cancelamento de plano** efetivado (o Gerente escolhe o destino) |
+
+**E há cinco botões que movem — porque mover é a consequência do que você
+acabou de fazer:**
+
+| Botão | Quem clica | O cliente vai |
+|---|---|---|
+| **Enviar ao Centro de Planejamento** | Coordenador Clínico | para o Planejamento |
+| **Concluir a reavaliação** | Coordenador Clínico | para o Acompanhamento |
+| **Enviar ao Comercial** | Dentista Planner | para a Conversão Comercial |
+| **Devolver ao Coordenador** (pede o motivo) | Dentista Planner | de volta à avaliação ou à reavaliação |
+| **Devolver ao Planejamento** (pede as considerações) | Consultor Comercial | de volta ao Planejamento |
+
+> **Os dois "devolver" pedem o motivo escrito de propósito.** Antes o caso
+> voltava e ninguém sabia por quê — então voltava igual, e o tempo perdido
+> aparecia no SLA como lentidão de quem recebeu. Agora quem recebe o caso de
+> volta recebe junto o que falta.
+
+**E se a fase estiver errada mesmo assim?** Só o **Admin Master** pode mover um
+cliente à mão, em qualquer sentido. É a válvula para o caso que a regra não
+previu — e toda passagem forçada fica marcada na auditoria como forçada, para
+depois se saber que aquela fase andou sem o fato que deveria tê-la movido.
+
+> **Não encontrou o botão de mover?** Ele não sumiu por engano: se você não é
+> Admin Master, a fase muda pelo seu trabalho. Quando ela parecer travada, o
+> que falta é um passo do fluxo — o check-in que não foi feito, a decisão que
+> ninguém respondeu, o pagamento que não foi confirmado.
 
 ### Fluxo 3 — Encerrar a sessão
 
