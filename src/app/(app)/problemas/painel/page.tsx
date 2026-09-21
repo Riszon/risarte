@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { getSessionContext, pode } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { formatBrDate, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { FilterForm } from "@/components/filter-form";
@@ -24,6 +23,11 @@ import {
   type PainelDeRelatos,
 } from "@/lib/painel-de-relatos";
 import { instanteDoPedido } from "../dados";
+import {
+  SemPermissaoNoPainel,
+  carregarPainel,
+  type FiltroDeAmbiente,
+} from "@/lib/painel-dados";
 import { CorDaIdade, SeloDeSituacao } from "../selos";
 
 export const metadata: Metadata = { title: "Painel de relatos" };
@@ -31,11 +35,15 @@ export const metadata: Metadata = { title: "Painel de relatos" };
 /**
  * O PAINEL DE RELATOS (0258) — pedido do dono, 16/09/2026.
  *
- * A conta inteira mora no banco (`system_reports_dashboard`), e é ele que
- * decide o escopo de quem pediu: rede (Admin e Franqueadora, com ranking de
- * pessoas) ou as próprias unidades (Gerente e Franqueado, sem ranking de
- * pessoas). A tela só desenha — somar aqui seria somar só o que a RLS deixa
- * cada um ler, e a Franqueadora veria meia rede chamada de rede.
+ * A conta morava no banco (`system_reports_dashboard`, 0258). Desde 20/09/2026
+ * ela é feita no servidor (`painel-dados.ts` + `montarPainel`), para o painel
+ * contar os DOIS ambientes — relatos de dois bancos não se somam dentro de um
+ * deles, e mediana muito menos.
+ *
+ * O que NÃO mudou: o escopo continua decidido no servidor (rede para Admin e
+ * Franqueadora, com ranking de pessoas; as próprias unidades para Gerente e
+ * Franqueado, sem ranking), e a leitura usa a chave de serviço — somar o que a
+ * RLS deixa cada um ler faria a Franqueadora ver meia rede chamada de rede.
  *
  * Sem biblioteca de gráfico, como o resto do sistema: barras são divs com
  * largura proporcional, sempre com o número escrito do lado.
@@ -61,32 +69,27 @@ export default async function PainelDeRelatosPage({
   const unidade =
     unidadePedida && /^[0-9a-f-]{36}$/i.test(unidadePedida) ? unidadePedida : null;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("system_reports_dashboard", {
-    p_de: periodo.de,
-    p_ate: periodo.ate,
-    p_clinic_id: unidade,
-  });
+  // AMBIENTE (20/09/2026): o painel passou a contar os DOIS — a conta saiu do
+  // banco e veio para o código (`montarPainel`), que é o único jeito de somar
+  // relatos de dois bancos e ainda ter mediana de verdade.
+  const pedido = um(params.ambiente);
+  const ambiente: FiltroDeAmbiente =
+    pedido === "sistema" || pedido === "treino" ? pedido : "todos";
 
-  if (error) {
-    if (error.message.includes("NOT_ALLOWED")) redirect("/problemas");
-    const faltaMigracao =
-      error.code === "PGRST202" || error.message.includes("Could not find the function");
-    if (!faltaMigracao) throw new Error(error.message);
-    return (
-      <Casca>
-        <div className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:bg-amber-950/30">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-          <p>
-            O painel ainda não foi ligado neste banco. Falta aplicar a{" "}
-            <strong>migração 0258</strong>.
-          </p>
-        </div>
-      </Casca>
-    );
+  let consolidado;
+  try {
+    consolidado = await carregarPainel({
+      session,
+      periodo: { de: periodo.de, ate: periodo.ate },
+      clinicId: unidade,
+      ambiente,
+    });
+  } catch (e) {
+    if (e instanceof SemPermissaoNoPainel) redirect("/problemas");
+    throw e;
   }
 
-  const d = data as PainelDeRelatos;
+  const d = consolidado.painel;
   const agora = instanteDoPedido();
   const t = d.totais;
   const nomeDaUnidade = d.escopo.unidades.find((u) => u.id === unidade)?.nome;
@@ -99,6 +102,19 @@ export default async function PainelDeRelatosPage({
   const linkDoPeriodo = (valor: string) => {
     const q = new URLSearchParams({ periodo: valor });
     if (unidade) q.set("unidade", unidade);
+    if (ambiente !== "todos") q.set("ambiente", ambiente);
+    return `/problemas/painel?${q.toString()}`;
+  };
+
+  const linkDoAmbiente = (valor: FiltroDeAmbiente) => {
+    const q = new URLSearchParams();
+    if (periodo.pronto) q.set("periodo", periodo.pronto);
+    else {
+      q.set("de", periodo.de);
+      q.set("ate", periodo.ate);
+    }
+    if (unidade) q.set("unidade", unidade);
+    if (valor !== "todos") q.set("ambiente", valor);
     return `/problemas/painel?${q.toString()}`;
   };
 
@@ -179,7 +195,42 @@ export default async function PainelDeRelatosPage({
             </label>
           )}
         </FilterForm>
+
+        {/* AMBIENTE: por padrão o painel conta os dois juntos (decisão do dono,
+            20/09/2026). Os botões existem para separar quando a pergunta é
+            "e no treino?" — o dado do treino é de treino, e às vezes atrapalha
+            a leitura do que aconteceu na operação real. */}
+        {(consolidado.contagemPorAmbiente.treino > 0 || ambiente !== "todos") && (
+          <nav className="flex flex-wrap gap-1 text-sm" aria-label="Ambiente">
+            {([
+              ["todos", "Os dois ambientes"],
+              ["sistema", "Só o sistema"],
+              ["treino", "Só o treino"],
+            ] as [FiltroDeAmbiente, string][]).map(([valor, rotulo]) => (
+              <Link
+                key={valor}
+                href={linkDoAmbiente(valor)}
+                aria-current={ambiente === valor ? "page" : undefined}
+                className={cn(
+                  "rounded-md border px-3 py-1.5",
+                  ambiente === valor
+                    ? "border-primary bg-primary font-medium text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {rotulo}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
+
+      {consolidado.aviso && (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          {consolidado.aviso}
+        </p>
+      )}
 
       {t.relatos === 0 ? (
         <p className="rounded-lg border p-8 text-center text-sm text-muted-foreground">

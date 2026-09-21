@@ -1830,6 +1830,12 @@ sistema real**, com o selo **Treino**, e você acompanha tudo num lugar só:
 - **Complementar ou reabrir** um relato do treino se faz no treino: a tela do
   sistema real mostra o link para abri-lo lá.
 
+**O painel de indicadores conta os dois.** Em Problemas → **Painel de
+indicadores**, os números somam o sistema e o treino, com botões para ver **só
+o sistema** ou **só o treino**. As regras não mudaram: o período conta pela
+data em que o relato foi registrado, "aproveitado" é o que foi resolvido, e os
+relatos do próprio Admin Master ficam fora dos rankings.
+
 > **Por que a lista junta fica no sistema real.** O sistema real alcança o
 > treino, mas o treino não alcança o real — e é bom que seja assim, porque o
 > treino é um ambiente aberto para aprender. Por isso o lugar de ver tudo junto

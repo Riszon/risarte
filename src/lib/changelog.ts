@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.259.0",
+    data: "2026-09-20",
+    migracao: null,
+    titulo: "O painel de relatos conta os dois ambientes",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O painel de indicadores dos relatos passou a somar o sistema e o treino num número só — inclusive o tempo médio e o tempo mediano de resposta. Há botões para ver só o sistema ou só o treino quando a pergunta for essa.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+    ],
+  },
+  {
     versao: "0.258.0",
     data: "2026-09-20",
     migracao: "0264",

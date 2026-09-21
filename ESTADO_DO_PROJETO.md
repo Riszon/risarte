@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.258.0** · Última migração: **0264** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.259.0** · Última migração: **0264** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3718,12 +3718,22 @@ alcança a produção, então o número só muda quando o sistema real consulta 
 cada minuto, e a cada abertura de tela). Aviso na hora exigiria chave da
 produção no treino — recusado de propósito.
 
-**Pendente (combinar com o dono):** o **painel de indicadores** ainda conta só
-o sistema real. A conta inteira mora no banco (0258) e depende de `auth.uid()`,
-que a chave de serviço não tem. Duas saídas: (a) seletor de ambiente no painel,
-com os números de cada um; (b) recalcular o painel no código, a partir dos
-relatos dos dois bancos — dá consolidação de verdade (inclusive mediana), mas é
-refazer uma peça já testada.
+**PAINEL CONSOLIDADO — opção (b), escolhida pelo dono (v0.259.0, sem migração).**
+A conta saiu do banco (0258) e virou `montarPainel` em `painel-de-relatos.ts`
+(pura, 17 testes novos: período pela data de registro em Brasília, aproveitado =
+resolvido, tempos só de quem chegou lá, Admin fora dos rankings, parados sem
+título, série por semana até 120 dias). `painel-dados.ts` busca as linhas dos
+DOIS bancos com chave de serviço e **decide o escopo antes** (rede × unidades,
+a mesma régua da 0258 — definer sem guarda entrega dado a quem pedir, 0227).
+Unidades e pessoas do treino são traduzidas para os ids da produção (código da
+unidade; ponte `mirror_user_map`), senão a mesma pessoa viraria duas linhas.
+A tela ganhou os botões **Os dois / Só o sistema / Só o treino**, e avisa quando
+não conseguir ler o treino em vez de somar errado.
+**Por que a mediana exigiu isto:** mediana de dois conjuntos não se soma — só
+se calcula sobre as linhas juntas.
+⚠️ A função `system_reports_dashboard` (0258) continua no banco, sem uso pela
+tela. Deixada de propósito (não se apaga o que ainda pode ser conferido contra
+a conta nova); remover fica para quando o painel novo tiver rodado um tempo.
 
 ### INÍCIO MAIS CURTO E ADMINISTRAÇÃO QUE RECOLHE (19/09/2026, v0.257.0, sem migração)
 
