@@ -3836,8 +3836,10 @@ Fluxo do dono: cadastra no REAL, treina no TREINO, e só depois libera o REAL.
   Agenda/Jornada/Atendimento/Prontuários abrem.
 - Já era assim: o formulário de criar acesso vem com o **treino marcado** e o
   login do treino nasce com a **mesma senha** (0.254).
-- **Pendente do dono:** clicar Sincronizar treino com a página RECARREGADA —
-  o Admin Principal ainda não chegou ao treino (conferido às 13:3x: `false`).
+- **Pendência fechada em 21/09:** o dono sincronizou com a página recarregada e
+  o Admin Principal chegou ao treino (conferido: `is_owner = true` lá, e um só).
+  A causa provável da primeira tentativa ter falhado: a aba estava aberta desde
+  antes da publicação, e a Vercel executou o botão na versão antiga.
 
 ### ADMIN PRINCIPAL — outros Admins sempre abaixo do dono (19/09/2026, v0.255.0, migração 0262)
 
