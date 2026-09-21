@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/09/2026 · Versão do sistema: **0.260.0** · Última migração: **0265** (0001–0264 aplicadas na produção e no treino; **0265 pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 20/09/2026 · Versão do sistema: **0.260.0** · Última migração: **0265** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3713,6 +3713,12 @@ estão recebendo"*.
   treino contra reescritas.
 - Em **Administração → Orientações**, bloco *O que o sistema já diz sozinho*, só
   leitura, dizendo QUANDO cada texto aparece.
+- **No ar e conferido (20/09):** Orientações mostra os dois textos; a regra dos
+  3 acessos provada na produção mexendo só no contador do dono e restaurando.
+  ⚠️ A janela é desenhada pelo NAVEGADOR: procurar o texto dela no HTML dava
+  sempre "não apareceu" (régua medindo a si mesma, §0d). O que se procura é o
+  pedido de desenhar o componente, com as propriedades — está no script do
+  arquivo de conferência.
 
 ### RELATAR PROBLEMA VALE NOS DOIS AMBIENTES (20/09/2026, v0.258.0, migração 0264)
 
