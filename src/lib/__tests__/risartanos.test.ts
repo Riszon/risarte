@@ -28,6 +28,7 @@ function pessoa(over: Partial<PessoaDaEquipe> = {}): PessoaDaEquipe {
     href: "/risartanos/RIS-0001",
     code: "RIS-0001",
     nome: "Ana",
+    funcaoPrevista: "Recepcionista",
     nomeCompleto: "Ana Maria Souza",
     email: "ana@risarte.com",
     cpf: "111.222.333-44",

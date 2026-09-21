@@ -20,6 +20,14 @@ export type PessoaDaEquipe = {
   href: string;
   code: string | null;
   nome: string;
+  /**
+   * A FUNÇÃO PREVISTA NO CADASTRO (`staff_members.role_title`), já com o
+   * rótulo em português. A lista mostrava "sem função definida" para quem
+   * ainda não tem acesso — mesmo com a função escolhida no cadastro (queixa do
+   * dono, 21/09/2026). Função prevista NÃO é função de acesso: uma diz o que a
+   * pessoa veio fazer; a outra, o que o login abre.
+   */
+  funcaoPrevista: string | null;
   nomeCompleto: string;
   email: string | null;
   cpf: string | null;

@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.262.0",
+    data: "2026-09-21",
+    migracao: null,
+    titulo: "Seu cadastro aparece no Perfil, e a lista mostra a função prevista",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Perfil ganhou o bloco Meu cadastro: foto, código, unidade, função, regime de contrato, contato, endereço e os dados pessoais que foram preenchidos no seu cadastro. É só leitura — se algo estiver errado, fale com a gestão da sua unidade.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na lista de Risartanos, quem ainda não tem login aparecia como sem função definida mesmo tendo a função escolhida no cadastro. Agora aparece a unidade e a função prevista, marcada como prevista — o que falta é o acesso, não a função.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.261.0",
     data: "2026-09-21",
     migracao: null,

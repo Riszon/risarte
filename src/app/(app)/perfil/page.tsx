@@ -16,6 +16,7 @@ import {
   type UserRole,
 } from "@/lib/roles";
 import { FormularioDeSenha, ProfileForm } from "./profile-form";
+import { MeuCadastro } from "./meu-cadastro";
 
 export const metadata: Metadata = { title: "Meu perfil" };
 
@@ -92,6 +93,11 @@ export default async function ProfilePage() {
       />
 
       <FormularioDeSenha />
+
+      {/* O CADASTRO DA PESSOA (21/09/2026, pedido do dono): o Perfil mostrava
+          só nome, telefone e funções de acesso — nada do que foi preenchido no
+          cadastro. Só leitura: ficha de RH não se autodeclara. */}
+      <MeuCadastro supabase={supabase} userId={session.userId} />
 
       {/* ⚠️ ESTE BLOCO VEIO DA TELA DE INÍCIO (10/09/2026). Lá ele era uma das
           três listas que o dono chamou de confusas — e com razão: é informação

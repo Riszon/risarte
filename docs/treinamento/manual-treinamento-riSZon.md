@@ -380,7 +380,7 @@ a função em cada uma, regime e, à direita, o **selo do acesso**:
 | Selo | O que quer dizer |
 |---|---|
 | **Com acesso** | entra no sistema normalmente |
-| **Sem acesso** | está no cadastro, mas não tem login |
+| **Sem acesso** | está no cadastro, mas não tem login (a linha mostra a unidade e a **função prevista** no cadastro) |
 | **Acesso desativado** | tem login, e ele está bloqueado |
 | **Login ainda ativo** | 🔴 **saiu da equipe e continua entrando** — resolva |
 | **Cadastro incompleto** | entra no sistema, mas não tem ficha de Risartano |
@@ -437,6 +437,13 @@ na aba **Acesso**, com tudo preenchido a partir do cadastro: e-mail, a unidade,
 a função escolhida e uma **senha provisória sugerida** pelo sistema (sem letras
 e números que se confundem ao ditar por telefone). Ao Admin sobra conferir e
 clicar em **Criar acesso**.
+
+**Cada pessoa vê o próprio cadastro.** No **Perfil** (clique no seu nome, no
+rodapé do menu), o bloco **Meu cadastro** mostra o que a Risarte tem sobre
+você: foto, código, unidade, função, regime de contrato, contato, endereço e
+dados pessoais. É **só leitura** — ficha de RH não se corrige sozinha; se algo
+estiver errado, fale com a gestão da sua unidade. O que você mesmo altera
+(nome de tratamento, telefone e senha) continua logo acima, na mesma tela.
 
 **Enviar os dados de acesso.** Depois de criar o acesso (ou redefinir a senha),
 a aba **Acesso** mostra uma **mensagem pronta** com:

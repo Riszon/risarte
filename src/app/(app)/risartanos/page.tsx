@@ -283,9 +283,15 @@ function Linha({ pessoa }: { pessoa: PessoaDaEquipe }) {
               />
             ))
           ) : (
+            // SEM ACESSO AINDA: mostra a unidade e a FUNÇÃO PREVISTA no
+            // cadastro (21/09/2026). "Sem função definida" era falso quando a
+            // função estava escolhida na ficha — o que falta é o login.
             <span className="text-xs text-muted-foreground">
               {pessoa.unidadeOrigem ?? "sem unidade"}
-              {pessoa.tipo === "risartano" && " · sem função definida"}
+              {pessoa.tipo === "risartano" &&
+                (pessoa.funcaoPrevista
+                  ? ` · ${pessoa.funcaoPrevista} (prevista)`
+                  : " · sem função definida")}
             </span>
           )}
         </span>

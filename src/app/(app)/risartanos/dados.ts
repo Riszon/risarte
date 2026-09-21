@@ -352,6 +352,7 @@ export async function carregarEquipe(
         temAcesso: true,
         acessoAtivo: p.is_active,
         isAdminMaster: p.is_admin_master,
+        funcaoPrevista: null,
         podeGerir: !isTreino(),
       });
     }
@@ -422,6 +423,10 @@ function pessoaDoCadastro(
       gerida:
         (session.isAdminMaster && !isTreino()) || alcance.gerirIds.has(u.clinicId),
     })),
+    funcaoPrevista:
+      r.role_title && r.role_title in ROLE_LABELS
+        ? ROLE_LABELS[r.role_title as UserRole]
+        : r.role_title,
     regime: r.contract_type,
     ativo: r.is_active,
     temAcesso,
