@@ -26,6 +26,7 @@ import { treinoConfigurado } from "@/lib/treino";
 import { isTreino } from "@/lib/environment";
 import { podeDarOuTirarAdmin, podeMexerNoAcessoDe } from "@/lib/admins";
 import { carregarHierarquia } from "@/lib/admins-db";
+import { carregarEnderecos } from "@/lib/ambientes-db";
 import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { AcessoDoRisartano } from "../acesso";
 import { FormularioDoRisartano } from "../formulario";
@@ -98,6 +99,8 @@ export default async function FichaDoRisartanoPage(
   const ambientes = acesso
     ? await carregarAmbientesDoUsuario(supabase, acesso.userId)
     : {};
+  // Os endereços entram na mensagem que o Admin manda com os dados de acesso.
+  const enderecos = await carregarEnderecos(supabase);
   // 0262: o acesso de um Admin só o Admin Principal altera.
   const hierarquia = acesso
     ? await carregarHierarquia(supabase, session, acesso.userId)
@@ -264,6 +267,9 @@ export default async function FichaDoRisartanoPage(
             loginsLivres={loginsLivres}
             isAdmin={mexeNoAcesso}
             modoTreino={isTreino()}
+            enderecoDoSistema={enderecos.sistema ?? null}
+            enderecoDoTreino={enderecos.treino ?? null}
+            whatsapp={staff.whatsapp}
             admin={
               hierarquia
                 ? {

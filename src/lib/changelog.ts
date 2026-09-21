@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.261.0",
+    data: "2026-09-21",
+    migracao: null,
+    titulo: "Mensagem pronta para enviar os dados de acesso",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na aba Acesso da ficha do Risartano, o Admin Master encontra agora uma mensagem pronta com o endereço do sistema, o login, a senha provisória e as unidades com a função em cada uma. Dá para copiar, abrir no WhatsApp da pessoa ou mandar por e-mail, sem digitar nada.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A senha provisória só aparece no momento em que é criada ou redefinida — ela não fica guardada. Se a mensagem sair sem senha, use Redefinir senha para gerar uma nova.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.260.0",
     data: "2026-09-20",
     migracao: "0265",

@@ -47,6 +47,7 @@ import {
 } from "./acesso-actions";
 import { linkStaffUser, unlinkStaffUser } from "./actions";
 import { UnitAccessControl } from "./unit-access-control";
+import { EnviarAcesso } from "./enviar-acesso";
 
 export type FuncaoDoAcesso = {
   id: string;
@@ -85,6 +86,9 @@ export function AcessoDoRisartano({
   isSelf,
   modoTreino = false,
   admin,
+  enderecoDoSistema,
+  enderecoDoTreino,
+  whatsapp,
 }: {
   /** null quando é um login sem cadastro de Risartano. */
   staffId: string | null;
@@ -116,12 +120,21 @@ export function AcessoDoRisartano({
     /** Quem vê é Admin, mas o alvo é outro Admin e quem vê não é o Principal. */
     bloqueadoPorHierarquia: boolean;
   };
+  /** Endereços dos ambientes, para a mensagem de acesso (21/09/2026). */
+  enderecoDoSistema?: string | null;
+  enderecoDoTreino?: string | null;
+  /** WhatsApp do cadastro — sem ele não há botão do WhatsApp. */
+  whatsapp?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [criando, setCriando] = useState(false);
   const [vinculando, setVinculando] = useState(false);
   const [loginEscolhido, setLoginEscolhido] = useState("");
+  // A SENHA SÓ EXISTE NESTE INSTANTE: o banco guarda o embaralhado. Guardamos
+  // a que acabou de ser definida (criação ou redefinição) só para montar a
+  // mensagem que o Admin manda à pessoa.
+  const [senhaRecente, setSenhaRecente] = useState<string | null>(null);
 
   function rodar(
     acao: () => Promise<{ ok: boolean; error?: string }>,
@@ -177,6 +190,7 @@ export function AcessoDoRisartano({
             senhaSugerida={senhaSugerida}
             treinoConfigurado={treinoConfigurado}
             onCancelar={() => setCriando(false)}
+            onCriado={(senha) => setSenhaRecente(senha)}
           />
         )}
         {isAdmin && staffId && vinculando && (
@@ -384,6 +398,27 @@ export function AcessoDoRisartano({
         isAdmin={isAdmin}
       />
 
+      {/* A MENSAGEM PRONTA PARA MANDAR (21/09/2026): endereço, login, senha
+          provisória e TODAS as unidades com as funções. Só para quem gere o
+          acesso, e nunca no treino (lá é cópia). */}
+      {isAdmin && !modoTreino && (
+        <EnviarAcesso
+          nome={staffNome}
+          email={acesso.email ?? staffEmail}
+          senha={senhaRecente}
+          unidades={acesso.units.map((u) => ({
+            unidade: u.clinicName,
+            funcao: u.roleLabel,
+          }))}
+          enderecoDoSistema={enderecoDoSistema}
+          enderecoDoTreino={
+            ambientePermitido(ambientes, "treino") ? enderecoDoTreino : null
+          }
+          sistemaLiberado={ambientePermitido(ambientes, "sistema")}
+          whatsapp={whatsapp}
+        />
+      )}
+
       {isAdmin && (
         <>
           <form
@@ -395,6 +430,7 @@ export function AcessoDoRisartano({
                 const r = await resetUserPassword(acesso.userId, formData);
                 if (r.ok) {
                   toast.success("Senha redefinida. Informe por um canal seguro.");
+                  setSenhaRecente(String(formData.get("password") ?? "") || null);
                   form.reset();
                 } else {
                   toast.error(r.error ?? "Algo deu errado.");
@@ -607,6 +643,7 @@ function CriarAcesso({
   senhaSugerida,
   treinoConfigurado,
   onCancelar,
+  onCriado,
 }: {
   staffId: string;
   nome: string;
@@ -617,6 +654,7 @@ function CriarAcesso({
   senhaSugerida: string;
   treinoConfigurado: boolean;
   onCancelar: () => void;
+  onCriado?: (senha: string | null) => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -716,6 +754,8 @@ function CriarAcesso({
           if (r.ok) {
             toast.success("Acesso criado. Passe a senha por um canal seguro.");
             if (r.aviso) toast.warning(r.aviso);
+            // A senha sobe para a ficha montar a mensagem de envio (21/09/2026).
+            onCriado?.(String(formData.get("password") ?? "") || null);
             onCancelar();
             router.refresh();
           } else {

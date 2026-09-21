@@ -438,6 +438,23 @@ a função escolhida e uma **senha provisória sugerida** pelo sistema (sem letr
 e números que se confundem ao ditar por telefone). Ao Admin sobra conferir e
 clicar em **Criar acesso**.
 
+**Enviar os dados de acesso.** Depois de criar o acesso (ou redefinir a senha),
+a aba **Acesso** mostra uma **mensagem pronta** com:
+
+- o **endereço** do sistema (ou do treino, para quem ainda não foi liberado no
+  real);
+- o **login** (o e-mail) e a **senha provisória**;
+- **todas as unidades** da pessoa, com a **função em cada uma**;
+- o que ela deve fazer no primeiro acesso (trocar a senha no Perfil).
+
+Três botões: **Copiar**, **WhatsApp** (abre a conversa com o número do cadastro)
+e **E-mail** (abre o programa de e-mail já preenchido).
+
+> ⚠️ **A senha provisória só existe naquele instante** — o sistema guarda apenas
+> uma versão embaralhada dela. Se a mensagem aparecer sem senha, é porque ela
+> não foi criada agora: use **Redefinir senha** para gerar outra. E mande a
+> senha por um canal separado do resto da mensagem, nunca num grupo.
+
 > ⚠️ **Acesso em outra unidade pede autorização.** Dar função numa unidade
 > diferente da unidade do cadastro exige que o Admin autorize no ato — a pessoa
 > passa a ver os dados daquela unidade, e o registro vai para a Auditoria.
