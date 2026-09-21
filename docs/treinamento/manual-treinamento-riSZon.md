@@ -1059,10 +1059,13 @@ trabalha. **Duração estimada:** 60 minutos.
 **Tarefa 2 — Agendar**
 
 1. Na ficha do paciente, botão **Novo agendamento**; ou pelo menu **Agenda**.
-2. Preencha: cliente, tipo, profissional, sala, duração, data e horário.
-3. **O sistema recusa** horário fora do funcionamento da unidade, dia fechado ou
+2. **Procure o cliente digitando** — nome, código do prontuário (`CBE-00006`)
+   ou CPF. A busca alcança **todos** os cadastros da unidade, não só os que
+   aparecem na lista inicial. Escolheu errado? O **X** ao lado do nome troca.
+3. Preencha o resto: tipo, profissional, sala, duração, data e horário.
+4. **O sistema recusa** horário fora do funcionamento da unidade, dia fechado ou
    sala lotada — exceto urgência/emergência.
-4. **Resultado esperado:** a janela fecha e o horário aparece na agenda.
+5. **Resultado esperado:** a janela fecha e o horário aparece na agenda.
 
 > **Quem atende depende do tipo.** Numa Avaliação o sistema oferece só o
 > Coordenador. Isso não é erro: é a regra da fase.

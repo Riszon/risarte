@@ -56,6 +56,7 @@ import {
   type SchedulingInfo,
 } from "./actions";
 import { AgendaPeekDialog } from "./agenda-peek-dialog";
+import { EscolherCliente } from "./escolher-cliente";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 const DURATION_ITEMS = [
@@ -276,10 +277,8 @@ export function AppointmentFormDialog({
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [participantsLoaded, setParticipantsLoaded] = useState(!isEdit);
 
-  const clientItems = effectiveClients.map((c) => ({
-    value: c.id,
-    label: c.inactive ? `${c.full_name} (inativo)` : c.full_name,
-  }));
+  // (O antigo `clientItems` saiu com a lista pronta: quem monta os nomes agora
+  //  é o `EscolherCliente`, que busca em vez de listar.)
 
   // When opened pre-filled from a notification, load the client's scheduling
   // info (current phase → suggested appointment type) once.
@@ -704,6 +703,9 @@ export function AppointmentFormDialog({
     setSchedulingInfo(null);
     setSessionIds([]);
     setPendingSessions([]);
+    // Com a lista antiga não havia como DESescolher; com a busca há ("trocar
+    // de cliente"). Perguntar a fase de um cliente vazio só geraria erro.
+    if (!id) return;
     startTransition(async () => {
       const info = await getClientSchedulingInfo(id);
       setSchedulingInfo(info);
@@ -847,28 +849,16 @@ export function AppointmentFormDialog({
           {!isEdit && (!pickUnit || unitId) && (
             <div className="space-y-2">
               <Label>Cliente *</Label>
-              <Select
-                items={clientItems}
-                value={clientId || null}
-                onValueChange={(v) => v !== null && handleClientChange(v)}
-              >
-                <SelectTrigger className="w-full">
-                  {clientId ? (
-                    <SelectValue />
-                  ) : (
-                    <span className="flex-1 text-left text-muted-foreground">
-                      Escolha o cliente
-                    </span>
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  {clientItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Era uma lista pronta para rolar, e a página só carregava 300
+                  nomes: numa unidade com mil cadastros o paciente podia não
+                  estar ali, sem aviso nenhum (relato OC-00063). Agora se
+                  digita, e a busca alcança a unidade inteira. */}
+              <EscolherCliente
+                clinicId={effectiveClinicId}
+                sugestoes={effectiveClients}
+                valor={clientId}
+                aoEscolher={handleClientChange}
+              />
             </div>
           )}
 

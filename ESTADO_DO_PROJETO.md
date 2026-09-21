@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/09/2026 · Versão do sistema: **0.265.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 21/09/2026 · Versão do sistema: **0.266.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,35 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### AGENDAR: PROCURAR O PACIENTE DIGITANDO (21/09/2026, v0.266.0, sem migração)
+
+Relato **OC-00063** (recepção de Londrina): ao agendar só havia uma lista pronta
+para rolar. O dono confirmou o peso: *"em uma clínica com mais de mil clientes
+cadastrados isso fica inviável"*.
+
+**O relato era a ponta.** Lendo o código, a tela da agenda carregava a lista com
+**`.limit(300)`** e o agendamento a oferecia como se fossem todos: numa unidade
+com mil cadastros o paciente procurado **podia não estar ali, calado**. Quem
+está no balcão conclui que a pessoa não tem cadastro — e cadastra de novo, que
+é como nasce prontuário duplicado. O mesmo corte tinha um segundo efeito
+escondido: abrir a agenda por um aviso (`?cliente=…`) **não pré-selecionava** o
+paciente se ele fosse o 400º em ordem alfabética, e o agendamento abria vazio
+sem dizer por quê.
+
+**O conserto reusa o que já existia**: `search_clients` (0251), a mesma busca do
+Ctrl+K, que já sabe procurar por nome, código e CPF e já é filtrada pela RLS.
+Escrever uma segunda busca aqui criaria duas réguas que um dia discordam. O que
+a ação nova acrescenta é o recorte por **unidade** — agendamento é da unidade, e
+oferecer cliente de outra seria oferecer erro. **Sem migração.**
+
+Os 300 viraram **50**, declarados no código como "só o começo" — eles existem
+para a unidade pequena continuar escolhendo sem digitar, como antes.
+
+**Conferido no treino, com o sistema rodando** (não só no código): busca por
+nome, por código (`CBE-00004`), por CPF (`345345`), cliente de outra unidade
+recusado, a escolha carregando a fase e o resto do formulário, e o botão
+"trocar de cliente" — caminho que a lista antiga nem permitia — sem quebrar.
 
 ### MODO ESCURO: A LETRA VOLTOU A APARECER (21/09/2026, v0.265.0, sem migração)
 

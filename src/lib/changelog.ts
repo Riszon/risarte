@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.266.0",
+    data: "2026-09-21",
+    migracao: null,
+    titulo: "Agendamento: procure o paciente digitando",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao agendar, o cliente deixou de ser uma lista para rolar: agora você digita o nome, o código do prontuário ou o CPF, e a busca procura em todos os cadastros da unidade. Escolheu errado? O X ao lado do nome troca.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A lista antiga mostrava no máximo 300 nomes, sem avisar: numa unidade com mais cadastros que isso, o paciente procurado simplesmente não aparecia, e parecia não ter cadastro. Pelo mesmo motivo, abrir a agenda a partir de um aviso às vezes não trazia o paciente já escolhido. Os dois foram corrigidos.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.265.0",
     data: "2026-09-21",
     migracao: null,

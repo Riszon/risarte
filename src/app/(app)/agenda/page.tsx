@@ -538,7 +538,15 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               .eq("clinic_id", clinicId)
               .neq("status", "anonymized")
               .order("full_name")
-              .limit(300)
+              // ⚠️ ISTO NÃO É MAIS "A LISTA DE CLIENTES" — é só o começo dela.
+              // Eram 300 nomes, e o agendamento os oferecia como se fossem
+              // todos: numa unidade com mil cadastros o paciente procurado
+              // podia não estar ali, calado (relato OC-00063). Agora quem
+              // acha o cliente é a busca (`buscarClientesParaAgendar`), que
+              // alcança a unidade inteira; estes primeiros nomes existem só
+              // para a unidade pequena escolher sem digitar, como antes — e
+              // 50 linhas pesam menos em toda abertura da agenda.
+              .limit(50)
               .returns<{ id: string; full_name: string; status: string }[]>()
           : Promise.resolve({
               data: [] as { id: string; full_name: string; status: string }[],
@@ -586,8 +594,28 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       full_name: c.full_name,
       inactive: c.status === "inactive",
     }));
-    if (clienteParam && clients.some((c) => c.id === clienteParam)) {
-      preselectClientId = clienteParam;
+    // A pré-seleção (abrir a agenda de um aviso, `?cliente=…`) NÃO pode
+    // depender da lista acima: ela é só o começo, e o paciente do aviso podia
+    // ser o 400º em ordem alfabética — nesse caso o agendamento abria vazio,
+    // sem dizer por quê. Pergunta-se pelo cliente, e ele entra na lista.
+    if (clienteParam) {
+      const { data: doAviso } = await supabase
+        .from("clients")
+        .select("id, full_name, status")
+        .eq("id", clienteParam)
+        .eq("clinic_id", clinicId)
+        .neq("status", "anonymized")
+        .maybeSingle<{ id: string; full_name: string; status: string }>();
+      if (doAviso) {
+        preselectClientId = doAviso.id;
+        if (!clients.some((c) => c.id === doAviso.id)) {
+          clients.unshift({
+            id: doAviso.id,
+            full_name: doAviso.full_name,
+            inactive: doAviso.status === "inactive",
+          });
+        }
+      }
     }
 
     const staffMap = new Map<string, StaffOption>();

@@ -2627,3 +2627,80 @@ export async function getMonthAgendaPeek(params: {
   }
   return out;
 }
+
+/** Um cliente como o agendamento precisa dele: nome, código e se está inativo. */
+export type ClienteParaAgendar = {
+  id: string;
+  fullName: string;
+  code: string | null;
+  inactive: boolean;
+};
+
+/**
+ * PROCURAR O CLIENTE NA HORA DE AGENDAR (relato OC-00063, 21/09/2026).
+ *
+ * A recepção só tinha uma lista pronta para rolar, e ela vinha **cortada em
+ * 300 nomes** pela tela da agenda. Numa unidade com mil cadastros, o paciente
+ * procurado podia simplesmente não estar ali — e nada na tela dizia isso. O
+ * silêncio é a pior parte: a recepcionista conclui que a pessoa não tem
+ * cadastro e cadastra de novo.
+ *
+ * Aqui não há lista: há busca, e ela alcança a unidade inteira.
+ *
+ * ⚠️ O TERMO NÃO PASSA PELO ENDEREÇO — é ação de servidor pelo mesmo motivo da
+ * busca rápida: nome e CPF de paciente não entram em URL (vai para histórico,
+ * registro de servidor e print de grupo).
+ *
+ * Reusa o `search_clients` (0251), que já sabe procurar por nome, código e CPF
+ * e já é filtrado pela RLS — escrever uma segunda busca aqui seria criar duas
+ * réguas que um dia discordam. O que esta acrescenta é o recorte por UNIDADE:
+ * agendamento é da unidade, e oferecer cliente de outra seria oferecer erro.
+ */
+export async function buscarClientesParaAgendar(
+  termo: string,
+  clinicId: string
+): Promise<ClienteParaAgendar[]> {
+  const session = await getSessionContext();
+  if (!session.userId) return [];
+
+  const texto = termo.trim();
+  if (texto.length < 2) return [];
+
+  const supabase = await createClient();
+  // Pede mais do que vai mostrar: o recorte por unidade acontece depois, e sem
+  // folga uma busca por "Silva" poderia voltar só nomes de outra unidade.
+  const { data, error } = await supabase.rpc("search_clients", {
+    p_term: texto,
+    p_limit: 40,
+  });
+  if (error) {
+    // Nunca o termo na mensagem: ele é dado de paciente.
+    console.error("search_clients (agendar) falhou:", error.message);
+    return [];
+  }
+
+  const encontrados = (data ?? []) as { id: string; full_name: string; code: string | null }[];
+  if (encontrados.length === 0) return [];
+  const ordem = new Map(encontrados.map((c, i) => [c.id, i]));
+
+  // A segunda consulta é quem garante a unidade e diz se o cliente está
+  // inativo — a função de busca é da rede inteira, de propósito.
+  const { data: daUnidade } = await supabase
+    .from("clients")
+    .select("id, full_name, code, status")
+    .in("id", [...ordem.keys()])
+    .eq("clinic_id", clinicId)
+    .neq("status", "anonymized")
+    .returns<{ id: string; full_name: string; code: string | null; status: string }[]>();
+
+  return (daUnidade ?? [])
+    // Mantém a ordem da busca (quem começa com o que foi digitado vem antes).
+    .sort((a, b) => (ordem.get(a.id) ?? 0) - (ordem.get(b.id) ?? 0))
+    .slice(0, 12)
+    .map((c) => ({
+      id: c.id,
+      fullName: c.full_name,
+      code: c.code,
+      inactive: c.status === "inactive",
+    }));
+}
