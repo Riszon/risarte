@@ -1817,6 +1817,11 @@ Onde se relata e se acompanha. Como relatar está na
 boia mostra um número até você abrir aquele relato. Se você é Admin Master, ela
 mostra quantos relatos ainda dependem de você.
 
+**Quem ainda está só no Início também relata.** Mesmo sem o sistema real
+liberado, a boia aparece na barra de cima e a tela de Problemas abre: a pessoa
+relata, acompanha a resposta e vê as próprias solicitações. A unidade do relato
+é a do cadastro dela.
+
 **Relatar é igual nos dois ambientes (desde 20/09/2026).** Se você está no
 **riSZon Treino** e algo dá errado, relate por lá mesmo, pela boia de sempre —
 com a captura de tela funcionando normalmente. O relato **aparece na lista do

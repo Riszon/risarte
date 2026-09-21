@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.259.1",
+    data: "2026-09-20",
+    migracao: null,
+    titulo: "Quem ainda está só no Início também relata problemas",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem ainda não tem o sistema real liberado não conseguia abrir a tela de Problemas nem relatar — e é justamente quem está treinando que mais tropeça. Agora a boia aparece na barra de cima, a tela de Problemas abre, e a unidade do relato vem da ficha da pessoa.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+    ],
+  },
+  {
     versao: "0.259.0",
     data: "2026-09-20",
     migracao: null,

@@ -45,7 +45,11 @@ export async function generateMetadata(
  */
 export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">) {
   const session = await getSessionContext();
-  if (!pode(session, "menu.sistema")) redirect("/");
+  // QUEM ESTÁ SÓ NO INÍCIO TAMBÉM RELATA (20/09/2026): no modo portal a pessoa
+  // não tem função nenhuma, então a matriz de permissões diria não — e quem
+  // está treinando é justamente quem mais precisa avisar que algo deu errado.
+  const soInicio = !session.ambientes.sistema;
+  if (!soInicio && !pode(session, "menu.sistema")) redirect("/");
 
   const { codigo } = await props.params;
   const code = decodeURIComponent(codigo).trim().toUpperCase();

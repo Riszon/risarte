@@ -70,6 +70,12 @@ export function Topbar({
             <NotificationNavItem />
           </>
         )}
+        {/* A BOIA TAMBÉM NO MODO PORTAL (20/09/2026): quem está treinando é
+            quem mais tropeça, e sem ela não teria como relatar. Os alertas do
+            sistema, não: são de operação. */}
+        {modoPortal && (
+          <ReportNavItem temUnidade={false} isAdminMaster={false} />
+        )}
         {podeVerSistema && (
           <>
             <TopbarItem

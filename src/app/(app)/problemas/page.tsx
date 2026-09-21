@@ -37,13 +37,30 @@ export default async function ProblemasPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getSessionContext();
-  if (!pode(session, "menu.sistema")) redirect("/");
+  // QUEM ESTÁ SÓ NO INÍCIO TAMBÉM RELATA (20/09/2026): no modo portal a pessoa
+  // não tem função nenhuma, então a matriz de permissões diria não — e quem
+  // está treinando é justamente quem mais precisa avisar que algo deu errado.
+  const soInicio = !session.ambientes.sistema;
+  if (!soInicio && !pode(session, "menu.sistema")) redirect("/");
 
   const params = await searchParams;
   const um = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-  const clinicId = session.activeClinic?.id ?? null;
   const supabase = await createClient();
+  let clinicId = session.activeClinic?.id ?? null;
+  // Sem unidade ativa (modo portal), a unidade do relato vem da ficha — a
+  // mesma regra de `registrarProblema`, senão o botão ficaria cinza para quem
+  // acabou de chegar.
+  if (!clinicId) {
+    const { data: ficha } = await supabase
+      .from("staff_members")
+      .select("clinic_id")
+      .eq("user_id", session.userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle<{ clinic_id: string }>();
+    clinicId = ficha?.clinic_id ?? null;
+  }
   const { relatos, nivel } = await carregarRelatos(supabase, session.userId);
 
   // OS DOIS AMBIENTES NA MESMA LISTA (19/09/2026, decisão do dono). Quem

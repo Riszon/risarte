@@ -22,11 +22,25 @@ export const ACTIVE_CLINIC_COOKIE = "risarte_active_clinic";
  * Perfil (onde se troca a própria senha) e o Manual. Nada mais — nem por link
  * direto, nem por endereço digitado à mão.
  */
-const PORTAL_PATHS = ["/", "/perfil", "/manual", "/conta-desativada"];
+const PORTAL_PATHS = [
+  "/",
+  "/perfil",
+  "/manual",
+  "/conta-desativada",
+  // ⚠️ PROBLEMAS ENTROU EM 20/09/2026, por causa da decisão do dono de que
+  // relatar não depende do ambiente. Quem está treinando é exatamente quem mais
+  // tropeça — e, sem esta linha, a pessoa relatava no treino e não conseguia
+  // acompanhar a resposta no sistema real: a tela devolvia para o Início.
+  // Achado ao provar a régua de visibilidade com um login que não é Admin.
+  "/problemas",
+];
 
 export function caminhoDoPortal(caminho: string): boolean {
   const limpo = caminho.split("?")[0].replace(/\/+$/, "") || "/";
-  return PORTAL_PATHS.includes(limpo);
+  if (PORTAL_PATHS.includes(limpo)) return true;
+  // O relato em si abre (é o endereço que se manda para alguém); o painel de
+  // indicadores, não — ele é de gestão e tem guarda própria.
+  return /^\/problemas\/OC-[0-9]+$/i.test(limpo);
 }
 
 export type Clinic = {

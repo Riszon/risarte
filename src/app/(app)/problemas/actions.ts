@@ -31,7 +31,23 @@ export async function registrarProblema(
   formData: FormData
 ): Promise<Resultado> {
   const session = await getSessionContext();
-  const clinicId = session.activeClinic?.id ?? null;
+  let clinicId = session.activeClinic?.id ?? null;
+
+  // QUEM ESTÁ SÓ NO INÍCIO NÃO TEM UNIDADE ATIVA (20/09/2026): sem função em
+  // clínica nenhuma, não há o que escolher no menu — e era isso que impedia o
+  // recém-chegado de relatar. A unidade vem então da ficha dele (o cadastro de
+  // Risartano sempre tem uma), que é a unidade onde a pessoa trabalha.
+  if (!clinicId) {
+    const supabaseDaFicha = await createClient();
+    const { data: ficha } = await supabaseDaFicha
+      .from("staff_members")
+      .select("clinic_id")
+      .eq("user_id", session.userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle<{ clinic_id: string }>();
+    clinicId = ficha?.clinic_id ?? null;
+  }
 
   if (!clinicId) {
     return {
