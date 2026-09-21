@@ -428,6 +428,10 @@ por outro caminho.
 aba Acesso diz **o que falta** em vez de oferecer um login — e não existe outro
 caminho para criar acesso sem a ficha completa.
 
+> **Antes de cadastrar, peça os dados à pessoa.** O texto pronto (WhatsApp e
+> e-mail) está em `docs/treinamento/mensagem-cadastro-risartano.md`, com a
+> lista exata do que o formulário exige.
+
 **Cadastrar alguém novo:** botão **Novo Risartano**. Ao salvar, a ficha já abre
 na aba **Acesso**, com tudo preenchido a partir do cadastro: e-mail, a unidade,
 a função escolhida e uma **senha provisória sugerida** pelo sistema (sem letras
