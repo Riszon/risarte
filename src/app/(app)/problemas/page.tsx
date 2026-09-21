@@ -9,6 +9,8 @@ import { abaInicial, ehAba } from "@/lib/system-reports";
 import { podeVerPainelDeRelatos } from "@/lib/painel-de-relatos";
 import { Problemas } from "./lista";
 import { carregarRelatos, instanteDoPedido } from "./dados";
+import { carregarRelatosDoTreino } from "@/lib/relatos-do-treino";
+import { carregarEnderecos } from "@/lib/ambientes-db";
 
 export const metadata: Metadata = { title: "Problemas" };
 
@@ -44,8 +46,20 @@ export default async function ProblemasPage({
   const supabase = await createClient();
   const { relatos, nivel } = await carregarRelatos(supabase, session.userId);
 
+  // OS DOIS AMBIENTES NA MESMA LISTA (19/09/2026, decisão do dono). Quem
+  // consolida é sempre a produção: o treino não alcança este banco.
+  const enderecos = await carregarEnderecos(supabase);
+  const doTreino = await carregarRelatosDoTreino({
+    prodUserId: session.userId,
+    isAdminMaster: session.isAdminMaster,
+    endereco: enderecos.treino ?? null,
+  });
+  const todos = [...relatos, ...doTreino.relatos].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  );
+
   const pedida = um(params.aba);
-  const aba = ehAba(pedida) ? pedida : abaInicial(relatos, session.isAdminMaster);
+  const aba = ehAba(pedida) ? pedida : abaInicial(todos, session.isAdminMaster);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -72,8 +86,14 @@ export default async function ProblemasPage({
         </p>
       </header>
 
+      {doTreino.aviso && (
+        <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          {doTreino.aviso}
+        </p>
+      )}
+
       <Problemas
-        relatos={relatos}
+        relatos={todos}
         isAdminMaster={session.isAdminMaster}
         nivel={nivel}
         semUnidade={!clinicId}

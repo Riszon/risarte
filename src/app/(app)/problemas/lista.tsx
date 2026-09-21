@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   MessageSquarePlus,
   MessagesSquare,
+  MonitorPlay,
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import {
   aguardaSuporte,
   casaBusca,
   contarAbas,
+  enderecoDoRelato,
   naAba,
   ordenar,
   relogioDoRelato,
@@ -35,6 +37,7 @@ import {
   type Aba,
   type Relato,
 } from "@/lib/system-reports";
+import { nomeDaAba } from "@/lib/ambientes";
 import type { NivelDoBanco } from "./dados";
 import { FormularioDeRelato } from "./formulario";
 import { CorDaIdade, SeloDeSituacao } from "./selos";
@@ -271,8 +274,11 @@ function Linha({
 
   return (
     <li>
+      {/* O relato do TREINO mora no banco de lá: o link abre a tela dele no
+          ambiente de treino, em aba própria. Os do sistema abrem aqui mesmo. */}
       <Link
-        href={`/problemas/${r.code}`}
+        href={enderecoDoRelato(r)}
+        target={r.ambiente === "treino" ? nomeDaAba("treino") : undefined}
         className={cn(
           "flex flex-wrap items-start gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-muted/50",
           novo && "bg-gold/10"
@@ -282,6 +288,12 @@ function Linha({
           <div className="flex flex-wrap items-center gap-2">
             <SeloDeSituacao situacao={r.status} />
             <span className="font-mono text-xs text-muted-foreground">{r.code}</span>
+            {r.ambiente === "treino" && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-gold/50 bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold-tinta">
+                <MonitorPlay className="size-3" />
+                Treino
+              </span>
+            )}
             {novo && (
               <span className="rounded-full bg-gold px-2 py-0.5 text-[11px] font-semibold text-gold-foreground">
                 Resposta nova

@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { ArrowRight, Camera, LifeBuoy, Undo2, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { contarPendentesDoTreino } from "@/app/(app)/relatos-treino-actions";
 import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { moduloDaTela } from "@/lib/system-reports";
@@ -105,9 +107,16 @@ export function ReportNavItem({
   const [capturando, setCapturando] = useState(false);
 
   const consultar = useCallback(async () => {
+    // O número junta OS DOIS AMBIENTES (19/09/2026): o daqui vem do banco,
+    // pela sessão de quem está logado; o do treino vem pelo servidor, que é
+    // quem tem a chave de lá. Falha no treino vira 0, nunca uma barra quebrada.
     const supabase = createClient();
-    const { data } = await supabase.rpc("system_reports_pending");
-    return typeof data === "number" ? data : 0;
+    const [local, treino] = await Promise.all([
+      supabase.rpc("system_reports_pending"),
+      contarPendentesDoTreino().catch(() => 0),
+    ]);
+    const daqui = typeof local.data === "number" ? local.data : 0;
+    return daqui + treino;
   }, []);
 
   useEffect(() => {

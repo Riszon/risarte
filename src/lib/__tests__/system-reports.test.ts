@@ -51,6 +51,7 @@ function relato(p: Partial<Relato> = {}): Relato {
     respostaLida: false,
     respostas: 0,
     ultimaFalaDoRelator: false,
+    ambiente: "sistema",
     ...p,
   };
 }

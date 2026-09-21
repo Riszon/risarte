@@ -110,12 +110,36 @@ export function Conversa({
         </ol>
       )}
 
-      {isAdminMaster && <Responder relato={relato} comAnexos={anexosLigados} />}
+      {isAdminMaster && (
+        <Responder
+          relato={relato}
+          comAnexos={anexosLigados && relato.ambiente === "sistema"}
+        />
+      )}
 
-      {relato.meu && conversaLigada && !encerrado && (
+      {/* Complementar e reabrir continuam do lado de quem relatou — e no
+          ambiente em que o relato vive. Num relato do treino aberto aqui, a
+          tela manda a pessoa para lá em vez de oferecer um botão que o outro
+          banco recusaria. */}
+      {relato.meu && relato.ambiente === "treino" && relato.endereco && (
+        <p className="text-sm text-muted-foreground">
+          Para complementar ou reabrir este relato,{" "}
+          <a
+            href={relato.endereco}
+            target="riszon-treino"
+            className="font-medium text-primary underline underline-offset-2"
+          >
+            abra-o no riSZon Treino
+          </a>
+          .
+        </p>
+      )}
+      {relato.meu && relato.ambiente === "sistema" && conversaLigada && !encerrado && (
         <Complementar relato={relato} comAnexos={anexosLigados} />
       )}
-      {relato.meu && conversaLigada && encerrado && <Reabrir relato={relato} />}
+      {relato.meu && relato.ambiente === "sistema" && conversaLigada && encerrado && (
+        <Reabrir relato={relato} />
+      )}
     </section>
   );
 }
@@ -218,7 +242,16 @@ function Responder({ relato, comAnexos }: { relato: Relato; comAnexos: boolean }
       className="space-y-3 rounded-lg border bg-muted/20 p-4"
     >
       <p className="text-sm font-medium">Responder</p>
+      {/* O ambiente viaja no formulário: relato do treino é respondido no banco
+          do treino (0264), sem a pessoa sair daqui. */}
       <input type="hidden" name="id" value={relato.id} />
+      <input type="hidden" name="ambiente" value={relato.ambiente} />
+      {relato.ambiente === "treino" && (
+        <p className="rounded-md border border-gold/40 bg-gold/5 px-3 py-2 text-xs">
+          Este relato veio do <b>riSZon Treino</b>. A resposta é gravada lá, e
+          quem relatou a lê no treino. Anexos não vão nesta resposta.
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="status">Situação</Label>

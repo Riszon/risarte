@@ -68,7 +68,29 @@ export type Relato = {
   respostas: number;
   /** A última fala da conversa (fora as linhas de situação) é de quem relatou. */
   ultimaFalaDoRelator: boolean;
+  /**
+   * DE QUE AMBIENTE VEIO O RELATO (19/09/2026, decisão do dono).
+   *
+   * O relato nasce no ambiente em que a pessoa está — inclusive no treino, onde
+   * a captura de tela funciona normalmente. A visão JUNTA mora no sistema real,
+   * que é o único que alcança os dois bancos: aqui o relato do treino aparece
+   * com selo e com `endereco` apontando para a tela dele lá.
+   */
+  ambiente: "sistema" | "treino";
+  /** Só para o relato de outro ambiente: o endereço completo da tela dele. */
+  endereco?: string;
 };
+
+/** O caminho da tela de um relato, no ambiente em que ele vive. */
+export function enderecoDoRelato(r: {
+  code: string;
+  ambiente: "sistema" | "treino";
+  endereco?: string;
+}): string {
+  return r.ambiente === "treino" && r.endereco
+    ? r.endereco
+    : `/problemas/${r.code}`;
+}
 
 export const TIPO_ROTULO: Record<TipoDeRelato, string> = {
   erro: "Algo deu errado",

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { responderNoTreino } from "@/lib/relatos-do-treino";
 import { APP_VERSION } from "@/lib/version";
 import { ROLE_LABELS } from "@/lib/roles";
 import { ehModulo } from "@/lib/system-reports";
@@ -134,7 +135,13 @@ export async function registrarProblema(
   return { ok: true, code: data.code, id: data.id };
 }
 
-/** Responder e mudar a situação — Admin Master, conferido também no banco. */
+/**
+ * Responder e mudar a situação — Admin Master, conferido também no banco.
+ *
+ * O relato pode ser do TREINO (19/09/2026): nesse caso a resposta é gravada no
+ * banco de lá, pela chave de serviço, dizendo quem está respondendo (0264). A
+ * regra de negócio continua num lugar só — no banco que guarda o relato.
+ */
 export async function responderProblema(
   formData: FormData
 ): Promise<Resultado> {
@@ -150,6 +157,28 @@ export async function responderProblema(
 
   if (!["aberto", "em_analise", "resolvido", "nao_e_defeito"].includes(status)) {
     return { ok: false, error: "Situação inválida." };
+  }
+
+  if (String(formData.get("ambiente") ?? "") === "treino") {
+    const r = await responderNoTreino({
+      reportId: id,
+      status,
+      answer: resposta || null,
+      resolvedVersion: versao || null,
+      prodAdminId: session.userId,
+    });
+    if (!r.ok) return { ok: false, error: r.error };
+    await logAudit({
+      action: "update",
+      entityType: "system_reports",
+      entityId: id,
+      clinicId: session.activeClinic?.id,
+      details: { status, ambiente: "treino" },
+    });
+    revalidatePath("/problemas", "layout");
+    // Sem anexo na resposta a um relato do treino: o arquivo teria de ser
+    // enviado ao armazenamento de lá, e a tela esconde o botão.
+    return { ok: true, id: null };
   }
 
   const supabase = await createClient();

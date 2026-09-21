@@ -22,6 +22,8 @@ import {
 import { GaleriaDeAnexos } from "../anexos";
 import { CorDaIdade, SeloDeSituacao } from "../selos";
 import { Conversa } from "./conversa";
+import { carregarRelatoDoTreinoPorCodigo } from "@/lib/relatos-do-treino";
+import { carregarEnderecos } from "@/lib/ambientes-db";
 
 export async function generateMetadata(
   props: PageProps<"/problemas/[codigo]">
@@ -53,18 +55,36 @@ export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">
 
   const supabase = await createClient();
   const { relatos, nivel } = await carregarRelatos(supabase, session.userId, { code });
-  const relato = relatos[0];
-  if (!relato) notFound();
+  let relato = relatos[0];
 
-  const reporterId = await reporterDoRelato(supabase, relato.id);
-  const [conversa, anexos] = await Promise.all([
-    carregarConversa(supabase, relato, reporterId),
-    carregarAnexos(supabase, relato, {
-      userId: session.userId,
+  // NÃO ACHOU AQUI? PODE SER DO TREINO (19/09/2026, decisão do dono): a mesma
+  // tela abre o relato que vive no banco de lá. Quem consolida é sempre a
+  // produção — o treino não alcança este banco.
+  let conversa, anexos, reporterId: string | null;
+  if (relato) {
+    reporterId = await reporterDoRelato(supabase, relato.id);
+    [conversa, anexos] = await Promise.all([
+      carregarConversa(supabase, relato, reporterId),
+      carregarAnexos(supabase, relato, {
+        userId: session.userId,
+        isAdminMaster: session.isAdminMaster,
+        reporterId,
+      }),
+    ]);
+  } else {
+    const enderecos = await carregarEnderecos(supabase);
+    const doTreino = await carregarRelatoDoTreinoPorCodigo({
+      code,
+      prodUserId: session.userId,
       isAdminMaster: session.isAdminMaster,
-      reporterId,
-    }),
-  ]);
+      endereco: enderecos.treino ?? null,
+    });
+    if (!doTreino) notFound();
+    relato = doTreino.relato;
+    conversa = doTreino.conversa;
+    anexos = doTreino.anexos;
+    reporterId = doTreino.reporterId;
+  }
   const agora = instanteDoPedido();
   const relogio = relogioDoRelato(relato, agora);
   const criado = Date.parse(relato.createdAt);

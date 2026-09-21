@@ -66,7 +66,12 @@ function faltaEstrutura(code: string | undefined): boolean {
   return code === "42703" || code === "PGRST200" || code === "PGRST204";
 }
 
-function montar(r: Bruto, userId: string): Relato {
+function montar(
+  r: Bruto,
+  userId: string,
+  ambiente: "sistema" | "treino" = "sistema",
+  base = ""
+): Relato {
   const conversa = [...(r.system_report_messages ?? [])].sort((a, b) => a.seq - b.seq);
   const falas = conversa.filter((m) => m.kind !== "situacao");
   const ultima = falas[falas.length - 1];
@@ -111,14 +116,28 @@ function montar(r: Bruto, userId: string): Relato {
     respostas,
     ultimaFalaDoRelator:
       ultima !== undefined && (ultima.kind === "complemento" || ultima.kind === "reabertura"),
+    ambiente,
+    // O relato do outro ambiente abre LÁ: no sistema real não existe tela para
+    // ele (o dado nem está neste banco).
+    endereco: base ? `${base}/problemas/${r.code}` : undefined,
   };
 }
+
+export const COLUNAS_DO_RELATO = { base: COLUNAS_BASE, completo: COLUNAS_0256 };
+export { montar as montarRelato };
+export type { Bruto as RelatoBruto };
 
 export async function carregarRelatos(
   supabase: SupabaseClient,
   userId: string,
-  filtro?: { code?: string }
+  filtro?: {
+    code?: string;
+    /** De onde veio esta lista. O padrão é este banco (o sistema real). */
+    origem?: { ambiente: "sistema" | "treino"; base: string };
+  }
 ): Promise<{ relatos: Relato[]; nivel: NivelDoBanco }> {
+  const ambiente = filtro?.origem?.ambiente ?? "sistema";
+  const base = filtro?.origem?.base ?? "";
   const consultar = (colunas: string) => {
     let q = supabase.from("system_reports").select(colunas);
     if (filtro?.code) q = q.eq("code", filtro.code);
@@ -130,7 +149,7 @@ export async function carregarRelatos(
   const novo = await consultar(COLUNAS_0256);
   if (!novo.error) {
     return {
-      relatos: (novo.data as unknown as Bruto[]).map((r) => montar(r, userId)),
+      relatos: (novo.data as unknown as Bruto[]).map((r) => montar(r, userId, ambiente, base)),
       nivel: "completo",
     };
   }
@@ -143,7 +162,7 @@ export async function carregarRelatos(
     throw new Error(antigo.error.message);
   }
   return {
-    relatos: (antigo.data as unknown as Bruto[]).map((r) => montar(r, userId)),
+    relatos: (antigo.data as unknown as Bruto[]).map((r) => montar(r, userId, ambiente, base)),
     nivel: "sem_0256",
   };
 }

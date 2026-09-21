@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.257.0** · Última migração: **0263** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.258.0** · Última migração: **0264** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,49 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### RELATAR PROBLEMA VALE NOS DOIS AMBIENTES (20/09/2026, v0.258.0, migração 0264)
+
+Pedido do dono: *"relatar problema deve ser independente se o usuário está em
+um ambiente de teste ou real"* — com alerta para o Admin, visão consolidada das
+solicitações de cada pessoa e relatório consolidado.
+
+**Caminho escolhido (o 3º que o dono propôs):** o relato NASCE onde a pessoa
+está (com a captura de tela funcionando no treino) e a visão JUNTA mora no
+sistema real. Isso vem de uma assimetria que não se deve mexer: a produção tem
+a chave do treino; **o treino não tem a da produção**, e dar uma chave da
+produção a um ambiente aberto ao aprendizado valeria mais que a conveniência.
+
+- `src/lib/relatos-do-treino.ts`: lê os relatos do treino com a chave de
+  serviço **reaplicando no código a régua da RLS de lá** (Admin vê tudo; cada
+  pessoa vê o que relatou), reusando a MESMA consulta e o MESMO montador da
+  tela (`carregarRelatos`/`montarRelato`), para as listas não divergirem.
+- Lista de Problemas: os dois ambientes juntos, selo **Treino**, ordenados por
+  data. Falha ao ler o treino vira aviso na tela (não derruba a lista).
+- Detalhe: o relato do treino abre **na mesma tela** do sistema real, com
+  conversa e anexos (URLs assinadas do Storage de lá).
+- Responder: **0264** parte `answer_system_report` em duas — a porta da tela
+  (exige Admin Master, mesma assinatura/retorno da 0257) e
+  `answer_system_report_como(..., p_autor)`, só para chave de serviço e só com
+  autor Admin Master naquele banco. A regra de negócio continua num lugar só.
+  Sem anexo na resposta a relato do treino (o arquivo iria para o outro
+  Storage) — a tela avisa e esconde o botão.
+- Complementar/reabrir de relato do treino: link para abrir no treino (as
+  funções de lá exigem `auth.uid()` de quem relatou).
+- Boia: o número soma os dois (server action `contarPendentesDoTreino`, porque
+  o navegador não tem — nem pode ter — a chave do treino).
+
+**⚠️ Limite declarado:** o aviso ao Admin não é instantâneo. O treino não
+alcança a produção, então o número só muda quando o sistema real consulta (a
+cada minuto, e a cada abertura de tela). Aviso na hora exigiria chave da
+produção no treino — recusado de propósito.
+
+**Pendente (combinar com o dono):** o **painel de indicadores** ainda conta só
+o sistema real. A conta inteira mora no banco (0258) e depende de `auth.uid()`,
+que a chave de serviço não tem. Duas saídas: (a) seletor de ambiente no painel,
+com os números de cada um; (b) recalcular o painel no código, a partir dos
+relatos dos dois bancos — dá consolidação de verdade (inclusive mediana), mas é
+refazer uma peça já testada.
 
 ### INÍCIO MAIS CURTO E ADMINISTRAÇÃO QUE RECOLHE (19/09/2026, v0.257.0, sem migração)
 

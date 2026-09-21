@@ -1817,6 +1817,24 @@ Onde se relata e se acompanha. Como relatar está na
 boia mostra um número até você abrir aquele relato. Se você é Admin Master, ela
 mostra quantos relatos ainda dependem de você.
 
+**Relatar é igual nos dois ambientes (desde 20/09/2026).** Se você está no
+**riSZon Treino** e algo dá errado, relate por lá mesmo, pela boia de sempre —
+com a captura de tela funcionando normalmente. O relato **aparece na lista do
+sistema real**, com o selo **Treino**, e você acompanha tudo num lugar só:
+
+- **Para você:** na tela Problemas do sistema real estão as suas solicitações
+  dos dois ambientes, cada uma com o selo de onde nasceu. Clique e ela abre.
+- **Para o Admin Master:** a lista e o número da boia contam os dois ambientes.
+  O relato do treino abre na mesma tela, com a conversa e os anexos, e a
+  resposta é gravada no treino — que é onde quem relatou vai lê-la.
+- **Complementar ou reabrir** um relato do treino se faz no treino: a tela do
+  sistema real mostra o link para abri-lo lá.
+
+> **Por que a lista junta fica no sistema real.** O sistema real alcança o
+> treino, mas o treino não alcança o real — e é bom que seja assim, porque o
+> treino é um ambiente aberto para aprender. Por isso o lugar de ver tudo junto
+> é o sistema real.
+
 **Quem vê o quê:** você enxerga os problemas relatados **na sua unidade**.
 Assim ninguém abre cinco vezes o mesmo, e quem chegar depois já lê a resposta
 que foi dada ao primeiro.

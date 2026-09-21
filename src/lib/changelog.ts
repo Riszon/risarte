@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.258.0",
+    data: "2026-09-20",
+    migracao: "0264",
+    titulo: "Relatar problema é igual nos dois ambientes",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Relatar um problema no riSZon Treino agora conta como relatar no sistema: a lista de Problemas do sistema real mostra os relatos dos dois ambientes, com o selo Treino, e você acompanha tudo num lugar só.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O relato que nasceu no treino abre na mesma tela do sistema real, com a conversa e os anexos. O Admin responde dali mesmo, e quem relatou lê a resposta no treino, onde relatou.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O número da boia passou a somar os dois ambientes: respostas novas e relatos esperando, venham do treino ou do sistema.",
+        papeis: "todos",
+        manual: "15.2. Problemas",
+      },
+    ],
+  },
+  {
     versao: "0.257.0",
     data: "2026-09-19",
     migracao: null,
