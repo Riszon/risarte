@@ -3713,6 +3713,12 @@ produção a um ambiente aberto ao aprendizado valeria mais que a conveniência.
 - Boia: o número soma os dois (server action `contarPendentesDoTreino`, porque
   o navegador não tem — nem pode ter — a chave do treino).
 
+**✅ No ar e conferido (20/09):** relato criado no treino apareceu na lista da
+produção com selo, abriu na mesma tela, foi respondido pelo caminho da 0264
+(resposta gravada no treino, com o Admin como autor) e a chamada anônima foi
+recusada; painel consolidado bateu com o banco (8 = 8). Falta provar a régua
+de visibilidade logado como NÃO-Admin (EV-076).
+
 **⚠️ Limite declarado:** o aviso ao Admin não é instantâneo. O treino não
 alcança a produção, então o número só muda quando o sistema real consulta (a
 cada minuto, e a cada abertura de tela). Aviso na hora exigiria chave da
