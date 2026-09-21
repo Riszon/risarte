@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 18/09/2026 · Versão do sistema: **0.256.0** · Última migração: **0263** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 18/09/2026 · Versão do sistema: **0.256.0** · Última migração: **0263** (aplicada na produção e no treino) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3694,9 +3694,13 @@ usar o ambiente (à vontade, testar limites, sempre disponível).
 - **Guia do treino** (`ComoUsarOTreino`): sempre no Início do treino, em
   `<details>` aberto (recolhe com um clique). Acrescentado por conta própria e
   dito ao dono: **nunca usar dados de pacientes reais no treino (LGPD)**.
-- **Não conferido visualmente antes do deploy**: a janela só aparece a quem
-  ainda não entrou; conferir com o primeiro Risartano novo (ou zerando o
-  `welcomed_at` do dono, se ele quiser ver).
+- **No ar em 19/09.** Guia do treino conferido logado no treino: título,
+  "teste os limites", "sempre disponível", aviso de LGPD, "a equipe vem do
+  sistema real", `<details open>`, e ausente no sistema real.
+- **A janela de boas-vindas ainda NÃO foi vista por ninguém**: os 2 perfis da
+  produção já estavam marcados pela 0263 (ambos já haviam entrado). Conferir
+  com o primeiro Risartano novo — ou zerando o `welcomed_at` do dono, se ele
+  pedir.
 
 ### O CAMINHO DO RECÉM-CHEGADO (19/09/2026, v0.255.1, sem migração)
 
