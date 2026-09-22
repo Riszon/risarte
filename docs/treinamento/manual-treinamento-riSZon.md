@@ -1262,6 +1262,19 @@ linha *"Apresentação remarcada para …"*.
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
 e a cobrança não muda até alguém autorizar.
 
+> **Você trabalha no funil; a sala de espera é da recepção.** As duas telas se
+> falam sozinhas desde a v0.270.0:
+>
+> | A recepção faz | Você vê / o que acontece |
+> |---|---|
+> | Recebe o cliente e coloca **em espera** | O cartão mostra **Em espera** e há quantos minutos |
+> | — | Você move o cartão para **Acontecendo agora** → o cliente vira **Em atendimento** na tela dela |
+> | — | Você marca **Apresentado** (ou cancelado/perdido) → o atendimento é **concluído** sozinho |
+>
+> Por isso o menu **Atendimento** não aparece mais para você: o que você
+> precisa saber já está no cartão. O quadro se atualiza sozinho a cada 45
+> segundos, então o que a recepção fizer chega até você sem recarregar nada.
+
 > **A sua agenda não é a da unidade.** A apresentação comercial é **online**:
 > não ocupa sala nem cadeira, e **não depende de a unidade estar aberta**. Você
 > atende várias unidades de onde estiver, e quem manda nos seus horários é a

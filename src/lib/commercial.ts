@@ -461,3 +461,53 @@ export function gutScore(
   if (!g || !u || !t) return null;
   return g * u * t;
 }
+
+// ---------------------------------------------------------------------------
+// O CLIENTE JÁ CHEGOU? (0269) — relato OC-00073
+// ---------------------------------------------------------------------------
+// A recepção prepara o cliente e o coloca "em espera"; o consultor trabalha no
+// funil. Antes, o cartão não dizia nada disso — o consultor não tinha como
+// saber que havia alguém esperando por ele, e a recepção não tinha como
+// avisar senão por fora do sistema.
+//
+// A regra é pura de propósito: é ela que decide o que aparece no cartão, e
+// prendê-la por teste é mais barato que abrir a tela para conferir.
+
+export type EstadoNaRecepcao = {
+  /** O rótulo curto do cartão. `null` = não há nada a dizer. */
+  rotulo: string | null;
+  /** `true` quando o cliente está esperando — o cartão fica em destaque. */
+  esperando: boolean;
+  /** Minutos de espera, para o cartão mostrar "há 12 min". */
+  minutos: number | null;
+};
+
+export function estadoNaRecepcao(
+  atendimento: string | null | undefined,
+  esperandoDesde: string | null | undefined,
+  chamadoAs: string | null | undefined,
+  agora: Date
+): EstadoNaRecepcao {
+  const desde = (iso: string | null | undefined): number | null => {
+    if (!iso) return null;
+    const ms = agora.getTime() - new Date(iso).getTime();
+    // Relógio adiantado ou dado do futuro: melhor não dizer nada do que
+    // mostrar "há -3 min", que faz quem lê duvidar do resto da tela.
+    return ms < 0 ? null : Math.floor(ms / 60000);
+  };
+
+  switch (atendimento) {
+    case "waiting":
+      return { rotulo: "Em espera", esperando: true, minutos: desde(esperandoDesde) };
+    case "in_service":
+      return { rotulo: "Em atendimento", esperando: false, minutos: desde(chamadoAs) };
+    case "done":
+      return { rotulo: "Atendimento concluído", esperando: false, minutos: null };
+    case "gave_up":
+      return { rotulo: "Desistiu da espera", esperando: false, minutos: null };
+    default:
+      // Sem check-in ainda: o cartão já mostra a hora da apresentação, e
+      // repetir "aguardando" aqui só encheria o espaço.
+      return { rotulo: null, esperando: false, minutos: null };
+  }
+}

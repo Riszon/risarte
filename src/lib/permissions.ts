@@ -94,7 +94,16 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Navegação",
     descricao: "Chegada, chamada e conclusão do dia.",
     dependeDoBanco: false,
-    padrao: TODOS,
+    // 0269 (relato OC-00073): o CONSULTOR COMERCIAL sai daqui. Ele trabalha no
+    // funil, em /comercial — a sala de espera é da recepção. Desde a 0269 as
+    // duas telas se falam sozinhas: a recepção coloca "em espera" e o cartão
+    // dele mostra; ele inicia a apresentação e o cliente vira "em atendimento"
+    // na tela dela. Com o espelho funcionando, a segunda tela virou ruído.
+    //
+    // ⚠️ Este padrão só vale onde a matriz NÃO tem linha gravada. A instalação
+    // do dono tinha (liberando o menu), e por isso a 0269 apaga aquela linha —
+    // mudar só este arquivo não teria efeito nenhum.
+    padrao: TODOS.filter((r) => r !== "commercial_consultant"),
   },
   {
     id: "menu.prontuarios",

@@ -81,6 +81,10 @@ export type BoardCard = {
    *  que trava o funil, e o cartão precisa gritar isso. */
   presentationAt: string | null;
   presentationWith: string | null;
+  /** 0269: o estado do cliente na sala de espera da recepção. */
+  atendimento: string | null;
+  esperandoDesde: string | null;
+  chamadoAs: string | null;
   /** Tentativas frustradas (não compareceu + remarcações). */
   attemptCount: number;
   noShowCount: number;
@@ -105,6 +109,25 @@ export function CommercialKanban({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  /**
+   * 0269: O QUADRO SE ATUALIZA SOZINHO (relato OC-00073).
+   *
+   * "Conforme a recepcionista faz alterações no status do cliente deve mudar
+   * no card do comercial também" — e quem mexe está em OUTRA tela, então não
+   * há clique daqui para disparar a atualização. De 45 em 45 segundos o
+   * quadro se refaz.
+   *
+   * Só com a aba À VISTA: atualizar um quadro que ninguém está olhando gasta
+   * banco por nada, e com o consultor de janela aberta o dia inteiro isso
+   * viraria uma consulta por minuto sem leitor.
+   */
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") router.refresh();
+    }, 45_000);
+    return () => clearInterval(t);
+  }, [router]);
 
   const [reasonFor, setReasonFor] = useState<{
     card: BoardCard;
@@ -571,6 +594,9 @@ function BoardCardView({
             clientName: card.fullName,
             presentationAt: card.presentationAt,
             presentationWith: card.presentationWith,
+            atendimento: card.atendimento,
+            esperandoDesde: card.esperandoDesde,
+            chamadoAs: card.chamadoAs,
             attemptCount: card.attemptCount,
             noShowCount: card.noShowCount,
             lastAttemptLabel: card.lastAttemptLabel,

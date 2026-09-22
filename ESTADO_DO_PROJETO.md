@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/09/2026 · Versão do sistema: **0.269.0** · Última migração: **0268** (aplicadas nos DOIS ambientes em 22/09) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 22/09/2026 · Versão do sistema: **0.270.0** · Última migração: **0269** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,50 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### O FUNIL E A SALA DE ESPERA PASSARAM A SE FALAR (22/09/2026, v0.270.0, migração 0269)
+
+Relato **OC-00073**, com o fluxo inteiro descrito pelo dono: a recepção agenda,
+confirma, recebe e coloca **em espera**; o consultor vê isso no cartão, inicia a
+apresentação (o cliente vira **em atendimento** na tela dela) e encerra (vira
+**concluído**).
+
+**O pedido tinha três partes, de naturezas diferentes** — e medir isso antes
+mudou o que foi feito:
+
+1. **"A recepção não vê o Comercial" — já era assim.** O módulo é liberado só
+   para consultor, assistente, gerente e franqueado.
+2. **"O consultor não vê o Atendimento" — era configuração, não código.** Mas
+   com uma pegadinha: **a matriz de permissões TINHA uma linha gravada**
+   liberando aquele menu, nos dois bancos. Linha de banco ganha de padrão de
+   código, então mudar `permissions.ts` sozinho **não teria efeito nenhum**. A
+   0269 apaga a linha (destrutivo declarado); o padrão mudou junto, para os
+   próximos.
+3. **As duas telas não se falavam — o trabalho de verdade.**
+
+**Decisões do dono (22/09/2026):** cada estado tem UM dono (a recepção manda no
+"em espera"; o consultor, no "em atendimento" e no "concluído") e
+cancelado/perdido **também encerram** o atendimento — a apresentação acabou,
+mesmo sem venda, e deixar o cliente na sala faria a recepção cobrar um
+atendimento que já terminou.
+
+**Quem move o atendimento é o `update_attendance`**, chamado de dentro do
+`commercial_set_stage` — não um UPDATE por fora. Ele já guarda quem chamou,
+quem concluiu, a hora, e as travas ("o cliente não pode estar em dois lugares",
+"o profissional já está atendendo"). Um segundo caminho para a mesma coisa é
+como os dois passam a divergir.
+
+**Dois detalhes que só apareceram ao medir:** a consulta das apresentações
+filtrava `starts_at >= agora`, então **a apresentação em andamento sumia do
+quadro** justamente quando o cliente estava esperando (a janela agora começa 4h
+atrás); e nenhuma das duas telas se atualizava sozinha — o quadro do Comercial
+passou a se refazer a cada 45s, só com a aba à vista.
+
+**Provado no treino com dois logins reais** (`prova-funil.mjs`, 9/9): recepção
+fez o check-in → consultor moveu o cartão → atendimento virou `in_service` →
+marcou apresentado → atendimento `done` e agendamento `completed`.
+
+⚠️ **Migração 0269 pendente na produção.**
 
 ### A AGENDA DO COMERCIAL ONLINE É DELE, NÃO DA UNIDADE (22/09/2026, v0.269.0, migração 0268)
 

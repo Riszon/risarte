@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useNow } from "@/lib/use-now";
+import { estadoNaRecepcao } from "@/lib/commercial";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 // A lista de tipos vem do módulo puro; de `./actions` vêm SÓ as ações. Um
 // arquivo `"use server"` não pode exportar constante — ver o comentário em
@@ -65,6 +67,10 @@ export type PresentationInfo = {
   lastAttemptLabel: string | null;
   lastAttemptAt: string | null;
   schedulingRequestedAt: string | null;
+  /** 0269: o que a RECEPÇÃO já fez com este cliente hoje (relato OC-00073). */
+  atendimento: string | null;
+  esperandoDesde: string | null;
+  chamadoAs: string | null;
   /** Só o time comercial escreve; a unidade enxerga. */
   podeAgir: boolean;
 };
@@ -78,8 +84,50 @@ export function PresentationTracker({ info }: { info: PresentationInfo }) {
   // marca, o aviso de espera some sozinho em vez de virar entulho no cartão.
   const esperandoRecepcao = semAgendamento && info.schedulingRequestedAt !== null;
 
+  // 0269: o cronômetro só existe no navegador (a lição do `useNow`): no
+  // servidor ele daria uma hora e no navegador outra, e o React derrubaria a
+  // árvore. Sem `agora`, mostra o rótulo sem o tempo.
+  // `useNow()` devolve NÚMERO e responde `null` no servidor e no primeiro
+  // desenho — é assim que servidor e navegador não discordam da hora.
+  const agora = useNow();
+  const recepcao = estadoNaRecepcao(
+    info.atendimento,
+    info.esperandoDesde,
+    info.chamadoAs,
+    new Date(agora ?? 0)
+  );
+  const minutos = agora === null ? null : recepcao.minutos;
+
   return (
     <div className="mt-2 space-y-1.5 border-t pt-2 text-xs">
+      {/* ⚠️ O CLIENTE JÁ ESTÁ ESPERANDO — vem antes de tudo no cartão. É o que
+          a recepção fez e o consultor precisa ver: antes da 0269 não havia
+          como saber, e ela avisava por fora do sistema. */}
+      {recepcao.rotulo && (
+        <p
+          className={cn(
+            "flex items-center gap-1.5 font-medium",
+            recepcao.esperando
+              ? "text-amber-700 dark:text-amber-400"
+              : "text-muted-foreground"
+          )}
+        >
+          <span
+            className={cn(
+              "size-2 shrink-0 rounded-full",
+              recepcao.esperando ? "animate-pulse bg-amber-500" : "bg-muted-foreground/50"
+            )}
+            aria-hidden
+          />
+          {recepcao.rotulo}
+          {minutos !== null && (
+            <span className="font-normal tabular-nums">
+              · há {minutos} min
+            </span>
+          )}
+        </p>
+      )}
+
       {info.presentationAt ? (
         <p className="flex items-center gap-1.5 text-muted-foreground">
           <CalendarClock className="size-3.5 shrink-0 text-primary" />

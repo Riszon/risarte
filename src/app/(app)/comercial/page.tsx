@@ -22,6 +22,19 @@ import {
 
 export const metadata: Metadata = { title: "Comercial" };
 
+/**
+ * O começo da janela de apresentações do quadro: 4 horas atrás.
+ *
+ * Fora do componente de propósito — ler o relógio durante o desenho é
+ * impuro, e o lint reprova com razão: duas leituras no mesmo desenho podem
+ * dar respostas diferentes.
+ */
+function quatroHorasAtras(): Date {
+  const d = new Date();
+  d.setHours(d.getHours() - 4);
+  return d;
+}
+
 export default async function ComercialKanbanPage(
   props: PageProps<"/comercial">
 ) {
@@ -197,7 +210,15 @@ export default async function ComercialKanbanPage(
   // o que não aparecia em lugar nenhum.
   const presentationByClient = new Map<
     string,
-    { at: string; withName: string | null }
+    {
+      at: string;
+      withName: string | null;
+      // 0269 (relato OC-00073): o que a RECEPÇÃO já fez com este cliente.
+      // Sem isto o consultor não sabia que o cliente estava esperando por ele.
+      attendance: string | null;
+      checkedInAt: string | null;
+      calledAt: string | null;
+    }
   >();
   const attemptsByClient = new Map<
     string,
@@ -210,12 +231,16 @@ export default async function ComercialKanbanPage(
       supabase
         .from("appointments")
         .select(
-          "client_id, starts_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+          "client_id, starts_at, attendance, checked_in_at, called_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
         )
         .in("client_id", ids)
         .eq("type", "commercial_presentation")
         .in("status", ["scheduled", "confirmed"])
-        .gte("starts_at", new Date().toISOString())
+        // ⚠️ A JANELA COMEÇA 4 HORAS ATRÁS, não "de agora em diante". Uma
+        // apresentação marcada para as 14h com o cliente esperando às 14h05
+        // sumia daqui — e era justamente a hora em que o consultor mais
+        // precisa ver o cartão (0269).
+        .gte("starts_at", quatroHorasAtras().toISOString())
         .order("starts_at"),
       supabase
         .from("commercial_card_events")
@@ -230,6 +255,9 @@ export default async function ComercialKanbanPage(
     for (const a of (appts ?? []) as unknown as {
       client_id: string;
       starts_at: string;
+      attendance: string | null;
+      checked_in_at: string | null;
+      called_at: string | null;
       provider: { full_name: string } | { full_name: string }[] | null;
     }[]) {
       if (presentationByClient.has(a.client_id)) continue;
@@ -237,6 +265,9 @@ export default async function ComercialKanbanPage(
       presentationByClient.set(a.client_id, {
         at: a.starts_at,
         withName: p?.full_name ?? null,
+        attendance: a.attendance ?? null,
+        checkedInAt: a.checked_in_at ?? null,
+        calledAt: a.called_at ?? null,
       });
     }
 
@@ -340,6 +371,10 @@ export default async function ComercialKanbanPage(
       outcomeByName: card?.outcomeBy ? (outcomeNames.get(card.outcomeBy) ?? null) : null,
       presentationAt: presentationByClient.get(c.id)?.at ?? null,
       presentationWith: presentationByClient.get(c.id)?.withName ?? null,
+      // O estado da sala de espera, do jeito que a recepção deixou.
+      atendimento: presentationByClient.get(c.id)?.attendance ?? null,
+      esperandoDesde: presentationByClient.get(c.id)?.checkedInAt ?? null,
+      chamadoAs: presentationByClient.get(c.id)?.calledAt ?? null,
       attemptCount: attemptsByClient.get(c.id)?.failed ?? 0,
       noShowCount: attemptsByClient.get(c.id)?.noShow ?? 0,
       lastAttemptLabel: attemptsByClient.get(c.id)?.lastLabel ?? null,

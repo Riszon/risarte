@@ -397,7 +397,12 @@ export default async function CommercialCockpitPage(
               noShowCount: tentativas.noShow,
               lastAttemptLabel: tentativas.lastLabel,
               lastAttemptAt: tentativas.lastAt,
-              schedulingRequestedAt: tentativas.requestedAt,
+              // O cockpit mostra um cliente só: aqui o estado da recepção
+            // não é carregado (quem precisa dele é o quadro do funil).
+            atendimento: null,
+            esperandoDesde: null,
+            chamadoAs: null,
+            schedulingRequestedAt: tentativas.requestedAt,
               podeAgir: canClose,
             }}
           />

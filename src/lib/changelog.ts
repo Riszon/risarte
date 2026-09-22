@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.270.0",
+    data: "2026-09-22",
+    migracao: "0269",
+    titulo: "O funil do Comercial e a sala de espera passaram a se falar",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando a recepção recebe o cliente e o coloca em espera, o cartão dele no funil do Comercial mostra Em espera e há quantos minutos. O consultor passa a ver que tem alguém aguardando por ele, sem ninguém precisar avisar por fora.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quando o consultor inicia a apresentação (move o cartão para Acontecendo agora), o cliente vira Em atendimento na tela da recepção sozinho. Ao marcar Apresentado — ou cancelado, ou perdido — o atendimento é concluído automaticamente.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O Consultor Comercial deixou de ver o menu Atendimento: o trabalho dele é o funil, e a sala de espera é da recepção. O quadro do Comercial também passou a se atualizar sozinho a cada 45 segundos, para acompanhar o que a recepção faz.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.269.0",
     data: "2026-09-22",
     migracao: "0268",
