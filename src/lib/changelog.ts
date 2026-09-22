@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.269.0",
+    data: "2026-09-22",
+    migracao: "0268",
+    titulo: "A agenda do comercial online é dele, não da unidade",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A apresentação comercial é online e não depende mais do horário da unidade: dava para marcar só de segunda a sábado, até as 18h, mesmo com o consultor trabalhando. Agora ela segue a jornada do consultor — inclusive no domingo e à noite, se for o caso dele.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Administração → Agenda do Comercial ficam os dias e horários do atendimento online. Há um padrão da rede (segunda a sábado, 8h às 20h) e, para quem tem jornada diferente, uma configuração própria. Só o Admin Master e a Franqueadora mexem nisso.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O que ainda impede uma apresentação: férias do próprio consultor, fechamento de agenda que inclua ele, e um horário em que ele já tem outro compromisso. Feriado e dia fechado da unidade não impedem mais — o atendimento é remoto. Consultas presenciais continuam presas à agenda da unidade, como sempre.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.268.0",
     data: "2026-09-22",
     migracao: null,

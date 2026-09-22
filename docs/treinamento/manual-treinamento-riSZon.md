@@ -1262,6 +1262,17 @@ linha *"Apresentação remarcada para …"*.
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
 e a cobrança não muda até alguém autorizar.
 
+> **A sua agenda não é a da unidade.** A apresentação comercial é **online**:
+> não ocupa sala nem cadeira, e **não depende de a unidade estar aberta**. Você
+> atende várias unidades de onde estiver, e quem manda nos seus horários é a
+> **Agenda do Comercial** (Administração → Agenda do Comercial), configurada
+> pelo Admin Master ou pela Franqueadora. O padrão da rede é **segunda a sábado,
+> das 8h às 20h**; se a sua jornada for outra, peça a configuração própria.
+>
+> **O que ainda impede uma apresentação:** as suas férias (planejamento anual),
+> um fechamento de agenda que inclua você, e um horário em que você já tem outro
+> compromisso. Feriado da unidade, não.
+
 **Quando o plano não serve para a negociação** — o paciente pediu algo mais
 barato, mudou de ideia sobre o escopo, ou o orçamento não cabe no que ele pode
 pagar —, use **Devolver ao Planejamento** e escreva as considerações. O plano

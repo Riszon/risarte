@@ -107,3 +107,72 @@ export function effectiveDayHours(
     timeToMinutes(end) > timeToMinutes(normalClose) ? end : hhmm(normalClose);
   return { open, close };
 }
+
+// ---------------------------------------------------------------------------
+// A AGENDA DO ATENDIMENTO ONLINE (0268) — relato OC-00072
+// ---------------------------------------------------------------------------
+// A apresentação comercial é online: não usa sala, não usa cadeira e não
+// depende de a unidade estar aberta. O consultor trabalha remoto e atende
+// VÁRIAS unidades — a unidade pode estar fechada num sábado enquanto ele
+// trabalha normalmente. Por isso a jornada dele é uma configuração própria, e
+// não a da unidade.
+//
+// Cascata igual à da unidade, trocando "clínica" por "pessoa": linha com
+// `user_id` nulo é o padrão da REDE; linha com `user_id` é a exceção daquele
+// consultor. Campo a campo — quem só muda o horário mantém os dias da rede.
+
+export type OnlineAgendaRow = {
+  user_id: string | null;
+  open_time: string | null;
+  close_time: string | null;
+  weekdays: number[] | null;
+};
+
+export type OnlineAgendaSettings = {
+  openTime: string;
+  closeTime: string;
+  weekdays: number[];
+  /** De onde veio o que está valendo — a tela diz isto a quem configura. */
+  origem: "consultor" | "rede" | "padrao";
+};
+
+/** Mais largo que o da unidade: quem atende remoto alcança o cliente fora do
+ *  horário comercial, que é quando o cliente consegue conversar. */
+export const ONLINE_AGENDA_DEFAULTS: OnlineAgendaSettings = {
+  openTime: "08:00",
+  closeTime: "20:00",
+  weekdays: [1, 2, 3, 4, 5, 6],
+  origem: "padrao",
+};
+
+export function resolveOnlineAgenda(
+  rows: OnlineAgendaRow[],
+  userId: string | null
+): OnlineAgendaSettings {
+  const doConsultor = userId ? rows.find((r) => r.user_id === userId) : undefined;
+  const daRede = rows.find((r) => r.user_id === null);
+
+  // ⚠️ CAMPO A CAMPO, não linha a linha. Se a linha do consultor só define o
+  // horário, os dias continuam vindo da rede — senão mudar a rede nunca mais
+  // alcançaria quem tem exceção (a lição da `finance_settings`, 0230).
+  const escolher = <T>(a: T | null | undefined, b: T | null | undefined, c: T): T =>
+    a ?? b ?? c;
+
+  const open = hhmm(
+    escolher(doConsultor?.open_time, daRede?.open_time, ONLINE_AGENDA_DEFAULTS.openTime)
+  );
+  const close = hhmm(
+    escolher(doConsultor?.close_time, daRede?.close_time, ONLINE_AGENDA_DEFAULTS.closeTime)
+  );
+  const dias =
+    (doConsultor?.weekdays?.length ? doConsultor.weekdays : null) ??
+    (daRede?.weekdays?.length ? daRede.weekdays : null) ??
+    ONLINE_AGENDA_DEFAULTS.weekdays;
+
+  return {
+    openTime: open || ONLINE_AGENDA_DEFAULTS.openTime,
+    closeTime: close || ONLINE_AGENDA_DEFAULTS.closeTime,
+    weekdays: dias,
+    origem: doConsultor ? "consultor" : daRede ? "rede" : "padrao",
+  };
+}

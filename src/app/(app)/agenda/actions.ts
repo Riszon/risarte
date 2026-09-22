@@ -9,10 +9,14 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import {
+  WEEKDAY_NAMES,
   effectiveDayHours,
   resolveAgendaSettings,
+  resolveOnlineAgenda,
   timeToMinutes,
   type AgendaSettingRow,
+  type OnlineAgendaRow,
+  type OnlineAgendaSettings,
 } from "@/lib/agenda-settings";
 import { mapRoom, sortRooms, type Room, type RoomRow } from "@/lib/rooms";
 import {
@@ -409,7 +413,10 @@ async function checkAgendaRules(
     .eq("clinic_id", clinicId)
     .eq("holiday_date", date)
     .maybeSingle();
-  if (holidayDecision?.will_attend === false) {
+  // 0268: o feriado é da UNIDADE (sala, cadeira, gente no balcão). A
+  // apresentação online acontece fora dela — o consultor é remoto e atende
+  // várias unidades, então o feriado de uma não pode calar a agenda dele.
+  if (holidayDecision?.will_attend === false && !isOnline) {
     return { block: "Feriado sem atendimento nesta unidade." };
   }
 
@@ -443,6 +450,12 @@ async function checkAgendaRules(
             "O profissional está de férias neste período (planejamento anual).",
         };
       }
+    } else if (isOnline) {
+      // 0268: período fechado da unidade (ou da rede) não alcança o online.
+      // O que alcança o consultor é o item INDIVIDUAL dele, tratado acima —
+      // decisão do dono: "férias do próprio consultor" e "fechamento que
+      // atinja o consultor" continuam bloqueando; o resto, não.
+      continue;
     } else if (item.isNetwork && item.locked) {
       // Item da REDE travado: a unidade não pode abrir por cima (nem dia avulso).
       return {
@@ -458,6 +471,44 @@ async function checkAgendaRules(
   // Encaixe ignores working hours and room capacity (but not closures/holidays/
   // annual-plan blocks above).
   if (isEncaixe) return {};
+
+  // =========================================================================
+  // 0268: QUAL AGENDA VALE — a da unidade ou a do consultor?
+  // =========================================================================
+  // A apresentação comercial é ONLINE. Ela já não usava sala, cadeira nem
+  // almoço; faltava o horário. O consultor trabalha remoto e atende VÁRIAS
+  // unidades: a unidade pode estar fechada no sábado enquanto ele trabalha
+  // normalmente (relato OC-00072). Daqui em diante o online é medido pela
+  // jornada dele — rede como padrão, exceção por pessoa.
+  if (isOnline) {
+    const { data: online } = await supabase
+      .from("online_agenda_settings")
+      .select("user_id, open_time, close_time, weekdays")
+      .returns<OnlineAgendaRow[]>();
+    const jornada = resolveOnlineAgenda(online ?? [], providerId || null);
+    const diaDele = jornada.weekdays.includes(weekdayOf(date));
+    if (!diaDele) {
+      return {
+        block: `O consultor não atende neste dia (${WEEKDAY_NAMES[weekdayOf(date)]}). Ajuste em Administração → Agenda do comercial.`,
+      };
+    }
+    const abre = timeToMinutes(jornada.openTime);
+    const fecha = timeToMinutes(jornada.closeTime);
+    const comeca = timeToMinutes(time);
+    if (comeca < abre) {
+      return { block: `O consultor começa a atender às ${jornada.openTime}.` };
+    }
+    if (comeca >= fecha) {
+      return { block: `O consultor encerra o atendimento às ${jornada.closeTime}.` };
+    }
+    if (comeca + durationMin > fecha) {
+      warn = `Esta apresentação termina depois do fim da jornada do consultor (${jornada.closeTime}).`;
+    }
+    // Sala, cadeira e almoço nunca valeram para o online; o horário da unidade
+    // deixou de valer agora. Sobram as travas de pessoa (férias e fechamento),
+    // já conferidas acima — então o resto da função não se aplica.
+    return warn ? { warn } : {};
+  }
 
   const { data: rows } = await supabase
     .from("clinic_agenda_settings")
@@ -2258,6 +2309,18 @@ export async function getNextAvailableSlots(params: {
   ]);
 
   const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
+  // 0268: para o ONLINE, quem manda é a jornada do consultor — senão a tela
+  // ofereceria só os horários da unidade e o sábado dele nunca apareceria,
+  // mesmo o servidor aceitando.
+  const { data: onlineRows } = isOnline
+    ? await supabase
+        .from("online_agenda_settings")
+        .select("user_id, open_time, close_time, weekdays")
+        .returns<OnlineAgendaRow[]>()
+    : { data: null };
+  const jornadaOnline = isOnline
+    ? resolveOnlineAgenda(onlineRows ?? [], providerUserId || null)
+    : null;
   const closures = (closureRows ?? []).map((r) => mapClosure(r as AgendaClosureRow));
   const openDayHours = new Map<string, { open: number; close: number }>();
   for (const r of (openDayRows ?? []) as {
@@ -2290,14 +2353,17 @@ export async function getNextAvailableSlots(params: {
     day.setDate(day.getDate() + d);
     const dateOnly = toIsoDate(day);
     const hd = holidayDecision.get(dateOnly);
-    if (hd === false) continue;
-    const isWeekdayOpen = cfg.weekdays.includes(day.getDay());
-    const special = openDayHours.get(dateOnly);
-    const dayOpen = isWeekdayOpen || Boolean(special) || hd === true;
+    // O feriado é da unidade; o consultor remoto não fecha por causa dele.
+    if (hd === false && !jornadaOnline) continue;
+    const isWeekdayOpen = (jornadaOnline ?? cfg).weekdays.includes(day.getDay());
+    // Dia avulso é ato da unidade (abrir a porta num sábado): não muda a
+    // jornada de quem atende de casa.
+    const special = jornadaOnline ? undefined : openDayHours.get(dateOnly);
+    const dayOpen = isWeekdayOpen || Boolean(special) || (hd === true && !jornadaOnline);
     if (!dayOpen) continue;
     // AJ7: dia avulso num dia NORMAL estende (une); em dia fechado usa a própria.
-    const normalOpenMin = timeToMinutes(cfg.openTime);
-    const normalCloseMin = timeToMinutes(cfg.closeTime);
+    const normalOpenMin = timeToMinutes((jornadaOnline ?? cfg).openTime);
+    const normalCloseMin = timeToMinutes((jornadaOnline ?? cfg).closeTime);
     const isNormalDay = isWeekdayOpen || hd === true;
     const openMin = special
       ? isNormalDay
@@ -2727,4 +2793,26 @@ export async function atendimentoAindaAberto(appointmentId: string): Promise<boo
     .maybeSingle<{ attendance: string | null }>();
   if (error || !data) return true;
   return data.attendance === "in_service";
+}
+
+/**
+ * A JORNADA ONLINE DE UM CONSULTOR (0268) — para a TELA oferecer os horários
+ * certos, e não só o servidor recusar os errados.
+ *
+ * Sem isto a tela continuaria montando a lista de horários com a agenda da
+ * unidade: o sábado do consultor nunca apareceria para escolher, e o servidor
+ * aceitaria um horário que a tela não oferece. Régua da tela e régua do
+ * servidor têm de ser a MESMA — quando divergem, quem usa aprende a não
+ * confiar em nenhuma das duas.
+ */
+export async function getJornadaOnline(
+  providerUserId: string | null
+): Promise<OnlineAgendaSettings> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("online_agenda_settings")
+    .select("user_id, open_time, close_time, weekdays")
+    .returns<OnlineAgendaRow[]>();
+  return resolveOnlineAgenda(data ?? [], providerUserId);
 }

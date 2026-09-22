@@ -32,7 +32,11 @@ import {
   type AppointmentType,
   type StaffOption,
 } from "@/lib/appointments";
-import { effectiveDayHours, timeToMinutes } from "@/lib/agenda-settings";
+import {
+  effectiveDayHours,
+  timeToMinutes,
+  type OnlineAgendaSettings,
+} from "@/lib/agenda-settings";
 import { PHASE_LABELS } from "@/lib/journey";
 import { ROLE_LABELS } from "@/lib/roles";
 import {
@@ -45,6 +49,7 @@ import {
   getClientSchedulingInfo,
   getDayBusyTimes,
   getDaySchedule,
+  getJornadaOnline,
   getNextAvailableSlots,
   getProviderProcedureStats,
   updateAppointment,
@@ -506,11 +511,30 @@ export function AppointmentFormDialog({
   // Ignora dados obsoletos quando os campos estão incompletos (derivado).
   const effectiveCross = shouldCheckCross ? crossUnit : EMPTY_CROSS;
 
+  // 0268: quando o atendimento é ONLINE, a lista de horários e os dias
+  // disponíveis saem da jornada do CONSULTOR, não da agenda da unidade — ele
+  // trabalha remoto e atende várias unidades (relato OC-00072).
+  const [jornadaBuscada, setJornadaBuscada] = useState<OnlineAgendaSettings | null>(null);
+  useEffect(() => {
+    if (!isOnline) return;
+    let atual = true;
+    getJornadaOnline(providerId || null).then((j) => {
+      if (atual) setJornadaBuscada(j);
+    });
+    return () => {
+      atual = false;
+    };
+  }, [isOnline, providerId]);
+  // DERIVADO, não apagado: trocar o tipo para presencial não precisa limpar
+  // estado nenhum — a jornada simplesmente deixa de valer. Apagar de dentro do
+  // efeito faria o React desenhar duas vezes à toa (e o lint reprova).
+  const jornadaOnline = isOnline ? jornadaBuscada : null;
+
   const dayWeekday = date ? new Date(`${date}T00:00:00`).getDay() : null;
+  // No online é a jornada do consultor que diz se o dia existe.
+  const configDoDia = jornadaOnline ?? effectiveConfig;
   const weekdayConfigured = Boolean(
-    effectiveConfig &&
-      dayWeekday !== null &&
-      effectiveConfig.weekdays.includes(dayWeekday)
+    configDoDia && dayWeekday !== null && configDoDia.weekdays.includes(dayWeekday)
   );
   // AJ7: dia avulso num dia NORMAL estende o horário (une); em dia fechado usa a
   // janela própria. Mesma regra do servidor (effectiveDayHours).
@@ -533,26 +557,28 @@ export function AppointmentFormDialog({
   // for encaixe and when there's no agenda config yet. A special open day
   // (dia avulso) offers its own window even on a closed weekday (H1.6).
   const baseSlots = useMemo(() => {
-    if (isEncaixe || !effectiveConfig) return WIDE_TIME_ITEMS;
-    const openMin = timeToMinutes(openWindow?.start ?? effectiveConfig.openTime);
-    const closeMin = timeToMinutes(openWindow?.end ?? effectiveConfig.closeTime);
+    if (isEncaixe || !configDoDia) return WIDE_TIME_ITEMS;
+    // Dia avulso é ato da unidade — não estica nem encurta a jornada de quem
+    // atende de casa.
+    const janela = jornadaOnline ? null : openWindow;
+    const openMin = timeToMinutes(janela?.start ?? configDoDia.openTime);
+    const closeMin = timeToMinutes(janela?.end ?? configDoDia.closeTime);
     const items: { value: string; label: string }[] = [];
     for (let m = openMin; m <= closeMin - SLOT_STEP; m += SLOT_STEP) {
       const v = minutesToHHMM(m);
       items.push({ value: v, label: v });
     }
     return items;
-  }, [isEncaixe, effectiveConfig, openWindow]);
+  }, [isEncaixe, configDoDia, jornadaOnline, openWindow]);
 
   // Closed weekday (configured) blocks the day, except for encaixe — unless
   // it's a special open day or a holiday the manager decided to attend.
   const dayClosed = Boolean(
     !isEncaixe &&
-      effectiveConfig &&
+      configDoDia &&
       dayWeekday !== null &&
       !weekdayConfigured &&
-      !openWindow &&
-      daySchedule.holidayAttend !== true
+      (jornadaOnline ? true : !openWindow && daySchedule.holidayAttend !== true)
   );
   // H2.9: encaixe em dia fechado é permitido, mas com alerta na escolha da data.
   const encaixeClosedDay = Boolean(

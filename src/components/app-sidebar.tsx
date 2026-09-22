@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Wifi } from "lucide-react";
 import {
   BarChart3,
   BookOpen,
@@ -223,6 +223,9 @@ const ADMIN_ITEMS = [
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
+  // 0268: a agenda do comercial é OUTRA coisa — online, sem sala nem cadeira,
+  // e sem depender do horário da unidade (relato OC-00072).
+  { href: "/admin/agenda-comercial", label: "Agenda do Comercial", icon: Wifi },
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
   { href: "/admin/orientacoes", label: "Orientações", icon: BookOpen },
   { href: "/admin/documentos", label: "Modelos de Documentos", icon: FileText },

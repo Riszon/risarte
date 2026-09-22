@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/09/2026 · Versão do sistema: **0.268.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 22/09/2026 · Versão do sistema: **0.269.0** · Última migração: **0268** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,43 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### A AGENDA DO COMERCIAL ONLINE É DELE, NÃO DA UNIDADE (22/09/2026, v0.269.0, migração 0268)
+
+Relato **OC-00072**: *"por ser um atendimento online não depende exclusivamente
+do atendimento da unidade... o consultor pode atender diversas unidades por
+trabalhar de maneira remota"*.
+
+**Buraco, não regra — e o próprio código provava.** A apresentação comercial já
+era tratada como diferente em **três** pontos (não ocupa sala, ignora o almoço,
+não conta cadeira). Faltava o quarto: ela ainda era recusada fora do horário da
+unidade e nos dias em que a unidade fecha. Ninguém nunca escreveu que deveria
+ser assim; a configuração da agenda (0043) nasceu pensando em cadeira e sala,
+que é justamente o que o online não usa.
+
+**A forma é a cascata de sempre** (SLA, preços, taxas): `online_agenda_settings`
+com `user_id` nulo = padrão da REDE, `user_id` preenchido = jornada daquele
+consultor. **Colunas anuláveis na linha do consultor**, pela lição da 0230 — com
+NOT NULL + default a exceção nasceria congelada e a rede nunca mais a alcançaria.
+Padrão semeado mais largo que o da unidade (**08h–20h, seg–sáb**): quem atende
+remoto alcança o cliente fora do horário comercial.
+
+**Decisões do dono (22/09/2026):** cascata rede → consultor; continuam
+bloqueando apenas as **férias do próprio consultor** e o **fechamento que o
+alcance**; configuram **Admin Master e Franqueadora** (o consultor não muda a
+própria jornada — quem fecha a própria agenda sem ninguém ver some do funil sem
+explicação).
+
+**A régua da tela é a MESMA do servidor.** A lista de horários do diálogo também
+passou a sair da jornada — senão o sábado do consultor não apareceria para
+escolher e o servidor aceitaria algo que a tela não oferece.
+
+**Provado no treino com o sistema rodando:** apresentação marcada para **domingo
+27/09 às 21:00** (a unidade não abre domingo e fecha às 18h), com a lista de
+horários indo até 21:45. **Contraprova no mesmo domingo:** tipo Retorno
+(presencial) continuou recusado — *"A unidade não atende neste dia da semana."*
+
+⚠️ **Migração 0268 pendente na produção.**
 
 ### A FAIXA DE GRAVAÇÃO SAI DO CAMINHO (22/09/2026, v0.268.0, sem migração)
 
