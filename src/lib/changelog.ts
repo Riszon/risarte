@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.268.0",
+    data: "2026-09-22",
+    migracao: null,
+    titulo: "A faixa de gravação sai do caminho",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A faixa de gravação ocupava a largura toda do rodapé e tapava os botões da tela de avaliação. Agora ela nasce no canto de baixo à direita, é bem menor, e você pode arrastá-la para onde quiser pela alça à esquerda.",
+        papeis: "todos",
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Dá para encolher a faixa no botão do tracinho: ela vira uma etiqueta pequena com o ponto vermelho e o tempo. O sistema guarda no seu computador onde você a deixou e se estava encolhida — na próxima consulta ela já aparece assim.",
+        papeis: "todos",
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A faixa encolhe e se move, mas não fecha: enquanto a consulta está sendo gravada ela continua visível, com o ponto vermelho e o tempo. É o que garante que ninguém seja gravado sem saber.",
+        papeis: "todos",
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.267.0",
     data: "2026-09-21",
     migracao: null,

@@ -1125,6 +1125,13 @@ fase do paciente ☐ sei que não sou eu quem chama
 **Cuidado:** você vê **o total** de cada opção, não o preço item a item. Isso é
 proposital: sua aprovação é clínica, não comercial.
 
+> **A faixa atrapalhando? Mova ou encolha.** Ela aparece no **canto de baixo à
+> direita**. Arraste pela **alça** (o pontilhado à esquerda) para onde preferir,
+> ou clique no **tracinho** para encolhê-la a uma etiqueta pequena com o tempo.
+> O sistema lembra onde você deixou, **neste computador**, para a próxima
+> consulta. O que ela **não** faz é fechar: enquanto grava, o ponto vermelho e o
+> tempo continuam à vista — é o que garante que ninguém seja gravado sem saber.
+
 > **A gravação cuida de si mesma.** Ela **começa** quando você chama o paciente
 > para uma avaliação ou reavaliação e **para** quando você conclui o
 > atendimento — não existe mais o risco de esquecer de ligar ou de desligar. A

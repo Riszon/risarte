@@ -125,6 +125,114 @@ export function nadaNoServidor(): null {
   return null;
 }
 
+/**
+ * ONDE A FAIXA FICA — e por que ela se move (relato OC-00069, 22/09/2026).
+ *
+ * A primeira versão nasceu larga e centralizada no rodapé, e cobriu justamente
+ * a faixa da tela onde moram os botões de ação ("Enviar ao Centro de
+ * Planejamento"). O Coordenador relatou no dia seguinte: *"fica em cima da tela
+ * da avaliação e não tem como mover"*.
+ *
+ * ⚠️ O QUE NÃO MUDA: enquanto grava, a faixa continua VISÍVEL. A decisão de
+ * 21/09 (dispensar o consentimento formal do áudio, mas nunca gravar às
+ * escondidas) depende disso. Por isso ela **encolhe e se move**, e não fecha:
+ * mesmo encolhida mostra o ponto vermelho e o tempo correndo.
+ */
+export const LUGAR_DA_FAIXA = "risarte.gravacao.lugar";
+export const FAIXA_ENCOLHIDA = "risarte.gravacao.encolhida";
+
+export type Lugar = { x: number; y: number };
+export type JeitoDaFaixa = { lugar: Lugar | null; encolhida: boolean };
+
+/** O padrão: canto de baixo à direita, inteira. Referência FIXA de propósito —
+ *  `useSyncExternalStore` compara por identidade e redesenharia sem parar. */
+const PADRAO: JeitoDaFaixa = { lugar: null, encolhida: false };
+
+let jeito: JeitoDaFaixa | null = null;
+const ouvintesDoJeito = new Set<() => void>();
+
+function lerDoNavegador(): JeitoDaFaixa {
+  // ⚠️ SEMPRE em try/catch: em janela anônima, com cookies bloqueados ou com o
+  // armazenamento cheio, o `localStorage` LEVANTA erro — e uma preferência de
+  // canto não pode derrubar a gravação da consulta.
+  try {
+    const salvo = localStorage.getItem(LUGAR_DA_FAIXA);
+    const p = salvo ? (JSON.parse(salvo) as Lugar) : null;
+    const valido = p && typeof p.x === "number" && typeof p.y === "number";
+    return {
+      lugar: valido ? p : null,
+      encolhida: localStorage.getItem(FAIXA_ENCOLHIDA) === "1",
+    };
+  } catch {
+    return PADRAO;
+  }
+}
+
+/** No navegador: o que ficou guardado. */
+export function jeitoDaFaixa(): JeitoDaFaixa {
+  if (!jeito) jeito = lerDoNavegador();
+  return jeito;
+}
+
+/** No servidor: o padrão, sempre o MESMO objeto — senão o React redesenha em
+ *  laço, e servidor e navegador discordariam no primeiro desenho. */
+export function jeitoNoServidor(): JeitoDaFaixa {
+  return PADRAO;
+}
+
+export function assinarJeitoDaFaixa(aoMudar: () => void) {
+  ouvintesDoJeito.add(aoMudar);
+  return () => {
+    ouvintesDoJeito.delete(aoMudar);
+  };
+}
+
+function mudarJeito(novo: JeitoDaFaixa) {
+  jeito = novo;
+  ouvintesDoJeito.forEach((f) => f());
+}
+
+export function guardarLugarDaFaixa(lugar: Lugar | null) {
+  mudarJeito({ ...jeitoDaFaixa(), lugar });
+  try {
+    if (lugar) localStorage.setItem(LUGAR_DA_FAIXA, JSON.stringify(lugar));
+    else localStorage.removeItem(LUGAR_DA_FAIXA);
+  } catch {
+    // a faixa continua onde está nesta sessão
+  }
+}
+
+export function guardarFaixaEncolhida(encolhida: boolean) {
+  mudarJeito({ ...jeitoDaFaixa(), encolhida });
+  try {
+    localStorage.setItem(FAIXA_ENCOLHIDA, encolhida ? "1" : "0");
+  } catch {
+    // idem
+  }
+}
+
+/**
+ * Mantém a faixa dentro da janela, com uma margem.
+ *
+ * Existe porque arrastar até a borda e soltar deixaria a faixa meio fora da
+ * tela — e o que ficaria de fora é justamente o botão "Parar e salvar". Vale
+ * também quando a janela MUDA de tamanho depois: a posição guardada ontem num
+ * monitor grande não pode deixar a faixa invisível no notebook de hoje.
+ */
+export function limitarNaJanela(
+  lugar: Lugar,
+  faixa: { largura: number; altura: number },
+  janela: { largura: number; altura: number },
+  margem = 8
+): Lugar {
+  const maxX = Math.max(margem, janela.largura - faixa.largura - margem);
+  const maxY = Math.max(margem, janela.altura - faixa.altura - margem);
+  return {
+    x: Math.min(Math.max(lugar.x, margem), maxX),
+    y: Math.min(Math.max(lugar.y, margem), maxY),
+  };
+}
+
 /** mm:ss — o tempo correndo na faixa, para o paciente ver junto. */
 export function relogio(segundos: number): string {
   const m = Math.floor(segundos / 60);

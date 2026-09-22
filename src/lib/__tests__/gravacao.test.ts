@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { dispensaConsentimento, relogio, TIPOS_QUE_GRAVAM } from "../gravacao";
+import {
+  dispensaConsentimento,
+  limitarNaJanela,
+  relogio,
+  TIPOS_QUE_GRAVAM,
+} from "../gravacao";
 
 /**
  * ⚠️ O TESTE QUE PRENDE UMA DISPENSA DE LGPD.
@@ -47,6 +52,34 @@ describe("dispensa do consentimento — áudio da avaliação", () => {
     expect(dispensaConsentimento("audio", null)).toBe(false);
     expect(dispensaConsentimento("audio", undefined)).toBe(false);
     expect(dispensaConsentimento("audio", "")).toBe(false);
+  });
+});
+
+describe("onde a faixa fica (relato OC-00069)", () => {
+  const faixa = { largura: 320, altura: 60 };
+  const janela = { largura: 1280, altura: 800 };
+
+  it("solta onde a pessoa largou", () => {
+    expect(limitarNaJanela({ x: 400, y: 300 }, faixa, janela)).toEqual({ x: 400, y: 300 });
+  });
+
+  it("não deixa a faixa sair pela direita nem por baixo", () => {
+    // Arrastar para fora esconderia justamente o "Parar e salvar".
+    expect(limitarNaJanela({ x: 5000, y: 5000 }, faixa, janela)).toEqual({
+      x: 1280 - 320 - 8,
+      y: 800 - 60 - 8,
+    });
+  });
+
+  it("nem pela esquerda ou pelo topo", () => {
+    expect(limitarNaJanela({ x: -900, y: -900 }, faixa, janela)).toEqual({ x: 8, y: 8 });
+  });
+
+  it("numa janela menor que a faixa, encosta na margem em vez de inverter", () => {
+    // O notebook pequeno depois do monitor grande: sem isto a conta daria um
+    // limite NEGATIVO e a faixa iria para fora da tela pelo outro lado.
+    const apertada = { largura: 300, altura: 50 };
+    expect(limitarNaJanela({ x: 200, y: 200 }, faixa, apertada)).toEqual({ x: 8, y: 8 });
   });
 });
 

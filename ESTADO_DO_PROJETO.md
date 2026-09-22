@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/09/2026 · Versão do sistema: **0.267.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 22/09/2026 · Versão do sistema: **0.268.0** · Última migração: **0267** (aplicadas nos DOIS ambientes em 21/09) · Empresarial **0.50.0** / migração **1012**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,35 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### A FAIXA DE GRAVAÇÃO SAI DO CAMINHO (22/09/2026, v0.268.0, sem migração)
+
+Relato **OC-00069**, no dia seguinte à entrega da gravação automática: *"o pop-up
+de gravação fica em cima da tela da avaliação clínica e não tem como mover"*.
+**O defeito era meu desenho de ontem** — a faixa nascia larga (`inset-x` inteiro,
+centralizada) justamente sobre a faixa do rodapé onde moram os botões de ação
+das telas clínicas.
+
+**O que NÃO podia mudar:** a decisão de 21/09 dispensou o consentimento formal
+do áudio, mas em troca a gravação nunca é escondida. Então a faixa **encolhe e
+se move — não fecha**. Encolhida (182 px em vez de 448), ela ainda mostra o
+ponto vermelho piscando e o tempo correndo.
+
+- **Nasce no canto** de baixo à direita, estreita.
+- **Arrasta pela alça**, não pelo corpo: arrastar pelo corpo faria o clique em
+  "Parar e salvar" virar arrasto por engano — e parar é o que mais importa
+  acertar ali.
+- **Lugar e tamanho ficam guardados no navegador** (conveniência de quem usa,
+  não dado do sistema), sempre em `try/catch`: em janela anônima o
+  `localStorage` levanta erro, e uma preferência de canto não pode derrubar uma
+  gravação.
+- **`limitarNaJanela` (4 testes)** impede a faixa de sair da tela ao arrastar e
+  a traz de volta quando a janela encolhe — senão a posição de ontem, no monitor
+  grande, esconderia o botão de parar no notebook de hoje.
+
+**Conferido no treino com o sistema rodando:** arrastada de (1064,664) para
+(250,150), encolhida, e **a gravação seguiu correndo (00:45) ao trocar de tela**,
+salvando 848 KB na ficha.
 
 ### A GRAVAÇÃO DA CONSULTA CUIDA DE SI MESMA (21/09/2026, v0.267.0, sem migração)
 

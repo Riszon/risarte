@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Loader2, Square } from "lucide-react";
+import { GripVertical, Loader2, Maximize2, Minus, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { CLINICAL_BUCKET } from "@/lib/clinical";
 import { recordClinicalMedia } from "@/app/(app)/prontuarios/[id]/clinical-actions";
 import { atendimentoAindaAberto } from "@/app/(app)/agenda/actions";
@@ -16,6 +23,12 @@ import {
   LIMITE_DE_GRAVACAO_S,
   extensaoDe,
   formatoDisponivel,
+  assinarJeitoDaFaixa,
+  guardarFaixaEncolhida,
+  guardarLugarDaFaixa,
+  jeitoDaFaixa,
+  jeitoNoServidor,
+  limitarNaJanela,
   marcarGravacao,
   relogio,
   type PedidoDeGravacao,
@@ -54,8 +67,80 @@ export function GravacaoDaConsulta() {
   // enxergaria o estado velho (o clássico da closure) — e aí a gravação seria
   // salva na ficha do paciente ANTERIOR.
   const emCurso = useRef<PedidoDeGravacao | null>(null);
-  //  nasce depois de ; o ref evita a dependência circular.
+  // `parar` nasce depois de `comecar`; o ref evita a dependência circular.
   const pararRef = useRef<(() => void) | null>(null);
+
+  // ---- Onde a faixa fica (relato OC-00069) ---------------------------------
+  // `null` = o canto de baixo à direita, o lugar padrão. Quem arrasta ganha uma
+  // posição própria, guardada NESTE navegador: é conveniência de quem usa, não
+  // dado do sistema — e ela volta ao canto sozinha se a janela encolher.
+  const { lugar, encolhida } = useSyncExternalStore(
+    assinarJeitoDaFaixa,
+    jeitoDaFaixa,
+    jeitoNoServidor
+  );
+  const [arrastando, setArrastando] = useState(false);
+  const faixaRef = useRef<HTMLDivElement | null>(null);
+  const agarre = useRef<{ dx: number; dy: number } | null>(null);
+
+  /** Arrastar pela alça: o corpo inteiro faria o clique em "Parar" virar arrasto. */
+  const comecarArrasto = useCallback(
+    (e: React.PointerEvent) => {
+      const caixa = faixaRef.current?.getBoundingClientRect();
+      if (!caixa) return;
+      agarre.current = { dx: e.clientX - caixa.left, dy: e.clientY - caixa.top };
+      setArrastando(true);
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!arrastando) return;
+    function mover(e: PointerEvent) {
+      const caixa = faixaRef.current?.getBoundingClientRect();
+      const pega = agarre.current;
+      if (!caixa || !pega) return;
+      guardarLugarDaFaixa(
+        limitarNaJanela(
+          { x: e.clientX - pega.dx, y: e.clientY - pega.dy },
+          { largura: caixa.width, altura: caixa.height },
+          { largura: window.innerWidth, altura: window.innerHeight }
+        )
+      );
+    }
+    function soltar() {
+      agarre.current = null;
+      setArrastando(false);
+    }
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", soltar);
+    return () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("pointercancel", soltar);
+    };
+  }, [arrastando]);
+
+  // A janela mudou de tamanho: a posição de ontem, num monitor grande, deixaria
+  // a faixa fora da tela no notebook de hoje — e com ela o botão de parar.
+  useEffect(() => {
+    if (!lugar) return;
+    function recolocar() {
+      const caixa = faixaRef.current?.getBoundingClientRect();
+      if (!caixa || !lugar) return;
+      const dentro = limitarNaJanela(
+        lugar,
+        { largura: caixa.width, altura: caixa.height },
+        { largura: window.innerWidth, altura: window.innerHeight }
+      );
+      if (dentro.x !== lugar.x || dentro.y !== lugar.y) guardarLugarDaFaixa(dentro);
+    }
+    window.addEventListener("resize", recolocar);
+    return () => window.removeEventListener("resize", recolocar);
+  }, [lugar]);
 
   const soltarMicrofone = useCallback(() => {
     if (relogioRef.current) clearInterval(relogioRef.current);
@@ -234,35 +319,92 @@ export function GravacaoDaConsulta() {
   if (!pedido && !salvando) return null;
   if (typeof document === "undefined") return null;
 
+  const estilo: React.CSSProperties = lugar
+    ? { left: lugar.x, top: lugar.y, right: "auto", bottom: "auto" }
+    : {};
+
   return createPortal(
     // Vai para o `body` pela mesma razão da barra de captura: a barra de cima
     // tem `backdrop-blur`, e qualquer `fixed` dentro dela vira posição relativa
     // àquele elemento — a faixa apareceria cortada.
+    //
+    // ⚠️ NASCE NO CANTO, NÃO NO MEIO (relato OC-00069). A primeira versão era
+    // larga e centralizada no rodapé, exatamente onde moram os botões de ação
+    // das telas clínicas — tapava o trabalho de quem ela deveria acompanhar.
     <div
+      ref={faixaRef}
       data-moldura
       role="status"
       aria-live="polite"
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-2xl flex-wrap items-center gap-3 rounded-xl border-2 border-destructive bg-background px-3 py-2.5 shadow-2xl sm:inset-x-6"
+      style={estilo}
+      className={cn(
+        "fixed z-50 flex items-center gap-2 rounded-xl border-2 border-destructive bg-background shadow-2xl",
+        !lugar && "right-3 bottom-3 sm:right-6",
+        encolhida ? "px-2 py-1.5" : "max-w-[min(28rem,calc(100vw-1.5rem))] px-3 py-2.5",
+        arrastando && "cursor-grabbing select-none"
+      )}
     >
       {salvando ? (
         <>
           <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
-          <p className="flex-1 text-sm font-medium">Salvando a gravação na ficha…</p>
+          <p className="text-sm font-medium">Salvando a gravação na ficha…</p>
         </>
       ) : (
         <>
-          <span className="size-3 shrink-0 animate-pulse rounded-full bg-destructive" />
-          <div className="min-w-0 flex-1 text-sm">
-            <p className="font-medium">
-              Gravando a consulta · <span className="tabular-nums">{relogio(segundos)}</span>
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {pedido?.clientName} — para sozinha ao concluir o atendimento.
-            </p>
-          </div>
-          <Button size="sm" variant="outline" onClick={parar}>
-            <Square className="mr-1.5 size-3.5" />
-            Parar e salvar
+          {/* A ALÇA. Arrastar pelo corpo inteiro faria o clique em "Parar"
+              virar arrasto por engano — e parar a gravação é o que mais
+              importa acertar aqui. */}
+          <button
+            type="button"
+            aria-label="Mover a faixa de gravação"
+            title="Arraste para mover"
+            onPointerDown={comecarArrasto}
+            className="shrink-0 cursor-grab touch-none rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <GripVertical className="size-4" />
+          </button>
+
+          <span
+            className="size-3 shrink-0 animate-pulse rounded-full bg-destructive"
+            aria-hidden
+          />
+
+          {encolhida ? (
+            // ENCOLHIDA AINDA MOSTRA QUE ESTÁ GRAVANDO: ponto vermelho e tempo.
+            // A regra de 21/09 (nunca gravar escondido) não permite um estado
+            // em que a faixa suma — só um em que ela ocupe pouco.
+            <span className="text-sm font-medium tabular-nums">{relogio(segundos)}</span>
+          ) : (
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="font-medium">
+                Gravando a consulta ·{" "}
+                <span className="tabular-nums">{relogio(segundos)}</span>
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {pedido?.clientName} — para sozinha ao concluir o atendimento.
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => guardarFaixaEncolhida(!encolhida)}
+            aria-label={encolhida ? "Mostrar a faixa inteira" : "Encolher a faixa"}
+            title={encolhida ? "Mostrar a faixa inteira" : "Encolher (continua gravando)"}
+            className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {encolhida ? <Maximize2 className="size-3.5" /> : <Minus className="size-4" />}
+          </button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={parar}
+            className={cn("shrink-0", encolhida && "h-7 px-2")}
+            title="Encerra a gravação e guarda o áudio na ficha"
+          >
+            <Square className={cn("size-3.5", !encolhida && "mr-1.5")} />
+            {!encolhida && "Parar e salvar"}
           </Button>
         </>
       )}
