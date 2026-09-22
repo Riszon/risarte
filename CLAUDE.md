@@ -346,6 +346,51 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**21–22/09/2026 — PC Administrador (relatos da equipe: 0.262.0 → 0.269.0)**
+
+Sessão inteira movida por relatos do sistema. **Tudo o que segue já está no ar
+nos dois ambientes, e as migrações 0266, 0267 e 0268 foram aplicadas na
+produção e no treino.**
+
+- **Jornada (0266)** — só o Admin força a passagem de fase; o resto anda por
+  evento. Três buracos fechados junto: *Concluir a reavaliação*, *Devolver ao
+  Coordenador* e — **achado medindo, não supondo** — o *Devolver ao
+  Planejamento* do Consultor, que a matriz nova tinha quebrado. A auditoria
+  passou a gravar `forcado`. Mapa completo em `docs/JORNADA.md` §4.
+- **Responder relato (0267)** — `/problemas` recusava a resposta do próprio
+  Admin **desde a 0264**: a função perguntava o PAPEL DA REQUISIÇÃO para saber
+  por qual porta a chamada entrou, e o papel não muda quando uma função chama
+  outra. Fechou junto uma brecha: `anon` tinha execute por herança.
+- **Modo escuro (0.265.0)** — `color-scheme` nunca foi declarado (as opções do
+  `<select>` sumiam) e a agenda pintava manchas de papel branco (contraste
+  **1,06**, medido pixel a pixel; hoje 5,9–11,8). 25 pontos corrigidos no
+  sistema inteiro, presos por `tema-escuro.test.ts`.
+- **Agendar (0.266.0)** — a lista de clientes vinha **cortada em 300 nomes, em
+  silêncio**; agora se procura digitando (nome, código ou CPF), reusando o
+  `search_clients`.
+- **Gravação da consulta (0.267.0 e 0.268.0)** — começa ao chamar o paciente e
+  para ao concluir o atendimento; vive na barra de cima para atravessar as
+  telas; a faixa arrasta e encolhe, mas **não fecha**. ⚠️ **Mudança de regra
+  registrada no §6**: o áudio da avaliação/reavaliação dispensa o consentimento
+  (dono + jurídico, 21/09), preso por teste.
+- **Agenda do comercial (0268)** — a apresentação online deixou de depender do
+  horário e dos dias da unidade; jornada própria em cascata (rede → consultor),
+  configurada em Administração → Agenda do Comercial.
+
+**Pendências (nesta ordem):**
+
+1. ⏰ **Supabase Pro vence em 29/09/2026** — lembrar o dono a cada sessão.
+2. **Notebook: seguir a seção 4 de `docs/DOIS-PCS.md`** antes de trabalhar lá
+   (`.stignore`, `git pull`, autocrlf/Node, tabela de PCs).
+3. Conferir na produção, no próximo Risartano cadastrado sem acesso, se a lista
+   mostra "Unidade · Função (prevista)" (EV-084).
+4. Ver na tela a mensagem com os dados de acesso (EV-082) e os dois botões
+   novos da jornada (EV-087).
+5. Teste final do LOTE B (config da agenda + Relatórios), de sessões anteriores.
+
+**Nada em andamento pela metade**: árvore limpa, tudo no GitHub, e os dois
+ambientes na mesma versão (conferido entrando logado, não pelo painel).
+
 **18/09/2026 — PC Administrador (preparação do ambiente, sem mudança de código)**
 
 - Feito: instalados Git 2.55 e Node 24.19 (via winget); criada e cadastrada no
