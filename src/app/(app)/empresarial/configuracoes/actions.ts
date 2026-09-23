@@ -250,3 +250,58 @@ export async function deleteProcedureBenefit(
   if (companyId) revalidatePath(`/empresarial/${companyId}`);
   return { ok: true };
 }
+
+/**
+ * O MODELO DE PROPOSTA DA REDE (1014) — prazo padrão e blocos de texto.
+ *
+ * ⚠️ É a linha com `lead_id` NULO, a que vale para todas as empresas que ainda
+ * não personalizaram. Por isso a guarda é a mesma das outras configurações da
+ * rede, e não a de quem mexe numa empresa só.
+ */
+export async function salvarPropostaDaRede(
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canEditConfig(session, null)) return { ok: false, error: "Sem permissão." };
+
+  const dias = Number.parseInt(String(formData.get("valid_days") ?? ""), 10);
+  if (!Number.isFinite(dias) || dias < 1 || dias > 365) {
+    return { ok: false, error: "A validade padrão vai de 1 a 365 dias." };
+  }
+
+  const sections: { titulo: string; corpo: string }[] = [];
+  for (let i = 0; i < 30; i += 1) {
+    const t = field(formData, `titulo_${i}`);
+    const c = field(formData, `corpo_${i}`);
+    if (!t && !c) continue;
+    sections.push({ titulo: t ?? "", corpo: c ?? "" });
+  }
+  if (sections.length === 0) {
+    return { ok: false, error: "Escreva pelo menos um bloco." };
+  }
+
+  const db = await empresarialDb();
+  const { data: existente } = await db
+    .from("proposal_templates")
+    .select("id")
+    .is("lead_id", null)
+    .maybeSingle();
+
+  const dados = { sections, valid_days: dias, updated_by: session.userId };
+  const { error } = existente
+    ? await db.from("proposal_templates").update(dados).eq("id", existente.id)
+    : await db.from("proposal_templates").insert({ lead_id: null, ...dados });
+
+  if (error) {
+    console.error("salvarPropostaDaRede failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o modelo da rede." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_proposal_template",
+    entityId: "rede",
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}

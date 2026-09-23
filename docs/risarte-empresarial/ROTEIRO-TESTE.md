@@ -246,6 +246,35 @@ aba diz o que falta.
 8. Ponha no levantamento um convênio atual **mais barato** que o programa: o
    documento tem de dizer que custa **mais**, e não esconder.
 
+## 10.3. A aba da Proposta (relato OC-00083, entregue em 23/09/2026)
+
+⚠️ **Rode a migração 1014 antes.** Sem ela a aba abre com faixa amarela
+avisando, e prazo/carência/detalhamento não gravam.
+
+1. Abra uma empresa **Apresentada**: a ficha tem de abrir direto na aba
+   **Proposta**.
+2. A fita agora tem **cinco abas**: Levantamento · Proposta · Apresentação ·
+   Envio e selos · Fechamento.
+3. Na aba Proposta, clique em **Ver o levantamento**: abre um pop-up com o que
+   a empresa contou (convênio atual, quanto paga, interesse, observações).
+   É **só leitura** — para mudar, use a aba Levantamento.
+4. Preencha **Prazo e carência**: validade 7 dias, carência da empresa 30,
+   carência do colaborador 15. Salve.
+5. Clique em **Ver a proposta**: o documento tem de dizer **7 dias** e trazer a
+   seção *"Quando o programa começa a valer"* com os dois prazos.
+6. Apague a validade e salve: o documento volta ao padrão da rede.
+7. Em **Configurações → Proposta comercial**, troque a validade padrão para 20
+   e salve. Gere de novo a proposta de uma empresa **sem prazo próprio**: 20
+   dias. (Volte para 15 depois.)
+8. Ainda em Configurações, mude um bloco de texto: a mudança aparece em toda
+   proposta que não tenha texto próprio.
+9. Na aba Proposta de uma empresa, mexa no **Detalhamento** e salve: só ela
+   muda; o botão **Voltar ao modelo da rede** desfaz.
+10. ⚠️ **A carência que viaja:** feche o negócio dessa empresa e confira no
+    cadastro dela que a carência gravada é a que foi combinada na proposta —
+    não zero.
+11. Troque de aba sem salvar e volte: o que você digitou continua lá.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

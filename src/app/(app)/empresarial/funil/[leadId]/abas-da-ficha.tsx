@@ -6,6 +6,7 @@ import {
   Circle,
   CircleAlert,
   ClipboardList,
+  FileSpreadsheet,
   Handshake,
   Presentation,
   Send,
@@ -35,6 +36,7 @@ import {
 
 const ICONE: Record<EtapaDaFicha, LucideIcon> = {
   levantamento: ClipboardList,
+  proposta: FileSpreadsheet,
   apresentacao: Presentation,
   envio: Send,
   fechamento: Handshake,

@@ -295,7 +295,7 @@ export async function convertLeadToCompany(
   const { data: qual } = await db
     .from("lead_qualification")
     .select(
-      "legal_name, category, billing_model, payment_model, subsidy_type, subsidy_value, employee_count, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone, notes"
+      "legal_name, category, billing_model, payment_model, subsidy_type, subsidy_value, employee_count, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone, notes, company_grace_days, employee_grace_days"
     )
     .eq("lead_id", leadId)
     .maybeSingle<QualificacaoDoLead>();

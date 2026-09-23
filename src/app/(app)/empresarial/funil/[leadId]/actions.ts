@@ -83,58 +83,21 @@ function daLista<T extends string>(
  * que muda ao longo do tempo já está na linha do tempo e nas tentativas de
  * contato. Por isso o update-depois-insert, e não duas linhas.
  */
-export async function saveQualification(
+/**
+ * ⚠️ O LEVANTAMENTO E A PROPOSTA VIRARAM DUAS GRAVAÇÕES (OC-00083,
+ * 23/09/2026), porque viraram duas abas.
+ *
+ * Eram um formulário só, com um botão de salvar só. Cada uma escreve **apenas
+ * as suas colunas** na mesma linha de `lead_qualification` — é por isso que o
+ * caminho é UPDATE parcial: um upsert com o objeto inteiro apagaria, a cada
+ * salvar, tudo o que a outra aba tinha preenchido. O defeito seria silencioso
+ * e só apareceria quando alguém voltasse na outra aba.
+ */
+async function gravarNoLevantamento(
   leadId: string,
-  formData: FormData
+  dados: Record<string, unknown>,
+  oQue: string
 ): Promise<ActionResult> {
-  const session = await getSessionContext();
-  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
-
-  const chance = inteiro(formData, "success_chance");
-  if (chance != null && (chance < 0 || chance > 100)) {
-    return { ok: false, error: "A chance de sucesso vai de 0 a 100." };
-  }
-
-  const dados = {
-    lead_id: leadId,
-    has_dental_plan: triBooleano(formData, "has_dental_plan"),
-    dental_plan_name: texto(formData, "dental_plan_name"),
-    dental_plan_monthly_cents: centavos(formData, "dental_plan_monthly"),
-    other_benefits: texto(formData, "other_benefits"),
-    social_projects: triBooleano(formData, "social_projects"),
-    social_projects_note: texto(formData, "social_projects_note"),
-    interest_level: daLista(formData, "interest_level", INTEREST_LEVELS),
-    success_chance: chance,
-
-    payment_model: daLista(formData, "payment_model", PAYMENT_MODELS),
-    subsidy_type: daLista(formData, "subsidy_type", ["PERCENT", "AMOUNT"] as const),
-    subsidy_value:
-      texto(formData, "subsidy_type") === "PERCENT"
-        ? inteiro(formData, "subsidy_percent")
-        : centavos(formData, "subsidy_amount"),
-    employee_count: inteiro(formData, "employee_count"),
-    includes_dependents: triBooleano(formData, "includes_dependents"),
-    dependents_estimate: inteiro(formData, "dependents_estimate"),
-    billing_model: daLista(formData, "billing_model", ["unico", "por_cnpj"] as const),
-    billing_basis: daLista(formData, "billing_basis", BILLING_BASES),
-    holder_fee_cents: centavos(formData, "holder_fee"),
-    dependent_fee_cents: centavos(formData, "dependent_fee"),
-    fixed_monthly_cents: centavos(formData, "fixed_monthly"),
-    implantation_per_employee_cents: centavos(formData, "implantation_per_employee"),
-
-    legal_name: texto(formData, "legal_name"),
-    category: daLista(formData, "category", COMPANY_CATEGORIES),
-    responsible_name: texto(formData, "responsible_name"),
-    responsible_role: texto(formData, "responsible_role"),
-    responsible_cpf: texto(formData, "responsible_cpf"),
-    responsible_email: texto(formData, "responsible_email"),
-    responsible_phone: texto(formData, "responsible_phone")
-      ? formatPhone(texto(formData, "responsible_phone")!)
-      : null,
-    notes: texto(formData, "notes"),
-    updated_by: session.userId,
-  };
-
   const db = await empresarialDb();
   // Atualiza-depois-insere em vez de `on conflict`: o índice único é sobre
   // lead_id, e o caminho explícito deixa claro qual dos dois aconteceu.
@@ -146,11 +109,11 @@ export async function saveQualification(
 
   const { error } = existente
     ? await db.from("lead_qualification").update(dados).eq("id", existente.id)
-    : await db.from("lead_qualification").insert(dados);
+    : await db.from("lead_qualification").insert({ lead_id: leadId, ...dados });
 
   if (error) {
-    console.error("saveQualification failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar o levantamento." };
+    console.error(`${oQue} failed:`, error.message);
+    return { ok: false, error: `Não foi possível salvar ${oQue}.` };
   }
 
   await logAudit({
@@ -161,6 +124,96 @@ export async function saveQualification(
   revalidatePath(`/empresarial/funil/${leadId}`);
   revalidatePath("/empresarial/funil");
   return { ok: true };
+}
+
+/** A ENTREVISTA: o que a empresa tem hoje e o que o consultor leu dela. */
+export async function saveDiscovery(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const chance = inteiro(formData, "success_chance");
+  if (chance != null && (chance < 0 || chance > 100)) {
+    return { ok: false, error: "A chance de sucesso vai de 0 a 100." };
+  }
+
+  return gravarNoLevantamento(
+    leadId,
+    {
+      has_dental_plan: triBooleano(formData, "has_dental_plan"),
+      dental_plan_name: texto(formData, "dental_plan_name"),
+      dental_plan_monthly_cents: centavos(formData, "dental_plan_monthly"),
+      other_benefits: texto(formData, "other_benefits"),
+      social_projects: triBooleano(formData, "social_projects"),
+      social_projects_note: texto(formData, "social_projects_note"),
+      interest_level: daLista(formData, "interest_level", INTEREST_LEVELS),
+      success_chance: chance,
+      notes: texto(formData, "notes"),
+      updated_by: session.userId,
+    },
+    "o levantamento"
+  );
+}
+
+/** A OFERTA: valores, carência, prazo e os dados que vão no documento. */
+export async function saveProposal(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  // Os limites são os mesmos do banco (1014). Barrar aqui é UX; a barreira é
+  // a `check constraint`, que vale mesmo para quem não passa por esta tela.
+  const prazo = inteiro(formData, "proposal_valid_days");
+  if (prazo != null && (prazo < 1 || prazo > 365)) {
+    return { ok: false, error: "O prazo da proposta vai de 1 a 365 dias." };
+  }
+  const carenciaEmpresa = inteiro(formData, "company_grace_days");
+  const carenciaColaborador = inteiro(formData, "employee_grace_days");
+  for (const c of [carenciaEmpresa, carenciaColaborador]) {
+    if (c != null && (c < 0 || c > 3650)) {
+      return { ok: false, error: "A carência vai de 0 a 3650 dias." };
+    }
+  }
+
+  return gravarNoLevantamento(
+    leadId,
+    {
+      proposal_valid_days: prazo,
+      company_grace_days: carenciaEmpresa,
+      employee_grace_days: carenciaColaborador,
+      payment_model: daLista(formData, "payment_model", PAYMENT_MODELS),
+      subsidy_type: daLista(formData, "subsidy_type", ["PERCENT", "AMOUNT"] as const),
+      subsidy_value:
+        texto(formData, "subsidy_type") === "PERCENT"
+          ? inteiro(formData, "subsidy_percent")
+          : centavos(formData, "subsidy_amount"),
+      employee_count: inteiro(formData, "employee_count"),
+      includes_dependents: triBooleano(formData, "includes_dependents"),
+      dependents_estimate: inteiro(formData, "dependents_estimate"),
+      billing_model: daLista(formData, "billing_model", ["unico", "por_cnpj"] as const),
+      billing_basis: daLista(formData, "billing_basis", BILLING_BASES),
+      holder_fee_cents: centavos(formData, "holder_fee"),
+      dependent_fee_cents: centavos(formData, "dependent_fee"),
+      fixed_monthly_cents: centavos(formData, "fixed_monthly"),
+      implantation_per_employee_cents: centavos(formData, "implantation_per_employee"),
+
+      legal_name: texto(formData, "legal_name"),
+      category: daLista(formData, "category", COMPANY_CATEGORIES),
+      responsible_name: texto(formData, "responsible_name"),
+      responsible_role: texto(formData, "responsible_role"),
+      responsible_cpf: texto(formData, "responsible_cpf"),
+      responsible_email: texto(formData, "responsible_email"),
+      responsible_phone: texto(formData, "responsible_phone")
+        ? formatPhone(texto(formData, "responsible_phone")!)
+        : null,
+      updated_by: session.userId,
+    },
+    "a proposta"
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -239,6 +292,73 @@ export async function resetPresentation(leadId: string): Promise<ActionResult> {
   if (error) {
     console.error("resetPresentation failed:", error.message);
     return { ok: false, error: "Não foi possível restaurar o padrão." };
+  }
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+/**
+ * O TEXTO da proposta desta empresa (1014).
+ *
+ * Mesma cascata da apresentação: enquanto não houver linha própria, a empresa
+ * usa o modelo da rede. Salvar aqui cria a personalização, e o modelo da rede
+ * continua intocado para todo mundo que ainda não personalizou.
+ */
+export async function saveProposalText(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const sections: { titulo: string; corpo: string }[] = [];
+  for (let i = 0; i < 30; i += 1) {
+    const t = texto(formData, `titulo_${i}`);
+    const c = texto(formData, `corpo_${i}`);
+    // Bloco vazio é bloco apagado — não vira parágrafo em branco no documento.
+    if (!t && !c) continue;
+    sections.push({ titulo: t ?? "", corpo: c ?? "" });
+  }
+  if (sections.length === 0) {
+    return { ok: false, error: "Escreva pelo menos um bloco." };
+  }
+
+  const dados = { lead_id: leadId, sections, updated_by: session.userId };
+
+  const db = await empresarialDb();
+  const { data: existente } = await db
+    .from("proposal_templates")
+    .select("id")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+
+  const { error } = existente
+    ? await db.from("proposal_templates").update(dados).eq("id", existente.id)
+    : await db.from("proposal_templates").insert(dados);
+
+  if (error) {
+    console.error("saveProposalText failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o texto da proposta." };
+  }
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+/** Volta ao modelo da rede: apaga só a personalização deste lead. */
+export async function resetProposalText(leadId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const db = await empresarialDb();
+  // `eq("lead_id", leadId)` e não `is null`: apagar a linha da REDE tiraria o
+  // modelo padrão de todo mundo.
+  const { error } = await db
+    .from("proposal_templates")
+    .delete()
+    .eq("lead_id", leadId);
+  if (error) {
+    console.error("resetProposalText failed:", error.message);
+    return { ok: false, error: "Não foi possível restaurar o modelo da rede." };
   }
   revalidatePath(`/empresarial/funil/${leadId}`);
   return { ok: true };

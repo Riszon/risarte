@@ -18,8 +18,20 @@
 
 import type { LeadStage } from "./constants";
 
+/**
+ * ⚠️ A PROPOSTA GANHOU ABA PRÓPRIA (23/09/2026, segundo retorno do dono no
+ * OC-00083): *"a proposta está misturada com o levantamento e ainda fica
+ * confuso"*.
+ *
+ * Ele está certo, e a razão não é de tela: **levantar e oferecer são dois atos
+ * diferentes**. No levantamento se registra o que a empresa tem e o que ela
+ * disse; na proposta se DECIDE o que oferecer. Estavam no mesmo formulário,
+ * com um botão de salvar só — quem ia ajustar um valor relia a entrevista
+ * inteira pelo caminho.
+ */
 export const ETAPAS_DA_FICHA = [
   "levantamento",
+  "proposta",
   "apresentacao",
   "envio",
   "fechamento",
@@ -28,6 +40,7 @@ export type EtapaDaFicha = (typeof ETAPAS_DA_FICHA)[number];
 
 export const ETAPA_ROTULO: Record<EtapaDaFicha, string> = {
   levantamento: "Levantamento",
+  proposta: "Proposta",
   apresentacao: "Apresentação",
   envio: "Envio e selos",
   fechamento: "Fechamento",
@@ -51,8 +64,10 @@ export function etapaInicial(stage: LeadStage): EtapaDaFicha {
       // A reunião está marcada: o que se faz agora é preparar a apresentação.
       return "apresentacao";
     case "PRESENTED":
-      // Apresentou: agora se registra o que ouviu e monta a proposta.
-      return "levantamento";
+      // Apresentou: o que se faz agora é montar a oferta. O que ele ouviu na
+      // reunião entra no levantamento, que está a um clique e aparece em
+      // pop-up dentro da própria aba da proposta.
+      return "proposta";
     case "PROPOSAL_SENT":
     case "FOLLOW_UP":
       return "envio";
@@ -85,10 +100,19 @@ export type DadosDasEtapas = {
    * responde "quantos"; ela não sabe dizer "nenhum".
    */
   temLevantamento: boolean;
+  /**
+   * Sabe-se quanto a empresa paga hoje de convênio.
+   *
+   * É o único dado do levantamento que muda o DOCUMENTO: sem ele a proposta
+   * não pode comparar, e a aba avisa antes de a pessoa descobrir no papel.
+   */
+  sabeOConvenioAtual: boolean;
   /** Campos que ainda faltam para a proposta (régua de `proposta.ts`). */
   faltaProposta: readonly string[];
   /** Campos que ainda faltam para o contrato (régua de `proposta.ts`). */
   faltaContrato: readonly string[];
+  /** A proposta tem texto próprio, em vez do modelo da rede. */
+  propostaPersonalizada: boolean;
   /** A apresentação foi personalizada para esta empresa, ou é o modelo da rede. */
   apresentacaoPersonalizada: boolean;
   /** Quantos envios já foram registrados. */
@@ -120,11 +144,22 @@ export function situacaoDasEtapas(
 ): Record<EtapaDaFicha, SituacaoDaEtapa> {
   const faltam = new Set([...d.faltaProposta, ...d.faltaContrato]).size;
 
+  // ⚠️ O LEVANTAMENTO NÃO É MAIS MEDIDO PELO QUE FALTA PARA A PROPOSTA.
+  // Aqueles campos mudaram de aba; contá-los aqui faria a aba da entrevista
+  // cobrar valores que não moram mais nela. O que se mede aqui é se a
+  // entrevista existe e se ela trouxe o dado que muda o documento.
   const levantamento: SituacaoDaEtapa = !d.temLevantamento
     ? { estado: "falta", resumo: "não começou" }
-    : faltam > 0
+    : d.sabeOConvenioAtual
+      ? { estado: "feito", resumo: "completo" }
+      : { estado: "pronto", resumo: "sem o convênio atual" };
+
+  const proposta: SituacaoDaEtapa =
+    faltam > 0
       ? { estado: "falta", resumo: `falta ${plural(faltam, "campo", "campos")}` }
-      : { estado: "pronto", resumo: "completo" };
+      : d.propostaPersonalizada
+        ? { estado: "feito", resumo: "pronta · texto próprio" }
+        : { estado: "pronto", resumo: "pronta" };
 
   const apresentacao: SituacaoDaEtapa = d.apresentacaoPersonalizada
     ? { estado: "feito", resumo: "personalizada" }
@@ -149,5 +184,5 @@ export function situacaoDasEtapas(
         ? { estado: "pronto", resumo: "conferido" }
         : { estado: "falta", resumo: "em aberto" };
 
-  return { levantamento, apresentacao, envio, fechamento };
+  return { levantamento, proposta, apresentacao, envio, fechamento };
 }

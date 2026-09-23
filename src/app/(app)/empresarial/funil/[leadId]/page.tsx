@@ -31,6 +31,7 @@ import {
 import { AbasDaFicha, type AbaDaFicha } from "./abas-da-ficha";
 import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
+import { FichaDaProposta } from "./ficha-proposta";
 import type {
   ImplementationStep,
   PassoRegistrado,
@@ -78,6 +79,13 @@ type TemplateRow = {
   sections: { titulo: string; corpo: string }[];
 };
 
+/** O modelo de TEXTO da proposta (1014). Mesma cascata da apresentação. */
+type PropostaTemplateRow = {
+  lead_id: string | null;
+  sections: { titulo: string; corpo: string }[];
+  valid_days: number;
+};
+
 type DispatchRow = {
   id: string;
   channel: DispatchChannel;
@@ -116,6 +124,9 @@ type QualRow = {
   responsible_email: string | null;
   responsible_phone: string | null;
   notes: string | null;
+  proposal_valid_days: number | null;
+  company_grace_days: number | null;
+  employee_grace_days: number | null;
 };
 
 export default async function FichaDoLeadPage({
@@ -190,6 +201,23 @@ export default async function FichaDoLeadPage({
   const daRede = templates?.find((t) => !t.lead_id);
   const template = daEmpresa ?? daRede;
 
+  // O modelo de TEXTO da proposta (1014), na mesma cascata.
+  //
+  // ⚠️ A MIGRAÇÃO VIAJA À MÃO E O CÓDIGO VIAJA SOZINHO (CLAUDE.md §0b): entre
+  // o deploy e o dia em que a 1014 for rodada, esta tabela pode não existir.
+  // Derrubar a ficha inteira por isso deixaria o funil fora do ar sem que
+  // ninguém soubesse por quê — a tela segue funcionando com o padrão e DIZ o
+  // que está faltando, como já se faz com a matriz de permissões.
+  const { data: propTemplates, error: erroProposta } = await db
+    .from("proposal_templates")
+    .select("lead_id, sections, valid_days")
+    .or(`lead_id.eq.${leadId},lead_id.is.null`)
+    .returns<PropostaTemplateRow[]>();
+  if (erroProposta) console.error("modelo da proposta:", erroProposta.message);
+  const semMigracao = Boolean(erroProposta);
+  const propostaDaEmpresa = propTemplates?.find((t) => t.lead_id === leadId);
+  const propostaDaRede = propTemplates?.find((t) => !t.lead_id);
+
   // Nomes de quem enviou e do consultor responsável.
   const userIds = [
     ...new Set(
@@ -255,6 +283,9 @@ export default async function FichaDoLeadPage({
     responsibleEmail: qual?.responsible_email ?? null,
     responsiblePhone: qual?.responsible_phone ?? lead.contact_phone,
     notes: qual?.notes ?? null,
+    proposalValidDays: qual?.proposal_valid_days ?? null,
+    companyGraceDays: qual?.company_grace_days ?? null,
+    employeeGraceDays: qual?.employee_grace_days ?? null,
     temLevantamento: Boolean(qual),
   };
 
@@ -275,8 +306,10 @@ export default async function FichaDoLeadPage({
     // aba precisa das duas: a linha vazia vem com os padrões da rede
     // preenchidos e pareceria quase pronta.
     temLevantamento: view.temLevantamento,
+    sabeOConvenioAtual: view.dentalPlanMonthlyCents != null,
     faltaProposta: faltaParaProposta(dadosDaProposta),
     faltaContrato: faltaParaContrato(dadosDaProposta),
+    propostaPersonalizada: Boolean(propostaDaEmpresa),
     apresentacaoPersonalizada: Boolean(daEmpresa),
     envios: envios.length,
     propostaEnviada: envios.some((e) => e.items.includes("PROPOSAL")),
@@ -293,8 +326,22 @@ export default async function FichaDoLeadPage({
       id: "levantamento",
       situacao: situacao.levantamento,
       agora: aberta === "levantamento",
+      painel: <FichaDoLead leadId={lead.id} qualificacao={view} />,
+    },
+    {
+      id: "proposta",
+      situacao: situacao.proposta,
+      agora: aberta === "proposta",
       painel: (
-        <FichaDoLead leadId={lead.id} cnpj={lead.cnpj} qualificacao={view} />
+        <FichaDaProposta
+          leadId={lead.id}
+          cnpj={lead.cnpj}
+          qualificacao={view}
+          prazoPadraoDaRede={propostaDaRede?.valid_days ?? 15}
+          blocos={(propostaDaEmpresa ?? propostaDaRede)?.sections ?? []}
+          textoPersonalizado={Boolean(propostaDaEmpresa)}
+          semMigracao={semMigracao}
+        />
       ),
     },
     {

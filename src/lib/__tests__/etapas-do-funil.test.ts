@@ -9,8 +9,10 @@ import {
 
 const vazio: DadosDasEtapas = {
   temLevantamento: true,
+  sabeOConvenioAtual: true,
   faltaProposta: [],
   faltaContrato: [],
+  propostaPersonalizada: false,
   apresentacaoPersonalizada: false,
   envios: 0,
   propostaEnviada: false,
@@ -34,8 +36,8 @@ describe("em qual aba a ficha abre", () => {
     expect(etapaInicial("CAPTURE")).toBe("levantamento");
     // Reunião marcada: o que se faz é preparar a apresentação.
     expect(etapaInicial("MEETING_SCHEDULED")).toBe("apresentacao");
-    // Apresentou: registra o que ouviu e monta a proposta.
-    expect(etapaInicial("PRESENTED")).toBe("levantamento");
+    // Apresentou: o trabalho de agora é montar a oferta.
+    expect(etapaInicial("PRESENTED")).toBe("proposta");
     expect(etapaInicial("PROPOSAL_SENT")).toBe("envio");
     expect(etapaInicial("FOLLOW_UP")).toBe("envio");
     expect(etapaInicial("IMPLEMENTATION")).toBe("fechamento");
@@ -48,7 +50,7 @@ describe("em qual aba a ficha abre", () => {
 });
 
 describe("o que cada aba diz de si mesma", () => {
-  it("conta os campos que faltam SEM contar duas vezes o mesmo", () => {
+  it("a PROPOSTA conta os campos que faltam SEM contar duas vezes o mesmo", () => {
     // `faltaParaProposta` e `faltaParaContrato` se sobrepõem de propósito —
     // somar as duas listas diria "falta 3" onde faltam 2 campos.
     const s = situacaoDasEtapas({
@@ -56,12 +58,23 @@ describe("o que cada aba diz de si mesma", () => {
       faltaProposta: ["colaboradores", "razão social"],
       faltaContrato: ["razão social"],
     });
-    expect(s.levantamento).toEqual({ estado: "falta", resumo: "falta 2 campos" });
+    expect(s.proposta).toEqual({ estado: "falta", resumo: "falta 2 campos" });
   });
 
   it("um campo só fala no singular", () => {
     const s = situacaoDasEtapas({ ...vazio, faltaProposta: ["CNPJ"] });
-    expect(s.levantamento.resumo).toBe("falta 1 campo");
+    expect(s.proposta.resumo).toBe("falta 1 campo");
+  });
+
+  it("o LEVANTAMENTO não é medido pelos campos da proposta", () => {
+    // Eles mudaram de aba (a proposta ganhou a sua). Contá-los aqui faria a
+    // aba da entrevista cobrar valores que não moram mais nela.
+    const s = situacaoDasEtapas({
+      ...vazio,
+      faltaProposta: ["colaboradores", "quem paga", "como será cobrado"],
+    });
+    expect(s.levantamento.resumo).not.toContain("campo");
+    expect(s.proposta.resumo).toBe("falta 3 campos");
   });
 
   it("SEM levantamento nenhum diz 'não começou', nunca 'falta 1 campo'", () => {
@@ -73,11 +86,20 @@ describe("o que cada aba diz de si mesma", () => {
     expect(s.levantamento).toEqual({ estado: "falta", resumo: "não começou" });
   });
 
-  it("levantamento completo é 'pronto', não 'feito'", () => {
-    // Preencher não é ter fechado nada: "feito" é reservado para ato com data.
-    expect(situacaoDasEtapas(vazio).levantamento).toEqual({
+  it("levantamento sem o valor do convênio atual avisa — é o que a proposta compara", () => {
+    const s = situacaoDasEtapas({ ...vazio, sabeOConvenioAtual: false });
+    expect(s.levantamento).toEqual({
       estado: "pronto",
-      resumo: "completo",
+      resumo: "sem o convênio atual",
+    });
+  });
+
+  it("proposta com texto próprio se distingue do modelo da rede", () => {
+    expect(situacaoDasEtapas(vazio).proposta.resumo).toBe("pronta");
+    const propria = situacaoDasEtapas({ ...vazio, propostaPersonalizada: true });
+    expect(propria.proposta).toEqual({
+      estado: "feito",
+      resumo: "pronta · texto próprio",
     });
   });
 

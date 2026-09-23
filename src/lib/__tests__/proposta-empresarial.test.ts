@@ -319,6 +319,31 @@ describe("o levantamento vira o cadastro da empresa", () => {
     expect(c.notes).toBe("Dependentes só no segundo mês.");
   });
 
+  it("A CARÊNCIA NEGOCIADA VIAJA para o cadastro da empresa (1014)", () => {
+    // Antes ela só nascia no cadastro, com o padrão 0: o que tinha sido
+    // combinado na proposta era redigitado depois, e podia sair diferente do
+    // que foi VENDIDO — cliente cobrando um prazo e o sistema aplicando outro.
+    const c = camposDaEmpresa(
+      { ...cheio, company_grace_days: 30, employee_grace_days: 15 },
+      lead
+    );
+    expect(c.grace_period_days).toBe(30);
+    expect(c.employee_grace_period_days).toBe(15);
+  });
+
+  it("carência NÃO negociada não inventa prazo — cai no padrão de sempre", () => {
+    // Nulo significa "não foi combinado nada", e aí vale o que a coluna já
+    // fazia: zero. Inventar 30 dias aqui criaria carência que ninguém vendeu.
+    const c = camposDaEmpresa(cheio, lead);
+    expect(c.grace_period_days).toBe(0);
+    expect(c.employee_grace_period_days).toBe(0);
+  });
+
+  it("carência ZERO é uma decisão, e não se confunde com ausência", () => {
+    const c = camposDaEmpresa({ ...cheio, company_grace_days: 0 }, lead);
+    expect(c.grace_period_days).toBe(0);
+  });
+
   it("FICHA EM BRANCO NÃO IMPEDE O FECHAMENTO", () => {
     // Quem acertou tudo por fora fecha do mesmo jeito: o levantamento é ajuda,
     // não pedágio. Os padrões antigos continuam valendo.

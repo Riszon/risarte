@@ -189,6 +189,9 @@ export type QualificacaoDoLead = {
   responsible_email: string | null;
   responsible_phone: string | null;
   notes: string | null;
+  /** Carência negociada na proposta (1014). Nulo = não foi combinada. */
+  company_grace_days?: number | null;
+  employee_grace_days?: number | null;
 };
 
 /**
@@ -223,6 +226,13 @@ export function camposDaEmpresa(
     responsible_email: qual?.responsible_email ?? null,
     responsible_phone: qual?.responsible_phone ?? null,
     notes: qual?.notes ?? null,
+    // ⚠️ A CARÊNCIA NEGOCIADA VIAJA JUNTO (1014). Antes ela só nascia no
+    // cadastro da empresa, com o padrão 0 — então o que tinha sido combinado
+    // na proposta precisava ser redigitado depois, e podia sair diferente do
+    // que foi VENDIDO. Nulo aqui significa "não foi negociado"; aí vale o
+    // padrão da coluna, que é o mesmo de sempre.
+    grace_period_days: qual?.company_grace_days ?? 0,
+    employee_grace_period_days: qual?.employee_grace_days ?? 0,
   };
 }
 

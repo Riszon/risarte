@@ -343,3 +343,69 @@ um campo de mentira (`["o levantamento"]`) na lista do que falta, e a contagem
 o contava. **Contagem responde "quantos"; ela não sabe dizer "nenhum".** Agora
 `temLevantamento` é pergunta separada e a aba diz **"não começou"**. Quatro das
 sete empresas mostravam o rótulo errado.
+
+### Bloco G — a PROPOSTA como etapa própria ✅ (migração 1014, v0.54.0)
+
+Segundo retorno do dono no **OC-00083**: *"deve ter uma aba específica para se
+tratar da proposta (configuração, personalização, detalhamento, carência,
+prazo da proposta e etc)... agora a proposta está misturada com o levantamento
+e ainda fica confuso"*.
+
+Ele está certo, e a razão não é de tela: **levantar e oferecer são dois atos
+diferentes**. No levantamento se registra o que a empresa tem e o que ela
+disse; na proposta se DECIDE o que oferecer. Estavam no mesmo formulário, com
+um botão de salvar só — quem ia ajustar um valor relia a entrevista inteira
+pelo caminho.
+
+**A ficha passou a ter cinco abas:** Levantamento · **Proposta** ·
+Apresentação · Envio e selos · Fechamento.
+
+**O que a aba Proposta tem**
+
+- Como a proposta será montada (quem paga, subsídio, colaboradores,
+  dependentes, base e valores) e a simulação ao vivo.
+- **Prazo e carência** (colunas novas da 1014): validade da proposta em dias,
+  carência da empresa e carência padrão do colaborador.
+- Os **dados para gerar a proposta e o contrato** — razão social, quem assina,
+  CPF, e-mail. Vieram do levantamento de propósito: são o que o documento
+  precisa para existir, não o que se descobre numa entrevista.
+- **Detalhamento**: blocos de texto com modelo da rede, ajustáveis por empresa
+  (mesma cascata da apresentação).
+- **O levantamento em pop-up**, só leitura. Configurar a oferta sem o que a
+  empresa disse é configurar no escuro, e mandar trocar de aba para consultar
+  seria o mesmo problema de antes com outra roupa.
+
+**Decisões que valem registrar**
+
+- **Duas abas, duas gravações, uma linha no banco.** Cada uma escreve APENAS as
+  suas colunas de `lead_qualification` (update parcial). Um upsert com o objeto
+  inteiro apagaria, a cada salvar, o que a outra aba tinha preenchido — e o
+  defeito seria silencioso até alguém voltar na outra aba.
+- **A CARÊNCIA NEGOCIADA VIAJA para o cadastro da empresa** (`camposDaEmpresa`,
+  puro e com teste). Antes ela só nascia no cadastro, com o padrão 0: o que
+  tinha sido combinado na proposta era redigitado depois e podia sair diferente
+  do que foi VENDIDO. **Nulo = não foi negociado** e vale o padrão de sempre;
+  zero é uma decisão e não se confunde com ausência.
+- **O prazo é campo da proposta com padrão da rede** (`proposal_templates` da
+  linha nula, editável em Configurações → Proposta comercial). Provado no
+  treino: rede 15 → documento 15 dias; rede 20 → 20; prazo próprio 7 → **7**,
+  ganhando da rede.
+- **O texto não repete número.** Valores, quem paga e carência são impressos
+  pelo documento a partir do que foi negociado; escrevê-los no texto criaria
+  uma segunda verdade que envelhece sozinha. A tela diz isso nos dois lugares.
+- **O levantamento deixou de ser medido pelos campos da proposta.** Eles mudaram
+  de aba; contá-los ali faria a aba da entrevista cobrar valores que não moram
+  mais nela. Agora ela mede o que é dela: existe? trouxe o valor do convênio
+  atual, que é o único dado do levantamento que muda o documento?
+- **A JANELA ENTRE O DEPLOY E A MIGRAÇÃO É TRATADA** (§0b): sem a 1014, a aba
+  abre com o padrão, avisa em faixa amarela e esconde o editor de texto, em vez
+  de derrubar a ficha inteira. Código viaja sozinho; migração, não.
+
+**Conferido nas telas do treino**, nas 7 empresas: cinco abas em todas, cada
+uma abrindo na etapa certa, 4 propostas geradas e 3 recusadas com o motivo.
+
+⚠️ **E a régua gritou de novo — desta vez certo.** A conferência do prazo
+respondeu *"NÃO ACHEI"* nas quatro medições: ao tirar as etiquetas do HTML, o
+texto vira `válida até 08/10/2026 ( 15 dias)`, com um espaço que o padrão de
+busca não previa. Ela levantou erro em vez de dizer "não mudou" — que teria
+escondido justamente o que se queria provar.

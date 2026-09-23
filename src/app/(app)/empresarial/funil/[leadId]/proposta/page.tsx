@@ -19,7 +19,6 @@ import {
   type BillingBasis,
 } from "@/lib/empresarial/proposta";
 import {
-  VALIDADE_PADRAO_DIAS,
   comoSeraCobrado,
   comparacaoComOAtual,
   quemPagaOQue,
@@ -56,6 +55,15 @@ type QualRow = {
   legal_name: string | null;
   responsible_name: string | null;
   responsible_role: string | null;
+  proposal_valid_days: number | null;
+  company_grace_days: number | null;
+  employee_grace_days: number | null;
+};
+
+type PropostaTemplateRow = {
+  lead_id: string | null;
+  sections: { titulo: string; corpo: string }[];
+  valid_days: number;
 };
 
 /**
@@ -165,8 +173,23 @@ export default async function PropostaPage({
     currentPlanMonthlyCents: q.dental_plan_monthly_cents,
   });
 
+  // O TEXTO da proposta (1014), na cascata: o desta empresa, senão o da rede.
+  const { data: modelos, error: erroModelo } = await db
+    .from("proposal_templates")
+    .select("lead_id, sections, valid_days")
+    .or(`lead_id.eq.${leadId},lead_id.is.null`)
+    .returns<PropostaTemplateRow[]>();
+  // ⚠️ A migração viaja à mão e o código viaja sozinho (CLAUDE.md §0b). Entre
+  // o deploy e o dia em que a 1014 rodar, o documento sai SEM os blocos de
+  // texto — e sair sem texto é melhor que não sair.
+  if (erroModelo) console.error("modelo da proposta:", erroModelo.message);
+  const daRede = modelos?.find((m) => !m.lead_id);
+  const blocos = (modelos?.find((m) => m.lead_id === leadId) ?? daRede)?.sections ?? [];
+
   const hoje = todayInBrazil();
-  const validade = validadeDaProposta(hoje);
+  // O prazo desta negociação manda; sem ele, o padrão da rede.
+  const dias = q.proposal_valid_days ?? daRede?.valid_days ?? 15;
+  const validade = validadeDaProposta(hoje, dias);
   const comparacao = comparacaoComOAtual(conta);
 
   let consultor: string | null = null;
@@ -216,8 +239,8 @@ export default async function PropostaPage({
           </p>
           <p className="text-sm text-muted-foreground">
             Emitida em {formatBrDate(startOfDayInBrazil(hoje))} · válida até{" "}
-            <strong className="text-foreground">{validade.texto}</strong> (
-            {VALIDADE_PADRAO_DIAS} dias)
+            <strong className="text-foreground">{validade.texto}</strong> ({dias}{" "}
+            dias)
           </p>
         </header>
 
@@ -301,6 +324,49 @@ export default async function PropostaPage({
               )}
           </section>
         )}
+
+        {(q.company_grace_days != null || q.employee_grace_days != null) && (
+          <section className="space-y-2 break-inside-avoid">
+            <h2 className="text-lg font-medium">Quando o programa começa a valer</h2>
+            <p className="leading-relaxed text-muted-foreground">
+              {q.company_grace_days != null && (
+                <>
+                  A empresa passa a usar o programa{" "}
+                  {q.company_grace_days === 0
+                    ? "desde o primeiro dia do contrato"
+                    : `${q.company_grace_days} dias após o início do contrato`}
+                  .{" "}
+                </>
+              )}
+              {q.employee_grace_days != null && (
+                <>
+                  Cada colaborador passa a usar{" "}
+                  {q.employee_grace_days === 0
+                    ? "desde a entrada dele no programa"
+                    : `${q.employee_grace_days} dias após a entrada dele`}
+                  .{" "}
+                </>
+              )}
+              {q.company_grace_days != null && q.employee_grace_days != null && (
+                <>Vale sempre a data mais distante entre as duas.</>
+              )}
+            </p>
+          </section>
+        )}
+
+        {/* O TEXTO — modelo da rede ou o desta empresa. Nunca repete número:
+            valores e carência são impressos acima, a partir do que foi
+            negociado. */}
+        {blocos.map((b, i) => (
+          <section key={i} className="space-y-1.5 break-inside-avoid">
+            {b.titulo && <h2 className="text-lg font-medium">{b.titulo}</h2>}
+            {b.corpo && (
+              <p className="leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                {b.corpo}
+              </p>
+            )}
+          </section>
+        ))}
 
         <section className="space-y-2 break-inside-avoid">
           <h2 className="text-lg font-medium">Como seguir</h2>

@@ -11,6 +11,7 @@ import { AdhesionPricingForm, SplitRulesForm } from "./pricing-forms";
 import { BenefitsEditor } from "./benefits-editor";
 import { loadBenefits, loadPricing, loadProcedures, loadSplit } from "./data";
 import { RetentionButton } from "./retention-button";
+import { PropostaDaRede, type Bloco } from "./proposta-da-rede";
 import { Settings } from "lucide-react";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
@@ -22,6 +23,7 @@ const TABS = [
   { key: "adesao", label: "Preços de adesão" },
   { key: "split", label: "Split de pagamento" },
   { key: "beneficios", label: "Benefícios" },
+  { key: "proposta", label: "Proposta comercial" },
 ] as const;
 
 export default async function EmpresarialConfigPage(props: {
@@ -38,6 +40,13 @@ export default async function EmpresarialConfigPage(props: {
   const db = await empresarialDb();
   const procedures = await loadProcedures();
   const procedureNames = new Map(procedures.map((p) => [p.id, p.name]));
+
+  // O modelo de proposta da rede (1014) — a linha com lead_id nulo.
+  const { data: modeloDaRede } = await db
+    .from("proposal_templates")
+    .select("sections, valid_days")
+    .is("lead_id", null)
+    .maybeSingle<{ sections: Bloco[]; valid_days: number }>();
 
   const [{ pricing }, { split }, benefits] = await Promise.all([
     loadPricing(db, null),
@@ -104,6 +113,13 @@ export default async function EmpresarialConfigPage(props: {
             <SplitRulesForm companyId={null} split={split} />
           </CardContent>
         </Card>
+      )}
+
+      {aba === "proposta" && (
+        <PropostaDaRede
+          validDays={modeloDaRede?.valid_days ?? 15}
+          blocos={modeloDaRede?.sections ?? []}
+        />
       )}
 
       {aba === "beneficios" && (
