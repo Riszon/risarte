@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { capturarTela } from "@/lib/captura-de-tela";
+import { SEGUNDOS_DA_CONTAGEM, capturarTela } from "@/lib/captura-de-tela";
 
 /**
  * A ESPERA ANTES DA FOTO (pedido do dono, 23/09/2026 — caixa de seleção
@@ -16,8 +16,12 @@ import { capturarTela } from "@/lib/captura-de-tela";
 
 type Chamada = string;
 
-function encenarNavegador(chamadas: Chamada[]) {
-  const faixa = { stop: () => chamadas.push("parou a faixa") };
+function encenarNavegador(chamadas: Chamada[], superficie = "monitor") {
+  const pedidos: Record<string, unknown>[] = [];
+  const faixa = {
+    stop: () => chamadas.push("parou a faixa"),
+    getSettings: () => ({ displaySurface: superficie }),
+  };
   const g = globalThis as unknown as Record<string, unknown>;
 
   // `navigator` no Node só tem leitura — daí definir a propriedade em vez de
@@ -26,9 +30,10 @@ function encenarNavegador(chamadas: Chamada[]) {
     configurable: true,
     value: {
       mediaDevices: {
-        getDisplayMedia: async () => {
+        getDisplayMedia: async (pedido: Record<string, unknown>) => {
+          pedidos.push(pedido);
           chamadas.push("pediu permissão");
-          return { getTracks: () => [faixa] };
+          return { getTracks: () => [faixa], getVideoTracks: () => [faixa] };
         },
       },
     },
@@ -57,6 +62,7 @@ function encenarNavegador(chamadas: Chamada[]) {
       };
     },
   };
+  return pedidos;
 }
 
 afterEach(() => {
@@ -72,7 +78,7 @@ describe("capturarTela — a espera antes do obturador", () => {
 
     const promessa = capturarTela({
       nome: "tela.png",
-      contagem: 5,
+      contagem: SEGUNDOS_DA_CONTAGEM,
       aoContar: (n) => {
         contados.push(n);
         chamadas.push(`faltam ${n}`);
@@ -85,7 +91,7 @@ describe("capturarTela — a espera antes do obturador", () => {
 
     expect(r.ok).toBe(true);
     // A contagem sai inteira, terminando em zero.
-    expect(contados).toEqual([5, 4, 3, 2, 1, 0]);
+    expect(contados).toEqual([8, 7, 6, 5, 4, 3, 2, 1, 0]);
     // E o painel só sai da frente DEPOIS dela — nunca antes.
     expect(chamadas.indexOf("escondeu o painel")).toBeGreaterThan(
       chamadas.indexOf("faltam 1")
@@ -93,6 +99,42 @@ describe("capturarTela — a espera antes do obturador", () => {
     expect(chamadas.indexOf("tirou a foto")).toBeGreaterThan(
       chamadas.indexOf("escondeu o painel")
     );
+  });
+
+  it("com tempo, pede a TELA INTEIRA — é onde a lista aberta existe", async () => {
+    const chamadas: Chamada[] = [];
+    const pedidos = encenarNavegador(chamadas);
+    vi.useFakeTimers();
+
+    const promessa = capturarTela({
+      nome: "tela.png",
+      origem: "tela-inteira",
+      contagem: 1,
+    });
+    await vi.runAllTimersAsync();
+    const r = await promessa;
+
+    expect(r.ok).toBe(true);
+    // O pedido ao navegador tem de dizer "monitor": fotografar a ABA nunca
+    // mostraria a lista, por mais tempo que se espere.
+    const video = pedidos[0]?.video as { displaySurface?: string } | undefined;
+    expect(video?.displaySurface).toBe("monitor");
+    expect(pedidos[0]?.preferCurrentTab).toBe(false);
+  });
+
+  it("devolve o que a pessoa escolheu de fato, para a tela poder avisar", async () => {
+    const chamadas: Chamada[] = [];
+    // Ela pediu a tela inteira, mas escolheu uma ABA na janela do navegador.
+    encenarNavegador(chamadas, "browser");
+    vi.useFakeTimers();
+
+    const promessa = capturarTela({ nome: "tela.png", origem: "tela-inteira", contagem: 1 });
+    await vi.runAllTimersAsync();
+    const r = await promessa;
+
+    expect(r.ok).toBe(true);
+    // Sem isto, o print sairia sem a lista e ninguém saberia por quê.
+    expect(r.ok && r.superficie).toBe("browser");
   });
 
   it("sem espera pedida, não conta nada e fotografa direto", async () => {

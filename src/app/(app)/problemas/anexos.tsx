@@ -39,6 +39,7 @@ import {
   triarArquivos,
 } from "@/lib/anexos-de-relato";
 import {
+  SEGUNDOS_DA_CONTAGEM,
   capturarTela,
   podeCapturarTela,
   type OrigemDaCaptura,
@@ -76,6 +77,29 @@ export function montarPendentes(
     };
   });
   return { novos, avisos };
+}
+
+/**
+ * O AVISO DEPOIS DA FOTO.
+ *
+ * ⚠️ A parte que importa é a do `comTempo`: quem pediu a contagem queria
+ * fotografar uma lista aberta, e isso **só funciona na tela inteira**. Se a
+ * pessoa escolheu uma aba ou uma janela na hora de autorizar, o print sai sem
+ * a lista — e, sem este aviso, ela concluiria que o sistema não funciona. A
+ * régua que mede sem dizer o que mediu é a régua que faz perder a tarde.
+ */
+export function avisarCaptura(comTempo: boolean, superficie: string | null) {
+  if (comTempo && superficie && superficie !== "monitor") {
+    toast.warning("O print saiu, mas sem a lista aberta.", {
+      description:
+        "Você escolheu " +
+        (superficie === "browser" ? "uma aba" : "uma janela") +
+        '. Lista e menu abertos só aparecem fotografando a TELA INTEIRA — tente de novo e escolha "Tela inteira" na janela do navegador.',
+      duration: 12000,
+    });
+    return;
+  }
+  toast.success("Tela capturada. Confira a miniatura antes de enviar.");
 }
 
 /** O aviso quando a captura não sai. "Cancelado" não diz nada: a pessoa desistiu. */
@@ -141,14 +165,13 @@ export function SeletorDeAnexos({
   const entrada = useRef<HTMLInputElement>(null);
   const [capturando, setCapturando] = useState(false);
   /**
-   * ESPERAR ANTES DE FOTOGRAFAR (pedido do dono, 23/09/2026).
+   * QUANTOS SEGUNDOS FALTAM PARA A FOTO (0 = não há contagem em curso).
    *
-   * Nasce DESLIGADO: a maioria dos prints é da tela parada, e cinco segundos
-   * de espera em todos eles seria cobrar de todo mundo o preço de um caso.
-   * Ligado, é o único jeito de fotografar uma caixa de seleção aberta — o
-   * clique que autoriza a captura fecha qualquer lista, e isso é do navegador.
+   * A contagem é um BOTÃO próprio, não um interruptor a ser ligado antes —
+   * a primeira versão era um interruptor e o dono capturou sem perceber que
+   * precisava ligá-lo. Opção que depende de a pessoa lembrar de ligar é
+   * opção que não existe.
    */
-  const [esperar5, setEsperar5] = useState(false);
   const [faltam, setFaltam] = useState(0);
   const [arrastando, setArrastando] = useState(false);
   // A captura só existe no navegador de computador. No servidor não há
@@ -201,13 +224,14 @@ export function SeletorDeAnexos({
   async function aoCapturar(origem: OrigemDaCaptura) {
     // Aviso na tela sairia na foto.
     toast.dismiss();
+    const comTempo = origem === "tela-inteira";
     setCapturando(true);
     const r = await capturarTela({
       nome: nomeDaCaptura(new Date(), origem === "esta-aba" ? telaAtual : null),
       origem,
       esconder,
       mostrar,
-      contagem: esperar5 ? 5 : 0,
+      contagem: comTempo ? SEGUNDOS_DA_CONTAGEM : 0,
       aoContar: setFaltam,
     });
     setCapturando(false);
@@ -215,7 +239,7 @@ export function SeletorDeAnexos({
     if (r.ok) {
       acrescentar([r.arquivo], "captura");
       if (origem === "esta-aba") aoCapturarEstaTela?.();
-      toast.success("Tela capturada. Confira a miniatura antes de enviar.");
+      avisarCaptura(comTempo, r.superficie);
     } else {
       avisarFalhaDaCaptura(r.motivo);
     }
@@ -254,11 +278,7 @@ export function SeletorDeAnexos({
             title="Fotografa a tela que está atrás deste painel"
           >
             <Camera className="mr-1.5 size-4" />
-            {faltam > 0
-              ? `Fotografando em ${faltam}…`
-              : capturando
-                ? "Capturando…"
-                : "Capturar esta tela"}
+            {capturando ? "Capturando…" : "Capturar esta tela"}
           </Button>
         )}
         {/*
@@ -295,11 +315,7 @@ export function SeletorDeAnexos({
             title="O navegador mostra as abas e janelas abertas para você escolher"
           >
             <AppWindow className="mr-1.5 size-4" />
-            {faltam > 0
-              ? `Fotografando em ${faltam}…`
-              : noPainel
-                ? "Outra aba ou janela"
-                : "Capturar de outra aba ou janela"}
+            {noPainel ? "Outra aba ou janela" : "Capturar de outra aba ou janela"}
           </Button>
         )}
         <Button
@@ -313,23 +329,28 @@ export function SeletorDeAnexos({
           Anexar arquivo
         </Button>
 
-        {/* ESPERAR 5 SEGUNDOS (pedido do dono, 23/09/2026) — o único jeito de
-            fotografar uma caixa de seleção ABERTA. O clique que autoriza a
-            captura fecha qualquer lista (é do navegador, não nosso); com a
-            espera, a permissão vem primeiro e a foto sai depois, com tempo de
-            reabrir o que precisa aparecer. */}
+        {/*
+          CAPTURAR COM TEMPO (pedido do dono, 23/09/2026; refeito no mesmo dia
+          depois do teste dele). Duas coisas quebravam o caso "quero mostrar a
+          lista aberta", e as duas estão aqui:
+
+          1. era um INTERRUPTOR que precisava ser ligado antes — e passou
+             despercebido. Agora é um botão que faz a coisa inteira.
+          2. a foto era da ABA, e lista de seleção aberta NÃO é desenho da
+             aba: o sistema operacional desenha por cima. Por isso este botão
+             pede a TELA INTEIRA, onde ela aparece.
+        */}
         {captura && (
           <Button
             type="button"
-            variant={esperar5 ? "secondary" : "ghost"}
+            variant="outline"
             size="sm"
-            aria-pressed={esperar5}
-            onClick={() => setEsperar5((antes) => !antes)}
+            onClick={() => aoCapturar("tela-inteira")}
             disabled={bloqueado}
-            title="Para fotografar uma caixa de seleção aberta: o sistema espera 5 segundos antes de tirar a foto, e nesse tempo você reabre a caixa"
+            title={`Para mostrar lista, menu ou calendário ABERTO: escolha "Tela inteira", e você tem ${SEGUNDOS_DA_CONTAGEM} segundos para abrir o que quer mostrar antes da foto`}
           >
             <Timer className="mr-1.5 size-4" />
-            {esperar5 ? "Esperando 5 s" : "Esperar 5 s"}
+            Capturar com tempo
           </Button>
         )}
         <input
@@ -344,6 +365,21 @@ export function SeletorDeAnexos({
           }}
         />
       </div>
+
+      {/* A ajuda fechada ninguém abre: o essencial do temporizador fica na
+          tela, em uma linha, ao lado dos botões. */}
+      {captura && (
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <Timer className="mt-0.5 size-3.5 shrink-0 text-gold-forte" />
+          <span>
+            <strong className="text-foreground">Capturar com tempo</strong> é
+            para mostrar lista, menu ou calendário <em>aberto</em>: escolha{" "}
+            <strong className="text-foreground">Tela inteira</strong> e abra o
+            que quer mostrar durante a contagem de {SEGUNDOS_DA_CONTAGEM}{" "}
+            segundos.
+          </span>
+        </p>
+      )}
 
       <p className="text-xs text-muted-foreground">
         {captura
@@ -397,6 +433,40 @@ export function SeletorDeAnexos({
           que não tem a ver com o problema, tire da lista antes de enviar.
         </p>
       )}
+
+      <ContagemDaFoto faltam={faltam} />
+    </div>
+  );
+}
+
+/**
+ * A CONTAGEM, VISÍVEL E COM A INSTRUÇÃO JUNTO.
+ *
+ * Fica no alto e no meio, longe da barra do navegador e dos campos que a
+ * pessoa vai abrir. Ela **some sozinha ao chegar a zero**, antes do clique do
+ * obturador — senão sairia na foto, tapando justamente o que se queria
+ * mostrar. Não dá para clicar nela (`pointer-events-none`): um clique aqui
+ * fecharia a lista que a pessoa acabou de abrir.
+ */
+export function ContagemDaFoto({ faltam }: { faltam: number }) {
+  if (faltam <= 0) return null;
+  return (
+    <div
+      role="status"
+      className="pointer-events-none fixed inset-x-0 top-6 z-[100] flex justify-center px-4"
+    >
+      <div className="flex items-center gap-3 rounded-lg bg-slate-900/95 px-4 py-3 text-white shadow-xl ring-1 ring-white/20">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gold text-lg font-bold text-slate-900 tabular-nums">
+          {faltam}
+        </span>
+        <div className="text-sm leading-tight">
+          <p className="font-semibold">Abra agora o que você quer mostrar</p>
+          <p className="text-white/75">
+            A lista, o menu ou o calendário. A foto sai sozinha quando chegar a
+            zero.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -462,13 +532,34 @@ function AjudaDoPrint({
         {captura && (
           <li>
             <strong className="text-foreground">
-              Precisa mostrar uma caixa de seleção aberta?
+              Para mostrar uma lista, um menu ou um calendário ABERTO
             </strong>{" "}
-            Ligue <em>Esperar 5 s</em> antes de capturar. O clique que autoriza
-            a foto fecha qualquer lista aberta — isso é do navegador, nenhum
-            sistema consegue evitar. Com a espera, você autoriza primeiro,
-            reabre a caixa enquanto o botão faz a contagem, e a foto sai com ela
-            aberta.
+            use <em>Capturar com tempo</em>. O passo a passo:
+            <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+              <li>
+                Clique em <em>Capturar com tempo</em>.
+              </li>
+              <li>
+                Na janela do navegador escolha{" "}
+                <strong className="text-foreground">Tela inteira</strong>,
+                clique na imagem da tela e depois em <em>Compartilhar</em>.
+              </li>
+              <li>
+                Aparece uma contagem no alto da tela. <strong className="text-foreground">
+                  É nesse tempo que você abre a lista
+                </strong>{" "}
+                que quer mostrar — são {SEGUNDOS_DA_CONTAGEM} segundos.
+              </li>
+              <li>A contagem some e a foto sai sozinha, com tudo aberto.</li>
+            </ol>
+            <span className="mt-1 block">
+              <strong className="text-foreground">Tem de ser a tela inteira</strong>,
+              e não é capricho: quando o navegador fotografa só a aba, ele copia
+              o desenho da página — e a lista aberta não é desenho da página, é
+              uma janelinha que o Windows põe por cima. Na foto da aba ela
+              simplesmente não existe. Se você escolher uma aba por engano, o
+              sistema avisa depois da foto.
+            </span>
           </li>
         )}
         {captura && (

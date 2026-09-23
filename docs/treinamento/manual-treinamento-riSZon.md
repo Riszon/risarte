@@ -1634,7 +1634,7 @@ painel:
 | **Outra aba ou janela** | O problema está aberto em **outra aba** do navegador ou em **outro programa** | O navegador mostra a lista do que está aberto; escolha e clique em **Compartilhar** |
 | **Anexar arquivo** | Você já tem o arquivo | Imagem, PDF ou vídeo (MP4/WebM), do computador ou do celular |
 | **Ctrl+V** | Você já tirou o print | Cola em qualquer campo do formulário (tecla **Print Screen**, ou **Win+Shift+S** para recortar um pedaço) |
-| **Esperar 5 s** | O print precisa mostrar uma **caixa de seleção (ou menu) aberta** | Liga a contagem: você autoriza a foto, o botão conta *5, 4, 3…* e só então fotografa — nesse tempo você reabre a caixa |
+| **Capturar com tempo** | O print precisa mostrar uma **lista, menu ou calendário ABERTO** | Fotografa a **tela inteira** depois de uma contagem de **8 segundos** — é nesse tempo que você abre o que quer mostrar |
 | **Arrastar** | — | Solta o arquivo em cima da área dos anexos |
 
 > **No modo "Ir até a tela do problema" nada se perde.** O que você escreveu e
@@ -1650,17 +1650,27 @@ painel:
 permitir: o sistema tira uma única foto e para de ver na mesma hora. O arquivo
 recebe o nome da tela de onde veio (ex.: *captura-agenda-20260917-0930.png*).
 
-**Precisa mostrar uma caixa de seleção aberta?** Ligue **Esperar 5 s** antes de
-clicar em **Capturar**. Sem ela, nenhuma lista aberta aparece no print — e isso
-não é falha do riSZon: para fotografar, o navegador **exige um clique** e ainda
-**pergunta se pode ver a tela**, e as duas coisas fecham qualquer caixa que
-estivesse aberta. Nenhum sistema consegue evitar isso.
+**Precisa mostrar uma lista, um menu ou um calendário ABERTO?** Use
+**Capturar com tempo**:
 
-Com a espera ligada, a ordem muda: você clica em **Capturar**, autoriza, e o
-botão começa a contar (*Fotografando em 5…*). **É nesse tempo que você reabre a
-caixa de seleção**, o menu ou o calendário. Quando a contagem termina, a foto
-sai com tudo aberto. O botão fica aceso enquanto a espera estiver ligada, e
-continua valendo para as próximas capturas até você desligar.
+1. Clique em **Capturar com tempo**.
+2. Na janela do navegador, escolha a aba **Tela inteira**, clique na imagem da
+   sua tela e depois em **Compartilhar**.
+3. Aparece uma **contagem grande no alto da tela**: *"Abra agora o que você quer
+   mostrar"*. **É nesse tempo que você abre a lista** — são **8 segundos**.
+4. A contagem some e a foto sai sozinha, com tudo aberto.
+
+> **Por que tem de ser "Tela inteira", e por que os outros botões não servem.**
+> Quando o navegador fotografa só a **aba**, ele copia o desenho da página — e a
+> lista aberta **não é desenho da página**: é uma janelinha que o Windows põe
+> por cima. Na foto da aba ela simplesmente não existe, por mais tempo que se
+> espere. Fotografando a tela inteira, entra tudo o que está no monitor,
+> inclusive ela. Se você escolher uma aba por engano, **o sistema avisa depois
+> da foto** em vez de deixar você achar que não funcionou.
+
+> ⚠️ **A tela inteira mostra tudo o que está no seu monitor** — outras janelas
+> abertas, inclusive. Antes de capturar assim, feche ou minimize o que não tem a
+> ver com o problema.
 
 **Não sabe por onde começar?** Clique em **Como usar o print**, logo abaixo dos
 botões — o passo a passo está ali.

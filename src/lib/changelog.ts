@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.274.0",
+    data: "2026-09-23",
+    migracao: null,
+    titulo: "Capturar com tempo — agora mostrando a lista aberta de verdade",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A primeira versão disto não funcionava, e o motivo não era o tempo: fotografando só a aba, a lista aberta nunca aparece — ela não é desenho da página, é uma janelinha que o Windows põe por cima. Agora a captura com tempo fotografa a TELA INTEIRA, que é onde a lista existe.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Deixou de ser um interruptor para ligar antes: virou o botão Capturar com tempo, que faz tudo. Clique, escolha Tela inteira, e uma contagem grande aparece no alto dizendo Abra agora o que você quer mostrar. São 8 segundos, e a foto sai sozinha.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Se na hora de autorizar você escolher uma aba ou uma janela em vez de Tela inteira, o print sai sem a lista — e o sistema avisa isso na hora, em vez de deixar você achar que não funcionou.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.273.0",
     data: "2026-09-23",
     migracao: null,

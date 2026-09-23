@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { moduloDaTela } from "@/lib/system-reports";
 import { MAXIMO_POR_ENVIO, nomeDaCaptura } from "@/lib/anexos-de-relato";
-import { capturarTela } from "@/lib/captura-de-tela";
+import { SEGUNDOS_DA_CONTAGEM, capturarTela } from "@/lib/captura-de-tela";
 import {
   LEVAR_RELATO,
   type RelatoParaLevar,
@@ -23,6 +23,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { FormularioDeRelato } from "@/app/(app)/problemas/formulario";
 import {
+  ContagemDaFoto,
+  avisarCaptura,
   avisarFalhaDaCaptura,
   montarPendentes,
   type AnexoPendente,
@@ -112,10 +114,7 @@ export function ReportNavItem({
   const [escondido, setEscondido] = useState(false);
   const [modoCaptura, setModoCaptura] = useState(false);
   const [capturando, setCapturando] = useState(false);
-  // ESPERAR 5 SEGUNDOS (pedido do dono, 23/09/2026). O clique que autoriza a
-  // captura fecha qualquer lista aberta — é regra do navegador. Com a espera,
-  // a permissão vem primeiro e a foto sai depois, dando tempo de reabrir.
-  const [esperar5, setEsperar5] = useState(false);
+  // Quantos segundos faltam para a foto (0 = sem contagem em curso).
   const [faltam, setFaltam] = useState(0);
 
   const consultar = useCallback(async () => {
@@ -210,17 +209,19 @@ export function ReportNavItem({
     );
   }
 
-  async function capturarPelaBarra() {
+  async function capturarPelaBarra(comTempo = false) {
     if (!rascunho) return;
     toast.dismiss();
     setCapturando(true);
     const tela = pathname;
     const r = await capturarTela({
       nome: nomeDaCaptura(new Date(), tela),
-      origem: "esta-aba",
+      // Com tempo é sempre a TELA INTEIRA: lista de seleção aberta não é
+      // desenho da aba, e na foto da aba ela simplesmente não existe.
+      origem: comTempo ? "tela-inteira" : "esta-aba",
       esconder: () => setEscondido(true),
       mostrar: () => setEscondido(false),
-      contagem: esperar5 ? 5 : 0,
+      contagem: comTempo ? SEGUNDOS_DA_CONTAGEM : 0,
       aoContar: setFaltam,
     });
     setCapturando(false);
@@ -234,9 +235,13 @@ export function ReportNavItem({
     if (novos.length === 0) return;
     setRascunho((atual) => (atual ? { ...atual, anexos: [...atual.anexos, ...novos] } : atual));
     registrarTelaDaCaptura(tela);
-    toast.success("Tela capturada.", {
-      description: "Capture outras telas, se precisar, ou volte ao relato.",
-    });
+    if (comTempo && r.superficie && r.superficie !== "monitor") {
+      avisarCaptura(true, r.superficie);
+    } else {
+      toast.success("Tela capturada.", {
+        description: "Capture outras telas, se precisar, ou volte ao relato.",
+      });
+    }
   }
 
   // Na própria tela de Problemas o formulário já está na página: ali a boia
@@ -432,26 +437,33 @@ export function ReportNavItem({
                   ? "1 print tirado."
                   : `${prints} prints tirados.`}
               {cheio && ` Limite de ${MAXIMO_POR_ENVIO} anexos atingido.`}
+              {!cheio && (
+                <>
+                  {" "}
+                  <strong className="text-foreground">Com tempo</strong> serve
+                  para mostrar lista ou menu <em>aberto</em>: escolha Tela
+                  inteira e abra durante a contagem.
+                </>
+              )}
             </p>
           </div>
-          <Button size="sm" onClick={capturarPelaBarra} disabled={capturando || cheio}>
+          <Button
+            size="sm"
+            onClick={() => capturarPelaBarra(false)}
+            disabled={capturando || cheio}
+          >
             <Camera className="mr-1.5 size-4" />
-            {faltam > 0
-              ? `Fotografando em ${faltam}…`
-              : capturando
-                ? "Capturando…"
-                : "Capturar"}
+            {capturando ? "Capturando…" : "Capturar"}
           </Button>
           <Button
             size="sm"
-            variant={esperar5 ? "secondary" : "ghost"}
-            aria-pressed={esperar5}
-            onClick={() => setEsperar5((antes) => !antes)}
-            disabled={capturando}
-            title="Para fotografar uma caixa de seleção aberta: o sistema espera 5 segundos antes de tirar a foto, e nesse tempo você reabre a caixa"
+            variant="outline"
+            onClick={() => capturarPelaBarra(true)}
+            disabled={capturando || cheio}
+            title={`Para mostrar lista, menu ou calendário ABERTO: escolha "Tela inteira" e abra o que quer mostrar durante os ${SEGUNDOS_DA_CONTAGEM} segundos`}
           >
             <Timer className="mr-1.5 size-4" />
-            {esperar5 ? "Esperando 5 s" : "Esperar 5 s"}
+            Com tempo
           </Button>
           <Button size="sm" variant="outline" onClick={() => abrir(true)} disabled={capturando}>
             <Undo2 className="mr-1.5 size-4" />
@@ -460,6 +472,7 @@ export function ReportNavItem({
         </div>,
         document.body
       )}
+      <ContagemDaFoto faltam={faltam} />
     </>
   );
 }

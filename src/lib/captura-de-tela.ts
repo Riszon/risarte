@@ -18,9 +18,32 @@
  * print mostraria o formulário em cima do problema. `esconder`/`mostrar` são
  * chamados em volta do instante da foto.
  *
+ * ⚠️ LISTA DE SELEÇÃO SÓ APARECE NA CAPTURA DA TELA INTEIRA (23/09/2026).
+ * A primeira versão da contagem não resolveu o relato do dono, e a causa não
+ * era o tempo: quando o navegador fotografa UMA ABA, ele copia o desenho
+ * daquela aba. A lista aberta de um campo de seleção **não é desenho da
+ * página** — o sistema operacional a desenha por cima, numa janelinha
+ * própria. Ela não está na aba, então não entra na foto, por mais tempo que
+ * se espere.
+ *
+ * Fotografando o MONITOR INTEIRO, entra tudo o que está na tela, inclusive
+ * essa janelinha. Por isso a captura com contagem pede a tela inteira — e por
+ * isso o resultado devolve o que a pessoa escolheu de fato: escolher "aba"
+ * ali dentro faz a lista sumir do print de novo, e ela precisa ouvir isso.
+ *
  * NO CELULAR NÃO EXISTE: os navegadores de telefone não oferecem captura de
  * tela para páginas. Lá o botão some e fica o anexo pela galeria.
  */
+
+/**
+ * SEGUNDOS DA CONTAGEM ANTES DA FOTO.
+ *
+ * Oito, não cinco: entre clicar em "Compartilhar" na janela do navegador e
+ * ter a lista aberta na tela há mover o mouse, achar o campo e clicar. Cinco
+ * segundos davam para quem já sabia o caminho; oito dão para quem está
+ * fazendo isso pela primeira vez, que é quem relata problema.
+ */
+export const SEGUNDOS_DA_CONTAGEM = 8;
 
 export function podeCapturarTela(): boolean {
   return (
@@ -30,7 +53,19 @@ export function podeCapturarTela(): boolean {
 }
 
 export type ResultadoDaCaptura =
-  | { ok: true; arquivo: File }
+  | {
+      ok: true;
+      arquivo: File;
+      /**
+       * O QUE A PESSOA ESCOLHEU DE VERDADE na janela do navegador —
+       * `"monitor"` (tela inteira), `"window"` (uma janela) ou `"browser"`
+       * (uma aba). Não é detalhe técnico: só `"monitor"` mostra lista de
+       * seleção aberta, e quem pediu a contagem para fotografar uma lista
+       * precisa ser avisado quando escolheu outra coisa — senão recebe um
+       * print sem a lista e conclui que o sistema não funciona.
+       */
+      superficie: string | null;
+    }
   | { ok: false; motivo: "cancelado" | "indisponivel" | "falhou" };
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -45,8 +80,10 @@ const proximoQuadro = () =>
  *   primeiro. É o caso do painel da boia e do modo "ir até a tela do problema".
  * - `escolher`: o navegador mostra a lista inteira (abas, janelas, tela
  *   toda), para quem abriu o problema em outra aba ou outro programa.
+ * - `tela-inteira`: o monitor todo. É o ÚNICO jeito de o print mostrar uma
+ *   lista de seleção aberta — ver o aviso abaixo.
  */
-export type OrigemDaCaptura = "esta-aba" | "escolher";
+export type OrigemDaCaptura = "esta-aba" | "escolher" | "tela-inteira";
 
 export async function capturarTela(opcoes: {
   nome: string;
@@ -75,9 +112,20 @@ export async function capturarTela(opcoes: {
   let stream: MediaStream;
   try {
     // Precisa ser chamado DIRETO do clique: o navegador exige o gesto.
-    const estaAba = (opcoes.origem ?? "esta-aba") === "esta-aba";
+    const origem = opcoes.origem ?? "esta-aba";
+    const estaAba = origem === "esta-aba";
     stream = await navigator.mediaDevices.getDisplayMedia(
-      (estaAba
+      (origem === "tela-inteira"
+        ? {
+            // A janela do navegador já abre na aba "Tela inteira".
+            video: { displaySurface: "monitor" },
+            audio: false,
+            monitorTypeSurfaces: "include",
+            preferCurrentTab: false,
+            selfBrowserSurface: "include",
+            surfaceSwitching: "exclude",
+          }
+        : estaAba
         ? {
             video: { displaySurface: "browser" },
             audio: false,
@@ -137,7 +185,14 @@ export async function capturarTela(opcoes: {
     // PNG porque texto em JPEG borra — e o texto é o que se quer ler no print.
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
     if (!blob) return { ok: false, motivo: "falhou" };
-    return { ok: true, arquivo: new File([blob], opcoes.nome, { type: "image/png" }) };
+    const superficie =
+      (stream.getVideoTracks()[0]?.getSettings() as { displaySurface?: string } | undefined)
+        ?.displaySurface ?? null;
+    return {
+      ok: true,
+      arquivo: new File([blob], opcoes.nome, { type: "image/png" }),
+      superficie,
+    };
   } catch {
     return { ok: false, motivo: "falhou" };
   } finally {
