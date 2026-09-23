@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.275.0",
+    data: "2026-09-23",
+    migracao: null,
+    titulo: "O título da seção voltou a aparecer nas telas com seta de voltar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Treze telas de Compras e do Risarte Empresarial mostravam a seta de voltar OU o nome da seção, nunca os dois — e quem escolhia era o código, sempre a favor da seta. O nome da seção sumia sem ninguém notar. Agora os dois aparecem.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.274.0",
     data: "2026-09-23",
     migracao: null,
