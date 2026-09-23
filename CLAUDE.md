@@ -346,11 +346,11 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**21–22/09/2026 — PC Administrador (relatos da equipe: 0.262.0 → 0.269.0)**
+**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.270.0; Empresarial 0.50.0 → 0.51.0)**
 
 Sessão inteira movida por relatos do sistema. **Tudo o que segue já está no ar
-nos dois ambientes, e as migrações 0266, 0267 e 0268 foram aplicadas na
-produção e no treino.**
+nos dois ambientes, e as migrações 0266, 0267, 0268, 0269 e 1013 foram
+aplicadas na produção e no treino.**
 
 - **Jornada (0266)** — só o Admin força a passagem de fase; o resto anda por
   evento. Três buracos fechados junto: *Concluir a reavaliação*, *Devolver ao
@@ -376,6 +376,26 @@ produção e no treino.**
 - **Agenda do comercial (0268)** — a apresentação online deixou de depender do
   horário e dos dias da unidade; jornada própria em cascata (rede → consultor),
   configurada em Administração → Agenda do Comercial.
+- **Funil × sala de espera (0269)** — as duas telas passaram a se falar: a
+  recepção põe "em espera" e o cartão do Comercial mostra, com o tempo
+  correndo; o consultor move o cartão e o atendimento anda sozinho ("em
+  atendimento" → "concluído"). O menu Atendimento saiu do Consultor.
+  ⚠️ **A matriz de permissões tinha uma LINHA GRAVADA** liberando aquele menu:
+  linha de banco ganha de padrão de código, e mudar só `permissions.ts` não
+  teria efeito nenhum. A 0269 apaga a linha (destrutivo declarado).
+- **Estorno de cobrança (EMPRESARIAL, 1013 — v0.51.0)** — a baixa indevida
+  passou a poder ser desfeita, com motivo obrigatório; devolve a situação do
+  vencimento, apaga o split e **reavalia a suspensão da empresa**. Faixa 1000+,
+  roteiro em `docs/risarte-empresarial/ROTEIRO-TESTE.md` §9.1, e no
+  `version.ts` só as duas linhas do Empresarial — **os documentos do core não
+  foram tocados** (§0).
+
+**O padrão que se repetiu três vezes nestes dois dias — conferir a RÉGUA antes
+de confiar nela:** a linha da matriz que anulava a mudança do menu; o "permission
+denied" do estorno, que era a minha conferência usando a chave de serviço (o app
+fala como usuário logado); e a resposta do OC-00058 gravada com o texto de outro
+relato, achada só porque li a conversa depois de gravar — "deu certo" não é
+conferência.
 
 **Pendências (nesta ordem):**
 
@@ -389,7 +409,11 @@ produção e no treino.**
 5. Teste final do LOTE B (config da agenda + Relatórios), de sessões anteriores.
 
 **Nada em andamento pela metade**: árvore limpa, tudo no GitHub, e os dois
-ambientes na mesma versão (conferido entrando logado, não pelo painel).
+ambientes na mesma versão — **core 0.270.0 / migração 0269** e **Empresarial
+0.51.0 / migração 1013**, conferido entrando logado, não pelo painel.
+
+**Relatos encerrados nestes dias:** OC-00053, OC-00058, OC-00060, OC-00061,
+OC-00063, OC-00069, OC-00072 e OC-00073.
 
 **18/09/2026 — PC Administrador (preparação do ambiente, sem mudança de código)**
 
