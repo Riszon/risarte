@@ -488,3 +488,113 @@ export async function removerAnexo(attachmentId: string): Promise<Resultado> {
   }
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// RESPONDER VÁRIOS DE UMA VEZ (pedido do dono, 23/09/2026)
+// ---------------------------------------------------------------------------
+// "Tem vezes que um usuário cria vários relatos de uma mesma tela ou de mesmo
+// tema, ou vários usuários relatam o mesmo problema." Responder um por um faz
+// o Admin reescrever o mesmo texto — e o que se repete à mão é o que sai
+// diferente em algum deles.
+//
+// ⚠️ CADA RELATO CONTINUA SENDO O DA PESSOA QUE O ABRIU (decisão do dono): a
+// mesma resposta é gravada em todos, sem vínculo entre eles. Quem relatou lê a
+// resposta NA SUA, e reabrir um não mexe nos outros.
+
+export type ResultadoEmLote = {
+  ok: boolean;
+  error?: string;
+  /** Quantos foram efetivamente respondidos. */
+  feitas: number;
+  /** O que NÃO foi feito, e por quê — nunca some em silêncio. */
+  pulados: { codigo: string; motivo: string }[];
+};
+
+/**
+ * ⚠️ UM POR VEZ, PELA MESMA PORTA DA RESPOSTA INDIVIDUAL. Seria mais rápido um
+ * `update ... in (...)`, e seria errado: a porta do banco não só grava o texto
+ * — ela guarda a mensagem na conversa, exige resposta para encerrar
+ * (ANSWER_REQUIRED) e trata o relato do TREINO, que vive no outro banco. Um
+ * caminho paralelo nasceria sem as três coisas.
+ */
+export async function responderVariosProblemas(
+  itens: { id: string; codigo: string; ambiente: "sistema" | "treino" }[],
+  status: string,
+  resposta: string,
+  versao: string
+): Promise<ResultadoEmLote> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) {
+    return { ok: false, error: "Você não tem permissão para isto.", feitas: 0, pulados: [] };
+  }
+  if (itens.length === 0) {
+    return { ok: false, error: "Nenhum relato escolhido.", feitas: 0, pulados: [] };
+  }
+  if (!["aberto", "em_analise", "resolvido", "nao_e_defeito"].includes(status)) {
+    return { ok: false, error: "Situação inválida.", feitas: 0, pulados: [] };
+  }
+  const texto = resposta.trim();
+  if (!texto) {
+    // A regra também está no banco; aqui ela aparece ANTES do clique valer
+    // para trinta relatos de uma vez.
+    return {
+      ok: false,
+      error: "Escreva a resposta — ela será gravada em todos os relatos escolhidos.",
+      feitas: 0,
+      pulados: [],
+    };
+  }
+
+  const supabase = await createClient();
+  const pulados: { codigo: string; motivo: string }[] = [];
+  let feitas = 0;
+
+  for (const item of itens) {
+    if (item.ambiente === "treino") {
+      const r = await responderNoTreino({
+        reportId: item.id,
+        status,
+        answer: texto,
+        resolvedVersion: versao.trim() || null,
+        prodAdminId: session.userId,
+      });
+      if (r.ok) feitas++;
+      else pulados.push({ codigo: item.codigo, motivo: r.error ?? "o treino recusou" });
+      continue;
+    }
+
+    const { error } = await supabase.rpc("answer_system_report", {
+      p_report_id: item.id,
+      p_status: status,
+      p_answer: texto,
+      p_resolved_version: versao.trim() || null,
+    });
+    if (!error) {
+      feitas++;
+      continue;
+    }
+    if (error.message.includes("ANSWER_REQUIRED")) {
+      pulados.push({ codigo: item.codigo, motivo: "encerrar exige uma resposta escrita" });
+    } else if (error.message.includes("NOTHING_TO_SAVE")) {
+      pulados.push({ codigo: item.codigo, motivo: "nada mudava neste relato" });
+    } else if (error.message.includes("NOT_ALLOWED")) {
+      pulados.push({ codigo: item.codigo, motivo: "sem permissão" });
+    } else {
+      console.error("responderVariosProblemas:", error.message);
+      pulados.push({ codigo: item.codigo, motivo: "o banco recusou" });
+    }
+  }
+
+  if (feitas > 0) {
+    await logAudit({
+      action: "update",
+      entityType: "system_reports",
+      entityId: "lote",
+      clinicId: session.activeClinic?.id,
+      details: { status, quantos: feitas },
+    });
+    revalidatePath("/problemas", "layout");
+  }
+
+  return { ok: feitas > 0, feitas, pulados };
+}

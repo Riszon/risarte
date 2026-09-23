@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { montarBriefing } from "@/app/(app)/problemas/preparar-briefing";
+import {
+  montarBriefing,
+  montarBriefingDoConjunto,
+} from "@/app/(app)/problemas/preparar-briefing";
 import type { MensagemDeRelato, Relato } from "@/lib/system-reports";
 
 const RELATO: Relato = {
@@ -146,5 +149,76 @@ describe("a conversa entra no briefing (0256)", () => {
 
   it("leva a parte do sistema", () => {
     expect(t).toContain("Parte do sistema: Agenda e Atendimento");
+  });
+});
+
+/**
+ * O BRIEFING DO CONJUNTO (pedido do dono, 23/09/2026).
+ *
+ * "Vários usuários relatam o mesmo problema... deve ter como selecionar e
+ * solicitar o conjunto de alterações." O texto que sai daqui é o que chega a
+ * quem vai corrigir — e o risco dele é virar uma pilha de cinco briefings
+ * colados, onde a instrução final repetida cinco vezes faz o leitor parar de
+ * ler antes do terceiro relato.
+ */
+describe("briefing de vários relatos", () => {
+  const OUTRO: Relato = {
+    ...RELATO,
+    id: "def",
+    code: "OC-00013",
+    title: "Não consigo marcar no sábado de manhã",
+    whatHappened: "Aparece que a unidade não atende.",
+    screen: "/agenda",
+    reporterName: "João Pereira",
+    reporterRole: "Gerente de Unidade",
+  };
+
+  it("um relato só continua sendo o briefing de sempre", () => {
+    // Selecionar um e pedir o conjunto não pode gerar um texto diferente do
+    // que o botão individual gera — duas formas do mesmo texto divergem.
+    const conjunto = montarBriefingDoConjunto([RELATO], "corrigir", "nota");
+    expect(conjunto).toBe(montarBriefing(RELATO, "corrigir", "nota"));
+  });
+
+  it("junta os códigos, as telas e QUANTAS pessoas relataram", () => {
+    const t = montarBriefingDoConjunto([RELATO, OUTRO], "corrigir", "");
+    expect(t).toContain("2 relatos do riSZon, tratados como UM caso");
+    expect(t).toContain("OC-00012, OC-00013");
+    expect(t).toContain("/agenda");
+    // Duas pessoas relatando o mesmo é o que muda a prioridade — some se o
+    // texto só listar os códigos.
+    expect(t).toContain("2 pessoas");
+    expect(t).toContain("Maria da Silva");
+    expect(t).toContain("João Pereira");
+  });
+
+  it("as instruções finais aparecem UMA vez, não uma por relato", () => {
+    const t = montarBriefingDoConjunto([RELATO, OUTRO], "corrigir", "");
+    const quantas = t.split("O QUE EU PRECISO").length - 1;
+    expect(quantas).toBe(1);
+  });
+
+  it("o conteúdo de cada relato vai inteiro", () => {
+    const t = montarBriefingDoConjunto([RELATO, OUTRO], "corrigir", "");
+    expect(t).toContain("Escolhi sábado e o sistema disse");
+    expect(t).toContain("Aparece que a unidade não atende.");
+    expect(t).toContain("RELATO 1 DE 2");
+    expect(t).toContain("RELATO 2 DE 2");
+  });
+
+  it("a consideração do Admin vale para o conjunto, e aparece uma vez", () => {
+    const t = montarBriefingDoConjunto([RELATO, OUTRO], "corrigir", "É a mesma causa.");
+    expect(t.split("É a mesma causa.").length - 1).toBe(1);
+    expect(t).toContain("(valem para o conjunto)");
+  });
+
+  it("responder em lote avisa que a mesma mensagem vai para todos", () => {
+    const t = montarBriefingDoConjunto([RELATO, OUTRO], "responder", "");
+    expect(t).toContain("UMA resposta que sirva para todos");
+    expect(t).toContain("não pode citar o caso de uma pessoa só");
+  });
+
+  it("nenhum relato escolhido devolve texto vazio", () => {
+    expect(montarBriefingDoConjunto([], "corrigir", "")).toBe("");
   });
 });

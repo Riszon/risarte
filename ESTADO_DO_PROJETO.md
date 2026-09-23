@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/09/2026 · Versão do sistema: **0.270.0** · Última migração: **0269** (aplicada no treino; **pendente na produção**) · Empresarial **0.50.0** / migração **1012**_
+_Atualizado em: 23/09/2026 · Versão do sistema: **0.271.0** · Última migração: **0269** (aplicadas nos DOIS ambientes; Empresarial na 1013) · Empresarial **0.51.0** / migração **1013**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,45 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### RESPONDER VÁRIOS RELATOS DE UMA VEZ (23/09/2026, v0.271.0, sem migração)
+
+Pedido do dono: *"tem vezes que um usuário cria vários relatos de uma mesma
+tela ou de mesmo tema, ou vários usuários relatam o mesmo problema — deve ter
+como selecionar e solicitar o conjunto de alterações, ou simplesmente responder
+todos ao mesmo tempo"*.
+
+**Duas ações sobre a mesma seleção**, e é de propósito que estejam juntas: o
+caminho real é *pedir a correção do conjunto → receber → responder o conjunto*.
+
+- **Responder juntos** — a mesma mensagem, situação e versão em todos os
+  escolhidos. **Sem vínculo entre eles** (decisão do dono): cada relato continua
+  sendo o da pessoa que o abriu, ela lê a resposta na dela, e reabrir um não
+  mexe nos outros.
+- **Pedir a correção do conjunto** — `montarBriefingDoConjunto` (7 testes) junta
+  N relatos num texto só. ⚠️ **O conjunto não é a soma dos textos:** cada relato
+  vai inteiro, mas as instruções finais aparecem **uma vez**, no fim — repetidas
+  N vezes viram ruído e quem lê para antes do terceiro. Antes dos blocos vai o
+  que só existe no conjunto: quantos são, de que telas vieram e **quantas
+  pessoas** relataram (um relato de cinco pessoas não é cinco relatos de uma).
+
+**Um por vez, pela mesma porta da resposta individual.** Um `update ... in (...)`
+seria mais rápido e erraria em três pontos: não gravaria a mensagem na conversa,
+não exigiria resposta para encerrar (`ANSWER_REQUIRED`) e não trataria o relato
+do **treino**, que vive no outro banco. Ambientes misturados são permitidos
+(decisão do dono) — cada um é resolvido no banco dele.
+
+**O que não foi feito volta dito, relato por relato** (a lição do §0): o lote
+devolve `feitas` e `pulados` com o código e o motivo de cada um.
+
+**A seleção atravessa abas e filtros**, e é derivada de TODOS os relatos, não da
+lista visível — filtrar depois de escolher não pode fazer o escolhido sumir do
+lote em silêncio.
+
+**Provado no treino duas vezes:** pelo caminho do banco (3 relatos, mensagem em
+cada conversa) e **pela tela** (2 relatos escolhidos → resposta, situação e
+versão gravadas nos dois; briefing de 3 relatos com as instruções aparecendo uma
+única vez).
 
 ### O FUNIL E A SALA DE ESPERA PASSARAM A SE FALAR (22/09/2026, v0.270.0, migração 0269)
 

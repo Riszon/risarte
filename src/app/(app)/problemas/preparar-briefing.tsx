@@ -165,6 +165,90 @@ export function montarBriefing(
   return linhas.join("\n");
 }
 
+/**
+ * O BRIEFING DE VÁRIOS RELATOS DE UMA VEZ (pedido do dono, 23/09/2026).
+ *
+ * "Tem vezes que um usuário cria vários relatos de uma mesma tela ou de mesmo
+ * tema, ou vários usuários relatam o mesmo problema... deve ter como
+ * selecionar e solicitar o conjunto de alterações."
+ *
+ * ⚠️ O CONJUNTO NÃO É A SOMA DOS TEXTOS. Cada relato traz o seu bloco inteiro
+ * (o que aconteceu, o contexto, a conversa), mas as instruções finais vêm UMA
+ * vez, no fim — repetidas N vezes elas viram ruído e quem lê para de ler.
+ * Antes dos blocos vai o que só existe no conjunto: quantos são, de que telas
+ * vieram e quantas pessoas relataram. É isso que transforma cinco relatos
+ * soltos num caso só.
+ */
+export function montarBriefingDoConjunto(
+  relatos: Relato[],
+  objetivo: Objetivo,
+  consideracoes: string,
+  mensagensPorRelato: Record<string, MensagemDeRelato[]> = {}
+): string {
+  if (relatos.length === 0) return "";
+  if (relatos.length === 1) {
+    return montarBriefing(relatos[0], objetivo, consideracoes, mensagensPorRelato[relatos[0].id] ?? []);
+  }
+
+  const linhas: string[] = [];
+  const telas = [...new Set(relatos.map((r) => r.screen).filter(Boolean))] as string[];
+  const pessoas = [...new Set(relatos.map((r) => r.reporterName).filter(Boolean))] as string[];
+  const modulos = [...new Set(relatos.map((r) => (r.module ? MODULO_ROTULO[r.module] : null)).filter(Boolean))] as string[];
+
+  linhas.push(
+    `${relatos.length} relatos do riSZon, tratados como UM caso`,
+    "",
+    `Códigos: ${relatos.map((r) => r.code).join(", ")}`
+  );
+  if (modulos.length > 0) linhas.push(`Partes do sistema: ${modulos.join(", ")}`);
+  if (telas.length > 0) linhas.push(`Telas citadas: ${telas.join(", ")}`);
+  // Quantas PESSOAS relataram é a informação que muda a prioridade: um relato
+  // de cinco pessoas não é o mesmo caso que cinco relatos de uma.
+  linhas.push(
+    `Quem relatou: ${pessoas.length === 1 ? pessoas[0] : `${pessoas.length} pessoas (${pessoas.join(", ")})`}`,
+    "",
+    "CONSIDERAÇÕES DO ADMIN MASTER (valem para o conjunto)",
+    consideracoes.trim() || "(não informado)",
+    "",
+    "─".repeat(60),
+    ""
+  );
+
+  relatos.forEach((r, i) => {
+    // Cada relato inteiro, mas sem repetir as instruções finais: elas vêm uma
+    // vez só, no fim.
+    const solo = montarBriefing(r, objetivo, "", mensagensPorRelato[r.id] ?? []);
+    const semInstrucoes = solo.split("O QUE EU PRECISO")[0].trimEnd();
+    linhas.push(`RELATO ${i + 1} DE ${relatos.length}`, semInstrucoes, "", "─".repeat(60), "");
+  });
+
+  linhas.push("O QUE EU PRECISO");
+  if (objetivo === "corrigir") {
+    linhas.push(
+      "Trate os relatos acima como UM caso: diagnostique a causa comum e corrija.",
+      "",
+      "Antes de mexer em qualquer coisa, confirme que o defeito EXISTE em cada",
+      "um — pode ser que alguns sejam o sistema fazendo o combinado, e outros",
+      "não. Se forem causas diferentes, diga isso em vez de forçar uma só.",
+      "",
+      "Se precisar de algo que não está aqui, peça antes de supor."
+    );
+  } else {
+    linhas.push(
+      "Escreva UMA resposta que sirva para todos os relatos acima. Não é",
+      "defeito — é para explicar.",
+      "",
+      "Quem vai ler: gente da operação, fora da área técnica. Português simples,",
+      "sem jargão. A mesma mensagem será gravada em todos os relatos, então ela",
+      "não pode citar o caso de uma pessoa só.",
+      "",
+      "Devolva SÓ o texto da resposta, pronto para eu colar."
+    );
+  }
+
+  return linhas.join("\n");
+}
+
 export function PrepararBriefing({
   relato,
   mensagens = [],

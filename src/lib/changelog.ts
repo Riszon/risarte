@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.271.0",
+    data: "2026-09-23",
+    migracao: null,
+    titulo: "Responder vários relatos de uma vez",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na tela Problemas, cada relato ganhou uma caixinha de seleção. Escolha os que tratam do mesmo assunto — de telas iguais, do mesmo tema, ou de pessoas diferentes relatando a mesma coisa — e responda todos de uma vez, com a mesma mensagem, situação e versão.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Com os relatos escolhidos também dá para gerar um texto único com o conjunto inteiro, para pedir a correção de todos de uma vez. Cada relato vai completo, com o contexto de quem abriu.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A mesma resposta é gravada em cada relato escolhido, e cada pessoa a lê no relato dela — os relatos continuam separados. Se algum não puder receber a resposta, o sistema diz qual e por quê, em vez de dizer só que terminou.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.270.0",
     data: "2026-09-22",
     migracao: "0269",

@@ -2012,6 +2012,26 @@ sistema real**, com o selo **Treino**, e você acompanha tudo num lugar só:
 - **Complementar ou reabrir** um relato do treino se faz no treino: a tela do
   sistema real mostra o link para abri-lo lá.
 
+**Responder vários de uma vez (v0.271.0).** Quando o mesmo assunto chega em
+vários relatos — a mesma tela, o mesmo tema, ou várias pessoas relatando a
+mesma coisa —, marque a **caixinha** de cada um (ela aparece só para o Admin
+Master) e use a barra que surge embaixo:
+
+- **Responder juntos** — a mesma mensagem, situação e versão vão para todos os
+  escolhidos. Cada pessoa continua lendo a resposta **no relato dela**; os
+  relatos não são fundidos, e reabrir um não mexe nos outros.
+- **Pedir a correção do conjunto** — gera um texto único com todos os relatos
+  escolhidos (cada um completo, com o contexto de quem abriu) para você levar a
+  quem vai corrigir.
+
+A seleção **atravessa abas e filtros**: o mesmo problema costuma chegar como
+"erro" de um e "dúvida" de outro. E dá para misturar relatos do sistema e do
+**treino** — cada resposta é gravada no banco de onde o relato nasceu.
+
+> **O que não puder ser respondido volta dito, relato por relato** (por exemplo,
+> um que já estava encerrado sem nada a mudar). Um lote que responde só "pronto"
+> esconde justamente o caso que precisava de você.
+
 **O painel de indicadores conta os dois.** Em Problemas → **Painel de
 indicadores**, os números somam o sistema e o treino, com botões para ver **só
 o sistema** ou **só o treino**. As regras não mudaram: o período conta pela

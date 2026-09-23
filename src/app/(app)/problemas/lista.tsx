@@ -38,6 +38,7 @@ import {
   type Relato,
 } from "@/lib/system-reports";
 import { nomeDaAba } from "@/lib/ambientes";
+import { BarraDoLote } from "./barra-do-lote";
 import type { NivelDoBanco } from "./dados";
 import { FormularioDeRelato } from "./formulario";
 import { CorDaIdade, SeloDeSituacao } from "./selos";
@@ -89,6 +90,14 @@ export function Problemas({
   const [tipo, setTipo] = useState<string>(TODOS);
   const [modulo, setModulo] = useState<string>(TODOS);
   const [unidade, setUnidade] = useState<string>(TODOS);
+  /**
+   * OS RELATOS ESCOLHIDOS (pedido do dono, 23/09/2026) — só para o Admin
+   * Master, que é quem responde. A seleção atravessa abas e filtros de
+   * propósito: o mesmo problema costuma chegar como "erro" de um e "dúvida"
+   * de outro, e obrigar a escolher tudo na mesma aba faria o lote existir só
+   * no caso fácil.
+   */
+  const [escolhidos, setEscolhidos] = useState<Set<string>>(new Set());
 
   const unidades = useMemo(() => {
     const mapa = new Map<string, string>();
@@ -114,6 +123,22 @@ export function Problemas({
     filtrados.filter((r) => naAba(r, aba)),
     aba
   );
+  function alternar(id: string) {
+    setEscolhidos((antes) => {
+      const proximo = new Set(antes);
+      if (proximo.has(id)) proximo.delete(id);
+      else proximo.add(id);
+      return proximo;
+    });
+  }
+
+  // Derivado de TODOS os relatos, não da lista visível: filtrar depois de
+  // escolher não pode fazer o escolhido sumir do lote em silêncio.
+  const selecionados = useMemo(
+    () => relatos.filter((r) => escolhidos.has(r.id)),
+    [relatos, escolhidos]
+  );
+
   const filtrando =
     busca.trim() !== "" || tipo !== TODOS || modulo !== TODOS || unidade !== TODOS;
 
@@ -234,6 +259,14 @@ export function Problemas({
         )}
       </div>
 
+      {/* A barra só existe para quem responde, e só quando há algo escolhido. */}
+      {isAdminMaster && (
+        <BarraDoLote
+          selecionados={selecionados}
+          aoLimpar={() => setEscolhidos(new Set())}
+        />
+      )}
+
       {lista.length === 0 ? (
         <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
           {filtrando
@@ -243,7 +276,14 @@ export function Problemas({
       ) : (
         <ul className="divide-y rounded-lg border">
           {lista.map((r) => (
-            <Linha key={r.id} relato={r} agora={agora} isAdminMaster={isAdminMaster} />
+            <Linha
+              key={r.id}
+              relato={r}
+              agora={agora}
+              isAdminMaster={isAdminMaster}
+              escolhido={escolhidos.has(r.id)}
+              aoEscolher={isAdminMaster ? () => alternar(r.id) : undefined}
+            />
           ))}
         </ul>
       )}
@@ -263,17 +303,35 @@ function Linha({
   relato: r,
   agora,
   isAdminMaster,
+  escolhido,
+  aoEscolher,
 }: {
   relato: Relato;
   agora: number;
   isAdminMaster: boolean;
+  escolhido: boolean;
+  /** Só o Admin Master escolhe — para os demais a caixinha nem aparece. */
+  aoEscolher?: () => void;
 }) {
   const relogio = relogioDoRelato(r, agora);
   const novo = temRespostaNova(r);
   const esperando = isAdminMaster && aguardaSuporte(r);
 
   return (
-    <li>
+    <li className={cn("flex items-start gap-1", escolhido && "bg-primary/5")}>
+      {/* A CAIXINHA FICA FORA DO LINK: clicar para escolher não pode abrir o
+          relato, e clicar no relato não pode escolher sem querer. */}
+      {aoEscolher && (
+        <label className="flex shrink-0 cursor-pointer items-center py-4 pl-4">
+          <input
+            type="checkbox"
+            checked={escolhido}
+            onChange={aoEscolher}
+            aria-label={`Escolher o relato ${r.code}`}
+            className="size-4 accent-primary"
+          />
+        </label>
+      )}
       {/* O relato do TREINO mora no banco de lá: o link abre a tela dele no
           ambiente de treino, em aba própria. Os do sistema abrem aqui mesmo. */}
       <Link
