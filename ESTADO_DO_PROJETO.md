@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/09/2026 · Versão do sistema: **0.272.0** · Última migração: **0270** (aplicada no treino; **pendente na produção**) · Empresarial **0.51.0** / migração **1013**_
+_Atualizado em: 23/09/2026 · Versão do sistema: **0.273.0** · Última migração: **0270** (aplicada na produção e no treino) · Empresarial **0.51.0** / migração **1013**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,39 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### PRINT COM A CAIXA DE SELEÇÃO ABERTA (23/09/2026, v0.273.0, sem migração)
+
+Pergunta do dono: *"quando quero fazer a captura de uma tela e quero mostrar
+caixa de seleção aberta não consigo... tem como as caixas de seleção que
+cliquei ficarem abertas, exclusivamente quando vou capturar a tela?"*
+
+**O defeito existe — mas a causa está FORA do nosso alcance, e isso mudou a
+forma da correção.** Para fotografar, `getDisplayMedia` **exige** um gesto do
+usuário, e o navegador ainda mostra o aviso *"permitir ver esta aba?"*. O
+clique é um clique fora da lista; o aviso rouba o foco. As duas coisas fecham
+qualquer caixa aberta, e **nenhuma página consegue impedir** — manter a lista
+aberta "só na hora do print" seria prometer o que o navegador não deixa
+cumprir.
+
+**A saída é o tempo, não a teimosia:** botão **Esperar 5 s** ao lado dos
+botões de captura (na página/painel de relato e na barra flutuante do "ir até
+a tela do problema"). Autoriza primeiro, o botão conta — *"Fotografando em
+5…"* —, a pessoa reabre a caixa nesse intervalo, e a foto sai com ela aberta.
+O botão fica aceso enquanto a espera estiver ligada e vale para as capturas
+seguintes.
+
+**⚠️ A ORDEM É A CORREÇÃO, e está presa por teste.** A contagem acontece com a
+tela ainda **visível**; o painel só sai da frente **depois** dela. Invertido
+— que é como o código estava —, a pessoa não saberia quanto falta e a foto
+sairia enquanto ela ainda procurasse a caixa. `captura-de-tela.test.ts` mede
+exatamente isso, e a régua foi **provada invertendo a ordem de propósito**:
+ela reprovou (`expected 1 to be greater than 6`) e voltou a passar com o
+código certo. Evidências **EV-112** e **EV-113**.
+
+Manual §9.4 ganhou a linha na tabela dos jeitos de capturar **e a explicação
+do porquê** — quem lê precisa saber que o limite é do navegador, senão volta
+a relatar o mesmo como defeito do riSZon.
 
 ### A SALA DE ESPERA ACOMPANHA O TRABALHO CLÍNICO (23/09/2026, v0.272.0, migração 0270)
 

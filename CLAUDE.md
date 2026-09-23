@@ -346,7 +346,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.270.0; Empresarial 0.50.0 → 0.51.0)**
+**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.273.0; Empresarial 0.50.0 → 0.51.0)**
 
 Sessão inteira movida por relatos do sistema. **Tudo o que segue já está no ar
 nos dois ambientes, e as migrações 0266, 0267, 0268, 0269 e 1013 foram
@@ -383,6 +383,12 @@ aplicadas na produção e no treino.**
   ⚠️ **A matriz de permissões tinha uma LINHA GRAVADA** liberando aquele menu:
   linha de banco ganha de padrão de código, e mudar só `permissions.ts` não
   teria efeito nenhum. A 0269 apaga a linha (destrutivo declarado).
+- **Print com a caixa de seleção aberta (0.273.0, sem migração)** — não dava
+  para manter a lista aberta, e **a causa é do navegador**: fotografar exige
+  um clique e o aviso de permissão, e os dois fecham qualquer caixa. A saída
+  foi o tempo — botão **Esperar 5 s**, que autoriza primeiro e fotografa
+  depois. A contagem roda com a tela visível e o painel só some no fim; teste
+  prende essa ordem, provado invertendo-a de propósito.
 - **Estorno de cobrança (EMPRESARIAL, 1013 — v0.51.0)** — a baixa indevida
   passou a poder ser desfeita, com motivo obrigatório; devolve a situação do
   vencimento, apaga o split e **reavalia a suspensão da empresa**. Faixa 1000+,
