@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -494,6 +496,7 @@ export function FichaDoLead({
         basis={basis}
         faltaProposta={faltaProposta}
         faltaContrato={faltaContrato}
+        linkDaProposta={`/empresarial/funil/${leadId}/proposta`}
       />
 
       {/* ---------------------------------------------------------------- */}
@@ -591,11 +594,14 @@ function SimuladorDaProposta({
   basis,
   faltaProposta,
   faltaContrato,
+  linkDaProposta,
 }: {
   proposta: ReturnType<typeof simularProposta>;
   basis: BillingBasis;
   faltaProposta: string[];
   faltaContrato: string[];
+  /** Endereço do documento da proposta desta empresa. */
+  linkDaProposta: string;
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -667,6 +673,36 @@ function SimuladorDaProposta({
             Proposta e contrato têm todos os dados necessários.
           </p>
         )}
+
+        {/* O DOCUMENTO DA PROPOSTA (OC-00083, Bloco F). Fica aqui, ao lado dos
+            números, e não numa aba própria: a simulação acompanha o que está
+            sendo DIGITADO e o documento é montado com o que foi SALVO — dois
+            lugares mostrando os mesmos números discordariam a cada tecla, e
+            ninguém saberia em qual acreditar. O aviso ao lado diz isso. */}
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          {faltaProposta.length === 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={linkDaProposta} target="_blank" />}
+            >
+              <FileText className="mr-1.5 size-4" />
+              Ver a proposta
+            </Button>
+          ) : (
+            <Button type="button" size="sm" variant="outline" disabled>
+              <FileText className="mr-1.5 size-4" />
+              Ver a proposta
+            </Button>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {faltaProposta.length > 0
+              ? "Preencha o que falta acima para gerar o documento."
+              : "Abre em outra aba, com os dados SALVOS — salve antes, se acabou de mudar algo."}
+          </span>
+        </div>
       </CardContent>
     </Card>
   );

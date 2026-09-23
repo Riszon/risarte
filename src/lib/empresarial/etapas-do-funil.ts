@@ -74,6 +74,17 @@ export type SituacaoDaEtapa = {
 };
 
 export type DadosDasEtapas = {
+  /**
+   * A empresa já tem levantamento salvo.
+   *
+   * ⚠️ É UMA PERGUNTA SEPARADA, e a primeira versão não a fazia: sem
+   * levantamento nenhum eu mandava um campo de mentira (`["o levantamento"]`)
+   * na lista do que falta, e a aba contava e escrevia **"falta 1 campo"** —
+   * como se faltasse um detalhe, quando não havia nada preenchido. Achado ao
+   * conferir a proposta no treino, comparando as duas telas. Contagem só
+   * responde "quantos"; ela não sabe dizer "nenhum".
+   */
+  temLevantamento: boolean;
   /** Campos que ainda faltam para a proposta (régua de `proposta.ts`). */
   faltaProposta: readonly string[];
   /** Campos que ainda faltam para o contrato (régua de `proposta.ts`). */
@@ -109,8 +120,9 @@ export function situacaoDasEtapas(
 ): Record<EtapaDaFicha, SituacaoDaEtapa> {
   const faltam = new Set([...d.faltaProposta, ...d.faltaContrato]).size;
 
-  const levantamento: SituacaoDaEtapa =
-    faltam > 0
+  const levantamento: SituacaoDaEtapa = !d.temLevantamento
+    ? { estado: "falta", resumo: "não começou" }
+    : faltam > 0
       ? { estado: "falta", resumo: `falta ${plural(faltam, "campo", "campos")}` }
       : { estado: "pronto", resumo: "completo" };
 

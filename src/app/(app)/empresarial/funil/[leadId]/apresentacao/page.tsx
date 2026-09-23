@@ -9,7 +9,7 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { Button } from "@/components/ui/button";
-import { BotaoImprimir } from "./botao-imprimir";
+import { BotaoImprimir } from "../botao-imprimir";
 
 export const metadata: Metadata = {
   title: "Apresentação · Risarte Empresarial",
@@ -85,7 +85,7 @@ export default async function ApresentacaoPage({
               ? "Apresentação desta empresa"
               : "Padrão da rede"}
           </span>
-          <BotaoImprimir companyName={lead.company_name} />
+          <BotaoImprimir tipo="apresentacao" companyName={lead.company_name} />
         </div>
       </div>
 

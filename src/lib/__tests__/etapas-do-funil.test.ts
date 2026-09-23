@@ -8,6 +8,7 @@ import {
 } from "@/lib/empresarial/etapas-do-funil";
 
 const vazio: DadosDasEtapas = {
+  temLevantamento: true,
   faltaProposta: [],
   faltaContrato: [],
   apresentacaoPersonalizada: false,
@@ -61,6 +62,15 @@ describe("o que cada aba diz de si mesma", () => {
   it("um campo só fala no singular", () => {
     const s = situacaoDasEtapas({ ...vazio, faltaProposta: ["CNPJ"] });
     expect(s.levantamento.resumo).toBe("falta 1 campo");
+  });
+
+  it("SEM levantamento nenhum diz 'não começou', nunca 'falta 1 campo'", () => {
+    // O defeito real: eu mandava um campo de mentira na lista do que falta, e
+    // a aba contava — a Amazon, com NADA preenchido, aparecia como se
+    // faltasse um detalhe. Contagem responde "quantos"; não sabe dizer
+    // "nenhum".
+    const s = situacaoDasEtapas({ ...vazio, temLevantamento: false });
+    expect(s.levantamento).toEqual({ estado: "falta", resumo: "não começou" });
   });
 
   it("levantamento completo é 'pronto', não 'feito'", () => {

@@ -224,6 +224,28 @@ aba diz o que falta.
    levantamento incompleto. A aba avisa o que falta; quem decide a ordem é
    quem atende.
 
+## 10.2. A proposta como documento (relato OC-00083, entregue em 23/09/2026)
+
+1. Abra uma empresa **sem levantamento**. A aba **Levantamento** deve dizer
+   **"não começou"** — nunca "falta 1 campo".
+2. Na ficha, o botão **Ver a proposta** (ao lado da simulação) fica
+   **desligado**, com o aviso de preencher o que falta.
+3. Abra pelo endereço direto `/empresarial/funil/<id>/proposta`: a página
+   **recusa** e lista o que falta, com botão de voltar. Ela NÃO pode imprimir
+   "R$ 0,00" com cara de proposta.
+4. Agora uma empresa **com levantamento completo**: clique em **Ver a
+   proposta**. Abre em outra aba com cabeçalho, razão social, CNPJ, data de
+   emissão e **validade de 15 dias**.
+5. Confira o quadro: **Mensalidade · Por colaborador · Empresa paga ·
+   Colaborador paga**, e a frase de quem paga o quê.
+6. **Salvar em PDF**: os botões do topo somem na impressão; o arquivo sai como
+   `risarte-empresarial_proposta_<empresa>_<data>`.
+7. ⚠️ **Confira o que NÃO está lá**: interesse, chance de fechar e observações
+   do consultor são notas internas e não podem aparecer — o documento vai para
+   a mão da empresa.
+8. Ponha no levantamento um convênio atual **mais barato** que o programa: o
+   documento tem de dizer que custa **mais**, e não esconder.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

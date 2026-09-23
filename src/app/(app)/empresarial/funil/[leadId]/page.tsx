@@ -271,10 +271,12 @@ export default async function FichaDoLeadPage({
   };
   const passos = stepRows ?? [];
   const situacao = situacaoDasEtapas({
-    // Sem levantamento nenhum, "falta tudo" — e não "está completo", que é o
-    // que sairia de uma linha vazia com os padrões da rede preenchidos.
-    faltaProposta: view.temLevantamento ? faltaParaProposta(dadosDaProposta) : ["o levantamento"],
-    faltaContrato: view.temLevantamento ? faltaParaContrato(dadosDaProposta) : [],
+    // "Ainda não começou" é uma resposta diferente de "falta um campo", e a
+    // aba precisa das duas: a linha vazia vem com os padrões da rede
+    // preenchidos e pareceria quase pronta.
+    temLevantamento: view.temLevantamento,
+    faltaProposta: faltaParaProposta(dadosDaProposta),
+    faltaContrato: faltaParaContrato(dadosDaProposta),
     apresentacaoPersonalizada: Boolean(daEmpresa),
     envios: envios.length,
     propostaEnviada: envios.some((e) => e.items.includes("PROPOSAL")),

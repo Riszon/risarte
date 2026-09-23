@@ -292,3 +292,54 @@ certo. Régua que não acha nada tem de gritar, nunca responder "não".
 
 **Próximo:** a proposta como documento (Bloco F) e o contrato gerado aqui,
 indo ao ZapSign só para assinar (Bloco G) — nesta ordem, combinado com o dono.
+
+### Bloco F — a proposta como DOCUMENTO ✅ (sem migração, v0.53.0)
+
+Segunda metade do **OC-00083**: *"toda a apresentação, proposta, contratos
+devem ser elaborados dentro do próprio sistema"*. A apresentação já era; a
+proposta **não existia como documento** — o sistema calculava os números na
+tela e o consultor montava a proposta por fora, cada um do seu jeito, com os
+valores redigitados à mão. **Redigitar valor é como a proposta passa a
+divergir do que o sistema cobra depois**, e ninguém descobre até a primeira
+fatura.
+
+Agora há `/empresarial/funil/<lead>/proposta`: página pronta para imprimir ou
+salvar em PDF, no mesmo molde da apresentação, aberta pelo botão **Ver a
+proposta** ao lado da simulação.
+
+**Decisões que valem registrar**
+
+- **O documento não guarda nada.** É desenhado a partir do levantamento salvo,
+  toda vez. Congelar uma cópia exigiria decidir quando ela envelhece, e
+  proposta velha impressa com cara de atual é pior que nenhuma. **Quem congela
+  valor é o contrato** (Bloco G).
+- **O botão fica ao lado dos números, não em aba própria.** A simulação
+  acompanha o que está sendo DIGITADO; o documento usa o que foi SALVO. Dois
+  lugares mostrando os mesmos números discordariam a cada tecla, e ninguém
+  saberia em qual acreditar. A tela declara isso ("abre com os dados salvos").
+- **Nada de nota interna entra no documento**: interesse, chance de fechar e as
+  observações do consultor ficam na ficha. É o que se pensa da empresa, não o
+  que foi combinado com ela — e o documento vai para a mão dela.
+- **Sem dados, a página RECUSA e diz o que falta**, em vez de imprimir
+  "R$ 0,00" com cara de proposta. Alguém mandaria isso para a empresa.
+- **A comparação com o convênio atual aparece mesmo quando é ruim.** Custando
+  mais, o documento diz que custa mais e qual é o argumento (cobertura e
+  atendimento). Esconder faria a proposta provar só o que ela quer provar — e o
+  consultor seria desmentido pela primeira planilha que a empresa abrisse.
+- **Subsídio em reais não vira percentual.** Valor por colaborador não é fatia
+  fixa da mensalidade; escrever "%" ali seria afirmar o que a conta não
+  sustenta.
+- **Validade: 15 dias**, numa constante só (`VALIDADE_PADRAO_DIAS`), porque é
+  número de negócio — quando virar configuração da rede no Bloco G, que já leva
+  migração, é ela que some, não quinze pedaços de texto.
+
+**Conferido nas telas de verdade**, no treino, nas 7 empresas: **3 propostas
+geradas** (com os quatro números, a validade e sem nenhuma nota interna) e **4
+recusadas dizendo o que falta**.
+
+⚠️ **E a conferência da proposta achou um defeito do Bloco E.** A Amazon não
+tem levantamento nenhum, e a aba dizia **"falta 1 campo"** — porque eu mandava
+um campo de mentira (`["o levantamento"]`) na lista do que falta, e a contagem
+o contava. **Contagem responde "quantos"; ela não sabe dizer "nenhum".** Agora
+`temLevantamento` é pergunta separada e a aba diz **"não começou"**. Quatro das
+sete empresas mostravam o rótulo errado.
