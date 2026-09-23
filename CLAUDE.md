@@ -346,7 +346,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.274.0; Empresarial 0.50.0 → 0.51.0)**
+**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.275.0; Empresarial 0.50.0 → 0.54.0)**
 
 Sessão inteira movida por relatos do sistema. **Tudo o que segue já está no ar
 nos dois ambientes, e as migrações 0266, 0267, 0268, 0269 e 1013 foram
@@ -419,12 +419,34 @@ conferência.
    novos da jornada (EV-087).
 5. Teste final do LOTE B (config da agenda + Relatórios), de sessões anteriores.
 
+- **Funil do Empresarial em ABAS (OC-00083 — 0.52.0, 0.53.0 e 0.54.0, migração
+  1014)** — a ficha da empresa mostrava TUDO de uma vez, sem olhar a fase; hoje
+  são cinco abas (Levantamento · Proposta · Apresentação · Envio · Fechamento),
+  a ficha abre na etapa da empresa e cada aba diz o que falta. A **proposta
+  virou documento** (página para imprimir/PDF) e depois **etapa própria**, com
+  prazo, carência e detalhamento em blocos — carência que agora **viaja para o
+  cadastro da empresa** no fechamento, em vez de ser redigitada. Detalhe em
+  `docs/risarte-empresarial/FUNIL-COMERCIAL.md` (Blocos E, F e G).
+  ⚠️ **Achado no caminho, e era do NÚCLEO:** `CabecalhoDeModulo` mostrava o
+  chapéu OU a seta de voltar, nunca os dois — o nome da seção era texto morto
+  em **13 telas** de Compras e do Empresarial. Corrigido em commit próprio
+  (core 0.275.0).
+
 **Nada em andamento pela metade**: árvore limpa, tudo no GitHub, e os dois
-ambientes na mesma versão — **core 0.270.0 / migração 0269** e **Empresarial
-0.51.0 / migração 1013**, conferido entrando logado, não pelo painel.
+ambientes na mesma versão — **core 0.275.0 / migração 0270** e **Empresarial
+0.54.0 / migração 1014**, conferido lendo o banco e abrindo as telas logado,
+não pelo painel.
 
 **Relatos encerrados nestes dias:** OC-00053, OC-00058, OC-00060, OC-00061,
-OC-00063, OC-00069, OC-00072 e OC-00073.
+OC-00063, OC-00069, OC-00072 e OC-00073. **Em teste pelo dono:** OC-00083.
+
+**O padrão da régua apareceu mais QUATRO vezes em 23/09** — e todas as quatro
+foram a régua errada, não o sistema: a janela de 700 caracteres que não achou
+as abas e acusou 7 fichas certas; a contagem que dizia *"falta 1 campo"* onde
+faltava o levantamento inteiro; o `válida até` que não casava por causa de um
+espaço; e, antes delas, a contagem da captura que eu dei por boa sem conferir
+o resultado que o dono pediu. **Conferir a régua antes de acusar a tela virou
+o primeiro passo, não o último.**
 
 **18/09/2026 — PC Administrador (preparação do ambiente, sem mudança de código)**
 
