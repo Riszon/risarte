@@ -346,7 +346,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.273.0; Empresarial 0.50.0 → 0.51.0)**
+**21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.274.0; Empresarial 0.50.0 → 0.51.0)**
 
 Sessão inteira movida por relatos do sistema. **Tudo o que segue já está no ar
 nos dois ambientes, e as migrações 0266, 0267, 0268, 0269 e 1013 foram
@@ -383,12 +383,17 @@ aplicadas na produção e no treino.**
   ⚠️ **A matriz de permissões tinha uma LINHA GRAVADA** liberando aquele menu:
   linha de banco ganha de padrão de código, e mudar só `permissions.ts` não
   teria efeito nenhum. A 0269 apaga a linha (destrutivo declarado).
-- **Print com a caixa de seleção aberta (0.273.0, sem migração)** — não dava
-  para manter a lista aberta, e **a causa é do navegador**: fotografar exige
-  um clique e o aviso de permissão, e os dois fecham qualquer caixa. A saída
-  foi o tempo — botão **Esperar 5 s**, que autoriza primeiro e fotografa
-  depois. A contagem roda com a tela visível e o painel só some no fim; teste
-  prende essa ordem, provado invertendo-a de propósito.
+- **Print com a lista aberta (0.273.0 e 0.274.0, sem migração)** — **entreguei
+  errado e o teste do dono achou no mesmo dia.** Eu vi a metade certa (o
+  clique e o aviso de permissão fecham a lista) e parei ali. A causa que
+  faltava: a foto da **aba** copia o desenho da página, e **lista aberta não é
+  desenho da página** — é janela do sistema operacional por cima. Tempo
+  nenhum faz aparecer o que não está lá. Agora a captura com tempo pede a
+  **tela inteira**, e a função devolve a superfície escolhida para avisar
+  quem escolher "aba". Virou **botão** (era interruptor, e passou
+  despercebido). **Quarta aparição do padrão da régua, em roupa nova: conferi
+  o MEU mecanismo (a contagem acontecia) em vez do resultado que ele pediu
+  (ver a lista no print).**
 - **Estorno de cobrança (EMPRESARIAL, 1013 — v0.51.0)** — a baixa indevida
   passou a poder ser desfeita, com motivo obrigatório; devolve a situação do
   vencimento, apaga o split e **reavalia a suspensão da empresa**. Faixa 1000+,

@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/09/2026 · Versão do sistema: **0.273.0** · Última migração: **0270** (aplicada na produção e no treino) · Empresarial **0.51.0** / migração **1013**_
+_Atualizado em: 23/09/2026 · Versão do sistema: **0.274.0** · Última migração: **0270** (aplicada na produção e no treino) · Empresarial **0.51.0** / migração **1013**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3682,38 +3682,48 @@ Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 p
 
 ## 2. O que está em andamento agora
 
-### PRINT COM A CAIXA DE SELEÇÃO ABERTA (23/09/2026, v0.273.0, sem migração)
+### PRINT COM A LISTA ABERTA — "CAPTURAR COM TEMPO" (23/09/2026, v0.273.0 e v0.274.0, sem migração)
 
 Pergunta do dono: *"quando quero fazer a captura de uma tela e quero mostrar
-caixa de seleção aberta não consigo... tem como as caixas de seleção que
-cliquei ficarem abertas, exclusivamente quando vou capturar a tela?"*
+caixa de seleção aberta não consigo"*. **Entreguei errado na primeira vez, e
+o teste dele achou no mesmo dia** — o registro fica assim de propósito.
 
-**O defeito existe — mas a causa está FORA do nosso alcance, e isso mudou a
-forma da correção.** Para fotografar, `getDisplayMedia` **exige** um gesto do
-usuário, e o navegador ainda mostra o aviso *"permitir ver esta aba?"*. O
-clique é um clique fora da lista; o aviso rouba o foco. As duas coisas fecham
-qualquer caixa aberta, e **nenhuma página consegue impedir** — manter a lista
-aberta "só na hora do print" seria prometer o que o navegador não deixa
-cumprir.
+**O que eu vi (certo, mas só metade):** para fotografar, o navegador exige um
+clique e mostra o aviso de permissão; os dois fecham qualquer lista aberta.
+Entreguei a contagem (0.273.0) e a lista continuou sem aparecer.
 
-**A saída é o tempo, não a teimosia:** botão **Esperar 5 s** ao lado dos
-botões de captura (na página/painel de relato e na barra flutuante do "ir até
-a tela do problema"). Autoriza primeiro, o botão conta — *"Fotografando em
-5…"* —, a pessoa reabre a caixa nesse intervalo, e a foto sai com ela aberta.
-O botão fica aceso enquanto a espera estiver ligada e vale para as capturas
-seguintes.
+**O que faltava (a causa de verdade):** a captura de **aba** copia o *desenho
+da página*, e **a lista aberta não é desenho da página** — o sistema
+operacional a desenha por cima, em janela própria. Ela não está na aba, então
+**não entra na foto por mais tempo que se espere**. Tempo resolvia o
+fechamento; não resolvia a ausência.
 
-**⚠️ A ORDEM É A CORREÇÃO, e está presa por teste.** A contagem acontece com a
-tela ainda **visível**; o painel só sai da frente **depois** dela. Invertido
-— que é como o código estava —, a pessoa não saberia quanto falta e a foto
-sairia enquanto ela ainda procurasse a caixa. `captura-de-tela.test.ts` mede
-exatamente isso, e a régua foi **provada invertendo a ordem de propósito**:
-ela reprovou (`expected 1 to be greater than 6`) e voltou a passar com o
-código certo. Evidências **EV-112** e **EV-113**.
+**A correção (0.274.0):** a captura com tempo pede a **TELA INTEIRA**
+(`displaySurface: "monitor"`), onde a lista existe. E, como a pessoa ainda pode
+escolher "aba" na janela do navegador, a função **devolve o que foi escolhido
+de fato** (`getSettings().displaySurface`): escolheu aba, o sistema avisa que o
+print saiu sem a lista e diz o que fazer. **Sem essa régua, o sintoma voltaria
+a ser "não funciona".**
 
-Manual §9.4 ganhou a linha na tabela dos jeitos de capturar **e a explicação
-do porquê** — quem lê precisa saber que o limite é do navegador, senão volta
-a relatar o mesmo como defeito do riSZon.
+**A segunda causa era a tela, não o código:** era um *interruptor* que
+precisava ser ligado antes de capturar, e o próprio dono capturou sem
+perceber que precisava ligá-lo (*"está muito confuso"*). Virou o botão
+**Capturar com tempo**, que faz a coisa inteira. **Opção que depende de a
+pessoa lembrar de ligar é opção que não existe.**
+
+Na tela: contagem grande no alto (*"Abra agora o que você quer mostrar"*) que
+some antes do obturador para não sair na foto; linha fixa de ajuda ao lado dos
+botões; passo a passo numerado em *Como usar o print*. **8 segundos**, não 5 —
+entre clicar em *Compartilhar* e ter a lista aberta há mover o mouse e achar o
+campo.
+
+Evidências **EV-112 a EV-116**. Manual §9.4 refeito (a explicação da 0.273.0
+estava errada). Os dois testes novos foram provados quebrando o código de
+propósito antes de valer.
+
+**A lição, que é a mesma da régua:** eu conferi que a contagem acontecia e
+conclui que o caso estava resolvido. **Conferi o meu mecanismo, não o
+resultado que o dono pediu** — e o que ele pediu era ver a lista no print.
 
 ### A SALA DE ESPERA ACOMPANHA O TRABALHO CLÍNICO (23/09/2026, v0.272.0, migração 0270)
 
