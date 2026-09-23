@@ -46,19 +46,26 @@ export function CabecalhoDeModulo({
       <RisarteMark className="pointer-events-none absolute -top-4 -right-6 h-40 text-primary-foreground/10" />
       <div className="relative flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
         <div className="min-w-0">
-          {voltar ? (
-            <Link
-              href={voltar.href}
-              className="text-xs text-primary-foreground/70 underline-offset-2 hover:text-primary-foreground hover:underline"
-            >
-              ← {voltar.rotulo}
-            </Link>
-          ) : (
-            <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-primary-foreground/60">
+          {/* ⚠️ O CHAPÉU SUMIA QUANDO HAVIA LINK DE VOLTAR (achado em 23/09/2026,
+              conferindo o OC-00083 no navegador). Era um `ou`: tela com
+              `voltar` mostrava só a seta, e o `chapeu` — que é OBRIGATÓRIO na
+              assinatura — virava texto morto em 13 telas. O defeito passava
+              despercebido porque o build compila prop que ninguém desenha.
+              Agora os dois aparecem, o voltar primeiro. */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            {voltar && (
+              <Link
+                href={voltar.href}
+                className="text-xs text-primary-foreground/70 underline-offset-2 hover:text-primary-foreground hover:underline"
+              >
+                ← {voltar.rotulo}
+              </Link>
+            )}
+            <p className="flex items-center gap-1.5 text-xs tracking-wider text-primary-foreground/60 uppercase">
               <Icone className="size-3.5" />
               {chapeu}
             </p>
-          )}
+          </div>
           <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight sm:text-3xl">
             {titulo}
           </h1>
