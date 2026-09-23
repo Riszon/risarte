@@ -20,6 +20,7 @@ import {
   Navigation,
   Paperclip,
   ShieldAlert,
+  Timer,
   Trash2,
   X,
 } from "lucide-react";
@@ -139,6 +140,16 @@ export function SeletorDeAnexos({
   const raiz = useRef<HTMLDivElement>(null);
   const entrada = useRef<HTMLInputElement>(null);
   const [capturando, setCapturando] = useState(false);
+  /**
+   * ESPERAR ANTES DE FOTOGRAFAR (pedido do dono, 23/09/2026).
+   *
+   * Nasce DESLIGADO: a maioria dos prints é da tela parada, e cinco segundos
+   * de espera em todos eles seria cobrar de todo mundo o preço de um caso.
+   * Ligado, é o único jeito de fotografar uma caixa de seleção aberta — o
+   * clique que autoriza a captura fecha qualquer lista, e isso é do navegador.
+   */
+  const [esperar5, setEsperar5] = useState(false);
+  const [faltam, setFaltam] = useState(0);
   const [arrastando, setArrastando] = useState(false);
   // A captura só existe no navegador de computador. No servidor não há
   // `navigator`: `useSyncExternalStore` responde "não" no servidor e no
@@ -196,8 +207,11 @@ export function SeletorDeAnexos({
       origem,
       esconder,
       mostrar,
+      contagem: esperar5 ? 5 : 0,
+      aoContar: setFaltam,
     });
     setCapturando(false);
+    setFaltam(0);
     if (r.ok) {
       acrescentar([r.arquivo], "captura");
       if (origem === "esta-aba") aoCapturarEstaTela?.();
@@ -240,7 +254,11 @@ export function SeletorDeAnexos({
             title="Fotografa a tela que está atrás deste painel"
           >
             <Camera className="mr-1.5 size-4" />
-            {capturando ? "Capturando…" : "Capturar esta tela"}
+            {faltam > 0
+              ? `Fotografando em ${faltam}…`
+              : capturando
+                ? "Capturando…"
+                : "Capturar esta tela"}
           </Button>
         )}
         {/*
@@ -277,7 +295,11 @@ export function SeletorDeAnexos({
             title="O navegador mostra as abas e janelas abertas para você escolher"
           >
             <AppWindow className="mr-1.5 size-4" />
-            {noPainel ? "Outra aba ou janela" : "Capturar de outra aba ou janela"}
+            {faltam > 0
+              ? `Fotografando em ${faltam}…`
+              : noPainel
+                ? "Outra aba ou janela"
+                : "Capturar de outra aba ou janela"}
           </Button>
         )}
         <Button
@@ -290,6 +312,26 @@ export function SeletorDeAnexos({
           <Paperclip className="mr-1.5 size-4" />
           Anexar arquivo
         </Button>
+
+        {/* ESPERAR 5 SEGUNDOS (pedido do dono, 23/09/2026) — o único jeito de
+            fotografar uma caixa de seleção ABERTA. O clique que autoriza a
+            captura fecha qualquer lista (é do navegador, não nosso); com a
+            espera, a permissão vem primeiro e a foto sai depois, com tempo de
+            reabrir o que precisa aparecer. */}
+        {captura && (
+          <Button
+            type="button"
+            variant={esperar5 ? "secondary" : "ghost"}
+            size="sm"
+            aria-pressed={esperar5}
+            onClick={() => setEsperar5((antes) => !antes)}
+            disabled={bloqueado}
+            title="Para fotografar uma caixa de seleção aberta: o sistema espera 5 segundos antes de tirar a foto, e nesse tempo você reabre a caixa"
+          >
+            <Timer className="mr-1.5 size-4" />
+            {esperar5 ? "Esperando 5 s" : "Esperar 5 s"}
+          </Button>
+        )}
         <input
           ref={entrada}
           type="file"
@@ -415,6 +457,18 @@ function AjudaDoPrint({
             janela) do problema e clique em <em>Compartilhar</em>.
             {modo === "pagina" &&
               " Dica: abra a tela do problema numa aba nova antes (botão direito no menu → Abrir em nova aba)."}
+          </li>
+        )}
+        {captura && (
+          <li>
+            <strong className="text-foreground">
+              Precisa mostrar uma caixa de seleção aberta?
+            </strong>{" "}
+            Ligue <em>Esperar 5 s</em> antes de capturar. O clique que autoriza
+            a foto fecha qualquer lista aberta — isso é do navegador, nenhum
+            sistema consegue evitar. Com a espera, você autoriza primeiro,
+            reabre a caixa enquanto o botão faz a contagem, e a foto sai com ela
+            aberta.
           </li>
         )}
         {captura && (

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { ArrowRight, Camera, LifeBuoy, Undo2, XIcon } from "lucide-react";
+import { ArrowRight, Camera, LifeBuoy, Timer, Undo2, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { contarPendentesDoTreino } from "@/app/(app)/relatos-treino-actions";
@@ -112,6 +112,11 @@ export function ReportNavItem({
   const [escondido, setEscondido] = useState(false);
   const [modoCaptura, setModoCaptura] = useState(false);
   const [capturando, setCapturando] = useState(false);
+  // ESPERAR 5 SEGUNDOS (pedido do dono, 23/09/2026). O clique que autoriza a
+  // captura fecha qualquer lista aberta — é regra do navegador. Com a espera,
+  // a permissão vem primeiro e a foto sai depois, dando tempo de reabrir.
+  const [esperar5, setEsperar5] = useState(false);
+  const [faltam, setFaltam] = useState(0);
 
   const consultar = useCallback(async () => {
     // O número junta OS DOIS AMBIENTES (19/09/2026): o daqui vem do banco,
@@ -215,8 +220,11 @@ export function ReportNavItem({
       origem: "esta-aba",
       esconder: () => setEscondido(true),
       mostrar: () => setEscondido(false),
+      contagem: esperar5 ? 5 : 0,
+      aoContar: setFaltam,
     });
     setCapturando(false);
+    setFaltam(0);
     if (!r.ok) {
       avisarFalhaDaCaptura(r.motivo);
       return;
@@ -428,7 +436,22 @@ export function ReportNavItem({
           </div>
           <Button size="sm" onClick={capturarPelaBarra} disabled={capturando || cheio}>
             <Camera className="mr-1.5 size-4" />
-            {capturando ? "Capturando…" : "Capturar"}
+            {faltam > 0
+              ? `Fotografando em ${faltam}…`
+              : capturando
+                ? "Capturando…"
+                : "Capturar"}
+          </Button>
+          <Button
+            size="sm"
+            variant={esperar5 ? "secondary" : "ghost"}
+            aria-pressed={esperar5}
+            onClick={() => setEsperar5((antes) => !antes)}
+            disabled={capturando}
+            title="Para fotografar uma caixa de seleção aberta: o sistema espera 5 segundos antes de tirar a foto, e nesse tempo você reabre a caixa"
+          >
+            <Timer className="mr-1.5 size-4" />
+            {esperar5 ? "Esperando 5 s" : "Esperar 5 s"}
           </Button>
           <Button size="sm" variant="outline" onClick={() => abrir(true)} disabled={capturando}>
             <Undo2 className="mr-1.5 size-4" />

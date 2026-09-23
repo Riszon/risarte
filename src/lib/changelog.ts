@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.273.0",
+    data: "2026-09-23",
+    migracao: null,
+    titulo: "Print com a caixa de seleção aberta",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao capturar a tela apareceu o botão Esperar 5 s. Ligue antes de clicar em Capturar: você autoriza a foto, o botão faz a contagem, e nesse tempo você reabre a caixa de seleção (ou o menu) que precisa aparecer no print. A foto sai com ela aberta.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Sem a espera, nenhuma caixa de seleção aparece no print — e isso não é falha do riSZon: para fotografar, o navegador exige um clique e ainda pergunta se pode ver a tela, e as duas coisas fecham qualquer lista aberta. A espera é a única forma de contornar.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.272.0",
     data: "2026-09-23",
     migracao: "0270",

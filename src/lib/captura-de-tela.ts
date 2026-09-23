@@ -53,6 +53,22 @@ export async function capturarTela(opcoes: {
   origem?: OrigemDaCaptura;
   esconder?: () => void;
   mostrar?: () => void;
+  /**
+   * SEGUNDOS ATÉ O CLIQUE DO OBTURADOR (pedido do dono, 23/09/2026).
+   *
+   * ⚠️ POR QUE ISTO EXISTE, E POR QUE NÃO DAVA PARA "SÓ DEIXAR A CAIXA
+   * ABERTA". Para fotografar, o navegador EXIGE um clique e ainda mostra o
+   * aviso "permitir ver esta aba?". O clique é um clique fora da lista, e o
+   * aviso rouba o foco: qualquer caixa de seleção fecha antes da foto, e isso
+   * não é ajuste nosso — é do navegador.
+   *
+   * A saída é o tempo: a permissão vem primeiro, e a FOTO sai alguns segundos
+   * depois, com a pessoa reabrindo a caixa no meio. O que não dava para manter
+   * aberto por teimosia, dá para reabrir com calma.
+   */
+  contagem?: number;
+  /** Chamado a cada segundo da contagem, para a tela mostrar quanto falta. */
+  aoContar?: (restantes: number) => void;
 }): Promise<ResultadoDaCaptura> {
   if (!podeCapturarTela()) return { ok: false, motivo: "indisponivel" };
 
@@ -85,13 +101,26 @@ export async function capturarTela(opcoes: {
     return { ok: false, motivo: nome === "NotAllowedError" ? "cancelado" : "falhou" };
   }
 
-  opcoes.esconder?.();
   try {
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
     video.srcObject = stream;
     await video.play();
+
+    // ⚠️ A CONTAGEM ACONTECE COM A TELA AINDA VISÍVEL. Esconder o painel antes
+    // dela deixaria a pessoa sem saber quanto falta — e sem saber quando a
+    // foto saiu. O painel só sai da frente no último instante, e some sem
+    // roubar o foco: sumir não fecha a caixa de seleção que ela acabou de
+    // abrir (é o clique que fecha, não o sumiço).
+    const segundos = Math.max(0, Math.floor(opcoes.contagem ?? 0));
+    for (let restam = segundos; restam > 0; restam--) {
+      opcoes.aoContar?.(restam);
+      await esperar(1000);
+    }
+    opcoes.aoContar?.(0);
+
+    opcoes.esconder?.();
 
     // O painel precisa ter sumido de fato, e o vídeo precisa ter o primeiro
     // quadro — sem esperar, a foto sai preta ou com o formulário na frente.
