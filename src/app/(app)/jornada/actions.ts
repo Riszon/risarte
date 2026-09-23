@@ -220,6 +220,19 @@ export async function sendToPlanningCenter(
     // Follow-up é best-effort — a movimentação já ocorreu.
     console.error("send_to_planning_followup failed:", error.message);
   }
+  // 0270 (relato OC-00075): ENVIAR AO PLANEJAMENTO ENCERRA A CONSULTA. Era o
+  // passo esquecido — quem acabou de atender não volta ao painel para dizer
+  // que acabou, e o paciente ficava na sala de espera do sistema depois de já
+  // ter ido embora. Best-effort: a fase já andou, e se o atendimento foi
+  // chamado por outra pessoa ela o encerra por lá (a função devolve o motivo
+  // em vez de levantar erro).
+  const { error: erroAtendimento } = await supabase.rpc("finish_clinical_attendance", {
+    p_client_id: clientId,
+  });
+  if (erroAtendimento) {
+    console.error("finish_clinical_attendance:", erroAtendimento.message);
+  }
+
   revalidatePath("/atendimento");
   revalidatePath(`/prontuarios/${clientId}`);
   return { ok: true };
@@ -251,7 +264,18 @@ export async function concluirReavaliacao(
       error: "Este cliente não está na Reavaliação.",
     };
   }
-  return moveClientPhase(clientId, "follow_up");
+  const movido = await moveClientPhase(clientId, "follow_up");
+  if (!movido.ok) return movido;
+
+  // 0270: a outra saída da mesma tela encerra a consulta igual ao "Enviar ao
+  // Planejamento" — senão o paciente da reavaliação ficaria na sala de espera
+  // depois de ter ido embora, que é o defeito do relato OC-00075.
+  const { error } = await supabase.rpc("finish_clinical_attendance", {
+    p_client_id: clientId,
+  });
+  if (error) console.error("finish_clinical_attendance:", error.message);
+  revalidatePath("/atendimento");
+  return { ok: true };
 }
 
 /**

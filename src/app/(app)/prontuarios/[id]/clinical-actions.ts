@@ -148,6 +148,10 @@ export async function recordCameraCapture(
     console.error("recordCameraCapture failed:", error.message);
     return { ok: false, error: "Não foi possível salvar a imagem." };
   }
+  // 0270: o registro ENTROU — quem escreve na ficha está atendendo, então a
+  // sala de espera anda junto. Depois da escrita de propósito: ato recusado
+  // (sem consentimento, tipo inválido) não chama ninguém.
+  await chamarSeEstiverEsperando(clientId);
   await logAudit({
     action: "create",
     entityType: "clinical_media",
@@ -201,6 +205,29 @@ async function podeGuardarSemConsentimento(
     .eq("id", clientId)
     .maybeSingle<{ journey_phase: string }>();
   return dispensaConsentimento(kind, data?.journey_phase);
+}
+
+/**
+ * O PRIMEIRO ATO CLÍNICO CHAMA O PACIENTE (0270) — relato OC-00075.
+ *
+ * "Não apertei na caixinha de CHAMAR e fui direto para o atendimento" — e o
+ * paciente ficou marcado como em espera para sempre: alerta de espera longa
+ * disparando, indicadores de tempo mentindo, e o atendimento sem poder ser
+ * concluído (concluir exige ter chamado).
+ *
+ * ⚠️ NUNCA DERRUBA O ATO CLÍNICO. O registro da consulta vale mais que o
+ * estado da sala de espera: se a chamada não for possível (o atendimento é de
+ * outro profissional, o cliente já está em atendimento noutro lugar), a função
+ * do banco devolve o motivo em vez de levantar erro, e a anamnese, a foto ou a
+ * consideração são salvas do mesmo jeito.
+ */
+async function chamarSeEstiverEsperando(clientId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("start_clinical_attendance", { p_client_id: clientId });
+  } catch (e) {
+    console.error("start_clinical_attendance:", e);
+  }
 }
 
 /** LGPD: register the patient's consent before any clinical data is collected. */
@@ -258,6 +285,10 @@ export async function addClinicalNote(
     console.error("addClinicalNote failed:", error.message);
     return { ok: false, error: "Não foi possível salvar a consideração." };
   }
+  // 0270: o registro ENTROU — quem escreve na ficha está atendendo, então a
+  // sala de espera anda junto. Depois da escrita de propósito: ato recusado
+  // (sem consentimento, tipo inválido) não chama ninguém.
+  await chamarSeEstiverEsperando(clientId);
   await logAudit({
     action: "create",
     entityType: "clinical_note",
@@ -305,6 +336,10 @@ export async function recordClinicalMedia(
     console.error("recordClinicalMedia failed:", error.message);
     return { ok: false, error: "Não foi possível registrar o arquivo." };
   }
+  // 0270: o registro ENTROU — quem escreve na ficha está atendendo, então a
+  // sala de espera anda junto. Depois da escrita de propósito: ato recusado
+  // (sem consentimento, tipo inválido) não chama ninguém.
+  await chamarSeEstiverEsperando(clientId);
   await logAudit({
     action: "create",
     entityType: "clinical_media",
@@ -563,6 +598,10 @@ export async function saveAnamnesis(
     }
   }
 
+  // 0270: o registro ENTROU — quem escreve na ficha está atendendo, então a
+  // sala de espera anda junto. Depois da escrita de propósito: ato recusado
+  // (sem consentimento, tipo inválido) não chama ninguém.
+  await chamarSeEstiverEsperando(clientId);
   await logAudit({
     action: "update",
     entityType: "clinical_anamnesis",

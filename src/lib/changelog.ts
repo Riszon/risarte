@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.272.0",
+    data: "2026-09-23",
+    migracao: "0270",
+    titulo: "A sala de espera acompanha o atendimento clínico",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem esquecia de apertar Chamar e ia direto atender deixava o paciente preso em Em espera — e depois não conseguia nem concluir o atendimento, porque concluir exige ter chamado. Agora o primeiro registro na ficha (gravação, anamnese, foto ou consideração) chama o paciente sozinho.",
+        papeis: ["clinical_coordinator", "dentist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Enviar ao Centro de Planejamento — e Concluir a reavaliação — passaram a encerrar o atendimento do dia. Terminou a consulta, o paciente sai da sala de espera sem ninguém precisar voltar ao painel.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Só entra nisso quem passou pela recepção: se não houve check-in, escrever na ficha não chama ninguém — é o check-in que move a fase do cliente na jornada, e pular isso esconderia a passagem. E abrir a ficha continua não mexendo em nada: olhar não é atender.",
+        papeis: "todos",
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.271.0",
     data: "2026-09-23",
     migracao: null,

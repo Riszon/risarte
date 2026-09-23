@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/09/2026 · Versão do sistema: **0.271.0** · Última migração: **0269** (aplicadas nos DOIS ambientes; Empresarial na 1013) · Empresarial **0.51.0** / migração **1013**_
+_Atualizado em: 23/09/2026 · Versão do sistema: **0.272.0** · Última migração: **0270** (aplicada no treino; **pendente na produção**) · Empresarial **0.51.0** / migração **1013**_
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >
@@ -3681,6 +3681,48 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### A SALA DE ESPERA ACOMPANHA O TRABALHO CLÍNICO (23/09/2026, v0.272.0, migração 0270)
+
+Relato **OC-00075** (Coordenador Clínico): *"não apertei na caixinha de CHAMAR
+e fui direto para o atendimento... a caixinha 'em espera' não seguiu para 'em
+atendimento'"*.
+
+**O sistema fazia o combinado — e o combinado tinha um preço que só aparece no
+uso.** Quem movia "em espera → em atendimento" era só o botão **Chamar**.
+Pulado ele: o paciente fica marcado como esperando para sempre, o alerta de
+espera longa dispara, os indicadores de tempo mentem e — o pior — **o
+atendimento não pode nem ser concluído**, porque concluir exige ter chamado
+(`NOT_CALLER`). O profissional fica preso num estado que não sabia que
+precisava criar.
+
+**Decisão do dono (23/09/2026), a mesma lógica da 0269:** o estado anda pelo
+TRABALHO, não por um clique extra.
+
+- **O primeiro ato clínico chama** — gravação, anamnese, foto ou consideração.
+  **Abrir a tela não**: olhar uma ficha para conferir um dado não é atender, e
+  mover estado por curiosidade criaria um desfazer para alguém.
+- **Enviar ao Planejamento / Concluir a reavaliação encerram** o atendimento.
+
+**Três cuidados que a função do banco carrega:**
+
+1. **Só quem está EM ESPERA.** Atendimento sem check-in não é esquecimento do
+   Chamar: é gente que não passou pela recepção — e o check-in é quem move a
+   FASE (1→2). Chamar por cima pularia a passagem em silêncio.
+2. **A mesma regra do botão** (H1.4): quem não podia chamar pelo painel também
+   não chama escrevendo na ficha. Não se inventa permissão.
+3. **Nunca derruba o ato clínico.** `start_clinical_attendance` devolve
+   `chamado` / `sem_espera` / `nao_permitido` em vez de levantar erro — o
+   registro da consulta vale mais que o estado da sala de espera. E a chamada
+   acontece **depois** da escrita: ato recusado (sem consentimento, tipo
+   inválido) não chama ninguém. *Eu tinha colocado antes, e corrigi ao reler.*
+
+**Provado no treino com dois logins reais** (`prova-0075.mjs`, 8/8), no caminho
+exato do relato: recepção faz o check-in → o Coordenador pula o Chamar e
+escreve na ficha → vira "em atendimento" com `called_by` dele (que é o que lhe
+permite concluir) → o envio ao Planejamento encerra.
+
+⚠️ **Migração 0270 pendente na produção.**
 
 ### RESPONDER VÁRIOS RELATOS DE UMA VEZ (23/09/2026, v0.271.0, sem migração)
 

@@ -1132,6 +1132,17 @@ proposital: sua aprovação é clínica, não comercial.
 > consulta. O que ela **não** faz é fechar: enquanto grava, o ponto vermelho e o
 > tempo continuam à vista — é o que garante que ninguém seja gravado sem saber.
 
+> **Esqueceu de apertar "Chamar"? O sistema resolve (v0.272.0).** Se você for
+> direto para a ficha e começar a trabalhar, o **primeiro registro** — a
+> gravação, a anamnese, uma foto ou uma consideração — já coloca o paciente
+> como **Em atendimento**. E quando você **Enviar ao Centro de Planejamento**
+> (ou **Concluir a reavaliação**), o atendimento é **encerrado** sozinho.
+>
+> Duas coisas que ele **não** faz, de propósito: **abrir a ficha não chama
+> ninguém** (olhar não é atender), e quem **não passou pela recepção** continua
+> fora — é o check-in que move a fase do cliente na jornada, e pular esse passo
+> esconderia a passagem.
+
 > **A gravação cuida de si mesma.** Ela **começa** quando você chama o paciente
 > para uma avaliação ou reavaliação e **para** quando você conclui o
 > atendimento — não existe mais o risco de esquecer de ligar ou de desligar. A
