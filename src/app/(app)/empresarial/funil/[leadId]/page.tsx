@@ -17,7 +17,18 @@ import type {
   LeadStage,
   PaymentModel,
 } from "@/lib/empresarial/constants";
-import type { BillingBasis, InterestLevel } from "@/lib/empresarial/proposta";
+import {
+  faltaParaContrato,
+  faltaParaProposta,
+  type BillingBasis,
+  type InterestLevel,
+} from "@/lib/empresarial/proposta";
+import { LEAD_STAGE_LABELS } from "@/lib/empresarial/constants";
+import {
+  etapaInicial,
+  situacaoDasEtapas,
+} from "@/lib/empresarial/etapas-do-funil";
+import { AbasDaFicha, type AbaDaFicha } from "./abas-da-ficha";
 import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
 import type {
@@ -28,7 +39,8 @@ import { ApresentacaoEditor } from "./apresentacao-editor";
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
 import { FechamentoEImplantacao } from "./fechamento-e-implantacao";
 
-export const metadata: Metadata = { title: "Levantamento · Risarte Empresarial" };
+// A tela deixou de ser só o levantamento quando virou abas (OC-00083).
+export const metadata: Metadata = { title: "Empresa no funil · Risarte Empresarial" };
 
 type LeadRow = {
   id: string;
@@ -246,24 +258,48 @@ export default async function FichaDoLeadPage({
     temLevantamento: Boolean(qual),
   };
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
-      <CabecalhoDeModulo
-        chapeu="Funil comercial · fase 4"
-        icone={ClipboardList}
-        titulo={lead.company_name}
-        descricao="O que o consultor levantou na apresentação, e os dados que montam a proposta e o contrato."
-        voltar={{ href: "/empresarial/funil", rotulo: "Funil" }}
-      />
-      <FichaDoLead
-        leadId={lead.id}
-        cnpj={lead.cnpj}
-        qualificacao={view}
-      />
+  // A SITUAÇÃO DE CADA ABA, pelas réguas que já existem (OC-00083).
+  const dadosDaProposta = {
+    employeeCount: view.employeeCount,
+    paymentModel: view.paymentModel,
+    billingBasis: view.billingBasis,
+    legalName: view.legalName,
+    responsibleName: view.responsibleName,
+    responsibleCpf: view.responsibleCpf,
+    responsibleEmail: view.responsibleEmail,
+    cnpj: lead.cnpj,
+  };
+  const passos = stepRows ?? [];
+  const situacao = situacaoDasEtapas({
+    // Sem levantamento nenhum, "falta tudo" — e não "está completo", que é o
+    // que sairia de uma linha vazia com os padrões da rede preenchidos.
+    faltaProposta: view.temLevantamento ? faltaParaProposta(dadosDaProposta) : ["o levantamento"],
+    faltaContrato: view.temLevantamento ? faltaParaContrato(dadosDaProposta) : [],
+    apresentacaoPersonalizada: Boolean(daEmpresa),
+    envios: envios.length,
+    propostaEnviada: envios.some((e) => e.items.includes("PROPOSAL")),
+    contratoAssinadoEm: lead.contract_signed_at,
+    implantacaoPagaEm: lead.implantation_paid_at,
+    conferido: Boolean(review),
+    passosFeitos: passos.filter((s) => s.done_at || s.not_applicable).length,
+    passosTotal: passos.length,
+  });
+  const aberta = etapaInicial(lead.stage);
 
-      {/* Fora do formulário do levantamento de propósito: são formulários
-          próprios, e aninhar <form> dentro de <form> não funciona. */}
-      {template && (
+  const abas: AbaDaFicha[] = [
+    {
+      id: "levantamento",
+      situacao: situacao.levantamento,
+      agora: aberta === "levantamento",
+      painel: (
+        <FichaDoLead leadId={lead.id} cnpj={lead.cnpj} qualificacao={view} />
+      ),
+    },
+    {
+      id: "apresentacao",
+      situacao: situacao.apresentacao,
+      agora: aberta === "apresentacao",
+      painel: template ? (
         <ApresentacaoEditor
           leadId={lead.id}
           title={template.title}
@@ -271,48 +307,85 @@ export default async function FichaDoLeadPage({
           blocos={template.sections}
           personalizada={Boolean(daEmpresa)}
         />
-      )}
+      ) : (
+        <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+          Ainda não há modelo de apresentação cadastrado para a rede. Peça ao
+          Admin Master para criar um em Risarte Empresarial → Configurações.
+        </p>
+      ),
+    },
+    {
+      id: "envio",
+      situacao: situacao.envio,
+      agora: aberta === "envio",
+      painel: (
+        <EnvioESelos
+          leadId={lead.id}
+          empresa={lead.company_name}
+          contato={lead.contact_name}
+          telefone={lead.contact_phone}
+          consultor={
+            lead.consultant_id ? nomePorId.get(lead.consultant_id) ?? null : null
+          }
+          envios={envios}
+          contractSignedAt={lead.contract_signed_at}
+          implantationPaidAt={lead.implantation_paid_at}
+        />
+      ),
+    },
+    {
+      id: "fechamento",
+      situacao: situacao.fechamento,
+      agora: aberta === "fechamento",
+      painel: (
+        <FechamentoEImplantacao
+          leadId={lead.id}
+          stage={lead.stage}
+          companyId={lead.company_id}
+          conferencia={
+            review
+              ? {
+                  confirmedAt: review.confirmed_at,
+                  confirmedByName: review.confirmed_by
+                    ? nomePorId.get(review.confirmed_by) ?? null
+                    : null,
+                  everythingOk: review.everything_ok,
+                  considerations: review.considerations,
+                  specialAgreements: review.special_agreements,
+                }
+              : null
+          }
+          passos={passos.map(
+            (s): PassoRegistrado => ({
+              step: s.step,
+              doneAt: s.done_at,
+              notApplicable: s.not_applicable,
+              note: s.note,
+              doneByName: s.done_by ? nomePorId.get(s.done_by) ?? null : null,
+            })
+          )}
+        />
+      ),
+    },
+  ];
 
-      <EnvioESelos
-        leadId={lead.id}
-        empresa={lead.company_name}
-        contato={lead.contact_name}
-        telefone={lead.contact_phone}
-        consultor={
-          lead.consultant_id ? nomePorId.get(lead.consultant_id) ?? null : null
-        }
-        envios={envios}
-        contractSignedAt={lead.contract_signed_at}
-        implantationPaidAt={lead.implantation_paid_at}
+  return (
+    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+      <CabecalhoDeModulo
+        /* A FASE DE VERDADE, das nove que existem. Estava escrito "fase 4" na
+           mão, e uma empresa em Captação mostrava o mesmo que uma em
+           Implantação (OC-00083). */
+        chapeu={`Funil comercial · ${LEAD_STAGE_LABELS[lead.stage]}`}
+        icone={ClipboardList}
+        titulo={lead.company_name}
+        descricao="Cada etapa na sua aba. A ficha abre na etapa em que a empresa está; as outras continuam a um clique."
+        voltar={{ href: "/empresarial/funil", rotulo: "Funil" }}
       />
 
-      <FechamentoEImplantacao
-        leadId={lead.id}
-        stage={lead.stage}
-        companyId={lead.company_id}
-        conferencia={
-          review
-            ? {
-                confirmedAt: review.confirmed_at,
-                confirmedByName: review.confirmed_by
-                  ? nomePorId.get(review.confirmed_by) ?? null
-                  : null,
-                everythingOk: review.everything_ok,
-                considerations: review.considerations,
-                specialAgreements: review.special_agreements,
-              }
-            : null
-        }
-        passos={(stepRows ?? []).map(
-          (s): PassoRegistrado => ({
-            step: s.step,
-            doneAt: s.done_at,
-            notApplicable: s.not_applicable,
-            note: s.note,
-            doneByName: s.done_by ? nomePorId.get(s.done_by) ?? null : null,
-          })
-        )}
-      />
+      {/* As abas montam os QUATRO formulários de uma vez e escondem os
+          inativos — aninhar <form> dentro de <form> não funciona, e
+          desmontar apagaria o que ainda não foi salvo. */}
+      <AbasDaFicha abas={abas} inicial={aberta} />
     </div>
   );
 }

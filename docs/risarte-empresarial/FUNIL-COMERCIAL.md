@@ -234,3 +234,61 @@ dentro de função com `search_path = ''` ela não resolve — o erro só aparec
 na primeira execução do cron, de madrugada, sem ninguém olhando. Virou uma
 **visão** (`funnel_lead_state`), não exposta a `authenticated` porque
 atravessaria a RLS dos leads.
+
+
+### Bloco E — a ficha da empresa em ABAS ✅ (sem migração, v0.52.0)
+
+Relato **OC-00083** (Admin Master, 23/09/2026): *"está tudo muito confuso,
+sensação de estar incompleto, bagunçado e desorganizado... deve seguir um
+fluxo lógico de acordo [com onde] a empresa se encontra no funil"*.
+
+**O defeito existia, e não era regra mal entendida.** A ficha empilhava os
+QUATRO blocos numa rolagem só — levantamento, apresentação, envio, fechamento —
+**sem olhar a fase da empresa**. O `stage` era lido do banco, atravessava a
+página inteira e só era usado dentro do último bloco. Uma empresa em *Captação*
+via exatamente a mesma tela de uma em *Implantação*.
+
+**O que mudou**
+
+- **Quatro abas**: Levantamento · Apresentação · Envio e selos · Fechamento.
+- **A ficha abre na etapa da empresa** (`etapaInicial`, puro e com teste), e a
+  aba correspondente leva o selo **"agora"** mesmo quando se está olhando
+  outra — senão se perde a referência de onde o trabalho parou.
+- **Cada aba diz de si mesma** em uma linha: *falta 2 campos*, *modelo da
+  rede*, *proposta enviada*, *implantação 3/7*. É daí que saía a "sensação de
+  incompleto": nada dizia o que faltava.
+- **O chapéu passou a mostrar a fase de verdade**, das nove. Estava escrito
+  `"fase 4"` na mão — e, pior, **não aparecia**: `CabecalhoDeModulo` mostrava
+  o chapéu OU o link de voltar, nunca os dois. Corrigido no núcleo, em commit
+  próprio; consertou 13 telas de uma vez.
+
+**Decisões que valem registrar**
+
+- **Nenhuma aba é trancada.** A tentação era travar o envio com a proposta
+  incompleta; seria um jeito novo de a pessoa ficar presa, e a mesma aba guarda
+  os selos de contrato assinado e implantação paga, que precisam ser marcados
+  mesmo em caso fora do roteiro. O sistema **diz** onde está o buraco; quem
+  decide a ordem é quem atende.
+- **Todas as abas ficam montadas**, e a inativa é escondida. São quatro
+  formulários com quatro botões de salvar: desmontar ao trocar de aba apagaria
+  o que a pessoa acabou de digitar, e ela só descobriria ao voltar.
+- **O "o que falta" reusa a régua que já existe** (`faltaParaProposta` /
+  `faltaParaContrato`, da 1009). Uma segunda contagem aqui garantiria que um
+  dia as duas discordassem, e a aba diria "pronto" numa tela que recusa salvar.
+- **Sem levantamento nenhum, a aba diz "falta o levantamento"** — a linha vazia
+  vem com os preços padrão da rede preenchidos, e contar só os campos faria
+  ela parecer completa.
+- **Empresa perdida abre no Fechamento**, onde está o desfecho: no levantamento
+  ela pareceria ter campo a preencher.
+
+**Conferido nas telas de verdade**, no treino, com as **7 empresas** do funil
+(Captação, Apresentado ×2, Proposta enviada, Fechamento ganho, Implantação ×2):
+o chapéu trouxe a fase certa em todas, e todas abriram na aba esperada.
+
+⚠️ **A régua da conferência mentiu antes de o código estar errado:** a primeira
+versão dela procurava o botão da aba numa janela de 700 caracteres, e o botão
+tem ~1.100 — resultado, *"nenhuma aba encontrada"* nas 7 fichas, com o código
+certo. Régua que não acha nada tem de gritar, nunca responder "não".
+
+**Próximo:** a proposta como documento (Bloco F) e o contrato gerado aqui,
+indo ao ZapSign só para assinar (Bloco G) — nesta ordem, combinado com o dono.

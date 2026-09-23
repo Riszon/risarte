@@ -199,6 +199,31 @@ boas-vindas, completar o cadastro e marcar a primeira consulta.
 34. (Se `GAMMA_API_KEY` configurada) **Gerar proposta** → aguarde → **Abrir proposta
     no Gamma**. Sem a chave, o cartão explica que está desativado.
 
+## 10.1. A ficha da empresa em abas (relato OC-00083, entregue em 23/09/2026)
+
+Objetivo: conferir que a ficha abre na etapa em que a empresa está e que cada
+aba diz o que falta.
+
+1. **Funil comercial** → abra uma empresa que esteja em **Captação**.
+   - O cabeçalho deve dizer **"Funil comercial · Captação"** (a fase de
+     verdade, não "fase 4").
+   - Deve abrir na aba **Levantamento**, com o selo **agora** nela.
+2. Olhe a fita de abas: **Levantamento · Apresentação · Envio e selos ·
+   Fechamento**, cada uma com uma linha embaixo dizendo a situação
+   (*falta 2 campos*, *modelo da rede*, *nada enviado*, *em aberto*).
+3. **Troque de aba sem salvar.** Digite algo no Levantamento, vá para
+   Apresentação e volte: **o que você digitou tem de continuar lá**. As abas
+   escondem, não apagam.
+4. Abra agora uma empresa em **Proposta enviada** ou **Follow-up**: tem de
+   abrir direto em **Envio e selos**.
+5. Uma em **Implantação** ou **Fechamento (ganho)**: abre em **Fechamento**.
+   Com passos de implantação pela metade, a aba diz **"implantação 3/7"** —
+   nunca "concluída".
+6. Uma empresa **perdida** abre em **Fechamento**, não no levantamento.
+7. **Nenhuma aba é trancada, de propósito**: dá para ir ao Envio mesmo com o
+   levantamento incompleto. A aba avisa o que falta; quem decide a ordem é
+   quem atende.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —
