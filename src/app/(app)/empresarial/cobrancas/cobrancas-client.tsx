@@ -4,9 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCheck, Printer, Plus } from "lucide-react";
+import { CheckCheck, Printer, Plus, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   baixarCobrancasEmLote,
+  estornarCobranca,
   gerarMensalidadesEmLote,
   type ResultadoEmLote,
 } from "./actions";
@@ -136,6 +138,9 @@ export function TabelaDeCobrancas({
   const [escolhidas, setEscolhidas] = useState<Set<string>>(new Set());
   const [resultado, setResultado] = useState<ResultadoEmLote | null>(null);
   const [gerar, setGerar] = useState(false);
+  /** A cobrança que está para ser estornada, e o motivo escrito (OC-00058). */
+  const [estornar, setEstornar] = useState<LinhaDeCobranca | null>(null);
+  const [motivo, setMotivo] = useState("");
   const [empresasParaGerar, setEmpresasParaGerar] = useState<Set<string>>(
     new Set()
   );
@@ -177,6 +182,21 @@ export function TabelaDeCobrancas({
       }
       setEscolhidas(new Set());
       setResultado(r);
+      router.refresh();
+    });
+  }
+
+  function confirmarEstorno() {
+    if (!estornar) return;
+    startTransition(async () => {
+      const r = await estornarCobranca(estornar.id, motivo);
+      if (!r.ok) {
+        toast.error(r.error ?? "Não foi possível estornar.");
+        return;
+      }
+      toast.success(`Baixa estornada — ${estornar.empresa}.`);
+      setEstornar(null);
+      setMotivo("");
       router.refresh();
     });
   }
@@ -254,6 +274,7 @@ export function TabelaDeCobrancas({
               <th className="px-2 py-2 font-medium">Vencimento</th>
               <th className="px-2 py-2 text-right font-medium">Valor</th>
               <th className="px-2 py-2 font-medium">Situação</th>
+              <th data-moldura className="px-2 py-2 font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -309,12 +330,29 @@ export function TabelaDeCobrancas({
                         : BILLING_STATUS_LABELS[l.status]}
                     </Badge>
                   </td>
+                  {/* ESTORNAR — só onde há baixa a desfazer (relato OC-00058).
+                      Fora da linha paga o botão não aparece: oferecer um
+                      estorno que o banco vai recusar é ensinar a desconfiar
+                      da tela. */}
+                  <td data-moldura className="px-2 py-2 text-right">
+                    {l.status === "PAID" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={pendente}
+                        onClick={() => setEstornar(l)}
+                      >
+                        <Undo2 className="mr-1 size-3.5" />
+                        Estornar
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {linhas.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="py-8 text-center text-muted-foreground">
                   Nenhuma cobrança com esses filtros.
                 </td>
               </tr>
@@ -327,6 +365,73 @@ export function TabelaDeCobrancas({
         Os totais acima somam <strong>o que está nesta lista</strong>, com os
         filtros aplicados.
       </p>
+
+      {/* ESTORNAR A BAIXA (relato OC-00058). O motivo é obrigatório: baixa
+          desfeita sem explicação é a que vira discussão de memória três meses
+          depois, quando o valor não fecha. */}
+      {estornar && (
+        <Dialog
+          open
+          onOpenChange={() => {
+            setEstornar(null);
+            setMotivo("");
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Estornar a baixa</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <p>
+                <strong>{estornar.empresa}</strong> ·{" "}
+                {BILLING_TYPE_LABELS[estornar.tipo]} ·{" "}
+                {mesBR(estornar.mesReferencia)} ·{" "}
+                <span className="tabular-nums">{formatBRL(estornar.totalCents)}</span>
+              </p>
+              <p className="rounded-md border bg-muted/40 p-2.5 text-xs text-muted-foreground">
+                A cobrança volta à situação do vencimento (pendente ou{" "}
+                <strong>em atraso</strong>), o split Risarte/RisLife é apagado e
+                a empresa é reavaliada — se ela voltar a ficar inadimplente além
+                da carência, é suspendida de novo. O estorno fica registrado com
+                o seu nome e o motivo.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="motivo-estorno" className="text-xs">
+                  Motivo do estorno
+                </Label>
+                <textarea
+                  id="motivo-estorno"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  rows={3}
+                  placeholder="Ex.: baixa lançada na empresa errada."
+                  className="w-full rounded-md border bg-background p-2 text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setEstornar(null);
+                    setMotivo("");
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={pendente || motivo.trim().length < 5}
+                  onClick={confirmarEstorno}
+                >
+                  Estornar a baixa
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {gerar && (
         <Dialog open onOpenChange={() => setGerar(false)}>

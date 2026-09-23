@@ -209,3 +209,64 @@ export async function gerarMensalidadesEmLote(
 
   return { ok: true, feitas, pulados };
 }
+
+/**
+ * ESTORNAR A BAIXA DE UMA COBRANÇA (relato OC-00058, 21/09/2026).
+ *
+ * "Ao baixar como pago a fatura do empresarial, o sistema não permite realizar
+ * o estorno do pagamento" — e era verdade: não existia função, botão nem
+ * coluna. Quem baixasse a cobrança errada ficava sem saída dentro do sistema.
+ *
+ * ⚠️ QUEM DESFAZ É O BANCO (`reverse_billing`), pela mesma razão de a baixa
+ * também ser: desfazer não é só limpar a data do pagamento — é devolver a
+ * situação do vencimento, apagar o split e **reavaliar a suspensão da
+ * empresa**, que a baixa pode ter levantado. Um `update` daqui nasceria sem as
+ * três coisas, e a divergência só apareceria no fechamento.
+ *
+ * Quem pode estornar é quem pode dar baixa (decisão do dono, 22/09/2026): quem
+ * errou conserta na hora, e o motivo fica registrado com o nome de quem foi.
+ */
+export async function estornarCobranca(
+  id: string,
+  motivo: string
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const texto = motivo.trim();
+  if (texto.length < 5) {
+    // A regra também está no banco (`REASON_REQUIRED`); aqui ela existe para a
+    // pessoa saber ANTES de clicar, e não depois de um erro cru.
+    return { ok: false, error: "Escreva o motivo do estorno." };
+  }
+
+  const db = await empresarialDb();
+  const { error } = await db.rpc("reverse_billing", {
+    p_billing_id: id,
+    p_reason: texto,
+  });
+  if (error) {
+    if (error.message.includes("NOT_PAID")) {
+      return { ok: false, error: "Esta cobrança não está paga — não há baixa a estornar." };
+    }
+    if (error.message.includes("REASON_REQUIRED")) {
+      return { ok: false, error: "Escreva o motivo do estorno." };
+    }
+    if (error.message.includes("BILLING_NOT_FOUND")) {
+      return { ok: false, error: "Cobrança não encontrada." };
+    }
+    console.error("estornarCobranca falhou:", error.message);
+    return { ok: false, error: "Não foi possível estornar agora." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_billing",
+    entityId: id,
+    // Nunca o motivo aqui: ele pode citar gente. Fica na própria cobrança.
+    details: { estorno: true },
+  });
+  revalidatePath("/empresarial/cobrancas");
+  revalidatePath("/empresarial");
+  return { ok: true };
+}

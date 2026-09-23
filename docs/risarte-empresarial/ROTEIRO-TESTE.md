@@ -95,6 +95,29 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
     inadimplência** após o vencimento — a empresa vira **Suspensa** e os benefícios
     ficam bloqueados (aparece o aviso na ficha/orçamento).
 
+### 9.1. Estornar uma baixa (relato OC-00058, entregue em 22/09/2026)
+
+Baixa incorreta acontece — o que não pode é ficar sem saída dentro do sistema.
+
+32a. Em **Empresarial → Cobranças**, a linha **Paga** mostra o botão
+     **Estornar**. Nas demais situações ele não aparece: não há baixa a desfazer.
+
+32b. Clique nele. O sistema **exige o motivo** (mínimo de 5 letras) e avisa o
+     que vai acontecer antes de confirmar.
+
+32c. **Resultado esperado:** a cobrança volta à **situação do vencimento** —
+     **Em atraso** se já venceu, **Pendente** se ainda não —, o pagamento e o
+     **split Risarte/RisLife são apagados**, e o motivo fica gravado com o nome
+     de quem estornou.
+
+32d. **Se a empresa tinha sido reativada por aquela baixa** e continua devendo
+     além da carência de 5 dias, ela é **suspensa de novo**. Isto é de
+     propósito: estornar não pode virar um jeito silencioso de manter ativa uma
+     empresa inadimplente.
+
+32e. Tente estornar a mesma cobrança duas vezes — o sistema recusa, porque não
+     há mais baixa a desfazer.
+
 ### 8.1. Boas-vindas — a fila de ligação (pedido do dono, 11/09/2026)
 
 Serve a **recepção e a SDR**: ligar para quem entrou no programa, dar as
