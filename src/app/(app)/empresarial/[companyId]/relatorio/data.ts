@@ -43,7 +43,7 @@ export type ReportEmployee = {
   leftReason: string | null;
   clinicName: string | null;
   linked: boolean;
-  /** Mensalidade deste colaborador (titular + plano de dependentes), em centavos. */
+  /** Mensalidade deste titular (titular + plano de dependentes), em centavos. */
   monthlyCents: number;
   dependents: ReportDependent[];
 };
@@ -135,7 +135,7 @@ type EmployeeRow = {
 
 /**
  * Carrega tudo que o relatório detalhado da empresa mostra: cadastro da empresa,
- * preços efetivos (empresa > rede), colaboradores com dependentes e os totais.
+ * preços efetivos (empresa > rede), titulares com dependentes e os totais.
  * A RLS do schema `empresarial` continua sendo a barreira real.
  */
 export async function loadCompanyReport(
@@ -200,7 +200,7 @@ export async function loadCompanyReport(
       }
     : DEFAULT_ADHESION_PRICING;
 
-  // Nomes das unidades dos colaboradores vinculados + consultor responsável.
+  // Nomes das unidades dos titulares vinculados + consultor responsável.
   const supabase = await createClient();
   const clinicIds = [
     ...new Set((empRows ?? []).map((e) => e.clinic_id).filter((x): x is string => !!x)),
@@ -234,7 +234,7 @@ export async function loadCompanyReport(
       linked: Boolean(d.client_id),
     }));
     const activeDeps = deps.filter((d) => d.status === "ACTIVE").length;
-    // Só colaborador ATIVO entra na mensalidade (mesma regra do cálculo geral).
+    // Só titular ATIVO entra na mensalidade (mesma regra do cálculo geral).
     const monthlyCents =
       e.status === "ACTIVE"
         ? pricing.holderFeeCents +

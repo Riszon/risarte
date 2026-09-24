@@ -290,7 +290,7 @@ export async function convertLeadToCompany(
   }
 
   // O LEVANTAMENTO VIAJA PARA A EMPRESA. Sem isto, o consultor digitaria tudo
-  // de novo — razão social, quem assina, quem paga, quantos colaboradores — e a
+  // de novo — razão social, quem assina, quem paga, quantos titulares — e a
   // segunda digitação é onde os dados divergem.
   const { data: qual } = await db
     .from("lead_qualification")

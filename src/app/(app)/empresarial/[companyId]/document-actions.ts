@@ -31,7 +31,7 @@ function canManageCompany(session: SessionContext): boolean {
   return isProgramManager(session);
 }
 
-/** Arquivos do colaborador: programa + equipe da unidade (quem cadastra). */
+/** Arquivos do titular: programa + equipe da unidade (quem cadastra). */
 function canManageEmployeeFiles(session: SessionContext): boolean {
   if (isProgramManager(session)) return true;
   return Object.values(session.rolesByClinic)
@@ -215,7 +215,7 @@ export async function removeCompanyDocument(
   if ((count ?? 0) > 0) {
     return {
       ok: false,
-      error: `${count} colaborador(es) estão vinculados a este documento. Mova-os antes de remover.`,
+      error: `${count} titular(es) estão vinculados a este documento. Mova-os antes de remover.`,
     };
   }
 
@@ -251,7 +251,7 @@ export async function setBillingModel(
   return { ok: true };
 }
 
-/** Vincula o colaborador a um documento (CNPJ) da empresa. */
+/** Vincula o titular a um documento (CNPJ) da empresa. */
 export async function setEmployeeDocument(
   companyId: string,
   employeeId: string,

@@ -9,7 +9,7 @@ import {
   ColaboradoresTab,
   type DependentView,
   type EmployeeView,
-} from "./colaboradores-tab";
+} from "./titulares-tab";
 import { MonthlySimulator, RemoveOverrideButton } from "./simulator";
 import {
   loadBenefits,
@@ -88,7 +88,7 @@ const PONTO_DA_SITUACAO: Record<CompanyStatus, string> = {
 const TABS = [
   { key: "geral", label: "Dados Gerais" },
   { key: "documentos", label: "Documentos" },
-  { key: "colaboradores", label: "Colaboradores" },
+  { key: "colaboradores", label: "Titulares" },
   { key: "plano", label: "Plano & Benefícios" },
   { key: "financeiro", label: "Financeiro" },
   { key: "social", label: "Riso+ Social" },
@@ -223,7 +223,7 @@ export default async function CompanyDetailPage(props: {
         : formatBRL(company.companySubsidyValue)
       : null;
 
-  // Aba Colaboradores: carrega colaboradores + dependentes + unidades do seletor.
+  // Aba Titulares: carrega titulares + dependentes + unidades do seletor.
   const allRoles = Object.values(session.rolesByClinic).flat();
   const canManageEmp =
     isProgramManager(session) ||
@@ -635,7 +635,7 @@ export default async function CompanyDetailPage(props: {
     const candidateMap = new Map<string, string>();
     for (const e of empCands ?? [])
       if (e.client_id) candidateMap.set(e.client_id, e.full_name);
-    // Dependentes vinculados dos colaboradores desta empresa.
+    // Dependentes vinculados dos titulares desta empresa.
     const empIds = (empCands ?? []).map((e) => e.id);
     if (empIds.length > 0) {
       const { data: depCands } = await db
@@ -903,7 +903,7 @@ export default async function CompanyDetailPage(props: {
                 value={company.stateRegistration}
               />
               <Info
-                label="Colaboradores (estimado)"
+                label="Titulares (estimado)"
                 value={company.employeeCount}
               />
               <div className="col-span-2">
@@ -978,7 +978,7 @@ export default async function CompanyDetailPage(props: {
                 value={`${company.gracePeriodDays} dias`}
               />
               <Info
-                label="Carência do colaborador"
+                label="Carência do titular"
                 value={`${company.employeeGracePeriodDays} dias`}
               />
               {/* O combinado feito na VENDA, trazido do funil pelo gatilho da
@@ -1116,7 +1116,7 @@ export default async function CompanyDetailPage(props: {
             <Card>
               <CardContent className="p-4">
                 <p className="text-xs uppercase text-muted-foreground">
-                  Economia gerada aos colaboradores
+                  Economia gerada aos titulares
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-gold-tinta">
                   {formatBRL(financeiro.savedTotal)}

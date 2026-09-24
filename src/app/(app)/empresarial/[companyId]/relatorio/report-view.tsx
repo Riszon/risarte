@@ -61,7 +61,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
   // Nome do arquivo já com empresa, filtro aplicado e data — para achar depois.
   const fileBaseName = () =>
     reportFileName(
-      "relatorio-colaboradores",
+      "relatorio-titulares",
       c.tradeName || c.legalName,
       report.filter === "ALL" ? null : REPORT_FILTER_LABELS[report.filter]
     );
@@ -105,7 +105,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
         ["Parcelamento máximo", `${c.defaultMaxInstallments}x`],
         ["Início do contrato", d(c.contractStartedAt)],
         ["Carência da empresa (dias)", c.gracePeriodDays],
-        ["Carência do colaborador (dias)", c.employeeGracePeriodDays],
+        ["Carência do titular (dias)", c.employeeGracePeriodDays],
         [],
         [`Preços de adesão (${report.pricingScope})`],
         ["Titular", (pricing.holderFeeCents / 100).toFixed(2)],
@@ -113,8 +113,8 @@ export function ReportView({ report }: { report: CompanyReport }) {
         ["Dependente familiar", (pricing.dependentFamilyFeeCents / 100).toFixed(2)],
         ["Familiar extra", (pricing.dependentFamilyExtraFeeCents / 100).toFixed(2)],
         [],
-        ["Colaboradores ativos", totals.employeesActive],
-        ["Colaboradores inativos", totals.employeesInactive],
+        ["Titulares ativos", totals.employeesActive],
+        ["Titulares inativos", totals.employeesInactive],
         ["Dependentes ativos", totals.dependentsActive],
         ["Cadastros pendentes", totals.pendingRegistration],
         ["Mensalidade (R$)", (totals.monthlyCents / 100).toFixed(2)],
@@ -124,7 +124,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
       empresa["!cols"] = [{ wch: 32 }, { wch: 46 }];
       XLSX.utils.book_append_sheet(wb, empresa, "Empresa");
 
-      // Aba 2 — Colaboradores
+      // Aba 2 — Titulares
       const colab = XLSX.utils.aoa_to_sheet([
         [
           "Nome",
@@ -164,7 +164,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
         { wch: 14 }, { wch: 22 }, { wch: 8 }, { wch: 18 }, { wch: 12 },
         { wch: 12 }, { wch: 20 }, { wch: 14 },
       ];
-      XLSX.utils.book_append_sheet(wb, colab, "Colaboradores");
+      XLSX.utils.book_append_sheet(wb, colab, "Titulares");
 
       // Aba 3 — Dependentes
       const deps = XLSX.utils.aoa_to_sheet([
@@ -203,7 +203,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
             Relatório detalhado
           </h1>
           <p className="text-sm text-muted-foreground">
-            Empresa, colaboradores e dependentes. Use “Imprimir / PDF” para enviar.
+            Empresa, titulares e dependentes. Use “Imprimir / PDF” para enviar.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -246,7 +246,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
           </h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { l: "Colaboradores ativos", v: String(totals.employeesActive) },
+              { l: "Titulares ativos", v: String(totals.employeesActive) },
               { l: "Dependentes ativos", v: String(totals.dependentsActive) },
               { l: "Mensalidade", v: formatBRL(totals.monthlyCents) },
               { l: "Economia gerada", v: formatBRL(totals.savedCents) },
@@ -296,11 +296,11 @@ export function ReportView({ report }: { report: CompanyReport }) {
               value={`${c.gracePeriodDays} dias`}
             />
             <Field
-              label="Carência do colaborador"
+              label="Carência do titular"
               value={`${c.employeeGracePeriodDays} dias`}
             />
             <Field
-              label="Colaboradores (informado)"
+              label="Titulares (informado)"
               value={c.employeeCount ?? "—"}
             />
             <div className="col-span-2 sm:col-span-3">
@@ -341,10 +341,10 @@ export function ReportView({ report }: { report: CompanyReport }) {
           </div>
         </section>
 
-        {/* Colaboradores + dependentes */}
+        {/* Titulares + dependentes */}
         <section>
           <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide">
-            Colaboradores e dependentes ({employees.length})
+            Titulares e dependentes ({employees.length})
           </h3>
           {/* Sai impresso: o leitor precisa saber que a lista está filtrada. */}
           <p className="mb-2 text-[10px] text-muted-foreground">
@@ -353,7 +353,7 @@ export function ReportView({ report }: { report: CompanyReport }) {
           </p>
           {employees.length === 0 ? (
             <p className="rounded-lg border py-6 text-center text-sm text-muted-foreground">
-              Nenhum colaborador nesta situação.
+              Nenhum titular nesta situação.
             </p>
           ) : (
             <div className="space-y-2">

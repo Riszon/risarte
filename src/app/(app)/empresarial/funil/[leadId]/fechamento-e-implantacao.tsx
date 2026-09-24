@@ -334,7 +334,7 @@ function Implantacao({
 
         {companyId && (
           <p className="text-xs text-muted-foreground">
-            A lista de colaboradores é importada na tela da empresa (planilha com
+            A lista de titulares é importada na tela da empresa (planilha com
             nome, CPF, telefone e e-mail), e a fila de ligação fica em{" "}
             <Link
               href={`/empresarial/${companyId}/boas-vindas`}

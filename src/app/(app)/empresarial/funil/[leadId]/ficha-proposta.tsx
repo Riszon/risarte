@@ -238,7 +238,7 @@ export function FichaDaProposta({
                 >
                   <option value="">— a definir —</option>
                   <option value="PERCENT">Porcentagem da mensalidade</option>
-                  <option value="AMOUNT">Valor fixo por colaborador</option>
+                  <option value="AMOUNT">Valor fixo por titular</option>
                 </select>
               </Campo>
             )}
@@ -258,7 +258,7 @@ export function FichaDaProposta({
             {paymentModel === "COMPANY_PARTIAL" && subsidyType === "AMOUNT" && (
               <Campo
                 id="subsidy_amount"
-                rotulo="Quanto a empresa paga por colaborador (R$)"
+                rotulo="Quanto a empresa paga por titular (R$)"
               >
                 <Input
                   id="subsidy_amount"
@@ -270,7 +270,7 @@ export function FichaDaProposta({
               </Campo>
             )}
 
-            <Campo id="employee_count" rotulo="Quantos colaboradores entram *">
+            <Campo id="employee_count" rotulo="Quantos titulares entram *">
               <Input
                 id="employee_count"
                 name="employee_count"
@@ -341,7 +341,7 @@ export function FichaDaProposta({
 
             {basis === "PER_EMPLOYEE" ? (
               <>
-                <Campo id="holder_fee" rotulo="Mensalidade por colaborador (R$)">
+                <Campo id="holder_fee" rotulo="Mensalidade por titular (R$)">
                   <Input
                     id="holder_fee"
                     name="holder_fee"
@@ -373,7 +373,7 @@ export function FichaDaProposta({
             )}
             <Campo
               id="implantation_per_employee"
-              rotulo="Implantação por colaborador (R$)"
+              rotulo="Implantação por titular (R$)"
             >
               <Input
                 id="implantation_per_employee"
@@ -424,7 +424,7 @@ export function FichaDaProposta({
             </Campo>
             <Campo
               id="employee_grace_days"
-              rotulo="Carência do colaborador (dias)"
+              rotulo="Carência do titular (dias)"
               ajuda="Contada da entrada de cada pessoa. Vale a mais longa entre as duas."
             >
               <Input
@@ -774,7 +774,7 @@ function SimuladorDaProposta({
             destaque
           />
           <Numero
-            rotulo="Por colaborador"
+            rotulo="Por titular"
             valor={
               proposta.porColaboradorCents == null
                 ? "—"
@@ -783,7 +783,7 @@ function SimuladorDaProposta({
           />
           <Numero rotulo="Empresa paga" valor={formatBRL(proposta.empresaPagaCents)} />
           <Numero
-            rotulo="Colaborador paga"
+            rotulo="Titular paga"
             valor={formatBRL(proposta.colaboradorPagaCents)}
           />
         </div>

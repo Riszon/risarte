@@ -44,7 +44,7 @@ describe("liberacaoDaPessoa", () => {
     expect(r.motivo).toBe("empresa");
   });
 
-  it("carência do colaborador conta a partir da ENTRADA dele", () => {
+  it("carência do titular conta a partir da ENTRADA dele", () => {
     // A empresa começou há muito tempo; quem entrou ontem ainda espera.
     const r = liberacaoDaPessoa(
       {
@@ -58,11 +58,11 @@ describe("liberacaoDaPessoa", () => {
     );
     expect(r.liberada).toBe(false);
     expect(r.liberadoEm?.slice(0, 10)).toBe("2026-09-25");
-    expect(r.motivo).toBe("colaborador");
+    expect(r.motivo).toBe("titular");
   });
 
   it("VALE A MAIS LONGA — passar uma não adianta se a outra ainda corre", () => {
-    // Colaborador liberado em 20/09; empresa só em 01/11. Manda a da empresa.
+    // Titular liberado em 20/09; empresa só em 01/11. Manda a da empresa.
     const r = liberacaoDaPessoa(
       {
         ...base,

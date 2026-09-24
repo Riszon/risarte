@@ -305,7 +305,7 @@ function LeadCard({
             </>
           ) : (
             // Ganho SEM empresa é beco sem saída: a implantação cadastra os
-            // colaboradores, e não há onde cadastrá-los. Em vez de um cartão
+            // titulares, e não há onde cadastrá-los. Em vez de um cartão
             // sem nenhum botão, o caminho de volta fica à vista.
             <>
               <p className="text-xs text-muted-foreground">

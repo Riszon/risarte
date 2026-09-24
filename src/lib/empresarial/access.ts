@@ -18,7 +18,7 @@ export function isProgramManager(session: SessionContext): boolean {
 
 /**
  * Vê o módulo Empresarial: gestores do programa + gestão/atendimento da unidade
- * (que enxergam as empresas com colaboradores na sua unidade).
+ * (que enxergam as empresas com titulares na sua unidade).
  */
 export function canViewEmpresarial(session: SessionContext): boolean {
   // Vem da matriz de permissões (0246), editável em /admin/permissoes.

@@ -72,7 +72,7 @@ export function MonthlySimulator({ pricing }: { pricing: AdhesionPricing }) {
         </label>
         {extra > 0 && (
           <label className="flex items-center justify-between gap-2 text-sm">
-            Extras além de 3 (por colaborador)
+            Extras além de 3 (por titular)
             <Input
               type="number"
               min={0}

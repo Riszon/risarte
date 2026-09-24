@@ -12,7 +12,7 @@ import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
 export type ActionResult = { ok: boolean; error?: string };
 
-/** Pode mexer nos colaboradores: gestor do programa, SDR, recepção ou gestão da unidade. */
+/** Pode mexer nos titulares: gestor do programa, SDR, recepção ou gestão da unidade. */
 function canManageEmployees(session: SessionContext): boolean {
   if (isProgramManager(session)) return true;
   return Object.values(session.rolesByClinic)
@@ -49,12 +49,12 @@ export async function createEmployee(
 ): Promise<ActionResult & { employeeId?: string }> {
   const session = await getSessionContext();
   if (!canManageEmployees(session)) {
-    return { ok: false, error: "Sem permissão para cadastrar colaboradores." };
+    return { ok: false, error: "Sem permissão para cadastrar titulares." };
   }
   const cpf = (field(formData, "cpf") ?? "").replace(/\D/g, "");
   if (cpf.length !== 11) return { ok: false, error: "Informe o CPF completo." };
   const fullName = field(formData, "full_name");
-  if (!fullName) return { ok: false, error: "Informe o nome do colaborador." };
+  if (!fullName) return { ok: false, error: "Informe o nome do titular." };
   const phone = field(formData, "phone");
   if (!phone) return { ok: false, error: "Informe o telefone." };
 
@@ -80,7 +80,7 @@ export async function createEmployee(
       return { ok: false, error: "Este CPF já está cadastrado nesta empresa." };
     }
     console.error("createEmployee failed:", error.message);
-    return { ok: false, error: "Não foi possível cadastrar o colaborador." };
+    return { ok: false, error: "Não foi possível cadastrar o titular." };
   }
   await logAudit({
     action: "create",
@@ -140,7 +140,7 @@ export async function completeEmployee(
   if (!canManageEmployees(session)) {
     return { ok: false, error: "Sem permissão." };
   }
-  if (!clinicId) return { ok: false, error: "Escolha a unidade do colaborador." };
+  if (!clinicId) return { ok: false, error: "Escolha a unidade do titular." };
   if (!(await canUseClinic(session, clinicId))) {
     return { ok: false, error: "Você não pode registrar nesta unidade." };
   }
@@ -202,7 +202,7 @@ export async function setEmployeeStatus(
 }
 
 /**
- * Exclusão LÓGICA do colaborador: some das listas, mas o registro fica para
+ * Exclusão LÓGICA do titular: some das listas, mas o registro fica para
  * preservar o histórico (uso de benefício, período no programa, cobranças).
  * Dependentes saem junto e o selo do cliente é recalculado.
  */
@@ -220,7 +220,7 @@ export async function deleteEmployee(
   });
   if (error) {
     console.error("deleteEmployee failed:", error.message);
-    return { ok: false, error: "Não foi possível excluir o colaborador." };
+    return { ok: false, error: "Não foi possível excluir o titular." };
   }
   await logAudit({
     action: "update",
@@ -286,7 +286,7 @@ export async function addDependent(
   });
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "Este CPF já é dependente deste colaborador." };
+      return { ok: false, error: "Este CPF já é dependente deste titular." };
     }
     console.error("addDependent failed:", error.message);
     return { ok: false, error: "Não foi possível adicionar o dependente." };
@@ -330,7 +330,7 @@ export async function updateDependent(
     .eq("id", dependentId);
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "Este CPF já é dependente deste colaborador." };
+      return { ok: false, error: "Este CPF já é dependente deste titular." };
     }
     console.error("updateDependent failed:", error.message);
     return { ok: false, error: "Não foi possível salvar o dependente." };
@@ -554,7 +554,7 @@ export async function importEmployees(
 }
 
 /**
- * I5b: busca do cliente pelo CPF para AUTOPREENCHER o cadastro do colaborador
+ * I5b: busca do cliente pelo CPF para AUTOPREENCHER o cadastro do titular
  * ou do dependente. Mesma ideia do cadastro do prontuário (H1.9) e do PPR+:
  * quem já é cliente da Risarte não é digitado de novo.
  */

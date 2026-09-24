@@ -40,7 +40,7 @@ export type EmployeeFileView = {
 };
 
 /**
- * Arquivos do colaborador (RG, comprovante de vínculo...) e dos dependentes.
+ * Arquivos do titular (RG, comprovante de vínculo...) e dos dependentes.
  * O upload vai direto ao Storage (bucket privado, pasta = id da empresa) e a
  * action registra a linha; a leitura é sempre por URL assinada.
  */
@@ -228,7 +228,7 @@ export function EmployeeFilesDialog({
   );
 }
 
-/** Seletor de CNPJ do colaborador — só aparece se a empresa tiver mais de um. */
+/** Seletor de CNPJ do titular — só aparece se a empresa tiver mais de um. */
 export function EmployeeDocumentPicker({
   companyId,
   employeeId,
@@ -251,14 +251,14 @@ export function EmployeeDocumentPicker({
       className="h-7 rounded-md border border-input bg-transparent px-1.5 text-xs"
       value={current ?? ""}
       disabled={isPending}
-      title="CNPJ da empresa a que este colaborador pertence"
+      title="CNPJ da empresa a que este titular pertence"
       onChange={(e) => {
         const value = e.target.value || null;
         startTransition(async () => {
           const { setEmployeeDocument } = await import("./document-actions");
           const r = await setEmployeeDocument(companyId, employeeId, value);
           if (r.ok) {
-            toast.success("CNPJ do colaborador atualizado.");
+            toast.success("CNPJ do titular atualizado.");
             onChanged?.();
             router.refresh();
           } else toast.error(r.error ?? "Erro.");

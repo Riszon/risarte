@@ -256,7 +256,7 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
               Extrato de benefícios e economia
             </h1>
             <p className="text-sm text-muted-foreground">
-              Por colaborador e dependente, com os indicadores de tratamento.
+              Por titular e dependente, com os indicadores de tratamento.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -319,7 +319,7 @@ export function BenefitsReportView({ report }: { report: BenefitsReport }) {
 
         {members.length === 0 ? (
           <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
-            Nenhum colaborador/dependente vinculado a um cliente ainda — complete
+            Nenhum titular/dependente vinculado a um cliente ainda — complete
             os cadastros para o extrato começar a registrar uso e economia.
           </p>
         ) : (

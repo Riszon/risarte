@@ -15,7 +15,7 @@ precisa poder dizer "está na 4" sem abrir a tela.
 | 5 | **Proposta enviada** | Proposta e contrato foram para a empresa |
 | 6 | **Follow-up** | Negociação e fechamento |
 | 7 | **Fechamento** | Encerrado: **ganho** ou **perda** (motivo obrigatório) |
-| 8 | **Implantação** | Cadastro dos colaboradores, boas-vindas, 1ºs agendamentos |
+| 8 | **Implantação** | Cadastro dos titulares, boas-vindas, 1ºs agendamentos |
 
 ## Decisões do dono (14/09/2026)
 
@@ -99,8 +99,8 @@ cartão. Três blocos e um simulador que recalcula enquanto o consultor digita.
 - **Leitura do consultor:** nível de interesse e chance de fechar (0–100),
   declarados como percepção, não medição.
 - **Como a proposta será montada:** quem paga (integral, parcial em % ou em R$
-  por colaborador, ou o colaborador), quantos colaboradores, dependentes nesta
-  fase, um CNPJ ou conjunto, e **por colaborador ou valor fixo por empresa** —
+  por titular, ou o titular), quantos titulares, dependentes nesta
+  fase, um CNPJ ou conjunto, e **por titular ou valor fixo por empresa** —
   a regra alternativa para sindicato e associação.
 - **Dados de proposta e contrato**, que **viajam para o cadastro da empresa no
   fechamento** (`camposDaEmpresa`, pura e testada). Sem isso o consultor
@@ -113,7 +113,7 @@ cartão. Três blocos e um simulador que recalcula enquanto o consultor digita.
    painel contar como respondida toda ficha em branco.
 2. **Sem saber o que a empresa paga hoje, a economia é NULA, nunca R$ 0,00** —
    e **economia negativa aparece**: esconder faria a proposta só provar o que
-   ela quer provar. Sem colaborador, o valor por cabeça também é nulo (dividir
+   ela quer provar. Sem titular, o valor por cabeça também é nulo (dividir
    por zero não tem resposta).
 3. **A tela LISTA o que falta** para a proposta e para o contrato, em vez de só
    bloquear: o consultor precisa saber o que perguntar na próxima conversa.
@@ -167,16 +167,16 @@ nunca dependeu da cláusula), e há teste que reprova a volta.
   fase, e **mesmo quando há pendência** — é o que não pode se perder. Limpar o
   campo depois **não apaga** o que já foi gravado na empresa.
 - **Sem empresa criada não dá para confirmar**: implantação é cadastrar os
-  colaboradores nela.
+  titulares nela.
 - **Os cinco passos da implantação** (`lead_implementation_steps`): cadastrar
-  os colaboradores, enviar as orientações, dar as boas-vindas, a apresentação
+  os titulares, enviar as orientações, dar as boas-vindas, a apresentação
   para todos e o primeiro agendamento pelo SDR. Linha **esparsa** — "não feito"
   é a ausência de registro. Só a **apresentação coletiva** pode ser marcada
   como *não se aplica*, e ela **sai dos dois lados da conta**: se ficasse no
   denominador, quem não pediu nunca chegaria a 100%, e barra que nunca fecha é
   barra que ninguém olha.
 
-**O upload da lista de colaboradores NÃO foi construído aqui — ele já existia.**
+**O upload da lista de titulares NÃO foi construído aqui — ele já existia.**
 A tela da empresa importa Excel com planilha-modelo e aba de dependentes, e cria
 o pré-cadastro (nome, CPF, telefone, e-mail) que a fase pede. O que faltava era
 **o caminho do funil até ele** e o registro de que foi feito. Um segundo
@@ -326,7 +326,7 @@ proposta** ao lado da simulação.
   mais, o documento diz que custa mais e qual é o argumento (cobertura e
   atendimento). Esconder faria a proposta provar só o que ela quer provar — e o
   consultor seria desmentido pela primeira planilha que a empresa abrisse.
-- **Subsídio em reais não vira percentual.** Valor por colaborador não é fatia
+- **Subsídio em reais não vira percentual.** Valor por titular não é fatia
   fixa da mensalidade; escrever "%" ali seria afirmar o que a conta não
   sustenta.
 - **Validade: 15 dias**, numa constante só (`VALIDADE_PADRAO_DIAS`), porque é
@@ -362,10 +362,10 @@ Apresentação · Envio e selos · Fechamento.
 
 **O que a aba Proposta tem**
 
-- Como a proposta será montada (quem paga, subsídio, colaboradores,
+- Como a proposta será montada (quem paga, subsídio, titulares,
   dependentes, base e valores) e a simulação ao vivo.
 - **Prazo e carência** (colunas novas da 1014): validade da proposta em dias,
-  carência da empresa e carência padrão do colaborador.
+  carência da empresa e carência padrão do titular.
 - Os **dados para gerar a proposta e o contrato** — razão social, quem assina,
   CPF, e-mail. Vieram do levantamento de propósito: são o que o documento
   precisa para existir, não o que se descobre numa entrevista.
@@ -409,3 +409,50 @@ respondeu *"NÃO ACHEI"* nas quatro medições: ao tirar as etiquetas do HTML, o
 texto vira `válida até 08/10/2026 ( 15 dias)`, com um espaço que o padrão de
 busca não previa. Ela levantou erro em vez de dizer "não mudou" — que teria
 escondido justamente o que se queria provar.
+
+### Bloco H1 — TITULAR no lugar de COLABORADOR ✅ (sem migração, v0.55.0)
+
+Pedido do dono (OC-00083, 23/09/2026): *"substituir a nomenclatura Colaborador
+por Titular em todo o empresarial. Pois tem empresas que estão possibilitando
+um benefício para um parceiro PJ e não um colaborador; em uma Associação pode
+estar oferecendo o benefício para um associado."*
+
+**166 trocas em 39 arquivos de código**, mais 18 nos testes e 54 nos documentos
+deste diretório. *Titular* serve aos três casos e faz par natural com
+*dependente*, que é a outra metade do cadastro.
+
+**O que NÃO mudou, de propósito:**
+
+- **A tabela continua `employees`** e as colunas continuam em inglês — é a
+  convenção do repositório (identificador em inglês, tela em pt-BR). Renomear
+  tabela exigiria migração e quebraria tudo que já aponta para ela, em troca de
+  zero para quem opera.
+- **A chave da aba (`?aba=colaboradores`)**, que viaja na barra de endereço:
+  trocá-la quebraria link salvo sem ninguém ganhar nada. O rótulo mudou; a
+  chave não.
+- **Palavra colada em outra** (`porColaboradorCents`) não é texto de tela e
+  ficou como está — a troca usou fronteira de palavra justamente para isso.
+
+**A régua foram os testes.** Três deles reprovaram na hora: eles afirmam o
+texto que a pessoa lê (*"quantos colaboradores entram"*, o motivo da carência)
+e por isso pegaram a mudança onde ela importa. Foram atualizados junto.
+
+**O que ainda diz "colaborador" e é legítimo:** o restante do sistema (SDR,
+Risartanos, agenda), onde a palavra descreve a equipe da própria Risarte. A
+troca ficou contida ao Empresarial, que é onde o sentido mudou.
+
+⚠️ **A PALAVRA TAMBÉM MORAVA NO BANCO — e só a conferência na tela achou.**
+O texto da apresentação (semeado pela 1010) e o da proposta (semeado pela
+1014) não estão no código: estão numa tabela. Trocar o arquivo .sql antigo não
+mudaria banco nenhum — migração já aplicada não roda de novo, e editá-la é
+proibido. Daí a **migração 1015**, que reescreve **só o modelo da REDE e só se
+o texto ainda for o original**: quem personalizou escreveu aquilo com as
+palavras dele, e reescrever por cima seria o sistema editando texto de gente.
+Quinta aparição de *código viaja sozinho, dado não* (§0b).
+
+**E a régua errou de novo, na contraprova.** Ela abria `/risartanos` e
+`/agenda` esperando encontrar "colaborador" lá — mas essas telas não desenham
+a palavra (ela só aparece em comentário e em parâmetro de endereço), então a
+conferência se acusou de estar lendo páginas vazias. A contraprova certa é
+procurar a palavra NOVA nas mesmas páginas: **16 telas sem "colaborador", 12
+delas dizendo "titular"** — e provada quebrando a busca de propósito.

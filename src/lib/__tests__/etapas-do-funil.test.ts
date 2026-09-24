@@ -55,7 +55,7 @@ describe("o que cada aba diz de si mesma", () => {
     // somar as duas listas diria "falta 3" onde faltam 2 campos.
     const s = situacaoDasEtapas({
       ...vazio,
-      faltaProposta: ["colaboradores", "razão social"],
+      faltaProposta: ["titulares", "razão social"],
       faltaContrato: ["razão social"],
     });
     expect(s.proposta).toEqual({ estado: "falta", resumo: "falta 2 campos" });
@@ -71,7 +71,7 @@ describe("o que cada aba diz de si mesma", () => {
     // aba da entrevista cobrar valores que não moram mais nela.
     const s = situacaoDasEtapas({
       ...vazio,
-      faltaProposta: ["colaboradores", "quem paga", "como será cobrado"],
+      faltaProposta: ["titulares", "quem paga", "como será cobrado"],
     });
     expect(s.levantamento.resumo).not.toContain("campo");
     expect(s.proposta.resumo).toBe("falta 3 campos");

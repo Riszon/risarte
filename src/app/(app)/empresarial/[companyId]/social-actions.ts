@@ -32,7 +32,7 @@ export async function generateSocialToken(
   if (company.payment_model === "EMPLOYEE_PAYS") {
     return {
       ok: false,
-      error: "Empresas no modelo “colaborador paga” não participam do Riso+ Social.",
+      error: "Empresas no modelo “titular paga” não participam do Riso+ Social.",
     };
   }
   // Integral → beneficiário próprio; Parcial → entra no pool coletivo.

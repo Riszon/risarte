@@ -58,7 +58,7 @@ export function SocialTab({
       ? "Modelo integral: cada ficha indica um beneficiário próprio."
       : paymentModel === "COMPANY_PARTIAL"
         ? "Modelo parcial: as fichas entram no pool coletivo da rede."
-        : "Modelo “colaborador paga”: não participa do Riso+ Social.";
+        : "Modelo “titular paga”: não participa do Riso+ Social.";
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>, msg: string) {
     startTransition(async () => {

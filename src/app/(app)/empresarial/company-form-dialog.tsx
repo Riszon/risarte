@@ -246,7 +246,7 @@ export function CompanyFormDialog({
               />
             </div>
             <div>
-              <Label htmlFor="employee_count">Nº de colaboradores (estimado)</Label>
+              <Label htmlFor="employee_count">Nº de titulares (estimado)</Label>
               <Input
                 id="employee_count"
                 name="employee_count"
@@ -493,7 +493,7 @@ export function CompanyFormDialog({
             </div>
             <div>
               <Label htmlFor="employee_grace_period_days">
-                Carência do colaborador (dias)
+                Carência do titular (dias)
               </Label>
               <Input
                 id="employee_grace_period_days"

@@ -32,7 +32,7 @@ export const DEFAULT_SPLIT_RULES: SplitRules = {
   recurringRislifePct: 50,
 };
 
-/** Custo mensal do plano de dependentes de UM colaborador. */
+/** Custo mensal do plano de dependentes de UM titular. */
 export function dependentPlanCostCents(
   pricing: AdhesionPricing,
   plan: DependentPlan,
@@ -66,7 +66,7 @@ export type MonthlyEmployee = {
 
 /**
  * Mensalidade da empresa (Seção 5.1): Σ (titular + custo do plano de dependentes)
- * de cada colaborador ATIVO. Devolve o total e o detalhamento.
+ * de cada titular ATIVO. Devolve o total e o detalhamento.
  */
 export function computeMonthlyCents(
   pricing: AdhesionPricing,

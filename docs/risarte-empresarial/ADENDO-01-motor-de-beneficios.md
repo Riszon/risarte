@@ -20,15 +20,15 @@ Por procedimento (global ou por empresa):
 - **Quantidade de usos:** `usage_limit_count` (NULL = ilimitado).
 - **Frequência:** `usage_period_months` (NULL = sem janela; ex.: 6 = a cada 6 meses).
   Regra: até `usage_limit_count` usos a cada `usage_period_months` meses.
-- **Carência do benefício (colaborador):** `grace_period_months` contada da entrada
-  do colaborador no programa.
+- **Carência do benefício (titular):** `grace_period_months` contada da entrada
+  do titular no programa.
 - **Pagamento:** `max_installments` (parcelamento do procedimento); meios de
   pagamento herdados da empresa (`companies.payment_methods`).
 
 ## 3. Carência em dois níveis
 - **Empresa:** `companies.contract_started_at` + `companies.grace_period_days` —
-  antes disso, nenhum benefício vale para os colaboradores dela.
-- **Colaborador:** `employees.joined_at` + carência do colaborador
+  antes disso, nenhum benefício vale para os titulares dela.
+- **Titular:** `employees.joined_at` + carência do titular
   (`employees.grace_period_days`, senão `companies.employee_grace_period_days`),
   e ainda a carência específica do benefício (item 2).
 - O benefício só libera quando **todas** as carências aplicáveis já passaram.
@@ -42,15 +42,15 @@ Por procedimento (global ou por empresa):
   se ainda está dentro da janela (ex.: limpeza < 6 meses) e o limite de usos foi
   atingido, o benefício **não se aplica** (avisa o motivo; o procedimento pode
   seguir como pago normal).
-- **Lembrete de uso:** rotina que encontra colaboradores cujo benefício recorrente
+- **Lembrete de uso:** rotina que encontra titulares cujo benefício recorrente
   **venceu a janela sem novo uso** e gera **notificação** (categoria "Empresarial")
-  + **WhatsApp manual** (padrão dos aniversariantes) para chamar o colaborador.
+  + **WhatsApp manual** (padrão dos aniversariantes) para chamar o titular.
 
 ## 5. Painéis de uso e economia (Fase 7)
 - **Ficha do cliente:** aba "Programa Empresarial" — benefícios do plano, o que já
   usou, próximos disponíveis (com data de liberação por carência/frequência) e a
   **economia acumulada** (Σ `amount_saved_cents`).
-- **Por empresa:** uso agregado, economia total gerada aos colaboradores, taxa de
+- **Por empresa:** uso agregado, economia total gerada aos titulares, taxa de
   adesão aos benefícios e lista de quem ainda não usou os recorrentes (para ação).
 
 ## 6. Onde cada item entra

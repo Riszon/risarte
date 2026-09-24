@@ -100,7 +100,7 @@ export const EMPLOYEE_FILE_TYPE_LABELS: Record<EmployeeFileType, string> = {
 };
 
 export const COMPANY_DOCS_BUCKET = "empresarial-empresa-docs";
-export const EMPLOYEE_DOCS_BUCKET = "empresarial-colaborador-docs";
+export const EMPLOYEE_DOCS_BUCKET = "empresarial-titular-docs";
 
 function digits(value: string, max: number): string {
   return value.replace(/\D/g, "").slice(0, max);

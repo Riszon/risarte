@@ -56,7 +56,7 @@ export default async function BoasVindasPage(props: {
   const lista = await carregarBoasVindas(companyId, hoje);
   if (!lista) notFound();
 
-  // LGPD: a lista mostra nome, CPF e telefone de colaboradores e dependentes.
+  // LGPD: a lista mostra nome, CPF e telefone de titulares e dependentes.
   await logAudit({
     action: "view",
     entityType: "empresarial_welcome_list",
@@ -137,9 +137,9 @@ export default async function BoasVindasPage(props: {
             )}
           </li>
           <li>
-            <strong className="text-foreground">Do colaborador:</strong>{" "}
+            <strong className="text-foreground">Do titular:</strong>{" "}
             {lista.empresa.diasDoColaboradorPadrao > 0
-              ? `${lista.empresa.diasDoColaboradorPadrao} dia(s) a partir da entrada de cada pessoa. Alguns colaboradores podem ter prazo próprio.`
+              ? `${lista.empresa.diasDoColaboradorPadrao} dia(s) a partir da entrada de cada pessoa. Alguns titulares podem ter prazo próprio.`
               : "não há."}
           </li>
         </ul>

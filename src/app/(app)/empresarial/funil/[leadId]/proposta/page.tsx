@@ -154,11 +154,11 @@ export default async function PropostaPage({
   }
 
   const basis: BillingBasis = q.billing_basis ?? "PER_EMPLOYEE";
-  const colaboradores = q.employee_count ?? 0;
+  const titulares = q.employee_count ?? 0;
   const dependentes = q.dependents_estimate ?? 0;
   const conta = simularProposta({
     basis,
-    employeeCount: colaboradores,
+    employeeCount: titulares,
     holderFeeCents: q.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents,
     includeDependents: Boolean(q.includes_dependents),
     dependentsCount: dependentes,
@@ -247,7 +247,7 @@ export default async function PropostaPage({
         <section className="space-y-2 break-inside-avoid">
           <h2 className="text-lg font-medium">Quem o programa atende</h2>
           <p className="leading-relaxed text-muted-foreground">
-            {colaboradores} colaborador{colaboradores === 1 ? "" : "es"}
+            {titulares} titular{titulares === 1 ? "" : "es"}
             {q.includes_dependents
               ? ` e ${dependentes} dependente${dependentes === 1 ? "" : "s"}`
               : ", sem dependentes"}
@@ -264,7 +264,7 @@ export default async function PropostaPage({
               destaque
             />
             <Numero
-              rotulo="Por colaborador"
+              rotulo="Por titular"
               valor={
                 conta.porColaboradorCents == null
                   ? "—"
@@ -273,7 +273,7 @@ export default async function PropostaPage({
             />
             <Numero rotulo="Empresa paga" valor={formatBRL(conta.empresaPagaCents)} />
             <Numero
-              rotulo="Colaborador paga"
+              rotulo="Titular paga"
               valor={formatBRL(conta.colaboradorPagaCents)}
             />
           </div>
@@ -340,7 +340,7 @@ export default async function PropostaPage({
               )}
               {q.employee_grace_days != null && (
                 <>
-                  Cada colaborador passa a usar{" "}
+                  Cada titular passa a usar{" "}
                   {q.employee_grace_days === 0
                     ? "desde a entrada dele no programa"
                     : `${q.employee_grace_days} dias após a entrada dele`}
@@ -372,7 +372,7 @@ export default async function PropostaPage({
           <h2 className="text-lg font-medium">Como seguir</h2>
           <p className="leading-relaxed text-muted-foreground">
             Aceita a proposta, seguimos para o contrato e a implantação. A equipe
-            do Risarte Empresarial cuida do cadastro dos colaboradores, do
+            do Risarte Empresarial cuida do cadastro dos titulares, do
             material de divulgação e do agendamento das primeiras consultas.
           </p>
         </section>

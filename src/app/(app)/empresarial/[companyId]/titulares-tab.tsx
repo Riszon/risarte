@@ -61,7 +61,7 @@ import {
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
-/** Situação do colaborador nas listas e no relatório (padrão: ativos). */
+/** Situação do titular nas listas e no relatório (padrão: ativos). */
 export const EMPLOYEE_FILTERS = [
   "ACTIVE",
   "INACTIVE",
@@ -97,7 +97,7 @@ export type EmployeeView = {
   dependentPlan: string;
   clientId: string | null;
   dependents: DependentView[];
-  /** CNPJ (documento) da empresa a que este colaborador pertence. */
+  /** CNPJ (documento) da empresa a que este titular pertence. */
   companyDocumentId?: string | null;
 };
 
@@ -123,7 +123,7 @@ export function ColaboradoresTab({
   canViewBenefitsReport?: boolean;
   /** Documentos (CNPJs) da empresa — o seletor só aparece se houver mais de um. */
   companyDocuments?: { id: string; label: string }[];
-  /** Arquivos dos colaboradores/dependentes desta empresa. */
+  /** Arquivos dos titulares/dependentes desta empresa. */
   employeeFiles?: EmployeeFileView[];
 }) {
   // Padrão: só os ATIVOS (decisão do dono). Excluídos ficam fora até pedir.
@@ -152,7 +152,7 @@ export function ColaboradoresTab({
             <HandHeart className="mr-1 size-4" />
             Boas-vindas
           </Button>
-          {/* Relatório detalhado (empresa + colaboradores + dependentes). */}
+          {/* Relatório detalhado (empresa + titulares + dependentes). */}
           <Button
             variant="outline"
             size="sm"
@@ -203,11 +203,11 @@ export function ColaboradoresTab({
 
       {employees.length === 0 ? (
         <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
-          Nenhum colaborador cadastrado ainda.
+          Nenhum titular cadastrado ainda.
         </p>
       ) : shown.length === 0 ? (
         <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
-          Nenhum colaborador {EMPLOYEE_FILTER_LABELS[statusFilter].toLowerCase()}.
+          Nenhum titular {EMPLOYEE_FILTER_LABELS[statusFilter].toLowerCase()}.
         </p>
       ) : (
         <div className="space-y-2">
@@ -291,7 +291,7 @@ function EmployeeRow({
           >
             Dependentes ({activeDeps.length})
           </Button>
-          {/* CNPJ do colaborador (só quando a empresa tem mais de um). */}
+          {/* CNPJ do titular (só quando a empresa tem mais de um). */}
           <EmployeeDocumentPicker
             companyId={companyId}
             employeeId={employee.id}
@@ -323,8 +323,8 @@ function EmployeeRow({
                         Completar cadastro
                       </Button>
                     }
-                    title="Completar cadastro do colaborador"
-                    hint="O colaborador vira cliente do riSZon na unidade escolhida."
+                    title="Completar cadastro do titular"
+                    hint="O titular vira cliente do riSZon na unidade escolhida."
                     onConfirm={(clinicId) =>
                       completeEmployee(companyId, employee.id, clinicId)
                     }
@@ -376,7 +376,7 @@ function StatusButton({
           startTransition(async () => {
             const r = await setEmployeeStatus(companyId, employee.id, true);
             if (r.ok) {
-              toast.success("Colaborador reativado.");
+              toast.success("Titular reativado.");
               router.refresh();
             } else toast.error(r.error ?? "Erro.");
           })
@@ -398,7 +398,7 @@ function StatusButton({
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Inativar colaborador</DialogTitle>
+          <DialogTitle>Inativar titular</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
           Bloqueia novos orçamentos/agendamentos. Tratamentos já aprovados
@@ -435,7 +435,7 @@ function StatusButton({
                   reason
                 );
                 if (r.ok) {
-                  toast.success("Colaborador inativado.");
+                  toast.success("Titular inativado.");
                   setOpen(false);
                   router.refresh();
                 } else toast.error(r.error ?? "Erro.");
@@ -450,7 +450,7 @@ function StatusButton({
   );
 }
 
-/** Excluir colaborador — exclusão lógica, com confirmação explícita. */
+/** Excluir titular — exclusão lógica, com confirmação explícita. */
 function DeleteEmployeeButton({
   companyId,
   employee,
@@ -479,7 +479,7 @@ function DeleteEmployeeButton({
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <p className="text-muted-foreground">
-            O colaborador sai das listas, das contagens e da mensalidade, e perde
+            O titular sai das listas, das contagens e da mensalidade, e perde
             o selo do programa.
           </p>
           {activeDeps.length > 0 && (
@@ -504,7 +504,7 @@ function DeleteEmployeeButton({
                 startTransition(async () => {
                   const r = await deleteEmployee(companyId, employee.id);
                   if (r.ok) {
-                    toast.success("Colaborador excluído.");
+                    toast.success("Titular excluído.");
                     setOpen(false);
                     router.refresh();
                   } else toast.error(r.error ?? "Erro.");
@@ -539,7 +539,7 @@ function RestoreButton({
         startTransition(async () => {
           const r = await restoreEmployee(companyId, employee.id);
           if (r.ok) {
-            toast.success("Colaborador restaurado (como inativo).");
+            toast.success("Titular restaurado (como inativo).");
             router.refresh();
           } else toast.error(r.error ?? "Erro.");
         })
@@ -700,7 +700,7 @@ function EmployeeFormDialog({
         ? await updateEmployee(companyId, employee!.id, formData)
         : await createEmployee(companyId, formData);
       if (r.ok) {
-        toast.success(isEdit ? "Colaborador atualizado." : "Colaborador cadastrado.");
+        toast.success(isEdit ? "Titular atualizado." : "Titular cadastrado.");
         setOpen(false);
         router.refresh();
       } else toast.error(r.error ?? "Erro.");
@@ -718,14 +718,14 @@ function EmployeeFormDialog({
           ) : (
             <Button size="sm">
               <Plus className="mr-1 size-4" />
-              Novo colaborador
+              Novo titular
             </Button>
           )
         }
       />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar colaborador" : "Novo colaborador"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar titular" : "Novo titular"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3">
           {/* I5b: o cadastro começa pelo CPF — se a pessoa já é cliente da
@@ -843,7 +843,7 @@ function DependentFormDialog({
   const isEdit = Boolean(dependent);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  // I5b: CPF primeiro + autopreenchimento (igual ao colaborador).
+  // I5b: CPF primeiro + autopreenchimento (igual ao titular).
   const [cpf, setCpf] = useState(dependent?.cpf ?? "");
   const [fullName, setFullName] = useState(dependent?.fullName ?? "");
   const [phone, setPhone] = useState(dependent?.phone ?? "");
@@ -1128,7 +1128,7 @@ function ImportEmployeesDialog({
       const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
       ws["!cols"] = headers.map((h) => ({ wch: Math.max(16, h.length + 2) }));
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Colaboradores");
+      XLSX.utils.book_append_sheet(wb, ws, "Titulares");
 
       // I5b: 2ª aba para já trazer os dependentes, ligados pelo CPF do titular.
       const depHeaders = [
@@ -1149,8 +1149,8 @@ function ImportEmployeesDialog({
       XLSX.writeFile(
         wb,
         companyName
-          ? `${reportFileName("modelo-colaboradores", companyName)}.xlsx`
-          : "modelo-colaboradores.xlsx"
+          ? `${reportFileName("modelo-titulares", companyName)}.xlsx`
+          : "modelo-titulares.xlsx"
       );
     } catch {
       toast.error("Não foi possível gerar o modelo.");
@@ -1191,8 +1191,8 @@ function ImportEmployeesDialog({
               "cpf do titular",
               "cpf titular",
               "titular",
-              "cpf do colaborador",
-              "cpf colaborador"
+              "cpf do titular",
+              "cpf titular"
             ),
             cpf: get(
               "cpf do dependente",
@@ -1261,12 +1261,12 @@ function ImportEmployeesDialog({
       />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Importar colaboradores (Excel)</DialogTitle>
+          <DialogTitle>Importar titulares (Excel)</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Aba <strong>Colaboradores</strong>: Nome, CPF, Telefone, E-mail,
+              Aba <strong>Titulares</strong>: Nome, CPF, Telefone, E-mail,
               Plano de Dependentes. Aba <strong>Dependentes</strong> (opcional):
               CPF do Titular, CPF do Dependente, Nome, Parentesco, Telefone.
             </p>
@@ -1288,7 +1288,7 @@ function ImportEmployeesDialog({
           </Button>
           {fileName && (
             <p className="text-sm text-muted-foreground">
-              {fileName} — {rows.length} colaborador(es)
+              {fileName} — {rows.length} titular(es)
               {depRows.length > 0 && ` · ${depRows.length} dependente(s)`} lido(s)
             </p>
           )}
@@ -1301,7 +1301,7 @@ function ImportEmployeesDialog({
                   const r = await importEmployees(companyId, rows, depRows);
                   if (r.ok) {
                     toast.success(
-                      `Importados: ${r.inserted ?? 0} colaborador(es)` +
+                      `Importados: ${r.inserted ?? 0} titular(es)` +
                         (r.dependentsInserted
                           ? ` · ${r.dependentsInserted} dependente(s)`
                           : "") +

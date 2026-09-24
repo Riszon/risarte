@@ -188,7 +188,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
             />
             <Info label="Inscrição estadual" value={c.stateRegistration} />
             <Info
-              label="Colaboradores (informado)"
+              label="Titulares (informado)"
               value={c.employeeCount != null ? String(c.employeeCount) : null}
             />
             <Info label="Cadastrada em" value={d(c.createdAt)} />
@@ -211,7 +211,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
                   <th className="py-1 pr-2 font-medium">Documento</th>
                   <th className="py-1 pr-2 font-medium">Identificação</th>
                   <th className="py-1 pr-2 font-medium">Titular (CAEPF)</th>
-                  <th className="py-1 text-right font-medium">Colaboradores</th>
+                  <th className="py-1 text-right font-medium">Titulares</th>
                 </tr>
               </thead>
               <tbody>
@@ -293,7 +293,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
               value={`${c.gracePeriodDays} dias`}
             />
             <Info
-              label="Carência do colaborador"
+              label="Carência do titular"
               value={`${c.employeeGracePeriodDays} dias`}
             />
             <Info label="Consultor RisLife" value={c.consultantName} />

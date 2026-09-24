@@ -52,7 +52,7 @@ type BenefitRow = {
 
 /**
  * Resolve os benefícios efetivos do cliente no programa: cobertura por
- * procedimento (empresa > rede), aplicando carência (empresa/colaborador/
+ * procedimento (empresa > rede), aplicando carência (empresa/titular/
  * benefício) e frequência/limite pelo histórico de uso. Usado no orçamento.
  */
 export async function loadClientProgram(
@@ -109,7 +109,7 @@ export async function loadClientProgram(
       .returns<{ procedure_id: string; used_at: string }[]>(),
   ]);
 
-  // Data de entrada do colaborador (titular ou, para dependente, do seu titular).
+  // Data de entrada do titular (titular ou, para dependente, do seu titular).
   let joinedAt: Date | null = emp?.joined_at ? new Date(emp.joined_at) : null;
   let employeeGraceDays: number | null = emp?.grace_period_days ?? null;
   if (!joinedAt && dep?.employee_id) {
@@ -129,7 +129,7 @@ export async function loadClientProgram(
   const companyBlocked = company?.status && company.status !== "ACTIVE";
   const now = new Date();
 
-  // Carência da empresa e do colaborador (as que independem do benefício).
+  // Carência da empresa e do titular (as que independem do benefício).
   const companyGraceUntil =
     company?.contract_started_at && (company?.grace_period_days ?? 0) > 0
       ? addDays(new Date(company.contract_started_at), company.grace_period_days)

@@ -46,10 +46,10 @@ export function quemPagaOQue(
   subsidyValue: number | null
 ): string {
   if (model === "COMPANY_PAYS") {
-    return "A empresa custeia integralmente a mensalidade. O colaborador não paga nada.";
+    return "A empresa custeia integralmente a mensalidade. O titular não paga nada.";
   }
   if (model === "EMPLOYEE_PAYS") {
-    return "Cada colaborador custeia a própria mensalidade, com desconto em folha ou cobrança direta, conforme combinado.";
+    return "Cada titular custeia a própria mensalidade, com desconto em folha ou cobrança direta, conforme combinado.";
   }
   // Parcial: a parte da empresa é o que importa, e ela vem da conta — não do
   // percentual digitado, que pode ter sido limitado ao total da mensalidade.
@@ -57,7 +57,7 @@ export function quemPagaOQue(
     subsidyType === "PERCENT" && subsidyValue
       ? ` (${subsidyValue}% da mensalidade)`
       : "";
-  return `A empresa custeia parte da mensalidade${como}; o restante fica com o colaborador.`;
+  return `A empresa custeia parte da mensalidade${como}; o restante fica com o titular.`;
 }
 
 /** Como a cobrança chega: uma fatura só ou uma por CNPJ. */

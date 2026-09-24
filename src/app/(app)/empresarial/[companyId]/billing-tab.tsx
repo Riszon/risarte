@@ -304,7 +304,7 @@ export function BillingTab({
                     <div>
                       <p className="font-medium">{i.payerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {i.payerDoc} · {i.employees} colaborador(es)
+                        {i.payerDoc} · {i.employees} titular(es)
                       </p>
                     </div>
                     <p className="text-lg font-semibold text-gold-tinta">

@@ -38,17 +38,17 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
 12. Aba **Benefícios**: **Adicionar benefício** — ex.: procedimento "Limpeza",
     cobertura **Sem custo**, Usos **1**, A cada **6** meses. Salve.
 
-## 4. Cadastro de empresa e colaboradores (Fase 1)
+## 4. Cadastro de empresa e titulares (Fase 1)
 
 13. **Empresarial → Nova empresa**: CNPJ, razão social, **modelo de pagamento**
     (ex.: "Empresa paga integral"), dia de vencimento, meios de pagamento,
     **carência** (deixe 0 para testar liberado). Salve.
-14. Abra a empresa → aba **Colaboradores** → **Novo colaborador** (nome, CPF, telefone,
-    plano de dependentes). Repita para 2–3 colaboradores.
+14. Abra a empresa → aba **Titulares** → **Novo titular** (nome, CPF, telefone,
+    plano de dependentes). Repita para 2–3 titulares.
 15. **Importar Excel**: baixe o modelo, preencha 2 linhas e importe — confira que
     aparecem na lista.
-16. Em um colaborador, **Dependentes** → **Adicionar dependente** (CPF + parentesco).
-17. Clique **Completar cadastro** num colaborador → escolha a **unidade** → confirme.
+16. Em um titular, **Dependentes** → **Adicionar dependente** (CPF + parentesco).
+17. Clique **Completar cadastro** num titular → escolha a **unidade** → confirme.
     Ele deve mostrar **★ Cliente vinculado** e o botão **Ver ficha**.
 18. Abra a ficha (Ver ficha ou **Prontuários**): confirme o selo **★ Risarte
     Empresarial** no topo.
@@ -56,7 +56,7 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
 ## 5. Mensalidade e simulador (Fase 2)
 
 19. Na empresa, aba **Plano & Benefícios**: confira a **Mensalidade atual** (deve
-    somar titular + dependentes dos colaboradores ativos).
+    somar titular + dependentes dos titulares ativos).
 20. Use o **Simulador** (mude os números) e veja o total recalcular.
 21. Em **Preços de adesão** dessa empresa, mude um valor e salve → vira **override**
     (aparece "Voltar ao padrão da rede"). A mensalidade muda conforme o override.
@@ -75,14 +75,14 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
 
 25. Na ficha do cliente, veja o card **★ Programa Empresarial**: economia acumulada,
     benefícios usados, disponíveis agora e histórico.
-26. **Empresarial → Painel**: confira os KPIs (empresas ativas, colaboradores,
+26. **Empresarial → Painel**: confira os KPIs (empresas ativas, titulares,
     **mensalidade MRR**, **economia gerada**, funil aberto) e a tabela por empresa.
 27. Na empresa, aba **Financeiro**: economia gerada + benefícios utilizados.
 
 ## 8. Riso+ Social (Fase 8)
 
 28. Na empresa (modelo "integral" ou "parcial"), aba **Riso+ Social** → escolha um
-    gatilho → **Gerar ficha social**. (No modelo "colaborador paga", o botão explica
+    gatilho → **Gerar ficha social**. (No modelo "titular paga", o botão explica
     que não participa.)
 29. Numa ficha integral, **Atribuir** um beneficiário e depois **Marcar utilizada**.
 
@@ -123,7 +123,7 @@ Baixa incorreta acontece — o que não pode é ficar sem saída dentro do siste
 Serve a **recepção e a SDR**: ligar para quem entrou no programa, dar as
 boas-vindas, completar o cadastro e marcar a primeira consulta.
 
-29a. Na empresa, aba **Colaboradores** → botão **Boas-vindas** (o primeiro).
+29a. Na empresa, aba **Titulares** → botão **Boas-vindas** (o primeiro).
 
 29b. A lista traz **uma linha por pessoa** — titular e cada dependente —
      agrupadas por família, com telefone, o que falta no cadastro e **a partir
@@ -131,7 +131,7 @@ boas-vindas, completar o cadastro e marcar a primeira consulta.
      do titular.
 
 29c. No alto, o bloco **Carências desta empresa**: a da empresa (contada do
-     início do contrato), a do colaborador (contada da entrada de cada um) e a
+     início do contrato), a do titular (contada da entrada de cada um) e a
      lista de **procedimentos com carência própria**.
 
 29d. Clique em **Registrar** numa pessoa e escolha o resultado. **"Não atendeu"
@@ -144,7 +144,7 @@ boas-vindas, completar o cadastro e marcar a primeira consulta.
 29f. Troque para a aba **Todas as pessoas** para ver quem já foi contatado, com
      a data, quem ligou e a observação.
 
-> ⚠️ **A carência mostrada é a GERAL** (empresa + colaborador, vale a mais
+> ⚠️ **A carência mostrada é a GERAL** (empresa + titular, vale a mais
 > longa). Os procedimentos com carência própria aparecem na lista do topo e
 > **não** entram na data de cada pessoa: como o prazo é diferente por
 > procedimento, uma data única estaria errada para quase todos os casos. Quem
@@ -236,8 +236,8 @@ aba diz o que falta.
 4. Agora uma empresa **com levantamento completo**: clique em **Ver a
    proposta**. Abre em outra aba com cabeçalho, razão social, CNPJ, data de
    emissão e **validade de 15 dias**.
-5. Confira o quadro: **Mensalidade · Por colaborador · Empresa paga ·
-   Colaborador paga**, e a frase de quem paga o quê.
+5. Confira o quadro: **Mensalidade · Por titular · Empresa paga ·
+   Titular paga**, e a frase de quem paga o quê.
 6. **Salvar em PDF**: os botões do topo somem na impressão; o arquivo sai como
    `risarte-empresarial_proposta_<empresa>_<data>`.
 7. ⚠️ **Confira o que NÃO está lá**: interesse, chance de fechar e observações
@@ -259,7 +259,7 @@ avisando, e prazo/carência/detalhamento não gravam.
    a empresa contou (convênio atual, quanto paga, interesse, observações).
    É **só leitura** — para mudar, use a aba Levantamento.
 4. Preencha **Prazo e carência**: validade 7 dias, carência da empresa 30,
-   carência do colaborador 15. Salve.
+   carência do titular 15. Salve.
 5. Clique em **Ver a proposta**: o documento tem de dizer **7 dias** e trazer a
    seção *"Quando o programa começa a valer"* com os dois prazos.
 6. Apague a validade e salve: o documento volta ao padrão da rede.
@@ -274,6 +274,22 @@ avisando, e prazo/carência/detalhamento não gravam.
     cadastro dela que a carência gravada é a que foi combinada na proposta —
     não zero.
 11. Troque de aba sem salvar e volte: o que você digitou continua lá.
+
+## 10.4. Titular no lugar de Colaborador (OC-00083, 23/09/2026)
+
+Conferência rápida, tela por tela: em nenhum lugar do **Risarte Empresarial**
+pode aparecer a palavra *colaborador*.
+
+1. **Empresas → uma empresa**: a aba passou a se chamar **Titulares**.
+2. Dentro dela: *Cadastrar titulares*, *Novo titular*, e a planilha de modelo
+   baixa como `modelo-titulares.xlsx`.
+3. **Funil → uma empresa → aba Proposta**: *Quantos titulares entram*,
+   *Mensalidade por titular*, *Carência do titular*.
+4. **Ver a proposta** (documento): *"90 titulares e 12 dependentes"*,
+   *"Por titular"*, *"Cada titular custeia a própria mensalidade"*.
+5. **Configurações → Preços de adesão** e os relatórios da empresa.
+6. ⚠️ **Fora do Empresarial a palavra continua**, e está certo: na agenda, nos
+   Risartanos e no SDR, *colaborador* é a equipe da própria Risarte.
 
 ## 11. LGPD / retenção (Fase 8)
 

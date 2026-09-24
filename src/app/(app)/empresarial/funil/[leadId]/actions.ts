@@ -39,7 +39,7 @@ function texto(formData: FormData, key: string): string | null {
  * Número inteiro, ou nulo.
  *
  * ⚠️ Campo em branco vira NULO, nunca zero. "Não perguntei quantos
- * colaboradores" e "a empresa tem zero colaboradores" são coisas diferentes, e
+ * titulares" e "a empresa tem zero titulares" são coisas diferentes, e
  * confundi-las faria o painel contar como respondida toda ficha em branco.
  */
 function inteiro(formData: FormData, key: string): number | null {

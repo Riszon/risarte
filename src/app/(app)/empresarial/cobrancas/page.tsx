@@ -30,7 +30,7 @@ export const metadata: Metadata = { title: "Cobranças do programa" };
  *
  * E não era o sistema fazendo o combinado: a Fase 7 do briefing previa
  * *"painéis por empresa, unidade e CONSOLIDADO; filtros por período/empresa"* e
- * relatórios. O painel entregue tinha empresas, funil, colaboradores e
+ * relatórios. O painel entregue tinha empresas, funil, titulares e
  * economia, e nenhuma dimensão financeira. Faltava metade da fase.
  *
  * ⚠️ E A TELA NÃO DIZ "BOLETO", DE PROPÓSITO. Quem relatou pediu para

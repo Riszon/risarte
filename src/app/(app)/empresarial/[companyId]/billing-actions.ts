@@ -99,7 +99,7 @@ export async function previewBilling(
         totalCents: part.cents,
       };
     });
-    // Colaboradores sem documento definido entram no principal.
+    // Titulares sem documento definido entram no principal.
     const orphan = breakdown.byDocument.get("__none__");
     if (orphan && orphan.cents > 0 && items.length > 0) {
       const target =
@@ -125,7 +125,7 @@ export async function previewBilling(
   if (items.length === 0 || items.every((i) => i.totalCents <= 0)) {
     return {
       ok: false,
-      error: "Sem colaboradores ativos para cobrar. Complete os cadastros antes.",
+      error: "Sem titulares ativos para cobrar. Complete os cadastros antes.",
     };
   }
 

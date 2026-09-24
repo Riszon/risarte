@@ -135,7 +135,7 @@ describe("quanto da implantação já foi feito", () => {
 
 describe("a conferência do fechamento", () => {
   it("sem empresa criada, não dá para confirmar", () => {
-    // Implantação é cadastrar colaboradores NELA; sem empresa não há onde.
+    // Implantação é cadastrar titulares NELA; sem empresa não há onde.
     expect(
       impedimentosDaConferencia({
         companyId: null,
@@ -143,7 +143,7 @@ describe("a conferência do fechamento", () => {
         considerations: null,
       })
     ).toEqual([
-      "criar a empresa a partir do lead (a implantação cadastra os colaboradores nela)",
+      "criar a empresa a partir do lead (a implantação cadastra os titulares nela)",
     ]);
   });
 

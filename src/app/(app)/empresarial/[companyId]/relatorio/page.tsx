@@ -39,7 +39,7 @@ export default async function CompanyReportPage(props: {
   const report = await loadCompanyReport(companyId, filter);
   if (!report) notFound();
 
-  // Trilha LGPD: relatório reúne dados pessoais de colaboradores/dependentes.
+  // Trilha LGPD: relatório reúne dados pessoais de titulares/dependentes.
   await logAudit({
     action: "export",
     entityType: "empresarial_company_report",

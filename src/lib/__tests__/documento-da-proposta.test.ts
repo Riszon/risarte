@@ -23,7 +23,7 @@ describe("validade da proposta", () => {
 });
 
 describe("quem paga o quê — a frase que vai para a empresa", () => {
-  it("integral e colaborador são frases fechadas, sem número solto", () => {
+  it("integral e titular são frases fechadas, sem número solto", () => {
     expect(quemPagaOQue("COMPANY_PAYS", null, null)).toContain(
       "custeia integralmente"
     );
@@ -37,7 +37,7 @@ describe("quem paga o quê — a frase que vai para a empresa", () => {
   });
 
   it("parcial em valor NÃO inventa percentual", () => {
-    // Subsídio em reais por colaborador não é uma fatia fixa da mensalidade:
+    // Subsídio em reais por titular não é uma fatia fixa da mensalidade:
     // escrever "%" aqui seria afirmar algo que a conta não sustenta.
     const frase = quemPagaOQue("COMPANY_PARTIAL", "AMOUNT", 2500);
     expect(frase).not.toContain("%");

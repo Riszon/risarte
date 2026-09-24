@@ -204,11 +204,11 @@ async function buildProposalText(companyId: string): Promise<string | null> {
   // 1 card por bloco (separados por ---), formato do Gamma já usado no projeto.
   return [
     `# Proposta Risarte Empresarial\n## ${name}`,
-    `## Saúde bucal como benefício\nLeve odontologia de qualidade aos seus colaboradores, com rede credenciada e acompanhamento contínuo.`,
-    `## Como funciona\n- Colaboradores e dependentes viram pacientes da rede Risarte\n- Benefícios e descontos exclusivos em procedimentos\n- Gestão simples: uma mensalidade única para a empresa`,
+    `## Saúde bucal como benefício\nLeve odontologia de qualidade aos seus titulares, com rede credenciada e acompanhamento contínuo.`,
+    `## Como funciona\n- Titulares e dependentes viram pacientes da rede Risarte\n- Benefícios e descontos exclusivos em procedimentos\n- Gestão simples: uma mensalidade única para a empresa`,
     `## Investimento\n- Titular: ${formatBRL(pricing.holderFeeCents)}/mês\n- Plano de dependentes a partir de ${formatBRL(pricing.dependentIndividualFeeCents)}/mês\n- Mensalidade estimada hoje: **${formatBRL(monthly.totalCents)}**`,
     `## Benefícios clínicos\nMais de ${benCount ?? 0} procedimentos com cobertura/desconto do programa, incluindo prevenção periódica sem custo.`,
-    `## Próximos passos\n1. Assinatura do contrato\n2. Cadastro dos colaboradores\n3. Início dos atendimentos`,
+    `## Próximos passos\n1. Assinatura do contrato\n2. Cadastro dos titulares\n3. Início dos atendimentos`,
   ].join("\n\n---\n\n");
 }
 

@@ -14,10 +14,10 @@ export const IMPLEMENTATION_STEPS = [
 export type ImplementationStep = (typeof IMPLEMENTATION_STEPS)[number];
 
 export const IMPLEMENTATION_STEP_LABELS: Record<ImplementationStep, string> = {
-  IMPORT_EMPLOYEES: "Cadastrar os colaboradores",
+  IMPORT_EMPLOYEES: "Cadastrar os titulares",
   GUIDELINES_SENT: "Enviar as orientações",
   WELCOME: "Dar as boas-vindas",
-  GROUP_PRESENTATION: "Apresentação para todos os colaboradores",
+  GROUP_PRESENTATION: "Apresentação para todos os titulares",
   FIRST_SCHEDULING: "Agendar a primeira consulta de cada um",
 };
 
@@ -27,11 +27,11 @@ export const IMPLEMENTATION_STEP_HELP: Record<ImplementationStep, string> = {
   GUIDELINES_SENT:
     "Como usar o programa, o que está coberto e o que fazer para marcar.",
   WELCOME:
-    "Boas-vindas à empresa e a cada colaborador — é a fila da recepção e do SDR.",
+    "Boas-vindas à empresa e a cada titular — é a fila da recepção e do SDR.",
   GROUP_PRESENTATION:
     "Algumas empresas pedem uma apresentação para toda a equipe. Nem toda pede: marque “não se aplica”.",
   FIRST_SCHEDULING:
-    "O SDR liga para cada colaborador e marca a primeira consulta.",
+    "O SDR liga para cada titular e marca a primeira consulta.",
 };
 
 /** Só este passo é opcional por natureza — as outras empresas todas precisam. */
@@ -91,7 +91,7 @@ export function progressoDaImplantacao(
 // -----------------------------------------------------------------------------
 
 export type ConferenciaInput = {
-  /** A empresa precisa existir: implantação é cadastrar colaboradores nela. */
+  /** A empresa precisa existir: implantação é cadastrar titulares nela. */
   companyId: string | null;
   everythingOk: boolean;
   considerations: string | null;
@@ -106,7 +106,7 @@ export function impedimentosDaConferencia(input: ConferenciaInput): string[] {
   const falta: string[] = [];
   if (!input.companyId) {
     falta.push(
-      "criar a empresa a partir do lead (a implantação cadastra os colaboradores nela)"
+      "criar a empresa a partir do lead (a implantação cadastra os titulares nela)"
     );
   }
   // "Não está tudo certo" não é erro — é informação. Mas aí precisa dizer o quê,

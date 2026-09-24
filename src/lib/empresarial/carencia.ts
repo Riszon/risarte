@@ -4,8 +4,8 @@
  * ⚠️ A CARÊNCIA NÃO É UM NÚMERO, SÃO TRÊS — e vale a mais longa:
  *
  *   1. a da **empresa**, contada do início do contrato;
- *   2. a do **colaborador**, contada da entrada dele (a empresa define o padrão
- *      e cada colaborador pode ter a sua);
+ *   2. a do **titular**, contada da entrada dele (a empresa define o padrão
+ *      e cada titular pode ter a sua);
  *   3. a do **benefício**, em meses, contada também da entrada — essa é por
  *      procedimento e por isso NÃO entra na data desta lista (ver abaixo).
  *
@@ -29,9 +29,9 @@ export type EntradaDaCarencia = {
   contratoIniciadoEm: string | null;
   /** Carência da empresa, em dias, a partir do início do contrato. */
   diasDaEmpresa: number;
-  /** Padrão de carência do colaborador, em dias, a partir da entrada dele. */
+  /** Padrão de carência do titular, em dias, a partir da entrada dele. */
   diasDoColaboradorPadrao: number;
-  /** Carência própria deste colaborador; `null` = usa o padrão da empresa. */
+  /** Carência própria deste titular; `null` = usa o padrão da empresa. */
   diasDesteColaborador: number | null;
   /** Entrada da pessoa no programa (ISO). Dependente usa a data do titular. */
   entrouEm: string | null;
@@ -43,7 +43,7 @@ export type Liberacao = {
   /** Já está liberada nesta data de referência? */
   liberada: boolean;
   /** Qual das duas carências decidiu a data — para a tela poder explicar. */
-  motivo: "empresa" | "colaborador" | null;
+  motivo: "empresa" | "titular" | null;
 };
 
 function somaDias(iso: string, dias: number): Date {
@@ -62,7 +62,7 @@ export function liberacaoDaPessoa(
   entrada: EntradaDaCarencia,
   referencia: Date
 ): Liberacao {
-  const candidatas: { data: Date; motivo: "empresa" | "colaborador" }[] = [];
+  const candidatas: { data: Date; motivo: "empresa" | "titular" }[] = [];
 
   if (entrada.contratoIniciadoEm && entrada.diasDaEmpresa > 0) {
     candidatas.push({
@@ -80,7 +80,7 @@ export function liberacaoDaPessoa(
   if (entrada.entrouEm && diasDoColaborador > 0) {
     candidatas.push({
       data: somaDias(entrada.entrouEm, diasDoColaborador),
-      motivo: "colaborador",
+      motivo: "titular",
     });
   }
 

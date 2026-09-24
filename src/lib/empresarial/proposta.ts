@@ -3,7 +3,7 @@
 // Puro e testado: nenhuma regra de dinheiro dentro de componente de tela
 // (invariante do módulo Financeiro, que vale aqui igual). Tudo em CENTAVOS.
 //
-// A diferença para `pricing.ts`: lá a mensalidade é somada sobre colaboradores
+// A diferença para `pricing.ts`: lá a mensalidade é somada sobre titulares
 // que EXISTEM; aqui ainda não existe ninguém — são estimativas do consultor
 // para montar a oferta. As duas contas nunca se misturam por isso.
 
@@ -12,7 +12,7 @@ import type { PaymentModel } from "./constants";
 export const BILLING_BASES = ["PER_EMPLOYEE", "FIXED_PER_COMPANY"] as const;
 export type BillingBasis = (typeof BILLING_BASES)[number];
 export const BILLING_BASIS_LABELS: Record<BillingBasis, string> = {
-  PER_EMPLOYEE: "Por colaborador (padrão)",
+  PER_EMPLOYEE: "Por titular (padrão)",
   FIXED_PER_COMPANY: "Valor fixo por empresa",
 };
 
@@ -48,7 +48,7 @@ export type PropostaResult = {
   mensalidadeCents: number;
   titularesCents: number;
   dependentesCents: number;
-  /** `null` quando não há colaborador: dividir por zero não tem resposta. */
+  /** `null` quando não há titular: dividir por zero não tem resposta. */
   porColaboradorCents: number | null;
   implantacaoCents: number;
   empresaPagaCents: number;
@@ -67,14 +67,14 @@ export type PropostaResult = {
 const naoNegativo = (n: number) => (Number.isFinite(n) && n > 0 ? n : 0);
 
 export function simularProposta(input: PropostaInput): PropostaResult {
-  const colaboradores = Math.floor(naoNegativo(input.employeeCount));
+  const titulares = Math.floor(naoNegativo(input.employeeCount));
   const dependentes = input.includeDependents
     ? Math.floor(naoNegativo(input.dependentsCount))
     : 0;
 
   const titularesCents =
     input.basis === "PER_EMPLOYEE"
-      ? colaboradores * naoNegativo(input.holderFeeCents)
+      ? titulares * naoNegativo(input.holderFeeCents)
       : naoNegativo(input.fixedMonthlyCents);
 
   // No valor fixo por empresa os dependentes já estão dentro do pacote — é o
@@ -88,10 +88,10 @@ export function simularProposta(input: PropostaInput): PropostaResult {
   const mensalidadeCents = titularesCents + dependentesCents;
 
   const implantacaoCents =
-    colaboradores * naoNegativo(input.implantationPerEmployeeCents);
+    titulares * naoNegativo(input.implantationPerEmployeeCents);
 
   // Quem paga o quê. As duas partes SEMPRE somam a mensalidade: a do
-  // colaborador é o resto, nunca uma segunda conta — senão um centavo de
+  // titular é o resto, nunca uma segunda conta — senão um centavo de
   // arredondamento sumiria entre as duas.
   let empresaPagaCents = 0;
   if (input.paymentModel === "COMPANY_PAYS") {
@@ -102,10 +102,10 @@ export function simularProposta(input: PropostaInput): PropostaResult {
         (mensalidadeCents * naoNegativo(input.subsidyValue)) / 100
       );
     } else if (input.subsidyType === "AMOUNT") {
-      empresaPagaCents = naoNegativo(input.subsidyValue) * colaboradores;
+      empresaPagaCents = naoNegativo(input.subsidyValue) * titulares;
     }
     // A parte da empresa nunca passa do total: bancar mais do que a conta
-    // inteira faria o colaborador aparecer com valor negativo a pagar.
+    // inteira faria o titular aparecer com valor negativo a pagar.
     empresaPagaCents = Math.min(empresaPagaCents, mensalidadeCents);
   }
   const colaboradorPagaCents = mensalidadeCents - empresaPagaCents;
@@ -119,7 +119,7 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     titularesCents,
     dependentesCents,
     porColaboradorCents:
-      colaboradores > 0 ? Math.round(mensalidadeCents / colaboradores) : null,
+      titulares > 0 ? Math.round(mensalidadeCents / titulares) : null,
     implantacaoCents,
     empresaPagaCents,
     colaboradorPagaCents,
@@ -165,7 +165,7 @@ export type DadosDaProposta = {
 export function faltaParaProposta(d: DadosDaProposta): string[] {
   const falta: string[] = [];
   if (!d.employeeCount || d.employeeCount <= 0)
-    falta.push("quantos colaboradores entram");
+    falta.push("quantos titulares entram");
   if (!d.paymentModel) falta.push("quem paga o programa");
   if (!d.billingBasis) falta.push("como será cobrado");
   return falta;

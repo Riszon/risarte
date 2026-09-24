@@ -138,7 +138,7 @@ export default async function EmpresarialConfigPage(props: {
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Dados de colaboradores que saíram há mais de 5 anos são
+              Dados de titulares que saíram há mais de 5 anos são
               anonimizados automaticamente (rotina mensal). Você também pode rodar
               agora.
             </p>

@@ -13,7 +13,7 @@ import { VOLTAM_PARA_A_FILA } from "./constantes";
  *
  * ⚠️ UMA LINHA POR PESSOA, NÃO POR COLABORADOR. Quem liga fala com gente: o
  * titular e cada dependente têm nome, telefone e cadastro próprios. Uma lista
- * por colaborador com os dependentes escondidos numa coluna faria a recepção
+ * por titular com os dependentes escondidos numa coluna faria a recepção
  * esquecer metade das pessoas — que são justamente as que mais precisam de
  * cadastro, porque entraram de carona no do titular.
  *
@@ -122,7 +122,7 @@ export async function carregarBoasVindas(
   if (!empresa) return null;
 
   const [
-    { data: colaboradores },
+    { data: titulares },
     { data: contatos, error: erroDosContatos },
     { data: beneficios },
   ] = await Promise.all([
@@ -133,7 +133,7 @@ export async function carregarBoasVindas(
         )
         .eq("company_id", companyId)
         // ⚠️ SÓ QUEM ESTÁ ATIVO. Quem saiu do programa não recebe boas-vindas —
-        // e ligar para ex-colaborador oferecendo benefício que ele não tem mais
+        // e ligar para ex-titular oferecendo benefício que ele não tem mais
         // é pior que não ligar.
         .eq("status", "ACTIVE")
         .is("left_at", null)
@@ -189,7 +189,7 @@ export async function carregarBoasVindas(
   const publico = await createClient();
 
   const clinicIds = [
-    ...new Set((colaboradores ?? []).map((e) => e.clinic_id).filter(Boolean)),
+    ...new Set((titulares ?? []).map((e) => e.clinic_id).filter(Boolean)),
   ] as string[];
   const { data: clinicas } = clinicIds.length
     ? await publico.from("clinics").select("id, name").in("id", clinicIds)
@@ -246,7 +246,7 @@ export async function carregarBoasVindas(
     diasDoColaboradorPadrao: empresa.employee_grace_period_days ?? 0,
   };
 
-  const familias: FamiliaParaContatar[] = (colaboradores ?? []).map((e) => {
+  const familias: FamiliaParaContatar[] = (titulares ?? []).map((e) => {
     const liberacaoDoTitular = liberacaoDaPessoa(
       {
         ...entradaBase,

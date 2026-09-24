@@ -1,3 +1,9 @@
+> ⚠️ **Nota de 23/09/2026:** neste documento, onde se lia *colaborador* passou
+> a se ler **titular**. A troca é do dono (OC-00083) e vale para o Empresarial
+> inteiro: há empresas oferecendo o benefício a um **parceiro PJ**, e associações
+> a um **associado** — nenhum dos dois é colaborador. *Titular* serve aos três e
+> faz par com *dependente*. Só o texto mudou; a tabela continua `employees`.
+
 # Briefing Executável — Módulo Risarte Empresarial (integrado ao riSZon)
 
 **Versão corrigida · 08 de julho de 2026**
@@ -23,17 +29,17 @@ Documento para desenvolvimento via Claude Code. Prosa em português; identificad
 
 ## 1. Contexto e decisões confirmadas
 
-O Risarte Empresarial é uma camada **comercial e de gestão B2B** que conecta empresas parceiras à rede Risarte. O colaborador cadastrado no programa **torna-se um cliente do riSZon**, agenda avaliação e faz tratamento em uma unidade franqueada com benefícios do programa. O módulo **não** faz atendimento clínico — isso continua sendo o riSZon.
+O Risarte Empresarial é uma camada **comercial e de gestão B2B** que conecta empresas parceiras à rede Risarte. O titular cadastrado no programa **torna-se um cliente do riSZon**, agenda avaliação e faz tratamento em uma unidade franqueada com benefícios do programa. O módulo **não** faz atendimento clínico — isso continua sendo o riSZon.
 
 **Decisões confirmadas (críticas):**
 
 | ID | Decisão |
 |----|---------|
 | D1 | Módulo construído **dentro do riSZon** (mesmo repo e mesmo Supabase), schema `empresarial`. Sem AWS/filas. |
-| D2 | Sem sincronização assíncrona interna: colaborador e cliente vivem no mesmo banco. Webhooks só para serviços externos (ASAAS, ZapSign). |
+| D2 | Sem sincronização assíncrona interna: titular e cliente vivem no mesmo banco. Webhooks só para serviços externos (ASAAS, ZapSign). |
 | D3 | **Split de pagamento** (padrão, configurável por empresa): 1º pagamento (adesão + implantação) = **100% RisLife**; mensalidades seguintes = **50% Risarte / 50% RisLife**. |
 | D4 | Tabela de preços/benefícios: **um padrão global** + **override por empresa**. Regionalização por unidade fica para o roadmap. |
-| D5 | Saída de colaborador: **bloqueio imediato** para novos orçamentos/agendamentos; **tratamentos já aprovados mantêm o benefício** até concluir. |
+| D5 | Saída de titular: **bloqueio imediato** para novos orçamentos/agendamentos; **tratamentos já aprovados mantêm o benefício** até concluir. |
 | D6 | Retenção de dados: **5 anos** (fiscal/legal), depois anonimização automática (LGPD). |
 | D7 | Funil comercial e agenda do consultor: **construídos nativos** dentro do módulo (sem Trello/Notion externos). |
 
@@ -62,9 +68,9 @@ O Risarte Empresarial é uma camada **comercial e de gestão B2B** que conecta e
 
 ---
 
-## 3. Integração com o riSZon (colaborador = cliente)
+## 3. Integração com o riSZon (titular = cliente)
 
-1. **Pré-cadastro** no módulo Empresarial: nome completo, CPF e telefone do colaborador; dependentes com CPF, telefone e grau de parentesco.
+1. **Pré-cadastro** no módulo Empresarial: nome completo, CPF e telefone do titular; dependentes com CPF, telefone e grau de parentesco.
 2. Quando a empresa fica **Ativa**, a SDR completa o cadastro. Nesse momento:
    - Se o CPF **já existe** como cliente no riSZon → puxar o cadastro e vincular ao programa (`employees.client_id`), **copiando também `clients.clinic_id` para `employees.clinic_id`** (essencial para a RLS por unidade — Seção 6).
    - Se **não existe** → criar o cliente no riSZon (já com sua `clinic_id`) e vincular do mesmo modo.
@@ -101,7 +107,7 @@ CREATE TABLE empresarial.companies (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Colaboradores (titulares)
+-- Titulares (titulares)
 CREATE TABLE empresarial.employees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL REFERENCES empresarial.companies(id),
@@ -228,16 +234,16 @@ CREATE TABLE empresarial.commercial_leads (
 ## 5. Regras de negócio
 
 ### 5.1 Cálculo da mensalidade da empresa
-Para cada colaborador ativo, soma-se a adesão do titular + o custo do plano de dependentes escolhido:
+Para cada titular ativo, soma-se a adesão do titular + o custo do plano de dependentes escolhido:
 
 | Item | Valor padrão | Regra |
 |------|-------------|-------|
-| Titular | R$ 39,90 | por colaborador ativo |
+| Titular | R$ 39,90 | por titular ativo |
 | Dependente Individual | R$ 39,90 | quando há **apenas 1** dependente |
 | Dependente Familiar | R$ 59,90 | de 1 a 3 dependentes (valor fixo) |
 | Dependente Familiar Extra | R$ 19,90 | cada dependente **além** dos 3 (só libera com a Familiar cheia) |
 
-`total = Σ (holder_fee + custo_do_plano_de_dependentes)` para todos os colaboradores ativos. Valores vêm de `adhesion_pricing` (override por empresa, senão padrão global).
+`total = Σ (holder_fee + custo_do_plano_de_dependentes)` para todos os titulares ativos. Valores vêm de `adhesion_pricing` (override por empresa, senão padrão global).
 
 ### 5.2 Split de pagamento (D3)
 - **Primeiro pagamento** (`billing_type = IMPLANTATION`): aplica `first_payment_*` (padrão 0% Risarte / 100% RisLife).
@@ -245,19 +251,19 @@ Para cada colaborador ativo, soma-se a adesão do titular + o custo do plano de 
 - Valores calculados no momento da **liquidação** (confirmação de pagamento pelo ASAAS) e gravados em `split_risarte` / `split_rislife`.
 - Regra de origem: `split_rules` da empresa; se ausente, o registro global (`company_id NULL`).
 
-### 5.3 Status da empresa e efeito nos colaboradores
+### 5.3 Status da empresa e efeito nos titulares
 
 | UI | Código | Quando | Efeito |
 |----|--------|--------|--------|
 | Ativa | `ACTIVE` | tudo em dia | benefícios liberados |
-| Suspensa | `SUSPENDED` | pendência cadastral **ou** atraso de pagamento > 5 dias corridos (configurável) | benefícios suspensos; alerta à unidade; colaborador notificado |
+| Suspensa | `SUSPENDED` | pendência cadastral **ou** atraso de pagamento > 5 dias corridos (configurável) | benefícios suspensos; alerta à unidade; titular notificado |
 | Encerrada | `TERMINATED` | contrato encerrado | perde o selo; vira cliente normal; mantém `membership_history` |
 
 ### 5.4 Bloqueio por inadimplência
 Se `adhesion_billing.status = OVERDUE` por mais de 5 dias corridos → empresa passa a `SUSPENDED` e o riSZon bloqueia **novos** orçamentos/agendamentos para todos os CPFs vinculados. Tratamentos já aprovados seguem (D5).
 
-### 5.5 Saída de colaborador / titular
-- Colaborador sai (pedido, demissão, desligamento ou fim da parceria): status `INACTIVE`, bloqueio imediato para novos tratamentos, benefícios aprovados mantidos.
+### 5.5 Saída de titular / titular
+- Titular sai (pedido, demissão, desligamento ou fim da parceria): status `INACTIVE`, bloqueio imediato para novos tratamentos, benefícios aprovados mantidos.
 - **Titular sai → todos os seus dependentes saem.** Notificar cada dependente e a unidade onde estão cadastrados.
 - Após a saída, na ficha do cliente liberar editar/excluir dependentes.
 
@@ -267,9 +273,9 @@ Se `adhesion_billing.status = OVERDUE` por mais de 5 dias corridos → empresa p
 |--------------------------------|-----------|------|
 | `COMPANY_PAYS` (integral) | Sim | indica **1 beneficiário próprio** para tratamento completo |
 | `COMPANY_PARTIAL` (parcial) | Sim | entra no **pool coletivo** (`is_pool = TRUE`) com outras empresas |
-| `EMPLOYEE_PAYS` (só colaboradores) | Não | — |
+| `EMPLOYEE_PAYS` (só titulares) | Não | — |
 
-Gatilhos configuráveis (`trigger_type`): quantidade de colaboradores ativos, tempo no programa, % de comparecimento a avaliações/reavaliações, montante gasto em tratamento no período. Somente empresas `ACTIVE` participam.
+Gatilhos configuráveis (`trigger_type`): quantidade de titulares ativos, tempo no programa, % de comparecimento a avaliações/reavaliações, montante gasto em tratamento no período. Somente empresas `ACTIVE` participam.
 
 ---
 
@@ -282,12 +288,12 @@ Aproveitar o RBAC já existente no riSZon. Adicionar/mapear:
 | Admin Master | tudo; consolidado e por unidade |
 | Franqueadora | gestão do programa, dashboards, metas |
 | Gerente de Unidade | dados e relatórios **da própria unidade** |
-| SDR | completar cadastro de colaboradores e agendar avaliação |
+| SDR | completar cadastro de titulares e agendar avaliação |
 | **Consultor Comercial Empresarial (RisLife)** | **novo papel**: funil, propostas, contratos, agenda e empresas que gerencia. **Sem acesso a dados clínicos/tratamentos** dos pacientes (LGPD) |
 
 Aplicar **RLS** no schema `empresarial`: unidade enxerga só o que é seu; consultor RisLife enxerga só o comercial; Admin Master enxerga tudo.
 
-**Nota multi-tenant:** `public.clients` e `public.procedures` são multi-tenant por `clinic_id` (procedimentos: catálogo de rede, com preço/protocolo por unidade tratado no próprio riSZon). Por isso `employees`, `dependents` e `membership_history` carregam uma cópia de `clinic_id` (preenchida no momento em que o colaborador/dependente é vinculado ao cliente) — é essa coluna que a política de RLS usa para restringir o "Gerente de Unidade" aos próprios dados, sem precisar de join constante com `public.clients` a cada consulta.
+**Nota multi-tenant:** `public.clients` e `public.procedures` são multi-tenant por `clinic_id` (procedimentos: catálogo de rede, com preço/protocolo por unidade tratado no próprio riSZon). Por isso `employees`, `dependents` e `membership_history` carregam uma cópia de `clinic_id` (preenchida no momento em que o titular/dependente é vinculado ao cliente) — é essa coluna que a política de RLS usa para restringir o "Gerente de Unidade" aos próprios dados, sem precisar de join constante com `public.clients` a cada consulta.
 
 ---
 
@@ -320,10 +326,10 @@ Cada fase termina com algo testável. Sugestão: rodar uma **empresa-piloto real
 - **Testável:** banco criado, migrações aplicadas, projeto reconhece o módulo.
 
 ### Fase 1 — Cadastros
-- CRUD de empresas, colaboradores e dependentes.
+- CRUD de empresas, titulares e dependentes.
 - Vínculo titular ↔ dependentes; puxar cliente existente pelo CPF.
 - Selo "Risarte Empresarial" no prontuário/lista do riSZon.
-- **Testável:** cadastrar empresa-piloto e ver o colaborador virar cliente com selo.
+- **Testável:** cadastrar empresa-piloto e ver o titular virar cliente com selo.
 
 ### Fase 2 — Benefícios e preços
 - Telas de `adhesion_pricing`, `split_rules` e `procedure_benefits` (padrão global + override por empresa).

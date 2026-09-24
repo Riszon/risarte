@@ -103,7 +103,7 @@ export function DocumentosTab({
                   <tr>
                     <th className="px-2 py-1.5 font-medium">Documento</th>
                     <th className="px-2 py-1.5 font-medium">Identificação</th>
-                    <th className="px-2 py-1.5 font-medium">Colaboradores</th>
+                    <th className="px-2 py-1.5 font-medium">Titulares</th>
                     {canManage && <th className="px-2 py-1.5" />}
                   </tr>
                 </thead>

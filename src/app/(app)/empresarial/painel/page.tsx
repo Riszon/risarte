@@ -160,7 +160,7 @@ export default async function PainelPage() {
   const kpis = [
     { label: "Empresas ativas", value: String(activeCompanies) },
     { label: "Suspensas", value: String(suspended) },
-    { label: "Colaboradores ativos", value: String(activeEmployees) },
+    { label: "Titulares ativos", value: String(activeEmployees) },
     { label: "Dependentes ativos", value: String(activeDependents) },
     { label: "Mensalidade (MRR)", value: formatBRL(mrr) },
     { label: "Economia gerada (total)", value: formatBRL(savedTotal) },
@@ -185,7 +185,7 @@ export default async function PainelPage() {
         chapeu="Programa corporativo"
         icone={BarChart3}
         titulo="Painel do programa"
-        descricao="Visão consolidada da rede: empresas, colaboradores e economia gerada."
+        descricao="Visão consolidada da rede: empresas, titulares e economia gerada."
         voltar={{ href: "/empresarial", rotulo: "Empresas" }}
       />
 

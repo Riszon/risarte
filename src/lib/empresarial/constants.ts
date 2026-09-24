@@ -19,7 +19,7 @@ export type PaymentModel = (typeof PAYMENT_MODELS)[number];
 export const PAYMENT_MODEL_LABELS: Record<PaymentModel, string> = {
   COMPANY_PAYS: "Empresa paga integral",
   COMPANY_PARTIAL: "Empresa paga parcial",
-  EMPLOYEE_PAYS: "Colaborador paga",
+  EMPLOYEE_PAYS: "Titular paga",
 };
 
 export const PAYMENT_METHODS = ["BOLETO", "PIX", "CARD"] as const;
@@ -294,7 +294,7 @@ export const SOCIAL_TRIGGER_TYPES = [
 ] as const;
 export type SocialTriggerType = (typeof SOCIAL_TRIGGER_TYPES)[number];
 export const SOCIAL_TRIGGER_LABELS: Record<SocialTriggerType, string> = {
-  EMPLOYEE_COUNT: "Quantidade de colaboradores",
+  EMPLOYEE_COUNT: "Quantidade de titulares",
   TIME_IN_PROGRAM: "Tempo no programa",
   ATTENDANCE: "Comparecimento",
   TREATMENT_SPEND: "Gasto em tratamento",

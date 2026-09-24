@@ -23,7 +23,7 @@ const BASE: PropostaInput = {
   currentPlanMonthlyCents: null,
 };
 
-describe("mensalidade por colaborador", () => {
+describe("mensalidade por titular", () => {
   it("soma titular × quantidade", () => {
     const r = simularProposta(BASE);
     expect(r.titularesCents).toBe(50 * 3990);
@@ -51,7 +51,7 @@ describe("mensalidade por colaborador", () => {
     expect(r.dependentesCents).toBe(0);
   });
 
-  it("implantação é por colaborador", () => {
+  it("implantação é por titular", () => {
     const r = simularProposta({ ...BASE, implantationPerEmployeeCents: 1990 });
     expect(r.implantacaoCents).toBe(50 * 1990);
   });
@@ -95,13 +95,13 @@ describe("valor fixo por empresa (sindicato, associação)", () => {
 });
 
 describe("quem paga o quê", () => {
-  it("empresa integral: colaborador não paga nada", () => {
+  it("empresa integral: titular não paga nada", () => {
     const r = simularProposta(BASE);
     expect(r.empresaPagaCents).toBe(199_500);
     expect(r.colaboradorPagaCents).toBe(0);
   });
 
-  it("colaborador paga: empresa não paga nada", () => {
+  it("titular paga: empresa não paga nada", () => {
     const r = simularProposta({ ...BASE, paymentModel: "EMPLOYEE_PAYS" });
     expect(r.empresaPagaCents).toBe(0);
     expect(r.colaboradorPagaCents).toBe(199_500);
@@ -131,7 +131,7 @@ describe("quem paga o quê", () => {
   });
 
   it("AS DUAS PARTES SEMPRE SOMAM O TOTAL, mesmo com centavo quebrado", () => {
-    // A parte do colaborador é o RESTO, nunca uma segunda conta — senão o
+    // A parte do titular é o RESTO, nunca uma segunda conta — senão o
     // centavo do arredondamento sumiria entre as duas.
     for (const pct of [33, 50, 61, 77, 99]) {
       const r = simularProposta({
@@ -147,7 +147,7 @@ describe("quem paga o quê", () => {
   });
 
   it("a empresa nunca banca mais que a conta inteira", () => {
-    // Sem o teto, o colaborador apareceria com valor NEGATIVO a pagar.
+    // Sem o teto, o titular apareceria com valor NEGATIVO a pagar.
     const r = simularProposta({
       ...BASE,
       paymentModel: "COMPANY_PARTIAL",
@@ -199,8 +199,8 @@ describe("entrada estragada não vira número estranho", () => {
     expect(r.mensalidadeCents).toBe(0);
   });
 
-  it("sem colaborador, o valor por cabeça é NULO", () => {
-    // Dividir por zero não tem resposta; mostrar "R$ 0,00 por colaborador"
+  it("sem titular, o valor por cabeça é NULO", () => {
+    // Dividir por zero não tem resposta; mostrar "R$ 0,00 por titular"
     // seria inventar uma.
     const r = simularProposta({ ...BASE, employeeCount: 0 });
     expect(r.porColaboradorCents).toBeNull();
@@ -226,7 +226,7 @@ describe("o que ainda falta perguntar", () => {
 
   it("lista o que falta, em vez de só dizer não", () => {
     expect(faltaParaProposta(vazio)).toEqual([
-      "quantos colaboradores entram",
+      "quantos titulares entram",
       "quem paga o programa",
       "como será cobrado",
     ]);

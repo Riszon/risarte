@@ -144,7 +144,7 @@ export default async function EmpresarialPage(props: {
       .returns<{ id: string; status: string; company_id: string }[]>(),
   ]);
 
-  // Colaboradores ativos por empresa (coluna da lista).
+  // Titulares ativos por empresa (coluna da lista).
   const activeByCompany = new Map<string, number>();
   for (const e of empRows ?? []) {
     activeByCompany.set(e.company_id, (activeByCompany.get(e.company_id) ?? 0) + 1);
@@ -190,7 +190,7 @@ export default async function EmpresarialPage(props: {
     { label: "Empresas", value: total, destaque: false },
     { label: "Ativas", value: active, destaque: true },
     { label: "Suspensas", value: suspended, destaque: false },
-    { label: "Colaboradores ativos", value: activeEmployees, destaque: true },
+    { label: "Titulares ativos", value: activeEmployees, destaque: true },
   ];
 
   return (
@@ -199,7 +199,7 @@ export default async function EmpresarialPage(props: {
         chapeu="Programa corporativo"
         icone={Building2}
         titulo="Risarte Empresarial"
-        descricao="Empresas parceiras, colaboradores e mensalidades do programa."
+        descricao="Empresas parceiras, titulares e mensalidades do programa."
       >
           {canFunnel && (
             <Button
@@ -318,7 +318,7 @@ export default async function EmpresarialPage(props: {
                   <th className="px-2 py-1.5 font-medium">Empresa</th>
                   <th className="px-2 py-1.5 font-medium">CNPJ</th>
                   <th className="px-2 py-1.5 font-medium">Situação</th>
-                  <th className="px-2 py-1.5 font-medium">Colaboradores</th>
+                  <th className="px-2 py-1.5 font-medium">Titulares</th>
                   <th className="px-2 py-1.5 font-medium">Modelo</th>
                   <th className="px-2 py-1.5 font-medium">Consultor</th>
                   {canManage && <th className="px-2 py-1.5 font-medium" />}
