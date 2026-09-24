@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   contaDoExcedente,
   recusaDoCadastro,
+  recusaDoDependente,
   vagasDisponiveis,
   type RegraDoExcedente,
 } from "@/lib/empresarial/excedente";
@@ -109,5 +110,25 @@ describe("quanto custa incluir os excedentes", () => {
   it("quantidade quebrada ou negativa não vira número estranho", () => {
     expect(contaDoExcedente(POR_ADESAO, -5, 0).mensalDeltaCents).toBe(0);
     expect(contaDoExcedente(POR_ADESAO, 2.9, 0).mensalDeltaCents).toBe(2 * 3490);
+  });
+});
+
+describe("o teto de DEPENDENTES (I4 / 1021)", () => {
+  it("a recusa fala de dependentes, com os dois números e o caminho", () => {
+    const t = recusaDoDependente(50, 50);
+    expect(t).toContain("50 dependente(s) ativos");
+    expect(t).toContain("o contrato fechou 50");
+    expect(t).toContain("termo de inclusão");
+    // ⚠️ Não pode falar de titular: é a frase que alguém lê no meio do
+    // atendimento, e a palavra errada manda a pessoa conferir a lista errada.
+    expect(t).not.toContain("titular");
+  });
+
+  it("usa a MESMA conta de vagas dos titulares — teto é teto", () => {
+    expect(vagasDisponiveis(50, 50).vagas).toBe(0);
+    expect(vagasDisponiveis(50, 30).vagas).toBe(20);
+    // Sem teto de dependentes (nulo), não há trava: é o caso de toda empresa
+    // fechada antes da 1020.
+    expect(vagasDisponiveis(null, 999).semTrava).toBe(true);
   });
 });

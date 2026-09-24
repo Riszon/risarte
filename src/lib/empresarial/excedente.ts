@@ -143,3 +143,24 @@ export function recusaDoCadastro(limite: number, ativos: number): string {
     `depois de aceito pela empresa, libera os cadastros.`
   );
 }
+
+/**
+ * A mesma frase, para DEPENDENTES (1021).
+ *
+ * ⚠️ POR QUE UMA FUNÇÃO IRMÃ, e não um parâmetro "quem" na de cima: a saída é
+ * um texto que alguém lê no meio do atendimento, e montar frase por
+ * concatenação de pedaços ("já tem 5 " + palavra + "(es) ativos") produz
+ * português torto na primeira flexão que não encaixa. Duas frases escritas por
+ * extenso custam três linhas e dizem exatamente o que precisam dizer.
+ *
+ * O teto de dependentes é DA EMPRESA, não de cada titular: o acordo combina
+ * "até 50 dependentes", e como eles se distribuem entre as famílias é assunto
+ * da empresa.
+ */
+export function recusaDoDependente(limite: number, ativos: number): string {
+  return (
+    `Esta empresa já tem ${ativos} dependente(s) ativos, e o contrato fechou ${limite}. ` +
+    `Para incluir mais, gere um termo de inclusão — ele calcula a diferença e, ` +
+    `depois de aceito pela empresa, libera os cadastros.`
+  );
+}

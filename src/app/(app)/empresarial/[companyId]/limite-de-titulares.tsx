@@ -46,6 +46,9 @@ export function LimiteDeTitulares({
   contratado,
   limite,
   ativos,
+  contratadoDeDependentes = null,
+  limiteDeDependentes = null,
+  dependentesAtivos = 0,
   termos,
   podeGerenciar,
 }: {
@@ -55,6 +58,10 @@ export function LimiteDeTitulares({
   /** Contratado + termos aceitos. `null` = sem trava. */
   limite: number | null;
   ativos: number;
+  /** I4 / 1021: o mesmo, para dependentes. `null` = sem teto de dependentes. */
+  contratadoDeDependentes?: number | null;
+  limiteDeDependentes?: number | null;
+  dependentesAtivos?: number;
   termos: TermoDeInclusao[];
   /** Só o gestor do programa gera e aceita termo. */
   podeGerenciar: boolean;
@@ -66,10 +73,26 @@ export function LimiteDeTitulares({
   // ⚠️ SEM QUANTIDADE CONTRATADA, O CARTÃO NÃO APARECE. Mostrar "sem limite"
   // em toda empresa antiga seria ruído — e sugeriria que falta configurar algo
   // que ninguém precisa configurar.
-  if (contratado == null || limite == null) return null;
+  //
+  // ⚠️ E OS DOIS TETOS SÃO INDEPENDENTES (1021): o acordo pode limitar só
+  // dependentes. Se o cartão dependesse do teto de titulares, essa empresa
+  // descobriria a trava ao ser recusada, que é exatamente o que ele evita.
+  const temTetoDeTitulares = contratado != null && limite != null;
+  const temTetoDeDependentes =
+    contratadoDeDependentes != null && limiteDeDependentes != null;
+  if (!temTetoDeTitulares && !temTetoDeDependentes) return null;
 
-  const vagas = Math.max(0, limite - ativos);
-  const acrescentado = limite - contratado;
+  const vagas = temTetoDeTitulares ? Math.max(0, limite! - ativos) : null;
+  const acrescentado = temTetoDeTitulares ? limite! - contratado! : 0;
+  const vagasDeDependentes = temTetoDeDependentes
+    ? Math.max(0, limiteDeDependentes! - dependentesAtivos)
+    : null;
+  const acrescentadoEmDependentes = temTetoDeDependentes
+    ? limiteDeDependentes! - contratadoDeDependentes!
+    : 0;
+  // Sem vaga em QUALQUER um dos dois, o cartão fica em alerta: a empresa tem
+  // um caminho bloqueado, mesmo que o outro esteja livre.
+  const semVagaEmAlgum = vagas === 0 || vagasDeDependentes === 0;
 
   function gerar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -107,11 +130,12 @@ export function LimiteDeTitulares({
   }
 
   return (
-    <Card className={vagas === 0 ? "border-amber-500/50" : undefined}>
+    <Card className={semVagaEmAlgum ? "border-amber-500/50" : undefined}>
       <CardContent className="space-y-3 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="text-sm font-medium">Quantidade contratada</p>
+        <p className="text-sm font-medium">Quantidade contratada</p>
+
+        {temTetoDeTitulares && (
+          <div className="flex flex-wrap items-start justify-between gap-2">
             <p className="text-xs text-muted-foreground">
               O contrato fechou <strong>{contratado}</strong> titular(es)
               {acrescentado > 0 && (
@@ -122,21 +146,58 @@ export function LimiteDeTitulares({
               )}
               . Cadastrados hoje: <strong>{ativos}</strong>.
             </p>
+            <p
+              className={`text-sm font-semibold ${
+                vagas === 0 ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+              }`}
+            >
+              {vagas === 0 ? "Sem vagas" : `${vagas} vaga(s)`}
+            </p>
           </div>
-          <p
-            className={`text-sm font-semibold ${
-              vagas === 0 ? "text-amber-700 dark:text-amber-400" : "text-foreground"
-            }`}
-          >
-            {vagas === 0 ? "Sem vagas" : `${vagas} vaga(s)`}
-          </p>
-        </div>
+        )}
 
-        {vagas === 0 && (
+        {/* O TETO DE DEPENDENTES (1021). Ele é da EMPRESA, não de cada
+            titular: o acordo combina "até 50 dependentes", e como eles se
+            distribuem entre as famílias é assunto dela. */}
+        {temTetoDeDependentes && (
+          <div className="flex flex-wrap items-start justify-between gap-2 border-t pt-3">
+            <p className="text-xs text-muted-foreground">
+              E <strong>{contratadoDeDependentes}</strong> dependente(s)
+              {acrescentadoEmDependentes > 0 && (
+                <>
+                  , mais <strong>{acrescentadoEmDependentes}</strong> dos termos
+                  aceitos
+                </>
+              )}
+              . Cadastrados hoje: <strong>{dependentesAtivos}</strong>.
+            </p>
+            <p
+              className={`text-sm font-semibold ${
+                vagasDeDependentes === 0
+                  ? "text-amber-700 dark:text-amber-400"
+                  : "text-foreground"
+              }`}
+            >
+              {vagasDeDependentes === 0
+                ? "Sem vagas"
+                : `${vagasDeDependentes} vaga(s)`}
+            </p>
+          </div>
+        )}
+
+        {semVagaEmAlgum && (
           <p className="rounded-md bg-amber-500/10 p-2 text-xs">
-            Novos cadastros estão <strong>bloqueados</strong>. Para incluir mais
-            titulares, gere um termo de inclusão: ele calcula a diferença e,
-            depois de aceito pela empresa, libera os cadastros.
+            Novos cadastros de{" "}
+            <strong>
+              {vagas === 0 && vagasDeDependentes === 0
+                ? "titulares e dependentes"
+                : vagas === 0
+                  ? "titulares"
+                  : "dependentes"}
+            </strong>{" "}
+            estão <strong>bloqueados</strong>. Para incluir mais, gere um termo
+            de inclusão: ele calcula a diferença e, depois de aceito pela
+            empresa, libera os cadastros.
           </p>
         )}
 

@@ -515,6 +515,23 @@ incluir mais, gere um termo de inclusão…"*.
 > **Empresa sem quantidade contratada não tem trava** e o cartão nem aparece. É
 > o caso de toda empresa cadastrada antes desta regra.
 
+### 11.1. O teto de dependentes
+
+O contrato pode limitar **titulares, dependentes ou os dois**. Quando há teto de
+dependentes, o cartão mostra **duas linhas** — uma para cada — com as suas
+vagas, e o cadastro de dependente é recusado do mesmo jeito, com a frase falando
+de dependentes.
+
+O termo de inclusão resolve os dois: informe quantos **titulares** e quantos
+**dependentes** entram, e o aceite libera exatamente aquilo.
+
+> ⚠️ **Inativar um titular devolve as vagas dos dependentes dele.** É de
+> propósito: senão a empresa que trocou de funcionário ficaria travada por gente
+> que não está mais no programa.
+
+> **O teto é da empresa, não de cada titular.** O acordo combina "até 50
+> dependentes"; como eles se distribuem entre as famílias é decisão dela.
+
 ---
 
 ## 12. Mensalidade, cobranças e split

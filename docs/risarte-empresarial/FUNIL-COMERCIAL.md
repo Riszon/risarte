@@ -993,3 +993,50 @@ A régua também errou de novo, e do mesmo jeito de sempre: ela varria a
 ela tinha achado era de outro componente. Passou a olhar só o cartão da
 simulação — e o `sm:grid-cols-4` verdadeiro, dos outros dois editores, virou
 conserto em vez de acusação errada.
+
+#### I4.1 — o teto de DEPENDENTES, que ficou faltando (migração 1021, v0.66.0)
+
+**A I4 foi entregue pela metade, e ninguém relatou — eu achei ao levantar as
+pendências do módulo.** A decisão do dono dizia *"a quantidade máxima de
+adesões para aquele acordo (sendo por titulares **ou dependentes ou ambos**)"*.
+A 1020 criou `contracted_dependents`, o fechamento passou a gravá-lo e o termo
+de inclusão já contava dependentes — **mas nada conferia esse teto na hora de
+cadastrar**. O acordo dizia "até 50 dependentes" e o sistema aceitava 500, em
+silêncio.
+
+**O defeito mais caro é o que não reclama.** A trava dos titulares dava a
+impressão de que o assunto estava resolvido; a metade que faltava só
+apareceria no dia em que alguém conferisse a fatura contra o contrato.
+
+**O que existe agora**
+
+- `empresarial.limite_de_dependentes(uuid)` — espelho exato de
+  `limite_de_titulares`: contratado + o que os termos **aceitos**
+  acrescentaram, **nulo** quando não há teto.
+- `empresarial.dependentes_ativos(uuid)` — a contagem, no banco.
+- `addDependent` recusa no limite, com frase própria de dependentes.
+- O cartão da ficha ganhou a **segunda linha**, e aparece mesmo quando o
+  acordo limita **só** dependentes.
+- O **máximo da proposta** passou a valer para dependentes quando o alvo é
+  *dependentes* ou *ambos* — antes só olhava titulares.
+
+**Decisões que valem registrar**
+
+- **⚠️ DEPENDENTE DE TITULAR INATIVO NÃO OCUPA VAGA.** Se ocupasse, a empresa
+  que trocou de funcionário ficaria travada por gente que não está mais no
+  programa. A regra mora no banco, numa função só: escrita em cada tela que
+  precisar dela, um lugar contaria diferente.
+- **O teto é DA EMPRESA, não de cada titular.** O acordo combina "até 50
+  dependentes"; como eles se distribuem entre as famílias é assunto dela.
+- **Duas frases de recusa escritas por extenso**, em vez de uma função com
+  parâmetro "quem". Montar frase por concatenação produz português torto na
+  primeira flexão que não encaixa — e é texto que alguém lê no meio do
+  atendimento.
+- **`limite_de_dependentes` é cópia da conta dos titulares, de propósito.**
+  Duas contas diferentes para a mesma pergunta é como elas passam a divergir.
+
+**Conferido nas telas do treino**: 18 asserções chamando a **mesma server
+action que o botão chama**, com a empresa criada e apagada no fim. A régua foi
+provada desligando a guarda — e acusou o dependente recusado sendo **gravado**.
+As duas conferências da 1020 (titulares e termo) foram rodadas de novo: nada
+regrediu.

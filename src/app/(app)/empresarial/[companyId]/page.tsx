@@ -253,18 +253,30 @@ export default async function CompanyDetailPage(props: {
   let limiteDeTitulares: number | null = null;
   let titularesAtivos = 0;
   let termosDeInclusao: TermoDeInclusao[] = [];
+  // I4 / 1021: o teto de DEPENDENTES, que a 1020 gravava e ninguém conferia.
+  let contratadoDeDependentes: number | null = null;
+  let limiteDeDependentes: number | null = null;
+  let dependentesAtivos = 0;
 
   if (aba === "colaboradores") {
     // I4 (1020): quem decide o limite é o banco — a mesma resposta precisa
     // valer para esta tela, para o cadastro e para a importação de planilha.
-    const [{ data: limiteRpc }, { data: contratoRow }, { data: termosRows }] =
-      await Promise.all([
+    const [
+      { data: limiteRpc },
+      { data: contratoRow },
+      { data: termosRows },
+      { data: limiteDepRpc },
+      { data: depsAtivosRpc },
+    ] = await Promise.all([
         db.rpc("limite_de_titulares", { p_company_id: companyId }),
         db
           .from("companies")
-          .select("contracted_holders")
+          .select("contracted_holders, contracted_dependents")
           .eq("id", companyId)
-          .maybeSingle<{ contracted_holders: number | null }>(),
+          .maybeSingle<{
+            contracted_holders: number | null;
+            contracted_dependents: number | null;
+          }>(),
         db
           .from("company_inclusion_terms")
           .select(
@@ -285,10 +297,17 @@ export default async function CompanyDetailPage(props: {
               created_at: string;
             }[]
           >(),
+        db.rpc("limite_de_dependentes", { p_company_id: companyId }),
+        db.rpc("dependentes_ativos", { p_company_id: companyId }),
       ]);
     contratadoDeTitulares = contratoRow?.contracted_holders ?? null;
     limiteDeTitulares =
       typeof limiteRpc === "number" ? limiteRpc : (limiteRpc?.[0] ?? null);
+    contratadoDeDependentes = contratoRow?.contracted_dependents ?? null;
+    limiteDeDependentes =
+      typeof limiteDepRpc === "number" ? limiteDepRpc : (limiteDepRpc?.[0] ?? null);
+    dependentesAtivos =
+      typeof depsAtivosRpc === "number" ? depsAtivosRpc : (depsAtivosRpc?.[0] ?? 0);
     termosDeInclusao = (termosRows ?? []).map((t) => ({
       id: t.id,
       code: t.code,
@@ -1080,6 +1099,9 @@ export default async function CompanyDetailPage(props: {
           contratado={contratadoDeTitulares}
           limite={limiteDeTitulares}
           ativos={titularesAtivos}
+          contratadoDeDependentes={contratadoDeDependentes}
+          limiteDeDependentes={limiteDeDependentes}
+          dependentesAtivos={dependentesAtivos}
           termos={termosDeInclusao}
           podeGerenciar={isProgramManager(session)}
         />

@@ -456,6 +456,28 @@ e o caminho para incluir mais existe, cobra a diferença e é curto.
 9. Numa empresa **sem quantidade contratada** (as cadastradas antes desta
    regra), o cartão **não aparece** e nada é bloqueado.
 
+### 10.11.1. O teto de DEPENDENTES (I4 / 1021, 24/09/2026)
+
+⚠️ **Rode a migração 1021 antes.** A 1020 travou os titulares e deixou esta
+metade de fora: o campo era gravado no fechamento e ninguém o lia.
+
+49. Na proposta, marque que **haverá dependentes** e defina a quantidade. Feche
+    o negócio.
+50. Na ficha, aba **Titulares**, o cartão **Quantidade contratada** passa a ter
+    **duas linhas**: titulares e dependentes, cada uma com as suas vagas.
+51. Cadastre dependentes até a última vaga; tente mais um. O sistema recusa
+    dizendo **quantos dependentes** já existem e quanto o contrato fechou —
+    nunca falando de titular, que mandaria conferir a lista errada.
+52. Gere um **termo de inclusão** com dependentes e **aceite**: o cadastro que
+    tinha sido recusado passa.
+53. ⚠️ **Inative um titular** que tenha dependentes: as vagas dele voltam. É de
+    propósito — senão a empresa que trocou de funcionário ficaria travada por
+    gente que não está mais no programa.
+54. Numa empresa **sem teto de dependentes**, nada é bloqueado; se ela também
+    não tiver teto de titulares, o cartão não aparece.
+55. Uma empresa com teto **só de dependentes** mostra o cartão do mesmo jeito —
+    a trava não pode ser surpresa só porque o outro teto não existe.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

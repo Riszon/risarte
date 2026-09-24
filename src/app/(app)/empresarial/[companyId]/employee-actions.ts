@@ -7,7 +7,11 @@ import { logAudit } from "@/lib/audit";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { recusaDoCadastro, vagasDisponiveis } from "@/lib/empresarial/excedente";
+import {
+  recusaDoCadastro,
+  recusaDoDependente,
+  vagasDisponiveis,
+} from "@/lib/empresarial/excedente";
 import { isProgramManager } from "@/lib/empresarial/access";
 import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
@@ -333,6 +337,53 @@ export async function addDependent(
   }
 
   const db = await empresarialDb();
+
+  // ⚠️ O TETO DE DEPENDENTES (1021, I4). A 1020 travou os TITULARES e deixou
+  // esta metade de fora: o campo era gravado no fechamento e ninguém o lia —
+  // o acordo dizia "até 50 dependentes" e o sistema aceitava 500, calado.
+  //
+  // Quem soma o limite é o BANCO (contratado + termos de inclusão aceitos),
+  // como nos titulares: duas contas para a mesma pergunta divergem.
+  const { data: limiteRow } = await db.rpc("limite_de_dependentes", {
+    p_company_id: companyId,
+  });
+  const limiteContratado =
+    typeof limiteRow === "number" ? limiteRow : (limiteRow?.[0] ?? null);
+
+  const { data: teto } = await db
+    .from("companies")
+    .select("max_adhesions, adhesion_limit_target")
+    .eq("id", companyId)
+    .maybeSingle<{
+      max_adhesions: number | null;
+      adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
+    }>();
+  // O máximo da proposta só vale para dependentes quando foi combinado para
+  // eles. Marcado como "só titulares", ele não diz nada sobre dependentes.
+  const tetoDaProposta =
+    teto?.max_adhesions != null && teto.adhesion_limit_target !== "HOLDERS"
+      ? teto.max_adhesions
+      : null;
+
+  if (limiteContratado != null || tetoDaProposta != null) {
+    const { data: ativosRow } = await db.rpc("dependentes_ativos", {
+      p_company_id: companyId,
+    });
+    const atuais =
+      typeof ativosRow === "number" ? ativosRow : (ativosRow?.[0] ?? 0);
+
+    const { semTrava, vagas } = vagasDisponiveis(limiteContratado, atuais);
+    if (!semTrava && vagas <= 0) {
+      return { ok: false, error: recusaDoDependente(limiteContratado!, atuais) };
+    }
+    if (tetoDaProposta != null && atuais >= tetoDaProposta) {
+      return {
+        ok: false,
+        error: `Esta empresa já tem ${atuais} dependente(s) ativos, e o máximo combinado na proposta é ${tetoDaProposta}. Renegocie o limite antes de incluir mais.`,
+      };
+    }
+  }
+
   const { error } = await db.from("dependents").insert({
     employee_id: employeeId,
     cpf: formatCpf(cpf),
