@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.276.0",
+    data: "2026-09-24",
+    migracao: null,
+    titulo: "O Risarte Empresarial ganhou manual próprio",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quem trabalha com as empresas parceiras tem agora um manual só do programa, dentro do próprio módulo: em Empresarial, botão Manual. Ele explica o caminho inteiro — do primeiro contato com a empresa até a ligação de boas-vindas — e muda junto com o sistema, como o manual geral. O manual do riSZon continua onde estava e agora aponta para ele.",
+        papeis: "todos",
+        manual: "7. Mapeamento da interface",
+      },
+    ],
+  },
+  {
     versao: "0.275.0",
     data: "2026-09-23",
     migracao: null,
