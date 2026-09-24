@@ -889,3 +889,71 @@ que o botão chama** — os dois contratados entram, o terceiro é recusado e **
 é gravado**, e com o termo aceito o mesmo cadastro passa. A régua foi provada
 quebrando a trava de propósito: com ela quebrada, o terceiro titular foi
 gravado e a conferência acusou 4 falhas.
+
+### Bloco J — a aba Proposta em PASSOS ✅ (sem migração, v0.64.0)
+
+Relato do dono (24/09/2026): *"no funil do empresarial, a configuração da
+proposta ainda está muito confusa e uma lista longa. Faça um refinamento
+estético e que siga um fluxo que otimize o trabalho."*
+
+**O defeito existia, e dava para medir.** A aba tinha **nove blocos numa
+coluna só**, mais de quarenta campos e **cinco botões de salvar**. Pior que o
+tamanho era a ORDEM:
+
+1. como a proposta será montada (preços)
+2. prazo e carência
+3. **a SIMULAÇÃO** — no meio do formulário
+4. dados do contrato
+5. unidades
+6. **CONDIÇÕES COMERCIAIS** — as faixas de preço, *depois* da simulação
+7. benefícios
+8. texto
+
+Quem mexia numa faixa (bloco 6) tinha de rolar para cima até o bloco 3 para
+ver o efeito no valor. **A resposta ficava longe da pergunta** — e é isso que
+faz uma tela parecer confusa mesmo com cada bloco certo por dentro.
+
+**O que existe agora**
+
+- Uma **trilha de seis passos** à esquerda, na ordem do trabalho: *Quem paga e
+  quanto · Condições comerciais · Benefícios e unidades · Prazo e carência ·
+  Texto da proposta · Dados do contrato*.
+- Cada passo traz o **seu resumo** embaixo do nome ("R$ 39,90 por titular · 90
+  titulares", "2 faixas · máx. 200", "5 benefícios · 2 unidades").
+- A **simulação fica fixa ao lado** do trabalho em tela larga.
+- O salvar do formulário principal **aparece só nos passos dele** e diz, ao
+  lado, que salva os três juntos.
+
+**Decisões que valem registrar**
+
+- **⚠️ OS PAINÉIS SÃO ESCONDIDOS, NUNCA DESMONTADOS.** O formulário principal
+  atravessa TRÊS passos (preços, prazos, dados do contrato) com um `<form>`
+  só, e campo desmontado não é enviado no salvar: desmontar apagaria em
+  silêncio o que está nos outros dois passos. Mesma escolha das abas da ficha
+  e da ficha do paciente. **É a única coisa nesta entrega que poderia perder
+  dado**, e por isso é o que a régua mede primeiro.
+- **É uma trilha, não um assistente.** Sem "próximo" obrigatório e sem passo
+  trancado: quem volta numa proposta em follow-up quer mexer numa faixa e
+  sair. Mesma razão de as abas da ficha não serem trancadas.
+- **Os dados do contrato foram para o FIM.** Razão social e CPF de quem assina
+  não mudam nada na negociação, e estavam no meio da precificação.
+- **Zero não é falta.** Sem faixa ("preço único") e sem benefício o passo fica
+  cinza, não amarelo — pintar de amarelo o que está certo é a forma mais
+  rápida de ensinar a equipe a ignorar avisos. O amarelo ficou para o que
+  falta de verdade.
+- **Máximo de adesões SEM regra de excedente virou aviso** (liga o Bloco I4):
+  é o caso que faz o termo de inclusão nascer sem valor. Avisar na hora de
+  montar a proposta é barato; descobrir na hora de cobrar, não.
+- **Um botão de salvar por dono.** Os passos 2, 3 e 5 têm o salvar deles
+  dentro do passo, e o "Salvar proposta" some ali — um botão de salvar que não
+  salva o que está na tela é pior que nenhum.
+- **O resumo de cada passo é conta pura e testada**
+  (`src/lib/empresarial/passos-da-proposta.ts`, 17 testes): a tela não decide
+  o que dizer, ela só desenha.
+
+**Conferido nas telas do treino** com um lead semeado e apagado no fim: 22
+asserções, 0 falha. A régua foi provada desmontando os painéis escondidos de
+propósito — e ela acusou na hora que os passos 4 e 6 sumiram do formulário.
+Ela também já tinha me pegado antes: a primeira versão semeava as faixas numa
+coluna que não existe, ignorava o erro da inserção e **acusava a tela** de não
+contar faixa nenhuma.

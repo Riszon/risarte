@@ -219,6 +219,40 @@ preencher.
 
 Tudo nesta seção fica na aba **Proposta** da ficha do funil.
 
+### 6.0. A trilha de seis passos
+
+A aba não é mais uma lista comprida: ela tem uma **trilha à esquerda** com seis
+passos, na ordem do trabalho, e a **simulação fica fixa ao lado** — o valor
+responde a cada mudança sem você precisar rolar a tela.
+
+| # | Passo | O que se decide |
+|---|---|---|
+| 1 | **Quem paga e quanto** | modelo de pagamento, quantos entram, mensalidade, implantação |
+| 2 | **Condições comerciais** | faixas por quantidade, mínimo, máximo, excedente |
+| 3 | **Benefícios e unidades** | o que está coberto e onde vale |
+| 4 | **Prazo e carência** | validade da proposta e as duas carências |
+| 5 | **Texto da proposta** | os blocos de texto do documento |
+| 6 | **Dados do contrato** | razão social e quem assina |
+
+**Cada passo mostra o seu resumo embaixo do nome** — *"R$ 39,90 por titular ·
+90 titulares"*, *"2 faixas · máx. 200"*, *"5 benefícios · 2 unidades"*. Dá para
+ver o estado da proposta inteira sem abrir passo nenhum.
+
+> **Não é um assistente: é uma trilha.** Não existe "próximo" obrigatório nem
+> passo trancado. Quem volta numa proposta em follow-up quer mexer numa faixa e
+> sair, não reler seis passos.
+
+> ⚠️ **Os passos 1, 4 e 6 são um formulário só** e salvam juntos, no botão
+> **Salvar proposta** (a tela diz isso ao lado do botão). Os passos 2, 3 e 5
+> têm **cada um o seu salvar**, dentro do próprio passo. Trocar de passo **não
+> apaga** o que você digitou — mas sair da ficha sem salvar, sim.
+
+> **O amarelo quer dizer alguma coisa.** Passo sem faixa nenhuma ou sem
+> benefício fica cinza, não amarelo: são decisões legítimas. Amarelo aparece
+> quando falta mesmo — por exemplo, **máximo de adesões combinado sem a regra
+> do excedente**, que é o que faz o termo de inclusão nascer sem valor
+> (seção 11).
+
 ### 6.1. Prazo e carência
 
 - **Validade da proposta** — quantos dias ela vale. Em branco, usa o padrão da

@@ -62,6 +62,11 @@ import {
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
 import { UnidadesDaParceria, type Unidade } from "./unidades-editor";
+import { PainelDoPasso, TrilhaDaProposta } from "./passos-da-proposta";
+import {
+  resumoDosPassos,
+  type PassoDaProposta,
+} from "@/lib/empresarial/passos-da-proposta";
 
 /**
  * A ABA DA PROPOSTA (OC-00083, 23/09/2026).
@@ -229,6 +234,33 @@ export function FichaDaProposta({
   const faltaProposta = faltaParaProposta(dados);
   const faltaContrato = faltaParaContrato(dados);
 
+  // A TRILHA. O resumo de cada passo é conta pura e testada
+  // (`passos-da-proposta.ts`): a tela só desenha o que ela devolve.
+  const [passo, setPasso] = useState<PassoDaProposta>("precos");
+  const situacoes = resumoDosPassos({
+    titulares: Number.parseInt(employeeCount || "0", 10) || 0,
+    mensalidadePorTitularCents: paraCentavos(holderFee) || null,
+    valorFixo: basis === "FIXED_PER_COMPANY",
+    temQuemPaga: paymentModel !== "",
+    faixas: condicoes.faixas.length,
+    minAdhesions: condicoes.minAdhesions,
+    maxAdhesions: condicoes.maxAdhesions,
+    temRegraDeExcedente: condicoes.excessMode != null,
+    beneficios: beneficios.length,
+    unidades: unidadesDaParceria.length,
+    validadeDias: qualificacao.proposalValidDays,
+    validadePadraoDaRede: prazoPadraoDaRede,
+    carenciaEmpresaDias: qualificacao.companyGraceDays,
+    carenciaTitularDias: qualificacao.employeeGraceDays,
+    textoPersonalizado,
+    faltaContrato,
+  });
+  // Os três passos que dividem o MESMO formulário. O salvar aparece só neles
+  // — nos outros, cada editor tem o seu, e um botão "Salvar proposta" ali
+  // faria a pessoa clicar no botão errado achando que salvou as faixas.
+  const noFormularioPrincipal =
+    passo === "precos" || passo === "prazos" || passo === "contrato";
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -262,8 +294,22 @@ export function FichaDaProposta({
         <LevantamentoEmPopup qualificacao={qualificacao} />
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
-        {/* ---------------------------------------------------------------- */}
+      {/* A TRILHA À ESQUERDA, O TRABALHO NO MEIO, A CONTA SEMPRE À VISTA.
+          Antes eram nove blocos numa coluna só — e a simulação ficava no MEIO
+          do formulário, com as faixas de preço depois dela: mexer numa faixa
+          obrigava a rolar para cima para ver o efeito. */}
+      <div className="grid gap-4 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[13.5rem_minmax(0,1fr)_20rem]">
+        <div className="lg:sticky lg:top-16">
+          <TrilhaDaProposta
+            ativo={passo}
+            aoTrocar={setPasso}
+            situacoes={situacoes}
+          />
+        </div>
+
+        <div className="min-w-0 space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
+            <PainelDoPasso visivel={passo === "precos"}>
         <Secao titulo="Como a proposta será montada">
           <div className="grid gap-3 sm:grid-cols-2">
             <Campo id="payment_model" rotulo="Quem paga o programa *">
@@ -444,7 +490,9 @@ export function FichaDaProposta({
           </div>
         </Secao>
 
-        {/* ---------------------------------------------------------------- */}
+            </PainelDoPasso>
+
+            <PainelDoPasso visivel={passo === "prazos"}>
         <Secao
           titulo="Prazo e carência"
           descricao="O que foi combinado na negociação. A carência viaja para o cadastro da empresa quando o negócio fecha — antes disso era redigitada, e podia sair diferente do que foi vendido."
@@ -498,18 +546,9 @@ export function FichaDaProposta({
           </div>
         </Secao>
 
-        {/* ---------------------------------------------------------------- */}
-        <SimuladorDaProposta
-          proposta={proposta}
-          basis={basis}
-          faltaProposta={faltaProposta}
-          faltaContrato={faltaContrato}
-          linkDaProposta={`/empresarial/funil/${leadId}/proposta`}
-          avisos={avisos}
-          incluiDependentes={incluiDependentes}
-        />
+            </PainelDoPasso>
 
-        {/* ---------------------------------------------------------------- */}
+            <PainelDoPasso visivel={passo === "contrato"}>
         <Secao
           titulo="Dados para gerar a proposta e o contrato"
           descricao="Estes campos viajam para o cadastro da empresa quando o negócio é fechado — ninguém digita duas vezes."
@@ -580,58 +619,115 @@ export function FichaDaProposta({
             </Campo>
           </div>
         </Secao>
+            </PainelDoPasso>
 
-        <div className="flex justify-end gap-2">
-          <Button type="submit" disabled={isPending}>
-            Salvar proposta
-          </Button>
+            {/* O SALVAR SÓ APARECE NOS PASSOS DESTE FORMULÁRIO. Nos outros,
+                cada editor tem o seu — e um "Salvar proposta" ali faria a
+                pessoa clicar no botão errado achando que gravou as faixas. */}
+            {noFormularioPrincipal && (
+              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                <span className="text-xs text-muted-foreground">
+                  Salva os passos 1, 4 e 6 juntos — são um formulário só.
+                </span>
+                <Button type="submit" disabled={isPending}>
+                  Salvar proposta
+                </Button>
+              </div>
+            )}
+          </form>
+
+          {/* Fora do formulário acima de propósito: <form> dentro de <form>
+              não funciona, e cada um tem o seu próprio salvar. */}
+          <PainelDoPasso visivel={passo === "condicoes"}>
+            {semMigracao ? (
+              <AguardandoMigracao />
+            ) : (
+              <CondicoesComerciais
+                leadId={leadId}
+                condicoes={condicoes}
+                porTitular={basis === "PER_EMPLOYEE"}
+              />
+            )}
+          </PainelDoPasso>
+
+          <PainelDoPasso visivel={passo === "beneficios"}>
+            {semMigracao ? (
+              <AguardandoMigracao />
+            ) : (
+              <>
+                {/* As unidades vêm ANTES dos benefícios de propósito: é a
+                    lista delas que o benefício usa para poder restringir. */}
+                <UnidadesDaParceria
+                  leadId={leadId}
+                  unidades={unidades}
+                  principal={unidadePrincipal}
+                  vinculadas={unidadesDaParceria}
+                />
+                <BeneficiosDaProposta
+                  leadId={leadId}
+                  procedimentos={procedimentos}
+                  grupos={grupos}
+                  iniciais={beneficios}
+                  vieramDaRede={beneficiosVieramDaRede}
+                  daRede={beneficiosDaRede}
+                  podeCriarGrupo={podeCriarGrupo}
+                  unidadesDaParceria={unidades.filter((u) =>
+                    unidadesDaParceria.includes(u.id)
+                  )}
+                />
+              </>
+            )}
+          </PainelDoPasso>
+
+          <PainelDoPasso visivel={passo === "texto"}>
+            {semMigracao ? (
+              <AguardandoMigracao />
+            ) : (
+              <TextoDaProposta
+                leadId={leadId}
+                blocos={blocos}
+                personalizado={textoPersonalizado}
+              />
+            )}
+          </PainelDoPasso>
         </div>
-      </form>
 
-      {/* Fora do formulário acima de propósito: <form> dentro de <form> não
-          funciona, e cada um tem o seu próprio salvar. */}
-      {/* As unidades vêm ANTES dos benefícios de propósito: é a lista delas
-          que o benefício usa para poder restringir. */}
-      {!semMigracao && (
-        <UnidadesDaParceria
-          leadId={leadId}
-          unidades={unidades}
-          principal={unidadePrincipal}
-          vinculadas={unidadesDaParceria}
-        />
-      )}
-
-      {!semMigracao && (
-        <CondicoesComerciais
-          leadId={leadId}
-          condicoes={condicoes}
-          porTitular={basis === "PER_EMPLOYEE"}
-        />
-      )}
-
-      {!semMigracao && (
-        <BeneficiosDaProposta
-          leadId={leadId}
-          procedimentos={procedimentos}
-          grupos={grupos}
-          iniciais={beneficios}
-          vieramDaRede={beneficiosVieramDaRede}
-          daRede={beneficiosDaRede}
-          podeCriarGrupo={podeCriarGrupo}
-          unidadesDaParceria={unidades.filter((u) =>
-            unidadesDaParceria.includes(u.id)
-          )}
-        />
-      )}
-
-      {!semMigracao && (
-        <TextoDaProposta
-          leadId={leadId}
-          blocos={blocos}
-          personalizado={textoPersonalizado}
-        />
-      )}
+        {/* ⚠️ A CONTA FICA GRUDADA NA TELA (xl), ao lado de qualquer passo.
+            Ela é a resposta de toda decisão de preço: longe da pergunta, a
+            pessoa muda um valor e não vê o efeito — que era exatamente o
+            problema relatado. Em tela menor ela cai abaixo do trabalho, que é
+            o melhor lugar possível sem roubar a altura da dobra. */}
+        <aside className="lg:col-span-2 xl:col-span-1 xl:sticky xl:top-16">
+          <SimuladorDaProposta
+            proposta={proposta}
+            basis={basis}
+            faltaProposta={faltaProposta}
+            faltaContrato={faltaContrato}
+            linkDaProposta={`/empresarial/funil/${leadId}/proposta`}
+            avisos={avisos}
+            incluiDependentes={incluiDependentes}
+          />
+        </aside>
+      </div>
     </div>
+  );
+}
+
+/**
+ * O que estes passos mostram enquanto a migração 1014 não rodou.
+ *
+ * Painel vazio faria a trilha prometer um passo que não existe — pior que o
+ * aviso, porque a pessoa procuraria o que fazer ali.
+ */
+function AguardandoMigracao() {
+  return (
+    <Card className="border-amber-500/50 bg-amber-500/5">
+      <CardContent className="p-4 text-sm">
+        Este passo só funciona depois que a atualização do banco (migração{" "}
+        <strong>1014</strong>) for aplicada aqui. Os demais passos funcionam
+        normalmente.
+      </CardContent>
+    </Card>
   );
 }
 

@@ -482,6 +482,33 @@ e o caminho para incluir mais existe, cobra a diferença e é curto.
     em `docs/treinamento/Manual-Risarte-Empresarial.docx`. **Nunca edite o
     .docx à mão** — a próxima geração apaga.
 
+## 13. A aba Proposta em passos (relato do dono, 24/09/2026)
+
+**O que testar:** a aba deixou de ser uma lista comprida, a ordem é a do
+trabalho, e nada se perde ao trocar de passo.
+
+42. Funil → uma empresa → aba **Proposta**. À esquerda tem de aparecer a
+    **trilha de seis passos**, numerados, cada um com o seu resumo embaixo
+    (*"R$ 39,90 por titular · 90 titulares"*, *"2 faixas · máx. 200"*).
+43. Clique em cada passo: só o conteúdo dele aparece à direita. **A simulação
+    fica no lugar**, ao lado (em tela larga) — mude um valor no passo 1 e veja
+    o número mudar **sem rolar a tela**.
+44. ⚠️ **O teste que mais importa.** No passo **1**, mude a mensalidade. Vá ao
+    passo **4** e mude a validade. Vá ao **6** e mude quem assina. **Agora
+    clique em Salvar proposta.** Volte nos três: **as três mudanças têm de
+    estar lá**. (Os passos 1, 4 e 6 são um formulário só; é isso que a frase
+    ao lado do botão avisa.)
+45. Nos passos **2**, **3** e **5**, o salvar é de cada um, dentro do passo.
+    Confira que o botão **Salvar proposta** **não aparece** neles — clicar no
+    botão errado achando que gravou a faixa é justamente o que se quer evitar.
+46. **Sem faixa e sem benefício**, os passos 2 e 3 ficam **cinza** (*"preço
+    único"*, *"sem benefício"*), nunca amarelos: não ter é uma decisão.
+47. Ponha um **máximo de adesões** e deixe a regra do excedente em branco: o
+    passo 2 fica **amarelo**, dizendo *"sem regra de excedente"*. É o aviso que
+    evita o termo de inclusão nascer sem valor (§10.11).
+48. Numa empresa **sem levantamento nenhum**, o passo 1 diz **"não começou"** —
+    não "falta 1 campo".
+
 ---
 
 **Observações:**
