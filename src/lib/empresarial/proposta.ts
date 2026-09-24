@@ -8,6 +8,13 @@
 // para montar a oferta. As duas contas nunca se misturam por isso.
 
 import type { PaymentModel } from "./constants";
+import {
+  custoDaImplantacao,
+  custoDosDependentes,
+  precoDaFaixa,
+  type FaixaDePreco,
+  type PrecoDeDependente,
+} from "./condicoes-da-proposta";
 
 export const BILLING_BASES = ["PER_EMPLOYEE", "FIXED_PER_COMPANY"] as const;
 export type BillingBasis = (typeof BILLING_BASES)[number];
@@ -42,6 +49,19 @@ export type PropostaInput = {
   subsidyValue: number;
   /** O que a empresa paga hoje de convênio, no total. `null` = não se sabe. */
   currentPlanMonthlyCents: number | null;
+
+  // ---- H3 (1017): tudo OPCIONAL, e por um motivo ----------------------------
+  // Ausente = esta negociação não combinou nada disso, e a conta é exatamente
+  // a que já era. Proposta antiga não muda de preço por causa de campo novo.
+  /** Faixas de preço por quantidade. Vazio = sem regra de quantidade. */
+  faixas?: readonly FaixaDePreco[];
+  /** Pacote de dependentes. Ausente = um valor por dependente. */
+  precoDoDependente?: PrecoDeDependente;
+  /** Quantos titulares terão dependentes — só a estimativa do pacote usa. */
+  titularesComDependentes?: number | null;
+  /** `FIXED` = um valor pela empresa; ausente/`PER_ADHESION` = por titular. */
+  implantationMode?: "PER_ADHESION" | "FIXED" | null;
+  implantationFixedCents?: number;
 };
 
 export type PropostaResult = {
@@ -62,6 +82,14 @@ export type PropostaResult = {
    */
   economiaMensalCents: number | null;
   economiaAnualCents: number | null;
+
+  // ---- H3 ------------------------------------------------------------------
+  /** A faixa que valeu, quando alguma valeu — a tela mostra qual. */
+  faixaAplicada: FaixaDePreco | null;
+  /** A conta dos dependentes é estimativa (pacote familiar)? */
+  dependentesEstimados: boolean;
+  /** De onde saiu o valor dos dependentes, em uma linha. */
+  explicacaoDosDependentes: string;
 };
 
 const naoNegativo = (n: number) => (Number.isFinite(n) && n > 0 ? n : 0);
@@ -72,23 +100,49 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     ? Math.floor(naoNegativo(input.dependentsCount))
     : 0;
 
-  const titularesCents =
-    input.basis === "PER_EMPLOYEE"
-      ? titulares * naoNegativo(input.holderFeeCents)
-      : naoNegativo(input.fixedMonthlyCents);
+  // ⚠️ A FAIXA ENTRA AQUI, antes de tudo. Ela troca o PREÇO UNITÁRIO (por
+  // titular) ou o VALOR FIXO da empresa, conforme a base — e a faixa do total
+  // vale para todos, que é a decisão do dono.
+  const faixas = input.faixas ?? [];
+  const porTitular = input.basis === "PER_EMPLOYEE";
+  const { precoCents: precoUnitario, faixa: faixaAplicada } = precoDaFaixa(
+    faixas,
+    // Na cobrança fixa a faixa é escolhida pelo tamanho da empresa, que é o
+    // número de titulares — cobrar "por empresa" não faz a quantidade sumir.
+    titulares,
+    porTitular ? naoNegativo(input.holderFeeCents) : naoNegativo(input.fixedMonthlyCents)
+  );
+
+  const titularesCents = porTitular
+    ? titulares * naoNegativo(precoUnitario)
+    : naoNegativo(precoUnitario);
 
   // No valor fixo por empresa os dependentes já estão dentro do pacote — é o
   // que a regra alternativa significa para sindicato e associação. Cobrá-los
   // por fora transformaria "valor fixo" em valor variável.
-  const dependentesCents =
-    input.basis === "PER_EMPLOYEE"
-      ? dependentes * naoNegativo(input.dependentFeeCents)
-      : 0;
+  const contaDosDependentes = porTitular
+    ? custoDosDependentes(
+        input.precoDoDependente ?? {
+          modo: "PER_DEPENDENT",
+          individualCents: naoNegativo(input.dependentFeeCents),
+          familiaCents: 0,
+          extraCents: 0,
+          tamanhoDaFamilia: 3,
+        },
+        dependentes,
+        input.titularesComDependentes ?? null
+      )
+    : { totalCents: 0, estimado: false, explicacao: "No valor fixo, os dependentes já estão no pacote." };
+  const dependentesCents = contaDosDependentes.totalCents;
 
   const mensalidadeCents = titularesCents + dependentesCents;
 
-  const implantacaoCents =
-    titulares * naoNegativo(input.implantationPerEmployeeCents);
+  const implantacaoCents = custoDaImplantacao(
+    input.implantationMode ?? null,
+    naoNegativo(input.implantationPerEmployeeCents),
+    naoNegativo(input.implantationFixedCents ?? 0),
+    titulares
+  );
 
   // Quem paga o quê. As duas partes SEMPRE somam a mensalidade: a do
   // titular é o resto, nunca uma segunda conta — senão um centavo de
@@ -126,6 +180,9 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     economiaMensalCents,
     economiaAnualCents:
       economiaMensalCents == null ? null : economiaMensalCents * 12,
+    faixaAplicada,
+    dependentesEstimados: contaDosDependentes.estimado,
+    explicacaoDosDependentes: contaDosDependentes.explicacao,
   };
 }
 

@@ -517,3 +517,64 @@ seletor de grupos num banco que não tem grupo (e a tela esconde de propósito);
 procurou o nome do grupo no texto quando ele mora **dentro de um campo de
 edição**; e, antes disso, cobrou a palavra "colaborador" em telas que não a
 desenham. **Conferir a régua antes de acusar a tela é o primeiro passo.**
+
+### Bloco H3 — as CONDIÇÕES COMERCIAIS da proposta ✅ (migração 1017, v0.57.0)
+
+Pedidos do dono, todos na mesma tela: mínimo e máximo de adesões (dizendo se
+contam titulares, dependentes ou ambos), valor mínimo da proposta, **faixas de
+preço por quantidade**, implantação **fixa ou por adesão**, e os preços de
+dependente (individual, pacote familiar e extra) configuráveis na proposta.
+
+**Decisões do dono, e o que elas significam no código**
+
+- **A faixa do TOTAL vale para todos**: 120 adesões pagam 120 × o preço da
+  faixa de 120. É simples de explicar ao cliente e de conferir na fatura; o
+  efeito assumido é que passar de 99 para 100 barateia todo mundo de uma vez.
+  A alternativa progressiva tornaria o "valor por titular" uma média, nunca um
+  preço de tabela.
+- **Abaixo do mínimo AVISA; acima do máximo BLOQUEIA.** A assimetria não é
+  descuido: abaixo do mínimo a empresa pode estar entrando aos poucos, e
+  barrar adesão é barrar receita; acima do máximo o limite costuma ser
+  capacidade de atendimento, e furá-lo é prometer o que não se entrega.
+- **Dependentes em individual · pacote · extra**, que é o que as colunas do
+  sistema já guardavam desde a 0097 — o que faltava era poder decidir na
+  negociação, antes de a empresa existir.
+
+**Decisões técnicas que valem registrar**
+
+- **TUDO ANULÁVEL, e aqui é a regra** (lição da 0230 pelo avesso): nulo é
+  "esta negociação não combinou nada disso", e é o que faz o comportamento de
+  hoje continuar valendo. **Proposta antiga não muda de preço por causa de
+  coluna nova** — preso por teste (`SEM condição nenhuma, a conta é exatamente
+  a de antes`).
+- **Na cobrança FIXA por empresa, a faixa é escolhida pelo número de
+  titulares.** Cobrar "por empresa" não faz a quantidade sumir: é ela que diz
+  qual faixa vale. O que muda é o que o preço significa.
+- **O PACOTE FAMILIAR SEMPRE SE DECLARA ESTIMATIVA.** Ele é por titular, e na
+  hora da proposta ninguém sabe a distribuição — a conta supõe divisão por
+  igual e **diz isso na tela e no documento**. Fingir precisão faria a primeira
+  fatura, calculada família a família, não bater sem ninguém saber por quê.
+  Sem saber quantos titulares terão dependentes, a conta cai no valor
+  individual e declara que caiu.
+- **Faixa mais cara para quantidade maior é AVISO, não erro.** Quase sempre é
+  digitação trocada, mas existe negociação em que o volume custa mais
+  (atendimento dedicado). O sistema diz o que vê; quem decide é quem vende.
+- **Duas faixas na mesma quantidade são recusadas** — dariam dois preços para
+  a mesma conta, e a resposta dependeria da ordem da consulta.
+- **A tabela de faixas vai para o PAPEL**: é argumento de venda e é o
+  compromisso que a empresa vai cobrar depois. Mostrar só o preço de hoje
+  esconderia as duas coisas.
+- **A simulação usa as condições SALVAS**, não as que estão sendo digitadas na
+  seção de baixo (ela tem salvar próprio). Misturar faria a conta mudar com
+  meia condição preenchida.
+
+**Conferido nas telas do treino** com um cenário completo — 90 titulares, três
+faixas, 30 dependentes em 10 titulares, implantação fixa e limites de 50 a 200:
+mensalidade **R$ 3.740,00** (faixa de R$ 34,90 + dez pacotes de R$ 59,90),
+implantação **R$ 3.500,00** sem multiplicar, tabela de faixas impressa com a
+faixa atual marcada, limites no documento, e o bloqueio aparecendo com 250
+titulares. Tudo devolvido ao estado anterior no fim.
+
+⚠️ **E a régua errou pela quarta vez — agora na aritmética.** Ela afirmava
+R$ 3.741,00 quando a soma é R$ 3.740,00, e acusou o sistema. O número do
+sistema estava certo.

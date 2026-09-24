@@ -318,6 +318,32 @@ pode aparecer a palavra *colaborador*.
 10. Em Configurações, **desligue** o grupo: ele some da lista de aplicar e
     continua existindo. As propostas que já o usaram não mudam.
 
+## 10.6. Condições comerciais da proposta (OC-00083 H3, 23/09/2026)
+
+⚠️ **Rode a migração 1017 antes.**
+
+1. Funil → empresa → aba **Proposta** → seção **Condições comerciais**.
+2. **Faixas:** crie três — *a partir de 1: R$ 39,90*, *de 50: R$ 34,90*,
+   *de 100: R$ 29,90*. Salve.
+3. Ponha **90 titulares**. A simulação tem de usar **R$ 34,90** (a faixa de
+   50), e a linha embaixo dizer *"Valendo a faixa a partir de 50"*.
+4. Suba para **120**: passa a R$ 29,90 — e **todos os 120** pagam esse valor,
+   não só os que passaram de 100.
+5. Crie uma faixa maior MAIS CARA: a tela **avisa** e **deixa salvar** (existe
+   negociação assim). Duas faixas na mesma quantidade: **recusa**.
+6. **Implantação fixa:** escolha *Valor fixo pela empresa*, R$ 3.500,00. O
+   documento mostra R$ 3.500,00, sem multiplicar pela quantidade.
+7. **Dependentes:** escolha *Pacote familiar*, R$ 59,90 cobrindo até 3, extra
+   R$ 19,90, e **10 titulares com dependentes**. Com 30 dependentes, a conta
+   dá **10 pacotes**. A tela e o documento dizem que é **estimativa**.
+8. Tire o campo *titulares com dependentes*: a conta cai no valor individual e
+   **diz que caiu**.
+9. **Limites:** mínimo 50, máximo 200, contando titulares. Com 20 titulares a
+   aba **avisa** (⚠️); com 250 ela **impede** (⛔).
+10. **Valor mínimo da proposta:** ponha um acima da mensalidade — a aba avisa
+    quanto falta, e **não trava**.
+11. Apague as faixas e deixe tudo em branco: a conta volta a ser a de antes.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

@@ -56,6 +56,11 @@ import {
   type Procedimento,
 } from "./beneficios-editor";
 import type { BeneficioDaProposta } from "@/lib/empresarial/beneficios-da-proposta";
+import {
+  avisoDoValorMinimo,
+  avisosDosLimites,
+} from "@/lib/empresarial/condicoes-da-proposta";
+import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
 
 /**
  * A ABA DA PROPOSTA (OC-00083, 23/09/2026).
@@ -86,6 +91,7 @@ export function FichaDaProposta({
   grupos,
   beneficios,
   podeCriarGrupo,
+  condicoes,
 }: {
   leadId: string;
   cnpj: string | null;
@@ -108,6 +114,8 @@ export function FichaDaProposta({
   grupos: GrupoDeBeneficios[];
   beneficios: BeneficioDaProposta[];
   podeCriarGrupo: boolean;
+  /** H3: limites, valor mínimo, faixas, implantação e dependentes. */
+  condicoes: CondicoesView;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -171,7 +179,38 @@ export function FichaDaProposta({
     // O que a empresa paga hoje vem do LEVANTAMENTO e não se edita aqui: é o
     // que ela disse, não o que se decide. O pop-up mostra o valor.
     currentPlanMonthlyCents: qualificacao.dentalPlanMonthlyCents,
+    // ⚠️ AS CONDIÇÕES SALVAS, e não as que estão sendo digitadas na seção de
+    // baixo: elas têm salvar próprio. Misturar faria a simulação mudar com
+    // meia condição preenchida, e ninguém saberia qual número acreditar.
+    faixas: condicoes.faixas,
+    precoDoDependente:
+      condicoes.dependentMode === "FAMILY_PACKAGE"
+        ? {
+            modo: "FAMILY_PACKAGE",
+            individualCents: paraCentavos(depFee),
+            familiaCents: condicoes.dependentFamilyFeeCents ?? 0,
+            extraCents: condicoes.dependentFamilyExtraFeeCents ?? 0,
+            tamanhoDaFamilia: condicoes.dependentFamilySize ?? 3,
+          }
+        : undefined,
+    titularesComDependentes: condicoes.holdersWithDependents,
+    implantationMode: condicoes.implantationMode,
+    implantationFixedCents: condicoes.implantationFixedCents ?? 0,
   });
+
+  // Os avisos das condições, calculados com o que está sendo digitado acima.
+  const avisos = [
+    ...avisosDosLimites(
+      {
+        min: condicoes.minAdhesions,
+        max: condicoes.maxAdhesions,
+        alvo: condicoes.adhesionLimitTarget,
+      },
+      Number.parseInt(employeeCount || "0", 10) || 0,
+      includeDeps === "SIM" ? Number.parseInt(depsCount || "0", 10) || 0 : 0
+    ),
+    avisoDoValorMinimo(condicoes.minProposalCents, proposta.mensalidadeCents),
+  ].filter((a) => a !== null);
 
   const dados = {
     employeeCount: Number.parseInt(employeeCount || "0", 10) || null,
@@ -462,6 +501,7 @@ export function FichaDaProposta({
           faltaProposta={faltaProposta}
           faltaContrato={faltaContrato}
           linkDaProposta={`/empresarial/funil/${leadId}/proposta`}
+          avisos={avisos}
         />
 
         {/* ---------------------------------------------------------------- */}
@@ -545,6 +585,14 @@ export function FichaDaProposta({
 
       {/* Fora do formulário acima de propósito: <form> dentro de <form> não
           funciona, e cada um tem o seu próprio salvar. */}
+      {!semMigracao && (
+        <CondicoesComerciais
+          leadId={leadId}
+          condicoes={condicoes}
+          porTitular={basis === "PER_EMPLOYEE"}
+        />
+      )}
+
       {!semMigracao && (
         <BeneficiosDaProposta
           leadId={leadId}
@@ -773,12 +821,14 @@ function SimuladorDaProposta({
   faltaProposta,
   faltaContrato,
   linkDaProposta,
+  avisos,
 }: {
   proposta: ReturnType<typeof simularProposta>;
   basis: BillingBasis;
   faltaProposta: string[];
   faltaContrato: string[];
   linkDaProposta: string;
+  avisos: { gravidade: "avisa" | "bloqueia"; texto: string }[];
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -839,6 +889,30 @@ function SimuladorDaProposta({
             </p>
           )}
         </div>
+
+        {/* A FAIXA E A ESTIMATIVA APARECEM ONDE O NÚMERO APARECE. Mostrar
+            R$ 29,90 sem dizer que veio de uma faixa faria o consultor procurar
+            o valor no campo e não achar. */}
+        {proposta.faixaAplicada && (
+          <p className="text-xs text-muted-foreground">
+            Valendo a faixa a partir de {proposta.faixaAplicada.minQuantity} —
+            o valor digitado acima não está sendo usado.
+          </p>
+        )}
+        {proposta.dependentesEstimados && (
+          <p className="text-xs text-muted-foreground">
+            Dependentes: {proposta.explicacaoDosDependentes}
+          </p>
+        )}
+
+        {avisos.map((a) => (
+          <p
+            key={a.texto}
+            className={`text-xs ${a.gravidade === "bloqueia" ? "text-destructive" : "text-amber-700 dark:text-amber-400"}`}
+          >
+            {a.gravidade === "bloqueia" ? "⛔" : "⚠️"} {a.texto}
+          </p>
+        ))}
 
         {faltaProposta.length > 0 && (
           <p className="text-xs text-destructive">

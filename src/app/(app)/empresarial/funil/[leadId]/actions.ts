@@ -27,6 +27,10 @@ import {
   problemasDoBeneficio,
   type BeneficioDaProposta,
 } from "@/lib/empresarial/beneficios-da-proposta";
+import {
+  problemasDasFaixas,
+  type FaixaDePreco,
+} from "@/lib/empresarial/condicoes-da-proposta";
 import { formatPhone } from "@/lib/masks";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -790,5 +794,105 @@ export async function saveAsBenefitGroup(
   });
   revalidatePath(`/empresarial/funil/${leadId}`);
   revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// H3 — condições comerciais e faixas de preço (1017)
+// -----------------------------------------------------------------------------
+
+/**
+ * Salva as condições comerciais e a tabela de faixas.
+ *
+ * As condições moram na mesma linha do levantamento (é a proposta); as faixas
+ * são linhas próprias e o conjunto é SUBSTITUÍDO — o que sumiu da tela sumiu
+ * do banco, mesma regra dos benefícios.
+ */
+export async function saveCommercialTerms(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const min = inteiro(formData, "min_adhesions");
+  const max = inteiro(formData, "max_adhesions");
+  if (min != null && max != null && max < min) {
+    // Faixa vazia: nenhuma quantidade serviria, e a proposta nasceria
+    // impossível de cumprir. O banco também recusa; aqui a mensagem é em
+    // português.
+    return { ok: false, error: "O máximo não pode ser menor que o mínimo." };
+  }
+
+  const faixas: FaixaDePreco[] = [];
+  for (let i = 0; i < 50; i += 1) {
+    const qtd = inteiro(formData, `faixa_qtd_${i}`);
+    const preco = centavos(formData, `faixa_preco_${i}`);
+    if (qtd == null || preco == null) continue;
+    faixas.push({ minQuantity: qtd, priceCents: preco });
+  }
+  const problemas = problemasDasFaixas(faixas).filter(
+    // O "custa mais" é AVISO na tela, não impedimento — a decisão de cobrar
+    // mais por volume existe, e é de quem vende.
+    (p) => !p.includes("custa MAIS")
+  );
+  if (problemas.length > 0) {
+    return { ok: false, error: `Confira as faixas: ${[...new Set(problemas)].join("; ")}.` };
+  }
+
+  const r = await gravarNoLevantamento(
+    leadId,
+    {
+      min_adhesions: min,
+      max_adhesions: max,
+      adhesion_limit_target: daLista(formData, "adhesion_limit_target", [
+        "HOLDERS",
+        "DEPENDENTS",
+        "BOTH",
+      ] as const),
+      min_proposal_cents: centavos(formData, "min_proposal"),
+      implantation_mode: daLista(formData, "implantation_mode", [
+        "PER_ADHESION",
+        "FIXED",
+      ] as const),
+      implantation_fixed_cents: centavos(formData, "implantation_fixed"),
+      dependent_mode: daLista(formData, "dependent_mode", [
+        "PER_DEPENDENT",
+        "FAMILY_PACKAGE",
+      ] as const),
+      dependent_family_fee_cents: centavos(formData, "dependent_family_fee"),
+      dependent_family_extra_fee_cents: centavos(formData, "dependent_family_extra_fee"),
+      dependent_family_size: inteiro(formData, "dependent_family_size"),
+      holders_with_dependents: inteiro(formData, "holders_with_dependents"),
+      updated_by: session.userId,
+    },
+    "as condições comerciais"
+  );
+  if (!r.ok) return r;
+
+  const db = await empresarialDb();
+  const { error: eDel } = await db
+    .from("lead_price_tiers")
+    .delete()
+    .eq("lead_id", leadId);
+  if (eDel) {
+    console.error("saveCommercialTerms (faixas) failed:", eDel.message);
+    return { ok: false, error: "As condições foram salvas, mas as faixas não." };
+  }
+  if (faixas.length > 0) {
+    const { error } = await db.from("lead_price_tiers").insert(
+      faixas.map((f) => ({
+        lead_id: leadId,
+        min_quantity: f.minQuantity,
+        price_cents: f.priceCents,
+      }))
+    );
+    if (error) {
+      console.error("saveCommercialTerms (faixas) failed:", error.message);
+      return { ok: false, error: "As condições foram salvas, mas as faixas não." };
+    }
+  }
+
+  revalidatePath(`/empresarial/funil/${leadId}`);
   return { ok: true };
 }

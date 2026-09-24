@@ -18,6 +18,7 @@ import {
   simularProposta,
   type BillingBasis,
 } from "@/lib/empresarial/proposta";
+import { rotuloDaFaixa } from "@/lib/empresarial/condicoes-da-proposta";
 import {
   comoSeraCobrado,
   comparacaoComOAtual,
@@ -65,6 +66,16 @@ type QualRow = {
   proposal_valid_days: number | null;
   company_grace_days: number | null;
   employee_grace_days: number | null;
+  min_adhesions: number | null;
+  max_adhesions: number | null;
+  adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
+  implantation_mode: "PER_ADHESION" | "FIXED" | null;
+  implantation_fixed_cents: number | null;
+  dependent_mode: "PER_DEPENDENT" | "FAMILY_PACKAGE" | null;
+  dependent_family_fee_cents: number | null;
+  dependent_family_extra_fee_cents: number | null;
+  dependent_family_size: number | null;
+  holders_with_dependents: number | null;
 };
 
 type BeneficioRow = {
@@ -172,6 +183,20 @@ export default async function PropostaPage({
     );
   }
 
+  // As faixas desta proposta (1017). Erro aqui não derruba o documento: sem
+  // faixa, vale o valor combinado — que é o caso normal.
+  const { data: faixasRows, error: erroFaixas } = await db
+    .from("lead_price_tiers")
+    .select("min_quantity, price_cents")
+    .eq("lead_id", leadId)
+    .order("min_quantity")
+    .returns<{ min_quantity: number; price_cents: number }[]>();
+  if (erroFaixas) console.error("faixas da proposta:", erroFaixas.message);
+  const faixas = (faixasRows ?? []).map((f) => ({
+    minQuantity: f.min_quantity,
+    priceCents: f.price_cents,
+  }));
+
   const basis: BillingBasis = q.billing_basis ?? "PER_EMPLOYEE";
   const titulares = q.employee_count ?? 0;
   const dependentes = q.dependents_estimate ?? 0;
@@ -190,6 +215,22 @@ export default async function PropostaPage({
     subsidyType: q.subsidy_type,
     subsidyValue: q.subsidy_value ?? 0,
     currentPlanMonthlyCents: q.dental_plan_monthly_cents,
+    faixas,
+    precoDoDependente:
+      q.dependent_mode === "FAMILY_PACKAGE"
+        ? {
+            modo: "FAMILY_PACKAGE",
+            individualCents:
+              q.dependent_fee_cents ??
+              DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents,
+            familiaCents: q.dependent_family_fee_cents ?? 0,
+            extraCents: q.dependent_family_extra_fee_cents ?? 0,
+            tamanhoDaFamilia: q.dependent_family_size ?? 3,
+          }
+        : undefined,
+    titularesComDependentes: q.holders_with_dependents,
+    implantationMode: q.implantation_mode,
+    implantationFixedCents: q.implantation_fixed_cents ?? 0,
   });
 
   // O TEXTO da proposta (1014), na cascata: o desta empresa, senão o da rede.
@@ -348,7 +389,55 @@ export default async function PropostaPage({
               <strong className="text-foreground">
                 {formatBRL(conta.implantacaoCents)}
               </strong>
-              , cobrada uma única vez no início do programa.
+              , cobrada uma única vez no início do programa
+              {q.implantation_mode === "FIXED"
+                ? ", em valor fixo pela empresa"
+                : ""}
+              .
+            </p>
+          )}
+
+          {/* ⚠️ A TABELA DE FAIXAS VAI PARA O PAPEL. Ela é argumento de venda —
+              "cresça e pague menos" — e é também o compromisso que a empresa
+              vai cobrar depois. Mostrar só o preço de hoje esconderia as duas
+              coisas. */}
+          {faixas.length > 0 && (
+            <div className="space-y-1 rounded-lg border p-4">
+              <p className="font-medium">Preço por quantidade</p>
+              <ul className="space-y-0.5 text-muted-foreground">
+                {faixas.map((f) => (
+                  <li key={f.minQuantity}>
+                    {rotuloDaFaixa(f, basis === "PER_EMPLOYEE")}
+                    {conta.faixaAplicada?.minQuantity === f.minQuantity && (
+                      <strong className="text-foreground"> — faixa atual</strong>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                A faixa alcançada vale para o total, e não por partes.
+              </p>
+            </div>
+          )}
+
+          {(q.min_adhesions != null || q.max_adhesions != null) && (
+            <p className="leading-relaxed text-muted-foreground">
+              {q.min_adhesions != null && (
+                <>Mínimo de {q.min_adhesions} adesões. </>
+              )}
+              {q.max_adhesions != null && <>Máximo de {q.max_adhesions} adesões. </>}
+              {q.adhesion_limit_target === "DEPENDENTS"
+                ? "O limite conta apenas os dependentes."
+                : q.adhesion_limit_target === "BOTH"
+                  ? "O limite conta titulares e dependentes."
+                  : "O limite conta apenas os titulares."}
+            </p>
+          )}
+
+          {conta.dependentesEstimados && conta.dependentesCents > 0 && (
+            <p className="text-sm text-muted-foreground">
+              O valor dos dependentes é uma <strong>estimativa</strong>: o
+              pacote é por titular, e a cobrança é calculada família a família.
             </p>
           )}
         </section>

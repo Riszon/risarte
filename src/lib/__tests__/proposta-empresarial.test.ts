@@ -371,3 +371,108 @@ describe("o levantamento vira o cadastro da empresa", () => {
     expect(camposDaEmpresa(cheio, lead).cnpj).toBe("55666777000188");
   });
 });
+
+// -----------------------------------------------------------------------------
+// H3 (1017) — as condições comerciais chegando na simulação
+// -----------------------------------------------------------------------------
+
+describe("as condições comerciais dentro da simulação", () => {
+  const BASE_H3: PropostaInput = {
+    basis: "PER_EMPLOYEE",
+    employeeCount: 120,
+    holderFeeCents: 3990,
+    includeDependents: false,
+    dependentsCount: 0,
+    dependentFeeCents: 3990,
+    fixedMonthlyCents: 0,
+    implantationPerEmployeeCents: 1990,
+    paymentModel: "COMPANY_PAYS",
+    subsidyType: null,
+    subsidyValue: 0,
+    currentPlanMonthlyCents: null,
+  };
+
+  it("SEM condição nenhuma, a conta é exatamente a de antes", () => {
+    // É o que protege toda proposta já salva: campo novo não muda preço.
+    const r = simularProposta(BASE_H3);
+    expect(r.mensalidadeCents).toBe(120 * 3990);
+    expect(r.implantacaoCents).toBe(120 * 1990);
+    expect(r.faixaAplicada).toBeNull();
+    expect(r.dependentesEstimados).toBe(false);
+  });
+
+  it("a faixa troca o preço de TODOS os titulares", () => {
+    const r = simularProposta({
+      ...BASE_H3,
+      faixas: [
+        { minQuantity: 50, priceCents: 3490 },
+        { minQuantity: 100, priceCents: 2990 },
+      ],
+    });
+    expect(r.mensalidadeCents).toBe(120 * 2990);
+    expect(r.faixaAplicada?.minQuantity).toBe(100);
+    expect(r.porColaboradorCents).toBe(2990);
+  });
+
+  it("no VALOR FIXO por empresa, a faixa troca o valor da empresa", () => {
+    // Cobrar "por empresa" não faz a quantidade sumir: é ela que escolhe a
+    // faixa. O que muda é o que o preço significa.
+    const r = simularProposta({
+      ...BASE_H3,
+      basis: "FIXED_PER_COMPANY",
+      fixedMonthlyCents: 500_000,
+      faixas: [{ minQuantity: 100, priceCents: 380_000 }],
+    });
+    expect(r.mensalidadeCents).toBe(380_000);
+  });
+
+  it("implantação FIXA não multiplica pela quantidade", () => {
+    const r = simularProposta({
+      ...BASE_H3,
+      implantationMode: "FIXED",
+      implantationFixedCents: 350_000,
+    });
+    expect(r.implantacaoCents).toBe(350_000);
+  });
+
+  it("o PACOTE de dependentes entra na mensalidade e se declara estimativa", () => {
+    const r = simularProposta({
+      ...BASE_H3,
+      employeeCount: 10,
+      includeDependents: true,
+      dependentsCount: 6,
+      titularesComDependentes: 2,
+      precoDoDependente: {
+        modo: "FAMILY_PACKAGE",
+        individualCents: 3990,
+        familiaCents: 5990,
+        extraCents: 1990,
+        tamanhoDaFamilia: 3,
+      },
+    });
+    // 6 dependentes entre 2 titulares = 3 e 3 → dois pacotes.
+    expect(r.dependentesCents).toBe(2 * 5990);
+    expect(r.dependentesEstimados).toBe(true);
+    expect(r.explicacaoDosDependentes).toMatch(/Estimativa/);
+  });
+
+  it("no valor fixo, o pacote de dependentes continua sem cobrar por fora", () => {
+    const r = simularProposta({
+      ...BASE_H3,
+      basis: "FIXED_PER_COMPANY",
+      fixedMonthlyCents: 500_000,
+      includeDependents: true,
+      dependentsCount: 30,
+      titularesComDependentes: 10,
+      precoDoDependente: {
+        modo: "FAMILY_PACKAGE",
+        individualCents: 3990,
+        familiaCents: 5990,
+        extraCents: 1990,
+        tamanhoDaFamilia: 3,
+      },
+    });
+    expect(r.dependentesCents).toBe(0);
+    expect(r.mensalidadeCents).toBe(500_000);
+  });
+});

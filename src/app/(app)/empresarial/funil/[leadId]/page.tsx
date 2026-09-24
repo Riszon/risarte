@@ -32,6 +32,7 @@ import { AbasDaFicha, type AbaDaFicha } from "./abas-da-ficha";
 import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
 import { FichaDaProposta } from "./ficha-proposta";
+import type { CondicoesView } from "./condicoes-editor";
 import type {
   ImplementationStep,
   PassoRegistrado,
@@ -140,6 +141,18 @@ type QualRow = {
   proposal_valid_days: number | null;
   company_grace_days: number | null;
   employee_grace_days: number | null;
+  // H3 (1017)
+  min_adhesions: number | null;
+  max_adhesions: number | null;
+  adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
+  min_proposal_cents: number | null;
+  implantation_mode: "PER_ADHESION" | "FIXED" | null;
+  implantation_fixed_cents: number | null;
+  dependent_mode: "PER_DEPENDENT" | "FAMILY_PACKAGE" | null;
+  dependent_family_fee_cents: number | null;
+  dependent_family_extra_fee_cents: number | null;
+  dependent_family_size: number | null;
+  holders_with_dependents: number | null;
 };
 
 export default async function FichaDoLeadPage({
@@ -261,6 +274,34 @@ export default async function FichaDoLeadPage({
   ]);
   if (erroBeneficios) console.error("benefícios do lead:", erroBeneficios.message);
   const semBeneficios = semMigracao || Boolean(erroBeneficios);
+
+  // H3 (1017): as faixas de preço desta proposta.
+  const { data: faixasRows, error: erroFaixas } = await db
+    .from("lead_price_tiers")
+    .select("min_quantity, price_cents")
+    .eq("lead_id", leadId)
+    .order("min_quantity")
+    .returns<{ min_quantity: number; price_cents: number }[]>();
+  if (erroFaixas) console.error("faixas do lead:", erroFaixas.message);
+  const semCondicoes = semMigracao || Boolean(erroFaixas);
+
+  const condicoes: CondicoesView = {
+    minAdhesions: qual?.min_adhesions ?? null,
+    maxAdhesions: qual?.max_adhesions ?? null,
+    adhesionLimitTarget: qual?.adhesion_limit_target ?? null,
+    minProposalCents: qual?.min_proposal_cents ?? null,
+    implantationMode: qual?.implantation_mode ?? null,
+    implantationFixedCents: qual?.implantation_fixed_cents ?? null,
+    dependentMode: qual?.dependent_mode ?? null,
+    dependentFamilyFeeCents: qual?.dependent_family_fee_cents ?? null,
+    dependentFamilyExtraFeeCents: qual?.dependent_family_extra_fee_cents ?? null,
+    dependentFamilySize: qual?.dependent_family_size ?? null,
+    holdersWithDependents: qual?.holders_with_dependents ?? null,
+    faixas: (faixasRows ?? []).map((f) => ({
+      minQuantity: f.min_quantity,
+      priceCents: f.price_cents,
+    })),
+  };
 
   const supabaseCatalogo = await createClient();
   const { data: procs } = await supabaseCatalogo
@@ -412,11 +453,12 @@ export default async function FichaDoLeadPage({
           prazoPadraoDaRede={propostaDaRede?.valid_days ?? 15}
           blocos={(propostaDaEmpresa ?? propostaDaRede)?.sections ?? []}
           textoPersonalizado={Boolean(propostaDaEmpresa)}
-          semMigracao={semMigracao || semBeneficios}
+          semMigracao={semMigracao || semBeneficios || semCondicoes}
           procedimentos={procs ?? []}
           grupos={grupos}
           beneficios={(beneficiosRows ?? []).map(paraBeneficio)}
           podeCriarGrupo={isProgramManager(session)}
+          condicoes={condicoes}
         />
       ),
     },
