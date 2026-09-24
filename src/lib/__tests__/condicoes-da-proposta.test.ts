@@ -3,11 +3,9 @@ import {
   avisoDoValorMinimo,
   avisosDosLimites,
   custoDaImplantacao,
-  custoDosDependentes,
   precoDaFaixa,
   problemasDasFaixas,
   rotuloDaFaixa,
-  type PrecoDeDependente,
 } from "@/lib/empresarial/condicoes-da-proposta";
 
 const FAIXAS = [
@@ -78,65 +76,6 @@ describe("o que impede a tabela de faixas de fazer sentido", () => {
     expect(rotuloDaFaixa(FAIXAS[1], false)).toBe(
       "A partir de 50 adesões: R$ 34,90 por mês"
     );
-  });
-});
-
-describe("o preço dos dependentes", () => {
-  const preco: PrecoDeDependente = {
-    modo: "FAMILY_PACKAGE",
-    individualCents: 3990,
-    familiaCents: 5990,
-    extraCents: 1990,
-    tamanhoDaFamilia: 3,
-  };
-
-  it("por dependente é conta fechada, não estimativa", () => {
-    const r = custoDosDependentes({ ...preco, modo: "PER_DEPENDENT" }, 10, null);
-    expect(r.totalCents).toBe(10 * 3990);
-    expect(r.estimado).toBe(false);
-  });
-
-  it("um dependente por titular paga o INDIVIDUAL", () => {
-    const r = custoDosDependentes(preco, 4, 4);
-    expect(r.totalCents).toBe(4 * 3990);
-    expect(r.estimado).toBe(true);
-  });
-
-  it("dois ou três por titular pagam o PACOTE, não o dobro", () => {
-    // É o ponto do pacote: 3 dependentes de um titular custam R$ 59,90, e não
-    // 3 × R$ 39,90.
-    expect(custoDosDependentes(preco, 3, 1).totalCents).toBe(5990);
-    expect(custoDosDependentes(preco, 6, 3).totalCents).toBe(3 * 5990);
-  });
-
-  it("acima do pacote, cada um a mais custa o EXTRA", () => {
-    // 5 dependentes de um titular = pacote (3) + 2 extras.
-    expect(custoDosDependentes(preco, 5, 1).totalCents).toBe(5990 + 2 * 1990);
-  });
-
-  it("o resto da divisão vai para os primeiros, um a cada", () => {
-    // 5 dependentes entre 2 titulares = 3 e 2 → pacote + pacote.
-    const r = custoDosDependentes(preco, 5, 2);
-    expect(r.totalCents).toBe(2 * 5990);
-  });
-
-  it("SEM saber quantos titulares terão dependentes, NÃO inventa distribuição", () => {
-    const r = custoDosDependentes(preco, 9, null);
-    expect(r.totalCents).toBe(9 * 3990);
-    expect(r.estimado).toBe(true);
-    expect(r.explicacao).toMatch(/Sem saber/);
-  });
-
-  it("zero dependente custa zero e não é estimativa", () => {
-    const r = custoDosDependentes(preco, 0, 5);
-    expect(r.totalCents).toBe(0);
-    expect(r.estimado).toBe(false);
-  });
-
-  it("o pacote familiar SEMPRE se declara estimativa", () => {
-    // Na hora da proposta ninguém sabe a distribuição real. Fingir precisão
-    // faria a primeira fatura não bater, sem ninguém saber por quê.
-    expect(custoDosDependentes(preco, 8, 4).estimado).toBe(true);
   });
 });
 

@@ -90,6 +90,8 @@ export function FichaDaProposta({
   procedimentos,
   grupos,
   beneficios,
+  beneficiosVieramDaRede,
+  beneficiosDaRede,
   podeCriarGrupo,
   condicoes,
 }: {
@@ -113,6 +115,10 @@ export function FichaDaProposta({
   procedimentos: Procedimento[];
   grupos: GrupoDeBeneficios[];
   beneficios: BeneficioDaProposta[];
+  /** Os de cima vieram do padrão da rede e ainda não foram salvos aqui. */
+  beneficiosVieramDaRede: boolean;
+  /** O padrão da rede, para poder ser reaplicado a qualquer momento. */
+  beneficiosDaRede: BeneficioDaProposta[];
   podeCriarGrupo: boolean;
   /** H3: limites, valor mínimo, faixas, implantação e dependentes. */
   condicoes: CondicoesView;
@@ -183,17 +189,6 @@ export function FichaDaProposta({
     // baixo: elas têm salvar próprio. Misturar faria a simulação mudar com
     // meia condição preenchida, e ninguém saberia qual número acreditar.
     faixas: condicoes.faixas,
-    precoDoDependente:
-      condicoes.dependentMode === "FAMILY_PACKAGE"
-        ? {
-            modo: "FAMILY_PACKAGE",
-            individualCents: paraCentavos(depFee),
-            familiaCents: condicoes.dependentFamilyFeeCents ?? 0,
-            extraCents: condicoes.dependentFamilyExtraFeeCents ?? 0,
-            tamanhoDaFamilia: condicoes.dependentFamilySize ?? 3,
-          }
-        : undefined,
-    titularesComDependentes: condicoes.holdersWithDependents,
     implantationMode: condicoes.implantationMode,
     implantationFixedCents: condicoes.implantationFixedCents ?? 0,
   });
@@ -222,6 +217,7 @@ export function FichaDaProposta({
     responsibleEmail: respEmail,
     cnpj,
   };
+  const incluiDependentes = includeDeps === "SIM";
   const faltaProposta = faltaParaProposta(dados);
   const faltaContrato = faltaParaContrato(dados);
 
@@ -502,6 +498,7 @@ export function FichaDaProposta({
           faltaContrato={faltaContrato}
           linkDaProposta={`/empresarial/funil/${leadId}/proposta`}
           avisos={avisos}
+          incluiDependentes={incluiDependentes}
         />
 
         {/* ---------------------------------------------------------------- */}
@@ -599,6 +596,8 @@ export function FichaDaProposta({
           procedimentos={procedimentos}
           grupos={grupos}
           iniciais={beneficios}
+          vieramDaRede={beneficiosVieramDaRede}
+          daRede={beneficiosDaRede}
           podeCriarGrupo={podeCriarGrupo}
         />
       )}
@@ -822,6 +821,7 @@ function SimuladorDaProposta({
   faltaContrato,
   linkDaProposta,
   avisos,
+  incluiDependentes,
 }: {
   proposta: ReturnType<typeof simularProposta>;
   basis: BillingBasis;
@@ -829,6 +829,8 @@ function SimuladorDaProposta({
   faltaContrato: string[];
   linkDaProposta: string;
   avisos: { gravidade: "avisa" | "bloqueia"; texto: string }[];
+  /** Há dependentes nesta fase — muda o que a tela precisa explicar. */
+  incluiDependentes: boolean;
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -899,9 +901,17 @@ function SimuladorDaProposta({
             o valor digitado acima não está sendo usado.
           </p>
         )}
-        {proposta.dependentesEstimados && (
+        {/* ⚠️ A PROPOSTA NÃO SOMA DEPENDENTE (decisão do dono, 24/09/2026).
+            Na contratação ninguém sabe quantos entram nem como se distribuem
+            entre os titulares, e o pacote é POR TITULAR. Número estimado em
+            documento de venda vira expectativa — e a primeira fatura, feita
+            família a família, não bateria. */}
+        {incluiDependentes && (
           <p className="text-xs text-muted-foreground">
-            Dependentes: {proposta.explicacaoDosDependentes}
+            O valor acima é <strong>só dos titulares</strong>. Os dependentes
+            têm a tabela de valores na proposta, e o total deles só existe
+            depois dos cadastros da implantação — é quando a cobrança deles é
+            gerada.
           </p>
         )}
 

@@ -74,92 +74,22 @@ export function problemasDasFaixas(faixas: readonly FaixaDePreco[]): string[] {
   return p;
 }
 
-export type PrecoDeDependente = {
-  /** `PER_DEPENDENT` = um valor por dependente (o de sempre). */
-  modo: "PER_DEPENDENT" | "FAMILY_PACKAGE";
-  individualCents: number;
-  /** Pacote que cobre até `tamanhoDaFamilia` dependentes de um mesmo titular. */
-  familiaCents: number;
-  /** Cada dependente acima do pacote. */
-  extraCents: number;
-  tamanhoDaFamilia: number;
-};
-
-export type ContaDosDependentes = {
-  totalCents: number;
-  /** A conta é estimativa? O pacote familiar precisa supor a distribuição. */
-  estimado: boolean;
-  /** Uma linha explicando de onde saiu o número. */
-  explicacao: string;
-};
-
 /**
- * QUANTO OS DEPENDENTES CUSTAM POR MÊS.
+ * ⚠️ A CONTA DOS DEPENDENTES SAIU DAQUI (24/09/2026), e a decisão é do dono.
  *
- * ⚠️ O PACOTE FAMILIAR É POR TITULAR, e na hora da proposta ninguém sabe como
- * os dependentes vão se distribuir — só o total estimado. A conta supõe que
- * eles se dividem por igual entre os titulares que terão dependentes, e
- * DECLARA que é estimativa. Fingir precisão aqui seria pior: a primeira
- * fatura, calculada família a família, não bateria e ninguém saberia por quê.
+ * Existia `custoDosDependentes`, que estimava o total do pacote familiar
+ * supondo distribuição por igual entre os titulares — e declarava a
+ * estimativa. Ele cortou pela raiz: **a proposta não calcula valor de
+ * dependente**, porque na contratação ninguém sabe quantos entram nem de
+ * quais titulares, e o pacote é POR titular.
  *
- * Sem saber quantos titulares terão dependentes, o pacote não tem como ser
- * estimado — a conta cai no valor individual e diz isso.
+ * O que a proposta faz agora é mostrar a TABELA (individual, pacote familiar
+ * e extra) e dizer que o total sai na implantação, quando os cadastros
+ * existem. Quem soma de verdade é `computeMonthlyCents`, família a família.
+ *
+ * A função foi REMOVIDA em vez de ficar sem uso: regra que o dono rejeitou,
+ * guardada no código, é regra que volta a ser chamada por engano.
  */
-export function custoDosDependentes(
-  preco: PrecoDeDependente,
-  dependentes: number,
-  titularesComDependentes: number | null
-): ContaDosDependentes {
-  const d = Math.max(0, Math.floor(dependentes));
-  if (d === 0) {
-    return { totalCents: 0, estimado: false, explicacao: "Sem dependentes nesta fase." };
-  }
-
-  if (preco.modo === "PER_DEPENDENT") {
-    return {
-      totalCents: d * Math.max(0, preco.individualCents),
-      estimado: false,
-      explicacao: `${d} dependente(s) × valor por dependente.`,
-    };
-  }
-
-  const titulares = Math.floor(titularesComDependentes ?? 0);
-  if (titulares <= 0) {
-    return {
-      totalCents: d * Math.max(0, preco.individualCents),
-      estimado: true,
-      explicacao:
-        "Sem saber quantos titulares terão dependentes, a conta usa o valor individual para todos.",
-    };
-  }
-
-  const tamanho = Math.max(1, Math.floor(preco.tamanhoDaFamilia));
-  // Distribuição por igual: o resto vai para os primeiros titulares, um a
-  // cada, como a última parcela que absorve o resíduo no resto do sistema.
-  const base = Math.floor(d / titulares);
-  const sobra = d % titulares;
-
-  let total = 0;
-  for (let i = 0; i < titulares; i += 1) {
-    const deste = base + (i < sobra ? 1 : 0);
-    if (deste <= 0) continue;
-    if (deste === 1) {
-      total += Math.max(0, preco.individualCents);
-    } else if (deste <= tamanho) {
-      total += Math.max(0, preco.familiaCents);
-    } else {
-      total +=
-        Math.max(0, preco.familiaCents) +
-        (deste - tamanho) * Math.max(0, preco.extraCents);
-    }
-  }
-
-  return {
-    totalCents: total,
-    estimado: true,
-    explicacao: `Estimativa: ${d} dependente(s) divididos entre ${titulares} titular(es), pacote de até ${tamanho}.`,
-  };
-}
 
 /** A implantação: um valor fixo pela empresa, ou por adesão. */
 export function custoDaImplantacao(

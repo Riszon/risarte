@@ -216,19 +216,6 @@ export default async function PropostaPage({
     subsidyValue: q.subsidy_value ?? 0,
     currentPlanMonthlyCents: q.dental_plan_monthly_cents,
     faixas,
-    precoDoDependente:
-      q.dependent_mode === "FAMILY_PACKAGE"
-        ? {
-            modo: "FAMILY_PACKAGE",
-            individualCents:
-              q.dependent_fee_cents ??
-              DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents,
-            familiaCents: q.dependent_family_fee_cents ?? 0,
-            extraCents: q.dependent_family_extra_fee_cents ?? 0,
-            tamanhoDaFamilia: q.dependent_family_size ?? 3,
-          }
-        : undefined,
-    titularesComDependentes: q.holders_with_dependents,
     implantationMode: q.implantation_mode,
     implantationFixedCents: q.implantation_fixed_cents ?? 0,
   });
@@ -401,6 +388,46 @@ export default async function PropostaPage({
               "cresça e pague menos" — e é também o compromisso que a empresa
               vai cobrar depois. Mostrar só o preço de hoje esconderia as duas
               coisas. */}
+          {/* ⚠️ A TABELA DOS DEPENDENTES, NÃO O TOTAL DELES (decisão do dono,
+              24/09/2026). Na contratação ninguém sabe quantos entram nem como
+              se distribuem entre os titulares — e o pacote é por titular. O
+              documento mostra quanto CUSTA cada situação e diz quando o total
+              vai existir. */}
+          {q.includes_dependents && (
+            <div className="space-y-1 rounded-lg border p-4">
+              <p className="font-medium">Dependentes</p>
+              <ul className="space-y-0.5 text-muted-foreground">
+                <li>
+                  Um dependente:{" "}
+                  {formatBRL(
+                    q.dependent_fee_cents ??
+                      DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents
+                  )}{" "}
+                  por mês
+                </li>
+                {q.dependent_mode === "FAMILY_PACKAGE" && (
+                  <>
+                    <li>
+                      Pacote familiar (até {q.dependent_family_size ?? 3}{" "}
+                      dependentes do mesmo titular):{" "}
+                      {formatBRL(q.dependent_family_fee_cents ?? 0)} por mês
+                    </li>
+                    <li>
+                      Cada dependente acima do pacote:{" "}
+                      {formatBRL(q.dependent_family_extra_fee_cents ?? 0)} por mês
+                    </li>
+                  </>
+                )}
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                O <strong>valor mensal acima não inclui dependentes</strong>.
+                Quantos entram, e de quais titulares, só se sabe ao cadastrar —
+                o total dos dependentes é fechado na implantação, e a cobrança
+                deles começa a partir daí.
+              </p>
+            </div>
+          )}
+
           {faixas.length > 0 && (
             <div className="space-y-1 rounded-lg border p-4">
               <p className="font-medium">Preço por quantidade</p>
@@ -434,12 +461,7 @@ export default async function PropostaPage({
             </p>
           )}
 
-          {conta.dependentesEstimados && conta.dependentesCents > 0 && (
-            <p className="text-sm text-muted-foreground">
-              O valor dos dependentes é uma <strong>estimativa</strong>: o
-              pacote é por titular, e a cobrança é calculada família a família.
-            </p>
-          )}
+
         </section>
 
         {comparacao && (

@@ -643,3 +643,56 @@ então a régua reprovou. **Teste que ninguém viu falhar não é teste.**
 ser importado no Vitest — o que deixaria **toda regra de servidor sem teste**.
 Ele virou um módulo vazio só nos testes (`vitest.config.ts`); no build do Next
 a trava continua valendo.
+
+### Bloco I1 — dois consertos ✅ (sem migração, v0.59.0)
+
+**1. DEFEITO: o que a rede configura não chegava na proposta.**
+
+Relato do dono (24/09/2026): *"os benefícios por procedimentos que são criados
+em configurações não aparecem no momento da elaboração das propostas."*
+
+O defeito existia e era silencioso: a aba Proposta lia **só** `lead_benefits`,
+então o trabalho feito em Configurações → Benefícios não alcançava negociação
+nenhuma — toda proposta começava do zero, e ninguém entendia para que servia a
+tela de configuração.
+
+Agora vale a mesma cascata da apresentação e do texto:
+
+- proposta **sem benefício nenhum** abre com o **padrão da rede** já
+  preenchido, e a tela **diz que ainda não está salvo** (senão alguém fecharia
+  a proposta achando que já estava);
+- depois do primeiro salvar, quem manda é a proposta — **inclusive quando ela
+  ficou vazia de propósito**;
+- o padrão da rede também aparece na lista de **grupos para aplicar**, para ser
+  retomado a qualquer momento.
+
+**2. A PROPOSTA DEIXOU DE CALCULAR O VALOR DOS DEPENDENTES** — e isto corrige
+uma decisão minha.
+
+Pedido dele: *"na proposta não deve calcular o valor com os dependentes, pois
+no momento da contratação não é possível saber quantos dependentes terão. Deve
+apresentar apenas o valor por dependente individual, familiar e extra."*
+
+Na H3 eu tinha resolvido com uma estimativa que **se declarava estimativa** —
+supondo distribuição por igual entre os titulares. Ele cortou pela raiz, e
+está certo: número estimado num documento de venda vira expectativa, e a
+primeira fatura, calculada **família a família**, não bateria.
+
+- a mensalidade da proposta é **só dos titulares**;
+- o documento mostra a **tabela**: individual, pacote familiar (com o tamanho
+  do pacote) e extra;
+- e diz, com todas as letras, que o total dos dependentes **sai na
+  implantação**, quando os cadastros existem — que é quando a cobrança deles
+  começa.
+
+⚠️ **`custoDosDependentes` foi REMOVIDA, não deixada sem uso.** Regra que o
+dono rejeitou, guardada no código, é regra que volta a ser chamada por engano.
+O porquê ficou no lugar dela, em `condicoes-da-proposta.ts`.
+
+**Três testes reprovaram na hora da mudança** — eles afirmavam que o dependente
+entrava na conta. Foram reescritos para afirmar a regra nova, que é o motivo
+de eles existirem.
+
+**Conferido nas telas do treino:** o benefício da rede aparecendo na proposta
+com o aviso de "ainda não salvo", e o documento com a mensalidade só dos
+titulares (90 × R$ 39,90) mais a tabela de dependentes.

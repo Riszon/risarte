@@ -367,6 +367,25 @@ pode aparecer a palavra *colaborador*.
    criada **com os preços, faixas e benefícios da proposta**. Se disser que
    algo não foi copiado, é para conferir aquilo no cadastro.
 
+## 10.8. Os dois consertos da I1 (OC-00083, 24/09/2026)
+
+Sem migração — basta Ctrl + F5.
+
+1. **Configurações → Benefícios**: cadastre um benefício da rede (ex.: limpeza
+   sem custo).
+2. Abra uma empresa do funil **que ainda não tenha benefício na proposta** →
+   aba **Proposta**. O benefício da rede tem de estar lá, com o aviso de que
+   veio do padrão e **ainda não foi salvo**.
+3. Ajuste o que a empresa negociou e **salve**. Agora a proposta tem os dela.
+4. Tire TODOS os benefícios e salve vazio: ao recarregar, a proposta continua
+   **vazia** — depois do primeiro salvar, quem manda é ela.
+5. No seletor de grupos, o **Padrão da rede** aparece para ser reaplicado.
+6. **Dependentes:** marque que haverá dependentes, ponha a estimativa e os
+   três valores. Gere o documento.
+   - A **mensalidade não pode incluir dependente** — só titulares.
+   - Tem de aparecer a seção **Dependentes** com os três valores.
+   - E a frase de que o total sai **na implantação**.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

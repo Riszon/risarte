@@ -273,6 +273,22 @@ export default async function FichaDoLeadPage({
       .returns<(BeneficioRow & { group_id: string })[]>(),
   ]);
   if (erroBeneficios) console.error("benefícios do lead:", erroBeneficios.message);
+
+  // ⚠️ O QUE A REDE CONFIGURA PRECISA CHEGAR NA PROPOSTA (relato do dono,
+  // 24/09/2026: "os benefícios por procedimentos que são criados em
+  // configurações não aparecem no momento da elaboração das propostas").
+  //
+  // O defeito era real e silencioso: a aba lia SÓ `lead_benefits`, então o
+  // trabalho feito em Configurações → Benefícios não alcançava negociação
+  // nenhuma, e toda proposta começava do zero. A cascata é a mesma que a
+  // apresentação e o texto já usam — o padrão da rede é o ponto de partida.
+  const { data: beneficiosDaRedeRows } = await db
+    .from("procedure_benefits")
+    .select(
+      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+    )
+    .is("company_id", null)
+    .returns<BeneficioRow[]>();
   const semBeneficios = semMigracao || Boolean(erroBeneficios);
 
   // H3 (1017): as faixas de preço desta proposta.
@@ -322,6 +338,7 @@ export default async function FichaDoLeadPage({
     forHolder: b.for_holder,
     forDependent: b.for_dependent,
   });
+  const daRedeComoGrupo = (beneficiosDaRedeRows ?? []).map(paraBeneficio);
   const grupos = (gruposRows ?? []).map((g) => ({
     id: g.id,
     name: g.name,
@@ -456,7 +473,17 @@ export default async function FichaDoLeadPage({
           semMigracao={semMigracao || semBeneficios || semCondicoes}
           procedimentos={procs ?? []}
           grupos={grupos}
-          beneficios={(beneficiosRows ?? []).map(paraBeneficio)}
+          beneficios={
+            // Proposta que ainda não tem benefício nenhum COMEÇA com o padrão
+            // da rede, já preenchido para conferir e salvar. Depois do
+            // primeiro salvar, quem manda é a proposta — inclusive quando ela
+            // ficou vazia de propósito.
+            (beneficiosRows ?? []).length > 0
+              ? (beneficiosRows ?? []).map(paraBeneficio)
+              : daRedeComoGrupo
+          }
+          beneficiosVieramDaRede={(beneficiosRows ?? []).length === 0 && daRedeComoGrupo.length > 0}
+          beneficiosDaRede={daRedeComoGrupo}
           podeCriarGrupo={isProgramManager(session)}
           condicoes={condicoes}
         />

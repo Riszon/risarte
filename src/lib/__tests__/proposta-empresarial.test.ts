@@ -31,24 +31,30 @@ describe("mensalidade por titular", () => {
     expect(r.porColaboradorCents).toBe(3990);
   });
 
-  it("dependentes entram quando marcados", () => {
+  it("A PROPOSTA NÃO SOMA DEPENDENTE, nem quando marcados", () => {
+    // Decisão do dono, 24/09/2026, corrigindo o que eu tinha feito antes: na
+    // contratação ninguém sabe quantos dependentes entram nem de quais
+    // titulares, e o pacote é POR TITULAR. Número estimado em documento de
+    // venda vira expectativa — e a primeira fatura, feita família a família,
+    // não bate. A proposta mostra a TABELA de valores; o total sai na
+    // implantação, e é só então que a cobrança deles é gerada.
     const r = simularProposta({
       ...BASE,
       includeDependents: true,
       dependentsCount: 20,
       dependentFeeCents: 2990,
     });
-    expect(r.dependentesCents).toBe(20 * 2990);
-    expect(r.mensalidadeCents).toBe(50 * 3990 + 20 * 2990);
+    expect(r.dependentesCents).toBe(0);
+    expect(r.mensalidadeCents).toBe(50 * 3990);
   });
 
-  it("dependentes NÃO entram quando a fase ainda não os inclui", () => {
-    const r = simularProposta({
-      ...BASE,
-      includeDependents: false,
-      dependentsCount: 20,
-    });
-    expect(r.dependentesCents).toBe(0);
+  it("marcar ou não marcar dependentes dá o MESMO valor na proposta", () => {
+    // O campo continua existindo (a tela precisa dizer que haverá
+    // dependentes, e os limites de adesão podem contá-los) — ele só não entra
+    // no dinheiro.
+    const com = simularProposta({ ...BASE, includeDependents: true, dependentsCount: 20 });
+    const sem = simularProposta({ ...BASE, includeDependents: false, dependentsCount: 20 });
+    expect(com.mensalidadeCents).toBe(sem.mensalidadeCents);
   });
 
   it("implantação é por titular", () => {
@@ -398,7 +404,6 @@ describe("as condições comerciais dentro da simulação", () => {
     expect(r.mensalidadeCents).toBe(120 * 3990);
     expect(r.implantacaoCents).toBe(120 * 1990);
     expect(r.faixaAplicada).toBeNull();
-    expect(r.dependentesEstimados).toBe(false);
   });
 
   it("a faixa troca o preço de TODOS os titulares", () => {
@@ -435,42 +440,26 @@ describe("as condições comerciais dentro da simulação", () => {
     expect(r.implantacaoCents).toBe(350_000);
   });
 
-  it("o PACOTE de dependentes entra na mensalidade e se declara estimativa", () => {
+  it("o dependente NÃO entra na mensalidade nem com pacote configurado", () => {
+    // O pacote continua sendo negociado e impresso na proposta como TABELA;
+    // o que ele não faz é virar número na mensalidade da contratação.
     const r = simularProposta({
       ...BASE_H3,
       employeeCount: 10,
       includeDependents: true,
       dependentsCount: 6,
-      titularesComDependentes: 2,
-      precoDoDependente: {
-        modo: "FAMILY_PACKAGE",
-        individualCents: 3990,
-        familiaCents: 5990,
-        extraCents: 1990,
-        tamanhoDaFamilia: 3,
-      },
     });
-    // 6 dependentes entre 2 titulares = 3 e 3 → dois pacotes.
-    expect(r.dependentesCents).toBe(2 * 5990);
-    expect(r.dependentesEstimados).toBe(true);
-    expect(r.explicacaoDosDependentes).toMatch(/Estimativa/);
+    expect(r.dependentesCents).toBe(0);
+    expect(r.mensalidadeCents).toBe(10 * 3990);
   });
 
-  it("no valor fixo, o pacote de dependentes continua sem cobrar por fora", () => {
+  it("no valor fixo também não há dependente na conta", () => {
     const r = simularProposta({
       ...BASE_H3,
       basis: "FIXED_PER_COMPANY",
       fixedMonthlyCents: 500_000,
       includeDependents: true,
       dependentsCount: 30,
-      titularesComDependentes: 10,
-      precoDoDependente: {
-        modo: "FAMILY_PACKAGE",
-        individualCents: 3990,
-        familiaCents: 5990,
-        extraCents: 1990,
-        tamanhoDaFamilia: 3,
-      },
     });
     expect(r.dependentesCents).toBe(0);
     expect(r.mensalidadeCents).toBe(500_000);

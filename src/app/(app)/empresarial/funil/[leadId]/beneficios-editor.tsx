@@ -46,12 +46,18 @@ export function BeneficiosDaProposta({
   procedimentos,
   grupos,
   iniciais,
+  vieramDaRede,
+  daRede,
   podeCriarGrupo,
 }: {
   leadId: string;
   procedimentos: Procedimento[];
   grupos: GrupoDeBeneficios[];
   iniciais: BeneficioDaProposta[];
+  /** A lista acima é o padrão da rede, ainda não salvo nesta proposta. */
+  vieramDaRede: boolean;
+  /** O padrão da rede, para poder ser reaplicado. */
+  daRede: BeneficioDaProposta[];
   /** Só o gestor do programa cria grupo — ele vale para a rede inteira. */
   podeCriarGrupo: boolean;
 }) {
@@ -71,7 +77,13 @@ export function BeneficiosDaProposta({
   }
 
   function aplicar() {
-    const grupo = grupos.find((g) => g.id === grupoEscolhido);
+    // O padrão da rede é oferecido como se fosse um grupo: é a mesma
+    // pergunta ("aplique esta combinação pronta"), e quem usa não precisa
+    // saber que uma vem de tabela diferente da outra.
+    const grupo =
+      grupoEscolhido === "__rede__"
+        ? { id: "__rede__", name: "Padrão da rede", description: null, itens: daRede }
+        : grupos.find((g) => g.id === grupoEscolhido);
     if (!grupo) return;
     const r = aplicarGrupo(lista, grupo.itens);
     setLista(r.lista);
@@ -125,9 +137,23 @@ export function BeneficiosDaProposta({
           </p>
         </div>
 
+        {/* ⚠️ A PROPOSTA COMEÇA COM O PADRÃO DA REDE (relato do dono,
+            24/09/2026). Antes disso a aba abria vazia, e o que era
+            configurado em Configurações → Benefícios não chegava a negociação
+            nenhuma. A tela DIZ que ainda não está salvo — senão a pessoa
+            fecharia a proposta achando que já estava. */}
+        {vieramDaRede && (
+          <p className="rounded-md border border-gold/40 bg-gold/5 p-2 text-xs">
+            Estes vieram do <strong>padrão da rede</strong> (Configurações →
+            Benefícios). Confira, ajuste o que esta empresa negociou e{" "}
+            <strong>salve</strong> — só então eles passam a valer nesta
+            proposta.
+          </p>
+        )}
+
         {/* Aplicar um grupo pronto: fora do formulário de propósito, porque
             mexe na lista da tela e não salva nada. */}
-        {grupos.length > 0 && (
+        {(grupos.length > 0 || daRede.length > 0) && (
           <div className="flex flex-wrap items-end gap-2 rounded-md bg-muted/40 p-2">
             <div className="min-w-48 flex-1">
               <Label htmlFor="grupo">Aplicar um grupo pronto</Label>
@@ -138,6 +164,11 @@ export function BeneficiosDaProposta({
                 className={selectClass}
               >
                 <option value="">— escolher —</option>
+                {daRede.length > 0 && (
+                  <option value="__rede__">
+                    Padrão da rede ({daRede.length})
+                  </option>
+                )}
                 {grupos.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name} ({g.itens.length})

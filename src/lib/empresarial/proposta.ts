@@ -10,10 +10,8 @@
 import type { PaymentModel } from "./constants";
 import {
   custoDaImplantacao,
-  custoDosDependentes,
   precoDaFaixa,
   type FaixaDePreco,
-  type PrecoDeDependente,
 } from "./condicoes-da-proposta";
 
 export const BILLING_BASES = ["PER_EMPLOYEE", "FIXED_PER_COMPANY"] as const;
@@ -37,8 +35,16 @@ export type PropostaInput = {
   basis: BillingBasis;
   employeeCount: number;
   holderFeeCents: number;
+  /**
+   * Dependentes entram no programa nesta fase, e quantos se estima.
+   *
+   * ⚠️ NÃO ENTRAM NA CONTA da proposta (decisão do dono, 24/09/2026) — servem
+   * para a tela dizer que haverá dependentes e para a régua dos limites de
+   * adesão. O VALOR deles só existe depois da implantação.
+   */
   includeDependents: boolean;
   dependentsCount: number;
+  /** Valor do dependente individual — vai na TABELA, não na conta. */
   dependentFeeCents: number;
   /** Só vale quando a base é valor fixo por empresa. */
   fixedMonthlyCents: number;
@@ -55,10 +61,6 @@ export type PropostaInput = {
   // a que já era. Proposta antiga não muda de preço por causa de campo novo.
   /** Faixas de preço por quantidade. Vazio = sem regra de quantidade. */
   faixas?: readonly FaixaDePreco[];
-  /** Pacote de dependentes. Ausente = um valor por dependente. */
-  precoDoDependente?: PrecoDeDependente;
-  /** Quantos titulares terão dependentes — só a estimativa do pacote usa. */
-  titularesComDependentes?: number | null;
   /** `FIXED` = um valor pela empresa; ausente/`PER_ADHESION` = por titular. */
   implantationMode?: "PER_ADHESION" | "FIXED" | null;
   implantationFixedCents?: number;
@@ -86,19 +88,12 @@ export type PropostaResult = {
   // ---- H3 ------------------------------------------------------------------
   /** A faixa que valeu, quando alguma valeu — a tela mostra qual. */
   faixaAplicada: FaixaDePreco | null;
-  /** A conta dos dependentes é estimativa (pacote familiar)? */
-  dependentesEstimados: boolean;
-  /** De onde saiu o valor dos dependentes, em uma linha. */
-  explicacaoDosDependentes: string;
 };
 
 const naoNegativo = (n: number) => (Number.isFinite(n) && n > 0 ? n : 0);
 
 export function simularProposta(input: PropostaInput): PropostaResult {
   const titulares = Math.floor(naoNegativo(input.employeeCount));
-  const dependentes = input.includeDependents
-    ? Math.floor(naoNegativo(input.dependentsCount))
-    : 0;
 
   // ⚠️ A FAIXA ENTRA AQUI, antes de tudo. Ela troca o PREÇO UNITÁRIO (por
   // titular) ou o VALOR FIXO da empresa, conforme a base — e a faixa do total
@@ -117,23 +112,19 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     ? titulares * naoNegativo(precoUnitario)
     : naoNegativo(precoUnitario);
 
-  // No valor fixo por empresa os dependentes já estão dentro do pacote — é o
-  // que a regra alternativa significa para sindicato e associação. Cobrá-los
-  // por fora transformaria "valor fixo" em valor variável.
-  const contaDosDependentes = porTitular
-    ? custoDosDependentes(
-        input.precoDoDependente ?? {
-          modo: "PER_DEPENDENT",
-          individualCents: naoNegativo(input.dependentFeeCents),
-          familiaCents: 0,
-          extraCents: 0,
-          tamanhoDaFamilia: 3,
-        },
-        dependentes,
-        input.titularesComDependentes ?? null
-      )
-    : { totalCents: 0, estimado: false, explicacao: "No valor fixo, os dependentes já estão no pacote." };
-  const dependentesCents = contaDosDependentes.totalCents;
+  // ⚠️ A PROPOSTA NÃO CALCULA O VALOR DOS DEPENDENTES (decisão do dono,
+  // 24/09/2026, corrigindo o que eu tinha feito em H3).
+  //
+  // Na hora de contratar ninguém sabe quantos dependentes vão entrar, nem como
+  // eles se distribuem entre os titulares — e o pacote familiar é POR TITULAR.
+  // Eu tinha resolvido isso com uma estimativa declarada; ele cortou pela
+  // raiz, e está certo: número estimado num documento de venda vira
+  // expectativa, e a primeira fatura (calculada família a família) não bate.
+  //
+  // O que a proposta mostra é a TABELA DE VALORES do dependente. O total sai
+  // depois da implantação, quando os cadastros existem — e é só então que a
+  // cobrança dos dependentes é gerada.
+  const dependentesCents = 0;
 
   const mensalidadeCents = titularesCents + dependentesCents;
 
@@ -181,8 +172,6 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     economiaAnualCents:
       economiaMensalCents == null ? null : economiaMensalCents * 12,
     faixaAplicada,
-    dependentesEstimados: contaDosDependentes.estimado,
-    explicacaoDosDependentes: contaDosDependentes.explicacao,
   };
 }
 
