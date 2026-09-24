@@ -91,6 +91,7 @@ type BeneficioRow = {
   max_installments: number | null;
   for_holder: boolean;
   for_dependent: boolean;
+  clinic_ids: string[] | null;
 };
 
 /** O modelo de TEXTO da proposta (1014). Mesma cascata da apresentação. */
@@ -153,6 +154,8 @@ type QualRow = {
   dependent_family_extra_fee_cents: number | null;
   dependent_family_size: number | null;
   holders_with_dependents: number | null;
+  // I3 (1019)
+  main_clinic_id: string | null;
 };
 
 export default async function FichaDoLeadPage({
@@ -255,7 +258,7 @@ export default async function FichaDoLeadPage({
     db
       .from("lead_benefits")
       .select(
-        "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+        "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent, clinic_ids"
       )
       .eq("lead_id", leadId)
       .returns<BeneficioRow[]>(),
@@ -265,6 +268,10 @@ export default async function FichaDoLeadPage({
       .eq("is_active", true)
       .order("name")
       .returns<{ id: string; name: string; description: string | null }[]>(),
+    // ⚠️ O GRUPO NÃO GUARDA UNIDADE, de propósito: ele é da REDE e as
+    // unidades são de CADA parceria. Um grupo que restringisse unidade só
+    // serviria para a empresa em que foi criado — e estragaria as outras em
+    // silêncio. A restrição de unidade é sempre da proposta.
     db
       .from("benefit_group_items")
       .select(
@@ -285,7 +292,7 @@ export default async function FichaDoLeadPage({
   const { data: beneficiosDaRedeRows } = await db
     .from("procedure_benefits")
     .select(
-      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent, clinic_ids"
     )
     .is("company_id", null)
     .returns<BeneficioRow[]>();
@@ -319,6 +326,20 @@ export default async function FichaDoLeadPage({
     })),
   };
 
+  // I3 (1019): as unidades do sistema e as desta parceria.
+  const { data: unidadesRows } = await (await createClient())
+    .from("clinics")
+    .select("id, name")
+    .order("name")
+    .returns<{ id: string; name: string }[]>();
+  const { data: parceriaRows, error: erroUnidades } = await db
+    .from("lead_clinics")
+    .select("clinic_id")
+    .eq("lead_id", leadId)
+    .returns<{ clinic_id: string }[]>();
+  if (erroUnidades) console.error("unidades da parceria:", erroUnidades.message);
+  const semUnidades = semMigracao || Boolean(erroUnidades);
+
   const supabaseCatalogo = await createClient();
   const { data: procs } = await supabaseCatalogo
     .from("procedures")
@@ -337,6 +358,7 @@ export default async function FichaDoLeadPage({
     maxInstallments: b.max_installments,
     forHolder: b.for_holder,
     forDependent: b.for_dependent,
+    clinicIds: b.clinic_ids ?? [],
   });
   const daRedeComoGrupo = (beneficiosDaRedeRows ?? []).map(paraBeneficio);
   const grupos = (gruposRows ?? []).map((g) => ({
@@ -470,7 +492,7 @@ export default async function FichaDoLeadPage({
           prazoPadraoDaRede={propostaDaRede?.valid_days ?? 15}
           blocos={(propostaDaEmpresa ?? propostaDaRede)?.sections ?? []}
           textoPersonalizado={Boolean(propostaDaEmpresa)}
-          semMigracao={semMigracao || semBeneficios || semCondicoes}
+          semMigracao={semMigracao || semBeneficios || semCondicoes || semUnidades}
           procedimentos={procs ?? []}
           grupos={grupos}
           beneficios={
@@ -486,6 +508,9 @@ export default async function FichaDoLeadPage({
           beneficiosDaRede={daRedeComoGrupo}
           podeCriarGrupo={isProgramManager(session)}
           condicoes={condicoes}
+          unidades={unidadesRows ?? []}
+          unidadePrincipal={qual?.main_clinic_id ?? null}
+          unidadesDaParceria={(parceriaRows ?? []).map((c) => c.clinic_id)}
         />
       ),
     },

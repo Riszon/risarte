@@ -249,6 +249,7 @@ export type QualificacaoDoLead = {
   dependent_family_fee_cents?: number | null;
   dependent_family_extra_fee_cents?: number | null;
   dependent_family_size?: number | null;
+  main_clinic_id?: string | null;
 };
 
 /**

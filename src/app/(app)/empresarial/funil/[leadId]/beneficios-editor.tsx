@@ -16,6 +16,7 @@ import {
 import {
   aplicarGrupo,
   paraQuemVale,
+  rotuloDasUnidades,
   type BeneficioDaProposta,
 } from "@/lib/empresarial/beneficios-da-proposta";
 import { selectClass } from "./campos";
@@ -49,6 +50,7 @@ export function BeneficiosDaProposta({
   vieramDaRede,
   daRede,
   podeCriarGrupo,
+  unidadesDaParceria,
 }: {
   leadId: string;
   procedimentos: Procedimento[];
@@ -60,6 +62,8 @@ export function BeneficiosDaProposta({
   daRede: BeneficioDaProposta[];
   /** Só o gestor do programa cria grupo — ele vale para a rede inteira. */
   podeCriarGrupo: boolean;
+  /** As unidades da parceria — as únicas que podem restringir um benefício. */
+  unidadesDaParceria: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -340,6 +344,43 @@ export function BeneficiosDaProposta({
                   {paraQuemVale(b)}
                 </span>
               </div>
+
+              {/* ⚠️ EM QUAIS UNIDADES ESTE BENEFÍCIO VALE (I3). Só aparece
+                  quando a parceria tem mais de uma unidade — com uma só, a
+                  pergunta não existe. Nenhuma marcada = todas as da parceria;
+                  a tela diz isso, senão a lista vazia pareceria um erro. */}
+              {unidadesDaParceria.length > 1 && (
+                <div className="space-y-1 border-t pt-2">
+                  <p className="text-xs font-medium">Vale nestas unidades</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {unidadesDaParceria.map((u) => (
+                      <label key={u.id} className="flex items-center gap-1.5 text-sm">
+                        <input
+                          type="checkbox"
+                          name={`unidade_${i}`}
+                          value={u.id}
+                          checked={(b.clinicIds ?? []).includes(u.id)}
+                          onChange={(e) =>
+                            trocar(i, {
+                              clinicIds: e.target.checked
+                                ? [...(b.clinicIds ?? []), u.id]
+                                : (b.clinicIds ?? []).filter((x) => x !== u.id),
+                            })
+                          }
+                          className="size-4"
+                        />
+                        {u.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {rotuloDasUnidades(
+                      b.clinicIds,
+                      new Map(unidadesDaParceria.map((u) => [u.id, u.name]))
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           ))}
 
@@ -364,6 +405,7 @@ export function BeneficiosDaProposta({
                       maxInstallments: null,
                       forHolder: true,
                       forDependent: true,
+                      clinicIds: [],
                     },
                   ]);
                 }}

@@ -77,14 +77,31 @@ export async function copiarPropostaParaEmpresa(
     }
   }
 
-  // 3) OS BENEFÍCIOS — o pedido literal. Eles alcançam todo mundo da empresa
+  // 3) AS UNIDADES DA PARCERIA (1019). Sem elas no cadastro, a restrição
+  //    combinada na proposta se perderia no fechamento — e o motor de
+  //    orçamento passaria a liberar o benefício em qualquer unidade.
+  const { data: unidades } = await db
+    .from("lead_clinics")
+    .select("clinic_id")
+    .eq("lead_id", leadId);
+  if (unidades?.length) {
+    const { error } = await db.from("company_clinics").insert(
+      unidades.map((u) => ({ company_id: companyId, clinic_id: u.clinic_id }))
+    );
+    if (error) {
+      console.error("fechamento (unidades):", error.message);
+      naoCopiado.push("as unidades da parceria");
+    }
+  }
+
+  // 4) OS BENEFÍCIOS — o pedido literal. Eles alcançam todo mundo da empresa
   //    porque `procedure_benefits` é por EMPRESA, e é essa tabela que o motor
   //    consulta no orçamento de cada pessoa (titular ou dependente, conforme
   //    o "para quem vale" que veio da proposta).
   const { data: beneficios } = await db
     .from("lead_benefits")
     .select(
-      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent, clinic_ids"
     )
     .eq("lead_id", leadId);
   if (beneficios?.length) {

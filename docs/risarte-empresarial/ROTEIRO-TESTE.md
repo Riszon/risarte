@@ -405,6 +405,26 @@ Sem migração — basta Ctrl + F5.
    salve. O que sumiu da tela some do grupo.
 7. Vá a uma proposta e aplique o grupo: ele chega com o que você deixou.
 
+## 10.10. As unidades da parceria (OC-00083 I3, 24/09/2026)
+
+⚠️ **Rode a migração 1019 antes.**
+
+1. Funil → empresa → aba **Proposta** → **Unidades da parceria**.
+2. Escolha a **unidade principal**: ela fica marcada na lista de baixo e
+   **não dá para desmarcar** — é a unidade que responde pela empresa.
+3. Marque uma segunda unidade e salve.
+4. Na seção de **benefícios**, cada um ganhou as caixas *Vale nestas
+   unidades*. Deixe um benefício **sem nenhuma marcada** (= todas) e restrinja
+   outro à unidade principal. Salve.
+5. **Ver a proposta**: tem de aparecer *"Onde o programa é atendido"* com a
+   principal nomeada e a outra listada; e o benefício restrito sai com
+   **"Só em ..."**. O sem restrição **não** repete "em todas as unidades".
+6. ⚠️ **A restrição valendo de verdade:** feche o negócio, cadastre um titular
+   e faça um orçamento **na unidade restrita** e **na outra**. O benefício de
+   custo zero só pode aparecer na unidade onde foi combinado.
+7. Com **uma unidade só** na parceria, as caixas por benefício não aparecem —
+   a pergunta não existe.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

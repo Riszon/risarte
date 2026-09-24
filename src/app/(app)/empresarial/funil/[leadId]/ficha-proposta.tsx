@@ -61,6 +61,7 @@ import {
   avisosDosLimites,
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
+import { UnidadesDaParceria, type Unidade } from "./unidades-editor";
 
 /**
  * A ABA DA PROPOSTA (OC-00083, 23/09/2026).
@@ -94,6 +95,9 @@ export function FichaDaProposta({
   beneficiosDaRede,
   podeCriarGrupo,
   condicoes,
+  unidades,
+  unidadePrincipal,
+  unidadesDaParceria,
 }: {
   leadId: string;
   cnpj: string | null;
@@ -122,6 +126,10 @@ export function FichaDaProposta({
   podeCriarGrupo: boolean;
   /** H3: limites, valor mínimo, faixas, implantação e dependentes. */
   condicoes: CondicoesView;
+  /** I3: as unidades do sistema, e as desta parceria. */
+  unidades: Unidade[];
+  unidadePrincipal: string | null;
+  unidadesDaParceria: string[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -582,6 +590,17 @@ export function FichaDaProposta({
 
       {/* Fora do formulário acima de propósito: <form> dentro de <form> não
           funciona, e cada um tem o seu próprio salvar. */}
+      {/* As unidades vêm ANTES dos benefícios de propósito: é a lista delas
+          que o benefício usa para poder restringir. */}
+      {!semMigracao && (
+        <UnidadesDaParceria
+          leadId={leadId}
+          unidades={unidades}
+          principal={unidadePrincipal}
+          vinculadas={unidadesDaParceria}
+        />
+      )}
+
       {!semMigracao && (
         <CondicoesComerciais
           leadId={leadId}
@@ -599,6 +618,9 @@ export function FichaDaProposta({
           vieramDaRede={beneficiosVieramDaRede}
           daRede={beneficiosDaRede}
           podeCriarGrupo={podeCriarGrupo}
+          unidadesDaParceria={unidades.filter((u) =>
+            unidadesDaParceria.includes(u.id)
+          )}
         />
       )}
 

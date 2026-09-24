@@ -757,3 +757,61 @@ criar grupo, que só existe **depois do clique**. Conferência por HTTP não
 alcança o que está atrás de uma interação — cobrar isso é acusar a tela de não
 mostrar o que ela mostra. Aquela asserção passou a conferir o caminho no
 código, dizendo que é isso que ela está conferindo.
+
+### Bloco I3 — as UNIDADES da parceria ✅ (migração 1019, v0.61.0)
+
+Pedido do dono (24/09/2026): *"quando vai criar uma proposta deve ter como
+indicar qual é a unidade principal para esta parceria e quais são as outras
+unidades que os beneficiários estarão vinculados e poderão utilizar. Inclusive
+durante a definição dos benefícios quais são as unidades que poderão realizar
+os procedimentos de custo zero por exemplo."*
+
+Escolha dele entre as três formas: **unidade principal + vinculadas, com
+exceção por benefício**.
+
+**O que existe agora**
+
+- Na aba **Proposta**, a seção **Unidades da parceria**: a unidade principal e
+  as outras que podem atender. A principal entra na lista **marcada e sem
+  poder ser desmarcada** — a unidade que responde pela empresa não atender
+  seria a primeira surpresa desagradável.
+- Em **cada benefício**, caixas para restringir as unidades. Só aparecem
+  quando a parceria tem mais de uma — com uma só, a pergunta não existe.
+- O **documento** ganhou *"Onde o programa é atendido"*, e cada benefício
+  restrito sai com o **"Só em ..."** ao lado.
+- **O motor de orçamento respeita a unidade**: benefício que não vale naquela
+  unidade some da lista da pessoa.
+- O **fechamento leva tudo** — unidade principal, unidades vinculadas e a
+  restrição de cada benefício.
+
+**Decisões que valem registrar**
+
+- **⚠️ NULO E VAZIO SIGNIFICAM "TODAS".** A outra leitura — "restringi a
+  nenhuma" — faria todo benefício já existente parar de valer no dia em que a
+  coluna nasceu. Quem quer tirar a cobertura usa *Não coberto*; lista vazia é
+  ausência de restrição, e a tela diz isso para a lista vazia não parecer erro.
+- **Sem parceria declarada, o programa não limita unidade nenhuma** — é como
+  funcionava antes desta regra, e é o que mantém toda empresa já cadastrada
+  exatamente como está.
+- **Sem saber onde a pessoa está sendo atendida, a resposta é SIM.** Recusar
+  por falta de informação tiraria benefício de quem tem direito.
+- **A unidade vem da SESSÃO**, porque é a tela do orçamento que pergunta e ela
+  sempre roda dentro de uma unidade ativa. Fora de sessão (rotina, script) a
+  regra devolve "vale".
+- **Tabela para as unidades da parceria; `uuid[]` para a exceção por
+  benefício**, e a diferença é deliberada: os benefícios da proposta são
+  apagados e reescritos a cada salvar, e uma tabela filha exigiria recriar os
+  vínculos a cada gravação — bastaria um esquecimento para a restrição sumir
+  em silêncio, que é o pior defeito possível numa regra de "onde vale".
+- **O GRUPO de benefícios NÃO guarda unidade**, de propósito: ele é da rede e
+  as unidades são de cada parceria. Um grupo que restringisse unidade só
+  serviria para a empresa em que foi criado — e estragaria as outras em
+  silêncio.
+- **"Em todas as unidades" não é escrito linha a linha** no documento:
+  repetir viraria ruído e esconderia justamente a linha restrita.
+- **Id de unidade que saiu da parceria some do texto**, em vez de virar "e
+  mais 1" sem dizer qual.
+
+**Conferido nas telas do treino** com uma parceria de duas unidades e um
+benefício restrito a uma: 10 asserções, 0 falha — inclusive a que garante que
+o benefício SEM restrição não vira ruído no documento.

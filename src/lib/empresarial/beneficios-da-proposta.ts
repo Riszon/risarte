@@ -24,6 +24,8 @@ export type BeneficioDaProposta = {
   maxInstallments: number | null;
   forHolder: boolean;
   forDependent: boolean;
+  /** Unidades onde ESTE benefício vale. Vazio/ausente = todas as da parceria. */
+  clinicIds?: string[] | null;
 };
 
 /**
@@ -151,4 +153,50 @@ export function problemasDoBeneficio(b: BeneficioDaProposta): string[] {
   }
   if (b.gracePeriodMonths < 0) p.push("a carência não pode ser negativa");
   return p;
+}
+
+// -----------------------------------------------------------------------------
+// I3 (1019) — em QUAIS UNIDADES o benefício vale
+// -----------------------------------------------------------------------------
+
+/**
+ * ⚠️ NULO E VAZIO SIGNIFICAM "TODAS AS UNIDADES DA PARCERIA".
+ *
+ * A diferença entre "não restringi" e "restringi a nenhuma" parece filosófica
+ * e não é: a segunda leitura faria todo benefício já existente parar de valer
+ * no dia em que a coluna nasceu. Quem quer tirar a cobertura usa "Não
+ * coberto"; lista vazia é ausência de restrição.
+ */
+export function valeNaUnidade(
+  clinicIds: readonly string[] | null | undefined,
+  unidade: string | null,
+  unidadesDaParceria: readonly string[]
+): boolean {
+  // Sem restrição: vale onde a parceria valer.
+  if (!clinicIds || clinicIds.length === 0) {
+    // Sem parceria declarada, o programa não limita unidade nenhuma — é como
+    // funcionava antes de existir esta regra.
+    if (unidadesDaParceria.length === 0) return true;
+    return unidade == null || unidadesDaParceria.includes(unidade);
+  }
+  // Com restrição, mas sem saber onde a pessoa está sendo atendida, a resposta
+  // honesta é SIM: recusar por falta de informação tiraria benefício de quem
+  // tem direito, e quem cruza de verdade é a tela do orçamento.
+  if (unidade == null) return true;
+  return clinicIds.includes(unidade);
+}
+
+/** Como a restrição é escrita na tela e no documento. */
+export function rotuloDasUnidades(
+  clinicIds: readonly string[] | null | undefined,
+  nomePorId: ReadonlyMap<string, string>
+): string {
+  if (!clinicIds || clinicIds.length === 0) return "Em todas as unidades da parceria";
+  const nomes = clinicIds
+    .map((id) => nomePorId.get(id))
+    .filter((n): n is string => Boolean(n));
+  // Id que não é mais unidade da parceria some da lista — e some do texto:
+  // escrever "e mais 1" sem saber qual seria pior que não escrever nada.
+  if (nomes.length === 0) return "Em todas as unidades da parceria";
+  return nomes.length === 1 ? `Só em ${nomes[0]}` : `Só em: ${nomes.join(", ")}`;
 }

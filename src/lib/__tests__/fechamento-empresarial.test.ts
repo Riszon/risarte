@@ -183,3 +183,48 @@ describe("quando alguma parte não dá certo", () => {
     expect(escritas.find((e) => e.tabela === "procedure_benefits")).toBeDefined();
   });
 });
+
+describe("as unidades da parceria no fechamento (I3)", () => {
+  it("as unidades combinadas viram unidades da empresa", async () => {
+    const { db, escritas } = bancoDeMentira({
+      lead_clinics: [{ clinic_id: "cambe" }, { clinic_id: "londrina" }],
+    });
+    await copiarPropostaParaEmpresa(db, "lead-1", "emp-1", QUAL);
+    const u = escritas.find((e) => e.tabela === "company_clinics");
+    expect(u?.linhas).toEqual([
+      { company_id: "emp-1", clinic_id: "cambe" },
+      { company_id: "emp-1", clinic_id: "londrina" },
+    ]);
+  });
+
+  it("A RESTRIÇÃO DE UNIDADE DO BENEFÍCIO ATRAVESSA o fechamento", async () => {
+    // Sem ela, o procedimento de custo zero combinado só para a unidade
+    // principal passaria a valer em qualquer uma — e quem descobriria seria a
+    // unidade que atendeu sem receber por isso.
+    const { db, escritas } = bancoDeMentira({
+      lead_benefits: [
+        {
+          procedure_id: "p1",
+          benefit_type: "FREE",
+          benefit_value: null,
+          usage_limit_count: null,
+          usage_period_months: null,
+          grace_period_months: 0,
+          max_installments: null,
+          for_holder: true,
+          for_dependent: true,
+          clinic_ids: ["cambe"],
+        },
+      ],
+    });
+    await copiarPropostaParaEmpresa(db, "lead-1", "emp-1", QUAL);
+    const ben = escritas.find((e) => e.tabela === "procedure_benefits");
+    expect((ben?.linhas[0] as { clinic_ids: string[] }).clinic_ids).toEqual(["cambe"]);
+  });
+
+  it("sem unidade combinada, não escreve linha nenhuma", async () => {
+    const { db, escritas } = bancoDeMentira();
+    await copiarPropostaParaEmpresa(db, "lead-1", "emp-1", QUAL);
+    expect(escritas.find((e) => e.tabela === "company_clinics")).toBeUndefined();
+  });
+});

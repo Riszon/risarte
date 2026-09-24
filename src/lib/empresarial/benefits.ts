@@ -2,7 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "./db";
 import type { BenefitType } from "./constants";
-import { valeParaPessoa } from "./beneficios-da-proposta";
+import { valeNaUnidade, valeParaPessoa } from "./beneficios-da-proposta";
+import { getSessionContext } from "@/lib/auth";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProgramBenefit = {
@@ -51,6 +52,7 @@ type BenefitRow = {
   grace_period_months: number;
   for_holder: boolean;
   for_dependent: boolean;
+  clinic_ids: string[] | null;
 };
 
 /**
@@ -101,7 +103,7 @@ export async function loadClientProgram(
     db
       .from("procedure_benefits")
       .select(
-        "procedure_id, company_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, for_holder, for_dependent"
+        "procedure_id, company_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, for_holder, for_dependent, clinic_ids"
       )
       .or(`company_id.eq.${companyId},company_id.is.null`)
       .returns<BenefitRow[]>(),
@@ -163,12 +165,43 @@ export async function loadClientProgram(
   // seria o paciente na hora de pagar.
   const pessoa: "titular" | "dependente" = emp ? "titular" : "dependente";
 
+  // ⚠️ ONDE A PESSOA ESTÁ SENDO ATENDIDA (1019). Sem a pergunta, a restrição
+  // "este procedimento é de custo zero só na unidade principal" seria enfeite:
+  // o desconto sairia em qualquer unidade, e quem descobriria seria a unidade
+  // que atendeu sem receber por isso.
+  //
+  // A unidade vem da SESSÃO porque é a tela do orçamento que pergunta, e ela
+  // sempre roda dentro de uma unidade ativa. Sem sessão de unidade, a resposta
+  // é "vale" — recusar por falta de informação tiraria benefício de quem tem
+  // direito.
+  let unidadeAtual: string | null = null;
+  const { data: parceria } = await db
+    .from("company_clinics")
+    .select("clinic_id")
+    .eq("company_id", companyId)
+    .returns<{ clinic_id: string }[]>();
+  const unidadesDaParceria = (parceria ?? []).map((c) => c.clinic_id);
+  try {
+    const sessao = await getSessionContext();
+    unidadeAtual = sessao.activeClinic?.id ?? null;
+  } catch {
+    // Fora de uma sessão (rotina, script), a unidade não existe — e a regra
+    // acima já trata isso como "vale".
+    unidadeAtual = null;
+  }
+
   const byProcedure: Record<string, ProgramBenefit> = {};
   for (const [procedureId, b] of chosen) {
     // Benefício que não alcança esta pessoa simplesmente não existe para ela —
     // some da lista em vez de aparecer bloqueado. "Bloqueado" é para o que
     // ainda vai valer (carência, limite); isto nunca vai.
     if (!valeParaPessoa({ forHolder: b.for_holder, forDependent: b.for_dependent }, pessoa)) {
+      continue;
+    }
+    // Benefício que não vale NESTA unidade também some da lista: ele não está
+    // bloqueado por carência nem por limite — ele simplesmente não é desta
+    // unidade.
+    if (!valeNaUnidade(b.clinic_ids, unidadeAtual, unidadesDaParceria)) {
       continue;
     }
     // Carência específica do benefício.

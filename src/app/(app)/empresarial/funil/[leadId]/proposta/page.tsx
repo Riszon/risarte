@@ -28,6 +28,7 @@ import {
 import type { BenefitType, PaymentModel } from "@/lib/empresarial/constants";
 import {
   paraQuemVale,
+  rotuloDasUnidades,
   rotuloDaCarencia,
   rotuloDoBeneficio,
   rotuloDoUso,
@@ -76,6 +77,7 @@ type QualRow = {
   dependent_family_extra_fee_cents: number | null;
   dependent_family_size: number | null;
   holders_with_dependents: number | null;
+  main_clinic_id: string | null;
 };
 
 type BeneficioRow = {
@@ -88,6 +90,7 @@ type BeneficioRow = {
   max_installments: number | null;
   for_holder: boolean;
   for_dependent: boolean;
+  clinic_ids: string[] | null;
 };
 
 type PropostaTemplateRow = {
@@ -237,7 +240,7 @@ export default async function PropostaPage({
   const { data: benRows, error: erroBen } = await db
     .from("lead_benefits")
     .select(
-      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent, clinic_ids"
     )
     .eq("lead_id", leadId)
     .returns<BeneficioRow[]>();
@@ -264,9 +267,29 @@ export default async function PropostaPage({
         maxInstallments: b.max_installments,
         forHolder: b.for_holder,
         forDependent: b.for_dependent,
+        clinicIds: b.clinic_ids ?? [],
       });
     }
     beneficios.sort((a, z) => a.nome.localeCompare(z.nome, "pt-BR"));
+  }
+
+  // I3 (1019): as unidades da parceria, para o documento dizer ONDE o
+  // programa é atendido — e para cada benefício poder dizer a sua exceção.
+  const { data: parceriaRows } = await db
+    .from("lead_clinics")
+    .select("clinic_id")
+    .eq("lead_id", leadId)
+    .returns<{ clinic_id: string }[]>();
+  const idsDaParceria = (parceriaRows ?? []).map((c) => c.clinic_id);
+  const nomeDaUnidade = new Map<string, string>();
+  if (idsDaParceria.length > 0 || q.main_clinic_id) {
+    const supabaseUnidades = await createClient();
+    const { data: cls } = await supabaseUnidades
+      .from("clinics")
+      .select("id, name")
+      .in("id", [...new Set([...idsDaParceria, q.main_clinic_id].filter(Boolean))])
+      .returns<{ id: string; name: string }[]>();
+    for (const c of cls ?? []) nomeDaUnidade.set(c.id, c.name);
   }
 
   const hoje = todayInBrazil();
@@ -511,6 +534,12 @@ export default async function PropostaPage({
                       {paraQuemVale(b)}
                       {uso ? ` · ${uso}` : ""}
                       {carencia ? ` · ${carencia}` : ""}
+                      {/* A exceção de unidade só é escrita quando EXISTE:
+                          repetir "em todas as unidades" em cada linha viraria
+                          ruído e esconderia justamente a linha restrita. */}
+                      {b.clinicIds && b.clinicIds.length > 0 && idsDaParceria.length > 1
+                        ? ` · ${rotuloDasUnidades(b.clinicIds, nomeDaUnidade)}`
+                        : ""}
                     </span>
                   </li>
                 );
@@ -561,6 +590,37 @@ export default async function PropostaPage({
             )}
           </section>
         ))}
+
+        {/* ⚠️ ONDE O PROGRAMA É ATENDIDO. A empresa precisa saber para onde
+            mandar a equipe, e é este o compromisso que ela vai cobrar. */}
+        {idsDaParceria.length > 0 && (
+          <section className="space-y-2 break-inside-avoid">
+            <h2 className="text-lg font-medium">Onde o programa é atendido</h2>
+            <p className="leading-relaxed text-muted-foreground">
+              {q.main_clinic_id && nomeDaUnidade.get(q.main_clinic_id) && (
+                <>
+                  Unidade principal:{" "}
+                  <strong className="text-foreground">
+                    {nomeDaUnidade.get(q.main_clinic_id)}
+                  </strong>
+                  .{" "}
+                </>
+              )}
+              {idsDaParceria.length > 1 ? (
+                <>
+                  Os beneficiários podem ser atendidos em:{" "}
+                  {idsDaParceria
+                    .map((id) => nomeDaUnidade.get(id))
+                    .filter(Boolean)
+                    .join(", ")}
+                  .
+                </>
+              ) : (
+                <>O atendimento acontece nesta unidade.</>
+              )}
+            </p>
+          </section>
+        )}
 
         <section className="space-y-2 break-inside-avoid">
           <h2 className="text-lg font-medium">Como seguir</h2>

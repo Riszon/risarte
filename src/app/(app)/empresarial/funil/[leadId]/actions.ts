@@ -661,6 +661,9 @@ function beneficiosDoFormulario(formData: FormData): BeneficioDaProposta[] {
       // nasce com as caixas ligadas; aqui, o que vale é o que ela mandou.
       forHolder: formData.get(`titular_${i}`) === "on",
       forDependent: formData.get(`dependente_${i}`) === "on",
+      // Vazio = todas as unidades da parceria. A tela manda uma caixa por
+      // unidade; nenhuma marcada significa "não restringi".
+      clinicIds: formData.getAll(`unidade_${i}`).map(String).filter(Boolean),
     });
   }
   return lista;
@@ -715,6 +718,7 @@ export async function saveLeadBenefits(
         max_installments: b.maxInstallments,
         for_holder: b.forHolder,
         for_dependent: b.forDependent,
+        clinic_ids: b.clinicIds && b.clinicIds.length > 0 ? b.clinicIds : null,
         updated_by: session.userId,
       }))
     );
@@ -890,6 +894,58 @@ export async function saveCommercialTerms(
     if (error) {
       console.error("saveCommercialTerms (faixas) failed:", error.message);
       return { ok: false, error: "As condições foram salvas, mas as faixas não." };
+    }
+  }
+
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// I3 — as unidades da parceria (1019)
+// -----------------------------------------------------------------------------
+
+/**
+ * Salva a unidade principal e as unidades vinculadas da parceria.
+ *
+ * ⚠️ A PRINCIPAL ENTRA SEMPRE na lista de vinculadas, mesmo que ninguém a
+ * marque: a unidade que responde pela empresa atender seria a primeira
+ * surpresa desagradável — e ninguém pensaria em marcá-la duas vezes.
+ */
+export async function saveLeadClinics(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const principal = texto(formData, "main_clinic_id");
+  const vinculadas = new Set(formData.getAll("clinic_ids").map(String).filter(Boolean));
+  if (principal) vinculadas.add(principal);
+
+  const r = await gravarNoLevantamento(
+    leadId,
+    { main_clinic_id: principal, updated_by: session.userId },
+    "as unidades da parceria"
+  );
+  if (!r.ok) return r;
+
+  const db = await empresarialDb();
+  const { error: eDel } = await db
+    .from("lead_clinics")
+    .delete()
+    .eq("lead_id", leadId);
+  if (eDel) {
+    console.error("saveLeadClinics (limpeza) failed:", eDel.message);
+    return { ok: false, error: "Não foi possível salvar as unidades." };
+  }
+  if (vinculadas.size > 0) {
+    const { error } = await db
+      .from("lead_clinics")
+      .insert([...vinculadas].map((clinic_id) => ({ lead_id: leadId, clinic_id })));
+    if (error) {
+      console.error("saveLeadClinics failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar as unidades." };
     }
   }
 

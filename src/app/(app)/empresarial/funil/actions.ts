@@ -315,6 +315,7 @@ export async function convertLeadToCompany(
       min_adhesions: qual?.min_adhesions ?? null,
       max_adhesions: qual?.max_adhesions ?? null,
       adhesion_limit_target: qual?.adhesion_limit_target ?? null,
+      main_clinic_id: qual?.main_clinic_id ?? null,
       origin_lead_id: leadId,
     })
     .select("id")
