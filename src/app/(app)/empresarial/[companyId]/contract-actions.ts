@@ -7,6 +7,7 @@ import { formatBRL } from "@/lib/pricing";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import { createZapDocument, isZapsignConfigured } from "@/lib/empresarial/zapsign";
+import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
@@ -197,7 +198,8 @@ async function buildProposalText(companyId: string): Promise<string | null> {
       status: "ACTIVE" as const,
       dependentPlan: e.dependent_plan,
       activeDependentCount: depCount.get(e.id) ?? 0,
-    }))
+    })),
+    await carregarFaixasDaEmpresa(db, companyId)
   );
 
   const name = company.trade_name || company.legal_name;

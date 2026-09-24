@@ -39,6 +39,7 @@ import {
   type CompanyCategory,
   type DocType,
 } from "@/lib/empresarial/documents";
+import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
@@ -404,7 +405,8 @@ export default async function CompanyDetailPage(props: {
         activeDependentCount: (e.dependents ?? []).filter(
           (d) => d.status === "ACTIVE"
         ).length,
-      }))
+      })),
+      await carregarFaixasDaEmpresa(db, companyId)
     );
     plano = {
       effectivePricing,
@@ -488,7 +490,8 @@ export default async function CompanyDetailPage(props: {
         status: "ACTIVE" as const,
         dependentPlan: e.dependent_plan,
         activeDependentCount: depCount.get(e.id) ?? 0,
-      }))
+      })),
+      await carregarFaixasDaEmpresa(db, companyId)
     );
     const holders = (emps ?? []).length;
     const dependentsCount = (deps ?? []).length;

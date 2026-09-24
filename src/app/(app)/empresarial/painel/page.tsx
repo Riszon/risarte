@@ -117,12 +117,33 @@ export default async function PainelPage() {
     empByCompany.set(e.company_id, list);
   }
 
+  // ⚠️ AS FAIXAS DE TODAS AS EMPRESAS DE UMA VEZ. Uma consulta por empresa
+  // dentro do laço seria uma ida ao banco por linha do painel — e o painel é
+  // a tela da REDE, pensada para 200 unidades.
+  const { data: faixasRows } = await db
+    .from("company_price_tiers")
+    .select("company_id, min_quantity, price_cents")
+    .returns<{ company_id: string; min_quantity: number; price_cents: number }[]>();
+  const faixasPorEmpresa = new Map<
+    string,
+    { minQuantity: number; priceCents: number }[]
+  >();
+  for (const f of faixasRows ?? []) {
+    const lista = faixasPorEmpresa.get(f.company_id) ?? [];
+    lista.push({ minQuantity: f.min_quantity, priceCents: f.price_cents });
+    faixasPorEmpresa.set(f.company_id, lista);
+  }
+
   const monthlyByCompany = new Map<string, number>();
   let mrr = 0;
   for (const c of companies ?? []) {
     if (c.status !== "ACTIVE") continue;
     const pricing = pricingByCompany.get(c.id) ?? networkPricing;
-    const m = computeMonthlyCents(pricing, empByCompany.get(c.id) ?? []);
+    const m = computeMonthlyCents(
+      pricing,
+      empByCompany.get(c.id) ?? [],
+      faixasPorEmpresa.get(c.id) ?? []
+    );
     monthlyByCompany.set(c.id, m.totalCents);
     mrr += m.totalCents;
   }

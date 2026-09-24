@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
+import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
@@ -360,7 +361,8 @@ export async function loadCompanySheet(
       status: "ACTIVE" as const,
       dependentPlan: e.dependent_plan,
       activeDependentCount: depCount.get(e.id) ?? 0,
-    }))
+    })),
+    await carregarFaixasDaEmpresa(db, companyId)
   );
 
   const empByDoc = new Map<string, number>();

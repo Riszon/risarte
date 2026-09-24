@@ -59,6 +59,34 @@ export async function createEmployee(
   if (!phone) return { ok: false, error: "Informe o telefone." };
 
   const db = await empresarialDb();
+
+  // ⚠️ O MÁXIMO COMBINADO NA PROPOSTA VALE AQUI (1018, H4). Decisão do dono:
+  // acima do máximo o sistema RECUSA, porque o máximo costuma ser capacidade
+  // de atendimento — aceitar além é prometer o que não se entrega. O mínimo
+  // não trava nada: a empresa pode estar entrando aos poucos.
+  const { data: limite } = await db
+    .from("companies")
+    .select("max_adhesions, adhesion_limit_target")
+    .eq("id", companyId)
+    .maybeSingle<{
+      max_adhesions: number | null;
+      adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
+    }>();
+  if (limite?.max_adhesions != null && limite.adhesion_limit_target !== "DEPENDENTS") {
+    const { count } = await db
+      .from("employees")
+      .select("*", { count: "exact", head: true })
+      .eq("company_id", companyId)
+      .eq("status", "ACTIVE");
+    const atuais = count ?? 0;
+    if (atuais >= limite.max_adhesions) {
+      return {
+        ok: false,
+        error: `Esta empresa já tem ${atuais} titular(es) ativos, e o máximo combinado na proposta é ${limite.max_adhesions}. Renegocie o limite antes de incluir mais.`,
+      };
+    }
+  }
+
   const { data, error } = await db
     .from("employees")
     .insert({

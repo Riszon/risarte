@@ -5,8 +5,10 @@ import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
+import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
 import {
   computeMonthlyCents,
+  precoDoTitularComFaixa,
   DEFAULT_ADHESION_PRICING,
   type AdhesionPricing,
 } from "@/lib/empresarial/pricing";
@@ -166,7 +168,7 @@ async function computeMonthlyBreakdown(
       db
         .from("adhesion_pricing")
         .select(
-          "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
+          "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments, dependent_family_size"
         )
         .or(`company_id.eq.${companyId},company_id.is.null`),
       db
@@ -210,10 +212,21 @@ async function computeMonthlyBreakdown(
   for (const d of (deps ?? []) as { employee_id: string }[])
     depCount.set(d.employee_id, (depCount.get(d.employee_id) ?? 0) + 1);
 
+  // ⚠️ A FAIXA É ESCOLHIDA PELO TOTAL, e a soma abaixo é feita um titular por
+  // vez (para repartir por CNPJ). Calcular a faixa dentro do laço faria cada
+  // chamada ver "1 titular ativo" e cobrar sempre a faixa de 1 — o preço mais
+  // caro, em toda empresa que negociou volume.
+  const faixas = await carregarFaixasDaEmpresa(db, companyId);
+  const ativos = (emps ?? []).filter((e) => e.status === "ACTIVE").length;
+  const precoComFaixa = {
+    ...pricing,
+    holderFeeCents: precoDoTitularComFaixa(pricing, faixas, ativos),
+  };
+
   const byDocument = new Map<string, { employees: number; cents: number }>();
   let totalCents = 0;
   for (const e of emps ?? []) {
-    const one = computeMonthlyCents(pricing, [
+    const one = computeMonthlyCents(precoComFaixa, [
       {
         status: "ACTIVE",
         dependentPlan: e.dependent_plan,

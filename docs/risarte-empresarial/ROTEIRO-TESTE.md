@@ -344,6 +344,29 @@ pode aparecer a palavra *colaborador*.
     quanto falta, e **não trava**.
 11. Apague as faixas e deixe tudo em branco: a conta volta a ser a de antes.
 
+## 10.7. O fechamento leva a proposta (OC-00083 H4, 23/09/2026)
+
+⚠️ **Rode a migração 1018 antes.**
+
+1. Monte uma proposta COMPLETA numa empresa do funil: preço do titular,
+   pacote de dependentes, **faixas**, carência, limites (mín. 50, máx. 100) e
+   pelo menos **dois benefícios**, um deles marcado **só para o titular**.
+2. Feche o negócio (**Fechar — ganho**).
+3. Abra a **ficha da empresa criada** e confira, um a um:
+   - **Preços de adesão**: os valores são os da proposta, não os da rede.
+   - **Benefícios**: os dois estão lá, e o que era só do titular continua
+     **só do titular**.
+   - **Carência**: a da empresa e a do titular são as que foram combinadas.
+4. **A faixa valendo:** cadastre titulares até passar da quantidade da faixa.
+   A mensalidade tem de cair para **todos**, não só para os que passaram.
+5. **O máximo valendo:** com 100 titulares ativos e máximo 100, tente
+   cadastrar mais um — o sistema **recusa**, dizendo os dois números.
+6. **O mínimo NÃO trava:** com 20 titulares e mínimo 50, dá para cadastrar
+   normalmente.
+7. Na linha do tempo do lead, a anotação do fechamento diz que a empresa foi
+   criada **com os preços, faixas e benefícios da proposta**. Se disser que
+   algo não foi copiado, é para conferir aquilo no cadastro.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

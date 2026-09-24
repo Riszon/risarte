@@ -6,6 +6,7 @@ import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatPhone } from "@/lib/masks";
 import { empresarialDb } from "@/lib/empresarial/db";
+import { copiarPropostaParaEmpresa } from "@/lib/empresarial/fechamento";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import {
   CAPTURE_CHANNELS,
@@ -292,11 +293,12 @@ export async function convertLeadToCompany(
   // O LEVANTAMENTO VIAJA PARA A EMPRESA. Sem isto, o consultor digitaria tudo
   // de novo — razão social, quem assina, quem paga, quantos titulares — e a
   // segunda digitação é onde os dados divergem.
+  // `select("*")` desde a H4: a lista nomeada já tinha ficado para trás duas
+  // vezes quando a proposta ganhou campos novos, e campo que fica para trás
+  // aqui vira preço que o cliente combinou e o sistema não cobra.
   const { data: qual } = await db
     .from("lead_qualification")
-    .select(
-      "legal_name, category, billing_model, payment_model, subsidy_type, subsidy_value, employee_count, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone, notes, company_grace_days, employee_grace_days"
-    )
+    .select("*")
     .eq("lead_id", leadId)
     .maybeSingle<QualificacaoDoLead>();
 
@@ -309,6 +311,11 @@ export async function convertLeadToCompany(
       ...camposDaEmpresa(qual, { company_name: lead.company_name, cnpj }),
       status: "ACTIVE",
       assigned_consultant_id: lead.consultant_id,
+      // H4 (1018): os limites combinados, e de onde este cadastro veio.
+      min_adhesions: qual?.min_adhesions ?? null,
+      max_adhesions: qual?.max_adhesions ?? null,
+      adhesion_limit_target: qual?.adhesion_limit_target ?? null,
+      origin_lead_id: leadId,
     })
     .select("id")
     .single();
@@ -320,6 +327,16 @@ export async function convertLeadToCompany(
     return { ok: false, error: "Não foi possível criar a empresa." };
   }
 
+  // H4 (1018): o que foi vendido vira o que será cobrado. A regra mora em
+  // `copiarPropostaParaEmpresa` para poder ser conferida sem fechar um
+  // negócio de verdade — dentro desta action ela só rodaria por um clique.
+  const { naoCopiado } = await copiarPropostaParaEmpresa(
+    db,
+    leadId,
+    company.id,
+    qual as unknown as Record<string, unknown> | null
+  );
+
   await db
     .from("commercial_leads")
     .update({ stage: "CLOSED_WON", company_id: company.id })
@@ -328,7 +345,10 @@ export async function convertLeadToCompany(
     lead_id: leadId,
     author_id: session.userId,
     kind: "STAGE_CHANGE",
-    note: "Fechado (ganho) — empresa criada.",
+    note:
+      naoCopiado.length === 0
+        ? "Fechado (ganho) — empresa criada com os preços, faixas e benefícios da proposta."
+        : `Fechado (ganho) — empresa criada, mas NÃO foi possível copiar: ${naoCopiado.join(", ")}. Confira no cadastro.`,
   });
   await logAudit({
     action: "create",
@@ -338,5 +358,15 @@ export async function convertLeadToCompany(
   });
   revalidatePath("/empresarial/funil");
   revalidatePath("/empresarial");
-  return { ok: true, companyId: company.id };
+  // O erro vai JUNTO com o sucesso: a empresa existe (é verdade) e algo não
+  // foi copiado (também é). Dizer só a primeira metade faria alguém descobrir
+  // a segunda na primeira fatura.
+  return {
+    ok: true,
+    companyId: company.id,
+    error:
+      naoCopiado.length > 0
+        ? `A empresa foi criada, mas não copiei: ${naoCopiado.join(", ")}. Confira no cadastro dela.`
+        : undefined,
+  };
 }

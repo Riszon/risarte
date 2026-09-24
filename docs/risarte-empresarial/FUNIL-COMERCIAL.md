@@ -578,3 +578,68 @@ titulares. Tudo devolvido ao estado anterior no fim.
 ⚠️ **E a régua errou pela quarta vez — agora na aritmética.** Ela afirmava
 R$ 3.741,00 quando a soma é R$ 3.740,00, e acusou o sistema. O número do
 sistema estava certo.
+
+### Bloco H4 — o FECHAMENTO leva a proposta ✅ (migração 1018, v0.58.0)
+
+Último pedido do OC-00083: *"o que for gerado na proposta da empresa e
+aprovada e realizado o fechamento deve se tornar as informações da ficha da
+empresa. e todos os benefícios deve ir para os Beneficiários que fazem parte
+da empresa e estão cadastrados no programa."*
+
+Até aqui a proposta morria no funil: negociava-se preço, faixa, carência e
+benefício, e no fechamento nascia uma empresa com os **padrões da rede**. O
+vendido precisava ser redigitado — e é na segunda digitação que o vendido e o
+cobrado divergem.
+
+**O que o fechamento passou a levar**
+
+| Da proposta | Para o cadastro |
+|---|---|
+| preço do titular e dos dependentes | `adhesion_pricing` da empresa |
+| tamanho do pacote familiar | `adhesion_pricing.dependent_family_size` (era `3` escrito no código desde a 0097) |
+| faixas de preço por quantidade | `company_price_tiers` |
+| benefícios, **com o "para quem vale"** | `procedure_benefits` da empresa |
+| carência da empresa e do titular | `companies` (já vinha desde a 1014) |
+| mínimo e máximo de adesões | `companies`, e o máximo **passa a recusar** cadastro |
+| a negociação de origem | `companies.origin_lead_id` |
+
+**Decisões que valem registrar**
+
+- **A FAIXA VIVE NA EMPRESA, e a mensalidade a aplica todo mês** com a
+  quantidade daquele momento. Congelar no fechamento faria a empresa crescer
+  para 150 titulares e continuar pagando o preço de 50 — e "cresça e pague
+  menos" foi o que ela comprou.
+- **⚠️ A ARMADILHA DA COBRANÇA:** o cálculo mensal roda **um titular por vez**,
+  para repartir o valor por CNPJ. Passar as faixas ali faria cada chamada ver
+  "1 titular ativo" e cobrar sempre a faixa de 1 — **o preço mais caro, em
+  toda empresa que negociou volume**. Existe `precoDoTitularComFaixa`, que
+  calcula uma vez com o total; a cobrança usa esse valor nas partes.
+- **As cinco telas que calculam a mensalidade** (painel, ficha, contrato,
+  cobrança e a tela da empresa) leem as faixas pelo **mesmo** carregador. Cada
+  uma do seu jeito é como elas passam a mostrar números diferentes para o
+  mesmo mês. No painel da rede elas são carregadas de uma vez — uma consulta
+  por linha seria uma ida ao banco por empresa, numa tela pensada para 200.
+- **Nada derruba o fechamento.** Quando a cópia roda, a empresa já existe e o
+  negócio já foi fechado: desfazer seria pior. O que não copiar volta numa
+  lista, aparece na tela de quem fechou **e** na linha do tempo do lead.
+- **A regra mora em `copiarPropostaParaEmpresa`, não dentro da action** —
+  dentro dela só seria exercitada por um clique, e ninguém conferiria sem
+  fechar um negócio de verdade.
+- **O máximo recusa; o mínimo não.** Cadastrar titular acima do máximo é
+  barrado com o número na mensagem; abaixo do mínimo nada trava, porque a
+  empresa pode estar entrando aos poucos.
+- **`select("*")` no levantamento do fechamento**: a lista nomeada de colunas
+  já tinha ficado para trás duas vezes quando a proposta ganhou campos, e
+  campo esquecido ali vira preço que o cliente combinou e o sistema não cobra.
+
+⚠️ **E A RÉGUA NÃO DISPAROU — a sexta vez, e a pior delas.** O teste da cópia
+usava um banco de mentira que **ignorava a lista de colunas do `select`**.
+Tirei `for_holder, for_dependent` da consulta de propósito, para ver o teste
+reprovar, e ele **passou**: o defeito que ele existe para pegar atravessava
+inteiro. O banco de mentira passou a recortar pelas colunas pedidas, e só
+então a régua reprovou. **Teste que ninguém viu falhar não é teste.**
+
+**Nota de teste:** `server-only` é trava de empacotamento, e levantava erro ao
+ser importado no Vitest — o que deixaria **toda regra de servidor sem teste**.
+Ele virou um módulo vazio só nos testes (`vitest.config.ts`); no build do Next
+a trava continua valendo.

@@ -249,6 +249,17 @@ export type QualificacaoDoLead = {
   /** Carência negociada na proposta (1014). Nulo = não foi combinada. */
   company_grace_days?: number | null;
   employee_grace_days?: number | null;
+  // ---- H3/H4 (1017, 1018): o que o fechamento leva para o cadastro ---------
+  // Todos opcionais: nulo é "esta negociação não combinou isso", e aí vale o
+  // padrão de sempre.
+  min_adhesions?: number | null;
+  max_adhesions?: number | null;
+  adhesion_limit_target?: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
+  holder_fee_cents?: number | null;
+  dependent_fee_cents?: number | null;
+  dependent_family_fee_cents?: number | null;
+  dependent_family_extra_fee_cents?: number | null;
+  dependent_family_size?: number | null;
 };
 
 /**
