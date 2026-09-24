@@ -696,3 +696,64 @@ de eles existirem.
 **Conferido nas telas do treino:** o benefício da rede aparecendo na proposta
 com o aviso de "ainda não salvo", e o documento com a mensalidade só dos
 titulares (90 × R$ 39,90) mais a tabela de dependentes.
+
+### Bloco I2 — grupos em Configurações e a MARGEM por procedimento ✅ (sem migração, v0.60.0)
+
+Dois pedidos do dono (24/09/2026).
+
+**1. "nas configurações deve ter como criar grupos de benefícios."**
+
+Antes só dava para criar **a partir de uma proposta** — o que obrigava a abrir
+uma negociação para montar algo que é da rede. Agora o grupo nasce em
+Configurações → Grupos de benefícios, **vazio ou copiando o padrão da rede**, e
+os benefícios dele se editam ali mesmo.
+
+Começar do padrão vem marcado: é o que a Risarte já pratica, e tirar é mais
+rápido que montar do zero. Salvar os itens **substitui o conjunto inteiro** —
+mesma regra da proposta, porque um upsert sem limpeza deixaria para sempre o
+item que alguém tirou, e ele voltaria a ser aplicado sem ninguém entender.
+
+**2. "deve ter como visualizar a margem de lucro de cada procedimento (com
+base na precificação) ... baseado na média da rede."**
+
+A tela de benefícios ganhou a coluna **Margem (rede)**, e ela responde a
+pergunta que importa na hora de decidir: **quanto este benefício custa de
+margem**.
+
+A conta não é nova — é a do FIN5 (`computeMargin`), com o benefício aplicado
+ao preço antes. As quatro fontes já existiam no precificador e são pedidas com
+escopo **nulo**, que é como o resto do sistema diz "padrão da rede":
+`cost_settings_for`, `material_costs_for_clinic`, `payout_matrix` e o preço
+padrão do procedimento.
+
+**Decisões que valem registrar**
+
+- **⚠️ CUSTO ZERO FARIA A MARGEM PARECER 100%** — o número mais perigoso que
+  esta tela poderia mostrar, porque convida a dar desconto que a clínica não
+  tem. Cada procedimento carrega `temRepasse` e `temMaterial`, e quando falta
+  algum a tela diz **"a margem acima é um teto otimista"** em vez de exibir o
+  número como verdade.
+- **O DESCONTO SAI INTEIRO DA MARGEM**, e é por isso que a coluna existe: o
+  repasse ao dentista é FIXO e não cai junto com o preço. 40% de desconto num
+  procedimento de R$ 200 tira R$ 80 do preço e **R$ 77,60 da margem**.
+- **Procedimento sem custo não é "margem zero"**: ele custa o repasse e o
+  material, que continuam sendo pagos. A margem fica **negativa**, e a tela diz
+  "este benefício deixa o procedimento no prejuízo".
+- **No gratuito não se cobra taxa de cartão** — não houve cobrança, não houve
+  taxa. A taxa incide sobre o que ENTRA, não sobre o preço de tabela.
+- **O repasse varia por nível do plano de carreira**, e esta tela não pergunta
+  o nível: usa-se a **maior** das linhas. Entre errar para mais e para menos no
+  custo, errar para mais é o lado seguro — mostra a margem mais apertada.
+- **Procedimento sem preço cadastrado fica de fora**, com "sem preço
+  cadastrado" escrito: margem sobre zero seria sempre negativa e não
+  significaria nada.
+- O percentual é **sobre o que a pessoa paga**, não sobre a tabela — sobre a
+  tabela, todo desconto pareceria menos grave do que é.
+
+**Conferido na tela do treino**, com um procedimento que tem preço de verdade.
+
+⚠️ **E a régua errou mais uma vez:** ela cobrava o texto do formulário de
+criar grupo, que só existe **depois do clique**. Conferência por HTTP não
+alcança o que está atrás de uma interação — cobrar isso é acusar a tela de não
+mostrar o que ela mostra. Aquela asserção passou a conferir o caminho no
+código, dizendo que é isso que ela está conferindo.

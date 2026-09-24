@@ -382,3 +382,153 @@ export async function excluirGrupoDeBeneficios(
   revalidatePath("/empresarial/configuracoes");
   return { ok: true };
 }
+
+/**
+ * Cria um grupo de benefícios direto em Configurações (I2).
+ *
+ * Antes só dava para criar a partir de uma proposta — o que obrigava a abrir
+ * uma negociação para montar algo que é da REDE. Aqui o grupo nasce vazio ou
+ * copiando o padrão da rede, e os itens são ajustados em seguida.
+ */
+export async function criarGrupoDeBeneficios(
+  formData: FormData
+): Promise<ActionResult & { groupId?: string }> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const nome = field(formData, "name");
+  if (!nome) return { ok: false, error: "Dê um nome ao grupo." };
+
+  const db = await empresarialDb();
+  const { data: grupo, error } = await db
+    .from("benefit_groups")
+    .insert({
+      name: nome,
+      description: field(formData, "description"),
+      created_by: session.userId,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "Já existe um grupo com este nome." };
+    console.error("criarGrupoDeBeneficios failed:", error.message);
+    return { ok: false, error: "Não foi possível criar o grupo." };
+  }
+
+  // Começar do padrão da rede é o caminho útil: é o que a Risarte já pratica,
+  // e o gestor tira ou ajusta o que aquele grupo precisa mudar. Grupo vazio
+  // continua possível — basta desmarcar.
+  if (formData.get("copiar_da_rede") === "on") {
+    const { data: rede } = await db
+      .from("procedure_benefits")
+      .select(
+        "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      )
+      .is("company_id", null);
+    if (rede?.length) {
+      const { error: eI } = await db
+        .from("benefit_group_items")
+        .insert(rede.map((b) => ({ group_id: grupo.id, ...b })));
+      if (eI) {
+        console.error("criarGrupoDeBeneficios (itens) failed:", eI.message);
+        return {
+          ok: true,
+          groupId: grupo.id,
+          error: "O grupo foi criado, mas os benefícios da rede não entraram.",
+        };
+      }
+    }
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "empresarial_benefit_group",
+    entityId: grupo.id,
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true, groupId: grupo.id };
+}
+
+/**
+ * Troca os benefícios de um grupo, substituindo o conjunto inteiro.
+ *
+ * Mesma regra da proposta: o que sumiu da tela sumiu do banco. Um upsert sem
+ * limpeza deixaria para sempre o item que alguém tirou.
+ */
+export async function salvarItensDoGrupo(
+  groupId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const itens: Record<string, unknown>[] = [];
+  for (let i = 0; i < 200; i += 1) {
+    const procedureId = field(formData, `proc_${i}`);
+    const tipo = field(formData, `tipo_${i}`);
+    if (!procedureId || !tipo) continue;
+    if (!(BENEFIT_TYPES as readonly string[]).includes(tipo)) continue;
+    const bruto = field(formData, `valor_${i}`);
+    const numero = (v: string | null) => {
+      if (!v) return null;
+      const n = Number.parseFloat(v.replace(/\./g, "").replace(",", "."));
+      return Number.isFinite(n) ? n : null;
+    };
+    const forHolder = formData.get(`titular_${i}`) === "on";
+    const forDependent = formData.get(`dependente_${i}`) === "on";
+    // A mesma trava do banco, com a mensagem em português.
+    if (!forHolder && !forDependent) {
+      return {
+        ok: false,
+        error: "Todo benefício precisa valer para o titular, para o dependente ou para os dois.",
+      };
+    }
+    itens.push({
+      group_id: groupId,
+      procedure_id: procedureId,
+      benefit_type: tipo,
+      benefit_value:
+        tipo === "DISCOUNT_PERCENT"
+          ? (numero(bruto) ?? null)
+          : tipo === "DISCOUNT_AMOUNT"
+            ? Math.round((numero(bruto) ?? 0) * 100) || null
+            : null,
+      usage_limit_count: field(formData, `limite_${i}`)
+        ? Number.parseInt(field(formData, `limite_${i}`)!, 10)
+        : null,
+      usage_period_months: field(formData, `janela_${i}`)
+        ? Number.parseInt(field(formData, `janela_${i}`)!, 10)
+        : null,
+      grace_period_months: field(formData, `carencia_${i}`)
+        ? Number.parseInt(field(formData, `carencia_${i}`)!, 10)
+        : 0,
+      for_holder: forHolder,
+      for_dependent: forDependent,
+    });
+  }
+
+  const db = await empresarialDb();
+  const { error: eDel } = await db
+    .from("benefit_group_items")
+    .delete()
+    .eq("group_id", groupId);
+  if (eDel) {
+    console.error("salvarItensDoGrupo (limpeza) failed:", eDel.message);
+    return { ok: false, error: "Não foi possível salvar os benefícios do grupo." };
+  }
+  if (itens.length > 0) {
+    const { error } = await db.from("benefit_group_items").insert(itens);
+    if (error) {
+      console.error("salvarItensDoGrupo failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar os benefícios do grupo." };
+    }
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_benefit_group",
+    entityId: groupId,
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}

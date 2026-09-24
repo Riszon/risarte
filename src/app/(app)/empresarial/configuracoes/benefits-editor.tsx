@@ -26,6 +26,17 @@ import { deleteProcedureBenefit, upsertProcedureBenefit } from "./actions";
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
+/** A margem que a tela mostra ao lado de cada benefício (I2). */
+export type MargemDaLinha = {
+  precoCheioCents: number;
+  precoComBeneficioCents: number;
+  margemComBeneficioCents: number;
+  margemPercent: number | null;
+  custoDoBeneficioCents: number;
+  negativa: boolean;
+  aviso: string | null;
+};
+
 export type BenefitView = {
   id: string;
   procedureId: string;
@@ -55,15 +66,52 @@ function describeBenefit(b: BenefitView): string {
   return parts.join(" · ");
 }
 
+function Margem({ m }: { m?: MargemDaLinha }) {
+  if (!m) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        sem preço cadastrado
+      </span>
+    );
+  }
+  const reais = (c: number) =>
+    (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return (
+    <span className="block text-xs leading-tight">
+      <span
+        className={
+          m.negativa
+            ? "font-medium text-destructive"
+            : "font-medium text-foreground"
+        }
+      >
+        {reais(m.margemComBeneficioCents)}
+        {m.margemPercent != null && ` (${m.margemPercent}%)`}
+      </span>
+      {m.custoDoBeneficioCents > 0 && (
+        <span className="block text-muted-foreground">
+          o benefício custa {reais(m.custoDoBeneficioCents)} de margem
+        </span>
+      )}
+      {m.aviso && (
+        <span className="block text-amber-700 dark:text-amber-400">{m.aviso}</span>
+      )}
+    </span>
+  );
+}
+
 export function BenefitsEditor({
   companyId,
   procedures,
   benefits,
+  margens,
   scopeLabel,
 }: {
   companyId: string | null;
   procedures: { id: string; name: string }[];
   benefits: BenefitView[];
+  /** Margem por procedimento, na média da rede. Vazio = não calculada. */
+  margens?: Map<string, MargemDaLinha>;
   scopeLabel: string;
 }) {
   const router = useRouter();
@@ -102,6 +150,11 @@ export function BenefitsEditor({
                 <th className="px-3 py-2 font-medium">Procedimento</th>
                 <th className="px-3 py-2 font-medium">Benefício</th>
                 <th className="px-3 py-2 font-medium">Parcelas</th>
+                {/* ⚠️ A MARGEM ENTRA AQUI porque é aqui que se decide o
+                    benefício. Numa tela separada, ninguém olharia na hora que
+                    importa — e o desconto sai inteiro da margem, porque o
+                    repasse ao dentista é FIXO e não cai junto. */}
+                <th className="px-3 py-2 font-medium">Margem (rede)</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -114,6 +167,9 @@ export function BenefitsEditor({
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {b.maxInstallments ? `${b.maxInstallments}x` : "—"}
+                  </td>
+                  <td className="px-3 py-2">
+                    <Margem m={margens?.get(b.procedureId)} />
                   </td>
                   <td className="px-3 py-2 text-right">
                     <span className="flex justify-end gap-1">

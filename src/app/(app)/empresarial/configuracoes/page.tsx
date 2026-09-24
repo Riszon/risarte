@@ -8,7 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AdhesionPricingForm, SplitRulesForm } from "./pricing-forms";
-import { BenefitsEditor } from "./benefits-editor";
+import { BenefitsEditor, type MargemDaLinha } from "./benefits-editor";
+import { custosDaRede } from "@/lib/empresarial/custos-da-rede";
+import {
+  avisoDaMargem,
+  margemComBeneficio,
+} from "@/lib/empresarial/margem-do-beneficio";
 import { loadBenefits, loadPricing, loadProcedures, loadSplit } from "./data";
 import { RetentionButton } from "./retention-button";
 import { PropostaDaRede, type Bloco } from "./proposta-da-rede";
@@ -102,11 +107,36 @@ export default async function EmpresarialConfigPage(props: {
       .sort((a, z) => a.nome.localeCompare(z.nome, "pt-BR")),
   }));
 
+  // I2: a margem de cada procedimento, na média da rede.
+  const custos = await custosDaRede();
+  const margens = new Map<string, MargemDaLinha>();
+
   const [{ pricing }, { split }, benefits] = await Promise.all([
     loadPricing(db, null),
     loadSplit(db, null),
     loadBenefits(db, null, procedureNames),
   ]);
+
+  // ⚠️ Procedimento SEM PREÇO cadastrado fica de fora do mapa, e a tela diz
+  // "sem preço cadastrado" em vez de mostrar margem sobre zero — que seria
+  // sempre 100% negativa e não significaria nada.
+  for (const b of benefits) {
+    const custo = custos.get(b.procedureId);
+    if (!custo || custo.precoCents <= 0) continue;
+    const m = margemComBeneficio(custo, {
+      benefitType: b.benefitType,
+      benefitValue: b.benefitValue,
+    });
+    margens.set(b.procedureId, {
+      precoCheioCents: m.precoCheioCents,
+      precoComBeneficioCents: m.precoComBeneficioCents,
+      margemComBeneficioCents: m.margemComBeneficioCents,
+      margemPercent: m.margemPercent,
+      custoDoBeneficioCents: m.custoDoBeneficioCents,
+      negativa: m.negativa,
+      aviso: avisoDaMargem(m),
+    });
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
@@ -176,13 +206,16 @@ export default async function EmpresarialConfigPage(props: {
         />
       )}
 
-      {aba === "grupos" && <GruposDeBeneficios grupos={grupos} />}
+      {aba === "grupos" && (
+        <GruposDeBeneficios grupos={grupos} procedimentos={procedures} />
+      )}
 
       {aba === "beneficios" && (
         <BenefitsEditor
           companyId={null}
           procedures={procedures}
           benefits={benefits}
+          margens={margens}
           scopeLabel="padrão da rede"
         />
       )}

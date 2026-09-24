@@ -386,6 +386,25 @@ Sem migração — basta Ctrl + F5.
    - Tem de aparecer a seção **Dependentes** com os três valores.
    - E a frase de que o total sai **na implantação**.
 
+## 10.9. Grupos em Configurações e a margem (OC-00083 I2, 24/09/2026)
+
+Sem migração — basta Ctrl + F5.
+
+1. **Configurações → Benefícios**: a tabela ganhou a coluna **Margem (rede)**.
+2. Num procedimento com **preço e repasse cadastrados**, ponha um desconto de
+   40%. A coluna tem de mostrar a margem que sobra **e** quanto o benefício
+   custou de margem.
+3. Troque para **Sem custo**: a margem fica **negativa** e a tela diz que o
+   procedimento fica no prejuízo — porque o repasse e o material continuam
+   sendo pagos.
+4. Num procedimento **sem repasse cadastrado**, a tela avisa que a margem é um
+   **teto otimista**. Não confie no número enquanto esse aviso estiver lá.
+5. **Configurações → Grupos de benefícios → Novo grupo**: dê um nome e deixe
+   marcado *começar com os benefícios do padrão da rede*. Crie.
+6. No grupo criado, clique em **Editar os benefícios**: ajuste, tire um, e
+   salve. O que sumiu da tela some do grupo.
+7. Vá a uma proposta e aplique o grupo: ele chega com o que você deixou.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —
