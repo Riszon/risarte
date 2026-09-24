@@ -186,10 +186,18 @@ export function ManualReader({
   secoes,
   versao,
   migracao,
+  // O Risarte Empresarial tem manual próprio e reusa ESTE leitor (v0.63.0).
+  // Os padrões são os do manual do sistema, então nada muda para quem já
+  // usava — copiar o leitor inteiro para o outro módulo criaria duas telas
+  // que divergem na primeira correção feita só de um lado.
+  titulo = "Manual de Treinamento",
+  exemplosDeBusca = "anamnese, desconto, permissão",
 }: {
   secoes: Secao[];
   versao: string;
   migracao: string;
+  titulo?: string;
+  exemplosDeBusca?: string;
 }) {
   const [busca, setBusca] = useState("");
   const [ativa, setAtiva] = useState(secoes[0]?.id ?? "");
@@ -213,7 +221,7 @@ export function ManualReader({
       <header className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
           <BookOpen className="size-6 text-gold-tinta" />
-          Manual de Treinamento
+          {titulo}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Esta é a versão do sistema que você está usando agora —{" "}
@@ -229,7 +237,7 @@ export function ManualReader({
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Procurar no manual (ex.: anamnese, desconto, permissão)"
+          placeholder={`Procurar no manual (ex.: ${exemplosDeBusca})`}
           className="pl-9"
           aria-label="Procurar no manual"
         />

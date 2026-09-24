@@ -462,6 +462,26 @@ e o caminho para incluir mais existe, cobra a diferença e é curto.
     ela anonimiza dados de quem saiu há mais de 5 anos (rotina também roda sozinha
     todo mês).
 
+## 12. O manual do Empresarial (pedido do dono, 24/09/2026)
+
+**O que testar:** o manual próprio do módulo, dentro do módulo.
+
+36. Em **Empresarial**, clique no botão **Manual** (o primeiro do alto). Ele
+    abre em `/empresarial/manual`.
+37. Confira no alto: **Manual do Risarte Empresarial**, com a **versão do
+    Empresarial** — não a do sistema.
+38. Clique nas seções pela lista lateral. Procure por **"carência"**,
+    **"termo de inclusão"** e **"split"**: a busca mostra **todas** as seções
+    que falam daquilo, uma embaixo da outra.
+39. ⚠️ **Entre como recepção** (ou outro papel que só enxerga o módulo): o
+    botão **Manual** tem de aparecer, mesmo sem Funil e sem Configurações.
+    Manual que só o gestor abre não treina quem liga para os titulares.
+40. Confira que o **manual do sistema** (Menu → Manual) continua igual, com o
+    título *Manual de Treinamento* e a versão do riSZon.
+41. Para circular fora do sistema, o Word sai com `npm run manual:empresarial`
+    em `docs/treinamento/Manual-Risarte-Empresarial.docx`. **Nunca edite o
+    .docx à mão** — a próxima geração apaga.
+
 ---
 
 **Observações:**

@@ -23,6 +23,7 @@ const nextConfig: NextConfig = {
   // arquivo ir junto).
   outputFileTracingIncludes: {
     "/manual": ["docs/treinamento/manual-treinamento-riSZon.md"],
+    "/empresarial/manual": ["docs/treinamento/manual-empresarial.md"],
   },
 
   // "Clientes" virou "Prontuários" (rota /clientes → /prontuarios). Mantém

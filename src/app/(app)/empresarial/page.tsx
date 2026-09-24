@@ -12,6 +12,7 @@ import {
 import { FilterForm } from "@/components/filter-form";
 import {
   BarChart3,
+  BookOpen,
   Building2,
   CalendarDays,
   KanbanSquare,
@@ -201,6 +202,20 @@ export default async function EmpresarialPage(props: {
         titulo="Risarte Empresarial"
         descricao="Empresas parceiras, titulares e mensalidades do programa."
       >
+          {/* SEM GUARDA, de propósito: quem entra no módulo lê o manual dele.
+              A recepção não vê Funil nem Configurações, e é justamente ela que
+              liga para os titulares — deixá-la sem manual seria treinar só
+              quem já sabe. */}
+          <Button
+            variant="outline"
+            size="sm"
+            className={BOTAO_NO_CABECALHO}
+            nativeButton={false}
+            render={<Link href="/empresarial/manual" />}
+          >
+            <BookOpen className="mr-1 size-4" />
+            Manual
+          </Button>
           {canFunnel && (
             <Button
               variant="outline"
