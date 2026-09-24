@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "./db";
 import type { BenefitType } from "./constants";
+import { valeParaPessoa } from "./beneficios-da-proposta";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type ProgramBenefit = {
@@ -48,6 +49,8 @@ type BenefitRow = {
   usage_limit_count: number | null;
   usage_period_months: number | null;
   grace_period_months: number;
+  for_holder: boolean;
+  for_dependent: boolean;
 };
 
 /**
@@ -98,7 +101,7 @@ export async function loadClientProgram(
     db
       .from("procedure_benefits")
       .select(
-        "procedure_id, company_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months"
+        "procedure_id, company_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, for_holder, for_dependent"
       )
       .or(`company_id.eq.${companyId},company_id.is.null`)
       .returns<BenefitRow[]>(),
@@ -154,8 +157,20 @@ export async function loadClientProgram(
     usageByProc.set(u.procedure_id, list);
   }
 
+  // ⚠️ ESTA PESSOA É TITULAR OU DEPENDENTE? (1016). Sem a pergunta, a marca
+  // "vale só para o titular" feita na proposta seria enfeite: o desconto
+  // apareceria no orçamento do dependente do mesmo jeito, e quem descobriria
+  // seria o paciente na hora de pagar.
+  const pessoa: "titular" | "dependente" = emp ? "titular" : "dependente";
+
   const byProcedure: Record<string, ProgramBenefit> = {};
   for (const [procedureId, b] of chosen) {
+    // Benefício que não alcança esta pessoa simplesmente não existe para ela —
+    // some da lista em vez de aparecer bloqueado. "Bloqueado" é para o que
+    // ainda vai valer (carência, limite); isto nunca vai.
+    if (!valeParaPessoa({ forHolder: b.for_holder, forDependent: b.for_dependent }, pessoa)) {
+      continue;
+    }
     // Carência específica do benefício.
     const benefitGraceUntil =
       joinedAt && b.grace_period_months > 0

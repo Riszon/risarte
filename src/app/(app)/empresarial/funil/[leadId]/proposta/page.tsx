@@ -24,7 +24,14 @@ import {
   quemPagaOQue,
   validadeDaProposta,
 } from "@/lib/empresarial/documento-da-proposta";
-import type { PaymentModel } from "@/lib/empresarial/constants";
+import type { BenefitType, PaymentModel } from "@/lib/empresarial/constants";
+import {
+  paraQuemVale,
+  rotuloDaCarencia,
+  rotuloDoBeneficio,
+  rotuloDoUso,
+  type BeneficioDaProposta,
+} from "@/lib/empresarial/beneficios-da-proposta";
 import { createClient } from "@/lib/supabase/server";
 import { BotaoImprimir } from "../botao-imprimir";
 
@@ -58,6 +65,18 @@ type QualRow = {
   proposal_valid_days: number | null;
   company_grace_days: number | null;
   employee_grace_days: number | null;
+};
+
+type BeneficioRow = {
+  procedure_id: string;
+  benefit_type: BenefitType;
+  benefit_value: number | null;
+  usage_limit_count: number | null;
+  usage_period_months: number | null;
+  grace_period_months: number;
+  max_installments: number | null;
+  for_holder: boolean;
+  for_dependent: boolean;
 };
 
 type PropostaTemplateRow = {
@@ -185,6 +204,42 @@ export default async function PropostaPage({
   if (erroModelo) console.error("modelo da proposta:", erroModelo.message);
   const daRede = modelos?.find((m) => !m.lead_id);
   const blocos = (modelos?.find((m) => m.lead_id === leadId) ?? daRede)?.sections ?? [];
+
+  // OS BENEFÍCIOS COMBINADOS (1016) e o nome de cada procedimento.
+  const { data: benRows, error: erroBen } = await db
+    .from("lead_benefits")
+    .select(
+      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+    )
+    .eq("lead_id", leadId)
+    .returns<BeneficioRow[]>();
+  if (erroBen) console.error("benefícios da proposta:", erroBen.message);
+
+  const beneficios: (BeneficioDaProposta & { nome: string })[] = [];
+  if (benRows?.length) {
+    const supabaseProc = await createClient();
+    const { data: procs } = await supabaseProc
+      .from("procedures")
+      .select("id, name")
+      .in("id", benRows.map((b) => b.procedure_id))
+      .returns<{ id: string; name: string }[]>();
+    const nomePorId = new Map((procs ?? []).map((x) => [x.id, x.name]));
+    for (const b of benRows) {
+      beneficios.push({
+        nome: nomePorId.get(b.procedure_id) ?? "Procedimento",
+        procedureId: b.procedure_id,
+        benefitType: b.benefit_type,
+        benefitValue: b.benefit_value,
+        usageLimitCount: b.usage_limit_count,
+        usagePeriodMonths: b.usage_period_months,
+        gracePeriodMonths: b.grace_period_months,
+        maxInstallments: b.max_installments,
+        forHolder: b.for_holder,
+        forDependent: b.for_dependent,
+      });
+    }
+    beneficios.sort((a, z) => a.nome.localeCompare(z.nome, "pt-BR"));
+  }
 
   const hoje = todayInBrazil();
   // O prazo desta negociação manda; sem ele, o padrão da rede.
@@ -322,6 +377,34 @@ export default async function PropostaPage({
                   />
                 </div>
               )}
+          </section>
+        )}
+
+        {/* ⚠️ OS BENEFÍCIOS SÃO O QUE A EMPRESA COMPRA. Ficam ANTES do texto
+            geral do programa: quem lê quer saber o que ganha, e o texto
+            explica como funciona. Cada linha diz para quem vale — a marca
+            feita na proposta sai impressa, senão ela não teria consequência
+            nenhuma para quem decide. */}
+        {beneficios.length > 0 && (
+          <section className="space-y-2 break-inside-avoid">
+            <h2 className="text-lg font-medium">O que está coberto</h2>
+            <ul className="divide-y rounded-lg border">
+              {beneficios.map((b) => {
+                const uso = rotuloDoUso(b);
+                const carencia = rotuloDaCarencia(b);
+                return (
+                  <li key={b.procedureId} className="flex flex-wrap gap-x-3 gap-y-0.5 p-3">
+                    <span className="min-w-48 flex-1 font-medium">{b.nome}</span>
+                    <span>{rotuloDoBeneficio(b)}</span>
+                    <span className="w-full text-sm text-muted-foreground">
+                      {paraQuemVale(b)}
+                      {uso ? ` · ${uso}` : ""}
+                      {carencia ? ` · ${carencia}` : ""}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         )}
 

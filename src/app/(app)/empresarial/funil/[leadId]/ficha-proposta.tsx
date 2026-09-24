@@ -50,6 +50,12 @@ import {
 import type { QualificacaoView } from "./ficha-lead";
 import { resetProposalText, saveProposal, saveProposalText } from "./actions";
 import type { Bloco } from "./apresentacao-editor";
+import {
+  BeneficiosDaProposta,
+  type GrupoDeBeneficios,
+  type Procedimento,
+} from "./beneficios-editor";
+import type { BeneficioDaProposta } from "@/lib/empresarial/beneficios-da-proposta";
 
 /**
  * A ABA DA PROPOSTA (OC-00083, 23/09/2026).
@@ -76,6 +82,10 @@ export function FichaDaProposta({
   blocos,
   textoPersonalizado,
   semMigracao = false,
+  procedimentos,
+  grupos,
+  beneficios,
+  podeCriarGrupo,
 }: {
   leadId: string;
   cnpj: string | null;
@@ -93,6 +103,11 @@ export function FichaDaProposta({
    * padrão, e avisa em vez de gravar num lugar que não existe.
    */
   semMigracao?: boolean;
+  /** H2: os benefícios combinados nesta proposta e os grupos da rede. */
+  procedimentos: Procedimento[];
+  grupos: GrupoDeBeneficios[];
+  beneficios: BeneficioDaProposta[];
+  podeCriarGrupo: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -529,7 +544,17 @@ export function FichaDaProposta({
       </form>
 
       {/* Fora do formulário acima de propósito: <form> dentro de <form> não
-          funciona, e o texto tem o seu próprio salvar. */}
+          funciona, e cada um tem o seu próprio salvar. */}
+      {!semMigracao && (
+        <BeneficiosDaProposta
+          leadId={leadId}
+          procedimentos={procedimentos}
+          grupos={grupos}
+          iniciais={beneficios}
+          podeCriarGrupo={podeCriarGrupo}
+        />
+      )}
+
       {!semMigracao && (
         <TextoDaProposta
           leadId={leadId}

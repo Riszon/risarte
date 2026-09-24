@@ -305,3 +305,80 @@ export async function salvarPropostaDaRede(
   revalidatePath("/empresarial/configuracoes");
   return { ok: true };
 }
+
+// -----------------------------------------------------------------------------
+// H2 — grupos de benefícios (1016)
+// -----------------------------------------------------------------------------
+
+/**
+ * Renomeia, descreve e liga/desliga um grupo.
+ *
+ * ⚠️ DESLIGAR NÃO APAGA. Grupo desligado some da lista de "aplicar" e continua
+ * existindo — as propostas que já o usaram guardaram os benefícios na própria
+ * linha delas, então nada muda no que já foi ofertado.
+ */
+export async function salvarGrupoDeBeneficios(
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const id = field(formData, "group_id");
+  const nome = field(formData, "name");
+  if (!id) return { ok: false, error: "Grupo não informado." };
+  if (!nome) return { ok: false, error: "O grupo precisa de um nome." };
+
+  const db = await empresarialDb();
+  const { error } = await db
+    .from("benefit_groups")
+    .update({
+      name: nome,
+      description: field(formData, "description"),
+      is_active: formData.get("is_active") === "on",
+    })
+    .eq("id", id);
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "Já existe um grupo com este nome." };
+    console.error("salvarGrupoDeBeneficios failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o grupo." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_benefit_group",
+    entityId: id,
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}
+
+/**
+ * Apaga um grupo de vez.
+ *
+ * Só o grupo: as propostas que o aplicaram copiaram os benefícios para a
+ * linha delas, e continuam exatamente como estavam. Apagar aqui não mexe em
+ * negociação nenhuma — por isso não há trava.
+ */
+export async function excluirGrupoDeBeneficios(
+  groupId: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const db = await empresarialDb();
+  const { error } = await db.from("benefit_groups").delete().eq("id", groupId);
+  if (error) {
+    console.error("excluirGrupoDeBeneficios failed:", error.message);
+    return { ok: false, error: "Não foi possível excluir o grupo." };
+  }
+
+  // A trilha não tem "delete" (LGPD: apagar é anonimizar, e aqui não há dado
+  // pessoal nenhum). "update" com o tipo próprio registra o que aconteceu.
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_benefit_group_excluido",
+    entityId: groupId,
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}

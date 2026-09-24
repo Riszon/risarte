@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import {
+  BENEFIT_TYPES,
   DISPATCH_CHANNELS,
   DISPATCH_CHANNEL_LABELS,
   DISPATCH_ITEMS,
@@ -22,6 +23,10 @@ import {
   podeNaoSeAplicar,
   type ImplementationStep,
 } from "@/lib/empresarial/implantacao";
+import {
+  problemasDoBeneficio,
+  type BeneficioDaProposta,
+} from "@/lib/empresarial/beneficios-da-proposta";
 import { formatPhone } from "@/lib/masks";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -610,5 +615,180 @@ export async function setImplementationStep(
     return { ok: false, error: "Não foi possível marcar o passo." };
   }
   revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// H2 — os benefícios combinados na proposta (1016)
+// -----------------------------------------------------------------------------
+
+/**
+ * Lê os benefícios que vieram do formulário.
+ *
+ * Chegam como `proc_0`, `tipo_0`, … — o mesmo formato dos blocos de texto.
+ * Linha sem procedimento é linha apagada: o botão de lixeira tira da tela, e
+ * o que não voltar no envio deixa de existir no banco.
+ */
+function beneficiosDoFormulario(formData: FormData): BeneficioDaProposta[] {
+  const lista: BeneficioDaProposta[] = [];
+  for (let i = 0; i < 200; i += 1) {
+    const procedureId = texto(formData, `proc_${i}`);
+    if (!procedureId) continue;
+    const tipo = daLista(formData, `tipo_${i}`, BENEFIT_TYPES);
+    if (!tipo) continue;
+    lista.push({
+      procedureId,
+      benefitType: tipo,
+      // "Sem custo" e "Não coberto" não têm valor, e o campo fica escondido na
+      // tela. Guardar o que sobrou de uma digitação anterior faria o banco
+      // carregar um número que ninguém mais vê — e que reapareceria ao trocar
+      // o tipo de volta.
+      benefitValue:
+        tipo === "DISCOUNT_PERCENT"
+          ? inteiro(formData, `valor_${i}`)
+          : tipo === "DISCOUNT_AMOUNT"
+            ? centavos(formData, `valor_${i}`)
+            : null,
+      usageLimitCount: inteiro(formData, `limite_${i}`),
+      usagePeriodMonths: inteiro(formData, `janela_${i}`),
+      gracePeriodMonths: inteiro(formData, `carencia_${i}`) ?? 0,
+      maxInstallments: inteiro(formData, `parcelas_${i}`),
+      // Ausente = desmarcado. O padrão "os dois marcados" é da TELA, que
+      // nasce com as caixas ligadas; aqui, o que vale é o que ela mandou.
+      forHolder: formData.get(`titular_${i}`) === "on",
+      forDependent: formData.get(`dependente_${i}`) === "on",
+    });
+  }
+  return lista;
+}
+
+/**
+ * Salva os benefícios da proposta, substituindo o conjunto inteiro.
+ *
+ * ⚠️ SUBSTITUI, não acrescenta: o formulário manda a lista completa, e o que
+ * não vier nela foi apagado na tela. Um upsert sem a limpeza deixaria para
+ * sempre o benefício que alguém tirou — e ele reapareceria no documento.
+ */
+export async function saveLeadBenefits(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const lista = beneficiosDoFormulario(formData);
+
+  // A conferência é a mesma da tela, e mora no módulo puro: duas cópias
+  // divergiriam, e a tela passaria a aceitar o que o banco recusa.
+  const problemas: string[] = [];
+  for (const b of lista) {
+    for (const p of problemasDoBeneficio(b)) problemas.push(p);
+  }
+  if (problemas.length > 0) {
+    return { ok: false, error: `Confira os benefícios: ${[...new Set(problemas)].join("; ")}.` };
+  }
+
+  const db = await empresarialDb();
+  const { error: eDel } = await db
+    .from("lead_benefits")
+    .delete()
+    .eq("lead_id", leadId);
+  if (eDel) {
+    console.error("saveLeadBenefits (limpeza) failed:", eDel.message);
+    return { ok: false, error: "Não foi possível salvar os benefícios." };
+  }
+
+  if (lista.length > 0) {
+    const { error } = await db.from("lead_benefits").insert(
+      lista.map((b) => ({
+        lead_id: leadId,
+        procedure_id: b.procedureId,
+        benefit_type: b.benefitType,
+        benefit_value: b.benefitValue,
+        usage_limit_count: b.usageLimitCount,
+        usage_period_months: b.usagePeriodMonths,
+        grace_period_months: b.gracePeriodMonths,
+        max_installments: b.maxInstallments,
+        for_holder: b.forHolder,
+        for_dependent: b.forDependent,
+        updated_by: session.userId,
+      }))
+    );
+    if (error) {
+      console.error("saveLeadBenefits failed:", error.message);
+      return { ok: false, error: "Não foi possível salvar os benefícios." };
+    }
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_lead_benefits",
+    entityId: leadId,
+  });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+/**
+ * Guarda a configuração desta proposta como um GRUPO da rede.
+ *
+ * Ato de gestor do programa: o grupo passa a valer para todo mundo. A RLS
+ * confirma; aqui a guarda existe para a mensagem ser em português.
+ */
+export async function saveAsBenefitGroup(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) {
+    return { ok: false, error: "Só o gestor do programa cria grupo da rede." };
+  }
+  const nome = texto(formData, "group_name");
+  if (!nome) return { ok: false, error: "Dê um nome ao grupo." };
+
+  const db = await empresarialDb();
+  const { data: atuais } = await db
+    .from("lead_benefits")
+    .select(
+      "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+    )
+    .eq("lead_id", leadId);
+
+  // Grupo vazio com nome bonito é pior que grupo nenhum: alguém o aplicaria
+  // achando que faz alguma coisa.
+  if (!atuais || atuais.length === 0) {
+    return { ok: false, error: "Esta proposta ainda não tem benefício para guardar." };
+  }
+
+  const { data: grupo, error: eG } = await db
+    .from("benefit_groups")
+    .insert({
+      name: nome,
+      description: texto(formData, "group_description"),
+      created_by: session.userId,
+    })
+    .select("id")
+    .single();
+  if (eG) {
+    if (eG.code === "23505") return { ok: false, error: "Já existe um grupo com este nome." };
+    console.error("saveAsBenefitGroup failed:", eG.message);
+    return { ok: false, error: "Não foi possível criar o grupo." };
+  }
+
+  const { error: eI } = await db.from("benefit_group_items").insert(
+    atuais.map((b) => ({ group_id: grupo.id, ...b }))
+  );
+  if (eI) {
+    console.error("saveAsBenefitGroup (itens) failed:", eI.message);
+    return { ok: false, error: "O grupo foi criado, mas os benefícios não entraram." };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "empresarial_benefit_group",
+    entityId: grupo.id,
+  });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  revalidatePath("/empresarial/configuracoes");
   return { ok: true };
 }

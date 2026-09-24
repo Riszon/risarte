@@ -456,3 +456,64 @@ a palavra (ela só aparece em comentário e em parâmetro de endereço), então 
 conferência se acusou de estar lendo páginas vazias. A contraprova certa é
 procurar a palavra NOVA nas mesmas páginas: **16 telas sem "colaborador", 12
 delas dizendo "titular"** — e provada quebrando a busca de propósito.
+
+### Bloco H2 — os BENEFÍCIOS na proposta, e os GRUPOS ✅ (migração 1016, v0.56.0)
+
+Pedido do dono: *"Na proposta deve ter como configurar a vantagem e os
+benefícios... Cada benefício deve ter como assinalar se vale para os Titulares
+e para os Dependentes (como padrão vir marcado para os dois). Deve ter a
+possibilidade de criar grupos de benefícios dos procedimentos, para não
+precisar ficar configurando um benefício por vez em cada elaboração."*
+
+**O que existe agora**
+
+- Na aba **Proposta**, a seção **Vantagens e benefícios**: procedimento a
+  procedimento, com tipo (desconto %, desconto R$, sem custo, não coberto),
+  quantas vezes, a cada quantos meses, carência, e **duas caixas — vale para o
+  titular, vale para o dependente**, as duas marcadas por padrão.
+- **Grupos da rede** (`benefit_groups`): aplicar um numa proposta, e — para o
+  gestor do programa — **guardar a combinação atual como grupo novo**.
+  Manutenção em Configurações → Grupos de benefícios.
+- O documento da proposta ganhou **"O que está coberto"**, com cada linha
+  dizendo para quem vale, a regra de uso e a carência.
+
+**Decisões que valem registrar**
+
+- **`procedure_benefits` ganhou as duas colunas junto**, e não só a proposta.
+  Sem elas na tabela que o motor consulta, a marca feita aqui seria enfeite: o
+  fechamento a perderia e o desconto apareceria no orçamento do dependente do
+  mesmo jeito. **E o motor passou a respeitá-las** — benefício que não alcança
+  a pessoa some da lista dela, em vez de aparecer "bloqueado" (bloqueado é o
+  que ainda vai valer; isto nunca vai).
+- **`lead_benefits` é tabela própria.** Enquanto o negócio não fecha não há
+  empresa para pendurar, e escrever em `procedure_benefits` com empresa nula
+  sobrescreveria o **padrão da rede inteiro**.
+- **NOT NULL com padrão `true` nas duas colunas** — e isto não contraria a
+  lição da 0230 (coluna anulável em cascata): não é configuração que herda da
+  rede, é uma afirmação sobre o benefício. "Não sei para quem vale" não é
+  resposta útil no meio de um orçamento, e todo benefício que já existia valia
+  para os dois.
+- **Benefício que não vale para ninguém é recusado pelo banco.** Quem quer
+  tirar a cobertura usa *Não coberto*, que é decisão declarada.
+- **Aplicar um grupo SUBSTITUI o que havia do mesmo procedimento** e mantém o
+  resto, dizendo na tela quantos trocou. Preservar o que já existia devolveria
+  uma mistura que não é nem o grupo nem o que havia antes.
+- **Salvar substitui o conjunto inteiro**: o que sumiu da tela sumiu do banco.
+  Um upsert sem limpeza deixaria para sempre o benefício que alguém tirou — e
+  ele reapareceria no documento.
+- **O grupo semeado nasce do que a rede já pratica**, não de uma lista
+  inventada; **e se não houver padrão da rede, nenhum grupo é criado.** Grupo
+  vazio com nome bonito é pior que grupo nenhum.
+- **Limite declarado:** os benefícios de um grupo não se editam em
+  Configurações. Para mudar, aplique numa proposta, ajuste e guarde como grupo
+  novo — assim a mesma conta não vive em dois lugares. A tela diz isso.
+
+**Conferido nas telas do treino**, criando e apagando dado de teste: as duas
+caixas, o *"Só o titular"* saindo impresso, a regra de uso, a carência, o
+grupo aparecendo ao ser criado e sumindo ao ser apagado (com os itens junto).
+
+⚠️ **E a régua errou TRÊS vezes, sempre a régua e nunca a tela:** ela cobrou o
+seletor de grupos num banco que não tem grupo (e a tela esconde de propósito);
+procurou o nome do grupo no texto quando ele mora **dentro de um campo de
+edição**; e, antes disso, cobrou a palavra "colaborador" em telas que não a
+desenham. **Conferir a régua antes de acusar a tela é o primeiro passo.**

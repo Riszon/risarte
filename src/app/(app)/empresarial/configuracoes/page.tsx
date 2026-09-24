@@ -12,7 +12,9 @@ import { BenefitsEditor } from "./benefits-editor";
 import { loadBenefits, loadPricing, loadProcedures, loadSplit } from "./data";
 import { RetentionButton } from "./retention-button";
 import { PropostaDaRede, type Bloco } from "./proposta-da-rede";
+import { GruposDeBeneficios, type GrupoView } from "./grupos-de-beneficios";
 import { Settings } from "lucide-react";
+import type { BenefitType } from "@/lib/empresarial/constants";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ const TABS = [
   { key: "split", label: "Split de pagamento" },
   { key: "beneficios", label: "Benefícios" },
   { key: "proposta", label: "Proposta comercial" },
+  { key: "grupos", label: "Grupos de benefícios" },
 ] as const;
 
 export default async function EmpresarialConfigPage(props: {
@@ -47,6 +50,57 @@ export default async function EmpresarialConfigPage(props: {
     .select("sections, valid_days")
     .is("lead_id", null)
     .maybeSingle<{ sections: Bloco[]; valid_days: number }>();
+
+  // H2 (1016): os grupos de benefícios da rede, com os itens de cada um.
+  const [{ data: gruposRows }, { data: itensRows }] = await Promise.all([
+    db
+      .from("benefit_groups")
+      .select("id, name, description, is_active")
+      .order("name")
+      .returns<
+        { id: string; name: string; description: string | null; is_active: boolean }[]
+      >(),
+    db
+      .from("benefit_group_items")
+      .select(
+        "group_id, procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      )
+      .returns<
+        {
+          group_id: string;
+          procedure_id: string;
+          benefit_type: BenefitType;
+          benefit_value: number | null;
+          usage_limit_count: number | null;
+          usage_period_months: number | null;
+          grace_period_months: number;
+          max_installments: number | null;
+          for_holder: boolean;
+          for_dependent: boolean;
+        }[]
+      >(),
+  ]);
+  const grupos: GrupoView[] = (gruposRows ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    isActive: g.is_active,
+    itens: (itensRows ?? [])
+      .filter((i) => i.group_id === g.id)
+      .map((i) => ({
+        nome: procedureNames.get(i.procedure_id) ?? "(procedimento)",
+        procedureId: i.procedure_id,
+        benefitType: i.benefit_type,
+        benefitValue: i.benefit_value,
+        usageLimitCount: i.usage_limit_count,
+        usagePeriodMonths: i.usage_period_months,
+        gracePeriodMonths: i.grace_period_months,
+        maxInstallments: i.max_installments,
+        forHolder: i.for_holder,
+        forDependent: i.for_dependent,
+      }))
+      .sort((a, z) => a.nome.localeCompare(z.nome, "pt-BR")),
+  }));
 
   const [{ pricing }, { split }, benefits] = await Promise.all([
     loadPricing(db, null),
@@ -121,6 +175,8 @@ export default async function EmpresarialConfigPage(props: {
           blocos={modeloDaRede?.sections ?? []}
         />
       )}
+
+      {aba === "grupos" && <GruposDeBeneficios grupos={grupos} />}
 
       {aba === "beneficios" && (
         <BenefitsEditor

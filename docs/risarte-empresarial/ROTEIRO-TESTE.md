@@ -291,6 +291,33 @@ pode aparecer a palavra *colaborador*.
 6. ⚠️ **Fora do Empresarial a palavra continua**, e está certo: na agenda, nos
    Risartanos e no SDR, *colaborador* é a equipe da própria Risarte.
 
+## 10.5. Benefícios na proposta e grupos (OC-00083 H2, 23/09/2026)
+
+⚠️ **Rode a migração 1016 antes.**
+
+1. Funil → uma empresa → aba **Proposta** → seção **Vantagens e benefícios**.
+2. **Incluir um procedimento**: escolha um. Ele entra com as **duas caixas
+   marcadas** (titular e dependente) — é o padrão.
+3. Ponha *Desconto (%)* 30, *Quantas vezes* 2, *A cada* 12 meses,
+   *Carência* 3. **Desmarque "Vale para o dependente"**. Salve.
+4. **Ver a proposta**: tem de aparecer a seção **O que está coberto**, com
+   "30% de desconto", **"Só o titular"**, "2 vezes a cada 12 meses" e
+   "após 3 meses de programa".
+5. Troque o tipo para **Sem custo**: o campo de valor some, e o documento
+   escreve só "Sem custo" — nunca "Sem custo (0%)".
+6. **Desmarque as duas caixas** e tente salvar: tem de recusar, dizendo que
+   falta marcar para quem vale.
+7. **Grupos:** com os benefícios salvos, clique em *Guardar esta combinação
+   como grupo da rede*, dê um nome. Vá em **Configurações → Grupos de
+   benefícios**: ele está lá, com o conteúdo.
+8. Abra **outra** empresa, aba Proposta: escolha o grupo em *Aplicar um grupo
+   pronto* e clique em **Aplicar**. A tela diz quantos incluiu e quais trocou.
+   **Nada foi salvo ainda** — confira e só então salve.
+9. Aplique um grupo sobre uma proposta que já tenha benefício do mesmo
+   procedimento: o grupo **substitui** aquele e **mantém** os outros.
+10. Em Configurações, **desligue** o grupo: ele some da lista de aplicar e
+    continua existindo. As propostas que já o usaram não mudam.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

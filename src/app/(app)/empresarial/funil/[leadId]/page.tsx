@@ -23,7 +23,7 @@ import {
   type BillingBasis,
   type InterestLevel,
 } from "@/lib/empresarial/proposta";
-import { LEAD_STAGE_LABELS } from "@/lib/empresarial/constants";
+import { LEAD_STAGE_LABELS, type BenefitType } from "@/lib/empresarial/constants";
 import {
   etapaInicial,
   situacaoDasEtapas,
@@ -77,6 +77,19 @@ type TemplateRow = {
   title: string;
   subtitle: string | null;
   sections: { titulo: string; corpo: string }[];
+};
+
+/** Uma linha de benefício — a mesma forma na proposta e no grupo (1016). */
+type BeneficioRow = {
+  procedure_id: string;
+  benefit_type: BenefitType;
+  benefit_value: number | null;
+  usage_limit_count: number | null;
+  usage_period_months: number | null;
+  grace_period_months: number;
+  max_installments: number | null;
+  for_holder: boolean;
+  for_dependent: boolean;
 };
 
 /** O modelo de TEXTO da proposta (1014). Mesma cascata da apresentação. */
@@ -218,6 +231,65 @@ export default async function FichaDoLeadPage({
   const propostaDaEmpresa = propTemplates?.find((t) => t.lead_id === leadId);
   const propostaDaRede = propTemplates?.find((t) => !t.lead_id);
 
+  // H2 (1016): os benefícios combinados nesta proposta, os grupos prontos da
+  // rede e o catálogo de procedimentos. Mesma janela da 1014: sem a migração,
+  // a seção some e a aba avisa, em vez de derrubar a ficha.
+  const [
+    { data: beneficiosRows, error: erroBeneficios },
+    { data: gruposRows },
+    { data: itensRows },
+  ] = await Promise.all([
+    db
+      .from("lead_benefits")
+      .select(
+        "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      )
+      .eq("lead_id", leadId)
+      .returns<BeneficioRow[]>(),
+    db
+      .from("benefit_groups")
+      .select("id, name, description")
+      .eq("is_active", true)
+      .order("name")
+      .returns<{ id: string; name: string; description: string | null }[]>(),
+    db
+      .from("benefit_group_items")
+      .select(
+        "group_id, procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
+      )
+      .returns<(BeneficioRow & { group_id: string })[]>(),
+  ]);
+  if (erroBeneficios) console.error("benefícios do lead:", erroBeneficios.message);
+  const semBeneficios = semMigracao || Boolean(erroBeneficios);
+
+  const supabaseCatalogo = await createClient();
+  const { data: procs } = await supabaseCatalogo
+    .from("procedures")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name")
+    .returns<{ id: string; name: string }[]>();
+
+  const paraBeneficio = (b: BeneficioRow) => ({
+    procedureId: b.procedure_id,
+    benefitType: b.benefit_type,
+    benefitValue: b.benefit_value,
+    usageLimitCount: b.usage_limit_count,
+    usagePeriodMonths: b.usage_period_months,
+    gracePeriodMonths: b.grace_period_months,
+    maxInstallments: b.max_installments,
+    forHolder: b.for_holder,
+    forDependent: b.for_dependent,
+  });
+  const grupos = (gruposRows ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    itens: (itensRows ?? [])
+      .filter((i) => i.group_id === g.id)
+      .map(paraBeneficio),
+  }));
+
   // Nomes de quem enviou e do consultor responsável.
   const userIds = [
     ...new Set(
@@ -340,7 +412,11 @@ export default async function FichaDoLeadPage({
           prazoPadraoDaRede={propostaDaRede?.valid_days ?? 15}
           blocos={(propostaDaEmpresa ?? propostaDaRede)?.sections ?? []}
           textoPersonalizado={Boolean(propostaDaEmpresa)}
-          semMigracao={semMigracao}
+          semMigracao={semMigracao || semBeneficios}
+          procedimentos={procs ?? []}
+          grupos={grupos}
+          beneficios={(beneficiosRows ?? []).map(paraBeneficio)}
+          podeCriarGrupo={isProgramManager(session)}
         />
       ),
     },
