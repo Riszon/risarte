@@ -316,6 +316,18 @@ export async function convertLeadToCompany(
       max_adhesions: qual?.max_adhesions ?? null,
       adhesion_limit_target: qual?.adhesion_limit_target ?? null,
       main_clinic_id: qual?.main_clinic_id ?? null,
+      // I4 (1020): a quantidade FECHADA no contrato e o que acontece ao passar
+      // dela. Campo próprio, separado do "quantos colaboradores a empresa
+      // tem" — aquele é editável à mão na ficha, e o limite de um contrato não
+      // pode mudar sozinho quando alguém corrige o cadastro.
+      contracted_holders: qual?.employee_count ?? null,
+      contracted_dependents: qual?.includes_dependents
+        ? (qual?.dependents_estimate ?? null)
+        : null,
+      excess_mode: qual?.excess_mode ?? null,
+      excess_fixed_cents: qual?.excess_fixed_cents ?? null,
+      excess_holder_fee_cents: qual?.excess_holder_fee_cents ?? null,
+      excess_dependent_fee_cents: qual?.excess_dependent_fee_cents ?? null,
       origin_lead_id: leadId,
     })
     .select("id")

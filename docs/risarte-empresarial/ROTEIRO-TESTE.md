@@ -425,6 +425,37 @@ Sem migração — basta Ctrl + F5.
 7. Com **uma unidade só** na parceria, as caixas por benefício não aparecem —
    a pergunta não existe.
 
+## 10.11. A quantidade contratada e o termo de inclusão (OC-00083 I4, 24/09/2026)
+
+**O que testar:** a empresa não pode cadastrar mais titulares do que contratou,
+e o caminho para incluir mais existe, cobra a diferença e é curto.
+
+1. Numa empresa ainda no funil, na aba **Proposta → Condições comerciais**,
+   preencha **"Se passar do contratado"**: escolha *Por adesão* e ponha um
+   preço de titular (por exemplo, R$ 34,90). Salve.
+2. **Feche o negócio.** Na ficha da empresa, aba **Titulares**, confira o
+   cartão **Quantidade contratada**: ele diz o que o contrato fechou, quantos
+   estão cadastrados e quantas vagas restam.
+3. **Cadastre titulares até a última vaga.** O cartão deve passar a dizer
+   **"Sem vagas"** e avisar que novos cadastros estão bloqueados — isso tem de
+   aparecer **antes** de alguém ser recusado.
+4. **Tente cadastrar mais um.** O sistema recusa dizendo quantos já existem,
+   quanto o contrato fechou e o que fazer em seguida. **Confira na lista que o
+   titular recusado não foi gravado.**
+5. Clique em **Incluir mais titulares**, informe a quantidade e gere o termo.
+   Ele nasce com código **TI-** e com a diferença mensal já calculada pela
+   regra que você combinou no passo 1.
+6. **Abra o termo** (botão *Abrir*): é um documento curto, que lembra que as
+   pessoas estão sendo cadastradas no programa **referente ao acordo já
+   existente** — e que **não repete** benefícios, carência nem unidades.
+7. ⚠️ **Com o termo ainda em rascunho, tente cadastrar de novo: continua
+   recusado.** É o **aceite** que libera. Clique em **Aceitar** e repita o
+   cadastro — agora passa.
+8. **Cancele** um termo aceito e confira que as vagas voltam, mas o termo
+   continua na lista, riscado.
+9. Numa empresa **sem quantidade contratada** (as cadastradas antes desta
+   regra), o cartão **não aparece** e nada é bloqueado.
+
 ## 11. LGPD / retenção (Fase 8)
 
 35. Como **Admin**, em **Empresarial → Configurações**, use **Rodar retenção agora** —

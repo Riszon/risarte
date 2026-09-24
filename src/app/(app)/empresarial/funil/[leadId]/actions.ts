@@ -868,6 +868,16 @@ export async function saveCommercialTerms(
       dependent_family_extra_fee_cents: centavos(formData, "dependent_family_extra_fee"),
       dependent_family_size: inteiro(formData, "dependent_family_size"),
       holders_with_dependents: inteiro(formData, "holders_with_dependents"),
+      // I4 (1020): o que acontece se a empresa passar do contratado. Combinar
+      // isto na proposta é o que permite o termo de inclusão nascer com o
+      // número pronto, em vez de virar renegociação do zero a cada pessoa.
+      excess_mode: daLista(formData, "excess_mode", [
+        "NEW_FIXED",
+        "PER_ADHESION",
+      ] as const),
+      excess_fixed_cents: centavos(formData, "excess_fixed"),
+      excess_holder_fee_cents: centavos(formData, "excess_holder_fee"),
+      excess_dependent_fee_cents: centavos(formData, "excess_dependent_fee"),
       updated_by: session.userId,
     },
     "as condições comerciais"

@@ -156,6 +156,11 @@ type QualRow = {
   holders_with_dependents: number | null;
   // I3 (1019)
   main_clinic_id: string | null;
+  // I4 (1020)
+  excess_mode: "NEW_FIXED" | "PER_ADHESION" | null;
+  excess_fixed_cents: number | null;
+  excess_holder_fee_cents: number | null;
+  excess_dependent_fee_cents: number | null;
 };
 
 export default async function FichaDoLeadPage({
@@ -324,6 +329,10 @@ export default async function FichaDoLeadPage({
       minQuantity: f.min_quantity,
       priceCents: f.price_cents,
     })),
+    excessMode: qual?.excess_mode ?? null,
+    excessFixedCents: qual?.excess_fixed_cents ?? null,
+    excessHolderFeeCents: qual?.excess_holder_fee_cents ?? null,
+    excessDependentFeeCents: qual?.excess_dependent_fee_cents ?? null,
   };
 
   // I3 (1019): as unidades do sistema e as desta parceria.

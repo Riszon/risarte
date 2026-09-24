@@ -815,3 +815,77 @@ exceção por benefício**.
 **Conferido nas telas do treino** com uma parceria de duas unidades e um
 benefício restrito a uma: 10 asserções, 0 falha — inclusive a que garante que
 o benefício SEM restrição não vira ruído no documento.
+
+### Bloco I4 — a QUANTIDADE CONTRATADA e o termo de inclusão ✅ (migração 1020, v0.62.0)
+
+Pedido do dono (24/09/2026): *"a empresa tem 100 colaboradores, e quando foi
+fazer o cadastro enviou 120 nomes — o sistema não pode permitir cadastrar os
+120. Deve ter algum botão para acrescentar mais colaboradores, para isso deve
+gerar uma proposta para incluir os novos."*
+
+As três escolhas dele, na tela de perguntas:
+
+1. A trava é pela **quantidade fechada no contrato** (não pelo máximo da
+   proposta, que continua valendo como teto separado).
+2. O botão gera **um documento mais simples que a proposta inicial (mais
+   curto), mas lembrando a empresa que o titular está sendo cadastrado no
+   programa e é referente ao acordo que já existe entre a Risarte e a empresa**.
+3. Para acordos de **valor fixo**, a proposta define a quantidade máxima de
+   adesões e **já deixa combinado o que vale se passar do teto** — um novo
+   valor fixo ou um preço por adesão de titulares e dependentes.
+
+**O que existe agora**
+
+- Na aba **Proposta**, em Condições comerciais, o bloco **"Se passar do
+  contratado"**: o modo (*por adesão* ou *novo valor fixo do pacote*) e os
+  valores. É aqui que o excedente é combinado — antes de acontecer, que é o
+  ponto do pedido 3.
+- O **fechamento leva a quantidade contratada** (titulares e dependentes) e a
+  regra do excedente para a ficha da empresa.
+- Na ficha, aba **Titulares**, o cartão **Quantidade contratada**: o que o
+  contrato fechou, o que os termos aceitos acrescentaram, quantos estão
+  cadastrados e quantas vagas restam. Sem vagas, ele diz que os cadastros
+  estão bloqueados e mostra o caminho.
+- **O cadastro é recusado no limite**, com a frase inteira: *"Esta empresa já
+  tem 2 titular(es) ativos, e o contrato fechou 2. Para incluir mais, gere um
+  termo de inclusão…"*.
+- **"Incluir mais titulares"** gera o **termo de inclusão** (código `TI-`),
+  que calcula a diferença mensal pela regra combinada e, **depois de aceito**,
+  libera exatamente aquela quantidade.
+- O termo tem **página própria para imprimir/PDF**, curta.
+
+**Decisões que valem registrar**
+
+- **⚠️ SEM QUANTIDADE CONTRATADA NÃO HÁ TRAVA, e o cartão nem aparece.** Toda
+  empresa cadastrada antes desta regra tem o campo nulo; tratá-lo como zero
+  travaria a operação inteira por causa de um campo novo. É a mesma leitura do
+  "nulo significa todas" do I3.
+- **É o ACEITE que libera, não o rascunho.** Termo em rascunho não abre vaga:
+  ele ainda não foi reconhecido pela empresa, e é esse reconhecimento que
+  justifica a cobrança da diferença.
+- **Cancelar um termo devolve as vagas** — mas o termo continua no histórico.
+- **O termo NÃO repete a proposta.** Benefícios, carência, unidades e
+  condições continuam sendo os do contrato; reescrevê-los criaria um segundo
+  documento dizendo as mesmas coisas, e no dia em que os dois discordassem
+  ninguém saberia qual vale. É isso que o dono pediu ao dizer *"mais curto"*.
+- **Termo sem valor não é aceito** e nasce avisando. Ele existe para cobrar a
+  diferença; aceitar um de R$ 0,00 liberaria cadastro de graça, que é o
+  contrário do que ele serve para fazer. O aviso volta **junto com o sucesso**
+  — o termo existe (é verdade) e nasceu sem valor (também é).
+- **No valor fixo, cobra-se a DIFERENÇA, não o pacote inteiro.** O acordo novo
+  substitui o anterior; somar os dois cobraria duas vezes o mesmo programa.
+- **Implantação fixa não se cobra de novo** — ela foi paga uma vez. Só a
+  implantação por adesão acompanha gente nova.
+- **Os valores ficam congelados no termo.** Mudar a regra da empresa depois não
+  pode reescrever o que ela aceitou — mesma lei do repasse (0209), da alçada
+  (0194) e do percentual do split (0232).
+- **Quem soma o limite é o BANCO** (`empresarial.limite_de_titulares`), não a
+  tela: a mesma resposta precisa valer para este cadastro, para a importação de
+  planilha e para qualquer caminho futuro.
+
+**Conferido nas telas do treino**, com a empresa criada e apagada no fim: 18
+asserções na ficha e no documento, e mais 7 chamando a **mesma server action
+que o botão chama** — os dois contratados entram, o terceiro é recusado e **não
+é gravado**, e com o termo aceito o mesmo cadastro passa. A régua foi provada
+quebrando a trava de propósito: com ela quebrada, o terceiro titular foi
+gravado e a conferência acusou 4 falhas.

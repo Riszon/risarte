@@ -10,6 +10,7 @@ import {
   type DependentView,
   type EmployeeView,
 } from "./titulares-tab";
+import { LimiteDeTitulares, type TermoDeInclusao } from "./limite-de-titulares";
 import { MonthlySimulator, RemoveOverrideButton } from "./simulator";
 import {
   loadBenefits,
@@ -247,7 +248,59 @@ export default async function CompanyDetailPage(props: {
   let units: { id: string; name: string }[] = [];
   let companyDocuments: { id: string; label: string }[] = [];
   let employeeFiles: EmployeeFileView[] = [];
+  // I4 (1020): a quantidade contratada, o limite efetivo e os termos.
+  let contratadoDeTitulares: number | null = null;
+  let limiteDeTitulares: number | null = null;
+  let titularesAtivos = 0;
+  let termosDeInclusao: TermoDeInclusao[] = [];
+
   if (aba === "colaboradores") {
+    // I4 (1020): quem decide o limite é o banco — a mesma resposta precisa
+    // valer para esta tela, para o cadastro e para a importação de planilha.
+    const [{ data: limiteRpc }, { data: contratoRow }, { data: termosRows }] =
+      await Promise.all([
+        db.rpc("limite_de_titulares", { p_company_id: companyId }),
+        db
+          .from("companies")
+          .select("contracted_holders")
+          .eq("id", companyId)
+          .maybeSingle<{ contracted_holders: number | null }>(),
+        db
+          .from("company_inclusion_terms")
+          .select(
+            "id, code, holders, dependents, monthly_delta_cents, implantation_cents, status, accepted_at, created_at"
+          )
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false })
+          .returns<
+            {
+              id: string;
+              code: string;
+              holders: number;
+              dependents: number;
+              monthly_delta_cents: number;
+              implantation_cents: number;
+              status: "RASCUNHO" | "ACEITO" | "CANCELADO";
+              accepted_at: string | null;
+              created_at: string;
+            }[]
+          >(),
+      ]);
+    contratadoDeTitulares = contratoRow?.contracted_holders ?? null;
+    limiteDeTitulares =
+      typeof limiteRpc === "number" ? limiteRpc : (limiteRpc?.[0] ?? null);
+    termosDeInclusao = (termosRows ?? []).map((t) => ({
+      id: t.id,
+      code: t.code,
+      holders: t.holders,
+      dependents: t.dependents,
+      monthlyDeltaCents: t.monthly_delta_cents,
+      implantationCents: t.implantation_cents,
+      status: t.status,
+      acceptedAt: t.accepted_at,
+      createdAt: t.created_at,
+    }));
+
     type EmpRow = {
       id: string;
       cpf: string;
@@ -333,6 +386,8 @@ export default async function CompanyDetailPage(props: {
       storagePath: f.storage_path,
       createdAt: f.created_at,
     }));
+    // Só ATIVO conta para o limite: quem saiu não ocupa vaga.
+    titularesAtivos = (empRows ?? []).filter((e) => e.status === "ACTIVE").length;
     employees = (empRows ?? []).map((e) => ({
       id: e.id,
       cpf: e.cpf,
@@ -1014,6 +1069,19 @@ export default async function CompanyDetailPage(props: {
           files={docsTab.files}
           billingModel={company.billingModel}
           canManage={canManage}
+        />
+      )}
+
+      {/* I4: a trava não pode ser surpresa — o número aparece ANTES de
+          alguém ser recusado no cadastro, e o caminho também. */}
+      {aba === "colaboradores" && (
+        <LimiteDeTitulares
+          companyId={company.id}
+          contratado={contratadoDeTitulares}
+          limite={limiteDeTitulares}
+          ativos={titularesAtivos}
+          termos={termosDeInclusao}
+          podeGerenciar={isProgramManager(session)}
         />
       )}
 

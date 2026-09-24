@@ -27,6 +27,11 @@ export type CondicoesView = {
   dependentFamilySize: number | null;
   holdersWithDependents: number | null;
   faixas: FaixaDePreco[];
+  // I4 (1020): o que acontece se a empresa passar do contratado.
+  excessMode: "NEW_FIXED" | "PER_ADHESION" | null;
+  excessFixedCents: number | null;
+  excessHolderFeeCents: number | null;
+  excessDependentFeeCents: number | null;
 };
 
 /**
@@ -56,6 +61,7 @@ export function CondicoesComerciais({
   const [modoImp, setModoImp] = useState(
     condicoes.implantationMode ?? "PER_ADHESION"
   );
+  const [modoExc, setModoExc] = useState(condicoes.excessMode ?? "");
 
   const avisosDasFaixas = problemasDasFaixas(faixas);
 
@@ -328,6 +334,68 @@ export function CondicoesComerciais({
                 estimativa</strong> — a fatura real é calculada família a família.
               </p>
             )}
+          </div>
+
+          {/* ---- o excedente ---- */}
+          <div className="space-y-2 rounded-md border p-2">
+            <div>
+              <p className="text-sm font-medium">Se passar do contratado</p>
+              <p className="text-xs text-muted-foreground">
+                O cadastro de titulares trava na quantidade fechada. Combinar
+                isto <strong>aqui</strong> é o que faz o termo de inclusão
+                nascer com o valor pronto — sem isso, cada pessoa a mais vira
+                uma renegociação do zero.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Campo id="excess_mode" rotulo="Como cobrar o excedente">
+                <select
+                  id="excess_mode"
+                  name="excess_mode"
+                  value={modoExc}
+                  onChange={(e) => setModoExc(e.target.value)}
+                  className={selectClass}
+                >
+                  <option value="">— não combinado —</option>
+                  <option value="PER_ADHESION">Por adesão (preço por pessoa)</option>
+                  <option value="NEW_FIXED">Novo valor fixo do pacote</option>
+                </select>
+              </Campo>
+              {modoExc === "NEW_FIXED" && (
+                <Campo
+                  id="excess_fixed"
+                  rotulo="Novo valor fixo (R$)"
+                  ajuda="O termo cobra só a DIFERENÇA para a mensalidade atual."
+                >
+                  <Input
+                    id="excess_fixed"
+                    name="excess_fixed"
+                    defaultValue={emReais(condicoes.excessFixedCents)}
+                    placeholder="0,00"
+                  />
+                </Campo>
+              )}
+              {modoExc === "PER_ADHESION" && (
+                <>
+                  <Campo id="excess_holder_fee" rotulo="Titular a mais (R$)">
+                    <Input
+                      id="excess_holder_fee"
+                      name="excess_holder_fee"
+                      defaultValue={emReais(condicoes.excessHolderFeeCents)}
+                      placeholder="0,00"
+                    />
+                  </Campo>
+                  <Campo id="excess_dependent_fee" rotulo="Dependente a mais (R$)">
+                    <Input
+                      id="excess_dependent_fee"
+                      name="excess_dependent_fee"
+                      defaultValue={emReais(condicoes.excessDependentFeeCents)}
+                      placeholder="0,00"
+                    />
+                  </Campo>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end">

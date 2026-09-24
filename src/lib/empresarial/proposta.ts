@@ -250,6 +250,12 @@ export type QualificacaoDoLead = {
   dependent_family_extra_fee_cents?: number | null;
   dependent_family_size?: number | null;
   main_clinic_id?: string | null;
+  includes_dependents?: boolean | null;
+  dependents_estimate?: number | null;
+  excess_mode?: "NEW_FIXED" | "PER_ADHESION" | null;
+  excess_fixed_cents?: number | null;
+  excess_holder_fee_cents?: number | null;
+  excess_dependent_fee_cents?: number | null;
 };
 
 /**

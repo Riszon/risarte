@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
+import { recusaDoCadastro, vagasDisponiveis } from "@/lib/empresarial/excedente";
 import { isProgramManager } from "@/lib/empresarial/access";
 import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
@@ -60,11 +61,24 @@ export async function createEmployee(
 
   const db = await empresarialDb();
 
-  // ⚠️ O MÁXIMO COMBINADO NA PROPOSTA VALE AQUI (1018, H4). Decisão do dono:
-  // acima do máximo o sistema RECUSA, porque o máximo costuma ser capacidade
-  // de atendimento — aceitar além é prometer o que não se entrega. O mínimo
-  // não trava nada: a empresa pode estar entrando aos poucos.
-  const { data: limite } = await db
+  // ⚠️ A TRAVA É PELA QUANTIDADE FECHADA NO CONTRATO (1020, I4). Decisão do
+  // dono: "a empresa tem 100 colaboradores, e quando foi fazer o cadastro
+  // enviou 120 nomes — o sistema não pode permitir cadastrar os 120".
+  //
+  // O limite efetivo é o contratado MAIS o que os termos de inclusão ACEITOS
+  // acrescentaram, e quem soma isso é o banco (`limite_de_titulares`): a
+  // mesma resposta precisa valer para esta tela, para a importação de
+  // planilha e para qualquer caminho futuro.
+  //
+  // O MÁXIMO da proposta continua valendo como teto separado — ele pode ser
+  // maior que o contratado (contratou 100, pode chegar a 120 sem renegociar).
+  const { data: limiteRow } = await db.rpc("limite_de_titulares", {
+    p_company_id: companyId,
+  });
+  const limiteContratado =
+    typeof limiteRow === "number" ? limiteRow : (limiteRow?.[0] ?? null);
+
+  const { data: teto } = await db
     .from("companies")
     .select("max_adhesions, adhesion_limit_target")
     .eq("id", companyId)
@@ -72,17 +86,31 @@ export async function createEmployee(
       max_adhesions: number | null;
       adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
     }>();
-  if (limite?.max_adhesions != null && limite.adhesion_limit_target !== "DEPENDENTS") {
+
+  const precisaContar =
+    limiteContratado != null ||
+    (teto?.max_adhesions != null && teto.adhesion_limit_target !== "DEPENDENTS");
+
+  if (precisaContar) {
     const { count } = await db
       .from("employees")
       .select("*", { count: "exact", head: true })
       .eq("company_id", companyId)
       .eq("status", "ACTIVE");
     const atuais = count ?? 0;
-    if (atuais >= limite.max_adhesions) {
+
+    const { semTrava, vagas } = vagasDisponiveis(limiteContratado, atuais);
+    if (!semTrava && vagas <= 0) {
+      return { ok: false, error: recusaDoCadastro(limiteContratado!, atuais) };
+    }
+    if (
+      teto?.max_adhesions != null &&
+      teto.adhesion_limit_target !== "DEPENDENTS" &&
+      atuais >= teto.max_adhesions
+    ) {
       return {
         ok: false,
-        error: `Esta empresa já tem ${atuais} titular(es) ativos, e o máximo combinado na proposta é ${limite.max_adhesions}. Renegocie o limite antes de incluir mais.`,
+        error: `Esta empresa já tem ${atuais} titular(es) ativos, e o máximo combinado na proposta é ${teto.max_adhesions}. Renegocie o limite antes de incluir mais.`,
       };
     }
   }
