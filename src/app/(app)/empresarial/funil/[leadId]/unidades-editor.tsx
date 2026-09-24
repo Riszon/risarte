@@ -94,7 +94,7 @@ export function UnidadesDaParceria({
 
           <div>
             <p className="text-sm font-medium">Também podem atender</p>
-            <div className="mt-1 grid gap-1.5 sm:grid-cols-2">
+            <div className="mt-1 grid gap-1.5 @md:grid-cols-2">
               {unidades.map((u) => {
                 const ehPrincipal = u.id === escolhidaPrincipal;
                 return (

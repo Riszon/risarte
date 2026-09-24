@@ -957,3 +957,39 @@ propósito — e ela acusou na hora que os passos 4 e 6 sumiram do formulário.
 Ela também já tinha me pegado antes: a primeira versão semeava as faixas numa
 coluna que não existe, ignorava o erro da inserção e **acusava a tela** de não
 contar faixa nenhuma.
+
+#### J.1 — o amontoado, e por que ele aconteceu (v0.65.0)
+
+O dono testou na tela e mandou a foto: *"ficou amontoado"*. Estava certo, e as
+causas eram três — **todas minhas, nenhuma de gosto**:
+
+1. **A ficha é `max-w-4xl` (896px), e eu pedi TRÊS colunas.** Trilha (216) +
+   simulação (320) deixavam ~360px para o trabalho. A ficha passou a ser larga
+   **a partir de `xl`** (`xl:max-w-7xl`); as outras quatro abas ganharam
+   `max-w-4xl` por dentro, porque são formulário de coluna única e linha de
+   1200px é ruim de ler.
+2. **`sm:grid-cols-4` na simulação.** O `sm:` mede a **JANELA**, não a coluna:
+   numa tela larga os quatro números eram espremidos nos 320px da barra
+   lateral e **"MENSALIDADE" escrevia por cima de "POR TITULAR"** — dá para ver
+   na foto. Virou `grid-cols-2` fixo, e o `Numero` ganhou `min-w-0` +
+   `break-words` para quebrar em vez de estourar a célula.
+3. **`bg-gold text-primary` no número do passo ativo.** O próprio
+   `globals.css` avisa que `--gold-foreground` é a cor de texto para fundo
+   sólido: com `text-primary` o número ficava escuro sobre escuro e sumia do
+   círculo.
+
+**O conserto de raiz da classe inteira: a coluna do trabalho virou
+`@container`.** Daqui para dentro, `@md:` e `@xl:` medem **a coluna**, e os
+editores de condições, benefícios e unidades passaram a responder ao espaço
+que realmente têm. Enquanto dependiam de ponto de corte de janela, eles
+continuariam abrindo quatro colunas dentro de uma faixa de 650px sempre que a
+tela fosse grande — que é exatamente o defeito da foto, em outro lugar.
+
+**Regra que fica:** *dentro de coluna estreita, ponto de corte de janela
+mente.* Layout de duas ou três colunas pede `@container`, não `sm:`/`lg:`.
+
+A régua também errou de novo, e do mesmo jeito de sempre: ela varria a
+**página inteira** procurando `sm:grid-cols-4`, acusava a simulação, e o que
+ela tinha achado era de outro componente. Passou a olhar só o cartão da
+simulação — e o `sm:grid-cols-4` verdadeiro, dos outros dois editores, virou
+conserto em vez de acusação errada.

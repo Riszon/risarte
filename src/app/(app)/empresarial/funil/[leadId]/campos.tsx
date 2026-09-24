@@ -93,11 +93,18 @@ export function Numero({
   destaque?: boolean;
 }) {
   return (
-    <div>
-      <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+    // `min-w-0` + `break-words`: sem eles, um rótulo ou um valor comprido
+    // estoura a célula da grade em vez de quebrar, e escreve por cima do
+    // vizinho. Foi assim que "MENSALIDADE" e "POR TITULAR" se sobrepuseram.
+    <div className="min-w-0">
+      <p className="text-[11px] leading-tight font-medium tracking-wider text-muted-foreground uppercase">
         {rotulo}
       </p>
-      <p className={destaque ? "text-lg font-semibold" : "text-sm"}>{valor}</p>
+      <p
+        className={`break-words ${destaque ? "text-lg font-semibold" : "text-sm"}`}
+      >
+        {valor}
+      </p>
     </div>
   );
 }

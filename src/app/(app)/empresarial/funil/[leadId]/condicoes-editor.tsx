@@ -91,7 +91,7 @@ export function CondicoesComerciais({
 
         <form onSubmit={onSubmit} className="space-y-4">
           {/* ---- limites de adesão ---- */}
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-4">
             <Campo id="min_adhesions" rotulo="Mínimo de adesões">
               <Input
                 id="min_adhesions"
@@ -230,7 +230,7 @@ export function CondicoesComerciais({
           </div>
 
           {/* ---- implantação ---- */}
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Campo id="implantation_mode" rotulo="Implantação">
               <select
                 id="implantation_mode"
@@ -260,7 +260,7 @@ export function CondicoesComerciais({
           {/* ---- dependentes ---- */}
           <div className="space-y-2 rounded-md border p-2">
             <p className="text-sm font-medium">Preço dos dependentes</p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 @xl:grid-cols-3">
               <Campo id="dependent_mode" rotulo="Como cobrar">
                 <select
                   id="dependent_mode"
@@ -347,7 +347,7 @@ export function CondicoesComerciais({
                 uma renegociação do zero.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 @xl:grid-cols-3">
               <Campo id="excess_mode" rotulo="Como cobrar o excedente">
                 <select
                   id="excess_mode"

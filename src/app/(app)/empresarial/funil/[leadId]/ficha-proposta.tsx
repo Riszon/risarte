@@ -298,7 +298,7 @@ export function FichaDaProposta({
           Antes eram nove blocos numa coluna só — e a simulação ficava no MEIO
           do formulário, com as faixas de preço depois dela: mexer numa faixa
           obrigava a rolar para cima para ver o efeito. */}
-      <div className="grid gap-4 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[13.5rem_minmax(0,1fr)_20rem]">
+      <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[15rem_minmax(0,1fr)_22rem]">
         <div className="lg:sticky lg:top-16">
           <TrilhaDaProposta
             ativo={passo}
@@ -307,11 +307,15 @@ export function FichaDaProposta({
           />
         </div>
 
-        <div className="min-w-0 space-y-4">
+        {/* ⚠️ `@container`: daqui para dentro, `@xl:` e `@4xl:` medem ESTA
+            COLUNA, não a janela. É o conserto de raiz do amontoado — um
+            `sm:grid-cols-4` continuava valendo por causa do tamanho da tela,
+            mesmo quando a coluna tinha 650px e os quatro campos não cabiam. */}
+        <div className="@container min-w-0 space-y-4">
           <form onSubmit={onSubmit} className="space-y-4">
             <PainelDoPasso visivel={passo === "precos"}>
         <Secao titulo="Como a proposta será montada">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Campo id="payment_model" rotulo="Quem paga o programa *">
               <select
                 id="payment_model"
@@ -497,7 +501,7 @@ export function FichaDaProposta({
           titulo="Prazo e carência"
           descricao="O que foi combinado na negociação. A carência viaja para o cadastro da empresa quando o negócio fecha — antes disso era redigitada, e podia sair diferente do que foi vendido."
         >
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 @xl:grid-cols-3">
             <Campo
               id="proposal_valid_days"
               rotulo="Validade da proposta (dias)"
@@ -553,7 +557,7 @@ export function FichaDaProposta({
           titulo="Dados para gerar a proposta e o contrato"
           descricao="Estes campos viajam para o cadastro da empresa quando o negócio é fechado — ninguém digita duas vezes."
         >
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Campo id="legal_name" rotulo="Razão social">
               <Input
                 id="legal_name"
@@ -962,7 +966,12 @@ function SimuladorDaProposta({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* ⚠️ SEMPRE DUAS COLUNAS. Aqui havia `sm:grid-cols-4`, e o `sm:` olha
+            a JANELA, não esta coluna: numa tela larga os quatro números eram
+            espremidos nos 320px da barra lateral e "MENSALIDADE" escrevia por
+            cima de "POR TITULAR". O dono viu antes de mim, na foto que mandou.
+            Regra: dentro de coluna estreita, ponto de corte de janela mente. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
           <Numero
             rotulo="Mensalidade"
             valor={formatBRL(proposta.mensalidadeCents)}

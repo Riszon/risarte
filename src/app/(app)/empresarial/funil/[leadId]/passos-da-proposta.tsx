@@ -88,11 +88,15 @@ export function TrilhaDaProposta({
                 : "border-transparent hover:border-border hover:bg-muted/50"
             )}
           >
+            {/* ⚠️ `gold-foreground`, NÃO `primary`. O próprio globals.css
+                avisa: `--gold-foreground` é a cor de texto para FUNDO SÓLIDO
+                de destaque. Com `text-primary` o número ficava escuro sobre
+                fundo escuro e simplesmente sumia do círculo. */}
             <span
               className={cn(
                 "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
                 atual
-                  ? "bg-gold text-primary"
+                  ? "bg-gold text-gold-foreground"
                   : "bg-muted text-muted-foreground"
               )}
             >
@@ -110,12 +114,15 @@ export function TrilhaDaProposta({
               </span>
               <span
                 className={cn(
-                  "mt-0.5 flex items-center gap-1 text-[11px]",
+                  "mt-0.5 flex items-start gap-1 text-[11px] leading-snug",
                   selo.cor
                 )}
               >
-                <Selo className="size-3 shrink-0" />
-                <span className="truncate">{situacao.resumo}</span>
+                <Selo className="mt-px size-3 shrink-0" />
+                {/* Duas linhas em vez de cortar: "3 faixas · mín. 10 · exceden…"
+                    escondia justamente o aviso do excedente, que é a parte que
+                    faz alguém agir. */}
+                <span className="line-clamp-2">{situacao.resumo}</span>
               </span>
             </span>
           </button>

@@ -223,7 +223,7 @@ export function BeneficiosDaProposta({
                 </Button>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-4">
+              <div className="grid gap-2 @xl:grid-cols-2 @4xl:grid-cols-4">
                 <div>
                   <Label htmlFor={`tipo_${i}`}>Benefício</Label>
                   <select

@@ -482,12 +482,21 @@ export default async function FichaDoLeadPage({
   });
   const aberta = etapaInicial(lead.stage);
 
+  // A ficha ficou larga em `xl` por causa das três colunas da Proposta. As
+  // demais abas são formulário de coluna única: sem esta trava elas virariam
+  // linhas de 1200px, que ninguém lê com conforto.
+  const LARGURA_DE_LEITURA = "max-w-4xl";
+
   const abas: AbaDaFicha[] = [
     {
       id: "levantamento",
       situacao: situacao.levantamento,
       agora: aberta === "levantamento",
-      painel: <FichaDoLead leadId={lead.id} qualificacao={view} />,
+      painel: (
+        <div className={LARGURA_DE_LEITURA}>
+          <FichaDoLead leadId={lead.id} qualificacao={view} />
+        </div>
+      ),
     },
     {
       id: "proposta",
@@ -527,7 +536,9 @@ export default async function FichaDoLeadPage({
       id: "apresentacao",
       situacao: situacao.apresentacao,
       agora: aberta === "apresentacao",
-      painel: template ? (
+      painel: (
+        <div className={LARGURA_DE_LEITURA}>
+      {template ? (
         <ApresentacaoEditor
           leadId={lead.id}
           title={template.title}
@@ -540,6 +551,8 @@ export default async function FichaDoLeadPage({
           Ainda não há modelo de apresentação cadastrado para a rede. Peça ao
           Admin Master para criar um em Risarte Empresarial → Configurações.
         </p>
+      )}
+        </div>
       ),
     },
     {
@@ -547,6 +560,7 @@ export default async function FichaDoLeadPage({
       situacao: situacao.envio,
       agora: aberta === "envio",
       painel: (
+        <div className={LARGURA_DE_LEITURA}>
         <EnvioESelos
           leadId={lead.id}
           empresa={lead.company_name}
@@ -559,6 +573,7 @@ export default async function FichaDoLeadPage({
           contractSignedAt={lead.contract_signed_at}
           implantationPaidAt={lead.implantation_paid_at}
         />
+        </div>
       ),
     },
     {
@@ -566,6 +581,7 @@ export default async function FichaDoLeadPage({
       situacao: situacao.fechamento,
       agora: aberta === "fechamento",
       painel: (
+        <div className={LARGURA_DE_LEITURA}>
         <FechamentoEImplantacao
           leadId={lead.id}
           stage={lead.stage}
@@ -593,12 +609,18 @@ export default async function FichaDoLeadPage({
             })
           )}
         />
+        </div>
       ),
     },
   ];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+    // ⚠️ LARGA SÓ A PARTIR DE `xl`, e por um motivo só: a aba Proposta tem
+    // TRÊS colunas (trilha, trabalho, simulação). Em `max-w-4xl` elas dividiam
+    // 896px e tudo ficava amontoado — o dono mandou a foto. As outras abas são
+    // formulário de coluna única e se seguram sozinhas em `max-w-4xl`
+    // (`LARGURA_DE_LEITURA`): linha comprida demais é ruim de ler.
+    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8 xl:max-w-7xl">
       <CabecalhoDeModulo
         /* A FASE DE VERDADE, das nove que existem. Estava escrito "fase 4" na
            mão, e uma empresa em Captação mostrava o mesmo que uma em
