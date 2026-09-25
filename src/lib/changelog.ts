@@ -62,6 +62,32 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.278.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "Datas de um dia antes: a data de nascimento e as do PPR",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A data de nascimento aparecia um dia antes na ficha do paciente. O sistema montava a data com o relógio do servidor, que trabalha em outro fuso — e a data voltava três horas, caindo na véspera. O mesmo acontecia nos vencimentos e na competência do PPR e nas datas do planejamento anual da agenda. Tudo corrigido.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A idade do paciente também vinha do relógio do servidor: quem fazia aniversário no dia seguinte já aparecia com a idade nova na véspera, à noite. E a idade detalhada chegava a mostrar dias negativos em algumas combinações de datas.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "No PPR, a mensalidade era marcada como em atraso a partir da noite do dia anterior ao vencimento. Agora o atraso conta no dia seguinte ao vencimento, como manda a regra.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.277.0",
     data: "2026-09-25",
     migracao: null,

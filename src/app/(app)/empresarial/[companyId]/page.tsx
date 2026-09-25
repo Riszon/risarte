@@ -64,7 +64,7 @@ import {
 } from "@/lib/empresarial/constants";
 import type { Company } from "@/lib/empresarial/types";
 import { CompanyFormDialog } from "../company-form-dialog";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { formatIsoDateBr } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Empresa · Risarte Empresarial" };
 
@@ -1044,9 +1044,7 @@ export default async function CompanyDetailPage(props: {
                 label="Início do contrato"
                 value={
                   company.contractStartedAt
-                    ? new Date(
-                        company.contractStartedAt + "T00:00:00"
-                      ).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
+                    ? formatIsoDateBr(company.contractStartedAt)
                     : "—"
                 }
               />

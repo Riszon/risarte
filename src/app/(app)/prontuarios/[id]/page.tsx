@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { idadeCurta, idadeDetalhada } from "@/lib/idade";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -155,6 +156,7 @@ import type {
 } from "@/lib/journey";
 import {
   BRAZIL_TIME_ZONE,
+  formatIsoDateBr,
   startOfTodayInBrazil,
   todayInBrazil,
 } from "@/lib/dates";
@@ -216,16 +218,9 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-/** Idade curta em anos para a pílula, ex.: "34 anos". */
-function shortAge(birthIso: string): string {
-  const birth = new Date(`${birthIso}T00:00:00`);
-  const now = new Date();
-  if (Number.isNaN(birth.getTime()) || birth > now) return "";
-  let years = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) years -= 1;
-  return `${years} ${years === 1 ? "ano" : "anos"}`;
-}
+// A idade saiu daqui para `@/lib/idade` (achado AP3): ela era calculada com
+// o relógio da MÁQUINA, e no servidor em UTC a pessoa fazia aniversário na
+// véspera, a partir das 21h.
 
 /** Há quanto tempo é cliente, ex.: "há 6 meses", "há 1 ano e 2 meses". */
 function clientDuration(createdIso: string): string {
@@ -248,30 +243,6 @@ function clientDuration(createdIso: string): string {
   const days = Math.floor((now.getTime() - start.getTime()) / 86_400_000);
   if (days <= 0) return "hoje";
   return `há ${days} ${days === 1 ? "dia" : "dias"}`;
-}
-
-/** Detailed age, e.g. "22 anos, 3 meses e 15 dias". */
-function formatDetailedAge(birthIso: string): string {
-  const birth = new Date(`${birthIso}T00:00:00`);
-  const now = new Date();
-  if (Number.isNaN(birth.getTime()) || birth > now) return "";
-  let years = now.getFullYear() - birth.getFullYear();
-  let months = now.getMonth() - birth.getMonth();
-  let days = now.getDate() - birth.getDate();
-  if (days < 0) {
-    months -= 1;
-    days += new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-  }
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
-  const word = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
-  return `${word(years, "ano", "anos")}, ${word(months, "mês", "meses")} e ${word(
-    days,
-    "dia",
-    "dias"
-  )}`;
 }
 
 export default async function ClientDetailPage(
@@ -677,11 +648,11 @@ export default async function ClientDetailPage(
   const clinicName =
     (Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw)?.name ?? null;
   const ageText = client.birth_date
-    ? formatDetailedAge(client.birth_date)
+    ? idadeDetalhada(client.birth_date)
     : "";
-  const shortAgeText = client.birth_date ? shortAge(client.birth_date) : "";
+  const shortAgeText = client.birth_date ? idadeCurta(client.birth_date) : "";
   const birthText = client.birth_date
-    ? new Date(`${client.birth_date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
+    ? formatIsoDateBr(client.birth_date)
     : "";
   const clientTime = clientDuration(client.created_at);
   // H3.8: aniversário HOJE (compara mês/dia, sem fuso).

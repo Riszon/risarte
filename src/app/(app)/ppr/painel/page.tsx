@@ -26,7 +26,13 @@ import { RisarteMark } from "@/components/risarte-logo";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { PprDrill, type PprDrillItem } from "./ppr-drill";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  startOfDayInBrazil,
+  startOfTodayInBrazil,
+  todayInBrazil,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Painel do PPR+" };
 
@@ -65,27 +71,39 @@ const PERIOD_LABELS: Record<Period, string> = {
 };
 const QUICK_PERIODS = ["hoje", "semana", "mes", "trimestre", "tudo"] as const;
 
+// ⚠️ AS FRONTEIRAS DO PERÍODO SÃO DO RELÓGIO BRASILEIRO (achado AP3).
+// "Hoje" e "este mês" vinham do relógio da MÁQUINA: no servidor em UTC, das
+// 21h à meia-noite o painel já mostrava o dia (e, no dia 1º, o MÊS) seguinte.
 function periodStart(p: Period, de?: string): Date | null {
-  const now = new Date();
-  if (p === "custom") return de ? new Date(`${de}T00:00:00`) : null;
-  if (p === "hoje") return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (p === "semana") {
-    const d = new Date(now);
-    d.setDate(d.getDate() - 7);
-    return d;
-  }
-  if (p === "mes") return new Date(now.getFullYear(), now.getMonth(), 1);
+  const hoje = todayInBrazil();
+  if (p === "custom") return de ? startOfDayInBrazil(de) : null;
+  if (p === "hoje") return startOfTodayInBrazil();
+  if (p === "semana") return startOfDayInBrazil(addDaysIso(hoje, -7));
+  if (p === "mes") return startOfDayInBrazil(`${hoje.slice(0, 7)}-01`);
   if (p === "trimestre") {
-    const d = new Date(now);
-    d.setMonth(d.getMonth() - 3);
-    return d;
+    // Três meses atrás, pelo calendário — sem `setMonth`, que transborda.
+    const ano = Number(hoje.slice(0, 4));
+    const mes = Number(hoje.slice(5, 7));
+    const alvo = mes - 3;
+    const anoAlvo = alvo <= 0 ? ano - 1 : ano;
+    const mesAlvo = alvo <= 0 ? alvo + 12 : alvo;
+    const dia = Math.min(
+      Number(hoje.slice(8, 10)),
+      new Date(Date.UTC(anoAlvo, mesAlvo, 0)).getUTCDate()
+    );
+    return startOfDayInBrazil(
+      `${anoAlvo}-${String(mesAlvo).padStart(2, "0")}-${String(dia).padStart(2, "0")}`
+    );
   }
   return null;
 }
 /** Fim do período (só no período escolhido) — inclui o dia inteiro do "até". */
 function periodEnd(p: Period, ate?: string): Date | null {
   if (p !== "custom" || !ate) return null;
-  return new Date(`${ate}T23:59:59.999`);
+  // O dia inteiro do "até", no fuso do Brasil: o começo do dia SEGUINTE menos
+  // um milissegundo. Montar "T23:59:59.999" à mão é relógio de parede virando
+  // instante — o defeito que este achado corrige.
+  return new Date(startOfDayInBrazil(addDaysIso(ate, 1)).getTime() - 1);
 }
 function fmtBr(d: string): string {
   const [y, m, day] = d.split("-");

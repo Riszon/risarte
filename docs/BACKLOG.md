@@ -890,7 +890,7 @@ causa da correção do tema escuro. Sem relação com ela.)*
 - **Gravidade:** alta se alcançar a produção (é a tela de RH), nenhuma se for
   só o treino. **É justamente por não saber ainda que precisa estar escrito.**
 
-### AP3. Data-só virando instante no SERVIDOR — a família inteira
+### AP3. ✅ RESOLVIDO em 25/09/2026 — data-só virando instante no servidor
 *(medido em 25/09/2026, ao corrigir o AP1. **9 arquivos, 15 ocorrências.**)*
 
 - **O que está confirmado:** `new Date("2026-09-01T00:00:00")` — data sem fuso
@@ -920,3 +920,55 @@ causa da correção do tema escuro. Sem relação com ela.)*
   que nasce vermelho é teste que alguém desliga.
 - **Tamanho:** médio. Vale como lote próprio, e o mais urgente dele é a data de
   nascimento do prontuário.
+
+**A RESOLUÇÃO DO AP3** (core 0.278.0)
+
+Os 9 arquivos foram corrigidos e a varredura de `src/app` (servidor) foi de
+**15 ocorrências a ZERO**. Entraram três funções puras e testadas:
+`formatIsoDateBr`, `formatIsoMonthBr` e `formatIsoDayMonthBr` em
+`src/lib/dates.ts`, mais `src/lib/idade.ts` — que juntou **quatro cópias** da
+conta de idade espalhadas pelo prontuário.
+
+**Três coisas apareceram no caminho, e nenhuma tinha sido relatada:**
+
+- **A idade era calculada com o relógio da máquina.** No servidor em UTC, das
+  21h à meia-noite, quem faz aniversário amanhã já aparecia com a idade nova.
+- **`idadeDetalhada` devolvia dias NEGATIVOS.** De 31/01 a 01/03 saía
+  *"0 anos, 1 mês e -2 dias"*: o empréstimo pegava os 28 dias de fevereiro de
+  uma diferença de −30. Achado pelo teste, não por relato.
+- **O atraso do PPR contava cedo demais.** A comparação era de instantes, então
+  a mensalidade virava "em atraso" às 21h do dia ANTERIOR no servidor — e, pela
+  regra do projeto (CLAUDE.md §8b), atraso conta no dia SEGUINTE ao vencimento.
+  Agora é comparação de data civil.
+
+**A régua entrou junto**, como estava combinado: `dates.test.ts` ganhou a
+terceira forma (`T00:00:00` escrito à mão) e passou a **descartar comentários**
+— sem isso ela acusaria a própria explicação do defeito. Provada recolocando o
+defeito no prontuário: ela aponta o arquivo pelo nome.
+
+⚠️ **A CONFERÊNCIA NO FUSO DO BRASIL DEU VERDE POR ACASO.** A primeira medição
+na tela passou — porque esta máquina está em Brasília, que é onde o defeito não
+existe. Subindo o servidor de treino com **`TZ=UTC`**, como na Vercel, a mesma
+tela acusou: *"03/03/2004"* ainda aparecia. **Para defeito de fuso, medir na
+máquina de quem programa é medir o lugar onde ele não está.**
+
+### AP4. Componentes de navegador também desenham no SERVIDOR (SSR)
+*(descoberto em 25/09/2026, ao medir o AP3 com `TZ=UTC`.)*
+
+- **O que está confirmado:** a varredura de `dates.test.ts` pula arquivos
+  `"use client"` de propósito — a premissa é que "no navegador o fuso é o da
+  pessoa". **A premissa está incompleta:** o Next desenha o HTML desses
+  componentes no SERVIDOR primeiro, e só depois o navegador hidrata. Foi assim
+  que a ficha do paciente continuou chegando com *03/03* mesmo depois de o
+  AP3 ser corrigido: o valor vinha de `client-data-section.tsx`, um componente
+  de navegador.
+- **Quantos:** **13 arquivos** `"use client"` ainda com a forma (agenda,
+  atendimento, notificações, empresarial, PPR). O 14º — a data de nascimento
+  do prontuário — foi corrigido junto com o AP3, por ser o mesmo campo.
+- **Gravidade: MENOR que a do AP3, e por isso ficou para depois.** Depois da
+  hidratação o navegador recalcula e mostra a data certa; o estrago é o
+  "pisca" e o aviso de hidratação. Mas em **documento impresso** e em qualquer
+  leitura do HTML cru, o valor errado é o que vale.
+- **O que fazer:** trocar pelas mesmas funções de data civil e então decidir se
+  a varredura passa a incluir os `"use client"` — hoje ela os exclui por uma
+  razão que era boa e virou meia-verdade.

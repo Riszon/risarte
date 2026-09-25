@@ -15,7 +15,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { PprBillingToolbar, PprChargeRow } from "./billing-client";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  BRAZIL_TIME_ZONE,
+  formatIsoDateBr,
+  formatIsoMonthBr,
+  todayInBrazil,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Mensalidades do PPR+" };
 
@@ -175,7 +180,11 @@ export default async function PprChargesPage(
             const holder = one(m?.holder ?? null);
             const late =
               c.status !== "paga" &&
-              new Date(`${c.due_date}T00:00:00`) < new Date();
+              // ⚠️ COMPARAÇÃO DE CALENDÁRIO, não de instantes (achado AP3). O
+              // jeito antigo marcava atraso a partir das 21h do dia ANTERIOR
+              // no servidor. E a regra do projeto é clara: atraso conta no dia
+              // SEGUINTE ao vencimento (CLAUDE.md §8b).
+              c.due_date < todayInBrazil();
             return (
               <li
                 key={c.id}
@@ -212,14 +221,11 @@ export default async function PprChargesPage(
                     {holder?.code && <span className="font-mono">{holder.code}</span>}
                     <span>
                       competência{" "}
-                      {new Date(`${c.reference_month}T00:00:00`).toLocaleDateString(
-                        "pt-BR",
-                        { timeZone: BRAZIL_TIME_ZONE, month: "2-digit", year: "numeric" }
-                      )}
+                      {formatIsoMonthBr(c.reference_month)}
                     </span>
                     <span>
                       vence{" "}
-                      {new Date(`${c.due_date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
+                      {formatIsoDateBr(c.due_date)}
                     </span>
                     {c.paid_at && (
                       <span className="text-emerald-700">

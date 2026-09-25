@@ -25,7 +25,12 @@ import {
 } from "@/lib/annual-plan";
 import { AnnualPlanManager } from "./annual-plan-manager";
 import { NetworkPlanManager } from "./network-plan-manager";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  BRAZIL_TIME_ZONE,
+  addDaysIso,
+  formatIsoDayMonthBr,
+  weekdayOf,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Planejamento anual" };
 
@@ -213,19 +218,21 @@ export default async function AnnualPlanPage(
   const dayBlocked = (iso: string) =>
     unitBlocking.some((i) => itemCoversDate(i, iso));
 
+  // ⚠️ O ANO É PERCORRIDO POR CALENDÁRIO, não por instantes (achado AP3).
+  // Antes cada dia era um `new Date("...T00:00:00")`, lido no fuso da máquina —
+  // funcionava por acaso, porque `ymd` e `getDay` liam no mesmo fuso, mas
+  // bastava alguém trocar um dos dois para o ano inteiro escorregar um dia.
   let workingDays = 0;
-  const cursor = new Date(`${jan1}T00:00:00`);
-  const end = new Date(`${dec31}T00:00:00`);
-  while (cursor.getTime() <= end.getTime()) {
-    const iso = ymd(cursor);
-    const wd = cursor.getDay();
+  let iso = jan1;
+  while (iso <= dec31) {
+    const wd = weekdayOf(iso);
     const hd = holidayDecision.get(iso);
     const open =
       hd === false
         ? false
         : cfg.weekdays.includes(wd) || hd === true;
     if (open && !dayBlocked(iso)) workingDays += 1;
-    cursor.setDate(cursor.getDate() + 1);
+    iso = addDaysIso(iso, 1);
   }
   const dailyMinutes = Math.max(
     0,
@@ -418,12 +425,9 @@ export default async function AnnualPlanPage(
                       {PLAN_ITEM_LABELS[it.type]}
                     </span>
                     <span className="ml-1.5 font-medium">
-                      {new Date(`${it.startsDate}T00:00:00`).toLocaleDateString(
-                        "pt-BR",
-                        { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" }
-                      )}
+                      {formatIsoDayMonthBr(it.startsDate)}
                       {it.endsDate !== it.startsDate
-                        ? ` – ${new Date(`${it.endsDate}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE, day: "2-digit", month: "2-digit" })}`
+                        ? ` – ${formatIsoDayMonthBr(it.endsDate)}`
                         : ""}
                     </span>
                     {it.title && (

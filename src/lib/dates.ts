@@ -292,3 +292,35 @@ export function monthRangeOf(iso: string): { from: string; to: string } {
     to: `${iso.slice(0, 7)}-${String(last).padStart(2, "0")}`,
   };
 }
+
+/**
+ * Uma data CIVIL ("2026-09-05") em português: "05/09/2026" — sem instante.
+ *
+ * ⚠️ POR QUE NÃO `formatBrDate`. Ela recebe um INSTANTE e faz `new Date(...)`.
+ * Com uma data-só isso é armadilha dupla: `new Date("2026-09-05")` é lido em
+ * **UTC** pela norma, e `new Date("2026-09-05T00:00:00")` é lido no fuso da
+ * MÁQUINA. Nos dois casos, ao formatar em São Paulo a data **volta um dia** no
+ * servidor — o paciente nascido no dia 5 aparece nascido no dia 4 (achado AP3,
+ * 25/09/2026).
+ *
+ * Data civil não tem hora nem fuso: ela é três números. Aqui ela é lida assim.
+ */
+export function formatIsoDateBr(isoDate: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate ?? "");
+  if (!m) return "";
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+/** A competência de uma data civil: "2026-09-01" → "09/2026". Sem instante. */
+export function formatIsoMonthBr(isoDate: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})/.exec(isoDate ?? "");
+  if (!m) return "";
+  return `${m[2]}/${m[1]}`;
+}
+
+/** Dia e mês de uma data civil: "2026-09-05" → "05/09". Sem instante. */
+export function formatIsoDayMonthBr(isoDate: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate ?? "");
+  if (!m) return "";
+  return `${m[3]}/${m[2]}`;
+}

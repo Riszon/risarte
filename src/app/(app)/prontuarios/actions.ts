@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ehMenorDeIdade } from "@/lib/idade";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -93,12 +94,8 @@ export type GuardianInput = {
   guardianClientId: string | null;
 };
 
-function isMinor(birthDate: string): boolean {
-  const birth = new Date(`${birthDate}T00:00:00`);
-  const age =
-    (Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-  return age < 18;
-}
+// A conta da idade mora em `@/lib/idade` (achado AP3): ela era feita aqui com
+// o relógio da MÁQUINA, que na Vercel está três horas à frente do Brasil.
 
 function parseGuardians(raw: string): GuardianInput[] | null {
   try {
@@ -154,7 +151,7 @@ function parseClientForm(formData: FormData) {
         "Dados do responsável incompletos: nome e parentesco são obrigatórios." as const,
     };
   }
-  if (isMinor(birthDate) && guardians.length === 0) {
+  if (birthDate && ehMenorDeIdade(birthDate) && guardians.length === 0) {
     return {
       error:
         "Cliente menor de 18 anos: informe ao menos um responsável." as const,

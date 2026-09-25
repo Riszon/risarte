@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ehMenorDeIdade } from "@/lib/idade";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AlertTriangle, Trash2 } from "lucide-react";
@@ -41,12 +42,9 @@ export type ClientFormValues = {
   notes?: string | null;
 };
 
-function isMinor(birthDate: string): boolean {
-  if (!birthDate) return false;
-  const birth = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return false;
-  return (Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000) < 18;
-}
+// A conta da idade mora em `@/lib/idade` — uma conta só para o sistema
+// inteiro (achado AP3). Aqui ela roda no navegador, onde o fuso já é o certo,
+// mas ter duas contas para a mesma pergunta é como elas passam a divergir.
 
 const EMPTY_GUARDIAN: GuardianInput = {
   fullName: "",
@@ -127,7 +125,9 @@ export function ClientForm({
     if (a.zipCode) setZipCode(a.zipCode);
   }
 
-  const minor = isMinor(birthDate);
+  // Sem data ainda digitada não há o que afirmar: não se cobra responsável
+  // de um campo em branco no meio do preenchimento.
+  const minor = birthDate ? ehMenorDeIdade(birthDate) : false;
 
   // CPF-first: as soon as the CPF is filled, check the network. Already a
   // client → block + open/transfer; a prospect (guardian) → autofill.

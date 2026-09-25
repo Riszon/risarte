@@ -32,7 +32,10 @@ import {
   PprMembershipActions,
   PprRemoveDependentButton,
 } from "./membership-actions";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { BRAZIL_TIME_ZONE,
+  formatIsoDateBr,
+  formatIsoMonthBr,
+} from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Adesão do PPR+" };
 
@@ -408,12 +411,7 @@ export default async function PprMembershipPage(
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-sm"
                 >
                   <span className="flex flex-wrap items-center gap-2">
-                    {new Date(
-                      `${c.reference_month}T00:00:00`
-                    ).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
+                    {formatIsoMonthBr(c.reference_month)}
                     <span
                       className={cn(
                         "rounded-full border px-1.5 py-0.5 text-[10px]",
@@ -428,9 +426,7 @@ export default async function PprMembershipPage(
                     </span>
                     <span className="text-xs text-muted-foreground">
                       vence{" "}
-                      {new Date(`${c.due_date}T00:00:00`).toLocaleDateString(
-                        "pt-BR"
-                      , { timeZone: BRAZIL_TIME_ZONE })}
+                      {formatIsoDateBr(c.due_date)}
                     </span>
                   </span>
                   <span className="flex items-center gap-2">

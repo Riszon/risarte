@@ -119,7 +119,19 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
     return achados;
   }
 
-  // DUAS formas, e só elas. A régua precisa ser exata: uma que acusasse
+  /**
+   * ⚠️ COMENTÁRIO NÃO É CÓDIGO. As três formas abaixo aparecem, por escrito,
+   * nos comentários que explicam o defeito nos arquivos consertados — e sem
+   * descartar as linhas de comentário a régua acusaria a própria explicação.
+   */
+  function semComentarios(fonte: string): string {
+    return fonte
+      .split("\n")
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+      .join("\n");
+  }
+
+  // TRÊS formas, e só elas. A régua precisa ser exata: uma que acusasse
   // `new Date(\`${d}T00:00:00\`).toLocaleDateString()` — que é inofensivo,
   // porque lê e escreve no mesmo fuso — ensinaria a ignorar o aviso, e aí ela
   // deixaria de valer para os casos que importam.
@@ -136,12 +148,33 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
       nome: "fronteira de dia convertida em instante",
       padrao: /new Date\(`[^`]*T\d[^`]*`\)\s*\.\s*(?:toISOString|getTime)\b/,
     },
+    {
+      // 3. DATA-SÓ VIRANDO INSTANTE (achado AP3, 25/09/2026).
+      //
+      //    ⚠️ ESTA FORMA ESCAPAVA DAS DUAS DE CIMA, e por isso o defeito viveu
+      //    em NOVE arquivos sem ninguém ver: as outras exigem template literal
+      //    com hora vinda de variável, e aqui a hora é fixa (`T00:00:00`),
+      //    escrita à mão para "garantir" que a data seja lida no dia certo.
+      //
+      //    Ela não garante nada. `new Date("2004-03-04T00:00:00")` é lido no
+      //    fuso da MÁQUINA: na máquina de quem programa (Brasília) sai certo, e
+      //    no servidor da Vercel (UTC) sai três horas adiantado — que, exibido
+      //    de volta em São Paulo, **volta um dia**. O paciente nascido no dia 4
+      //    aparecia nascido no dia 3, para sempre, e só onde o sistema roda.
+      //
+      //    Data civil não tem hora nem fuso: são três números. Para exibir,
+      //    `formatIsoDateBr`/`formatIsoMonthBr`; para fronteira de dia,
+      //    `startOfDayInBrazil`; para andar no calendário, `addDaysIso` e
+      //    `weekdayOf`.
+      nome: "data-só virando instante (`T00:00:00` escrito à mão)",
+      padrao: /new Date\([^)]*T00:00:00/,
+    },
   ];
 
   for (const { nome, padrao } of FORMAS) {
     it(`nenhum arquivo de servidor tem ${nome}`, () => {
       const culpados = arquivosDoServidor("src/app")
-        .filter((f) => padrao.test(readFileSync(f, "utf8")))
+        .filter((f) => padrao.test(semComentarios(readFileSync(f, "utf8"))))
         .map((f) => f.replace(/\\/g, "/"));
 
       expect(
@@ -151,13 +184,34 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
     });
   }
 
-  it("a régua reconhece as duas formas do defeito", () => {
+  it("a régua reconhece as TRÊS formas do defeito", () => {
     // Régua que ninguém provou que dispara passa por cegueira, não por saúde.
     expect(FORMAS[0].padrao.test("const x = new Date(`${d}T${hora}:00`);")).toBe(true);
     expect(FORMAS[1].padrao.test("new Date(`${d}T00:00:00`).toISOString()")).toBe(true);
     // E não acusa o que é seguro: ler e escrever no mesmo fuso.
     expect(FORMAS[0].padrao.test('new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR")')).toBe(false);
     expect(FORMAS[1].padrao.test('new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR")')).toBe(false);
+
+    // A terceira (AP3): as duas escritas que apareceram nos 9 arquivos — com
+    // crase e com aspas —, e também partida em várias linhas, que foi como
+    // duas delas escaparam da primeira medição.
+    expect(FORMAS[2].padrao.test('new Date(`${iso}T00:00:00`)')).toBe(true);
+    expect(FORMAS[2].padrao.test('new Date(birth + "T00:00:00")')).toBe(true);
+    expect(FORMAS[2].padrao.test('new Date(\n  `${c.due_date}T00:00:00`\n)')).toBe(true);
+    // ⚠️ E NÃO acusa o que é legítimo: instante completo (com fuso no texto) e
+    // a aritmética em UTC de `addDaysIso`, que é justamente o jeito CERTO.
+    expect(FORMAS[2].padrao.test('new Date("2026-09-05T12:00:00Z")')).toBe(false);
+    expect(FORMAS[2].padrao.test("new Date(Date.UTC(a, m - 1, d))")).toBe(false);
+  });
+
+  it("a varredura descarta COMENTÁRIO — senão acusaria a própria explicação", () => {
+    const comentado = [
+      "// antes era new Date(`${iso}T00:00:00`), e isso é o defeito",
+      " * new Date(x + \"T00:00:00\")",
+      "const seguro = startOfDayInBrazil(iso);",
+    ].join("\n");
+    expect(FORMAS[2].padrao.test(comentado)).toBe(true);
+    expect(FORMAS[2].padrao.test(semComentarios(comentado))).toBe(false);
   });
 });
 

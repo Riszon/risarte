@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientForm, type ClientFormValues } from "../client-form";
 import type { GuardianInput } from "../actions";
 import { genderLabel } from "@/lib/gender";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { formatIsoDateBr } from "@/lib/dates";
 
 /** Rótulo de sub-seção dos dados (ícone dourado + título em maiúsculas). */
 function SectionLabel({
@@ -124,11 +124,12 @@ export function ClientDataSection({
             <Field
               label="Nascimento"
               value={
-                client.birth_date
-                  ? new Date(
-                      `${client.birth_date}T00:00:00`
-                    ).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })
-                  : "—"
+                // ⚠️ SSR TAMBÉM DESENHA (achado AP3/AP4). Este componente é de
+                // navegador, onde o fuso da pessoa já é o certo — mas o Next
+                // desenha o HTML no SERVIDOR primeiro, e lá (UTC) a data-só
+                // voltava um dia: a ficha chegava escrita 03/03 e só virava
+                // 04/03 depois da hidratação.
+                client.birth_date ? formatIsoDateBr(client.birth_date) : "—"
               }
             />
             <Field label="Gênero" value={genderLabel(client.gender)} />
