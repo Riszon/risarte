@@ -547,6 +547,20 @@ dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
 **Por empresa:** aba **Financeiro** → **Gerar cobrança mensal**. Nasce
 **Pendente**, com valor e vencimento.
 
+**A implantação não espera os cadastros.** Ao clicar em **Gerar implantação**:
+
+- Se a empresa tem **quantidade contratada** (veio da proposta), a conta usa
+  **ela**, mesmo que ainda haja menos gente cadastrada — e a tela diz isso,
+  com os dois números.
+- Se **não há titulares nem quantidade contratada**, a tela **pede o valor**.
+- A **mensalidade**, essa sim, só é gerada com titulares ativos: são perguntas
+  diferentes.
+
+> **O vencimento e o valor são editáveis depois.** Toda cobrança ainda não paga
+> tem o botão **Editar** (valor, vencimento e descrição). O vencimento padrão
+> vem do **dia de vencimento** que está no cadastro da empresa, em Dados
+> Gerais — mudar lá muda o padrão das próximas.
+
 **De todas as empresas:** **Empresarial → Cobranças**. Quatro quadros (**Em
 aberto**, **Vencidas**, **Pagas**, quantas estão na tela) que somam **o que
 está na lista, com os filtros aplicados**. Filtros por situação, período de

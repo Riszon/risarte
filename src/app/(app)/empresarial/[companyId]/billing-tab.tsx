@@ -87,6 +87,8 @@ export function BillingTab({
   const [previewType, setPreviewType] =
     useState<"MONTHLY" | "IMPLANTATION">("MONTHLY");
   const [loadingPreview, setLoadingPreview] = useState(false);
+  // Valor digitado quando não há como calcular a implantação (OC-00055).
+  const [valorImplantacao, setValorImplantacao] = useState("");
 
   function openPreview(type: "MONTHLY" | "IMPLANTATION") {
     setPreviewType(type);
@@ -325,6 +327,41 @@ export function BillingTab({
                 </p>
               )}
 
+              {/* A CONTA VEIO DA QUANTIDADE CONTRATADA (OC-00055/OC-00057).
+                  Dizer isso faz parte do número: sem a frase, quem vê o valor
+                  procura os titulares na lista e não os encontra. */}
+              {preview.baseContratada != null && (
+                <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                  Calculado pela <strong>quantidade contratada</strong> (
+                  {preview.baseContratada} titular(es)), e não pelos{" "}
+                  {preview.titularesCadastrados ?? 0} já cadastrados — é o que
+                  foi combinado na proposta. Dá para ajustar o valor depois, no{" "}
+                  <strong>Editar</strong> da cobrança.
+                </p>
+              )}
+
+              {/* Sem titulares e sem quantidade contratada: ninguém tem como
+                  saber o valor, então a tela PERGUNTA em vez de inventar. */}
+              {preview.precisaValor && (
+                <div className="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+                  <Label htmlFor="valor_implantacao" className="text-xs">
+                    Valor da implantação (R$)
+                  </Label>
+                  <Input
+                    id="valor_implantacao"
+                    value={valorImplantacao}
+                    onChange={(e) => setValorImplantacao(e.target.value)}
+                    placeholder="0,00"
+                    inputMode="decimal"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Esta empresa ainda não tem titulares cadastrados nem
+                    quantidade contratada na proposta, então não há como
+                    calcular sozinho.
+                  </p>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2">
                 <Button
                   variant="ghost"
@@ -336,9 +373,27 @@ export function BillingTab({
                 <Button
                   disabled={isPending}
                   onClick={() => {
+                    const cents = preview.precisaValor
+                      ? Math.round(
+                          Number.parseFloat(
+                            valorImplantacao
+                              .replace(/\s/g, "")
+                              .replace(/\./g, "")
+                              .replace(",", ".")
+                          ) * 100
+                        )
+                      : undefined;
+                    if (
+                      preview.precisaValor &&
+                      (!Number.isFinite(cents as number) || (cents as number) <= 0)
+                    ) {
+                      toast.error("Informe o valor da implantação.");
+                      return;
+                    }
                     setPreview(null);
+                    setValorImplantacao("");
                     run(
-                      async () => generateBilling(companyId, previewType),
+                      async () => generateBilling(companyId, previewType, cents),
                       preview.items && preview.items.length > 1
                         ? `${preview.items.length} cobranças geradas.`
                         : "Cobrança gerada."

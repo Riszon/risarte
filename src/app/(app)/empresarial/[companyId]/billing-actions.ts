@@ -33,6 +33,12 @@ export type BillingPreview = {
   description?: string;
   beneficiary?: string;
   billingModel?: string;
+  /** Implantação: o cálculo usou a quantidade contratada, não os cadastrados. */
+  baseContratada?: number;
+  /** Quantos titulares estão cadastrados agora (para a tela explicar a conta). */
+  titularesCadastrados?: number;
+  /** Nem titulares nem quantidade contratada: a tela precisa pedir o valor. */
+  precisaValor?: boolean;
 };
 
 /**
@@ -49,7 +55,9 @@ export async function previewBilling(
   const db = await empresarialDb();
   const { data: company } = await db
     .from("companies")
-    .select("legal_name, trade_name, cnpj, due_day, billing_model")
+    .select(
+      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders"
+    )
     .eq("id", companyId)
     .maybeSingle<{
       legal_name: string;
@@ -57,8 +65,10 @@ export async function previewBilling(
       cnpj: string;
       due_day: number;
       billing_model: string;
+      contracted_holders: number | null;
     }>();
   if (!company) return { ok: false, error: "Empresa não encontrada." };
+  const contratado = company.contracted_holders;
 
   const { data: docs } = await db
     .from("company_documents")
@@ -124,10 +134,82 @@ export async function previewBilling(
     ];
   }
 
+  // ⚠️ A IMPLANTAÇÃO NÃO ESPERA OS CADASTROS (relatos OC-00055 e OC-00057,
+  // decisão do dono em 24/09/2026).
+  //
+  // Antes, sem nenhum titular ativo a geração era recusada — e a empresa que
+  // aderiu hoje e só manda os nomes no mês que vem ficava sem como ser
+  // cobrada. Pior: quando havia 2 de 7 cadastrados, a cobrança saía pelos 2,
+  // e só não saía errada se alguém lembrasse de corrigir o valor na mão.
+  //
+  // Agora a base é a QUANTIDADE CONTRATADA, que veio da proposta no
+  // fechamento (I4). Sem ela, a tela pede o valor — é o caso das empresas
+  // cadastradas direto, sem passar pelo funil.
+  if (billingType === "IMPLANTATION") {
+    const semTitulares = breakdown.totalEmployees === 0;
+    const menosQueOContratado =
+      contratado != null && breakdown.totalEmployees < contratado;
+
+    if (semTitulares || menosQueOContratado) {
+      if (contratado != null && contratado > 0) {
+        const cents = await implantacaoPeloContratado(db, companyId, contratado);
+        return {
+          ok: true,
+          items: [
+            {
+              documentId: null,
+              payerName: companyName,
+              payerDoc: primary
+                ? `${primary.doc_type} ${primary.doc_formatted}`
+                : company.cnpj,
+              employees: contratado,
+              totalCents: cents,
+            },
+          ],
+          dueDate,
+          referenceMonth,
+          description,
+          beneficiary: "Risarte / RisLife",
+          billingModel: company.billing_model,
+          baseContratada: contratado,
+          titularesCadastrados: breakdown.totalEmployees,
+        };
+      }
+      if (semTitulares) {
+        // Sem titulares E sem quantidade contratada: ninguém tem como saber o
+        // valor. A tela pergunta — inventar um número aqui seria pior.
+        return {
+          ok: true,
+          items: [
+            {
+              documentId: null,
+              payerName: companyName,
+              payerDoc: primary
+                ? `${primary.doc_type} ${primary.doc_formatted}`
+                : company.cnpj,
+              employees: 0,
+              totalCents: 0,
+            },
+          ],
+          dueDate,
+          referenceMonth,
+          description,
+          beneficiary: "Risarte / RisLife",
+          billingModel: company.billing_model,
+          precisaValor: true,
+          titularesCadastrados: 0,
+        };
+      }
+    }
+  }
+
   if (items.length === 0 || items.every((i) => i.totalCents <= 0)) {
     return {
       ok: false,
-      error: "Sem titulares ativos para cobrar. Complete os cadastros antes.",
+      error:
+        billingType === "MONTHLY"
+          ? "Sem titulares ativos para cobrar a mensalidade. Complete os cadastros antes."
+          : "Sem titulares ativos e sem quantidade contratada. Informe o valor da implantação.",
     };
   }
 
@@ -152,6 +234,45 @@ function nextDue(dueDay: number): { dueDate: string; referenceMonth: string } {
     dueDate: due.toISOString().slice(0, 10),
     referenceMonth: reference.toISOString().slice(0, 10),
   };
+}
+
+/**
+ * O valor da implantação pela QUANTIDADE CONTRATADA.
+ *
+ * ⚠️ SÓ TITULARES, e isso é a mesma lei que vale na proposta (decisão do dono
+ * em 24/09/2026, bloco I1): ninguém sabe quantos dependentes entram nem como
+ * se distribuem entre as famílias antes dos cadastros. Somá-los aqui seria
+ * cobrar por gente que talvez não exista.
+ *
+ * A faixa é escolhida pela quantidade CONTRATADA — é ela que a empresa
+ * negociou. Usar a faixa de "1" porque ainda não há ninguém cadastrado
+ * cobraria o preço mais caro justamente de quem fechou volume.
+ */
+async function implantacaoPeloContratado(
+  db: Awaited<ReturnType<typeof empresarialDb>>,
+  companyId: string,
+  contratado: number
+): Promise<number> {
+  const { data: pricingRows } = await db
+    .from("adhesion_pricing")
+    .select("company_id, holder_fee_cents")
+    .or(`company_id.eq.${companyId},company_id.is.null`);
+  const rows = (pricingRows ?? []) as {
+    company_id: string | null;
+    holder_fee_cents: number;
+  }[];
+  const escolhido =
+    rows.find((r) => r.company_id === companyId) ??
+    rows.find((r) => r.company_id === null);
+  const base = escolhido?.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents;
+
+  const faixas = await carregarFaixasDaEmpresa(db, companyId);
+  const porTitular = precoDoTitularComFaixa(
+    { ...DEFAULT_ADHESION_PRICING, holderFeeCents: base },
+    faixas,
+    contratado
+  );
+  return porTitular * contratado;
 }
 
 /** Mensalidade total e por documento (para o modelo "um boleto por CNPJ"). */
@@ -247,7 +368,14 @@ async function computeMonthlyBreakdown(
 /** Gera a cobrança (implantação ou mensal). Cria o registro local (PENDING). */
 export async function generateBilling(
   companyId: string,
-  billingType: "IMPLANTATION" | "MONTHLY"
+  billingType: "IMPLANTATION" | "MONTHLY",
+  /**
+   * Valor informado à mão, em centavos. Só vale para a IMPLANTAÇÃO e só quando
+   * a prévia disse que não há como calcular (`precisaValor`) — a empresa não
+   * tem titulares nem quantidade contratada. Aceitá-lo em qualquer caso abriria
+   * a porta para alguém digitar um valor por cima da conta sem ninguém ver.
+   */
+  valorInformadoCents?: number
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
@@ -256,6 +384,16 @@ export async function generateBilling(
   const preview = await previewBilling(companyId, billingType);
   if (!preview.ok || !preview.items) {
     return { ok: false, error: preview.error ?? "Não foi possível gerar." };
+  }
+
+  if (preview.precisaValor) {
+    if (!valorInformadoCents || valorInformadoCents <= 0) {
+      return { ok: false, error: "Informe o valor da implantação." };
+    }
+    preview.items = preview.items.map((i) => ({
+      ...i,
+      totalCents: valorInformadoCents,
+    }));
   }
 
   const db = await empresarialDb();

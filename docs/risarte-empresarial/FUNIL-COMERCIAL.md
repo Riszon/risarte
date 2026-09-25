@@ -1040,3 +1040,55 @@ action que o botão chama**, com a empresa criada e apagada no fim. A régua foi
 provada desligando a guarda — e acusou o dependente recusado sendo **gravado**.
 As duas conferências da 1020 (titulares e termo) foram rodadas de novo: nada
 regrediu.
+
+### Bloco K — a cobrança de implantação (relatos OC-00055 e OC-00057) ✅ (sem migração, v0.68.0)
+
+Dois relatos do André, de 21/09/2026, que são o mesmo assunto:
+
+- *"Fiz o cadastro de uma nova empresa e o sistema não permitiu gerar a
+  cobrança de implantação sem ter colaboradores cadastrados... Já tivemos
+  fatos que a empresa aderiu ao programa e só enviou os dados dos
+  colaboradores no mês posterior."* (OC-00055)
+- *"A empresa foi cadastrada informando que terá 7 colaboradores, mas até o
+  momento só temos dados de 2. A cobrança foi gerada apenas com o valor
+  referente a 2."* (OC-00057)
+
+**A regra antiga existia por um motivo defensável** — não cobrar por gente que
+não existe — **mas resolvia a pergunta errada.** A implantação é a adesão ao
+programa: ela é devida pelo que foi *combinado*, não pelo que já foi
+*digitado*. E o caminho que sobrava (gerar pelos 2 e corrigir o valor à mão)
+depende de alguém lembrar — e o dia em que ninguém lembra, a empresa é cobrada
+a menos e ninguém percebe.
+
+**O que existe agora** (decisão do dono, 24/09/2026)
+
+- A implantação passa a ser calculada pela **quantidade contratada**, que veio
+  da proposta no fechamento (I4), sempre que houver menos cadastrados do que o
+  contratado — inclusive quando não há nenhum.
+- A tela **diz que a conta veio dali**, com os dois números. Sem a frase, quem
+  vê o valor procura os titulares na lista e não os encontra.
+- **Sem titulares e sem quantidade contratada**, a tela **pede o valor** em vez
+  de recusar. É o caso da empresa cadastrada direto, sem passar pelo funil.
+- A **mensalidade continua exigindo titulares**: são perguntas diferentes.
+  Cobrar mensalidade de ninguém não é cobrar a adesão de um acordo — é cobrar
+  serviço de quem não está no programa.
+
+**Decisões que valem registrar**
+
+- **⚠️ SÓ TITULARES entram na conta**, nunca dependentes — a mesma lei da
+  proposta (I1): ninguém sabe quantos entram nem como se distribuem entre as
+  famílias antes dos cadastros.
+- **A faixa é escolhida pela quantidade CONTRATADA.** Usar a faixa de "1"
+  porque ainda não há ninguém cadastrado cobraria o preço mais caro justamente
+  de quem fechou volume.
+- **O valor à mão só é aceito quando a prévia declarou que não há como
+  calcular.** Aceitá-lo em qualquer caso abriria a porta para alguém digitar
+  um número por cima da conta sem ninguém ver.
+- **O vencimento já era editável** (botão *Editar* da cobrança, desde
+  31/07/2026), e continua — era isso que o OC-00059 pedia. O padrão vem do
+  **dia de vencimento** do cadastro da empresa.
+
+**Conferido nas telas do treino**: 14 asserções chamando as mesmas server
+actions que os botões chamam. A régua foi provada apagando a quantidade
+contratada do cálculo — e ela acusou a cobrança voltando a sair por R$ 79,80
+(os 2 cadastrados) em vez de R$ 279,30 (os 7 contratados).
