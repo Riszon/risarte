@@ -13,7 +13,7 @@ import {
   type AdhesionPricing,
 } from "@/lib/empresarial/pricing";
 import type { DependentPlan } from "@/lib/empresarial/constants";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { proximoVencimento, rotuloDoMes } from "@/lib/empresarial/vencimento";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -89,11 +89,9 @@ export async function previewBilling(
   const companyName = company.trade_name || company.legal_name;
   const primary = (docs ?? []).find((d) => d.is_primary);
 
-  const { dueDate, referenceMonth } = nextDue(company.due_day);
-  const monthLabel = new Date(referenceMonth + "T00:00:00").toLocaleDateString(
-    "pt-BR",
-    { timeZone: BRAZIL_TIME_ZONE, month: "long", year: "numeric" }
-  );
+  const { dueDate, referenceMonth } = proximoVencimento(company.due_day);
+  // O rótulo vem do NÚMERO do mês, sem instante no meio (ver rotuloDoMes).
+  const monthLabel = rotuloDoMes(referenceMonth);
   const description =
     billingType === "IMPLANTATION"
       ? `Adesão e implantação — Risarte Empresarial (${companyName})`
@@ -225,16 +223,18 @@ export async function previewBilling(
 }
 
 /** Vencimento: próximo dia configurado que ainda não passou. */
-function nextDue(dueDay: number): { dueDate: string; referenceMonth: string } {
-  const now = new Date();
-  const due = new Date(now.getFullYear(), now.getMonth(), dueDay);
-  if (due < now) due.setMonth(due.getMonth() + 1);
-  const reference = new Date(now.getFullYear(), now.getMonth(), 1);
-  return {
-    dueDate: due.toISOString().slice(0, 10),
-    referenceMonth: reference.toISOString().slice(0, 10),
-  };
-}
+// ⚠️ A CONTA DO VENCIMENTO SAIU DAQUI (achado AP1, corrigido em 25/09/2026).
+//
+// Ela vivia nesta função privada e lia o calendário do SERVIDOR — que na
+// Vercel é UTC. Entre 21h e meia-noite de Brasília o servidor já está no dia
+// seguinte, e uma cobrança gerada às 22h do dia 30 gravava o mês de
+// referência do mês seguinte. E `new Date(2026, 1, 31)` é 3 de MARÇO: a
+// empresa com vencimento no dia 31 recebia, em fevereiro, um boleto para
+// março.
+//
+// Agora mora em `@/lib/empresarial/vencimento`, pura e com teste — porque
+// decide data e dinheiro, e os dois defeitos eram invisíveis para quem olha a
+// tela num computador brasileiro.
 
 /**
  * O valor da implantação pela QUANTIDADE CONTRATADA.

@@ -824,7 +824,7 @@ mesmo dia, com o que já se sabe e o que falta confirmar. O que está confirmado
 vem separado do que é suspeita: item que mistura os dois faz alguém "corrigir"
 um palpite.
 
-### AP1. O vencimento da cobrança usa o relógio do SERVIDOR, não o do Brasil
+### AP1. ✅ RESOLVIDO em 25/09/2026 — o vencimento usava o relógio do servidor
 *(encontrado em 24/09/2026, lendo `billing-actions.ts` para os relatos
 OC-00055/OC-00057. Não relatado por ninguém.)*
 
@@ -846,6 +846,30 @@ OC-00055/OC-00057. Não relatado por ninguém.)*
   este caso, porque uma régua que deixa passar é tão grave quanto o defeito.
 - **Tamanho:** pequeno. Cabe no próximo lote do Empresarial.
 
+**A RESOLUÇÃO**
+
+Corrigido em **Empresarial 0.69.0**. A conta saiu da server action e virou
+`src/lib/empresarial/vencimento.ts`, pura e com **15 testes**.
+
+**Eram DOIS defeitos, não um.** O segundo apareceu ao reescrever a função:
+`new Date(2026, 1, 31)` é **3 de março**, não 28 de fevereiro — e `due_day`
+aceita 1 a 31 no banco, sem trava. A empresa com vencimento no dia 31 recebia,
+em fevereiro, um boleto para março. Agora o dia é preso ao último dia do mês.
+
+**E um TERCEIRO, na mesma função:** o rótulo do mês da mensalidade saía de
+`new Date(mes + "T00:00:00").toLocaleDateString(...)`. Data-só sem fuso é lida
+no relógio da máquina; na Vercel (UTC) isso volta três horas ao ser mostrado em
+São Paulo e **cai no mês anterior** — a mensalidade de setembro sairia descrita
+como *"agosto de 2026"*, só no servidor.
+
+⚠️ **A régua nasceu cega e foi consertada.** Os 13 primeiros testes passavam a
+data de propósito (para não depender do dia em que rodam) e por isso **nenhum**
+exercitava o valor padrão — que é justamente onde o defeito morava. Provado:
+com o defeito original recolocado, os 13 continuaram VERDES. Entraram dois
+testes com o **relógio congelado** na janela das 21h à meia-noite, e aí a régua
+acusa.
+
+
 ### AP2. `/risartanos/[codigo]` responde 404 para o Admin Master
 *(encontrado em 25/09/2026, na varredura `npm run check:telas` rodada por
 causa da correção do tema escuro. Sem relação com ela.)*
@@ -865,3 +889,34 @@ causa da correção do tema escuro. Sem relação com ela.)*
   dado de treino → corrigir a semeadura.
 - **Gravidade:** alta se alcançar a produção (é a tela de RH), nenhuma se for
   só o treino. **É justamente por não saber ainda que precisa estar escrito.**
+
+### AP3. Data-só virando instante no SERVIDOR — a família inteira
+*(medido em 25/09/2026, ao corrigir o AP1. **9 arquivos, 15 ocorrências.**)*
+
+- **O que está confirmado:** `new Date("2026-09-01T00:00:00")` — data sem fuso
+  — é lida no relógio da **máquina**. Na Vercel isso é UTC; ao ser mostrada em
+  São Paulo, a data **volta três horas** e cai no dia anterior. Varredura feita
+  só em arquivos de **servidor** (os `"use client"` ficam de fora de propósito:
+  no navegador da equipe o fuso já é o certo).
+- **Onde** (`src/app`, servidor):
+  - `prontuarios/[id]/page.tsx` (3×) e `prontuarios/actions.ts` — **data de
+    nascimento**. É o mais visível: o paciente nascido em 04/03 aparece como
+    03/03, e a idade calculada erra no dia do aniversário.
+  - `ppr/mensalidades/page.tsx` (3×), `ppr/adesoes/[id]/page.tsx`,
+    `ppr/adesoes/[id]/contrato/page.tsx`, `ppr/painel/page.tsx` — vencimentos,
+    mês de referência e o **contrato impresso**.
+  - `agenda/planejamento-anual/page.tsx` (4×) — datas do calendário do ano.
+- **Por que não foi corrigido junto com o AP1:** são três módulos diferentes
+  (prontuário, PPR, agenda), cada um com o seu teste e a sua conferência.
+  Misturar com a cobrança do Empresarial esconderia os dois — a mesma razão
+  que criou esta seção.
+- **O conserto:** `startOfDayInBrazil()` / `formatInBrazil()` de
+  `src/lib/dates.ts`, ou ler a data como número quando o que se quer é
+  calendário (foi o que `rotuloDoMes` passou a fazer).
+- ⚠️ **A régua entra JUNTO com o conserto, nunca antes.** A varredura de
+  `dates.test.ts` hoje só reconhece duas formas, ambas com template literal
+  (`new Date(\`...T${hora}\`)`); a forma desta família escapa. Acrescentar a
+  terceira forma agora deixaria o teste **vermelho** nos 9 arquivos — e teste
+  que nasce vermelho é teste que alguém desliga.
+- **Tamanho:** médio. Vale como lote próprio, e o mais urgente dele é a data de
+  nascimento do prontuário.
