@@ -1,3 +1,4 @@
+import { startOfDayInBrazil } from "@/lib/dates";
 // Programa de Prevenção Riso+ (PPR+) — regras puras (sem banco, sem React).
 // Dinheiro SEMPRE em centavos inteiros. Decisões do dono em docs/PPR.md §14.
 
@@ -389,7 +390,10 @@ export function daysOverdue(charges: PprCharge[], now = new Date()): number {
   );
   let worst = 0;
   for (const c of open) {
-    const due = new Date(`${c.dueDate}T00:00:00`);
+    // A fronteira do dia é a meia-noite BRASILEIRA (AP4): montada à mão,
+    // no servidor em UTC ela caía às 21h do dia anterior e o atraso saía um
+    // dia maior.
+    const due = startOfDayInBrazil(c.dueDate);
     const diff = Math.floor((now.getTime() - due.getTime()) / 86_400_000);
     if (diff > worst) worst = diff;
   }

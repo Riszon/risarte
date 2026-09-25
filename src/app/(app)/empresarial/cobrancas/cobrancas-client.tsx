@@ -15,7 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatBRL } from "@/lib/pricing";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  formatIsoDateBr,
+  formatIsoMonthBr,
+} from "@/lib/dates";
 import {
   BILLING_STATUS_LABELS,
   BILLING_TYPE_LABELS,
@@ -52,18 +55,12 @@ const VARIANTE: Record<BillingStatus, "secondary" | "destructive" | "outline"> =
 
 function dataBR(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso.slice(0, 10) + "T00:00:00").toLocaleDateString("pt-BR", {
-    timeZone: BRAZIL_TIME_ZONE,
-  });
+  return formatIsoDateBr(iso.slice(0, 10));
 }
 
 function mesBR(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso.slice(0, 10) + "T00:00:00").toLocaleDateString("pt-BR", {
-    timeZone: BRAZIL_TIME_ZONE,
-    month: "2-digit",
-    year: "numeric",
-  });
+  return formatIsoMonthBr(iso.slice(0, 10));
 }
 
 /**

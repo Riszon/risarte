@@ -23,7 +23,12 @@ import Link from "next/link";
 import { CalendarSearch } from "lucide-react";
 import { openSpecialDays, removeSpecialDay, saveLunchBreak } from "../actions";
 import { EditOpenDayDialog } from "./edit-open-day-dialog";
-import { todayInBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  formatIsoDateInBrazil,
+  startOfDayInBrazil,
+  todayInBrazil,
+  BRAZIL_TIME_ZONE,
+} from "@/lib/dates";
 
 const TIME_OPTIONS: string[] = [];
 for (let h = 6; h <= 22; h++) {
@@ -516,7 +521,7 @@ export function AgendaConfigEditor({
                   key={d}
                   className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs"
                 >
-                  {new Date(`${d}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
+                  {formatIsoDateInBrazil(d, {
                     weekday: "short",
                     day: "2-digit",
                     month: "2-digit",
@@ -632,7 +637,9 @@ export function AgendaConfigEditor({
               <ul className="divide-y rounded-lg border">
                 {openDays.map((d) => {
                   const advanceDays = Math.round(
-                    (new Date(`${d.date}T00:00:00`).getTime() -
+                    // A fronteira do dia é a meia-noite BRASILEIRA: montar
+                    // "T00:00:00" à mão dava a meia-noite da máquina.
+                    (startOfDayInBrazil(d.date).getTime() -
                       new Date(d.createdAt).getTime()) /
                       86_400_000
                   );
@@ -643,10 +650,11 @@ export function AgendaConfigEditor({
                     >
                       <div className="min-w-0">
                         <span className="font-medium">
-                          {new Date(`${d.date}T00:00:00`).toLocaleDateString(
-                            "pt-BR",
-                            { timeZone: BRAZIL_TIME_ZONE, weekday: "long", day: "2-digit", month: "long" }
-                          )}
+                          {formatIsoDateInBrazil(d.date, {
+                            weekday: "long",
+                            day: "2-digit",
+                            month: "long",
+                          })}
                         </span>
                         <span className="text-muted-foreground">
                           {" "}

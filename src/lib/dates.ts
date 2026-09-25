@@ -324,3 +324,32 @@ export function formatIsoDayMonthBr(isoDate: string | null | undefined): string 
   if (!m) return "";
   return `${m[3]}/${m[2]}`;
 }
+
+/**
+ * Formata o que vier: data civil ("2026-09-05") OU instante ISO completo.
+ *
+ * Existe porque três telas de relatório do Empresarial tinham a MESMA linha
+ * copiada — `iso.length <= 10 ? new Date(iso + "T00:00:00") : new Date(iso)` —
+ * e a primeira metade dela é justamente o defeito do AP3. Uma conta só, e ela
+ * escolhe o caminho certo: data civil não passa por instante nenhum.
+ */
+export function formatAnyDateBr(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return iso.length <= 10 ? formatIsoDateBr(iso) : formatBrDate(iso);
+}
+
+/**
+ * Uma data CIVIL formatada com as opções que você quiser, sempre no Brasil.
+ *
+ * É o caso geral de `formatIsoDateBr`: serve quando se quer dia da semana, mês
+ * por extenso, etc. O instante é construído com `startOfDayInBrazil`, que é a
+ * meia-noite BRASILEIRA daquele dia — por isso não escorrega para a véspera
+ * quando o código roda em UTC.
+ */
+export function formatIsoDateInBrazil(
+  isoDate: string | null | undefined,
+  options: Intl.DateTimeFormatOptions
+): string {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(isoDate ?? "")) return "";
+  return formatInBrazil(startOfDayInBrazil(isoDate!.slice(0, 10)), options);
+}

@@ -952,7 +952,7 @@ existe. Subindo o servidor de treino com **`TZ=UTC`**, como na Vercel, a mesma
 tela acusou: *"03/03/2004"* ainda aparecia. **Para defeito de fuso, medir na
 máquina de quem programa é medir o lugar onde ele não está.**
 
-### AP4. Componentes de navegador também desenham no SERVIDOR (SSR)
+### AP4. ✅ RESOLVIDO em 25/09/2026 — componentes de navegador também desenham no servidor
 *(descoberto em 25/09/2026, ao medir o AP3 com `TZ=UTC`.)*
 
 - **O que está confirmado:** a varredura de `dates.test.ts` pula arquivos
@@ -972,3 +972,66 @@ máquina de quem programa é medir o lugar onde ele não está.**
 - **O que fazer:** trocar pelas mesmas funções de data civil e então decidir se
   a varredura passa a incluir os `"use client"` — hoje ela os exclui por uma
   razão que era boa e virou meia-verdade.
+
+**AP2 — MEDIDO em 25/09/2026, e a suspeita estava certa**
+
+Com a rota aquecida (compilada), no treino:
+
+| código | resultado |
+|---|---|
+| `RIS-000007-TREINO` | **404** |
+| `RIS-000002` | abre |
+| `RIS-000009` | abre |
+
+**Não é rota quebrada: é o sufixo `-TREINO` nos códigos semeados.** A ficha
+procura pelo código exato, e o código com sufixo não existe como tal. Logo,
+**a produção não é afetada** — lá os códigos não têm sufixo.
+
+O que falta é pequeno e fica aqui: corrigir a semeadura do treino (ou fazer a
+busca tolerar o sufixo), para a varredura parar de acusar.
+
+### AP5. A varredura de telas ACUSA ROTA CERTA quando o servidor está frio
+*(medido em 25/09/2026, três execuções seguidas.)*
+
+- **O que está confirmado:** `npm run check:telas` contra um servidor de
+  desenvolvimento **recém-iniciado** devolve 404 em rotas que funcionam. Três
+  execuções acusaram **conjuntos DIFERENTES**: uma o `/financeiro/*` inteiro,
+  outra o `/admin/*` inteiro, outra nenhum. Conferidas uma a uma logo depois,
+  com a rota já compilada, **todas as oito abriram (200)**.
+- **A causa:** em desenvolvimento o Next compila cada rota **na primeira
+  visita**. A varredura chega antes da compilação terminar e lê o 404
+  temporário. Ela está medindo o compilador, não o sistema.
+- **Por que isto importa mais do que parece:** é a régua acusando o que está
+  certo — o defeito que o `CLAUDE.md` §0d registra como pior que não ter régua.
+  Eu mesmo, nesta sessão, quase saí atrás de um defeito no Financeiro que não
+  existia, e só não fui porque conferi rota por rota.
+- **O que fazer:** aquecer cada rota antes de medir (uma visita descartada), ou
+  repetir o 404 uma vez antes de acusar; e a varredura deveria **dizer** que
+  está contra servidor de desenvolvimento. Contra o site publicado (onde tudo
+  já está compilado) o problema não existe.
+- **Enquanto não for feito:** 404 isolado na varredura **não é diagnóstico** —
+  conferir a rota à mão antes de acreditar.
+
+**A RESOLUÇÃO DO AP4** (core 0.279.0)
+
+Os 13 arquivos `"use client"` foram corrigidos, mais **três regras puras em
+`src/lib`** que a varredura nem olhava — e que eram as piores do lote, porque
+regra pura é usada por tudo:
+
+- `annual-plan.ts` — o contador de dias do planejamento anual.
+- `clients.ts` — `isMinorOn`, que virou casca de `ehMenorDeIdade`.
+- `ppr/rules.ts` — os dias de atraso da mensalidade.
+
+**A régua cresceu junto**, e em três direções:
+
+1. Passou a varrer **`src/lib`** além de `src/app`.
+2. A terceira forma passou a incluir os `"use client"` — as duas primeiras
+   continuam só no servidor, porque são sobre HORA, e hora de navegador é a da
+   pessoa. **Data é diferente: o SSR desenha no servidor.**
+3. Ganhou a exceção do **`Z`**: `new Date("...T00:00:00Z")` é instante absoluto
+   e é código CERTO (`notification-list.tsx` usa de propósito). Sem a exceção a
+   régua acusaria código bom — o jeito mais rápido de ensinar a equipe a
+   ignorá-la.
+
+Provada recolocando o defeito num componente de navegador: ela acusa pelo nome
+do arquivo. Varredura de `src` inteira: **zero**.

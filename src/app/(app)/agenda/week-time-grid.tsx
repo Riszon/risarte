@@ -29,7 +29,10 @@ import {
   useCardDrag,
   type DropTarget,
 } from "./agenda-drag";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  startOfDayInBrazil,
+  BRAZIL_TIME_ZONE,
+} from "@/lib/dates";
 
 const SLOT_MIN = 15;
 const SLOT_PX = 16;
@@ -152,7 +155,7 @@ export function WeekTimeGrid({
   const holidayNameByDate = new Map(holidays.map((h) => [h.date, h.name]));
 
   function closuresOnDay(iso: string): AgendaClosure[] {
-    const ds = new Date(`${iso}T00:00:00`).getTime();
+    const ds = startOfDayInBrazil(iso).getTime();
     const de = ds + 86_400_000;
     return closures.filter(
       (c) =>

@@ -62,7 +62,10 @@ import {
   updateAppointmentStatus,
   updateAttendance,
 } from "../agenda/actions";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  formatIsoDateInBrazil,
+  BRAZIL_TIME_ZONE,
+} from "@/lib/dates";
 import { TIPOS_QUE_GRAVAM, pedirGravacao, pedirParaParar } from "@/lib/gravacao";
 
 export type PanelAppointment = {
@@ -502,7 +505,7 @@ export function AttendancePanel({
     accent?: string;
   }) {
     const pendingSince = a.pendingSinceIso
-      ? new Date(`${a.pendingSinceIso}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
+      ? formatIsoDateInBrazil(a.pendingSinceIso, {
           day: "2-digit",
           month: "2-digit",
         })

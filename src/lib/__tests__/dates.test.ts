@@ -166,14 +166,55 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
       //    `formatIsoDateBr`/`formatIsoMonthBr`; para fronteira de dia,
       //    `startOfDayInBrazil`; para andar no calendário, `addDaysIso` e
       //    `weekdayOf`.
+      //    ⚠️ O `Z` NO FIM SALVA. `new Date("...T00:00:00Z")` é instante
+      //    ABSOLUTO — igual em qualquer máquina — e é exatamente o que
+      //    `notification-list.tsx` faz de propósito para comparar dias. Sem
+      //    esta exceção a régua acusaria código CERTO, que é o jeito mais
+      //    rápido de ensinar a equipe a ignorá-la.
       nome: "data-só virando instante (`T00:00:00` escrito à mão)",
-      padrao: /new Date\([^)]*T00:00:00/,
+      padrao: /new Date\([^)]*T00:00:00(?!(?:\.\d+)?Z)/,
     },
   ];
 
-  for (const { nome, padrao } of FORMAS) {
-    it(`nenhum arquivo de servidor tem ${nome}`, () => {
-      const culpados = arquivosDoServidor("src/app")
+  /**
+   * ⚠️ A TERCEIRA FORMA VARRE MAIS LARGO QUE AS DUAS PRIMEIRAS, e a razão é um
+   * erro de premissa que custou uma correção pela metade (AP4, 25/09/2026).
+   *
+   * As formas 1 e 2 são sobre HORA de negócio, e a hora do navegador é a da
+   * pessoa — por isso os arquivos `"use client"` ficam de fora delas.
+   *
+   * A forma 3 é sobre DATA, e aí a premissa não vale: o Next desenha o HTML
+   * dos componentes de navegador no SERVIDOR primeiro. A ficha do paciente
+   * continuou chegando com a data de nascimento de um dia antes mesmo depois
+   * de o AP3 ser corrigido, porque o valor vinha de um `"use client"`.
+   *
+   * E `src/lib` entra junto: as REGRAS PURAS moram lá, e eram três — o
+   * contador de dias do planejamento anual, o menor de idade e o atraso do
+   * PPR. A varredura olhava só `src/app` e não as via.
+   */
+  function todosOsArquivos(raiz: string): string[] {
+    const achados: string[] = [];
+    for (const nome of readdirSync(raiz)) {
+      const caminho = join(raiz, nome);
+      if (statSync(caminho).isDirectory()) {
+        // Os testes citam o defeito por escrito, como exemplo.
+        if (nome === "__tests__") continue;
+        achados.push(...todosOsArquivos(caminho));
+        continue;
+      }
+      if (!/\.tsx?$/.test(nome)) continue;
+      achados.push(caminho);
+    }
+    return achados;
+  }
+
+  for (const [i, { nome, padrao }] of FORMAS.entries()) {
+    const larga = i === 2;
+    it(`nenhum arquivo ${larga ? "de src" : "de servidor"} tem ${nome}`, () => {
+      const alvos = larga
+        ? [...todosOsArquivos("src/app"), ...todosOsArquivos("src/lib")]
+        : arquivosDoServidor("src/app");
+      const culpados = alvos
         .filter((f) => padrao.test(semComentarios(readFileSync(f, "utf8"))))
         .map((f) => f.replace(/\\/g, "/"));
 
@@ -202,6 +243,14 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
     // a aritmética em UTC de `addDaysIso`, que é justamente o jeito CERTO.
     expect(FORMAS[2].padrao.test('new Date("2026-09-05T12:00:00Z")')).toBe(false);
     expect(FORMAS[2].padrao.test("new Date(Date.UTC(a, m - 1, d))")).toBe(false);
+    // ⚠️ E NÃO acusa o instante ABSOLUTO com `Z`, que é código certo:
+    // `notification-list.tsx` usa exatamente isso para comparar dias.
+    expect(FORMAS[2].padrao.test("new Date(`${dia}T00:00:00Z`).getTime()")).toBe(false);
+    expect(FORMAS[2].padrao.test('new Date(x + "T00:00:00.000Z")')).toBe(false);
+    // ⚠️ E NÃO acusa o instante ABSOLUTO com Z, que é código certo:
+    //  usa isso de propósito para comparar dias.
+    expect(FORMAS[2].padrao.test("new Date(`${dia}T00:00:00Z`).getTime()")).toBe(false);
+    expect(FORMAS[2].padrao.test("new Date(x + \"T00:00:00.000Z\")")).toBe(false);
   });
 
   it("a varredura descarta COMENTÁRIO — senão acusaria a própria explicação", () => {

@@ -28,7 +28,7 @@ import {
   updateNetworkPlanItem,
   deleteNetworkPlanItem,
 } from "./actions";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { formatIsoDateBr } from "@/lib/dates";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -225,12 +225,7 @@ export function NetworkPlanManager({
     });
   }
 
-  const fmt = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  const fmt = (iso: string) => formatIsoDateBr(iso);
 
   return (
     <Card>

@@ -5,7 +5,10 @@ import { useEffect, useRef } from "react";
 import { AlertTriangle, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { agendaHref } from "@/lib/agenda-view";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  startOfDayInBrazil,
+  BRAZIL_TIME_ZONE,
+} from "@/lib/dates";
 
 export type StripState =
   | "normal"
@@ -80,7 +83,10 @@ export function DayStripView({
         className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]"
       >
         {days.map((d) => {
-          const date = new Date(`${d.iso}T00:00:00`);
+          // Meia-noite BRASILEIRA daquele dia: "T00:00:00" à mão dava a
+          // meia-noite da máquina, e no servidor (UTC) a tira de dias
+          // chegava rotulada com a véspera.
+          const date = startOfDayInBrazil(d.iso);
           const blocked =
             d.state === "closed" ||
             d.state === "holiday_closed" ||

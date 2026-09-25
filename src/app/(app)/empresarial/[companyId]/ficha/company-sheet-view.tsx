@@ -20,7 +20,10 @@ import {
   COMPANY_FILE_TYPE_LABELS,
 } from "@/lib/empresarial/documents";
 import type { CompanySheet } from "./data";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  formatIsoMonthBr,
+  formatAnyDateBr,
+} from "@/lib/dates";
 import { TopoDoRelatorio } from "../../topo-do-relatorio";
 
 const PRINT_CSS = `
@@ -40,8 +43,7 @@ const PRINT_CSS = `
 
 function d(iso: string | null): string {
   if (!iso) return "—";
-  const date = iso.length <= 10 ? new Date(iso + "T00:00:00") : new Date(iso);
-  return date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
+  return formatAnyDateBr(iso);
 }
 
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
@@ -383,14 +385,7 @@ export function CompanySheetView({ sheet }: { sheet: CompanySheet }) {
                       {BILLING_TYPE_LABELS[b.billingType]}
                     </td>
                     <td className="py-1 pr-2 text-muted-foreground">
-                      {b.referenceMonth
-                        ? new Date(
-                            b.referenceMonth + "T00:00:00"
-                          ).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
-                            month: "2-digit",
-                            year: "numeric",
-                          })
-                        : "—"}
+                      {formatIsoMonthBr(b.referenceMonth) || "—"}
                     </td>
                     <td className="py-1 pr-2 text-muted-foreground">
                       {d(b.dueDate)}

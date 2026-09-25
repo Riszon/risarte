@@ -23,7 +23,10 @@ import {
   RELATIONSHIP_LABELS,
 } from "@/lib/empresarial/constants";
 import type { BenefitsReport, MemberStats } from "./data";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  formatAnyDateBr,
+  BRAZIL_TIME_ZONE,
+} from "@/lib/dates";
 import { TopoDoRelatorio } from "../../topo-do-relatorio";
 
 const PRINT_CSS = `
@@ -50,8 +53,7 @@ type Options = {
 
 function d(iso: string | null): string {
   if (!iso) return "—";
-  const date = iso.length <= 10 ? new Date(iso + "T00:00:00") : new Date(iso);
-  return date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
+  return formatAnyDateBr(iso);
 }
 
 function hm(iso: string | null): string {

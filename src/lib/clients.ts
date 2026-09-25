@@ -1,3 +1,5 @@
+import { todayInBrazil } from "@/lib/dates";
+import { ehMenorDeIdade } from "@/lib/idade";
 // Regras do CADASTRO do cliente (I4).
 //
 // "Cadastro completo" é o mesmo que o formulário de novo cliente do prontuário
@@ -27,13 +29,20 @@ export type ClientRegistrationFields = {
 const filled = (v: string | null | undefined) => Boolean(v && v.trim() !== "");
 
 /** Menor de 18 anos na data de referência. */
-export function isMinorOn(birthDate: string | null, ref = new Date()): boolean {
+/**
+ * ⚠️ A CONTA MORA EM `@/lib/idade` (AP3/AP4). Aqui ela era feita com o relógio
+ * da MÁQUINA: no servidor em UTC, das 21h à meia-noite, quem completava 18
+ * anos no dia seguinte já era tratado como maior na véspera.
+ *
+ * A data de referência continua aceita para quem precisa perguntar "era menor
+ * naquela data?", agora como data civil.
+ */
+export function isMinorOn(
+  birthDate: string | null,
+  ref: string = todayInBrazil()
+): boolean {
   if (!birthDate) return false;
-  const b = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(b.getTime())) return false;
-  const limit = new Date(ref);
-  limit.setFullYear(limit.getFullYear() - 18);
-  return b > limit;
+  return ehMenorDeIdade(birthDate, ref);
 }
 
 /**

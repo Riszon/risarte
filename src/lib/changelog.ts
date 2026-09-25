@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.279.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "Mais datas de um dia antes — agora nas telas que você usa clicando",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O conserto das datas foi até o fim: agenda (dias avulsos, tira de dias, planejamento anual), Atendimento, notificações, cobranças do Empresarial e os relatórios da empresa mostravam a data de um dia antes por alguns instantes ao abrir a tela — e em papel impresso, o dia errado era o que saía.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O contador de dias do planejamento anual, a checagem de menor de idade e os dias de atraso do PPR também usavam o relógio do servidor. Passaram a usar o calendário brasileiro.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.278.0",
     data: "2026-09-25",
     migracao: null,

@@ -62,7 +62,10 @@ import {
 } from "./actions";
 import { AgendaPeekDialog } from "./agenda-peek-dialog";
 import { EscolherCliente } from "./escolher-cliente";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  formatIsoDateInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 
 const DURATION_ITEMS = [
   { value: "15", label: "15 minutos" },
@@ -530,7 +533,7 @@ export function AppointmentFormDialog({
   // efeito faria o React desenhar duas vezes à toa (e o lint reprova).
   const jornadaOnline = isOnline ? jornadaBuscada : null;
 
-  const dayWeekday = date ? new Date(`${date}T00:00:00`).getDay() : null;
+  const dayWeekday = date ? weekdayOf(date) : null;
   // No online é a jornada do consultor que diz se o dia existe.
   const configDoDia = jornadaOnline ?? effectiveConfig;
   const weekdayConfigured = Boolean(
@@ -1271,7 +1274,7 @@ export function AppointmentFormDialog({
                       onClick={() => doSubmit(s.date, s.time)}
                       className="rounded-full border bg-background px-2.5 py-1 text-xs hover:border-primary hover:bg-primary/5"
                     >
-                      {new Date(`${s.date}T00:00:00`).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
+                      {formatIsoDateInBrazil(s.date, {
                         weekday: "short",
                         day: "2-digit",
                         month: "2-digit",

@@ -1,3 +1,4 @@
+import { startOfDayInBrazil } from "@/lib/dates";
 // Annual attendance plan (GR6): recess, vacations (collective/individual),
 // events, trainings and scheduled maintenance. Unit-blocking types close the
 // whole unit on those dates; individual vacation closes only the listed people.
@@ -101,7 +102,11 @@ export function itemCoversDate(item: PlanItem, dateIso: string): boolean {
 
 /** Whole-day count of an item (inclusive). */
 export function itemDayCount(item: PlanItem): number {
-  const s = new Date(`${item.startsDate}T00:00:00`).getTime();
-  const e = new Date(`${item.endsDate}T00:00:00`).getTime();
+  // Meia-noite BRASILEIRA nos dois lados (AP4). Antes eram duas
+  // meia-noites da MÁQUINA: a diferença dava certo por acaso, porque as duas
+  // erravam junto — e bastava alguém mexer em uma para o contador de dias
+  // passar a mentir.
+  const s = startOfDayInBrazil(item.startsDate).getTime();
+  const e = startOfDayInBrazil(item.endsDate).getTime();
   return Math.round((e - s) / 86_400_000) + 1;
 }

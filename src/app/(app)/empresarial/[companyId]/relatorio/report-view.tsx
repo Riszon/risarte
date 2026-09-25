@@ -19,7 +19,7 @@ import {
 import { printAs, reportFileName } from "@/lib/empresarial/filenames";
 import { REPORT_FILTER_LABELS } from "@/lib/empresarial/constants";
 import type { CompanyReport } from "./data";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { formatAnyDateBr } from "@/lib/dates";
 import { TopoDoRelatorio } from "../../topo-do-relatorio";
 
 // PDF: esconde a tela (menu/botões) e imprime só o relatório.
@@ -40,8 +40,7 @@ const PRINT_CSS = `
 
 function d(iso: string | null): string {
   if (!iso) return "—";
-  const date = iso.length <= 10 ? new Date(iso + "T00:00:00") : new Date(iso);
-  return date.toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
+  return formatAnyDateBr(iso);
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
