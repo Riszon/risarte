@@ -1122,3 +1122,27 @@ Duas lições que isso acrescentou ao conserto:
   login contava como falha de tela (culpando o sistema por um cabo); agora é
   marcado como ambiente, e o resultado final avisa quantos perfis **não foram
   conferidos** — a mesma regra do "invariante sem dado" da camada 1.
+
+### AP6. Três perfis barrados de telas que a regra escrita manda abrir
+*(encontrado em 25/09/2026, pela varredura JÁ CONSERTADA — é o primeiro achado
+que ela entrega depois de parar de acusar tela boa.)*
+
+- **O que está confirmado**, com a varredura e à mão:
+
+  | perfil | tela | regra escrita (CLAUDE.md) | o que acontece |
+  |---|---|---|---|
+  | Gerente de Unidade | `/financeiro/dre` | *"o gerente vê o financeiro da PRÓPRIA unidade"* | manda para a raiz |
+  | Financeiro da Franqueadora | `/financeiro/dre` | *"é o financeiro da rede"* | manda para a raiz |
+  | Comprador da Franqueadora | `/compras/rodadas` | *"a mesa de negociação é o trabalho do comprador (C2)"* | manda para a raiz |
+
+  O do gerente foi conferido à mão, logado: **307 para `/`, com E sem unidade
+  ativa no cookie**. Não é falta de unidade escolhida.
+- **O que NÃO se sabe ainda:** se a guarda da tela está errada, se a regra
+  escrita envelheceu, ou se falta papel/permissão nos usuários do TREINO
+  (estes três perfis existem só lá, criados para a varredura). A terceira
+  hipótese é a mais barata de testar e tem de vir primeiro.
+- **Por que não foi corrigido junto:** o AP5 era sobre a régua mentir; isto é
+  sobre permissão. Misturar esconderia os dois — e mexer em guarda de tela sem
+  saber qual das três hipóteses vale é trocar um defeito por outro.
+- ⚠️ **Se for a primeira hipótese, é grave:** gerente sem DRE não enxerga o
+  resultado da própria unidade, que é a tela pela qual ele responde.
