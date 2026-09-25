@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.280.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "A ficha do Risartano abre por códigos renumerados",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Algumas fichas de Risartano recebem um código renumerado quando a numeração já estava ocupada. Esses códigos não abriam a ficha: o endereço dava página não encontrada, e a lista passava a apontar para a pessoa por um endereço interno em vez do código. Agora o código abre a ficha normalmente, como qualquer outro.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.279.0",
     data: "2026-09-25",
     migracao: null,

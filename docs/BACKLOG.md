@@ -870,7 +870,7 @@ testes com o **relógio congelado** na janela das 21h à meia-noite, e aí a ré
 acusa.
 
 
-### AP2. `/risartanos/[codigo]` responde 404 para o Admin Master
+### AP2. ✅ RESOLVIDO em 25/09/2026 — a ficha do Risartano recusava o código que o próprio sistema gera
 *(encontrado em 25/09/2026, na varredura `npm run check:telas` rodada por
 causa da correção do tema escuro. Sem relação com ela.)*
 
@@ -1035,3 +1035,35 @@ regra pura é usada por tudo:
 
 Provada recolocando o defeito num componente de navegador: ela acusa pelo nome
 do arquivo. Varredura de `src` inteira: **zero**.
+
+**A RESOLUÇÃO DO AP2** (core 0.280.0)
+
+**A causa não era dado de treino: era o sistema discordando de si mesmo.**
+
+O padrão que decide o endereço da ficha era `^RIS-\d{1,10}$` — só dígitos. Mas
+quem gera os códigos com sufixo é o **próprio sistema**: ao espelhar a produção
+no treino, `codigoAfastado` renomeia a ficha LOCAL que ocupa o número para
+`RIS-000007-TREINO`, liberando-o sem apagar nada. Duas regras do mesmo sistema
+com ideias diferentes sobre o que é um código.
+
+**Dois sintomas, e o segundo é o que ninguém veria:**
+
+1. `/risartanos/RIS-000007-TREINO` respondia **404**.
+2. `enderecoDaFicha` caía para o endereço por **id** — então, clicando na
+   lista, ninguém tropeçava. O código simplesmente **deixava de servir de
+   endereço**, em silêncio, contra a regra de que o código do documento nunca
+   some (CLAUDE.md §8b).
+
+**O conserto** foi o padrão passar a aceitar as duas formas que o espelho cria
+(`-TREINO` e `-TREINO-A1B2C3`) — e **não** sufixo inventado.
+
+⚠️ **A trava contra voltar a divergir é o formato do teste, não o seu valor.**
+`espelho.test.ts` agora pega o que `codigoAfastado` **gera** e exige que
+`chaveDaFicha` e `enderecoDaFicha` **aceitem**. Não confere um texto fixo:
+confere que os dois lados combinam. Provado devolvendo o padrão antigo — caem
+quatro asserções, uma para cada sintoma.
+
+**Conferido na tela do treino:** as quatro fichas com sufixo abrem pelo código.
+⚠️ E a primeira medição acusou uma delas por engano: eu procurava o nome no
+texto visível, e ali ele mora no `value=` de um campo — a mesma armadilha que
+já tinha me pegado nesta sessão. Passou a procurar no HTML cru.

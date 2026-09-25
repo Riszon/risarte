@@ -324,7 +324,27 @@ export const TAMANHO_DA_SENHA_SUGERIDA = 10;
 // -----------------------------------------------------------------------------
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CODIGO = /^RIS-\d{1,10}$/;
+
+/**
+ * O CÓDIGO DA FICHA, incluindo as formas que o próprio sistema gera.
+ *
+ * ⚠️ O SUFIXO `-TREINO` NÃO É LIXO: quem o põe é o espelho
+ * (`codigoAfastado`, em `src/lib/espelho.ts`). Ao copiar a produção para o
+ * treino, uma ficha LOCAL que ocupava o mesmo número é **renomeada** para
+ * liberá-lo — nada é apagado. O código vira `RIS-000007-TREINO` e, se até esse
+ * estiver ocupado, `RIS-000007-TREINO-A1B2C3`.
+ *
+ * O padrão antigo era `^RIS-\d{1,10}$`, e recusava as duas formas. Resultado
+ * (achado AP2, 25/09/2026): a ficha respondia **404** pelo endereço do código,
+ * e `enderecoDaFicha` caía para o id — ou seja, o sistema **gerava um código
+ * que depois se recusava a entender**. Clicando na lista ninguém tropeçava (o
+ * link ia pelo id), mas o código deixava de servir como endereço, contra a
+ * regra de que o código do documento nunca some (CLAUDE.md §8b).
+ *
+ * `espelho.test.ts` amarra os dois lados: o que `codigoAfastado` gera tem de
+ * ser aceito aqui.
+ */
+const CODIGO = /^RIS-\d{1,10}(?:-TREINO(?:-[0-9A-Z]{1,12})?)?$/;
 
 /**
  * O endereço prefere o CÓDIGO (`/risartanos/RIS-0007`): é ele que as pessoas

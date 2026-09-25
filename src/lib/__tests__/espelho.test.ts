@@ -11,6 +11,7 @@ import {
   permitidoNaProducao,
   traduzirIds,
 } from "../espelho";
+import { chaveDaFicha, enderecoDaFicha } from "../risartanos";
 
 describe("permitidoNaProducao — a mesma regra de environment_allowed (0259)", () => {
   it("sem linha: treino e Academy abertos, sistema fechado", () => {
@@ -191,5 +192,45 @@ describe("codigoAfastado — numeração ocupada por ficha local do treino", () 
         new Set(["RIS-000001-TREINO"])
       )
     ).toBe("RIS-000001-TREINO-1A2B3C");
+  });
+});
+
+// ⚠️ O ELO QUE FALTAVA ENTRE QUEM GERA E QUEM LÊ (achado AP2, 25/09/2026).
+//
+// `codigoAfastado` cria `RIS-000007-TREINO`; `chaveDaFicha` decidia o endereço
+// com `^RIS-\d{1,10}$` e RECUSAVA esse código — a ficha respondia 404 pelo
+// endereço do código, e a lista caía para o id. Duas regras do mesmo sistema
+// discordando sobre o que é um código.
+//
+// Este teste não confere um valor: confere que os DOIS LADOS combinam. É o
+// único jeito de eles não voltarem a divergir quando um deles mudar.
+describe("o código que o espelho gera é endereçável (AP2)", () => {
+  const casos = [
+    codigoAfastado("RIS-000007", "abc", new Set()),
+    codigoAfastado(
+      "RIS-000007",
+      "1a2b3c4d-0000-0000-0000-000000000000",
+      new Set(["RIS-000007-TREINO"])
+    ),
+  ];
+
+  for (const codigo of casos) {
+    it(`"${codigo}" é aceito por chaveDaFicha`, () => {
+      expect(chaveDaFicha(codigo)).toEqual({ por: "code", valor: codigo });
+    });
+
+    it(`"${codigo}" vira endereço pelo CÓDIGO, não pelo id`, () => {
+      expect(enderecoDaFicha({ code: codigo, id: "um-id-qualquer" })).toBe(
+        `/risartanos/${codigo}`
+      );
+    });
+  }
+
+  it("e o que NÃO é código continua recusado", () => {
+    expect(chaveDaFicha("RIS-abc")).toBeNull();
+    expect(chaveDaFicha("")).toBeNull();
+    // Sufixo inventado não passa: só as formas que o espelho realmente cria.
+    expect(chaveDaFicha("RIS-000007-PRODUCAO")).toBeNull();
+    expect(chaveDaFicha("RIS-000007-TREINO-")).toBeNull();
   });
 });
