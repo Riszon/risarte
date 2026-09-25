@@ -673,6 +673,30 @@ function EmployeeFormDialog({
   const [email, setEmail] = useState(employee?.email ?? "");
   const [found, setFound] = useState<EmpresarialCandidate | null>(null);
 
+  /**
+   * ⚠️ CADASTRO NOVO ABRE LIMPO (relato OC-00056, 21/09/2026).
+   *
+   * O botão "Novo titular" continua montado depois de salvar — só a janela
+   * fecha. Como estes campos são controlados (existem para o
+   * autopreenchimento pelo CPF), o segundo titular chegava com os dados do
+   * primeiro. Quem não percebesse gravaria a mesma pessoa duas vezes, e o
+   * CPF repetido só seria recusado no fim.
+   *
+   * Limpar ao ABRIR, e não ao fechar: quem fechou sem querer no meio do
+   * preenchimento reabre e perde tudo de qualquer jeito — mas ao menos
+   * nunca cadastra com o dado de outra pessoa na tela.
+   */
+  function abrirOuFechar(aberto: boolean) {
+    if (aberto && !isEdit) {
+      setCpf("");
+      setFullName("");
+      setPhone("");
+      setEmail("");
+      setFound(null);
+    }
+    setOpen(aberto);
+  }
+
   function lookup(value: string) {
     if (isEdit) return;
     if (value.replace(/\D/g, "").length !== 11) {
@@ -708,7 +732,7 @@ function EmployeeFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={abrirOuFechar}>
       <DialogTrigger
         render={
           isEdit ? (
@@ -849,6 +873,19 @@ function DependentFormDialog({
   const [phone, setPhone] = useState(dependent?.phone ?? "");
   const [found, setFound] = useState<EmpresarialCandidate | null>(null);
 
+  // O MESMO do titular (OC-00056). O relato achou pelo titular, mas o
+  // dependente tem o defeito idêntico — e corrigir só o que foi relatado
+  // deixaria o irmão do problema esperando o próximo relato.
+  function abrirOuFechar(aberto: boolean) {
+    if (aberto && !isEdit) {
+      setCpf("");
+      setFullName("");
+      setPhone("");
+      setFound(null);
+    }
+    setOpen(aberto);
+  }
+
   function lookup(value: string) {
     if (isEdit) return; // Na edição não sobrescreve o que já está cadastrado.
     if (value.replace(/\D/g, "").length !== 11) {
@@ -883,7 +920,7 @@ function DependentFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={abrirOuFechar}>
       <DialogTrigger
         render={
           isEdit ? (
