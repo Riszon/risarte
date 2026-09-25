@@ -333,6 +333,19 @@ Syncthing se comportarem de forma estranha.**
    `git status -sb` sem `[ahead N]`.
 2. Atualizar "Estado da última sessão" abaixo (data, PC, feito, pendente,
    próximo passo) e incluir no push.
+3. **⚠️ ACHADO DE PASSAGEM VIRA LINHA NO `docs/BACKLOG.md`** (seção *Achados de
+   passagem*), **no mesmo dia em que foi encontrado** — ordem do dono,
+   25/09/2026: *"se encontrar e não registrar para lembrar depois do que
+   precisamos corrigir, podemos esquecer e o relato de ter encontrado não teve
+   utilidade nenhuma."*
+
+   **Dizer no chat NÃO é registrar.** A conversa termina, a sessão fecha, e o
+   que sobra é o custo de ter procurado sem o benefício de ter achado. Quase
+   todo defeito caro deste projeto foi visto por alguém antes de doer.
+
+   O achado **não entra no commit da vez** (misturar dois assuntos esconde os
+   dois): entra no BACKLOG, separando **o que está confirmado** do **que é
+   suspeita** — item que mistura os dois faz alguém "corrigir" um palpite.
 
 ### Regras
 
@@ -345,6 +358,72 @@ Syncthing se comportarem de forma estranha.**
 
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
+
+**24–25/09/2026 — PC Administrador (core 0.275.0 → 0.277.0; Empresarial 0.54.0 → 0.68.0; migrações 1020 e 1021)**
+
+**Tudo no ar nos dois ambientes. 1020 e 1021 aplicadas na produção e no
+treino** — conferido lendo o banco da produção (só leitura, com trava que
+EXIGE ser produção) e a versão pelas duas telas.
+
+- **OC-00083 fechado (Blocos I4, J e K).** A **quantidade contratada** trava o
+  cadastro, e o **termo de inclusão** (`TI-`) libera — curto de propósito,
+  referente ao acordo que já existe; é o **aceite** que autoriza, não o
+  rascunho. O teto de **dependentes** entrou depois (1021): a 1020 gravava o
+  campo e **ninguém o lia** — achado ao levantar as pendências, não por relato.
+- **A aba Proposta virou trilha de 6 passos** (Bloco J), na ordem do trabalho,
+  com a simulação fixa ao lado. Eram 9 blocos numa coluna e a simulação no
+  meio do formulário, com as faixas de preço DEPOIS dela.
+  ⚠️ **Amontoou na primeira versão** e o dono mandou a foto: a ficha era
+  `max-w-4xl` e eu pedi três colunas; e `sm:grid-cols-4` numa barra de 320px
+  fez "MENSALIDADE" escrever por cima de "POR TITULAR". **Lição: dentro de
+  coluna estreita, ponto de corte de JANELA mente** — a coluna virou
+  `@container`.
+- **Manual próprio do Empresarial** (`docs/treinamento/manual-empresarial.md`,
+  21 seções), dentro do módulo em `/empresarial/manual`, reusando o leitor do
+  núcleo. Word em `npm run manual:empresarial`.
+- **Relatos OC-00055/00056/00057/00059:** a implantação deixou de esperar os
+  cadastros (usa a **quantidade contratada**; sem base, pede o valor) e o
+  cadastro de titular **abre limpo** — o dependente tinha o mesmo defeito, sem
+  relato. O vencimento já era editável desde 31/07: virou orientação.
+- **OC-00064/OC-00084 (tema escuro) — eu respondi errado e o dono corrigiu.**
+  Eu disse "resolvido na 0.265.0" com base no registro, sem medir. A correção
+  de 21/09 (`color-scheme: dark`) era **necessária e metade**: os `<select>`
+  usam `bg-transparent`, então as `<option>` ficavam transparentes, o navegador
+  pintava a listinha de branco e a letra clara sumia. Agora `option/optgroup`
+  têm fundo e letra declarados (340+ caixas de uma vez).
+
+⚠️ **O PADRÃO DESTES DOIS DIAS: a régua errada dizendo que estava tudo bem.**
+Aconteceu cinco vezes. A pior foi o tema escuro: `tema-escuro.test.ts` lê o
+CÓDIGO procurando "mancha clara + letra herdada" e passou o tempo todo —
+**corretamente**, porque quem pintava de branco era o NAVEGADOR. Defeito que
+só existe depois que o navegador desenha só se mede com um navegador
+desenhando. Daí os dois testes E2E novos (`14-cadastro-limpo`,
+`15-caixa-de-selecao-escura`). As outras quatro: semear numa coluna
+inexistente e **acusar a tela** de não contar faixas; procurar `sm:grid-cols-4`
+na página inteira e acusar a simulação; procurar a versão na página inteira
+quando a barra lateral também a mostra; e um servidor de teste que subiu
+falando com a **PRODUÇÃO** porque o `.env.test.local` começa com BOM (morto
+antes de qualquer requisição; a conferência agora RECUSA rodar se a página não
+enxergar o dado criado no treino).
+
+⚠️ **Playwright: os navegadores nunca tinham sido instalados neste PC.**
+`npx playwright install chromium` foi rodado em 25/09 — a suíte E2E agora roda
+aqui.
+
+**Pendências (nesta ordem):**
+
+1. ⏰ **Supabase Pro vence em 29/09/2026.**
+2. **Cadastrar os benefícios PADRÃO DA REDE na produção** —
+   Configurações → Benefícios está **VAZIO** (conferido lendo o banco em
+   25/09). Enquanto estiver, toda proposta nova nasce sem nada a oferecer. É o
+   item mais barato com maior efeito.
+3. **`docs/BACKLOG.md` → seção "Achados de passagem"**: AP1 (vencimento no
+   relógio do servidor) e AP2 (`/risartanos/[codigo]` 404).
+4. **Notebook: seguir a seção 4 de `docs/DOIS-PCS.md`** antes de trabalhar lá.
+5. Trava de mensalidade duplicada (migração pequena) e depois o **ASAAS**, que
+   é o grande buraco operacional do Empresarial.
+6. Teste final do LOTE B (config da agenda + Relatórios), de sessões
+   anteriores.
 
 **21–23/09/2026 — PC Administrador (relatos da equipe: core 0.262.0 → 0.275.0; Empresarial 0.50.0 → 0.54.0)**
 

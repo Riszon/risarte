@@ -803,3 +803,65 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 - [ ] H4.14 **Definições de status:** "Iniciar tratamento" = plano aprovado e
       NENHUM procedimento executado; "Sessão de tratamento" = tratamento já
       iniciado (aplicar de forma consistente em agenda/jornada).
+
+---
+
+## ACHADOS DE PASSAGEM — encontrados fazendo outra coisa (fila viva)
+
+⚠️ **POR QUE ESTA SEÇÃO EXISTE** (ordem do dono, 25/09/2026): *"se encontrar e
+não registrar para lembrar depois do que precisamos corrigir, podemos esquecer
+e o relato de ter encontrado não teve utilidade nenhuma."*
+
+Quase todo defeito caro deste projeto foi visto por alguém **antes** de doer —
+e se perdeu porque foi dito de passagem, numa conversa, em vez de virar linha
+numa lista que alguém relê. Achado que mora só no chat **não existe**: a
+conversa termina, a sessão fecha, e o que sobrou foi o custo de ter procurado
+sem o benefício de ter achado.
+
+**A regra:** achado fora do escopo do que se está fazendo **não entra no
+commit da vez** (misturar dois assuntos esconde os dois) — entra **aqui**, no
+mesmo dia, com o que já se sabe e o que falta confirmar. O que está confirmado
+vem separado do que é suspeita: item que mistura os dois faz alguém "corrigir"
+um palpite.
+
+### AP1. O vencimento da cobrança usa o relógio do SERVIDOR, não o do Brasil
+*(encontrado em 24/09/2026, lendo `billing-actions.ts` para os relatos
+OC-00055/OC-00057. Não relatado por ninguém.)*
+
+- **Onde:** `nextDue()` em
+  `src/app/(app)/empresarial/[companyId]/billing-actions.ts`.
+- **O que está confirmado:** a função usa `new Date()` e
+  `toISOString().slice(0,10)` para montar o vencimento e o **mês de
+  referência**. Na Vercel o servidor roda em **UTC**.
+- **A consequência esperada:** entre 21h e meia-noite (horário de Brasília) o
+  servidor já está no dia seguinte. Gerar uma cobrança nesse intervalo no
+  último dia do mês pode gravar o **mês de referência errado** — e no dia 31
+  pode escolher o vencimento do mês seguinte.
+- **Por que não foi corrigido na hora:** apareceu no meio da entrega da
+  implantação (Bloco K). Misturar um conserto de fuso com uma mudança de regra
+  comercial esconderia os dois.
+- **O conserto:** trocar por `todayInBrazil()` / `startOfDayInBrazil()` de
+  `src/lib/dates.ts`, como manda a lição de fuso do `CLAUDE.md`. **Há teste que
+  varre `src/app`** procurando esse padrão — conferir por que ele não pegou
+  este caso, porque uma régua que deixa passar é tão grave quanto o defeito.
+- **Tamanho:** pequeno. Cabe no próximo lote do Empresarial.
+
+### AP2. `/risartanos/[codigo]` responde 404 para o Admin Master
+*(encontrado em 25/09/2026, na varredura `npm run check:telas` rodada por
+causa da correção do tema escuro. Sem relação com ela.)*
+
+- **O que está confirmado:** no **treino**, logado como Admin Master,
+  `GET /risartanos/RIS-000007-TREINO` devolve **404**, e existem **12**
+  registros em `public.staff_members`. A varredura acusa: *"404 para o Admin
+  Master é rota quebrada, não permissão"*.
+- **O que é SUSPEITA, não confirmado:** os códigos do treino têm sufixo
+  `-TREINO` (posto por semeadura/anonimização), e a página pode estar
+  procurando por um formato que não casa com isso. **Se for só isso, é defeito
+  do ambiente de treino**; se não for, a ficha de RH está quebrada também na
+  produção.
+- **O que fazer:** ler `src/app/(app)/risartanos/[codigo]/page.tsx` (por qual
+  coluna busca, onde chama `notFound()`); conferir na **produção, só leitura**,
+  com um código sem sufixo. Defeito real → corrigir e prender com teste;
+  dado de treino → corrigir a semeadura.
+- **Gravidade:** alta se alcançar a produção (é a tela de RH), nenhuma se for
+  só o treino. **É justamente por não saber ainda que precisa estar escrito.**
