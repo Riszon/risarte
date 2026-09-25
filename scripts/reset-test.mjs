@@ -176,6 +176,46 @@ async function conferirAlcance(db, listadas) {
   };
 }
 
+/**
+ * ⚠️ O TREINO NÃO É DESCARTÁVEL — ELE É O AMBIENTE DE TRABALHO DO DONO.
+ *
+ * Relato OC-00088 (25/09/2026): *"sumiu todos os prontuários que foram
+ * cadastrados, sumiu planejamentos, agendamentos, não tem nenhum cliente na
+ * jornada."* Sumiram porque EU rodei a suíte ponta a ponta naquele dia, e o
+ * preparo dela chama esta função — que apaga `clients`, `appointments`,
+ * `treatment_plans` e mais 27 tabelas.
+ *
+ * A trava contra a PRODUÇÃO sempre existiu e funcionou (`test-db.mjs` recusa o
+ * projeto de verdade). O que não existia era trava nenhuma contra apagar o
+ * trabalho de quem TESTA no treino: o script tratava aquele banco como rascunho
+ * enquanto o dono o usava como ambiente de trabalho. Duas ideias diferentes
+ * sobre o mesmo banco, e quem perdeu foi quem não sabia da primeira.
+ *
+ * Agora apagar exige dizer que sim, por escrito, e a recusa MOSTRA o que seria
+ * apagado. Sem isso a suíte não roda — de propósito: teste que destrói trabalho
+ * sem avisar custa mais do que vale.
+ */
+function autorizadoAApagar() {
+  return (
+    process.env.RISARTE_APAGAR_TREINO === "sim" ||
+    process.env.CI === "true" ||
+    process.env.CI === "1"
+  );
+}
+
+async function contarMovimento(db, nomes) {
+  const contagens = [];
+  for (const t of nomes) {
+    try {
+      const { rows } = await db.query(`select count(*)::int as n from public.${t}`);
+      if (rows[0].n > 0) contagens.push({ tabela: t, linhas: rows[0].n });
+    } catch {
+      /* tabela que não existe mais não conta */
+    }
+  }
+  return contagens.sort((a, b) => b.linhas - a.linhas);
+}
+
 export async function limparMovimento(db) {
   // Só trunca o que existe: tabela renomeada em migração futura não pode
   // derrubar a limpeza inteira e deixar metade do lixo para trás.
@@ -185,6 +225,29 @@ export async function limparMovimento(db) {
     [MOVIMENTO]
   );
   const nomes = rows.map((r) => r.table_name);
+
+  // ⚠️ A TRAVA DO OC-00088: sem autorização escrita, não se apaga — e a recusa
+  // mostra o que HAVIA, para ninguém descobrir a perda dias depois.
+  if (!autorizadoAApagar()) {
+    const cheias = await contarMovimento(db, nomes);
+    const total = cheias.reduce((s, c) => s + c.linhas, 0);
+    const amostra = cheias
+      .slice(0, 8)
+      .map((c) => `      ${c.tabela}: ${c.linhas}`)
+      .join("\n");
+    throw new Error(
+      "RECUSADO: esta limpeza apaga o MOVIMENTO do banco de treino — e o treino\n" +
+        "   é onde a equipe testa. Em 25/09/2026 ela levou junto os prontuários,\n" +
+        "   os agendamentos e os planos que o dono tinha cadastrado (OC-00088).\n" +
+        (total > 0
+          ? `\n   Hoje há ${total} linha(s) de movimento lá:\n${amostra}\n`
+          : "\n   Hoje o movimento já está vazio.\n") +
+        "\n   Se for mesmo para apagar, diga por escrito:\n" +
+        "      RISARTE_APAGAR_TREINO=sim npm run test:e2e\n" +
+        "   (na integração contínua, a variável CI já autoriza.)"
+    );
+  }
+
   const paraTruncar = nomes.filter((t) => !POR_DELETE.includes(t));
   const paraDeletar = nomes.filter((t) => POR_DELETE.includes(t));
   const existentes = paraTruncar.map((t) => `public.${t}`);

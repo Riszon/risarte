@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.283.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "Os testes automáticos não apagam mais o ambiente de treino sem avisar",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "Os cadastros feitos no ambiente de TREINO sumiram em 25/09. A causa não foi o sistema: foi a rotina de testes automáticos, que limpa o banco de treino antes de rodar — e ela foi executada naquele dia. O ambiente real nunca esteve em risco: essa rotina é impedida por trava de rodar contra o banco de produção.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A partir de agora essa limpeza só acontece se for pedida por escrito, e antes de apagar ela mostra quantos registros seriam perdidos. Antes ela apagava calada.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.282.0",
     data: "2026-09-25",
     migracao: null,

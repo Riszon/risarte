@@ -1146,3 +1146,49 @@ que ela entrega depois de parar de acusar tela boa.)*
   saber qual das três hipóteses vale é trocar um defeito por outro.
 - ⚠️ **Se for a primeira hipótese, é grave:** gerente sem DRE não enxerga o
   resultado da própria unidade, que é a tela pela qual ele responde.
+
+### AP7. ⚠️ EU APAGUEI OS DADOS DE TESTE DO DONO (relato OC-00088, 25/09/2026)
+
+**Não foi defeito do sistema: foi a suíte de testes, rodada por mim.**
+
+O preparo do teste ponta a ponta chama `limparMovimento`, que esvazia o
+MOVIMENTO do banco de **treino** — `clients`, `appointments`,
+`treatment_plans` e mais 27 tabelas. Rodei a suíte várias vezes em 25/09 para
+provar dois consertos (o cadastro que abria sujo e a caixa de seleção no tema
+escuro). Cada execução apagou o que havia ali.
+
+**Medido depois do relato:**
+
+| | treino | produção |
+|---|---|---|
+| `clients` | 0 | 0 |
+| `appointments` | 0 | 0 |
+| `treatment_plans` | 0 | 0 |
+| `staff_members` | 12 | 7 |
+| `audit_logs` | 134 | — |
+
+**A PRODUÇÃO NUNCA ESTEVE EM RISCO, e isso é verificável:** `reset-test.mjs` só
+conecta por `test-db.mjs`, que **recusa** qualquer endereço contendo o
+identificador do projeto de produção — nos dois endereços, o da API e o do
+banco. A mesma recusa se repete em `playwright.config.ts` e em `e2e/apoio.ts`.
+A produção tem 0 clientes porque ainda não entrou em uso real, não porque algo
+os apagou.
+
+**O que faltava** não era trava contra a produção — era trava contra apagar o
+**treino**. O script tratava aquele banco como rascunho; o dono o usa como
+ambiente de trabalho. Duas ideias diferentes sobre o mesmo banco, e quem perdeu
+foi quem não sabia da primeira.
+
+**O conserto** (core 0.283.0): apagar passou a exigir autorização escrita
+(`RISARTE_APAGAR_TREINO=sim`, ou `CI` na integração contínua). Sem ela a suíte
+**recusa e mostra quantas linhas seriam apagadas**, para ninguém descobrir a
+perda dias depois. Provado nos dois caminhos: recusa sem a variável, roda com.
+
+**O que NÃO dá para fazer:** devolver o que foi apagado. `truncate` não deixa
+rastro e não há cópia do treino. A única via seria a recuperação por ponto no
+tempo do Supabase (recurso do plano pago) — decisão do dono, não minha.
+
+⚠️ **A lição, que é a terceira aparição da mesma família neste projeto** (§0 do
+CLAUDE.md: o truncate que levou o Risarte Academy; 11/09: o comentário que
+descrevia a lista e não o efeito): **antes de apagar em massa, pergunte quem
+está usando aquele banco — não só o que o comando alcança.**

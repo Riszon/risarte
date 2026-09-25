@@ -250,8 +250,22 @@ olhar só o número da resposta deixaria passar).
 ## Teste ponta a ponta (camada 3)
 
 ```bash
-npm run test:e2e
+RISARTE_APAGAR_TREINO=sim npm run test:e2e
 ```
+
+⚠️ **A VARIÁVEL NÃO É BUROCRACIA — ELA EXISTE PORQUE A SUÍTE JÁ APAGOU O
+TRABALHO DO DONO** (relato OC-00088, 25/09/2026). O preparo da suíte esvazia o
+MOVIMENTO do banco de treino: `clients`, `appointments`, `treatment_plans` e
+mais 27 tabelas. A trava contra a PRODUÇÃO sempre funcionou; o que faltava era
+trava contra apagar o treino, **que é onde a equipe testa**. O script tratava
+aquele banco como rascunho enquanto o dono o usava como ambiente de trabalho.
+
+Sem a variável, a suíte **recusa e mostra quantas linhas seriam apagadas**. Na
+integração contínua a variável `CI` já autoriza — lá o banco é mesmo
+descartável.
+
+**Antes de rodar a suíte, pergunte se alguém está testando no treino.** Meia
+hora de cadastro manual vale mais que uma rodada de testes.
 
 **O app de teste sobe na porta 3100, com o BANCO DE TESTE** (projeto Supabase
 separado, `.env.test.local`, fora do Git). O servidor do dono continua na 3000
