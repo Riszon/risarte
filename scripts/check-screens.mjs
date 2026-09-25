@@ -246,6 +246,23 @@ async function signIn(email) {
 
 // ---- a varredura -----------------------------------------------------------
 
+/**
+ * ⚠️ NINGUÉM É ACUSADO NA PRIMEIRA TENTATIVA (achado AP5, 25/09/2026).
+ *
+ * Três execuções seguidas desta varredura acusaram conjuntos DIFERENTES de
+ * telas — numa o `/financeiro` inteiro, noutra o `/admin` inteiro, noutra
+ * nenhuma. Conferidas à mão logo depois, TODAS abriam. Uma acusação que muda
+ * de alvo a cada execução não está medindo o sistema: está medindo o dia.
+ *
+ * Contra servidor de desenvolvimento a primeira visita a uma tela leva
+ * segundos (medido: 7,4s no `/financeiro` recém-iniciado) porque ele monta a
+ * página na hora; e uma falha de rede passageira — que houve várias nesta
+ * máquina — derruba a consulta que a guarda da tela faz, e a guarda nega.
+ *
+ * Por isso: veredito que ACUSA (bloqueado ou erro) é repetido uma vez. Se a
+ * segunda visita abrir, o que houve foi instabilidade, e isso é DITO em vez de
+ * silenciado — esconder seria trocar um alarme falso por uma cegueira.
+ */
 async function visit(route, cookie) {
   const started = Date.now();
   try {
@@ -289,17 +306,52 @@ async function sweep(persona, targets, onProgress) {
     Array.from({ length: CONCURRENCY }, async () => {
       while (next < targets.length) {
         const target = targets[next++];
-        const outcome = await visit(target.url, cookie);
-        results.push({
-          route: target.route,
-          ...judge({
-            ...outcome,
+        const julgar = (o) =>
+          judge({
+            ...o,
             role: persona.role,
             isAdminMaster: persona.isAdminMaster,
             route: target.route,
-          }),
+          });
+
+        let outcome = await visit(target.url, cookie);
+        let veredito = julgar(outcome);
+        let instavel = null;
+
+        // ⚠️ NINGUÉM É ACUSADO NA PRIMEIRA TENTATIVA (achado AP5).
+        //
+        // Três execuções seguidas acusaram conjuntos DIFERENTES de telas —
+        // numa o `/financeiro` inteiro, noutra o `/admin` inteiro, noutra
+        // nenhuma. Conferidas à mão, todas abriam. Acusação que muda de alvo a
+        // cada execução mede o dia, não o sistema.
+        //
+        // A repetição é SÓ quando vira acusação, nunca em toda tela bloqueada:
+        // quase todo bloqueio aqui é permissão funcionando, e repetir todos
+        // dobrava o tempo da varredura (a primeira versão deste conserto
+        // travou a execução).
+        //
+        // ⚠️ DUAS repetições, com espera CRESCENTE. Uma só, de 400ms, não foi
+        // suficiente: uma execução nesta máquina acusou seis telas que, abertas
+        // à mão logo depois, responderam 200. Queda de rede dura segundos, não
+        // milissegundos — e a guarda da tela, sem resposta do banco, nega.
+        for (const espera of [600, 1500]) {
+          if (veredito.level !== "falha") break;
+          await new Promise((r) => setTimeout(r, espera));
+          const denovo = await visit(target.url, cookie);
+          const vereditoNovo = julgar(denovo);
+          if (vereditoNovo.level !== "falha") {
+            instavel = `na 1ª visita ${outcome.detail || outcome.verdict}, depois passou`;
+            outcome = denovo;
+            veredito = vereditoNovo;
+          }
+        }
+
+        results.push({
+          route: target.route,
+          ...veredito,
           verdict: outcome.verdict,
           ms: outcome.ms,
+          instavel,
         });
         onProgress?.(results.length, target.route);
       }
@@ -358,6 +410,9 @@ async function main() {
   );
 
   let falhas = 0;
+  // Perfis que NÃO deu para medir (rede/banco). Não são falha, mas também não
+  // são aprovação: varredura que passou por ausência não é varredura.
+  let naoConferidos = 0;
   const lentas = [];
   for (const persona of personas) {
     const started = Date.now();
@@ -371,8 +426,27 @@ async function main() {
       );
     } catch (e) {
       line("");
-      console.log(`\r  FALHA  ${persona.label}: ${e.message}\n`);
-      falhas++;
+      // ⚠️ NÃO CONSEGUIR ENTRAR NÃO É DEFEITO DO SISTEMA (achado AP5). Numa
+      // execução desta máquina, SETE dos oito perfis falharam aqui com
+      // "fetch failed" — a rede caiu, não o sistema. Contar isso como falha de
+      // tela faz a varredura culpar o riSZon por um cabo.
+      const ambiente =
+        /fetch failed|ENOTFOUND|ECONNRESET|ETIMEDOUT|network|socket/i.test(
+          e.message
+        );
+      console.log(
+        `\r  ${ambiente ? "⚠️ AMBIENTE" : "FALHA "}  ${persona.label}: ${e.message}`
+      );
+      if (ambiente) {
+        console.log(
+          "              Não deu para ENTRAR como este perfil — isto é rede ou" +
+            " banco, não tela.\n"
+        );
+        naoConferidos++;
+      } else {
+        console.log("");
+        falhas++;
+      }
       continue;
     }
 
@@ -382,6 +456,37 @@ async function main() {
     const ruins = results.filter((r) => r.level === "falha");
     falhas += ruins.length;
 
+    // ⚠️ QUANDO TUDO FALHA, QUEM FALHOU FOI A MEDIÇÃO (achado AP5).
+    //
+    // Uma execução nesta máquina acusou 100 de 101 telas com "resposta 500" —
+    // e o sistema estava inteiro: o servidor de desenvolvimento é que tinha
+    // ficado num estado quebrado (a armadilha do `.next-test`, registrada no
+    // ARQUITETURA-TECNICA). Listar cem telas ali é pior que inútil: dá
+    // trabalho de leitura e esconde que o problema é o ambiente.
+    //
+    // A régua que encontra tudo quebrado tem de gritar sobre SI MESMA, do
+    // mesmo jeito que a régua que não encontra nada grita em vez de responder
+    // "não". Zero resultado e resultado total são o mesmo tipo de sintoma.
+    const quaseTudo = results.length > 0 && ruins.length / results.length >= 0.8;
+    if (quaseTudo) {
+      line("");
+      console.log(
+        `\r  ⚠️ AMBIENTE  ${persona.label} — ${ruins.length} de ${results.length} telas falharam.`
+      );
+      console.log(
+        "              Isto não é diagnóstico do sistema: quando quase tudo cai,"
+      );
+      console.log(
+        "              o que caiu foi a medição. Feche o servidor, apague a pasta"
+      );
+      console.log(
+        "              de build do teste, suba de novo e repita antes de acreditar."
+      );
+      const motivo = ruins[0]?.note ?? "";
+      if (motivo) console.log(`              (o primeiro disse: ${motivo})`);
+      continue;
+    }
+
     line("");
     console.log(
       `\r  ${ruins.length === 0 ? "OK   " : "FALHA"}  ${persona.label} — ` +
@@ -389,6 +494,24 @@ async function main() {
         ` (${((Date.now() - started) / 1000).toFixed(0)}s)`
     );
     for (const r of ruins) console.log(`           ${r.route}: ${r.note}`);
+
+    // ⚠️ A INSTABILIDADE É NOTÍCIA, não ruído (AP5). Tela que negou na
+    // primeira visita e abriu na segunda não é falha — mas também não é
+    // silêncio: é o sinal de que o ambiente está oscilando, e de que os
+    // números desta execução merecem desconfiança.
+    const oscilaram = results.filter((r) => r.instavel);
+    if (oscilaram.length > 0) {
+      console.log(
+        `           ⚠️ ${oscilaram.length} tela(s) oscilaram (negaram e depois abriram):`
+      );
+      for (const r of oscilaram.slice(0, 5)) {
+        console.log(`              ${r.route} — ${r.instavel}`);
+      }
+      console.log(
+        "              Isto é o ambiente, não o sistema. Se repetir sempre na" +
+          " mesma tela, aí sim é defeito."
+      );
+    }
 
     // Tela lenta não é falha, mas é notícia: na primeira passagem o servidor
     // ainda está montando cada página, então só vale contar a partir da
@@ -425,6 +548,17 @@ async function main() {
       ? `\nNenhuma tela falhou.`
       : `\n${falhas} falha(s) na varredura.`
   );
+
+  // ⚠️ PERFIL NÃO MEDIDO NÃO É PERFIL APROVADO (AP5). Dizer "nenhuma tela
+  // falhou" depois de não conseguir entrar em sete dos oito perfis seria
+  // aprovação por ausência — o mesmo defeito que a camada 1 já combate com o
+  // aviso de "invariante sem dado".
+  if (naoConferidos > 0) {
+    console.log(
+      `⚠️ ${naoConferidos} perfil(is) NÃO foram conferidos (rede ou banco). ` +
+        `O resultado acima cobre só os demais.`
+    );
+  }
 
   // Invariante sem dado não é invariante aprovada — a mesma regra da camada 1.
   if (semDado.length > 0) {

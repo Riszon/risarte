@@ -100,10 +100,18 @@ export function classify({ status, location = null, body = "" }) {
   if (status >= 300 && status < 400) {
     const to = String(location ?? "").replace(/^https?:\/\/[^/]+/, "");
     if (to.startsWith("/login")) return { verdict: "login", detail: "" };
-    if (to === "" || to === "/") return { verdict: "bloqueado", detail: "" };
+    // ⚠️ A EVIDÊNCIA VIAJA JUNTO COM O VEREDITO (achado AP5, 25/09/2026).
+    // "bloqueado" cobre DUAS coisas muito diferentes — responder 404 e mandar
+    // de volta para a raiz —, e a acusação ao Admin Master dizia "404" nos
+    // dois casos. Ela afirmava algo que podia não ter acontecido, e foi assim
+    // que eu saí atrás de um defeito no Financeiro que não existia. Régua que
+    // conta errado o que viu é pior que régua nenhuma.
+    if (to === "" || to === "/") {
+      return { verdict: "bloqueado", detail: "mandou de volta para a raiz" };
+    }
     return { verdict: "redirecionou", detail: `foi para ${to}` };
   }
-  if (status === 404) return { verdict: "bloqueado", detail: "" };
+  if (status === 404) return { verdict: "bloqueado", detail: "respondeu 404" };
   if (status >= 500) return { verdict: "erro", detail: `resposta ${status}` };
   if (status !== 200) return { verdict: "erro", detail: `resposta ${status}` };
 
@@ -246,7 +254,8 @@ export function judge({ verdict, detail = "", role, isAdminMaster, route }) {
   if (isAdminMaster && verdict === "bloqueado") {
     return {
       level: "falha",
-      note: "404 para o Admin Master é rota quebrada, não permissão",
+      // A frase conta O QUE FOI VISTO, não o que se supõe ter sido visto.
+      note: `${detail || "ficou bloqueada"} para o Admin Master — é rota quebrada, não permissão`,
     };
   }
 

@@ -990,7 +990,7 @@ procura pelo código exato, e o código com sufixo não existe como tal. Logo,
 O que falta é pequeno e fica aqui: corrigir a semeadura do treino (ou fazer a
 busca tolerar o sufixo), para a varredura parar de acusar.
 
-### AP5. A varredura de telas ACUSA ROTA CERTA quando o servidor está frio
+### AP5. ✅ RESOLVIDO em 25/09/2026 — a varredura de telas acusava rota certa
 *(medido em 25/09/2026, três execuções seguidas.)*
 
 - **O que está confirmado:** `npm run check:telas` contra um servidor de
@@ -1067,3 +1067,58 @@ quatro asserções, uma para cada sintoma.
 ⚠️ E a primeira medição acusou uma delas por engano: eu procurava o nome no
 texto visível, e ali ele mora no `value=` de um campo — a mesma armadilha que
 já tinha me pegado nesta sessão. Passou a procurar no HTML cru.
+
+**A RESOLUÇÃO DO AP5** (core 0.281.0)
+
+⚠️ **A HIPÓTESE QUE EU TINHA ESCRITO AQUI ESTAVA ERRADA, e ela fica registrada
+de propósito.** Eu havia anotado: *"em desenvolvimento o Next compila a rota na
+primeira visita, a varredura chega antes e lê o 404 temporário"*. Medi: rota
+fria responde **200**, só devagar — 7,4s no `/financeiro` recém-iniciado, 2,8s
+no `/estoque`. **Nunca 404.** Diagnóstico plausível e não medido é palpite com
+cara de conclusão, e este ficou dois dias no papel parecendo fato.
+
+**O que a medição encontrou:**
+
+1. **A acusação MENTIA sobre o que viu.** O veredito `bloqueado` cobre duas
+   coisas — responder **404** e **mandar de volta para a raiz** — e a frase
+   dizia "404" nas duas. Foi ela que me mandou procurar um defeito no
+   Financeiro que não existia. Agora a evidência viaja com o veredito e a
+   frase repete o que foi visto. **Preso por teste**: a frase da raiz não pode
+   conter "404".
+2. **Uma falha passageira virava acusação.** Nesta máquina houve várias quedas
+   de rede no mesmo dia (DNS, busca de fonte) — e a guarda da tela, sem
+   resposta do banco, nega. Agora a tela que **vira acusação** é visitada uma
+   segunda vez; se passar, não é falha, e a oscilação é **dita** em vez de
+   silenciada.
+   ⚠️ A primeira versão deste conserto repetia TODA tela bloqueada e travou a
+   varredura: quase todo bloqueio ali é permissão funcionando. Repetir só o
+   que acusa custa quase nada.
+3. **Quando quase tudo falha, quem falhou foi a medição.** Uma execução acusou
+   **100 de 101 telas** com "resposta 500" — e o sistema estava inteiro: o
+   servidor de desenvolvimento tinha ficado num estado quebrado (a armadilha do
+   `.next-test`). A varredura agora reconhece isso (≥80% de falhas) e **grita
+   sobre si mesma** em vez de listar cem telas. É a regra da "régua vazia
+   grita" pelo outro lado: **zero resultado e resultado total são o mesmo tipo
+   de sintoma.**
+
+**Fica a lição operacional:** contra servidor de desenvolvimento, a varredura
+mede um ambiente que está sendo montado enquanto é medido. Contra o site
+publicado — onde tudo já está compilado — nada disso acontece.
+
+**AP5 — o que foi medido DEPOIS do conserto**
+
+Primeira varredura com a frase honesta: as seis telas acusadas para o Admin
+Master não diziam mais "404", diziam **"mandou de volta para a raiz"** — e
+abertas à mão, logo depois, **todas responderam 200**. Ou seja: eram falsas, e
+a causa é a mesma queda de rede que derrubou o login de **sete dos oito
+perfis** na mesma execução.
+
+Duas lições que isso acrescentou ao conserto:
+
+- **Uma repetição de 400ms era curta demais.** Queda de rede dura segundos.
+  Passaram a ser duas, com espera crescente (600ms e 1,5s) — e só em tela que
+  vira acusação, nunca em toda tela bloqueada.
+- **Perfil que não conseguiu ENTRAR não é perfil aprovado.** Antes, falhar no
+  login contava como falha de tela (culpando o sistema por um cabo); agora é
+  marcado como ambiente, e o resultado final avisa quantos perfis **não foram
+  conferidos** — a mesma regra do "invariante sem dado" da camada 1.

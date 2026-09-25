@@ -239,3 +239,44 @@ describe("falha, acerto ou observação", () => {
     }
   });
 });
+
+// ⚠️ A RÉGUA TEM DE CONTAR O QUE VIU (achado AP5, 25/09/2026).
+//
+// O veredito "bloqueado" cobre DUAS coisas diferentes: responder 404 e mandar
+// de volta para a raiz. A acusação ao Admin Master dizia "404" nos dois casos
+// — afirmava algo que podia não ter acontecido. Foi assim que eu saí atrás de
+// um defeito no Financeiro que não existia: a varredura disse "404", e não era.
+describe("a acusação diz o que foi VISTO (AP5)", () => {
+  it("404 e volta-para-a-raiz são bloqueios com evidências DIFERENTES", () => {
+    expect(classify({ status: 404 }).detail).toBe("respondeu 404");
+    expect(classify({ status: 307, location: "/" }).detail).toBe(
+      "mandou de volta para a raiz"
+    );
+    // O veredito continua o mesmo — o que muda é poder contar qual foi.
+    expect(classify({ status: 404 }).verdict).toBe(
+      classify({ status: 307, location: "/" }).verdict
+    );
+  });
+
+  it("a frase para o Admin Master repete a evidência, não um palpite", () => {
+    const de404 = judge({
+      ...classify({ status: 404 }),
+      role: "admin",
+      isAdminMaster: true,
+      route: "/estoque",
+    });
+    const daRaiz = judge({
+      ...classify({ status: 307, location: "/" }),
+      role: "admin",
+      isAdminMaster: true,
+      route: "/estoque",
+    });
+
+    expect(de404.level).toBe("falha");
+    expect(de404.note).toContain("respondeu 404");
+    expect(daRaiz.level).toBe("falha");
+    expect(daRaiz.note).toContain("mandou de volta para a raiz");
+    // ⚠️ O defeito em uma linha: a frase da raiz NÃO pode dizer 404.
+    expect(daRaiz.note).not.toContain("404");
+  });
+});

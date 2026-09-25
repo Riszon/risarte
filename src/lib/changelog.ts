@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.282.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "A conferência de telas parou de acusar tela que está boa",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A conferência automática das telas (Conferir Telas) às vezes apontava telas que estavam funcionando, e apontava telas diferentes a cada execução. Três consertos: ela passou a dizer exatamente o que viu em vez de supor, a visitar a tela uma segunda vez antes de acusar, e a avisar quando quase tudo falha — porque aí o problema é da conferência, não do sistema.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.280.0",
     data: "2026-09-25",
     migracao: null,
