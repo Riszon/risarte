@@ -383,6 +383,34 @@
     @apply font-sans;
   }
 
+  /* ⚠️ A LISTA DO `<select>` PRECISA DE COR DECLARADA — `color-scheme` NÃO
+     BASTA (relatos OC-00064 e OC-00084).
+
+     Em 21/09/2026 o OC-00053 foi tratado com `color-scheme: dark` no `.dark`,
+     e aquilo estava certo: sem ele o navegador nem sabia que o sistema estava
+     no escuro. Mas o defeito voltou — a mesma pessoa reabriu, e o dono
+     relatou de novo na 0.274.0.
+
+     A causa que faltava, medida no navegador em 25/09/2026: nossos `<select>`
+     usam `bg-transparent`, então as `<option>` ficam com
+     `background-color: rgba(0,0,0,0)`. `color-scheme` só muda o PADRÃO do
+     navegador; ele não vence um fundo transparente. Sem fundo próprio, a
+     listinha é pintada com o branco do navegador, e a letra — que herda o
+     quase-branco do tema escuro — some. Branco sobre branco, de novo, por
+     outro caminho.
+
+     A regra abaixo tira a decisão do navegador: a opção passa a ter fundo E
+     letra declarados, nos dois temas, porque as duas variáveis mudam com o
+     tema. Vale para as 340+ caixas de seleção do sistema de uma vez — nenhuma
+     tela precisa lembrar disso.
+
+     `optgroup` entra junto: ele é o título dentro da lista e sofre igual. */
+  option,
+  optgroup {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
   /* Barras de rolagem discretas e arredondadas (Firefox). */
   * {
     scrollbar-width: thin;

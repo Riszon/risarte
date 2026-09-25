@@ -130,13 +130,24 @@ eram — vermelho na Aquisição, laranja na Conversão Clínica, e assim por di
 escolha fica guardada **no seu computador**: se você entrar de outra máquina,
 escolhe de novo.
 
-> **Se alguma letra sumir no modo escuro, é defeito — relate.** Até setembro de
-> 2026 isso acontecia em dois lugares: as opções das caixas de seleção e os
-> cartões da agenda apareciam apagados, porque a cor tinha sido escolhida para
-> o tema claro. Os dois foram corrigidos, e o sistema passou a ter uma
-> verificação automática que impede o problema de voltar. Se você encontrar
-> outro canto assim, use a **boia** — é exatamente o tipo de coisa que só quem
-> usa o sistema todo dia percebe.
+> **Se alguma letra sumir no modo escuro, é defeito — relate.** Isso aconteceu
+> em dois lugares: os **cartões da agenda** (corrigido em setembro de 2026) e
+> as **opções das caixas de seleção**.
+>
+> A caixa de seleção precisou de **duas** correções, e vale saber por quê: na
+> primeira, o sistema passou a avisar o navegador de que estava no tema escuro
+> — necessário, mas insuficiente. Quem desenha aquela listinha que abre é o
+> navegador, e ele só respeita o aviso quando a lista **não tem cor própria**.
+> Como as nossas caixas eram transparentes, ele continuava pintando de branco,
+> e a letra clara sumia. Na segunda correção, as opções ganharam fundo e letra
+> declarados, nos dois temas. Agora existe uma verificação que **abre a tela
+> num navegador de verdade** e mede se dá para ler — a primeira verificação só
+> lia o código, e por isso não pegou nada.
+>
+> **Reabrir um relato quando o problema continua é o certo a fazer.** Foi uma
+> reabertura que mostrou que a primeira correção estava pela metade. Se você
+> encontrar outro canto assim, use a **boia** — é exatamente o tipo de coisa
+> que só quem usa o sistema todo dia percebe.
 
 ### 2.2. A tela de Início
 

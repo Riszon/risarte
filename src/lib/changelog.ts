@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.277.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "Modo escuro: as opções das caixas de seleção, de novo",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "No tema escuro, as opções das caixas de seleção continuavam sumindo — a correção de setembro tinha resolvido só metade. Quem desenha aquela lista é o navegador, e ele só usa as cores do tema quando a lista não é transparente; como as nossas eram, ele seguia pintando de branco e a letra clara desaparecia. Agora as opções têm fundo e letra próprios, nos dois temas, em todas as telas do sistema.",
+        papeis: "todos",
+        manual: "2.1. A cor da tela diz onde você está",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Passou a existir uma verificação que abre a tela num navegador de verdade e mede se a opção dá para ler. A verificação anterior só lia o código — e por isso não pegou este defeito.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.276.0",
     data: "2026-09-24",
     migracao: null,
