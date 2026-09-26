@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,27 +40,61 @@ function CampoDoIndicador({
   indicador: Indicador;
   minimo: number;
 }) {
+  // ⚠️ A CAIXA DE SELEÇÃO É O CRITÉRIO; O NÚMERO É A QUANTIDADE.
+  //
+  // Antes, "usar ou não" era deduzido do número ser maior que zero — e as duas
+  // perguntas ficavam na mesma caixa. Quem apagasse o número para redigitar
+  // via o critério sumir da missão sem ter pedido isso. Agora marcar é um ato,
+  // e o campo desmarcado nem é enviado (`disabled`), então ele chega como
+  // "sem exigência" sem precisar de ninguém zerar nada à mão.
+  const [marcado, setMarcado] = useState(minimo > 0);
+  const campoId = `${papel}-${indicador.chave}`;
+
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={`${papel}-${indicador.chave}`} className="leading-snug">
-        {indicador.rotulo}
-      </Label>
-      <Input
-        id={`${papel}-${indicador.chave}`}
-        name={indicador.chave}
-        type="number"
-        min={0}
-        step={1}
-        inputMode="numeric"
-        defaultValue={minimo || ""}
-        placeholder="0"
-      />
-      <p className="text-xs text-muted-foreground">{indicador.ajuda}</p>
-      <p className="text-xs text-muted-foreground">
+    <div
+      className={
+        marcado
+          ? "space-y-1.5 rounded-lg border border-primary/40 bg-primary/5 p-3"
+          : "space-y-1.5 rounded-lg border border-input p-3"
+      }
+    >
+      <label className="flex cursor-pointer items-start gap-2">
+        <input
+          type="checkbox"
+          checked={marcado}
+          onChange={(e) => setMarcado(e.currentTarget.checked)}
+          className="mt-0.5 size-4 shrink-0 accent-primary"
+          aria-label={`Usar ${indicador.rotulo} como critério`}
+        />
+        <span className="text-sm font-medium leading-snug">
+          {indicador.rotulo}
+        </span>
+      </label>
+
+      {marcado && (
+        <div className="flex items-center gap-2 pl-6">
+          <Label htmlFor={campoId} className="text-xs text-muted-foreground">
+            Quantas vezes:
+          </Label>
+          <Input
+            id={campoId}
+            name={indicador.chave}
+            type="number"
+            min={1}
+            step={1}
+            inputMode="numeric"
+            defaultValue={minimo || 1}
+            className="h-8 w-24"
+          />
+        </div>
+      )}
+
+      <p className="pl-6 text-xs text-muted-foreground">{indicador.ajuda}</p>
+      <p className="pl-6 text-xs text-muted-foreground">
         <span className="font-medium">Onde:</span> {indicador.onde}
       </p>
       {dependeDeTerceiro(indicador) && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="pl-6 text-xs text-amber-700 dark:text-amber-400">
           ⚠️ Depende de alguém ter feito algo antes.
         </p>
       )}
@@ -215,7 +249,7 @@ function CartaoDaFuncao({
 
           <div className="flex items-center justify-between gap-3 border-t pt-4">
             <p className="text-xs text-muted-foreground">
-              Deixe em branco (ou 0) o que não for exigido.
+              Marque os critérios que farão parte da missão desta função.
             </p>
             <Button type="submit" size="sm" disabled={isPending}>
               {isPending ? "Salvando…" : "Salvar"}

@@ -1286,3 +1286,44 @@ vermelho. Corrigir primeiro, prender depois.
 **Não confirmado:** se os testes desses dois arquivos ainda medem o que
 prometem. Os erros de tipo sugerem que o formato mudou embaixo deles, mas isso
 é suspeita — só a leitura de cada caso confirma.
+
+---
+
+### AP9. ⚠️ `<>` com `auth.uid()` deixava a trava ABERTA (26/09/2026 — corrigido)
+
+**Achado por sonda, não por relato**, escrevendo a 0273. A guarda "só a própria
+pessoa inicia a missão" era `if v_user <> auth.uid() then raise`. Quando
+`auth.uid()` é **nulo** — chamada sem sessão: chave de serviço, conexão direta,
+tarefa agendada — `<>` devolve **nulo**, e `if NULO then` **não dispara**.
+
+A trava ficava aberta **justamente para quem não estava logado**, numa função
+`security definer`, que roda como dona do banco. A sonda mostrou
+`PASSOU — ERRADO` na primeira execução.
+
+**Corrigido** com `is distinct from`, que trata o nulo como valor. Provado: a
+chamada sem sessão passou a ser recusada com `ONLY_THE_PERSON_STARTS`.
+
+**Varrido o histórico inteiro:** era o único caso nas 296 migrações.
+
+**Virou régua:** `scripts/check-migrations.mjs` ganhou a Regra 5, que reprova
+qualquer comparação de `auth.uid()` com `<>` ou `!=`. Provada quebrando a 0273
+de propósito — acusou e explicou o porquê.
+
+⚠️ **A lição, que é irmã da régua vazia (§0d):** em SQL, comparar com `<>` um
+valor que pode ser nulo não dá "verdadeiro" nem "falso" — dá **nulo**, e nulo
+num `if` se comporta como falso. Guarda de segurança escrita assim falha
+**aberta**, que é o pior jeito de falhar.
+
+---
+
+### AP10. `check-migrations` não pegou um erro que o Postgres pega (26/09/2026)
+
+A 0273 foi aprovada pelo `check-migrations.mjs` e **quebrou no banco**:
+`operator does not exist: user_role = user_role[]` — um `= any((select ...))`
+sobre coluna de enum. Custou uma ida e volta.
+
+**Não confirmado:** se vale a pena ensinar o script a pegar esta classe. Ele lê
+texto, não tem catálogo de tipos; pegar isto exigiria entender a consulta.
+Pode ser que o caminho certo seja outro — rodar a migração contra um banco
+descartável antes de mandar para o dono. Fica anotado como ideia, não como
+tarefa: a decisão precisa de alguém pensando no custo.

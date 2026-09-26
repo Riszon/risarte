@@ -62,6 +62,44 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.288.0",
+    data: "2026-09-26",
+    migracao: "0273",
+    titulo: "A missão só começa quando você aceita",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A certificação deixou de valer o tempo todo. Agora você usa o ambiente de treino à vontade para aprender, sem nada ser contado. Quando for convocado, aparece um aviso no Início com o que você precisa cumprir — e a contagem só começa quando você clicar em 'Aceitar e começar a missão'.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O que você fizer no treino ANTES de aceitar a missão não conta. Isso é de propósito: o treino existe para errar sem medo, e ninguém deve evitar usá-lo achando que está gastando a chance.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Admin Master abre turmas por unidade em Administração → Certificação. O sistema monta a lista sozinho, pulando quem já tem certificação, e ele confere antes de convocar.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Existe o tipo 'reciclagem', para quando o sistema mudar muito e a equipe toda precisar reaprender. Quem já é certificado CONTINUA trabalhando no sistema real enquanto refaz a missão — ninguém perde o acesso por causa da reciclagem.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na configuração das metas, agora se MARCA quais critérios fazem parte da missão, em vez de deduzir pelo número. Marcou, vale; desmarcou, não vale.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.287.0",
     data: "2026-09-25",
     migracao: null,

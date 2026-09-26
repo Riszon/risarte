@@ -8,9 +8,11 @@ import {
   ehEscopo,
   ehGatilho,
   ehModoDeGrupo,
+  ehTipoDeTurma,
   indicadoresDoPapel,
   normalizarMeta,
   PAPEIS_COM_MISSAO,
+  type Candidato,
 } from "@/lib/certificacao";
 import type { UserRole } from "@/lib/roles";
 
@@ -136,6 +138,103 @@ export async function salvarPortao(formData: FormData): Promise<ActionResult> {
     },
   });
 
+  revalidatePath("/admin/certificacao");
+  return { ok: true };
+}
+
+/**
+ * A PRÉVIA: quem entraria na turma, antes de convocar.
+ *
+ * ⚠️ Existe para o Admin VER antes de decidir. Convocar às cegas e descobrir
+ * depois quem foi chamado é como se convoca a pessoa errada — e convocação
+ * errada gasta a confiança da equipe no portão.
+ */
+export async function previaDaTurma(
+  clinicId: string,
+  tipo: string
+): Promise<{ ok: boolean; error?: string; candidatos?: Candidato[] }> {
+  await requireAdminMaster();
+  if (!ehTipoDeTurma(tipo)) return { ok: false, error: "Tipo inválido." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("training_candidates", {
+    p_clinic_id: clinicId,
+    p_kind: tipo,
+  });
+
+  if (error) return { ok: false, error: "Não foi possível montar a prévia." };
+  return { ok: true, candidatos: (data ?? []) as Candidato[] };
+}
+
+/** Abre a turma e convoca a lista conferida. */
+export async function abrirTurma(formData: FormData): Promise<ActionResult> {
+  await requireAdminMaster();
+
+  const clinicId = String(formData.get("clinic_id") ?? "");
+  const tipo = String(formData.get("kind") ?? "");
+  const nota = String(formData.get("note") ?? "");
+  const escolhidos = formData.getAll("convocados").map(String);
+
+  if (!clinicId) return { ok: false, error: "Escolha a unidade." };
+  if (!ehTipoDeTurma(tipo)) return { ok: false, error: "Escolha o tipo de turma." };
+  if (escolhidos.length === 0) {
+    return {
+      ok: false,
+      error: "Nenhuma pessoa marcada. Uma turma sem ninguém não convoca nada.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("open_training_campaign", {
+    p_clinic_id: clinicId,
+    p_kind: tipo,
+    p_note: nota || null,
+    p_only_users: escolhidos,
+  });
+
+  if (error) {
+    const m = error.message;
+    return {
+      ok: false,
+      error:
+        m.includes("NOT_ALLOWED")
+          ? "Só o Admin Master abre turmas."
+          : m.includes("CAMPAIGN_ALREADY_OPEN")
+            ? "Esta unidade já tem uma turma aberta. Encerre a atual antes de abrir outra."
+            : m.includes("NOBODY_TO_ENROLL")
+              ? "Ninguém foi convocado: nenhuma das pessoas marcadas entra nesta turma."
+              : "Não foi possível abrir a turma.",
+    };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "training_campaigns",
+    clinicId,
+    details: { tipo, convocados: escolhidos.length },
+  });
+
+  revalidatePath("/admin/certificacao");
+  return { ok: true };
+}
+
+/** Encerra a turma. Não apaga nada: matrícula e certificado continuam. */
+export async function encerrarTurma(id: string): Promise<ActionResult> {
+  await requireAdminMaster();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("close_training_campaign", { p_id: id });
+
+  if (error) {
+    return {
+      ok: false,
+      error:
+        error.message === "NOT_ALLOWED"
+          ? "Só o Admin Master encerra turmas."
+          : "Não foi possível encerrar a turma.",
+    };
+  }
+
+  await logAudit({ action: "update", entityType: "training_campaigns", entityId: id });
   revalidatePath("/admin/certificacao");
   return { ok: true };
 }

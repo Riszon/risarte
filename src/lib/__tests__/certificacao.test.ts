@@ -13,6 +13,12 @@ import {
   resumoDaMissao,
   temMissao,
   cargosElegiveis,
+  contaDesde,
+  ehTipoDeTurma,
+  missaoEstaValendo,
+  podeIniciar,
+  recadoDaMatricula,
+  resumoDaPrevia,
   ehModoDeGrupo,
   grupoEstaDefinido,
   missaoDependeSoDeTerceiros,
@@ -327,5 +333,91 @@ describe("as explicações que ajudam a configurar (25/09/2026)", () => {
         ).not.toContain(proibida);
       }
     }
+  });
+});
+
+describe("⚠️ A LEI DO MARCO: só conta depois do clique (0273)", () => {
+  const convocado = {
+    status: "convocado" as const,
+    started_at: null,
+  };
+  const iniciada = {
+    status: "em_andamento" as const,
+    started_at: "2026-09-26T13:00:00.000Z",
+  };
+
+  it("sem o clique, NÃO existe janela de contagem", () => {
+    // `null` não é zero: é "não há janela". Se quem chamar isto tratar null
+    // como "conte desde sempre", a pessoa se certifica com o que fez enquanto
+    // só estava aprendendo — que é exatamente o que esta lei proíbe.
+    expect(contaDesde(convocado)).toBeNull();
+    expect(contaDesde({ started_at: null })).toBeNull();
+  });
+
+  it("depois do clique, a janela começa no instante do clique", () => {
+    const desde = contaDesde(iniciada);
+    expect(desde).toBeInstanceOf(Date);
+    expect(desde!.toISOString()).toBe("2026-09-26T13:00:00.000Z");
+  });
+
+  it("data estragada vira 'sem janela', não uma data maluca", () => {
+    // Uma data inválida viraria `Invalid Date` e qualquer comparação com ela
+    // é falsa — a contagem daria zero PARA SEMPRE, sem nada explicando.
+    // Melhor não ter janela: aí o estado é visível ("não começou").
+    expect(contaDesde({ started_at: "não é data" })).toBeNull();
+  });
+
+  it("só quem está convocado e não começou pode começar", () => {
+    expect(podeIniciar(convocado)).toBe(true);
+    expect(podeIniciar(iniciada)).toBe(false);
+    expect(podeIniciar({ status: "concluido", started_at: "2026-09-26T13:00:00Z" })).toBe(false);
+    expect(podeIniciar({ status: "dispensado", started_at: null })).toBe(false);
+  });
+
+  it("a missão vale só enquanto está em andamento", () => {
+    expect(missaoEstaValendo(convocado)).toBe(false);
+    expect(missaoEstaValendo(iniciada)).toBe(true);
+    // Concluída não vale mais: quem passou não precisa continuar produzindo.
+    expect(
+      missaoEstaValendo({ status: "concluido", started_at: "2026-09-26T13:00:00Z" })
+    ).toBe(false);
+  });
+
+  it("⚠️ o recado do convocado avisa que NADA está sendo medido", () => {
+    // É a frase mais importante do módulo. Sem ela a pessoa evitaria usar o
+    // treino com medo de "gastar a chance" — o oposto do que o treino é.
+    const recado = recadoDaMatricula(convocado);
+    expect(recado).toMatch(/não.*contad|nada.*cont/i);
+    expect(recado).toMatch(/aprender|à vontade/i);
+
+    expect(recadoDaMatricula(iniciada)).toMatch(/valendo|conta/i);
+  });
+});
+
+describe("a prévia da turma (0273)", () => {
+  const candidatos = [
+    { user_id: "1", full_name: "Ana", role: "receptionist" as const, ja_certificado: false },
+    { user_id: "2", full_name: "Bia", role: "receptionist" as const, ja_certificado: true },
+    { user_id: "3", full_name: "Caio", role: "dentist" as const, ja_certificado: false },
+  ];
+
+  it("separa quem já passou de quem nunca fez", () => {
+    // O Admin precisa da conta ANTES de convocar: descobrir depois que chamou
+    // 2 em vez de 20 gasta a confiança da equipe no portão.
+    expect(resumoDaPrevia(candidatos)).toEqual({
+      total: 3,
+      jaCertificados: 1,
+      novos: 2,
+    });
+  });
+
+  it("lista vazia devolve zeros, não quebra", () => {
+    expect(resumoDaPrevia([])).toEqual({ total: 0, jaCertificados: 0, novos: 0 });
+  });
+
+  it("reconhece só os tipos que o banco aceita", () => {
+    expect(ehTipoDeTurma("novatos")).toBe(true);
+    expect(ehTipoDeTurma("reciclagem")).toBe(true);
+    expect(ehTipoDeTurma("todos")).toBe(false);
   });
 });

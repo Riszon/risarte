@@ -1142,3 +1142,138 @@ export function cargosElegiveis(
 ): readonly UserRole[] {
   return PAPEIS_COM_MISSAO.filter((p) => temMissao(metas, p));
 }
+
+// -- A turma, o certificado e o clique que começa a missão (0273) -------------
+
+export const TIPOS_DE_TURMA = ["novatos", "reciclagem"] as const;
+export type TipoDeTurma = (typeof TIPOS_DE_TURMA)[number];
+
+export const TIPO_DE_TURMA_ROTULO: Record<TipoDeTurma, string> = {
+  novatos: "Só quem ainda não tem certificação",
+  reciclagem: "Reciclagem: todos, inclusive os já certificados",
+};
+
+export const TIPO_DE_TURMA_AJUDA: Record<TipoDeTurma, string> = {
+  novatos:
+    "O caso normal. Quem já passou não é chamado de novo — certificação não se refaz à toa.",
+  reciclagem:
+    "Para quando o sistema mudar muito e a equipe inteira precisar reaprender o fluxo. Quem já é certificado CONTINUA trabalhando no sistema real enquanto refaz a missão.",
+};
+
+export const ESTADOS_DA_MATRICULA = [
+  "convocado",
+  "em_andamento",
+  "concluido",
+  "dispensado",
+] as const;
+export type EstadoDaMatricula = (typeof ESTADOS_DA_MATRICULA)[number];
+
+export const ESTADO_ROTULO: Record<EstadoDaMatricula, string> = {
+  convocado: "Convocado",
+  em_andamento: "Missão em andamento",
+  concluido: "Concluído",
+  dispensado: "Dispensado",
+};
+
+export type Matricula = {
+  id: string;
+  campaign_id: string;
+  user_id: string;
+  role: UserRole;
+  status: EstadoDaMatricula;
+  invited_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type Candidato = {
+  user_id: string;
+  full_name: string | null;
+  role: UserRole;
+  ja_certificado: boolean;
+};
+
+/**
+ * ⚠️ A LEI DO MARCO — a razão de existir da 0273.
+ *
+ * Devolve a partir de QUANDO o trabalho da pessoa conta para a missão, ou
+ * `null` quando ainda não conta nada.
+ *
+ * Ordem do dono (26/09/2026): *"só deve contar a partir de quando o usuário
+ * clicar ou aceitar iniciar a missão (...) pois o usuário pode estar testando
+ * e aprendendo a utilizar o sistema, mas não iniciou a missão."*
+ *
+ * `null` NÃO é zero: é "não há janela". Quem chamar isto na Etapa 2 tem de
+ * tratar os dois casos separadamente — contar desde o começo dos tempos seria
+ * exatamente o que esta lei proíbe, e daria uma certificação a quem só brincou
+ * bastante no treino.
+ */
+export function contaDesde(matricula: Pick<Matricula, "started_at">): Date | null {
+  if (!matricula.started_at) return null;
+  const d = new Date(matricula.started_at);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** A pessoa pode clicar em "aceitar e começar"? */
+export function podeIniciar(
+  matricula: Pick<Matricula, "status" | "started_at">
+): boolean {
+  return matricula.status === "convocado" && matricula.started_at === null;
+}
+
+/**
+ * A missão está valendo agora — ou seja, o que ela fizer no treino conta.
+ * Concluída não vale mais: quem já passou não precisa continuar produzindo.
+ */
+export function missaoEstaValendo(
+  matricula: Pick<Matricula, "status" | "started_at">
+): boolean {
+  return matricula.status === "em_andamento" && matricula.started_at !== null;
+}
+
+/**
+ * O que dizer para a pessoa, na tela de Início.
+ *
+ * ⚠️ A frase do estado `convocado` é a mais importante do módulo: é ela que
+ * avisa que, até o clique, nada está sendo medido. Sem isso a pessoa evitaria
+ * usar o treino com medo de "gastar" a chance — o oposto do que o ambiente de
+ * treino existe para permitir.
+ */
+export function recadoDaMatricula(
+  matricula: Pick<Matricula, "status" | "started_at">
+): string {
+  if (podeIniciar(matricula)) {
+    return "Você foi convocado. Enquanto não clicar em começar, nada do que você fizer no treino é contado — use à vontade para aprender.";
+  }
+  if (missaoEstaValendo(matricula)) {
+    return "Sua missão está valendo: o que você fizer no treino a partir de agora conta.";
+  }
+  if (matricula.status === "concluido") {
+    return "Missão concluída.";
+  }
+  return "Você foi dispensado desta turma.";
+}
+
+/**
+ * Quantos da prévia entram de verdade, separando quem já passou.
+ *
+ * ⚠️ Serve para a tela mostrar a conta ANTES de convocar. Descobrir depois que
+ * a turma chamou 2 pessoas em vez de 20 (ou o contrário) é caro: convocação
+ * errada gasta a confiança da equipe no portão.
+ */
+export function resumoDaPrevia(candidatos: readonly Candidato[]): {
+  total: number;
+  jaCertificados: number;
+  novos: number;
+} {
+  const jaCertificados = candidatos.filter((c) => c.ja_certificado).length;
+  return {
+    total: candidatos.length,
+    jaCertificados,
+    novos: candidatos.length - jaCertificados,
+  };
+}
+
+export function ehTipoDeTurma(v: string): v is TipoDeTurma {
+  return (TIPOS_DE_TURMA as readonly string[]).includes(v);
+}

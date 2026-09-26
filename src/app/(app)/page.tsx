@@ -20,7 +20,8 @@ import { isoDateIn, todayInBrazil } from "@/lib/dates";
 import { deveMostrarBoasVindas } from "@/lib/textos-automaticos";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
-import { montarPendencias, atalhosPara, type Pendencia } from "./inicio-dados";
+import { montarPendencias, atalhosPara, missaoAberta, type Pendencia } from "./inicio-dados";
+import { MissaoDeCertificacao } from "@/components/missao-de-certificacao";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -191,6 +192,15 @@ export default async function HomePage() {
     erroAoLer: Boolean(erroBoasVindas),
   });
 
+  // ⚠️ A CONVOCAÇÃO APARECE SÓ NO SISTEMA REAL (0273).
+  //
+  // A missão é CUMPRIDA no treino, mas quem manda na certificação é este banco
+  // — é aqui que mora a tranca do ambiente `sistema` (0259) e é aqui que o
+  // certificado fica guardado. Mostrar o cartão nos dois lados criaria duas
+  // matrículas e dois marcos de início, em bancos diferentes, e nenhum dos
+  // dois seria a verdade.
+  const minhaMissao = treino ? null : await missaoAberta(supabase, session.userId);
+
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
 
@@ -212,6 +222,8 @@ export default async function HomePage() {
       {shouldNotifyBirthdays && homeClinic && (
         <BirthdayNotifier clinicId={homeClinic.id} />
       )}
+
+      {minhaMissao && <MissaoDeCertificacao missao={minhaMissao} />}
 
       {/* ---------------------------------------------- 1. quem, onde, quando */}
       <section className="marca-dagua relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">

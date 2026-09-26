@@ -13,6 +13,7 @@ import {
 } from "@/lib/certificacao";
 import { PortaoEditor } from "./portao-editor";
 import { MissoesEditor } from "./missoes-editor";
+import { Turmas, type TurmaAberta } from "./turmas";
 
 export const metadata: Metadata = { title: "Certificação para o sistema real" };
 
@@ -32,6 +33,8 @@ export default async function CertificacaoPage() {
     { data: cargosDoGrupo },
     { data: pessoasDoGrupo },
     { data: perfis },
+    { data: unidades },
+    { data: turmasBrutas },
   ] = await Promise.all([
     supabase
       .from("training_requirements")
@@ -49,6 +52,18 @@ export default async function CertificacaoPage() {
       .eq("is_active", true)
       .order("full_name")
       .returns<PerfilLinha[]>(),
+    supabase
+      .from("clinics")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name"),
+    supabase
+      .from("training_campaigns")
+      .select(
+        "id, code, kind, note, created_at, clinics(name), training_enrollments(user_id, role, status, started_at, profiles(full_name))"
+      )
+      .eq("status", "aberta")
+      .order("created_at", { ascending: false }),
   ]);
 
   // ⚠️ Linha ausente ou valor estranho cai no PADRÃO, e o padrão é o cauteloso
@@ -75,6 +90,32 @@ export default async function CertificacaoPage() {
     user_id: p.id,
     full_name: p.full_name,
     email: p.email,
+  }));
+
+  // O Supabase devolve o que foi embutido como objeto OU lista, conforme a
+  // relação. Normalizo aqui, uma vez, em vez de espalhar `?.[0]` pela tela.
+  const umNome = (v: unknown): string | null => {
+    if (!v) return null;
+    const o = Array.isArray(v) ? v[0] : v;
+    return (o as { name?: string; full_name?: string })?.name ??
+      (o as { full_name?: string })?.full_name ??
+      null;
+  };
+
+  const turmas: TurmaAberta[] = (turmasBrutas ?? []).map((t) => ({
+    id: String(t.id),
+    code: t.code ? String(t.code) : null,
+    kind: String(t.kind),
+    note: t.note ? String(t.note) : null,
+    created_at: String(t.created_at),
+    clinic_name: umNome(t.clinics) ?? "Unidade",
+    matriculas: (t.training_enrollments ?? []).map((m) => ({
+      user_id: String(m.user_id),
+      full_name: umNome(m.profiles),
+      role: String(m.role),
+      status: m.status as TurmaAberta["matriculas"][number]["status"],
+      started_at: m.started_at ? String(m.started_at) : null,
+    })),
   }));
 
   return (
@@ -119,6 +160,26 @@ export default async function CertificacaoPage() {
           </p>
         </div>
         <MissoesEditor metas={listaDeMetas} />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Turmas de treinamento
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            A missão <strong>não fica valendo o tempo todo</strong>. A pessoa
+            usa o treino livremente para aprender; só quando é convocada — e
+            aceita — o que ela faz passa a contar para a certificação.
+          </p>
+        </div>
+        <Turmas
+          unidades={(unidades ?? []).map((u) => ({
+            id: String(u.id),
+            name: String(u.name),
+          }))}
+          turmas={turmas}
+        />
       </div>
 
       <p className="text-xs text-muted-foreground">

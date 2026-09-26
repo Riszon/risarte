@@ -12,6 +12,8 @@ import {
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { contarEtapasDaCompra } from "./compras/trilha-dados";
 import { startOfTodayInBrazil } from "@/lib/dates";
+import { resumoDaMissao, type MetaDoTreino } from "@/lib/certificacao";
+import type { MissaoNaTela } from "@/components/missao-de-certificacao";
 
 /**
  * O QUE ESPERA POR VOCÊ — o miolo da tela de início.
@@ -430,4 +432,49 @@ export function atalhosPara(session: SessionContext): Atalho[] {
   // Três é o limite de propósito: a partir do quarto, a fileira vira menu — e
   // um segundo menu ao lado do primeiro não ajuda ninguém a começar o dia.
   return atalhos.slice(0, 3);
+}
+
+/**
+ * A MISSÃO ABERTA DA PESSOA (0273), para o cartão da tela de Início.
+ *
+ * ⚠️ Devolve `null` em silêncio quando algo dá errado — inclusive quando a
+ * migração ainda não rodou naquele banco. É a mesma escolha do resto do
+ * Início: o cartão que não aparece é um problema pequeno; a tela de Início que
+ * não abre trava a pessoa inteira. (Mesma janela tratada em
+ * `permission_matrix`, §0b do CLAUDE.md.)
+ */
+export async function missaoAberta(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<MissaoNaTela | null> {
+  const { data, error } = await supabase
+    .from("training_enrollments")
+    .select("id, role, status, started_at, training_campaigns!inner(status)")
+    .eq("user_id", userId)
+    .in("status", ["convocado", "em_andamento"])
+    .eq("training_campaigns.status", "aberta")
+    .order("invited_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const papel = data.role as UserRole;
+
+  // O resumo vem das metas DE AGORA. A pessoa precisa ver o que vai cumprir
+  // antes de aceitar — um cartão que diz "você foi convocado" sem dizer para
+  // quê pede um clique no escuro.
+  const { data: metas } = await supabase
+    .from("training_requirements")
+    .select("role, indicator, minimum_count")
+    .eq("role", papel)
+    .returns<MetaDoTreino[]>();
+
+  return {
+    id: String(data.id),
+    role: papel,
+    status: data.status as MissaoNaTela["status"],
+    started_at: data.started_at ? String(data.started_at) : null,
+    resumo: resumoDaMissao(metas ?? [], papel),
+  };
 }

@@ -668,6 +668,35 @@ ou recém-contratada para travar a equipe inteira sem ninguém entender por quê
 > escolher — e, enquanto faltar, a liberação coletiva não acontece. A tela
 > avisa.
 
+### ⚠️ A missão só começa quando você aceita
+
+**Esta é a parte mais importante desta seção.** A certificação **não fica
+valendo o tempo todo**.
+
+Primeiro você usa o ambiente de treino **à vontade**, para aprender: cadastre
+paciente de mentira, erre, apague, refaça, teste todos os botões. **Nada disso
+é contado.** É para isso que o treino existe.
+
+Depois, quando a liderança abrir uma **turma**, aparece um aviso na sua tela de
+**Início** dizendo que você foi convocado e **o que exatamente você vai precisar
+cumprir**. Você lê com calma. Sem pressa — enquanto não clicar, continua nada
+sendo contado.
+
+**Quando estiver pronto, clique em "Aceitar e começar a missão".** A partir
+desse instante — e só dele — o que você fizer no treino conta para a sua
+certificação. O que você fez antes, aprendendo, não entra.
+
+> **Por que assim?** Porque a prova precisa medir o que você faz *sabendo* que
+> está sendo medido. Contar o período de aprendizado faria a certificação ser
+> conquistada por quem brincou bastante, não por quem aprendeu.
+
+**Para o Admin Master:** as turmas ficam na mesma tela de Certificação. Escolha
+a unidade e o tipo, confira a lista que o sistema monta (ele já pula quem tem
+certificação) e desmarque quem não deve entrar agora — férias, afastamento,
+quem acabou de chegar. A lista mostra quem já aceitou e quem ainda não.
+
+**Enquanto não houver turma aberta, ninguém tem missão** — e está certo assim.
+
 > **Por enquanto esta tela guarda a definição.** A contagem automática do que
 > cada pessoa já fez no treino, e a liberação sozinha, entram nas próximas
 > entregas. Até lá a liberação continua sendo feita à mão em **Administração →

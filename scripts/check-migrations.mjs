@@ -66,6 +66,32 @@ const drops = new Set(
 
 const problems = [];
 
+// Regra 5 — COMPARAR COM `auth.uid()` USANDO `<>` DEIXA A TRAVA ABERTA.
+//
+// ⚠️ Achado por sonda em 26/09/2026, na 0273. `v_user <> auth.uid()` devolve
+// NULO quando `auth.uid()` é nulo — chamada sem sessão, chave de serviço,
+// tarefa agendada —, e `if NULO then` não dispara. A guarda "só a própria
+// pessoa faz isto" ficava ABERTA justamente para quem não estava logado, numa
+// função `security definer`, que roda como dona do banco.
+//
+// O certo é `is distinct from`, que trata o nulo como valor. A régua olha só
+// o código, não os comentários: explicar o defeito não pode acusá-lo.
+const semComentarios = sql
+  .split("\n")
+  .filter((l) => !l.trimStart().startsWith("--"))
+  .join("\n");
+
+for (const mau of semComentarios.matchAll(
+  /([A-Za-z_.]+)\s*(?:<>|!=)\s*auth\.uid\(\)|auth\.uid\(\)\s*(?:<>|!=)\s*([A-Za-z_.]+)/g
+)) {
+  problems.push(
+    `comparação com auth.uid() usando "<>": ${mau[0].trim()}\n` +
+      `      Quando auth.uid() é NULO (sem sessão), "<>" devolve NULO e o IF\n` +
+      `      não dispara — a trava fica ABERTA para quem não está logado.\n` +
+      `      Use "is distinct from". Ver 0273 e §0d do CLAUDE.md.`
+  );
+}
+
 for (const m of sql.matchAll(FN)) {
   const [, name, args, returns, lang] = m;
   const prev = known.get(name);
