@@ -372,6 +372,61 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**25/09/2026 (tarde/noite) — PC Administrador (core 0.283.0 → 0.286.0; migrações 0271 e 0272)**
+
+**Tudo no ar e APLICADO NOS DOIS BANCOS** — conferido lendo a produção (só
+leitura, com trava que EXIGE ser produção), não pelo painel.
+
+- **OC-00088 encerrado.** A causa não foi o sistema: foi a suíte de testes,
+  rodada por mim, que limpava o movimento do TREINO. Hoje a limpeza exige
+  `RISARTE_APAGAR_TREINO=sim` e mostra quantas linhas perderia.
+  **Decisão do dono: NÃO recuperar** — *"por ser um ambiente teste"*. A
+  restauração voltaria o banco inteiro, inclusive o que foi feito de bom
+  depois.
+- **A garantia inteira virou portão (0.284.0).** Inventário de TODO caminho
+  que apaga (seção *Inventário do apagamento* no BACKLOG): dois scripts, ambos
+  travados; as duas rotinas agendadas **não apagam** (a retenção anonimiza com
+  UPDATE). `apagar-com-autorizacao.test.ts` reprova script novo que apague sem
+  pedir. ⚠️ **A primeira versão dessa régua passou verde com a trava
+  arrancada** — procurava a PALAVRA, que continuava no texto da mensagem de
+  erro. Virou regra no §0e: **régua nova só vale depois de ter reprovado uma
+  vez.**
+- **PORTÃO DE CERTIFICAÇÃO — Etapa 1 (0271 e 0272).** Do documento "Avaliação
+  no riSZon teste". ⚠️ **A tranca já existia desde a 0259**: o riSZon real
+  nasce FECHADO para todo Risartano novo. Faltava a chave.
+  - **42 ações contáveis em 13 funções**, levantadas perguntando ao BANCO (155
+    tabelas / 224 colunas apontam para `profiles`). Cada indicador declara a
+    `origem` — a consulta da Etapa 2 escrita por extenso.
+    **`npm run check:indicadores`** confere as 42 contra o banco.
+  - **Franqueado e Franqueadora/Rede ficam de fora, declarado no código:** são
+    papéis de leitura; meta para eles mediria navegação, não competência.
+  - **Padrão ÚNICO DA REDE, sem cascata por unidade** (ordem do dono) — a
+    única configuração do sistema fora da cascata, e há teste que reprova se
+    alguma função do módulo passar a mencionar unidade.
+  - **Grupo do teste coletivo** por cargo ou por pessoa. **Grupo vazio NÃO é
+    "todo mundo"** — é configuração incompleta.
+    ⚠️ Achado escrevendo a action: a função apagava as DUAS listas, então
+    salvar no modo "pessoas" apagaria a seleção de cargos em silêncio.
+    Corrigido antes de rodar: **nulo = não mexer, lista vazia = trocar.**
+
+**Pendências (nesta ordem):**
+
+1. ⏰ **Supabase Pro vence em 29/09/2026** — quatro dias.
+2. **O dono precisa DEFINIR AS METAS** em Administração → Certificação. Está
+   tudo em branco: enquanto estiver, ninguém é barrado.
+3. **Etapa 2 do portão (a medição).** Bloqueada por uma dependência: a
+   produção precisa das chaves do treino no `.env.local` deste PC
+   (`TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`) — elas existem na
+   Vercel, não aqui. Fluxo da área de transferência, uma por vez.
+   ⚠️ **Decisão de desenho já tomada:** certificado é FATO HISTÓRICO, não
+   contagem. Ao cumprir, congelar no banco da produção — senão uma limpeza do
+   treino descertifica quem já passou.
+4. **Cadastrar os benefícios PADRÃO DA REDE na produção** (segue VAZIO).
+5. **AP8** (BACKLOG): `tsc --noEmit` acusa 8 erros em dois arquivos de teste;
+   nenhum portão olha para lá.
+6. Notebook: seguir a §4 de `docs/DOIS-PCS.md`.
+7. Teste final do LOTE B (config da agenda + Relatórios).
+
 **24–25/09/2026 — PC Administrador (core 0.275.0 → 0.277.0; Empresarial 0.54.0 → 0.68.0; migrações 1020 e 1021)**
 
 **Tudo no ar nos dois ambientes. 1020 e 1021 aplicadas na produção e no
