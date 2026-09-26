@@ -353,6 +353,19 @@ Syncthing se comportarem de forma estranha.**
 - `.env.local` se edita num PC só por vez (não tem Git por trás).
 - Não depender de memórias locais do Claude (`~/.claude`): tudo que for
   importante para a continuidade fica registrado neste arquivo ou em `docs/`.
+- **⚠️ NADA APAGA DADO SEM ALGUÉM PEDIR** (ordem do dono, 25/09/2026, depois do
+  OC-00088): script, rotina agendada ou migração que apague alguma coisa tem de
+  **exigir autorização explícita** — `RISARTE_APAGAR_TREINO=sim`, `--confirmar`,
+  `CI`, ou um `-- DESTRUTIVO:` declarado. O inventário completo do que consegue
+  apagar (e o que cada caminho exige) está em `docs/BACKLOG.md`, seção
+  *Inventário do apagamento*; a régua que **reprova a entrega** é
+  `src/lib/__tests__/apagar-com-autorizacao.test.ts`.
+
+  **E a régua se prova quebrando o código de propósito.** A primeira versão
+  dela passou verde com a trava do `reset-test.mjs` arrancada, porque procurava
+  a *palavra* `RISARTE_APAGAR_TREINO` — que continuava no arquivo, dentro do
+  texto da mensagem de erro que ensina a autorizar. **Régua nova só vale depois
+  de ter reprovado uma vez.**
 
 ### Estado da última sessão
 

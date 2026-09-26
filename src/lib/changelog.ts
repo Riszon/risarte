@@ -62,6 +62,32 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.284.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "Nenhuma rotina do sistema apaga dado sem alguém pedir por escrito",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Depois do sumiço dos cadastros no treino, foram conferidas TODAS as rotinas do sistema que conseguem apagar alguma coisa. São duas: a limpeza do banco de treino e a limpeza de arquivos de teste. As duas agora só funcionam se forem pedidas por escrito, e nenhuma delas alcança o ambiente real.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A rotina que guarda os dados antigos por tempo de lei foi conferida também: ela NÃO apaga nada — ela apaga só o nome e o CPF de quem saiu há muito tempo, mantendo o histórico, como a lei exige.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Daqui em diante, qualquer rotina nova que consiga apagar dado sem pedir autorização trava a entrega do sistema. A garantia deixou de depender de alguém lembrar.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.283.0",
     data: "2026-09-25",
     migracao: null,

@@ -806,6 +806,61 @@ Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 
 ---
 
+## ⚠️ INVENTÁRIO DO APAGAMENTO — o que, no sistema inteiro, consegue apagar dado
+
+**Ordem do dono, 25/09/2026:** *"Você deve garantir que nenhum dado será
+apagado, a não ser quando solicitado."*
+
+Não é uma pendência: é o **retrato conferido** de todo caminho que apaga
+alguma coisa, levantado **medindo** (varredura dos scripts + leitura das
+funções agendadas no banco), não por memória. Serve para responder à pergunta
+"o que pode apagar meu dado?" sem refazer a busca — e para que quem acrescentar
+um caminho novo saiba que existe uma lista onde ele precisa entrar.
+
+| Caminho | Alcança | Apaga o quê | Exige o quê |
+|---|---|---|---|
+| `scripts/reset-test.mjs` | **treino** | movimento (30 tabelas) | `RISARTE_APAGAR_TREINO=sim` ou `CI` |
+| `scripts/limpar-arquivos-de-teste.mjs` | **produção** (lê `.env.local`) | arquivos de teste no Storage | `--confirmar` (sem ele, só simula) |
+| `src/lib/espelho-treino.ts` | **treino** | papéis, agenda da equipe e matriz de permissões, antes de copiar | é a própria ação pedida pelo Admin |
+| Migrações (`supabase/migrations/`) | onde forem rodadas | o que o arquivo declarar | `npm run check:destrutivo` reprova o não declarado |
+| `empresarial.run_retention()` (agendada) | produção e treino | **NADA** — anonimiza com `update` | — |
+| `recompute_client_activity` (agendada) | produção e treino | **NADA** — recalcula | — |
+
+**As três conclusões que importam:**
+
+1. **Nenhum caminho automático apaga cadastro.** As duas rotinas que rodam
+   sozinhas no banco (retenção e atividade do cliente) foram lidas uma a uma:
+   a retenção **anonimiza** (apaga nome e CPF, mantém o histórico, como a LGPD
+   manda) e a outra recalcula um campo. Nenhuma das duas tem `delete`.
+2. **Nada que apaga alcança a produção sem passar por gente.** O único
+   script que fala com a produção é o de arquivos, e ele **simula por padrão**
+   — sem `--confirmar` imprime "NADA FOI APAGADO".
+3. **A garantia virou portão**, não promessa:
+   `src/lib/__tests__/apagar-com-autorizacao.test.ts` varre `scripts/*.mjs`,
+   encontra quem executa apagamento e **reprova a entrega** se não houver
+   leitura de autorização. Script novo que apague calado não passa.
+
+⚠️ **A PRIMEIRA VERSÃO DESSA RÉGUA PASSOU VERDE COM A TRAVA ARRANCADA.** Ela
+procurava a palavra `RISARTE_APAGAR_TREINO` no arquivo, e a palavra continuava
+lá — **dentro do texto da mensagem de erro**, ensinando como autorizar.
+Ensinar como autorizar não é exigir autorização. A régua passou a exigir a
+marca no **papel de leitura** (`process.env.X`, `process.argv`), e isso só
+apareceu porque a régua foi **provada quebrando o código de propósito**.
+É o mesmo erro do `--pat-branco` (§0d do `CLAUDE.md`): perguntar se a string
+existe quando o que importa é se ela existe **naquele papel**.
+
+**Limites declarados** (o que esta garantia NÃO cobre):
+
+- **Apagamento pela tela** — botões de excluir do próprio sistema. Esses são
+  pedidos pelo usuário por definição, e cada um tem a sua regra (cliente nunca
+  é apagado, vira anonimizado; item de estoque com movimento vira inativo).
+- **`espelho-treino.ts`** apaga como parte do ato que o Admin pediu ("copiar a
+  produção para o treino"); a régua não o cobre porque não é script, e o
+  caminho até ele é a tela de Administração.
+- **Apagamento feito à mão no painel do Supabase.** Nenhum código alcança isso.
+
+---
+
 ## ACHADOS DE PASSAGEM — encontrados fazendo outra coisa (fila viva)
 
 ⚠️ **POR QUE ESTA SEÇÃO EXISTE** (ordem do dono, 25/09/2026): *"se encontrar e
