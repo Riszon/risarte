@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
@@ -67,12 +68,19 @@ export async function addCompanyDocument(
 
   const db = await empresarialDb();
   // Primeiro documento da empresa entra como principal automaticamente.
-  const { count } = await db
-    .from("company_documents")
-    .select("id", { count: "exact", head: true })
-    .eq("company_id", companyId);
-  const makePrimary =
-    (count ?? 0) === 0 || formData.get("is_primary") === "on";
+  const existentes = contagemConfirmada(
+    await db
+      .from("company_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", companyId)
+  );
+  // ⚠️ AP11: sem conseguir contar, o sistema concluía "é o primeiro
+  // documento" e o tornava PRINCIPAL sozinho — tirando o posto do principal de
+  // verdade, sem ninguém ter pedido.
+  if (existentes === null) {
+    return { ok: false, error: naoConseguiConferir("os documentos que a empresa já tem") };
+  }
+  const makePrimary = existentes === 0 || formData.get("is_primary") === "on";
 
   if (makePrimary) {
     // Um principal por empresa (índice único no banco garante).
@@ -208,14 +216,22 @@ export async function removeCompanyDocument(
         "Este é o documento principal. Marque outro como principal antes de remover.",
     };
   }
-  const { count } = await db
-    .from("employees")
-    .select("id", { count: "exact", head: true })
-    .eq("company_document_id", documentId);
-  if ((count ?? 0) > 0) {
+  const vinculados = contagemConfirmada(
+    await db
+      .from("employees")
+      .select("id", { count: "exact", head: true })
+      .eq("company_document_id", documentId)
+  );
+  // ⚠️ AP11: o banco NÃO segura esta (a ligação é `on delete set null`).
+  // Sem conseguir contar, o documento era removido e os titulares perdiam a
+  // ligação com ele EM SILÊNCIO.
+  if (vinculados === null) {
+    return { ok: false, error: naoConseguiConferir("se há titulares ligados a este documento") };
+  }
+  if (vinculados > 0) {
     return {
       ok: false,
-      error: `${count} titular(es) estão vinculados a este documento. Mova-os antes de remover.`,
+      error: `${vinculados} titular(es) estão vinculados a este documento. Mova-os antes de remover.`,
     };
   }
 

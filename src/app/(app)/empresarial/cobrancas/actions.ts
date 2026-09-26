@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -157,15 +158,32 @@ export async function gerarMensalidadesEmLote(
       continue;
     }
 
-    const { count } = await db
-      .from("adhesion_billing")
-      .select("id", { count: "exact", head: true })
-      .eq("company_id", companyId)
-      .eq("billing_type", "MONTHLY")
-      .eq("reference_month", preview.referenceMonth)
-      .neq("status", "CANCELLED");
+    const jaCobradas = contagemConfirmada(
+      await db
+        .from("adhesion_billing")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("billing_type", "MONTHLY")
+        .eq("reference_month", preview.referenceMonth)
+        .neq("status", "CANCELLED")
+    );
 
-    if ((count ?? 0) > 0) {
+    // ⚠️ AP11 — ESTA É A TRAVA CONTRA COBRAR A MESMA EMPRESA DUAS VEZES NO MÊS,
+    // e hoje ela é a ÚNICA: o banco não tem índice que impeça a duplicata
+    // (pendência registrada no CLAUDE.md). Com `count ?? 0`, uma contagem que
+    // falhava virava "não há cobrança deste mês" e a segunda cobrança nascia.
+    // Sem conseguir conferir, a empresa fica de fora DESTA rodada — e aparece
+    // na lista de puladas, com o motivo, para ninguém achar que foi cobrada.
+    if (jaCobradas === null) {
+      pulados.push({
+        empresa: nomeDaEmpresa(companyId),
+        motivo:
+          "não foi possível conferir se já existe cobrança deste mês — nada foi gerado para ela; tente de novo",
+      });
+      continue;
+    }
+
+    if (jaCobradas > 0) {
       pulados.push({
         empresa: nomeDaEmpresa(companyId),
         motivo: "já tem cobrança deste mês",

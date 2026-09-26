@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
@@ -76,13 +77,20 @@ export async function createEmployee(
   //
   // O MÁXIMO da proposta continua valendo como teto separado — ele pode ser
   // maior que o contratado (contratou 100, pode chegar a 120 sem renegociar).
-  const { data: limiteRow } = await db.rpc("limite_de_titulares", {
+  // ⚠️ AP11 — AQUI O VAZIO TEM SIGNIFICADO, e por isso o ERRO precisa ser lido.
+  // `limite_de_titulares` devolve nulo de propósito quando o contrato não tem
+  // quantidade ("sem trava"). Lendo só `data`, uma consulta que FALHOU também
+  // devolvia nulo — e era lida como "sem trava": o teto contratado sumia.
+  const { data: limiteRow, error: erroDoLimite } = await db.rpc("limite_de_titulares", {
     p_company_id: companyId,
   });
+  if (erroDoLimite) {
+    return { ok: false, error: naoConseguiConferir("a quantidade contratada da empresa") };
+  }
   const limiteContratado =
     typeof limiteRow === "number" ? limiteRow : (limiteRow?.[0] ?? null);
 
-  const { data: teto } = await db
+  const { data: teto, error: erroDoTeto } = await db
     .from("companies")
     .select("max_adhesions, adhesion_limit_target")
     .eq("id", companyId)
@@ -90,18 +98,28 @@ export async function createEmployee(
       max_adhesions: number | null;
       adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
     }>();
+  // Mesmo caso: sem ler, o máximo combinado na proposta deixava de valer.
+  if (erroDoTeto) {
+    return { ok: false, error: naoConseguiConferir("o limite combinado na proposta") };
+  }
 
   const precisaContar =
     limiteContratado != null ||
     (teto?.max_adhesions != null && teto.adhesion_limit_target !== "DEPENDENTS");
 
   if (precisaContar) {
-    const { count } = await db
-      .from("employees")
-      .select("*", { count: "exact", head: true })
-      .eq("company_id", companyId)
-      .eq("status", "ACTIVE");
-    const atuais = count ?? 0;
+    const atuais = contagemConfirmada(
+      await db
+        .from("employees")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("status", "ACTIVE")
+    );
+    // ⚠️ AP11: sem contar, "quantos titulares já estão ativos?" virava ZERO,
+    // e o teto contratado deixava passar cadastro além do combinado.
+    if (atuais === null) {
+      return { ok: false, error: naoConseguiConferir("quantos titulares a empresa já tem ativos") };
+    }
 
     const { semTrava, vagas } = vagasDisponiveis(limiteContratado, atuais);
     if (!semTrava && vagas <= 0) {
@@ -344,13 +362,18 @@ export async function addDependent(
   //
   // Quem soma o limite é o BANCO (contratado + termos de inclusão aceitos),
   // como nos titulares: duas contas para a mesma pergunta divergem.
-  const { data: limiteRow } = await db.rpc("limite_de_dependentes", {
+  // ⚠️ AP11: nulo aqui significa "sem trava" de propósito — por isso o ERRO
+  // precisa ser lido antes, senão a falha vira "sem trava" (ver titulares).
+  const { data: limiteRow, error: erroDoLimite } = await db.rpc("limite_de_dependentes", {
     p_company_id: companyId,
   });
+  if (erroDoLimite) {
+    return { ok: false, error: naoConseguiConferir("a quantidade de dependentes contratada") };
+  }
   const limiteContratado =
     typeof limiteRow === "number" ? limiteRow : (limiteRow?.[0] ?? null);
 
-  const { data: teto } = await db
+  const { data: teto, error: erroDoTeto } = await db
     .from("companies")
     .select("max_adhesions, adhesion_limit_target")
     .eq("id", companyId)
@@ -358,6 +381,9 @@ export async function addDependent(
       max_adhesions: number | null;
       adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
     }>();
+  if (erroDoTeto) {
+    return { ok: false, error: naoConseguiConferir("o limite combinado na proposta") };
+  }
   // O máximo da proposta só vale para dependentes quando foi combinado para
   // eles. Marcado como "só titulares", ele não diz nada sobre dependentes.
   const tetoDaProposta =
@@ -366,11 +392,22 @@ export async function addDependent(
       : null;
 
   if (limiteContratado != null || tetoDaProposta != null) {
-    const { data: ativosRow } = await db.rpc("dependentes_ativos", {
+    const { data: ativosRow, error: erroDosAtivos } = await db.rpc("dependentes_ativos", {
       p_company_id: companyId,
     });
-    const atuais =
-      typeof ativosRow === "number" ? ativosRow : (ativosRow?.[0] ?? 0);
+    // ⚠️ AP11 — ESTE DEFEITO FOI ESCRITO JUNTO COM A 1021 (25/09), e a busca
+    // do AP11 não o pegou porque procurava a forma `count ?? 0`. Aqui era
+    // `?.[0] ?? 0`: a falha virava "zero dependentes ativos" e o teto deixava
+    // passar. `dependentes_ativos` é uma contagem — sempre devolve um número —
+    // então vazio aqui é sinal de problema, nunca zero.
+    const atuais = erroDosAtivos
+      ? null
+      : typeof ativosRow === "number"
+        ? ativosRow
+        : (ativosRow?.[0] ?? null);
+    if (atuais === null) {
+      return { ok: false, error: naoConseguiConferir("quantos dependentes a empresa já tem ativos") };
+    }
 
     const { semTrava, vagas } = vagasDisponiveis(limiteContratado, atuais);
     if (!semTrava && vagas <= 0) {
