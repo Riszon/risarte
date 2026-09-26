@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.294.2",
+    data: "2026-09-26",
+    migracao: "0279",
+    titulo: "Contas internas do financeiro, do comercial e da reciclagem fechadas para fora do sistema",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Dezessete contas internas do sistema — entre elas o fluxo de caixa e o ponto de equilíbrio das unidades, os alertas financeiros e a suspensão de acesso da reciclagem — podiam ser acionadas por fora do sistema, sem login. Foram fechadas. Nada muda nas telas.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.294.1",
     data: "2026-09-26",
     migracao: "0278",

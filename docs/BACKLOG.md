@@ -1574,7 +1574,7 @@ explica quais estão fechadas.
 
 ---
 
-### AP15. 🔴 16 funções "privadas" executam para QUEM NÃO ESTÁ LOGADO (26/09/2026) — PRÓXIMO
+### AP15. 🔴 16 funções "privadas" executam para QUEM NÃO ESTÁ LOGADO (26/09/2026 — corrigido, 0279 / core 0.294.2)
 
 **Achado conferindo a 0277 na produção.** A régua "a regra sem guarda NÃO está
 exposta à API" falhou: a função interna da tranca respondeu.
@@ -1618,4 +1618,48 @@ authenticated` nas 16 (e guarda ou revoke na `restore_training_access`),
 conferindo antes, no banco, quem as chama por dentro — as que o APP chama por
 `rpc` precisam de guarda, não de revoke. A **Regra 7** do `check-migrations`
 já impede migração nova de repetir o erro.
+
+**✅ CORRIGIDO (0279, core 0.294.2)** — as 16 mais `restore_training_access`.
+Antes de fechar, conferido no banco e no código: **nenhuma** é chamada pelo
+app, por política, view ou função INVOKER — só por funções `security definer`
+(rodam como `postgres`) e pela rotina `risarte-training-deadlines`. Provado no
+treino: sem login as 17 recusam; o banco confirma 0 executáveis por
+anon/logado; fluxo de caixa e ponto de equilíbrio (portas com guarda) e as
+duas rotinas seguem funcionando. Levantamento das "privadas": 25 declaradas,
+**0 expostas**.
+
+---
+
+### AP16. 🔴 Funções SEM GUARDA executam sem login — inclusive dado de paciente por CPF (26/09/2026) — PRÓXIMO
+
+**Achado medindo o AP15.** O AP15 cobria só as funções que as migrações
+*declararam* privadas. Olhando todas: **355** funções `security definer`
+(fora gatilhos) executam para `anon`; a maioria tem guarda interna (recusa
+quem não está logado), mas **107 não têm nenhum sinal de guarda** e **37
+delas gravam**.
+
+**CONFIRMADO, lendo a definição e provando NA PRODUÇÃO pela API, sem login
+(sem tocar em dado real):**
+
+- `find_client_basic_by_cpf(cpf)` — **devolve nome, nascimento e telefone do
+  paciente pelo CPF**. Executou com CPF inexistente (0 linhas). **LGPD.**
+- `empresarial.settle_billing(id)` — **dá baixa (PAGO) numa cobrança do
+  Empresarial** e mexe no split. Executou até `BILLING_NOT_FOUND` (id
+  inexistente, nada gravado).
+- `empresarial.mark_contract_signed(doc)` — **marca contrato como assinado**.
+  Lida a definição (sem guarda); não chamada na produção.
+
+**SUSPEITA (a régua é aproximada — cada uma precisa ser lida):** as demais da
+lista abaixo. Pode haver guarda que o padrão não reconhece; pode haver função
+que o app chama por `rpc` e que por isso precisa de GUARDA, não de revoke.
+Marcadas com * as que gravam:
+
+acquirer_applies_to, acquirer_rate_for, acquirer_rate_usage, acquirer_rates_usage, acquirer_visible_to_me, alvo_e_admin, apply_renegotiation*, apply_sale_benefit_risk*, apply_settlement_projection*, asset_book_value, can_manage_staff, can_reconcile, cancellation_penalty_percent, chat_channel_people, chat_cross_level_allowed, chat_display_names, closure_snapshot*, commercial_cash_discount_percent, commercial_min_installment_cents, cost_settings_for, empresarial.attach_usage_appointment*, empresarial.mark_contract_signed*, empresarial.mark_overdue_and_suspend*, empresarial.member_role_for, empresarial.record_benefit_usage*, empresarial.refresh_client_badge*, empresarial.refresh_company_suspension*, empresarial.refresh_dependent_plan*, empresarial.register_direct_sale_usage*, empresarial.register_negotiation_usage*, empresarial.restore_employee*, empresarial.run_retention*, empresarial.set_employee_active*, empresarial.settle_billing*, empresarial_client_conditions, environment_allowed, estimated_direct_sale_material, estimated_direct_sale_payout, estimated_option_material, estimated_option_payout, estimated_purchase_cost, fill_history_access, finance_settings_for, find_client_basic_by_cpf, find_duplicate_client, find_prospect_by_cpf, find_staff_by_cpf, finish_clinical_attendance*, followup_parked_by_commercial, inactivity_threshold, inactivity_threshold_minutes, installment_balance, is_mirror_db, kit_cost_cents, kits_for, mark_overdue_installments*, material_cost_for, material_costs_for_clinic, min_margin_percent, network_fee_accounts, network_fee_for, network_fee_label, next_asset_code, next_cancellation_code*, next_client_code*, next_client_code_prefixed*, next_procedure_code*, next_sale_code*, next_stock_item_code, notify_plan_people*, notify_protocol_decision*, notify_protocol_proposal*, notify_provider_cross_unit*, open_day_snapshot*, option_session_rows, overdue_limit_percent, overstocked_items, packages_running_out, payable_approval_for, payable_punctuality_discount, payout_matrix, payout_rate_by_level, payout_rate_for, plan_item_snapshot*, post_installment_accrual*, post_payable_accrual*, ppr_client_conditions, ppr_client_tier_percent, ppr_effective_settings, ppr_refresh_delinquency*, procedure_cost_breakdown, procedure_kits_detail, providers_with_access, recompute_client_activity*, recompute_client_activity_one*, recompute_closure_flags*, replenishment_list, resolve_supplier_items, role_allowed_for_clinic, sale_recoverable_benefit_cents, session_consumption, sessions_without_kit, settle_treatment_sessions*, sla_minutes, stock_expiring, stock_ledger_check, training_candidates
+
+**Conserto provável, em duas camadas:** (1) as que só são chamadas por dentro
+→ `revoke execute ... from public, anon, authenticated` (mesma receita da
+0279, com o mesmo levantamento de chamadores antes); (2) as que o app chama
+por `rpc` → guarda dentro da função. E considerar tirar o EXECUTE de `anon`
+de TODAS as funções do sistema (o riSZon não tem tela pública que use o banco
+sem login — conferir antes: `/login`, documentos e termos públicos).
 

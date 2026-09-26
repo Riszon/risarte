@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.294.1; Empresarial 0.69.0 → 0.72.0; migrações 0273–0278, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.294.2; Empresarial 0.69.0 → 0.72.0; migrações 0273–0279, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -434,7 +434,11 @@ a produção, com trava que EXIGE ser produção).
    🔴 **A conferência achou o AP15:** `revoke ... from public` NÃO deixa função
    privada no Supabase — 19 funções "privadas" executavam SEM LOGIN (provado
    na produção: fluxo de caixa). As 3 da 0277 fechadas na **0278 (APLICADA na
-   produção; conferido de fora, sem login: recusa)**; as 16 antigas estão no AP15, propostas como próximo item.
+   produção; conferido de fora, sem login: recusa)**; ✅ **as 16 antigas (+ restore_training_access) fechadas na
+   0279 (AP15) — o dono precisa rodar.** 🔴 **AP16 (BACKLOG), achado medindo o
+   AP15:** 107 funções SEM guarda executam sem login; confirmado na produção
+   que `find_client_basic_by_cpf` (paciente por CPF — LGPD) e
+   `empresarial.settle_billing` (dá baixa) executam. Proposto como próximo.
    Regra 7 do `check-migrations` impede a repetição.
    **A seguir: a parte 2**: gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
