@@ -1424,3 +1424,46 @@ cobrança em dobro: acusou o arquivo e a linha.
    Não libera ação nenhuma — mas é a régua vazia respondendo "não" na tela que
    a equipe mais olha. Vale uma passada própria.
 
+
+---
+
+### AP12. ⚠️ Implantação da SEGUNDA etapa cobra de novo quem já pagou (26/09/2026)
+
+**Achado construindo a trava da mensalidade (1022)**, quando o dono explicou a
+regra da implantação ao responder se ela também devia ter trava.
+
+**A REGRA, nas palavras do dono (26/09/2026):** *"sempre que for acrescentado
+novos titulares o primeiro pagamento é a implantação (...) uma empresa com 100
+colaboradores fez a adesão de 80 em uma primeira etapa, e uma segunda etapa dos
+20 restantes, será cobrado a implantação nas duas vezes, proporcional à
+quantidade."* Ou seja: **cada titular paga implantação UMA vez**, na etapa em
+que entra.
+
+**CONFIRMADO, lendo o código** (`billing-actions.ts`, `previewBilling`):
+
+- Com menos cadastrados que o contratado → cobra pela **quantidade contratada**
+  (decisão do dono de 25/09, OC-00055/57 — certo para a PRIMEIRA etapa).
+- Senão → cobra por **todos os titulares cadastrados**.
+- O **termo de inclusão** (`TI-`, 1020), que é o caminho da segunda etapa,
+  **não gera cobrança nenhuma** (conferido: nem migração nem código).
+
+Resultado no caso do dono: contrato de 80 → implantação de **80** ✓; termo de
+inclusão de +20 → "Gerar implantação" cobra os **100** cadastrados — **os 80
+pagam de novo** ✗. E, como a implantação não tem trava, dois cliques também a
+duplicam.
+
+**NÃO CONFIRMADO:** se alguma empresa já pagou implantação em dobro. Na
+produção, em 26/09, **não há cobrança nenhuma** — então ainda não.
+
+**A 1022 NÃO trava a implantação, de propósito:** uma trava "uma por
+documento" barraria a segunda etapa, que é legítima. O manual do Empresarial
+(§ limites conhecidos) orienta a conferir o valor na prévia e usar **Editar**
+até o conserto.
+
+**Conserto proposto (a decidir com o dono):** cada implantação guarda
+**quantos titulares cobriu**; a próxima cobra só a diferença — `base de hoje
+(contratado + termos aceitos) − já coberto pelas implantações vivas`. Quando a
+diferença é zero, não há o que cobrar, e isso também resolve o clique duplo.
+Alternativa mais precisa e mais cara: ligar cada titular à implantação que o
+cobriu. A primeira segue o jeito que a primeira etapa já é calculada (por
+quantidade), e por isso é a recomendada.

@@ -204,10 +204,16 @@ export async function gerarMensalidadesEmLote(
 
     const { error } = await db.from("adhesion_billing").insert(rows);
     if (error) {
-      console.error("gerarMensalidadesEmLote falhou:", error.message);
+      // 23505 = a trava da 1022: a mensalidade foi gerada pela tela da
+      // empresa entre a conferência lá de cima e esta gravação. Não é defeito
+      // nem falha — é a trava fazendo o trabalho dela, e a frase diz isso.
+      const duplicada = error.code === "23505";
+      if (!duplicada) console.error("gerarMensalidadesEmLote falhou:", error.message);
       pulados.push({
         empresa: nomeDaEmpresa(companyId),
-        motivo: "o banco recusou a criação",
+        motivo: duplicada
+          ? "já tem cobrança deste mês (gerada agora há pouco por outra tela)"
+          : "o banco recusou a criação",
       });
       continue;
     }

@@ -547,6 +547,19 @@ dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
 **Por empresa:** aba **Financeiro** → **Gerar cobrança mensal**. Nasce
 **Pendente**, com valor e vencimento.
 
+> **A mesma mensalidade não sai duas vezes.** Se a mensalidade do mês já foi
+> gerada — por esta tela ou pela cobrança de todas as empresas —, o sistema
+> recusa e diz: *"A mensalidade de setembro/2026 desta empresa já foi gerada.
+> Para refazê-la, cancele a atual primeiro."* A trava é do **banco**, então
+> vale para qualquer caminho, inclusive dois cliques seguidos.
+>
+> **Empresa com mais de um documento** (CNPJ/CAEPF) recebe **um boleto por
+> documento** no mesmo mês — isso é normal, e a trava deixa. O que ela barra é
+> o **mesmo documento** cobrado duas vezes no **mesmo mês**.
+>
+> **Para corrigir uma mensalidade errada:** cancele a atual e gere de novo.
+> Cobrança cancelada não conta para a trava.
+
 **A implantação não espera os cadastros.** Ao clicar em **Gerar implantação**:
 
 - Se a empresa tem **quantidade contratada** (veio da proposta), a conta usa
@@ -719,9 +732,13 @@ momento, na frente do cliente.
   (simulação) enquanto as chaves não estiverem cadastradas.
 - **Proposta no Gamma** depende de chave configurada; sem ela, o cartão explica
   que está desativado.
-- **Não há trava no banco contra duas mensalidades do mesmo mês** para a mesma
-  empresa. A tela evita ao gerar em lote, mas duas pessoas gerando ao mesmo
-  tempo ainda passariam.
+- **Implantação da segunda etapa cobra TODOS os titulares, não só os novos.**
+  Quando a empresa inclui titulares depois (pelo termo de inclusão), cada
+  titular novo deve pagar a própria implantação — mas hoje o botão **Gerar
+  implantação** calcula por todos os cadastrados, e os que já pagaram entram
+  de novo. **Até isso ser corrigido: confira o valor na prévia e, se estiver
+  cobrando os antigos, gere e use Editar para acertar o valor** antes de
+  enviar. (A mensalidade, essa sim, tem trava no banco desde a versão 0.71.0.)
 - **Controle por lote e baixa FIFO** não fazem parte deste módulo.
 
 ---

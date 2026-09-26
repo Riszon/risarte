@@ -1,5 +1,6 @@
 "use server";
 
+import { naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -397,6 +398,42 @@ export async function generateBilling(
   }
 
   const db = await empresarialDb();
+
+  // ⚠️ A MENSALIDADE DO MÊS JÁ FOI GERADA? (1022)
+  // Até 26/09/2026 esta tela não conferia: o botão só ficava bloqueado
+  // enquanto carregava, e dois cliques — ou um aqui e outro no lote —
+  // cobravam a empresa em dobro. A trava de verdade agora está no BANCO; esta
+  // conferência existe para a pessoa ouvir o PORQUÊ, antes de tentar.
+  //
+  // A chave é a mesma do banco: (empresa, DOCUMENTO, mês). Empresa com dois
+  // CNPJs recebe dois boletos no mês, e isso é legítimo.
+  if (billingType === "MONTHLY") {
+    // Sem o mês, não há o que conferir — e gerar sem conferir é exatamente o
+    // que esta trava existe para impedir.
+    if (!preview.referenceMonth) {
+      return { ok: false, error: naoConseguiConferir("o mês de referência da mensalidade") };
+    }
+    const { data: jaGeradas, error: erroDaConferencia } = await db
+      .from("adhesion_billing")
+      .select("company_document_id")
+      .eq("company_id", companyId)
+      .eq("billing_type", "MONTHLY")
+      .eq("reference_month", preview.referenceMonth)
+      .neq("status", "CANCELLED");
+    // Sem conseguir conferir, NÃO gera (AP11): a trava do banco seguraria a
+    // duplicata, mas a pessoa receberia um erro sem explicação.
+    if (erroDaConferencia || !jaGeradas) {
+      return { ok: false, error: naoConseguiConferir("se a mensalidade deste mês já foi gerada") };
+    }
+    const docsJaCobrados = new Set(jaGeradas.map((r) => r.company_document_id ?? null));
+    if (preview.items.some((i) => docsJaCobrados.has(i.documentId ?? null))) {
+      return {
+        ok: false,
+        error: `A mensalidade de ${rotuloDoMes(preview.referenceMonth)} desta empresa já foi gerada. Para refazê-la, cancele a atual primeiro.`,
+      };
+    }
+  }
+
   const rows = preview.items.map((i) => ({
     company_id: companyId,
     company_document_id: i.documentId,
@@ -410,6 +447,16 @@ export async function generateBilling(
 
   const { error } = await db.from("adhesion_billing").insert(rows);
   if (error) {
+    // 23505 = a trava da 1022. Chega aqui quando duas pessoas geram a mesma
+    // mensalidade ao mesmo tempo (a conferência acima não vê a outra): o banco
+    // barrou, e a frase precisa dizer isso — não "não foi possível".
+    if (error.code === "23505") {
+      return {
+        ok: false,
+        error:
+          "A mensalidade deste mês acabou de ser gerada (por outra tela ou por outra pessoa). Nada foi duplicado.",
+      };
+    }
     console.error("generateBilling failed:", error.message);
     return { ok: false, error: "Não foi possível gerar a cobrança." };
   }
