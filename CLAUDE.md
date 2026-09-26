@@ -433,8 +433,8 @@ a produção, com trava que EXIGE ser produção).
    APLICADA na produção** (7 fechadas = as 6 pessoas no portal; conferido).
    🔴 **A conferência achou o AP15:** `revoke ... from public` NÃO deixa função
    privada no Supabase — 19 funções "privadas" executavam SEM LOGIN (provado
-   na produção: fluxo de caixa). As 3 da 0277 fechadas na **0278 (o dono
-   precisa rodar)**; as 16 antigas estão no AP15, propostas como próximo item.
+   na produção: fluxo de caixa). As 3 da 0277 fechadas na **0278 (APLICADA na
+   produção; conferido de fora, sem login: recusa)**; as 16 antigas estão no AP15, propostas como próximo item.
    Regra 7 do `check-migrations` impede a repetição.
    **A seguir: a parte 2**: gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
