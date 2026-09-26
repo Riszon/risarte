@@ -435,7 +435,7 @@ a produção, com trava que EXIGE ser produção).
    privada no Supabase — 19 funções "privadas" executavam SEM LOGIN (provado
    na produção: fluxo de caixa). As 3 da 0277 fechadas na **0278 (APLICADA na
    produção; conferido de fora, sem login: recusa)**; ✅ **as 16 antigas (+ restore_training_access) fechadas na
-   0279 (AP15) — o dono precisa rodar.** 🔴 **AP16 (BACKLOG), achado medindo o
+   0279 (AP15) — APLICADA na produção** (conferido de fora, sem login: recusam). 🔴 **AP16 (BACKLOG), achado medindo o
    AP15:** 107 funções SEM guarda executam sem login; confirmado na produção
    que `find_client_basic_by_cpf` (paciente por CPF — LGPD) e
    `empresarial.settle_billing` (dá baixa) executam. Proposto como próximo.
