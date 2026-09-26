@@ -1247,3 +1247,16 @@ tempo do Supabase (recurso do plano pago) — decisão do dono, não minha.
 CLAUDE.md: o truncate que levou o Risarte Academy; 11/09: o comentário que
 descrevia a lista e não o efeito): **antes de apagar em massa, pergunte quem
 está usando aquele banco — não só o que o comando alcança.**
+
+**DECISÃO DO DONO, 25/09/2026 — NÃO RECUPERAR.** *"Por ser um ambiente teste
+não vamos tentar recuperar."* A recuperação por ponto no tempo do Supabase
+**não será tentada**, e o item está encerrado: o que se perdeu foi cadastro de
+treino, e recadastrar custa menos que restaurar o banco inteiro — a restauração
+voltaria TUDO ao estado anterior, inclusive o que foi feito de bom depois.
+
+**Fica registrado para quem ler isto depois:** a decisão foi barata **porque
+era treino**. No ambiente REAL ela não existiria — e é por isso que a trava, e
+não a recuperação, é a resposta certa para este relato.
+
+**ENCERRADO em 25/09/2026** — core 0.283.0 (a trava) e 0.284.0 (a garantia
+geral; ver *Inventário do apagamento*, no topo deste arquivo).
