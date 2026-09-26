@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/09/2026 · Versão do sistema: **0.275.0** · Última migração: **0270** (aplicada na produção e no treino) · Empresarial **0.54.0** / migração **1014** (aplicada na produção e no treino)_
+_Atualizado em: 26/09/2026 · Versão do sistema: **0.293.0** · Última migração: **0276** (aplicada no treino; a produção recebe pelo dono) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🔒 0.293.0 / 0276 — O SISTEMA REAL ABRE POR UNIDADE E FUNÇÃO (26/09/2026)
+>
+> Portão de certificação, Etapa 3, parte 1. A tranca da 0259 era por pessoa;
+> agora cada (unidade, função) da pessoa responde aberta ou fechada, e por quê
+> (`system_access_by_clinic`, regra única usada pela sessão, pela ficha e pelo
+> Início). Uma missão por função vale em todas as unidades daquela função;
+> funções diferentes liberam cada uma sozinha; coletiva segura a unidade até o
+> grupo cumprir; função sem metas não barra; quem já trabalhava ficou
+> registrado como *anterior ao portão*. Admin: **Liberar sem missão** (motivo
+> obrigatório) e **Retirar liberação** (marca, não apaga). A tranca vive no
+> caminho das telas, não na RLS — **AP14** no BACKLOG, próximo item.
+> A parte 2 (gravar o certificado e liberar) vem a seguir.
+>
+> O que aconteceu entre 0.276.0 e 0.292.0 (portão Etapas 1–2, AP9–AP13,
+> travas de cobrança do Empresarial) está no "Estado da última sessão" do
+> `CLAUDE.md` e no `docs/BACKLOG.md`.
 
 > ## ✅ INFRA CONFERIDA EM 18/09/2026
 >

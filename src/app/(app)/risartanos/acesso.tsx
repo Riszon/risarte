@@ -4,7 +4,12 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Crown, Globe, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { Building2, Crown, Globe, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  ROTULO_DO_MOTIVO,
+  type LeituraDoAcesso,
+  type MotivoDeAcesso,
+} from "@/lib/acesso-por-unidade";
 import { SO_O_ADMIN_PRINCIPAL } from "@/lib/admins";
 import {
   AMBIENTES,
@@ -39,7 +44,9 @@ import {
   createUser,
   definirAdmin,
   definirAmbiente,
+  liberarUnidadeSemMissao,
   removeUserRole,
+  retirarLiberacaoDaUnidade,
   resetUserPassword,
   setUserActive,
   updateRoleScope,
@@ -77,6 +84,7 @@ export function AcessoDoRisartano({
   funcaoPrevista,
   senhaSugerida,
   ambientes,
+  acessoPorUnidade = null,
   treinoConfigurado,
   acesso,
   funcoes,
@@ -103,6 +111,8 @@ export function AcessoDoRisartano({
   senhaSugerida: string;
   /** Os três ambientes desta pessoa (0259) e se o treino está ligado no servidor. */
   ambientes: PermissoesDeAmbiente;
+  /** O sistema real em cada unidade (0276). Nulo no treino. */
+  acessoPorUnidade?: LeituraDoAcesso | null;
   treinoConfigurado: boolean;
   acesso: StaffAccess | null;
   funcoes: FuncaoDoAcesso[];
@@ -398,6 +408,16 @@ export function AcessoDoRisartano({
         isAdmin={isAdmin}
       />
 
+      {acessoPorUnidade && funcoes.length > 0 && (
+        <SistemaPorUnidade
+          userId={acesso.userId}
+          nome={staffNome}
+          funcoes={funcoes}
+          leitura={acessoPorUnidade}
+          isAdmin={isAdmin}
+        />
+      )}
+
       {/* A MENSAGEM PRONTA PARA MANDAR (21/09/2026): endereço, login, senha
           provisória e TODAS as unidades com as funções. Só para quem gere o
           acesso, e nunca no treino (lá é cópia). */}
@@ -605,6 +625,170 @@ function Ambientes({
           nos dois ambientes.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * O SISTEMA REAL EM CADA UNIDADE (0276).
+ *
+ * O interruptor "Sistema" logo acima é a PORTA: fechado, fecha tudo. Aberto,
+ * cada unidade ainda precisa de um motivo para abrir — missão cumprida da
+ * função que a pessoa tem ali, liberação anterior ao portão, função sem metas
+ * ou liberação sem missão do Admin. É isto que este bloco mostra.
+ */
+function SistemaPorUnidade({
+  userId,
+  nome,
+  funcoes,
+  leitura,
+  isAdmin,
+}: {
+  userId: string;
+  nome: string;
+  funcoes: FuncaoDoAcesso[];
+  leitura: LeituraDoAcesso;
+  isAdmin: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [liberando, setLiberando] = useState<string | null>(null);
+  const [motivo, setMotivo] = useState("");
+
+  if (leitura.tipo !== "ok") {
+    return (
+      <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+        {leitura.tipo === "sem_funcao"
+          ? "O banco ainda não recebeu a migração 0276: por enquanto vale só o interruptor Sistema, para todas as unidades."
+          : "Não foi possível conferir agora o sistema real por unidade. Recarregue em instantes."}
+      </p>
+    );
+  }
+  const porUnidade = new Map(leitura.linhas.map((l) => [l.clinic_id, l]));
+  // Só a liberação REGISTRADA se retira; certificado é fato histórico e "sem
+  // metas" é da função, não da pessoa.
+  const retiravel = (m: MotivoDeAcesso) => m === "manual" || m === "anterior";
+  const liberavel = (m: MotivoDeAcesso) =>
+    m === "aguardando_missao" || m === "aguardando_grupo";
+
+  return (
+    <div className="space-y-2 rounded-lg border p-3">
+      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <Building2 className="size-3.5" />
+        Sistema real em cada unidade
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Abre em cada unidade pela função que a pessoa tem nela. Missão cumprida
+        de uma função vale em todas as unidades onde ela tem essa função.
+      </p>
+      <ul className="space-y-1.5">
+        {funcoes.map((f) => {
+          const l = porUnidade.get(f.clinicId);
+          const aberta = l?.allowed === true;
+          return (
+            <li key={f.id} className="space-y-2 rounded-lg border px-3 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0 text-sm">
+                  <span className="font-medium">{f.clinicName}</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {ROLE_LABELS[f.role]}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {l ? ROTULO_DO_MOTIVO[l.reason] : "Sem resposta do banco"}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span
+                    className={
+                      aberta
+                        ? "text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                        : "text-xs text-muted-foreground"
+                    }
+                  >
+                    {aberta ? "Aberto" : "Fechado"}
+                  </span>
+                  {isAdmin && l && liberavel(l.reason) && liberando !== f.clinicId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={isPending}
+                      onClick={() => {
+                        setLiberando(f.clinicId);
+                        setMotivo("");
+                      }}
+                    >
+                      Liberar sem missão
+                    </Button>
+                  )}
+                  {isAdmin && l && retiravel(l.reason) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={isPending}
+                      onClick={() =>
+                        startTransition(async () => {
+                          const r = await retirarLiberacaoDaUnidade(userId, f.clinicId);
+                          if (!r.ok) {
+                            toast.error(r.error ?? "Algo deu errado.");
+                            return;
+                          }
+                          toast.success(`Liberação retirada: ${nome} em ${f.clinicName} passa a precisar da missão.`);
+                          router.refresh();
+                        })
+                      }
+                    >
+                      Retirar liberação
+                    </Button>
+                  )}
+                </span>
+              </div>
+              {liberando === f.clinicId && (
+                <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                  <Label htmlFor={`motivo-${f.clinicId}`} className="text-xs">
+                    Por que liberar sem a missão? (fica registrado)
+                  </Label>
+                  <Input
+                    id={`motivo-${f.clinicId}`}
+                    value={motivo}
+                    onChange={(e) => setMotivo(e.target.value)}
+                    placeholder="Ex.: veio de outra rede com experiência na função"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLiberando(null)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={isPending || !motivo.trim()}
+                      onClick={() =>
+                        startTransition(async () => {
+                          const r = await liberarUnidadeSemMissao(userId, f.clinicId, motivo);
+                          if (!r.ok) {
+                            toast.error(r.error ?? "Algo deu errado.");
+                            return;
+                          }
+                          toast.success(`${nome} liberado(a) em ${f.clinicName} sem a missão.`);
+                          setLiberando(null);
+                          router.refresh();
+                        })
+                      }
+                    >
+                      Liberar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

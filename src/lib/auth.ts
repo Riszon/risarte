@@ -14,6 +14,12 @@ import {
   podeComPapeis,
   type MatrizPermissoes,
 } from "@/lib/permissions";
+import { isTreino } from "@/lib/environment";
+import {
+  aplicarTranca,
+  lerAcessoPorUnidade,
+  type UnidadeFechada,
+} from "@/lib/acesso-por-unidade";
 
 export const ACTIVE_CLINIC_COOKIE = "risarte_active_clinic";
 
@@ -77,6 +83,14 @@ export type SessionContext = {
    * com os atalhos e nada mais.
    */
   ambientes: Record<Ambiente, boolean>;
+  /**
+   * As unidades onde a pessoa TEM função mas o sistema real ainda está
+   * fechado, e por quê (0276). Elas NÃO aparecem em `clinics` — ficam aqui
+   * para o Início poder explicar em vez de simplesmente sumir com elas.
+   */
+  unidadesFechadas: (UnidadeFechada & { clinicName: string })[];
+  /** A tranca por unidade não pôde ser conferida: tudo ficou fechado (AP11). */
+  acessoNaoConferido: boolean;
 };
 
 type RoleRow = {
@@ -113,6 +127,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     { data: permRows, error: permErro },
     { data: allClinics },
     { data: envRows, error: envErro },
+    respostaDoAcesso,
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -147,6 +162,11 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
         .select("environment, allowed")
         .eq("user_id", userId)
         .returns<{ environment: Ambiente; allowed: boolean }[]>(),
+      // 0276: a tranca por unidade e função. No TREINO ela não existe — o
+      // treino é justamente onde a pessoa pratica antes de ser liberada.
+      isTreino()
+        ? Promise.resolve(null)
+        : supabase.rpc("system_access_by_clinic", { p_user_id: userId }),
     ]);
 
   // Sem a tabela (banco ainda sem a 0246) ou sem linha nenhuma, vale o padrão
@@ -184,12 +204,55 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
   if (!envErro) {
     for (const row of envRows ?? []) registradas[row.environment] = row.allowed;
   }
-  const ambientes = Object.fromEntries(
+  let ambientes = Object.fromEntries(
     AMBIENTES.map((a) => [
       a,
       envErro ? true : ambientePermitido(registradas, a, isAdminMaster),
     ])
   ) as Record<Ambiente, boolean>;
+
+  const rolesByClinic: Record<string, UserRole[]> = {};
+  const memberClinics = new Map<string, Clinic>();
+  for (const row of roleRows ?? []) {
+    if (!row.clinics) continue;
+    memberClinics.set(row.clinics.id, row.clinics);
+    (rolesByClinic[row.clinics.id] ??= []).push(row.role);
+  }
+
+  // ⚠️ A TRANCA POR UNIDADE E FUNÇÃO (0276). Unidade fechada SAI da sessão —
+  // da lista de unidades E dos papéis. Tirar só da lista deixaria o papel de
+  // lá valendo no menu (`pode()` sem unidade soma os papéis de todas).
+  //
+  // Admin Master não passa por aqui (nunca se tranca para fora — 0259); porta
+  // fechada na ficha já é o modo portal, sem unidade nenhuma para conferir.
+  let unidadesFechadas: SessionContext["unidadesFechadas"] = [];
+  let acessoNaoConferido = false;
+  if (!isAdminMaster && respostaDoAcesso && ambientes.sistema) {
+    const leitura = lerAcessoPorUnidade(respostaDoAcesso);
+    if (leitura.tipo === "sem_funcao") {
+      // Banco ainda sem a 0276: vale a porta de antes, e o log diz isso em
+      // vez de fingir que conferiu.
+      console.error("tranca por unidade: banco sem a 0276, valendo só a porta da 0259");
+    }
+    if (leitura.tipo === "erro") {
+      acessoNaoConferido = true;
+      console.error("tranca por unidade: não foi possível conferir —", leitura.mensagem);
+    }
+    const { liberadas, fechadas } = aplicarTranca([...memberClinics.keys()], leitura);
+    unidadesFechadas = fechadas.map((f) => ({
+      ...f,
+      clinicName: memberClinics.get(f.clinicId)?.name ?? "",
+    }));
+    for (const id of [...memberClinics.keys()]) {
+      if (liberadas.has(id)) continue;
+      memberClinics.delete(id);
+      delete rolesByClinic[id];
+    }
+    // Tinha unidade e nenhuma abriu: é o modo portal (só o Início).
+    if (liberadas.size === 0 && (fechadas.length > 0 || acessoNaoConferido)) {
+      ambientes = { ...ambientes, sistema: false };
+    }
+  }
 
   // MODO PORTAL: sem o sistema real liberado, só a tela de Início e o Perfil
   // abrem. A barreira é aqui, no lugar por onde TODA tela passa — e não em cada
@@ -208,14 +271,6 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     } else if (!caminhoDoPortal(caminho)) {
       redirect("/");
     }
-  }
-
-  const rolesByClinic: Record<string, UserRole[]> = {};
-  const memberClinics = new Map<string, Clinic>();
-  for (const row of roleRows ?? []) {
-    if (!row.clinics) continue;
-    memberClinics.set(row.clinics.id, row.clinics);
-    (rolesByClinic[row.clinics.id] ??= []).push(row.role);
   }
 
   let clinics: Clinic[];
@@ -249,6 +304,8 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     activeClinicExplicit: chosen !== null,
     permissoes,
     ambientes,
+    unidadesFechadas,
+    acessoNaoConferido,
   };
 });
 

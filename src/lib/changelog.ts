@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.293.0",
+    data: "2026-09-26",
+    migracao: "0276",
+    titulo: "O sistema real passa a abrir por unidade, pela função que você tem nela",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O sistema real abre em cada unidade pela função que você tem nela. Cumpriu a missão de uma função, ela vale em todas as unidades onde você tem essa função; funções diferentes têm missões diferentes, e cada uma libera a sua unidade sem esperar a outra. Quem já trabalhava continua trabalhando.",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Unidade ainda fechada deixa de aparecer na sua lista de unidades — e o Início mostra qual é, com a função e o motivo (aguardando a missão, ou aguardando o grupo da unidade).",
+        papeis: "todos",
+        manual: "2.6. Os três ambientes",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin Master: na ficha do Risartano, aba Acesso, o bloco 'Sistema real em cada unidade' mostra cada unidade aberta ou fechada e por quê, com 'Liberar sem missão' (motivo obrigatório) e 'Retirar liberação'.",
+        papeis: [],
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.292.0",
     data: "2026-09-26",
     migracao: null,

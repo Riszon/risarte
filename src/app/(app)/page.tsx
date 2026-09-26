@@ -25,6 +25,7 @@ import { MissaoDeCertificacao } from "@/components/missao-de-certificacao";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
+import { ROTULO_DO_MOTIVO } from "@/lib/acesso-por-unidade";
 
 /**
  * A TELA DE INÍCIO — "o que espera por mim agora?".
@@ -226,6 +227,50 @@ export default async function HomePage() {
       )}
 
       {minhaMissao && <MissaoDeCertificacao missao={minhaMissao} />}
+
+      {/* 0276: AS UNIDADES AINDA FECHADAS, e por quê. Sem isto a unidade
+          simplesmente some da lista, e a pessoa conclui que perdeu o acesso
+          por defeito — e abre chamado. */}
+      {session.acessoNaoConferido && (
+        <p className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          Não foi possível conferir agora em quais unidades o sistema real está
+          liberado para você. Por segurança, ele ficou fechado — recarregue a
+          página em instantes.
+        </p>
+      )}
+      {session.unidadesFechadas.length > 0 && (
+        <section className="rounded-xl border bg-card p-4 text-sm shadow-sm">
+          <h2 className="font-semibold">
+            {session.unidadesFechadas.length === 1
+              ? "Unidade ainda fechada no sistema real"
+              : "Unidades ainda fechadas no sistema real"}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            O sistema real abre em cada unidade pela função que você tem nela.
+            Cumprida a missão de uma função, ela vale em todas as unidades onde
+            você tem essa função.
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {session.unidadesFechadas.map((u) => (
+              <li
+                key={u.clinicId}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2"
+              >
+                <span>
+                  <span className="font-medium">{u.clinicName}</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {ROLE_LABELS[u.role]}
+                  </span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {ROTULO_DO_MOTIVO[u.motivo]}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ---------------------------------------------- 1. quem, onde, quando */}
       <section className="marca-dagua relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">

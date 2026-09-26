@@ -537,7 +537,8 @@ onde está o Manual. Depois do terceiro, ela não volta.
    jornada, atendimento, o que for da função. No sistema real ela vê só o
    Início.
 3. Terminado o treinamento, o Admin clica **Liberar** no **riSZon** (ficha →
-   aba Acesso). A partir daí ela usa o sistema real.
+   aba Acesso). A partir daí ela usa o sistema real — **nas unidades em que a
+   função dela estiver liberada** (veja abaixo).
 
 > Desmarcar o treino ou o Academy na hora de criar o acesso agora vale: a
 > pessoa fica **sem** aquele ambiente até alguém liberar.
@@ -554,6 +555,52 @@ os três ambientes com **Liberar** / **Retirar**.
 
 > **O treino e o Academy já vêm liberados** para quem ganha acesso: são os
 > lugares de aprender. O que se libera caso a caso é o sistema de verdade.
+
+#### O sistema real abre em cada unidade pela função que você tem nela
+
+O **riSZon** liberado na ficha é a **porta**. Com a porta aberta, cada unidade
+ainda abre ou fica fechada **pela função que a pessoa tem naquela unidade**:
+
+- **Uma missão por função.** Quem é recepcionista em Cambé e em Londrina
+  cumpre a missão de recepção **uma vez** e fica liberado nas duas.
+- **Funções diferentes, missões diferentes — e cada uma libera sozinha.** Quem
+  é recepcionista em Cambé e gerente em Londrina: cumpriu a de recepção, Cambé
+  abre; Londrina continua fechada até cumprir a de gerência. Uma não espera a
+  outra.
+- **Liberação coletiva:** se a unidade tem uma turma coletiva de novatos em
+  andamento, ela só abre quando **o grupo inteiro** cumprir — mesmo para quem
+  já é certificado em outra unidade.
+- **Função sem metas definidas não barra ninguém.** Enquanto as metas de uma
+  função estiverem em branco em Administração → Certificação, a unidade abre
+  normalmente para quem tem aquela função.
+- **Quem já trabalhava quando esta regra entrou (versão 0.293.0) continua
+  trabalhando**: cada unidade + função que já existia ficou registrada como
+  *liberada antes do portão*. A regra vale para o que mudar dali em diante —
+  por exemplo, uma recepcionista que passa a ser **gerente** na mesma unidade
+  precisa da missão de gerência (se ela tiver metas).
+
+**Unidade fechada some da sua lista de unidades.** Para você não achar que foi
+defeito, o **Início** mostra o quadro **"Unidades ainda fechadas no sistema
+real"**, com a unidade, a função e o motivo (*aguardando a missão desta
+função*, *aguardando o grupo da unidade cumprir*). Se **nenhuma** unidade
+estiver aberta, você fica só no Início, como quem acabou de chegar.
+
+> **"Não foi possível conferir…"** — se o sistema não conseguir consultar a
+> liberação naquele instante, ele **fecha** em vez de abrir, e avisa no Início.
+> Recarregue a página em instantes.
+
+**Para o Admin Master:** na ficha do Risartano, aba **Acesso**, o bloco
+**"Sistema real em cada unidade"** mostra cada unidade com a função, **Aberto**
+ou **Fechado** e o motivo.
+
+- **Liberar sem missão** — aparece nas unidades que aguardam missão. Serve
+  para o caso que a régua não prevê (por exemplo, alguém experiente vindo de
+  outra rede). **O motivo é obrigatório** e fica registrado.
+- **Retirar liberação** — aparece nas liberadas *antes do portão* ou *sem
+  missão*. A unidade volta a exigir a missão. Nada é apagado: a retirada fica
+  registrada. **Missão cumprida não se retira** — é fato histórico.
+- **O interruptor riSZon, acima, vence tudo:** retirado, a pessoa fica fechada
+  em **todas** as unidades, com certificado ou sem.
 
 **Trocar a senha:** em **Perfil → Minha senha**, **no riSZon**, informando a
 senha atual. A nova vale no riSZon **e no treino**. Dentro do treino a troca de

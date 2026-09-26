@@ -10,6 +10,7 @@ import {
 } from "@/lib/roles";
 import { enderecoDaFicha, type PessoaDaEquipe } from "@/lib/risartanos";
 import type { Ambiente, PermissoesDeAmbiente } from "@/lib/ambientes";
+import { lerAcessoPorUnidade, type LeituraDoAcesso } from "@/lib/acesso-por-unidade";
 import {
   STAFF_PHOTO_BUCKET,
   staffDisplayName,
@@ -580,6 +581,23 @@ export async function carregarAmbientesDoUsuario(
   const mapa: PermissoesDeAmbiente = {};
   for (const row of data ?? []) mapa[row.environment] = row.allowed;
   return mapa;
+}
+
+/**
+ * O sistema real em cada unidade desta pessoa, e por quê (0276). A MESMA
+ * função do banco que a sessão usa — a ficha não tem régua própria.
+ *
+ * No treino não existe tranca por unidade (lá é onde se pratica): nulo, e a
+ * ficha não mostra o bloco.
+ */
+export async function carregarAcessoPorUnidade(
+  supabase: Supa,
+  userId: string
+): Promise<LeituraDoAcesso | null> {
+  if (isTreino()) return null;
+  return lerAcessoPorUnidade(
+    await supabase.rpc("system_access_by_clinic", { p_user_id: userId })
+  );
 }
 
 /** Clínicas ativas (o Admin escolhe entre elas ao dar uma função). */

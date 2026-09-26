@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   carregarAcessos,
+  carregarAcessoPorUnidade,
   carregarAmbientesDoUsuario,
   carregarClinicas,
   carregarFuncoes,
@@ -60,11 +61,12 @@ export default async function AcessoSemCadastroPage(
     .eq("user_id", perfil.id)
     .maybeSingle<{ id: string; code: string | null }>();
 
-  const [acessos, clinicas, funcoes, ambientes] = await Promise.all([
+  const [acessos, clinicas, funcoes, ambientes, acessoPorUnidade] = await Promise.all([
     carregarAcessos(supabase, [perfil.id]),
     carregarClinicas(supabase),
     carregarFuncoes(supabase, perfil.id),
     carregarAmbientesDoUsuario(supabase, perfil.id),
+    carregarAcessoPorUnidade(supabase, perfil.id),
   ]);
   const acesso = acessos.get(perfil.id) ?? null;
   const enderecos = await carregarEnderecos(supabase);
@@ -145,6 +147,7 @@ export default async function AcessoSemCadastroPage(
         funcaoPrevista={null}
         senhaSugerida=""
         ambientes={ambientes}
+        acessoPorUnidade={acessoPorUnidade}
         treinoConfigurado={treinoConfigurado()}
         acesso={acesso}
         funcoes={funcoes}

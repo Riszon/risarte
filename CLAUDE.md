@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.292.0; Empresarial 0.69.0 → 0.72.0; migrações 0273, 0274, 0275, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.293.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0276, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -412,10 +412,21 @@ a produção, com trava que EXIGE ser produção).
 **Pendências (nesta ordem):**
 
 1. ⏰ **Supabase Pro vence em 29/09/2026** — três dias.
-2. **Etapa 3 do portão: a liberação.** Missão cumprida → abre o sistema real
-   (automático) ou avisa o Admin (aprovação), congela o certificado em
-   `training_certifications` e **restaura o acesso suspenso** da reciclagem.
-   Coletiva: só libera a unidade quando todo o grupo cumprir.
+2. **Etapa 3 do portão.** ✅ **Parte 1 (0276, core 0.293.0): a tranca virou
+   POR UNIDADE E FUNÇÃO** — regra do dono: uma missão por função vale em todas
+   as unidades dessa função; funções diferentes liberam cada uma sozinha;
+   coletiva segura a unidade até o grupo cumprir. Quem já trabalhava ficou
+   *anterior ao portão*; Admin libera sem missão (motivo obrigatório). Provado
+   no treino (sonda com todos os motivos + login real no servidor local).
+   ⚠️ **O dono precisa RODAR a 0276 na produção.** ⚠️ No treino, 16 dos 24
+   Risartanos têm a porta "sistema" FECHADA no banco de treino — por isso a
+   varredura `check:telas` apontada para o treino deixa gerente, financeiro e
+   comprador no modo portal (3 falhas que NÃO são da 0276; conferido).
+   **A seguir: AP14** (levar a tranca para a RLS — o dono pediu logo em
+   seguida) e depois a **parte 2**: gravar o certificado (só pelo servidor,
+   depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
+   acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
+   cumprir: grava o certificado e avisa o Admin (decisão do dono).
 3. **O dono definir as metas** em Administração → Certificação (seguem em
    branco na produção) e **conferir `risarte-training-deadlines`** em
    Database → Cron Jobs da produção (não dá para ler pela API).

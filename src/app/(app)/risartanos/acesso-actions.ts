@@ -488,6 +488,103 @@ export async function definirAmbiente(
   };
 }
 
+/**
+ * LIBERAR O SISTEMA REAL NUMA UNIDADE SEM A MISSÃO (0276).
+ *
+ * A saída para o caso que a régua não prevê — profissional experiente vindo
+ * de outra rede. O MOTIVO é obrigatório (o banco também exige): liberação sem
+ * motivo é a que ninguém sabe explicar seis meses depois.
+ */
+export async function liberarUnidadeSemMissao(
+  userId: string,
+  clinicId: string,
+  motivo: string
+): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
+  await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
+  if (!motivo.trim()) {
+    return { ok: false, error: "Escreva o motivo de liberar sem a missão." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("grant_clinic_access", {
+    p_user_id: userId,
+    p_clinic_id: clinicId,
+    p_note: motivo.trim(),
+  });
+  if (error) {
+    console.error("liberarUnidadeSemMissao falhou:", error.message);
+    const msg = error.message ?? "";
+    return {
+      ok: false,
+      error: msg.includes("NO_ROLE_IN_CLINIC")
+        ? "Esta pessoa não tem função nesta unidade."
+        : msg.includes("NOTE_REQUIRED")
+          ? "Escreva o motivo de liberar sem a missão."
+          : error.code === "PGRST202"
+            ? "O banco ainda não recebeu a migração 0276."
+            : "Não foi possível liberar. Nada foi alterado.",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "system_clinic_access",
+    entityId: userId,
+    details: { clinicId, liberado: true, semMissao: true },
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * RETIRAR A LIBERAÇÃO DE UMA UNIDADE (0276) — a manual ou a "anterior ao
+ * portão". O banco MARCA a retirada, não apaga a linha. Certificado não se
+ * retira: é fato histórico.
+ */
+export async function retirarLiberacaoDaUnidade(
+  userId: string,
+  clinicId: string
+): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
+  await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
+
+  const supabase = await createClient();
+  const { data: retirou, error } = await supabase.rpc("revoke_clinic_access", {
+    p_user_id: userId,
+    p_clinic_id: clinicId,
+  });
+  if (error) {
+    console.error("retirarLiberacaoDaUnidade falhou:", error.message);
+    return {
+      ok: false,
+      error:
+        error.code === "PGRST202"
+          ? "O banco ainda não recebeu a migração 0276."
+          : "Não foi possível retirar. Nada foi alterado.",
+    };
+  }
+  if (retirou !== true) {
+    return {
+      ok: false,
+      error: "Não havia liberação para retirar nesta unidade (talvez ela venha de missão cumprida).",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "system_clinic_access",
+    entityId: userId,
+    details: { clinicId, liberado: false },
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 /** Bytes de sorteio para a senha provisória (a conta em si é pura e testada). */
 function sorteio(): Uint8Array {
   const bytes = new Uint8Array(TAMANHO_DA_SENHA_SUGERIDA);

@@ -19,6 +19,7 @@ import {
   carregarEspecialidades,
   carregarFicha,
   carregarFuncoes,
+  carregarAcessoPorUnidade,
   carregarAmbientesDoUsuario,
   podeVerEquipe,
 } from "../dados";
@@ -99,6 +100,10 @@ export default async function FichaDoRisartanoPage(
   const ambientes = acesso
     ? await carregarAmbientesDoUsuario(supabase, acesso.userId)
     : {};
+  // 0276: o sistema real em cada unidade (a mesma régua da sessão).
+  const acessoPorUnidade = acesso
+    ? await carregarAcessoPorUnidade(supabase, acesso.userId)
+    : null;
   // Os endereços entram na mensagem que o Admin manda com os dados de acesso.
   const enderecos = await carregarEnderecos(supabase);
   // 0262: o acesso de um Admin só o Admin Principal altera.
@@ -260,6 +265,7 @@ export default async function FichaDoRisartanoPage(
             funcaoPrevista={funcaoPrevista}
             senhaSugerida={senhaSugerida(sorteio)}
             ambientes={ambientes}
+            acessoPorUnidade={acessoPorUnidade}
             treinoConfigurado={treinoConfigurado()}
             acesso={acesso}
             funcoes={funcoes}

@@ -1514,3 +1514,34 @@ gerar, o que reduz (não elimina) o risco.
 **Conserto provável:** as três leituras devolvem erro e a prévia recusa com
 `naoConseguiConferir("o preço da adesão")`. Mexe na mensalidade também — por
 isso não entrou no commit da AP12.
+
+---
+
+### AP14. ⚠️ A tranca do sistema real não está no BANCO — só no caminho das telas (26/09/2026) — PRÓXIMO
+
+**Levantado ao planejar a Etapa 3 do portão (0276); o dono mandou registrar
+"para corrigirmos logo a seguir".**
+
+**CONFIRMADO, lendo o código:** a tranca do sistema real — a porta da 0259
+(`environment_allowed`) e a tranca por unidade e função da 0276
+(`system_access_by_clinic`) — é aplicada em `getSessionContext`
+(`src/lib/auth.ts`), por onde toda TELA passa. As políticas de RLS das tabelas
+não a consultam: elas olham só `user_clinic_roles` (`user_clinic_ids()`,
+`user_full_access_clinic_ids()`, `has_role_in_clinic()`…).
+
+**O risco:** quem tem login e função numa unidade ainda FECHADA para ele, e
+chama o banco direto (a API do Supabase com o próprio token, sem passar pelas
+telas), lê e grava o que a função dele permite ali — como se estivesse
+liberado. Exige conhecimento técnico e um login válido; não expõe nada a quem
+não tem função na unidade. Mesma situação desde a 0259 (modo portal).
+
+**NÃO CONFIRMADO:** se alguém já fez isso. Não há registro que permita saber.
+
+**Conserto provável:** levar a pergunta "esta unidade está aberta para mim?"
+para dentro das funções que as políticas já usam (`user_clinic_ids()` e
+companhia), com uma função única e `stable` que devolve as unidades
+liberadas, para a RLS inteira passar a obedecer sem reescrever política por
+política. Cuidados: (1) desempenho — essas funções rodam em toda consulta;
+(2) o Admin Master e as rotinas agendadas (`auth.uid()` nulo) não podem
+trancar; (3) o treino não tem tranca; (4) provar com um login fechado
+chamando a API direto, ANTES e DEPOIS.
