@@ -372,10 +372,10 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.290.0; migrações 0273 e 0274)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.291.0; migrações 0273, 0274 e 0275)**
 
-**Tudo no ar e aplicado nos dois bancos** (0273/0274 conferidas lendo a
-produção, com trava que EXIGE ser produção).
+**Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
+a produção, com trava que EXIGE ser produção).
 
 - **Portão de certificação — Etapas 1b e 2 completas.**
   - **0273: a missão só conta depois do CLIQUE da pessoa** (`started_at`).
@@ -393,6 +393,16 @@ produção, com trava que EXIGE ser produção).
     da AÇÃO, não da criação. O banco desmentiu 3 origens do catálogo, e a régua
     `check:indicadores` passou a conferir autor + data (instante) + filtros.
     **Missão com critério sem medida NÃO está cumprida.**
+  - **0275 (0.291.0): turma para várias unidades ou a rede toda.** Uma turma,
+    uma lista de unidades; liberação coletiva continua POR UNIDADE; uma turma
+    aberta por unidade; matrícula por (pessoa, FUNÇÃO). Progresso medido ao
+    abrir cada unidade (a rede toda seriam dezenas de milhares de consultas).
+    ⚠️ Fechou uma brecha da 0273: `training_candidates` listava a equipe de
+    qualquer unidade para qualquer usuário logado. ⚠️ Com a 0275, turma →
+    clínica tem TRÊS caminhos: `clinics(name)` na turma dá **PGRST201** —
+    provado na produção. Não usar esse embed; o nome vem da lista carregada.
+  - **Relatos, sugestões e chat** viraram indicadores das 13 funções (82 no
+    total) — o chat por decisão do dono, com o aviso "meta 1" preso por teste.
 - ⚠️ **A dependência das chaves do treino NÃO existia.** Eu tinha registrado que
   a Etapa 2 dependia de copiar `TREINO_*` para o `.env.local`. Não depende: em
   produção elas estão na Vercel, e para testar aqui basta pôr os valores do
