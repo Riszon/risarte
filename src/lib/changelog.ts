@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.294.1",
+    data: "2026-09-26",
+    migracao: "0278",
+    titulo: "Fechada uma porta interna da liberação por unidade",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Uma conta interna da liberação por unidade podia ser consultada por fora do sistema, sem login. Ela foi fechada. Nada muda nas telas.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.294.0",
     data: "2026-09-26",
     migracao: "0277",

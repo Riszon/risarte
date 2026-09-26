@@ -87,6 +87,13 @@ incluindo o token `--gold` exposto como utilitário `bg-gold`.
   `[System.IO.File]::ReadAllText('<path>', [System.Text.Encoding]::UTF8) | Set-Clipboard`
   — NÃO `Get-Content -Raw` (PS 5.1 lê UTF-8 como Latin-1 → mojibake gravado no
   banco). Isso estragou texto das migrações 0004/0006/0008; corrigido na 0009.
+- **`revoke ... from public` NÃO DEIXA FUNÇÃO PRIVADA NO SUPABASE.** O banco dá
+  EXECUTE de toda função nova, pelo nome, a `anon`, `authenticated` e
+  `service_role` (`pg_default_acl`). Função interna (sem guarda) leva
+  `revoke execute ... from public, anon, authenticated`; se deve responder a
+  logados, o `grant ... to authenticated` vem DEPOIS. Provado na produção em
+  26/09/2026: sem login, a regra interna da tranca e a conta do fluxo de caixa
+  executaram (AP15). A Regra 7 do `check-migrations` reprova o jeito antigo.
 - **Escrever migrações idempotentes** (seguras para rodar de novo): `create table
   if not exists`, `drop policy/trigger if exists` + create, `create or replace
   function`, seeds com `on conflict do nothing`, cron em blocos `do $$ ...

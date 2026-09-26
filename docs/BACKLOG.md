@@ -1571,3 +1571,51 @@ igual.
 **Ficou de fora, declarado:** o Perfil da própria pessoa deixa de listar as
 funções das unidades fechadas (a lista vem da mesma janela) — o Início é que
 explica quais estão fechadas.
+
+---
+
+### AP15. 🔴 16 funções "privadas" executam para QUEM NÃO ESTÁ LOGADO (26/09/2026) — PRÓXIMO
+
+**Achado conferindo a 0277 na produção.** A régua "a regra sem guarda NÃO está
+exposta à API" falhou: a função interna da tranca respondeu.
+
+**A causa, CONFIRMADA lendo o banco:** o Supabase tem um padrão
+(`pg_default_acl`) que dá EXECUTE de toda função nova, **pelo nome**, a
+`anon`, `authenticated` e `service_role`. O projeto inteiro usou
+`revoke all on function ... from public` achando que isso deixava a função
+privada — e não deixa: tirar de `public` não tira de quem recebeu pelo nome.
+
+**CONFIRMADO, perguntando ao banco (treino) e provado na produção:** das 21
+funções que as migrações declararam privadas, **19 executam para `anon`**
+(sem login). As 3 da 0277 foram fechadas na **0278**. Ficam **16**:
+
+| Função | Migração | O que ela faz sem guarda |
+|---|---|---|
+| `cash_flow_series_raw` | 0230 | **fluxo de caixa de qualquer unidade** |
+| `breakeven_lines_raw` | 0230 | **ponto de equilíbrio de qualquer unidade** |
+| `cash_first_negative` | 0230 | dia em que o caixa de qualquer unidade fica negativo |
+| `raise_finance_alert` / `clear_finance_alert` | 0230 | **cria/apaga alerta financeiro** (e notificação) |
+| `refresh_network_fee_payable` | 0233 | **recalcula a conta a pagar das taxas da rede** |
+| `materialize_round_allocations` | 0241 | **grava a parte da unidade numa rodada de compras** |
+| `suspend_training_access` | 0274 | **suspende o acesso de alguém ao sistema real** |
+| `apply_training_deadlines` | 0274 | aplica os prazos da reciclagem (suspende quem venceu) |
+| `commercial_can_manage`, `commercial_is_team`, `commercial_is_unit`, `commercial_can_close`, `direct_sale_can_close` | 0153–0158 | respostas de permissão (vazam pouco) |
+| `commercial_ensure_card`, `commercial_log_card_event` | 0153/0155 | **cria cartão / grava evento no funil comercial** |
+
+**Provado na produção (26/09), pela API, com a chave pública e sem login, só
+leitura e com id inexistente:** `cash_flow_series_raw` EXECUTOU (com um id de
+unidade real devolveria o fluxo de caixa dela). A função protegida
+`system_access_by_clinic` recusou na mesma chamada — a régua mede certo.
+
+**NÃO CONFIRMADO:** se alguém já usou. Não há registro de chamada por função.
+
+**Relacionado, confirmado lendo a 0274:** `restore_training_access` recebeu
+`grant execute ... to authenticated` de propósito, mas não tem guarda ("a
+guarda está em quem as expõe") — qualquer logado a chama direto.
+
+**Conserto:** uma migração com `revoke execute ... from public, anon,
+authenticated` nas 16 (e guarda ou revoke na `restore_training_access`),
+conferindo antes, no banco, quem as chama por dentro — as que o APP chama por
+`rpc` precisam de guarda, não de revoke. A **Regra 7** do `check-migrations`
+já impede migração nova de repetir o erro.
+

@@ -113,6 +113,30 @@ if (target.slice(0, 4) > "0277") {
   }
 }
 
+// Regra 7 — `REVOKE ... FROM PUBLIC` NÃO DEIXA A FUNÇÃO PRIVADA NO SUPABASE.
+//
+// O banco tem um padrão (`pg_default_acl`) que dá EXECUTE de toda função nova,
+// NOMINALMENTE, a `anon`, `authenticated` e `service_role`. Tirar de `public`
+// não tira de quem recebeu pelo nome. Provado na produção em 26/09/2026: sem
+// login, pela chave pública, a regra interna da tranca (0277) e a conta do
+// fluxo de caixa (0230) executaram. 19 funções "privadas" estavam abertas
+// (AP15). Vale para migrações DEPOIS da 0278 — as antigas são o AP15.
+if (target.slice(0, 4) > "0278") {
+  for (const m of semComentarios.matchAll(
+    /revoke\s+(?:all|execute)(?:\s+privileges)?\s+on\s+function\s+([\w.]+)\s*\([^)]*\)\s+from\s+([^;]+);/gi
+  )) {
+    const quem = m[2].toLowerCase();
+    if (/\bpublic\b/.test(quem) && !(/\banon\b/.test(quem) && /\bauthenticated\b/.test(quem))) {
+      problems.push(
+        `função "privada" só tirada de public: ${m[0].replace(/\s+/g, " ").trim()}\n` +
+          `      No Supabase toda função nova já nasce executável por anon e\n` +
+          `      authenticated (pelo nome). Escreva "from public, anon, authenticated"\n` +
+          `      — e, se ela deve responder a logados, dê o grant DEPOIS. Ver AP15.`
+      );
+    }
+  }
+}
+
 for (const m of sql.matchAll(FN)) {
   const [, name, args, returns, lang] = m;
   const prev = known.get(name);
