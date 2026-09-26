@@ -418,7 +418,9 @@ a produção, com trava que EXIGE ser produção).
    coletiva segura a unidade até o grupo cumprir. Quem já trabalhava ficou
    *anterior ao portão*; Admin libera sem missão (motivo obrigatório). Provado
    no treino (sonda com todos os motivos + login real no servidor local).
-   ⚠️ **O dono precisa RODAR a 0276 na produção.** ⚠️ No treino, 16 dos 24
+   ✅ **0276 APLICADA na produção** (26/09): 1 linha *anterior* — correto: das 7
+   pessoas com função, 6 nunca tiveram a porta registrada (modo portal desde a
+   0259), e a outra é Admin. Ninguém perdeu acesso (conferido lendo o banco). ⚠️ No treino, 16 dos 24
    Risartanos têm a porta "sistema" FECHADA no banco de treino — por isso a
    varredura `check:telas` apontada para o treino deixa gerente, financeiro e
    comprador no modo portal (3 falhas que NÃO são da 0276; conferido).
