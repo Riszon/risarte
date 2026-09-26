@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.295.0",
+    data: "2026-09-26",
+    migracao: "0281",
+    titulo: "Missão cumprida abre o sistema real",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando você cumpre a missão de certificação no treino, o sistema real passa a abrir sozinho nas unidades onde você tem aquela função — ou depois da aprovação do Admin, conforme a configuração da rede. Na reciclagem, o acesso suspenso volta sozinho ao concluir.",
+        papeis: "todos",
+        manual: "Quando você cumpre a missão",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O cartão da missão no Início ganhou o botão \"Conferir minha missão\": fez o último item no treino, clique e saiba na hora.",
+        papeis: "todos",
+        manual: "Quando você cumpre a missão",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin Master: em Administração → Certificação, a fila \"Aguardando a sua aprovação\" mostra quem cumpriu, com os números atingidos, para aprovar uma pessoa ou a unidade inteira de uma vez.",
+        papeis: [],
+        manual: "Quando você cumpre a missão",
+      },
+    ],
+  },
+  {
     versao: "0.294.3",
     data: "2026-09-26",
     migracao: "0280",

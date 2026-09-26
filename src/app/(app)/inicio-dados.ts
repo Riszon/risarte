@@ -13,7 +13,7 @@ import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { contarEtapasDaCompra } from "./compras/trilha-dados";
 import { startOfTodayInBrazil } from "@/lib/dates";
 import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
-import { medirMatricula } from "@/lib/certificacao-servidor";
+import { medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import type { MissaoNaTela } from "@/components/missao-de-certificacao";
 
 /**
@@ -452,10 +452,13 @@ export async function missaoAberta(
   const { data, error } = await supabase
     .from("training_enrollments")
     .select(
-      "id, role, status, started_at, access_suspended_at, training_campaigns!inner(status, access_policy, deadline)"
+      "id, role, status, started_at, access_suspended_at, approval_status, training_campaigns!inner(status, access_policy, deadline)"
     )
     .eq("user_id", userId)
-    .in("status", ["convocado", "em_andamento"])
+    // 0281: a concluída também aparece enquanto a turma está aberta — é o
+    // cartão que diz "aguardando aprovação" ou "certificado". Sem ele, a
+    // missão cumprida simplesmente sumiria da tela.
+    .in("status", ["convocado", "em_andamento", "concluido"])
     .eq("training_campaigns.status", "aberta")
     .order("invited_at", { ascending: false })
     .limit(1)
@@ -495,10 +498,34 @@ export async function missaoAberta(
         })
       : null;
 
+  // ⚠️ 0281: MEDIU E CUMPRIU → REGISTRA. É aqui que a missão vira certificado
+  // para quem simplesmente abre o Início. O registro é do SERVIDOR (chave de
+  // serviço), depois desta medição — nunca de um valor vindo do navegador.
+  let status = data.status as MissaoNaTela["status"];
+  let conclusao: MissaoNaTela["conclusao"] =
+    status === "concluido"
+      ? data.approval_status === "pendente"
+        ? "aguardando_aprovacao"
+        : "certificado"
+      : null;
+  if (status === "em_andamento") {
+    const registrado = await registrarSeCumprida(String(data.id), medicao);
+    if (registrado) {
+      status = "concluido";
+      conclusao =
+        registrado === "aguardando_aprovacao"
+          ? "aguardando_aprovacao"
+          : registrado === "porta_fechada"
+            ? "porta_fechada"
+            : "certificado";
+    }
+  }
+
   return {
     id: String(data.id),
     role: papel,
-    status: data.status as MissaoNaTela["status"],
+    status,
+    conclusao,
     started_at: startedAt,
     resumo: resumoDaMissao(metas ?? [], papel),
     medicao,

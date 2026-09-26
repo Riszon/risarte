@@ -9,6 +9,13 @@ import {
 } from "@/lib/certificacao";
 import { medirMissao, TEMPO_LIMITE_MS } from "@/lib/certificacao-contagem";
 import type { UserRole } from "@/lib/roles";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  deveRegistrarConclusao,
+  ehResultadoDaConclusao,
+  retratoDaMedicao,
+  type ResultadoDaConclusao,
+} from "@/lib/certificacao-conclusao";
 
 /**
  * MEDIR UMA MATRÍCULA — do banco da produção até o banco de treino e de volta.
@@ -76,6 +83,38 @@ export async function medirMatricula(entrada: {
     desde
   );
   return { estado: "medido", progresso: progressoDaMissao(missao, contagens) };
+}
+
+/**
+ * REGISTRA A CONCLUSÃO — só se a medição disser que foi cumprida (0281).
+ *
+ * ⚠️ É A ÚNICA PORTA para o certificado, e ela usa a CHAVE DE SERVIÇO de
+ * propósito: `record_training_completion` não responde a usuário logado.
+ * Quem decide "cumpriu" é esta medição, feita aqui no servidor contra o banco
+ * de treino — nunca um valor vindo do navegador.
+ *
+ * Idempotente: o banco devolve o estado se a conclusão já foi registrada.
+ * Falha ao registrar NÃO vira "cumprida": devolve nulo e grita no log — a
+ * pessoa vê o progresso de sempre e a próxima abertura tenta de novo.
+ */
+export async function registrarSeCumprida(
+  enrollmentId: string,
+  medicao: Medicao | null
+): Promise<ResultadoDaConclusao | null> {
+  if (!deveRegistrarConclusao(medicao) || medicao?.estado !== "medido") return null;
+  const { data, error } = await createAdminClient().rpc("record_training_completion", {
+    p_enrollment_id: enrollmentId,
+    p_snapshot: retratoDaMedicao(medicao.progresso, new Date()),
+  });
+  if (error) {
+    console.error("registrarSeCumprida falhou:", error.message);
+    return null;
+  }
+  if (!ehResultadoDaConclusao(data)) {
+    console.error("registrarSeCumprida: resposta desconhecida do banco:", data);
+    return null;
+  }
+  return data;
 }
 
 /**

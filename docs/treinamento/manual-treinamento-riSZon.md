@@ -536,9 +536,12 @@ onde está o Manual. Depois do terceiro, ela não volta.
 2. No treino, a pessoa entra com **tudo o que a função dela permite** — agenda,
    jornada, atendimento, o que for da função. No sistema real ela vê só o
    Início.
-3. Terminado o treinamento, o Admin clica **Liberar** no **riSZon** (ficha →
-   aba Acesso). A partir daí ela usa o sistema real — **nas unidades em que a
-   função dela estiver liberada** (veja abaixo).
+3. Quando ela **cumpre a missão de certificação**, o sistema real abre sozinho
+   (ou depois da aprovação do Admin, conforme a configuração) — veja *Quando
+   você cumpre a missão*. Sem missão definida para a função, o Admin libera à
+   mão: **Liberar** no **riSZon** (ficha → aba Acesso). Em todos os casos ela
+   usa o sistema real **nas unidades em que a função dela estiver liberada**
+   (veja abaixo).
 
 > Desmarcar o treino ou o Academy na hora de criar o acesso agora vale: a
 > pessoa fica **sem** aquele ambiente até alguém liberar.
@@ -802,10 +805,43 @@ o acesso de todo mundo que ela havia suspendido.
 > por outro motivo — desligamento, afastamento —, a reciclagem não mexe nisso,
 > nem para tirar nem para devolver.
 
-> **Por enquanto esta tela guarda a definição.** A contagem automática do que
-> cada pessoa já fez no treino, e a liberação sozinha, entram nas próximas
-> entregas. Até lá a liberação continua sendo feita à mão em **Administração →
-> Ambientes**.
+### Quando você cumpre a missão
+
+**A conferência acontece sozinha** em três momentos: quando você abre o
+**Início**, quando clica em **"Conferir minha missão"** no cartão (use depois de
+fazer o último item no treino, para saber na hora) e quando o Admin abre a sua
+unidade na lista da turma.
+
+Cumprida a missão, o cartão do Início muda, e o que acontece depende de como o
+Admin configurou a liberação:
+
+| Liberação | O que acontece |
+|---|---|
+| **Automática** | O certificado é gravado na hora e o sistema real abre nas unidades onde você tem aquela função. |
+| **Aprovação do Admin** | O cartão diz *"Missão cumprida — aguardando aprovação"*. O Admin confere os seus números e aprova; aí o sistema real abre. Você não precisa fazer mais nada no treino. |
+| **Reciclagem** (qualquer configuração) | O certificado novo é gravado na hora e, se o seu acesso estava suspenso por causa dela, **ele volta sozinho**. |
+
+Duas coisas que valem nos dois casos:
+
+- **Na liberação coletiva, a unidade abre quando o grupo todo cumprir.** Você
+  já está certificado, mas aquela unidade espera os colegas — o Início mostra
+  isso no quadro das unidades fechadas.
+- **Se o Admin tiver fechado o seu acesso ao sistema real à mão** (na ficha), a
+  certificação é registrada, mas o acesso não abre sozinho: o Admin é avisado e
+  decide.
+
+> **"Não deu para medir" nunca libera.** Se o ambiente de treino não responder
+> na hora da conferência, nada é registrado — nem para liberar, nem para
+> negar. O seu trabalho continua lá, e a próxima conferência encontra.
+
+**Para o Admin Master:** com a liberação por aprovação, quem cumpriu aparece no
+alto de **Administração → Certificação**, em **"Aguardando a sua aprovação"**,
+agrupado por unidade e com os **números que a pessoa atingiu** em cada critério.
+Aprove uma pessoa ou **todos de uma unidade de uma vez** — útil na coletiva,
+onde a unidade só abre quando o grupo inteiro for aprovado. Dois cliques não
+geram dois certificados. Você recebe um aviso no sino sempre que alguém entra
+nessa fila, e também quando alguém cumpre a missão mas está com o acesso
+fechado na ficha.
 
 ## A barra de cima
 

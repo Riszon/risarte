@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.294.3; Empresarial 0.69.0 → 0.72.0; migrações 0273–0280, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.295.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0281, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -450,7 +450,16 @@ a produção, com trava que EXIGE ser produção).
    consulta pronta. O dono escolheu seguir para a parte 2 antes. Regra 8 do check-migrations
    (`$$` ímpar) nasceu de um erro pego na revisão da 0280.
    Regra 7 do `check-migrations` impede a repetição.
-   **A seguir: a parte 2**: gravar o certificado (só pelo servidor,
+   ✅ **PARTE 2 (0281, core 0.295.0): a liberação.** Missão cumprida →
+   certificado (automático, ou após o Aprovar do Admin; reciclagem sempre
+   automática e devolve o acesso suspenso); porta fechada à mão não reabre
+   (avisa o Admin). **Só o SERVIDOR registra** (`record_training_completion`
+   só para service_role), depois de medir; conferência no Início, no botão
+   "Conferir minha missão" e ao abrir a unidade na turma. Fila "Aguardando a
+   sua aprovação" com os números. Provado no treino (16 checagens + API).
+   ⚠️ **O dono precisa RODAR a 0281 na produção.** ⏳ Falta ver na tela com
+   uma missão real cumprida no treino.
+   (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
    cumprir: grava o certificado e avisa o Admin (decisão do dono).

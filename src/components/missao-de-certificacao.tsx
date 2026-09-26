@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { GraduationCap } from "lucide-react";
+import { BadgeCheck, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   missaoEstaValendo,
@@ -15,7 +15,7 @@ import {
 import { ProgressoDaMissao } from "@/components/progresso-da-missao";
 import { ROLE_LABELS } from "@/lib/roles";
 import { formatAnyDateBr } from "@/lib/dates";
-import { iniciarMinhaMissao } from "@/app/(app)/missao-actions";
+import { conferirMinhaMissao, iniciarMinhaMissao } from "@/app/(app)/missao-actions";
 
 export type MissaoNaTela = Pick<
   Matricula,
@@ -29,6 +29,8 @@ export type MissaoNaTela = Pick<
   suspenso: boolean;
   /** Só existe depois do clique; antes dele não há o que medir. */
   medicao: Medicao | null;
+  /** Depois de cumprida (0281): o que aconteceu. Nulo enquanto não cumpriu. */
+  conclusao: "aguardando_aprovacao" | "certificado" | "porta_fechada" | null;
 };
 
 /**
@@ -48,6 +50,47 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const valendo = missaoEstaValendo(missao);
+
+  function conferir() {
+    startTransition(async () => {
+      const r = await conferirMinhaMissao(missao.id);
+      if (!r.ok) {
+        toast.error(r.error ?? "Não foi possível conferir agora.");
+        return;
+      }
+      if (r.cumprida) toast.success(r.recado ?? "Missão cumprida!");
+      else toast.info(r.recado ?? "Ainda faltam critérios.");
+      router.refresh();
+    });
+  }
+
+  // 0281: MISSÃO CUMPRIDA — o cartão vira o recado do que aconteceu.
+  if (missao.conclusao) {
+    return (
+      <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4">
+        <div className="flex items-start gap-3">
+          <BadgeCheck className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="font-semibold">
+              {missao.conclusao === "aguardando_aprovacao"
+                ? "Missão cumprida — aguardando aprovação"
+                : "Missão de certificação cumprida"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Função: {ROLE_LABELS[missao.role]}
+            </p>
+            <p className="text-sm">
+              {missao.conclusao === "aguardando_aprovacao"
+                ? "O Admin confere os seus números e aprova. O sistema real abre em seguida — você não precisa fazer mais nada no treino."
+                : missao.conclusao === "porta_fechada"
+                  ? "Sua certificação foi registrada. O acesso ao sistema real depende de uma liberação do Admin na sua ficha."
+                  : "O sistema real está liberado nas unidades onde você tem esta função. Se alguma unidade ainda aparecer fechada abaixo, ela está esperando o grupo todo cumprir."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   function comecar() {
     startTransition(async () => {
@@ -129,6 +172,19 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
               Começou em {formatAnyDateBr(missao.started_at)}. O que você fez
               antes disso não conta.
             </p>
+          )}
+
+          {/* 0281: a pessoa que acabou de fazer o último cadastro quer saber NA
+              HORA — sem adivinhar que precisa recarregar a página. */}
+          {valendo && (
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Button type="button" variant="outline" onClick={conferir} disabled={isPending}>
+                {isPending ? "Conferindo no treino…" : "Conferir minha missão"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Cumpriu tudo? A liberação acontece aqui.
+              </span>
+            </div>
           )}
 
           {podeIniciar(missao) && (

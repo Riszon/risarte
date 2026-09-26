@@ -59,6 +59,8 @@ export type MatriculaNaTurma = {
   status: EstadoDaMatricula;
   started_at: string | null;
   access_suspended_at: string | null;
+  /** 0281: "pendente" (espera o Admin) ou "aprovada"; nulo quando não precisou. */
+  approval_status: string | null;
 };
 
 export type TurmaAberta = {
@@ -530,7 +532,9 @@ function UnidadeDaTurma({
   turmaId: string;
   unidade: TurmaAberta["unidades"][number];
 }) {
+  const router = useRouter();
   const [medidas, setMedidas] = useState<Record<string, Medicao> | null>(null);
+  const [concluidas, setConcluidas] = useState<Record<string, string>>({});
   const [medindo, setMedindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -541,7 +545,12 @@ function UnidadeDaTurma({
     setMedindo(true);
     const r = await medirUnidadeDaTurma(turmaId, unidade.id);
     setMedindo(false);
-    if (r.ok) setMedidas(r.medidas ?? {});
+    if (r.ok) {
+      setMedidas(r.medidas ?? {});
+      setConcluidas(r.concluidas ?? {});
+      // 0281: a medição acabou de liberar alguém — a lista precisa refletir.
+      if (r.concluidas && Object.keys(r.concluidas).length > 0) router.refresh();
+    }
     else setErro(r.error ?? "Não foi possível medir agora.");
   }
 
@@ -588,7 +597,13 @@ function UnidadeDaTurma({
                         : "rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400"
                     }
                   >
-                    {ESTADO_ROTULO[m.status]}
+                    {m.status === "concluido"
+                      ? m.approval_status === "pendente"
+                        ? "Aguardando aprovação"
+                        : "Certificado"
+                      : concluidas[chaveDaConvocacao(m)]
+                        ? "Cumpriu agora"
+                        : ESTADO_ROTULO[m.status]}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
                     {m.access_suspended_at

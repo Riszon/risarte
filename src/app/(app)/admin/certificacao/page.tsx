@@ -13,6 +13,9 @@ import {
 } from "@/lib/certificacao";
 import { PortaoEditor } from "./portao-editor";
 import { MissoesEditor } from "./missoes-editor";
+import { AprovacoesPendentes, type ConclusaoPendente } from "./aprovacoes";
+import { lerRetrato } from "@/lib/certificacao-conclusao";
+import type { UserRole } from "@/lib/roles";
 import {
   Turmas,
   type MatriculaNaTurma,
@@ -40,6 +43,7 @@ export default async function CertificacaoPage() {
     { data: perfis },
     { data: unidades },
     { data: turmasBrutas, error: erroDasTurmas },
+    { data: pendentesBrutos, error: erroDosPendentes },
   ] = await Promise.all([
     supabase
       .from("training_requirements")
@@ -65,10 +69,16 @@ export default async function CertificacaoPage() {
     supabase
       .from("training_campaigns")
       .select(
-        "id, code, kind, note, created_at, access_policy, deadline, whole_network, training_campaign_units(clinic_id), training_enrollments(user_id, role, status, started_at, access_suspended_at, clinic_id, profiles(full_name))"
+        "id, code, kind, note, created_at, access_policy, deadline, whole_network, training_campaign_units(clinic_id), training_enrollments(user_id, role, status, started_at, access_suspended_at, approval_status, clinic_id, profiles(full_name))"
       )
       .eq("status", "aberta")
       .order("created_at", { ascending: false }),
+    // 0281: quem cumpriu e espera o Admin (gatilho "aprovação").
+    supabase
+      .from("training_enrollments")
+      .select("id, role, clinic_id, completed_at, result_snapshot, profiles(full_name), training_campaigns(code)")
+      .eq("approval_status", "pendente")
+      .order("completed_at", { ascending: true }),
   ]);
 
   // ⚠️ Linha ausente ou valor estranho cai no PADRÃO, e o padrão é o cauteloso
@@ -123,6 +133,7 @@ export default async function CertificacaoPage() {
       access_suspended_at: m.access_suspended_at
         ? String(m.access_suspended_at)
         : null,
+      approval_status: m.approval_status ? String(m.approval_status) : null,
       clinic_id: m.clinic_id ? String(m.clinic_id) : null,
     }));
     const idsDasUnidades = (t.training_campaign_units ?? []).map((u) =>
@@ -162,6 +173,23 @@ export default async function CertificacaoPage() {
     turmaAberta: turmaDaUnidade.get(String(u.id)) ?? null,
   }));
 
+  // 0281: a fila de aprovação. O código da turma vem embutido (turma → só um
+  // caminho a partir da matrícula); o nome da unidade, da lista já carregada.
+  const umCodigo = (v: unknown): string | null => {
+    const o = Array.isArray(v) ? v[0] : v;
+    return (o as { code?: string | null } | null)?.code ?? null;
+  };
+  const pendentes: ConclusaoPendente[] = (pendentesBrutos ?? []).map((p) => ({
+    id: String(p.id),
+    full_name: umNome(p.profiles),
+    role: p.role as UserRole,
+    clinic_id: p.clinic_id ? String(p.clinic_id) : null,
+    clinic_name: p.clinic_id ? (nomeDe.get(String(p.clinic_id)) ?? "Unidade desativada") : "",
+    turma: umCodigo(p.training_campaigns),
+    completed_at: p.completed_at ? String(p.completed_at) : null,
+    retrato: lerRetrato(p.result_snapshot),
+  }));
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       <div className="space-y-2">
@@ -174,6 +202,16 @@ export default async function CertificacaoPage() {
           precisa cumprir no treino para que o sistema real seja liberado.
         </p>
       </div>
+
+      {/* ⚠️ ERRO AO LER NÃO É "NINGUÉM ESPERANDO" (régua vazia, §0d). */}
+      {erroDosPendentes ? (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          Não foi possível ler quem espera aprovação. Se a atualização 0281 ainda
+          não foi aplicada neste banco, é isso: rode-a e recarregue.
+        </p>
+      ) : pendentes.length > 0 ? (
+        <AprovacoesPendentes pendentes={pendentes} />
+      ) : null}
 
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
         <p className="font-medium">Vale para a rede inteira.</p>
@@ -233,9 +271,10 @@ export default async function CertificacaoPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        A medição do progresso e a liberação automática entram nas próximas
-        etapas. Por enquanto esta tela guarda a definição, e a liberação
-        continua sendo feita à mão em Administração → Ambientes.
+        A liberação acontece sozinha quando a missão é conferida — ao abrir o
+        Início, no botão “Conferir minha missão” ou quando você abre a unidade
+        numa turma. Com a liberação por aprovação, a pessoa aparece em
+        “Aguardando a sua aprovação” no alto desta tela.
       </p>
     </div>
   );

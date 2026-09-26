@@ -19,7 +19,8 @@ import {
   type Medicao,
   type MetaDoTreino,
 } from "@/lib/certificacao";
-import { medirMatricula, medirVarias } from "@/lib/certificacao-servidor";
+import { medirMatricula, medirVarias, registrarSeCumprida } from "@/lib/certificacao-servidor";
+import type { ResultadoDaConclusao } from "@/lib/certificacao-conclusao";
 import type { UserRole } from "@/lib/roles";
 import { todayInBrazil } from "@/lib/dates";
 
@@ -278,14 +279,20 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
 export async function medirUnidadeDaTurma(
   campaignId: string,
   clinicId: string
-): Promise<{ ok: boolean; error?: string; medidas?: Record<string, Medicao> }> {
+): Promise<{
+  ok: boolean;
+  error?: string;
+  medidas?: Record<string, Medicao>;
+  /** 0281: quem cumpriu e foi registrado nesta medição (chave → resultado). */
+  concluidas?: Record<string, ResultadoDaConclusao>;
+}> {
   await requireAdminMaster();
   const supabase = await createClient();
 
   const [{ data: matriculas, error }, { data: metas }] = await Promise.all([
     supabase
       .from("training_enrollments")
-      .select("user_id, role, status, started_at, profiles(email)")
+      .select("id, user_id, role, status, started_at, profiles(email)")
       .eq("campaign_id", campaignId)
       .eq("clinic_id", clinicId),
     supabase
@@ -301,6 +308,7 @@ export async function medirUnidadeDaTurma(
   };
 
   const lista = (matriculas ?? []).map((m) => ({
+    id: String(m.id),
     chave: chaveDaConvocacao({ user_id: String(m.user_id), role: String(m.role) }),
     role: m.role as UserRole,
     status: String(m.status),
@@ -322,7 +330,52 @@ export async function medirUnidadeDaTurma(
     });
   });
 
-  return { ok: true, medidas: Object.fromEntries(medidas) };
+  // ⚠️ 0281: MEDIU E CUMPRIU → REGISTRA, igual ao Início. Sem isto, a
+  // conclusão de quem não abre o Início dependeria só dessa pessoa voltar.
+  const concluidas: Record<string, ResultadoDaConclusao> = {};
+  for (const m of lista) {
+    if (m.status !== "em_andamento") continue;
+    const r = await registrarSeCumprida(m.id, medidas.get(m.chave) ?? null);
+    if (r) concluidas[m.chave] = r;
+  }
+  if (Object.keys(concluidas).length > 0) revalidatePath("/admin/certificacao");
+
+  return { ok: true, medidas: Object.fromEntries(medidas), concluidas };
+}
+
+/**
+ * APROVAR A CONCLUSÃO (0281) — gatilho "aprovação". O banco confere que quem
+ * aprova é o Admin Master e que a matrícula está pendente (dois cliques não
+ * geram dois certificados).
+ */
+export async function aprovarConclusoes(
+  enrollmentIds: string[]
+): Promise<ActionResult & { aprovadas?: number; recusadas?: string[] }> {
+  await requireAdminMaster();
+  if (enrollmentIds.length === 0) return { ok: false, error: "Nada escolhido para aprovar." };
+  const supabase = await createClient();
+  let aprovadas = 0;
+  const recusadas: string[] = [];
+  // Uma por vez, de propósito: cada aprovação grava certificado, porta e
+  // aviso; se uma falhar, as outras seguem, e a tela diz quais ficaram.
+  for (const id of enrollmentIds) {
+    const { error } = await supabase.rpc("approve_training_completion", { p_enrollment_id: id });
+    if (error) {
+      recusadas.push(id);
+      if (!error.message.includes("NOT_PENDING")) {
+        console.error("aprovarConclusoes falhou:", error.message);
+      }
+      continue;
+    }
+    aprovadas++;
+    await logAudit({ action: "update", entityType: "training_enrollments", entityId: id, details: { aprovada: true } });
+  }
+  revalidatePath("/admin/certificacao");
+  revalidatePath("/", "layout");
+  if (aprovadas === 0) {
+    return { ok: false, error: "Nenhuma aprovação foi registrada (talvez já tivessem sido aprovadas).", recusadas };
+  }
+  return { ok: true, aprovadas, recusadas };
 }
 
 /** Encerra a turma. Não apaga nada: matrícula e certificado continuam. */

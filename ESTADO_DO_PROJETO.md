@@ -1,7 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/09/2026 · Versão do sistema: **0.294.3** · Última migração: **0280** (aplicada na produção e no treino) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/09/2026 · Versão do sistema: **0.295.0** · Última migração: **0281** (no treino; a produção recebe pelo dono) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎓 0.295.0 / 0281 — MISSÃO CUMPRIDA ABRE O SISTEMA REAL (Etapa 3, parte 2)
+>
+> Certificado automático ou após aprovação do Admin (reciclagem sempre
+> automática, devolvendo o acesso suspenso). Só o servidor registra a
+> conclusão, depois de medir no treino. Fila de aprovação com os números em
+> Administração → Certificação. **O portão de certificação está completo.**
+>
 > ## 🔒 0.294.0 / 0277 — A TRANCA POR UNIDADE VALE NO BANCO (AP14)
 >
 > `user_clinic_roles` virou uma VIEW sobre `user_clinic_roles_all` que esconde
