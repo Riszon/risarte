@@ -1733,3 +1733,40 @@ função sumindo), justamente os novatos, que são quem mais precisa do Academy.
 `public.user_clinic_roles_all` (a tabela completa) — mexe no schema do OUTRO
 sistema, então só com o dono vendo antes.
 
+---
+
+### ACADEMY — PARA RETOMAR (dono, 26/09/2026: *"registre sobre estas questões da Risarte Academy para retomarmos nisso"*)
+
+Três questões abertas, todas sobre o **Risarte Academy** (outro sistema, código
+FORA deste repositório, que usa o MESMO banco da produção, schema
+`treinamento`). O ponto de partida é o mesmo para as três: **ler as
+definições das 5 funções do Academy que citam `public`**.
+
+**Passo 1 — o dono roda na produção (só leitura) e manda o resultado:**
+
+```sql
+select p.proname as funcao, p.prosecdef as roda_como_dono, has_function_privilege(anon, p.oid, execute) as anonimo_pode, pg_get_functiondef(p.oid) as definicao from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = treinamento and p.proname in (current_user_roles, current_user_clinics, current_user_scope_all, get_ranking, get_feed);
+```
+
+**As três questões que a resposta decide:**
+
+1. **AP17 — a 0277 afetou o Academy?** Se `current_user_roles` /
+   `current_user_clinics` / `current_user_scope_all` leem
+   `public.user_clinic_roles` (hoje uma VIEW que esconde de quem pergunta as
+   funções das unidades fechadas), os novatos em modo portal (6 na produção em
+   26/09) podem estar aparecendo no Academy SEM função. Conserto provável:
+   lerem `user_clinic_roles_all` — mexe no schema do Academy, só com o dono
+   vendo antes.
+2. **AP16, pendente — fechar os schemas `public`/`empresarial` para quem não
+   está logado** (`revoke usage ... from anon`). Já se sabe (consulta de
+   26/09): nenhuma política do `treinamento` é aberta a anon/public. Falta
+   saber se alguma das 5 funções é chamada SEM login (ex.: um ranking ou feed
+   público) — se for, fechar o schema a quebraria.
+3. **`environment_allowed` e `is_mirror_db`** ficaram abertas a anon de
+   propósito (a 0259 previa o Academy ler a primeira). Confirmar se o Academy
+   as usa; se não, fecham junto com o item 2.
+
+**Cuidado permanente (CLAUDE.md §0):** o Academy já perdeu dados uma vez por uma
+operação do riSZon que "não o afetava". Nada no schema `treinamento` muda sem
+o dono ver antes.
+

@@ -445,8 +445,9 @@ a produção, com trava que EXIGE ser produção).
    `treinamento` para anon, mas 5 funções dele leem `public`
    (`current_user_roles/clinics/scope_all`, `get_ranking`, `get_feed`).
    ⚠️ **AP17 (suspeita):** se leem `user_clinic_roles`, a janela da 0277
-   pode estar escondendo a função dos novatos no Academy. Aguardando as
-   definições (consulta pedida ao dono). Regra 8 do check-migrations
+   pode estar escondendo a função dos novatos no Academy. Registrado para
+   RETOMAR (ordem do dono): BACKLOG, seção *ACADEMY — PARA RETOMAR*, com a
+   consulta pronta. O dono escolheu seguir para a parte 2 antes. Regra 8 do check-migrations
    (`$$` ímpar) nasceu de um erro pego na revisão da 0280.
    Regra 7 do `check-migrations` impede a repetição.
    **A seguir: a parte 2**: gravar o certificado (só pelo servidor,
