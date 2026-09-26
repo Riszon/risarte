@@ -439,9 +439,14 @@ a produção, com trava que EXIGE ser produção).
    AP15:** 107 funções SEM guarda executam sem login; confirmado na produção
    que `find_client_basic_by_cpf` (paciente por CPF — LGPD) e
    `empresarial.settle_billing` (dá baixa) executam. ✅ **Corrigido em grande
-   parte na 0280 (o dono precisa rodar)** — 63 internas fechadas, 42 só para
+   parte na 0280 (APLICADA na produção; conferido sem login)** — 63 internas fechadas, 42 só para
    logado, 5 guardas. Pendente (BACKLOG AP16): fechar os schemas para anon
-   depende de conferir o ACADEMY na produção. Regra 8 do check-migrations
+   depende do ACADEMY — o dono rodou a consulta: nenhuma política do
+   `treinamento` para anon, mas 5 funções dele leem `public`
+   (`current_user_roles/clinics/scope_all`, `get_ranking`, `get_feed`).
+   ⚠️ **AP17 (suspeita):** se leem `user_clinic_roles`, a janela da 0277
+   pode estar escondendo a função dos novatos no Academy. Aguardando as
+   definições (consulta pedida ao dono). Regra 8 do check-migrations
    (`$$` ímpar) nasceu de um erro pego na revisão da 0280.
    Regra 7 do `check-migrations` impede a repetição.
    **A seguir: a parte 2**: gravar o certificado (só pelo servidor,

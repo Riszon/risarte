@@ -1703,3 +1703,33 @@ chama cada função:
    `finish_clinical_attendance` ficaram sem guarda de propósito: só
    recalculam pela regra (a última já tem a guarda da `update_attendance`).
 
+**Conferência do Academy (dono, 26/09/2026, na produção):** nenhuma política
+do schema `treinamento` é aberta a `anon`/`public`. Mas **5 funções do
+Academy citam `public.`**: `current_user_roles`, `current_user_clinics`,
+`current_user_scope_all`, `get_ranking`, `get_feed`. Fechar os schemas para
+anon depende de saber se alguma delas é chamada sem login — definições
+pedidas ao dono.
+
+---
+
+### AP17. ⚠️ A janela da 0277 pode estar escondendo a função dos NOVATOS no Academy (26/09/2026) — SUSPEITA
+
+**Achado lendo a resposta do dono sobre o Academy.** O Risarte Academy (outro
+sistema, MESMO banco) tem funções chamadas `current_user_roles`,
+`current_user_clinics` e `current_user_scope_all` que citam o schema
+`public`.
+
+**CONFIRMADO:** desde a 0277, `public.user_clinic_roles` é uma VIEW que esconde
+de quem pergunta sobre si as funções das unidades FECHADAS para ele. Na
+produção, 6 pessoas (as que estão no modo portal) têm todas as unidades
+fechadas.
+
+**SUSPEITA (não confirmada — depende das definições):** se essas funções do
+Academy leem `public.user_clinic_roles`, elas passaram a devolver VAZIO para
+esses 6 — e o Academy pode estar tratando-os como "sem função" (trilhas por
+função sumindo), justamente os novatos, que são quem mais precisa do Academy.
+
+**Conserto provável, se confirmado:** as funções do Academy lerem
+`public.user_clinic_roles_all` (a tabela completa) — mexe no schema do OUTRO
+sistema, então só com o dono vendo antes.
+
