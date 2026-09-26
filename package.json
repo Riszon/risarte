@@ -11,6 +11,7 @@
     "verificar": "node scripts/verificar-build.mjs",
     "check:dados": "node scripts/check-invariants.mjs",
     "check:telas": "node scripts/check-screens.mjs",
+    "check:indicadores": "node scripts/conferir-indicadores.mjs",
     "check:destrutivo": "node scripts/conferir-destrutivo.mjs",
     "check:alcance": "node scripts/alcance-do-truncate.mjs",
     "check:migracao": "node scripts/check-migrations.mjs",

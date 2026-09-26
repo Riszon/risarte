@@ -12,6 +12,9 @@ import {
   normalizarMeta,
   resumoDaMissao,
   temMissao,
+  cargosElegiveis,
+  ehModoDeGrupo,
+  grupoEstaDefinido,
   type MetaDoTreino,
 } from "@/lib/certificacao";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
@@ -176,5 +179,68 @@ describe("⚠️ o padrão é ÚNICO DA REDE (ordem do dono, 25/09/2026)", () =>
     for (const papel of PAPEIS_COM_MISSAO) {
       expect(Object.keys(ROLE_LABELS)).toContain(papel as UserRole);
     }
+  });
+});
+
+describe("a origem de cada indicador (o que a Etapa 2 vai contar)", () => {
+  it("todo indicador diz de onde o número sai", () => {
+    // Sem isto, a contagem da Etapa 2 seria escrita "de cabeça" e o número
+    // sairia de outro lugar — a tela mostraria "3 de 5" e ninguém saberia 3
+    // do quê. Mostrar a origem do número faz parte do número.
+    for (const i of INDICADORES) {
+      expect(i.origem, `"${i.chave}" não diz de onde vem`).toMatch(
+        /^[a-z_]+\.[a-z_]+(\.[a-z_]+)?( \+ .+)?$/
+      );
+    }
+  });
+
+  it("duas metas diferentes não saem da mesma coluna sem filtro", () => {
+    // `primeiros_agendamentos` e `agendamentos_reavaliacao` vêm os dois de
+    // `appointments.created_by` — e só se distinguem pelo `+ type=`. Origem
+    // repetida SEM filtro seria o mesmo número em dois lugares, e o Admin
+    // exigiria a mesma coisa duas vezes achando que exige duas.
+    const semFiltro = INDICADORES.filter((i) => !i.origem.includes(" + ")).map(
+      (i) => i.origem
+    );
+    expect(new Set(semFiltro).size).toBe(semFiltro.length);
+  });
+});
+
+describe("o grupo do teste coletivo (0272)", () => {
+  const metas: MetaDoTreino[] = [
+    { role: "receptionist", indicator: "cadastros", minimum_count: 5 },
+  ];
+
+  it("⚠️ grupo vazio NÃO significa 'todo mundo'", () => {
+    // Ler o vazio como "todos" escolheria o comportamento mais destrutivo
+    // justamente quando ninguém escolheu nada: bastaria uma pessoa de férias
+    // para travar a unidade inteira.
+    expect(grupoEstaDefinido("papeis", [], [])).toBe(false);
+    expect(grupoEstaDefinido("pessoas", [], [])).toBe(false);
+  });
+
+  it("cada modo olha a SUA lista, não a outra", () => {
+    // Guardamos as duas listas para o Admin poder trocar de modo e voltar sem
+    // perder o que montou. Se o modo olhasse a lista errada, ele veria o grupo
+    // "definido" por causa de uma seleção que não está valendo.
+    expect(grupoEstaDefinido("papeis", ["receptionist"], [])).toBe(true);
+    expect(grupoEstaDefinido("pessoas", ["receptionist"], [])).toBe(false);
+    expect(grupoEstaDefinido("pessoas", [], [{ user_id: "x" }])).toBe(true);
+    expect(grupoEstaDefinido("papeis", [], [{ user_id: "x" }])).toBe(false);
+  });
+
+  it("só é elegível por cargo quem tem missão de verdade", () => {
+    // Cargo sem meta nenhuma nasce aprovado: pô-lo no grupo faria a liberação
+    // coletiva depender de gente que nunca foi medida.
+    const elegiveis = cargosElegiveis(metas);
+    expect(elegiveis).toContain("receptionist");
+    expect(elegiveis).not.toContain("dentist");
+    expect(cargosElegiveis([])).toHaveLength(0);
+  });
+
+  it("reconhece só os modos que o banco aceita", () => {
+    expect(ehModoDeGrupo("papeis")).toBe(true);
+    expect(ehModoDeGrupo("pessoas")).toBe(true);
+    expect(ehModoDeGrupo("todos")).toBe(false);
   });
 });

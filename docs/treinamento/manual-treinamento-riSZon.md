@@ -629,18 +629,33 @@ despreparada mexendo no sistema real, e o sistema real enchendo de cliente
 inventado e pagamento de mentira.
 
 **O que libera é cumprir a sua missão no treino.** Cada função tem metas
-próprias — a recepção cadastra um tanto de pessoas, faz um tanto de primeiros
-agendamentos e de reavaliações; o coordenador clínico faz avaliações e aprova
-planejamentos; e assim por diante. As metas valem para a **rede inteira**: não
+próprias, escolhidas entre **as ações que o sistema realmente consegue
+contar** — a recepção cadastra pessoas, faz primeiros agendamentos, registra
+check-ins e consentimentos; o coordenador conclui avaliações e avalia opções de
+plano; o dentista conclui sessões e escreve evoluções; o comercial faz
+apresentações e fecha contratos. São **42 ações ao todo, em 13 funções**, e
+cada função só enxerga as suas. As metas valem para a **rede inteira**: não
 existe unidade com régua mais fácil.
 
 **Para o Admin Master:** as metas ficam em **Administração → Certificação**,
-uma função por vez. Lá também se escolhe:
+uma função por vez (as já configuradas aparecem abertas; as demais abrem no
+clique). Lá também se escolhe:
 
 - **De quem depende a liberação** — só da própria pessoa (*individual*), ou de
-  a equipe inteira da unidade ter cumprido (*coletiva*);
+  todos os participantes da unidade terem cumprido (*coletiva*);
 - **O que acontece ao cumprir** — o sistema real abre sozinho (*automática*),
   ou o Admin Master recebe um aviso e confirma (*aprovação*).
+
+**Na liberação coletiva, é preciso dizer QUEM participa** — por **cargo**
+(toda recepcionista e todo coordenador da unidade, e quem for contratado
+depois entra sozinho) ou por **pessoa** (estas cinco, pelo nome, e quem chegar
+depois não entra sozinho). Isso existe por um motivo prático: sem a lista, a
+liberação esperaria *todo mundo* da unidade, e bastaria uma pessoa de férias
+ou recém-contratada para travar a equipe inteira sem ninguém entender por quê.
+
+> **Grupo vazio não quer dizer "todo mundo".** Quer dizer que ainda falta
+> escolher — e, enquanto faltar, a liberação coletiva não acontece. A tela
+> avisa.
 
 > **Por enquanto esta tela guarda a definição.** A contagem automática do que
 > cada pessoa já fez no treino, e a liberação sozinha, entram nas próximas

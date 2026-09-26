@@ -3,29 +3,52 @@ import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   PADRAO_DO_PORTAO,
+  cargosElegiveis,
   ehEscopo,
   ehGatilho,
+  ehModoDeGrupo,
   type ConfiguracaoDoPortao,
   type MetaDoTreino,
+  type ParticipanteDoGrupo,
 } from "@/lib/certificacao";
 import { PortaoEditor } from "./portao-editor";
 import { MissoesEditor } from "./missoes-editor";
 
 export const metadata: Metadata = { title: "Certificação para o sistema real" };
 
+type PerfilLinha = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
 export default async function CertificacaoPage() {
   await requireAdminMaster();
   const supabase = await createClient();
 
-  const [{ data: metas }, { data: config }] = await Promise.all([
+  const [
+    { data: metas },
+    { data: config },
+    { data: cargosDoGrupo },
+    { data: pessoasDoGrupo },
+    { data: perfis },
+  ] = await Promise.all([
     supabase
       .from("training_requirements")
       .select("role, indicator, minimum_count")
       .returns<MetaDoTreino[]>(),
     supabase
       .from("training_settings")
-      .select("release_scope, release_trigger")
+      .select("release_scope, release_trigger, cohort_mode")
       .maybeSingle(),
+    supabase.from("training_cohort_roles").select("role"),
+    supabase.from("training_cohort_members").select("user_id"),
+    supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("is_active", true)
+      .order("full_name")
+      .returns<PerfilLinha[]>(),
   ]);
 
   // ⚠️ Linha ausente ou valor estranho cai no PADRÃO, e o padrão é o cauteloso
@@ -41,7 +64,18 @@ export default async function CertificacaoPage() {
       config && ehGatilho(String(config.release_trigger))
         ? (config.release_trigger as ConfiguracaoDoPortao["release_trigger"])
         : PADRAO_DO_PORTAO.release_trigger,
+    cohort_mode:
+      config && ehModoDeGrupo(String(config.cohort_mode))
+        ? (config.cohort_mode as ConfiguracaoDoPortao["cohort_mode"])
+        : PADRAO_DO_PORTAO.cohort_mode,
   };
+
+  const listaDeMetas = metas ?? [];
+  const pessoas: ParticipanteDoGrupo[] = (perfis ?? []).map((p) => ({
+    user_id: p.id,
+    full_name: p.full_name,
+    email: p.email,
+  }));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
@@ -65,7 +99,13 @@ export default async function CertificacaoPage() {
         </p>
       </div>
 
-      <PortaoEditor atual={atual} />
+      <PortaoEditor
+        atual={atual}
+        cargosElegiveis={cargosElegiveis(listaDeMetas)}
+        pessoas={pessoas}
+        cargosNoGrupo={(cargosDoGrupo ?? []).map((r) => String(r.role))}
+        pessoasNoGrupo={(pessoasDoGrupo ?? []).map((r) => String(r.user_id))}
+      />
 
       <div className="space-y-3">
         <div>
@@ -74,10 +114,11 @@ export default async function CertificacaoPage() {
           </h2>
           <p className="text-sm text-muted-foreground">
             Quantas vezes a pessoa precisa fazer cada coisa <strong>no
-            treino</strong>. Função sem nenhum número exigido não é barrada.
+            treino</strong>. Função sem nenhum número exigido não é barrada. As
+            funções já configuradas abrem sozinhas; as demais abrem no clique.
           </p>
         </div>
-        <MissoesEditor metas={metas ?? []} />
+        <MissoesEditor metas={listaDeMetas} />
       </div>
 
       <p className="text-xs text-muted-foreground">

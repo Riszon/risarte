@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.286.0",
+    data: "2026-09-25",
+    migracao: "0272",
+    titulo: "Certificação: 42 ações contáveis e o grupo do teste coletivo",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Certificação passou a oferecer TUDO o que o sistema consegue contar: 42 ações, distribuídas por 13 funções. Recepção, captação, clínico, planejamento, comercial, gestão da unidade, financeiro, compras e Empresarial — cada função vê só o que ela faz.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quando a liberação for coletiva, agora se escolhe QUEM participa: por cargo (toda recepcionista e todo coordenador da unidade) ou por pessoa (estas cinco, pelo nome). Sem isso, a unidade inteira poderia ficar travada por causa de uma pessoa de férias.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Grupo coletivo vazio NÃO quer dizer 'todo mundo' — quer dizer configuração incompleta, e a tela avisa. Enquanto ninguém for escolhido, a liberação coletiva não acontece.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "As funções aparecem uma embaixo da outra, e só abrem as que já têm meta definida. As demais ficam a um clique — a tela mostra o que precisa ser conferido sem virar uma lista longa.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.285.0",
     data: "2026-09-25",
     migracao: "0271",
