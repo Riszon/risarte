@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.294.2; Empresarial 0.69.0 → 0.72.0; migrações 0273–0279, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.294.3; Empresarial 0.69.0 → 0.72.0; migrações 0273–0280, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -438,7 +438,11 @@ a produção, com trava que EXIGE ser produção).
    0279 (AP15) — APLICADA na produção** (conferido de fora, sem login: recusam). 🔴 **AP16 (BACKLOG), achado medindo o
    AP15:** 107 funções SEM guarda executam sem login; confirmado na produção
    que `find_client_basic_by_cpf` (paciente por CPF — LGPD) e
-   `empresarial.settle_billing` (dá baixa) executam. Proposto como próximo.
+   `empresarial.settle_billing` (dá baixa) executam. ✅ **Corrigido em grande
+   parte na 0280 (o dono precisa rodar)** — 63 internas fechadas, 42 só para
+   logado, 5 guardas. Pendente (BACKLOG AP16): fechar os schemas para anon
+   depende de conferir o ACADEMY na produção. Regra 8 do check-migrations
+   (`$$` ímpar) nasceu de um erro pego na revisão da 0280.
    Regra 7 do `check-migrations` impede a repetição.
    **A seguir: a parte 2**: gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o

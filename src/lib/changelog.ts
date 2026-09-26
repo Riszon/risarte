@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.294.3",
+    data: "2026-09-26",
+    migracao: "0280",
+    titulo: "Nenhuma conta interna responde mais para quem não está logado",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Mais de cem contas internas do sistema podiam ser acionadas por fora, sem login — entre elas a busca de paciente por CPF e a baixa de cobrança do Empresarial. Foram fechadas para quem não está logado. Dar baixa, suspender empresa por atraso, anonimizar colaboradores antigos e ativar ou restaurar titular passaram a conferir, também no banco, se quem pede tem permissão para isso.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.294.2",
     data: "2026-09-26",
     migracao: "0279",

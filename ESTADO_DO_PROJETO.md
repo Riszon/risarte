@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/09/2026 · Versão do sistema: **0.294.2** · Última migração: **0279** (aplicada na produção e no treino) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/09/2026 · Versão do sistema: **0.294.3** · Última migração: **0280** (no treino; a produção recebe pelo dono) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🔒 0.294.0 / 0277 — A TRANCA POR UNIDADE VALE NO BANCO (AP14)
 >

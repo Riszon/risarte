@@ -1630,7 +1630,7 @@ duas rotinas seguem funcionando. Levantamento das "privadas": 25 declaradas,
 
 ---
 
-### AP16. 🔴 Funções SEM GUARDA executam sem login — inclusive dado de paciente por CPF (26/09/2026) — PRÓXIMO
+### AP16. 🔴 Funções SEM GUARDA executam sem login — inclusive dado de paciente por CPF (26/09/2026 — corrigido em grande parte, 0280 / core 0.294.3)
 
 **Achado medindo o AP15.** O AP15 cobria só as funções que as migrações
 *declararam* privadas. Olhando todas: **355** funções `security definer`
@@ -1662,4 +1662,44 @@ acquirer_applies_to, acquirer_rate_for, acquirer_rate_usage, acquirer_rates_usag
 por `rpc` → guarda dentro da função. E considerar tirar o EXECUTE de `anon`
 de TODAS as funções do sistema (o riSZon não tem tela pública que use o banco
 sem login — conferir antes: `/login`, documentos e termos públicos).
+
+**✅ CORRIGIDO EM GRANDE PARTE (0280, core 0.294.3).** Gerada a partir das
+definições ATUAIS do banco (nada reescrito de memória), decidida por quem
+chama cada função:
+
+- **63 internas** (só funções do banco as chamam): fechadas para anon E
+  logado; a chave de serviço continua (webhooks ASAAS/ZapSign).
+- **42 usadas** pelo app/políticas/funções INVOKER: fechadas para anon,
+  mantidas para logado (a busca por CPF é do cadastro — cliente único na rede).
+- **5 guardas** no banco, nas que gravam dinheiro/situação/dado pessoal:
+  `settle_billing` e `mark_overdue_and_suspend` (gestor do programa/Admin),
+  `run_retention` (Admin — o prazo vinha por parâmetro: com 0 anonimizaria
+  na hora todo colaborador inativo), `set_employee_active` e
+  `restore_employee` (a régua da política employees_write). Sem usuário
+  (webhook, rotina) passa.
+- **Provado no treino:** sem login tudo recusa; webhooks passam; recepcionista
+  barrada nas guardas e o Admin não; interna nega ao logado e roda por dentro;
+  varredura das telas idêntica.
+- ⚠️ **Achado gerando a migração:** o script escreveu `AS $` / `end $;`
+  (`"$$"` no texto de substituição do replace vira UM `$`) — pego na revisão
+  a olho, antes de rodar. Virou a **Regra 8** do `check-migrations` (número
+  ímpar de `$$` reprova).
+
+**FICA PENDENTE, declarado:**
+
+1. **Fechar os schemas `public`/`empresarial` inteiros para quem não está
+   logado** (`revoke usage ... from anon`) — é o que impede função NOVA de
+   nascer aberta. Não foi feito porque o **Risarte Academy usa o MESMO banco**
+   e o código dele não está neste PC: uma página pública dele pode ler algo de
+   `public` sem login. Precisa da conferência do dono na produção (consulta
+   só-leitura no schema `treinamento`).
+2. `environment_allowed` e `is_mirror_db` ficaram abertas de propósito (o
+   Academy pode lê-las; não expõem nada sensível).
+3. **Com login**, as 42 "usadas" continuam valendo para QUALQUER logado — ex.:
+   custos, repasses e estoque de qualquer unidade para uma recepcionista que
+   chamasse a API direto. É exposição a funcionário, não à internet; pede
+   guarda por função (ler cada uma).
+4. `recompute_client_activity`, `ppr_refresh_delinquency` e
+   `finish_clinical_attendance` ficaram sem guarda de propósito: só
+   recalculam pela regra (a última já tem a guarda da `update_attendance`).
 

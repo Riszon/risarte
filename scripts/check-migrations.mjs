@@ -137,6 +137,23 @@ if (target.slice(0, 4) > "0278") {
   }
 }
 
+// Regra 8 — NÚMERO ÍMPAR DE `$$` = DELIMITADOR QUEBRADO.
+//
+// `"$$"` como TEXTO de substituição no `String.replace` do JavaScript vira UM
+// `$`. Aconteceu na 0239 (em silêncio) e de novo ao GERAR a 0280 por script,
+// em 26/09/2026 — pego só na revisão a olho: `AS $` e `end $;`. Função com
+// delimitador quebrado ou não cria, ou engole o resto da migração como corpo.
+{
+  const dolares = (semComentarios.match(/\$\$/g) ?? []).length;
+  if (dolares % 2 !== 0) {
+    problems.push(
+      `número ímpar de "$$" (${dolares}): algum delimitador de função está quebrado.\n` +
+        `      Se a migração foi gerada por script, procure "AS $" ou "end $;" —\n` +
+        `      "$$" no texto de substituição do replace vira UM "$".`
+    );
+  }
+}
+
 for (const m of sql.matchAll(FN)) {
   const [, name, args, returns, lang] = m;
   const prev = known.get(name);
