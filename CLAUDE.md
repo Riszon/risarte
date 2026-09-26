@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.292.0; Empresarial 0.69.0 → 0.70.0; migrações 0273, 0274 e 0275)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.292.0; Empresarial 0.69.0 → 0.71.0; migrações 0273, 0274, 0275 e 1022)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -426,6 +426,14 @@ a produção, com trava que EXIGE ser produção).
    estavam escritos de outro jeito (ler só o `data` e ignorar o `error`),
    um deles escrito por mim na 1021. **Ficou de fora, declarado:** as telas —
    o Início ainda diria "0 esperando" se a contagem falhasse.
+4b. ✅ **Trava da mensalidade no banco (1022, Empresarial 0.71.0) — o dono
+   precisa RODAR a 1022 na produção.** Chave (empresa, DOCUMENTO, mês): empresa
+   com dois CNPJs recebe dois boletos. A tela da empresa não tinha trava
+   nenhuma — dois cliques cobravam em dobro.
+4c. ⚠️ **AP12 (BACKLOG): implantação da 2ª etapa cobra de novo quem já pagou.**
+   Regra do dono: cada titular paga implantação uma vez, na etapa em que
+   entra. Hoje "Gerar implantação" cobra todos os cadastrados. Conserto
+   proposto (guardar quantos cada implantação cobriu) aguarda o OK do dono.
 5. **AP10** (BACKLOG): o `check-migrations` não pega erro de tipo que o
    Postgres pega (`= any()` sobre enum).
 6. Cadastrar os benefícios PADRÃO DA REDE na produção (segue VAZIO).
