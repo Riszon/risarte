@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.291.0; migrações 0273, 0274 e 0275)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.292.0; Empresarial 0.69.0 → 0.70.0; migrações 0273, 0274 e 0275)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -419,9 +419,13 @@ a produção, com trava que EXIGE ser produção).
 3. **O dono definir as metas** em Administração → Certificação (seguem em
    branco na produção) e **conferir `risarte-training-deadlines`** em
    Database → Cron Jobs da produção (não dá para ler pela API).
-4. **AP11** (BACKLOG): 14 lugares fazem `count ?? 0` depois de `head: true` —
-   alguns são TRAVAS que falhariam abertas (apagar procedimento em uso, passar
-   do teto contratado do Empresarial). Ler um por um.
+4. ✅ **AP11 FECHADO (0.292.0 / Empresarial 0.70.0).** 16 travas deixavam
+   passar quando a contagem falhava — a pior, a **mensalidade em dobro** do
+   Empresarial, que não tem trava no banco. Peça única `src/lib/contagem.ts`
+   e régua `contagem-nas-acoes.test.ts`. ⚠️ A busca achou 9; os outros 7
+   estavam escritos de outro jeito (ler só o `data` e ignorar o `error`),
+   um deles escrito por mim na 1021. **Ficou de fora, declarado:** as telas —
+   o Início ainda diria "0 esperando" se a contagem falhasse.
 5. **AP10** (BACKLOG): o `check-migrations` não pega erro de tipo que o
    Postgres pega (`= any()` sobre enum).
 6. Cadastrar os benefícios PADRÃO DA REDE na produção (segue VAZIO).
