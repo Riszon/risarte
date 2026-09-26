@@ -457,7 +457,8 @@ a produção, com trava que EXIGE ser produção).
    só para service_role), depois de medir; conferência no Início, no botão
    "Conferir minha missão" e ao abrir a unidade na turma. Fila "Aguardando a
    sua aprovação" com os números. Provado no treino (16 checagens + API).
-   ⚠️ **O dono precisa RODAR a 0281 na produção.** ⏳ Falta ver na tela com
+   ✅ **0281 APLICADA na produção** (conferido de fora: só a chave de serviço
+   registra; sem login recusa; aprovar exige Admin). ⏳ Falta ver na tela com
    uma missão real cumprida no treino.
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
