@@ -195,6 +195,7 @@ export function PprRemoveDependentButton({
       if (!r.ok) toast.error(r.error ?? "Não foi possível remover.");
       else {
         toast.success("Dependente removido do plano.");
+        if (r.aviso) toast.warning(r.aviso);
         setOpen(false);
         router.refresh();
       }
@@ -371,6 +372,7 @@ export function PprMembershipActions({
       if (!r.ok) toast.error(r.error ?? "Não foi possível incluir.");
       else {
         toast.success("Dependente incluído.");
+        if (r.aviso) toast.warning(r.aviso);
         setAddingDependent(false);
         router.refresh();
       }

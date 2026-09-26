@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import {
   getSessionContext,
@@ -1608,7 +1609,7 @@ export async function getClientRegistrationGaps(
   if (!clientId) return [];
   await getSessionContext();
   const supabase = await createClient();
-  const [{ data: row }, { count }] = await Promise.all([
+  const [{ data: row }, { count, error: erroDaContagem }] = await Promise.all([
     supabase
       .from("clients")
       .select(CLIENT_FIELDS_SELECT)
@@ -1620,7 +1621,12 @@ export async function getClientRegistrationGaps(
       .eq("client_id", clientId),
   ]);
   if (!row) return [];
-  return missingClientFields(toRegistrationFields(row, count ?? 0));
+  // Falha FECHADA de propósito (AP11): sem conseguir contar os responsáveis,
+  // o sistema os pede — pedir um dado a mais é o erro seguro; dispensar o
+  // responsável de um menor não seria.
+  return missingClientFields(
+    toRegistrationFields(row, contagemConfirmada({ count, error: erroDaContagem }) ?? 0)
+  );
 }
 
 /**

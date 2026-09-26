@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -345,7 +346,7 @@ export async function addPlanOption(
   if ("error" in ctx) return { ok: false, error: ctx.error };
 
   const supabase = await createClient();
-  const { count } = await supabase
+  const { count, error: erroDaOrdem } = await supabase
     .from("treatment_plan_options")
     .select("id", { count: "exact", head: true })
     .eq("plan_id", planId);
@@ -364,7 +365,8 @@ export async function addPlanOption(
     is_primary: input.isPrimary,
     title,
     description: input.description.trim() || null,
-    sort_order: count ?? 0,
+    // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
+    sort_order: contagemConfirmada({ count, error: erroDaOrdem }) ?? 0,
   });
   if (error) {
     console.error("addPlanOption failed:", error.message);
@@ -774,7 +776,7 @@ export async function addBudgetItem(
   if ("error" in ctx) return { ok: false, error: ctx.error };
 
   const supabase = await createClient();
-  const { count } = await supabase
+  const { count, error: erroDaOrdem } = await supabase
     .from("treatment_plan_option_items")
     .select("id", { count: "exact", head: true })
     .eq("option_id", optionId);
@@ -792,7 +794,8 @@ export async function addBudgetItem(
     gut_gravity: gutNote(input.gutGravity),
     gut_urgency: gutNote(input.gutUrgency),
     gut_tendency: gutNote(input.gutTendency),
-    sort_order: count ?? 0,
+    // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
+    sort_order: contagemConfirmada({ count, error: erroDaOrdem }) ?? 0,
   });
   if (error) {
     console.error("addBudgetItem failed:", error.message);
@@ -913,7 +916,7 @@ export async function addPlanStage(
   if ("error" in ctx) return { ok: false, error: ctx.error };
 
   const supabase = await createClient();
-  const { count } = await supabase
+  const { count, error: erroDaOrdem } = await supabase
     .from("treatment_plan_stages")
     .select("id", { count: "exact", head: true })
     .eq("option_id", optionId);
@@ -922,7 +925,8 @@ export async function addPlanStage(
     option_id: optionId,
     clinic_id: ctx.clinicId,
     name: stageName,
-    sort_order: count ?? 0,
+    // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
+    sort_order: contagemConfirmada({ count, error: erroDaOrdem }) ?? 0,
   });
   if (error) {
     console.error("addPlanStage failed:", error.message);

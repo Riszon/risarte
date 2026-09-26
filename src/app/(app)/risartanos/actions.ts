@@ -1,5 +1,6 @@
 "use server";
 
+import { naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import {
   fullAccessClinicIds,
@@ -293,9 +294,15 @@ export async function createStaffMember(
   const supabase = await createClient();
 
   // Não criar dois Risartanos: se o CPF já existe na rede, bloqueia e aponta.
-  const { data: dup } = await supabase.rpc("find_staff_by_cpf", {
+  const { data: dup, error: erroDaBusca } = await supabase.rpc("find_staff_by_cpf", {
     p_cpf: parsed.values.cpf as string,
   });
+  // ⚠️ AP11: o banco NÃO tem índice único de CPF para Risartano (só código e
+  // id). Esta busca é a única trava — se ela falha e responde "ninguém", a
+  // mesma pessoa ganha dois cadastros, e o histórico dela se parte em dois.
+  if (erroDaBusca) {
+    return { ok: false, error: naoConseguiConferir("se já existe um Risartano com este CPF") };
+  }
   if (dup && dup.length > 0) {
     const d = dup[0];
     return {

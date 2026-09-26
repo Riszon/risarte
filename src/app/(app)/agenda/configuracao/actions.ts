@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -117,7 +118,7 @@ export async function addRoom(
   const supabase = await createClient();
 
   // H1.10: a Gerente não cria salas acima do teto definido pelo Admin.
-  const [{ data: clinic }, { count }] = await Promise.all([
+  const [{ data: clinic }, { count, error: erroDaContagem }] = await Promise.all([
     supabase.from("clinics").select("max_rooms").eq("id", clinicId).maybeSingle(),
     supabase
       .from("clinic_rooms")
@@ -126,7 +127,12 @@ export async function addRoom(
       .is("deleted_at", null),
   ]);
   const maxRooms = clinic?.max_rooms ?? 0;
-  if (maxRooms > 0 && (count ?? 0) >= maxRooms) {
+  const salas = contagemConfirmada({ count, error: erroDaContagem });
+  // ⚠️ AP11: sem contar, o teto de salas definido pelo Admin deixava de valer.
+  if (maxRooms > 0 && salas === null) {
+    return { ok: false, error: naoConseguiConferir("quantas salas a unidade já tem") };
+  }
+  if (maxRooms > 0 && salas !== null && salas >= maxRooms) {
     return {
       ok: false,
       error: `Esta unidade permite no máximo ${maxRooms} sala(s) (definido pelo Admin no cadastro da clínica).`,
@@ -215,13 +221,21 @@ export async function setRoomActive(
 
   // Don't allow turning off the last active room (the unit needs ≥1 chair).
   if (!active) {
-    const { count } = await supabase
-      .from("clinic_rooms")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", room.clinic_id)
-      .eq("is_active", true)
-      .is("deleted_at", null);
-    if ((count ?? 0) <= 1) {
+    const ativas = contagemConfirmada(
+      await supabase
+        .from("clinic_rooms")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", room.clinic_id)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+    );
+    // Esta trava já falhava FECHADA (nula virava zero, e zero barra). O que
+    // estava errado era a frase: dizia "precisa de ao menos uma sala" para uma
+    // unidade que talvez tivesse cinco.
+    if (ativas === null) {
+      return { ok: false, error: naoConseguiConferir("quantas salas ativas a unidade tem") };
+    }
+    if (ativas <= 1) {
       return {
         ok: false,
         error: "A unidade precisa de ao menos uma sala ativa.",
@@ -270,12 +284,18 @@ export async function deleteRoom(roomId: string): Promise<AgendaConfigResult> {
   if (room.deleted_at) return { ok: true }; // já excluída — nada a fazer
 
   // A unidade precisa manter ao menos uma cadeira viva.
-  const { count } = await supabase
-    .from("clinic_rooms")
-    .select("id", { count: "exact", head: true })
-    .eq("clinic_id", room.clinic_id)
-    .is("deleted_at", null);
-  if ((count ?? 0) <= 1) {
+  const cadeiras = contagemConfirmada(
+    await supabase
+      .from("clinic_rooms")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", room.clinic_id)
+      .is("deleted_at", null)
+  );
+  // Já falhava fechada; a frase é que mentia (ver a trava de desativar).
+  if (cadeiras === null) {
+    return { ok: false, error: naoConseguiConferir("quantas cadeiras a unidade tem") };
+  }
+  if (cadeiras <= 1) {
     return {
       ok: false,
       error: "A unidade precisa de ao menos uma cadeira. Crie outra antes de excluir esta.",
@@ -334,15 +354,22 @@ export async function setMaxRooms(
   }
 
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("clinic_rooms")
-    .select("id", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .is("deleted_at", null);
-  if (max < (count ?? 0)) {
+  const existentes = contagemConfirmada(
+    await supabase
+      .from("clinic_rooms")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .is("deleted_at", null)
+  );
+  // ⚠️ AP11: sem contar, dava para baixar o limite para menos cadeiras do que
+  // a unidade já tem — e o teto passaria a mentir sobre a própria unidade.
+  if (existentes === null) {
+    return { ok: false, error: naoConseguiConferir("quantas cadeiras a unidade já tem") };
+  }
+  if (max < existentes) {
     return {
       ok: false,
-      error: `Esta unidade já tem ${count} cadeira(s). Exclua ou desative cadeiras antes de baixar o limite.`,
+      error: `Esta unidade já tem ${existentes} cadeira(s). Exclua ou desative cadeiras antes de baixar o limite.`,
     };
   }
 

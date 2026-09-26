@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import {
   getSessionContext,
@@ -286,12 +287,24 @@ export async function deleteProcedure(id: string): Promise<ProcedureResult> {
     return { ok: false, error: "Sem permissão para editar procedimentos." };
   }
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("treatment_plan_option_items")
-    .select("id", { count: "exact", head: true })
-    .eq("procedure_id", id);
+  const usos = contagemConfirmada(
+    await supabase
+      .from("treatment_plan_option_items")
+      .select("id", { count: "exact", head: true })
+      .eq("procedure_id", id)
+  );
+  // ⚠️ AP11: sem conseguir contar, NÃO se escolhe entre inativar e apagar.
+  // Com `count ?? 0`, uma contagem que falhou mandava o procedimento para o
+  // caminho de APAGAR. O banco ainda segurava (a ligação com os orçamentos
+  // impede), mas quem tentou recebia um erro sem explicação nenhuma.
+  if (usos === null) {
+    return {
+      ok: false,
+      error: naoConseguiConferir("se o procedimento já foi usado em algum orçamento"),
+    };
+  }
 
-  if ((count ?? 0) > 0) {
+  if (usos > 0) {
     const { error } = await supabase
       .from("procedures")
       .update({ is_active: false, updated_at: new Date().toISOString() })

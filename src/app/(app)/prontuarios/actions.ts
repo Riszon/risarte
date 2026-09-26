@@ -1,5 +1,6 @@
 "use server";
 
+import { naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { ehMenorDeIdade } from "@/lib/idade";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
@@ -388,11 +389,22 @@ export async function createClientRecord(
   const supabase = await createClient();
 
   // Network-wide duplicate check (clients are unique across the network).
-  const { data: duplicates } = await supabase.rpc("find_duplicate_client", {
-    p_cpf: parsed.values.cpf,
-    p_full_name: parsed.values.full_name,
-    p_birth_date: parsed.values.birth_date,
-  });
+  const { data: duplicates, error: erroDaBusca } = await supabase.rpc(
+    "find_duplicate_client",
+    {
+      p_cpf: parsed.values.cpf,
+      p_full_name: parsed.values.full_name,
+      p_birth_date: parsed.values.birth_date,
+    }
+  );
+
+  // ⚠️ AP11: se a busca falhar, ela NÃO responde "não há ninguém". Com CPF, o
+  // banco ainda seguraria (índice único de CPF); SEM CPF — criança, por
+  // exemplo — a busca é por nome + nascimento, o banco não protege, e o
+  // mesmo paciente nasceria duas vezes, com dois prontuários.
+  if (erroDaBusca) {
+    return { ok: false, error: naoConseguiConferir("se esta pessoa já está cadastrada") };
+  }
 
   if (duplicates && duplicates.length > 0) {
     const dup = duplicates[0];

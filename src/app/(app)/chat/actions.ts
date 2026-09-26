@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext, requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -161,7 +162,7 @@ export async function listChannels(): Promise<ChatChannel[]> {
   const channels: ChatChannel[] = await Promise.all(
     (chanRows ?? []).map(async (c) => {
       const lastRead = lastReadById.get(c.id) ?? "1970-01-01T00:00:00Z";
-      const [{ data: lastMsg }, { count }] = await Promise.all([
+      const [{ data: lastMsg }, { count, error: erroDaContagem }] = await Promise.all([
         supabase
           .from("chat_messages")
           .select("body, created_at")
@@ -184,7 +185,8 @@ export async function listChannels(): Promise<ChatChannel[]> {
             ? `Equipe — ${c.clinic_id ? (clinicNameById.get(c.clinic_id) ?? "unidade") : "unidade"}`
             : (directTitleById.get(c.id) ?? "Conversa"),
         clinicId: c.clinic_id,
-        unread: count ?? 0,
+        // Só um contador na tela: zero é aceitável se a contagem falhar (AP11).
+        unread: contagemConfirmada({ count, error: erroDaContagem }) ?? 0,
         lastMessage: (lastMsg?.body as string | undefined) ?? null,
         lastAt: (lastMsg?.created_at as string | undefined) ?? null,
       };

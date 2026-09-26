@@ -1,5 +1,6 @@
 "use server";
 
+import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -20,6 +21,12 @@ export type PprActionResult = {
   ok: boolean;
   error?: string;
   membershipId?: string;
+  /**
+   * Deu certo, MAS algo ficou para conferir. Hoje só existe um caso: o
+   * dependente entrou (ou saiu), e a mensalidade não pôde ser recalculada.
+   * Não é erro — o ato aconteceu — e por isso não vai em `error`.
+   */
+  aviso?: string;
 };
 
 /** Dependente: ou já é cliente, ou é cadastrado na hora (CPF opcional). */
@@ -712,26 +719,37 @@ export async function refreshPprDelinquency(
 // Dependentes depois da venda
 // ---------------------------------------------------------------------------
 
-/** Recalcula a mensalidade pelo número de dependentes vivos na adesão. */
-async function recalcMonthly(membershipId: string) {
+/**
+ * Recalcula a mensalidade pelo número de dependentes vivos na adesão.
+ *
+ * Devolve `false` quando NÃO recalculou — e, nesse caso, deixa a mensalidade
+ * como estava. ⚠️ AP11: antes, uma contagem que falhava virava ZERO
+ * dependentes, e a mensalidade era regravada SEM os extras — a adesão passava
+ * a cobrar menos do que devia, em silêncio, até alguém perceber na fatura.
+ */
+async function recalcMonthly(membershipId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data: m } = await supabase
     .from("ppr_memberships")
     .select("id, plan:ppr_plans ( * )")
     .eq("id", membershipId)
     .maybeSingle();
-  if (!m) return;
+  if (!m) return false;
   const planRow = (Array.isArray(m.plan) ? m.plan[0] : m.plan) as PlanRow | null;
-  if (!planRow) return;
-  const { count } = await supabase
-    .from("ppr_beneficiaries")
-    .select("id", { count: "exact", head: true })
-    .eq("membership_id", membershipId)
-    .eq("role", "dependente")
-    .is("left_at", null);
+  if (!planRow) return false;
+  const deps = contagemConfirmada(
+    await supabase
+      .from("ppr_beneficiaries")
+      .select("id", { count: "exact", head: true })
+      .eq("membership_id", membershipId)
+      .eq("role", "dependente")
+      .is("left_at", null)
+  );
+  // Mensalidade errada é pior que mensalidade velha: a velha está errada por
+  // UM dependente; a de "zero dependentes" pode estar errada por todos.
+  if (deps === null) return false;
   const plan = toPlan(planRow);
-  const deps = count ?? 0;
-  await supabase
+  const { error } = await supabase
     .from("ppr_memberships")
     .update({
       extra_dependents: extraDependentCount(plan, deps),
@@ -739,7 +757,14 @@ async function recalcMonthly(membershipId: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", membershipId);
+  return !error;
 }
+
+// ⚠️ A frase diz o que RESOLVE. Abrir a adesão de novo não recalcula nada —
+// só a próxima inclusão ou retirada recalcula —, então mandar "conferir"
+// deixaria a pessoa olhando um valor errado sem ter o que fazer com ele.
+const AVISO_DA_MENSALIDADE =
+  "O dependente foi registrado, mas a mensalidade não pôde ser recalculada e ficou com o valor anterior. Relate o problema (com o código da adesão) para o valor ser corrigido.";
 
 export async function addPprDependent(
   membershipId: string,
@@ -767,13 +792,18 @@ export async function addPprDependent(
   const planRow = (Array.isArray(m.plan) ? m.plan[0] : m.plan) as PlanRow | null;
   if (!planRow) return { ok: false, error: "Plano não encontrado." };
   const plan = toPlan(planRow);
-  const { count } = await supabase
-    .from("ppr_beneficiaries")
-    .select("id", { count: "exact", head: true })
-    .eq("membership_id", membershipId)
-    .eq("role", "dependente")
-    .is("left_at", null);
-  const current = count ?? 0;
+  const current = contagemConfirmada(
+    await supabase
+      .from("ppr_beneficiaries")
+      .select("id", { count: "exact", head: true })
+      .eq("membership_id", membershipId)
+      .eq("role", "dependente")
+      .is("left_at", null)
+  );
+  // ⚠️ AP11: sem contar, o limite de dependentes do plano deixava de valer.
+  if (current === null) {
+    return { ok: false, error: naoConseguiConferir("quantos dependentes a adesão já tem") };
+  }
   const max = maxDependentsOf(plan);
   if (!plan.allowsDependents)
     return { ok: false, error: "Este plano é individual." };
@@ -839,7 +869,7 @@ export async function addPprDependent(
     return { ok: false, error: "Não foi possível incluir o dependente." };
   }
 
-  await recalcMonthly(membershipId);
+  const recalculou = await recalcMonthly(membershipId);
   await logEvent(
     membershipId,
     m.clinic_id as string,
@@ -847,7 +877,7 @@ export async function addPprDependent(
     `Dependente incluído (${dependent.relationship ?? "—"})`
   );
   refresh(membershipId, m.holder_client_id as string);
-  return { ok: true };
+  return recalculou ? { ok: true } : { ok: true, aviso: AVISO_DA_MENSALIDADE };
 }
 
 /**
@@ -934,7 +964,7 @@ export async function removePprBeneficiary(
     .eq("id", beneficiaryId);
   if (error) return { ok: false, error: "Não foi possível remover." };
 
-  await recalcMonthly(b.membership_id as string);
+  const recalculou = await recalcMonthly(b.membership_id as string);
   await logEvent(
     b.membership_id as string,
     b.clinic_id as string,
@@ -942,5 +972,5 @@ export async function removePprBeneficiary(
     "Dependente saiu do plano"
   );
   refresh(b.membership_id as string, b.client_id as string);
-  return { ok: true };
+  return recalculou ? { ok: true } : { ok: true, aviso: AVISO_DA_MENSALIDADE };
 }
