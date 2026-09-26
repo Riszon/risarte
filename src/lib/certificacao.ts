@@ -73,6 +73,7 @@ export const INDICADORES = [
     onde: "Clientes → Novo cliente",
     nivel: "essencial",
     origem: "clients.created_by",
+    quando: "created_at",
     papeis: ["receptionist", "sdr"],
   },
   {
@@ -83,6 +84,7 @@ export const INDICADORES = [
     onde: "Agenda → Agendar (tipo Avaliação)",
     nivel: "essencial",
     origem: "appointments.created_by + type=evaluation",
+    quando: "created_at",
     papeis: ["receptionist", "sdr"],
   },
   {
@@ -92,6 +94,7 @@ export const INDICADORES = [
     onde: "Agenda → Agendar (tipo Reavaliação)",
     nivel: "complementar",
     origem: "appointments.created_by + type=reevaluation",
+    quando: "created_at",
     papeis: ["receptionist"],
   },
   {
@@ -103,6 +106,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "appointments.created_by + type=treatment_start",
+    quando: "created_at",
     papeis: ["receptionist"],
   },
   {
@@ -112,6 +116,7 @@ export const INDICADORES = [
     onde: "Agenda → clicar no agendamento → Registrar chegada",
     nivel: "essencial",
     origem: "appointments.checked_in_by",
+    quando: "checked_in_at",
     papeis: ["receptionist", "tsb", "asb"],
   },
   {
@@ -122,6 +127,7 @@ export const INDICADORES = [
     onde: "Sala de espera → Chamar",
     nivel: "essencial",
     origem: "appointments.called_by",
+    quando: "called_at",
     papeis: ["receptionist", "clinical_coordinator", "dentist", "tsb", "asb"],
   },
   {
@@ -131,6 +137,7 @@ export const INDICADORES = [
     onde: "Agenda → abrir o agendamento → Remarcar",
     nivel: "complementar",
     origem: "appointment_changes.changed_by",
+    quando: "changed_at",
     papeis: ["receptionist"],
   },
   {
@@ -140,6 +147,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Anamnese",
     nivel: "essencial",
     origem: "anamnesis_fills.filled_by",
+    quando: "filled_at",
     papeis: ["receptionist", "tsb", "asb"],
   },
   {
@@ -150,6 +158,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Consentimento",
     nivel: "essencial",
     origem: "client_consents.recorded_by",
+    quando: "granted_at",
     papeis: ["receptionist", "clinical_coordinator"],
   },
   {
@@ -159,16 +168,18 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Editar",
     nivel: "complementar",
     origem: "client_changes.changed_by",
+    quando: "changed_at",
     papeis: ["sdr", "receptionist"],
   },
   {
     chave: "movimentacoes_jornada",
     rotulo: "Clientes movidos de fase",
     ajuda:
-      "Passagens da jornada feitas por ela. É o coração do sistema: aprender a mover o cliente na hora certa.",
+      "Passagens da jornada registradas em nome dela. ⚠️ Inclui as que o sistema faz sozinho quando ela conclui uma etapa — o histórico não separa as duas, então este número tende a ser maior que os movimentos feitos à mão.",
     onde: "Jornada do Cliente → arrastar o cartão",
     nivel: "essencial",
     origem: "journey_phase_history.moved_by",
+    quando: "created_at",
     papeis: ["receptionist", "sdr", "clinical_coordinator", "commercial_consultant"],
   },
   {
@@ -178,6 +189,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Transferir",
     nivel: "complementar",
     origem: "client_clinic_history.transferred_by",
+    quando: "created_at",
     papeis: ["receptionist", "unit_manager"],
   },
   {
@@ -188,6 +200,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Compartilhar",
     nivel: "complementar",
     origem: "client_shares.shared_by",
+    quando: "started_at",
     papeis: ["receptionist", "unit_manager"],
   },
 
@@ -202,6 +215,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Avaliação → Concluir",
     nivel: "essencial",
     origem: "clinical_evaluations.closed_by + kind=avaliacao",
+    quando: "closed_at",
     papeis: ["clinical_coordinator"],
   },
   {
@@ -212,6 +226,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "clinical_evaluations.closed_by + kind=reavaliacao",
+    quando: "closed_at",
     papeis: ["clinical_coordinator"],
   },
   {
@@ -222,6 +237,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Galeria → Enviar",
     nivel: "essencial",
     origem: "clinical_media.uploaded_by",
+    quando: "created_at",
     papeis: ["clinical_coordinator", "tsb", "asb"],
   },
   {
@@ -232,6 +248,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Considerações",
     nivel: "essencial",
     origem: "clinical_notes.created_by",
+    quando: "created_at",
     papeis: ["clinical_coordinator"],
   },
   {
@@ -242,6 +259,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Anamnese clínica",
     nivel: "complementar",
     origem: "clinical_anamnesis.created_by",
+    quando: "created_at",
     papeis: ["clinical_coordinator", "dentist"],
   },
   {
@@ -253,6 +271,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "treatment_plan_options.reviewed_by",
+    quando: "reviewed_at",
     papeis: ["clinical_coordinator"],
   },
   {
@@ -262,6 +281,7 @@ export const INDICADORES = [
     onde: "Painel de atendimento → Concluir",
     nivel: "essencial",
     origem: "appointments.done_by",
+    quando: "done_at",
     papeis: ["clinical_coordinator", "dentist"],
   },
   {
@@ -273,6 +293,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "appointments.provider_user_id",
+    quando: "done_at",
     papeis: ["dentist", "clinical_coordinator", "tsb", "asb"],
   },
   {
@@ -282,6 +303,7 @@ export const INDICADORES = [
     onde: "Painel de atendimento → Registrar desfecho",
     nivel: "complementar",
     origem: "attendance_session_outcomes.recorded_by",
+    quando: "recorded_at",
     papeis: ["clinical_coordinator", "tsb", "asb"],
   },
   {
@@ -291,6 +313,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Solicitações",
     nivel: "complementar",
     origem: "clinical_requests.requested_by",
+    quando: "created_at",
     papeis: ["clinical_coordinator", "dentist"],
   },
   {
@@ -301,6 +324,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "plan_quality_reviews.reviewed_by",
+    quando: "reviewed_at",
     papeis: ["clinical_coordinator"],
   },
   {
@@ -312,6 +336,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "journey_decisions.resolved_by",
+    quando: "resolved_at",
     papeis: ["clinical_coordinator", "unit_manager"],
   },
 
@@ -327,16 +352,18 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "treatment_plans.created_by",
+    quando: "created_at",
     papeis: ["planner_dentist"],
   },
   {
     chave: "planos_enviados",
     rotulo: "Planos enviados para aprovação",
     ajuda:
-      "Planos que ela submeteu ao Coordenador. Criar e não enviar deixa o caso parado — por isso os dois são medidos.",
+      "Planos montados por ela que já foram enviados ao Coordenador. Criar e não enviar deixa o caso parado — por isso os dois são medidos.",
     onde: "Planejamento → Enviar para aprovação",
     nivel: "essencial",
-    origem: "treatment_plan_status_events.changed_by + status=submitted",
+    origem: "treatment_plans.created_by",
+    quando: "submitted_at",
     papeis: ["planner_dentist"],
   },
   {
@@ -347,6 +374,7 @@ export const INDICADORES = [
     onde: "Planejamento → Pedir complemento",
     nivel: "complementar",
     origem: "planning_supplements.created_by",
+    quando: "created_at",
     papeis: ["planner_dentist"],
   },
 
@@ -362,6 +390,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "treatment_sessions.executed_by + status=done",
+    quando: "done_at",
     papeis: ["dentist"],
   },
   {
@@ -372,6 +401,7 @@ export const INDICADORES = [
     onde: "Prontuário → Evolução",
     nivel: "essencial",
     origem: "clinical_progress_notes.author_id",
+    quando: "created_at",
     papeis: ["dentist"],
   },
   {
@@ -381,6 +411,7 @@ export const INDICADORES = [
     onde: "Ficha do cliente → Documentos",
     nivel: "essencial",
     origem: "clinical_documents.author_id",
+    quando: "created_at",
     papeis: ["dentist", "clinical_coordinator"],
   },
   {
@@ -390,7 +421,8 @@ export const INDICADORES = [
       "Baixas de estoque feitas à mão, para quando o kit do procedimento não cobre o que foi usado.",
     onde: "Estoque → Registrar consumo",
     nivel: "complementar",
-    origem: "stock_movements.created_by",
+    origem: "stock_movements.created_by + source_type=manual + kind=consumo",
+    quando: "created_at",
     papeis: ["tsb", "asb"],
   },
 
@@ -405,6 +437,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "commercial_presentations.consultant_id",
+    quando: "created_at",
     papeis: ["commercial_consultant"],
   },
   {
@@ -416,6 +449,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "plan_negotiations.created_by",
+    quando: "created_at",
     papeis: ["commercial_consultant"],
   },
   {
@@ -425,6 +459,7 @@ export const INDICADORES = [
     onde: "Comercial → Funil",
     nivel: "essencial",
     origem: "commercial_card_events.actor_id",
+    quando: "created_at",
     papeis: ["commercial_consultant"],
   },
   {
@@ -435,6 +470,7 @@ export const INDICADORES = [
     onde: "Comercial → Funil → Registrar desfecho",
     nivel: "complementar",
     origem: "commercial_cards.outcome_by",
+    quando: "outcome_at",
     papeis: ["commercial_consultant"],
   },
   {
@@ -446,6 +482,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "commercial_sales.contract_signed_by",
+    quando: "contract_signed_at",
     papeis: ["commercial_consultant", "commercial_assistant"],
   },
   {
@@ -455,6 +492,7 @@ export const INDICADORES = [
     onde: "Comercial → Follow-up",
     nivel: "essencial",
     origem: "commercial_followup_attempts.created_by",
+    quando: "created_at",
     papeis: ["commercial_consultant", "commercial_assistant"],
   },
   {
@@ -465,6 +503,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "commercial_sales.payment_issued_by",
+    quando: "payment_issued_at",
     papeis: ["commercial_assistant"],
   },
   {
@@ -475,6 +514,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "commercial_sales.payment_confirmed_by",
+    quando: "payment_confirmed_at",
     papeis: ["commercial_assistant"],
   },
   {
@@ -485,6 +525,7 @@ export const INDICADORES = [
     onde: "Comercial → Venda direta",
     nivel: "essencial",
     origem: "direct_sales.created_by",
+    quando: "created_at",
     papeis: ["commercial_consultant", "receptionist"],
   },
   {
@@ -494,6 +535,7 @@ export const INDICADORES = [
     onde: "PPR+ → Nova adesão",
     nivel: "complementar",
     origem: "ppr_memberships.sold_by",
+    quando: "created_at",
     papeis: ["commercial_consultant", "receptionist"],
   },
   {
@@ -505,6 +547,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "payment_renegotiations.created_by",
+    quando: "created_at",
     papeis: ["commercial_consultant", "unit_manager", "finance_franchisor"],
   },
 
@@ -519,6 +562,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "payables.approved_by",
+    quando: "approved_at",
     papeis: ["unit_manager", "finance_franchisor"],
   },
   {
@@ -528,6 +572,7 @@ export const INDICADORES = [
     onde: "Financeiro → Contas a pagar → Nova",
     nivel: "essencial",
     origem: "payables.created_by",
+    quando: "created_at",
     papeis: ["unit_manager", "finance_franchisor"],
   },
   {
@@ -538,6 +583,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "stock_counts.applied_by",
+    quando: "applied_at",
     papeis: ["unit_manager"],
   },
   {
@@ -547,6 +593,7 @@ export const INDICADORES = [
     onde: "Estoque → Inventário → Nova contagem",
     nivel: "essencial",
     origem: "stock_counts.created_by",
+    quando: "created_at",
     papeis: ["unit_manager"],
   },
   {
@@ -557,6 +604,7 @@ export const INDICADORES = [
     onde: "Compras → Nova requisição → Enviar",
     nivel: "essencial",
     origem: "purchase_requests.sent_by",
+    quando: "sent_at",
     papeis: ["unit_manager"],
   },
   {
@@ -568,6 +616,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "purchase_receipts.created_by",
+    quando: "created_at",
     papeis: ["unit_manager"],
   },
   {
@@ -577,6 +626,7 @@ export const INDICADORES = [
     onde: "Estoque → Compras → Lançar nota",
     nivel: "complementar",
     origem: "stock_purchases.created_by",
+    quando: "created_at",
     papeis: ["unit_manager"],
   },
   {
@@ -587,6 +637,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "purchase_allocations.decided_by",
+    quando: "decided_at",
     papeis: ["unit_manager"],
   },
   {
@@ -597,6 +648,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "plan_negotiations.authorized_by",
+    quando: "authorized_at",
     papeis: ["unit_manager"],
   },
   {
@@ -606,6 +658,7 @@ export const INDICADORES = [
     onde: "Financeiro → Orçamento",
     nivel: "complementar",
     origem: "budget_lines.created_by",
+    quando: "created_at",
     papeis: ["unit_manager", "finance_franchisor"],
   },
   {
@@ -617,6 +670,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "fiscal_periods.closed_by",
+    quando: "closed_at",
     papeis: ["unit_manager", "finance_franchisor"],
   },
   {
@@ -628,6 +682,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "plan_cancellations.created_by",
+    quando: "created_at",
     papeis: ["unit_manager"],
   },
   {
@@ -637,6 +692,7 @@ export const INDICADORES = [
     onde: "Administração → Config. Agenda",
     nivel: "complementar",
     origem: "agenda_closures.created_by",
+    quando: "created_at",
     papeis: ["unit_manager"],
   },
 
@@ -651,6 +707,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "payment_receipts.created_by",
+    quando: "created_at",
     papeis: ["finance_franchisor"],
   },
   {
@@ -661,6 +718,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "payment_installments.paid_by",
+    quando: "paid_at",
     papeis: ["finance_franchisor", "receptionist"],
   },
   {
@@ -671,6 +729,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "payable_payments.created_by",
+    quando: "created_at",
     papeis: ["finance_franchisor"],
   },
   {
@@ -681,6 +740,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "financial_entries.reconciled_by",
+    quando: "reconciled_at",
     papeis: ["finance_franchisor"],
   },
   {
@@ -692,6 +752,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "bank_transactions.matched_by",
+    quando: "matched_at",
     papeis: ["finance_franchisor"],
   },
   {
@@ -701,6 +762,7 @@ export const INDICADORES = [
     onde: "Financeiro → Conciliação → Importar extrato",
     nivel: "complementar",
     origem: "bank_statement_imports.created_by",
+    quando: "created_at",
     papeis: ["finance_franchisor"],
   },
   {
@@ -709,7 +771,8 @@ export const INDICADORES = [
     ajuda: "Lançamentos contábeis criados à mão por ela.",
     onde: "Financeiro → Razão → Novo lançamento",
     nivel: "complementar",
-    origem: "financial_entries.created_by",
+    origem: "financial_entries.created_by + source_type=manual",
+    quando: "created_at",
     papeis: ["finance_franchisor"],
   },
   {
@@ -720,6 +783,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "collection_contacts.author_id",
+    quando: "created_at",
     papeis: ["finance_franchisor", "unit_manager"],
   },
   {
@@ -730,6 +794,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "payout_closings.closed_by",
+    quando: "closed_at",
     papeis: ["finance_franchisor"],
   },
 
@@ -744,6 +809,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "purchase_rounds.created_by",
+    quando: "created_at",
     papeis: ["purchaser"],
   },
   {
@@ -754,6 +820,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "purchase_quotes.created_by",
+    quando: "created_at",
     papeis: ["purchaser"],
   },
   {
@@ -764,6 +831,7 @@ export const INDICADORES = [
     nivel: "essencial",
     dependeDeOutro: true,
     origem: "purchase_round_items.awarded_by",
+    quando: "awarded_at",
     papeis: ["purchaser"],
   },
   {
@@ -774,6 +842,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "purchase_orders.created_by",
+    quando: "created_at",
     papeis: ["purchaser"],
   },
   {
@@ -785,6 +854,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "supplier_item_links.created_by",
+    quando: "created_at",
     papeis: ["purchaser", "unit_manager"],
   },
 
@@ -798,6 +868,7 @@ export const INDICADORES = [
     onde: "Empresarial → Funil",
     nivel: "essencial",
     origem: "empresarial.commercial_leads.consultant_id",
+    quando: "created_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -807,6 +878,7 @@ export const INDICADORES = [
     onde: "Empresarial → Ficha da empresa → Contatos",
     nivel: "essencial",
     origem: "empresarial.lead_contact_attempts.author_id",
+    quando: "created_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -816,6 +888,7 @@ export const INDICADORES = [
     onde: "Empresarial → Ficha da empresa → Atividades",
     nivel: "essencial",
     origem: "empresarial.commercial_lead_activities.author_id",
+    quando: "created_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -825,6 +898,7 @@ export const INDICADORES = [
     onde: "Empresarial → Funil → arrastar o cartão",
     nivel: "essencial",
     origem: "empresarial.commercial_lead_stage_history.moved_by",
+    quando: "entered_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -834,6 +908,7 @@ export const INDICADORES = [
     onde: "Empresarial → Ficha da empresa → Reuniões",
     nivel: "complementar",
     origem: "empresarial.lead_meetings.created_by",
+    quando: "created_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -844,6 +919,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "empresarial.lead_dispatches.sent_by",
+    quando: "sent_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -854,6 +930,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "empresarial.lead_closing_reviews.confirmed_by",
+    quando: "confirmed_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -864,6 +941,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "empresarial.lead_implementation_steps.done_by",
+    quando: "done_at",
     papeis: ["rislife_consultant"],
   },
   {
@@ -874,6 +952,7 @@ export const INDICADORES = [
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "empresarial.welcome_contacts.contacted_by",
+    quando: "contacted_at",
     papeis: ["rislife_consultant"],
   },
 ] as const satisfies readonly {
@@ -884,6 +963,7 @@ export const INDICADORES = [
   nivel: NivelDoIndicador;
   dependeDeOutro?: true;
   origem: string;
+  quando: string;
   papeis: readonly UserRole[];
 }[];
 
@@ -1349,3 +1429,145 @@ export function oQueImpedeAbrir(entrada: {
   }
   return null;
 }
+
+// -- ETAPA 2: A MEDIÇÃO --------------------------------------------------------
+
+/** "empresarial.lead_meetings.created_by + a=b" → as partes da consulta. */
+export type OrigemLida = {
+  schema: string;
+  tabela: string;
+  coluna: string;
+  filtros: { coluna: string; valor: string }[];
+};
+
+/**
+ * Lê a `origem` de um indicador. O catálogo guarda a consulta como texto
+ * legível ("appointments.created_by + type=evaluation") porque é assim que
+ * gente confere; a contagem precisa das partes. Um leitor só, com teste — e é
+ * o MESMO formato que `npm run check:indicadores` confere contra o banco.
+ */
+export function lerOrigem(origem: string): OrigemLida {
+  const [caminho, ...resto] = origem.split(" + ").map((x) => x.trim());
+  const p = caminho.split(".");
+  return {
+    schema: p.length === 3 ? p[0] : "public",
+    tabela: p.length === 3 ? p[1] : p[0],
+    coluna: p[p.length - 1],
+    filtros: resto.map((f) => {
+      const i = f.indexOf("=");
+      return { coluna: f.slice(0, i).trim(), valor: f.slice(i + 1).trim() };
+    }),
+  };
+}
+
+/**
+ * O resultado de contar UM indicador.
+ *
+ * ⚠️ `ok: false` NÃO É ZERO. É "não consegui medir" — o banco de treino fora
+ * do ar, a consulta demorou demais, a tabela mudou de nome. As duas coisas
+ * produziriam o mesmo "0 de 5" na tela se ninguém as separasse, e a conclusão
+ * natural de quem olha é "a pessoa não fez", que é mentira. (§0d do
+ * CLAUDE.md: régua que não acha nada tem de GRITAR, nunca responder "não".)
+ */
+export type ResultadoDaContagem =
+  | { ok: true; feito: number }
+  | { ok: false; motivo: string };
+
+export type ItemDoProgresso = {
+  chave: string;
+  rotulo: string;
+  minimo: number;
+  /** `null` = não deu para medir. Nunca vira zero. */
+  feito: number | null;
+  cumprido: boolean;
+  motivo?: string;
+};
+
+export type ProgressoDaMissao = {
+  itens: ItemDoProgresso[];
+  /** Todos os critérios medidos E todos atingidos. */
+  cumprida: boolean;
+  /** Quantos critérios não deu para medir agora. */
+  semMedida: number;
+  /** 0 a 100, só sobre o que foi medido. */
+  percentual: number;
+};
+
+/**
+ * Junta o que foi contado com o que era exigido.
+ *
+ * ⚠️ A LEI DESTA FUNÇÃO: MISSÃO COM QUALQUER CRITÉRIO SEM MEDIDA NÃO ESTÁ
+ * CUMPRIDA — mesmo que todos os outros estejam. Na Etapa 3 "cumprida" vai
+ * liberar o sistema real; liberar alguém porque o banco de treino não
+ * respondeu seria abrir o portão por falha de rede.
+ *
+ * E o feito acima do mínimo não "sobra" para outro critério: fazer 20
+ * cadastros não compensa zero check-ins. Cada critério é uma habilidade.
+ */
+export function progressoDaMissao(
+  missao: readonly { indicador: Indicador; minimo: number }[],
+  contagens: Readonly<Record<string, ResultadoDaContagem | undefined>>
+): ProgressoDaMissao {
+  const itens: ItemDoProgresso[] = missao
+    .filter((m) => m.minimo > 0)
+    .map(({ indicador, minimo }) => {
+      const c = contagens[indicador.chave];
+      if (!c) {
+        return {
+          chave: indicador.chave,
+          rotulo: indicador.rotulo,
+          minimo,
+          feito: null,
+          cumprido: false,
+          motivo: "não foi contado",
+        };
+      }
+      if (!c.ok) {
+        return {
+          chave: indicador.chave,
+          rotulo: indicador.rotulo,
+          minimo,
+          feito: null,
+          cumprido: false,
+          motivo: c.motivo,
+        };
+      }
+      return {
+        chave: indicador.chave,
+        rotulo: indicador.rotulo,
+        minimo,
+        feito: c.feito,
+        cumprido: c.feito >= minimo,
+      };
+    });
+
+  const semMedida = itens.filter((i) => i.feito === null).length;
+  const exigido = itens.reduce((s, i) => s + i.minimo, 0);
+  // Cada critério contribui no MÁXIMO o próprio mínimo: a sobra de um não
+  // pode puxar o percentual para cima e esconder o que falta no outro.
+  const atingido = itens.reduce(
+    (s, i) => s + (i.feito === null ? 0 : Math.min(i.feito, i.minimo)),
+    0
+  );
+
+  return {
+    itens,
+    cumprida: itens.length > 0 && semMedida === 0 && itens.every((i) => i.cumprido),
+    semMedida,
+    percentual: exigido === 0 ? 0 : Math.floor((atingido / exigido) * 100),
+  };
+}
+
+/**
+ * O resultado de medir uma matrícula. TRÊS respostas, nunca duas: "não
+ * começou", "não deu para medir" e "medido" são coisas diferentes, e a tela
+ * precisa dizer qual é. Juntar as duas primeiras num "0 de 5" faria a pessoa
+ * achar que o trabalho dela sumiu.
+ *
+ * Mora aqui (e não no módulo de servidor) porque a tela também precisa do
+ * tipo, e o que é importado por tela não pode depender de código de servidor.
+ */
+export type Medicao =
+  | { estado: "nao_comecou" }
+  | { estado: "sem_medicao"; motivo: string }
+  | { estado: "medido"; progresso: ProgressoDaMissao };

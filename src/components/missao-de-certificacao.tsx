@@ -10,7 +10,9 @@ import {
   podeIniciar,
   recadoDaMatricula,
   type Matricula,
+  type Medicao,
 } from "@/lib/certificacao";
+import { ProgressoDaMissao } from "@/components/progresso-da-missao";
 import { ROLE_LABELS } from "@/lib/roles";
 import { formatAnyDateBr } from "@/lib/dates";
 import { iniciarMinhaMissao } from "@/app/(app)/missao-actions";
@@ -25,6 +27,8 @@ export type MissaoNaTela = Pick<
   prazo: string | null;
   /** O acesso ao sistema real foi suspenso por causa desta reciclagem. */
   suspenso: boolean;
+  /** Só existe depois do clique; antes dele não há o que medir. */
+  medicao: Medicao | null;
 };
 
 /**
@@ -99,7 +103,14 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
             </p>
           )}
 
-          {missao.resumo ? (
+          {valendo && missao.medicao ? (
+            <div className="rounded-lg border border-input bg-background p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Seu progresso no treino:
+              </p>
+              <ProgressoDaMissao medicao={missao.medicao} />
+            </div>
+          ) : missao.resumo ? (
             <div className="rounded-lg border border-input bg-background p-3">
               <p className="text-xs font-medium text-muted-foreground">
                 O que você precisa fazer no treino:

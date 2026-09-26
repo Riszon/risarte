@@ -26,7 +26,9 @@ import {
   POLITICAS_DE_ACESSO,
   ehModoDeGrupo,
   grupoEstaDefinido,
+  lerOrigem,
   missaoDependeSoDeTerceiros,
+  progressoDaMissao,
   type MetaDoTreino,
 } from "@/lib/certificacao";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
@@ -206,15 +208,26 @@ describe("a origem de cada indicador (o que a Etapa 2 vai contar)", () => {
     }
   });
 
-  it("duas metas diferentes não saem da mesma coluna sem filtro", () => {
-    // `primeiros_agendamentos` e `agendamentos_reavaliacao` vêm os dois de
-    // `appointments.created_by` — e só se distinguem pelo `+ type=`. Origem
-    // repetida SEM filtro seria o mesmo número em dois lugares, e o Admin
-    // exigiria a mesma coisa duas vezes achando que exige duas.
-    const semFiltro = INDICADORES.filter((i) => !i.origem.includes(" + ")).map(
-      (i) => i.origem
-    );
-    expect(new Set(semFiltro).size).toBe(semFiltro.length);
+  it("duas metas diferentes nunca contam exatamente a mesma coisa", () => {
+    // Uma contagem é a ORIGEM (autor + filtros) mais o QUANDO. Se dois
+    // indicadores tiverem as duas iguais, são o mesmo número com dois nomes —
+    // e o Admin exigiria a mesma coisa duas vezes achando que exige duas.
+    //
+    // "Planos criados" e "planos enviados" saem da MESMA coluna (quem montou o
+    // plano) e são ações diferentes: um pela data de criação, o outro pela de
+    // envio. É por isso que a regra olha o par, e não só a coluna.
+    const frases = INDICADORES.map((i) => `${i.origem} @ ${i.quando}`);
+    const repetidas = frases.filter((f, k) => frases.indexOf(f) !== k);
+    expect(repetidas, "contagens idênticas com nomes diferentes").toEqual([]);
+  });
+
+  it("todo indicador diz QUANDO a ação aconteceu", () => {
+    // Sem isto, a contagem usaria a data de criação do registro — e um
+    // agendamento criado ontem com check-in feito hoje não contaria como
+    // check-in de hoje.
+    for (const i of INDICADORES) {
+      expect(i.quando, `"${i.chave}" sem data da ação`).toMatch(/^[a-z_]+$/);
+    }
   });
 });
 
@@ -506,5 +519,110 @@ describe("⚠️ a política de acesso na reciclagem (0274)", () => {
     expect(ehPoliticaDeAcesso("prazo")).toBe(true);
     expect(ehPoliticaDeAcesso("suspende_agora")).toBe(true);
     expect(ehPoliticaDeAcesso("bloquear")).toBe(false);
+  });
+});
+
+describe("⚠️ ETAPA 2 — ler a origem e montar o progresso", () => {
+  it("lê autor, schema e filtros da origem", () => {
+    expect(lerOrigem("clients.created_by")).toEqual({
+      schema: "public",
+      tabela: "clients",
+      coluna: "created_by",
+      filtros: [],
+    });
+    expect(lerOrigem("empresarial.lead_meetings.created_by")).toMatchObject({
+      schema: "empresarial",
+      tabela: "lead_meetings",
+      coluna: "created_by",
+    });
+  });
+
+  it("lê DOIS filtros, na ordem — nenhum pode sumir", () => {
+    // A prova contra o banco não conseguiu demonstrar o segundo filtro (ele não
+    // cortava nada a mais nos dados que havia). Aqui ele é provado na leitura:
+    // se o segundo sumisse, "consumo avulso" contaria perda e ajuste como se
+    // fossem consumo.
+    expect(
+      lerOrigem("stock_movements.created_by + source_type=manual + kind=consumo").filtros
+    ).toEqual([
+      { coluna: "source_type", valor: "manual" },
+      { coluna: "kind", valor: "consumo" },
+    ]);
+  });
+
+  it("todas as 79 origens do catálogo são lidas sem perder peça", () => {
+    for (const i of INDICADORES) {
+      const o = lerOrigem(i.origem);
+      expect(o.tabela, i.chave).toBeTruthy();
+      expect(o.coluna, i.chave).toBeTruthy();
+      expect(o.filtros.length, i.chave).toBe(i.origem.split(" + ").length - 1);
+      for (const f of o.filtros) {
+        expect(f.coluna, i.chave).toBeTruthy();
+        expect(f.valor, i.chave).toBeTruthy();
+      }
+    }
+  });
+
+  const cad = INDICADORES.find((i) => i.chave === "cadastros")!;
+  const chk = INDICADORES.find((i) => i.chave === "check_ins")!;
+  const missao = [
+    { indicador: cad, minimo: 5 },
+    { indicador: chk, minimo: 3 },
+  ];
+
+  it("cumprida só quando TODOS os critérios são atingidos", () => {
+    const p = progressoDaMissao(missao, {
+      cadastros: { ok: true, feito: 5 },
+      check_ins: { ok: true, feito: 3 },
+    });
+    expect(p.cumprida).toBe(true);
+    expect(p.percentual).toBe(100);
+  });
+
+  it("⚠️ critério SEM MEDIDA impede a missão de estar cumprida", () => {
+    // Na Etapa 3, "cumprida" libera o sistema real. Liberar alguém porque o
+    // banco de treino não respondeu seria abrir o portão por falha de rede.
+    const p = progressoDaMissao(missao, {
+      cadastros: { ok: true, feito: 50 },
+      check_ins: { ok: false, motivo: "o banco de treino demorou demais para responder" },
+    });
+    expect(p.cumprida).toBe(false);
+    expect(p.semMedida).toBe(1);
+    const semMedida = p.itens.find((i) => i.chave === "check_ins")!;
+    // E ele NÃO vira zero: vira "não medido", com o motivo.
+    expect(semMedida.feito).toBeNull();
+    expect(semMedida.motivo).toMatch(/demorou/);
+  });
+
+  it("critério que nem foi contado também não conta como feito", () => {
+    const p = progressoDaMissao(missao, { cadastros: { ok: true, feito: 5 } });
+    expect(p.cumprida).toBe(false);
+    expect(p.itens.find((i) => i.chave === "check_ins")!.feito).toBeNull();
+  });
+
+  it("sobra num critério NÃO compensa falta no outro", () => {
+    // 20 cadastros não ensinam a fazer check-in. Cada critério é uma
+    // habilidade; o percentual não pode esconder o que falta.
+    const p = progressoDaMissao(missao, {
+      cadastros: { ok: true, feito: 20 },
+      check_ins: { ok: true, feito: 0 },
+    });
+    expect(p.cumprida).toBe(false);
+    // 5 de 5 + 0 de 3 = 5 de 8 → 62%. Com a sobra contando, daria 100%.
+    expect(p.percentual).toBe(62);
+  });
+
+  it("critério sem exigência não entra na conta", () => {
+    const p = progressoDaMissao([...missao, { indicador: chk, minimo: 0 }], {
+      cadastros: { ok: true, feito: 5 },
+      check_ins: { ok: true, feito: 3 },
+    });
+    expect(p.itens).toHaveLength(2);
+  });
+
+  it("missão vazia nunca é 'cumprida'", () => {
+    // Sem critério nenhum, "tudo atingido" seria verdade por vacuidade — e
+    // liberaria o sistema real para quem não fez nada.
+    expect(progressoDaMissao([], {}).cumprida).toBe(false);
   });
 });

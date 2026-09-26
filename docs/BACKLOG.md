@@ -1327,3 +1327,40 @@ texto, não tem catálogo de tipos; pegar isto exigiria entender a consulta.
 Pode ser que o caminho certo seja outro — rodar a migração contra um banco
 descartável antes de mandar para o dono. Fica anotado como ideia, não como
 tarefa: a decisão precisa de alguém pensando no custo.
+
+---
+
+### AP11. ⚠️ `count ?? 0` depois de `head: true` pode fazer TRAVA falhar aberta (26/09/2026)
+
+**Achado escrevendo a medição da certificação (Etapa 2), não por relato.**
+
+**CONFIRMADO, medindo contra o banco de treino:** pedindo só a contagem ao
+Supabase (`select("*", { count: "exact", head: true })`), uma tabela que **não
+existe** volta com **`error: null` e `count: null`** — sem erro nenhum. O
+tempo-limite volta como erro comum, com `status: 0`.
+
+**CONFIRMADO, lendo o código:** 14 lugares do sistema fazem `count ?? 0` logo
+depois de uma contagem assim. Nenhum deles foi conferido caso a caso.
+
+**O risco não é igual nos 14.** Onde o zero só alimenta um número na tela
+(`chat/page.tsx`, `notification-nav-item.tsx`), o pior caso é um contador
+errado. Onde o zero **libera uma ação**, a trava **falha aberta** — mesma
+família do AP9:
+
+| Arquivo | O que o zero falso faria |
+|---|---|
+| `procedimentos/actions.ts:294` | apagar procedimento que está em uso (a regra é inativar) |
+| `empresarial/[companyId]/employee-actions.ts:104` | passar do teto da quantidade contratada (I4) |
+| `empresarial/[companyId]/document-actions.ts:215` | (conferir o que a trava protege) |
+| `agenda/configuracao/actions.ts:224, 278, 342` | (conferir: parecem travas de "o último não pode sair") |
+| `ppr/actions.ts:776` | (conferir) |
+| `prontuarios/[id]/page.tsx:2434` | `hasApprovedPlan` falso por erro de leitura |
+
+**NÃO CONFIRMADO:** se algum desses já recebeu contagem nula na prática. As
+tabelas existem, então o nulo só viria de um erro — e alguns desses lugares
+podem já conferir `error` antes. **Cada um precisa ser lido**, não trocado em
+massa: em alguns o zero é mesmo a resposta certa quando não há linha.
+
+**O conserto provável** é o mesmo da `certificacao-contagem.ts`: tratar
+`count === null` como "não consegui contar" e, nas travas, **recusar a ação**
+nesse caso. Guarda que não consegue conferir tem de fechar, não abrir.

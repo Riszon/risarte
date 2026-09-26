@@ -46,19 +46,24 @@ export function clienteDoTreino(): SupabaseClient | null {
   );
 }
 
-/** Acha a pessoa no treino pelo e-mail (é a chave entre os dois bancos). */
+/**
+ * Acha a pessoa no treino pelo e-mail (é a chave entre os dois bancos).
+ *
+ * `sinal` é opcional e só existe para quem não pode ficar esperando — a
+ * medição da certificação roda na tela de Início, e um treino lento não pode
+ * pendurar o sistema real. Quem já chamava sem ele continua igual.
+ */
 export async function acharNoTreino(
   treino: SupabaseClient,
-  email: string
+  email: string,
+  sinal?: AbortSignal
 ): Promise<{ id: string } | null> {
   // `ilike` para ignorar maiúsculas — com `_` e `%` escapados, senão
   // "ana_silva@" casaria também com "anaXsilva@".
   const alvo = email.trim().toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`);
-  const { data } = await treino
-    .from("profiles")
-    .select("id, email")
-    .ilike("email", alvo)
-    .maybeSingle<{ id: string; email: string | null }>();
+  let consulta = treino.from("profiles").select("id, email").ilike("email", alvo);
+  if (sinal) consulta = consulta.abortSignal(sinal);
+  const { data } = await consulta.maybeSingle<{ id: string; email: string | null }>();
   return data ? { id: data.id } : null;
 }
 

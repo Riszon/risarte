@@ -28,7 +28,9 @@ import {
   type EstadoDaMatricula,
   type PoliticaDeAcesso,
   type TipoDeTurma,
+  type Medicao,
 } from "@/lib/certificacao";
+import { ProgressoDaMissao } from "@/components/progresso-da-missao";
 import { ROLE_LABELS } from "@/lib/roles";
 import { formatAnyDateBr, todayInBrazil } from "@/lib/dates";
 import { abrirTurma, encerrarTurma, previaDaTurma } from "./actions";
@@ -51,6 +53,8 @@ export type TurmaAberta = {
     status: EstadoDaMatricula;
     started_at: string | null;
     access_suspended_at: string | null;
+    email: string | null;
+    medicao: Medicao | null;
   }[];
 };
 
@@ -410,6 +414,11 @@ function ListaDeTurmas({ turmas }: { turmas: TurmaAberta[] }) {
                       <span className="block text-xs text-muted-foreground">
                         {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS] ?? m.role}
                       </span>
+                      {m.medicao && (
+                        <span className="mt-1.5 block">
+                          <ProgressoDaMissao medicao={m.medicao} compacto />
+                        </span>
+                      )}
                     </span>
                     <span className="shrink-0 text-right">
                       <span

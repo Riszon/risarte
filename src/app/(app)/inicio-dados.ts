@@ -12,7 +12,8 @@ import {
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { contarEtapasDaCompra } from "./compras/trilha-dados";
 import { startOfTodayInBrazil } from "@/lib/dates";
-import { resumoDaMissao, type MetaDoTreino } from "@/lib/certificacao";
+import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
+import { medirMatricula } from "@/lib/certificacao-servidor";
 import type { MissaoNaTela } from "@/components/missao-de-certificacao";
 
 /**
@@ -445,7 +446,8 @@ export function atalhosPara(session: SessionContext): Atalho[] {
  */
 export async function missaoAberta(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  email: string
 ): Promise<MissaoNaTela | null> {
   const { data, error } = await supabase
     .from("training_enrollments")
@@ -478,12 +480,28 @@ export async function missaoAberta(
     .eq("role", papel)
     .returns<MetaDoTreino[]>();
 
+  const startedAt = data.started_at ? String(data.started_at) : null;
+
+  // ⚠️ SÓ MEDE QUEM JÁ COMEÇOU. Antes do clique não existe janela de contagem
+  // (lei do marco, 0273) — e medir mesmo assim iria ao banco de treino a cada
+  // abertura do Início para devolver uma resposta que já se sabe qual é.
+  const medicao: Medicao | null =
+    data.status === "em_andamento" && startedAt
+      ? await medirMatricula({
+          email,
+          role: papel,
+          started_at: startedAt,
+          metas: metas ?? [],
+        })
+      : null;
+
   return {
     id: String(data.id),
     role: papel,
     status: data.status as MissaoNaTela["status"],
-    started_at: data.started_at ? String(data.started_at) : null,
+    started_at: startedAt,
     resumo: resumoDaMissao(metas ?? [], papel),
+    medicao,
     prazo: turma?.deadline ? String(turma.deadline) : null,
     suspenso: Boolean(data.access_suspended_at),
   };

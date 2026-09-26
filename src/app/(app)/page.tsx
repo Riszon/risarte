@@ -199,7 +199,9 @@ export default async function HomePage() {
   // certificado fica guardado. Mostrar o cartão nos dois lados criaria duas
   // matrículas e dois marcos de início, em bancos diferentes, e nenhum dos
   // dois seria a verdade.
-  const minhaMissao = treino ? null : await missaoAberta(supabase, session.userId);
+  const minhaMissao = treino
+    ? null
+    : await missaoAberta(supabase, session.userId, session.email);
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";

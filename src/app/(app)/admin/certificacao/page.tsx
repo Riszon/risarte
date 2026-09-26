@@ -14,6 +14,8 @@ import {
 import { PortaoEditor } from "./portao-editor";
 import { MissoesEditor } from "./missoes-editor";
 import { Turmas, type TurmaAberta } from "./turmas";
+import { medirMatricula, medirVarias } from "@/lib/certificacao-servidor";
+import type { UserRole } from "@/lib/roles";
 
 export const metadata: Metadata = { title: "Certificação para o sistema real" };
 
@@ -60,7 +62,7 @@ export default async function CertificacaoPage() {
     supabase
       .from("training_campaigns")
       .select(
-        "id, code, kind, note, created_at, access_policy, deadline, clinics(name), training_enrollments(user_id, role, status, started_at, access_suspended_at, profiles(full_name))"
+        "id, code, kind, note, created_at, access_policy, deadline, clinics(name), training_enrollments(user_id, role, status, started_at, access_suspended_at, profiles(full_name, email))"
       )
       .eq("status", "aberta")
       .order("created_at", { ascending: false }),
@@ -102,7 +104,13 @@ export default async function CertificacaoPage() {
       null;
   };
 
-  const turmas: TurmaAberta[] = (turmasBrutas ?? []).map((t) => ({
+  const umEmail = (v: unknown): string | null => {
+    if (!v) return null;
+    const o = Array.isArray(v) ? v[0] : v;
+    return (o as { email?: string | null })?.email ?? null;
+  };
+
+  const turmasSemMedida: TurmaAberta[] = (turmasBrutas ?? []).map((t) => ({
     id: String(t.id),
     code: t.code ? String(t.code) : null,
     kind: String(t.kind),
@@ -120,6 +128,33 @@ export default async function CertificacaoPage() {
       access_suspended_at: m.access_suspended_at
         ? String(m.access_suspended_at)
         : null,
+      email: umEmail(m.profiles),
+      medicao: null,
+    })),
+  }));
+
+  // ⚠️ SÓ MEDE QUEM JÁ COMEÇOU, e poucos de cada vez (`medirVarias`). Antes do
+  // clique não há janela de contagem; e medir a turma inteira de uma vez
+  // poderia estourar as conexões do banco de treino e fazer TODOS aparecerem
+  // como "não deu para medir".
+  const aMedir = turmasSemMedida.flatMap((t) =>
+    t.matriculas
+      .filter((m) => m.status === "em_andamento" && m.started_at && m.email)
+      .map((m) => ({ chave: `${t.id}:${m.user_id}`, m }))
+  );
+  const medidas = await medirVarias(aMedir, ({ m }) =>
+    medirMatricula({
+      email: m.email!,
+      role: m.role as UserRole,
+      started_at: m.started_at,
+      metas: listaDeMetas,
+    })
+  );
+  const turmas: TurmaAberta[] = turmasSemMedida.map((t) => ({
+    ...t,
+    matriculas: t.matriculas.map((m) => ({
+      ...m,
+      medicao: medidas.get(`${t.id}:${m.user_id}`) ?? null,
     })),
   }));
 

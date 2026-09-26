@@ -690,6 +690,23 @@ certificação. O que você fez antes, aprendendo, não entra.
 > está sendo medido. Contar o período de aprendizado faria a certificação ser
 > conquistada por quem brincou bastante, não por quem aprendeu.
 
+**Depois de começar, o cartão mostra o seu progresso** — cada critério com uma
+barra e quanto falta: *"3 de 5"*, *"1 de 3"*. A contagem é feita no ambiente de
+treino e **só considera o que você fez depois do clique**.
+
+Duas regras que valem a pena saber:
+
+- **Fazer mais num critério não compensa outro.** Vinte cadastros não ensinam
+  a fazer check-in. Cada critério precisa ser atingido.
+- **Se aparecer "não deu para medir", o seu trabalho não sumiu.** Quer dizer
+  que o sistema não conseguiu falar com o ambiente de treino naquele momento.
+  Tudo o que você fez continua lá, e aparece quando a medição voltar. Enquanto
+  algum critério não puder ser conferido, a missão **não** é dada por
+  cumprida — nada é liberado no escuro.
+
+**Para o Admin Master:** a lista de cada turma mostra, pessoa por pessoa, o
+progresso de quem já começou.
+
 **Para o Admin Master:** as turmas ficam na mesma tela de Certificação. Escolha
 a unidade e o tipo, confira a lista que o sistema monta (ele já pula quem tem
 certificação) e desmarque quem não deve entrar agora — férias, afastamento,

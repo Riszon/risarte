@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.290.0",
+    data: "2026-09-26",
+    migracao: null,
+    titulo: "Certificação: agora você vê o seu progresso na missão",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Depois de aceitar a missão, o cartão na tela de Início passa a mostrar o seu progresso: cada critério com uma barra e quanto falta — '3 de 5 cadastros', '1 de 3 check-ins'. A contagem é feita no ambiente de treino e só considera o que você fez depois de clicar em começar.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Administração → Certificação, a lista de cada turma mostra o progresso de quem já começou, critério por critério.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Se o sistema não conseguir falar com o ambiente de treino naquele momento, ele diz isso — em vez de mostrar zero. O seu trabalho não se perde: ele está no treino e volta a aparecer quando a medição responder. E a missão nunca é dada por cumprida enquanto algum critério não puder ser conferido.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Fazer mais do que o exigido num critério não compensa outro. Vinte cadastros não ensinam a fazer check-in: cada critério precisa ser atingido.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.289.0",
     data: "2026-09-26",
     migracao: "0274",
