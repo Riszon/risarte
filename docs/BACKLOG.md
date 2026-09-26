@@ -1517,7 +1517,7 @@ isso não entrou no commit da AP12.
 
 ---
 
-### AP14. ⚠️ A tranca do sistema real não está no BANCO — só no caminho das telas (26/09/2026) — PRÓXIMO
+### AP14. ⚠️ A tranca do sistema real não está no BANCO — só no caminho das telas (26/09/2026 — corrigido, 0277 / core 0.294.0)
 
 **Levantado ao planejar a Etapa 3 do portão (0276); o dono mandou registrar
 "para corrigirmos logo a seguir".**
@@ -1545,3 +1545,29 @@ política. Cuidados: (1) desempenho — essas funções rodam em toda consulta;
 (2) o Admin Master e as rotinas agendadas (`auth.uid()` nulo) não podem
 trancar; (3) o treino não tem tranca; (4) provar com um login fechado
 chamando a API direto, ANTES e DEPOIS.
+
+**✅ CORRIGIDO (0277, core 0.294.0).** Provado ANTES, no treino: com a unidade
+A fechada pela regra, a pessoa lia a cliente de A pela API e o banco dizia que
+ela tinha função lá. DEPOIS: não lê, não tem função em A, e B (aberta) segue
+igual.
+
+- **A mudança de rota:** o plano era reescrever as funções-base. O
+  levantamento no banco achou **70 funções** lendo `user_clinic_roles` direto
+  (40 conferindo quem chama ali mesmo) — e o dono delas, `postgres`, ignora
+  RLS, então a tabela não se protegeria sozinha. Solução: a tabela virou
+  `user_clinic_roles_all` e uma **view com o nome antigo** esconde de quem
+  chama as funções das unidades fechadas. Tudo obedece sem ser tocado.
+- **`system_closed_clinics`** (derivada, recalculada por gatilho: função,
+  porta, liberação, Admin, metas, forma de liberação, turmas, matrículas,
+  certificados). Vazia no treino (`is_mirror_db`) e para o Admin.
+- **Provado no treino:** sonda antes/depois; gatilhos recalculando sozinhos
+  em 7 situações; a API (PostgREST) lendo com embeds e gravando/atualizando/
+  apagando pela view.
+- **Regra 6 do `check-migrations`:** migração depois da 0277 que mexa na
+  ESTRUTURA de `public.user_clinic_roles` é reprovada (provada com uma
+  migração de teste: 3 problemas acusados, gravação de dado não acusada).
+- **Como desfazer** está no cabeçalho da 0277.
+
+**Ficou de fora, declarado:** o Perfil da própria pessoa deixa de listar as
+funções das unidades fechadas (a lista vem da mesma janela) — o Início é que
+explica quais estão fechadas.

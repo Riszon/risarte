@@ -92,6 +92,27 @@ for (const mau of semComentarios.matchAll(
   );
 }
 
+// Regra 6 — DESDE A 0277, `public.user_clinic_roles` É UMA JANELA (VIEW).
+//
+// A tabela de verdade virou `user_clinic_roles_all`; no lugar dela ficou uma
+// view que esconde, de quem chama, as funções das unidades fechadas (AP14).
+// Ler e gravar DADOS pelo nome antigo continua certo. Mexer na ESTRUTURA não:
+// gatilho, política, coluna e índice em cima da view falham no Postgres — ou,
+// pior, uma política criada na view não protege a tabela. A régua vale só
+// para migrações DEPOIS da 0277 (as antigas mexiam na tabela, que era a
+// mesma coisa).
+if (target.slice(0, 4) > "0277") {
+  for (const mau of semComentarios.matchAll(
+    /(?:alter\s+table|create\s+(?:unique\s+)?index\s+(?:if\s+not\s+exists\s+)?\w*\s*on|create\s+(?:or\s+replace\s+)?trigger\s+\w+[\s\S]{0,120}?\bon|create\s+policy\s+\w+\s+on|drop\s+(?:policy|trigger)\s+(?:if\s+exists\s+)?\w+\s+on)\s+(?:only\s+)?public\.user_clinic_roles\b(?!_all)/gi
+  )) {
+    problems.push(
+      `estrutura em public.user_clinic_roles: ${mau[0].replace(/\s+/g, " ").trim()}\n` +
+        `      Desde a 0277 esse nome é uma VIEW (a janela da tranca por unidade).\n` +
+        `      Gatilho, política, coluna e índice vão em public.user_clinic_roles_all.`
+    );
+  }
+}
+
 for (const m of sql.matchAll(FN)) {
   const [, name, args, returns, lang] = m;
   const prev = known.get(name);

@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.293.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0276, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.294.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0277, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -424,8 +424,14 @@ a produção, com trava que EXIGE ser produção).
    Risartanos têm a porta "sistema" FECHADA no banco de treino — por isso a
    varredura `check:telas` apontada para o treino deixa gerente, financeiro e
    comprador no modo portal (3 falhas que NÃO são da 0276; conferido).
-   **A seguir: AP14** (levar a tranca para a RLS — o dono pediu logo em
-   seguida) e depois a **parte 2**: gravar o certificado (só pelo servidor,
+   ✅ **AP14 corrigido (0277, core 0.294.0): a tranca vale no BANCO.** A
+   tabela virou `user_clinic_roles_all` e uma VIEW com o nome antigo esconde de
+   quem chama as funções das unidades fechadas — as 70 funções e ~130 regras
+   obedecem sem reescrita. Provado antes/depois no treino; varredura das telas
+   idêntica à anterior. ⚠️ **Estrutura (gatilho/política/coluna) vai em
+   `user_clinic_roles_all`** — Regra 6 do `check-migrations`. ⚠️ **O dono
+   precisa RODAR a 0277 na produção.**
+   **A seguir: a parte 2**: gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
    cumprir: grava o certificado e avisa o Admin (decisão do dono).

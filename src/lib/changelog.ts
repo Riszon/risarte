@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.294.0",
+    data: "2026-09-26",
+    migracao: "0277",
+    titulo: "Unidade fechada passa a estar fechada também por dentro do sistema",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quando o sistema real está fechado numa unidade para você, ele agora fica fechado por completo — não só nas telas. Antes, quem soubesse acessar o banco de dados por fora das telas ainda conseguia ver dados daquela unidade. Nada muda no seu dia a dia: as unidades liberadas funcionam exatamente como antes.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.293.0",
     data: "2026-09-26",
     migracao: "0276",

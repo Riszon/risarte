@@ -88,7 +88,7 @@ export type SessionContext = {
    * fechado, e por quê (0276). Elas NÃO aparecem em `clinics` — ficam aqui
    * para o Início poder explicar em vez de simplesmente sumir com elas.
    */
-  unidadesFechadas: (UnidadeFechada & { clinicName: string })[];
+  unidadesFechadas: UnidadeFechada[];
   /** A tranca por unidade não pôde ser conferida: tudo ficou fechado (AP11). */
   acessoNaoConferido: boolean;
 };
@@ -239,10 +239,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
       console.error("tranca por unidade: não foi possível conferir —", leitura.mensagem);
     }
     const { liberadas, fechadas } = aplicarTranca([...memberClinics.keys()], leitura);
-    unidadesFechadas = fechadas.map((f) => ({
-      ...f,
-      clinicName: memberClinics.get(f.clinicId)?.name ?? "",
-    }));
+    unidadesFechadas = fechadas;
     for (const id of [...memberClinics.keys()]) {
       if (liberadas.has(id)) continue;
       memberClinics.delete(id);

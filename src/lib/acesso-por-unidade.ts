@@ -32,6 +32,8 @@ export const ROTULO_DO_MOTIVO: Record<MotivoDeAcesso, string> = {
 
 export type AcessoDaUnidade = {
   clinic_id: string;
+  /** Vem do banco (0277): a pessoa não enxerga a unidade FECHADA na própria lista. */
+  clinic_name: string;
   role: UserRole;
   allowed: boolean;
   reason: MotivoDeAcesso;
@@ -76,6 +78,7 @@ export function lerAcessoPorUnidade(resposta: {
       // que ele quer dizer: a linha conta como fechada.
       linhas.push({
         clinic_id: String(r.clinic_id),
+        clinic_name: typeof r.clinic_name === "string" ? r.clinic_name : "",
         role: r.role as UserRole,
         allowed: false,
         reason: "aguardando_missao",
@@ -84,6 +87,7 @@ export function lerAcessoPorUnidade(resposta: {
     }
     linhas.push({
       clinic_id: String(r.clinic_id),
+      clinic_name: typeof r.clinic_name === "string" ? r.clinic_name : "",
       role: r.role as UserRole,
       allowed: r.allowed === true,
       reason: motivo as MotivoDeAcesso,
@@ -94,12 +98,18 @@ export function lerAcessoPorUnidade(resposta: {
 
 export type UnidadeFechada = {
   clinicId: string;
+  clinicName: string;
   role: UserRole;
   motivo: MotivoDeAcesso;
 };
 
 /**
  * Quais unidades da pessoa ficam na sessão.
+ *
+ * ⚠️ DESDE A 0277 A LISTA DE FUNÇÕES QUE A PESSOA LÊ JÁ VEM SEM AS UNIDADES
+ * FECHADAS (o banco as esconde de quem pergunta sobre si). Por isso as
+ * unidades conferidas são as da lista MAIS as que a regra do banco citou —
+ * senão a fechada simplesmente sumiria, sem explicação no Início.
  *
  * ⚠️ UNIDADE SEM RESPOSTA DO BANCO FICA FECHADA. As duas listas vêm da mesma
  * tabela (`user_clinic_roles`), então a falta de uma linha só acontece se algo
@@ -118,10 +128,11 @@ export function aplicarTranca(
   const porUnidade = new Map(leitura.linhas.map((l) => [l.clinic_id, l]));
   const liberadas = new Set<string>();
   const fechadas: UnidadeFechada[] = [];
-  for (const id of unidadesDaPessoa) {
+  const todas = new Set([...unidadesDaPessoa, ...porUnidade.keys()]);
+  for (const id of todas) {
     const l = porUnidade.get(id);
     if (l?.allowed) liberadas.add(id);
-    else if (l) fechadas.push({ clinicId: id, role: l.role, motivo: l.reason });
+    else if (l) fechadas.push({ clinicId: id, clinicName: l.clinic_name, role: l.role, motivo: l.reason });
   }
   return { liberadas, fechadas };
 }

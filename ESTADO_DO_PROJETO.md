@@ -1,7 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/09/2026 · Versão do sistema: **0.293.0** · Última migração: **0276** (aplicada na produção e no treino) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/09/2026 · Versão do sistema: **0.294.0** · Última migração: **0277** (aplicada no treino; a produção recebe pelo dono) · Empresarial **0.72.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔒 0.294.0 / 0277 — A TRANCA POR UNIDADE VALE NO BANCO (AP14)
+>
+> `user_clinic_roles` virou uma VIEW sobre `user_clinic_roles_all` que esconde
+> de quem chama as funções das unidades fechadas (`system_closed_clinics`,
+> recalculada por gatilho). Pela API, quem tem a unidade fechada não lê dados
+> dela. Estrutura da tabela de funções: sempre em `user_clinic_roles_all`.
+>
 > ## 🔒 0.293.0 / 0276 — O SISTEMA REAL ABRE POR UNIDADE E FUNÇÃO (26/09/2026)
 >
 > Portão de certificação, Etapa 3, parte 1. A tranca da 0259 era por pessoa;

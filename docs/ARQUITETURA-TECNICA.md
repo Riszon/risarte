@@ -350,6 +350,20 @@ lê**, e a camada 2 procura exatamente marcas de erro na página.
 
 ## Lições que já custaram bug (não repetir)
 
+- **`public.user_clinic_roles` É UMA JANELA (VIEW) DESDE A 0277.** A tabela de
+  verdade é `user_clinic_roles_all`; a view, com o nome antigo, esconde de
+  QUEM CHAMA as funções das unidades onde o sistema real está fechado para ela
+  (`system_closed_clinics`, recalculada por gatilho a partir da regra da
+  0276). É por isso que as ~130 regras de segurança e as 70 funções que leem
+  funções obedecem à tranca sem ter sido reescritas. **Ler e gravar dados:**
+  pelo nome de sempre. **Estrutura (gatilho, política, coluna, índice):** em
+  `user_clinic_roles_all` — a Regra 6 do `check-migrations` reprova o
+  contrário. **Função que precisa ver as funções fechadas da própria pessoa**
+  (a regra da tranca, o "liberar sem missão") lê `user_clinic_roles_all`
+  direto. Por que não reescrever as funções: 40 delas conferem a função de quem
+  chama ali mesmo, e as funções rodam como `postgres`, que ignora RLS — a
+  tabela não teria como se proteger sozinha (medido em 26/09/2026).
+
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou
   `preferred_clinic_id` (2ª FK para `clinics`), todo embed `clinics ( name )`
   virou ambíguo (PGRST201) e quebrou listas/jornada. Desambiguar sempre com o
