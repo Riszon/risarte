@@ -12,7 +12,11 @@ import {
   normalizarMeta,
   resumoDaMissao,
   temMissao,
+  agruparPorUnidade,
   cargosElegiveis,
+  chaveDaConvocacao,
+  ehRedeToda,
+  rotuloDoAlcance,
   contaDesde,
   ehTipoDeTurma,
   missaoEstaValendo,
@@ -333,12 +337,15 @@ describe("as explicações que ajudam a configurar (25/09/2026)", () => {
     expect(missaoDependeSoDeTerceiros([], "clinical_coordinator")).toBe(false);
   });
 
-  it("as quatro ações desaconselhadas NÃO entraram", () => {
+  it("as ações desaconselhadas NÃO entraram", () => {
     // O dono viu a lista e concordou em deixá-las fora. Se alguém acrescentar
     // uma delas amanhã, é decisão nova — não pode entrar de carona.
+    //
+    // O CHAT SAIU DESTA LISTA em 26/09/2026, por pedido do dono. Não foi
+    // carona: foi decisão dele, depois de ouvir o risco. O teste abaixo prende
+    // o que sobrou dessa conversa — o aviso tem de estar na tela.
     const fontesProibidas = [
       "audit_logs",        // mede navegação, não competência
-      "chat_messages",     // mede conversa
       "notifications",     // não é ato dela
       "cancelled_by",      // premiar cancelamento produz cancelamento
       "reopened_by",       // mede retrabalho
@@ -624,5 +631,80 @@ describe("⚠️ ETAPA 2 — ler a origem e montar o progresso", () => {
     // Sem critério nenhum, "tudo atingido" seria verdade por vacuidade — e
     // liberaria o sistema real para quem não fez nada.
     expect(progressoDaMissao([], {}).cumprida).toBe(false);
+  });
+});
+
+describe("relatos, sugestões e chat (decisão do dono, 26/09/2026)", () => {
+  it("valem para TODAS as funções com missão", () => {
+    for (const chave of ["relatos_problema", "sugestoes", "mensagens_chat"]) {
+      for (const papel of PAPEIS_COM_MISSAO) {
+        expect(
+          indicadoresDoPapel(papel).some((i) => i.chave === chave),
+          `${chave} não aparece para ${papel}`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("⚠️ os três avisam para usar meta baixa", () => {
+    // O risco de cada um foi explicado ao dono e ele decidiu incluir. O que
+    // fica preso aqui é o aviso para QUEM CONFIGURA: sem ele, alguém poria
+    // meta 10 no chat sem saber que isso ensina a mandar mensagem vazia.
+    for (const chave of ["relatos_problema", "sugestoes", "mensagens_chat"]) {
+      const i = INDICADORES.find((x) => x.chave === chave)!;
+      expect(i.ajuda, chave).toMatch(/meta (baixa|1)/i);
+      expect(i.nivel).toBe("complementar");
+    }
+  });
+
+  it("relato e sugestão não são a mesma contagem", () => {
+    const erro = INDICADORES.find((x) => x.chave === "relatos_problema")!;
+    const sug = INDICADORES.find((x) => x.chave === "sugestoes")!;
+    expect(lerOrigem(erro.origem).filtros).toEqual([{ coluna: "kind", valor: "erro" }]);
+    expect(lerOrigem(sug.origem).filtros).toEqual([{ coluna: "kind", valor: "sugestao" }]);
+  });
+});
+
+describe("turma para várias unidades (0275)", () => {
+  const c = (clinic: string, nome: string, user: string, role: UserRole) => ({
+    clinic_id: clinic,
+    clinic_name: nome,
+    user_id: user,
+    full_name: user,
+    role,
+    ja_certificado: false,
+  });
+
+  it("a chave é (pessoa, função), não só a pessoa", () => {
+    // Desmarcar a recepcionista não pode tirar junto a gerente.
+    expect(chaveDaConvocacao({ user_id: "u1", role: "receptionist" })).not.toBe(
+      chaveDaConvocacao({ user_id: "u1", role: "unit_manager" })
+    );
+  });
+
+  it("agrupa a prévia por unidade, em ordem de nome", () => {
+    const g = agruparPorUnidade([
+      c("b", "Londrina", "u1", "receptionist"),
+      c("a", "Cambé", "u2", "receptionist"),
+      c("b", "Londrina", "u3", "dentist"),
+    ]);
+    expect(g.map((x) => x.clinic_name)).toEqual(["Cambé", "Londrina"]);
+    expect(g[1].pessoas).toHaveLength(2);
+  });
+
+  it("o título da turma não vira uma lista de 200 nomes", () => {
+    expect(rotuloDoAlcance(false, ["Cambé"])).toBe("Cambé");
+    expect(rotuloDoAlcance(false, ["Cambé", "Londrina"])).toBe("Cambé e Londrina");
+    expect(rotuloDoAlcance(false, ["A", "B", "C"])).toBe("A, B e C");
+    expect(rotuloDoAlcance(false, ["A", "B", "C", "D"])).toBe("4 unidades");
+    expect(rotuloDoAlcance(true, Array(200).fill("x"))).toBe("Rede toda (200 unidades)");
+  });
+
+  it("⚠️ 'rede toda' só quando NENHUMA unidade ativa ficou de fora", () => {
+    // Três unidades ocupadas com outra turma NÃO fazem parte desta — chamá-la
+    // de "rede toda" esconderia justamente essas três.
+    expect(ehRedeToda(["a", "b", "c"], ["a", "b", "c"])).toBe(true);
+    expect(ehRedeToda(["a", "b"], ["a", "b", "c"])).toBe(false);
+    expect(ehRedeToda([], [])).toBe(false);
   });
 });

@@ -62,6 +62,44 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.291.0",
+    data: "2026-09-26",
+    migracao: "0275",
+    titulo: "Certificação: turma para várias unidades ou para a rede toda",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao abrir uma turma, dá para escolher uma unidade, várias, ou marcar 'Rede toda' de uma vez. Com muitas unidades, há uma busca pelo nome. A turma continua sendo uma só, com um código só.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Mesmo numa turma da rede toda, cada unidade é liberada quando o SEU grupo cumprir a missão — uma unidade não fica esperando a outra.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Unidade que já está numa turma aberta aparece desabilitada, com o código da turma. Ela só pode entrar em outra quando aquela for encerrada.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Três ações novas para as metas, valendo para todas as funções: problemas relatados, sugestões enviadas e mensagens no chat. A tela recomenda meta baixa (1) para as três.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na lista de turmas, o progresso de cada pessoa é medido quando você abre a unidade — assim a tela continua rápida mesmo com a rede inteira numa turma só.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.290.0",
     data: "2026-09-26",
     migracao: null,

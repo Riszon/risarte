@@ -14,8 +14,12 @@ import {
   indicadoresDoPapel,
   normalizarMeta,
   PAPEIS_COM_MISSAO,
-  type Candidato,
+  chaveDaConvocacao,
+  type CandidatoDaUnidade,
+  type Medicao,
+  type MetaDoTreino,
 } from "@/lib/certificacao";
+import { medirMatricula, medirVarias } from "@/lib/certificacao-servidor";
 import type { UserRole } from "@/lib/roles";
 import { todayInBrazil } from "@/lib/dates";
 
@@ -146,43 +150,48 @@ export async function salvarPortao(formData: FormData): Promise<ActionResult> {
 }
 
 /**
- * A PRÉVIA: quem entraria na turma, antes de convocar.
+ * A PRÉVIA: quem entraria na turma, antes de convocar — para UMA ou VÁRIAS
+ * unidades (0275).
  *
  * ⚠️ Existe para o Admin VER antes de decidir. Convocar às cegas e descobrir
  * depois quem foi chamado é como se convoca a pessoa errada — e convocação
  * errada gasta a confiança da equipe no portão.
  */
 export async function previaDaTurma(
-  clinicId: string,
+  clinicIds: string[],
   tipo: string
-): Promise<{ ok: boolean; error?: string; candidatos?: Candidato[] }> {
+): Promise<{ ok: boolean; error?: string; candidatos?: CandidatoDaUnidade[] }> {
   await requireAdminMaster();
   if (!ehTipoDeTurma(tipo)) return { ok: false, error: "Tipo inválido." };
+  if (clinicIds.length === 0) return { ok: true, candidatos: [] };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("training_candidates", {
-    p_clinic_id: clinicId,
+  const { data, error } = await supabase.rpc("training_candidates_multi", {
+    p_clinic_ids: clinicIds,
     p_kind: tipo,
   });
 
   if (error) return { ok: false, error: "Não foi possível montar a prévia." };
-  return { ok: true, candidatos: (data ?? []) as Candidato[] };
+  return { ok: true, candidatos: (data ?? []) as CandidatoDaUnidade[] };
 }
 
-/** Abre a turma e convoca a lista conferida. */
+/** Abre UMA turma para as unidades escolhidas e convoca a lista conferida. */
 export async function abrirTurma(formData: FormData): Promise<ActionResult> {
   await requireAdminMaster();
 
-  const clinicId = String(formData.get("clinic_id") ?? "");
+  const unidades = [...new Set(formData.getAll("clinic_ids").map(String).filter(Boolean))];
   const tipo = String(formData.get("kind") ?? "");
   const nota = String(formData.get("note") ?? "");
-  const escolhidos = formData.getAll("convocados").map(String);
+  // Pares "pessoa:função" — a mesma pessoa pode vir com duas funções, e o Admin
+  // pode convocar só uma delas.
+  const escolhidos = formData.getAll("convocados").map(String).filter(Boolean);
+  const redeToda = formData.get("whole_network") === "sim";
   // Sem a caixa na tela (turma de novatos) o campo nem é enviado — e o padrão
   // é o único que não pode parar a clínica.
   const politica = String(formData.get("access_policy") ?? "mantem");
   const prazo = String(formData.get("deadline") ?? "").trim();
 
-  if (!clinicId) return { ok: false, error: "Escolha a unidade." };
+  if (unidades.length === 0) return { ok: false, error: "Escolha ao menos uma unidade." };
   if (!ehTipoDeTurma(tipo)) return { ok: false, error: "Escolha o tipo de turma." };
   if (!ehPoliticaDeAcesso(politica)) {
     return { ok: false, error: "Política de acesso inválida." };
@@ -206,12 +215,13 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("open_training_campaign", {
-    p_clinic_id: clinicId,
+    p_clinic_ids: unidades,
     p_kind: tipo,
     p_note: nota || null,
-    p_only_users: escolhidos,
+    p_only: escolhidos,
     p_access_policy: politica,
     p_deadline: politica === "prazo" ? prazo : null,
+    p_whole_network: redeToda,
   });
 
   if (error) {
@@ -222,28 +232,97 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
         m.includes("NOT_ALLOWED")
           ? "Só o Admin Master abre turmas."
           : m.includes("CAMPAIGN_ALREADY_OPEN")
-            ? "Esta unidade já tem uma turma aberta. Encerre a atual antes de abrir outra."
-            : m.includes("NOBODY_TO_ENROLL")
-              ? "Ninguém foi convocado: nenhuma das pessoas marcadas entra nesta turma."
-              : m.includes("POLICY_ONLY_FOR_RECYCLING")
-                ? "Suspender acesso só vale para reciclagem."
-                : m.includes("DEADLINE_IN_THE_PAST")
-                  ? "A data limite precisa ser futura."
-                  : m.includes("DEADLINE_REQUIRED")
-                    ? "Escolha a data limite da reciclagem."
-                    : "Não foi possível abrir a turma.",
+            ? "Alguma das unidades escolhidas já tem uma turma aberta. Encerre a atual ou tire a unidade da seleção."
+            : m.includes("UNKNOWN_UNIT")
+              ? "Alguma das unidades escolhidas não existe ou foi desativada. Recarregue a tela."
+              : m.includes("NO_UNITS")
+                ? "Escolha ao menos uma unidade."
+                : m.includes("NOBODY_TO_ENROLL")
+                  ? "Ninguém foi convocado: nenhuma das pessoas marcadas entra nesta turma."
+                  : m.includes("POLICY_ONLY_FOR_RECYCLING")
+                    ? "Suspender acesso só vale para reciclagem."
+                    : m.includes("DEADLINE_IN_THE_PAST")
+                      ? "A data limite precisa ser futura."
+                      : m.includes("DEADLINE_REQUIRED")
+                        ? "Escolha a data limite da reciclagem."
+                        : "Não foi possível abrir a turma.",
     };
   }
 
   await logAudit({
     action: "create",
     entityType: "training_campaigns",
-    clinicId,
-    details: { tipo, convocados: escolhidos.length, politica, prazo: prazo || null },
+    details: {
+      tipo,
+      unidades: unidades.length,
+      redeToda,
+      convocados: escolhidos.length,
+      politica,
+      prazo: prazo || null,
+    },
   });
 
   revalidatePath("/admin/certificacao");
   return { ok: true };
+}
+
+/**
+ * O PROGRESSO DE UMA UNIDADE DA TURMA, medido na hora em que o Admin abre.
+ *
+ * ⚠️ POR QUE SOB DEMANDA, E NÃO AO ABRIR A TELA. Uma turma da rede toda com
+ * 200 unidades pode ter 2.000 pessoas; com 5 critérios cada, medir tudo ao
+ * abrir a tela seriam 10.000 consultas ao banco de treino — a tela não abriria.
+ * Medindo uma unidade por vez, quando o Admin a expande, o custo acompanha o
+ * que ele de fato quer ver.
+ */
+export async function medirUnidadeDaTurma(
+  campaignId: string,
+  clinicId: string
+): Promise<{ ok: boolean; error?: string; medidas?: Record<string, Medicao> }> {
+  await requireAdminMaster();
+  const supabase = await createClient();
+
+  const [{ data: matriculas, error }, { data: metas }] = await Promise.all([
+    supabase
+      .from("training_enrollments")
+      .select("user_id, role, status, started_at, profiles(email)")
+      .eq("campaign_id", campaignId)
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("training_requirements")
+      .select("role, indicator, minimum_count")
+      .returns<MetaDoTreino[]>(),
+  ]);
+  if (error) return { ok: false, error: "Não foi possível ler as matrículas." };
+
+  const emailDe = (v: unknown): string | null => {
+    const o = Array.isArray(v) ? v[0] : v;
+    return (o as { email?: string | null } | null)?.email ?? null;
+  };
+
+  const lista = (matriculas ?? []).map((m) => ({
+    chave: chaveDaConvocacao({ user_id: String(m.user_id), role: String(m.role) }),
+    role: m.role as UserRole,
+    status: String(m.status),
+    started_at: m.started_at ? String(m.started_at) : null,
+    email: emailDe(m.profiles),
+  }));
+
+  const medidas = await medirVarias(lista, async (m) => {
+    // Quem não começou não é medido: não há janela de contagem (lei do marco).
+    if (m.status !== "em_andamento" || !m.started_at) return { estado: "nao_comecou" };
+    if (!m.email) {
+      return { estado: "sem_medicao", motivo: "esta pessoa não tem e-mail no cadastro" };
+    }
+    return medirMatricula({
+      email: m.email,
+      role: m.role,
+      started_at: m.started_at,
+      metas: metas ?? [],
+    });
+  });
+
+  return { ok: true, medidas: Object.fromEntries(medidas) };
 }
 
 /** Encerra a turma. Não apaga nada: matrícula e certificado continuam. */

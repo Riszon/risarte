@@ -30,8 +30,10 @@ import type { UserRole } from "@/lib/roles";
  * lista e concordou):
  *   * ACESSOS DA AUDITORIA — medem navegação, não competência. Quem abrisse 50
  *     telas "passaria" sem ter feito nada.
- *   * MENSAGENS DE CHAT — mediriam conversa, e treinariam a pessoa a escrever
- *     mensagem vazia para bater meta.
+ *   * MENSAGENS DE CHAT — ficaram de fora até 26/09/2026, quando o dono pediu
+ *     para incluir. O risco continua o mesmo (meta alta mede conversa, não
+ *     competência) e está escrito na explicação da tela: meta 1, "sabe usar".
+ *     A decisão é dele; o aviso é para quem configura.
  *   * NOTIFICAÇÕES RECEBIDAS — não são ato dela; são coisa que aconteceu com
  *     ela.
  *   * CANCELAR VENDA E REABRIR SESSÃO — são retrabalho. Meta que premia
@@ -955,6 +957,85 @@ export const INDICADORES = [
     quando: "contacted_at",
     papeis: ["rislife_consultant"],
   },
+  // ===========================================================================
+  // PARA TODAS AS FUNÇÕES — usar o sistema como ferramenta de trabalho
+  // (decisão do dono, 26/09/2026)
+  // ===========================================================================
+  {
+    chave: "relatos_problema",
+    rotulo: "Problemas relatados",
+    ajuda:
+      "Relatos de erro que ela abriu no botão de relatar problema. ⚠️ Cada relato gera trabalho para quem responde: use meta baixa (1). Meta alta ensina a inventar relato para bater número.",
+    onde: "Botão de relatar problema, em qualquer tela",
+    nivel: "complementar",
+    origem: "system_reports.reporter_id + kind=erro",
+    quando: "created_at",
+    papeis: [
+      "receptionist",
+      "sdr",
+      "clinical_coordinator",
+      "planner_dentist",
+      "dentist",
+      "tsb",
+      "asb",
+      "commercial_consultant",
+      "commercial_assistant",
+      "unit_manager",
+      "finance_franchisor",
+      "purchaser",
+      "rislife_consultant",
+    ],
+  },
+  {
+    chave: "sugestoes",
+    rotulo: "Sugestões enviadas",
+    ajuda:
+      "Sugestões de melhoria que ela enviou pelo mesmo botão. ⚠️ Mesmo cuidado dos relatos: meta baixa (1).",
+    onde: "Botão de relatar problema → Sugestão",
+    nivel: "complementar",
+    origem: "system_reports.reporter_id + kind=sugestao",
+    quando: "created_at",
+    papeis: [
+      "receptionist",
+      "sdr",
+      "clinical_coordinator",
+      "planner_dentist",
+      "dentist",
+      "tsb",
+      "asb",
+      "commercial_consultant",
+      "commercial_assistant",
+      "unit_manager",
+      "finance_franchisor",
+      "purchaser",
+      "rislife_consultant",
+    ],
+  },
+  {
+    chave: "mensagens_chat",
+    rotulo: "Mensagens no chat",
+    ajuda:
+      "Mensagens que ela enviou no chat. ⚠️ Serve só para confirmar que ela SABE USAR o chat — use meta 1. Número maior mede quantidade de conversa, não competência, e ensina a mandar mensagem vazia.",
+    onde: "Chat (ícone na barra de cima)",
+    nivel: "complementar",
+    origem: "chat_messages.sender_id",
+    quando: "created_at",
+    papeis: [
+      "receptionist",
+      "sdr",
+      "clinical_coordinator",
+      "planner_dentist",
+      "dentist",
+      "tsb",
+      "asb",
+      "commercial_consultant",
+      "commercial_assistant",
+      "unit_manager",
+      "finance_franchisor",
+      "purchaser",
+      "rislife_consultant",
+    ],
+  },
 ] as const satisfies readonly {
   chave: string;
   rotulo: string;
@@ -1571,3 +1652,72 @@ export type Medicao =
   | { estado: "nao_comecou" }
   | { estado: "sem_medicao"; motivo: string }
   | { estado: "medido"; progresso: ProgressoDaMissao };
+
+// -- Turma para várias unidades (0275) ----------------------------------------
+
+/** Quem entraria na turma, já com a unidade de onde veio. */
+export type CandidatoDaUnidade = Candidato & {
+  clinic_id: string;
+  clinic_name: string;
+};
+
+/**
+ * A chave de uma convocação é (pessoa, função), não só a pessoa: com várias
+ * unidades, a mesma pessoa pode ser recepcionista numa e gerente noutra — e a
+ * certificação é por FUNÇÃO (0273). Desmarcar a recepcionista não pode tirar
+ * junto a gerente.
+ */
+export function chaveDaConvocacao(c: { user_id: string; role: string }): string {
+  return `${c.user_id}:${c.role}`;
+}
+
+/** A prévia agrupada por unidade, na ordem do nome. */
+export function agruparPorUnidade(
+  candidatos: readonly CandidatoDaUnidade[]
+): { clinic_id: string; clinic_name: string; pessoas: CandidatoDaUnidade[] }[] {
+  const grupos = new Map<
+    string,
+    { clinic_id: string; clinic_name: string; pessoas: CandidatoDaUnidade[] }
+  >();
+  for (const c of candidatos) {
+    const g = grupos.get(c.clinic_id) ?? {
+      clinic_id: c.clinic_id,
+      clinic_name: c.clinic_name,
+      pessoas: [],
+    };
+    g.pessoas.push(c);
+    grupos.set(c.clinic_id, g);
+  }
+  return [...grupos.values()].sort((a, b) =>
+    a.clinic_name.localeCompare(b.clinic_name, "pt-BR")
+  );
+}
+
+/**
+ * Como a turma se apresenta: "Rede toda (200 unidades)", "Cambé", "Cambé,
+ * Londrina e Maringá" ou "15 unidades". Com 200 unidades, listar os nomes no
+ * título da turma seria o título mais longo da tela.
+ */
+export function rotuloDoAlcance(redeToda: boolean, nomes: readonly string[]): string {
+  if (redeToda) return `Rede toda (${nomes.length} unidade${nomes.length === 1 ? "" : "s"})`;
+  if (nomes.length === 0) return "Sem unidade";
+  if (nomes.length === 1) return nomes[0];
+  if (nomes.length <= 3) {
+    return `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+  }
+  return `${nomes.length} unidades`;
+}
+
+/**
+ * "Rede toda" é quando NENHUMA unidade ativa ficou de fora — e não "todas as
+ * que dava para marcar". Se três unidades estavam ocupadas com outra turma,
+ * a turma nova não é da rede toda, e chamá-la assim esconderia essas três.
+ */
+export function ehRedeToda(
+  escolhidas: readonly string[],
+  todasAtivas: readonly string[]
+): boolean {
+  if (todasAtivas.length === 0) return false;
+  const set = new Set(escolhidas);
+  return todasAtivas.every((id) => set.has(id));
+}

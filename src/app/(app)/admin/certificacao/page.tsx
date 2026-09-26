@@ -13,9 +13,12 @@ import {
 } from "@/lib/certificacao";
 import { PortaoEditor } from "./portao-editor";
 import { MissoesEditor } from "./missoes-editor";
-import { Turmas, type TurmaAberta } from "./turmas";
-import { medirMatricula, medirVarias } from "@/lib/certificacao-servidor";
-import type { UserRole } from "@/lib/roles";
+import {
+  Turmas,
+  type MatriculaNaTurma,
+  type TurmaAberta,
+  type UnidadeParaTurma,
+} from "./turmas";
 
 export const metadata: Metadata = { title: "Certificação para o sistema real" };
 
@@ -36,7 +39,7 @@ export default async function CertificacaoPage() {
     { data: pessoasDoGrupo },
     { data: perfis },
     { data: unidades },
-    { data: turmasBrutas },
+    { data: turmasBrutas, error: erroDasTurmas },
   ] = await Promise.all([
     supabase
       .from("training_requirements")
@@ -56,13 +59,13 @@ export default async function CertificacaoPage() {
       .returns<PerfilLinha[]>(),
     supabase
       .from("clinics")
-      .select("id, name")
+      .select("id, name, type")
       .eq("is_active", true)
       .order("name"),
     supabase
       .from("training_campaigns")
       .select(
-        "id, code, kind, note, created_at, access_policy, deadline, clinics(name), training_enrollments(user_id, role, status, started_at, access_suspended_at, profiles(full_name, email))"
+        "id, code, kind, note, created_at, access_policy, deadline, whole_network, training_campaign_units(clinic_id), training_enrollments(user_id, role, status, started_at, access_suspended_at, clinic_id, profiles(full_name))"
       )
       .eq("status", "aberta")
       .order("created_at", { ascending: false }),
@@ -104,58 +107,59 @@ export default async function CertificacaoPage() {
       null;
   };
 
-  const umEmail = (v: unknown): string | null => {
-    if (!v) return null;
-    const o = Array.isArray(v) ? v[0] : v;
-    return (o as { email?: string | null })?.email ?? null;
-  };
+  // ⚠️ O NOME DA UNIDADE VEM DA LISTA DE CLÍNICAS JÁ CARREGADA, não de um
+  // embed na turma. Com a 0275, turma → clínica tem dois caminhos (a coluna
+  // antiga e a lista de unidades) e o embed ficaria ambíguo — a mesma armadilha
+  // que já derrubou listas inteiras (ver "Lições" em ARQUITETURA-TECNICA.md).
+  const nomeDe = new Map((unidades ?? []).map((u) => [String(u.id), String(u.name)]));
 
-  const turmasSemMedida: TurmaAberta[] = (turmasBrutas ?? []).map((t) => ({
-    id: String(t.id),
-    code: t.code ? String(t.code) : null,
-    kind: String(t.kind),
-    note: t.note ? String(t.note) : null,
-    created_at: String(t.created_at),
-    access_policy: String(t.access_policy ?? "mantem"),
-    deadline: t.deadline ? String(t.deadline) : null,
-    clinic_name: umNome(t.clinics) ?? "Unidade",
-    matriculas: (t.training_enrollments ?? []).map((m) => ({
+  const turmas: TurmaAberta[] = (turmasBrutas ?? []).map((t) => {
+    const matriculas = (t.training_enrollments ?? []).map((m) => ({
       user_id: String(m.user_id),
       full_name: umNome(m.profiles),
       role: String(m.role),
-      status: m.status as TurmaAberta["matriculas"][number]["status"],
+      status: m.status as MatriculaNaTurma["status"],
       started_at: m.started_at ? String(m.started_at) : null,
       access_suspended_at: m.access_suspended_at
         ? String(m.access_suspended_at)
         : null,
-      email: umEmail(m.profiles),
-      medicao: null,
-    })),
-  }));
+      clinic_id: m.clinic_id ? String(m.clinic_id) : null,
+    }));
+    const idsDasUnidades = (t.training_campaign_units ?? []).map((u) =>
+      String(u.clinic_id)
+    );
+    return {
+      id: String(t.id),
+      code: t.code ? String(t.code) : null,
+      kind: String(t.kind),
+      note: t.note ? String(t.note) : null,
+      created_at: String(t.created_at),
+      access_policy: String(t.access_policy ?? "mantem"),
+      deadline: t.deadline ? String(t.deadline) : null,
+      whole_network: Boolean(t.whole_network),
+      // O PROGRESSO NÃO É MEDIDO AQUI. Uma turma da rede toda pode ter milhares
+      // de pessoas; medir todas ao abrir a tela travaria a tela. Cada unidade é
+      // medida quando o Admin a abre (`medirUnidadeDaTurma`).
+      unidades: idsDasUnidades
+        .map((id) => ({
+          id,
+          name: nomeDe.get(id) ?? "Unidade desativada",
+          matriculas: matriculas.filter((m) => m.clinic_id === id),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    };
+  });
 
-  // ⚠️ SÓ MEDE QUEM JÁ COMEÇOU, e poucos de cada vez (`medirVarias`). Antes do
-  // clique não há janela de contagem; e medir a turma inteira de uma vez
-  // poderia estourar as conexões do banco de treino e fazer TODOS aparecerem
-  // como "não deu para medir".
-  const aMedir = turmasSemMedida.flatMap((t) =>
-    t.matriculas
-      .filter((m) => m.status === "em_andamento" && m.started_at && m.email)
-      .map((m) => ({ chave: `${t.id}:${m.user_id}`, m }))
-  );
-  const medidas = await medirVarias(aMedir, ({ m }) =>
-    medirMatricula({
-      email: m.email!,
-      role: m.role as UserRole,
-      started_at: m.started_at,
-      metas: listaDeMetas,
-    })
-  );
-  const turmas: TurmaAberta[] = turmasSemMedida.map((t) => ({
-    ...t,
-    matriculas: t.matriculas.map((m) => ({
-      ...m,
-      medicao: medidas.get(`${t.id}:${m.user_id}`) ?? null,
-    })),
+  // Unidade que já está numa turma aberta não pode entrar em outra (0275).
+  const turmaDaUnidade = new Map<string, string>();
+  for (const t of turmas) {
+    for (const u of t.unidades) turmaDaUnidade.set(u.id, t.code ?? "aberta");
+  }
+  const unidadesParaTurma: UnidadeParaTurma[] = (unidades ?? []).map((u) => ({
+    id: String(u.id),
+    name: String(u.name),
+    franqueadora: u.type === "franchisor",
+    turmaAberta: turmaDaUnidade.get(String(u.id)) ?? null,
   }));
 
   return (
@@ -214,11 +218,17 @@ export default async function CertificacaoPage() {
           </p>
         </div>
         <Turmas
-          unidades={(unidades ?? []).map((u) => ({
-            id: String(u.id),
-            name: String(u.name),
-          }))}
+          unidades={unidadesParaTurma}
           turmas={turmas}
+          // ⚠️ ERRO AO LER NÃO É "NENHUMA TURMA". Na janela entre o código ir
+          // ao ar e a 0275 ser rodada no banco, esta consulta falha — e a tela
+          // diria "nenhuma turma aberta" com turmas abertas lá. É a régua vazia
+          // respondendo "não" (§0d do CLAUDE.md).
+          erroAoLer={
+            erroDasTurmas
+              ? "Não foi possível ler as turmas. Se a atualização 0275 ainda não foi aplicada neste banco, é isso: rode-a e recarregue."
+              : null
+          }
         />
       </div>
 

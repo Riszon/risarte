@@ -633,7 +633,11 @@ próprias, escolhidas entre **as ações que o sistema realmente consegue
 contar** — a recepção cadastra pessoas, faz primeiros agendamentos, registra
 check-ins e consentimentos; o coordenador conclui avaliações e avalia opções de
 plano; o dentista conclui sessões e escreve evoluções; o comercial faz
-apresentações e fecha contratos. São **79 ações ao todo, em 13 funções**, e
+apresentações e fecha contratos. Três delas valem para **todas** as funções:
+relatar um problema, enviar uma sugestão e usar o chat — e a tela recomenda
+meta **1** para as três (relato inventado para bater número dá trabalho a quem
+responde; mensagem de chat em quantidade mede conversa, não competência). São
+**82 ações ao todo, em 13 funções**, e
 cada função só enxerga as suas. As metas valem para a **rede inteira**: não
 existe unidade com régua mais fácil.
 
@@ -708,9 +712,23 @@ Duas regras que valem a pena saber:
 progresso de quem já começou.
 
 **Para o Admin Master:** as turmas ficam na mesma tela de Certificação. Escolha
-a unidade e o tipo, confira a lista que o sistema monta (ele já pula quem tem
-certificação) e desmarque quem não deve entrar agora — férias, afastamento,
-quem acabou de chegar. A lista mostra quem já aceitou e quem ainda não.
+**uma unidade, várias, ou marque "Rede toda"** — com muitas unidades, há uma
+busca pelo nome. Escolha o tipo, confira a lista que o sistema monta, **agrupada
+por unidade** (ele já pula quem tem certificação), e desmarque quem não deve
+entrar agora — férias, afastamento, quem acabou de chegar.
+
+Três coisas para saber sobre turmas de várias unidades:
+
+- **É uma turma só**, com um código só — não uma por unidade.
+- **Cada unidade é liberada quando o SEU grupo cumprir.** Numa turma da rede
+  toda, Cambé não fica esperando Londrina.
+- **Unidade que já está numa turma aberta aparece desabilitada**, com o código
+  da turma. Ela só entra em outra quando aquela for encerrada — senão a mesma
+  pessoa teria duas missões ao mesmo tempo.
+
+Na lista de turmas, **abra uma unidade para ver o progresso de cada pessoa**:
+ele é medido no treino na hora em que você abre, para a tela continuar rápida
+mesmo com a rede inteira numa turma.
 
 **Enquanto não houver turma aberta, ninguém tem missão** — e está certo assim.
 
