@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.285.0",
+    data: "2026-09-25",
+    migracao: "0271",
+    titulo: "Administração → Certificação: o que cada função cumpre no treino",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Nova tela em Administração → Certificação. Nela o Admin Master define, função por função, o que a pessoa precisa fazer no ambiente de TREINO antes de o riSZon real ser liberado para ela: quantos cadastros, quantos primeiros agendamentos, quantas avaliações, e assim por diante.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na mesma tela se escolhe como a liberação acontece: se depende só da própria pessoa ou da equipe inteira da unidade, e se o sistema real abre sozinho ao cumprir a missão ou se o Admin Master confirma antes.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "As metas valem para a rede inteira — não existe unidade com régua mais fácil. É o padrão único de entrada no sistema real.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Por enquanto esta tela guarda a definição. A contagem automática do que cada pessoa já fez no treino, e a liberação sozinha, vêm nas próximas entregas — até lá a liberação continua sendo feita à mão em Administração → Ambientes.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.284.0",
     data: "2026-09-25",
     migracao: null,

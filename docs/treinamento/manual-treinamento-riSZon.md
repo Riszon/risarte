@@ -619,6 +619,34 @@ fica salvo e só a cópia fica pendente.
 Risarte Academy só mostra o atalho depois que o endereço dele for preenchido —
 enquanto estiver em branco, o cartão não aparece.
 
+### O portão: por que o sistema real começa fechado
+
+**Todo Risartano novo entra primeiro no treino.** O riSZon real nasce
+**fechado** para quem acaba de chegar — não é falha de cadastro, é a regra:
+ninguém opera na base de verdade antes de aprender numa base onde errar não
+custa nada. É isso que evita as duas coisas que mais atrapalham: gente
+despreparada mexendo no sistema real, e o sistema real enchendo de cliente
+inventado e pagamento de mentira.
+
+**O que libera é cumprir a sua missão no treino.** Cada função tem metas
+próprias — a recepção cadastra um tanto de pessoas, faz um tanto de primeiros
+agendamentos e de reavaliações; o coordenador clínico faz avaliações e aprova
+planejamentos; e assim por diante. As metas valem para a **rede inteira**: não
+existe unidade com régua mais fácil.
+
+**Para o Admin Master:** as metas ficam em **Administração → Certificação**,
+uma função por vez. Lá também se escolhe:
+
+- **De quem depende a liberação** — só da própria pessoa (*individual*), ou de
+  a equipe inteira da unidade ter cumprido (*coletiva*);
+- **O que acontece ao cumprir** — o sistema real abre sozinho (*automática*),
+  ou o Admin Master recebe um aviso e confirma (*aprovação*).
+
+> **Por enquanto esta tela guarda a definição.** A contagem automática do que
+> cada pessoa já fez no treino, e a liberação sozinha, entram nas próximas
+> entregas. Até lá a liberação continua sendo feita à mão em **Administração →
+> Ambientes**.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu

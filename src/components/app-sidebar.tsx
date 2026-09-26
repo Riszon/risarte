@@ -21,6 +21,7 @@ import {
   DoorOpen,
   FileText,
   Globe,
+  GraduationCap,
   Handshake,
   HeartPulse,
   Home,
@@ -220,6 +221,9 @@ const ADMIN_ITEMS = [
   { href: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
   // 0259: os endereços dos três ambientes (sistema, treino e Academy).
   { href: "/admin/ambientes", label: "Ambientes", icon: Globe },
+  // 0271: o portão de certificação — o que cada função cumpre no treino
+  // antes de o riSZon real ser liberado.
+  { href: "/admin/certificacao", label: "Certificação", icon: GraduationCap },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },

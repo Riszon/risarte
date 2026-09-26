@@ -1260,3 +1260,29 @@ não a recuperação, é a resposta certa para este relato.
 
 **ENCERRADO em 25/09/2026** — core 0.283.0 (a trava) e 0.284.0 (a garantia
 geral; ver *Inventário do apagamento*, no topo deste arquivo).
+
+---
+
+### AP8. Dois arquivos de TESTE não passam na conferência de tipos (25/09/2026)
+
+**Confirmado, medindo:** `npx tsc --noEmit` acusa 8 erros, todos dentro de
+`src/lib/__tests__/briefing.test.ts` e `src/lib/__tests__/screens.test.ts` —
+campo `ambiente` faltando num objeto `Relato`, e `string` atribuída onde o tipo
+é `null | undefined`.
+
+**Por que ninguém viu até agora:** o `npm run verificar` (build do Next) **não
+confere os arquivos de teste**, e o Vitest **não confere tipos** — ele executa.
+Os dois portões passam, e ninguém dos dois olha para este canto. Foi achado de
+raspão, rodando `tsc` à mão para conferir um arquivo novo.
+
+**Por que importa:** o tipo é a régua que diz se o teste está montando o objeto
+que o sistema realmente usa. Teste que monta um `Relato` sem `ambiente` pode
+estar exercitando um formato que não existe mais — e passar verde por isso.
+
+**O que falta decidir:** se o `tsc --noEmit` entra no portão de entrega. Entrar
+é o certo, e **não é de graça**: enquanto os 8 erros existirem, o portão fica
+vermelho. Corrigir primeiro, prender depois.
+
+**Não confirmado:** se os testes desses dois arquivos ainda medem o que
+prometem. Os erros de tipo sugerem que o formato mudou embaixo deles, mas isso
+é suspeita — só a leitura de cada caso confirma.
