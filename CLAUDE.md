@@ -426,8 +426,9 @@ a produção, com trava que EXIGE ser produção).
    estavam escritos de outro jeito (ler só o `data` e ignorar o `error`),
    um deles escrito por mim na 1021. **Ficou de fora, declarado:** as telas —
    o Início ainda diria "0 esperando" se a contagem falhasse.
-4b. ✅ **Trava da mensalidade no banco (1022, Empresarial 0.71.0) — o dono
-   precisa RODAR a 1022 na produção.** Chave (empresa, DOCUMENTO, mês): empresa
+4b. ✅ **Trava da mensalidade no banco (1022, Empresarial 0.71.0) — APLICADA
+   na produção** (o dono conferiu o índice `adhesion_billing_mensalidade_unica`
+   em 26/09). Chave (empresa, DOCUMENTO, mês): empresa
    com dois CNPJs recebe dois boletos. A tela da empresa não tinha trava
    nenhuma — dois cliques cobravam em dobro.
 4c. ✅ **AP12 corrigido (1023, Empresarial 0.72.0) — 1023 APLICADA nos dois
