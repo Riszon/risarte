@@ -372,6 +372,51 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.290.0; migrações 0273 e 0274)**
+
+**Tudo no ar e aplicado nos dois bancos** (0273/0274 conferidas lendo a
+produção, com trava que EXIGE ser produção).
+
+- **Portão de certificação — Etapas 1b e 2 completas.**
+  - **0273: a missão só conta depois do CLIQUE da pessoa** (`started_at`).
+    Antes disso ela usa o treino à vontade. Turmas por unidade, com prévia
+    antes de convocar; certificado é tabela (fato histórico).
+    ⚠️ **Defeito grave achado por sonda antes de ir ao ar (AP9):** a guarda
+    "só a própria pessoa inicia" usava `<>` com `auth.uid()` — nulo, a trava
+    ficava ABERTA para quem não estava logado. Virou Regra 5 do
+    `check-migrations`.
+  - **0274: reciclagem com três políticas** — mantém o acesso, prazo (suspende
+    de madrugada quem não concluiu) ou suspende agora. Quatro travas provadas no
+    treino: só suspende quem tinha acesso; só restaura o que ele suspendeu;
+    encerrar a turma devolve o acesso; só reciclagem suspende.
+  - **Etapa 2 (0.290.0): a medição.** Cada indicador ganhou `quando` — a data
+    da AÇÃO, não da criação. O banco desmentiu 3 origens do catálogo, e a régua
+    `check:indicadores` passou a conferir autor + data (instante) + filtros.
+    **Missão com critério sem medida NÃO está cumprida.**
+- ⚠️ **A dependência das chaves do treino NÃO existia.** Eu tinha registrado que
+  a Etapa 2 dependia de copiar `TREINO_*` para o `.env.local`. Não depende: em
+  produção elas estão na Vercel, e para testar aqui basta pôr os valores do
+  `.env.test.local` em `process.env` **dentro do processo do teste** — nenhum
+  arquivo é escrito. Ver as sondas descritas no commit da 0.290.0.
+
+**Pendências (nesta ordem):**
+
+1. ⏰ **Supabase Pro vence em 29/09/2026** — três dias.
+2. **Etapa 3 do portão: a liberação.** Missão cumprida → abre o sistema real
+   (automático) ou avisa o Admin (aprovação), congela o certificado em
+   `training_certifications` e **restaura o acesso suspenso** da reciclagem.
+   Coletiva: só libera a unidade quando todo o grupo cumprir.
+3. **O dono definir as metas** em Administração → Certificação (seguem em
+   branco na produção) e **conferir `risarte-training-deadlines`** em
+   Database → Cron Jobs da produção (não dá para ler pela API).
+4. **AP11** (BACKLOG): 14 lugares fazem `count ?? 0` depois de `head: true` —
+   alguns são TRAVAS que falhariam abertas (apagar procedimento em uso, passar
+   do teto contratado do Empresarial). Ler um por um.
+5. **AP10** (BACKLOG): o `check-migrations` não pega erro de tipo que o
+   Postgres pega (`= any()` sobre enum).
+6. Cadastrar os benefícios PADRÃO DA REDE na produção (segue VAZIO).
+7. AP8, Notebook (§4 de `docs/DOIS-PCS.md`), teste final do LOTE B.
+
 **25/09/2026 (tarde/noite) — PC Administrador (core 0.283.0 → 0.286.0; migrações 0271 e 0272)**
 
 **Tudo no ar e APLICADO NOS DOIS BANCOS** — conferido lendo a produção (só
