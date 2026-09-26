@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.287.0",
+    data: "2026-09-25",
+    migracao: null,
+    titulo: "Certificação: 79 ações para escolher, cada uma explicada",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A tela de Certificação passou de 42 para 79 ações contáveis. Entraram a venda direta, o PPR+, as renegociações, o ciclo de compras da unidade, o financeiro do dia a dia e o funil do Empresarial.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Cada ação agora explica três coisas: o que exatamente é contado, EM QUAL TELA a pessoa faz aquilo, e se aquilo depende de outra pessoa ter feito algo antes. Serve para escolher o número sem adivinhar.",
+        papeis: "todos",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "As ações vêm separadas em 'trabalho do dia a dia' e 'acontece de vez em quando'. As do dia a dia ficam à vista; as outras abrem num clique — a recepcionista sozinha tem 16 opções.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Se a missão de uma função tiver SÓ ações que dependem de outra pessoa, a tela avisa: quem tiver aquela função pode ficar travado sem ter como resolver sozinho.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.286.0",
     data: "2026-09-25",
     migracao: "0272",

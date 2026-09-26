@@ -633,9 +633,20 @@ próprias, escolhidas entre **as ações que o sistema realmente consegue
 contar** — a recepção cadastra pessoas, faz primeiros agendamentos, registra
 check-ins e consentimentos; o coordenador conclui avaliações e avalia opções de
 plano; o dentista conclui sessões e escreve evoluções; o comercial faz
-apresentações e fecha contratos. São **42 ações ao todo, em 13 funções**, e
+apresentações e fecha contratos. São **79 ações ao todo, em 13 funções**, e
 cada função só enxerga as suas. As metas valem para a **rede inteira**: não
 existe unidade com régua mais fácil.
+
+**Cada ação vem explicada**, para quem configura não precisar adivinhar: o que
+exatamente é contado, **em qual tela** a pessoa faz aquilo, e se aquilo
+**depende de outra pessoa** ter feito algo antes (não dá para receber
+mercadoria sem alguém ter feito o pedido). As ações aparecem separadas em
+**trabalho do dia a dia** e **acontece de vez em quando** — comece pelas
+primeiras.
+
+> **Se a missão de uma função tiver só ações que dependem de terceiros**, a
+> tela avisa. Quem tiver aquela função ficaria travado sem ter como resolver
+> sozinho, e o portão viraria castigo por algo que não é dela.
 
 **Para o Admin Master:** as metas ficam em **Administração → Certificação**,
 uma função por vez (as já configuradas aparecem abertas; as demais abrem no

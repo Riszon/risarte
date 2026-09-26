@@ -8,14 +8,86 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import {
+  dependeDeTerceiro,
+  missaoDependeSoDeTerceiros,
   missaoDoPapel,
   PAPEIS_COM_MISSAO,
   resumoDaMissao,
   temMissao,
+  type Indicador,
   type MetaDoTreino,
 } from "@/lib/certificacao";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { salvarMissao } from "./actions";
+
+type LinhaDaMissao = { indicador: Indicador; minimo: number };
+
+/**
+ * Um campo por indicador, com TUDO o que o Admin precisa para decidir o
+ * número: o que é contado, onde a pessoa faz aquilo, e se aquilo depende de
+ * alguém ter feito algo antes.
+ *
+ * ⚠️ O `onde` não é enfeite. É com ele que o Admin julga se dá para treinar:
+ * "recebimentos de mercadoria" parece uma boa meta até perceber que exige um
+ * pedido de compra feito antes, por outra pessoa.
+ */
+function CampoDoIndicador({
+  papel,
+  indicador,
+  minimo,
+}: {
+  papel: UserRole;
+  indicador: Indicador;
+  minimo: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={`${papel}-${indicador.chave}`} className="leading-snug">
+        {indicador.rotulo}
+      </Label>
+      <Input
+        id={`${papel}-${indicador.chave}`}
+        name={indicador.chave}
+        type="number"
+        min={0}
+        step={1}
+        inputMode="numeric"
+        defaultValue={minimo || ""}
+        placeholder="0"
+      />
+      <p className="text-xs text-muted-foreground">{indicador.ajuda}</p>
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium">Onde:</span> {indicador.onde}
+      </p>
+      {dependeDeTerceiro(indicador) && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          ⚠️ Depende de alguém ter feito algo antes.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Grupo({
+  papel,
+  linhas,
+}: {
+  papel: UserRole;
+  linhas: LinhaDaMissao[];
+}) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {linhas.map(({ indicador, minimo }) => (
+        <CampoDoIndicador
+          key={indicador.chave}
+          papel={papel}
+          indicador={indicador}
+          minimo={minimo}
+        />
+      ))}
+    </div>
+  );
+}
 
 /**
  * UM CARTÃO POR FUNÇÃO, salvo separadamente.
@@ -25,10 +97,12 @@ import { salvarMissao } from "./actions";
  * por vez, e errar um número na recepção não faz ele perder o que digitou nas
  * outras doze.
  *
- * ⚠️ E O CARTÃO COMEÇA FECHADO QUANDO NÃO TEM MISSÃO. São 13 funções e até 8
- * indicadores em cada uma: abertas todas de uma vez, a tela viraria a "lista
- * longa" de que o dono reclamou. Quem já foi configurado fica à vista — que é
- * o que se precisa conferir —; o resto está a um clique, não escondido.
+ * ⚠️ DUAS CAMADAS DE DOBRA, porque são 79 indicadores em 13 funções:
+ *   1. o cartão da função começa fechado quando ainda não tem meta;
+ *   2. dentro dele, as COMPLEMENTARES começam fechadas.
+ * Abertas todas de uma vez, a recepcionista sozinha mostraria 16 campos — a
+ * "lista longa" de que o dono já reclamou uma vez. O que é trabalho de todo
+ * dia fica à vista; o resto está a um clique, não escondido.
  */
 function CartaoDaFuncao({
   papel,
@@ -42,6 +116,13 @@ function CartaoDaFuncao({
   const missao = missaoDoPapel(metas, papel);
   const exigeAlgo = temMissao(metas, papel);
   const resumo = resumoDaMissao(metas, papel);
+  const soTerceiros = missaoDependeSoDeTerceiros(metas, papel);
+
+  const essenciais = missao.filter((m) => m.indicador.nivel === "essencial");
+  const complementares = missao.filter(
+    (m) => m.indicador.nivel === "complementar"
+  );
+  const complementaresUsadas = complementares.some((m) => m.minimo > 0);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -88,31 +169,51 @@ function CartaoDaFuncao({
           </span>
         </summary>
 
-        <form onSubmit={onSubmit} className="space-y-4 border-t p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {missao.map(({ indicador, minimo }) => (
-              <div key={indicador.chave} className="space-y-1.5">
-                <Label htmlFor={`${papel}-${indicador.chave}`}>
-                  {indicador.rotulo}
-                </Label>
-                <Input
-                  id={`${papel}-${indicador.chave}`}
-                  name={indicador.chave}
-                  type="number"
-                  min={0}
-                  step={1}
-                  inputMode="numeric"
-                  defaultValue={minimo || ""}
-                  placeholder="0"
-                />
+        <form onSubmit={onSubmit} className="space-y-5 border-t p-4">
+          {soTerceiros && (
+            <p className="rounded-md bg-amber-500/10 p-3 text-sm">
+              ⚠️ <strong>Esta missão só tem ações que dependem de outra
+              pessoa.</strong> Quem tiver esta função pode ficar travado sem ter
+              como resolver sozinho. Considere incluir ao menos uma ação que ela
+              faça do zero.
+            </p>
+          )}
+
+          {essenciais.length > 0 && (
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">Trabalho do dia a dia</h3>
                 <p className="text-xs text-muted-foreground">
-                  {indicador.ajuda}
+                  O que esta função faz o tempo todo. É por aqui que se começa.
                 </p>
               </div>
-            ))}
-          </div>
+              <Grupo papel={papel} linhas={essenciais} />
+            </div>
+          )}
 
-          <div className="flex items-center justify-between gap-3">
+          {complementares.length > 0 && (
+            <details open={complementaresUsadas} className="group/compl">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-dashed border-input px-3 py-2 text-sm hover:bg-accent/40">
+                <span
+                  aria-hidden
+                  className="text-muted-foreground transition-transform group-open/compl:rotate-90"
+                >
+                  ›
+                </span>
+                <span className="font-medium">
+                  Acontece de vez em quando ({complementares.length})
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  — só se quiser aprofundar o treino
+                </span>
+              </summary>
+              <div className="pt-4">
+                <Grupo papel={papel} linhas={complementares} />
+              </div>
+            </details>
+          )}
+
+          <div className="flex items-center justify-between gap-3 border-t pt-4">
             <p className="text-xs text-muted-foreground">
               Deixe em branco (ou 0) o que não for exigido.
             </p>

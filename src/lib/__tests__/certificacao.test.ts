@@ -15,6 +15,7 @@ import {
   cargosElegiveis,
   ehModoDeGrupo,
   grupoEstaDefinido,
+  missaoDependeSoDeTerceiros,
   type MetaDoTreino,
 } from "@/lib/certificacao";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
@@ -242,5 +243,89 @@ describe("o grupo do teste coletivo (0272)", () => {
     expect(ehModoDeGrupo("papeis")).toBe(true);
     expect(ehModoDeGrupo("pessoas")).toBe(true);
     expect(ehModoDeGrupo("todos")).toBe(false);
+  });
+});
+
+describe("as explicações que ajudam a configurar (25/09/2026)", () => {
+  it("todo indicador diz o que conta, onde se faz e o quanto pesa", () => {
+    // Sem isso o Admin escolhe o número no escuro: "recebimentos de
+    // mercadoria" parece boa meta até ele perceber que exige um pedido feito
+    // antes, por outra pessoa.
+    for (const i of INDICADORES) {
+      expect(i.ajuda.length, `"${i.chave}" sem explicação`).toBeGreaterThan(20);
+      expect(i.onde.length, `"${i.chave}" não diz onde se faz`).toBeGreaterThan(4);
+      expect(["essencial", "complementar"]).toContain(i.nivel);
+    }
+  });
+
+  it("toda função tem pelo menos uma ação do dia a dia", () => {
+    // Função só de "complementar" nasceria sem por onde começar, e o Admin
+    // montaria a missão inteira de exceções.
+    for (const papel of PAPEIS_COM_MISSAO) {
+      const essenciais = indicadoresDoPapel(papel).filter(
+        (i) => i.nivel === "essencial"
+      );
+      expect(
+        essenciais.length,
+        `${papel} não tem nenhuma ação essencial`
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it("os essenciais vêm PRIMEIRO na lista", () => {
+    // A ordem decide o que o Admin configura: com até 16 opções numa função,
+    // o que aparece embaixo não é lido.
+    for (const papel of PAPEIS_COM_MISSAO) {
+      const niveis = indicadoresDoPapel(papel).map((i) => i.nivel);
+      const primeiroComplementar = niveis.indexOf("complementar");
+      if (primeiroComplementar === -1) continue;
+      expect(
+        niveis.slice(primeiroComplementar).every((n) => n === "complementar"),
+        `${papel} tem essencial depois de complementar`
+      ).toBe(true);
+    }
+  });
+
+  it("⚠️ avisa quando a missão inteira depende de terceiros", () => {
+    // "Aprovar 5 planos" precisa de 5 planos prontos. Missão só disso trava a
+    // pessoa por culpa de outra, e ela não tem como destravar sozinha.
+    const soDependentes: MetaDoTreino[] = [
+      { role: "clinical_coordinator", indicator: "aprovacoes_plano", minimum_count: 5 },
+    ];
+    expect(missaoDependeSoDeTerceiros(soDependentes, "clinical_coordinator")).toBe(
+      true
+    );
+
+    // Basta UMA ação que ela faça do zero para o aviso sumir.
+    const comAutonomia: MetaDoTreino[] = [
+      ...soDependentes,
+      { role: "clinical_coordinator", indicator: "avaliacoes", minimum_count: 3 },
+    ];
+    expect(missaoDependeSoDeTerceiros(comAutonomia, "clinical_coordinator")).toBe(
+      false
+    );
+
+    // Sem missão nenhuma não há o que avisar — seria alarme sobre o vazio.
+    expect(missaoDependeSoDeTerceiros([], "clinical_coordinator")).toBe(false);
+  });
+
+  it("as quatro ações desaconselhadas NÃO entraram", () => {
+    // O dono viu a lista e concordou em deixá-las fora. Se alguém acrescentar
+    // uma delas amanhã, é decisão nova — não pode entrar de carona.
+    const fontesProibidas = [
+      "audit_logs",        // mede navegação, não competência
+      "chat_messages",     // mede conversa
+      "notifications",     // não é ato dela
+      "cancelled_by",      // premiar cancelamento produz cancelamento
+      "reopened_by",       // mede retrabalho
+    ];
+    for (const i of INDICADORES) {
+      for (const proibida of fontesProibidas) {
+        expect(
+          i.origem,
+          `"${i.chave}" usa ${proibida}, que ficou de fora de propósito`
+        ).not.toContain(proibida);
+      }
+    }
   });
 });
