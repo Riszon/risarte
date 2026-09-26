@@ -19,6 +19,11 @@ import {
   podeIniciar,
   recadoDaMatricula,
   resumoDaPrevia,
+  ehPoliticaDeAcesso,
+  exigePrazo,
+  oQueImpedeAbrir,
+  politicaCombinaComTipo,
+  POLITICAS_DE_ACESSO,
   ehModoDeGrupo,
   grupoEstaDefinido,
   missaoDependeSoDeTerceiros,
@@ -419,5 +424,87 @@ describe("a prévia da turma (0273)", () => {
     expect(ehTipoDeTurma("novatos")).toBe(true);
     expect(ehTipoDeTurma("reciclagem")).toBe(true);
     expect(ehTipoDeTurma("todos")).toBe(false);
+  });
+});
+
+describe("⚠️ a política de acesso na reciclagem (0274)", () => {
+  const HOJE = "2026-09-26";
+
+  it("só reciclagem pode suspender", () => {
+    // Em turma de novatos a pessoa ainda nem tem acesso (a 0259 já a deixa
+    // fechada). "Suspender" ali seria um comando sem efeito COM CARA DE
+    // EFEITO — o Admin acreditaria ter travado alguém que segue igual.
+    expect(politicaCombinaComTipo("suspende_agora", "novatos")).toBe(false);
+    expect(politicaCombinaComTipo("prazo", "novatos")).toBe(false);
+    expect(politicaCombinaComTipo("mantem", "novatos")).toBe(true);
+    expect(politicaCombinaComTipo("suspende_agora", "reciclagem")).toBe(true);
+  });
+
+  it("prazo sem data não abre", () => {
+    // Prazo sem data é uma ameaça que nunca chega: a pessoa seria avisada de
+    // um limite que o sistema não sabe cobrar.
+    expect(
+      oQueImpedeAbrir({ politica: "prazo", tipo: "reciclagem", prazo: null, hoje: HOJE })
+    ).toMatch(/data limite/i);
+  });
+
+  it("prazo no passado não abre", () => {
+    // Suspenderia todo mundo na primeira madrugada — o mesmo efeito de
+    // `suspende_agora`, mas sem ninguém ter escolhido isso.
+    expect(
+      oQueImpedeAbrir({
+        politica: "prazo",
+        tipo: "reciclagem",
+        prazo: "2026-09-01",
+        hoje: HOJE,
+      })
+    ).toMatch(/futura/i);
+    // A data de HOJE também não serve: venceria esta madrugada.
+    expect(
+      oQueImpedeAbrir({ politica: "prazo", tipo: "reciclagem", prazo: HOJE, hoje: HOJE })
+    ).toMatch(/futura/i);
+  });
+
+  it("o que está de pé não é impedido", () => {
+    expect(
+      oQueImpedeAbrir({
+        politica: "prazo",
+        tipo: "reciclagem",
+        prazo: "2026-10-31",
+        hoje: HOJE,
+      })
+    ).toBeNull();
+    expect(
+      oQueImpedeAbrir({ politica: "mantem", tipo: "novatos", prazo: null, hoje: HOJE })
+    ).toBeNull();
+    // `mantem` não pede prazo, então prazo nulo não é problema.
+    expect(
+      oQueImpedeAbrir({
+        politica: "suspende_agora",
+        tipo: "reciclagem",
+        prazo: null,
+        hoje: HOJE,
+      })
+    ).toBeNull();
+  });
+
+  it("só o prazo exige data", () => {
+    expect(exigePrazo("prazo")).toBe(true);
+    expect(exigePrazo("mantem")).toBe(false);
+    expect(exigePrazo("suspende_agora")).toBe(false);
+  });
+
+  it("o padrão da lista é o que NÃO para a clínica", () => {
+    // A ordem importa: é ela que a tela usa, e a primeira opção é a que o
+    // Admin marca sem pensar. Suspender uma unidade inteira por descuido
+    // pararia o atendimento.
+    expect(POLITICAS_DE_ACESSO[0]).toBe("mantem");
+  });
+
+  it("reconhece só as políticas que o banco aceita", () => {
+    expect(ehPoliticaDeAcesso("mantem")).toBe(true);
+    expect(ehPoliticaDeAcesso("prazo")).toBe(true);
+    expect(ehPoliticaDeAcesso("suspende_agora")).toBe(true);
+    expect(ehPoliticaDeAcesso("bloquear")).toBe(false);
   });
 });

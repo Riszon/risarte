@@ -1277,3 +1277,75 @@ export function resumoDaPrevia(candidatos: readonly Candidato[]): {
 export function ehTipoDeTurma(v: string): v is TipoDeTurma {
   return (TIPOS_DE_TURMA as readonly string[]).includes(v);
 }
+
+// -- A política de acesso durante a reciclagem (0274) -------------------------
+
+export const POLITICAS_DE_ACESSO = [
+  "mantem",
+  "prazo",
+  "suspende_agora",
+] as const;
+export type PoliticaDeAcesso = (typeof POLITICAS_DE_ACESSO)[number];
+
+export const POLITICA_ROTULO: Record<PoliticaDeAcesso, string> = {
+  mantem: "Continua trabalhando normalmente",
+  prazo: "Continua até uma data, depois suspende",
+  suspende_agora: "Suspende o acesso imediatamente",
+};
+
+export const POLITICA_AJUDA: Record<PoliticaDeAcesso, string> = {
+  mantem:
+    "Ninguém perde acesso. A reciclagem fica como pendência, e cobrar é com a liderança. É o único caminho que não pode parar a clínica.",
+  prazo:
+    "A pessoa trabalha normalmente até a data escolhida. Quem não tiver concluído até lá é suspenso automaticamente, de madrugada.",
+  suspende_agora:
+    "A pessoa perde o acesso ao sistema real assim que é convocada, e só volta ao concluir a reciclagem. Use quando o fluxo novo não puder ser operado sem treinar.",
+};
+
+/** O prazo é obrigatório — e só existe — na política de prazo. */
+export function exigePrazo(p: PoliticaDeAcesso): boolean {
+  return p === "prazo";
+}
+
+export function ehPoliticaDeAcesso(v: string): v is PoliticaDeAcesso {
+  return (POLITICAS_DE_ACESSO as readonly string[]).includes(v);
+}
+
+/**
+ * A política e o tipo da turma combinam?
+ *
+ * ⚠️ Só RECICLAGEM suspende. Em turma de novatos a pessoa ainda nem tem acesso
+ * ao sistema real (a 0259 já a deixa fechada): "suspender" ali seria um comando
+ * sem efeito nenhum, com cara de efeito — e o Admin acreditaria ter travado
+ * alguém que continua exatamente como estava.
+ */
+export function politicaCombinaComTipo(
+  politica: PoliticaDeAcesso,
+  tipo: TipoDeTurma
+): boolean {
+  return politica === "mantem" || tipo === "reciclagem";
+}
+
+/**
+ * O que impede esta turma de ser aberta, em uma frase — ou `null` se está de pé.
+ *
+ * A tela usa isto para explicar ANTES de o banco recusar: um "não foi possível
+ * abrir" sem motivo faria o Admin tentar de novo igual.
+ */
+export function oQueImpedeAbrir(entrada: {
+  politica: PoliticaDeAcesso;
+  tipo: TipoDeTurma;
+  prazo: string | null;
+  hoje: string;
+}): string | null {
+  if (!politicaCombinaComTipo(entrada.politica, entrada.tipo)) {
+    return "Suspender acesso só faz sentido na reciclagem: em turma de novatos a pessoa ainda não tem acesso ao sistema real.";
+  }
+  if (exigePrazo(entrada.politica)) {
+    if (!entrada.prazo) return "Escolha a data limite da reciclagem.";
+    if (entrada.prazo <= entrada.hoje) {
+      return "A data limite precisa ser futura — uma data passada suspenderia todo mundo já na primeira madrugada.";
+    }
+  }
+  return null;
+}

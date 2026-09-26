@@ -697,6 +697,29 @@ quem acabou de chegar. A lista mostra quem já aceitou e quem ainda não.
 
 **Enquanto não houver turma aberta, ninguém tem missão** — e está certo assim.
 
+### A reciclagem e o seu acesso ao sistema real
+
+Quando a turma é de **reciclagem**, o Admin escolhe uma de três coisas — e o
+que ele escolher **aparece na sua tela de Início desde o primeiro dia**:
+
+| Escolha | O que acontece com você |
+|---|---|
+| **Continua trabalhando** | Nada muda. A reciclagem fica como pendência. |
+| **Prazo até uma data** | Você trabalha normalmente até lá. Passou a data sem concluir, o acesso ao sistema real é suspenso automaticamente. |
+| **Suspende agora** | Você fica sem acesso ao sistema real já na convocação, e volta ao concluir. |
+
+**O prazo nunca chega de surpresa:** a data aparece no cartão da convocação
+desde o dia em que você é chamado, com a frase dizendo o que acontece depois
+dela.
+
+**Se o seu acesso for suspenso**, o caminho de volta é um só: concluir a
+reciclagem no treino. O Admin também pode **encerrar a turma**, e isso devolve
+o acesso de todo mundo que ela havia suspendido.
+
+> **O sistema nunca dá acesso a quem não tinha.** Se você já estava bloqueado
+> por outro motivo — desligamento, afastamento —, a reciclagem não mexe nisso,
+> nem para tirar nem para devolver.
+
 > **Por enquanto esta tela guarda a definição.** A contagem automática do que
 > cada pessoa já fez no treino, e a liberação sozinha, entram nas próximas
 > entregas. Até lá a liberação continua sendo feita à mão em **Administração →

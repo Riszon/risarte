@@ -8,13 +8,16 @@ import {
   ehEscopo,
   ehGatilho,
   ehModoDeGrupo,
+  ehPoliticaDeAcesso,
   ehTipoDeTurma,
+  oQueImpedeAbrir,
   indicadoresDoPapel,
   normalizarMeta,
   PAPEIS_COM_MISSAO,
   type Candidato,
 } from "@/lib/certificacao";
 import type { UserRole } from "@/lib/roles";
+import { todayInBrazil } from "@/lib/dates";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -174,9 +177,26 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
   const tipo = String(formData.get("kind") ?? "");
   const nota = String(formData.get("note") ?? "");
   const escolhidos = formData.getAll("convocados").map(String);
+  // Sem a caixa na tela (turma de novatos) o campo nem é enviado — e o padrão
+  // é o único que não pode parar a clínica.
+  const politica = String(formData.get("access_policy") ?? "mantem");
+  const prazo = String(formData.get("deadline") ?? "").trim();
 
   if (!clinicId) return { ok: false, error: "Escolha a unidade." };
   if (!ehTipoDeTurma(tipo)) return { ok: false, error: "Escolha o tipo de turma." };
+  if (!ehPoliticaDeAcesso(politica)) {
+    return { ok: false, error: "Política de acesso inválida." };
+  }
+
+  // A mesma conferência da tela, refeita aqui: a tela pode ser contornada, e
+  // esta é a decisão que TIRA ACESSO de gente ao sistema real.
+  const impedimento = oQueImpedeAbrir({
+    politica,
+    tipo,
+    prazo: prazo || null,
+    hoje: todayInBrazil(),
+  });
+  if (impedimento) return { ok: false, error: impedimento };
   if (escolhidos.length === 0) {
     return {
       ok: false,
@@ -190,6 +210,8 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
     p_kind: tipo,
     p_note: nota || null,
     p_only_users: escolhidos,
+    p_access_policy: politica,
+    p_deadline: politica === "prazo" ? prazo : null,
   });
 
   if (error) {
@@ -203,7 +225,13 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
             ? "Esta unidade já tem uma turma aberta. Encerre a atual antes de abrir outra."
             : m.includes("NOBODY_TO_ENROLL")
               ? "Ninguém foi convocado: nenhuma das pessoas marcadas entra nesta turma."
-              : "Não foi possível abrir a turma.",
+              : m.includes("POLICY_ONLY_FOR_RECYCLING")
+                ? "Suspender acesso só vale para reciclagem."
+                : m.includes("DEADLINE_IN_THE_PAST")
+                  ? "A data limite precisa ser futura."
+                  : m.includes("DEADLINE_REQUIRED")
+                    ? "Escolha a data limite da reciclagem."
+                    : "Não foi possível abrir a turma.",
     };
   }
 
@@ -211,7 +239,7 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
     action: "create",
     entityType: "training_campaigns",
     clinicId,
-    details: { tipo, convocados: escolhidos.length },
+    details: { tipo, convocados: escolhidos.length, politica, prazo: prazo || null },
   });
 
   revalidatePath("/admin/certificacao");

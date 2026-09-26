@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.289.0",
+    data: "2026-09-26",
+    migracao: "0274",
+    titulo: "Reciclagem: manter o acesso, dar prazo, ou suspender",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao abrir uma turma de reciclagem, o Admin Master escolhe o que acontece com o acesso ao sistema real: a pessoa continua trabalhando normalmente, continua até uma data limite, ou é suspensa na hora até concluir.",
+        papeis: "todos",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na opção com prazo, quem não concluir até a data escolhida fica sem acesso ao sistema real automaticamente, de madrugada. O prazo aparece na tela de Início da pessoa desde o dia da convocação — ninguém é surpreendido.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Encerrar a turma devolve o acesso de todo mundo que ela tinha suspendido. E o sistema nunca devolve acesso a quem estava bloqueado por outro motivo — só desfaz o que ele mesmo fez.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Suspender só existe na reciclagem. Em turma de novatos a pessoa ainda não tem acesso ao sistema real, então a opção nem aparece.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.288.0",
     data: "2026-09-26",
     migracao: "0273",

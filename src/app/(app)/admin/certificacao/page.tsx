@@ -60,7 +60,7 @@ export default async function CertificacaoPage() {
     supabase
       .from("training_campaigns")
       .select(
-        "id, code, kind, note, created_at, clinics(name), training_enrollments(user_id, role, status, started_at, profiles(full_name))"
+        "id, code, kind, note, created_at, access_policy, deadline, clinics(name), training_enrollments(user_id, role, status, started_at, access_suspended_at, profiles(full_name))"
       )
       .eq("status", "aberta")
       .order("created_at", { ascending: false }),
@@ -108,6 +108,8 @@ export default async function CertificacaoPage() {
     kind: String(t.kind),
     note: t.note ? String(t.note) : null,
     created_at: String(t.created_at),
+    access_policy: String(t.access_policy ?? "mantem"),
+    deadline: t.deadline ? String(t.deadline) : null,
     clinic_name: umNome(t.clinics) ?? "Unidade",
     matriculas: (t.training_enrollments ?? []).map((m) => ({
       user_id: String(m.user_id),
@@ -115,6 +117,9 @@ export default async function CertificacaoPage() {
       role: String(m.role),
       status: m.status as TurmaAberta["matriculas"][number]["status"],
       started_at: m.started_at ? String(m.started_at) : null,
+      access_suspended_at: m.access_suspended_at
+        ? String(m.access_suspended_at)
+        : null,
     })),
   }));
 

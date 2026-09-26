@@ -21,6 +21,10 @@ export type MissaoNaTela = Pick<
 > & {
   /** "3 × cadastros · 2 × primeiros agendamentos" */
   resumo: string | null;
+  /** Data limite da reciclagem (ISO), quando a turma tem prazo. */
+  prazo: string | null;
+  /** O acesso ao sistema real foi suspenso por causa desta reciclagem. */
+  suspenso: boolean;
 };
 
 /**
@@ -76,6 +80,24 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
           </div>
 
           <p className="text-sm">{recadoDaMatricula(missao)}</p>
+
+          {/* ⚠️ A PESSOA PRECISA SABER O QUE ESTÁ EM JOGO. Uma reciclagem com
+              prazo que não aparece na tela é um prazo que ninguém cumpre — e a
+              suspensão chegaria como surpresa, de madrugada. */}
+          {missao.suspenso && (
+            <p className="rounded-md bg-amber-500/15 p-3 text-sm font-medium">
+              ⚠️ Seu acesso ao sistema real está suspenso até você concluir esta
+              reciclagem.
+            </p>
+          )}
+
+          {!missao.suspenso && missao.prazo && (
+            <p className="rounded-md bg-amber-500/10 p-3 text-sm">
+              <strong>Prazo: {formatAnyDateBr(missao.prazo)}.</strong> Você
+              continua trabalhando normalmente até lá. Depois dessa data, quem
+              não tiver concluído fica sem acesso ao sistema real.
+            </p>
+          )}
 
           {missao.resumo ? (
             <div className="rounded-lg border border-input bg-background p-3">

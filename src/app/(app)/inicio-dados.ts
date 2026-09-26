@@ -449,7 +449,9 @@ export async function missaoAberta(
 ): Promise<MissaoNaTela | null> {
   const { data, error } = await supabase
     .from("training_enrollments")
-    .select("id, role, status, started_at, training_campaigns!inner(status)")
+    .select(
+      "id, role, status, started_at, access_suspended_at, training_campaigns!inner(status, access_policy, deadline)"
+    )
     .eq("user_id", userId)
     .in("status", ["convocado", "em_andamento"])
     .eq("training_campaigns.status", "aberta")
@@ -460,6 +462,12 @@ export async function missaoAberta(
   if (error || !data) return null;
 
   const papel = data.role as UserRole;
+  // O Supabase devolve o embutido como objeto ou lista conforme a relação.
+  const turma = (
+    Array.isArray(data.training_campaigns)
+      ? data.training_campaigns[0]
+      : data.training_campaigns
+  ) as { access_policy?: string; deadline?: string | null } | undefined;
 
   // O resumo vem das metas DE AGORA. A pessoa precisa ver o que vai cumprir
   // antes de aceitar — um cartão que diz "você foi convocado" sem dizer para
@@ -476,5 +484,7 @@ export async function missaoAberta(
     status: data.status as MissaoNaTela["status"],
     started_at: data.started_at ? String(data.started_at) : null,
     resumo: resumoDaMissao(metas ?? [], papel),
+    prazo: turma?.deadline ? String(turma.deadline) : null,
+    suspenso: Boolean(data.access_suspended_at),
   };
 }
