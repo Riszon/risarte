@@ -1947,6 +1947,38 @@ O sistema traduz os erros do banco de dados para linguagem clara
 microfone.` — o navegador precisa de permissão para o microfone, e a página
 precisa estar em endereço seguro (https).
 
+### 10.6. "Não foi possível conferir … Nada foi alterado"
+
+Esta mensagem aparece quando o sistema **precisava conferir alguma coisa antes
+de agir e não conseguiu** — por exemplo, *"Não foi possível conferir quantos
+titulares a empresa já tem ativos agora. Nada foi alterado — tente de novo em
+instantes."*
+
+**O que ela quer dizer:** o sistema preferiu **não fazer** a ter de adivinhar.
+Nada foi gravado, cobrado ou apagado; você não precisa desfazer nada. Quase
+sempre é uma falha momentânea de conexão — tente de novo em alguns segundos.
+Se continuar, relate o problema.
+
+**Por que o sistema é assim:** antes, quando essa conferência falhava, ele
+seguia em frente **como se a resposta fosse zero**. Nas travas, isso é
+perigoso: "já existe cobrança deste mês?" virava "não" e a empresa podia ser
+cobrada duas vezes; "quantos titulares já estão ativos?" virava "zero" e o
+limite contratado deixava de valer. Hoje, quando não consegue conferir, ele
+para e avisa.
+
+Aparece em: cobrança mensal do Empresarial (ali a empresa fica na lista das
+**puladas**, com o motivo), cadastro de titular e de dependente do Empresarial,
+documentos da empresa, dependentes do PPR+, salas e cadeiras da agenda,
+exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
+
+> **PPR+: um caso diferente.** Ao incluir ou retirar um dependente, se a
+> mensalidade não puder ser recalculada naquele momento, o dependente **entra
+> (ou sai) normalmente** e aparece um aviso dizendo que a mensalidade **ficou
+> com o valor anterior**. Abrir a adesão de novo não corrige: **relate o
+> problema com o código da adesão**, para o valor ser acertado. (Antes, nesse
+> mesmo caso, o sistema gravava a mensalidade como se não houvesse dependente
+> nenhum — e a adesão passava a cobrar menos, sem ninguém saber.)
+
 ---
 
 ## 11. Segurança e boas práticas

@@ -1364,3 +1364,63 @@ massa: em alguns o zero é mesmo a resposta certa quando não há linha.
 **O conserto provável** é o mesmo da `certificacao-contagem.ts`: tratar
 `count === null` como "não consegui contar" e, nas travas, **recusar a ação**
 nesse caso. Guarda que não consegue conferir tem de fechar, não abrir.
+**✅ RESOLVIDO em 26/09/2026** (core 0.292.0, Empresarial 0.70.0). Cada caso
+foi LIDO antes de mexer — e a leitura achou mais do que a busca.
+
+**Consertados — deixavam passar o que devia barrar (16):**
+
+| Onde | O que a falha fazia | O banco segurava? |
+|---|---|---|
+| Empresarial · cobrança mensal | **cobrava a mesma empresa duas vezes no mês** | **não** — não há índice único; o código era a única trava |
+| Empresarial · titular: limite contratado, teto da proposta, contagem | o teto contratado sumia | não |
+| Empresarial · dependente: limite, teto e `dependentes_ativos` | o teto sumia — ⚠️ **este eu escrevi com a 1021** | não |
+| Empresarial · remover documento | titulares perdiam a ligação **em silêncio** | não (`on delete set null`) |
+| Empresarial · documento novo | virava principal sozinho, tirando o posto do verdadeiro | não |
+| PPR+ · recalcular mensalidade | gravava "zero dependentes" — **cobrava menos**, em silêncio | não |
+| PPR+ · limite de dependentes do plano | deixava passar | não |
+| Agenda · teto de salas / baixar o limite de cadeiras | deixava passar | não |
+| Procedimentos · excluir | ia pelo caminho de APAGAR | **sim** — a ligação com orçamentos impede; virava erro sem explicação |
+| Cadastro de cliente **sem CPF** | o mesmo paciente nascia duas vezes | não (CPF tem índice único; nome + nascimento não) |
+| Cadastro de Risartano | a mesma pessoa ganhava dois cadastros | **não há índice único de CPF para Risartano** |
+
+⚠️ **A busca inicial (`count ?? 0`) achou 9 desses.** Os outros 7 estavam
+escritos de outro jeito — ler só o `data` de uma função do banco e ignorar o
+`error` —, e só apareceram lendo as funções uma a uma. Onde o vazio tem
+significado de propósito (`limite_de_titulares` devolve nulo quando o contrato
+não tem quantidade), a falha virava "sem trava". **Lição: o defeito é "não
+consegui ler" virando uma resposta; a forma de escrever varia.**
+
+**Já falhavam FECHADOS — só a frase mentia (2):** desativar a última sala e
+excluir a última cadeira. Barravam corretamente, mas diziam "a unidade precisa
+de ao menos uma sala" para uma unidade que talvez tivesse cinco.
+
+**Zero é aceitável e ficou ESCRITO (5):** posição na lista (3, no plano de
+tratamento), contador de não lidas do chat, e o pedido de responsável do
+menor — ali a falha pede um dado a mais, que é o erro seguro.
+
+**Conferidos e deixados como estão:**
+
+- **5 buscas de duplicado só por CPF** (PPR+, Empresarial, autopreencher do
+  cadastro): o índice único de CPF do banco segura. A falha vira uma mensagem
+  de erro pouco clara no momento de gravar — não vira duplicado.
+- **`next_client_code_prefixed`** (cliente que entra pelo PPR+): se falhar, o
+  gatilho `on_client_created_code` preenche o código — o cliente sai com o
+  prefixo da UNIDADE em vez de `PPR-`. O código nunca some; o prefixo erra.
+- **Buscas do chat e de autopreencher:** a falha só mostra menos coisa.
+
+**A régua:** `src/lib/__tests__/contagem-nas-acoes.test.ts` reprova `count ?? 0`
+em qualquer arquivo de ação. Provada devolvendo EXATAMENTE o defeito da
+cobrança em dobro: acusou o arquivo e a linha.
+
+**O que a régua NÃO pega, e fica declarado:**
+
+1. **O segundo jeito de escrever** (ler só o `data` e ignorar o `error`): tem
+   usos legítimos demais para uma régua de texto separar. Foi varrido à mão
+   nas 18 chamadas de função de arquivos de ação; código novo depende de
+   leitura.
+2. **As telas.** `inicio-dados.ts` (as pendências do Início), `compras/trilha-
+   dados.ts` e os contadores de relatos ainda fazem `?? 0`: se a contagem
+   falhar, o Início diz **"0 esperando por você"** quando há trabalho parado.
+   Não libera ação nenhuma — mas é a régua vazia respondendo "não" na tela que
+   a equipe mais olha. Vale uma passada própria.
+

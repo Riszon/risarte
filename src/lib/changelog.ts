@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.292.0",
+    data: "2026-09-26",
+    migracao: null,
+    titulo: "Quando não consegue conferir, o sistema para — em vez de adivinhar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Várias travas do sistema, quando não conseguiam conferir alguma coisa por uma falha momentânea, seguiam em frente como se a resposta fosse zero. Na cobrança mensal do Empresarial, isso podia cobrar a mesma empresa duas vezes no mês; no cadastro de titulares e dependentes, o limite contratado deixava de valer. Agora, quando não consegue conferir, o sistema não faz nada e avisa: 'Não foi possível conferir … Nada foi alterado — tente de novo'.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "PPR+: ao incluir ou retirar um dependente, se a mensalidade não puder ser recalculada naquele momento, ela fica com o valor anterior e aparece um aviso. Antes, nesse caso, ela era gravada como se não houvesse dependente nenhum — e a adesão passava a cobrar menos, sem ninguém saber.",
+        papeis: "todos",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Cadastro de cliente sem CPF e cadastro de Risartano: se a busca por cadastro repetido falhar, o sistema não cadastra — antes, podia criar a mesma pessoa duas vezes.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Na cobrança mensal do Empresarial, uma empresa que não pôde ser conferida aparece na lista de PULADAS, com o motivo. Nada foi gerado para ela: basta rodar de novo.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.291.0",
     data: "2026-09-26",
     migracao: "0275",
