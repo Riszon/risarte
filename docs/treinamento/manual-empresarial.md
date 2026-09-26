@@ -569,6 +569,31 @@ dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
 - A **mensalidade**, essa sim, só é gerada com titulares ativos: são perguntas
   diferentes.
 
+**Cada titular paga a implantação UMA vez — na etapa em que entra.** Quando
+a empresa inclui titulares depois (pelo **termo de inclusão**), o primeiro
+pagamento desses titulares novos é a implantação deles. Exemplo: empresa de
+100 colaboradores aderiu com 80 e, meses depois, incluiu os outros 20. A
+primeira implantação cobrou os 80; ao clicar de novo em **Gerar
+implantação**, a tela cobra **só os 20** e mostra a conta: quantos a empresa
+tem hoje (contratados + termos aceitos), quantos já pagaram e a diferença.
+
+- O **preço por titular** é o da **faixa da empresa inteira** (100, no
+  exemplo), não a de 20 — quem entra depois não paga mais caro por isso.
+- Se **todos já pagaram**, o sistema **não gera** e diz por quê. É também o
+  que impede a mesma implantação de sair duas vezes por dois cliques.
+- **Cobrança cancelada não conta** como paga: se a implantação foi cancelada,
+  a próxima cobra aqueles titulares de novo.
+- A segunda etapa pode ser cobrada **antes** de os 20 serem cadastrados — o
+  termo de inclusão aceito já basta, igual à primeira implantação.
+
+> **Aviso em amarelo "implantação(ões) gerada(s) antes do registro":** as
+> implantações feitas **antes da versão 0.72.0** não guardaram quantos
+> titulares cobriram. Quando a empresa tem uma delas, a tela faz a conta do
+> jeito antigo (todos) e avisa que pode estar repetindo quem já pagou.
+> **Confira e use Editar para acertar o valor.** O mesmo aviso aparece quando
+> a primeira implantação teve o **valor informado à mão** (sem titulares nem
+> quantidade contratada): ninguém sabe quantos titulares aquele valor cobriu.
+
 > **O vencimento e o valor são editáveis depois.** Toda cobrança ainda não paga
 > tem o botão **Editar** (valor, vencimento e descrição). O vencimento padrão
 > vem do **dia de vencimento** que está no cadastro da empresa, em Dados
@@ -732,13 +757,10 @@ momento, na frente do cliente.
   (simulação) enquanto as chaves não estiverem cadastradas.
 - **Proposta no Gamma** depende de chave configurada; sem ela, o cartão explica
   que está desativado.
-- **Implantação da segunda etapa cobra TODOS os titulares, não só os novos.**
-  Quando a empresa inclui titulares depois (pelo termo de inclusão), cada
-  titular novo deve pagar a própria implantação — mas hoje o botão **Gerar
-  implantação** calcula por todos os cadastrados, e os que já pagaram entram
-  de novo. **Até isso ser corrigido: confira o valor na prévia e, se estiver
-  cobrando os antigos, gere e use Editar para acertar o valor** antes de
-  enviar. (A mensalidade, essa sim, tem trava no banco desde a versão 0.71.0.)
+- **A implantação não tem trava no banco** (a mensalidade tem, desde a
+  0.71.0). Duas pessoas clicando em **Gerar implantação** no MESMO instante
+  ainda podem gerar duas; um clique depois do outro, não — o segundo é
+  recusado. Se acontecer, cancele uma delas.
 - **Controle por lote e baixa FIFO** não fazem parte deste módulo.
 
 ---

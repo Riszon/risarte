@@ -1427,7 +1427,7 @@ cobrança em dobro: acusou o arquivo e a linha.
 
 ---
 
-### AP12. ⚠️ Implantação da SEGUNDA etapa cobra de novo quem já pagou (26/09/2026)
+### AP12. ⚠️ Implantação da SEGUNDA etapa cobra de novo quem já pagou (26/09/2026 — corrigido, 1023 / Empresarial 0.72.0)
 
 **Achado construindo a trava da mensalidade (1022)**, quando o dono explicou a
 regra da implantação ao responder se ela também devia ter trava.
@@ -1467,3 +1467,50 @@ diferença é zero, não há o que cobrar, e isso também resolve o clique duplo
 Alternativa mais precisa e mais cara: ligar cada titular à implantação que o
 cobriu. A primeira segue o jeito que a primeira etapa já é calculada (por
 quantidade), e por isso é a recomendada.
+
+**✅ CORRIGIDO (Empresarial 0.72.0, migração 1023), pelo conserto proposto** —
+o dono: *"pode seguir com a correção de implantação que você propos"*.
+
+- **1023:** `adhesion_billing.holders_covered` — quantos titulares cada
+  implantação cobriu. Gravado ao GERAR. Implantação antiga fica **nula**, de
+  propósito: nulo = "não sei", nunca zero (zero repetiria o defeito) nem "todos"
+  (poderia deixar de cobrar quem entrou depois).
+- **A regra é pura e testada** (`src/lib/empresarial/implantacao-cobranca.ts`,
+  9 testes, com o caso 80 + 20 do dono): base = `max(limite_de_titulares,
+  ativos)`; cobra `base − soma das implantações vivas`; zero ou menos → não
+  gera e diz por quê (resolve também o clique duplo em sequência).
+- **Preço da 2ª etapa = faixa da BASE** (a empresa inteira), não a dos novos —
+  mesma lei da 1ª etapa: a faixa é a do volume negociado.
+- **Leitura que falha não vira "nada coberto"** (AP11): sem conseguir ler o
+  limite ou as implantações anteriores, a prévia recusa.
+- **Valor informado à mão** (sem titulares e sem contrato) grava nulo: ninguém
+  sabe quantos aquele valor cobriu. A próxima prévia avisa.
+
+**Ficou de fora, declarado:** (1) dois cliques no MESMO instante ainda podem
+gerar duas implantações — não há índice único possível, porque várias
+implantações por empresa são legítimas; está no manual. (2) Implantação por
+documento (modelo "um boleto por CNPJ") na 2ª etapa sai num boleto só, no
+documento principal: não há como saber a qual CNPJ pertencem titulares que
+ainda não foram cadastrados.
+
+---
+
+### AP13. Preço da adesão lido sem conferir o erro (26/09/2026)
+
+**Achado mexendo na AP12.** `implantacaoPeloContratado` (hoje
+`precoPorTitularDaImplantacao`) e `computeMonthlyBreakdown`, em
+`empresarial/[companyId]/billing-actions.ts`, leem `adhesion_pricing`
+ignorando o `error`; `carregarFaixasDaEmpresa` devolve `[]` quando a
+leitura falha.
+
+**CONFIRMADO, lendo o código:** se essas leituras falharem, a cobrança é
+calculada com o **preço padrão do código** (`DEFAULT_ADHESION_PRICING`) e sem
+faixas — e a prévia mostra esse número como se fosse o da empresa. É a mesma
+família do AP11 (falha lida como "vazio"), num valor em vez de numa trava.
+
+**NÃO CONFIRMADO:** se já aconteceu. A prévia é conferida por gente antes de
+gerar, o que reduz (não elimina) o risco.
+
+**Conserto provável:** as três leituras devolvem erro e a prévia recusa com
+`naoConseguiConferir("o preço da adesão")`. Mexe na mensalidade também — por
+isso não entrou no commit da AP12.

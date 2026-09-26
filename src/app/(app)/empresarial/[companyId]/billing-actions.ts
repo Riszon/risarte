@@ -1,5 +1,6 @@
 "use server";
 
+import { decidirImplantacao } from "@/lib/empresarial/implantacao-cobranca";
 import { naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
@@ -40,6 +41,18 @@ export type BillingPreview = {
   titularesCadastrados?: number;
   /** Nem titulares nem quantidade contratada: a tela precisa pedir o valor. */
   precisaValor?: boolean;
+  /**
+   * Implantação de SEGUNDA etapa (AP12): quantos titulares as implantações
+   * anteriores já cobriram, e a base de hoje. A cobrança é só a diferença.
+   */
+  jaCobertos?: number;
+  baseDaImplantacao?: number;
+  /**
+   * Há implantação antiga, gerada antes da 1023, sem o registro de quantos
+   * titulares cobriu. A conta sai do jeito de sempre — e a tela avisa, porque
+   * pode estar cobrando de novo quem já pagou.
+   */
+  avisoCobertura?: string;
 };
 
 /**
@@ -144,6 +157,85 @@ export async function previewBilling(
   // Agora a base é a QUANTIDADE CONTRATADA, que veio da proposta no
   // fechamento (I4). Sem ela, a tela pede o valor — é o caso das empresas
   // cadastradas direto, sem passar pelo funil.
+  // ⚠️ CADA TITULAR PAGA IMPLANTAÇÃO UMA VEZ (AP12, regra do dono em
+  // 26/09/2026). Antes, a conta começava do zero a cada clique: na segunda
+  // etapa (termo de inclusão de +20) cobrava os 100 cadastrados, e os 80 que
+  // já tinham pago pagavam de novo — e dois cliques também duplicavam.
+  let avisoCobertura: string | undefined;
+  if (billingType === "IMPLANTATION") {
+    const [
+      { data: limiteRow, error: erroDoLimite },
+      { data: anteriores, error: erroDasAnteriores },
+    ] = await Promise.all([
+      // A base é o LIMITE (contratado + termos de inclusão aceitos), não só o
+      // contratado: é o termo aceito que diz que a segunda etapa existe.
+      db.rpc("limite_de_titulares", { p_company_id: companyId }),
+      db
+        .from("adhesion_billing")
+        .select("holders_covered")
+        .eq("company_id", companyId)
+        .eq("billing_type", "IMPLANTATION")
+        .neq("status", "CANCELLED")
+        .returns<{ holders_covered: number | null }[]>(),
+    ]);
+    // Sem conseguir ler, não se adivinha (AP11): a conta errada aqui é cobrar
+    // de novo quem já pagou.
+    if (erroDoLimite || erroDasAnteriores || !anteriores) {
+      return {
+        ok: false,
+        error: naoConseguiConferir("quantos titulares já pagaram implantação"),
+      };
+    }
+    const limite =
+      typeof limiteRow === "number" ? limiteRow : (limiteRow?.[0] ?? null);
+    const decisao = decidirImplantacao({
+      limite,
+      ativos: breakdown.totalEmployees,
+      anteriores,
+    });
+
+    if (decisao.tipo === "nada") {
+      return {
+        ok: false,
+        error: `Todos os titulares já pagaram a implantação (${decisao.jaCobertos} cobertos; a base de hoje é de ${decisao.base}). Não há o que cobrar. Quando entrarem titulares novos, eles pagam a própria implantação.`,
+      };
+    }
+
+    if (decisao.tipo === "diferenca") {
+      // A FAIXA É A DA EMPRESA INTEIRA (a base), não a dos novos: os 20 que
+      // entram numa empresa de 100 pagam o preço de 100 — pagar a faixa de 20
+      // cobraria mais caro justamente de quem entrou depois. É a mesma lei da
+      // primeira etapa, escrita em `implantacaoPeloContratado`.
+      const porTitular = await precoPorTitularDaImplantacao(db, companyId, decisao.base);
+      return {
+        ok: true,
+        items: [
+          {
+            documentId: null,
+            payerName: companyName,
+            payerDoc: primary
+              ? `${primary.doc_type} ${primary.doc_formatted}`
+              : company.cnpj,
+            employees: decisao.aCobrar,
+            totalCents: porTitular * decisao.aCobrar,
+          },
+        ],
+        dueDate,
+        referenceMonth,
+        description: `Implantação dos novos titulares (${decisao.aCobrar}) — Risarte Empresarial (${companyName})`,
+        beneficiary: "Risarte / RisLife",
+        billingModel: company.billing_model,
+        jaCobertos: decisao.jaCobertos,
+        baseDaImplantacao: decisao.base,
+        titularesCadastrados: breakdown.totalEmployees,
+      };
+    }
+
+    if (decisao.tipo === "desconhecido") {
+      avisoCobertura = `Esta empresa tem ${decisao.semRegistro} implantação(ões) gerada(s) antes do registro de quantos titulares cada uma cobriu. A conta abaixo é a de sempre e PODE estar cobrando de novo quem já pagou — confira e use Editar para acertar o valor.`;
+    }
+  }
+
   if (billingType === "IMPLANTATION") {
     const semTitulares = breakdown.totalEmployees === 0;
     const menosQueOContratado =
@@ -172,6 +264,7 @@ export async function previewBilling(
           billingModel: company.billing_model,
           baseContratada: contratado,
           titularesCadastrados: breakdown.totalEmployees,
+          avisoCobertura,
         };
       }
       if (semTitulares) {
@@ -197,6 +290,7 @@ export async function previewBilling(
           billingModel: company.billing_model,
           precisaValor: true,
           titularesCadastrados: 0,
+          avisoCobertura,
         };
       }
     }
@@ -220,6 +314,7 @@ export async function previewBilling(
     description,
     beneficiary: "Risarte / RisLife",
     billingModel: perDocument ? "por_cnpj" : "unico",
+    avisoCobertura,
   };
 }
 
@@ -238,6 +333,39 @@ export async function previewBilling(
 // tela num computador brasileiro.
 
 /**
+ * O preço de UM titular na implantação, pela faixa da quantidade dada.
+ *
+ * ⚠️ AP13 (BACKLOG): se a leitura do preço ou das faixas falhar, esta conta
+ * cai no preço padrão da rede SEM avisar. Não foi mudado aqui de propósito —
+ * vale também para a mensalidade, e é assunto próprio.
+ */
+async function precoPorTitularDaImplantacao(
+  db: Awaited<ReturnType<typeof empresarialDb>>,
+  companyId: string,
+  quantidadeDaFaixa: number
+): Promise<number> {
+  const { data: pricingRows } = await db
+    .from("adhesion_pricing")
+    .select("company_id, holder_fee_cents")
+    .or(`company_id.eq.${companyId},company_id.is.null`);
+  const rows = (pricingRows ?? []) as {
+    company_id: string | null;
+    holder_fee_cents: number;
+  }[];
+  const escolhido =
+    rows.find((r) => r.company_id === companyId) ??
+    rows.find((r) => r.company_id === null);
+  const base = escolhido?.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents;
+
+  const faixas = await carregarFaixasDaEmpresa(db, companyId);
+  return precoDoTitularComFaixa(
+    { ...DEFAULT_ADHESION_PRICING, holderFeeCents: base },
+    faixas,
+    quantidadeDaFaixa
+  );
+}
+
+/**
  * O valor da implantação pela QUANTIDADE CONTRATADA.
  *
  * ⚠️ SÓ TITULARES, e isso é a mesma lei que vale na proposta (decisão do dono
@@ -254,26 +382,7 @@ async function implantacaoPeloContratado(
   companyId: string,
   contratado: number
 ): Promise<number> {
-  const { data: pricingRows } = await db
-    .from("adhesion_pricing")
-    .select("company_id, holder_fee_cents")
-    .or(`company_id.eq.${companyId},company_id.is.null`);
-  const rows = (pricingRows ?? []) as {
-    company_id: string | null;
-    holder_fee_cents: number;
-  }[];
-  const escolhido =
-    rows.find((r) => r.company_id === companyId) ??
-    rows.find((r) => r.company_id === null);
-  const base = escolhido?.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents;
-
-  const faixas = await carregarFaixasDaEmpresa(db, companyId);
-  const porTitular = precoDoTitularComFaixa(
-    { ...DEFAULT_ADHESION_PRICING, holderFeeCents: base },
-    faixas,
-    contratado
-  );
-  return porTitular * contratado;
+  return (await precoPorTitularDaImplantacao(db, companyId, contratado)) * contratado;
 }
 
 /** Mensalidade total e por documento (para o modelo "um boleto por CNPJ"). */
@@ -443,6 +552,11 @@ export async function generateBilling(
     status: "PENDING",
     due_date: preview.dueDate,
     description: preview.description,
+    // AP12: é isto que a PRÓXIMA implantação desconta. Quando o valor foi
+    // informado à mão (sem titulares e sem contrato), não se sabe quantos ele
+    // cobriu — fica nulo ("não sei"), e a próxima prévia avisa.
+    holders_covered:
+      billingType === "IMPLANTATION" && !preview.precisaValor ? i.employees : null,
   }));
 
   const { error } = await db.from("adhesion_billing").insert(rows);

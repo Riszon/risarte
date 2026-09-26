@@ -336,6 +336,29 @@ export function BillingTab({
                 </p>
               )}
 
+              {/* SEGUNDA ETAPA (AP12): cada titular paga implantação UMA vez.
+                  Sem esta frase, quem vê "20 titulares" numa empresa de 100
+                  acha que o sistema errou a conta. */}
+              {preview.jaCobertos != null && preview.baseDaImplantacao != null && (
+                <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                  <strong>Implantação dos novos titulares.</strong> A empresa
+                  tem hoje {preview.baseDaImplantacao} titular(es) entre
+                  contratados e termos de inclusão aceitos;{" "}
+                  {preview.jaCobertos} já pagaram a implantação antes. Esta
+                  cobra só a diferença, pelo preço da faixa de{" "}
+                  {preview.baseDaImplantacao}.
+                </p>
+              )}
+
+              {/* Implantação antiga sem registro de quantos cobriu: a conta é
+                  a de sempre e pode repetir quem já pagou — a tela avisa em
+                  vez de adivinhar. */}
+              {preview.avisoCobertura && (
+                <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2 text-xs">
+                  {preview.avisoCobertura}
+                </p>
+              )}
+
               {/* Sem titulares e sem quantidade contratada: ninguém tem como
                   saber o valor, então a tela PERGUNTA em vez de inventar. */}
               {preview.precisaValor && (

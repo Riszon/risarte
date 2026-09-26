@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.292.0; Empresarial 0.69.0 → 0.71.0; migrações 0273, 0274, 0275 e 1022)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.292.0; Empresarial 0.69.0 → 0.72.0; migrações 0273, 0274, 0275, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -430,10 +430,16 @@ a produção, com trava que EXIGE ser produção).
    precisa RODAR a 1022 na produção.** Chave (empresa, DOCUMENTO, mês): empresa
    com dois CNPJs recebe dois boletos. A tela da empresa não tinha trava
    nenhuma — dois cliques cobravam em dobro.
-4c. ⚠️ **AP12 (BACKLOG): implantação da 2ª etapa cobra de novo quem já pagou.**
-   Regra do dono: cada titular paga implantação uma vez, na etapa em que
-   entra. Hoje "Gerar implantação" cobra todos os cadastrados. Conserto
-   proposto (guardar quantos cada implantação cobriu) aguarda o OK do dono.
+4c. ✅ **AP12 corrigido (1023, Empresarial 0.72.0) — o dono precisa RODAR a
+   1023 na produção.** Cada titular paga implantação uma vez: cada
+   implantação guarda quantos cobriu (`holders_covered`) e a próxima cobra só
+   a diferença, pela faixa da empresa inteira. Provado no treino como usuário
+   logado (80 → clique duplo recusado → 2ª etapa cobra 20). Implantação
+   antiga fica nula ("não sei") e a tela avisa. **Enquanto a 1023 não rodar
+   na produção, "Gerar implantação" lá recusa** ("não foi possível
+   conferir") — falha fechada, de propósito.
+4d. **AP13 (BACKLOG):** preço da adesão lido sem conferir o erro — cai no
+   preço padrão do código em silêncio. Mexe na mensalidade também.
 5. **AP10** (BACKLOG): o `check-migrations` não pega erro de tipo que o
    Postgres pega (`= any()` sobre enum).
 6. Cadastrar os benefícios PADRÃO DA REDE na produção (segue VAZIO).
