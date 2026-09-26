@@ -40,6 +40,7 @@ export function AprovacoesPendentes({ pendentes }: { pendentes: ConclusaoPendent
     porUnidade.set(chave, [...(porUnidade.get(chave) ?? []), p]);
   }
 
+  /** `rotulo`: "Fulana" (uma pessoa) ou "Unidade X" (a unidade inteira). */
   function aprovar(ids: string[], rotulo: string) {
     startTransition(async () => {
       const r = await aprovarConclusoes(ids);
@@ -48,8 +49,10 @@ export function AprovacoesPendentes({ pendentes }: { pendentes: ConclusaoPendent
       } else {
         toast.success(
           r.recusadas && r.recusadas.length > 0
-            ? `${r.aprovadas} aprovada(s) em ${rotulo}; ${r.recusadas.length} não (já aprovadas ou erro).`
-            : `${r.aprovadas} aprovada(s) em ${rotulo}. O sistema real foi liberado.`
+            ? `${rotulo}: ${r.aprovadas} aprovada(s); ${r.recusadas.length} não (já aprovadas ou erro).`
+            : ids.length === 1
+              ? `Aprovação registrada: ${rotulo}. O sistema real foi liberado.`
+              : `${rotulo}: ${r.aprovadas} aprovada(s). O sistema real foi liberado.`
         );
       }
       router.refresh();

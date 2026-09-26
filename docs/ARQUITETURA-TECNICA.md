@@ -375,6 +375,12 @@ lê**, e a camada 2 procura exatamente marcas de erro na página.
   `preferred_clinic_id` (2ª FK para `clinics`), todo embed `clinics ( name )`
   virou ambíguo (PGRST201) e quebrou listas/jornada. Desambiguar sempre com o
   nome da FK: `clinics!clients_clinic_id_fkey ( name )`.
+  **Aconteceu de novo em 26/09/2026:** a 0281 deu à matrícula
+  (`training_enrollments`) uma 2ª ligação para `profiles` (`approved_by`), e a
+  fila de aprovação e a lista de turmas do Admin pararam de carregar NA
+  PRODUÇÃO — achado no teste ponta a ponta, não por relato. **Ao criar coluna
+  que aponta para uma tabela que já tinha ligação, procurar os embeds dela.**
+  `embed-ambiguo.test.ts` prende as tabelas que já têm duas ligações.
 - **Contagem de dias inteiros** usa subtração de data `(now()::date - col::date)`,
   NÃO `extract(day from interval)` (que só devolve o componente "dia").
 - **`new Date("2026-09-05T14:00:00")` É LIDO NO FUSO DA MÁQUINA.** No

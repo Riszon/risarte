@@ -292,7 +292,7 @@ export async function medirUnidadeDaTurma(
   const [{ data: matriculas, error }, { data: metas }] = await Promise.all([
     supabase
       .from("training_enrollments")
-      .select("id, user_id, role, status, started_at, profiles(email)")
+      .select("id, user_id, role, status, started_at, profiles!training_enrollments_user_id_fkey(email)")
       .eq("campaign_id", campaignId)
       .eq("clinic_id", clinicId),
     supabase

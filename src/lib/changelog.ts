@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.295.1",
+    data: "2026-09-26",
+    migracao: null,
+    titulo: "Certificação: a fila de aprovação e a lista de turmas voltaram a abrir",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Admin Master: em Administração → Certificação, a fila \"Aguardando a sua aprovação\" e a lista de turmas não carregavam desde a atualização anterior — apareciam avisos de \"não foi possível ler\". Corrigido.",
+        papeis: [],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quem ainda não tem o sistema real liberado passa a ler \"Sua unidade ainda está fechada no sistema real\" no Início, em vez de \"Nenhuma clínica cadastrada ainda\"; e, com a missão cumprida esperando o Admin, a unidade aparece como \"Aguardando a aprovação do Admin\".",
+        papeis: "todos",
+        manual: "Quando você cumpre a missão",
+      },
+    ],
+  },
+  {
     versao: "0.295.0",
     data: "2026-09-26",
     migracao: "0281",

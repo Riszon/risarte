@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.295.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0281, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.295.1; Empresarial 0.69.0 → 0.72.0; migrações 0273–0281, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -458,8 +458,15 @@ a produção, com trava que EXIGE ser produção).
    "Conferir minha missão" e ao abrir a unidade na turma. Fila "Aguardando a
    sua aprovação" com os números. Provado no treino (16 checagens + API).
    ✅ **0281 APLICADA na produção** (conferido de fora: só a chave de serviço
-   registra; sem login recusa; aprovar exige Admin). ⏳ Falta ver na tela com
-   uma missão real cumprida no treino.
+   registra; sem login recusa; aprovar exige Admin).
+   ✅ **TESTE PONTA A PONTA feito (26/09, pedido do dono)** no treino como
+   produção, com `recepcao@example.com`: convocação → missão → cadastros →
+   aprovação → sistema real aberto. 🔴 Achou: a 0281 criou 2ª ligação
+   matrícula→profiles e a fila de aprovação + a lista de turmas QUEBRARAM NA
+   PRODUÇÃO (PGRST201) — corrigido no código (0.295.1) + régua
+   `embed-ambiguo.test.ts`; e dois textos enganosos no Início. Treino
+   devolvido ao estado anterior (ficaram a turma TR-00013 encerrada, 2
+   clientes de teste e o certificado da usuária de teste).
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao

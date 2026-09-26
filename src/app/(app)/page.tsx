@@ -264,7 +264,14 @@ export default async function HomePage() {
                   </span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {ROTULO_DO_MOTIVO[u.motivo]}
+                  {/* A missão desta função foi cumprida e espera o Admin: dizer
+                      "aguardando a missão" contradiria o cartão logo acima
+                      (achado no teste ponta a ponta, 26/09/2026). */}
+                  {u.motivo === "aguardando_missao" &&
+                  minhaMissao?.conclusao === "aguardando_aprovacao" &&
+                  minhaMissao.role === u.role
+                    ? "Aguardando a aprovação do Admin"
+                    : ROTULO_DO_MOTIVO[u.motivo]}
                 </span>
               </li>
             ))}
@@ -304,6 +311,11 @@ export default async function HomePage() {
                     ver minhas funções
                   </Link>
                 </>
+              ) : session.unidadesFechadas.length > 0 ? (
+                // 0276: a unidade existe — está FECHADA. "Nenhuma clínica
+                // cadastrada" (a frase de antes) era falsa e assustava: achado
+                // no teste ponta a ponta do portão, 26/09/2026.
+                "Sua unidade ainda está fechada no sistema real — veja acima."
               ) : (
                 "Nenhuma clínica cadastrada ainda."
               )}

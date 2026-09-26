@@ -69,14 +69,14 @@ export default async function CertificacaoPage() {
     supabase
       .from("training_campaigns")
       .select(
-        "id, code, kind, note, created_at, access_policy, deadline, whole_network, training_campaign_units(clinic_id), training_enrollments(user_id, role, status, started_at, access_suspended_at, approval_status, clinic_id, profiles(full_name))"
+        "id, code, kind, note, created_at, access_policy, deadline, whole_network, training_campaign_units(clinic_id), training_enrollments(user_id, role, status, started_at, access_suspended_at, approval_status, clinic_id, profiles!training_enrollments_user_id_fkey(full_name))"
       )
       .eq("status", "aberta")
       .order("created_at", { ascending: false }),
     // 0281: quem cumpriu e espera o Admin (gatilho "aprovação").
     supabase
       .from("training_enrollments")
-      .select("id, role, clinic_id, completed_at, result_snapshot, profiles(full_name), training_campaigns(code)")
+      .select("id, role, clinic_id, completed_at, result_snapshot, profiles!training_enrollments_user_id_fkey(full_name), training_campaigns(code)")
       .eq("approval_status", "pendente")
       .order("completed_at", { ascending: true }),
   ]);
