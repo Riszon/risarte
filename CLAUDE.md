@@ -470,7 +470,8 @@ a produção, com trava que EXIGE ser produção).
    ✅ **AP16 item 3 (0282, core 0.296.0): guarda de UNIDADE** em 17 funções de
    custo/repasse/estoque/financeiro — original vira `_X_raw`, a porta confere
    `can_read_clinic_data`. Provado no treino (recepção barrada na outra
-   unidade). ⚠️ **O dono precisa RODAR a 0282 na produção.**
+   unidade). ✅ **0282 APLICADA na produção** (27/09; conferido: portas e
+   originais no lugar, nada responde sem login).
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
