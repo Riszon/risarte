@@ -477,8 +477,13 @@ a produção, com trava que EXIGE ser produção).
    padrão / sem dependentes / com zero quando uma leitura falha — recusam
    com "não foi possível conferir". A régua do AP11 passou a pegar a
    contagem RENOMEADA (`{ count: x }` … `x ?? 0`). Conferido na tela: prévia
-   = ficha (R$ 219,50). **AP18** (suspeita, precisa do dono): o termo lê só o
-   preço próprio da empresa.
+   = ficha (R$ 219,50).
+   ✅ **AP18 (1024, Empresarial 0.74.0, 27/09):** o valor fixo da proposta
+   passou a existir na EMPRESA e manda na mensalidade (fixo + termos
+   aceitos), no termo (novo fixo − o que paga hoje) e nas 6 telas; a
+   implantação é sempre o 1º pagamento (campos da proposta saíram; colunas
+   ficam no banco). Conferido no treino, logado. ⏳ **1024 a rodar na
+   produção** pelo dono. AP19 (3 pontas soltas) no BACKLOG.
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
