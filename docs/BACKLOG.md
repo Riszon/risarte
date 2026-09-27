@@ -1770,3 +1770,28 @@ select p.proname as funcao, p.prosecdef as roda_como_dono, has_function_privileg
 operação do riSZon que "não o afetava". Nada no schema `treinamento` muda sem
 o dono ver antes.
 
+**✅ ITEM 3 DO AP16 CORRIGIDO (0282, core 0.296.0) — guarda de UNIDADE.**
+17 funções que entregavam custo, repasse, estoque ou financeiro de QUALQUER
+unidade a qualquer logado ganharam uma PORTA: a original virou
+`_<nome>_raw` (fechada para a API) e a porta, com o mesmo nome/parâmetros/
+retorno, confere `can_read_clinic_data(unidade)` (Admin, rede, ou acesso à
+unidade por função/escopo; rotina sem usuário passa). Unidade vazia = valores
+da REDE (passa), exceto em `ppr_refresh_delinquency` e
+`recompute_client_activity` (vazio = TODAS → só Admin/rotina).
+Provado no treino como usuária real: a recepcionista lê a própria unidade e
+a rede, é BARRADA na outra; o Admin lê todas; a original não responde a
+logado; as provas anteriores (AP15, 0280, 0281, 0277) seguem passando;
+varredura das telas sem falha nova (107 telas).
+
+**Ficaram SEM porta, de propósito:** as que respondem "posso?" sobre a própria
+pessoa (`can_manage_staff`, `can_reconcile`, `acquirer_visible_to_me`,
+`fill_history_access`, `role_allowed_for_clinic`); as usadas DENTRO de
+políticas (`providers_with_access` — guarda que recusa ali derruba a
+consulta inteira); a busca por CPF (`find_client_basic_by_cpf`,
+`find_duplicate_client`, `find_prospect_by_cpf`, `find_staff_by_cpf` —
+cadastro com cliente único na rede); códigos e avisos (`next_client_code*`,
+`next_procedure_code`, `notify_protocol_*`, `notify_provider_cross_unit` —
+custo baixo, e a guarda arriscaria o cadastro/agendamento em outra unidade
+feito pela SDR); chat (`chat_channel_people`, `chat_display_names` — nomes
+de colegas); `acquirer_rates_usage` (contagem de uso de taxa).
+

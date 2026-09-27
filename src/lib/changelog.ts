@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.296.0",
+    data: "2026-09-26",
+    migracao: "0282",
+    titulo: "Custos, repasses, estoque e financeiro só da unidade que você enxerga",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Os números de custo, repasse por nível, estoque e configuração financeira de uma unidade passaram a ser entregues só a quem enxerga aquela unidade (quem tem função nela, a Franqueadora com escopo sobre ela, a rede e o Admin). As telas já mostravam só a sua unidade; o que mudou é que o sistema também recusa pedidos feitos por fora das telas. Nada muda no seu dia a dia.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.295.1",
     data: "2026-09-26",
     migracao: null,

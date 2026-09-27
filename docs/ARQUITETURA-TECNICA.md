@@ -371,6 +371,14 @@ lê**, e a camada 2 procura exatamente marcas de erro na página.
   chama ali mesmo, e as funções rodam como `postgres`, que ignora RLS — a
   tabela não teria como se proteger sozinha (medido em 26/09/2026).
 
+- **FUNÇÕES COM "PORTA" (0282): `X` chama `_X_raw`.** 17 funções de custo,
+  repasse, estoque e financeiro ganharam uma porta com guarda de unidade
+  (`can_read_clinic_data`); a original, renomeada para `_X_raw`, não responde
+  à API. **Mudar a CONTA** de uma delas = mudar `_X_raw` (drop + create, com
+  o mesmo retorno da porta). **Mudar a assinatura** = mudar as DUAS. O
+  `check-migrations` trata `alter function ... rename to` como liberação do
+  nome, igual a `drop function`.
+
 - **2ª FK para a mesma tabela = embeds ambíguos.** Quando `clients` ganhou
   `preferred_clinic_id` (2ª FK para `clinics`), todo embed `clinics ( name )`
   virou ambíguo (PGRST201) e quebrou listas/jornada. Desambiguar sempre com o

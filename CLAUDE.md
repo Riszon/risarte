@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.295.1; Empresarial 0.69.0 → 0.72.0; migrações 0273–0281, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.296.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0282, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -467,6 +467,10 @@ a produção, com trava que EXIGE ser produção).
    `embed-ambiguo.test.ts`; e dois textos enganosos no Início. Treino
    devolvido ao estado anterior (ficaram a turma TR-00013 encerrada, 2
    clientes de teste e o certificado da usuária de teste).
+   ✅ **AP16 item 3 (0282, core 0.296.0): guarda de UNIDADE** em 17 funções de
+   custo/repasse/estoque/financeiro — original vira `_X_raw`, a porta confere
+   `can_read_clinic_data`. Provado no treino (recepção barrada na outra
+   unidade). ⚠️ **O dono precisa RODAR a 0282 na produção.**
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao

@@ -58,11 +58,18 @@ for (const f of files) {
 }
 
 const sql = readFileSync(join(DIR, target), "utf8");
-const drops = new Set(
-  [...sql.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?public\.(\w+)/gi)].map(
+// `alter function public.X(...) rename to Y` também libera o nome X: a função
+// criada depois com esse nome é NOVA, não substitui a antiga (0282 — a porta
+// com guarda na frente da original renomeada). Sem isto, a régua acusava
+// "retorno mudou" em cada porta.
+const drops = new Set([
+  ...[...sql.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?public\.(\w+)/gi)].map(
     (m) => m[1]
-  )
-);
+  ),
+  ...[...sql.matchAll(/alter\s+function\s+public\.(\w+)\s*\([^)]*\)\s+rename\s+to\s+\w+/gi)].map(
+    (m) => m[1]
+  ),
+]);
 
 const problems = [];
 
