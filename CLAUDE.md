@@ -482,8 +482,8 @@ a produção, com trava que EXIGE ser produção).
    passou a existir na EMPRESA e manda na mensalidade (fixo + termos
    aceitos), no termo (novo fixo − o que paga hoje) e nas 6 telas; a
    implantação é sempre o 1º pagamento (campos da proposta saíram; colunas
-   ficam no banco). Conferido no treino, logado. ⏳ **1024 a rodar na
-   produção** pelo dono. AP19 (3 pontas soltas) no BACKLOG.
+   ficam no banco). Conferido no treino, logado. ✅ **1024 APLICADA na
+   produção** (27/09; conferido pela API: 1 empresa, por titular, sem fixo). AP19 (3 pontas soltas) no BACKLOG.
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
