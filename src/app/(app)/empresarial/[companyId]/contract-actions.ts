@@ -7,7 +7,8 @@ import { formatBRL } from "@/lib/pricing";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import { createZapDocument, isZapsignConfigured } from "@/lib/empresarial/zapsign";
-import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
+import { carregarFaixasParaCobrar } from "@/lib/empresarial/faixas-da-empresa";
+import { contagemConfirmada } from "@/lib/contagem";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
@@ -148,8 +149,15 @@ async function buildProposalText(companyId: string): Promise<string | null> {
     .maybeSingle();
   if (!company) return null;
 
-  const [{ data: pricingRows }, { data: emps }, { data: deps }, { count: benCount }] =
-    await Promise.all([
+  // ⚠️ AP13: a proposta vai para a empresa com PREÇO. Qualquer leitura que
+  // falhe devolve nulo (a tela diz que não conseguiu montar) — antes, a falha
+  // virava o preço padrão, zero dependentes e "Mais de 0 procedimentos".
+  const [
+    { data: pricingRows, error: erroDoPreco },
+    { data: emps, error: erroDosTitulares },
+    { data: deps, error: erroDosDependentes },
+    contagemDosBeneficios,
+  ] = await Promise.all([
       db
         .from("adhesion_pricing")
         .select(
@@ -168,8 +176,16 @@ async function buildProposalText(companyId: string): Promise<string | null> {
         .select("id", { count: "exact", head: true })
         .or(`company_id.eq.${companyId},company_id.is.null`),
     ]);
+  const benCount = contagemConfirmada(contagemDosBeneficios);
+  const faixas = await carregarFaixasParaCobrar(db, companyId);
+  if (
+    erroDoPreco || erroDosTitulares || erroDosDependentes ||
+    !pricingRows || !emps || !deps || benCount === null || !faixas
+  ) {
+    return null;
+  }
 
-  const rows = (pricingRows ?? []) as {
+  const rows = pricingRows as {
     company_id: string | null;
     holder_fee_cents: number;
     dependent_individual_fee_cents: number;
@@ -199,7 +215,7 @@ async function buildProposalText(companyId: string): Promise<string | null> {
       dependentPlan: e.dependent_plan,
       activeDependentCount: depCount.get(e.id) ?? 0,
     })),
-    await carregarFaixasDaEmpresa(db, companyId)
+    faixas
   );
 
   const name = company.trade_name || company.legal_name;
@@ -209,7 +225,7 @@ async function buildProposalText(companyId: string): Promise<string | null> {
     `## Saúde bucal como benefício\nLeve odontologia de qualidade aos seus titulares, com rede credenciada e acompanhamento contínuo.`,
     `## Como funciona\n- Titulares e dependentes viram pacientes da rede Risarte\n- Benefícios e descontos exclusivos em procedimentos\n- Gestão simples: uma mensalidade única para a empresa`,
     `## Investimento\n- Titular: ${formatBRL(pricing.holderFeeCents)}/mês\n- Plano de dependentes a partir de ${formatBRL(pricing.dependentIndividualFeeCents)}/mês\n- Mensalidade estimada hoje: **${formatBRL(monthly.totalCents)}**`,
-    `## Benefícios clínicos\nMais de ${benCount ?? 0} procedimentos com cobertura/desconto do programa, incluindo prevenção periódica sem custo.`,
+    `## Benefícios clínicos\nMais de ${benCount} procedimentos com cobertura/desconto do programa, incluindo prevenção periódica sem custo.`,
     `## Próximos passos\n1. Assinatura do contrato\n2. Cadastro dos titulares\n3. Início dos atendimentos`,
   ].join("\n\n---\n\n");
 }
@@ -228,7 +244,15 @@ export async function generateCompanyProposal(
     return { ok: false, error: "O Gamma ainda não está configurado (chave ausente)." };
   }
   const inputText = await buildProposalText(companyId);
-  if (!inputText) return { ok: false, error: "Empresa não encontrada." };
+  // AP13: nulo também é "não consegui ler preço/cadastros" — dizer "empresa
+  // não encontrada" mandaria procurar o defeito no lugar errado.
+  if (!inputText) {
+    return {
+      ok: false,
+      error:
+        "Não foi possível montar a proposta agora (preços ou cadastros não responderam). Nada foi enviado — tente de novo em instantes.",
+    };
+  }
 
   try {
     const res = await fetch(`${GAMMA_BASE}/generations`, {

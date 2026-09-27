@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
 import { contaDoExcedente } from "@/lib/empresarial/excedente";
+import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 
 export type ActionResult = { ok: boolean; error?: string; code?: string };
 
@@ -58,26 +59,41 @@ export async function criarTermoDeInclusao(
   if (!empresa) return { ok: false, error: "Empresa não encontrada." };
 
   // A mensalidade de HOJE é a base da diferença no acordo de valor fixo.
-  const { data: precos } = await db
+  //
+  // ⚠️ AP13: o termo é um DOCUMENTO COM VALOR que a empresa aceita. Antes, se a
+  // leitura do preço ou a contagem dos ativos falhasse, a conta seguia com
+  // ZERO (`ativos ?? 0`) e o termo nascia com a mensalidade de base zerada —
+  // a mesma armadilha do AP11, escrita de um jeito que a régua de texto não
+  // pegava. Sem conseguir ler, não gera.
+  const { data: precos, error: erroDoPreco } = await db
     .from("adhesion_pricing")
     .select("holder_fee_cents")
     .eq("company_id", companyId)
     .maybeSingle<{ holder_fee_cents: number }>();
-  const { count: ativos } = await db
+  const contagemDosAtivos = await db
     .from("employees")
     .select("*", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("status", "ACTIVE");
-  const mensalidadeAtualCents = (ativos ?? 0) * (precos?.holder_fee_cents ?? 0);
+  const ativos = contagemConfirmada(contagemDosAtivos);
+  if (erroDoPreco || ativos === null) {
+    return { ok: false, error: naoConseguiConferir("o preço e os titulares ativos da empresa") };
+  }
+  // Sem preço próprio da empresa a base é zero — comportamento de antes, agora
+  // só quando a leitura DEU CERTO e não achou linha (ver AP18 no BACKLOG).
+  const mensalidadeAtualCents = ativos * (precos?.holder_fee_cents ?? 0);
 
-  const { data: empresaImpl } = await db
+  const { data: empresaImpl, error: erroDaEmpresa } = await db
     .from("companies")
     .select("origin_lead_id")
     .eq("id", companyId)
     .maybeSingle<{ origin_lead_id: string | null }>();
+  if (erroDaEmpresa) {
+    return { ok: false, error: naoConseguiConferir("a origem da empresa") };
+  }
   let implantacaoPorAdesaoCents = 0;
   if (empresaImpl?.origin_lead_id) {
-    const { data: q } = await db
+    const { data: q, error: erroDaQualificacao } = await db
       .from("lead_qualification")
       .select("implantation_per_employee_cents, implantation_mode")
       .eq("lead_id", empresaImpl.origin_lead_id)
@@ -85,6 +101,10 @@ export async function criarTermoDeInclusao(
         implantation_per_employee_cents: number | null;
         implantation_mode: "PER_ADHESION" | "FIXED" | null;
       }>();
+    // AP13: sem ler a qualificação, a implantação por adesão viraria zero.
+    if (erroDaQualificacao) {
+      return { ok: false, error: naoConseguiConferir("a implantação combinada") };
+    }
     // ⚠️ Implantação FIXA não se cobra de novo: ela foi paga uma vez, pela
     // empresa. Só a implantação POR ADESÃO acompanha gente nova.
     if (q?.implantation_mode !== "FIXED") {

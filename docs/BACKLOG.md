@@ -1495,7 +1495,7 @@ ainda não foram cadastrados.
 
 ---
 
-### AP13. Preço da adesão lido sem conferir o erro (26/09/2026)
+### AP13. Preço da adesão lido sem conferir o erro (26/09/2026 — corrigido, Empresarial 0.73.0)
 
 **Achado mexendo na AP12.** `implantacaoPeloContratado` (hoje
 `precoPorTitularDaImplantacao`) e `computeMonthlyBreakdown`, em
@@ -1794,4 +1794,44 @@ cadastro com cliente único na rede); códigos e avisos (`next_client_code*`,
 custo baixo, e a guarda arriscaria o cadastro/agendamento em outra unidade
 feito pela SDR); chat (`chat_channel_people`, `chat_display_names` — nomes
 de colegas); `acquirer_rates_usage` (contagem de uso de taxa).
+
+**✅ AP13 CORRIGIDO (Empresarial 0.73.0, 27/09/2026, sem migração).** Confirmado
+lendo o código e maior do que o registrado: além do preço e das faixas, a
+mensalidade lia os TITULARES e os DEPENDENTES sem conferir o erro (falha nos
+dependentes = mensalidade sem eles), e mais dois lugares que geram documento
+com valor faziam o mesmo:
+
+- **Cobrança** (`billing-actions.ts`): preço, faixas, titulares e dependentes
+  conferidos; qualquer falha → a prévia recusa com "Não foi possível conferir
+  o preço e os titulares da empresa agora" (no lote, a empresa vai para as
+  puladas com esse motivo).
+- **Termo de inclusão** (`inclusion-actions.ts`): preço, contagem de ativos
+  (`ativos ?? 0` — a variação do AP11 que a régua não via), origem e
+  implantação combinada conferidos.
+- **Proposta Gamma** (`contract-actions.ts`): preço, titulares, dependentes,
+  faixas e a contagem de benefícios; a mensagem de falha deixou de dizer
+  "Empresa não encontrada" (falso).
+- `carregarFaixasParaCobrar` (nulo na falha) para quem gera valor; a
+  tolerante segue nas TELAS, de propósito (a ficha abre).
+- **Réguas:** `faixas-para-cobrar.test.ts` (quem cobra não usa a
+  tolerante) e, no AP11, a **contagem renomeada** (`{ count: x }` … `x ?? 0`)
+  — ambas provadas reprovando um caso plantado.
+- Conferido na tela do treino: a prévia da mensalidade da Bom Sabor dá
+  R$ 219,50 (3 titulares), o mesmo valor da ficha — nada gerado.
+
+---
+
+### AP18. O termo de inclusão lê só o preço PRÓPRIO da empresa (27/09/2026) — SUSPEITA
+
+**Achado mexendo no AP13.** Em `inclusion-actions.ts`, a "mensalidade de
+hoje" (base da diferença no acordo de valor fixo) lê `adhesion_pricing` com
+`.eq("company_id", companyId)` — sem o padrão da rede como reserva, ao
+contrário da cobrança. E multiplica só titulares ativos pelo preço do
+titular (sem dependentes nem faixas).
+
+**CONFIRMADO, lendo o código:** empresa sem linha própria de preço tem base
+ZERO nesse cálculo. **NÃO CONFIRMADO:** se existe empresa assim na produção
+(as que vêm do funil ganham linha própria no fechamento — `fechamento.ts`),
+e se a conta simplificada (só titulares) é a regra combinada ou um atalho.
+Precisa do dono dizer qual é a regra da "mensalidade de hoje" no termo.
 

@@ -560,6 +560,16 @@ dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
 > **Para corrigir uma mensalidade errada:** cancele a atual e gere de novo.
 > Cobrança cancelada não conta para a trava.
 
+> **"Não foi possível conferir o preço e os titulares da empresa agora…"** —
+> o sistema não conseguiu ler, naquele instante, o preço combinado, as faixas,
+> os titulares ou os dependentes. **Nada foi gerado.** Tente de novo em
+> instantes. É de propósito: antes, uma falha momentânea fazia a cobrança sair
+> com o preço padrão da rede ou **sem os dependentes** — mais barata ou mais
+> cara, e sem ninguém perceber. O mesmo vale para o **termo de inclusão** e
+> para a **proposta**: sem conseguir ler os valores, eles não são montados.
+> Na geração **em lote**, a empresa aparece entre as **puladas**, com esse
+> motivo.
+
 **A implantação não espera os cadastros.** Ao clicar em **Gerar implantação**:
 
 - Se a empresa tem **quantidade contratada** (veio da proposta), a conta usa

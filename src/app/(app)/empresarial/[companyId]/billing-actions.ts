@@ -7,7 +7,7 @@ import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
-import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
+import { carregarFaixasParaCobrar } from "@/lib/empresarial/faixas-da-empresa";
 import {
   computeMonthlyCents,
   precoDoTitularComFaixa,
@@ -100,6 +100,11 @@ export async function previewBilling(
   const perDocument = company.billing_model === "por_cnpj" && (docs?.length ?? 0) > 1;
 
   const breakdown = await computeMonthlyBreakdown(db, companyId);
+  // AP13: sem conseguir ler preço, titulares e dependentes, não há conta — e
+  // conta "aproximada" numa cobrança é conta errada com cara de certa.
+  if (!breakdown) {
+    return { ok: false, error: naoConseguiConferir("o preço e os titulares da empresa") };
+  }
   const companyName = company.trade_name || company.legal_name;
   const primary = (docs ?? []).find((d) => d.is_primary);
 
@@ -207,6 +212,9 @@ export async function previewBilling(
       // cobraria mais caro justamente de quem entrou depois. É a mesma lei da
       // primeira etapa, escrita em `implantacaoPeloContratado`.
       const porTitular = await precoPorTitularDaImplantacao(db, companyId, decisao.base);
+      if (porTitular === null) {
+        return { ok: false, error: naoConseguiConferir("o preço da adesão") };
+      }
       return {
         ok: true,
         items: [
@@ -244,6 +252,9 @@ export async function previewBilling(
     if (semTitulares || menosQueOContratado) {
       if (contratado != null && contratado > 0) {
         const cents = await implantacaoPeloContratado(db, companyId, contratado);
+        if (cents === null) {
+          return { ok: false, error: naoConseguiConferir("o preço da adesão") };
+        }
         return {
           ok: true,
           items: [
@@ -335,20 +346,21 @@ export async function previewBilling(
 /**
  * O preço de UM titular na implantação, pela faixa da quantidade dada.
  *
- * ⚠️ AP13 (BACKLOG): se a leitura do preço ou das faixas falhar, esta conta
- * cai no preço padrão da rede SEM avisar. Não foi mudado aqui de propósito —
- * vale também para a mensalidade, e é assunto próprio.
+ * ⚠️ AP13: NULO quando não conseguiu ler o preço ou as faixas. Antes, a falha
+ * caía no preço padrão da rede SEM avisar — a empresa que negociou outro preço
+ * receberia a implantação pelo padrão. Quem chama recusa gerar.
  */
 async function precoPorTitularDaImplantacao(
   db: Awaited<ReturnType<typeof empresarialDb>>,
   companyId: string,
   quantidadeDaFaixa: number
-): Promise<number> {
-  const { data: pricingRows } = await db
+): Promise<number | null> {
+  const { data: pricingRows, error: erroDoPreco } = await db
     .from("adhesion_pricing")
     .select("company_id, holder_fee_cents")
     .or(`company_id.eq.${companyId},company_id.is.null`);
-  const rows = (pricingRows ?? []) as {
+  if (erroDoPreco || !pricingRows) return null;
+  const rows = pricingRows as {
     company_id: string | null;
     holder_fee_cents: number;
   }[];
@@ -357,7 +369,8 @@ async function precoPorTitularDaImplantacao(
     rows.find((r) => r.company_id === null);
   const base = escolhido?.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents;
 
-  const faixas = await carregarFaixasDaEmpresa(db, companyId);
+  const faixas = await carregarFaixasParaCobrar(db, companyId);
+  if (!faixas) return null;
   return precoDoTitularComFaixa(
     { ...DEFAULT_ADHESION_PRICING, holderFeeCents: base },
     faixas,
@@ -381,8 +394,9 @@ async function implantacaoPeloContratado(
   db: Awaited<ReturnType<typeof empresarialDb>>,
   companyId: string,
   contratado: number
-): Promise<number> {
-  return (await precoPorTitularDaImplantacao(db, companyId, contratado)) * contratado;
+): Promise<number | null> {
+  const porTitular = await precoPorTitularDaImplantacao(db, companyId, contratado);
+  return porTitular === null ? null : porTitular * contratado;
 }
 
 /** Mensalidade total e por documento (para o modelo "um boleto por CNPJ"). */
@@ -393,9 +407,16 @@ async function computeMonthlyBreakdown(
   totalCents: number;
   totalEmployees: number;
   byDocument: Map<string, { employees: number; cents: number }>;
-}> {
-  const [{ data: pricingRows }, { data: emps }, { data: deps }] =
-    await Promise.all([
+} | null> {
+  // ⚠️ AP13: QUALQUER leitura que falhe devolve nulo. Antes, cada falha virava
+  // um número "razoável": preço padrão no lugar do combinado, ZERO dependentes
+  // (a mensalidade saía sem eles), "sem titulares". A cobrança nascia errada
+  // e parecia certa.
+  const [
+    { data: pricingRows, error: erroDoPreco },
+    { data: emps, error: erroDosTitulares },
+    { data: deps, error: erroDosDependentes },
+  ] = await Promise.all([
       db
         .from("adhesion_pricing")
         .select(
@@ -417,8 +438,11 @@ async function computeMonthlyBreakdown(
         >(),
       db.from("dependents").select("employee_id, status").eq("status", "ACTIVE"),
     ]);
+  if (erroDoPreco || erroDosTitulares || erroDosDependentes || !pricingRows || !emps || !deps) {
+    return null;
+  }
 
-  const rows = (pricingRows ?? []) as {
+  const rows = pricingRows as {
     company_id: string | null;
     holder_fee_cents: number;
     dependent_individual_fee_cents: number;
@@ -447,8 +471,9 @@ async function computeMonthlyBreakdown(
   // vez (para repartir por CNPJ). Calcular a faixa dentro do laço faria cada
   // chamada ver "1 titular ativo" e cobrar sempre a faixa de 1 — o preço mais
   // caro, em toda empresa que negociou volume.
-  const faixas = await carregarFaixasDaEmpresa(db, companyId);
-  const ativos = (emps ?? []).filter((e) => e.status === "ACTIVE").length;
+  const faixas = await carregarFaixasParaCobrar(db, companyId);
+  if (!faixas) return null;
+  const ativos = emps.filter((e) => e.status === "ACTIVE").length;
   const precoComFaixa = {
     ...pricing,
     holderFeeCents: precoDoTitularComFaixa(pricing, faixas, ativos),
