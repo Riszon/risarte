@@ -1835,3 +1835,27 @@ ZERO nesse cálculo. **NÃO CONFIRMADO:** se existe empresa assim na produção
 e se a conta simplificada (só titulares) é a regra combinada ou um atalho.
 Precisa do dono dizer qual é a regra da "mensalidade de hoje" no termo.
 
+**AP18 — investigação completa (27/09/2026), CONFIRMADO lendo o código:**
+
+1. A "mensalidade de hoje" do termo SÓ é usada no modo **novo valor fixo**
+   (`NEW_FIXED`): o termo cobra `novo fixo − mensalidade de hoje`. No modo
+   **por adesão** ela não entra.
+2. Ela é calculada como **titulares ativos × preço por titular PRÓPRIO da
+   empresa** — sem o preço da rede (empresa sem preço próprio → base ZERO →
+   o termo cobra o pacote novo INTEIRO), sem dependentes e sem faixas.
+3. 🔴 **Maior:** o acordo de **valor fixo por empresa** existe só na proposta
+   (`lead_qualification.billing_basis = FIXED_PER_COMPANY` e
+   `fixed_monthly_cents`). O **fechamento NÃO copia** nenhum dos dois para a
+   empresa (`fechamento.ts` copia preço por titular e faixas). Consequência:
+   empresa fechada com valor fixo seria **cobrada por titular** na mensalidade,
+   e no termo a "mensalidade de hoje" seria titulares × preço, não o fixo.
+
+**Produção em 27/09 (lida, só contagens):** 1 empresa, cadastrada direto (sem
+funil), sem preço próprio, sem regra de excedente, 0 termos, 0 propostas de
+valor fixo. **Nada foi cobrado errado ainda.**
+
+**Perguntas ao dono** (feitas em 27/09): no valor fixo, a mensalidade é o
+valor fixo (e não por titular)? No termo "novo valor fixo", a diferença é
+novo fixo − fixo atual? Para empresa por titular, a "mensalidade de hoje" é o
+que ela paga de verdade (com dependentes e faixas)?
+
