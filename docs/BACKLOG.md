@@ -1884,7 +1884,7 @@ empresa de valor fixo, um mês do fixo, e na 2ª etapa o acréscimo do termo).
 - **Proposta:** `custoDaImplantacao` removida; o salvar parou de escrever as
   três colunas de implantação (escrever nulo apagaria o valor guardado).
 
-### AP19. Três pontas soltas do valor fixo (27/09/2026) — SUSPEITA
+### AP19. Três pontas soltas do valor fixo (27/09/2026) — CONFIRMADO, regras decididas pelo dono
 
 **Achados fazendo o AP18.** Nenhum tem caso na produção hoje (1 empresa,
 cadastrada direto, por titular, 0 termos).
@@ -1901,3 +1901,19 @@ cadastrada direto, por titular, 0 termos).
 3. **Empresa cadastrada direto não pode ser de valor fixo** — só pelo
    fechamento do funil. Falta o campo no cadastro/edição da empresa, se o dono
    quiser.
+
+**Reconferido no código em 27/09 — as três CONFIRMADAS:** (1) o termo por
+adesão congela preço próprio e a mensalidade soma todos os ativos pela tabela
+(`computeMonthlyBreakdown` não sabe quem entrou por termo); (2) em empresa por
+titular, o termo "novo valor fixo" cobra um pacote que o boleto nunca cobra;
+(3) `billing_basis`, valor fixo e regra do excedente só se editam na proposta
+do funil.
+
+**Decisões do dono (27/09/2026):**
+1. **Empresa por titular: o excedente paga o PREÇO DA TABELA** da empresa
+   (com a faixa) — termo e boleto dão o mesmo número. O "preço do excedente"
+   da proposta passa a valer só no acordo de valor fixo.
+2. **"Novo valor fixo" NÃO EXISTE em proposta por titular** — só no valor fixo.
+3. **Empresa cadastrada direto pode ser de valor fixo e ter regra do
+   excedente**, na edição (Dados Gerais), por quem já mexe no preço, com cada
+   mudança registrada.
