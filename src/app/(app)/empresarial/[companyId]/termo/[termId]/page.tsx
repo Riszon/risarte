@@ -33,6 +33,9 @@ type TermoRow = {
   notes: string | null;
   created_at: string;
   company_id: string;
+  /** AP19: preenchidos = termo de empresa por titular (vale a tabela). */
+  base_holders: number | null;
+  base_holder_fee_cents: number | null;
 };
 
 /**
@@ -84,6 +87,16 @@ export default async function TermoDeInclusaoPage({
   if (!empresa) notFound();
 
   const razao = empresa.legal_name || empresa.trade_name || "Empresa";
+  // AP19: empresa por titular — quem entra paga a tabela, e o termo mostra o
+  // antes e o depois congelados nele.
+  const pelaTabela = termo.base_holders != null && termo.base_holder_fee_cents != null;
+  const antesCents = pelaTabela ? termo.base_holders! * termo.base_holder_fee_cents! : 0;
+  const depoisTitulares = pelaTabela ? termo.base_holders! + termo.holders : 0;
+  const mudouAFaixa =
+    pelaTabela &&
+    termo.holders > 0 &&
+    termo.holder_fee_cents != null &&
+    termo.holder_fee_cents !== termo.base_holder_fee_cents;
   const hoje = todayInBrazil();
 
   return (
@@ -161,6 +174,11 @@ export default async function TermoDeInclusaoPage({
                 {termo.dependent_fee_cents != null && (
                   <> · {formatBRL(termo.dependent_fee_cents)} por mês cada</>
                 )}
+                {/* AP19: o preço do dependente depende do plano de cada
+                    família — o termo cita a tabela, não inventa um total. */}
+                {pelaTabela && (
+                  <> · pela tabela de dependentes do contrato, conforme o plano de cada família</>
+                )}
               </li>
             )}
           </ul>
@@ -178,11 +196,41 @@ export default async function TermoDeInclusaoPage({
               .
             </p>
           )}
+          {pelaTabela && (
+            <p className="leading-relaxed text-muted-foreground">
+              Os titulares pagam pela <strong className="text-foreground">tabela
+              da empresa</strong>. Com esta inclusão, a mensalidade dos titulares
+              passa de{" "}
+              <strong className="text-foreground">
+                {termo.base_holders} × {formatBRL(termo.base_holder_fee_cents!)} ={" "}
+                {formatBRL(antesCents)}
+              </strong>{" "}
+              para{" "}
+              <strong className="text-foreground">
+                {depoisTitulares} ×{" "}
+                {formatBRL(termo.holder_fee_cents ?? termo.base_holder_fee_cents!)} ={" "}
+                {formatBRL(antesCents + termo.monthly_delta_cents)}
+              </strong>
+              .
+              {mudouAFaixa && (
+                <>
+                  {" "}
+                  A nova quantidade muda a faixa de preço, e o novo valor vale
+                  para <strong className="text-foreground">todos</strong> os
+                  titulares.
+                </>
+              )}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
             <div>
-              <p className="text-xs text-muted-foreground">A mais por mês</p>
+              <p className="text-xs text-muted-foreground">
+                {pelaTabela && termo.monthly_delta_cents < 0
+                  ? "A menos por mês"
+                  : "A mais por mês"}
+              </p>
               <p className="text-lg font-semibold">
-                {formatBRL(termo.monthly_delta_cents)}
+                {formatBRL(Math.abs(termo.monthly_delta_cents))}
               </p>
             </div>
             {termo.implantation_cents > 0 && (
@@ -196,10 +244,10 @@ export default async function TermoDeInclusaoPage({
           </div>
           {/* Régua vazia grita: termo sem valor não pode sair parecendo de
               graça. */}
-          {termo.monthly_delta_cents <= 0 && (
+          {!pelaTabela && termo.monthly_delta_cents <= 0 && (
             <p className="text-sm text-destructive">
               ⚠️ Este termo está <strong>sem valor combinado</strong> — a regra
-              do excedente não foi definida na proposta. Ele não deve ser
+              do excedente não foi definida. Ele não deve ser
               enviado à empresa assim.
             </p>
           )}

@@ -869,13 +869,21 @@ export async function saveCommercialTerms(
       // I4 (1020): o que acontece se a empresa passar do contratado. Combinar
       // isto na proposta é o que permite o termo de inclusão nascer com o
       // número pronto, em vez de virar renegociação do zero a cada pessoa.
-      excess_mode: daLista(formData, "excess_mode", [
-        "NEW_FIXED",
-        "PER_ADHESION",
-      ] as const),
-      excess_fixed_cents: centavos(formData, "excess_fixed"),
-      excess_holder_fee_cents: centavos(formData, "excess_holder_fee"),
-      excess_dependent_fee_cents: centavos(formData, "excess_dependent_fee"),
+      //
+      // ⚠️ AP19: na proposta POR TITULAR o bloco não aparece (vale a tabela).
+      // Sem o campo na tela, NÃO escreve — escrever nulo apagaria a regra que
+      // estava guardada.
+      ...(formData.has("excess_mode")
+        ? {
+            excess_mode: daLista(formData, "excess_mode", [
+              "NEW_FIXED",
+              "PER_ADHESION",
+            ] as const),
+            excess_fixed_cents: centavos(formData, "excess_fixed"),
+            excess_holder_fee_cents: centavos(formData, "excess_holder_fee"),
+            excess_dependent_fee_cents: centavos(formData, "excess_dependent_fee"),
+          }
+        : {}),
       updated_by: session.userId,
     },
     "as condições comerciais"

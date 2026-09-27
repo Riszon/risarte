@@ -157,6 +157,9 @@ async function buildProposalText(companyId: string): Promise<string | null> {
       .select("monthly_delta_cents")
       .eq("company_id", companyId)
       .eq("status", "ACEITO")
+      // AP19: só termos do VALOR FIXO somam ao fixo — o termo "pela tabela"
+      // (de quando a empresa era por titular) já está coberto pelo valor fixo.
+      .is("base_holders", null)
       .returns<{ monthly_delta_cents: number }[]>();
     if (erroDosTermos || !aceitos) return null;
     fixoDaProposta = mensalidadeDoFixo(company.fixed_monthly_cents, aceitos.map((t) => t.monthly_delta_cents));

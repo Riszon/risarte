@@ -307,6 +307,20 @@ export function CondicoesComerciais({
           </div>
 
           {/* ---- o excedente ---- */}
+          {/* AP19 (dono, 27/09/2026): na proposta POR TITULAR quem passa do
+              contratado paga a tabela da empresa — não há regra a combinar, e
+              "novo valor fixo" não existe. Os campos somem; o que estiver
+              gravado fica no banco, sem uso. */}
+          {porTitular ? (
+          <div className="space-y-1 rounded-md border p-2">
+            <p className="text-sm font-medium">Se passar do contratado</p>
+            <p className="text-xs text-muted-foreground">
+              Quem passar do contratado entra pelo <strong>preço da tabela</strong>{" "}
+              desta empresa, com a faixa — o termo de inclusão e o boleto dão o
+              mesmo número. Não há nada a combinar aqui.
+            </p>
+          </div>
+          ) : (
           <div className="space-y-2 rounded-md border p-2">
             <div>
               <p className="text-sm font-medium">Se passar do contratado</p>
@@ -367,6 +381,7 @@ export function CondicoesComerciais({
               )}
             </div>
           </div>
+          )}
 
           <div className="flex justify-end">
             <Button type="submit" size="sm" disabled={isPending}>

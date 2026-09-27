@@ -149,13 +149,15 @@ function resumoDasCondicoes(d: DadosDosPassos): SituacaoDaEtapa {
   }
   if (d.minAdhesions != null) partes.push(`mín. ${d.minAdhesions}`);
   if (d.maxAdhesions != null) partes.push(`máx. ${d.maxAdhesions}`);
-  if (d.temRegraDeExcedente) partes.push("excedente combinado");
+  // AP19: por titular, o excedente é a tabela — não se combina.
+  if (d.valorFixo && d.temRegraDeExcedente) partes.push("excedente combinado");
+  if (!d.valorFixo && d.maxAdhesions != null) partes.push("excedente pela tabela");
   if (partes.length === 0) return { estado: "pronto", resumo: "preço único" };
   // ⚠️ O MÁXIMO SEM REGRA DE EXCEDENTE É O CASO QUE DÓI DEPOIS (I4): a empresa
   // fecha com teto, quer incluir mais gente, e o termo de inclusão nasce sem
   // valor porque ninguém combinou quanto custa passar do teto. Avisar aqui é
   // barato; descobrir na hora de cobrar, não.
-  if (d.maxAdhesions != null && !d.temRegraDeExcedente) {
+  if (d.valorFixo && d.maxAdhesions != null && !d.temRegraDeExcedente) {
     return { estado: "falta", resumo: `${partes.join(" · ")} · sem regra de excedente` };
   }
   return { estado: "feito", resumo: partes.join(" · ") };

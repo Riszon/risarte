@@ -1884,7 +1884,7 @@ empresa de valor fixo, um mês do fixo, e na 2ª etapa o acréscimo do termo).
 - **Proposta:** `custoDaImplantacao` removida; o salvar parou de escrever as
   três colunas de implantação (escrever nulo apagaria o valor guardado).
 
-### AP19. Três pontas soltas do valor fixo (27/09/2026) — CONFIRMADO, regras decididas pelo dono
+### AP19. ✅ RESOLVIDO em 27/09/2026 (1025 / Empresarial 0.75.0) — três pontas soltas do valor fixo
 
 **Achados fazendo o AP18.** Nenhum tem caso na produção hoje (1 empresa,
 cadastrada direto, por titular, 0 termos).
@@ -1917,3 +1917,30 @@ do funil.
 3. **Empresa cadastrada direto pode ser de valor fixo e ter regra do
    excedente**, na edição (Dados Gerais), por quem já mexe no preço, com cada
    mudança registrada.
+4. (Plano, com o OK do dono) **dependentes no termo por titular: só a
+   tabela**, sem total estimado; e a **quantidade contratada** entra na mesma
+   edição.
+
+**✅ RESOLVIDO (1025, Empresarial 0.75.0):**
+- `contaPelaTabela` (pura, testada): antes = contrato cheio (maior entre
+  limite e ativos) × preço da faixa daquele tamanho; depois = antes + novos ×
+  preço da faixa nova. A diferença PODE SER NEGATIVA (a faixa vale para todos).
+- **1025:** o termo congela o antes (`base_holders`, `base_holder_fee_cents`)
+  — é por eles que a tela sabe que o termo é "pela tabela". Termo pela tabela
+  é aceito mesmo com diferença ≤ 0; a trava do "sem valor" ficou no fixo.
+- Somas do valor fixo (cobrança, termo, telas, painel, proposta Gamma) contam
+  só termos do FIXO (`base_holders is null`) — ao virar valor fixo, os termos
+  da época por titular não somam.
+- Proposta por titular: o bloco do excedente vira explicação; o salvar só
+  escreve `excess_*` quando o campo está na tela (escrever nulo apagaria);
+  a trilha só avisa "sem regra de excedente" no valor fixo.
+- Cartão **Acordo de cobrança** em Dados Gerais (`acordo-de-cobranca.ts`,
+  pura e testada): base, fixo, contratado (titulares/dependentes), excedente;
+  na empresa por titular o fixo e o excedente não são escritos (ficam
+  guardados). Auditoria com antes/depois.
+- Conferido no treino, logado: acordo salvo (3 contratados) → termo TI-00012
+  "3 × 39,90 = 119,70 → 5 × 39,90 = 199,50", +79,80, implantação 79,80; novo
+  fixo menor que o fixo recusado; 6.000 > 5.000 aceito; auditoria com antes e
+  depois; proposta por titular sem os campos. Deixado no treino: TI-00012
+  CANCELADO e dois registros de auditoria; a Bom Sabor voltou ao estado
+  anterior (conferido).

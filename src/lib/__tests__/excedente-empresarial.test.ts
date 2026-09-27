@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   contaDoExcedente,
+  contaPelaTabela,
   recusaDoCadastro,
   recusaDoDependente,
   vagasDisponiveis,
@@ -130,5 +131,30 @@ describe("o teto de DEPENDENTES (I4 / 1021)", () => {
     // Sem teto de dependentes (nulo), não há trava: é o caso de toda empresa
     // fechada antes da 1020.
     expect(vagasDisponiveis(null, 999).semTrava).toBe(true);
+  });
+});
+
+describe("o termo da empresa POR TITULAR vai pela tabela (AP19)", () => {
+  it("sem mudar de faixa, a diferença é titulares novos × preço", () => {
+    const c = contaPelaTabela(100, 3990, 3990, 20, 0);
+    expect(c.depoisTitulares).toBe(120);
+    expect(c.mensalDeltaCents).toBe(20 * 3990);
+    expect(c.implantacaoCents).toBe(20 * 3990);
+  });
+
+  it("a faixa nova vale para TODOS — e a diferença pode ser NEGATIVA", () => {
+    // 100 × 39,90 = 3.990,00; 120 × 29,90 = 3.588,00 → a empresa paga MENOS.
+    const c = contaPelaTabela(100, 3990, 2990, 20, 0);
+    expect(c.mensalDeltaCents).toBe(120 * 2990 - 100 * 3990);
+    expect(c.mensalDeltaCents).toBeLessThan(0);
+    // O 1º pagamento dos novos é pelo preço de depois.
+    expect(c.implantacaoCents).toBe(20 * 2990);
+  });
+
+  it("só dependentes: os titulares não mudam, e dependente não entra na conta", () => {
+    const c = contaPelaTabela(100, 3990, 3990, 0, 10);
+    expect(c.dependentes).toBe(10);
+    expect(c.mensalDeltaCents).toBe(0);
+    expect(c.implantacaoCents).toBe(0);
   });
 });

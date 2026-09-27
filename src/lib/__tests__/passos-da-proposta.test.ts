@@ -97,6 +97,7 @@ describe("os passos da aba Proposta", () => {
       minAdhesions: 50,
       maxAdhesions: 200,
       temRegraDeExcedente: true,
+      valorFixo: true,
     });
     expect(r.condicoes.estado).toBe("feito");
     expect(r.condicoes.resumo).toContain("3 faixas");
@@ -104,15 +105,23 @@ describe("os passos da aba Proposta", () => {
     expect(r.condicoes.resumo).toContain("máx. 200");
   });
 
-  it("⚠️ máximo SEM regra de excedente é avisado — é o termo de inclusão nascendo sem valor", () => {
-    const r = resumoDosPassos({ ...base, maxAdhesions: 100 });
+  it("⚠️ VALOR FIXO com máximo SEM regra de excedente é avisado — é o termo nascendo sem valor", () => {
+    const r = resumoDosPassos({ ...base, valorFixo: true, maxAdhesions: 100 });
     expect(r.condicoes.estado).toBe("falta");
     expect(r.condicoes.resumo).toContain("sem regra de excedente");
+  });
+
+  it("POR TITULAR, máximo sem regra não é pendência: o excedente é a tabela (AP19)", () => {
+    const r = resumoDosPassos({ ...base, maxAdhesions: 100 });
+    expect(r.condicoes.estado).toBe("feito");
+    expect(r.condicoes.resumo).toContain("excedente pela tabela");
+    expect(r.condicoes.resumo).not.toContain("sem regra");
   });
 
   it("máximo COM regra de excedente não avisa nada", () => {
     const r = resumoDosPassos({
       ...base,
+      valorFixo: true,
       maxAdhesions: 100,
       temRegraDeExcedente: true,
     });

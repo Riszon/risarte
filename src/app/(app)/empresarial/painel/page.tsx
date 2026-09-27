@@ -148,6 +148,9 @@ export default async function PainelPage() {
     .from("company_inclusion_terms")
     .select("company_id, monthly_delta_cents")
     .eq("status", "ACEITO")
+    // AP19: só termos do VALOR FIXO somam ao fixo — o termo "pela tabela"
+    // (de quando a empresa era por titular) já está coberto pelo valor fixo.
+    .is("base_holders", null)
     .returns<{ company_id: string; monthly_delta_cents: number }[]>();
   const termosPorEmpresa = new Map<string, number[]>();
   for (const t of termosAceitos ?? []) {

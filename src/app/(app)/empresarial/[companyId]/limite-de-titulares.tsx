@@ -24,6 +24,8 @@ export type TermoDeInclusao = {
   dependents: number;
   monthlyDeltaCents: number;
   implantationCents: number;
+  /** AP19: termo de empresa por titular — vale a tabela, nunca "sem valor". */
+  pelaTabela: boolean;
   status: "RASCUNHO" | "ACEITO" | "CANCELADO";
   acceptedAt: string | null;
   createdAt: string;
@@ -261,7 +263,13 @@ export function LimiteDeTitulares({
                   {t.holders > 0 && `${t.holders} titular(es)`}
                   {t.holders > 0 && t.dependents > 0 && " e "}
                   {t.dependents > 0 && `${t.dependents} dependente(s)`}
-                  {t.monthlyDeltaCents > 0 ? (
+                  {t.pelaTabela ? (
+                    <>
+                      {" "}
+                      · {t.monthlyDeltaCents >= 0 ? "+" : "−"}
+                      {formatBRL(Math.abs(t.monthlyDeltaCents))}/mês nos titulares
+                    </>
+                  ) : t.monthlyDeltaCents > 0 ? (
                     <> · +{formatBRL(t.monthlyDeltaCents)}/mês</>
                   ) : (
                     <span className="text-amber-700 dark:text-amber-400">

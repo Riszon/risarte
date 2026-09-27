@@ -325,15 +325,26 @@ mais campo para isso (decisão da direção, 27/09/2026).
 
 ### 6.6. Se passar do contratado
 
-O que acontece quando a empresa quiser incluir mais gente depois:
+O que acontece quando a empresa quiser incluir mais gente depois **depende de
+como ela paga**:
 
-- **Por adesão** — cada pessoa a mais tem preço.
-- **Novo valor fixo do pacote** — o pacote inteiro passa a valer outro valor.
+- **Proposta por titular** — **não há nada a combinar.** Quem passa do
+  contratado entra pelo **preço da tabela** da empresa, com a faixa — o mesmo
+  preço dos outros titulares. O passo mostra só essa explicação.
+- **Proposta de valor fixo** — combine uma das duas:
+  - **Por adesão** — cada pessoa a mais tem preço.
+  - **Novo valor fixo do pacote** — o pacote inteiro passa a valer outro valor.
 
-> **Combine isso ANTES.** É o que permite o termo de inclusão (seção 11) nascer
-> com o número pronto, em vez de virar uma renegociação do zero toda vez que
-> entrar uma pessoa a mais. Sem isso, o termo nasce **sem valor** e o sistema
-> avisa.
+> **Por que por titular não tem regra própria** (decisão da direção,
+> 27/09/2026): antes dava para combinar um "preço do excedente" diferente do
+> titular — mas a mensalidade sempre somou todos os titulares pela tabela. O
+> termo assinado dizia um valor e o boleto cobrava outro. Hoje os dois dão o
+> mesmo número.
+
+> **No valor fixo, combine ANTES.** É o que permite o termo de inclusão
+> (seção 11) nascer com o número pronto. Sem isso, o termo nasce **sem valor** e
+> o sistema avisa — e a trilha marca o passo em amarelo (*"sem regra de
+> excedente"*) quando há máximo combinado.
 
 ### 6.7. Vantagens e benefícios
 
@@ -424,13 +435,30 @@ Menu **Empresarial**, clique na empresa. Sete abas:
 
 | Aba | O que tem |
 |---|---|
-| **Dados Gerais** | CNPJ, razão social, categoria, modelo de pagamento, vencimento, meios de pagamento, carência |
+| **Dados Gerais** | CNPJ, razão social, categoria, modelo de pagamento, vencimento, meios de pagamento, carência, **acordo de cobrança** |
 | **Documentos** | os documentos da empresa |
 | **Titulares** | as pessoas do programa |
 | **Plano & Benefícios** | mensalidade atual, simulador, preços de adesão, benefícios |
 | **Financeiro** | cobranças, economia gerada, benefícios utilizados |
 | **Riso+ Social** | as fichas sociais |
 | **Contratos** | contratos e assinatura |
+
+**Acordo de cobrança** (cartão em Dados Gerais) — como a mensalidade é cobrada
+(**por titular** ou **valor fixo**), a **quantidade contratada** (titulares e
+dependentes) e o que acontece **se passar do contratado**. Numa empresa que veio
+do funil, isso já chega preenchido no fechamento. Numa empresa **cadastrada
+direto**, é aqui que se define. Para isso, use **Editar** no próprio cartão.
+
+- Quantidade em branco = **sem trava** (como toda empresa antiga).
+- No valor fixo, o **novo valor fixo do pacote** tem de ser **maior** que o
+  atual — o termo cobra a diferença; se não for, o sistema recusa.
+- Na empresa por titular, o valor fixo e a regra do excedente **somem da tela**
+  e continuam guardados; voltar para valor fixo mostra o que estava lá.
+- Mudar o acordo vale para as **próximas** cobranças — as já geradas não mudam
+  — e fica registrado na **Auditoria**, com o antes e o depois.
+- Numa empresa que passou de por titular para valor fixo, os termos de inclusão
+  da época "por titular" **não somam** ao valor fixo: o valor fixo já cobre
+  tudo o que foi combinado até ali.
 
 **Modelo de pagamento** — é a decisão que muda tudo o mais:
 
@@ -514,16 +542,22 @@ incluir mais, gere um termo de inclusão…"*.
 **Incluir mais titulares** gera o **termo de inclusão** (código `TI-`):
 
 1. Informe quantos titulares e dependentes entram.
-2. O sistema calcula a diferença pela regra combinada na proposta (seção 6.6),
-   partindo do que a empresa **paga de verdade hoje**:
-   - **Novo valor fixo do pacote** → a empresa passa a pagar **o novo fixo menos
-     o que paga hoje** (o valor fixo + os termos já aceitos; na empresa por
-     titular, a mesma conta da mensalidade do mês, com dependentes e faixa).
-   - **Por adesão** → cada pessoa a mais pelo preço combinado.
+2. O sistema calcula a diferença:
+   - **Empresa por titular** → pela **tabela da empresa**, com a faixa. O termo
+     mostra a mensalidade dos titulares **antes e depois** — por exemplo, *"passa
+     de 3 × R$ 39,90 = R$ 119,70 para 5 × R$ 39,90 = R$ 199,50"*. Se a nova
+     quantidade mudar a faixa, o preço novo vale para **todos**, e o termo diz
+     isso; a diferença pode até ser **a menos**. Os **dependentes** aparecem
+     pela tabela de dependentes do contrato, conforme o plano de cada família —
+     sem total estimado.
+   - **Empresa de valor fixo** → pela regra combinada (seção 6.6), partindo do
+     que ela **paga de verdade hoje** (o valor fixo + os termos já aceitos):
+     **novo valor fixo** cobra o novo fixo menos isso; **por adesão**, cada
+     pessoa a mais pelo preço combinado.
 
    A **implantação** dos que entram também aparece no termo — é o primeiro
    pagamento deles: na empresa por titular, cada titular novo pelo preço da
-   faixa da empresa inteira; na de valor fixo, o **acréscimo mensal** do termo.
+   tabela depois da inclusão; na de valor fixo, o **acréscimo mensal** do termo.
    É o mesmo número que **Gerar implantação** vai cobrar.
 3. **Abrir** mostra o documento, curto, pronto para PDF.
 4. **Aceitar** libera exatamente aquela quantidade.
@@ -538,9 +572,11 @@ incluir mais, gere um termo de inclusão…"*.
 > sendo os do contrato. Dois documentos dizendo a mesma coisa é um documento a
 > mais para discordar do outro.
 
-> **Termo sem valor não é aceito.** Se a regra do excedente não foi combinada na
-> proposta, o termo nasce com R$ 0,00 e o sistema avisa **junto com o sucesso** —
-> ele existe, e existe sem valor. Ajuste a proposta e gere outro.
+> **Termo sem valor não é aceito** (só acontece no valor fixo). Se a regra do
+> excedente não foi combinada, o termo nasce com R$ 0,00 e o sistema avisa
+> **junto com o sucesso** — ele existe, e existe sem valor. Ajuste a regra (na
+> proposta, ou no **Acordo de cobrança** em Dados Gerais) e gere outro. Na
+> empresa por titular o termo **sempre** tem valor: é a tabela.
 
 > **"Não foi possível conferir os termos de inclusão já aceitos / o tamanho
 > atual da empresa…"** — o sistema não conseguiu ler, naquele instante, um
@@ -548,7 +584,8 @@ incluir mais, gere um termo de inclusão…"*.
 > instantes: um termo é documento com valor, e sai certo ou não sai.
 
 > **Empresa sem quantidade contratada não tem trava** e o cartão nem aparece. É
-> o caso de toda empresa cadastrada antes desta regra.
+> o caso de toda empresa cadastrada antes desta regra. Para passar a ter, defina
+> a quantidade no **Acordo de cobrança** (Dados Gerais).
 
 ### 11.1. O teto de dependentes
 
@@ -854,7 +891,7 @@ momento, na frente do cliente.
 - [ ] Preço do titular e faixas conferidos
 - [ ] Dependentes: valores definidos
 - [ ] Valor fixo por empresa? Conferir o valor — é ele que a empresa paga, com qualquer número de titulares
-- [ ] **Se passar do contratado: combinado** (senão o termo nasce sem valor)
+- [ ] **Valor fixo: se passar do contratado, combinado** (senão o termo nasce sem valor; por titular, vale a tabela)
 - [ ] Benefícios com "vale para quem", frequência e carência
 - [ ] Unidades da parceria e restrições por benefício
 - [ ] Validade e carências

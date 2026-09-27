@@ -114,6 +114,62 @@ export function contaDoExcedente(
   };
 }
 
+export type ContaPelaTabela = {
+  titulares: number;
+  dependentes: number;
+  /** Quantos titulares o contrato cobria antes, e o preço de cada um. */
+  antesTitulares: number;
+  antesPrecoCents: number;
+  /** Com os novos: o total de titulares e o preço (a faixa pode ter mudado). */
+  depoisTitulares: number;
+  depoisPrecoCents: number;
+  /** Depois − antes. PODE SER NEGATIVO: a faixa nova vale para todos. */
+  mensalDeltaCents: number;
+  /** O 1º pagamento dos titulares novos, pelo preço de depois. */
+  implantacaoCents: number;
+};
+
+/**
+ * O TERMO DA EMPRESA POR TITULAR (AP19 — decisão do dono, 27/09/2026).
+ *
+ * Quem passa do contratado paga o PREÇO DA TABELA da empresa, com a faixa —
+ * a mesma conta do boleto. Por isso não há "preço do excedente" aqui, nem
+ * nada a combinar: a regra do excedente só existe no acordo de valor fixo.
+ *
+ * ⚠️ A DIFERENÇA É ENTRE O CONTRATO CHEIO ANTES E DEPOIS, e pode ser NEGATIVA.
+ * A faixa vale para o total: entrar gente pode baixar o preço de todos, e o
+ * termo mostra isso como é — esconder faria o documento dizer uma coisa e o
+ * boleto outra, que é o defeito que esta regra existe para acabar.
+ *
+ * ⚠️ DEPENDENTES NÃO ENTRAM NA CONTA (mesma regra da proposta, 24/09/2026):
+ * o preço deles depende do plano de cada família, que ninguém sabe antes do
+ * cadastro. O termo cita a tabela do contrato.
+ */
+export function contaPelaTabela(
+  antesTitulares: number,
+  antesPrecoCents: number,
+  depoisPrecoCents: number,
+  titulares: number,
+  dependentes: number
+): ContaPelaTabela {
+  const t = Math.max(0, Math.floor(titulares));
+  const d = Math.max(0, Math.floor(dependentes));
+  const antes = Math.max(0, Math.floor(antesTitulares));
+  const pAntes = Math.max(0, antesPrecoCents);
+  const pDepois = Math.max(0, depoisPrecoCents);
+  const depois = antes + t;
+  return {
+    titulares: t,
+    dependentes: d,
+    antesTitulares: antes,
+    antesPrecoCents: pAntes,
+    depoisTitulares: depois,
+    depoisPrecoCents: pDepois,
+    mensalDeltaCents: depois * pDepois - antes * pAntes,
+    implantacaoCents: t * pDepois,
+  };
+}
+
 /**
  * Quantos cabem ainda, e quantos sobram.
  *

@@ -138,6 +138,9 @@ export async function previewBilling(
       .select("monthly_delta_cents")
       .eq("company_id", companyId)
       .eq("status", "ACEITO")
+      // AP19: só termos do VALOR FIXO somam ao fixo — o termo "pela tabela"
+      // (de quando a empresa era por titular) já está coberto pelo valor fixo.
+      .is("base_holders", null)
       .returns<{ monthly_delta_cents: number }[]>();
     if (erroDosTermos || !termos) {
       return { ok: false, error: naoConseguiConferir("os termos de inclusão da empresa") };

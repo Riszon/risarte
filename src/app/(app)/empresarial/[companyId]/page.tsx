@@ -13,6 +13,7 @@ import {
 } from "./titulares-tab";
 import { LimiteDeTitulares, type TermoDeInclusao } from "./limite-de-titulares";
 import { MonthlySimulator, RemoveOverrideButton } from "./simulator";
+import { AcordoDeCobranca, type AcordoView } from "./acordo-de-cobranca";
 import {
   loadBenefits,
   loadPricing,
@@ -281,7 +282,7 @@ export default async function CompanyDetailPage(props: {
         db
           .from("company_inclusion_terms")
           .select(
-            "id, code, holders, dependents, monthly_delta_cents, implantation_cents, status, accepted_at, created_at"
+            "id, code, holders, dependents, monthly_delta_cents, implantation_cents, status, accepted_at, created_at, base_holders"
           )
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
@@ -296,6 +297,7 @@ export default async function CompanyDetailPage(props: {
               status: "RASCUNHO" | "ACEITO" | "CANCELADO";
               accepted_at: string | null;
               created_at: string;
+              base_holders: number | null;
             }[]
           >(),
         db.rpc("limite_de_dependentes", { p_company_id: companyId }),
@@ -316,6 +318,7 @@ export default async function CompanyDetailPage(props: {
       dependents: t.dependents,
       monthlyDeltaCents: t.monthly_delta_cents,
       implantationCents: t.implantation_cents,
+      pelaTabela: t.base_holders != null,
       status: t.status,
       acceptedAt: t.accepted_at,
       createdAt: t.created_at,
@@ -505,6 +508,9 @@ export default async function CompanyDetailPage(props: {
     monthlyCents: number;
     savedCents: number;
   } | null = null;
+  // AP19: o acordo de cobrança (base, fixo, contratado, excedente). Nulo = não
+  // deu para ler — o cartão não oferece editar às cegas.
+  let acordo: AcordoView | null = null;
   if (aba === "geral") {
     const [{ data: pricingRows }, { data: emps }, { data: deps }, { data: usage }] =
       await Promise.all([
@@ -573,11 +579,42 @@ export default async function CompanyDetailPage(props: {
     );
     const holders = (emps ?? []).length;
     const dependentsCount = (deps ?? []).length;
+    const mensalidadeGeral = await mensalidadeNaTela(db, companyId, monthly.totalCents);
+    const { data: ac, error: erroDoAcordo } = await db
+      .from("companies")
+      .select(
+        "billing_basis, fixed_monthly_cents, contracted_holders, contracted_dependents, excess_mode, excess_fixed_cents, excess_holder_fee_cents, excess_dependent_fee_cents"
+      )
+      .eq("id", companyId)
+      .maybeSingle<{
+        billing_basis: string | null;
+        fixed_monthly_cents: number | null;
+        contracted_holders: number | null;
+        contracted_dependents: number | null;
+        excess_mode: "NEW_FIXED" | "PER_ADHESION" | null;
+        excess_fixed_cents: number | null;
+        excess_holder_fee_cents: number | null;
+        excess_dependent_fee_cents: number | null;
+      }>();
+    if (erroDoAcordo) console.error("acordo de cobrança:", erroDoAcordo.message);
+    acordo = ac
+      ? {
+          base: ac.billing_basis === "FIXED_PER_COMPANY" ? "FIXED_PER_COMPANY" : "PER_EMPLOYEE",
+          fixoCents: ac.fixed_monthly_cents,
+          titularesContratados: ac.contracted_holders,
+          dependentesContratados: ac.contracted_dependents,
+          modoDoExcedente: ac.excess_mode,
+          excedenteFixoCents: ac.excess_fixed_cents,
+          excedenteTitularCents: ac.excess_holder_fee_cents,
+          excedenteDependenteCents: ac.excess_dependent_fee_cents,
+          termosCents: mensalidadeGeral.valorFixo?.termosCents ?? 0,
+        }
+      : null;
     resumo = {
       holders,
       dependents: dependentsCount,
       total: holders + dependentsCount,
-      monthlyCents: (await mensalidadeNaTela(db, companyId, monthly.totalCents)).totalCents,
+      monthlyCents: mensalidadeGeral.totalCents,
       savedCents: (usage ?? []).reduce(
         (a, u) => a + (u.amount_saved_cents ?? 0),
         0
@@ -1080,6 +1117,11 @@ export default async function CompanyDetailPage(props: {
               )}
             </CardContent>
           </Card>
+          <AcordoDeCobranca
+            companyId={companyId}
+            acordo={acordo}
+            podeEditar={canManage}
+          />
         </div>
       )}
 
