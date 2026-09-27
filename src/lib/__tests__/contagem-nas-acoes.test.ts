@@ -57,6 +57,55 @@ describe("⚠️ nenhuma AÇÃO transforma 'não consegui contar' em zero (AP11)
     ).toEqual([]);
   });
 
+  // A VARIAÇÃO QUE ESCAPAVA (AP13, 26/09/2026): renomear a contagem na
+  // desmontagem — `const { count: ativos } = …` e depois `ativos ?? 0`. O termo
+  // de inclusão do Empresarial nascia com a mensalidade de base ZERO quando a
+  // contagem falhava, e a régua de cima não via, porque a palavra "count" não
+  // aparece na linha do `?? 0`.
+  //
+  // Só DESMONTAGEM conta (`{ count: X }`, sem operador): um objeto como
+  // `details: { count: data ?? 0 }` é registro de auditoria, não contagem.
+  const DESMONTAGEM = /\{\s*(?:\w+(?:\s*:\s*\w+)?\s*,\s*)*count\s*:\s*(\w+)\s*(?:,\s*\w+(?:\s*:\s*\w+)?\s*)*\}/g;
+  function renomeadasComZero(texto: string): string[] {
+    const nomes = new Set([...texto.matchAll(DESMONTAGEM)].map((m) => m[1]));
+    const achados: string[] = [];
+    for (const n of nomes) {
+      texto.split("\n").forEach((linha) => {
+        if (linha.trimStart().startsWith("//")) return;
+        if (new RegExp(`(^|[^\\w.])${n} \\?\\? 0`).test(linha)) achados.push(linha.trim());
+      });
+    }
+    return achados;
+  }
+
+  it("nem a contagem RENOMEADA vira zero (`{ count: x }` … `x ?? 0`)", () => {
+    const achados: string[] = [];
+    for (const arq of acoes(RAIZ)) {
+      for (const l of renomeadasComZero(readFileSync(arq, "utf8"))) {
+        achados.push(`${arq.replace(process.cwd(), "")}  ${l}`);
+      }
+    }
+    expect(
+      achados,
+      "Contagem renomeada que falhou vira ZERO. Use contagemConfirmada():\n" + achados.join("\n")
+    ).toEqual([]);
+  });
+
+  it("a régua da contagem renomeada pega o caso real e ignora o registro de auditoria", () => {
+    // O caso que existia no termo de inclusão (AP13):
+    expect(
+      renomeadasComZero(
+        "const { count: ativos } = await db.from('x');\nconst base = (ativos ?? 0) * preco;"
+      )
+    ).toHaveLength(1);
+    // Dentro de um Promise.all com outras desmontagens:
+    expect(
+      renomeadasComZero("const [{ data }, { count: benCount }] = x;\nconst t = `${benCount ?? 0}`;")
+    ).toHaveLength(1);
+    // Objeto de auditoria não é desmontagem:
+    expect(renomeadasComZero("details: { count: data ?? 0 },")).toEqual([]);
+  });
+
   it("a régua separa o jeito perigoso do jeito explícito", () => {
     expect(PROIBIDO.test("  const atuais = count ?? 0;")).toBe(true);
     expect(PROIBIDO.test("    numero: esperando.count ?? 0,")).toBe(true);

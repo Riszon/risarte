@@ -1640,7 +1640,7 @@ export async function getClientSchedulingInfo(
   await getSessionContext();
   const supabase = await createClient();
 
-  const [{ data: client }, { data: lastAppointments }, { count: guardians }] =
+  const [{ data: client }, { data: lastAppointments }, contagemDosResponsaveis] =
     await Promise.all([
       supabase
         .from("clients")
@@ -1660,8 +1660,13 @@ export async function getClientSchedulingInfo(
     ]);
 
   if (!client) return null;
+  // Contagem que falhou vira ZERO de propósito: o cadastro passa a pedir o
+  // responsável que falta — erra para o lado de PEDIR, nunca de liberar.
   const missing = missingClientFields(
-    toRegistrationFields(client as unknown as ClientFieldsRow, guardians ?? 0)
+    toRegistrationFields(
+      client as unknown as ClientFieldsRow,
+      contagemConfirmada(contagemDosResponsaveis) ?? 0
+    )
   );
   return {
     phase: client.journey_phase as JourneyPhase,

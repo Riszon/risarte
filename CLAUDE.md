@@ -372,7 +372,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**26/09/2026 — PC Administrador (core 0.286.0 → 0.296.0; Empresarial 0.69.0 → 0.72.0; migrações 0273–0282, 1022 e 1023)**
+**26/09/2026 — PC Administrador (core 0.286.0 → 0.296.1; Empresarial 0.69.0 → 0.73.0; migrações 0273–0282, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
 a produção, com trava que EXIGE ser produção).
@@ -472,6 +472,13 @@ a produção, com trava que EXIGE ser produção).
    `can_read_clinic_data`. Provado no treino (recepção barrada na outra
    unidade). ✅ **0282 APLICADA na produção** (27/09; conferido: portas e
    originais no lugar, nada responde sem login).
+   ✅ **AP13 (Empresarial 0.73.0 + core 0.296.1, sem migração, 27/09):**
+   cobrança, termo de inclusão e proposta deixaram de calcular com o preço
+   padrão / sem dependentes / com zero quando uma leitura falha — recusam
+   com "não foi possível conferir". A régua do AP11 passou a pegar a
+   contagem RENOMEADA (`{ count: x }` … `x ?? 0`). Conferido na tela: prévia
+   = ficha (R$ 219,50). **AP18** (suspeita, precisa do dono): o termo lê só o
+   preço próprio da empresa.
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao

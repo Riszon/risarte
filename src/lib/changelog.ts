@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.296.1",
+    data: "2026-09-27",
+    migracao: null,
+    titulo: "Mais uma conferência automática contra contagens que falham",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O sistema ganhou mais uma conferência automática, feita antes de cada atualização: nenhuma ação pode tratar uma contagem que falhou como se fosse zero. Ela achou um caso no termo de inclusão do Empresarial, já corrigido. Nada muda nas telas.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.296.0",
     data: "2026-09-26",
     migracao: "0282",
