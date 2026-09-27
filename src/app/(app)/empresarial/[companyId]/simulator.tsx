@@ -10,7 +10,14 @@ import type { AdhesionPricing } from "@/lib/empresarial/pricing";
 import { removeOverride } from "../configuracoes/actions";
 
 /** Simulador de mensalidade — usa os preços efetivos da empresa. */
-export function MonthlySimulator({ pricing }: { pricing: AdhesionPricing }) {
+export function MonthlySimulator({
+  pricing,
+  valorFixo = false,
+}: {
+  pricing: AdhesionPricing;
+  /** AP18: a empresa paga valor fixo — o simulador vira comparação. */
+  valorFixo?: boolean;
+}) {
   const [holders, setHolders] = useState(1);
   const [individual, setIndividual] = useState(0);
   const [family, setFamily] = useState(0);
@@ -29,6 +36,13 @@ export function MonthlySimulator({ pricing }: { pricing: AdhesionPricing }) {
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <p className="text-sm font-medium">Simulador de mensalidade</p>
+      {valorFixo && (
+        <p className="text-xs text-muted-foreground">
+          Esta empresa paga <strong>valor fixo</strong>. O simulador mostra
+          quanto seria <strong>por titular</strong>, só para comparar — não é
+          o que ela paga.
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex items-center justify-between gap-2 text-sm">
           Titulares

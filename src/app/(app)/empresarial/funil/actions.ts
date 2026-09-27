@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { formatPhone } from "@/lib/masks";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { copiarPropostaParaEmpresa } from "@/lib/empresarial/fechamento";
+import { naoConseguiConferir } from "@/lib/contagem";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import {
   CAPTURE_CHANNELS,
@@ -296,11 +297,29 @@ export async function convertLeadToCompany(
   // `select("*")` desde a H4: a lista nomeada já tinha ficado para trás duas
   // vezes quando a proposta ganhou campos novos, e campo que fica para trás
   // aqui vira preço que o cliente combinou e o sistema não cobra.
-  const { data: qual } = await db
+  // ⚠️ AP13/AP18: sem conseguir ler a proposta, NÃO fecha. Antes a falha era
+  // ignorada e a empresa nascia sem quantidade contratada, sem preço e sem o
+  // acordo de valor fixo — cobrada pelo padrão, e ninguém saberia.
+  const { data: qual, error: erroDaProposta } = await db
     .from("lead_qualification")
     .select("*")
     .eq("lead_id", leadId)
     .maybeSingle<QualificacaoDoLead>();
+  const { data: faixasDoLead, error: erroDasFaixas } = await db
+    .from("lead_price_tiers")
+    .select("min_quantity, price_cents")
+    .eq("lead_id", leadId)
+    .returns<{ min_quantity: number; price_cents: number }[]>();
+  if (erroDaProposta || erroDasFaixas) {
+    return { ok: false, error: naoConseguiConferir("a proposta deste lead") };
+  }
+  // Valor fixo sem o valor não é acordo: fechar assim cobraria por titular.
+  if (qual?.billing_basis === "FIXED_PER_COMPANY" && qual.fixed_monthly_cents == null) {
+    return {
+      ok: false,
+      error: "A proposta é de valor fixo por empresa, mas o valor fixo mensal não foi preenchido. Complete a proposta antes de fechar.",
+    };
+  }
 
   // A regra de como o levantamento vira cadastro mora em `camposDaEmpresa`,
   // pura e com teste. Aqui só se liga o resultado ao banco: regra dentro da
@@ -308,7 +327,11 @@ export async function convertLeadToCompany(
   const { data: company, error: cErr } = await db
     .from("companies")
     .insert({
-      ...camposDaEmpresa(qual, { company_name: lead.company_name, cnpj }),
+      ...camposDaEmpresa(
+        qual,
+        { company_name: lead.company_name, cnpj },
+        (faixasDoLead ?? []).map((f) => ({ minQuantity: f.min_quantity, priceCents: f.price_cents }))
+      ),
       status: "ACTIVE",
       assigned_consultant_id: lead.consultant_id,
       // H4 (1018): os limites combinados, e de onde este cadastro veio.

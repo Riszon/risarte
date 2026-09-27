@@ -1,3 +1,5 @@
+import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
+import { mensalidadeNaTela } from "@/lib/empresarial/mensalidade-na-tela";
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
@@ -263,14 +265,19 @@ export async function loadCompanyReport(
 
   // Totais SEMPRE sobre a base completa — o filtro muda só a lista impressa,
   // senão a mensalidade da empresa mudaria conforme o que está sendo exibido.
+  // AP18: o relatório calculava SEM as faixas de preço — divergia da ficha e
+  // do boleto em toda empresa com desconto por volume. E no valor fixo, a
+  // mensalidade é o fixo (+ termos), não a conta por titular.
   const monthly = computeMonthlyCents(
     pricing,
     allEmployees.map((e) => ({
       status: e.status,
       dependentPlan: e.dependentPlan,
       activeDependentCount: e.dependents.filter((d) => d.status === "ACTIVE").length,
-    }))
+    })),
+    await carregarFaixasDaEmpresa(db, companyId)
   );
+  const mensalidade = await mensalidadeNaTela(db, companyId, monthly.totalCents);
 
   const employees =
     filter === "ALL"
@@ -314,7 +321,7 @@ export async function loadCompanyReport(
       pendingRegistration: allEmployees.filter(
         (e) => e.registrationStage === "PRE_REGISTERED" && e.status === "ACTIVE"
       ).length,
-      monthlyCents: monthly.totalCents,
+      monthlyCents: mensalidade.totalCents,
       savedCents: (usage ?? []).reduce((a, u) => a + (u.amount_saved_cents ?? 0), 0),
       benefitUses: usage?.length ?? 0,
     },

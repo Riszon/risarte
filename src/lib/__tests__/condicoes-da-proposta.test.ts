@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   avisoDoValorMinimo,
   avisosDosLimites,
-  custoDaImplantacao,
   precoDaFaixa,
   problemasDasFaixas,
   rotuloDaFaixa,
@@ -76,21 +75,6 @@ describe("o que impede a tabela de faixas de fazer sentido", () => {
     expect(rotuloDaFaixa(FAIXAS[1], false)).toBe(
       "A partir de 50 adesões: R$ 34,90 por mês"
     );
-  });
-});
-
-describe("a implantação", () => {
-  it("por adesão multiplica pelos titulares", () => {
-    expect(custoDaImplantacao("PER_ADHESION", 1990, 500_000, 50)).toBe(50 * 1990);
-  });
-
-  it("fixa é um valor só, independente da quantidade", () => {
-    expect(custoDaImplantacao("FIXED", 1990, 500_000, 50)).toBe(500_000);
-    expect(custoDaImplantacao("FIXED", 1990, 500_000, 5)).toBe(500_000);
-  });
-
-  it("sem modo escolhido, é POR ADESÃO — o comportamento que já existia", () => {
-    expect(custoDaImplantacao(null, 1990, 500_000, 50)).toBe(50 * 1990);
   });
 });
 

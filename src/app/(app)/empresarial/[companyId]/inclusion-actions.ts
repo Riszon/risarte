@@ -6,7 +6,12 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
 import { contaDoExcedente } from "@/lib/empresarial/excedente";
-import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
+import { naoConseguiConferir } from "@/lib/contagem";
+import { ehValorFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
+import {
+  computeMonthlyBreakdown,
+  precoPorTitularDaImplantacao,
+} from "@/lib/empresarial/cobranca-servidor";
 
 export type ActionResult = { ok: boolean; error?: string; code?: string };
 
@@ -47,7 +52,7 @@ export async function criarTermoDeInclusao(
   const { data: empresa } = await db
     .from("companies")
     .select(
-      "excess_mode, excess_fixed_cents, excess_holder_fee_cents, excess_dependent_fee_cents"
+      "excess_mode, excess_fixed_cents, excess_holder_fee_cents, excess_dependent_fee_cents, billing_basis, fixed_monthly_cents"
     )
     .eq("id", companyId)
     .maybeSingle<{
@@ -55,61 +60,71 @@ export async function criarTermoDeInclusao(
       excess_fixed_cents: number | null;
       excess_holder_fee_cents: number | null;
       excess_dependent_fee_cents: number | null;
+      billing_basis: string | null;
+      fixed_monthly_cents: number | null;
     }>();
   if (!empresa) return { ok: false, error: "Empresa não encontrada." };
 
-  // A mensalidade de HOJE é a base da diferença no acordo de valor fixo.
+  // ⚠️ AP18 — A MENSALIDADE DE HOJE É O QUE A EMPRESA PAGA DE VERDADE (dono,
+  // 27/09/2026). Ela é a base da diferença no modo "novo valor fixo".
   //
-  // ⚠️ AP13: o termo é um DOCUMENTO COM VALOR que a empresa aceita. Antes, se a
-  // leitura do preço ou a contagem dos ativos falhasse, a conta seguia com
-  // ZERO (`ativos ?? 0`) e o termo nascia com a mensalidade de base zerada —
-  // a mesma armadilha do AP11, escrita de um jeito que a régua de texto não
-  // pegava. Sem conseguir ler, não gera.
-  const { data: precos, error: erroDoPreco } = await db
-    .from("adhesion_pricing")
-    .select("holder_fee_cents")
-    .eq("company_id", companyId)
-    .maybeSingle<{ holder_fee_cents: number }>();
-  const contagemDosAtivos = await db
-    .from("employees")
-    .select("*", { count: "exact", head: true })
-    .eq("company_id", companyId)
-    .eq("status", "ACTIVE");
-  const ativos = contagemConfirmada(contagemDosAtivos);
-  if (erroDoPreco || ativos === null) {
-    return { ok: false, error: naoConseguiConferir("o preço e os titulares ativos da empresa") };
+  // Antes era titulares ativos × preço PRÓPRIO da empresa: sem preço próprio
+  // dava ZERO (o termo cobrava o pacote novo inteiro), e ignorava dependentes,
+  // faixas — e, no acordo de valor fixo, o próprio fixo.
+  //   * valor fixo  → o fixo + os termos já aceitos;
+  //   * por titular → a MESMA conta da cobrança do mês (cobranca-servidor).
+  // AP13: sem conseguir ler, não gera — o termo é documento com valor.
+  const fixo = ehValorFixo(empresa.billing_basis);
+  let mensalidadeAtualCents: number;
+  if (fixo) {
+    const { data: aceitos, error: erroDosTermos } = await db
+      .from("company_inclusion_terms")
+      .select("monthly_delta_cents")
+      .eq("company_id", companyId)
+      .eq("status", "ACEITO")
+      .returns<{ monthly_delta_cents: number }[]>();
+    if (erroDosTermos || !aceitos) {
+      return { ok: false, error: naoConseguiConferir("os termos de inclusão já aceitos") };
+    }
+    const m = mensalidadeDoFixo(empresa.fixed_monthly_cents, aceitos.map((t) => t.monthly_delta_cents));
+    if (m === null) {
+      return { ok: false, error: "Esta empresa é de valor fixo, mas o valor fixo mensal não está cadastrado." };
+    }
+    mensalidadeAtualCents = m;
+  } else {
+    const hoje = await computeMonthlyBreakdown(db, companyId);
+    if (!hoje) {
+      return { ok: false, error: naoConseguiConferir("o preço e os titulares da empresa") };
+    }
+    mensalidadeAtualCents = hoje.totalCents;
   }
-  // Sem preço próprio da empresa a base é zero — comportamento de antes, agora
-  // só quando a leitura DEU CERTO e não achou linha (ver AP18 no BACKLOG).
-  const mensalidadeAtualCents = ativos * (precos?.holder_fee_cents ?? 0);
 
-  const { data: empresaImpl, error: erroDaEmpresa } = await db
-    .from("companies")
-    .select("origin_lead_id")
-    .eq("id", companyId)
-    .maybeSingle<{ origin_lead_id: string | null }>();
-  if (erroDaEmpresa) {
-    return { ok: false, error: naoConseguiConferir("a origem da empresa") };
-  }
+  // ⚠️ A IMPLANTAÇÃO DOS NOVOS É O 1º PAGAMENTO DELES (dono, 27/09/2026 — os
+  // campos de implantação da proposta deixaram de valer). O termo mostra o
+  // MESMO número que "Gerar implantação" vai cobrar:
+  //   * valor fixo  → o acréscimo mensal do termo (calculado logo abaixo);
+  //   * por titular → cada titular novo pelo preço da faixa da empresa já com
+  //     eles (a faixa é a do tamanho TOTAL, como na implantação — AP12).
   let implantacaoPorAdesaoCents = 0;
-  if (empresaImpl?.origin_lead_id) {
-    const { data: q, error: erroDaQualificacao } = await db
-      .from("lead_qualification")
-      .select("implantation_per_employee_cents, implantation_mode")
-      .eq("lead_id", empresaImpl.origin_lead_id)
-      .maybeSingle<{
-        implantation_per_employee_cents: number | null;
-        implantation_mode: "PER_ADHESION" | "FIXED" | null;
-      }>();
-    // AP13: sem ler a qualificação, a implantação por adesão viraria zero.
-    if (erroDaQualificacao) {
-      return { ok: false, error: naoConseguiConferir("a implantação combinada") };
+  if (!fixo && titulares > 0) {
+    const { data: limiteRow, error: erroDoLimite } = await db.rpc("limite_de_titulares", {
+      p_company_id: companyId,
+    });
+    const { count: ativosAgora, error: erroDosAtivos } = await db
+      .from("employees")
+      .select("*", { count: "exact", head: true })
+      .eq("company_id", companyId)
+      .eq("status", "ACTIVE");
+    if (erroDoLimite || erroDosAtivos || typeof ativosAgora !== "number") {
+      return { ok: false, error: naoConseguiConferir("o tamanho atual da empresa") };
     }
-    // ⚠️ Implantação FIXA não se cobra de novo: ela foi paga uma vez, pela
-    // empresa. Só a implantação POR ADESÃO acompanha gente nova.
-    if (q?.implantation_mode !== "FIXED") {
-      implantacaoPorAdesaoCents = q?.implantation_per_employee_cents ?? 0;
+    const limite = typeof limiteRow === "number" ? limiteRow : null;
+    const baseDepois = Math.max(limite ?? ativosAgora, ativosAgora) + titulares;
+    const porTitular = await precoPorTitularDaImplantacao(db, companyId, baseDepois);
+    if (porTitular === null) {
+      return { ok: false, error: naoConseguiConferir("o preço da adesão") };
     }
+    implantacaoPorAdesaoCents = porTitular;
   }
 
   const conta = contaDoExcedente(
@@ -124,6 +139,8 @@ export async function criarTermoDeInclusao(
     titulares,
     dependentes
   );
+  // Valor fixo: o 1º pagamento do acréscimo É o acréscimo mensal.
+  const implantacaoCents = fixo ? conta.mensalDeltaCents : conta.implantacaoCents;
 
   const { data: termo, error } = await db
     .from("company_inclusion_terms")
@@ -135,7 +152,7 @@ export async function criarTermoDeInclusao(
       dependent_fee_cents: conta.dependenteCents,
       fixed_cents: conta.fixoCents,
       monthly_delta_cents: conta.mensalDeltaCents,
-      implantation_cents: conta.implantacaoCents,
+      implantation_cents: implantacaoCents,
       notes: String(formData.get("notes") ?? "").trim() || null,
       created_by: session.userId,
     })

@@ -1,3 +1,4 @@
+import { mensalidadeNaTela } from "@/lib/empresarial/mensalidade-na-tela";
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
@@ -436,7 +437,8 @@ export async function loadCompanySheet(
       dependents: (deps ?? []).length,
       total: activeEmps.length + (deps ?? []).length,
       inactiveHolders: (emps ?? []).filter((e) => e.status === "INACTIVE").length,
-      monthlyCents: monthly.totalCents,
+      // AP18: no valor fixo, a ficha mostra o fixo (+ termos), não a conta por titular.
+      monthlyCents: (await mensalidadeNaTela(db, companyId, monthly.totalCents)).totalCents,
       savedCents: (usage ?? []).reduce(
         (a, u) => a + (u.amount_saved_cents ?? 0),
         0

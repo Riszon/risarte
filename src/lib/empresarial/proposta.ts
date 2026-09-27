@@ -9,10 +9,10 @@
 
 import type { PaymentModel } from "./constants";
 import {
-  custoDaImplantacao,
   precoDaFaixa,
   type FaixaDePreco,
 } from "./condicoes-da-proposta";
+import { fixoDoFechamento } from "./mensalidade";
 
 export const BILLING_BASES = ["PER_EMPLOYEE", "FIXED_PER_COMPANY"] as const;
 export type BillingBasis = (typeof BILLING_BASES)[number];
@@ -48,7 +48,6 @@ export type PropostaInput = {
   dependentFeeCents: number;
   /** Só vale quando a base é valor fixo por empresa. */
   fixedMonthlyCents: number;
-  implantationPerEmployeeCents: number;
   paymentModel: PaymentModel;
   subsidyType: SubsidyType | null;
   /** % na base 100, ou centavos POR COLABORADOR, conforme o tipo. */
@@ -61,9 +60,6 @@ export type PropostaInput = {
   // a que já era. Proposta antiga não muda de preço por causa de campo novo.
   /** Faixas de preço por quantidade. Vazio = sem regra de quantidade. */
   faixas?: readonly FaixaDePreco[];
-  /** `FIXED` = um valor pela empresa; ausente/`PER_ADHESION` = por titular. */
-  implantationMode?: "PER_ADHESION" | "FIXED" | null;
-  implantationFixedCents?: number;
 };
 
 export type PropostaResult = {
@@ -72,6 +68,7 @@ export type PropostaResult = {
   dependentesCents: number;
   /** `null` quando não há titular: dividir por zero não tem resposta. */
   porColaboradorCents: number | null;
+  /** O 1º pagamento — é a mesma conta da mensalidade (AP18). */
   implantacaoCents: number;
   empresaPagaCents: number;
   colaboradorPagaCents: number;
@@ -128,12 +125,12 @@ export function simularProposta(input: PropostaInput): PropostaResult {
 
   const mensalidadeCents = titularesCents + dependentesCents;
 
-  const implantacaoCents = custoDaImplantacao(
-    input.implantationMode ?? null,
-    naoNegativo(input.implantationPerEmployeeCents),
-    naoNegativo(input.implantationFixedCents ?? 0),
-    titulares
-  );
+  // ⚠️ A IMPLANTAÇÃO É O 1º PAGAMENTO (dono, 27/09/2026 — AP18). Havia três
+  // campos (valor por titular, modo, valor fixo) que a proposta imprimia e a
+  // cobrança NÃO lia: a implantação sempre foi cobrada pelo preço da
+  // mensalidade. O documento prometia um número e o boleto cobrava outro.
+  // Os campos saíram da tela; as colunas ficam no banco, sem uso.
+  const implantacaoCents = mensalidadeCents;
 
   // Quem paga o quê. As duas partes SEMPRE somam a mensalidade: a do
   // titular é o resto, nunca uma segunda conta — senão um centavo de
@@ -256,6 +253,9 @@ export type QualificacaoDoLead = {
   excess_fixed_cents?: number | null;
   excess_holder_fee_cents?: number | null;
   excess_dependent_fee_cents?: number | null;
+  // ---- AP18 (1024): a base do acordo e o valor fixo ---------------------------
+  billing_basis?: "PER_EMPLOYEE" | "FIXED_PER_COMPANY" | null;
+  fixed_monthly_cents?: number | null;
 };
 
 /**
@@ -272,9 +272,20 @@ export type QualificacaoDoLead = {
  */
 export function camposDaEmpresa(
   qual: QualificacaoDoLead | null,
-  lead: { company_name: string; cnpj: string }
+  lead: { company_name: string; cnpj: string },
+  /** As faixas da proposta — no valor fixo, elas trocam o valor pelo tamanho. */
+  faixas: readonly FaixaDePreco[] = []
 ) {
+  // ⚠️ AP18 (1024): o ACORDO DE VALOR FIXO viaja para a empresa. Antes ele
+  // ficava na proposta, e a empresa seria cobrada por titular. O valor vai JÁ
+  // COM A FAIXA — o número que a empresa leu — e fica congelado aqui.
+  const fixo =
+    qual?.billing_basis === "FIXED_PER_COMPANY" && qual.fixed_monthly_cents != null
+      ? fixoDoFechamento(qual.fixed_monthly_cents, faixas, qual.employee_count ?? 0)
+      : null;
   return {
+    billing_basis: fixo != null ? ("FIXED_PER_COMPANY" as const) : ("PER_EMPLOYEE" as const),
+    fixed_monthly_cents: fixo,
     cnpj: lead.cnpj,
     legal_name: qual?.legal_name?.trim() || lead.company_name,
     trade_name: lead.company_name,

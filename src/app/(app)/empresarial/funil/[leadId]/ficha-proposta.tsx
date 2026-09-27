@@ -158,9 +158,6 @@ export function FichaDaProposta({
   const [fixedMonthly, setFixedMonthly] = useState(
     emReais(qualificacao.fixedMonthlyCents)
   );
-  const [implantation, setImplantation] = useState(
-    emReais(qualificacao.implantationPerEmployeeCents)
-  );
   const [paymentModel, setPaymentModel] = useState<PaymentModel | "">(
     qualificacao.paymentModel ?? ""
   );
@@ -188,7 +185,6 @@ export function FichaDaProposta({
     dependentsCount: Number.parseInt(depsCount || "0", 10) || 0,
     dependentFeeCents: paraCentavos(depFee),
     fixedMonthlyCents: paraCentavos(fixedMonthly),
-    implantationPerEmployeeCents: paraCentavos(implantation),
     paymentModel: (paymentModel || "EMPLOYEE_PAYS") as PaymentModel,
     subsidyType: subsidyType || null,
     subsidyValue:
@@ -202,8 +198,6 @@ export function FichaDaProposta({
     // baixo: elas têm salvar próprio. Misturar faria a simulação mudar com
     // meia condição preenchida, e ninguém saberia qual número acreditar.
     faixas: condicoes.faixas,
-    implantationMode: condicoes.implantationMode,
-    implantationFixedCents: condicoes.implantationFixedCents ?? 0,
   });
 
   // Os avisos das condições, calculados com o que está sendo digitado acima.
@@ -479,19 +473,12 @@ export function FichaDaProposta({
                 />
               </Campo>
             )}
-            <Campo
-              id="implantation_per_employee"
-              rotulo="Implantação por titular (R$)"
-            >
-              <Input
-                id="implantation_per_employee"
-                name="implantation_per_employee"
-                value={implantation}
-                onChange={(e) => setImplantation(e.target.value)}
-                placeholder="0,00"
-              />
-            </Campo>
           </div>
+          {/* AP18: a implantação não se negocia aqui — é o 1º pagamento. */}
+          <p className="text-xs text-muted-foreground">
+            A implantação é o <strong>primeiro pagamento</strong>: o mesmo
+            valor da mensalidade, cobrado ao iniciar o programa.
+          </p>
         </Secao>
 
             </PainelDoPasso>
@@ -995,7 +982,7 @@ function SimuladorDaProposta({
         {basis === "PER_EMPLOYEE" && (
           <p className="text-xs text-muted-foreground">
             Titulares {formatBRL(proposta.titularesCents)} · dependentes{" "}
-            {formatBRL(proposta.dependentesCents)} · implantação{" "}
+            {formatBRL(proposta.dependentesCents)} · implantação (1º pagamento){" "}
             {formatBRL(proposta.implantacaoCents)}
           </p>
         )}

@@ -227,7 +227,7 @@ responde a cada mudança sem você precisar rolar a tela.
 
 | # | Passo | O que se decide |
 |---|---|---|
-| 1 | **Quem paga e quanto** | modelo de pagamento, quantos entram, mensalidade, implantação |
+| 1 | **Quem paga e quanto** | modelo de pagamento, quantos entram, mensalidade |
 | 2 | **Condições comerciais** | faixas por quantidade, mínimo, máximo, excedente |
 | 3 | **Benefícios e unidades** | o que está coberto e onde vale |
 | 4 | **Prazo e carência** | validade da proposta e as duas carências |
@@ -281,6 +281,16 @@ redigitadas depois.
 - Faixa maior **mais cara** que a anterior: a tela **avisa** e **deixa salvar**
   (existe negociação assim). Duas faixas na mesma quantidade: **recusa**.
 
+**Valor fixo por empresa.** Em vez de preço por titular, a proposta pode
+combinar **um valor só pela empresa**. É esse valor que ela paga todo mês,
+**com qualquer número de titulares cadastrados** — as faixas, se houver,
+escolhem o valor pelo tamanho da empresa. No fechamento, o acordo **viaja para
+o cadastro da empresa** (valor fixo já com a faixa aplicada) e passa a mandar
+na mensalidade, na ficha, no painel e na cobrança.
+
+> Fechar uma proposta de valor fixo **sem o valor preenchido** é recusado: não
+> existe mensalidade sem o número combinado.
+
 ### 6.3. Dependentes
 
 Três formas: **individual**, **pacote familiar** (um valor cobrindo até N
@@ -293,8 +303,18 @@ pessoas, com preço do extra) e o que a negociação combinar.
 
 ### 6.4. Implantação
 
-**Valor fixo pela empresa** ou **por adesão**. No valor fixo, o documento mostra
-o valor único, sem multiplicar pela quantidade.
+**A implantação é o primeiro pagamento** — o mesmo valor da mensalidade,
+cobrado ao iniciar o programa. Não se negocia à parte, e a proposta não tem
+mais campo para isso (decisão da direção, 27/09/2026).
+
+> **Por que os campos saíram:** a proposta tinha "implantação por titular" e
+> "implantação fixa ou por adesão", e o documento imprimia esses valores — mas
+> a cobrança **nunca os usou**: a implantação sempre foi cobrada pelo preço da
+> mensalidade. A empresa lia um número e recebia o boleto de outro. Hoje o
+> documento mostra exatamente o que será cobrado.
+>
+> **Proposta antiga** que tinha esses campos preenchidos: o valor continua
+> guardado, mas o documento passa a mostrar o primeiro pagamento.
 
 ### 6.5. Limites: mínimo e máximo
 
@@ -494,7 +514,17 @@ incluir mais, gere um termo de inclusão…"*.
 **Incluir mais titulares** gera o **termo de inclusão** (código `TI-`):
 
 1. Informe quantos titulares e dependentes entram.
-2. O sistema calcula a diferença pela regra combinada na proposta (seção 6.6).
+2. O sistema calcula a diferença pela regra combinada na proposta (seção 6.6),
+   partindo do que a empresa **paga de verdade hoje**:
+   - **Novo valor fixo do pacote** → a empresa passa a pagar **o novo fixo menos
+     o que paga hoje** (o valor fixo + os termos já aceitos; na empresa por
+     titular, a mesma conta da mensalidade do mês, com dependentes e faixa).
+   - **Por adesão** → cada pessoa a mais pelo preço combinado.
+
+   A **implantação** dos que entram também aparece no termo — é o primeiro
+   pagamento deles: na empresa por titular, cada titular novo pelo preço da
+   faixa da empresa inteira; na de valor fixo, o **acréscimo mensal** do termo.
+   É o mesmo número que **Gerar implantação** vai cobrar.
 3. **Abrir** mostra o documento, curto, pronto para PDF.
 4. **Aceitar** libera exatamente aquela quantidade.
 
@@ -511,6 +541,11 @@ incluir mais, gere um termo de inclusão…"*.
 > **Termo sem valor não é aceito.** Se a regra do excedente não foi combinada na
 > proposta, o termo nasce com R$ 0,00 e o sistema avisa **junto com o sucesso** —
 > ele existe, e existe sem valor. Ajuste a proposta e gere outro.
+
+> **"Não foi possível conferir os termos de inclusão já aceitos / o tamanho
+> atual da empresa…"** — o sistema não conseguiu ler, naquele instante, um
+> número de que o termo depende. **Nada foi gerado.** Tente de novo em
+> instantes: um termo é documento com valor, e sai certo ou não sai.
 
 > **Empresa sem quantidade contratada não tem trava** e o cartão nem aparece. É
 > o caso de toda empresa cadastrada antes desta regra.
@@ -542,6 +577,13 @@ Aba **Plano & Benefícios** → **Mensalidade atual**: soma titular + dependente
 dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
 **Simulador** ao lado recalcula com outros números, sem gravar nada.
 
+**Empresa de valor fixo:** a mensalidade é **o valor fixo + os acréscimos dos
+termos de inclusão aceitos** — não depende de quantos titulares estão
+cadastrados. A tela escreve *"Acordo de valor fixo: R$ … + R$ … dos termos de
+inclusão aceitos"*, e é esse o número que aparece na ficha, no relatório, no
+painel (MRR) e na cobrança. Exemplo: fixo de R$ 5.000,00; um termo passou o
+pacote para R$ 6.000,00 → a mensalidade é R$ 6.000,00 (5.000 + 1.000 do termo). O **Simulador** ao lado continua fazendo a conta por titular — ele avisa que, nesta empresa, serve só para comparar.
+
 ### As cobranças
 
 **Por empresa:** aba **Financeiro** → **Gerar cobrança mensal**. Nasce
@@ -569,6 +611,13 @@ dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
 > para a **proposta**: sem conseguir ler os valores, eles não são montados.
 > Na geração **em lote**, a empresa aparece entre as **puladas**, com esse
 > motivo.
+
+**Empresa de valor fixo:** a implantação é **um mês do valor fixo**. Depois de
+um termo de inclusão aceito, **Gerar implantação** cobra **só o acréscimo** que
+o termo trouxe (a mensalidade de hoje menos o que as implantações anteriores já
+cobraram), e a tela mostra a conta. Se não há acréscimo novo, o sistema **não
+gera** e diz por quê. O restante desta seção vale para a empresa **por
+titular**.
 
 **A implantação não espera os cadastros.** Ao clicar em **Gerar implantação**:
 
@@ -804,7 +853,7 @@ momento, na frente do cliente.
 - [ ] Levantamento preenchido (o documento depende dele)
 - [ ] Preço do titular e faixas conferidos
 - [ ] Dependentes: valores definidos
-- [ ] Implantação: fixa ou por adesão
+- [ ] Valor fixo por empresa? Conferir o valor — é ele que a empresa paga, com qualquer número de titulares
 - [ ] **Se passar do contratado: combinado** (senão o termo nasce sem valor)
 - [ ] Benefícios com "vale para quem", frequência e carência
 - [ ] Unidades da parceria e restrições por benefício

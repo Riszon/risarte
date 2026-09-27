@@ -1821,7 +1821,7 @@ com valor faziam o mesmo:
 
 ---
 
-### AP18. O termo de inclusão lê só o preço PRÓPRIO da empresa (27/09/2026) — SUSPEITA
+### AP18. ✅ RESOLVIDO em 27/09/2026 (1024 / Empresarial 0.74.0) — o valor fixo da proposta não chegava à empresa, e o termo partia de uma mensalidade inventada
 
 **Achado mexendo no AP13.** Em `inclusion-actions.ts`, a "mensalidade de
 hoje" (base da diferença no acordo de valor fixo) lê `adhesion_pricing` com
@@ -1859,3 +1859,45 @@ valor fixo (e não por titular)? No termo "novo valor fixo", a diferença é
 novo fixo − fixo atual? Para empresa por titular, a "mensalidade de hoje" é o
 que ela paga de verdade (com dependentes e faixas)?
 
+**✅ RESOLVIDO (27/09/2026 — migração 1024, Empresarial 0.74.0), com as
+respostas do dono:** no valor fixo a mensalidade **é o valor fixo**; o termo
+"novo valor fixo" cobra **novo fixo − o que paga hoje**; na empresa por
+titular a base é **o que ela paga de verdade**; e a implantação é **sempre o
+1º pagamento** (os campos de implantação da proposta deixaram de existir; na
+empresa de valor fixo, um mês do fixo, e na 2ª etapa o acréscimo do termo).
+
+- **1024:** `companies.billing_basis` + `fixed_monthly_cents` (com trava:
+  valor fixo exige o valor). Copia das propostas já fechadas, com a faixa do
+  tamanho aplicada — nenhum dado apagado.
+- **Fechamento** leva o acordo para a empresa (`fixoDoFechamento`) e recusa
+  valor fixo sem valor.
+- **Cobrança:** mensal = fixo + Σ termos aceitos; implantação =
+  `implantacaoDoFixo` (1ª vez o mês inteiro; depois só o acréscimo; clique
+  duplo recusa). Regras puras em `mensalidade.ts`, com teste do exemplo do
+  dono (5.000 → 6.000).
+- **Termo:** a mensalidade de hoje é a MESMA conta da cobrança
+  (`cobranca-servidor.ts`, módulo novo para as duas não divergirem).
+- **Telas** (ficha, tela da empresa, relatório, painel/MRR, proposta Gamma)
+  mostram o fixo. ⚠️ **De passagem:** o relatório calculava SEM as faixas —
+  divergia da ficha e do boleto em empresa com desconto por volume. Corrigido
+  junto (é a mesma linha).
+- **Proposta:** `custoDaImplantacao` removida; o salvar parou de escrever as
+  três colunas de implantação (escrever nulo apagaria o valor guardado).
+
+### AP19. Três pontas soltas do valor fixo (27/09/2026) — SUSPEITA
+
+**Achados fazendo o AP18.** Nenhum tem caso na produção hoje (1 empresa,
+cadastrada direto, por titular, 0 termos).
+
+1. **Excedente "por adesão" com preço diferente do titular.** Empresa por
+   titular que aceita um termo por adesão a R$ X, sendo o titular R$ Y: a
+   mensalidade soma TODOS os titulares pelo preço da faixa (Y) — o termo
+   prometeu X para os novos. **CONFIRMADO lendo o código**
+   (`computeMonthlyBreakdown` não sabe quem entrou por termo). **NÃO
+   CONFIRMADO:** se é regra (o excedente vira titular comum) ou defeito.
+2. **Empresa por titular que aceita termo "novo valor fixo".** Depois do
+   aceite, a cobrança continua por titular — o termo prometeu um pacote. Não
+   está definido se o aceite deveria virar a empresa para valor fixo.
+3. **Empresa cadastrada direto não pode ser de valor fixo** — só pelo
+   fechamento do funil. Falta o campo no cadastro/edição da empresa, se o dono
+   quiser.

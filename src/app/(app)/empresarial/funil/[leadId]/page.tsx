@@ -318,8 +318,6 @@ export default async function FichaDoLeadPage({
     maxAdhesions: qual?.max_adhesions ?? null,
     adhesionLimitTarget: qual?.adhesion_limit_target ?? null,
     minProposalCents: qual?.min_proposal_cents ?? null,
-    implantationMode: qual?.implantation_mode ?? null,
-    implantationFixedCents: qual?.implantation_fixed_cents ?? null,
     dependentMode: qual?.dependent_mode ?? null,
     dependentFamilyFeeCents: qual?.dependent_family_fee_cents ?? null,
     dependentFamilyExtraFeeCents: qual?.dependent_family_extra_fee_cents ?? null,
@@ -435,7 +433,6 @@ export default async function FichaDoLeadPage({
       qual?.dependent_fee_cents ??
       DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents,
     fixedMonthlyCents: qual?.fixed_monthly_cents ?? null,
-    implantationPerEmployeeCents: qual?.implantation_per_employee_cents ?? null,
     legalName: qual?.legal_name ?? lead.company_name,
     category: qual?.category ?? null,
     responsibleName: qual?.responsible_name ?? lead.contact_name,

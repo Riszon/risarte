@@ -1,3 +1,4 @@
+import { ehValorFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -55,9 +56,16 @@ export default async function PainelPage() {
   ] = await Promise.all([
     db
       .from("companies")
-      .select("id, legal_name, trade_name, status")
+      .select("id, legal_name, trade_name, status, billing_basis, fixed_monthly_cents")
       .returns<
-        { id: string; legal_name: string; trade_name: string | null; status: CompanyStatus }[]
+        {
+          id: string;
+          legal_name: string;
+          trade_name: string | null;
+          status: CompanyStatus;
+          billing_basis: string | null;
+          fixed_monthly_cents: number | null;
+        }[]
       >(),
     db
       .from("employees")
@@ -134,6 +142,18 @@ export default async function PainelPage() {
     faixasPorEmpresa.set(f.company_id, lista);
   }
 
+  // AP18: termos aceitos de todas as empresas, de uma vez — no valor fixo a
+  // mensalidade é o fixo + eles.
+  const { data: termosAceitos } = await db
+    .from("company_inclusion_terms")
+    .select("company_id, monthly_delta_cents")
+    .eq("status", "ACEITO")
+    .returns<{ company_id: string; monthly_delta_cents: number }[]>();
+  const termosPorEmpresa = new Map<string, number[]>();
+  for (const t of termosAceitos ?? []) {
+    termosPorEmpresa.set(t.company_id, [...(termosPorEmpresa.get(t.company_id) ?? []), t.monthly_delta_cents]);
+  }
+
   const monthlyByCompany = new Map<string, number>();
   let mrr = 0;
   for (const c of companies ?? []) {
@@ -144,8 +164,12 @@ export default async function PainelPage() {
       empByCompany.get(c.id) ?? [],
       faixasPorEmpresa.get(c.id) ?? []
     );
-    monthlyByCompany.set(c.id, m.totalCents);
-    mrr += m.totalCents;
+    const fixo = ehValorFixo(c.billing_basis)
+      ? mensalidadeDoFixo(c.fixed_monthly_cents, termosPorEmpresa.get(c.id) ?? [])
+      : null;
+    const total = fixo ?? m.totalCents;
+    monthlyByCompany.set(c.id, total);
+    mrr += total;
   }
 
   const now = new Date();

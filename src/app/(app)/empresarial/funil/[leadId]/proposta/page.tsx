@@ -213,14 +213,11 @@ export default async function PropostaPage({
       q.dependent_fee_cents ??
       DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents,
     fixedMonthlyCents: q.fixed_monthly_cents ?? 0,
-    implantationPerEmployeeCents: q.implantation_per_employee_cents ?? 0,
     paymentModel: q.payment_model ?? "EMPLOYEE_PAYS",
     subsidyType: q.subsidy_type,
     subsidyValue: q.subsidy_value ?? 0,
     currentPlanMonthlyCents: q.dental_plan_monthly_cents,
     faixas,
-    implantationMode: q.implantation_mode,
-    implantationFixedCents: q.implantation_fixed_cents ?? 0,
   });
 
   // O TEXTO da proposta (1014), na cascata: o desta empresa, senão o da rede.
@@ -399,11 +396,8 @@ export default async function PropostaPage({
               <strong className="text-foreground">
                 {formatBRL(conta.implantacaoCents)}
               </strong>
-              , cobrada uma única vez no início do programa
-              {q.implantation_mode === "FIXED"
-                ? ", em valor fixo pela empresa"
-                : ""}
-              .
+              {" — "}o primeiro pagamento, no mesmo valor da mensalidade,
+              cobrado ao iniciar o programa.
             </p>
           )}
 

@@ -91,16 +91,10 @@ export function problemasDasFaixas(faixas: readonly FaixaDePreco[]): string[] {
  * guardada no código, é regra que volta a ser chamada por engano.
  */
 
-/** A implantação: um valor fixo pela empresa, ou por adesão. */
-export function custoDaImplantacao(
-  modo: "PER_ADHESION" | "FIXED" | null,
-  porAdesaoCents: number,
-  fixoCents: number,
-  titulares: number
-): number {
-  if (modo === "FIXED") return Math.max(0, fixoCents);
-  return Math.max(0, Math.floor(titulares)) * Math.max(0, porAdesaoCents);
-}
+// ⚠️ `custoDaImplantacao` (por adesão × titulares, ou fixa) foi REMOVIDA no
+// AP18 (27/09/2026): a implantação é SEMPRE o 1º pagamento, decisão do dono.
+// A cobrança nunca a usou — a proposta prometia um número e o boleto cobrava
+// outro. Mesmo critério de acima: regra rejeitada não fica guardada.
 
 export type LimitesDeAdesao = {
   min: number | null;

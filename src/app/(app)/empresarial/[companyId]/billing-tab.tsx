@@ -350,6 +350,26 @@ export function BillingTab({
                 </p>
               )}
 
+              {/* AP18: VALOR FIXO. Sem a frase, quem vê R$ 5.000 com 60
+                  titulares cadastrados procura o erro na conta por titular. */}
+              {preview.valorFixo && (
+                <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                  <strong>Acordo de valor fixo.</strong> Valor fixo combinado:{" "}
+                  {formatBRL(preview.valorFixo.fixoCents)}
+                  {preview.valorFixo.termosCents > 0 && (
+                    <>
+                      {" "}
+                      + {formatBRL(preview.valorFixo.termosCents)} dos termos de
+                      inclusão aceitos
+                    </>
+                  )}
+                  . Não depende de quantos titulares estão cadastrados.
+                  {preview.valorFixo.jaCobradoCents
+                    ? ` A implantação cobra só o que ainda não foi cobrado (já foram ${formatBRL(preview.valorFixo.jaCobradoCents)}).`
+                    : ""}
+                </p>
+              )}
+
               {/* Implantação antiga sem registro de quantos cobriu: a conta é
                   a de sempre e pode repetir quem já pagou — a tela avisa em
                   vez de adivinhar. */}

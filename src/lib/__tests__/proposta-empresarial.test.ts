@@ -16,7 +16,6 @@ const BASE: PropostaInput = {
   dependentsCount: 0,
   dependentFeeCents: 3990,
   fixedMonthlyCents: 0,
-  implantationPerEmployeeCents: 0,
   paymentModel: "COMPANY_PAYS",
   subsidyType: null,
   subsidyValue: 0,
@@ -58,8 +57,9 @@ describe("mensalidade por titular", () => {
   });
 
   it("implantação é por titular", () => {
-    const r = simularProposta({ ...BASE, implantationPerEmployeeCents: 1990 });
-    expect(r.implantacaoCents).toBe(50 * 1990);
+    // AP18: a implantação é o 1º pagamento — a própria mensalidade.
+    const r = simularProposta(BASE);
+    expect(r.implantacaoCents).toBe(r.mensalidadeCents);
   });
 });
 
@@ -391,7 +391,6 @@ describe("as condições comerciais dentro da simulação", () => {
     dependentsCount: 0,
     dependentFeeCents: 3990,
     fixedMonthlyCents: 0,
-    implantationPerEmployeeCents: 1990,
     paymentModel: "COMPANY_PAYS",
     subsidyType: null,
     subsidyValue: 0,
@@ -402,7 +401,7 @@ describe("as condições comerciais dentro da simulação", () => {
     // É o que protege toda proposta já salva: campo novo não muda preço.
     const r = simularProposta(BASE_H3);
     expect(r.mensalidadeCents).toBe(120 * 3990);
-    expect(r.implantacaoCents).toBe(120 * 1990);
+    expect(r.implantacaoCents).toBe(r.mensalidadeCents);
     expect(r.faixaAplicada).toBeNull();
   });
 
@@ -431,13 +430,12 @@ describe("as condições comerciais dentro da simulação", () => {
     expect(r.mensalidadeCents).toBe(380_000);
   });
 
-  it("implantação FIXA não multiplica pela quantidade", () => {
+  it("a implantação é o 1º pagamento, com faixa e tudo (AP18)", () => {
     const r = simularProposta({
       ...BASE_H3,
-      implantationMode: "FIXED",
-      implantationFixedCents: 350_000,
+      faixas: [{ minQuantity: 100, priceCents: 2990 }],
     });
-    expect(r.implantacaoCents).toBe(350_000);
+    expect(r.implantacaoCents).toBe(r.mensalidadeCents);
   });
 
   it("o dependente NÃO entra na mensalidade nem com pacote configurado", () => {
@@ -463,5 +461,36 @@ describe("as condições comerciais dentro da simulação", () => {
     });
     expect(r.dependentesCents).toBe(0);
     expect(r.mensalidadeCents).toBe(500_000);
+  });
+});
+
+describe("fechamento: o acordo de valor fixo viaja para a empresa (AP18)", () => {
+  const lead = { company_name: "Aurora", cnpj: "55666777000188" };
+  const base = {
+    legal_name: null, category: null, billing_model: null, payment_model: null,
+    subsidy_type: null, subsidy_value: null, employee_count: 150,
+    responsible_name: null, responsible_role: null, responsible_cpf: null,
+    responsible_email: null, responsible_phone: null, notes: null,
+  };
+
+  it("⚠️ proposta de valor fixo → a empresa nasce com a base e o valor (antes: por titular)", () => {
+    const c = camposDaEmpresa({ ...base, billing_basis: "FIXED_PER_COMPANY", fixed_monthly_cents: 500_000 }, lead);
+    expect(c.billing_basis).toBe("FIXED_PER_COMPANY");
+    expect(c.fixed_monthly_cents).toBe(500_000);
+  });
+
+  it("o valor vai com a FAIXA do tamanho da empresa — o número que a empresa leu", () => {
+    const c = camposDaEmpresa(
+      { ...base, billing_basis: "FIXED_PER_COMPANY", fixed_monthly_cents: 500_000 },
+      lead,
+      [{ minQuantity: 100, priceCents: 450_000 }]
+    );
+    expect(c.fixed_monthly_cents).toBe(450_000);
+  });
+
+  it("proposta por titular (ou sem base) continua por titular, sem fixo", () => {
+    expect(camposDaEmpresa({ ...base, billing_basis: "PER_EMPLOYEE", fixed_monthly_cents: 500_000 }, lead))
+      .toMatchObject({ billing_basis: "PER_EMPLOYEE", fixed_monthly_cents: null });
+    expect(camposDaEmpresa(null, lead)).toMatchObject({ billing_basis: "PER_EMPLOYEE", fixed_monthly_cents: null });
   });
 });

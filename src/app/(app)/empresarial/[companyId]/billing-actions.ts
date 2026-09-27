@@ -1,20 +1,19 @@
 "use server";
 
 import { decidirImplantacao } from "@/lib/empresarial/implantacao-cobranca";
+import { ehValorFixo, implantacaoDoFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
+import { formatBRL } from "@/lib/pricing";
 import { naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
-import { carregarFaixasParaCobrar } from "@/lib/empresarial/faixas-da-empresa";
 import {
-  computeMonthlyCents,
-  precoDoTitularComFaixa,
-  DEFAULT_ADHESION_PRICING,
-  type AdhesionPricing,
-} from "@/lib/empresarial/pricing";
-import type { DependentPlan } from "@/lib/empresarial/constants";
+  computeMonthlyBreakdown,
+  implantacaoPeloContratado,
+  precoPorTitularDaImplantacao,
+} from "@/lib/empresarial/cobranca-servidor";
 import { proximoVencimento, rotuloDoMes } from "@/lib/empresarial/vencimento";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -53,6 +52,16 @@ export type BillingPreview = {
    * pode estar cobrando de novo quem já pagou.
    */
   avisoCobertura?: string;
+  /**
+   * AP18 (1024): acordo de VALOR FIXO. A mensalidade é o fixo + os termos
+   * aceitos; a implantação é o 1º pagamento do que ainda não foi cobrado.
+   */
+  valorFixo?: {
+    fixoCents: number;
+    termosCents: number;
+    /** Implantação: o que as implantações anteriores já cobraram. */
+    jaCobradoCents?: number;
+  };
 };
 
 /**
@@ -70,7 +79,7 @@ export async function previewBilling(
   const { data: company } = await db
     .from("companies")
     .select(
-      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders"
+      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders, billing_basis, fixed_monthly_cents"
     )
     .eq("id", companyId)
     .maybeSingle<{
@@ -80,6 +89,8 @@ export async function previewBilling(
       due_day: number;
       billing_model: string;
       contracted_holders: number | null;
+      billing_basis: string | null;
+      fixed_monthly_cents: number | null;
     }>();
   if (!company) return { ok: false, error: "Empresa não encontrada." };
   const contratado = company.contracted_holders;
@@ -115,6 +126,86 @@ export async function previewBilling(
     billingType === "IMPLANTATION"
       ? `Adesão e implantação — Risarte Empresarial (${companyName})`
       : `Mensalidade do Risarte Empresarial — ${monthLabel}`;
+
+  // ⚠️ AP18 (1024): ACORDO DE VALOR FIXO — regras do dono, 27/09/2026.
+  //   * mensalidade = o fixo + o que os termos de inclusão ACEITOS somaram
+  //     (o termo "novo valor fixo" guarda a diferença: somando, dá o pacote);
+  //   * implantação = o 1º pagamento: um mês do fixo, depois só o acréscimo.
+  // Um boleto só, no documento principal: o pacote é da empresa, não de CNPJ.
+  if (ehValorFixo(company.billing_basis)) {
+    const { data: termos, error: erroDosTermos } = await db
+      .from("company_inclusion_terms")
+      .select("monthly_delta_cents")
+      .eq("company_id", companyId)
+      .eq("status", "ACEITO")
+      .returns<{ monthly_delta_cents: number }[]>();
+    if (erroDosTermos || !termos) {
+      return { ok: false, error: naoConseguiConferir("os termos de inclusão da empresa") };
+    }
+    const deltas = termos.map((t) => t.monthly_delta_cents);
+    const mensal = mensalidadeDoFixo(company.fixed_monthly_cents, deltas);
+    if (mensal === null) {
+      return {
+        ok: false,
+        error: "Esta empresa é de valor fixo, mas o valor fixo mensal não está cadastrado. Nada foi gerado.",
+      };
+    }
+    const fixoCents = company.fixed_monthly_cents ?? 0;
+    const pagador = {
+      documentId: null,
+      payerName: companyName,
+      payerDoc: primary ? `${primary.doc_type} ${primary.doc_formatted}` : company.cnpj,
+      employees: breakdown.totalEmployees,
+    };
+    const comum = {
+      ok: true as const,
+      dueDate,
+      referenceMonth,
+      beneficiary: "Risarte / RisLife",
+      billingModel: company.billing_model,
+      titularesCadastrados: breakdown.totalEmployees,
+    };
+
+    if (billingType === "MONTHLY") {
+      return {
+        ...comum,
+        items: [{ ...pagador, totalCents: mensal }],
+        description,
+        valorFixo: { fixoCents, termosCents: mensal - fixoCents },
+      };
+    }
+
+    const { data: anteriores, error: erroDasAnteriores } = await db
+      .from("adhesion_billing")
+      .select("total_amount_cents")
+      .eq("company_id", companyId)
+      .eq("billing_type", "IMPLANTATION")
+      .neq("status", "CANCELLED")
+      .returns<{ total_amount_cents: number }[]>();
+    if (erroDasAnteriores || !anteriores) {
+      return { ok: false, error: naoConseguiConferir("as implantações já cobradas desta empresa") };
+    }
+    const impl = implantacaoDoFixo(mensal, anteriores.map((a) => a.total_amount_cents));
+    if (impl.tipo === "nada") {
+      return {
+        ok: false,
+        error: `A implantação desta empresa já foi cobrada (${formatBRL(impl.jaCobradoCents)}, igual à mensalidade de hoje). Não há o que cobrar. Quando um termo de inclusão aumentar o valor, o acréscimo paga a própria implantação.`,
+      };
+    }
+    return {
+      ...comum,
+      items: [{ ...pagador, totalCents: impl.aCobrarCents }],
+      description:
+        impl.tipo === "primeira"
+          ? description
+          : `Implantação do acréscimo do valor fixo — Risarte Empresarial (${companyName})`,
+      valorFixo: {
+        fixoCents,
+        termosCents: mensal - fixoCents,
+        jaCobradoCents: impl.tipo === "diferenca" ? impl.jaCobradoCents : 0,
+      },
+    };
+  }
 
   let items: NonNullable<BillingPreview["items"]>;
   if (perDocument) {
@@ -342,163 +433,6 @@ export async function previewBilling(
 // Agora mora em `@/lib/empresarial/vencimento`, pura e com teste — porque
 // decide data e dinheiro, e os dois defeitos eram invisíveis para quem olha a
 // tela num computador brasileiro.
-
-/**
- * O preço de UM titular na implantação, pela faixa da quantidade dada.
- *
- * ⚠️ AP13: NULO quando não conseguiu ler o preço ou as faixas. Antes, a falha
- * caía no preço padrão da rede SEM avisar — a empresa que negociou outro preço
- * receberia a implantação pelo padrão. Quem chama recusa gerar.
- */
-async function precoPorTitularDaImplantacao(
-  db: Awaited<ReturnType<typeof empresarialDb>>,
-  companyId: string,
-  quantidadeDaFaixa: number
-): Promise<number | null> {
-  const { data: pricingRows, error: erroDoPreco } = await db
-    .from("adhesion_pricing")
-    .select("company_id, holder_fee_cents")
-    .or(`company_id.eq.${companyId},company_id.is.null`);
-  if (erroDoPreco || !pricingRows) return null;
-  const rows = pricingRows as {
-    company_id: string | null;
-    holder_fee_cents: number;
-  }[];
-  const escolhido =
-    rows.find((r) => r.company_id === companyId) ??
-    rows.find((r) => r.company_id === null);
-  const base = escolhido?.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents;
-
-  const faixas = await carregarFaixasParaCobrar(db, companyId);
-  if (!faixas) return null;
-  return precoDoTitularComFaixa(
-    { ...DEFAULT_ADHESION_PRICING, holderFeeCents: base },
-    faixas,
-    quantidadeDaFaixa
-  );
-}
-
-/**
- * O valor da implantação pela QUANTIDADE CONTRATADA.
- *
- * ⚠️ SÓ TITULARES, e isso é a mesma lei que vale na proposta (decisão do dono
- * em 24/09/2026, bloco I1): ninguém sabe quantos dependentes entram nem como
- * se distribuem entre as famílias antes dos cadastros. Somá-los aqui seria
- * cobrar por gente que talvez não exista.
- *
- * A faixa é escolhida pela quantidade CONTRATADA — é ela que a empresa
- * negociou. Usar a faixa de "1" porque ainda não há ninguém cadastrado
- * cobraria o preço mais caro justamente de quem fechou volume.
- */
-async function implantacaoPeloContratado(
-  db: Awaited<ReturnType<typeof empresarialDb>>,
-  companyId: string,
-  contratado: number
-): Promise<number | null> {
-  const porTitular = await precoPorTitularDaImplantacao(db, companyId, contratado);
-  return porTitular === null ? null : porTitular * contratado;
-}
-
-/** Mensalidade total e por documento (para o modelo "um boleto por CNPJ"). */
-async function computeMonthlyBreakdown(
-  db: Awaited<ReturnType<typeof empresarialDb>>,
-  companyId: string
-): Promise<{
-  totalCents: number;
-  totalEmployees: number;
-  byDocument: Map<string, { employees: number; cents: number }>;
-} | null> {
-  // ⚠️ AP13: QUALQUER leitura que falhe devolve nulo. Antes, cada falha virava
-  // um número "razoável": preço padrão no lugar do combinado, ZERO dependentes
-  // (a mensalidade saía sem eles), "sem titulares". A cobrança nascia errada
-  // e parecia certa.
-  const [
-    { data: pricingRows, error: erroDoPreco },
-    { data: emps, error: erroDosTitulares },
-    { data: deps, error: erroDosDependentes },
-  ] = await Promise.all([
-      db
-        .from("adhesion_pricing")
-        .select(
-          "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments, dependent_family_size"
-        )
-        .or(`company_id.eq.${companyId},company_id.is.null`),
-      db
-        .from("employees")
-        .select("id, dependent_plan, status, company_document_id")
-        .eq("company_id", companyId)
-        .eq("status", "ACTIVE")
-        .returns<
-          {
-            id: string;
-            dependent_plan: DependentPlan;
-            status: "ACTIVE";
-            company_document_id: string | null;
-          }[]
-        >(),
-      db.from("dependents").select("employee_id, status").eq("status", "ACTIVE"),
-    ]);
-  if (erroDoPreco || erroDosTitulares || erroDosDependentes || !pricingRows || !emps || !deps) {
-    return null;
-  }
-
-  const rows = pricingRows as {
-    company_id: string | null;
-    holder_fee_cents: number;
-    dependent_individual_fee_cents: number;
-    dependent_family_fee_cents: number;
-    dependent_family_extra_fee_cents: number;
-    max_installments: number;
-  }[];
-  const chosen =
-    rows.find((r) => r.company_id === companyId) ??
-    rows.find((r) => r.company_id === null);
-  const pricing: AdhesionPricing = chosen
-    ? {
-        holderFeeCents: chosen.holder_fee_cents,
-        dependentIndividualFeeCents: chosen.dependent_individual_fee_cents,
-        dependentFamilyFeeCents: chosen.dependent_family_fee_cents,
-        dependentFamilyExtraFeeCents: chosen.dependent_family_extra_fee_cents,
-        maxInstallments: chosen.max_installments,
-      }
-    : DEFAULT_ADHESION_PRICING;
-
-  const depCount = new Map<string, number>();
-  for (const d of (deps ?? []) as { employee_id: string }[])
-    depCount.set(d.employee_id, (depCount.get(d.employee_id) ?? 0) + 1);
-
-  // ⚠️ A FAIXA É ESCOLHIDA PELO TOTAL, e a soma abaixo é feita um titular por
-  // vez (para repartir por CNPJ). Calcular a faixa dentro do laço faria cada
-  // chamada ver "1 titular ativo" e cobrar sempre a faixa de 1 — o preço mais
-  // caro, em toda empresa que negociou volume.
-  const faixas = await carregarFaixasParaCobrar(db, companyId);
-  if (!faixas) return null;
-  const ativos = emps.filter((e) => e.status === "ACTIVE").length;
-  const precoComFaixa = {
-    ...pricing,
-    holderFeeCents: precoDoTitularComFaixa(pricing, faixas, ativos),
-  };
-
-  const byDocument = new Map<string, { employees: number; cents: number }>();
-  let totalCents = 0;
-  for (const e of emps ?? []) {
-    const one = computeMonthlyCents(precoComFaixa, [
-      {
-        status: "ACTIVE",
-        dependentPlan: e.dependent_plan,
-        activeDependentCount: depCount.get(e.id) ?? 0,
-      },
-    ]).totalCents;
-    totalCents += one;
-    const key = e.company_document_id ?? "__none__";
-    const cur = byDocument.get(key) ?? { employees: 0, cents: 0 };
-    cur.employees++;
-    cur.cents += one;
-    byDocument.set(key, cur);
-  }
-
-  return { totalCents, totalEmployees: (emps ?? []).length, byDocument };
-}
 
 /** Gera a cobrança (implantação ou mensal). Cria o registro local (PENDING). */
 export async function generateBilling(

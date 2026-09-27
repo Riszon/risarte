@@ -19,8 +19,6 @@ export type CondicoesView = {
   maxAdhesions: number | null;
   adhesionLimitTarget: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
   minProposalCents: number | null;
-  implantationMode: "PER_ADHESION" | "FIXED" | null;
-  implantationFixedCents: number | null;
   dependentMode: "PER_DEPENDENT" | "FAMILY_PACKAGE" | null;
   dependentFamilyFeeCents: number | null;
   dependentFamilyExtraFeeCents: number | null;
@@ -58,9 +56,6 @@ export function CondicoesComerciais({
   const [isPending, startTransition] = useTransition();
   const [faixas, setFaixas] = useState<FaixaDePreco[]>(condicoes.faixas);
   const [modoDep, setModoDep] = useState(condicoes.dependentMode ?? "PER_DEPENDENT");
-  const [modoImp, setModoImp] = useState(
-    condicoes.implantationMode ?? "PER_ADHESION"
-  );
   const [modoExc, setModoExc] = useState(condicoes.excessMode ?? "");
 
   const avisosDasFaixas = problemasDasFaixas(faixas);
@@ -83,7 +78,7 @@ export function CondicoesComerciais({
         <div>
           <p className="text-sm font-medium">Condições comerciais</p>
           <p className="text-xs text-muted-foreground">
-            Limites, valor mínimo, faixas por quantidade e implantação. Deixe em
+            Limites, valor mínimo e faixas por quantidade. Deixe em
             branco o que esta negociação não combinou — em branco, vale o que já
             está acima.
           </p>
@@ -229,33 +224,8 @@ export function CondicoesComerciais({
             </Button>
           </div>
 
-          {/* ---- implantação ---- */}
-          <div className="grid gap-3 @md:grid-cols-2">
-            <Campo id="implantation_mode" rotulo="Implantação">
-              <select
-                id="implantation_mode"
-                name="implantation_mode"
-                value={modoImp}
-                onChange={(e) =>
-                  setModoImp(e.target.value as "PER_ADHESION" | "FIXED")
-                }
-                className={selectClass}
-              >
-                <option value="PER_ADHESION">Por adesão (valor × titulares)</option>
-                <option value="FIXED">Valor fixo pela empresa</option>
-              </select>
-            </Campo>
-            {modoImp === "FIXED" && (
-              <Campo id="implantation_fixed" rotulo="Implantação fixa (R$)">
-                <Input
-                  id="implantation_fixed"
-                  name="implantation_fixed"
-                  defaultValue={emReais(condicoes.implantationFixedCents)}
-                  placeholder="0,00"
-                />
-              </Campo>
-            )}
-          </div>
+          {/* AP18 (27/09/2026): a implantação saiu daqui — é sempre o 1º
+              pagamento, e a cobrança nunca leu estes campos. */}
 
           {/* ---- dependentes ---- */}
           <div className="space-y-2 rounded-md border p-2">

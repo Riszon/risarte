@@ -41,7 +41,6 @@ export type QualificacaoView = {
   holderFeeCents: number;
   dependentFeeCents: number;
   fixedMonthlyCents: number | null;
-  implantationPerEmployeeCents: number | null;
   legalName: string | null;
   category: CompanyCategory | null;
   responsibleName: string | null;

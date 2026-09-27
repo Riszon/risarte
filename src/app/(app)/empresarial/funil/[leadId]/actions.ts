@@ -208,7 +208,8 @@ export async function saveProposal(
       holder_fee_cents: centavos(formData, "holder_fee"),
       dependent_fee_cents: centavos(formData, "dependent_fee"),
       fixed_monthly_cents: centavos(formData, "fixed_monthly"),
-      implantation_per_employee_cents: centavos(formData, "implantation_per_employee"),
+      // AP18: implantation_per_employee_cents não é mais escrito — o campo
+      // saiu da tela, e escrever nulo apagaria o valor antigo guardado.
 
       legal_name: texto(formData, "legal_name"),
       category: daLista(formData, "category", COMPANY_CATEGORIES),
@@ -855,11 +856,8 @@ export async function saveCommercialTerms(
         "BOTH",
       ] as const),
       min_proposal_cents: centavos(formData, "min_proposal"),
-      implantation_mode: daLista(formData, "implantation_mode", [
-        "PER_ADHESION",
-        "FIXED",
-      ] as const),
-      implantation_fixed_cents: centavos(formData, "implantation_fixed"),
+      // AP18: implantation_mode / implantation_fixed_cents não são mais
+      // escritos (a implantação é o 1º pagamento); o banco guarda o antigo.
       dependent_mode: daLista(formData, "dependent_mode", [
         "PER_DEPENDENT",
         "FAMILY_PACKAGE",

@@ -1,3 +1,4 @@
+import { mensalidadeNaTela } from "@/lib/empresarial/mensalidade-na-tela";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -448,6 +449,8 @@ export default async function CompanyDetailPage(props: {
     benefits: BenefitView[];
     procedures: { id: string; name: string }[];
     monthly: ReturnType<typeof computeMonthlyCents>;
+    /** AP18: o que a empresa paga de verdade (fixo + termos, ou por titular). */
+    mensalidade: Awaited<ReturnType<typeof mensalidadeNaTela>>;
   } | null = null;
   if (aba === "plano") {
     const procedures = await loadProcedures();
@@ -490,6 +493,7 @@ export default async function CompanyDetailPage(props: {
       benefits,
       procedures,
       monthly,
+      mensalidade: await mensalidadeNaTela(db, companyId, monthly.totalCents),
     };
   }
 
@@ -573,7 +577,7 @@ export default async function CompanyDetailPage(props: {
       holders,
       dependents: dependentsCount,
       total: holders + dependentsCount,
-      monthlyCents: monthly.totalCents,
+      monthlyCents: (await mensalidadeNaTela(db, companyId, monthly.totalCents)).totalCents,
       savedCents: (usage ?? []).reduce(
         (a, u) => a + (u.amount_saved_cents ?? 0),
         0
@@ -1127,13 +1131,24 @@ export default async function CompanyDetailPage(props: {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-semibold text-gold-tinta">
-                  {formatBRL(plano.monthly.totalCents)}
+                  {formatBRL(plano.mensalidade.totalCents)}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {plano.monthly.holdersCount} titular(es) ·{" "}
-                  {formatBRL(plano.monthly.holdersCents)} + dependentes{" "}
-                  {formatBRL(plano.monthly.dependentsCents)}
-                </p>
+                {plano.mensalidade.valorFixo ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Acordo de <strong>valor fixo</strong>:{" "}
+                    {formatBRL(plano.mensalidade.valorFixo.fixoCents)}
+                    {plano.mensalidade.valorFixo.termosCents > 0 &&
+                      ` + ${formatBRL(plano.mensalidade.valorFixo.termosCents)} dos termos de inclusão aceitos`}
+                    . Não depende de quantos titulares estão cadastrados (
+                    {plano.monthly.holdersCount} hoje).
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {plano.monthly.holdersCount} titular(es) ·{" "}
+                    {formatBRL(plano.monthly.holdersCents)} + dependentes{" "}
+                    {formatBRL(plano.monthly.dependentsCents)}
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-muted-foreground">
                   Split mensal:{" "}
                   {plano.effectiveSplit.recurringRisartePct}% Risarte /{" "}
@@ -1141,7 +1156,10 @@ export default async function CompanyDetailPage(props: {
                 </p>
               </CardContent>
             </Card>
-            <MonthlySimulator pricing={plano.effectivePricing} />
+            <MonthlySimulator
+              pricing={plano.effectivePricing}
+              valorFixo={plano.mensalidade.valorFixo !== null}
+            />
           </div>
 
           {canManage && (

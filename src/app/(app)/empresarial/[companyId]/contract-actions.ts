@@ -1,5 +1,6 @@
 "use server";
 
+import { ehValorFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -144,10 +145,23 @@ async function buildProposalText(companyId: string): Promise<string | null> {
   const db = await empresarialDb();
   const { data: company } = await db
     .from("companies")
-    .select("legal_name, trade_name, payment_model")
+    .select("legal_name, trade_name, payment_model, billing_basis, fixed_monthly_cents")
     .eq("id", companyId)
     .maybeSingle();
   if (!company) return null;
+  // AP18: no valor fixo, o investimento é o fixo (+ termos aceitos).
+  let fixoDaProposta: number | null = null;
+  if (ehValorFixo(company.billing_basis)) {
+    const { data: aceitos, error: erroDosTermos } = await db
+      .from("company_inclusion_terms")
+      .select("monthly_delta_cents")
+      .eq("company_id", companyId)
+      .eq("status", "ACEITO")
+      .returns<{ monthly_delta_cents: number }[]>();
+    if (erroDosTermos || !aceitos) return null;
+    fixoDaProposta = mensalidadeDoFixo(company.fixed_monthly_cents, aceitos.map((t) => t.monthly_delta_cents));
+    if (fixoDaProposta === null) return null;
+  }
 
   // ⚠️ AP13: a proposta vai para a empresa com PREÇO. Qualquer leitura que
   // falhe devolve nulo (a tela diz que não conseguiu montar) — antes, a falha
@@ -224,7 +238,9 @@ async function buildProposalText(companyId: string): Promise<string | null> {
     `# Proposta Risarte Empresarial\n## ${name}`,
     `## Saúde bucal como benefício\nLeve odontologia de qualidade aos seus titulares, com rede credenciada e acompanhamento contínuo.`,
     `## Como funciona\n- Titulares e dependentes viram pacientes da rede Risarte\n- Benefícios e descontos exclusivos em procedimentos\n- Gestão simples: uma mensalidade única para a empresa`,
-    `## Investimento\n- Titular: ${formatBRL(pricing.holderFeeCents)}/mês\n- Plano de dependentes a partir de ${formatBRL(pricing.dependentIndividualFeeCents)}/mês\n- Mensalidade estimada hoje: **${formatBRL(monthly.totalCents)}**`,
+    fixoDaProposta != null
+      ? `## Investimento\n- Valor fixo mensal: **${formatBRL(fixoDaProposta)}**\n- Não depende de quantos titulares estão cadastrados`
+      : `## Investimento\n- Titular: ${formatBRL(pricing.holderFeeCents)}/mês\n- Plano de dependentes a partir de ${formatBRL(pricing.dependentIndividualFeeCents)}/mês\n- Mensalidade estimada hoje: **${formatBRL(monthly.totalCents)}**`,
     `## Benefícios clínicos\nMais de ${benCount} procedimentos com cobertura/desconto do programa, incluindo prevenção periódica sem custo.`,
     `## Próximos passos\n1. Assinatura do contrato\n2. Cadastro dos titulares\n3. Início dos atendimentos`,
   ].join("\n\n---\n\n");

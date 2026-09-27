@@ -72,7 +72,6 @@ describe("a comparação com o convênio atual", () => {
     dependentsCount: 0,
     dependentFeeCents: 0,
     fixedMonthlyCents: 0,
-    implantationPerEmployeeCents: 0,
     paymentModel: "COMPANY_PAYS" as const,
     subsidyType: null,
     subsidyValue: 0,
