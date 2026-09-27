@@ -1,7 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/09/2026 · Versão do sistema: **0.296.1** · Última migração: **0282** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/09/2026 · Versão do sistema: **0.297.0** · Última migração: **0283** (aplicada no treino; produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔔 0.297.0 / 0283 — OS AVISOS DE AGENDAR SÓ SAEM QUANDO O AGENDAMENTO EXISTE (OC-00080)
+>
+> "Fechamento! Iniciar tratamento" e "Agendar apresentação comercial" tinham
+> "Já agendei" e "Marcar todos", que calavam o aviso sem conferir a agenda. Um
+> gatilho em `appointments` (0283) marca o aviso como lido quando o agendamento
+> vivo do tipo certo é criado, por qualquer caminho. A tela ficou com "Abrir
+> agenda" e "Fechar" (adia 15 min, sobrevive ao F5). Componente único
+> `aviso-de-agendar.tsx`; régua `avisos-de-agendar.test.ts`.
+>
 > ## 🎓 0.295.0 / 0281 — MISSÃO CUMPRIDA ABRE O SISTEMA REAL (Etapa 3, parte 2)
 >
 > Certificado automático ou após aprovação do Admin (reciclagem sempre

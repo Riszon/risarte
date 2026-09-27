@@ -1305,6 +1305,27 @@ trabalha. **Duração estimada:** 60 minutos.
 > **Quem atende depende do tipo.** Numa Avaliação o sistema oferece só o
 > Coordenador. Isso não é erro: é a regra da fase.
 
+**Os avisos que cobram um agendamento.** Dois avisos abrem por cima da tela
+quando há alguém esperando a recepção agendar: **"Fechamento! Iniciar
+tratamento"** (a venda fechou) e **"Agendar apresentação comercial"**.
+
+1. Cada cliente do aviso tem um botão só: **Abrir agenda** — ele leva à agenda
+   com o cliente já escolhido.
+2. Agende normalmente (tipo **Início de Tratamento** ou **Apresentação
+   Comercial**).
+3. **Resultado esperado:** o aviso **some sozinho**, em até um minuto — por
+   qualquer caminho que você tenha agendado (pelo aviso, pela agenda ou pela
+   ficha).
+4. **Fechar** (ou o **X**) só **adia**: o aviso volta em **15 minutos**, até o
+   agendamento existir. Aviso de um cliente novo abre na hora.
+
+> **Por que não existe mais "Já agendei" nem "Marcar todos como agendados"**
+> (relato OC-00080, 27/09/2026): os dois apagavam o aviso sem ninguém conferir
+> a agenda — e até "Abrir agenda" apagava no clique, antes de agendar. O
+> lembrete podia ser calado sem o paciente ser agendado. Hoje quem tira o aviso
+> é o próprio agendamento. Um agendamento criado já **cancelado**, ou de outro
+> tipo (sessão, retorno), **não** tira o aviso.
+
 **Tarefa 3 — Receber o paciente no dia**
 
 1. Menu **Atendimento**.
@@ -2090,8 +2111,8 @@ exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
 - Saia do sistema em computador compartilhado.
 - Confira antes de salvar em telas de dinheiro: **nada se apaga**.
 - Não fotografe telas com dado de paciente.
-- Ao receber um aviso modal insistente, **não clique em "Já agendei" sem ter
-  agendado** — isso afirma um fato que não aconteceu.
+- O aviso que cobra um agendamento só sai quando o agendamento existe. Se
+  precisar da tela, use **Fechar** — ele volta em 15 minutos (seção 6.1).
 
 ---
 

@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.297.0",
+    data: "2026-09-27",
+    migracao: "0283",
+    titulo: "Os avisos de agendar só saem quando o agendamento existe",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Os avisos \"Fechamento! Iniciar tratamento\" e \"Agendar apresentação comercial\" agora têm um botão só por cliente, Abrir agenda, e somem sozinhos quando o início do tratamento ou a apresentação é agendado — por qualquer caminho. \"Já agendei\" e \"Marcar todos como agendados\" deixaram de existir: apagavam o aviso sem conferir a agenda. Fechar só adia 15 minutos.",
+        papeis: ["receptionist"],
+        manual: "Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.296.1",
     data: "2026-09-27",
     migracao: null,

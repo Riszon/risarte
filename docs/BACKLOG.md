@@ -1944,3 +1944,16 @@ do funil.
   depois; proposta por titular sem os campos. Deixado no treino: TI-00012
   CANCELADO e dois registros de auditoria; a Bom Sabor voltou ao estado
   anterior (conferido).
+
+### AP20. Início ou apresentação CANCELADO depois não traz o aviso de volta (27/09/2026) — SUSPEITA
+
+**Achado fazendo o OC-00080 (0283).** O aviso "Fechamento! Iniciar
+tratamento" (e o de apresentação) sai quando o agendamento é criado. Se esse
+agendamento for **cancelado depois**, o aviso NÃO volta.
+
+**CONFIRMADO lendo o código:** o gatilho só marca como lido; nada recria o
+aviso no cancelamento. **Rede que já existe:** o cliente continua na Fase 5
+"Aguardando Iniciar Tratamento" (ou na Conversão Comercial), e o prazo (SLA)
+fica vermelho na Jornada. **NÃO DECIDIDO:** se o cancelamento deve recriar o
+aviso para a recepção — é mudança de comportamento, precisa do dono.
+
