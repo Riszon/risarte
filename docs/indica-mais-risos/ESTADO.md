@@ -48,7 +48,7 @@ Nenhuma ligação apaga em cascata.
 | **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visões, funções e o parâmetro de 90 dias no lugar; sem login, recusa). Segue escondido (só Admin) |
 | **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 **aplicada nos dois bancos** (treino: gatilhos e rotina conferidos no banco; produção: tabelas e função conferidas pela API em 28/09; o dono conferiu no painel a rotina `indica-rotina-diaria` ativa — 1ª execução 29/09 02:30 — e, por SQL, os 3 gatilhos nas tabelas certas) |
 | **IND3b — Convite público, portal e mensagens** | ✅ entregue em 28/09/2026 (0.5.0, migração 2006). 2006 **aplicada nos dois bancos** (produção conferida em 28/09: fila, 9 funções e 10 parâmetros pela API; `risarte.vercel.app/i/…` no ar respondendo "Convite não encontrado"; `/indica-mais-risos` sem login vai para o login). Módulo interno segue escondido; as páginas públicas só abrem com código/link válido |
-| IND4 — Campanhas e equipe | a fazer |
+| **IND4 — Campanhas e equipe** | ✅ entregue em 28/09/2026 (0.6.0, migração 2007). 2007 **aplicada no treino**; **produção: aguardando o dono rodar** |
 | IND5 — Gestão de rede | a fazer |
 
 ## IND0 — o que foi entregue
@@ -369,6 +369,95 @@ treino, marcados "(pode ignorar)": "Link Teste" e "Amigo Portal".
    amigo, mandar o convite, abrir o convite e aceitar.
 5. Aba **Mensagens**: abrir o WhatsApp de uma mensagem, enviar e marcar.
 6. Nova indicação com "Ainda não" no aceite → o convite aparece na fila.
+
+## IND4 — o que foi entregue (28/09/2026)
+
+**Decisões do dono (28/09/2026):** faixas das metas com os **valores de 2025
+como modelo**; prêmio em dinheiro **só como relatório** para a folha (sem
+conta a pagar até o OK do contador); campanha entra **sozinha**, a **mais
+vantajosa**; **segmentos de público já** (nível, especialidade do tratamento
+do Embaixador e empresa do Empresarial).
+
+**Campanhas** (aba nova):
+
+- **Assistente** com 4 modelos prontos — Riso Coins em Dobro, Traga sua
+  Família, Inauguração de Unidade, Maratona de Embaixadores. Os números dos
+  modelos são o parâmetro `campanhas_modelos` (editável em Configurações), não
+  código.
+- Vantagem: multiplicador (não soma com o nível — vale o maior), pontos extras
+  por etapa e **bônus por marco** (N-ª conversão dentro da campanha, uma vez).
+- **Público:** níveis; **especialidade do tratamento** que o Embaixador fechou
+  (procedimentos incluídos nas vendas fechadas e não canceladas dele); **empresa**
+  do Risarte Empresarial (`clients.empresarial_company_id`). Vazio = todos.
+- **Especialidade-alvo** (opcional): a vantagem no FECHAMENTO só vale se a
+  venda do indicado tiver procedimento dessa especialidade; senão o fechamento
+  pontua sem a campanha e o motivo fica gravado no lançamento.
+- **Situação:** rascunho → agendada/ativa → pausada → encerrada (motivo) →
+  apurada. Nasce rascunho; só muda pelos botões (`mudar_campanha`). Depois de
+  começar, **só amplia** (gatilho `campanha_protege_regras`: multiplicador e
+  extras não caem; público, unidades e começo não mudam) e a versão sobe.
+- **Escolha automática** (`_campanha_para`): entre as ativas que valem para a
+  unidade e o público, a de maior valor numa conversão completa. Campanha com
+  especialidade-alvo perde o empate (a vantagem dela é condicional).
+- **Simulador de custo** pelo histórico de 180 dias da unidade (taxas reais de
+  comparecimento e fechamento) e **orçamento** com alerta no % configurado
+  (`campanha_alerta_orcamento_percentual`, 80) e **esgotado** em 100% (deixa de
+  entrar em indicação nova; aumentar o orçamento reabre). Valor do Riso Coin
+  para o custo: `valor_riso_coin_centavos` (10).
+- Rotina `indica-rotina-campanhas` (02:40): agendada → ativa, fim → encerrada,
+  alerta e esgotado de orçamento.
+
+**Equipe** (aba nova):
+
+- **Meta coletiva** por unidade (mês, trimestre ou campanha) com as faixas
+  pré-preenchidas pelo `metas_faixas_padrao` (25/40/50/55 conversões; recepção
+  e CRC R$ 500/1.000/1.500 e, no Bônus, Super Meta + experiência; demais
+  funções voucher R$ 100/200/300). **Trava de qualidade** (comparecimento
+  mínimo das indicações do período, padrão 50%).
+- Só contam **convertidas** com fechamento no período. **Provisória** a
+  qualquer hora; **final** só depois do período e sem fechamento do período
+  ainda em carência; uma final por meta (reprovar permite refazer).
+- **Aprovação do gestor** congela a lista de premiados (recepção/SDR =
+  "Recepção / CRC"; as outras funções = "demais") → **Relatório para a folha**
+  (página para imprimir, com totais em dinheiro, vouchers e experiências).
+  Apuração só nasce e muda pelas funções (gatilho `apuracao_so_pelo_motor`).
+- **Ranking individual** do mês: pedidos, indicações, Embaixadores ativados,
+  conversões de origem e de fechamento, taxa.
+- Auditoria da franqueadora: escolhe a unidade no topo da Equipe e vê metas,
+  apurações e aprovações.
+
+**Configurações:** parâmetros em lista (faixas, modelos) passaram a abrir e
+gravar como JSON (antes apareceriam como "[object Object]").
+
+**Provas:** `npm run test:indica` **180/180** (seção 16, 45 novas) — **provado
+quebrando** três regras, uma de cada vez: a escolha da mais vantajosa, a
+especialidade-alvo e o marco (cada quebra derrubou a sua conferência). A
+régua da escolha passou verde na primeira quebra (as campanhas empatavam na
+ordem e a certa saía primeiro por acaso) — corrigida para a pior vir primeiro.
+Testes unitários `indica-campanhas` (espelho das transições lido do SQL) e
+`indica-metas` (faixas de 2025 lidas da migração). Tela real no treino (Admin,
+porque o módulo segue escondido): modelo → simulador → rascunho → publicar →
+reduzir travado → ampliar (versão 2) → encerrar com motivo; meta com as faixas
+de 2025 → apuração provisória → ranking; recepção continua barrada; 0 erro no
+console. Ficou no treino, encerrada: a campanha "Riso Coins em Dobro (teste —
+pode ignorar)" e uma meta de setembro encerrada.
+
+⚠️ **Achado de passagem (núcleo), AP23 no BACKLOG:** a barra de cima estoura
+a largura no celular em todas as telas (544 px em 390). As telas do IND4 não
+passam disso.
+
+### Checklist da IND4 — no TREINO, como Admin
+
+1. Rodar a **2007** na produção (SQL Editor) e avisar "rodei 2007".
+2. **Campanhas → Nova campanha** → escolher "Riso Coins em Dobro" → marcar só
+   a sua unidade → **Simular custo** → **Criar rascunho** → **Publicar**.
+3. Registrar uma indicação nova: ela aparece com a campanha e o dobro de
+   pontos pendentes.
+4. **Editar** a campanha e tentar baixar o multiplicador: o botão trava.
+   Aumentar funciona e sobe a versão. **Encerrar** pede motivo.
+5. **Equipe → Nova meta**: as faixas vêm com os valores de 2025 → Criar →
+   **Apurar agora**. No mês seguinte, **Apuração final** → **Aprovar** →
+   **Relatório para a folha**.
 
 ## Notas para as próximas fases
 

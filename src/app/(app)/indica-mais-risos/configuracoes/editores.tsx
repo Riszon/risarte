@@ -31,8 +31,11 @@ export type Parametro = {
 function mostrar(v: unknown): string {
   if (v === undefined || v === null) return "";
   if (typeof v === "boolean") return v ? "true" : "false";
+  if (typeof v === "object") return JSON.stringify(v, null, 2);
   return String(v);
 }
+
+const textareaClass = "min-h-48 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 font-mono text-xs";
 
 /** Editar o padrão da REDE (franqueadora): valor, faixa e trava. */
 export function EditarRede({ p }: { p: Parametro }) {
@@ -68,7 +71,7 @@ export function EditarRede({ p }: { p: Parametro }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 text-xs">Rede</Button>} />
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-mono text-base">{p.chave}</DialogTitle>
           <DialogDescription>
@@ -83,6 +86,8 @@ export function EditarRede({ p }: { p: Parametro }) {
                 <option value="true">Sim</option>
                 <option value="false">Não</option>
               </select>
+            ) : p.tipo === "object" ? (
+              <textarea id="valor-rede" value={valor} onChange={(e) => setValor(e.target.value)} className={textareaClass} />
             ) : (
               <Input id="valor-rede" value={valor} onChange={(e) => setValor(e.target.value)} />
             )}
@@ -145,15 +150,19 @@ export function EditarUnidade({ p, unidadeId, unidadeNome }: { p: Parametro; uni
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 text-xs">Unidade</Button>} />
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-mono text-base">{p.chave}</DialogTitle>
           <DialogDescription>
-            Valor só para {unidadeNome} ({faixa}). Padrão da rede: {mostrar(p.valorRede)}.
+            Valor só para {unidadeNome} ({faixa}). Padrão da rede: {p.tipo === "object" ? "a lista abaixo" : mostrar(p.valorRede)}.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <Input value={valor} onChange={(e) => setValor(e.target.value)} />
+          {p.tipo === "object" ? (
+            <textarea aria-label="Valor da unidade" value={valor} onChange={(e) => setValor(e.target.value)} className={textareaClass} />
+          ) : (
+            <Input value={valor} onChange={(e) => setValor(e.target.value)} />
+          )}
           <div className="flex justify-end">
             <Button onClick={salvar} disabled={gravando}>{gravando ? "Gravando…" : "Gravar"}</Button>
           </div>

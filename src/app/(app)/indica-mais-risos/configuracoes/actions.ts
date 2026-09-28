@@ -18,6 +18,15 @@ function paraJson(texto: string, tipoDoPadrao: string): unknown | undefined {
     return t !== "" && Number.isFinite(n) ? n : undefined;
   }
   if (tipoDoPadrao === "boolean") return t === "true" ? true : t === "false" ? false : undefined;
+  if (tipoDoPadrao === "object") {
+    // Listas (faixas das metas, modelos de campanha): JSON do mesmo formato.
+    try {
+      const v: unknown = JSON.parse(t);
+      return v !== null && typeof v === "object" ? v : undefined;
+    } catch {
+      return undefined;
+    }
+  }
   return t === "" ? undefined : t;
 }
 

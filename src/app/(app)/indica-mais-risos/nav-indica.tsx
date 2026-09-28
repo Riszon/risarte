@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 const ABAS = [
   { href: "/indica-mais-risos/indicacoes", rotulo: "Indicações" },
   { href: "/indica-mais-risos/embaixadores", rotulo: "Embaixadores" },
+  { href: "/indica-mais-risos/campanhas", rotulo: "Campanhas" },
+  { href: "/indica-mais-risos/equipe", rotulo: "Equipe" },
   { href: "/indica-mais-risos/resgates", rotulo: "Resgates" },
   { href: "/indica-mais-risos/mensagens", rotulo: "Mensagens" },
   { href: "/indica-mais-risos/catalogo", rotulo: "Catálogo" },

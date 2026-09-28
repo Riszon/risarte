@@ -399,8 +399,8 @@ async function main() {
   );
   ok(p3.riso_coins === 60 && Number(p3.regra_aplicada.multiplicador_nivel) === 1.2, "nível Ouro (1,2x): 50 → 60 pendentes, multiplicador registrado");
 
-  await sistema();
-  const camp = await um(
+  // Nasce ativa pelo bastidor (desde a 2007, só a porta muda a situação).
+  const [camp] = await bastidor(
     `insert into indica.campanhas (nome, escopo, inicio, fim, status, regras)
      values ('Riso Coins em Dobro (teste)', 'rede', now() - interval '1 day', now() + interval '30 days', 'ativa',
              '{"multiplicador": 2}') returning id`
@@ -414,6 +414,9 @@ async function main() {
     [ind4]
   );
   ok(p4.riso_coins === 100, "campanha 2x com nível 1,2x: usa o MAIOR (100), sem somar multiplicadores");
+  // Encerra: desde a 2007 a campanha ativa entra SOZINHA nas indicações
+  // seguintes, e as seções 6–15 provam as regras sem campanha.
+  await bastidor("update indica.campanhas set status = 'encerrada' where id = $1", [camp.id]);
 
   // =========================================================================
   console.log("\n6. Trava de atribuição");
@@ -939,6 +942,288 @@ async function main() {
   await q("select indica.rotina_diaria()");
   const lembrete2 = await um("select count(*)::int n from indica.mensagens where embaixador_id = $1 and evento = 'a_vencer'", [embV]);
   ok(lembrete2.n === 1, "o lembrete não se repete no mesmo mês");
+
+  // =========================================================================
+  const temCampanhas = (await um("select to_regprocedure('indica.mudar_campanha(uuid,text,text)') is not null as sim")).sim;
+  if (!temCampanhas) return;
+  console.log("\n16. Campanhas e metas da equipe (2007)");
+  // Embaixador próprio: nível Ouro (1,2x) fixado, sem herdar teto das seções anteriores.
+  await sistema();
+  const cliX = await novoCliente("Olga Campanha Teste", tel(30));
+  await como(recepcao.id);
+  const embX = (await um("select indica.criar_embaixador($1, '2026.1') as id", [cliX])).id;
+  await bastidor(
+    "update indica.embaixadores set nivel_id = (select id from indica.niveis where codigo = 'ouro') where id = $1",
+    [embX]
+  );
+  const campanhaDe = async (id) => (await um("select campanha_id from indica.indicacoes where id = $1", [id])).campanha_id;
+  const lancDe = (id, tipo) =>
+    um("select riso_coins, regra_aplicada from indica.pontos_lancamentos where indicacao_id = $1 and tipo = $2 order by id limit 1", [id, tipo]);
+  const novaCampanha = async (nome, regras, extra = {}) =>
+    (
+      await um(
+        `insert into indica.campanhas (nome, escopo, unidades, inicio, fim, regras, publico, especialidade, orcamento_max_centavos)
+         values ($1, 'unidades', array[$2::uuid], ${extra.inicio ?? "now() - interval '1 day'"}, ${extra.fim ?? "now() + interval '20 days'"},
+                 $3, $4, $5, $6) returning id`,
+        [nome, U, regras, extra.publico ?? {}, extra.especialidade ?? null, extra.orcamento ?? null]
+      )
+    ).id;
+  const publicar = (id) => um("select indica.mudar_campanha($1, 'publicar') as s", [id]);
+  const encerrar = (id) => q("select indica.mudar_campanha($1, 'encerrar', 'Fim do teste')", [id]);
+  const indicarX = async (nome, n, extra = {}) =>
+    (await registrar({ embaixador_id: embX, canal: "agendamento", indicado_nome: nome, indicado_telefone: tel(n), ...extra })).id;
+
+  // --- A: situação e "só amplia" ---------------------------------------------
+  await como(gerente.id);
+  const c16a = await novaCampanha("Traga sua Família (teste)", { multiplicador: 1.5 });
+  await falha(
+    `insert into indica.campanhas (nome, escopo, unidades, inicio, fim, status)
+     values ('Nasce ativa', 'unidades', array[$1::uuid], now(), now() + interval '1 day', 'ativa')`,
+    [U], "INDICA_FORA_DO_MOTOR", "campanha não nasce ativa: nasce rascunho");
+  await falha("update indica.campanhas set status = 'ativa' where id = $1", [c16a], "INDICA_FORA_DO_MOTOR",
+    "a situação da campanha não muda por update direto");
+  await como(recepcao.id);
+  await falha("select indica.mudar_campanha($1, 'publicar')", [c16a], "INDICA_SEM_PERMISSAO", "recepção não publica campanha");
+  await como(franqueado.id);
+  await falha("select indica.mudar_campanha($1, 'publicar')", [c16a], "INDICA_SEM_PERMISSAO", "gestor de outra unidade não publica");
+  await como(gerente.id);
+  ok((await publicar(c16a)).s === "ativa", "o gestor publica: começo no passado → ativa");
+  await falha(`update indica.campanhas set regras = '{"multiplicador": 1.2}' where id = $1`, [c16a], "INDICA_CAMPANHA_REDUZIDA",
+    "campanha ativa não reduz o multiplicador");
+  await falha(`update indica.campanhas set publico = '{"niveis": ["diamante"]}' where id = $1`, [c16a], "INDICA_CAMPANHA_REDUZIDA",
+    "campanha ativa não troca o público");
+  await q(`update indica.campanhas set regras = '{"multiplicador": 1.6}' where id = $1`, [c16a]);
+  ok((await um("select versao from indica.campanhas where id = $1", [c16a])).versao === 2, "ampliar é permitido e sobe a versão");
+  await falha("select indica.mudar_campanha($1, 'encerrar')", [c16a], "INDICA_MOTIVO_OBRIGATORIO", "encerrar exige motivo");
+
+  // --- B: a mais vantajosa, automática ---------------------------------------
+  // Termina DEPOIS da 1,6x: na fila (por fim) ela vem por último — só ganha se a conta de vantagem funcionar.
+  const c16b = await novaCampanha("Riso Coins em Dobro (teste)", { multiplicador: 2 }, { fim: "now() + interval '40 days'" });
+  await publicar(c16b);
+  await como(recepcao.id);
+  const i16b = await indicarX("Gil Automático", 31);
+  ok((await campanhaDe(i16b)) === c16b, "sem escolher, a indicação entra na campanha MAIS VANTAJOSA (2x, não 1,6x)");
+  const p16b = await lancDe(i16b, "pendente");
+  const base16 = Number(p16b.regra_aplicada.pontos.registro);
+  ok(p16b.riso_coins === base16 * 2 && p16b.regra_aplicada.campanha?.id === c16b,
+    `os pontos seguem a campanha congelada: ${base16} × 2, sem somar com o nível 1,2x (${p16b.riso_coins})`);
+
+  // --- C: público por nível -----------------------------------------------------
+  await como(gerente.id);
+  const c16c = await novaCampanha("Maratona Diamante (teste)", { multiplicador: 5 }, { publico: { niveis: ["diamante"] } });
+  await publicar(c16c);
+  await como(recepcao.id);
+  const i16c = await indicarX("Hugo Nível", 32);
+  ok((await campanhaDe(i16c)) === c16b, "campanha só para Diamante não alcança Embaixador Ouro");
+  await falha("select indica.registrar_indicacao($1)",
+    [{ unidade_id: U, embaixador_id: embX, canal: "agendamento", indicado_nome: "Ivo Forçado", indicado_telefone: tel(33), campanha_id: c16c }],
+    "INDICA_CAMPANHA_INVALIDA", "escolher à mão campanha fora do público é recusado");
+  await como(gerente.id);
+  await encerrar(c16c);
+
+  // --- D: público por empresa do Empresarial --------------------------------
+  await sistema();
+  const temEmpresarial = (await um("select to_regclass('empresarial.companies') is not null as sim")).sim;
+  const empresa = temEmpresarial ? (await um("select id from empresarial.companies limit 1"))?.id : null;
+  if (!empresa) {
+    console.log("  ⚠️ sem empresa do Empresarial no treino — segmento por empresa NÃO conferido");
+  } else {
+    await como(gerente.id);
+    const c16d = await novaCampanha("Empresa Parceira (teste)", { multiplicador: 4 }, { publico: { empresas: [empresa] } });
+    await publicar(c16d);
+    await como(recepcao.id);
+    const i16d1 = await indicarX("Júlia Sem Empresa", 34);
+    ok((await campanhaDe(i16d1)) !== c16d, "Embaixador sem vínculo com a empresa fica fora da campanha dela");
+    await sistema();
+    await q("update public.clients set empresarial_company_id = $1 where id = $2", [empresa, cliX]);
+    await como(recepcao.id);
+    const i16d2 = await indicarX("Kátia Com Empresa", 35);
+    ok((await campanhaDe(i16d2)) === c16d, "colaborador da empresa entra na campanha da empresa");
+    await sistema();
+    await q("update public.clients set empresarial_company_id = null where id = $1", [cliX]);
+    await como(gerente.id);
+    await encerrar(c16d);
+  }
+
+  // --- E: público por especialidade do tratamento do Embaixador --------------
+  await sistema();
+  const esp = await q(
+    `select distinct on (specialty) id, specialty from public.procedures
+      where nullif(btrim(specialty), '') is not null order by specialty, id limit 2`
+  );
+  if (esp.length < 2) throw new Error("o treino precisa de procedimentos com 2 especialidades");
+  const [S1, S2] = esp;
+  const itemNaVenda = async (negId, procId) => {
+    const opt = await um("select option_id from public.plan_negotiations where id = $1", [negId]);
+    const it = await um(
+      `insert into public.treatment_plan_option_items (option_id, clinic_id, description, procedure_id)
+       values ($1, $2, 'Item de teste', $3) returning id`,
+      [opt.option_id, U, procId]
+    );
+    await q("insert into public.plan_negotiation_items (negotiation_id, item_id, included) values ($1, $2, true)", [negId, it.id]);
+  };
+  await como(gerente.id);
+  const c16e = await novaCampanha("Quem trata " + S1.specialty + " (teste)", { multiplicador: 3 },
+    { publico: { especialidades: [S1.specialty] } });
+  await publicar(c16e);
+  await como(recepcao.id);
+  const i16e1 = await indicarX("Lia Antes", 36);
+  ok((await campanhaDe(i16e1)) !== c16e, "Embaixador sem tratamento da especialidade fica fora");
+  await sistema();
+  const vX = await venda(cliX, 500_000, false);
+  await itemNaVenda(vX.negId, S1.id);
+  await q("update public.commercial_sales set closed_at = now() where id = $1", [vX.vendaId]);
+  await como(recepcao.id);
+  const i16e2 = await indicarX("Mia Depois", 37);
+  ok((await campanhaDe(i16e2)) === c16e, `quem fechou tratamento de ${S1.specialty} entra na campanha da especialidade`);
+  await como(gerente.id);
+  await encerrar(c16e);
+
+  // --- F: especialidade-ALVO no fechamento + bônus por marco ----------------
+  const c16f = await novaCampanha("Alvo " + S2.specialty + " (teste)",
+    { multiplicador: 2.5, marcos: [{ conversoes: 1, bonus: 300 }] }, { especialidade: S2.specialty });
+  await publicar(c16f);
+  const converter = async (nome, n, procId) => {
+    await como(recepcao.id);
+    const id = await indicarX(nome, n);
+    await sistema();
+    const cli = await novoCliente(nome, tel(n));
+    const ag = await avaliacao(cli, false, "now() + interval '1 day'");
+    await q("update public.appointments set checked_in_at = now(), attendance = 'waiting' where id = $1", [ag]);
+    const v = await venda(cli, 400_000, false);
+    await itemNaVenda(v.negId, procId);
+    await q("update public.commercial_sales set closed_at = now() where id = $1", [v.vendaId]);
+    await q(
+      `insert into public.payment_installments (clinic_id, negotiation_id, seq, kind, due_date, amount_cents, status, paid_at)
+       values ($1, $2, 1, 'entrada', current_date, 100000, 'paga', now())`,
+      [U, v.negId]
+    );
+    return id;
+  };
+  const i16f = await converter("Nina Fora do Alvo", 38, S1.id);
+  ok((await campanhaDe(i16f)) === c16f, "campanha 2,5x com especialidade-alvo entra no registro");
+  ok((await um("select status from indica.indicacoes where id = $1", [i16f])).status === "convertida", "a indicação chegou a convertida");
+  const f16comp = await lancDe(i16f, "credito");
+  ok(f16comp.regra_aplicada.campanha?.id === c16f, "no comparecimento a campanha vale");
+  const f16fech = await lancDe(i16f, "carencia");
+  ok(f16fech.regra_aplicada.especialidade_fora_da_campanha === true && f16fech.regra_aplicada.campanha === null,
+    "venda SEM a especialidade-alvo: o fechamento pontua sem a campanha (e o motivo fica gravado)");
+  const i16g = await converter("Otto No Alvo", 39, S2.id);
+  const g16fech = await lancDe(i16g, "carencia");
+  ok(g16fech.regra_aplicada.especialidade_fora_da_campanha === false && g16fech.regra_aplicada.campanha?.id === c16f
+      && g16fech.riso_coins > f16fech.riso_coins,
+    `venda COM a especialidade-alvo: o fechamento leva a campanha (${g16fech.riso_coins} > ${f16fech.riso_coins})`);
+  const marcos = await q(
+    "select riso_coins from indica.pontos_lancamentos where embaixador_id = $1 and regra_aplicada ->> 'marco_campanha' = $2",
+    [embX, c16f]
+  );
+  ok(marcos.length === 1 && marcos[0].riso_coins === 300, "bônus de marco: +300 na 1ª conversão da campanha, uma vez só");
+  await como(gerente.id);
+  const consumo = (await um("select indica.campanha_consumo($1) as c", [c16f])).c;
+  ok(consumo.riso_coins >= 300 && consumo.custo_centavos === Math.round(consumo.riso_coins * 10),
+    `consumo da campanha em Riso Coins e em reais (${consumo.riso_coins} → ${consumo.custo_centavos} centavos)`);
+  await encerrar(c16f);
+
+  // --- G: rotina das campanhas: agendada → ativa, orçamento --------------------
+  const c16h = await novaCampanha("Inauguração (teste)", { multiplicador: 1.1 }, { inicio: "now() + interval '2 days'" });
+  ok((await publicar(c16h)).s === "agendada", "começo no futuro: publicar deixa AGENDADA");
+  await q("update indica.campanhas set inicio = now() - interval '1 hour' where id = $1", [c16h]);
+  await q("update indica.campanhas set orcamento_max_centavos = 100 where id = $1", [c16b]);
+  await como(recepcao.id);
+  await falha("select indica.rotina_campanhas()", [], "permission denied", "ninguém logado roda a rotina das campanhas");
+  await sistema();
+  const rc = (await um("select indica.rotina_campanhas() as r")).r;
+  const h = await um("select status from indica.campanhas where id = $1", [c16h]);
+  const b = await um("select alerta_orcamento_em, orcamento_esgotado_em from indica.campanhas where id = $1", [c16b]);
+  ok(h.status === "ativa" && rc.ativadas >= 1, "rotina: campanha agendada que começou vira ativa");
+  ok(b.alerta_orcamento_em && b.orcamento_esgotado_em && rc.orcamentos_esgotados >= 1, "rotina: orçamento passou de 80% → alerta; de 100% → esgotado");
+  await como(recepcao.id);
+  const i16h = await indicarX("Pedro Pós-Orçamento", 40);
+  ok((await campanhaDe(i16h)) === c16a, "campanha com orçamento esgotado sai da escolha automática (vai a 1,6x)");
+  await como(gerente.id);
+  await q("update indica.campanhas set orcamento_max_centavos = 100000000 where id = $1", [c16b]);
+  const b2 = await um("select alerta_orcamento_em, orcamento_esgotado_em from indica.campanhas where id = $1", [c16b]);
+  ok(b2.alerta_orcamento_em === null && b2.orcamento_esgotado_em === null,
+    "aumentar o orçamento reabre a campanha (a rotina confere de novo)");
+
+  // --- H: simulador --------------------------------------------------------------
+  await como(recepcao.id);
+  await falha("select indica.simular_campanha(array[$1::uuid], '{}', now(), now() + interval '30 days')", [U],
+    "INDICA_SEM_PERMISSAO", "recepção não usa o simulador");
+  await como(gerente.id);
+  const sim = (await um(
+    `select indica.simular_campanha(array[$1::uuid], '{"multiplicador": 2}', now(), now() + interval '30 days') as r`, [U])).r;
+  ok(sim.historico_indicacoes > 0 && sim.riso_coins_com_campanha >= sim.riso_coins_sem_campanha && sim.custo_extra_centavos >= 0,
+    `simulador usa o histórico da unidade (${sim.historico_indicacoes} indicações; +${sim.custo_extra_centavos} centavos)`);
+
+  // --- I: metas da equipe ----------------------------------------------------
+  await sistema();
+  const padrao = (await um("select indica.config_valor('metas_faixas_padrao') as v")).v;
+  ok(padrao.length === 4 && padrao[0].gatilho === 25 && padrao[3].gatilho === 55
+      && padrao[0].premios.recepcao_crc.valor_centavos === 50000 && padrao[2].premios.demais.valor_centavos === 30000,
+    "faixas padrão = modelo 2025 (25/40/50/55; R$ 500 recepção, voucher R$ 300 na Super Meta)");
+  const faixas = [{ nome: "Meta teste", gatilho: 1, premios: {
+    recepcao_crc: { tipo: "dinheiro", valor_centavos: 50000 }, demais: { tipo: "voucher", valor_centavos: 10000 } } }];
+  const novaMeta = async (inicio, fim, trava) => (await um(
+    `insert into indica.metas_equipe (unidade_id, periodo_tipo, periodo_inicio, periodo_fim, metrica, faixas, trava_qualidade_comparecimento, status)
+     values ($1, 'mes', ${inicio}, ${fim}, 'conversoes', $2, $3, 'ativa') returning id`, [U, JSON.stringify(faixas), trava])).id;
+  await como(recepcao.id);
+  await falha(`insert into indica.metas_equipe (unidade_id, periodo_tipo, periodo_inicio, periodo_fim, metrica)
+               values ($1, 'mes', current_date, current_date, 'conversoes')`, [U], "row-level security",
+    "recepção não cria meta");
+  await como(gerente.id);
+  const metaMes = await novaMeta("date_trunc('month', current_date)::date", "(date_trunc('month', current_date) + interval '1 month - 1 day')::date", null);
+  const apProv = (await um("select indica.apurar_meta($1, 'provisoria') as id", [metaMes])).id;
+  const ap1 = await um("select valor_apurado, faixa_atingida, status from indica.apuracoes where id = $1", [apProv]);
+  ok(Number(ap1.valor_apurado) >= 2 && ap1.faixa_atingida === "Meta teste", `apuração provisória conta as conversões do mês (${ap1.valor_apurado})`);
+  await falha("select indica.apurar_meta($1, 'final')", [metaMes], "INDICA_APURACAO_CEDO", "a final só sai depois do fim do período");
+
+  // Período passado: as duas conversões da seção F movidas para 5 dias atrás.
+  await bastidor(
+    "update indica.indicacoes set fechou_em = now() - interval '5 days', registrada_em = now() - interval '6 days' where id = any($1)",
+    [[i16f, i16g]]
+  );
+  await como(gerente.id);
+  const metaPassada = await novaMeta("current_date - 10", "current_date - 1", 50);
+  const apFinal = (await um("select indica.apurar_meta($1, 'final') as id", [metaPassada])).id;
+  const ap2 = await um("select * from indica.apuracoes where id = $1", [apFinal]);
+  ok(Number(ap2.valor_apurado) >= 2 && ap2.comparecimento_ok === true && ap2.faixa_atingida === "Meta teste"
+      && ap2.indicacoes_contadas.includes(i16f) && ap2.indicacoes_contadas.includes(i16g),
+    "apuração final: 2 conversões do período, comparecimento 100%, faixa atingida, indicações listadas");
+  await falha("select indica.apurar_meta($1, 'final')", [metaPassada], "apuracoes_final_uq", "só uma apuração final por meta");
+  await sistema();
+  await falha("update indica.apuracoes set valor_apurado = 99 where id = $1", [apFinal], "INDICA_FORA_DO_MOTOR",
+    "apuração não muda por update direto");
+  await como(recepcao.id);
+  await falha("select indica.aprovar_apuracao($1, true)", [apFinal], "INDICA_SEM_PERMISSAO", "recepção não aprova apuração");
+  await como(gerente.id);
+  await falha("select indica.aprovar_apuracao($1, false, '')", [apFinal], "INDICA_MOTIVO_OBRIGATORIO", "reprovar exige motivo");
+  await q("select indica.aprovar_apuracao($1, true)", [apFinal]);
+  const ap3 = await um("select status, premios, aprovado_por from indica.apuracoes where id = $1", [apFinal]);
+  const premioRecepcao = ap3.premios.find((p) => p.user_id === recepcao.id);
+  const premioGerente = ap3.premios.find((p) => p.user_id === gerente.id);
+  ok(ap3.status === "aprovada" && ap3.aprovado_por === gerente.id, "o gestor aprova a apuração final");
+  ok(premioRecepcao?.grupo === "recepcao_crc" && premioRecepcao.premio.valor_centavos === 50000
+      && premioGerente?.grupo === "demais" && premioGerente.premio.tipo === "voucher",
+    "a aprovação congela a lista para a folha: recepção R$ 500 em dinheiro, demais voucher");
+
+  // Trava de qualidade: uma indicação sem comparecimento no período → 66% < 70%.
+  await bastidor("update indica.indicacoes set registrada_em = now() - interval '6 days' where id = $1", [i16c]);
+  await como(gerente.id);
+  const metaTrava = await novaMeta("current_date - 10", "current_date - 1", 70);
+  const apT = (await um("select indica.apurar_meta($1, 'provisoria') as id", [metaTrava])).id;
+  const ap4 = await um("select faixa_atingida, comparecimento_ok, taxa_comparecimento from indica.apuracoes where id = $1", [apT]);
+  ok(ap4.comparecimento_ok === false && ap4.faixa_atingida === null,
+    `trava de qualidade: comparecimento ${ap4.taxa_comparecimento}% abaixo de 70% → faixa não paga`);
+
+  // --- J: ranking da equipe --------------------------------------------------
+  await como(recepcao.id);
+  const rk = await q("select * from indica.ranking_equipe($1, current_date - 30, current_date)", [U]);
+  const euRk = rk.find((r) => r.usuario_id === recepcao.id);
+  ok(euRk && euRk.registradas > 0 && euRk.conversoes_origem >= 2, `ranking individual da unidade (recepção: ${euRk?.registradas} registradas)`);
+  await como(franqueado.id);
+  await falha("select * from indica.ranking_equipe($1, current_date - 30, current_date)", [U], "INDICA_SEM_PERMISSAO",
+    "outra unidade não vê o ranking desta");
 }
 
 try {

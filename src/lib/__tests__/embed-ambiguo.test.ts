@@ -19,6 +19,8 @@ const AMBIGUOS: { origem: string; destino: string }[] = [
   // Indica +Risos (2000): origem, conversão e criado_por apontam para profiles.
   { origem: "indicacoes", destino: "profiles" },
   { origem: "v_indicacoes", destino: "profiles" },
+  // Indica +Risos (2007): apuração ganhou criado_por, além de aprovado_por.
+  { origem: "apuracoes", destino: "profiles" },
 ];
 
 function arquivos(dir: string): string[] {

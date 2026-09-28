@@ -37,7 +37,8 @@ const GRUPOS: Record<string, string> = {
   indicado: "Benefício do indicado",
   resgate: "Resgate",
   niveis: "Níveis",
-  equipe: "Equipe",
+  equipe: "Equipe (metas)",
+  campanhas: "Campanhas",
   regulamento: "Regulamento",
   portal: "Portal do Embaixador",
   lgpd: "LGPD",
@@ -48,6 +49,8 @@ const GRUPOS: Record<string, string> = {
 function exibir(v: unknown): string {
   if (typeof v === "boolean") return v ? "Sim" : "Não";
   if (v === undefined || v === null) return "—";
+  if (Array.isArray(v)) return `lista com ${v.length} ${v.length === 1 ? "item" : "itens"}`;
+  if (typeof v === "object") return "estrutura (abra para ver)";
   return String(v);
 }
 
