@@ -1340,9 +1340,18 @@ tratamento"** (a venda fechou) e **"Agendar apresentação comercial"**.
 **Tarefa 3 — Receber o paciente no dia**
 
 1. Menu **Atendimento**.
-2. Botão **Registrar chegada** → confira profissional, horário e sala com o
+2. **Confirmar a presença** (quando o paciente confirma por telefone ou
+   mensagem): no cartão **A chegar**, botão **Confirmar**. O cartão ganha o
+   selo verde **Confirmado** e o botão some — é a mesma situação "Confirmado"
+   da agenda. (Relato OC-00076.)
+3. Botão **Registrar chegada** → confira profissional, horário e sala com o
    paciente na frente → **Confirmar chegada**.
-3. **Quem chama é o profissional**, não a recepção.
+4. **Quem chama é o profissional**, não a recepção.
+
+> **O Atendimento mostra os atendimentos de HOJE** (e as pendências de dias
+> anteriores). A confirmação feita na véspera continua pela **Agenda**: clique
+> no agendamento → **Confirmado**. Não confunda **Confirmar** (o paciente disse
+> que vem) com **Confirmar chegada** (o paciente está na sua frente).
 
 **Tarefa 4 — Atender o pedido do Comercial**
 
@@ -1353,8 +1362,8 @@ aviso, abra a ficha e agende — o Comercial vê a nova data no cartão dele
 automaticamente, e não precisa ser avisado de volta.
 
 **Erros frequentes:** tentar cadastrar sem CPF; agendar fora do horário da
-unidade; fechar o aviso modal de "agendar apresentação" clicando em *"Já
-agendei"* sem ter agendado — isso afirma um fato que não aconteceu.
+unidade; fechar o aviso de "agendar apresentação" achando que ele some — ele
+só sai quando a apresentação é agendada (Fechar adia 15 minutos).
 
 **Como confirmar que deu certo:** o paciente aparece na lista de Prontuários com
 a fase correta, e o horário aparece na Agenda.

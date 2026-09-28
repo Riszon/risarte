@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.299.0",
+    data: "2026-09-27",
+    migracao: null,
+    titulo: "Confirmar a presença do paciente direto no Atendimento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No Atendimento, o cartão \"A chegar\" ganhou o botão Confirmar: quando o paciente confirma que vem, um clique registra — sem ir à agenda. Quem já confirmou aparece com o selo verde \"Confirmado\".",
+        papeis: ["receptionist"],
+        manual: "Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.298.1",
     data: "2026-09-27",
     migracao: null,

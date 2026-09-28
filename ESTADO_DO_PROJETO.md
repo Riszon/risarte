@@ -1,7 +1,12 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/09/2026 · Versão do sistema: **0.298.0** · Última migração: **0284** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/09/2026 · Versão do sistema: **0.299.0** · Última migração: **0284** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ✅ 0.299.0 — CONFIRMAR A PRESENÇA NO ATENDIMENTO (OC-00076)
+>
+> Cartão "A chegar" com o botão **Confirmar** (paciente ainda agendado) e o
+> selo verde **Confirmado** — a mesma ação e permissão da agenda. Sem migração.
+>
 > ## 🔔 0.298.0 / 0284 — INÍCIO CANCELADO OU FALTA: O AVISO VOLTA (AP20)
 >
 > Gatilho em `appointments`: início vivo que vira cancelado/falta, com o

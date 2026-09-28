@@ -541,6 +541,16 @@ export function AttendancePanel({
                 Pendente desde {pendingSince}
               </Badge>
             )}
+            {/* OC-00076: a recepção vê de relance quem já confirmou — a mesma
+                situação "Confirmado" da agenda, na mesma cor. */}
+            {a.status === "confirmed" && (
+              <Badge
+                variant="outline"
+                className="border-emerald-300 bg-emerald-50 text-[10px] text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300"
+              >
+                Confirmado
+              </Badge>
+            )}
           </div>
           {a.clinicName && (
             <p className="text-[11px] font-medium text-primary">
@@ -886,7 +896,7 @@ export function AttendancePanel({
                 accent={STAGE.arrive.row}
                 action={
                   canCheckIn ? (
-                    <span className="flex items-center gap-1">
+                    <span className="flex flex-wrap items-center gap-1">
                       <Button
                         size="sm"
                         disabled={isPending}
@@ -894,6 +904,25 @@ export function AttendancePanel({
                       >
                         Registrar chegada
                       </Button>
+                      {/* OC-00076 (dono, 27/09/2026): confirmar a presença
+                          daqui, sem ir à agenda. Mesma ação e mesma permissão
+                          dos botões de situação da agenda. Confirmado, o botão
+                          some e fica o selo verde. */}
+                      {a.status === "scheduled" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isPending}
+                          onClick={() =>
+                            run(
+                              () => updateAppointmentStatus(a.id, "confirmed"),
+                              `${a.clientName}: presença confirmada.`
+                            )
+                          }
+                        >
+                          Confirmar
+                        </Button>
+                      )}
                       {/* H3.4: o cliente não veio / cancelou em cima da hora. */}
                       <DropdownMenu>
                         <DropdownMenuTrigger
