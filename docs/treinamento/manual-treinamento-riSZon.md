@@ -1318,6 +1318,17 @@ tratamento"** (a venda fechou) e **"Agendar apresentação comercial"**.
    ficha).
 4. **Fechar** (ou o **X**) só **adia**: o aviso volta em **15 minutos**, até o
    agendamento existir. Aviso de um cliente novo abre na hora.
+5. **Cada cliente aparece uma vez só**, mesmo que tenha recebido dois pedidos
+   (por exemplo, "Agendar apresentação" e depois "URGENTE"). Ao agendar, todos
+   os pedidos daquele cliente saem juntos.
+
+> **Início cancelado ou falta: o aviso volta.** Se o início do tratamento for
+> **cancelado**, ou o paciente **faltar**, e ele não tiver outro início
+> agendado, o aviso "Fechamento! Iniciar tratamento" volta para a recepção,
+> com o motivo embaixo do nome (*"O paciente faltou ao início agendado."*).
+> Remarcar a data não traz o aviso — o início continua agendado. A
+> **apresentação comercial** cancelada não volta sozinha: quem decide tentar de
+> novo é o Comercial, pelo botão **Pedir novo agendamento**.
 
 > **Por que não existe mais "Já agendei" nem "Marcar todos como agendados"**
 > (relato OC-00080, 27/09/2026): os dois apagavam o aviso sem ninguém conferir

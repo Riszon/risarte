@@ -1,7 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/09/2026 · Versão do sistema: **0.297.0** · Última migração: **0283** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/09/2026 · Versão do sistema: **0.298.0** · Última migração: **0284** (aplicada no treino; produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔔 0.298.0 / 0284 — INÍCIO CANCELADO OU FALTA: O AVISO VOLTA (AP20)
+>
+> Gatilho em `appointments`: início vivo que vira cancelado/falta, com o
+> paciente ainda aguardando e sem outro início, recria o aviso para a recepção
+> com o motivo (sem duplicar). Apresentação segue com o Comercial. A janela
+> mostra uma linha por cliente (`umPorCliente`).
+>
 > ## 🔔 0.297.0 / 0283 — OS AVISOS DE AGENDAR SÓ SAEM QUANDO O AGENDAMENTO EXISTE (OC-00080)
 >
 > "Fechamento! Iniciar tratamento" e "Agendar apresentação comercial" tinham

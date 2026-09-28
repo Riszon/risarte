@@ -1945,7 +1945,7 @@ do funil.
   CANCELADO e dois registros de auditoria; a Bom Sabor voltou ao estado
   anterior (conferido).
 
-### AP20. Início ou apresentação CANCELADO depois não traz o aviso de volta (27/09/2026) — SUSPEITA
+### AP20. ✅ RESOLVIDO em 27/09/2026 (0284 / core 0.298.0) — início cancelado depois não trazia o aviso de volta
 
 **Achado fazendo o OC-00080 (0283).** O aviso "Fechamento! Iniciar
 tratamento" (e o de apresentação) sai quando o agendamento é criado. Se esse
@@ -1957,3 +1957,9 @@ aviso no cancelamento. **Rede que já existe:** o cliente continua na Fase 5
 fica vermelho na Jornada. **NÃO DECIDIDO:** se o cancelamento deve recriar o
 aviso para a recepção — é mudança de comportamento, precisa do dono.
 
+**✅ RESOLVIDO (0284, core 0.298.0), decisões do dono (27/09/2026):** início
+**cancelado ou falta** → o aviso volta para a recepção com o motivo, só se o
+paciente continua aguardando e sem outro início agendado (remarcar não
+dispara). **Apresentação fica com o Comercial** ("Pedir novo agendamento",
+0248). E, junto (item 10 da revisão): a janela mostra **uma linha por
+cliente**. Provado no treino (transação desfeita + tela); ver EV-130/131.

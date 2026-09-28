@@ -1,7 +1,7 @@
 "use client";
 
 import { PartyPopper } from "lucide-react";
-import { nomeDoAvisoDeFechamento } from "@/lib/avisos-de-agendar";
+import { motivoDoAvisoDeInicio, nomeDoAvisoDeFechamento } from "@/lib/avisos-de-agendar";
 import { AvisoDeAgendar } from "./aviso-de-agendar";
 
 /**
@@ -23,6 +23,11 @@ export function TreatmentStartPopup() {
       }
       quandoSai="quando o início do tratamento for agendado"
       nomeDoCliente={(i) => nomeDoAvisoDeFechamento(i.title, i.body)}
+      // AP20 (0284): o aviso que VOLTOU diz por quê — cancelado ou faltou.
+      detalhe={(i) => {
+        const m = motivoDoAvisoDeInicio(i.body);
+        return m ? m.charAt(0).toUpperCase() + m.slice(1) + "." : null;
+      }}
     />
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { ADIAMENTO_MS, clienteDoAviso } from "@/lib/avisos-de-agendar";
+import { ADIAMENTO_MS, clienteDoAviso, umPorCliente } from "@/lib/avisos-de-agendar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -65,6 +65,7 @@ export function AvisoDeAgendar({
   descricao,
   quandoSai,
   nomeDoCliente,
+  detalhe,
 }: {
   /** `ilike` do título dos avisos desta família. */
   padraoDoTitulo: string;
@@ -75,6 +76,8 @@ export function AvisoDeAgendar({
   /** A frase de quando o aviso sai — ex.: "quando o início for agendado". */
   quandoSai: string;
   nomeDoCliente: (item: Item) => string;
+  /** Uma linha a mais embaixo do nome (ex.: por que o aviso voltou). */
+  detalhe?: (item: Item) => string | null;
 }) {
   const [items, setItems] = useState<Item[]>([]);
   const [open, setOpen] = useState(false);
@@ -95,7 +98,8 @@ export function AvisoDeAgendar({
         .order("created_at", { ascending: false })
         .limit(50);
       if (cancelled) return;
-      const list = (data ?? []) as Item[];
+      // Uma linha por cliente (dono, 27/09/2026): fica o aviso mais recente.
+      const list = umPorCliente((data ?? []) as Item[]);
       setItems(list);
       if (list.length === 0) {
         setOpen(false);
@@ -143,6 +147,9 @@ export function AvisoDeAgendar({
             return (
               <li key={i.id} className="rounded-md border p-2 text-sm">
                 <p className="font-medium">{nomeDoCliente(i)}</p>
+                {detalhe?.(i) && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400">{detalhe(i)}</p>
+                )}
                 {cliente && (
                   <div className="mt-1.5">
                     {/* Abrir NÃO resolve: só adia, para a agenda ficar à vista.

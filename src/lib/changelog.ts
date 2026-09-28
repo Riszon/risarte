@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.298.0",
+    data: "2026-09-27",
+    migracao: "0284",
+    titulo: "Início cancelado ou falta: o aviso de agendar volta para a recepção",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Se o início do tratamento for cancelado ou o paciente faltar, e ele não tiver outro início agendado, o aviso \"Fechamento! Iniciar tratamento\" volta para a recepção, dizendo o motivo. Remarcar a data não traz o aviso.",
+        papeis: ["receptionist"],
+        manual: "Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Nos avisos de agendar, cada cliente aparece uma vez só, mesmo quando recebeu dois pedidos.",
+        papeis: ["receptionist"],
+        manual: "Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.297.0",
     data: "2026-09-27",
     migracao: "0283",

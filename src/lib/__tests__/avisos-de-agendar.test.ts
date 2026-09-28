@@ -6,6 +6,8 @@ import {
   clienteDoAviso,
   nomeDoAvisoDeApresentacao,
   nomeDoAvisoDeFechamento,
+  umPorCliente,
+  motivoDoAvisoDeInicio,
 } from "@/lib/avisos-de-agendar";
 
 const ID = "49083081-3dee-433e-9da5-476727cf9959";
@@ -71,5 +73,26 @@ describe("a tela do aviso não marca nada como lido (OC-00080)", () => {
   it("o botão continua se chamando Fechar (a suíte E2E fecha por ele)", () => {
     const t = readFileSync(join(process.cwd(), TELAS[0]), "utf8");
     expect(t).toMatch(/>\s*Fechar\s*</);
+  });
+});
+
+describe("uma linha por cliente e o motivo do aviso que voltou", () => {
+  const OUTRO = "11111111-2222-4333-8444-555555555555";
+  it("junta os avisos do mesmo cliente, ficando o mais recente", () => {
+    const lista = [
+      { id: "novo", link: `/prontuarios/${ID}` },
+      { id: "velho", link: `/agenda?cliente=${ID}` },
+      { id: "outro", link: `/agenda?cliente=${OUTRO}` },
+      { id: "sem-link-1", link: null },
+      { id: "sem-link-2", link: null },
+    ];
+    expect(umPorCliente(lista).map((i) => i.id)).toEqual(["novo", "outro", "sem-link-1", "sem-link-2"]);
+  });
+
+  it("lê o motivo do aviso de início que voltou (0284)", () => {
+    expect(motivoDoAvisoDeInicio("Ana Lima — o paciente faltou ao início agendado. Agende de novo.")).toBe(
+      "o paciente faltou ao início agendado"
+    );
+    expect(motivoDoAvisoDeInicio("Ana Lima fechou o plano. Fale com o cliente…")).toBeNull();
   });
 });
