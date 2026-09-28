@@ -209,9 +209,18 @@ async function pickPersonas() {
     }
     // AP6: prefere quem tem o sistema real ABERTO. Só sobra o modo portal? O
     // perfil entra marcado e o relatório diz que não foi conferido.
+    //
+    // ⚠️ CONTA DE TESTE ANTES DE PESSOA REAL (27/09/2026). A primeira versão
+    // desta escolha pegou uma recepcionista REAL do treino (a única com a porta
+    // aberta) — e a varredura deixou 2 registros de auditoria no nome dela.
+    // Onde existe conta de teste (`@example.com`) para o papel, a varredura usa
+    // SÓ ela, aberta ou em portal; pessoa real só quando não há conta de teste
+    // nenhuma (a produção, como sempre foi).
     const portal = (p) =>
       emModoPortal({ isAdminMaster: false, portaDoSistema: portaDe.get(p.id) });
-    const found = candidatos.find((p) => !portal(p)) ?? candidatos[0];
+    const deTeste = candidatos.filter((p) => /@example\.com$/i.test(p.email ?? ""));
+    const escolhiveis = deTeste.length > 0 ? deTeste : candidatos;
+    const found = escolhiveis.find((p) => !portal(p)) ?? escolhiveis[0];
     personas.push({
       label: ROLE_LABELS[role],
       email: found.email,

@@ -1983,3 +1983,13 @@ cliente**. Provado no treino (transação desfeita + tela); ver EV-130/131.
 - **AP10:** fechado pela prática já adotada — toda migração roda no treino
   (`npm run migrar:teste`) antes de ir ao dono; escrito no
   ARQUITETURA-TECNICA e no CLAUDE.md §2.
+
+⚠️ **Erro meu na primeira versão do conserto do AP6 (27/09/2026, mesmo dia):**
+a escolha "prefere quem tem o sistema aberto" pegou uma **recepcionista REAL**
+do treino — a única com a porta aberta. A varredura só faz GET, mas duas telas
+gravam auditoria ao abrir: ficaram **2 registros "view"** no nome dela
+(`direct_sale_page`, `ppr_dashboard`), às 22:37–22:38. **Não apagados** —
+auditoria não se apaga sem o dono pedir. Corrigido na hora: onde existe conta
+de teste (`@example.com`) para o papel, a varredura usa SÓ ela; pessoa real
+só onde não há conta de teste (a produção, como sempre foi).
+
