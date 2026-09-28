@@ -1178,7 +1178,7 @@ Duas lições que isso acrescentou ao conserto:
   marcado como ambiente, e o resultado final avisa quantos perfis **não foram
   conferidos** — a mesma regra do "invariante sem dado" da camada 1.
 
-### AP6. Três perfis barrados de telas que a regra escrita manda abrir
+### AP6. ✅ RESOLVIDO em 27/09/2026 — três perfis "barrados": a varredura media o MODO PORTAL
 *(encontrado em 25/09/2026, pela varredura JÁ CONSERTADA — é o primeiro achado
 que ela entrega depois de parar de acusar tela boa.)*
 
@@ -1263,7 +1263,7 @@ geral; ver *Inventário do apagamento*, no topo deste arquivo).
 
 ---
 
-### AP8. Dois arquivos de TESTE não passam na conferência de tipos (25/09/2026)
+### AP8. ✅ RESOLVIDO em 27/09/2026 — dois arquivos de TESTE não passavam na conferência de tipos
 
 **Confirmado, medindo:** `npx tsc --noEmit` acusa 8 erros, todos dentro de
 `src/lib/__tests__/briefing.test.ts` e `src/lib/__tests__/screens.test.ts` —
@@ -1316,7 +1316,7 @@ num `if` se comporta como falso. Guarda de segurança escrita assim falha
 
 ---
 
-### AP10. `check-migrations` não pegou um erro que o Postgres pega (26/09/2026)
+### AP10. ✅ RESOLVIDO em 27/09/2026 — `check-migrations` não pegou um erro que o Postgres pega
 
 A 0273 foi aprovada pelo `check-migrations.mjs` e **quebrou no banco**:
 `operator does not exist: user_role = user_role[]` — um `= any((select ...))`
@@ -1963,3 +1963,23 @@ paciente continua aguardando e sem outro início agendado (remarcar não
 dispara). **Apresentação fica com o Comercial** ("Pedir novo agendamento",
 0248). E, junto (item 10 da revisão): a janela mostra **uma linha por
 cliente**. Provado no treino (transação desfeita + tela); ver EV-130/131.
+
+### ✅ AP6, AP8 e AP10 — RESOLVIDOS em 27/09/2026 (core 0.298.1, sem migração)
+
+- **AP6 — era a TERCEIRA hipótese, e maior do que parecia.** Os usuários da
+  varredura no treino estão em **modo portal** (porta "sistema" fechada). Não
+  eram só os 3 que falhavam: **recepção e consultor** também — o "OK" deles
+  era aprovação por ausência (nenhuma regra escrita manda eles abrirem algo).
+  Na prática a varredura media só o Admin e o Dentista. Conserto: a varredura
+  escolhe um usuário com o sistema aberto; só havendo portal, o perfil sai
+  como "NÃO conferido — modo portal" (`emModoPortal`, com teste). A guarda do
+  DRE e da mesa de compras NÃO foi tocada: nada indica defeito nelas.
+  **Para medir de verdade esses 5 papéis no treino**, os usuários de teste
+  precisam da porta aberta — decisão do dono (é dado do treino).
+- **AP8:** os 8 erros corrigidos (`classify` ganhou o tipo do parâmetro; o
+  relato de teste, o campo `ambiente`; a regra do login, `?.` para REPROVAR
+  se sumir). E virou portão: `npm run tipos`, dentro do `verificar` e na CI —
+  provado reprovando com um erro plantado.
+- **AP10:** fechado pela prática já adotada — toda migração roda no treino
+  (`npm run migrar:teste`) antes de ir ao dono; escrito no
+  ARQUITETURA-TECNICA e no CLAUDE.md §2.

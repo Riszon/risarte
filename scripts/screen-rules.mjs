@@ -96,6 +96,9 @@ export const ERROR_MARKERS = [
  * como a outra forma da mesma coisa. Quem separa um caso do outro é o papel de
  * quem pediu: para o Admin Master, que enxerga tudo, 404 só pode ser defeito.
  */
+/**
+ * @param {{ status: number, location?: string | null, body?: string }} resposta
+ */
 export function classify({ status, location = null, body = "" }) {
   if (status >= 300 && status < 400) {
     const to = String(location ?? "").replace(/^https?:\/\/[^/]+/, "");
@@ -209,6 +212,29 @@ export const PERMISSION_RULES = [
  * corretamente protegidas de "abriram para quem não devia". Régua que erra é
  * pior que régua que não existe: ela manda consertar o que está certo.
  */
+/**
+ * ⚠️ MODO PORTAL — o perfil que NÃO dá para medir (AP6, 27/09/2026).
+ *
+ * Quem está em modo portal só abre o Início e o Perfil: toda tela o manda de
+ * volta para a raiz. A varredura conferia esses perfis e dava dois resultados
+ * falsos: FALHA onde a regra escrita manda abrir (gerente, financeiro,
+ * comprador) e OK por ausência onde não há regra (recepção, consultor). Os
+ * dois mediam a PORTA, não a tela.
+ *
+ * Espelha `ambientePermitido(…, "sistema")` (src/lib/ambientes.ts): Admin
+ * Master nunca se tranca para fora; sem porta registrada, o sistema real
+ * nasce FECHADO (0259). `portaDoSistema` = o `allowed` gravado em
+ * `user_environments` para "sistema", ou `undefined` quando não há linha.
+ *
+ * LIMITE DECLARADO: na produção a tranca por unidade (0276) também pode fechar
+ * o sistema para alguém com a porta aberta, e ela só responde à própria pessoa
+ * ou ao Admin — a varredura não consegue perguntar de fora.
+ */
+export function emModoPortal({ isAdminMaster, portaDoSistema }) {
+  if (isAdminMaster) return false;
+  return portaDoSistema !== true;
+}
+
 export function isBlocked(verdict) {
   return verdict === "bloqueado" || verdict === "redirecionou";
 }

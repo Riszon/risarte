@@ -38,5 +38,25 @@ if (r.status !== 0) {
     "\nA montagem FALHOU. Este é o mesmo erro que a Vercel daria — corrija" +
       " antes de publicar."
   );
+  process.exit(r.status ?? 1);
 }
-process.exit(r.status ?? 1);
+
+// ⚠️ OS TIPOS DO PROJETO INTEIRO, TESTES INCLUSIVE (AP8, 27/09/2026).
+//
+// O build do Next NÃO confere os arquivos de teste, e o Vitest NÃO confere
+// tipos — ele executa. Os dois portões passavam com 8 erros de tipo em dois
+// testes, e ninguém via: o tipo é a régua que diz se o teste monta o objeto
+// igual ao sistema, e régua que ninguém lê envelhece em silêncio.
+const tipos = spawnSync("npx", ["tsc", "--noEmit", "-p", "."], {
+  stdio: "inherit",
+  shell: true,
+});
+if (tipos.status !== 0) {
+  console.error(
+    "\nOs TIPOS falharam (inclui os arquivos de teste, que o build não olha)." +
+      " Corrija antes de publicar."
+  );
+  process.exit(tipos.status ?? 1);
+}
+console.log("\nTipos conferidos (projeto inteiro, testes inclusive).");
+process.exit(0);

@@ -6,6 +6,7 @@ import {
   PERMISSION_RULES,
   ROUTE_FIXTURES,
   classify,
+  emModoPortal,
   fillRoute,
   judge,
   routeFromFile,
@@ -231,7 +232,8 @@ describe("falha, acerto ou observação", () => {
     const regra = PERMISSION_RULES.find(
       (r: { route: string }) => r.route === "/login"
     );
-    expect(regra.role).toBe("*");
+    // Sumir a regra tem de REPROVAR aqui, não passar por tipo.
+    expect(regra?.role).toBe("*");
     for (const role of [null, "dentist", "purchaser"]) {
       expect(
         judge({ verdict: "bloqueado", route: "/login", role, isAdminMaster: role === null })
@@ -278,5 +280,23 @@ describe("a acusação diz o que foi VISTO (AP5)", () => {
     expect(daRaiz.note).toContain("mandou de volta para a raiz");
     // ⚠️ O defeito em uma linha: a frase da raiz NÃO pode dizer 404.
     expect(daRaiz.note).not.toContain("404");
+  });
+});
+
+// ⚠️ AP6 (27/09/2026): perfil em modo portal mede a PORTA, não a tela. A
+// varredura acusava FALHA (gerente, financeiro, comprador) e dava OK por
+// ausência (recepção, consultor) — os dois falsos. A regra espelha
+// `ambientePermitido(…, "sistema")`.
+describe("modo portal: o perfil que não dá para medir (AP6)", () => {
+  it("sem porta registrada, o sistema real nasce FECHADO (0259)", () => {
+    expect(emModoPortal({ isAdminMaster: false, portaDoSistema: undefined })).toBe(true);
+  });
+  it("porta fechada é portal; porta aberta não é", () => {
+    expect(emModoPortal({ isAdminMaster: false, portaDoSistema: false })).toBe(true);
+    expect(emModoPortal({ isAdminMaster: false, portaDoSistema: true })).toBe(false);
+  });
+  it("o Admin Master nunca se tranca para fora", () => {
+    expect(emModoPortal({ isAdminMaster: true, portaDoSistema: false })).toBe(false);
+    expect(emModoPortal({ isAdminMaster: true, portaDoSistema: undefined })).toBe(false);
   });
 });

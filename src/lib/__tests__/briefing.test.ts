@@ -35,6 +35,7 @@ const RELATO: Relato = {
   respostaLida: false,
   respostas: 0,
   ultimaFalaDoRelator: false,
+  ambiente: "sistema",
 };
 
 describe("briefing de um relato", () => {

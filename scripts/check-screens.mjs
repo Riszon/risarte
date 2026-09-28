@@ -33,6 +33,7 @@ import { join, relative } from "node:path";
 import {
   ROUTE_FIXTURES,
   classify,
+  emModoPortal,
   fillRoute,
   isBlocked,
   judge,
@@ -143,12 +144,17 @@ const TARGET_ROLES = Object.keys(ROLE_LABELS);
  * como gerente, e a varredura concluiria que a recepção enxerga contas a pagar.
  */
 async function pickPersonas() {
-  const [{ data: profiles }, { data: roles }, { data: clinics }] =
+  const [{ data: profiles }, { data: roles }, { data: clinics }, portas] =
     await Promise.all([
       admin.from("profiles").select("id, email, is_admin_master, is_active"),
       admin.from("user_clinic_roles").select("user_id, clinic_id, role"),
       admin.from("clinics").select("id, name, type, is_active"),
+      admin.from("user_environments").select("user_id, allowed").eq("environment", "sistema"),
     ]);
+  // Sem conseguir ler as portas, não dá para separar quem está em modo portal:
+  // a varredura para em vez de voltar a acusar a porta como se fosse a tela.
+  if (portas.error) throw new Error(`não consegui ler as portas do sistema: ${portas.error.message}`);
+  const portaDe = new Map((portas.data ?? []).map((p) => [p.user_id, p.allowed]));
 
   const byUser = new Map();
   for (const r of roles ?? []) {
@@ -190,23 +196,29 @@ async function pickPersonas() {
   }
 
   for (const role of TARGET_ROLES) {
-    const found = (profiles ?? []).find((p) => {
+    const candidatos = (profiles ?? []).filter((p) => {
       if (!p.is_active || p.is_admin_master) return false;
       const mine = byUser.get(p.id) ?? [];
       return (
         mine.length > 0 && mine.every((r) => r.role === role)
       );
     });
-    if (!found) {
+    if (candidatos.length === 0) {
       missing.push(ROLE_LABELS[role]);
       continue;
     }
+    // AP6: prefere quem tem o sistema real ABERTO. Só sobra o modo portal? O
+    // perfil entra marcado e o relatório diz que não foi conferido.
+    const portal = (p) =>
+      emModoPortal({ isAdminMaster: false, portaDoSistema: portaDe.get(p.id) });
+    const found = candidatos.find((p) => !portal(p)) ?? candidatos[0];
     personas.push({
       label: ROLE_LABELS[role],
       email: found.email,
       role,
       isAdminMaster: false,
       clinicId: (byUser.get(found.id) ?? [])[0]?.clinic_id ?? null,
+      portal: portal(found),
     });
   }
 
@@ -414,7 +426,18 @@ async function main() {
   // são aprovação: varredura que passou por ausência não é varredura.
   let naoConferidos = 0;
   const lentas = [];
+  let emPortal = 0;
   for (const persona of personas) {
+    // AP6: modo portal mede a PORTA, não a tela — não é falha nem aprovação.
+    if (persona.portal) {
+      console.log(
+        `  ⚠️ PORTAL  ${persona.label}: NÃO conferido — todo usuário deste papel ` +
+          `está em modo portal (sistema real fechado), e aí só o Início abre.`
+      );
+      emPortal++;
+      naoConferidos++;
+      continue;
+    }
     const started = Date.now();
     const line = (text) =>
       process.stdout.write("\r" + text.padEnd(72).slice(0, 72));
@@ -539,9 +562,12 @@ async function main() {
   }
 
   // ---- relatório -----------------------------------------------------------
+  // Só conta o que foi ABERTO: perfil não conferido (portal, rede) não entra
+  // no volume — contá-lo inflaria o número com medição que não aconteceu.
+  const medidos = personas.length - naoConferidos;
   console.log(
-    `\nVolume conferido: ${targets.length} telas × ${personas.length} perfis = ` +
-      `${targets.length * personas.length} aberturas.`
+    `\nVolume conferido: ${targets.length} telas × ${medidos} perfis = ` +
+      `${targets.length * medidos} aberturas.`
   );
   console.log(
     falhas === 0
@@ -555,8 +581,9 @@ async function main() {
   // aviso de "invariante sem dado".
   if (naoConferidos > 0) {
     console.log(
-      `⚠️ ${naoConferidos} perfil(is) NÃO foram conferidos (rede ou banco). ` +
-        `O resultado acima cobre só os demais.`
+      `⚠️ ${naoConferidos} perfil(is) NÃO foram conferidos` +
+        (emPortal > 0 ? ` (${emPortal} em modo portal; os demais, rede ou banco)` : ` (rede ou banco)`) +
+        `. O resultado acima cobre só os demais.`
     );
   }
 

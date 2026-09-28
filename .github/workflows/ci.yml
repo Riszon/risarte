@@ -35,3 +35,7 @@ jobs:
 
       - name: Build (compila + checa tipos)
         run: npm run build
+
+      # AP8: o build não confere os TESTES e o Vitest não confere tipos.
+      - name: Tipos do projeto inteiro (testes inclusive)
+        run: npm run tipos

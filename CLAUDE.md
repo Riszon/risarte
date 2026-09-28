@@ -805,6 +805,11 @@ npm run verificar
 # NÃO enxerga SQL — 0232 e 0233 chegaram ao dono com erro que só o Postgres
 # acusa, e cada uma custou uma ida e volta.
 node scripts/check-migrations.mjs 0233
+# E RODAR NO TREINO antes de mandar ao dono (AP10): o script lê texto; o
+# Postgres pega o resto. Prova de dado = transação desfeita.
+npm run migrar:teste
+# Tipos do projeto INTEIRO, testes inclusive (AP8) — já roda dentro do verificar.
+npm run tipos
 npm run test    # testes unitários (Vitest) das regras de negócio em src/lib. Rodar antes de cada commit.
 npm run lint    # eslint — baseline ZERO desde 04/09/2026 (os 3 antigos saíram). Qualquer problema é novo.
 ```

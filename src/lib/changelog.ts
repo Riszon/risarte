@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.298.1",
+    data: "2026-09-27",
+    migracao: null,
+    titulo: "Conferências automáticas mais honestas",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "As conferências feitas antes de cada atualização ficaram mais rigorosas: a varredura das telas deixou de dar falha (ou aprovação) para perfis que ainda estão com o sistema real fechado, e a conferência de tipos passou a olhar também os testes. Nada muda nas telas.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.298.0",
     data: "2026-09-27",
     migracao: "0284",

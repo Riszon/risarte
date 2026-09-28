@@ -148,6 +148,27 @@ causas, e as duas estão cobertas por teste manual documentado no commit:
 O script **cala quando não tem certeza** (union, subconsulta na lista de
 seleção): checagem que erra é pior que checagem que não existe.
 
+### E depois: rodar no banco de TREINO antes de mandar ao dono (AP10)
+
+```bash
+npm run migrar:teste   # aplica só as que faltam, cada uma numa transação
+```
+
+O script lê TEXTO e não tem o catálogo de tipos: a 0273 passou por ele e
+quebrou no banco (`operator does not exist: user_role = user_role[]`).
+Ensinar o script a pegar cada classe de erro do Postgres não tem fim; o
+próprio Postgres pega todas. **Toda migração roda no treino ANTES de ir para o
+dono** — foi assim desde a 1024 (1025, 0283, 0284), e nenhuma voltou. Se a
+migração mexe em dado, a prova vai numa transação desfeita (`begin` …
+`rollback`), que não deixa rastro no treino.
+
+## Portão de tipos: o projeto INTEIRO, testes inclusive (AP8)
+
+`npm run verificar` monta do zero **e** roda `npm run tipos`
+(`tsc --noEmit`). O build do Next não confere os arquivos de teste, e o
+Vitest executa sem conferir tipos — os dois passaram por semanas com 8 erros
+em dois testes. A CI roda o mesmo passo.
+
 ## Conferência dos DADOS (camada 1 dos testes)
 
 ```bash
@@ -216,6 +237,15 @@ Foi assim em 08/09/2026: a barra de cima (servidor) passava o **componente** do
 primeira tela. **Regra: entrega que mexe no layout, no proxy ou em qualquer
 coisa montada em toda tela passa por `npm run check:telas` antes de ir ao ar** —
 o build atesta que o código compila, não que o sistema abre.
+
+**MODO PORTAL NÃO SE MEDE (AP6, 27/09/2026).** Perfil cujo usuário está em
+modo portal (sistema real fechado) só abre o Início: a varredura acusava
+FALHA onde a regra manda abrir e dava OK por ausência onde não há regra — os
+dois mediam a porta, não a tela. Hoje ela escolhe, para cada papel, um
+usuário com o sistema aberto; se só houver portal, o perfil sai como
+**"⚠️ PORTAL — NÃO conferido"** (`emModoPortal`, espelho de
+`ambientePermitido`). Limite: na produção a tranca por unidade (0276) também
+fecha, e ela não responde de fora.
 
 **404 aqui quase nunca é rota faltando** — as telas usam `notFound()` como
 resposta de "você não pode ver isto". Quem separa defeito de permissão é o papel
