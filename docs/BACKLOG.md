@@ -2040,3 +2040,23 @@ migrações numa transação desfeita.
 **Correção proposta:** aceitar qualquer schema em `FN` (`(\w+)\.(\w+)`) e usar
 `schema.nome` como chave do mapa `known`; provar quebrando de propósito com uma
 função `indica.` de retorno trocado.
+### AP22. ⚠️ Aviso de hidratação intermitente no navegador (28/09/2026) — SUSPEITA, NÃO REPRODUZIDA
+
+Achado durante a conferência de tela da IND2 do Indica +Risos (servidor de
+teste 3100, banco de treino, `next dev`).
+
+**Confirmado:** numa rodada do roteiro (admin navegando Embaixadores → ficha →
+Resgates → Catálogo, e por fim a recepção caindo no Início), o console do
+navegador registrou UMA vez: *"A tree hydrated but some attributes of the
+server rendered HTML didn't match the client properties."* O trecho do erro
+que diria QUAL atributo foi cortado pela régua.
+
+**Não confirmado:** a causa. Três voltas completas abrindo cada tela do
+Indica (admin) e o Início (recepção), uma a uma, não repetiram o aviso.
+
+**Suspeita:** algo que depende da hora, desenhado nos dois lados — o relógio
+da barra de cima ("Seg., 28/09/2026 16:52") virando o minuto entre o desenho
+do servidor e o do navegador. Não conferi o componente.
+
+**Para retomar:** régua que imprima o erro inteiro (o React mostra o diff do
+atributo) e rode em loop cruzando a virada do minuto.
