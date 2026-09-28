@@ -2009,3 +2009,9 @@ Com a regra "conta de teste antes de pessoa real", o Dentista agora sai como
 "não conferido — modo portal" até a porta de `dentista@example.com` ser
 aberta (precisa do OK do dono).
 
+✅ **Dentista também (OK do dono, 27/09/2026):** porta de
+`dentista@example.com` aberta no treino (estava fechada; foto em
+`ap6-porta-dentista.mjs`). Varredura completa: **8 perfis, 856 aberturas,
+0 falha — todos por contas de teste.** A varredura não usa mais pessoa real
+no treino.
+

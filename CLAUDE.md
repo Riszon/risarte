@@ -492,6 +492,13 @@ a produção, com trava que EXIGE ser produção).
    (gatilho em appointments); tela com "Abrir agenda" e "Fechar" (adia 15
    min). **0283 APLICADA na produção** (conferido: gatilho no lugar; a função
    não responde sem login).
+   ✅ **AP6/AP8/AP10 (core 0.298.1, 27/09):** a varredura de telas deixou de
+   medir o modo portal e passou a usar SÓ contas de teste (`@example.com`)
+   onde existem — ela usava uma recepcionista e um dentista REAIS do treino
+   (5 registros "view" de auditoria no nome deles, não apagados). Com o OK do
+   dono, a porta "sistema" das 6 contas de teste foi ABERTA no treino:
+   **8 perfis, 856 aberturas, 0 falha**. Tipos dos testes viraram portão
+   (`npm run tipos`, dentro do `verificar` e na CI).
    ✅ **AP20 + item 10 (0284, core 0.298.0, 27/09):** início cancelado ou
    falta traz o aviso de volta com o motivo; uma linha por cliente na janela.
    **0284 APLICADA na produção** (conferido: gatilho no lugar; a função não
