@@ -45,7 +45,7 @@ Nenhuma ligação apaga em cascata.
 |---|---|
 | **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
 | **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
-| **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 aplicada no **treino**; **produção pendente**. Segue escondido (só Admin) |
+| **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visões, funções e o parâmetro de 90 dias no lugar; sem login, recusa). Segue escondido (só Admin) |
 | IND3 — Automação e portal | a fazer |
 | IND4 — Campanhas e equipe | a fazer |
 | IND5 — Gestão de rede | a fazer |
@@ -244,7 +244,7 @@ da barra de cima (núcleo). Não é das telas do Indica (todas abriram limpas).
 
 ### Checklist da IND2 — no TREINO, como Admin
 
-1. Rodar a **2004 na produção** (SQL Editor) — o assistente copia.
+1. ✅ 2004 na produção (feito em 28/09/2026).
 2. **Catálogo** → Novo item: "Crédito Risarte R$ 100", 1.000 Riso Coins,
    valor 100,00.
 3. **Embaixadores** → abrir um Embaixador → **Ajuste manual** +1.000 com
