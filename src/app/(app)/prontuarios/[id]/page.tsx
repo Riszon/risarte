@@ -120,6 +120,8 @@ import {
 import { PlanEditorSwitcher } from "./plan-editor-switcher";
 import { loadClientPlans } from "./plan-loader";
 import { EmpresarialPanel } from "./empresarial-panel";
+import { canIndicar } from "@/lib/indica/access";
+import { IndicaNaFicha } from "../../indica-mais-risos/na-ficha";
 import { loadClientUsage } from "@/lib/empresarial/benefits";
 import { loadClientPrograms } from "@/lib/programs";
 import type { TreatmentPlan } from "@/lib/planning";
@@ -761,6 +763,8 @@ export default async function ClientDetailPage(
   const canScheduleFromFicha =
     client.status !== "anonymized" &&
     (hasRoleInClinic(session, scheduleClinicId, ["receptionist"]) || isSdr);
+  // Indica +Risos: "Pedi indicação" e "Nova indicação" (módulo próprio).
+  const podeIndicarNaFicha = client.status !== "anonymized" && canIndicar(session);
   let fichaStaff: StaffOption[] = [];
   let fichaConfig: AgendaFormConfig | undefined;
   if (canScheduleFromFicha) {
@@ -2557,8 +2561,16 @@ export default async function ClientDetailPage(
               (hasApprovedPlan && canPresent) ||
               directSale.canLaunch ||
               pprOffer.canSell ||
-              pprOffer.membership) && (
+              pprOffer.membership ||
+              podeIndicarNaFicha) && (
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {podeIndicarNaFicha && (
+                  <IndicaNaFicha
+                    session={session}
+                    cliente={{ id: client.id, nome: client.full_name, codigo: client.code ?? null }}
+                    unidadeId={scheduleClinicId}
+                  />
+                )}
                 {/* PPR3: oferecer o programa de prevenção (ou abrir a adesão). */}
                 <PprOfferButton
                   clientId={client.id}

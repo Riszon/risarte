@@ -90,25 +90,26 @@ async function main() {
   );
   await db.query("begin");
 
-  // --- Migrações (dentro da transação, se ainda não gravadas) -------------
-  const existe = await um(
-    "select exists (select 1 from pg_namespace where nspname = 'indica') as sim"
+  // --- Migrações 2000+ que o treino ainda não tem: dentro da transação ----
+  const todas = readdirSync(DIR).filter((f) => /^2\d{3}_.*\.sql$/.test(f)).sort();
+  if (todas.length === 0) throw new Error("nenhuma migração 2000+ encontrada");
+  const gravadas = new Set(
+    (await q("select filename from public.schema_migrations")).map((r) => r.filename)
   );
-  if (!existe.sim) {
-    const arquivos = readdirSync(DIR).filter((f) => /^2\d{3}_.*\.sql$/.test(f)).sort();
-    if (arquivos.length === 0) throw new Error("nenhuma migração 2000+ encontrada");
-    for (const f of arquivos) {
-      await db.query(readFileSync(join(DIR, f), "utf8"));
-      console.log(`(aplicada só nesta transação: ${f})`);
-    }
+  const pendentes = todas.filter((f) => !gravadas.has(f));
+  for (const f of pendentes) {
+    await db.query(readFileSync(join(DIR, f), "utf8"));
+    console.log(`(aplicada só nesta transação: ${f})`);
+  }
+  if (pendentes.length > 0) {
     // Idempotência: rodar de novo não pode dar erro nem duplicar padrões.
-    for (const f of arquivos) await db.query(readFileSync(join(DIR, f), "utf8"));
+    for (const f of pendentes) await db.query(readFileSync(join(DIR, f), "utf8"));
     const dup = await um(
       "select count(*)::int n from indica.config group by unidade_id, chave, vigente_desde order by 1 desc limit 1"
     );
-    ok(dup.n === 1, "migrações rodam duas vezes sem erro e sem duplicar os padrões");
+    ok(dup.n === 1, "migrações novas rodam duas vezes sem erro e sem duplicar os padrões");
   } else {
-    console.log("(schema indica já existe no treino — testando o que está gravado)");
+    console.log("(todas as migrações 2000+ já estão no treino — testando o que está gravado)");
   }
 
   // --- Pessoas e unidades do cenário de teste (falha ALTO se faltar) ------
@@ -563,6 +564,35 @@ async function main() {
   const p7 = await um("select count(*)::int n from indica.pontos_lancamentos where indicacao_id = $1", [ind7]);
   const e7 = await um("select dados from indica.indicacao_eventos where indicacao_id = $1", [ind7]);
   ok(p7.n === 0 && e7.dados.pontos_pendentes === 0, "teto atingido: a indicação vale, mas não gera pontos");
+
+  // =========================================================================
+  console.log("\n12. Telas da recepção (2003): busca, código e conferência");
+  await como(recepcao.id);
+  const porTel = await q("select * from indica.buscar_indicador($1)", [tel(1).replace(/\D/g, "").slice(-9)]);
+  ok(porTel.some((r) => r.cliente_id === cliEmb && r.embaixador_id === emb), "acha quem indica pelo TELEFONE (sem DDD)");
+  const porCodigo = await q("select * from indica.buscar_indicador($1)", [embRow.codigo.toLowerCase()]);
+  ok(porCodigo.some((r) => r.embaixador_id === emb), "acha pelo código pessoal, sem ligar para maiúsculas");
+  await como(franqueado.id);
+  const rede1 = await um("select * from indica.embaixador_pelo_codigo($1)", [embRow.codigo]);
+  ok(rede1?.embaixador_id === emb && rede1.primeiro_nome === "Joana", "o código vale na rede toda (outra unidade acha, só com o 1º nome)");
+  await como(recepcao.id);
+  const conf = async (dados) =>
+    (await um("select indica.conferir_indicacao($1) as r", [{ unidade_id: U, ...dados }])).r;
+  // tel(6) = Elisa (ind4): em aberto e ainda sem cadastro. (tel(2) já virou
+  // cliente atendido — ali a resposta certa é "já é cliente", não "duplicada".)
+  const cDup = await conf({ indicado_telefone: tel(6), embaixador_id: emb });
+  ok(cDup.situacao === "duplicada" && /^IND-\d{6}$/.test(cDup.codigo), `já indicado: diz o código (${cDup.codigo})`);
+  ok(!("cliente_id" in cDup), "a conferência nunca devolve o cadastro encontrado");
+  const cLivre = await conf({ indicado_telefone: tel(9), embaixador_id: emb });
+  ok(cLivre.situacao === "livre" && cLivre.cadastro_encontrado === false, "número novo: livre");
+  const cMeio = await conf({ indicado_telefone: "(43) 99", embaixador_id: emb });
+  ok(cMeio.situacao === "incompleto", "número pela metade: 'ainda não sei', não 'livre'");
+  const cAuto = await conf({ indicado_telefone: tel(1), embaixador_id: emb });
+  ok(cAuto.situacao === "autoindicacao", "a tela avisa a autoindicação antes de gravar");
+  const cCli = await conf({ indicado_cpf: cpf(3), embaixador_id: emb });
+  ok(cCli.situacao === "ja_e_cliente", "a tela avisa quem já é cliente");
+  const linha = await um("select embaixador_rotulo, trava_vencida from indica.v_indicacoes where id = $1", [ind4]);
+  ok(linha?.embaixador_rotulo === `${embRow.codigo} · Joana` && linha.trava_vencida === false, "a lista mostra o Embaixador como 'CÓDIGO · 1º nome'");
 }
 
 try {

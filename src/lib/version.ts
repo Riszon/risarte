@@ -14,5 +14,5 @@ export const EMPRESARIAL_VERSION = "0.75.0";
 export const EMPRESARIAL_MIGRATION = "1025";
 
 // Indica +Risos (programa de indicação) — faixa de migração 2000+.
-export const INDICA_VERSION = "0.1.0";
-export const INDICA_MIGRATION = "2002";
+export const INDICA_VERSION = "0.2.0";
+export const INDICA_MIGRATION = "2003";

@@ -16,6 +16,9 @@ import { join } from "node:path";
 // lugar: o embed tem de dizer qual (`profiles!<nome_da_fk>(...)`).
 const AMBIGUOS: { origem: string; destino: string }[] = [
   { origem: "training_enrollments", destino: "profiles" },
+  // Indica +Risos (2000): origem, conversão e criado_por apontam para profiles.
+  { origem: "indicacoes", destino: "profiles" },
+  { origem: "v_indicacoes", destino: "profiles" },
 ];
 
 function arquivos(dir: string): string[] {

@@ -24,6 +24,7 @@ import {
   GraduationCap,
   Handshake,
   HeartPulse,
+  HeartHandshake,
   Home,
   Boxes,
   Landmark,
@@ -96,6 +97,8 @@ type Props = {
   canViewEmpresarial: boolean;
   /** PPR2: seção do Programa de Prevenção Riso+ (PPR+). */
   canViewPpr: boolean;
+  /** Indica +Risos (programa de indicação). Opcional: só o layout informa. */
+  canViewIndica?: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
@@ -181,6 +184,13 @@ const EMPRESARIAL_ITEM = {
   icon: Briefcase,
 };
 
+// Indica +Risos — programa de indicação (módulo próprio, schema `indica`).
+const INDICA_ITEM = {
+  href: "/indica-mais-risos",
+  label: "Indica +Risos",
+  icon: HeartHandshake,
+};
+
 // PPR2: Programa de Prevenção Riso+ (PPR+) — prevenção e recorrência.
 const PPR_ITEM = {
   href: "/ppr",
@@ -248,6 +258,7 @@ export function AppSidebar({
   canViewStaff,
   canViewEmpresarial,
   canViewPpr,
+  canViewIndica = false,
   canViewFinance,
   canViewStock,
   canViewPurchases,
@@ -330,6 +341,9 @@ export function AppSidebar({
   }
   if (canViewPpr) {
     navItems = [...navItems, PPR_ITEM];
+  }
+  if (canViewIndica) {
+    navItems = [...navItems, INDICA_ITEM];
   }
   if (canViewStock) {
     navItems = [...navItems, STOCK_ITEM];

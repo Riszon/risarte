@@ -217,6 +217,22 @@ export const CAPACIDADES: Capability[] = [
     ],
   },
   {
+    id: "modulo.indica",
+    rotulo: "Indica +Risos",
+    grupo: "Módulos",
+    descricao:
+      "O programa de indicação: registrar, acompanhar e converter as indicações dos clientes.",
+    dependeDoBanco: true,
+    // ⚠️ NASCE ESCONDIDO (decisão do dono, 28/09/2026): a matriz gravada no
+    // banco não tem linha desta permissão, então só o Admin Master vê. Este
+    // padrão é o que o "Restaurar padrão" de /admin/permissoes liga quando o
+    // dono decidir abrir para a equipe.
+    padrao: [
+      "receptionist", "sdr", "commercial_consultant", "commercial_assistant",
+      "unit_manager", "franchisee", "franchisor_staff",
+    ],
+  },
+  {
     id: "modulo.financeiro",
     rotulo: "Financeiro",
     grupo: "Módulos",
@@ -308,6 +324,17 @@ export const CAPACIDADES: Capability[] = [
     descricao: "Planos, vantagens e regras do programa de prevenção.",
     dependeDoBanco: false,
     padrao: [],
+  },
+  {
+    id: "acao.indica.indicar",
+    rotulo: "Pedir e registrar indicação",
+    grupo: "Ações — Programas",
+    descricao:
+      "Os botões \"Pedi indicação\" e \"Nova indicação\" na ficha do cliente, sem ver o módulo inteiro.",
+    dependeDoBanco: true,
+    // Também nasce escondido (ver modulo.indica). Quem tem o módulo já pode
+    // indicar; esta permissão é para quem SÓ pede e registra (clínico).
+    padrao: ["clinical_coordinator", "dentist", "tsb", "asb"],
   },
 ];
 

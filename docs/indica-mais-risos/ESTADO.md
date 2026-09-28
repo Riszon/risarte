@@ -44,7 +44,7 @@ Nenhuma ligação apaga em cascata.
 | Fase | Situação |
 |---|---|
 | **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
-| IND1 — Operação da recepção | a fazer |
+| **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 aplicada no **treino**; **produção pendente**. Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
 | IND2 — Embaixadores e resgates | a fazer |
 | IND3 — Automação e portal | a fazer |
 | IND4 — Campanhas e equipe | a fazer |
@@ -111,13 +111,91 @@ conferir agora:
    — conferir os 24 parâmetros contra a seção "Configuração" das diretrizes.
    Se algum padrão estiver diferente do que a rede quer, é aqui que se muda.
 
-## Pendências e notas para a IND1
+## IND1 — o que foi entregue (28/09/2026)
+
+**Decisões do dono:** vai para o `main` **escondido** (a matriz gravada não
+tem linha das permissões novas → só o Admin Master vê); aceite **verbal** do
+regulamento 2026.1 até o texto definitivo (jurídico/CRO); quando ligar, veem o
+módulo recepção, SDR, comercial, gerente, franqueado e rede, e o clínico
+(coordenador, dentista, TSB, ASB) só pede e registra pela ficha.
+
+**Telas** (`src/app/(app)/indica-mais-risos/`):
+
+- `/indica-mais-risos` → leva às Indicações (o painel é da IND5).
+- `/indica-mais-risos/indicacoes` — **quadro** (uma coluna por etapa, botão
+  "Avançar…") e **lista** com filtros (etapa, período, código/nome; unidade na
+  visão da rede). Cartão "parada" depois de 3 dias sem movimento.
+- `/indica-mais-risos/indicacoes/[id]` — indicado, quem indicou, pontos,
+  etapas, extrato da indicação e linha do tempo; botões da próxima etapa.
+- **Nova indicação** (janela): busca de quem indica por nome, código,
+  CPF, **telefone** ou código pessoal (na rede toda); "Tornar Embaixador(a)"
+  com o aceite; conferência de duplicidade **enquanto digita**.
+- **Na ficha do cliente:** "Pedi indicação" e "Nova indicação" (o cliente da
+  ficha é quem indica).
+
+**Etapas pela tela:** Validar · Ligar à avaliação (escolhe a avaliação na
+agenda do indicado; se não há cadastro ligado, procura o cadastro primeiro) ·
+Compareceu (exige check-in) · Faltou · Fechou (escolhe a venda fechada) · Não
+fechou / Recusar (motivo) · Converter · Cancelar e estornar (só gestor) ·
+Expirar (trava vencida).
+
+**Migração 2003:** busca de quem indica (com telefone), Embaixador pelo
+código na rede, conferência de duplicidade que nunca devolve dados da pessoa,
+`registrar_indicacao` usando a MESMA conferência da tela, visão
+`v_indicacoes`, e o extrato visível para quem vê a indicação.
+
+**Permissões:** `modulo.indica` e `acao.indica.indicar` em
+`src/lib/permissions.ts` (sem linha no banco = escondido). Para ligar:
+Administração → Permissões → "Indica +Risos" e "Pedir e registrar indicação" →
+**Restaurar padrão** (liga os papéis combinados). A matriz do treino é cópia
+da produção: ligar na produção liga nos dois.
+
+**Provas:**
+
+- `npm run test:indica` — 70 conferências (as 60 da IND0 + 10 da 2003).
+- Testes unitários: `indica-erros`, `indica-formato`, `indica-status`.
+- **Tela de verdade** (servidor de teste na porta 3100, banco de TREINO,
+  contas `@example.com`): admin abre quadro, lista, janela e ficha; recepção
+  NÃO vê o módulo nem os botões (escondido funciona); fluxo real tornar
+  Embaixador → registrar (+50 pendentes) → validar → recusar (−50), 0 erro no
+  console. ⚠️ **Ficaram no treino, de propósito e marcados:** o Embaixador
+  `TESTE12` (cliente "Teste do portão 1 (pode ignorar)") e a indicação
+  `IND-000025` "Indicado de teste (pode ignorar)", **encerrada (recusada)**.
+  Indicação não se apaga (regra do banco).
+
+### Checklist do que testar na unidade (IND1) — no TREINO, como Admin
+
+1. Rodar a **2003 na produção** (SQL Editor) — o assistente copia.
+2. No treino, entrar como Admin → menu **Indica +Risos** → quadro vazio com a
+   frase "Quem você atendeu hoje e saiu feliz?".
+3. Abrir a ficha de um cliente → **Nova indicação** → marcar o aceite →
+   **Tornar Embaixador(a)** → aparece o código (ex.: MARIA27).
+4. Preencher o indicado com um WhatsApp → ver **"Livre para indicar"**.
+   Repetir o mesmo número numa segunda indicação → **"já foi indicada
+   (IND-…)"** e o botão fica apagado.
+5. Registrar → abre o detalhe com **+50 pendentes**.
+6. Cadastrar o indicado em Prontuários e agendar uma **avaliação** → no
+   detalhe, **Validar** → **Ligar à avaliação** (procurar o cadastro e escolher
+   a avaliação).
+7. Tentar **Compareceu** antes do check-in → recusa com a explicação. Fazer o
+   check-in no Atendimento → **Compareceu** → **200 disponíveis**.
+8. Fechar a venda no Comercial (contrato + pagamento) → **Fechou** → escolher
+   a venda → **200 em carência**. **Converter** só depois da 1ª parcela paga.
+9. **Pedi indicação** na ficha → registrar o momento e a resposta.
+10. Quando estiver bom: Administração → Permissões → **Restaurar padrão** nas
+    duas permissões do Indica para abrir à equipe (aí entra o manual).
+
+⚠️ **Antes de ligar para a equipe:** escrever a seção do manual
+(`docs/treinamento/manual-treinamento-riSZon.md`) e a novidade em
+`src/lib/changelog.ts` (§0c do CLAUDE.md). Hoje não entra porque ninguém da
+equipe vê o módulo.
+
+## Notas para as próximas fases
 
 - ⚠️ **Embed ambíguo:** `indica.indicacoes` tem TRÊS ligações para `profiles`
   (origem, conversão, criado_por). Todo embed de `profiles` a partir dela
-  precisa do nome da ligação (`profiles!indicacoes_risartano_origem_id_fkey(...)`).
-  Acrescentar a tabela em `embed-ambiguo.test.ts` quando a IND1 criar o
-  primeiro embed.
+  precisa do nome da ligação. Presa em `embed-ambiguo.test.ts` (IND1); as
+  telas buscam os nomes à parte (`nomesDePessoas`).
 - Faixas da unidade: os pontos por etapa, o benefício do indicado e o limite
   de aprovação do resgate nascem SEM faixa. A franqueadora define a faixa na
   tela de configurações (IND2) antes de liberar para as unidades.
