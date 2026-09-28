@@ -499,6 +499,13 @@ a produção, com trava que EXIGE ser produção).
    dono, a porta "sistema" das 6 contas de teste foi ABERTA no treino:
    **8 perfis, 856 aberturas, 0 falha**. Tipos dos testes viraram portão
    (`npm run tipos`, dentro do `verificar` e na CI).
+   ✅ **OC-00076 + Comercial (0.299.0/0.299.1):** botão Confirmar e selo
+   "Confirmado" no Atendimento; selo também no cartão "A apresentar".
+   ✅ **OC-00085/86 (0285, core 0.300.0, 27/09):** a avaliação termina no
+   cockpit; o envio para a gravação e ESPERA o áudio ser salvo; quem envia
+   encerra; "Encerrar sem enviar" com motivo. **0285 APLICADA na produção**
+   (conferido: sem login, as duas funções recusam). ⏳ Falta ver o áudio de
+   verdade (o navegador de teste bloqueia o microfone).
    ✅ **AP20 + item 10 (0284, core 0.298.0, 27/09):** início cancelado ou
    falta traz o aviso de volta com o motivo; uma linha por cliente na janela.
    **0284 APLICADA na produção** (conferido: gatilho no lugar; a função não
