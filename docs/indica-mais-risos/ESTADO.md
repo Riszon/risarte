@@ -46,7 +46,7 @@ Nenhuma ligação apaga em cascata.
 | **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
 | **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
 | **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visões, funções e o parâmetro de 90 dias no lugar; sem login, recusa). Segue escondido (só Admin) |
-| **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 aplicada no **treino** (gatilhos e rotina agendada conferidos); **produção pendente** |
+| **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 **aplicada nos dois bancos** (treino: gatilhos e rotina conferidos no banco; produção: tabelas e função conferidas pela API em 28/09 — o agendamento e os gatilhos a API não mostra: conferência do dono pelo painel/SQL) |
 | IND3b — Convite público, portal e mensagens | a fazer (decisões já tomadas: fila manual de WhatsApp; `risarte.vercel.app` como parâmetro; aceite do indicado registrado pela recepção) |
 | IND4 — Campanhas e equipe | a fazer |
 | IND5 — Gestão de rede | a fazer |
@@ -297,7 +297,8 @@ e rotina agendada conferidos no banco; todas as telas do módulo abrem limpas.
 
 ### Checklist da IND3a — no TREINO, como Admin
 
-1. Rodar a **2005 na produção** (SQL Editor) — o assistente copia.
+1. ✅ 2005 na produção (28/09/2026). Conferir em Database → Cron Jobs que
+   `indica-rotina-diaria` existe e está ativo (a API não mostra).
 2. Registrar uma indicação (Nova indicação) só com nome e WhatsApp.
 3. Cadastrar o indicado em Prontuários **com o mesmo WhatsApp** e agendar a
    **avaliação** → a indicação vai sozinha para **Agendada**.
