@@ -47,7 +47,7 @@ Nenhuma ligação apaga em cascata.
 | **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
 | **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visões, funções e o parâmetro de 90 dias no lugar; sem login, recusa). Segue escondido (só Admin) |
 | **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 **aplicada nos dois bancos** (treino: gatilhos e rotina conferidos no banco; produção: tabelas e função conferidas pela API em 28/09; o dono conferiu no painel a rotina `indica-rotina-diaria` ativa — 1ª execução 29/09 02:30 — e, por SQL, os 3 gatilhos nas tabelas certas) |
-| IND3b — Convite público, portal e mensagens | a fazer (decisões já tomadas: fila manual de WhatsApp; `risarte.vercel.app` como parâmetro; aceite do indicado registrado pela recepção) |
+| **IND3b — Convite público, portal e mensagens** | ✅ entregue em 28/09/2026 (0.5.0, migração 2006). 2006 aplicada no **treino**; **produção pendente**. Módulo interno segue escondido; as páginas públicas só abrem com código/link válido |
 | IND4 — Campanhas e equipe | a fazer |
 | IND5 — Gestão de rede | a fazer |
 
@@ -306,6 +306,69 @@ e rotina agendada conferidos no banco; todas as telas do módulo abrem limpas.
    **Convertida**.
 6. Configurações → **Automação**: no dia seguinte, a execução das 02:30
    aparece com os números.
+
+## IND3b — o que foi entregue (28/09/2026)
+
+**Páginas públicas (sem login)** — `src/proxy.ts` libera só `/i/`, `/c/` e
+`/e/` (com a barra; régua `indica-rotas-publicas.test.ts` reprova `/i` que
+abriria `/indica-mais-risos`). Elas falam com o banco por UMA porta,
+`src/lib/indica/publico.ts`, que só chama funções públicas (chave de serviço,
+devolvem o mínimo):
+
+- **`/i/[código]`** — "Fulano te convidou": nome, WhatsApp, unidade e aceite
+  do contato (LGPD). Sem preço, desconto ou gratuidade (ética). Resposta
+  **genérica** se a pessoa já foi indicada ou já é paciente (a página não vira
+  consulta). Limite diário por código (parâmetro) + campo-isca contra robô.
+- **`/c/[token]`** — o indicado aceita o contato (grava canal e IP). Vale uma
+  vez; sem aceite em 7 dias, a rotina recusa a indicação e anonimiza.
+- **`/e/[token]`** — portal do Embaixador (celular): saldo, nível, "Enviar meu
+  convite pelo WhatsApp", copiar link, cadastrar amigo (devolve o convite
+  pronto), minhas indicações (só a etapa), trocar Riso Coins, extrato.
+
+**Na equipe:**
+
+- **Nova indicação** pergunta o aceite do indicado: pessoalmente / por
+  telefone (grava data e quem registrou) / ainda não (gera o convite).
+- **Detalhe da indicação** mostra a situação do aceite e deixa registrar
+  depois ("aceitou por telefone/pessoalmente").
+- **Mensagens** (aba nova): a fila, com o texto pronto → "Abrir WhatsApp" →
+  "Enviada" / "Descartar". Eventos: convite ao indicado, obrigado, compareceu,
+  fechou, pontos liberados, pontos a vencer. Modelos editáveis em
+  Configurações → Mensagens (rede, e a unidade pode variar).
+- **Ficha do Embaixador → Links:** link pessoal para copiar e "Gerar link do
+  portal" com envio pelo WhatsApp dele.
+
+**Migração 2006:** parâmetros `url_publica` (vazio = o próprio site),
+`termo_lgpd_versao_vigente`, `link_limite_diario_por_codigo` e os 7 modelos
+de mensagem; aceite por telefone; convite com hash; fila `indica.mensagens`
+com gatilho blindado na linha do tempo; `registrar_indicacao` com aceite ou
+convite; funções públicas (`convite_publico`, `registrar_pelo_link`,
+`ver_convite`, `aceitar_convite`, `portal_catalogo`, `portal_resgatar`,
+`portal_indicar`); rotina diária + aceite vencido e lembrete a vencer.
+
+**Provas:** `npm run test:indica` **135/135** (24 novas) — **provado
+quebrando** (tirar a resposta genérica derruba a conferência "a página não vira
+consulta de paciente"). Tela real no treino, **sem login**: convite →
+obrigado (indicação canal 'link' com aceite), portal com saldo, indicar amigo
+→ convite pronto → amigo aceita em `/c/`, fila de mensagens; o módulo interno
+continua pedindo login; 0 erro no console.
+
+⚠️ **Embaixador sem telefone no cadastro não recebe mensagens** (não há para
+quem mandar — a fila pula, de propósito). A janela "Links" avisa. Ficaram no
+treino, marcados "(pode ignorar)": "Link Teste" e "Amigo Portal".
+
+### Checklist da IND3b — no TREINO
+
+1. Rodar a **2006 na produção** (SQL Editor) — o assistente copia.
+2. Como Admin: ficha de um Embaixador **com telefone** → **Links** → copiar o
+   link pessoal e abrir numa janela anônima (sem login).
+3. Preencher o convite com um WhatsApp seu, escolher a unidade, aceitar →
+   "Recebemos o seu contato". Em Indicações aparece a nova, canal "Link
+   pessoal", com o aceite gravado.
+4. **Links → Gerar link do portal** → abrir no celular → ver saldo, indicar um
+   amigo, mandar o convite, abrir o convite e aceitar.
+5. Aba **Mensagens**: abrir o WhatsApp de uma mensagem, enviar e marcar.
+6. Nova indicação com "Ainda não" no aceite → o convite aparece na fila.
 
 ## Notas para as próximas fases
 

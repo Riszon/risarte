@@ -23,7 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "../../status-badge";
 import { unidadesParaIndicar } from "../../dados";
-import { AjusteDialog, ResgateDialog, SituacaoDialog, type ItemParaResgate } from "./acoes-embaixador";
+import { AjusteDialog, LinksDoEmbaixador, ResgateDialog, SituacaoDialog, type ItemParaResgate } from "./acoes-embaixador";
+import { origemDoSite } from "@/lib/indica/publico";
 
 export const metadata: Metadata = { title: "Embaixador — Indica +Risos" };
 
@@ -162,11 +163,11 @@ export default async function EmbaixadorPage(props: PageProps<"/indica-mais-riso
             </Link>{" "}
             · regulamento {emb.versao_regulamento} aceito em {formatBrDate(emb.aceite_regulamento_em)}
           </p>
-          <p className="text-xs text-muted-foreground">
-            O link pessoal e o QR Code chegam com a página de convite (IND3).
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {emb.status === "ativo" && (
+            <LinksDoEmbaixador embaixadorId={emb.id} linkPessoal={`${await origemDoSite()}/i/${emb.codigo}`} />
+          )}
           {emb.status === "ativo" && (
             <ResgateDialog
               embaixadorId={emb.id}

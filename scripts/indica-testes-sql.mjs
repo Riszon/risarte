@@ -836,6 +836,109 @@ async function main() {
     "cada execução da rotina fica registrada com os números");
   const r14_res2 = (await um("select indica.rotina_diaria() as r")).r;
   ok(r14_res2.riso_coins_vencidos === 0 && r14_res2.convertidas_por_prazo === 0, "rodar de novo não repete nada");
+
+  // =========================================================================
+  const temConvite = (await um("select to_regprocedure('indica.convite_publico(text)') is not null as sim")).sim;
+  if (!temConvite) return;
+  console.log("\n15. Aceite LGPD, convite, páginas públicas, portal e mensagens (2006)");
+  await como(recepcao.id);
+  const msg = (indicacaoId, evento) =>
+    um("select * from indica.mensagens where indicacao_id = $1 and evento = $2", [indicacaoId, evento]);
+
+  // Aceite registrado pela recepção
+  const indP = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Paula Presente", indicado_telefone: tel(17), consentimento: "presencial" })).id;
+  const cP = await um(
+    `select c.canal, c.registrado_por, i.convite_token_hash from indica.indicacoes i
+       join indica.consentimentos c on c.id = i.consentimento_id where i.id = $1`, [indP]);
+  ok(cP?.canal === "presencial" && cP.registrado_por === recepcao.id && cP.convite_token_hash === null,
+    "aceite presencial gravado com quem registrou; sem convite");
+  const mObrigado = await msg(indP, "registrada");
+  ok(mObrigado && mObrigado.destinatario === "embaixador" && mObrigado.texto.includes("Joana") && mObrigado.texto.includes("Paula"),
+    "a fila recebe o 'obrigado' ao Embaixador com os nomes (modelo da rede)");
+  ok(!(await msg(indP, "convite")), "com aceite, não há convite na fila");
+
+  // Sem aceite: convite pelo link
+  const indQ = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Quitéria Convite", indicado_telefone: tel(18) })).id;
+  const mConvite = await msg(indQ, "convite");
+  ok(mConvite && /^\/c\/[0-9a-f]{64}$/.test(mConvite.link_caminho) && mConvite.texto.includes("Joana indicou você"),
+    "sem aceite, o convite ao indicado vai para a fila com o link /c/…");
+  const tokenQ = mConvite.link_caminho.slice(3);
+  await falha("select indica.ver_convite($1)", [tokenQ], "permission denied", "logado não lê o convite público (só o servidor)");
+  await como(null, "service_role");
+  const verQ = (await um("select indica.ver_convite($1) as v", [tokenQ])).v;
+  ok(verQ?.indicador === "Joana" && verQ.indicado === "Quitéria" && !JSON.stringify(verQ).includes("43"),
+    "a página do convite mostra só primeiros nomes e a unidade");
+  ok((await um("select indica.aceitar_convite($1, '200.1.2.3') as ok", [tokenQ])).ok === true, "o indicado aceita pelo link");
+  const cQ = await um(
+    "select c.canal, host(c.ip) ip from indica.indicacoes i join indica.consentimentos c on c.id = i.consentimento_id where i.id = $1", [indQ]);
+  ok(cQ?.canal === "link" && cQ.ip === "200.1.2.3", "aceite pelo link grava canal e IP");
+  ok((await um("select indica.aceitar_convite($1, null) as ok", [tokenQ])).ok === false, "o link do convite vale uma vez");
+
+  // Página pública /i/[código]
+  const pub = (await um("select indica.convite_publico($1) as p", [embRow.codigo.toLowerCase()])).p;
+  ok(pub?.indicador === "Joana" && pub.unidades.length > 0 && !JSON.stringify(pub).includes("cpf"),
+    "/i/[código] mostra quem convida e as unidades");
+  ok((await um("select indica.convite_publico('NAOEXISTE99') as p")).p === null, "código inexistente não mostra nada");
+  const semAceite = (await um("select indica.registrar_pelo_link($1, $2, null) as r",
+    [embRow.codigo, { unidade_id: U, nome: "Rui Link", telefone: tel(19), aceite: false }])).r;
+  ok(semAceite.ok === false, "sem marcar o aceite, a página pública não envia");
+  const pelaPagina = (await um("select indica.registrar_pelo_link($1, $2, '177.10.0.1') as r",
+    [embRow.codigo, { unidade_id: U, nome: "Rui Link", telefone: tel(19), aceite: true }])).r;
+  const indR = await um(
+    `select i.canal, c.canal consent, host(c.ip) ip from indica.indicacoes i
+       join indica.consentimentos c on c.id = i.consentimento_id where i.indicado_telefone = $1`, [tel(19)]);
+  ok(pelaPagina.ok && indR?.canal === "link" && indR.consent === "link" && indR.ip === "177.10.0.1",
+    "pela página pública: indicação canal 'link' com o aceite e o IP");
+  const repetida = (await um("select indica.registrar_pelo_link($1, $2, null) as r",
+    [embRow.codigo, { unidade_id: U, nome: "Rui de Novo", telefone: tel(19), aceite: true }])).r;
+  const qtd = await um("select count(*)::int n from indica.indicacoes where indicado_telefone = $1", [tel(19)]);
+  ok(repetida.ok === true && repetida.situacao === "recebido" && qtd.n === 1,
+    "pessoa já indicada: resposta GENÉRICA (a página não vira consulta de paciente) e nada novo");
+
+  // Portal do Embaixador
+  await como(recepcao.id);
+  const tokP = (await um("select indica.gerar_link_portal($1) as t", [emb])).t;
+  await como(null, "service_role");
+  const cat = (await um("select indica.portal_catalogo($1) as c", [tokP])).c;
+  ok(Array.isArray(cat) && cat.some((i) => i.nome.startsWith("Crédito Risarte")), "o portal mostra o catálogo");
+  const pIndica = (await um("select indica.portal_indicar($1, $2) as r",
+    [tokP, { nome: "Sara Portal", telefone: tel(20) }])).r;
+  ok(pIndica.ok && /^\/c\//.test(pIndica.link) && pIndica.texto.includes("Sara"),
+    "o Embaixador indica pelo portal e recebe o convite pronto para mandar ao amigo");
+  const pDup = (await um("select indica.portal_indicar($1, $2) as r", [tokP, { nome: "Sara de Novo", telefone: tel(20) }])).r;
+  ok(pDup.ok === false && /já foi indicada/.test(pDup.erro), "no portal, repetir a pessoa avisa sem detalhar");
+  const pRes = (await um("select indica.portal_resgatar($1, $2) as r", [tokP, itemCredito])).r;
+  ok(pRes.ok === true && /^RES-\d{6}$/.test(pRes.codigo), `o Embaixador pede resgate pelo portal (${pRes.codigo})`);
+  const pInv = (await um("select indica.portal_resgatar($1, $2) as r", ["x".repeat(64), itemCredito])).r;
+  ok(pInv.ok === false, "link inválido não resgata");
+
+  // Fila: marcar enviada
+  await como(recepcao.id);
+  await q("select indica.marcar_mensagem($1, 'enviada')", [mObrigado.id]);
+  const mk = await um("select status, enviada_por from indica.mensagens where id = $1", [mObrigado.id]);
+  ok(mk.status === "enviada" && mk.enviada_por === recepcao.id, "a recepção marca a mensagem como enviada");
+  await como(franqueado.id);
+  await falha("select indica.marcar_mensagem($1, 'descartada')", [mConvite.id], "INDICA_SEM_PERMISSAO",
+    "outra unidade não mexe na fila desta");
+
+  // Rotina: convite sem aceite em 7 dias + lembrete a vencer
+  await como(recepcao.id);
+  const indS = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Silvio Sem Aceite", indicado_telefone: tel(21) })).id;
+  await bastidor("update indica.indicacoes set registrada_em = now() - interval '8 days' where id = $1", [indS]);
+  await bastidor(
+    `insert into indica.pontos_lancamentos (embaixador_id, tipo, saldo, riso_coins, regra_aplicada, expira_em, motivo)
+     values ($1, 'ajuste', 'disponivel', 70, '{}', now() + interval '10 days', 'teste a vencer')`, [embV]);
+  await sistema();
+  const rot = (await um("select indica.rotina_diaria() as r")).r;
+  const sS = await um("select status, indicado_nome, indicado_telefone from indica.indicacoes where id = $1", [indS]);
+  const mS = await msg(indS, "convite");
+  ok(sS.status === "recusada" && sS.indicado_nome === "Anonimizado" && sS.indicado_telefone === null && mS.status === "descartada",
+    "rotina: 7 dias sem aceite → recusada, dados anonimizados e convite descartado");
+  const lembrete = await um("select count(*)::int n from indica.mensagens where embaixador_id = $1 and evento = 'a_vencer'", [embV]);
+  ok(rot.lembretes_a_vencer >= 1 && lembrete.n === 1, "rotina: lembrete de Riso Coins a vencer vai para a fila");
+  await q("select indica.rotina_diaria()");
+  const lembrete2 = await um("select count(*)::int n from indica.mensagens where embaixador_id = $1 and evento = 'a_vencer'", [embV]);
+  ok(lembrete2.n === 1, "o lembrete não se repete no mesmo mês");
 }
 
 try {

@@ -18,7 +18,74 @@ import { formatBRL } from "@/lib/pricing";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { cn } from "@/lib/utils";
 import { EMBAIXADOR_STATUS_LABEL, type EmbaixadorStatus } from "@/lib/indica/rotulos";
-import { ajustarPontos, definirStatusEmbaixador, solicitarResgate } from "../actions";
+import { ajustarPontos, definirStatusEmbaixador, linkDoPortal, solicitarResgate } from "../actions";
+
+/** Link pessoal (/i/CÓDIGO) para copiar, e o link do portal pelo WhatsApp. */
+export function LinksDoEmbaixador({ embaixadorId, linkPessoal }: { embaixadorId: string; linkPessoal: string }) {
+  const [aberto, setAberto] = useState(false);
+  const [portal, setPortal] = useState<{ link: string; whatsapp: string | null } | null>(null);
+  const [gerando, gerar] = useTransition();
+
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => { setAberto(v); if (!v) setPortal(null); }}>
+      <DialogTrigger render={<Button size="sm" variant="outline">Links</Button>} />
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Links do Embaixador</DialogTitle>
+          <DialogDescription>
+            O link pessoal é o convite que ele manda aos amigos. O do portal é o acesso dele ao saldo e aos
+            prêmios (sem senha; gerar outro invalida o anterior).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div>
+            <Label>Link pessoal (convite)</Label>
+            <div className="mt-1 flex gap-2">
+              <Input readOnly value={linkPessoal} className="font-mono text-xs" />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigator.clipboard.writeText(linkPessoal).then(() => toast.success("Link copiado."))}
+              >
+                Copiar
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2 border-t pt-3">
+            <Label>Portal do Embaixador</Label>
+            {portal ? (
+              <>
+                <Input readOnly value={portal.link} className="font-mono text-xs" />
+                {portal.whatsapp ? (
+                  <Button className="w-full" nativeButton={false} render={<a href={portal.whatsapp} target="_blank" rel="noopener noreferrer" />}>
+                    Enviar pelo WhatsApp do Embaixador
+                  </Button>
+                ) : (
+                  <p className="text-xs text-destructive">O cadastro não tem telefone: copie o link e envie de outro jeito.</p>
+                )}
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={gerando}
+                onClick={() =>
+                  gerar(async () => {
+                    const r = await linkDoPortal(embaixadorId);
+                    if (r.ok) setPortal({ link: r.link, whatsapp: r.whatsapp });
+                    else toast.error(r.error);
+                  })
+                }
+              >
+                {gerando ? "Gerando…" : "Gerar link do portal"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 const textareaClass = "mt-1 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm";

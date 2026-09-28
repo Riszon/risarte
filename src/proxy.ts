@@ -1,7 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+// Indica +Risos (IND3b): convite (/i/), aceite do indicado (/c/) e portal do
+// Embaixador (/e/) abrem SEM login — com a barra no fim, para "/i/" não
+// liberar "/indica-mais-risos". Quem protege o conteúdo é o banco: essas
+// páginas só chamam funções que exigem o código/link e devolvem o mínimo.
+const PUBLIC_PATHS = ["/login", "/auth", "/i/", "/c/", "/e/"];
 
 export async function proxy(request: NextRequest) {
   // Before Supabase is configured (.env.local), let everything through so

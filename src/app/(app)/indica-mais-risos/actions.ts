@@ -207,6 +207,10 @@ export async function registrarIndicacao(
       indicado_telefone: telefone || null,
       indicado_cpf: cpf || null,
       indicado_email: campo("indicado_email") || null,
+      // LGPD: presencial | telefone (a equipe registra) | vazio = convite.
+      consentimento: ["presencial", "telefone"].includes(campo("consentimento"))
+        ? campo("consentimento")
+        : null,
     },
   });
   if (error) {
@@ -331,6 +335,23 @@ export async function vendasDoCliente(clienteId: string): Promise<OpcaoDeVenda[]
     }
   }
   return vendas.sort((a, b) => b.fechadaEm.localeCompare(a.fechadaEm));
+}
+
+/** Aceite do indicado registrado DEPOIS (ex.: a recepção ligou para ele). */
+export async function registrarAceite(
+  indicacaoId: string,
+  canal: "presencial" | "telefone"
+): Promise<Resultado> {
+  const session = await getSessionContext();
+  if (!canViewIndica(session)) return { ok: false, error: SEM_PERMISSAO };
+  const db = await indicaDb();
+  const { error } = await db.rpc("registrar_aceite", { p_indicacao_id: indicacaoId, p_canal: canal });
+  if (error) {
+    console.error("registrar_aceite:", error.message);
+    return { ok: false, error: mensagemDoBanco(error) };
+  }
+  revalidar(indicacaoId);
+  return { ok: true };
 }
 
 // -----------------------------------------------------------------------------

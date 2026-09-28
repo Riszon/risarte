@@ -223,6 +223,23 @@ export function NovaIndicacaoDialog({
                 </select>
               </div>
             </div>
+            <fieldset className="space-y-1.5 rounded-lg border px-3 py-2">
+              <legend className="px-1 text-sm font-medium">O indicado autorizou o contato? (LGPD) *</legend>
+              {[
+                ["presencial", "Sim, pessoalmente (está aqui)"],
+                ["telefone", "Sim, por telefone"],
+                ["", "Ainda não — gerar convite para ele aceitar pelo WhatsApp"],
+              ].map(([valor, rotulo]) => (
+                <label key={valor || "convite"} className="flex items-center gap-2 text-sm">
+                  <input type="radio" name="consentimento" value={valor} required defaultChecked={false} />
+                  {rotulo}
+                </label>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                O aceite fica gravado com a data e quem registrou. Sem aceite, o convite vai para a fila de
+                mensagens; se o indicado não aceitar em 7 dias, os dados dele são apagados.
+              </p>
+            </fieldset>
             <AvisoDeConferencia conferencia={conferencia} />
           </section>
 

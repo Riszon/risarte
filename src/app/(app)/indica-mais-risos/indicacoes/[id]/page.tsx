@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "../../status-badge";
 import { AcoesIndicacao } from "../../acoes-indicacao";
+import { RegistrarAceite } from "./aceite";
 import { nomesDePessoas } from "../../dados";
 
 export const metadata: Metadata = { title: "Indicação — Indica +Risos" };
@@ -96,8 +97,14 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
   });
 
   const supabase = await createClient();
-  const [{ data: eventos }, { data: lancamentos }, { data: agendamento }, { data: unidade }] =
-    await Promise.all([
+  const [
+    { data: eventos },
+    { data: lancamentos },
+    { data: agendamento },
+    { data: unidade },
+    { data: lgpd },
+    { data: aceite },
+  ] = await Promise.all([
       db
         .from("indicacao_eventos")
         .select("id, status_de, status_para, motivo, usuario_id, criado_em")
@@ -118,7 +125,24 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
             .maybeSingle<{ starts_at: string; status: string; checked_in_at: string | null }>()
         : Promise.resolve({ data: null }),
       supabase.from("clinics").select("name").eq("id", ind.unidade_id).maybeSingle<{ name: string }>(),
+      db.from("indicacoes")
+        .select("consentimento_id, convite_expira_em, anonimizada_em")
+        .eq("id", id)
+        .maybeSingle<{ consentimento_id: string | null; convite_expira_em: string | null; anonimizada_em: string | null }>(),
+      db.from("consentimentos")
+        .select("canal, aceito_em")
+        .eq("indicacao_id", id)
+        .order("criado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ canal: string; aceito_em: string | null }>(),
     ]);
+  const CANAL_ACEITE: Record<string, string> = {
+    presencial: "pessoalmente",
+    telefone: "por telefone",
+    link: "pelo link do convite",
+    whatsapp: "pelo WhatsApp",
+    portal: "pelo portal",
+  };
 
   const pessoas = await nomesDePessoas([
     ind.risartano_origem_id,
@@ -182,6 +206,25 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
           <CardContent className="space-y-1 text-sm">
             <p>{ind.indicado_nome}</p>
             {ind.indicado_telefone && <p className="text-muted-foreground">{ind.indicado_telefone}</p>}
+            <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-xs">
+              {lgpd?.anonimizada_em ? (
+                <span className="text-muted-foreground">Dados do indicado anonimizados (LGPD).</span>
+              ) : aceite?.aceito_em ? (
+                <span className="text-emerald-700 dark:text-emerald-300">
+                  Aceitou o contato {CANAL_ACEITE[aceite.canal] ?? aceite.canal} em {formatBrDate(aceite.aceito_em)}.
+                </span>
+              ) : ind.cliente_indicado_id ? (
+                <span className="text-muted-foreground">Contato coberto pelo cadastro do cliente.</span>
+              ) : (
+                <div className="space-y-1.5">
+                  <span className="text-amber-700 dark:text-amber-300">
+                    Aguardando o aceite do contato
+                    {lgpd?.convite_expira_em ? ` (convite vale até ${formatBrDate(lgpd.convite_expira_em)} — está na fila de mensagens)` : ""}.
+                  </span>
+                  {!["recusada", "cancelada", "expirada"].includes(ind.status) && <RegistrarAceite indicacaoId={ind.id} />}
+                </div>
+              )}
+            </div>
             {ind.cliente_indicado_id ? (
               <Link href={`/prontuarios/${ind.cliente_indicado_id}`} className="font-medium text-primary hover:underline">
                 Abrir a ficha

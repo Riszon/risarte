@@ -8,6 +8,7 @@ const ABAS = [
   { href: "/indica-mais-risos/indicacoes", rotulo: "Indicações" },
   { href: "/indica-mais-risos/embaixadores", rotulo: "Embaixadores" },
   { href: "/indica-mais-risos/resgates", rotulo: "Resgates" },
+  { href: "/indica-mais-risos/mensagens", rotulo: "Mensagens" },
   { href: "/indica-mais-risos/catalogo", rotulo: "Catálogo" },
   { href: "/indica-mais-risos/configuracoes", rotulo: "Configurações" },
 ];
