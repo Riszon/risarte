@@ -48,7 +48,8 @@ resultado como se fosse o banco inteiro.
 **Regras que TODO agente segue (decisão do dono, 10/07/2026):**
 
 1. **Faixas de migração (nunca colidir):** core usa **0106+** (faixa 0–999);
-   Empresarial usa **1000+**. Antes de criar migração, use a faixa do SEU projeto
+   Empresarial usa **1000+**; **Indica +Risos usa 2000+** (schema `indica`,
+   estado em `docs/indica-mais-risos/`, branch `feature/indica-mais-risos`). Antes de criar migração, use a faixa do SEU projeto
    e o próximo número livre dentro dela. (Core já foi até 0105; Empresarial 0096–0104.)
 2. **Documentos de estado separados:** cada projeto atualiza só os SEUS documentos
    (acima). Nunca mexer no documento de estado do outro projeto.

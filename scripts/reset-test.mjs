@@ -94,7 +94,34 @@ const PERMITIDAS_FORA_DA_LISTA = new Set([
   // registro de uso apontando para um atendimento que não existe mais não é
   // dado — é lixo que faria o painel de economia mentir.
   "empresarial.benefit_usage",
+  // INDICA +RISOS (28/09/2026, conferido com `check:alcance` no treino). A
+  // indicação anda com o agendamento, a venda e a negociação do indicado — todos
+  // movimento apagado aqui —, e uma indicação apontando para uma avaliação que
+  // não existe mais é lixo: o funil contaria comparecimento sem atendimento.
+  // Vão junto a linha do tempo, o extrato (os pontos nasceram dessas etapas), o
+  // consentimento e o alerta de cada indicação. `apuracoes` chega por
+  // `payables` (o prêmio pago da equipe), também movimento.
+  "indica.indicacoes",
+  "indica.indicacao_eventos",
+  "indica.pontos_lancamentos",
+  "indica.consentimentos",
+  "indica.alertas_fraude",
+  "indica.apuracoes",
 ]);
+
+/**
+ * INDICA +RISOS — o que aponta para `clients` com chave RESTRITIVA e por isso
+ * barraria o `delete from public.clients`: o Embaixador (carteira do cliente),
+ * o pedido de indicação e, por consequência, o resgate do Embaixador. Todos
+ * existem por causa do cliente de teste que está sendo apagado. Saem ANTES dos
+ * clientes, depois do truncate (que já levou o extrato que aponta para eles).
+ * Configuração, níveis, catálogo, parceiros e campanhas ficam.
+ */
+const INDICA_ANTES_DOS_CLIENTES = [
+  "indica.resgates",
+  "indica.pedidos_indicacao",
+  "indica.embaixadores",
+];
 
 /**
  * ⚠️ `public.clients` SAI DO TRUNCATE E VAI PARA UM `delete`.
@@ -277,6 +304,10 @@ export async function limparMovimento(db) {
       // Depois do truncate: o `delete` que respeita `on delete set null` e
       // deixa o cadastro do Empresarial de pé. Vem por último porque as filhas
       // pesadas já foram embora — sobra pouco para o Postgres percorrer.
+      for (const t of INDICA_ANTES_DOS_CLIENTES) {
+        const { rows: existe } = await db.query("select to_regclass($1) as t", [t]);
+        if (existe[0].t) await db.query(`delete from ${t}`);
+      }
       for (const t of paraDeletar) {
         await db.query(`delete from public.${t}`);
       }

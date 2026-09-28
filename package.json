@@ -23,6 +23,7 @@
     "seed:teste": "node scripts/seed-test.mjs",
     "senhas:treino": "node scripts/senhas-treino.mjs",
     "migrar:teste": "node scripts/apply-migrations.mjs",
+    "test:indica": "node scripts/indica-testes-sql.mjs",
     "manual:docx": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx",
     "manual:empresarial": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-empresarial.md docs/treinamento/Manual-Risarte-Empresarial.docx",
     "marca:svg": "node scripts/ai-para-svg.mjs",

@@ -68,7 +68,7 @@ if (destino.startsWith(resolve("."))) {
  * SCHEMAS — a API só enxerga os que estão em "Exposed schemas" no painel do
  * Supabase. Ao criar um schema novo, acrescente aqui.
  */
-const SCHEMAS = ["public", "empresarial", "treinamento"];
+const SCHEMAS = ["public", "empresarial", "treinamento", "indica"];
 
 async function tabelasDoBanco() {
   const nomes = new Set();
