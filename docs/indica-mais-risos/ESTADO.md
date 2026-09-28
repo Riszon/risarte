@@ -47,7 +47,7 @@ Nenhuma ligação apaga em cascata.
 | **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
 | **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visões, funções e o parâmetro de 90 dias no lugar; sem login, recusa). Segue escondido (só Admin) |
 | **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 **aplicada nos dois bancos** (treino: gatilhos e rotina conferidos no banco; produção: tabelas e função conferidas pela API em 28/09; o dono conferiu no painel a rotina `indica-rotina-diaria` ativa — 1ª execução 29/09 02:30 — e, por SQL, os 3 gatilhos nas tabelas certas) |
-| **IND3b — Convite público, portal e mensagens** | ✅ entregue em 28/09/2026 (0.5.0, migração 2006). 2006 aplicada no **treino**; **produção pendente**. Módulo interno segue escondido; as páginas públicas só abrem com código/link válido |
+| **IND3b — Convite público, portal e mensagens** | ✅ entregue em 28/09/2026 (0.5.0, migração 2006). 2006 **aplicada nos dois bancos** (produção conferida em 28/09: fila, 9 funções e 10 parâmetros pela API; `risarte.vercel.app/i/…` no ar respondendo "Convite não encontrado"; `/indica-mais-risos` sem login vai para o login). Módulo interno segue escondido; as páginas públicas só abrem com código/link válido |
 | IND4 — Campanhas e equipe | a fazer |
 | IND5 — Gestão de rede | a fazer |
 
@@ -359,7 +359,7 @@ treino, marcados "(pode ignorar)": "Link Teste" e "Amigo Portal".
 
 ### Checklist da IND3b — no TREINO
 
-1. Rodar a **2006 na produção** (SQL Editor) — o assistente copia.
+1. ✅ 2006 na produção (28/09/2026), conferida.
 2. Como Admin: ficha de um Embaixador **com telefone** → **Links** → copiar o
    link pessoal e abrir numa janela anônima (sem login).
 3. Preencher o convite com um WhatsApp seu, escolher a unidade, aceitar →
