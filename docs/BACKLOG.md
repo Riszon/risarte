@@ -2060,3 +2060,21 @@ do servidor e o do navegador. Não conferi o componente.
 
 **Para retomar:** régua que imprima o erro inteiro (o React mostra o diff do
 atributo) e rode em loop cruzando a virada do minuto.
+### AP23. Barra de cima estoura a largura no celular em TODAS as telas (28/09/2026) — CONFIRMADO, núcleo
+
+Achado na conferência de tela da IND4 do Indica +Risos (servidor de teste
+3100, banco de treino, Admin, janela de 390 px).
+
+**Confirmado (medido):** `document.documentElement.scrollWidth` = **544 px**
+numa janela de **390 px** no Início (`/`) e em todas as telas medidas do
+Indica (indicações, resgates, catálogo, campanhas, equipe). O elemento que
+passa da borda é o grupo de ícones da barra de cima
+(`div.flex shrink-0 items-center gap-0.5`, ícones `size-9`) — o `shrink-0`
+impede que ele encolha. A página inteira passa a rolar para o lado no celular.
+
+**Não confirmado:** se acontece com todos os papéis (medi só com o Admin, que
+tem mais ícones) e desde quando.
+
+**Não é do Indica:** as telas novas não passam dos mesmos 544 px da casca.
+O arquivo é do núcleo (barra de cima do layout) — correção fica com a sessão
+do core.
