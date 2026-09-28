@@ -49,7 +49,12 @@ resultado como se fosse o banco inteiro.
 
 1. **Faixas de migração (nunca colidir):** core usa **0106+** (faixa 0–999);
    Empresarial usa **1000+**; **Indica +Risos usa 2000+** (schema `indica`,
-   estado em `docs/indica-mais-risos/`, branch `feature/indica-mais-risos`). Antes de criar migração, use a faixa do SEU projeto
+   estado em `docs/indica-mais-risos/`, branch `feature/indica-mais-risos`).
+   ⚠️ Desde a 2005 o Indica tem **gatilhos blindados** em `appointments`,
+   `commercial_sales` e `payment_installments` (`indica_automacao_*`): se
+   falharem, o fluxo do núcleo segue e o erro vai para
+   `indica.falhas_automacao`. Ao mexer nessas tabelas, rodar
+   `npm run test:indica`. Antes de criar migração, use a faixa do SEU projeto
    e o próximo número livre dentro dela. (Core já foi até 0105; Empresarial 0096–0104.)
 2. **Documentos de estado separados:** cada projeto atualiza só os SEUS documentos
    (acima). Nunca mexer no documento de estado do outro projeto.

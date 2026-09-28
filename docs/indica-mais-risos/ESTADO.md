@@ -46,7 +46,8 @@ Nenhuma ligação apaga em cascata.
 | **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
 | **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
 | **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visões, funções e o parâmetro de 90 dias no lugar; sem login, recusa). Segue escondido (só Admin) |
-| IND3 — Automação e portal | a fazer |
+| **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 aplicada no **treino** (gatilhos e rotina agendada conferidos); **produção pendente** |
+| IND3b — Convite público, portal e mensagens | a fazer (decisões já tomadas: fila manual de WhatsApp; `risarte.vercel.app` como parâmetro; aceite do indicado registrado pela recepção) |
 | IND4 — Campanhas e equipe | a fazer |
 | IND5 — Gestão de rede | a fazer |
 
@@ -256,6 +257,55 @@ da barra de cima (núcleo). Não é das telas do Indica (todas abriram limpas).
    voucher** → código + cliente + negociação. Tentar de novo: recusa.
 7. **Configurações** → ver os parâmetros; como franqueadora, definir a faixa
    de `pontos_registro` (ex.: 30 a 80) para liberar as unidades.
+
+## IND3a — o que foi entregue (28/09/2026)
+
+**Decisões do dono para a IND3:** WhatsApp em **fila manual** (a troca por
+provedor é só plugar); endereço público `risarte.vercel.app` **como
+parâmetro**; o **aceite LGPD do indicado registrado pela recepção** quando ele
+está presente (sem isso, convite pelo link e anonimização em 7 dias); entrega
+em duas partes (IND3a e IND3b).
+
+**Gatilhos (2005) — blindados:**
+
+| Acontece no riSZon | A indicação vira |
+|---|---|
+| Avaliação do indicado marcada (acha pelo cadastro ou, sem cadastro ligado, pelo telefone/CPF — só se houver UMA) | (validada →) **agendada** |
+| Check-in da avaliação (inclusive encaixe) | **compareceu** |
+| Falta na avaliação ligada | **faltou** |
+| Venda fechada (`closed_at`) | **fechou** |
+| 1ª parcela paga | **convertida** |
+| Venda cancelada na carência | **cancelada** (estorno) |
+
+Se o Indica recusar (ex.: trava vencida), o check-in / a venda / a baixa
+acontecem normalmente e a falha vai para `indica.falhas_automacao`, visível em
+Configurações → Automação (franqueadora: todas; gestor: as da unidade). Cada
+passo automático aparece na linha do tempo como "Automático: …". Os botões
+manuais continuam valendo.
+
+**Rotina diária** `indica-rotina-diaria` (pg_cron, 02:30 de Brasília): expira
+travas vencidas; converte carência vencida pelo prazo; vence Riso Coins (o que
+vence primeiro sai primeiro); recalcula níveis no dia 1; anonimiza indicações
+encerradas há mais de 12 meses (parâmetro). Cada execução fica em
+`indica.rotinas_execucoes` e aparece em Configurações → Automação.
+
+**Provas:** `npm run test:indica` **111/111** (17 novas: os seis gatilhos,
+encaixe, blindagem, rotina completa, idempotência). **Provado quebrando:**
+tirar a blindagem do gatilho da agenda faz o próprio CHECK-IN falhar com o erro
+do Indica — é exatamente o que a blindagem impede. No treino: gatilhos ativos
+e rotina agendada conferidos no banco; todas as telas do módulo abrem limpas.
+
+### Checklist da IND3a — no TREINO, como Admin
+
+1. Rodar a **2005 na produção** (SQL Editor) — o assistente copia.
+2. Registrar uma indicação (Nova indicação) só com nome e WhatsApp.
+3. Cadastrar o indicado em Prontuários **com o mesmo WhatsApp** e agendar a
+   **avaliação** → a indicação vai sozinha para **Agendada**.
+4. Fazer o **check-in** no Atendimento → **Compareceu** sozinha.
+5. Fechar a venda no Comercial → **Fechou**; dar baixa na 1ª parcela →
+   **Convertida**.
+6. Configurações → **Automação**: no dia seguinte, a execução das 02:30
+   aparece com os números.
 
 ## Notas para as próximas fases
 

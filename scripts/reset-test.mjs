@@ -107,6 +107,8 @@ const PERMITIDAS_FORA_DA_LISTA = new Set([
   "indica.consentimentos",
   "indica.alertas_fraude",
   "indica.apuracoes",
+  // 2005: o registro de falhas da automação aponta para a indicação.
+  "indica.falhas_automacao",
 ]);
 
 /**

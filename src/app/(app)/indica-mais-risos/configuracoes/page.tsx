@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Lock } from "lucide-react";
+import { formatBrDateTime } from "@/lib/dates";
 import { getSessionContext } from "@/lib/auth";
 import { indicaDb } from "@/lib/indica/db";
 import { ehFranqueadoraIndica, ehGestorIndica } from "@/lib/indica/access";
@@ -56,7 +58,7 @@ export default async function ConfiguracoesPage() {
   const gestor = unidade ? ehGestorIndica(session, unidade.id) : false;
 
   const db = await indicaDb();
-  const [{ data, error }, { data: niveis }] = await Promise.all([
+  const [{ data, error }, { data: niveis }, { data: execucoes }, { data: falhas }] = await Promise.all([
     db.from("config")
       .select("unidade_id, grupo, chave, valor, min, max, travado, descricao, vigente_desde")
       .lte("vigente_desde", new Date().toISOString())
@@ -64,7 +66,14 @@ export default async function ConfiguracoesPage() {
       .returns<LinhaConfig[]>(),
     db.from("niveis").select("id, nome, ordem, criterio_conversoes, multiplicador, beneficios, ativo").order("ordem")
       .returns<(NivelEditavel & { ordem: number })[]>(),
+    // Só a franqueadora lê (RLS); para os demais volta vazio.
+    db.from("rotinas_execucoes").select("executada_em, resultado").order("id", { ascending: false }).limit(1)
+      .returns<{ executada_em: string; resultado: Record<string, number> }[]>(),
+    // Franqueadora: todas; gestor: as das indicações da unidade (RLS).
+    db.from("falhas_automacao").select("id, origem, indicacao_id, erro, criado_em").order("id", { ascending: false }).limit(15)
+      .returns<{ id: number; origem: string; indicacao_id: string | null; erro: string; criado_em: string }[]>(),
   ]);
+  const ultima = execucoes?.[0] ?? null;
 
   // A mais recente de cada chave (rede) e da unidade ativa.
   const rede = new Map<string, LinhaConfig>();
@@ -102,6 +111,54 @@ export default async function ConfiguracoesPage() {
         <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {mensagemDoBanco(error)}
         </p>
+      )}
+
+      {(franqueadora || gestor) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Automação</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              As etapas andam sozinhas pela agenda (avaliação marcada, check-in, falta), pelo Comercial
+              (venda fechada ou cancelada) e pelo Financeiro (1ª parcela paga). Se o Indica falhar, o
+              check-in, a venda e a baixa acontecem normalmente — a falha aparece aqui e a etapa pode ser
+              avançada pelo botão.
+            </p>
+            {franqueadora && (
+              <p>
+                Rotina diária (02:30):{" "}
+                {ultima ? (
+                  <>
+                    última em <strong>{formatBrDateTime(ultima.executada_em)}</strong> —{" "}
+                    {ultima.resultado.expiradas ?? 0} expirada(s), {ultima.resultado.convertidas_por_prazo ?? 0}{" "}
+                    convertida(s) por prazo, {ultima.resultado.riso_coins_vencidos ?? 0} Riso Coins vencidos,{" "}
+                    {ultima.resultado.anonimizadas ?? 0} anonimizada(s), {ultima.resultado.falhas ?? 0} falha(s).
+                  </>
+                ) : (
+                  <span className="text-amber-700 dark:text-amber-300">ainda não rodou.</span>
+                )}
+              </p>
+            )}
+            {(falhas ?? []).length > 0 ? (
+              <ul className="space-y-1">
+                {(falhas ?? []).map((f) => (
+                  <li key={f.id} className="rounded-md border px-2.5 py-1.5 text-xs">
+                    <span className="text-muted-foreground">{formatBrDateTime(f.criado_em)} · {f.origem}</span>{" "}
+                    {f.indicacao_id && (
+                      <Link href={`/indica-mais-risos/indicacoes/${f.indicacao_id}`} className="font-medium text-primary hover:underline">
+                        abrir a indicação
+                      </Link>
+                    )}
+                    <span className="block">{f.erro.replace(/^INDICA_[A-Z_]+:\s*/, "")}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground">Nenhuma falha da automação registrada.</p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {[...porGrupo.entries()].map(([grupo, lista]) => (

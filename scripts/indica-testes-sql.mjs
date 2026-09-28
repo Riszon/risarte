@@ -112,6 +112,20 @@ async function main() {
     console.log("(todas as migrações 2000+ já estão no treino — testando o que está gravado)");
   }
 
+  // --- Automação (2005) DESLIGADA nas seções 1–13 --------------------------
+  // Elas provam o caminho MANUAL, etapa por etapa; com os gatilhos ligados, o
+  // check-in e a venda andariam sozinhos no meio da prova. A seção 14 liga de
+  // novo e prova a automação. (Dentro da transação: nada disso sobrevive.)
+  const GATILHOS = [
+    ["public.appointments", "indica_automacao_agenda"],
+    ["public.commercial_sales", "indica_automacao_venda"],
+    ["public.payment_installments", "indica_automacao_parcela"],
+  ];
+  const temAutomacao = (await um("select to_regprocedure('indica.rotina_diaria()') is not null as sim")).sim;
+  if (temAutomacao) {
+    for (const [tabela, gatilho] of GATILHOS) await db.query(`alter table ${tabela} disable trigger ${gatilho}`);
+  }
+
   // --- Pessoas e unidades do cenário de teste (falha ALTO se faltar) ------
   const pessoa = async (email, papel) => {
     const r = await um(
@@ -136,7 +150,10 @@ async function main() {
 
   // Telefones/CPFs únicos por execução: não colidir com dado do treino.
   const sufixo = String(Date.now()).slice(-7);
-  const tel = (n) => `(43) 9${n}${sufixo}`.slice(0, 15);
+  // 11 dígitos sempre: n de 1 algarismo → "(43) 9n" + sufixo; de 2 → "(43) 8nn"
+  // + 6 do sufixo (prefixo 8 para não colidir com os de 1 algarismo).
+  const tel = (n) =>
+    n < 10 ? `(43) 9${n}${sufixo}` : `(43) 8${n}${sufixo.slice(0, 6)}`;
   const cpf = (n) => {
     const d = `${n}${sufixo}`.padEnd(11, "0").slice(0, 11);
     return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
@@ -698,6 +715,127 @@ async function main() {
   const ve = await um("select disponivel, nivel_nome, indicacoes, total_resgatado from indica.v_embaixadores where id = $1", [emb]);
   ok(ve && ve.indicacoes >= 5 && ve.disponivel === (await saldo(emb)).disponivel,
     "v_embaixadores mostra saldo, nível e indicações");
+
+  // =========================================================================
+  if (!temAutomacao) return;
+  console.log("\n14. Automação (2005): agenda, Comercial, Financeiro e rotina diária");
+  await sistema();
+  for (const [tabela, gatilho] of GATILHOS) await db.query(`alter table ${tabela} enable trigger ${gatilho}`);
+  // Volta o teto ao padrão e reativa o Embaixador (seções 11 e 13 mexeram).
+  // Dentro da transação o relógio (now()) é o mesmo: apaga-se a versão de
+  // teste da seção 11 em vez de criar outra "mais nova".
+  await q(
+    "delete from indica.config where unidade_id is null and chave = 'teto_conversoes_12_meses' and vigente_desde = now()"
+  );
+  await como(gerente.id);
+  await q("select indica.definir_status_embaixador($1, 'ativo', 'Reativado para o teste')", [emb]);
+  await como(recepcao.id);
+
+  const status = async (id) => (await um("select status from indica.indicacoes where id = $1", [id])).status;
+  const falhasAntes = (await um("select count(*)::int n from indica.falhas_automacao")).n;
+
+  // --- A: agenda → check-in → venda → 1ª parcela, tudo sozinho ---------------
+  const indA = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Auto Silva", indicado_telefone: tel(11) })).id;
+  await sistema();
+  const cliA = await novoCliente("Auto Silva", tel(11));
+  const agA = await avaliacao(cliA, false, "now() + interval '2 days'");
+  const a1 = await um("select status, cliente_indicado_id, agendamento_id from indica.indicacoes where id = $1", [indA]);
+  ok(a1.status === "agendada" && a1.cliente_indicado_id === cliA && a1.agendamento_id === agA,
+    "marcar a avaliação do indicado liga a indicação sozinha (validada → agendada), achando-o pelo telefone");
+  await q("update public.appointments set checked_in_at = now(), attendance = 'waiting' where id = $1", [agA]);
+  ok((await status(indA)) === "compareceu", "o CHECK-IN da avaliação vira 'Compareceu' sozinho");
+  const vA = await venda(cliA, 800_000, false);
+  await q("update public.commercial_sales set closed_at = now() where id = $1", [vA.vendaId]);
+  ok((await status(indA)) === "fechou", "a venda FECHADA no Comercial vira 'Fechou' sozinha");
+  await q(
+    `insert into public.payment_installments (clinic_id, negotiation_id, seq, kind, due_date, amount_cents, status, paid_at)
+     values ($1, $2, 1, 'entrada', current_date, 100000, 'paga', now())`,
+    [U, vA.negId]
+  );
+  ok((await status(indA)) === "convertida", "a 1ª PARCELA paga converte sozinha (libera a carência)");
+  const evA = await um(
+    "select count(*)::int n from indica.indicacao_eventos where indicacao_id = $1 and motivo like 'Automático:%'",
+    [indA]
+  );
+  ok(evA.n >= 5, `cada passo automático fica na linha do tempo como 'Automático' (${evA.n})`);
+
+  // --- B: venda cancelada na carência → estorno --------------------------------
+  const indB = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Bia Cancela", indicado_telefone: tel(12) })).id;
+  await sistema();
+  const cliB2 = await novoCliente("Bia Cancela", tel(12));
+  const agB2 = await avaliacao(cliB2, true);
+  ok((await status(indB)) === "compareceu", "avaliação criada já com check-in (encaixe) também conta");
+  const vB2 = await venda(cliB2, 300_000, false);
+  await q("update public.commercial_sales set closed_at = now() where id = $1", [vB2.vendaId]);
+  const carenciaAntes = (await saldo(emb)).em_carencia;
+  await q("update public.commercial_sales set cancelled_at = now(), cancel_reason = 'Desistiu' where id = $1", [vB2.vendaId]);
+  ok((await status(indB)) === "cancelada" && (await saldo(emb)).em_carencia < carenciaAntes,
+    "venda CANCELADA na carência cancela a indicação e estorna a carência");
+  void agB2;
+
+  // --- C: falta ---------------------------------------------------------------
+  const indC = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Caio Falta", indicado_telefone: tel(13) })).id;
+  await sistema();
+  const cliC2 = await novoCliente("Caio Falta", tel(13));
+  const agC2 = await avaliacao(cliC2, false, "now() + interval '1 day'");
+  await q("update public.appointments set status = 'no_show' where id = $1", [agC2]);
+  ok((await status(indC)) === "faltou", "FALTA na avaliação vira 'Faltou' sozinha");
+
+  // --- D: BLINDAGEM — o Indica falha e o check-in acontece mesmo assim ------
+  const indD = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Davi Blindado", indicado_telefone: tel(14) })).id;
+  await sistema();
+  const cliD = await novoCliente("Davi Blindado", tel(14));
+  const agD = await avaliacao(cliD, false, "now() + interval '1 day'");
+  await bastidor("update indica.indicacoes set trava_ate = now() - interval '1 day' where id = $1", [indD]);
+  await sistema();
+  await q("update public.appointments set checked_in_at = now(), attendance = 'waiting' where id = $1", [agD]);
+  const chegou = await um("select checked_in_at is not null as ok from public.appointments where id = $1", [agD]);
+  const falhasDepois = (await um("select count(*)::int n from indica.falhas_automacao")).n;
+  ok(chegou.ok && (await status(indD)) === "agendada",
+    "com o Indica recusando (trava vencida), o CHECK-IN acontece normalmente");
+  ok(falhasDepois > falhasAntes, "e a falha fica registrada em indica.falhas_automacao");
+
+  // --- E: rotina diária -------------------------------------------------------
+  await como(recepcao.id);
+  await falha("select indica.rotina_diaria()", [], "permission denied", "ninguém logado roda a rotina (só o agendador)");
+  await sistema();
+  // Carência por prazo: indicação fechada há 40 dias, sem parcela paga.
+  const indE = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Eva Prazo", indicado_telefone: tel(15) })).id;
+  await sistema();
+  const cliE = await novoCliente("Eva Prazo", tel(15));
+  await avaliacao(cliE, true);
+  const vE = await venda(cliE, 200_000, false);
+  await q("update public.commercial_sales set closed_at = now() where id = $1", [vE.vendaId]);
+  await bastidor("update indica.indicacoes set fechou_em = now() - interval '40 days' where id = $1", [indE]);
+  // Anonimização: encerrada há 13 meses.
+  await bastidor(
+    "update indica.indicacoes set encerrada_em = now() - interval '13 months' where id = $1",
+    [indB]
+  );
+  // Vencimento: Embaixador novo com 300 vencidos e 200 válidos.
+  const cliV = await novoCliente("Vera Vence", tel(16));
+  await como(recepcao.id);
+  const embV = (await um("select indica.criar_embaixador($1, '2026.1') as id", [cliV])).id;
+  await bastidor(
+    `insert into indica.pontos_lancamentos (embaixador_id, tipo, saldo, riso_coins, regra_aplicada, expira_em, motivo)
+     values ($1, 'ajuste', 'disponivel', 300, '{}', now() - interval '1 day', 'teste vencido'),
+            ($1, 'ajuste', 'disponivel', 200, '{}', now() + interval '6 months', 'teste valido')`,
+    [embV]
+  );
+  await sistema();
+  const r14_res = (await um("select indica.rotina_diaria() as r")).r;
+  ok((await status(indD)) === "expirada", "rotina: trava vencida → expirada");
+  ok((await status(indE)) === "convertida", "rotina: carência vencida pelo prazo → convertida");
+  const r14_sv = await saldo(embV);
+  ok(r14_sv.disponivel === 200, `rotina: Riso Coins vencidos saem (300), os válidos ficam (${r14_sv.disponivel})`);
+  const r14_anon = await um("select indicado_nome, indicado_telefone, anonimizada_em from indica.indicacoes where id = $1", [indB]);
+  ok(r14_anon.indicado_nome === "Anonimizado" && r14_anon.indicado_telefone === null && r14_anon.anonimizada_em,
+    "rotina: indicação encerrada há mais de 12 meses é anonimizada (LGPD)");
+  const r14_exec = await um("select resultado from indica.rotinas_execucoes order by id desc limit 1");
+  ok(r14_exec && r14_exec.resultado.expiradas >= 1 && JSON.stringify(r14_exec.resultado) === JSON.stringify(r14_res),
+    "cada execução da rotina fica registrada com os números");
+  const r14_res2 = (await um("select indica.rotina_diaria() as r")).r;
+  ok(r14_res2.riso_coins_vencidos === 0 && r14_res2.convertidas_por_prazo === 0, "rodar de novo não repete nada");
 }
 
 try {
