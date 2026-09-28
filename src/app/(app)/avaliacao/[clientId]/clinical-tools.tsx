@@ -38,6 +38,7 @@ import {
 import { concluirReavaliacao, sendToPlanningCenter } from "../../jornada/actions";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BotaoDeGravacao } from "@/components/botao-de-gravacao";
+import { decidirEnvio, pararGravacaoDoCliente } from "@/lib/gravacao";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 
 const selectClass =
@@ -539,7 +540,13 @@ export function SendToPlanningBlock({
       }
       confirmLabel="Concluir"
       successMessage={`${clientName} foi para o Acompanhamento.`}
-      onConfirm={() => concluirReavaliacao(clientId)}
+      onConfirm={async () => {
+        // OC-00086: o áudio para e é salvo ANTES — ele vai junto.
+        const d = decidirEnvio(await pararGravacaoDoCliente(clientId));
+        if (d?.bloqueia) return { ok: false, error: d.aviso };
+        if (d) toast.info(d.aviso);
+        return concluirReavaliacao(clientId);
+      }}
     />
   );
 
@@ -570,6 +577,14 @@ export function SendToPlanningBlock({
         disabled={isPending}
         onClick={() =>
           startTransition(async () => {
+            // OC-00086: o áudio para e é salvo ANTES de enviar — o Planner
+            // recebe o caso já com ele.
+            const d = decidirEnvio(await pararGravacaoDoCliente(clientId));
+            if (d?.bloqueia) {
+              toast.error(d.aviso, { duration: 10_000 });
+              return;
+            }
+            if (d) toast.info(d.aviso);
             const r = await sendToPlanningCenter(clientId);
             if (r.ok) {
               toast.success(`${clientName} enviado(a) ao Centro de Planejamento.`);

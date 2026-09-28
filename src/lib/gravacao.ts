@@ -18,6 +18,8 @@
 export const GRAVACAO_INICIAR = "risarte:gravacao-iniciar";
 /** Pedido de parar e SALVAR — o fim do atendimento dispara isto. */
 export const GRAVACAO_PARAR = "risarte:gravacao-parar";
+/** A barra responde a quem pediu para parar: recebi / salvei / falhou (0285). */
+export const GRAVACAO_SALVA = "risarte:gravacao-salva";
 
 export type PedidoDeGravacao = {
   clientId: string;
@@ -238,4 +240,86 @@ export function relogio(segundos: number): string {
   const m = Math.floor(segundos / 60);
   const s = segundos % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+/**
+ * O resultado de parar a gravação antes de enviar a avaliação (OC-00086).
+ *   * `salvo`   — havia gravação deste cliente, e o áudio está na ficha;
+ *   * `nada`    — não havia gravação deste cliente (nada a esperar);
+ *   * `falhou`  — havia, e o áudio NÃO foi salvo (a barra já mostrou o erro);
+ *   * `demorou` — o envio do áudio ainda está correndo (arquivo grande).
+ */
+export type ResultadoDaParada = "salvo" | "nada" | "falhou" | "demorou";
+
+/** Sem resposta da barra neste tempo = não há barra nesta tela: nada a esperar. */
+export const SEM_BARRA_MS = 3_000;
+/** Quanto se espera o áudio subir antes de enviar mesmo assim. */
+export const ESPERA_DO_AUDIO_MS = 90_000;
+
+/**
+ * ⚠️ O ÁUDIO VAI JUNTO COM A AVALIAÇÃO (decisão do dono, 27/09/2026).
+ *
+ * "Enviar ao Centro de Planejamento" e "Concluir a reavaliação" chamam isto
+ * ANTES de enviar: a gravação DESTE cliente para, e a promessa só se resolve
+ * quando o áudio estiver salvo na ficha — o Planner recebe o caso já com ele.
+ * Gravação de OUTRO cliente não é tocada.
+ */
+export function pararGravacaoDoCliente(
+  clientId: string,
+  esperaMs = ESPERA_DO_AUDIO_MS
+): Promise<ResultadoDaParada> {
+  return new Promise((resolve) => {
+    const resposta =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : String(Math.random());
+    let recebido = false;
+    const fim = (r: ResultadoDaParada) => {
+      clearTimeout(semBarra);
+      clearTimeout(limite);
+      window.removeEventListener(GRAVACAO_SALVA, ouvir);
+      resolve(r);
+    };
+    function ouvir(e: Event) {
+      const d = (e as CustomEvent<{ resposta: string; resultado: ResultadoDaParada | "recebido" }>).detail;
+      if (d?.resposta !== resposta) return;
+      if (d.resultado === "recebido") {
+        recebido = true;
+        return;
+      }
+      fim(d.resultado);
+    }
+    const semBarra = setTimeout(() => {
+      if (!recebido) fim("nada");
+    }, SEM_BARRA_MS);
+    const limite = setTimeout(() => fim("demorou"), esperaMs);
+    window.addEventListener(GRAVACAO_SALVA, ouvir);
+    window.dispatchEvent(
+      new CustomEvent(GRAVACAO_PARAR, { detail: { appointmentId: null, clientId, resposta } })
+    );
+  });
+}
+
+/**
+ * O que a tela faz com o resultado — puro, para ser testado. `null` = pode
+ * enviar sem dizer nada; texto com `bloqueia` = não envia (o áudio falhou e
+ * quem avalia precisa saber antes); sem `bloqueia` = envia e avisa.
+ */
+export function decidirEnvio(
+  r: ResultadoDaParada
+): { bloqueia: boolean; aviso: string } | null {
+  if (r === "falhou") {
+    return {
+      bloqueia: true,
+      aviso:
+        "O áudio da consulta NÃO foi salvo (veja o aviso acima). Nada foi enviado. Para enviar sem o áudio, clique de novo.",
+    };
+  }
+  if (r === "demorou") {
+    return {
+      bloqueia: false,
+      aviso: "O áudio ainda está sendo salvo — ele chega à ficha em instantes.",
+    };
+  }
+  return null;
 }

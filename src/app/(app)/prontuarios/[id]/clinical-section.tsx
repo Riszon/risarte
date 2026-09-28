@@ -41,6 +41,7 @@ import {
 import { BotaoDeGravacao } from "@/components/botao-de-gravacao";
 import { MediaGallery } from "./media-gallery";
 import { sendToPlanningCenter } from "../../jornada/actions";
+import { decidirEnvio, pararGravacaoDoCliente } from "@/lib/gravacao";
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import type { AgendaFormConfig } from "../../agenda/actions";
 import type { StaffOption } from "@/lib/appointments";
@@ -543,6 +544,13 @@ export function ClinicalSection({
                   disabled={isPending}
                   onClick={() =>
                     startTransition(async () => {
+                      // OC-00086: o áudio para e é salvo ANTES de enviar.
+                      const d = decidirEnvio(await pararGravacaoDoCliente(clientId));
+                      if (d?.bloqueia) {
+                        toast.error(d.aviso, { duration: 10_000 });
+                        return;
+                      }
+                      if (d) toast.info(d.aviso);
                       const result = await sendToPlanningCenter(clientId);
                       if (result.ok) {
                         toast.success(

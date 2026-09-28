@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.300.0",
+    data: "2026-09-27",
+    migracao: "0285",
+    titulo: "A avaliação termina no cockpit, e o áudio vai junto",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Enviar ao Centro de Planejamento (e Concluir a reavaliação) agora para a gravação e espera o áudio ser salvo antes de enviar — o Planner recebe o caso com o áudio. E encerra o atendimento seja quem for que tenha chamado o paciente.",
+        papeis: ["clinical_coordinator"],
+        manual: "Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No Atendimento, avaliação e reavaliação não se concluem mais pelo painel: o cartão tem \"Abrir avaliação\", e o Chamar já abre o Cockpit de Avaliação. Para a avaliação interrompida, há \"Encerrar sem enviar\", com motivo.",
+        papeis: ["clinical_coordinator"],
+        manual: "Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.299.1",
     data: "2026-09-27",
     migracao: null,

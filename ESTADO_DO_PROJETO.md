@@ -1,7 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/09/2026 · Versão do sistema: **0.299.1** · Última migração: **0284** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/09/2026 · Versão do sistema: **0.300.0** · Última migração: **0285** (aplicada no treino; produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎙️ 0.300.0 / 0285 — A AVALIAÇÃO TERMINA NO COCKPIT, E O ÁUDIO VAI JUNTO (OC-00085/86)
+>
+> Causa comum: a avaliação tinha duas saídas que faziam metade cada uma. Agora
+> o envio ao Planejamento para a gravação e ESPERA o áudio ser salvo
+> (`pararGravacaoDoCliente`), e fecha o atendimento seja quem for que chamou
+> (0285, com guarda própria). No painel, avaliação/reavaliação têm "Abrir
+> avaliação" e "Encerrar sem enviar" (motivo). Rede nova: a gravação para se o
+> cliente muda de fase. Régua `fim-da-avaliacao.test.ts`.
+>
 > ## ✅ 0.299.1 — O COMERCIAL VÊ A APRESENTAÇÃO CONFIRMADA
 >
 > Selo verde "Confirmado" no cartão "A apresentar" e na ficha comercial

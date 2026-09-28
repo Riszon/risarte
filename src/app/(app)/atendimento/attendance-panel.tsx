@@ -58,6 +58,7 @@ import { useNow } from "@/lib/use-now";
 import {
   checkInAppointment,
   concludeAttendancePartial,
+  encerrarAvaliacaoSemEnviar,
   swapAppointmentProvider,
   updateAppointmentStatus,
   updateAttendance,
@@ -396,6 +397,10 @@ export function AttendancePanel({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // OC-00085: a avaliação interrompida — encerrar sem enviar, com motivo.
+  const [encerrarSemEnviar, setEncerrarSemEnviar] = useState<PanelAppointment | null>(null);
+  const [motivoSemEnviar, setMotivoSemEnviar] = useState("");
+
   // H3.5: check-in passa por uma confirmação (profissional, horário e sala).
   const [confirmCheckIn, setConfirmCheckIn] = useState<PanelAppointment | null>(
     null
@@ -604,6 +609,55 @@ export function AttendancePanel({
 
   return (
     <>
+      {/* OC-00085: encerrar a avaliação interrompida, com motivo. */}
+      <Dialog
+        open={encerrarSemEnviar !== null}
+        onOpenChange={(o) => {
+          if (!o) setEncerrarSemEnviar(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Encerrar a avaliação sem enviar?</DialogTitle>
+            <DialogDescription>
+              Use só quando a avaliação foi <b>interrompida</b> (o paciente passou
+              mal, precisou sair). O atendimento fecha e a gravação é salva; o
+              cliente continua aguardando o envio ao Planejamento, para terminar
+              depois. O motivo fica no histórico do agendamento.
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            className="min-h-20 w-full rounded-md border bg-transparent p-2 text-sm"
+            placeholder="Motivo (obrigatório)"
+            value={motivoSemEnviar}
+            onChange={(e) => setMotivoSemEnviar(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEncerrarSemEnviar(null)}>
+              Voltar
+            </Button>
+            <Button
+              disabled={isPending || motivoSemEnviar.trim().length < 5}
+              onClick={() => {
+                const a = encerrarSemEnviar;
+                if (!a) return;
+                run(
+                  () => encerrarAvaliacaoSemEnviar(a.id, motivoSemEnviar),
+                  `Avaliação de ${a.clientName} encerrada sem enviar.`,
+                  () => {
+                    pedirParaParar(a.id);
+                    setEncerrarSemEnviar(null);
+                    router.refresh();
+                  }
+                );
+              }}
+            >
+              Encerrar sem enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* H3.5: confirmação da chegada — profissional, horário e sala. */}
       <Dialog
         open={confirmCheckIn !== null}
@@ -1030,8 +1084,14 @@ export function AttendancePanel({
                                   appointmentId: a.id,
                                 });
                               }
-                              if (a.clientId) router.push(`/prontuarios/${a.clientId}`);
-                              else router.refresh();
+                              // OC-00085: avaliação e reavaliação abrem o
+                              // COCKPIT — é lá que elas terminam.
+                              const ehAvaliacao = (TIPOS_QUE_GRAVAM as readonly string[]).includes(a.type);
+                              if (a.clientId) {
+                                router.push(
+                                  ehAvaliacao ? `/avaliacao/${a.clientId}` : `/prontuarios/${a.clientId}`
+                                );
+                              } else router.refresh();
                             }
                           )
                         }
@@ -1116,6 +1176,52 @@ export function AttendancePanel({
                       >
                         Concluir
                       </Button>
+                    ) : null
+                  ) : (TIPOS_QUE_GRAVAM as readonly string[]).includes(a.type) ? (
+                    // ⚠️ OC-00085 (dono, 27/09/2026): AVALIAÇÃO NÃO SE CONCLUI
+                    // AQUI. Ela termina no cockpit — "Enviar ao Centro de
+                    // Planejamento" (que exige os dados) ou "Concluir a
+                    // reavaliação". O "Concluir" daqui encerrava a consulta sem
+                    // avaliação nenhuma. Para a avaliação INTERROMPIDA, o menu
+                    // tem "Encerrar sem enviar", com motivo.
+                    canConclude(a) && a.clientId ? (
+                      <span className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          nativeButton={false}
+                          render={<Link href={`/avaliacao/${a.clientId}`} />}
+                        >
+                          Abrir avaliação
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isPending}
+                                aria-label="Outras opções"
+                                className="h-8 px-1.5"
+                              >
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuGroup>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setMotivoSemEnviar("");
+                                  setEncerrarSemEnviar(a);
+                                }}
+                              >
+                                Encerrar sem enviar…
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </span>
                     ) : null
                   ) : canConclude(a) ? (
                     <Button

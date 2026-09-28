@@ -15,11 +15,12 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { CLINICAL_BUCKET } from "@/lib/clinical";
 import { recordClinicalMedia } from "@/app/(app)/prontuarios/[id]/clinical-actions";
-import { atendimentoAindaAberto } from "@/app/(app)/agenda/actions";
+import { atendimentoAindaAberto, faseDoCliente } from "@/app/(app)/agenda/actions";
 import {
   CONFERIR_ATENDIMENTO_S,
   GRAVACAO_INICIAR,
   GRAVACAO_PARAR,
+  GRAVACAO_SALVA,
   LIMITE_DE_GRAVACAO_S,
   extensaoDe,
   formatoDisponivel,
@@ -69,6 +70,21 @@ export function GravacaoDaConsulta() {
   const emCurso = useRef<PedidoDeGravacao | null>(null);
   // `parar` nasce depois de `comecar`; o ref evita a dependência circular.
   const pararRef = useRef<(() => void) | null>(null);
+  // OC-00086: quem pediu para parar e espera o áudio ser salvo (o envio da
+  // avaliação). Respondidos no fim de `guardar`, dê certo ou errado.
+  const esperando = useRef<string[]>([]);
+  const salvandoRef = useRef(false);
+  const responder = useCallback((resposta: string, resultado: string) => {
+    window.dispatchEvent(new CustomEvent(GRAVACAO_SALVA, { detail: { resposta, resultado } }));
+  }, []);
+  const responderTodos = useCallback(
+    (resultado: "salvo" | "nada" | "falhou") => {
+      const lista = esperando.current;
+      esperando.current = [];
+      for (const r of lista) responder(r, resultado);
+    },
+    [responder]
+  );
 
   // ---- Onde a faixa fica (relato OC-00069) ---------------------------------
   // `null` = o canto de baixo à direita, o lugar padrão. Quem arrasta ganha uma
@@ -158,9 +174,12 @@ export function GravacaoDaConsulta() {
     emCurso.current = null;
     if (!alvo || blob.size === 0) {
       setSalvando(false);
+      salvandoRef.current = false;
+      responderTodos("nada");
       return;
     }
     setSalvando(true);
+    salvandoRef.current = true;
     const supabase = createBrowserClient();
     const carimbo = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const nome = `consulta-${carimbo}.${extensaoDe(mime)}`;
@@ -170,7 +189,9 @@ export function GravacaoDaConsulta() {
       .upload(caminho, blob, { contentType: mime });
     if (erroUpload) {
       setSalvando(false);
+      salvandoRef.current = false;
       toast.error(`Falha ao enviar a gravação: ${erroUpload.message}`);
+      responderTodos("falhou");
       return;
     }
     const r = await recordClinicalMedia(alvo.clientId, {
@@ -181,6 +202,8 @@ export function GravacaoDaConsulta() {
       sizeBytes: blob.size,
     });
     setSalvando(false);
+    salvandoRef.current = false;
+    responderTodos(r.ok ? "salvo" : "falhou");
     if (r.ok) {
       toast.success(`Gravação de ${alvo.clientName} salva na ficha.`);
     } else {
@@ -189,7 +212,7 @@ export function GravacaoDaConsulta() {
       // ocupando espaço com dado de paciente dentro.
       await supabase.storage.from(CLINICAL_BUCKET).remove([caminho]);
     }
-  }, []);
+  }, [responderTodos]);
 
   const parar = useCallback(() => {
     const g = gravador.current;
@@ -269,12 +292,34 @@ export function GravacaoDaConsulta() {
       void comecar((e as CustomEvent<PedidoDeGravacao>).detail);
     }
     function aoParar(e: Event) {
-      const alvo = (e as CustomEvent<{ appointmentId: string | null }>).detail;
-      // Um atendimento não encerra a gravação de outro.
+      const alvo = (e as CustomEvent<{
+        appointmentId: string | null;
+        clientId?: string;
+        resposta?: string;
+      }>).detail;
       const atual = emCurso.current;
-      if (!atual) return;
+      if (!atual) {
+        // Já parou e o áudio está subindo: quem pediu espera o fim do envio.
+        if (alvo?.resposta && salvandoRef.current) {
+          responder(alvo.resposta, "recebido");
+          esperando.current.push(alvo.resposta);
+        } else if (alvo?.resposta) {
+          responder(alvo.resposta, "nada");
+        }
+        return;
+      }
+      // O envio da avaliação de um cliente não encerra a gravação de outro.
+      if (alvo?.clientId && alvo.clientId !== atual.clientId) {
+        if (alvo.resposta) responder(alvo.resposta, "nada");
+        return;
+      }
+      // Um atendimento não encerra a gravação de outro.
       if (alvo?.appointmentId && atual.appointmentId && alvo.appointmentId !== atual.appointmentId) {
         return;
+      }
+      if (alvo?.resposta) {
+        responder(alvo.resposta, "recebido");
+        esperando.current.push(alvo.resposta);
       }
       parar();
     }
@@ -284,7 +329,7 @@ export function GravacaoDaConsulta() {
       window.removeEventListener(GRAVACAO_INICIAR, aoIniciar);
       window.removeEventListener(GRAVACAO_PARAR, aoParar);
     };
-  }, [comecar, parar]);
+  }, [comecar, parar, responder]);
 
   /**
    * A REDE DE SEGURANÇA: e se o atendimento for concluído em OUTRA tela?
@@ -307,6 +352,38 @@ export function GravacaoDaConsulta() {
     }, CONFERIR_ATENDIMENTO_S * 1000);
     return () => clearInterval(t);
   }, [pedido?.appointmentId, parar]);
+
+  /**
+   * ⚠️ A REDE DA FASE (OC-00086, 27/09/2026). A rede de cima só vale para a
+   * gravação ligada a um atendimento; a do botão "Gravar" da ficha não tem
+   * atendimento nenhum, e nada a parava. Esta vale para TODA gravação: se o
+   * cliente mudou de fase desde que a gravação começou (a avaliação foi
+   * enviada ao Planejamento, a reavaliação concluída — por esta aba, por
+   * outra, ou por outra pessoa), a consulta acabou, e o áudio é salvo.
+   */
+  useEffect(() => {
+    const clienteId = pedido?.clientId;
+    if (!clienteId) return;
+    let faseInicial: string | null = null;
+    let cancelado = false;
+    faseDoCliente(clienteId)
+      .then((f) => {
+        if (!cancelado) faseInicial = f;
+      })
+      .catch(() => {});
+    const t = setInterval(async () => {
+      if (!faseInicial) return;
+      const agora = await faseDoCliente(clienteId).catch(() => null);
+      if (agora && agora !== faseInicial) {
+        toast.info("A avaliação foi enviada — a gravação foi salva.");
+        parar();
+      }
+    }, CONFERIR_ATENDIMENTO_S * 1000);
+    return () => {
+      cancelado = true;
+      clearInterval(t);
+    };
+  }, [pedido?.clientId, parar]);
 
   // Fechar a aba no meio perderia o áudio: avisa antes.
   useEffect(() => {

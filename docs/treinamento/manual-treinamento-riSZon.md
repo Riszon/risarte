@@ -1380,8 +1380,8 @@ fase do paciente ☐ sei que não sou eu quem chama
 
 1. Menu **Atendimento** → **Chamar** o paciente (é você quem chama numa
    avaliação). **A gravação da consulta começa neste clique** — uma faixa
-   aparece no rodapé mostrando o tempo correndo.
-2. Abra a ficha → tela de avaliação (`/avaliacao/[clientId]`).
+   aparece no rodapé mostrando o tempo correndo — e o sistema já abre o
+   **Cockpit de Avaliação** (`/avaliacao/[clientId]`).
 3. **Registrar consentimento** — obrigatório para **fotos, exames, vídeos e
    anamnese**. **Nada disso é coletado antes** (exigência de LGPD imposta pelo
    sistema). A **gravação de áudio da avaliação e da reavaliação** é a única
@@ -1390,7 +1390,26 @@ fase do paciente ☐ sei que não sou eu quem chama
 4. **Levantamento de informações** → escolher a ficha de anamnese → preencher →
    **Salvar anamnese**.
 5. Subir fotos e exames.
-6. **Enviar ao Centro de Planejamento**.
+6. **Enviar ao Centro de Planejamento**. O sistema **para a gravação, espera
+   o áudio ser salvo na ficha e só então envia** — o Planner recebe o caso já
+   com o áudio. É também o que encerra o atendimento, **seja quem for que
+   tenha chamado** o paciente.
+
+> **A avaliação termina AQUI, no cockpit — não no Atendimento** (relatos
+> OC-00085 e OC-00086, 27/09/2026). No painel de Atendimento, o cartão de uma
+> avaliação ou reavaliação em andamento tem **Abrir avaliação**, e não
+> **Concluir**: concluir por lá encerrava a consulta sem avaliação nenhuma, e
+> o envio pelo cockpit deixava o áudio gravando.
+>
+> **Avaliação interrompida** (o paciente passou mal, precisou sair): no cartão,
+> menu **…** → **Encerrar sem enviar**, com o **motivo** (obrigatório). O
+> atendimento fecha, a gravação é salva, e o paciente continua aguardando o
+> envio ao Planejamento, para terminar depois. O motivo fica no histórico do
+> agendamento, na ficha. Só quem chamou (ou o Admin) pode encerrar assim.
+>
+> **O áudio não foi salvo?** Se a gravação falhar ao ser salva, o envio **não
+> acontece** e o sistema avisa. Clique em Enviar de novo para enviar sem o
+> áudio — é uma decisão sua, não um acidente.
 
 **Segunda tarefa — aprovar plano:** na ficha, aba **Plano** → expandir a opção →
 **Aprovar opção** ou **Reprovar opção**.
@@ -1420,8 +1439,12 @@ proposital: sua aprovação é clínica, não comercial.
 > esconderia a passagem.
 
 > **A gravação cuida de si mesma.** Ela **começa** quando você chama o paciente
-> para uma avaliação ou reavaliação e **para** quando você conclui o
-> atendimento — não existe mais o risco de esquecer de ligar ou de desligar. A
+> para uma avaliação ou reavaliação e **para** quando você envia ao
+> Planejamento, conclui a reavaliação ou encerra sem enviar — não existe mais o
+> risco de esquecer de ligar ou de desligar. E se a avaliação for enviada por
+> **outra pessoa** ou em **outra aba**, a gravação percebe em até um minuto
+> que o paciente mudou de fase, e para e salva sozinha — inclusive a iniciada
+> pelo botão **Gravar a consulta** da ficha. A
 > faixa do rodapé mostra o tempo e continua lá enquanto você navega: pode abrir
 > a anamnese, subir fotos, ver o histórico, que a gravação não é cortada.
 >

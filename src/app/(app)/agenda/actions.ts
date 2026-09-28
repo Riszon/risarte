@@ -2794,6 +2794,63 @@ export async function buscarClientesParaAgendar(
  * parar uma gravação por engano perde consulta; continuar gravando um minuto a
  * mais só gasta um minuto — e o teto de 2 horas fecha o pior caso.
  */
+/**
+ * A fase do cliente, para a rede da gravação (OC-00086): mudou de fase desde
+ * que a gravação começou = a avaliação acabou. `null` quando não dá para ler
+ * (a gravação segue — parar por engano cortaria a consulta).
+ */
+export async function faseDoCliente(clientId: string): Promise<string | null> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("journey_phase")
+    .eq("id", clientId)
+    .maybeSingle<{ journey_phase: string }>();
+  if (error || !data) return null;
+  return data.journey_phase;
+}
+
+/**
+ * ENCERRAR A AVALIAÇÃO SEM ENVIAR (OC-00085, decisão do dono 27/09/2026).
+ *
+ * Avaliação e reavaliação não se concluem mais no painel — terminam no cockpit.
+ * Esta é a saída de quando ela é INTERROMPIDA (o paciente passou mal, precisou
+ * sair): fecha o atendimento, o motivo vai para o histórico do agendamento, e
+ * o cliente continua aguardando o envio para terminar depois (0285).
+ */
+export async function encerrarAvaliacaoSemEnviar(
+  appointmentId: string,
+  motivo: string
+): Promise<ActionResult> {
+  await getSessionContext();
+  const texto = motivo.trim();
+  if (texto.length < 5) {
+    return { ok: false, error: "Escreva o motivo (pelo menos 5 letras)." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("encerrar_avaliacao_sem_enviar", {
+    p_appointment_id: appointmentId,
+    p_motivo: texto,
+  });
+  if (error) {
+    const m = error.message ?? "";
+    if (m.includes("NOT_CALLER")) {
+      return { ok: false, error: "Só quem chamou o paciente (ou o Admin) pode encerrar esta avaliação." };
+    }
+    if (m.includes("NAO_ESTA_EM_ATENDIMENTO")) {
+      return { ok: false, error: "Esta avaliação não está mais em atendimento." };
+    }
+    if (m.includes("MOTIVO_OBRIGATORIO")) {
+      return { ok: false, error: "Escreva o motivo (pelo menos 5 letras)." };
+    }
+    console.error("encerrarAvaliacaoSemEnviar:", m);
+    return { ok: false, error: "Não foi possível encerrar a avaliação." };
+  }
+  revalidatePath("/atendimento");
+  return { ok: true };
+}
+
 export async function atendimentoAindaAberto(appointmentId: string): Promise<boolean> {
   await getSessionContext();
   const supabase = await createClient();
