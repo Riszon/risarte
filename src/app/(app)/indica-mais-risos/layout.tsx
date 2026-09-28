@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { canViewIndica } from "@/lib/indica/access";
+import { NavIndica } from "./nav-indica";
 
 /**
  * A porta do módulo. Quem não tem "Indica +Risos" na matriz de permissões
@@ -10,5 +11,10 @@ import { canViewIndica } from "@/lib/indica/access";
 export default async function IndicaLayout({ children }: { children: React.ReactNode }) {
   const session = await getSessionContext();
   if (!canViewIndica(session)) redirect("/");
-  return <>{children}</>;
+  return (
+    <>
+      <NavIndica />
+      {children}
+    </>
+  );
 }

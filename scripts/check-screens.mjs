@@ -105,6 +105,7 @@ const FIXTURE_SOURCES = {
     admin.schema("empresarial").from("commercial_leads").select("id").limit(1),
   pprMembership: () => admin.from("ppr_memberships").select("id").limit(1),
   indicacao: () => admin.schema("indica").from("indicacoes").select("id").limit(1),
+  embaixador: () => admin.schema("indica").from("embaixadores").select("id").limit(1),
   pprPlan: () => admin.from("ppr_plans").select("id").limit(1),
   pprBeneficiary: () => admin.from("ppr_beneficiaries").select("id").limit(1),
   cancellation: () => admin.from("plan_cancellations").select("id").limit(1),

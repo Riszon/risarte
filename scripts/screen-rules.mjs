@@ -62,6 +62,7 @@ export const ROUTE_FIXTURES = {
   "/empresarial/funil/[leadId]": "lead",
   "/empresarial/funil/[leadId]/apresentacao": "lead",
   "/indica-mais-risos/indicacoes/[id]": "indicacao",
+  "/indica-mais-risos/embaixadores/[id]": "embaixador",
   "/ppr/adesoes/[id]": "pprMembership",
   "/ppr/adesoes/[id]/contrato": "pprMembership",
   "/ppr/configuracao/[planId]": "pprPlan",

@@ -593,6 +593,111 @@ async function main() {
   ok(cCli.situacao === "ja_e_cliente", "a tela avisa quem já é cliente");
   const linha = await um("select embaixador_rotulo, trava_vencida from indica.v_indicacoes where id = $1", [ind4]);
   ok(linha?.embaixador_rotulo === `${embRow.codigo} · Joana` && linha.trava_vencida === false, "a lista mostra o Embaixador como 'CÓDIGO · 1º nome'");
+
+  // =========================================================================
+  console.log("\n13. Ajuste manual, catálogo, resgate e voucher (2004)");
+  await como(recepcao.id);
+  await falha(
+    "select indica.ajustar_pontos($1, 5000, 'Campanha de teste')",
+    [emb],
+    "INDICA_SEM_PERMISSAO",
+    "recepção não faz ajuste manual"
+  );
+  await como(gerente.id);
+  await falha("select indica.ajustar_pontos($1, 5000, 'x')", [emb], "INDICA_MOTIVO_OBRIGATORIO", "ajuste exige motivo");
+  const s0 = await saldo(emb);
+  await falha(
+    "select indica.ajustar_pontos($1, $2, 'Tirar demais')",
+    [emb, -(s0.disponivel + 1)],
+    "INDICA_SALDO_INSUFICIENTE",
+    "ajuste negativo não deixa saldo abaixo de zero"
+  );
+  await q("select indica.ajustar_pontos($1, 5000, 'Crédito de teste do resgate')", [emb]);
+  const s1 = await saldo(emb);
+  ok(s1.disponivel === s0.disponivel + 5000, "gerente credita 5.000 com motivo (vai para a auditoria)");
+
+  await como(rede.id);
+  const itemCredito = (await um(
+    `insert into indica.catalogo_itens (tipo, nome, custo_riso_coins, valor_centavos)
+     values ('credito_risarte', 'Crédito Risarte R$ 100 (teste)', 1000, 10000) returning id`
+  )).id;
+  const itemCaro = (await um(
+    `insert into indica.catalogo_itens (tipo, nome, custo_riso_coins, valor_centavos, estoque)
+     values ('produto', 'Escova elétrica (teste)', 2500, 30000, 1) returning id`
+  )).id;
+  const itemDiamante = (await um(
+    `insert into indica.catalogo_itens (tipo, nome, custo_riso_coins, nivel_minimo_id)
+     values ('experiencia', 'Evento Diamante (teste)', 100, (select id from indica.niveis where codigo = 'diamante')) returning id`
+  )).id;
+  ok(Boolean(itemCredito && itemCaro), "franqueadora cadastra itens no catálogo da rede");
+  await como(recepcao.id);
+  await falha(
+    "insert into indica.catalogo_itens (tipo, nome, custo_riso_coins) values ('produto', 'x', 10)",
+    [],
+    "row-level security",
+    "recepção não mexe no catálogo"
+  );
+
+  const pedir = (item, extra = {}) =>
+    um("select indica.solicitar_resgate($1) as id", [{ embaixador_id: emb, item_id: item, unidade_id: U, ...extra }]);
+  await falha("select indica.solicitar_resgate($1)", [{ embaixador_id: emb, item_id: itemDiamante, unidade_id: U }],
+    "INDICA_NIVEL_INSUFICIENTE", "item de nível acima não sai");
+  await falha("select indica.solicitar_resgate($1)", [{ embaixador_id: emb, item_id: itemCredito, unidade_id: U, cedido_para_nome: "Ana" }],
+    "INDICA_DADOS", "ceder o prêmio exige nome, CPF e telefone");
+
+  const rs1 = (await pedir(itemCredito)).id;
+  const res1 = await um("select status, item_nome, valor_centavos from indica.resgates where id = $1", [rs1]);
+  const s2 = await saldo(emb);
+  ok(res1.status === "aprovado" && s2.disponivel === s1.disponivel - 1000,
+    "resgate até o limite nasce aprovado e RESERVA os pontos na hora");
+  ok(res1.item_nome.startsWith("Crédito Risarte") && Number(res1.valor_centavos) === 10000, "o resgate grava o item e o valor da época");
+
+  const rs2 = (await pedir(itemCaro, { cedido_para_nome: "Ana Presenteada", cedido_para_cpf: cpf(8), cedido_para_telefone: tel(8) })).id;
+  const res2 = await um("select status, cedido_para_nome from indica.resgates where id = $1", [rs2]);
+  ok(res2.status === "solicitado" && res2.cedido_para_nome === "Ana Presenteada",
+    "acima de 2.000 fica aguardando o gestor; prêmio cedido com os dados de quem recebe");
+  await falha("select indica.solicitar_resgate($1)", [{ embaixador_id: emb, item_id: itemCaro, unidade_id: U }],
+    "INDICA_SEM_ESTOQUE", "estoque 1 já reservado: o segundo pedido é recusado");
+  await falha("select indica.mudar_resgate($1, 'aprovar')", [rs2], "INDICA_SEM_PERMISSAO", "recepção não aprova");
+  await como(gerente.id);
+  await q("select indica.mudar_resgate($1, 'recusar', 'Item fora de linha')", [rs2]);
+  const s3 = await saldo(emb);
+  const est = await um("select estoque from indica.catalogo_itens where id = $1", [itemCaro]);
+  ok(s3.disponivel === s2.disponivel && est.estoque === 1,
+    "recusar devolve os pontos (linha nova 'devolucao') e o estoque");
+  ok(s3.total_resgatado === 1000, `total resgatado desconta a devolução (${s3.total_resgatado})`);
+
+  await como(recepcao.id);
+  const status1 = (await um("select indica.mudar_resgate($1, 'entregar') as s", [rs1])).s;
+  const v1 = await um("select codigo_voucher, voucher_valido_ate - entregue_em as validade from indica.resgates where id = $1", [rs1]);
+  ok(status1 === "entregue" && /^RIS-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(v1.codigo_voucher),
+    `entregar gera o voucher (${v1.codigo_voucher})`);
+  ok(v1.validade.days === 90, "voucher de Crédito Risarte vale 90 dias (parâmetro)");
+  await falha("select indica.mudar_resgate($1, 'cancelar', 'desisti')", [rs1], "INDICA_TRANSICAO_INVALIDA",
+    "resgate entregue não volta");
+
+  await sistema();
+  const negB = (await um("select id from public.plan_negotiations where client_id = $1 limit 1", [cliB])).id;
+  await como(recepcao.id);
+  const valor = (await um("select indica.usar_voucher($1, $2) as v", [v1.codigo_voucher.toLowerCase(), negB])).v;
+  ok(Number(valor) === 10000, "usar o voucher numa negociação devolve o valor (R$ 100)");
+  await falha("select indica.usar_voucher($1, $2)", [v1.codigo_voucher, negB], "INDICA_VOUCHER_USADO",
+    "voucher usado não vale de novo");
+
+  await sistema();
+  await falha("update indica.resgates set riso_coins = 1 where id = $1", [rs1], "INDICA_FORA_DO_MOTOR",
+    "resgate não muda por update direto");
+
+  await como(gerente.id);
+  await falha("select indica.definir_status_embaixador($1, 'suspenso', 'x')", [emb], "INDICA_MOTIVO_OBRIGATORIO",
+    "suspender exige motivo");
+  await q("select indica.definir_status_embaixador($1, 'suspenso', 'Conferência de fraude')", [emb]);
+  await como(recepcao.id);
+  await falha("select indica.solicitar_resgate($1)", [{ embaixador_id: emb, item_id: itemCredito, unidade_id: U }],
+    "INDICA_EMBAIXADOR_INATIVO", "Embaixador suspenso não resgata");
+  const ve = await um("select disponivel, nivel_nome, indicacoes, total_resgatado from indica.v_embaixadores where id = $1", [emb]);
+  ok(ve && ve.indicacoes >= 5 && ve.disponivel === (await saldo(emb)).disponivel,
+    "v_embaixadores mostra saldo, nível e indicações");
 }
 
 try {

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
+import { ehGestorIndica } from "@/lib/indica/access";
+import { SALDO_LABEL, TIPO_LANCAMENTO_LABEL } from "@/lib/indica/rotulos";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { indicaDb } from "@/lib/indica/db";
@@ -25,6 +27,7 @@ type Indicacao = {
   status: IndicacaoStatus;
   unidade_id: string;
   canal: Canal;
+  embaixador_id: string | null;
   embaixador_rotulo: string | null;
   parceiro_nome: string | null;
   indicado_nome: string;
@@ -65,21 +68,8 @@ type Lancamento = {
   criado_em: string;
 };
 
-const TIPO_LANCAMENTO: Record<string, string> = {
-  credito: "Crédito",
-  pendente: "Pendente",
-  carencia: "Em carência",
-  liberacao: "Liberação",
-  estorno: "Estorno",
-  resgate: "Resgate",
-  expiracao: "Expiração",
-  ajuste: "Ajuste",
-};
-const SALDO: Record<Lancamento["saldo"], string> = {
-  disponivel: "disponível",
-  pendente: "pendente",
-  carencia: "carência",
-};
+const TIPO_LANCAMENTO = TIPO_LANCAMENTO_LABEL;
+const SALDO = SALDO_LABEL;
 
 export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos/indicacoes/[id]">) {
   const session = await getSessionContext();
@@ -90,7 +80,7 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
   const { data: ind } = await db
     .from("v_indicacoes")
     .select(
-      "id, codigo, status, unidade_id, canal, embaixador_rotulo, parceiro_nome, indicado_nome, indicado_telefone, cliente_indicado_id, risartano_origem_id, risartano_conversao_id, agendamento_id, venda_id, valor_fechado_centavos, trava_ate, trava_vencida, registrada_em, validada_em, agendada_em, compareceu_em, fechou_em, convertida_em, encerrada_em"
+      "id, codigo, status, unidade_id, canal, embaixador_id, embaixador_rotulo, parceiro_nome, indicado_nome, indicado_telefone, cliente_indicado_id, risartano_origem_id, risartano_conversao_id, agendamento_id, venda_id, valor_fechado_centavos, trava_ate, trava_vencida, registrada_em, validada_em, agendada_em, compareceu_em, fechou_em, convertida_em, encerrada_em"
     )
     .eq("id", id)
     .maybeSingle<Indicacao>();
@@ -139,10 +129,7 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
   const totais = { disponivel: 0, pendente: 0, carencia: 0 };
   for (const l of lancamentos ?? []) totais[l.saldo] += l.riso_coins;
 
-  const podeCancelar =
-    session.isAdminMaster ||
-    hasRoleInClinic(session, ind.unidade_id, ["unit_manager", "franchisee"]) ||
-    Object.values(session.rolesByClinic).some((r) => r.includes("franchisor_staff"));
+  const podeCancelar = ehGestorIndica(session, ind.unidade_id);
 
   const etapas: [string, string | null][] = [
     ["Registrada", ind.registrada_em],
@@ -212,7 +199,13 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
             <CardTitle className="text-sm">Quem indicou</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <p className="font-medium">{ind.embaixador_rotulo ?? ind.parceiro_nome ?? "—"}</p>
+            {ind.embaixador_id ? (
+              <Link href={`/indica-mais-risos/embaixadores/${ind.embaixador_id}`} className="font-medium hover:underline">
+                {ind.embaixador_rotulo ?? "—"}
+              </Link>
+            ) : (
+              <p className="font-medium">{ind.parceiro_nome ?? "—"}</p>
+            )}
             <p className="text-muted-foreground">
               Pedido por:{" "}
               {ind.risartano_origem_id ? (pessoas.get(ind.risartano_origem_id) ?? "—") : "—"}

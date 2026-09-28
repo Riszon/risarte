@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock, LayoutGrid, List } from "lucide-react";
-import { getSessionContext, hasRoleInClinic, type SessionContext } from "@/lib/auth";
+import { getSessionContext, type SessionContext } from "@/lib/auth";
+import { ehGestorIndica } from "@/lib/indica/access";
 import { createClient } from "@/lib/supabase/server";
 import { indicaDb } from "@/lib/indica/db";
 import { mensagemDoBanco } from "@/lib/indica/erros";
@@ -53,11 +54,7 @@ type Linha = {
 const DIAS_PARADA = 3;
 
 function podeCancelarNa(session: SessionContext, unidadeId: string): boolean {
-  return (
-    session.isAdminMaster ||
-    hasRoleInClinic(session, unidadeId, ["unit_manager", "franchisee"]) ||
-    Object.values(session.rolesByClinic).some((r) => r.includes("franchisor_staff"))
-  );
+  return ehGestorIndica(session, unidadeId);
 }
 
 export default async function IndicacoesPage(props: PageProps<"/indica-mais-risos/indicacoes">) {

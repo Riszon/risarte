@@ -45,7 +45,7 @@ Nenhuma ligação apaga em cascata.
 |---|---|
 | **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
 | **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
-| IND2 — Embaixadores e resgates | a fazer |
+| **IND2 — Embaixadores e resgates** | ✅ entregue em 28/09/2026 (0.3.0, migração 2004). 2004 aplicada no **treino**; **produção pendente**. Segue escondido (só Admin) |
 | IND3 — Automação e portal | a fazer |
 | IND4 — Campanhas e equipe | a fazer |
 | IND5 — Gestão de rede | a fazer |
@@ -189,6 +189,73 @@ da produção: ligar na produção liga nos dois.
 (`docs/treinamento/manual-treinamento-riSZon.md`) e a novidade em
 `src/lib/changelog.ts` (§0c do CLAUDE.md). Hoje não entra porque ninguém da
 equipe vê o módulo.
+
+## IND2 — o que foi entregue (28/09/2026)
+
+**Decisões do dono:** Crédito Risarte = **voucher com código** (RIS-XXXX-XXXX);
+o consultor aplica como desconto na negociação (Comercial, como hoje) e marca
+o voucher como usado no Indica, ligado à negociação. Validade do voucher =
+parâmetro `voucher_validade_dias`, padrão **90 dias**. Comercial e Financeiro
+não mudaram.
+
+**Telas** (abas no topo do módulo: Indicações · Embaixadores · Resgates ·
+Catálogo · Configurações):
+
+- **Embaixadores:** ranking (conversões, saldo, indicações, nome), situação,
+  saldo a vencer em 30 dias; **"Quem pedir hoje"** = quem fechou tratamento
+  na unidade nos últimos 30 dias e ainda não é Embaixador.
+- **Ficha do Embaixador:** saldos, barra até o próximo nível, indicações,
+  resgates, extrato completo; **Novo resgate** (com cessão do prêmio),
+  **Ajuste manual** e **Mudar situação** (só gestor, com motivo). Link
+  pessoal/QR ficam para a IND3 (a página de convite ainda não existe).
+- **Resgates:** fila (em aberto / por situação); Aprovar e Recusar (gestor),
+  Entregar (gera o voucher e mostra o código), Cancelar (devolve os pontos);
+  **Usar voucher** (código + cliente + negociação).
+- **Catálogo:** itens (tipo, custo, valor, estoque, parceiro, nível mínimo,
+  onde vale, ativo) e parceiros. Rede = franqueadora; unidade = gestor.
+- **Configurações:** todos os parâmetros por grupo; a franqueadora grava o
+  padrão da rede, **trava** ou define a **faixa**; o gestor ajusta a unidade
+  ativa dentro da faixa. Níveis editáveis pela franqueadora. Toda mudança é
+  uma versão nova (histórico preservado; regra muda só para o futuro).
+
+**Migração 2004:** tipo `devolucao` no extrato; resgate grava o item e o
+valor da época + voucher (validade, uso, negociação); trava de escrita nos
+resgates; `ajustar_pontos`, `definir_status_embaixador`, `solicitar_resgate`
+(reserva os pontos NA HORA; confere saldo, estoque, nível e unidade; nasce
+aprovado até o limite), `mudar_resgate` (aprovar/entregar/recusar/cancelar),
+`usar_voucher`; visões `v_embaixadores` e `v_saldo_embaixador` (total
+resgatado desconta devoluções).
+
+**Provas:** `npm run test:indica` **94/94** (24 novas: ajuste, catálogo,
+resgate, reserva, estoque, nível, cessão, aprovação, devolução, voucher,
+validade, uso único, trava, suspensão) — **provado quebrando** (tirar a
+reserva derruba 3). Testes unitários `indica-rotulos` (rótulos presos aos
+`check` do banco). Tela real no treino: as 4 telas abrem sem erro; cadastro
+de item, ajuste, resgate, entrega com voucher (`RIS-UU35-S5EE`) e desativação
+do item pela tela; recepção continua sem acesso.
+
+⚠️ **Ficaram no treino, marcados "(teste — pode ignorar)":** item de catálogo
+"Crédito R$ 50 (teste…)" (**desativado**), ajuste +1000 e o resgate
+`RES-000007` **entregue** do Embaixador `TESTE12`.
+
+⚠️ **AP22 (BACKLOG):** um aviso de hidratação apareceu UMA vez no navegador
+durante o roteiro e não se repetiu em três voltas completas. Suspeita: relógio
+da barra de cima (núcleo). Não é das telas do Indica (todas abriram limpas).
+
+### Checklist da IND2 — no TREINO, como Admin
+
+1. Rodar a **2004 na produção** (SQL Editor) — o assistente copia.
+2. **Catálogo** → Novo item: "Crédito Risarte R$ 100", 1.000 Riso Coins,
+   valor 100,00.
+3. **Embaixadores** → abrir um Embaixador → **Ajuste manual** +1.000 com
+   motivo → aparece no extrato.
+4. **Novo resgate** → escolher o item → nasce **aprovado** (abaixo de 2.000)
+   e o disponível cai na hora.
+5. **Resgates** → **Entregar** → aparece o voucher `RIS-…`.
+6. Aplicar o valor como desconto numa negociação (Comercial) → **Usar
+   voucher** → código + cliente + negociação. Tentar de novo: recusa.
+7. **Configurações** → ver os parâmetros; como franqueadora, definir a faixa
+   de `pontos_registro` (ex.: 30 a 80) para liberar as unidades.
 
 ## Notas para as próximas fases
 
