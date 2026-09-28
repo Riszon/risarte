@@ -43,7 +43,7 @@ Nenhuma ligação apaga em cascata.
 
 | Fase | Situação |
 |---|---|
-| **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). Aplicada no **treino**; **produção pendente** |
+| **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
 | IND1 — Operação da recepção | a fazer |
 | IND2 — Embaixadores e resgates | a fazer |
 | IND3 — Automação e portal | a fazer |
@@ -91,7 +91,7 @@ que apaga junto — medido com `check:alcance`), `scripts/backup-producao.mjs`
 (schema `indica` no backup), `src/lib/version.ts` (duas linhas do Indica),
 `CLAUDE.md` §0 (faixa 2000+).
 
-### Passos do dono para levar a IND0 à produção
+### Passos do dono para levar a IND0 à produção — ✅ feitos em 28/09/2026
 
 1. Supabase da **produção** → SQL Editor → rodar, nesta ordem, `2000`, `2001`,
    `2002` (o assistente copia cada uma em UTF-8 para a área de transferência).
