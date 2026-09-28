@@ -1993,3 +1993,19 @@ auditoria não se apaga sem o dono pedir. Corrigido na hora: onde existe conta
 de teste (`@example.com`) para o papel, a varredura usa SÓ ela; pessoa real
 só onde não há conta de teste (a produção, como sempre foi).
 
+**AP6 — fechamento, com as contas de teste abertas (autorizado pelo dono,
+27/09/2026).** A porta "sistema" das 5 contas de teste do treino
+(gerente/financeiro/comprador/consultor/recepcao@example.com) foi ABERTA —
+estavam todas fechadas; a foto do estado anterior está no script
+`ap6-portas.mjs` (devolver = fechar de novo). Varredura completa: **7 perfis,
+749 aberturas, 0 falha** — gerente e financeiro abrem o DRE, comprador abre a
+mesa. **As guardas estavam certas desde sempre**; era a porta.
+
+⚠️ **E o Dentista:** a varredura, desde antes de hoje, media o Dentista com um
+**dentista REAL** do treino (o primeiro com esse papel e a porta aberta).
+Hoje ficaram **3 registros "view ppr_dashboard"** no nome dele (um por
+rodada); rodadas de dias anteriores devem ter deixado outros. Não apagados.
+Com a regra "conta de teste antes de pessoa real", o Dentista agora sai como
+"não conferido — modo portal" até a porta de `dentista@example.com` ser
+aberta (precisa do OK do dono).
+
