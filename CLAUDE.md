@@ -486,7 +486,12 @@ a produção, com trava que EXIGE ser produção).
    produção** (27/09; conferido pela API: 1 empresa, por titular, sem fixo).
    ✅ **AP19 (1025, Empresarial 0.75.0, 27/09):** termo por titular pela
    tabela (= boleto); "novo valor fixo" só no valor fixo; cartão "Acordo de
-   cobrança" em Dados Gerais. ✅ **1025 APLICADA na produção** (27/09; conferido pela API, inclusive o filtro das somas do fixo). AP19 (3 pontas soltas) no BACKLOG.
+   cobrança" em Dados Gerais. ✅ **1025 APLICADA na produção** (27/09; conferido pela API, inclusive o filtro das somas do fixo).
+   ✅ **OC-00080 (0283, core 0.297.0, 27/09):** os avisos "Iniciar
+   tratamento" e "Agendar apresentação" só saem quando o agendamento existe
+   (gatilho em appointments); tela com "Abrir agenda" e "Fechar" (adia 15
+   min). **0283 APLICADA na produção** (conferido: gatilho no lugar; a função
+   não responde sem login). AP20 (cancelamento não traz o aviso) no BACKLOG. AP19 (3 pontas soltas) no BACKLOG.
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
