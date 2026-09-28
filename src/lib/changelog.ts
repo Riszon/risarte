@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.301.0",
+    data: "2026-09-28",
+    migracao: null,
+    titulo: "O alerta da anamnese diz o que foi marcado",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O alerta da anamnese deixou de dizer só \"Condição de saúde relevante marcada\": agora mostra o que foi marcado (ex.: Diabetes, AIDS) e o que foi escrito no \"Especifique\" (ex.: qual remédio causa alergia) — no prontuário e no cockpit do Planner.",
+        papeis: ["clinical_coordinator", "planner_dentist", "dentist", "unit_manager"],
+        manual: "Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A leitura da anamnese ficou mais organizada: cada seção em um bloco, pergunta e resposta lado a lado, e em vermelho só o que pede atenção. É a mesma no prontuário e no Planner.",
+        papeis: ["clinical_coordinator", "planner_dentist", "dentist", "unit_manager"],
+        manual: "Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.300.0",
     data: "2026-09-27",
     migracao: "0285",

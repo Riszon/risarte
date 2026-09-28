@@ -1,5 +1,6 @@
 "use client";
 
+import { LeituraDaAnamnese } from "@/components/leitura-da-anamnese";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -10,9 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
-  formatAnswer,
   groupBySection,
-  isAnswerAlerting,
   isQuestionVisible,
   kindSupportsDetail,
   YES_NO_OPTIONS,
@@ -631,49 +630,8 @@ function ReadView({ current }: { current: CurrentFill }) {
         Preenchida em {fmtDateTime(current.filledAt)}
         {current.filledByName ? ` por ${current.filledByName}` : ""}
       </p>
-      {groupBySection(
-        current.answers.map((a) => ({
-          id: a.id,
-          templateId: "",
-          clinicId: null,
-          section: a.section,
-          label: a.label,
-          kind: a.kind,
-          options: null,
-          detailPrompt: null,
-          required: false,
-          sortOrder: a.sortOrder,
-          alertWhen: a.alertWhen,
-          alertMessage: a.alertMessage,
-          gender: null,
-          conditionQuestionId: null,
-          conditionValues: null,
-        }))
-      ).map((g) => (
-        <div key={g.section} className="space-y-1.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {g.section}
-          </h3>
-          <ul className="space-y-1">
-            {g.questions.map((q) => {
-              const a = current.answers.find((x) => x.id === q.id)!;
-              const alerting = isAnswerAlerting(a.value, a.alertWhen);
-              return (
-                <li key={a.id} className="text-sm">
-                  <span className="text-muted-foreground">{a.label}: </span>
-                  <span className={cn("font-medium", alerting && "text-destructive")}>
-                    {formatAnswer(a.value, a.kind)}
-                    {alerting && <AlertTriangle className="ml-1 inline size-3.5" />}
-                  </span>
-                  {a.detail && (
-                    <span className="text-muted-foreground"> — {a.detail}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
+      {/* OC-00062: a mesma leitura do cockpit do Planner. */}
+      <LeituraDaAnamnese answers={current.answers} />
     </div>
   );
 }

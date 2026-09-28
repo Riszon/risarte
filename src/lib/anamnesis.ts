@@ -215,7 +215,14 @@ const YES_NO_LABEL: Record<string, string> = {
 
 /** Resposta legível para exibição na ficha. */
 export function formatAnswer(value: AnswerValue, kind: QuestionKind): string {
-  if (value == null || (Array.isArray(value) && value.length === 0)) return "—";
+  // Texto vazio também é "sem resposta" (campo digitado e apagado): sem isto a
+  // leitura mostrava a linha em branco, com cara de erro (OC-00062).
+  if (
+    value == null ||
+    (typeof value === "string" && value.trim() === "") ||
+    (Array.isArray(value) && value.length === 0)
+  )
+    return "—";
   if (Array.isArray(value)) return value.join(", ");
   if (kind === "yes_no" || kind === "yes_no_unknown") {
     return YES_NO_LABEL[value] ?? value;
@@ -269,15 +276,48 @@ export function isQuestionVisible(
   return true;
 }
 
-/** Lista os alertas disparados pelas respostas (mensagem + pergunta). */
-export function evaluateAlerts(
-  answers: FilledAnswer[]
-): { label: string; message: string }[] {
-  const out: { label: string; message: string }[] = [];
+/** Um alerta disparado — o que ele avisa E o que o disparou. */
+export type AlertaDaAnamnese = {
+  /** A pergunta (texto da ficha). */
+  label: string;
+  /** A mensagem configurada (ex.: "Condição de saúde relevante marcada"). */
+  message: string;
+  /**
+   * ⚠️ O QUE FOI MARCADO (OC-00062, 27/09/2026). Na múltipla escolha, só as
+   * opções que disparam o alerta (ex.: "AIDS", "Diabetes"); na resposta única
+   * que não é sim/não, a própria resposta. Sim/Não não entra: "Sim" não
+   * acrescenta nada à mensagem.
+   *
+   * Antes o alerta dizia só "Condição de saúde relevante marcada" e repetia a
+   * PERGUNTA — o sistema sabia que era AIDS (é o que dispara) e jogava fora.
+   */
+  itens: string[];
+  /** O que a pessoa escreveu no detalhe (ex.: qual remédio, qual alergia). */
+  detalhe: string | null;
+};
+
+/** Lista os alertas disparados pelas respostas. */
+export function evaluateAlerts(answers: FilledAnswer[]): AlertaDaAnamnese[] {
+  const out: AlertaDaAnamnese[] = [];
   for (const a of answers) {
-    if (a.alertMessage && isAnswerAlerting(a.value, a.alertWhen)) {
-      out.push({ label: a.label, message: a.alertMessage });
+    if (!a.alertMessage || !isAnswerAlerting(a.value, a.alertWhen)) continue;
+    let itens: string[] = [];
+    if (a.alertWhen && "any_of" in a.alertWhen && Array.isArray(a.value)) {
+      const disparam = a.alertWhen.any_of;
+      itens = a.value.filter((v) => disparam.includes(v));
+    } else if (
+      typeof a.value === "string" &&
+      a.kind !== "yes_no" &&
+      a.kind !== "yes_no_unknown"
+    ) {
+      itens = [a.value];
     }
+    out.push({
+      label: a.label,
+      message: a.alertMessage,
+      itens,
+      detalhe: a.detail?.trim() || null,
+    });
   }
   return out;
 }

@@ -1,7 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/09/2026 · Versão do sistema: **0.300.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/09/2026 · Versão do sistema: **0.301.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🩺 0.301.0 — O ALERTA DA ANAMNESE DIZ O QUE FOI MARCADO (OC-00062)
+>
+> `evaluateAlerts` devolve `itens` (as opções que disparam) e `detalhe`;
+> componentes únicos `AlertasDaAnamnese` e `LeituraDaAnamnese` para o
+> prontuário e o Planner. Só quem já lê a anamnese vê (`canViewAnamnesis`).
+>
 > ## 🎙️ 0.300.0 / 0285 — A AVALIAÇÃO TERMINA NO COCKPIT, E O ÁUDIO VAI JUNTO (OC-00085/86)
 >
 > Causa comum: a avaliação tinha duas saídas que faziam metade cada uma. Agora

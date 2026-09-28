@@ -1,3 +1,5 @@
+import { AlertasDaAnamnese } from "@/components/alertas-da-anamnese";
+import type { AlertaDaAnamnese } from "@/lib/anamnesis";
 import type { Metadata } from "next";
 import { idadeCurta, idadeDetalhada } from "@/lib/idade";
 import Link from "next/link";
@@ -1217,7 +1219,7 @@ export default async function ClientDetailPage(
     canViewClinical || hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
   let anamnesisTemplates: FillTemplate[] = [];
   let anamnesisFills: AnamnesisTypeGroup[] = [];
-  const anamnesisAlerts: { label: string; message: string }[] = [];
+  const anamnesisAlerts: AlertaDaAnamnese[] = [];
   if (canViewAnamnesis) {
     const [{ data: tplRows }, { data: qRows }, { data: fillRows }] =
       await Promise.all([
@@ -2674,22 +2676,8 @@ export default async function ClientDetailPage(
         canAnswer={canAnswerDecision}
       />
 
-      {anamnesisAlerts.length > 0 && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-destructive">
-            <AlertTriangle className="size-4" />
-            Alertas da anamnese
-          </h2>
-          <ul className="mt-1.5 space-y-1">
-            {anamnesisAlerts.map((a, i) => (
-              <li key={i} className="text-sm">
-                <span className="font-medium text-destructive">{a.message}</span>
-                <span className="text-muted-foreground"> — {a.label}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
+      <AlertasDaAnamnese alertas={anamnesisAlerts} />
 
       {anamnesisNudge && (
         <div className="flex items-center gap-2 rounded-md border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900">

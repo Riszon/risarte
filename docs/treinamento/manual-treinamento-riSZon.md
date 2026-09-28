@@ -1388,7 +1388,18 @@ fase do paciente ☐ sei que não sou eu quem chama
    exceção: ela não espera o consentimento, por orientação do jurídico da
    Risarte (decisão de 21/09/2026).
 4. **Levantamento de informações** → escolher a ficha de anamnese → preencher →
-   **Salvar anamnese**.
+   **Salvar anamnese**. Quando uma resposta pede atenção (uma doença, uma
+   alergia, uso de remédio), o topo do prontuário mostra **Alertas da
+   anamnese** — a mensagem **e o que foi marcado** (ex.: *"Condição de saúde
+   relevante marcada"* com as etiquetas **Diabetes** e **AIDS**; *"Alergia a
+   medicamento"* com **Dipirona**, se você escreveu no "Especifique").
+
+> **Escreva no "Especifique".** É esse texto que aparece no alerta e chega ao
+> Planner. "Alergia a medicamento" sem dizer qual obriga alguém a perguntar de
+> novo ao paciente.
+
+> **Quem vê o alerta:** só quem já pode ler a anamnese — equipe clínica,
+> Planner, Gerente da unidade e Dentista. A recepção não vê (dado de saúde).
 5. Subir fotos e exames.
 6. **Enviar ao Centro de Planejamento**. O sistema **para a gravação, espera
    o áudio ser salvo na ficha e só então envia** — o Planner recebe o caso já
@@ -1474,6 +1485,10 @@ Planejamento**.
 1. Menu **Centro de Planejamento** → a fila vem **priorizada** (apresentação
    comercial mais próxima primeiro).
 2. Abra o caso → cockpit em duas colunas: evidências à esquerda, plano à direita.
+   No cartão **Anamnese**, os alertas vêm primeiro, dizendo **o que** foi
+   marcado (ex.: **Diabetes**, **AIDS**, **Dipirona**); abaixo, a ficha por
+   seção, com pergunta e resposta lado a lado e **em vermelho só o que
+   disparou alerta** — as outras opções marcadas aparecem em cinza.
 3. **Iniciar plano de tratamento** → escreva o **Diagnóstico**.
 4. **Adicionar opção de tratamento** (marque uma como principal).
 5. Dentro da opção, **Procedimento** → escolha do catálogo → **Item**.

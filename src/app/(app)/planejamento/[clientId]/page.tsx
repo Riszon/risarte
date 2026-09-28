@@ -1,3 +1,6 @@
+import { LeituraDaAnamnese } from "@/components/leitura-da-anamnese";
+import { AlertasDaAnamnese } from "@/components/alertas-da-anamnese";
+import type { AlertaDaAnamnese } from "@/lib/anamnesis";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -42,7 +45,6 @@ import {
 } from "@/lib/pricing";
 import {
   evaluateAlerts,
-  formatAnswer,
   mapAnswer,
   type AnamnesisAnswerRow,
   type FilledAnswer,
@@ -170,7 +172,7 @@ export default async function PlanningCockpitPage(
 
   // H3.13: anamnese do cliente (leitura) — última versão preenchida.
   let anamnesisAnswers: FilledAnswer[] = [];
-  let anamnesisAlerts: { label: string; message: string }[] = [];
+  let anamnesisAlerts: AlertaDaAnamnese[] = [];
   let anamnesisInfo: { filledAt: string; templateName: string | null } | null =
     null;
   // Sem filtro por clínica: mostra a anamnese mais recente do cliente mesmo que
@@ -759,27 +761,11 @@ export default async function PlanningCockpitPage(
                 {anamnesisInfo.templateName ?? "Ficha"} · atualizada em{" "}
                 {fmtDateTime(anamnesisInfo.filledAt)}
               </p>
-              {anamnesisAlerts.length > 0 && (
-                <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-                  {anamnesisAlerts.map((a, i) => (
-                    <p key={i} className="flex items-start gap-1.5">
-                      <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-                      <span className="font-medium">{a.message}</span>
-                    </p>
-                  ))}
-                </div>
-              )}
-              <ul className="space-y-1 text-sm">
-                {anamnesisAnswers.map((a) => (
-                  <li key={a.id} className="flex flex-wrap gap-x-2">
-                    <span className="text-muted-foreground">{a.label}:</span>
-                    <span className="font-medium">
-                      {formatAnswer(a.value, a.kind)}
-                      {a.detail ? ` — ${a.detail}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
+              <AlertasDaAnamnese alertas={anamnesisAlerts} compacto />
+              {/* OC-00062: a mesma leitura do prontuário — seções, pergunta e
+                  resposta lado a lado, e em vermelho só o que disparou. */}
+              <LeituraDaAnamnese answers={anamnesisAnswers} />
             </div>
           )}
         </PopupCard>
