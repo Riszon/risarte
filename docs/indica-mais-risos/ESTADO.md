@@ -44,7 +44,7 @@ Nenhuma ligação apaga em cascata.
 | Fase | Situação |
 |---|---|
 | **IND0 — Fundação** | ✅ entregue em 28/09/2026 (0.1.0, migrações 2000–2002). **Aplicada e exposta nos dois bancos** (conferido pela API em 28/09: produção com 24 parâmetros, 4 níveis e o motor respondendo; sem login, recusa; treino com os 24 parâmetros) |
-| **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 aplicada no **treino**; **produção pendente**. Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
+| **IND1 — Operação da recepção** | ✅ entregue em 28/09/2026 (0.2.0, migração 2003). 2003 **aplicada nos dois bancos** (produção conferida pela API em 28/09: visão e funções no lugar; sem login, recusa). Módulo **escondido** (só Admin Master) até o dono ligar a permissão |
 | IND2 — Embaixadores e resgates | a fazer |
 | IND3 — Automação e portal | a fazer |
 | IND4 — Campanhas e equipe | a fazer |
@@ -165,7 +165,7 @@ da produção: ligar na produção liga nos dois.
 
 ### Checklist do que testar na unidade (IND1) — no TREINO, como Admin
 
-1. Rodar a **2003 na produção** (SQL Editor) — o assistente copia.
+1. ✅ 2003 na produção (feito em 28/09/2026).
 2. No treino, entrar como Admin → menu **Indica +Risos** → quadro vazio com a
    frase "Quem você atendeu hoje e saiu feliz?".
 3. Abrir a ficha de um cliente → **Nova indicação** → marcar o aceite →
