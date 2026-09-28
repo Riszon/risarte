@@ -491,7 +491,11 @@ a produção, com trava que EXIGE ser produção).
    tratamento" e "Agendar apresentação" só saem quando o agendamento existe
    (gatilho em appointments); tela com "Abrir agenda" e "Fechar" (adia 15
    min). **0283 APLICADA na produção** (conferido: gatilho no lugar; a função
-   não responde sem login). AP20 (cancelamento não traz o aviso) no BACKLOG. AP19 (3 pontas soltas) no BACKLOG.
+   não responde sem login).
+   ✅ **AP20 + item 10 (0284, core 0.298.0, 27/09):** início cancelado ou
+   falta traz o aviso de volta com o motivo; uma linha por cliente na janela.
+   **0284 APLICADA na produção** (conferido: gatilho no lugar; a função não
+   responde sem login). AP19 (3 pontas soltas) no BACKLOG.
    (Registro antigo do plano da parte 2, já entregue:) gravar o certificado (só pelo servidor,
    depois de medir), fila de aprovação, coletiva, e a reciclagem devolvendo o
    acesso sozinha (decisão do dono). Porta fechada pelo Admin NÃO reabre ao
