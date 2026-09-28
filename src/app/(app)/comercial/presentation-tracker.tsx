@@ -62,6 +62,8 @@ export type PresentationInfo = {
   clientName: string;
   presentationAt: string | null;
   presentationWith: string | null;
+  /** A recepção confirmou a presença (situação "Confirmado" do agendamento). */
+  presentationConfirmed: boolean;
   attemptCount: number;
   noShowCount: number;
   lastAttemptLabel: string | null;
@@ -137,6 +139,14 @@ export function PresentationTracker({ info }: { info: PresentationInfo }) {
             </strong>
             {info.presentationWith && ` · ${info.presentationWith}`}
           </span>
+          {/* O consultor vê de relance quais apresentações estão garantidas e
+              em quais vale uma mensagem antes — a mesma situação "Confirmado"
+              da agenda e do Atendimento, na mesma cor. */}
+          {info.presentationConfirmed && (
+            <span className="shrink-0 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 text-[10px] font-medium text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300">
+              Confirmado
+            </span>
+          )}
         </p>
       ) : (
         <p

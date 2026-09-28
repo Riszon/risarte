@@ -213,6 +213,8 @@ export default async function ComercialKanbanPage(
     {
       at: string;
       withName: string | null;
+      /** A recepção confirmou a presença. */
+      confirmed: boolean;
       // 0269 (relato OC-00073): o que a RECEPÇÃO já fez com este cliente.
       // Sem isto o consultor não sabia que o cliente estava esperando por ele.
       attendance: string | null;
@@ -231,7 +233,7 @@ export default async function ComercialKanbanPage(
       supabase
         .from("appointments")
         .select(
-          "client_id, starts_at, attendance, checked_in_at, called_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+          "client_id, starts_at, status, attendance, checked_in_at, called_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
         )
         .in("client_id", ids)
         .eq("type", "commercial_presentation")
@@ -255,6 +257,7 @@ export default async function ComercialKanbanPage(
     for (const a of (appts ?? []) as unknown as {
       client_id: string;
       starts_at: string;
+      status: string;
       attendance: string | null;
       checked_in_at: string | null;
       called_at: string | null;
@@ -265,6 +268,7 @@ export default async function ComercialKanbanPage(
       presentationByClient.set(a.client_id, {
         at: a.starts_at,
         withName: p?.full_name ?? null,
+        confirmed: a.status === "confirmed",
         attendance: a.attendance ?? null,
         checkedInAt: a.checked_in_at ?? null,
         calledAt: a.called_at ?? null,
@@ -371,6 +375,7 @@ export default async function ComercialKanbanPage(
       outcomeByName: card?.outcomeBy ? (outcomeNames.get(card.outcomeBy) ?? null) : null,
       presentationAt: presentationByClient.get(c.id)?.at ?? null,
       presentationWith: presentationByClient.get(c.id)?.withName ?? null,
+      presentationConfirmed: presentationByClient.get(c.id)?.confirmed ?? false,
       // O estado da sala de espera, do jeito que a recepção deixou.
       atendimento: presentationByClient.get(c.id)?.attendance ?? null,
       esperandoDesde: presentationByClient.get(c.id)?.checkedInAt ?? null,

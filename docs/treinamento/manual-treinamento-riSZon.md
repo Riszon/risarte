@@ -1498,6 +1498,9 @@ Na coluna **A apresentar**, cada cartão mostra:
 
 - **quando é a apresentação** e com quem — ou, em **vermelho**, *"Sem
   apresentação marcada"*, que é o caso que trava o funil;
+- o selo verde **Confirmado** quando a Recepção confirmou a presença do
+  cliente (na Agenda ou no Atendimento). **Sem o selo**, a apresentação está
+  marcada mas ninguém confirmou ainda — vale uma mensagem antes;
 - **quantas tentativas** já houve e **o que aconteceu da última vez**.
 
 Quando o cliente não comparece, pede para remarcar, ou você fala com ele sem

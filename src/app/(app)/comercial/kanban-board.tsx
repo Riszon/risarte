@@ -81,6 +81,8 @@ export type BoardCard = {
    *  que trava o funil, e o cartão precisa gritar isso. */
   presentationAt: string | null;
   presentationWith: string | null;
+  /** A recepção confirmou a presença na apresentação. */
+  presentationConfirmed: boolean;
   /** 0269: o estado do cliente na sala de espera da recepção. */
   atendimento: string | null;
   esperandoDesde: string | null;
@@ -594,6 +596,7 @@ function BoardCardView({
             clientName: card.fullName,
             presentationAt: card.presentationAt,
             presentationWith: card.presentationWith,
+            presentationConfirmed: card.presentationConfirmed,
             atendimento: card.atendimento,
             esperandoDesde: card.esperandoDesde,
             chamadoAs: card.chamadoAs,

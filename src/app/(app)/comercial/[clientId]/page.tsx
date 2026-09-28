@@ -231,7 +231,7 @@ export default async function CommercialCockpitPage(
     supabase
       .from("appointments")
       .select(
-        "starts_at, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+        "starts_at, status, provider:profiles!appointments_provider_user_id_fkey ( full_name )"
       )
       .eq("client_id", clientId)
       .eq("type", "commercial_presentation")
@@ -248,6 +248,7 @@ export default async function CommercialCockpitPage(
   const nextPresentation = apptRow
     ? {
         at: (apptRow as { starts_at: string }).starts_at,
+        confirmed: (apptRow as { status: string }).status === "confirmed",
         withName:
           (Array.isArray(apptProvider) ? apptProvider[0] : apptProvider)?.full_name ??
           null,
@@ -392,6 +393,7 @@ export default async function CommercialCockpitPage(
               clientId,
               clientName: client.full_name as string,
               presentationAt: nextPresentation?.at ?? null,
+              presentationConfirmed: nextPresentation?.confirmed ?? false,
               presentationWith: nextPresentation?.withName ?? null,
               attemptCount: tentativas.failed,
               noShowCount: tentativas.noShow,

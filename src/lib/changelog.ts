@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.299.1",
+    data: "2026-09-27",
+    migracao: null,
+    titulo: "O Comercial vê quando a apresentação está confirmada",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No Comercial, o cartão \"A apresentar\" e a ficha do cliente mostram o selo verde \"Confirmado\" quando a Recepção confirmou a presença na apresentação. Sem o selo, a apresentação está marcada mas ainda não foi confirmada.",
+        papeis: ["commercial_consultant"],
+        manual: "Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.299.0",
     data: "2026-09-27",
     migracao: null,
