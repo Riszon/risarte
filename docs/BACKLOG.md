@@ -2015,3 +2015,28 @@ aberta (precisa do OK do dono).
 0 falha — todos por contas de teste.** A varredura não usa mais pessoa real
 no treino.
 
+
+### AP21. ⚠️ `check-migrations` só enxerga funções do schema `public` (28/09/2026) — ACHADO DE PASSAGEM
+
+Achado ao conferir as migrações 2000–2002 do Indica +Risos.
+
+**Confirmado (lendo o código):** a expressão que acha as funções em
+`scripts/check-migrations.mjs` (constante `FN`, linha 41) exige
+`create ... function public.<nome>`. As Regras 1, 2 e 3 (retorno mudou sem
+`drop`, colunas do `returns table`, parâmetros mudaram sem `drop`) **não olham
+funções de `empresarial.` nem de `indica.`**. A régua responde "OK" para esses
+schemas sem ter conferido nada — é a régua que passa por ausência (§0d).
+As Regras 5 a 8 olham o texto inteiro e valem para qualquer schema.
+
+**Suspeita (não medida):** alguma migração do Empresarial (faixa 1000+) pode
+ter trocado retorno ou parâmetros de função sem `drop` e só não quebrou porque
+passou pelo treino. Não conferi uma a uma.
+
+**Mitigação que já existe:** toda migração roda no treino antes de ir ao dono
+(`npm run migrar:teste`), e o Postgres pega essas três classes de erro. O
+Indica ainda roda os testes SQL (`npm run test:indica`) aplicando as
+migrações numa transação desfeita.
+
+**Correção proposta:** aceitar qualquer schema em `FN` (`(\w+)\.(\w+)`) e usar
+`schema.nome` como chave do mapa `known`; provar quebrando de propósito com uma
+função `indica.` de retorno trocado.
