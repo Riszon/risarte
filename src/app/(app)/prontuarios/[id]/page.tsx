@@ -122,6 +122,7 @@ import { loadClientPlans } from "./plan-loader";
 import { EmpresarialPanel } from "./empresarial-panel";
 import { canIndicar } from "@/lib/indica/access";
 import { IndicaNaFicha } from "../../indica-mais-risos/na-ficha";
+import { AbaIndicaNaFicha } from "../../indica-mais-risos/aba-ficha";
 import { loadClientUsage } from "@/lib/empresarial/benefits";
 import { loadClientPrograms } from "@/lib/programs";
 import type { TreatmentPlan } from "@/lib/planning";
@@ -3264,6 +3265,13 @@ export default async function ClientDetailPage(
               canRenegotiate={canRenegotiate}
               canAuthorize={canAuthorizeRenegotiation}
             />
+          </TabPanel>
+        )}
+
+        {/* Indica +Risos: o cliente como Embaixador e como indicado (módulo). */}
+        {podeIndicarNaFicha && (
+          <TabPanel id="indica" label="Indica +Risos">
+            <AbaIndicaNaFicha session={session} clienteId={client.id} />
           </TabPanel>
         )}
 

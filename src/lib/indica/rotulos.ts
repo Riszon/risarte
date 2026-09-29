@@ -85,3 +85,19 @@ export function proximoNivel(
   const progresso = alvo.criterio <= 0 ? 1 : Math.min(1, conversoes / alvo.criterio);
   return { nivel: alvo, faltam, progresso };
 }
+
+/** "Pedi indicação": em que momento a equipe pediu e o que o cliente respondeu. */
+export const PEDIDO_MOMENTOS: { valor: string; rotulo: string }[] = [
+  { valor: "fechamento", rotulo: "No fechamento do tratamento" },
+  { valor: "entrega_etapa", rotulo: "Na entrega de uma etapa" },
+  { valor: "elogio", rotulo: "Depois de um elogio" },
+  { valor: "retorno", rotulo: "No retorno / manutenção" },
+  { valor: "outro", rotulo: "Outro momento" },
+];
+
+export const PEDIDO_RESULTADOS: { valor: string; rotulo: string }[] = [
+  { valor: "indicou", rotulo: "Indicou alguém" },
+  { valor: "vai_pensar", rotulo: "Vai pensar" },
+  { valor: "recusou", rotulo: "Não quis indicar" },
+  { valor: "pendente", rotulo: "Ainda sem resposta" },
+];

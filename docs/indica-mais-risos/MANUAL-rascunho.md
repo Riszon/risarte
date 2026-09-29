@@ -20,6 +20,14 @@ lança os pontos.
 Indicações · Embaixadores · Campanhas · Equipe · Resgates · Mensagens ·
 Catálogo · Relatórios · Auditoria · Configurações.
 
+**Guia completo:** aba **Como funciona** do módulo (ou `/guia-indica` para quem
+só pede indicação) — objetivo, quem ganha, os termos e o passo a passo, com
+os números da configuração.
+
+**Na ficha do cliente:** um selo mostra se ele é Embaixador (nível e código)
+ou se chegou por indicação, e a aba **Indica +Risos** mostra o saldo, todas as
+indicações que ele fez, por quem foi indicado e os pedidos de indicação.
+
 **Quem vê:** recepção, SDR, consultor e assistente comercial, gerente,
 franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só os botões
 **"Pedi indicação"** e **"Nova indicação"** na ficha do cliente.

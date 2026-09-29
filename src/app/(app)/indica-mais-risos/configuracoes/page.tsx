@@ -235,7 +235,7 @@ export default async function ConfiguracoesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nível</TableHead>
-                <TableHead className="text-right">Fechamentos (12m)</TableHead>
+                <TableHead className="text-right">Conversões na janela</TableHead>
                 <TableHead className="text-right">Multiplicador</TableHead>
                 <TableHead>Benefício</TableHead>
                 <TableHead />

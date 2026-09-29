@@ -10,6 +10,7 @@ import {
 import {
   ClipboardList,
   FileText,
+  HeartHandshake,
   History,
   Inbox,
   ListChecks,
@@ -39,6 +40,7 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   documentos: FileText,
   pedidos: Inbox,
   financeiro: Wallet,
+  indica: HeartHandshake,
   historico: History,
 };
 

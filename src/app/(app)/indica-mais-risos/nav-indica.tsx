@@ -16,6 +16,7 @@ const ABAS = [
   { href: "/indica-mais-risos/relatorios", rotulo: "Relatórios" },
   { href: "/indica-mais-risos/auditoria", rotulo: "Auditoria" },
   { href: "/indica-mais-risos/configuracoes", rotulo: "Configurações" },
+  { href: "/indica-mais-risos/como-funciona", rotulo: "Como funciona" },
 ];
 
 /** As abas do Indica +Risos, no topo de todas as telas do módulo. */

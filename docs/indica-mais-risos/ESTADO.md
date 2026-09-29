@@ -554,6 +554,42 @@ Nada disso foi ligado — decisão do dono ("preparar e esperar"):
    evidências, escrever a novidade em `src/lib/changelog.ts`, bumpar
    `APP_VERSION` e rodar `npm run manual:docx` (regra do §0c do CLAUDE.md).
 
+## Depois da IND5 — ficha do cliente e guia (28/09/2026, sem migração)
+
+Pedido do dono: confirmar se o status de Embaixador aparece no prontuário e
+criar um guia próprio do programa.
+
+- **Antes:** a ficha só tinha os botões "Pedi indicação" e "Nova indicação";
+  o status de Embaixador **não aparecia** e não havia lista de indicações.
+- **Selo na ficha** (ao lado dos botões): "Nível · CÓDIGO" do Embaixador (com
+  "(suspenso)"/"(encerrado)" quando for o caso) e "Indicado por …" quando o
+  cliente chegou por indicação.
+- **Aba "Indica +Risos" na ficha:** como Embaixador (nível, código, status,
+  multiplicador, desde quando, saldo disponível/pendente/carência, a vencer,
+  resgatado, conversões, TODAS as indicações feitas com a etapa, resgates),
+  como indicado (por quem) e os pedidos de indicação (momento, resposta, quem
+  pediu). Aparece para quem tem o Indica ou o "Pedir e registrar indicação".
+- **Guia "Como funciona"** — objetivo, quem ganha, passo a passo com os pontos
+  de cada etapa, níveis, prêmios, 29 termos, regras, o papel de cada função e
+  perguntas frequentes. **Os números vêm da configuração da rede** (mudou lá,
+  muda no guia). Duas portas: a aba **Como funciona** no módulo e
+  `/guia-indica` para quem só pede indicação (dentistas, coordenação, TSB,
+  ASB), que a porta do módulo barra. A aba da ficha leva ao guia certo.
+- Configurações → Níveis: o cabeçalho dizia "Fechamentos (12m)", mas o nível
+  conta **conversões** (`recalcular_nivel`, status 'convertida'). Corrigido
+  para "Conversões na janela".
+- ⚠️ **AP24 (BACKLOG):** `beneficio_indicado_percentual`,
+  `beneficio_validade_dias` e `premio_individual_percentual_origem` estão na
+  configuração mas nada os usa. O guia não promete o presente de boas-vindas
+  como automático.
+
+**Provas:** tela real no treino (Admin): selo e aba na ficha do Embaixador
+(as 4 indicações dele), "Indicado por" na ficha do indicado, guia com todas
+as seções e o número do registro igual ao da configuração, as duas portas;
+recepção (permissão desligada) não vê aba nem guia; 0 erro no console. Criado
+no treino, para a conferência: o cliente e a indicação "Indicado da Ficha
+(teste — pode ignorar)".
+
 ## Notas para as próximas fases
 
 - ⚠️ **Embed ambíguo:** `indica.indicacoes` tem TRÊS ligações para `profiles`

@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { PediIndicacaoDialog } from "./pedi-indicacao-dialog";
 import { NovaIndicacaoDialog } from "./nova-indicacao-dialog";
 import { regulamentoVigente, unidadesParaIndicar } from "./dados";
+import { SeloIndica } from "./aba-ficha";
 
 /**
- * Os dois botões do Indica +Risos na ficha do cliente: "Pedi indicação" e
+ * O selo (Embaixador / indicado por) e os dois botões do Indica +Risos na
+ * ficha do cliente: "Pedi indicação" e
  * "Nova indicação" (com o cliente da ficha como quem indica).
  *
  * Mora no módulo, não na ficha: a ficha é do núcleo e só ganha a linha que
@@ -42,6 +44,7 @@ export async function IndicaNaFicha({
 
   return (
     <>
+      <SeloIndica session={session} clienteId={cliente.id} />
       <PediIndicacaoDialog clienteId={cliente.id} clienteNome={cliente.nome} unidadeId={unidadeId} />
       <NovaIndicacaoDialog
         unidades={unidades}

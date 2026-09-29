@@ -14,24 +14,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { PEDIDO_MOMENTOS, PEDIDO_RESULTADOS } from "@/lib/indica/rotulos";
 import { registrarPedido } from "./actions";
 
 const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
-const MOMENTOS: { valor: string; rotulo: string }[] = [
-  { valor: "fechamento", rotulo: "No fechamento do tratamento" },
-  { valor: "entrega_etapa", rotulo: "Na entrega de uma etapa" },
-  { valor: "elogio", rotulo: "Depois de um elogio" },
-  { valor: "retorno", rotulo: "No retorno / manutenção" },
-  { valor: "outro", rotulo: "Outro momento" },
-];
-
-const RESULTADOS: { valor: string; rotulo: string }[] = [
-  { valor: "indicou", rotulo: "Indicou alguém" },
-  { valor: "vai_pensar", rotulo: "Vai pensar" },
-  { valor: "recusou", rotulo: "Não quis indicar" },
-  { valor: "pendente", rotulo: "Ainda sem resposta" },
-];
+const MOMENTOS = PEDIDO_MOMENTOS;
+const RESULTADOS = PEDIDO_RESULTADOS;
 
 /**
  * "PEDI INDICAÇÃO" — um clique na ficha.
