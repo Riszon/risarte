@@ -49,7 +49,7 @@ Nenhuma ligação apaga em cascata.
 | **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 **aplicada nos dois bancos** (treino: gatilhos e rotina conferidos no banco; produção: tabelas e função conferidas pela API em 28/09; o dono conferiu no painel a rotina `indica-rotina-diaria` ativa — 1ª execução 29/09 02:30 — e, por SQL, os 3 gatilhos nas tabelas certas) |
 | **IND3b — Convite público, portal e mensagens** | ✅ entregue em 28/09/2026 (0.5.0, migração 2006). 2006 **aplicada nos dois bancos** (produção conferida em 28/09: fila, 9 funções e 10 parâmetros pela API; `risarte.vercel.app/i/…` no ar respondendo "Convite não encontrado"; `/indica-mais-risos` sem login vai para o login). Módulo interno segue escondido; as páginas públicas só abrem com código/link válido |
 | **IND4 — Campanhas e equipe** | ✅ entregue em 28/09/2026 (0.6.0, migração 2007). 2007 **aplicada nos dois bancos** (produção conferida pela API em 28/09: 7 funções, 5 parâmetros com as faixas 25/40/50/55, colunas novas; sem login, recusa; o dono conferiu no painel a rotina `indica-rotina-campanhas` ativa, 1ª execução 29/09 02:40). Módulo segue escondido |
-| **IND5 — Gestão de rede** | ✅ entregue em 28/09/2026 (0.7.0, migração 2008). 2008 **aplicada no treino**; **produção: aguardando o dono rodar** |
+| **IND5 — Gestão de rede** | ✅ entregue em 28/09/2026 (0.7.0, migração 2008). 2008 **aplicada nos dois bancos** (produção conferida pela API em 28/09: 5 funções, 5 parâmetros, colunas novas dos alertas, painel respondendo; sem login, recusa; o dono conferiu no painel a rotina `indica-rotina-antifraude`, 1ª execução 29/09 02:50). Módulo segue escondido |
 
 ## IND0 — o que foi entregue
 
@@ -535,8 +535,7 @@ Ficou no treino um alerta de teste decidido "(pode ignorar)".
 
 ### Checklist da IND5 — no TREINO, como Admin
 
-1. Rodar a **2008** na produção e conferir em Database → Cron Jobs a rotina
-   `indica-rotina-antifraude` (02:50).
+1. ✅ 2008 na produção (28/09/2026), conferida; rotina `indica-rotina-antifraude` no ar.
 2. Abrir **Indica +Risos**: agora abre o **Painel**. Trocar o período e a
    unidade (aplicam sozinhos).
 3. **Relatórios** → agrupar por campanha → baixar as três planilhas e abrir no
