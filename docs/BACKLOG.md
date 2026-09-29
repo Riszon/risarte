@@ -2078,3 +2078,23 @@ tem mais ícones) e desde quando.
 **Não é do Indica:** as telas novas não passam dos mesmos 544 px da casca.
 O arquivo é do núcleo (barra de cima do layout) — correção fica com a sessão
 do core.
+
+### AP24. Indica +Risos: três parâmetros configurados que NADA usa (28/09/2026) — CONFIRMADO
+
+Achado ao escrever o guia "Como funciona" do Indica +Risos.
+
+**Confirmado (busca no código e nas migrações 2000–2008):** a 2001 semeou
+`beneficio_indicado_percentual` (10% — "presente de boas-vindas no 1º plano do
+indicado"), `beneficio_validade_dias` (60) e
+`premio_individual_percentual_origem` (50% — divisão do prêmio individual
+entre quem pediu e quem fechou). Eles aparecem em Configurações e podem ser
+editados, mas **nenhuma função, tela ou rotina lê esses valores**. Quem mudar
+o número vai achar que mudou uma regra que não existe.
+
+**O guia foi escrito sem prometer:** diz que o presente de boas-vindas,
+quando houver, a unidade informa, e que o sistema hoje **não aplica
+sozinho**.
+
+**Para decidir com o dono:** implementar (o benefício entraria na negociação
+do indicado, como o voucher; o prêmio individual, nas metas) ou tirar os
+parâmetros da tela até existir a regra.
