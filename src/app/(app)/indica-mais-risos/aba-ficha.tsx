@@ -160,7 +160,7 @@ export async function AbaIndicaNaFicha({ session, clienteId }: { session: Sessio
           {!emb ? (
             <p className="text-muted-foreground">
               Este cliente ainda não é Embaixador. Ele passa a ser quando aceita o regulamento — pelo botão{" "}
-              <strong>Nova indicação</strong> no topo da ficha, na primeira indicação que fizer.
+              <strong>Pedir indicação</strong> no topo da ficha, na primeira indicação que fizer.
             </p>
           ) : (
             <>
@@ -251,7 +251,7 @@ export async function AbaIndicaNaFicha({ session, clienteId }: { session: Sessio
         <CardContent className="text-sm">
           {(pedidos ?? []).length === 0 ? (
             <p className="text-muted-foreground">
-              Ninguém registrou um pedido ainda. Use <strong>Pedi indicação</strong> no topo da ficha depois de um bom momento
+              Ninguém registrou um pedido ainda. Use <strong>Pedir indicação</strong> no topo da ficha depois de um bom momento
               (fechamento, entrega de etapa, elogio).
             </p>
           ) : (

@@ -29,8 +29,8 @@ ou se chegou por indicação, e a aba **Indica +Risos** mostra o saldo, todas as
 indicações que ele fez, por quem foi indicado e os pedidos de indicação.
 
 **Quem vê:** recepção, SDR, consultor e assistente comercial, gerente,
-franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só os botões
-**"Pedi indicação"** e **"Nova indicação"** na ficha do cliente.
+franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só o botão
+**"Pedir indicação"** na ficha do cliente.
 
 ## Regras que valem para todos
 
@@ -49,13 +49,19 @@ franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só os botõ
 
 ## Recepção e SDR
 
-1. **Registrar uma indicação:** Indicações → **Nova indicação** (ou na ficha do
-   cliente). Busque o Embaixador pelo nome, código ou telefone; preencha nome e
-   WhatsApp do indicado; escolha a unidade. O sistema confere duplicidade na
-   hora.
-2. **Aceite do indicado:** marque como ele aceitou (pessoalmente ou por
-   telefone). Se ainda não aceitou, marque "ainda não": o convite com o link
-   vai para a aba **Mensagens**.
+1. **Na ficha do cliente → Pedir indicação.** Marque quando você pediu e o que
+   ele respondeu. Se ele **indicou**, as pessoas entram ali mesmo: nome e
+   WhatsApp de cada uma — **Enter no WhatsApp abre a próxima linha**, e dá para
+   incluir várias (até 30) e salvar **uma vez só**. Se o cliente ainda não é
+   Embaixador, marque que ele aceitou o regulamento: ele vira Embaixador ao
+   salvar. Cada pessoa é conferida enquanto você digita (já indicada, já é
+   paciente); se alguma for recusada ao salvar, as outras ficam registradas e
+   a janela mostra só a que precisa de correção.
+2. **Aceite do indicado:** escolha como as pessoas autorizaram o contato
+   (pessoalmente, por telefone ou "ainda não") — para todas de uma vez, ou
+   pessoa por pessoa. Quem ainda não autorizou recebe o convite pela aba
+   **Mensagens**. Para registrar a indicação de alguém que não está na ficha
+   aberta, use Indicações → **Nova indicação** e busque o Embaixador.
 3. **Mensagens:** a fila tem o texto pronto. Clique em **Abrir WhatsApp**,
    envie e marque **Enviada**.
 4. **Resgates:** o Embaixador pede o prêmio (na recepção ou pelo portal). Você

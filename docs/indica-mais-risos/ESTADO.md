@@ -590,6 +590,36 @@ recepção (permissão desligada) não vê aba nem guia; 0 erro no console. Cria
 no treino, para a conferência: o cliente e a indicação "Indicado da Ficha
 (teste — pode ignorar)".
 
+## Pedir indicação com várias pessoas de uma vez (29/09/2026, sem migração)
+
+Pedido do dono: os botões "Pedi indicação" e "Nova indicação" da ficha viram
+UM só, e dentro dele a recepção inclui as pessoas indicadas — várias de uma
+vez, salvando uma vez só (ex.: cliente que indica 10 pessoas).
+
+- **Ficha do cliente → Pedir indicação** (`pedir-indicacao-dialog.tsx`):
+  momento e resposta; se "Indicou alguém", a lista de pessoas (nome, WhatsApp,
+  autorização LGPD — para todos ou por pessoa). **Enter no WhatsApp abre a
+  próxima linha** com o cursor no nome. Até 30 por vez (`MAX_POR_LOTE`).
+- Cada linha é conferida enquanto se digita (mesma regra do banco): já
+  indicada, já é paciente, é o próprio Embaixador. Telefone repetido DENTRO da
+  lista é apontado antes de salvar (`errosDoLote`, com teste).
+- Cliente que ainda não é Embaixador: caixa do aceite do regulamento na
+  própria janela; vira Embaixador ao salvar.
+- Ação única `registrarPedidoEIndicacoes`: grava o pedido UMA vez, cria o
+  Embaixador se preciso e registra cada pessoa; **uma recusada não derruba as
+  outras** — a janela fica só com as que falharam, e salvar de novo não
+  duplica o pedido (`pularPedido`).
+- A janela antiga "Pedi indicação" saiu; a "Nova indicação" continua no
+  módulo (Indicações), para quando o Embaixador não é o cliente da ficha
+  aberta.
+
+**Provas:** tela real no treino — um botão só; Enter abre a próxima linha;
+3 pessoas (uma já indicada, apontada na linha); salvou as 2 livres e manteve
+só a recusada; no banco 1 pedido, o cliente virou Embaixador e 2 indicações;
+corrigida e salva de novo → 3 indicações e o pedido continuou 1; selo de
+Embaixador na ficha; 0 erro no console. Ficou no treino "Cliente Lote (teste —
+pode ignorar)" com as indicações "Lote … (pode ignorar)".
+
 ## Notas para as próximas fases
 
 - ⚠️ **Embed ambíguo:** `indica.indicacoes` tem TRÊS ligações para `profiles`

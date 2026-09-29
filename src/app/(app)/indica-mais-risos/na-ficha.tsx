@@ -1,16 +1,13 @@
 import type { SessionContext } from "@/lib/auth";
 import { indicaDb } from "@/lib/indica/db";
-import { canViewIndica } from "@/lib/indica/access";
-import { Button } from "@/components/ui/button";
-import { PediIndicacaoDialog } from "./pedi-indicacao-dialog";
-import { NovaIndicacaoDialog } from "./nova-indicacao-dialog";
+import { PedirIndicacaoDialog } from "./pedir-indicacao-dialog";
 import { regulamentoVigente, unidadesParaIndicar } from "./dados";
 import { SeloIndica } from "./aba-ficha";
 
 /**
- * O selo (Embaixador / indicado por) e os dois botões do Indica +Risos na
- * ficha do cliente: "Pedi indicação" e
- * "Nova indicação" (com o cliente da ficha como quem indica).
+ * O selo (Embaixador / indicado por) e o botão único "Pedir indicação" da
+ * ficha do cliente — o pedido e as pessoas indicadas na mesma janela, várias
+ * de uma vez (o cliente da ficha é quem indica).
  *
  * Mora no módulo, não na ficha: a ficha é do núcleo e só ganha a linha que
  * chama este componente (regra dos arquivos compartilhados, CLAUDE.md §0).
@@ -45,26 +42,12 @@ export async function IndicaNaFicha({
   return (
     <>
       <SeloIndica session={session} clienteId={cliente.id} />
-      <PediIndicacaoDialog clienteId={cliente.id} clienteNome={cliente.nome} unidadeId={unidadeId} />
-      <NovaIndicacaoDialog
+      <PedirIndicacaoDialog
+        cliente={{ id: cliente.id, nome: cliente.nome }}
+        embaixador={emb ? { id: emb.id, codigo: emb.codigo, nivel: emb.niveis?.nome ?? null, ativo: emb.status === "ativo" } : null}
         unidades={unidades}
+        unidadePadrao={unidadeId}
         regulamento={regulamento}
-        abrirAoGravar={canViewIndica(session)}
-        indicadorInicial={{
-          clienteId: cliente.id,
-          nome: cliente.nome,
-          codigoCliente: cliente.codigo,
-          unidade: null,
-          embaixadorId: emb?.id ?? null,
-          embaixadorCodigo: emb?.codigo ?? null,
-          embaixadorAtivo: emb?.status === "ativo",
-          nivel: emb?.niveis?.nome ?? null,
-        }}
-        gatilho={
-          <Button size="sm" variant="outline">
-            Nova indicação
-          </Button>
-        }
       />
     </>
   );

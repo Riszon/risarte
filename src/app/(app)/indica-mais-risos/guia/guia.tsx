@@ -214,7 +214,7 @@ export async function GuiaIndica() {
           <Termo nome="Portal do Embaixador">Página no celular, aberta por um link enviado no WhatsApp, onde o Embaixador vê saldo, indica e resgata. Não precisa de senha.</Termo>
           <Termo nome="Link pessoal">Endereço com o código do Embaixador para o amigo se cadastrar sozinho.</Termo>
           <Termo nome="Convite e aceite (LGPD)">Mensagem ao indicado pedindo autorização para a Risarte entrar em contato.</Termo>
-          <Termo nome="Pedi indicação">Botão da ficha que registra que a equipe pediu uma indicação ao cliente (e como ele respondeu).</Termo>
+          <Termo nome="Pedir indicação">Botão da ficha do cliente: registra que a equipe pediu uma indicação, como ele respondeu e, se indicou, as pessoas indicadas — várias de uma vez.</Termo>
           <Termo nome="Meta da equipe e faixas">Objetivo coletivo da unidade no período, com prêmios por faixa (ex.: Meta 1, Super Meta).</Termo>
           <Termo nome="Trava de qualidade">Comparecimento mínimo das indicações do período para a faixa da meta ser paga.</Termo>
           <Termo nome="Apuração">Contagem da meta: provisória (acompanhamento) ou final (base do prêmio, aprovada pelo gestor).</Termo>
@@ -238,7 +238,7 @@ export async function GuiaIndica() {
       <Secao id="funcoes" titulo="8. O que cada função faz">
         <div className="grid gap-3 sm:grid-cols-2">
           <Termo nome="Recepção e SDR">Registram indicações, cuidam do aceite, enviam as mensagens da fila, entregam prêmios e vouchers.</Termo>
-          <Termo nome="Dentistas, coordenação, TSB e ASB">Na ficha do cliente: “Pedi indicação” nos bons momentos (fechamento, entrega de etapa, elogio) e “Nova indicação”.</Termo>
+          <Termo nome="Dentistas, coordenação, TSB e ASB">Na ficha do cliente: “Pedir indicação” nos bons momentos (fechamento, entrega de etapa, elogio), incluindo ali as pessoas que o cliente indicar.</Termo>
           <Termo nome="Comercial">Pede indicação no fechamento e usa o voucher de Crédito Risarte na negociação.</Termo>
           <Termo nome="Gerente e franqueado">Acompanham o painel, criam campanhas e metas, aprovam apurações, resgates e ajustes da unidade.</Termo>
           <Termo nome="Franqueadora">Define as regras da rede, vê a rede inteira, decide os alertas de fraude e acompanha o retorno.</Termo>

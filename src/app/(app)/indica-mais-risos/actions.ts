@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { indicaDb } from "@/lib/indica/db";
 import { canIndicar, canViewIndica } from "@/lib/indica/access";
 import { mensagemDoBanco } from "@/lib/indica/erros";
-import { INDICACAO_STATUS, type IndicacaoStatus } from "@/lib/indica/status";
+import { CANAIS_DA_RECEPCAO, INDICACAO_STATUS, type IndicacaoStatus } from "@/lib/indica/status";
+import { MAX_POR_LOTE, errosDoLote, linhasPreenchidas, type LinhaLote } from "@/lib/indica/lote";
 import { formatCpf, formatPhone } from "@/lib/masks";
 
 type Resultado<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -391,4 +392,105 @@ export async function registrarPedido(dados: {
   }
   revalidatePath(`/prontuarios/${dados.clienteId}`);
   return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// "Pedir indicação" com as indicações dentro — várias de uma vez
+// -----------------------------------------------------------------------------
+
+export type ResultadoDaLinha = { ok: true; id: string; codigo: string } | { ok: false; error: string };
+
+/**
+ * UM clique para o que a recepção fazia em várias janelas: registra o pedido
+ * (uma vez), torna o cliente Embaixador se preciso (com o aceite do
+ * regulamento) e registra CADA pessoa indicada. Uma linha recusada (já
+ * indicada, já é cliente…) NÃO derruba as outras: cada uma volta com o seu
+ * resultado, e a tela mantém só as que falharam para corrigir.
+ *
+ * `pularPedido`: a tela já gravou o pedido numa tentativa anterior — reenviar
+ * as linhas que falharam não pode duplicar o pedido.
+ */
+export async function registrarPedidoEIndicacoes(d: {
+  clienteId: string;
+  unidadeId: string;
+  momento: string;
+  resultado: string;
+  observacao: string;
+  pularPedido: boolean;
+  embaixadorId: string | null;
+  versaoRegulamento: string | null;
+  aceitouRegulamento: boolean;
+  canal: string;
+  linhas: LinhaLote[];
+}): Promise<
+  | { ok: false; error: string }
+  | { ok: true; embaixadorId: string | null; codigoEmbaixador: string | null; linhas: ResultadoDaLinha[] }
+> {
+  const session = await getSessionContext();
+  if (!canIndicar(session)) return { ok: false, error: SEM_PERMISSAO };
+  const linhas = d.resultado === "indicou" ? linhasPreenchidas(d.linhas) : [];
+  if (d.resultado === "indicou" && linhas.length === 0 && d.pularPedido) {
+    return { ok: false, error: "Não há ninguém para registrar." };
+  }
+  if (linhas.length > MAX_POR_LOTE) {
+    return { ok: false, error: `No máximo ${MAX_POR_LOTE} pessoas por vez.` };
+  }
+  const erros = errosDoLote(linhas);
+  if (erros.size > 0) {
+    const [i, msg] = [...erros.entries()][0];
+    return { ok: false, error: `Pessoa ${i + 1}: ${msg}` };
+  }
+  if (linhas.length > 0 && !(CANAIS_DA_RECEPCAO as readonly string[]).includes(d.canal)) {
+    return { ok: false, error: "Escolha como a indicação chegou." };
+  }
+
+  // 1) O pedido (uma vez só).
+  if (!d.pularPedido) {
+    const p = await registrarPedido({
+      clienteId: d.clienteId,
+      unidadeId: d.unidadeId,
+      momento: d.momento,
+      resultado: d.resultado,
+      observacao: d.observacao,
+    });
+    if (!p.ok) return p;
+  }
+  if (linhas.length === 0) return { ok: true, embaixadorId: d.embaixadorId, codigoEmbaixador: null, linhas: [] };
+
+  // 2) Quem indica precisa ser Embaixador (aceite do regulamento).
+  let embaixadorId = d.embaixadorId;
+  let codigoEmbaixador: string | null = null;
+  if (!embaixadorId) {
+    if (!d.versaoRegulamento) return { ok: false, error: "Não foi possível ler a versão do regulamento. Avise o administrador." };
+    const e = await tornarEmbaixador(d.clienteId, d.versaoRegulamento, d.aceitouRegulamento);
+    if (!e.ok) return e;
+    embaixadorId = e.embaixadorId;
+    codigoEmbaixador = e.codigo;
+  }
+
+  // 3) Cada pessoa, na ordem da tela; uma recusa não para as outras.
+  const db = await indicaDb();
+  const resultados: ResultadoDaLinha[] = [];
+  for (const l of linhas) {
+    const { data, error } = await db.rpc("registrar_indicacao", {
+      p_dados: {
+        unidade_id: d.unidadeId,
+        canal: d.canal,
+        embaixador_id: embaixadorId,
+        indicado_nome: l.nome.trim(),
+        indicado_telefone: formatPhone(l.telefone),
+        consentimento: l.aceite || null,
+      },
+    });
+    if (error) {
+      resultados.push({ ok: false, error: mensagemDoBanco(error) });
+      continue;
+    }
+    const id = data as string;
+    const { data: ind } = await db.from("indicacoes").select("codigo").eq("id", id).single<{ codigo: string }>();
+    resultados.push({ ok: true, id, codigo: ind?.codigo ?? "" });
+  }
+  revalidar();
+  revalidatePath(`/prontuarios/${d.clienteId}`);
+  return { ok: true, embaixadorId, codigoEmbaixador, linhas: resultados };
 }

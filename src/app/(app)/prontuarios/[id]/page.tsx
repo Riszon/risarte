@@ -764,7 +764,7 @@ export default async function ClientDetailPage(
   const canScheduleFromFicha =
     client.status !== "anonymized" &&
     (hasRoleInClinic(session, scheduleClinicId, ["receptionist"]) || isSdr);
-  // Indica +Risos: "Pedi indicação" e "Nova indicação" (módulo próprio).
+  // Indica +Risos: "Pedir indicação", com as indicações dentro (módulo próprio).
   const podeIndicarNaFicha = client.status !== "anonymized" && canIndicar(session);
   let fichaStaff: StaffOption[] = [];
   let fichaConfig: AgendaFormConfig | undefined;

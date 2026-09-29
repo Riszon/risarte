@@ -143,8 +143,8 @@ export default async function EmbaixadoresPage(props: PageProps<"/indica-mais-ri
               </ul>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
-              Quem acabou de fechar é quem mais indica. Abra a ficha e use “Pedi indicação” /
-              “Nova indicação”.
+              Quem acabou de fechar é quem mais indica. Abra a ficha e use “Pedir indicação” — as
+              pessoas indicadas entram ali mesmo, várias de uma vez.
             </p>
           </CardContent>
         </Card>
@@ -234,7 +234,7 @@ export default async function EmbaixadoresPage(props: PageProps<"/indica-mais-ri
               {linhas.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
-                    Nenhum Embaixador ainda. Ele nasce na janela “Nova indicação”, com o aceite do
+                    Nenhum Embaixador ainda. Ele nasce no “Pedir indicação” da ficha (ou na “Nova indicação”), com o aceite do
                     regulamento.
                   </TableCell>
                 </TableRow>
