@@ -49,7 +49,7 @@ Nenhuma ligação apaga em cascata.
 | **IND3a — Automação e rotinas** | ✅ entregue em 28/09/2026 (0.4.0, migração 2005). 2005 **aplicada nos dois bancos** (treino: gatilhos e rotina conferidos no banco; produção: tabelas e função conferidas pela API em 28/09; o dono conferiu no painel a rotina `indica-rotina-diaria` ativa — 1ª execução 29/09 02:30 — e, por SQL, os 3 gatilhos nas tabelas certas) |
 | **IND3b — Convite público, portal e mensagens** | ✅ entregue em 28/09/2026 (0.5.0, migração 2006). 2006 **aplicada nos dois bancos** (produção conferida em 28/09: fila, 9 funções e 10 parâmetros pela API; `risarte.vercel.app/i/…` no ar respondendo "Convite não encontrado"; `/indica-mais-risos` sem login vai para o login). Módulo interno segue escondido; as páginas públicas só abrem com código/link válido |
 | **IND4 — Campanhas e equipe** | ✅ entregue em 28/09/2026 (0.6.0, migração 2007). 2007 **aplicada nos dois bancos** (produção conferida pela API em 28/09: 7 funções, 5 parâmetros com as faixas 25/40/50/55, colunas novas; sem login, recusa; o dono conferiu no painel a rotina `indica-rotina-campanhas` ativa, 1ª execução 29/09 02:40). Módulo segue escondido |
-| IND5 — Gestão de rede | a fazer |
+| **IND5 — Gestão de rede** | ✅ entregue em 28/09/2026 (0.7.0, migração 2008). 2008 **aplicada no treino**; **produção: aguardando o dono rodar** |
 
 ## IND0 — o que foi entregue
 
@@ -148,7 +148,7 @@ código na rede, conferência de duplicidade que nunca devolve dados da pessoa,
 **Permissões:** `modulo.indica` e `acao.indica.indicar` em
 `src/lib/permissions.ts` (sem linha no banco = escondido). Para ligar:
 Administração → Permissões → "Indica +Risos" e "Pedir e registrar indicação" →
-**Restaurar padrão** (liga os papéis combinados). A matriz do treino é cópia
+botão **↺ "Voltar ao padrão do sistema"** de cada linha (liga os papéis combinados; sem linha no banco a linha aparece desmarcada e o ↺ aparece). A matriz do treino é cópia
 da produção: ligar na produção liga nos dois.
 
 **Provas:**
@@ -183,7 +183,7 @@ da produção: ligar na produção liga nos dois.
 8. Fechar a venda no Comercial (contrato + pagamento) → **Fechou** → escolher
    a venda → **200 em carência**. **Converter** só depois da 1ª parcela paga.
 9. **Pedi indicação** na ficha → registrar o momento e a resposta.
-10. Quando estiver bom: Administração → Permissões → **Restaurar padrão** nas
+10. Quando estiver bom: Administração → Permissões → **↺ Voltar ao padrão do sistema** nas
     duas permissões do Indica para abrir à equipe (aí entra o manual).
 
 ⚠️ **Antes de ligar para a equipe:** escrever a seção do manual
@@ -458,6 +458,102 @@ passam disso.
 5. **Equipe → Nova meta**: as faixas vêm com os valores de 2025 → Criar →
    **Apurar agora**. No mês seguinte, **Apuração final** → **Aprovar** →
    **Relatório para a folha**.
+
+## IND5 — o que foi entregue (28/09/2026)
+
+**Decisões do dono (28/09/2026):** custo do programa **gerado e realizado lado a
+lado**; alerta de fraude **alto em aberto segura os resgates**; planilha **sem
+contato do indicado**; abertura do módulo **preparada, mas quem liga é o dono**.
+
+**Painel** (`/indica-mais-risos`, que antes só redirecionava):
+- Filtros que aplicam sozinhos: período, unidade (a franqueadora escolhe; vazio
+  = rede inteira) e campanha.
+- Cartões com variação sobre o período anterior de MESMO tamanho: indicações,
+  comparecimento e fechamento (das registradas no período), conversões e
+  receita (pelo fechamento no período, como as metas), % dos clientes novos
+  que vieram de indicação, custo e CAC (gerado · realizado) e retorno em %.
+- Funil com a perda entre etapas, evolução de 12 meses, destaques (Embaixadores
+  e Risartanos), metas da equipe com barra e "ações do dia" (paradas há mais de
+  `acoes_parada_dias`, faltaram, resgates aguardando, pontos a vencer,
+  alertas em aberto).
+- **Custo gerado** = Riso Coins lançados no período (pendente, crédito,
+  carência, ajuste, menos estornos) × `valor_riso_coin_centavos` + prêmios de
+  equipe aprovados. **Realizado** = resgates entregues (valor do item) +
+  prêmios aprovados. Por campanha, o realizado não se aplica (resgate não é de
+  campanha). Retorno = (receita − custo) ÷ custo, sobre a RECEITA.
+
+**Relatórios** (aba nova): retorno e custo por unidade ou por campanha (com
+"Sem campanha" e Total); coortes (das indicações de cada mês, quantas
+compareceram, fecharam, converteram, se perderam ou seguem em andamento).
+**Planilhas CSV** (ROI, coortes e indicações do período) para o Excel
+brasileiro, **sem nome, telefone, CPF ou e-mail do indicado** (a de indicações
+leva código, etapa, datas, unidade, campanha, código do Embaixador e valor);
+protegidas contra fórmula injetada; cada download fica na auditoria.
+
+**Antifraude** — `detectar_fraudes` roda às 02:50 (`indica-rotina-antifraude`)
+e a franqueadora pode rodar na hora. Sete regras, limites e severidade em
+Configurações → Antifraude:
+
+| Regra | Dispara quando | Severidade padrão |
+|---|---|---|
+| Volume atípico | mais de 5 indicações do Embaixador em 7 dias | média |
+| Mesmo contato do Embaixador | e-mail do indicado = e-mail do Embaixador | **alta** |
+| Telefone de outra indicação | telefone igual ao de indicação de outro Embaixador | média |
+| Registro depois do atendimento | indicado com check-in até 90 dias ANTES da indicação | **alta** |
+| Concentração num Risartano | uma pessoa registrou mais de 50% (com mínimo de 4) | média |
+| Ciclo fechado | o indicado virou Embaixador e indicou quem o indicou | **alta** |
+| Ajustes manuais em excesso | mais de 3 ajustes do mesmo usuário no mês | média |
+
+Um fato vira UM alerta para sempre (chave única): decidido improcedente, não
+volta. **Alerta alto em aberto ou em análise segura os resgates** do
+Embaixador (pedido novo, aprovação e entrega; recepção e portal), com
+mensagem neutra ao Embaixador ("em análise… fale com a unidade"). Os pontos
+continuam contando.
+
+**Auditoria** (aba nova): alertas (abertos ou todos) com a explicação, links
+para a indicação e o Embaixador, "resgates segurados"; a franqueadora marca
+**em análise** e decide **procedente/improcedente com o que foi apurado**;
+histórico dos ajustes manuais. O gestor vê os alertas da unidade dele; quem
+decide é a franqueadora; a recepção não vê.
+
+**Não cobre (declarado):** endereço igual (a indicação não guarda endereço) e
+"responsável financeiro" (sem campo no cadastro). A concentração num
+Risartano tende a acusar unidade pequena com uma só recepcionista — por isso é
+média e não segura resgate; ajuste o limite em Configurações se virar ruído.
+
+**Provas:** `npm run test:indica` **213/213** (seção 17, 33 novas) — **provado
+quebrando** três regras (a trava do resgate por severidade, as perdidas das
+coortes e as conversões do painel), cada uma derrubou a sua conferência. A
+régua das coortes era fraca na primeira versão (somava um número que eu mesmo
+calculo pela diferença) e foi trocada pela contagem direta. Unitários
+`indica-painel` (as 7 regras lidas do SQL têm rótulo, descrição e
+severidade). Tela real no treino (Admin): painel, filtro sozinho, relatórios,
+3 planilhas conferidas sem telefone/e-mail e registradas na auditoria,
+conferência antifraude pela tela, decidir alerta (recusa sem motivo, grava com
+motivo); recepção barrada nas 3 telas e na planilha (403); 0 erro no console.
+Ficou no treino um alerta de teste decidido "(pode ignorar)".
+
+### Checklist da IND5 — no TREINO, como Admin
+
+1. Rodar a **2008** na produção e conferir em Database → Cron Jobs a rotina
+   `indica-rotina-antifraude` (02:50).
+2. Abrir **Indica +Risos**: agora abre o **Painel**. Trocar o período e a
+   unidade (aplicam sozinhos).
+3. **Relatórios** → agrupar por campanha → baixar as três planilhas e abrir no
+   Excel (acentos certos, sem telefone).
+4. **Auditoria** → **Rodar conferência agora**. Se aparecer alerta, decidir
+   com o que foi apurado.
+
+### Para ABRIR o módulo à equipe (quando o dono decidir)
+
+Nada disso foi ligado — decisão do dono ("preparar e esperar"):
+1. Produção → Administração → Permissões → linhas **"Indica +Risos"** e
+   **"Pedir e registrar indicação"** → botão **↺ (Voltar ao padrão do
+   sistema)** → Salvar. O treino é espelho (só consulta): recebe sozinho.
+2. Na mesma entrega: colar a seção de `MANUAL-rascunho.md` (nesta pasta) no
+   manual (`docs/treinamento/manual-treinamento-riSZon.md`), com as
+   evidências, escrever a novidade em `src/lib/changelog.ts`, bumpar
+   `APP_VERSION` e rodar `npm run manual:docx` (regra do §0c do CLAUDE.md).
 
 ## Notas para as próximas fases
 

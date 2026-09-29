@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const ABAS = [
+  { href: "/indica-mais-risos", rotulo: "Painel" },
   { href: "/indica-mais-risos/indicacoes", rotulo: "Indicações" },
   { href: "/indica-mais-risos/embaixadores", rotulo: "Embaixadores" },
   { href: "/indica-mais-risos/campanhas", rotulo: "Campanhas" },
@@ -12,6 +13,8 @@ const ABAS = [
   { href: "/indica-mais-risos/resgates", rotulo: "Resgates" },
   { href: "/indica-mais-risos/mensagens", rotulo: "Mensagens" },
   { href: "/indica-mais-risos/catalogo", rotulo: "Catálogo" },
+  { href: "/indica-mais-risos/relatorios", rotulo: "Relatórios" },
+  { href: "/indica-mais-risos/auditoria", rotulo: "Auditoria" },
   { href: "/indica-mais-risos/configuracoes", rotulo: "Configurações" },
 ];
 
@@ -22,7 +25,8 @@ export function NavIndica() {
     <nav className="border-b bg-background/60 px-4">
       <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto">
         {ABAS.map((a) => {
-          const ativa = caminho === a.href || caminho.startsWith(`${a.href}/`);
+          // O Painel é a raiz do módulo: só fica marcado nele mesmo.
+          const ativa = caminho === a.href || (a.href !== "/indica-mais-risos" && caminho.startsWith(`${a.href}/`));
           return (
             <li key={a.href}>
               <Link

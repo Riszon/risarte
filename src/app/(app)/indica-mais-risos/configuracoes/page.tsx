@@ -43,6 +43,7 @@ const GRUPOS: Record<string, string> = {
   portal: "Portal do Embaixador",
   lgpd: "LGPD",
   antifraude: "Antifraude",
+  painel: "Painel",
   mensagens: "Mensagens (modelos do WhatsApp — use {embaixador}, {indicado}, {pontos}, {saldo}, {data}, {unidade}, {link})",
 };
 

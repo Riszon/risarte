@@ -1224,6 +1224,172 @@ async function main() {
   await como(franqueado.id);
   await falha("select * from indica.ranking_equipe($1, current_date - 30, current_date)", [U], "INDICA_SEM_PERMISSAO",
     "outra unidade não vê o ranking desta");
+
+  // =========================================================================
+  const temPainel = (await um("select to_regprocedure('indica.painel(date,date,uuid,uuid)') is not null as sim")).sim;
+  if (!temPainel) return;
+  console.log("\n17. Painel, antifraude e relatórios (2008)");
+
+  // --- A: painel ---------------------------------------------------------------
+  await como(recepcao.id);
+  const pn = (await um("select indica.painel(current_date - 30, current_date, $1) as p", [U])).p;
+  await sistema();
+  const direto = await um(
+    `select count(*) filter (where registrada_em >= (current_date - 30)::timestamp at time zone 'America/Sao_Paulo')::int as reg,
+            count(*) filter (where status = 'convertida'
+                               and fechou_em >= (current_date - 30)::timestamp at time zone 'America/Sao_Paulo')::int as conv
+       from indica.indicacoes where unidade_id = $1`, [U]);
+  ok(pn.atual.registradas === direto.reg && pn.atual.conversoes === direto.conv,
+    `painel da unidade confere com a contagem direta (${direto.reg} registradas, ${direto.conv} conversões)`);
+  ok(pn.atual.custo_gerado_centavos === Math.round(pn.atual.riso_coins_gerados * 10) + pn.atual.premios_equipe_centavos,
+    "custo GERADO = Riso Coins lançados × R$ 0,10 + prêmios de equipe");
+  ok(pn.atual.premios_equipe_centavos >= 50000 && pn.atual.custo_realizado_centavos >= pn.atual.premios_equipe_centavos,
+    `custo REALIZADO inclui os prêmios aprovados da seção 16 (${pn.atual.premios_equipe_centavos} centavos)`);
+  ok(pn.anterior && pn.evolucao.length === 12 && Array.isArray(pn.top_embaixadores) && typeof pn.acoes.paradas_total === "number",
+    "painel traz o período anterior, 12 meses de evolução, destaques e ações do dia");
+  await como(recepcao.id);
+  await falha("select indica.painel(current_date - 30, current_date, null)", [], "INDICA_SEM_PERMISSAO",
+    "recepção não vê a rede inteira");
+  await como(franqueado.id);
+  await falha("select indica.painel(current_date - 30, current_date, $1)", [U], "INDICA_SEM_PERMISSAO",
+    "outra unidade não vê o painel desta");
+  await como(rede.id);
+  const pr = (await um("select indica.painel(current_date - 30, current_date, null) as p")).p;
+  ok(pr.atual.registradas >= pn.atual.registradas, "a franqueadora vê a rede inteira");
+  const pc = (await um("select indica.painel(current_date - 30, current_date, null, $1) as p", [c16f])).p;
+  ok(pc.atual.custo_realizado_centavos === null && pc.atual.riso_coins_gerados > 0,
+    "filtrado por campanha: custo gerado sim, realizado não se aplica (resgate não é de campanha)");
+
+  // --- B: relatórios -----------------------------------------------------------
+  const roi = (await um("select indica.relatorio_roi(current_date - 30, current_date, 'unidade') as r")).r;
+  const linhaU = roi.linhas.find((l) => l.grupo_id === U);
+  ok(linhaU && linhaU.registradas === pn.atual.registradas && roi.total.registradas === pr.atual.registradas,
+    "ROI por unidade: a linha da unidade bate com o painel dela, e o total com o da rede");
+  const roiC = (await um("select indica.relatorio_roi(current_date - 30, current_date, 'campanha') as r")).r;
+  const somaCamp = roiC.linhas.reduce((s, l) => s + l.registradas, 0);
+  ok(somaCamp === roiC.total.registradas && roiC.linhas.some((l) => l.grupo === "Sem campanha"),
+    "ROI por campanha: as linhas (com 'Sem campanha') somam o total");
+  const co = (await um("select indica.coortes(current_date - 60, current_date, $1) as c", [U])).c;
+  await sistema();
+  const coDireto = await um(
+    `select count(*)::int as reg,
+            count(*) filter (where status in ('recusada', 'expirada', 'cancelada', 'nao_fechou'))::int as perd,
+            count(*) filter (where status = 'convertida')::int as conv
+       from indica.indicacoes
+      where unidade_id = $1 and registrada_em >= (current_date - 60)::timestamp at time zone 'America/Sao_Paulo'`, [U]);
+  const soma = (k) => co.reduce((t, m) => t + m[k], 0);
+  ok(co.length > 0 && soma("registradas") === coDireto.reg && soma("perdidas") === coDireto.perd && soma("convertidas") === coDireto.conv
+      && coDireto.perd > 0,
+    `coortes batem com a contagem direta (${coDireto.reg} registradas, ${coDireto.perd} perdidas, ${coDireto.conv} convertidas)`);
+  await como(rede.id);
+  await como(recepcao.id);
+  await falha("select indica.relatorio_roi(current_date - 30, current_date, 'unidade')", [], "INDICA_SEM_PERMISSAO",
+    "recepção não tira o relatório da rede");
+
+  // --- C: antifraude — volume, contato do Embaixador, conluio ---------------------
+  await sistema();
+  const cliY = await novoCliente("Yara Fraude Teste", tel(50));
+  await q("update public.clients set email = 'yara.fraude@example.com' where id = $1", [cliY]);
+  await como(recepcao.id);
+  const embY = (await um("select indica.criar_embaixador($1, '2026.1') as id", [cliY])).id;
+  await bastidor(
+    `insert into indica.pontos_lancamentos (embaixador_id, tipo, saldo, riso_coins, regra_aplicada, expira_em, motivo)
+     values ($1, 'ajuste', 'disponivel', 5000, '{}', now() + interval '6 months', 'saldo de teste')`, [embY]);
+  await como(recepcao.id);
+  for (let n = 51; n <= 56; n++) {
+    await registrar({ embaixador_id: embY, canal: "agendamento", indicado_nome: `Volume ${n}`, indicado_telefone: tel(n) });
+  }
+  const indContato = (await registrar({ embaixador_id: embY, canal: "agendamento", indicado_nome: "Mesmo Email",
+    indicado_telefone: tel(57), indicado_email: "YARA.fraude@example.com " })).id;
+  await como(recepcao.id);
+  await falha("select indica.detectar_fraudes()", [], "INDICA_SEM_PERMISSAO", "só a franqueadora roda a conferência antifraude");
+  await como(rede.id);
+  const d1 = (await um("select indica.detectar_fraudes() as r")).r;
+  const alertasY = async () => q("select regra, severidade, status, indicacao_id, usuario_id from indica.alertas_fraude where embaixador_id = $1", [embY]);
+  let aY = await alertasY();
+  ok(aY.some((a) => a.regra === "volume" && a.severidade === "media"), `volume atípico: 7 indicações em 7 dias → alerta médio (${d1.volume} novo[s])`);
+  ok(aY.some((a) => a.regra === "contato_embaixador" && a.severidade === "alta" && a.indicacao_id === indContato),
+    "e-mail do indicado igual ao do Embaixador (sem diferenciar maiúscula/espaço) → alerta ALTO na indicação");
+  ok(aY.some((a) => a.regra === "conluio" && a.usuario_id === recepcao.id),
+    "conluio: a recepção registrou 100% das indicações do Embaixador → alerta com o nome de quem");
+  const d2 = (await um("select indica.detectar_fraudes() as r")).r;
+  ok(Object.values(d2).every((n) => n === 0) && (await alertasY()).length === aY.length,
+    "rodar de novo não repete alerta (um fato, um alerta)");
+
+  // --- D: alerta ALTO segura os resgates -------------------------------------------
+  await como(recepcao.id);
+  await falha("select indica.solicitar_resgate($1)", [{ embaixador_id: embY, item_id: itemCredito, unidade_id: U }],
+    "INDICA_RESGATE_EM_ANALISE", "com alerta ALTO em aberto, o resgate pela recepção é segurado");
+  const tokY = (await um("select indica.gerar_link_portal($1) as t", [embY])).t;
+  await como(null, "service_role");
+  const pY = (await um("select indica.portal_resgatar($1, $2) as r", [tokY, itemCredito])).r;
+  ok(pY.ok === false && /em análise/.test(pY.erro) && !/fraude/i.test(pY.erro),
+    "pelo portal também, com mensagem neutra (não fala em fraude ao Embaixador)");
+  await sistema();
+  const idAlto = (await um("select id from indica.alertas_fraude where embaixador_id = $1 and severidade = 'alta'", [embY]))?.id;
+  if (!idAlto) throw new Error("régua: alerta alto do Embaixador não encontrado");
+  await como(recepcao.id);
+  ok((await q("select id from indica.alertas_fraude")).length === 0, "recepção não enxerga alertas de fraude");
+  await falha("select indica.tratar_alerta($1, 'improcedente', 'ok')", [idAlto], "INDICA_SEM_PERMISSAO",
+    "recepção não decide alerta");
+  await como(rede.id);
+  await falha("select indica.tratar_alerta($1, 'improcedente')", [idAlto], "INDICA_MOTIVO_OBRIGATORIO",
+    "decidir exige o que foi apurado");
+  await q("select indica.tratar_alerta($1, 'em_analise')", [idAlto]);
+  await como(recepcao.id);
+  await falha("select indica.solicitar_resgate($1)", [{ embaixador_id: embY, item_id: itemCredito, unidade_id: U }],
+    "INDICA_RESGATE_EM_ANALISE", "em análise continua segurando");
+  await como(rede.id);
+  await q("select indica.tratar_alerta($1, 'improcedente', 'E-mail da família, conferido com a unidade')", [idAlto]);
+  await falha("select indica.tratar_alerta($1, 'procedente', 'mudei de ideia')", [idAlto], "INDICA_TRANSICAO_INVALIDA",
+    "alerta decidido não se reabre");
+  await como(recepcao.id);
+  const rsY = (await um("select indica.solicitar_resgate($1) as id", [{ embaixador_id: embY, item_id: itemCredito, unidade_id: U }])).id;
+  ok(Boolean(rsY), "decidido improcedente, o resgate volta a funcionar");
+  await sistema();
+  const volta = (await um("select indica.detectar_fraudes() as r")).r;
+  ok(volta.contato_embaixador === 0, "o fato decidido improcedente não volta como alerta novo");
+
+  // --- E: contato repetido, registro tardio, ciclo fechado, ajustes ------------------
+  await como(recepcao.id);
+  const indR1 = (await registrar({ embaixador_id: embY, canal: "agendamento", indicado_nome: "Repetido Um", indicado_telefone: tel(58) })).id;
+  await avancar(indR1, "recusada", "Não quis contato");
+  const indR2 = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Repetido Dois", indicado_telefone: tel(58) })).id;
+
+  await sistema();
+  const cliT = await novoCliente("Tardio Atendido", tel(59));
+  await avaliacao(cliT, true, "now() - interval '2 days'");
+  await como(recepcao.id);
+  const indT = (await registrar({ embaixador_id: embY, canal: "agendamento", indicado_nome: "Tardio", indicado_telefone: tel(60) })).id;
+  await bastidor("update indica.indicacoes set cliente_indicado_id = $1 where id = $2", [cliT, indT]);
+
+  await sistema();
+  const cliP = await novoCliente("Pedro Ciclo", tel(61));
+  await como(recepcao.id);
+  await registrar({ embaixador_id: embY, canal: "agendamento", indicado_nome: "Pedro Ciclo", indicado_telefone: tel(61), cliente_indicado_id: cliP });
+  const embP = (await um("select indica.criar_embaixador($1, '2026.1') as id", [cliP])).id;
+  const indVolta = (await registrar({ embaixador_id: embP, canal: "agendamento", indicado_nome: "Yara de Volta", indicado_telefone: tel(50) })).id;
+
+  await como(gerente.id);
+  for (let k = 0; k < 3; k++) await q("select indica.ajustar_pontos($1, 100, 'Ajuste de teste da auditoria')", [embY]);
+
+  await como(rede.id);
+  const d3 = (await um("select indica.detectar_fraudes() as r")).r;
+  const alerta = (regra, campo, valor) =>
+    um(`select severidade from indica.alertas_fraude where regra = $1 and ${campo} = $2`, [regra, valor]);
+  ok((await alerta("contato_repetido", "indicacao_id", indR2))?.severidade === "media",
+    "telefone igual ao de indicação de OUTRO Embaixador → alerta médio");
+  ok((await alerta("registro_tardio", "indicacao_id", indT))?.severidade === "alta",
+    "indicado já atendido antes do registro → registro tardio, alerta ALTO");
+  ok((await alerta("ciclo_fechado", "indicacao_id", indVolta))?.severidade === "alta",
+    "o indicado virou Embaixador e indicou quem o indicou → ciclo fechado, alerta ALTO");
+  ok((await alerta("ajustes", "usuario_id", gerente.id))?.severidade === "media",
+    `mais de 3 ajustes manuais do mesmo usuário no mês → alerta médio (${d3.ajustes} novo[s])`);
+  await como(gerente.id);
+  const visGerente = await q("select regra from indica.alertas_fraude where embaixador_id = $1", [embY]);
+  ok(visGerente.length > 0, "o gestor enxerga os alertas da unidade dele");
+  await falha("select indica.tratar_alerta($1, 'em_analise')", [idAlto], "INDICA_SEM_PERMISSAO",
+    "mas quem decide é a franqueadora");
 }
 
 try {

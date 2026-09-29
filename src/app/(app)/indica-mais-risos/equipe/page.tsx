@@ -14,6 +14,7 @@ import {
 } from "@/lib/indica/metas";
 import { formatBrDateTime, formatIsoDateBr, monthRangeOf, todayInBrazil } from "@/lib/dates";
 import { formatBRL } from "@/lib/pricing";
+import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -129,14 +130,13 @@ export default async function EquipePage({ searchParams }: PageProps<"/indica-ma
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {franqueadora && (
-            <form className="flex items-center gap-1.5">
+            <FilterForm className="flex items-center gap-1.5">
               <select name="unidade" defaultValue={unidade.id} className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm" aria-label="Unidade">
                 {(todas ?? []).map((u) => (
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
-              <button className="h-8 rounded-lg border px-2 text-sm">Ver</button>
-            </form>
+            </FilterForm>
           )}
           {gestor && (
             <NovaMetaDialog
@@ -255,11 +255,10 @@ export default async function EquipePage({ searchParams }: PageProps<"/indica-ma
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-sm">Ranking individual — {formatIsoDateBr(mesDe)} a {formatIsoDateBr(mesAte)}</CardTitle>
-          <form className="flex items-center gap-1.5">
+          <FilterForm className="flex items-center gap-1.5">
             {franqueadora && <input type="hidden" name="unidade" value={unidade.id} />}
-            <input type="month" name="mes" defaultValue={mes.slice(0, 7)} aria-label="Mês" className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm" />
-            <button className="h-8 rounded-lg border px-2 text-sm">Ver</button>
-          </form>
+            <input type="month" name="mes" defaultValue={mes.slice(0, 7)} aria-label="Mês (Enter para aplicar)" className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm" />
+          </FilterForm>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
           {ranking.error ? (
