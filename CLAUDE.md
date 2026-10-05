@@ -378,6 +378,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**05/10/2026 — PC Administrador (core 0.301.0 → 0.302.0, sem migração)**
+
+- **OC-00093:** o "Abrir" de aviso NÃO LIDO só marcava como lido (o
+  `router.refresh()` cancelava a ida). Corrigido; e o aviso de cliente abre
+  o prontuário na aba do assunto (mapa por título em `notifications.ts`,
+  aprovado pelo dono; `?aba=` no prontuário). Visto na tela no treino.
+- ⚠️ **Achei o repositório no ramo `feature/indica-mais-risos`** (mesmo
+  ponto do `main`, 11b409c). Entreguei no `main` e devolvi o repositório ao
+  ramo do Indica, como estava.
+- Resíduo de teste no treino: 4 avisos "TESTE OC-00093" na conta
+  `admin@example.com` (todos lidos). Não apagados.
+- ⏰ **Supabase Pro venceu em 29/09/2026** — confirmar com o dono se renovou.
+
 **26/09/2026 — PC Administrador (core 0.286.0 → 0.296.1; Empresarial 0.69.0 → 0.73.0; migrações 0273–0282, 1022 e 1023)**
 
 **Tudo no ar e aplicado nos dois bancos** (0273, 0274 e 0275 conferidas lendo
