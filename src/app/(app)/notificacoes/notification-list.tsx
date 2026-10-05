@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -26,6 +26,7 @@ import {
   NOTIFICATION_CATEGORY_CLASS,
   NOTIFICATION_CATEGORY_LABELS,
   categorizeNotification,
+  linkDoAviso,
   type NotificationCategory,
 } from "@/lib/notifications";
 import type { NotificationRow } from "./page";
@@ -99,6 +100,21 @@ export function NotificationList({
     });
   }
 
+  // OC-00093: o "Abrir" de um aviso NÃO LIDO não abria nada. O clique fazia
+  // duas coisas ao mesmo tempo — ir para o prontuário e marcar como lido — e o
+  // `router.refresh()` do marcar recarregava ESTA tela por cima da ida: o aviso
+  // virava "lido" e a pessoa ficava parada aqui. Agora marca, espera, e só
+  // então vai; sem refresh (a lista é refeita quando a pessoa voltar).
+  const [abrindo, setAbrindo] = useState<string | null>(null);
+  function abrirNaoLido(id: string, href: string) {
+    setAbrindo(id);
+    startTransition(async () => {
+      // Falhar ao marcar não pode impedir de abrir: o aviso só fica não lido.
+      await markNotificationRead(id).catch(() => null);
+      router.push(href);
+    });
+  }
+
   function markAll() {
     startTransition(async () => {
       const result = await markAllNotificationsRead();
@@ -154,6 +170,10 @@ export function NotificationList({
               const Icon = CATEGORY_ICON[cat];
               const unread = !notification.read_at;
               const older = dayDiffFromToday(notification.created_at) >= 2;
+              // Aviso de cliente abre o prontuário na aba do assunto.
+              const href = notification.link
+                ? linkDoAviso(notification.link, notification.title)
+                : "";
               return (
                 <li
                   key={notification.id}
@@ -202,12 +222,16 @@ export function NotificationList({
                         variant="outline"
                         size="sm"
                         nativeButton={false}
-                        render={<Link href={notification.link} />}
-                        onClick={() => {
-                          if (unread) markRead(notification.id);
+                        render={<Link href={href} />}
+                        aria-disabled={abrindo === notification.id}
+                        onClick={(e) => {
+                          if (!unread) return; // já lido: o link abre sozinho
+                          e.preventDefault();
+                          if (abrindo) return;
+                          abrirNaoLido(notification.id, href);
                         }}
                       >
-                        Abrir
+                        {abrindo === notification.id ? "Abrindo…" : "Abrir"}
                       </Button>
                     )}
                     {unread && (

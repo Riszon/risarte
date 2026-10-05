@@ -56,6 +56,101 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   outras: "bg-muted-foreground",
 };
 
+/** Abas do prontuário (`TabPanel id` em prontuarios/[id]/page.tsx). */
+export type AbaDoProntuario =
+  | "pedidos"
+  | "plano"
+  | "sessoes"
+  | "financeiro"
+  | "jornada"
+  | "historico";
+
+/**
+ * EM QUE ABA O AVISO ABRE O PRONTUÁRIO (OC-00093, 05/10/2026). Antes todo
+ * aviso abria na aba Cadastro, e a pessoa tinha de adivinhar onde estava o
+ * assunto. Mapa aprovado pelo dono, tirado das funções do banco que criam os
+ * avisos (não de suposição).
+ *
+ * Pelo TÍTULO, como a categoria: assim os avisos já enviados também abrem na
+ * aba certa, sem reescrever dado nenhum. O título começa sempre igual; o nome
+ * do cliente vem depois dos dois-pontos.
+ *
+ * Fora do mapa de propósito: "Decisão urgente/obrigatória" e "Cliente
+ * aguardando decisão" — a caixa da decisão fica no TOPO do prontuário, acima
+ * das abas, então aparece em qualquer uma.
+ */
+const ABA_DO_AVISO: [prefixo: string, aba: AbaDoProntuario][] = [
+  ["Pedido respondido", "pedidos"],
+  ["Sugestão de reavaliação", "pedidos"],
+  ["Revisão do plano solicitada", "pedidos"],
+  ["Revisão do plano pendente", "pedidos"],
+
+  ["Plano aguardando aprovação", "plano"],
+  ["Plano aprovado", "plano"],
+  ["Plano devolvido para revisão", "plano"],
+  ["Plano aceito pelo cliente", "plano"],
+  ["Plano reprovado pelo cliente", "plano"],
+  ["Plano de tratamento para aprovação", "plano"],
+  ["Plano de tratamento segue para outra unidade", "plano"],
+  ["Novo caso no Centro de Planejamento", "plano"],
+
+  ["Agendar sessões", "sessoes"],
+  ["Agendar próxima sessão de tratamento", "sessoes"],
+  ["Sessões reabertas", "sessoes"],
+  ["Sessão atrasada", "sessoes"],
+  ["Plano parado", "sessoes"],
+  ["Procedimento para revisar", "sessoes"],
+  ["Procedimento reprovado", "sessoes"],
+  ["Novo procedimento para refazer", "sessoes"],
+  ["Novo fechamento — acompanhar tratamento", "sessoes"],
+  // O fechamento da venda direta é feito na aba Sessões & Procedimentos.
+  ["Venda direta aguardando fechamento", "sessoes"],
+
+  ["Renegociação", "financeiro"],
+
+  ["Cliente em conversão clínica", "jornada"],
+  ["Cliente retornou para conversão clínica", "jornada"],
+  ["Cliente em reavaliação", "jornada"],
+  ["Cliente em acompanhamento", "jornada"],
+  ["Caso pronto para apresentação comercial", "jornada"],
+  ["Caso comercial sem apresentação agendada", "jornada"],
+  ["Caso devolvido pelo Centro de Planejamento", "jornada"],
+  ["Apresentação comercial agendada", "jornada"],
+  ["Agendar apresentação", "jornada"],
+  ["Fechamento! Agendar início de tratamento", "jornada"],
+  ["Cancelamento — agendar", "jornada"],
+
+  ["Cliente compartilhado", "historico"],
+  ["Compartilhamento encerrado", "historico"],
+  ["Cliente transferido", "historico"],
+  ["Seu cliente faltou", "historico"],
+  ["Agendamento do seu cliente foi alterado", "historico"],
+];
+
+export function abaDoAviso(title: string): AbaDoProntuario | null {
+  const t = (title ?? "").trim();
+  return ABA_DO_AVISO.find(([prefixo]) => t.startsWith(prefixo))?.[1] ?? null;
+}
+
+/** Todas as abas que o mapa usa (a régua confere que elas existem na tela). */
+export const ABAS_DOS_AVISOS: AbaDoProntuario[] = [
+  ...new Set(ABA_DO_AVISO.map(([, aba]) => aba)),
+];
+
+const LINK_DO_CLIENTE = /^\/(?:clientes|prontuarios)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
+
+/**
+ * O endereço que o "Abrir" do aviso usa. Aviso de cliente vai direto para
+ * `/prontuarios/<id>` (os antigos guardam `/clientes/<id>`, que só chegava lá
+ * por redirecionamento) e leva a aba. Qualquer outro endereço passa intacto.
+ */
+export function linkDoAviso(link: string, title: string): string {
+  const m = LINK_DO_CLIENTE.exec(link ?? "");
+  if (!m) return link;
+  const aba = abaDoAviso(title);
+  return `/prontuarios/${m[1]}${aba ? `?aba=${aba}` : ""}`;
+}
+
 export function categorizeNotification(title: string): NotificationCategory {
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";

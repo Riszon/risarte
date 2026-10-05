@@ -882,6 +882,16 @@ coisa, quem manda é este.
 > Contar a fila inteira para quem não responde seria pendurar no seu ícone um
 > número sobre o qual você não pode fazer nada.
 
+> **O "Abrir" do aviso leva direto ao assunto.** Na tela de Notificações, o
+> **Abrir** de um aviso sobre um cliente abre o prontuário **na aba do
+> assunto** — "Pedido respondido" cai em **Pedidos**, "Plano aprovado" em
+> **Plano**, "Sessão atrasada" em **Sessões & Procedimentos**, renegociação em
+> **Financeiro**, compartilhamento e transferência em **Histórico**, mudança de
+> fase em **Jornada**. Se a sua função não tem aquela aba, o prontuário abre
+> na primeira. Abrir um aviso não lido também o marca como lido (o botão mostra
+> "Abrindo…" enquanto isso). As decisões pendentes ("necessita reavaliação?")
+> não têm aba: a caixa delas fica no topo do prontuário, acima das abas.
+
 > **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
 > alertas do financeiro disparam notificação. O triângulo é para consultar a
 > lista completa quando você quiser. (Contar tudo o que ele mostra sairia caro e

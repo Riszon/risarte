@@ -3,6 +3,8 @@
 import {
   Children,
   isValidElement,
+  useEffect,
+  useRef,
   useState,
   type ReactNode,
   type ReactElement,
@@ -51,17 +53,43 @@ export const TabPanel: (props: PanelProps) => ReactNode = () => null;
 /** H4.10: a ficha do cliente em abas (na sequência do fluxo). Mantém todas as
  * abas montadas (esconde as inativas) para não perder o estado dos editores.
  * Refino visual: aba ativa com acento dourado (sublinhado) + ícone. */
-export function ProntuarioTabs({ children }: { children: ReactNode }) {
+export function ProntuarioTabs({
+  children,
+  initialTab,
+}: {
+  children: ReactNode;
+  /** OC-00093: a aba pedida no endereço (`?aba=pedidos`, vinda do aviso). Se
+   * a pessoa não tem essa aba, abre na primeira — como antes. */
+  initialTab?: string | null;
+}) {
   const panels = Children.toArray(children).filter(
     (c): c is ReactElement<PanelProps> =>
       isValidElement(c) &&
       typeof (c.props as Partial<PanelProps>).id === "string"
   );
-  const [active, setActive] = useState<string>(panels[0]?.props.id ?? "");
+  const [active, setActive] = useState<string>(
+    panels.find((p) => p.props.id === initialTab)?.props.id ??
+      panels[0]?.props.id ??
+      ""
+  );
+
+  // A barra rola de lado: aberta direto numa aba do fim (Pedidos, Histórico),
+  // ela ficaria fora da vista e a pessoa não veria em que aba está. Só mexe na
+  // rolagem da BARRA — a página fica onde está.
+  const barra = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!initialTab) return;
+    const el = barra.current;
+    const botao = el?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (el && botao) el.scrollLeft = botao.offsetLeft - el.clientWidth / 2 + botao.clientWidth / 2;
+  }, [initialTab]);
 
   return (
     <div>
-      <div className="sticky top-0 z-10 -mx-4 mb-4 overflow-x-auto border-b border-border bg-background/95 px-4 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] supports-[backdrop-filter]:bg-background/80 [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={barra}
+        className="sticky top-0 z-10 -mx-4 mb-4 overflow-x-auto border-b border-border bg-background/95 px-4 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] supports-[backdrop-filter]:bg-background/80 [&::-webkit-scrollbar]:hidden"
+      >
         <div role="tablist" className="flex gap-1">
           {panels.map((p) => {
             const Icon = TAB_ICONS[p.props.id];

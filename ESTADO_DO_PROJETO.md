@@ -1,7 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/09/2026 · Versão do sistema: **0.301.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 05/10/2026 · Versão do sistema: **0.302.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔔 0.302.0 — O "ABRIR" DO AVISO ABRE, E NA ABA CERTA (OC-00093)
+>
+> O `router.refresh()` do "marcar como lida" recarregava /notificacoes por
+> cima da navegação: aviso não lido virava lido e nada abria. Agora marca,
+> espera e navega. `linkDoAviso` manda o aviso de cliente para
+> `/prontuarios/<id>?aba=<aba>` (mapa por título em `notifications.ts`,
+> aprovado pelo dono) e `ProntuarioTabs` aceita `initialTab`. Sem migração:
+> os avisos antigos (`/clientes/<id>`) também abrem na aba certa.
+>
 > ## 🩺 0.301.0 — O ALERTA DA ANAMNESE DIZ O QUE FOI MARCADO (OC-00062)
 >
 > `evaluateAlerts` devolve `itens` (as opções que disparam) e `detalhe`;

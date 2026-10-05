@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.302.0",
+    data: "2026-10-05",
+    migracao: null,
+    titulo: "O \"Abrir\" do aviso abre o prontuário — e na aba certa",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Na tela de Notificações, o \"Abrir\" de um aviso ainda não lido só marcava o aviso como lido e não saía do lugar. Agora ele abre de primeira (o botão mostra \"Abrindo…\" enquanto marca).",
+        papeis: "todos",
+        manual: "A barra de cima",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O aviso sobre um cliente abre o prontuário na aba do assunto: \"Pedido respondido\" em Pedidos, \"Plano aprovado\" em Plano, \"Sessão atrasada\" em Sessões & Procedimentos, renegociação em Financeiro, compartilhamento e transferência em Histórico, mudança de fase em Jornada. Vale também para os avisos que já estavam na sua lista.",
+        papeis: "todos",
+        manual: "A barra de cima",
+      },
+    ],
+  },
+  {
     versao: "0.301.0",
     data: "2026-09-28",
     migracao: null,

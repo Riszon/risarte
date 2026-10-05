@@ -258,6 +258,9 @@ export default async function ClientDetailPage(
   // J8: ?editar=1 abre o cadastro já em edição — usado pelo botão "Completar o
   // cadastro" do agendamento (cliente com cadastro incompleto).
   const startEditing = (await props.searchParams)?.editar === "1";
+  // OC-00093: ?aba=pedidos abre o prontuário na aba do assunto do aviso.
+  const abaPedida = (await props.searchParams)?.aba;
+  const initialTab = typeof abaPedida === "string" ? abaPedida : null;
   const supabase = await createClient();
 
   const { data: client } = await supabase
@@ -2785,7 +2788,9 @@ export default async function ClientDetailPage(
         </div>
       )}
 
-      <ProntuarioTabs>
+      {/* A chave refaz as abas só quando a aba pedida muda (outro aviso para o
+          mesmo cliente); sem ela a aba ficaria presa na anterior. */}
+      <ProntuarioTabs key={initialTab ?? ""} initialTab={initialTab}>
         <TabPanel id="cadastro" label="Cadastro">
           {/* Dados do cliente primeiro (o principal da aba). */}
           <ClientDataSection
