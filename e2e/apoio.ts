@@ -439,14 +439,13 @@ export async function levarAoComercial(
   await enviarAprovacao.click();
   await page.getByText(/Aguardando aprovação/).first().waitFor();
 
-  // O Coordenador abre a opção e aprova. Um clique basta desde a correção do
-  // item 2 — antes eram necessários dois, e o contorno vivia aqui.
+  // O Coordenador aprova. Desde o OC-00092 a opção já vem aberta para quem
+  // avalia — não há mais "Expandir opção" a clicar aqui.
   await trocarPara(context, PESSOAS.coordenador);
   await fecharAvisos(page);
   await page.goto(`/prontuarios/${paciente.id}`);
   await esperarEFecharAvisos(page);
   await page.getByRole("tab", { name: "Plano", exact: true }).click();
-  await page.getByRole("button", { name: "Expandir opção" }).first().click();
   await page.getByRole("button", { name: /Aprovar opção/ }).first().click();
   await page.getByText(/aprovada/i).first().waitFor();
 

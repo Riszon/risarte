@@ -1432,11 +1432,37 @@ fase do paciente ☐ sei que não sou eu quem chama
 > acontece** e o sistema avisa. Clique em Enviar de novo para enviar sem o
 > áudio — é uma decisão sua, não um acidente.
 
-**Segunda tarefa — aprovar plano:** na ficha, aba **Plano** → expandir a opção →
-**Aprovar opção** ou **Reprovar opção**.
+**Segunda tarefa — aprovar plano.**
+
+*Onde ver se há plano esperando por você* (qualquer um dos três serve):
+
+- **Início** → cartão **Planos aguardando sua aprovação** (só aparece quando
+  há algum) → **Abrir**. Ele leva a **Planos de Tratamento**, já filtrado.
+- Menu **Planos de Tratamento** → filtro **Aguardando aprovação** → **Ficha**
+  na linha do cliente.
+- **Sino** → aviso **Plano aguardando aprovação** → **Abrir**.
+
+Por qualquer um deles, o prontuário do cliente abre **direto na aba Plano**.
+
+*Como aprovar:*
+
+1. Na aba **Plano**, as opções de tratamento já aparecem **abertas** enquanto
+   o plano aguarda a sua aprovação (se alguma estiver recolhida, clique na
+   setinha ao lado do nome).
+2. Leia os procedimentos de cada opção. No fim de cada uma ficam o campo
+   **Considerações** e os botões **Aprovar opção** e **Reprovar opção**.
+3. Decida **todas** as opções — cada uma precisa da sua decisão.
+4. Com todas decididas e **pelo menos uma aprovada**, o plano fica aprovado e
+   o Planner envia ao Comercial. Se **todas** forem reprovadas, volta ao
+   Planner para revisão.
 
 > **Reprovar exige considerações escritas** — o sistema não deixa reprovar em
-> branco (migração 0042).
+> branco (migração 0042). É o que orienta o Planner a corrigir.
+
+> **Abriu a aba Plano e não há botão de aprovar?** Um destes três: o Planner
+> **ainda não enviou** o plano para aprovação (a situação do plano não diz
+> "Aguardando aprovação do Coordenador"); o plano **já foi avaliado**; ou você
+> está em **outra unidade** que não a do cliente (confira no alto do menu).
 
 **Cuidado:** você vê **o total** de cada opção, não o preço item a item. Isso é
 proposital: sua aprovação é clínica, não comercial.

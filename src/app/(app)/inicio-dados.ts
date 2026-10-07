@@ -303,7 +303,11 @@ export async function montarPendencias(
     numero: aguardandoAprovacao?.count ?? 0,
     titulo: "Planos aguardando sua aprovação",
     linha: "O Planner enviou e o caso não anda até você decidir.",
-    href: "/planejamento?situacao=aguardando_aprovacao",
+    // AP25 (OC-00092): apontava para `/planejamento`, que é só do Planner — o
+    // Coordenador clicava e era devolvido ao Início. `/planos` é a tela que
+    // ele tem; a unidade vai junto para o número do cartão bater com a lista
+    // (o Admin, sem ela, veria a rede inteira).
+    href: `/planos?situacao=aguardando_aprovacao&unidade=${clinica.id}`,
     tom: "atencao",
   });
 

@@ -378,6 +378,21 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**07/10/2026 — PC Administrador (core 0.302.0 → 0.303.0, sem migração)**
+
+- **OC-00092 (dúvida "onde aprovo o plano?") + AP25 + AP26:** para quem
+  avalia um plano aguardando aprovação, as opções já vêm ABERTAS (decisão do
+  dono); o cartão do Início do Coordenador apontava para `/planejamento`
+  (só Planner) e agora abre `/planos` no filtro; "Ficha"/"Ver plano" de
+  `/planos` abrem na aba Plano; manual 6.2 com o passo a passo.
+- ⏳ **E2E ajustado e NÃO rodado** (`03-planejamento.spec.ts`, `apoio.ts`):
+  a suíte limpa o treino. Rodar na próxima vez que o treino puder ser limpo.
+- Resíduo no treino: **plano de teste "aguardando aprovação"** no cliente
+  fictício "Teste do portão 1 (pode ignorar)", Risarte Unidade Teste —
+  deixado de propósito para o dono ver a tela. Não apagado.
+- O repositório segue sendo encontrado no ramo `feature/indica-mais-risos`;
+  entreguei no `main` e devolvi ao ramo do Indica.
+
 **05/10/2026 — PC Administrador (core 0.301.0 → 0.302.0, sem migração)**
 
 - **OC-00093:** o "Abrir" de aviso NÃO LIDO só marcava como lido (o

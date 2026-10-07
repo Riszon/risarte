@@ -1,7 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 05/10/2026 · Versão do sistema: **0.302.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 07/10/2026 · Versão do sistema: **0.303.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ✅ 0.303.0 — APROVAR O PLANO: BOTÕES À VISTA E O CAMINHO ATÉ ELES (OC-00092, AP25, AP26)
+>
+> `opcaoAbertaPorPadrao` (`planning.ts`): quem AVALIA um plano `submitted`
+> vê todas as opções abertas (os botões ficam dentro delas). O cartão do
+> Início do Coordenador apontava para `/planejamento` (só Planner →
+> `redirect("/")`); agora `/planos?situacao=aguardando_aprovacao&unidade=`.
+> "Ficha"/"Ver plano" de `/planos` levam `?aba=plano`. E2E ajustado, não
+> rodado (limpa o treino).
+>
 > ## 🔔 0.302.0 — O "ABRIR" DO AVISO ABRE, E NA ABA CERTA (OC-00093)
 >
 > O `router.refresh()` do "marcar como lida" recarregava /notificacoes por

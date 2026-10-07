@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.303.0",
+    data: "2026-10-07",
+    migracao: null,
+    titulo: "Aprovar o plano: os botões à vista e o caminho até eles",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Coordenador: ao abrir um plano que aguarda a sua aprovação, as opções de tratamento já vêm abertas, com os botões Aprovar opção e Reprovar opção à vista no fim de cada uma. Antes vinham recolhidas e era preciso clicar na setinha para os botões aparecerem.",
+        papeis: ["clinical_coordinator"],
+        manual: "Coordenador Clínico",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O cartão \"Planos aguardando sua aprovação\", no Início, levava o Coordenador a uma tela que é só do Planner e o devolvia ao Início. Agora abre Planos de Tratamento, já no filtro Aguardando aprovação.",
+        papeis: ["clinical_coordinator"],
+        manual: "Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Planos de Tratamento, \"Ficha\" e \"Ver plano\" abrem o prontuário direto na aba Plano.",
+        papeis: ["clinical_coordinator", "unit_manager", "planner_dentist", "franchisee"],
+        manual: "Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.302.0",
     data: "2026-10-05",
     migracao: null,

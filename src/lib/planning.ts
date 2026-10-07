@@ -112,6 +112,27 @@ export function planStage(plan: {
   }
 }
 
+/**
+ * A OPÇÃO DO PLANO COMEÇA ABERTA OU RECOLHIDA? Uma regra só, usada por quem
+ * DESENHA e por quem trata o CLIQUE — quando os dois divergiram, o primeiro
+ * clique do Coordenador não fazia nada (item 2 de docs/CORRECOES-TESTES.md).
+ *
+ * - Quem AVALIA um plano aguardando aprovação vê TODAS abertas (OC-00092,
+ *   07/10/2026): os botões Aprovar/Reprovar ficam dentro da opção, e com tudo
+ *   recolhido o Coordenador não achava onde aprovar. Continua valendo o
+ *   princípio de que não se aprova sem ver: os botões vêm depois do conteúdo.
+ * - Quem EDITA vê a principal aberta.
+ * - Na leitura, tudo recolhido.
+ */
+export function opcaoAbertaPorPadrao(p: {
+  avaliando: boolean;
+  editando: boolean;
+  principal: boolean;
+}): boolean {
+  if (p.avaliando) return true;
+  return p.editando ? p.principal : false;
+}
+
 export type PlanResult = { ok: boolean; error?: string };
 
 // Per-option review by the Coordenador (F4). Must match option_review_status.

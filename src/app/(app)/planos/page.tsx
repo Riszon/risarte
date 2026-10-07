@@ -484,7 +484,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                     </Link>
                   )}
                   <Link
-                    href={`/prontuarios/${e.clientId}`}
+                    href={`/prontuarios/${e.clientId}?aba=plano`}
                     className="text-primary hover:underline"
                   >
                     Ver plano
@@ -596,7 +596,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                   <tr key={e.planId} className="border-b last:border-0">
                     <td className="px-2 py-1.5">
                       <Link
-                        href={`/prontuarios/${e.clientId}`}
+                        href={`/prontuarios/${e.clientId}?aba=plano`}
                         className="font-medium hover:underline"
                       >
                         {e.clientName}
@@ -659,7 +659,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
                     </td>
                     <td className="px-2 py-1.5 text-xs">
                       <Link
-                        href={`/prontuarios/${e.clientId}`}
+                        href={`/prontuarios/${e.clientId}?aba=plano`}
                         className="text-primary hover:underline"
                       >
                         Ficha

@@ -2099,7 +2099,7 @@ sozinho**.
 do indicado, como o voucher; o prêmio individual, nas metas) ou tirar os
 parâmetros da tela até existir a regra.
 
-### AP25. O cartão "Planos aguardando sua aprovação" leva o Coordenador a uma tela que o devolve (07/10/2026) — CONFIRMADO no código, NÃO visto na tela
+### AP25. ✅ RESOLVIDO em 07/10/2026 (core 0.303.0) — o cartão "Planos aguardando sua aprovação" levava o Coordenador a uma tela que o devolvia
 
 Achado ao responder a dúvida OC-00092 ("onde aprovo o plano?").
 
@@ -2118,7 +2118,7 @@ nenhum.
 Tratamento por padrão, e a lista de lá tem o link "Ficha". Conferir se o
 filtro por situação existe com esse nome antes de trocar.
 
-### AP26. Aprovar/Reprovar ficam escondidos dentro da opção RECOLHIDA (07/10/2026) — CONFIRMADO no código
+### AP26. ✅ RESOLVIDO em 07/10/2026 (core 0.303.0; o dono escolheu "abrir as opções sozinhas") — Aprovar/Reprovar ficavam escondidos dentro da opção RECOLHIDA
 
 Mesma origem (OC-00092). É a causa provável da dúvida.
 

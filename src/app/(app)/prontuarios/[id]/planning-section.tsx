@@ -40,6 +40,7 @@ import { GUT_DIMENSION_LABELS, gutTierOf, sortByGutDesc } from "@/lib/gut";
 import {
   OPTION_REVIEW_LABELS,
   PLAN_STATUS_LABELS,
+  opcaoAbertaPorPadrao,
   type PlanOption,
   type PlanStage,
   type TreatmentPlan,
@@ -377,8 +378,14 @@ export function PlanningSection({
   // mudaria. Era o que acontecia com o COORDENADOR na opção principal: ele
   // clicava para abrir e avaliar o plano, nada acontecia, e os botões de
   // aprovar ficavam inalcançáveis — no gargalo do núcleo clínico.
+  // OC-00092: para quem AVALIA um plano aguardando aprovação, todas abrem
+  // sozinhas — a regra mora em `opcaoAbertaPorPadrao` (com teste).
   const optionOpenByDefault = (isPrimary: boolean) =>
-    canEditContent ? isPrimary : false;
+    opcaoAbertaPorPadrao({
+      avaliando: canReview && plan?.status === "submitted",
+      editando: canEditContent,
+      principal: isPrimary,
+    });
   const toggleOption = (id: string, isPrimary: boolean) =>
     setOpenOptions((prev) => ({
       ...prev,
@@ -1188,7 +1195,10 @@ export function PlanningSection({
         {/* Aprovação por opção (F4): o Coordenador decide cada opção acima. */}
         {canReview && plan.status === "submitted" && (
           <p className="border-t pt-3 text-sm text-muted-foreground">
-            Avalie <strong>cada opção</strong> acima (Aprovar ou Reprovar). O plano
+            Avalie <strong>cada opção</strong> acima: os botões{" "}
+            <strong>Aprovar opção</strong> e <strong>Reprovar opção</strong>{" "}
+            ficam no fim de cada uma (se estiver recolhida, clique na setinha
+            ao lado do nome). O plano
             é liberado ao Comercial quando todas as opções tiverem decisão e houver
             ao menos uma aprovada; se todas forem reprovadas, volta ao Planner.
           </p>

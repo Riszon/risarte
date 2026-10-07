@@ -138,13 +138,13 @@ test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial"
   await fecharAvisos(page);
   await page.goto(`/prontuarios/${paciente.id}`);
   await page.getByRole("tab", { name: "Plano", exact: true }).click();
-  // O Coordenador tem de ABRIR a opção para decidir: aprovar sem ver o que está
-  // dentro seria assinar em branco, e a tela impede isso por construção.
+  // O Coordenador decide com a opção ABERTA: aprovar sem ver o que está dentro
+  // seria assinar em branco, e a tela impede isso por construção — os botões
+  // ficam no fim do conteúdo.
   //
-  // Um clique basta desde a correção do item 2 (os dois lados passaram a usar o
-  // mesmo padrão de aberto/fechado). Antes, o primeiro clique do Coordenador
-  // não fazia nada e os botões de aprovar ficavam inalcançáveis.
-  await page.getByRole("button", { name: "Expandir opção" }).first().click();
+  // Desde o OC-00092 (07/10/2026) as opções já abrem sozinhas para quem
+  // avalia um plano aguardando aprovação: recolhidas, o Coordenador não achava
+  // onde aprovar.
   const aprovar = page.getByRole("button", { name: /Aprovar opção/ }).first();
   await expect(aprovar).toBeVisible({ timeout: 20_000 });
   await aprovar.click();
@@ -186,12 +186,19 @@ test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial"
   await db.end();
 });
 
-test("um clique abre a opção para o Coordenador", async ({ page, context }) => {
+test("a opção já vem aberta para o Coordenador, e um clique a recolhe", async ({
+  page,
+  context,
+}) => {
   // Nasceu como falha esperada, guardando o defeito do clique duplo (item 2 de
   // docs/CORRECOES-TESTES.md). A correção saiu, ele ficou verde sozinho e o
   // marcador foi removido — que é exatamente o serviço que ele devia prestar.
   // Fica como guarda permanente: se os dois padrões voltarem a divergir, o
-  // Coordenador perde o acesso aos botões de aprovar e este teste acusa.
+  // primeiro clique não faz nada e este teste acusa.
+  //
+  // OC-00092 (07/10/2026): quem avalia vê as opções ABERTAS — os botões de
+  // aprovar aparecem sem clique nenhum. O clique agora RECOLHE, e é ele que
+  // continua provando que desenho e clique usam o mesmo padrão.
   const db = await banco();
   const { rows } = await db.query(
     `select client_id from public.treatment_plans
@@ -204,11 +211,13 @@ test("um clique abre a opção para o Coordenador", async ({ page, context }) =>
   await fecharAvisos(page);
   await page.goto(`/prontuarios/${rows[0].client_id}`);
   await page.getByRole("tab", { name: "Plano", exact: true }).click();
-  await page.getByRole("button", { name: "Expandir opção" }).first().click();
 
-  await expect(
-    page.getByRole("button", { name: /Aprovar opção/ }).first()
-  ).toBeVisible({ timeout: 10_000 });
+  const aprovar = page.getByRole("button", { name: /Aprovar opção/ });
+  await expect(aprovar.first()).toBeVisible({ timeout: 10_000 });
+  const antes = await aprovar.count();
+
+  await page.getByRole("button", { name: "Recolher opção" }).first().click();
+  await expect(aprovar).toHaveCount(antes - 1);
 });
 
 /** Quantas linhas daquela tabela existem para o plano deste paciente. */
