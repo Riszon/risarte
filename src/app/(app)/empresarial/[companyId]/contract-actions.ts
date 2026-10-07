@@ -195,12 +195,18 @@ async function buildProposalText(companyId: string): Promise<string | null> {
     ]);
   const benCount = contagemConfirmada(contagemDosBeneficios);
   const faixas = await carregarFaixasParaCobrar(db, companyId);
+  // OC-00090: o contratado é o mínimo da mensalidade. Rigoroso como o resto
+  // (AP13): sem conseguir ler o limite, a proposta sairia com o valor a menor.
+  const { data: limiteRow, error: erroDoLimite } = await db.rpc("limite_de_titulares", {
+    p_company_id: companyId,
+  });
   if (
-    erroDoPreco || erroDosTitulares || erroDosDependentes ||
+    erroDoPreco || erroDosTitulares || erroDosDependentes || erroDoLimite ||
     !pricingRows || !emps || !deps || benCount === null || !faixas
   ) {
     return null;
   }
+  const minimoDeTitulares = typeof limiteRow === "number" ? limiteRow : null;
 
   const rows = pricingRows as {
     company_id: string | null;
@@ -232,7 +238,8 @@ async function buildProposalText(companyId: string): Promise<string | null> {
       dependentPlan: e.dependent_plan,
       activeDependentCount: depCount.get(e.id) ?? 0,
     })),
-    faixas
+    faixas,
+    minimoDeTitulares
   );
 
   const name = company.trade_name || company.legal_name;

@@ -6,6 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
+import { avisarCadastrosPendentes } from "@/lib/empresarial/cobranca-servidor";
 import { previewBilling } from "../[companyId]/billing-actions";
 
 export type ResultadoEmLote = {
@@ -15,6 +16,11 @@ export type ResultadoEmLote = {
   feitas?: number;
   /** O que NÃO foi feito, e por quê — nunca some em silêncio. */
   pulados?: { empresa: string; motivo: string }[];
+  /**
+   * OC-00090: mensalidades geradas pelo CONTRATADO com cadastros faltando. A
+   * cobrança saiu; isto volta para alguém cobrar os dados dessas empresas.
+   */
+  comCadastroPendente?: { empresa: string; cadastrados: number; contratados: number }[];
 };
 
 /**
@@ -130,6 +136,7 @@ export async function gerarMensalidadesEmLote(
 
   const db = await empresarialDb();
   const pulados: { empresa: string; motivo: string }[] = [];
+  const comCadastroPendente: NonNullable<ResultadoEmLote["comCadastroPendente"]> = [];
   let feitas = 0;
 
   // Os nomes vêm ANTES do laço. O que a operação pulou precisa voltar com o
@@ -218,6 +225,17 @@ export async function gerarMensalidadesEmLote(
       continue;
     }
     feitas += rows.length;
+
+    // OC-00090: saiu pelo contratado, com cadastro faltando → avisa os
+    // gestores (o banco segura a repetição) e devolve na lista do lote.
+    if (preview.cadastrosPendentes) {
+      comCadastroPendente.push({
+        empresa: nomeDaEmpresa(companyId),
+        cadastrados: preview.cadastrosPendentes.cadastrados,
+        contratados: preview.cadastrosPendentes.contratados,
+      });
+      await avisarCadastrosPendentes(db, companyId, preview.referenceMonth);
+    }
   }
 
   if (feitas > 0) {
@@ -231,7 +249,7 @@ export async function gerarMensalidadesEmLote(
     revalidatePath("/empresarial");
   }
 
-  return { ok: true, feitas, pulados };
+  return { ok: true, feitas, pulados, comCadastroPendente };
 }
 
 /**

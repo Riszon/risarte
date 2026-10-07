@@ -110,6 +110,27 @@ function AvisoDoLote({
             Tudo o que foi selecionado entrou.
           </p>
         )}
+        {/* OC-00090: saiu pelo contratado, faltando cadastro. A cobrança está
+            certa; o que falta é alguém cobrar os dados da empresa. */}
+        {(resultado.comCadastroPendente ?? []).length > 0 && (
+          <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-2 text-sm">
+            <p>
+              <strong>Cobradas pelo contratado, com cadastros faltando.</strong>{" "}
+              A mensalidade saiu pelo combinado; cobre da empresa os dados dos
+              colaboradores:
+            </p>
+            <ul className="max-h-40 space-y-1 overflow-y-auto">
+              {(resultado.comCadastroPendente ?? []).map((c, i) => (
+                <li key={`${c.empresa}-${i}`} className="flex justify-between gap-3">
+                  <span className="font-medium">{c.empresa}</span>
+                  <span className="text-muted-foreground">
+                    {c.cadastrados} de {c.contratados} cadastrados
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="flex justify-end">
           <Button size="sm" onClick={onClose}>
             Entendi

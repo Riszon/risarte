@@ -10,6 +10,7 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
 import {
+  avisarCadastrosPendentes,
   computeMonthlyBreakdown,
   implantacaoPeloContratado,
   precoPorTitularDaImplantacao,
@@ -62,7 +63,22 @@ export type BillingPreview = {
     /** Implantação: o que as implantações anteriores já cobraram. */
     jaCobradoCents?: number;
   };
+  /**
+   * OC-00090: a MENSALIDADE está sendo cobrada com titulares contratados que
+   * ainda não foram cadastrados. A cobrança sai pelo combinado; a tela avisa
+   * (e o sino dos gestores também) para alguém cobrar os dados da empresa.
+   */
+  cadastrosPendentes?: { cadastrados: number; contratados: number; faltam: number };
 };
+
+/** Os cadastros que faltam, ou nada — uma conta só para a prévia e o aviso. */
+function pendenciaDeCadastro(
+  cadastrados: number,
+  limite: number | null
+): BillingPreview["cadastrosPendentes"] {
+  if (limite == null || cadastrados >= limite) return undefined;
+  return { cadastrados, contratados: limite, faltam: limite - cadastrados };
+}
 
 /**
  * Prévia do que será cobrado — o dono confirma antes de gerar (valor, vencimento,
@@ -110,12 +126,20 @@ export async function previewBilling(
     >();
   const perDocument = company.billing_model === "por_cnpj" && (docs?.length ?? 0) > 1;
 
-  const breakdown = await computeMonthlyBreakdown(db, companyId);
+  // OC-00090: na MENSALIDADE o contratado é o mínimo. A implantação tem a
+  // própria conta do contratado (mais abaixo) e usa daqui só os cadastrados.
+  const breakdown = await computeMonthlyBreakdown(db, companyId, {
+    peloContratado: billingType === "MONTHLY",
+  });
   // AP13: sem conseguir ler preço, titulares e dependentes, não há conta — e
   // conta "aproximada" numa cobrança é conta errada com cara de certa.
   if (!breakdown) {
     return { ok: false, error: naoConseguiConferir("o preço e os titulares da empresa") };
   }
+  const cadastrosPendentes =
+    billingType === "MONTHLY"
+      ? pendenciaDeCadastro(breakdown.totalEmployees, breakdown.limite)
+      : undefined;
   const companyName = company.trade_name || company.legal_name;
   const primary = (docs ?? []).find((d) => d.is_primary);
 
@@ -175,6 +199,9 @@ export async function previewBilling(
         items: [{ ...pagador, totalCents: mensal }],
         description,
         valorFixo: { fixoCents, termosCents: mensal - fixoCents },
+        // O fixo não depende dos cadastros, mas a pendência existe do mesmo
+        // jeito — e alguém precisa cobrar os dados da empresa.
+        cadastrosPendentes,
       };
     }
 
@@ -239,7 +266,9 @@ export async function previewBilling(
         payerDoc: primary
           ? `${primary.doc_type} ${primary.doc_formatted}`
           : company.cnpj,
-        employees: breakdown.totalEmployees,
+        // Os COBRADOS: na mensalidade, o maior entre cadastrados e contratado
+        // (OC-00090); na implantação, igual aos cadastrados.
+        employees: breakdown.titularesCobrados,
         totalCents: breakdown.totalCents,
       },
     ];
@@ -406,7 +435,10 @@ export async function previewBilling(
       ok: false,
       error:
         billingType === "MONTHLY"
-          ? "Sem titulares ativos para cobrar a mensalidade. Complete os cadastros antes."
+          ? // OC-00090: com quantidade contratada a mensalidade sai mesmo sem
+            // cadastro. Só chega aqui quem não tem NENHUM dos dois — e aí não
+            // existe número combinado para cobrar.
+            "Esta empresa não tem titulares cadastrados nem quantidade contratada registrada, então não há valor combinado para cobrar. Informe os Titulares contratados (Dados Gerais → Acordo de cobrança) ou cadastre os titulares."
           : "Sem titulares ativos e sem quantidade contratada. Informe o valor da implantação.",
     };
   }
@@ -420,6 +452,8 @@ export async function previewBilling(
     beneficiary: "Risarte / RisLife",
     billingModel: perDocument ? "por_cnpj" : "unico",
     avisoCobertura,
+    cadastrosPendentes,
+    titularesCadastrados: breakdown.totalEmployees,
   };
 }
 
@@ -535,6 +569,12 @@ export async function generateBilling(
     }
     console.error("generateBilling failed:", error.message);
     return { ok: false, error: "Não foi possível gerar a cobrança." };
+  }
+  // OC-00090: a mensalidade saiu com cadastros faltando → o sino dos gestores
+  // avisa, para alguém cobrar os dados da empresa. Depois de gravar, e sem
+  // poder derrubar a cobrança.
+  if (billingType === "MONTHLY" && preview.cadastrosPendentes) {
+    await avisarCadastrosPendentes(db, companyId, preview.referenceMonth);
   }
   await logAudit({
     action: "create",

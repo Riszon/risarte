@@ -96,6 +96,33 @@ export function precoDoTitularComFaixa(
 }
 
 /**
+ * QUANTOS TITULARES A MENSALIDADE COBRA (OC-00090, dono em 07/10/2026).
+ *
+ * O CONTRATADO É O MÍNIMO. A empresa fechou 7 titulares e mandou os dados de
+ * 2: a mensalidade cobra 7 — foi o que se combinou, e o cadastro que falta
+ * depende dela, não de nós. Antes a conta olhava só os cadastrados: cobrava 2
+ * de 7, e sem nenhum cadastrado recusava gerar.
+ *
+ * É a mesma base que a implantação usa desde 24/09 (OC-00055/57) e que o termo
+ * de inclusão usa como "antes" (AP19). `minimo` é o LIMITE da empresa: o
+ * contratado mais os termos de inclusão aceitos. Nulo = contrato sem
+ * quantidade fechada — aí só os cadastrados contam, como sempre.
+ *
+ * `faltamCadastrar` viaja junto porque faz parte do número: cobrar por quem
+ * não está na lista sem dizer isso faria a pessoa procurar o erro na conta.
+ */
+export function titularesDaMensalidade(
+  ativos: number,
+  minimo: number | null | undefined
+): { cobrados: number; faltamCadastrar: number } {
+  const a = Math.max(0, Math.floor(Number.isFinite(ativos) ? ativos : 0));
+  const m =
+    minimo != null && Number.isFinite(minimo) ? Math.max(0, Math.floor(minimo)) : 0;
+  const cobrados = Math.max(a, m);
+  return { cobrados, faltamCadastrar: cobrados - a };
+}
+
+/**
  * ⚠️ AS FAIXAS ENTRAM AQUI (1018), e não na hora do fechamento.
  *
  * A mensalidade é recalculada a cada apuração com a quantidade DAQUELE
@@ -109,39 +136,59 @@ export function precoDoTitularComFaixa(
 export function computeMonthlyCents(
   pricing: AdhesionPricing,
   employees: MonthlyEmployee[],
-  faixas: readonly FaixaDePreco[] = []
+  faixas: readonly FaixaDePreco[] = [],
+  /**
+   * O limite da empresa (contratado + termos aceitos) — ver
+   * `titularesDaMensalidade`. Ausente/nulo = só os cadastrados contam.
+   */
+  minimoDeTitulares: number | null = null
 ): {
   totalCents: number;
+  /** Titulares CADASTRADOS e ativos (não os cobrados). */
   holdersCount: number;
   holdersCents: number;
   dependentsCents: number;
+  /** Quantos titulares a conta cobra: o maior entre cadastrados e contratado. */
+  titularesCobrados: number;
+  /** Cobrados que ainda não estão cadastrados (0 quando não falta ninguém). */
+  faltamCadastrar: number;
+  /** O preço de cada titular, já com a faixa da quantidade cobrada. */
+  porTitularCents: number;
 } {
   const ativos = employees.filter((e) => e.status === "ACTIVE");
-  // A faixa é escolhida pela quantidade de titulares ATIVOS — é ela que a
-  // empresa tem hoje, e é sobre ela que o preço foi combinado.
+  const { cobrados, faltamCadastrar } = titularesDaMensalidade(
+    ativos.length,
+    minimoDeTitulares
+  );
+  // A faixa é escolhida pela quantidade COBRADA — os cadastrados ou, se forem
+  // menos, o contratado: é sobre ela que o preço foi combinado. Escolher pela
+  // faixa de "2" quem contratou 100 cobraria o preço mais caro de quem fechou
+  // volume.
   const { precoCents: porTitular } = precoDaFaixa(
     faixas,
-    ativos.length,
+    cobrados,
     pricing.holderFeeCents
   );
 
-  let holdersCount = 0;
-  let holdersCents = 0;
+  // Dependentes: só os de quem já está cadastrado. Ninguém sabe o plano de
+  // dependentes de um titular que ainda não tem nome.
   let dependentsCents = 0;
   for (const e of ativos) {
-    holdersCount++;
-    holdersCents += porTitular;
     dependentsCents += dependentPlanCostCents(
       pricing,
       e.dependentPlan,
       e.activeDependentCount
     );
   }
+  const holdersCents = porTitular * cobrados;
   return {
     totalCents: holdersCents + dependentsCents,
-    holdersCount,
+    holdersCount: ativos.length,
     holdersCents,
     dependentsCents,
+    titularesCobrados: cobrados,
+    faltamCadastrar,
+    porTitularCents: porTitular,
   };
 }
 

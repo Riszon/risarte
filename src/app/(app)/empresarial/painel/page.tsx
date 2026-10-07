@@ -56,7 +56,9 @@ export default async function PainelPage() {
   ] = await Promise.all([
     db
       .from("companies")
-      .select("id, legal_name, trade_name, status, billing_basis, fixed_monthly_cents")
+      .select(
+        "id, legal_name, trade_name, status, billing_basis, fixed_monthly_cents, contracted_holders"
+      )
       .returns<
         {
           id: string;
@@ -65,6 +67,7 @@ export default async function PainelPage() {
           status: CompanyStatus;
           billing_basis: string | null;
           fixed_monthly_cents: number | null;
+          contracted_holders: number | null;
         }[]
       >(),
     db
@@ -157,6 +160,24 @@ export default async function PainelPage() {
     termosPorEmpresa.set(t.company_id, [...(termosPorEmpresa.get(t.company_id) ?? []), t.monthly_delta_cents]);
   }
 
+  // OC-00090: O CONTRATADO É O MÍNIMO DA MENSALIDADE — o painel soma o que os
+  // boletos cobram. O limite de cada empresa é o contratado + os titulares de
+  // TODOS os termos aceitos: a mesma conta de `empresarial.limite_de_titulares`
+  // (1020), refeita aqui em lote porque uma chamada por empresa seria uma ida
+  // ao banco por linha do painel. Se a regra de lá mudar, esta muda junto.
+  const { data: titularesDosTermos } = await db
+    .from("company_inclusion_terms")
+    .select("company_id, holders")
+    .eq("status", "ACEITO")
+    .returns<{ company_id: string; holders: number }[]>();
+  const incluidosPorEmpresa = new Map<string, number>();
+  for (const t of titularesDosTermos ?? []) {
+    incluidosPorEmpresa.set(
+      t.company_id,
+      (incluidosPorEmpresa.get(t.company_id) ?? 0) + (t.holders ?? 0)
+    );
+  }
+
   const monthlyByCompany = new Map<string, number>();
   let mrr = 0;
   for (const c of companies ?? []) {
@@ -165,7 +186,10 @@ export default async function PainelPage() {
     const m = computeMonthlyCents(
       pricing,
       empByCompany.get(c.id) ?? [],
-      faixasPorEmpresa.get(c.id) ?? []
+      faixasPorEmpresa.get(c.id) ?? [],
+      c.contracted_holders == null
+        ? null
+        : c.contracted_holders + (incluidosPorEmpresa.get(c.id) ?? 0)
     );
     const fixo = ehValorFixo(c.billing_basis)
       ? mensalidadeDoFixo(c.fixed_monthly_cents, termosPorEmpresa.get(c.id) ?? [])

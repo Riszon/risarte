@@ -378,6 +378,23 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**07/10/2026 (tarde) — PC Administrador (Empresarial 0.75.0 → 0.76.0, migração 1026)**
+
+- **OC-00090: a mensalidade por titular cobra pelo CONTRATADO** (regra nova do
+  dono — antes somava só os cadastrados e recusava sem nenhum). O limite
+  (contrato + termos aceitos) é o mínimo, com a faixa dele; dependentes só os
+  cadastrados. Vale no boleto, no lote e nas telas (ficha, relatório, painel,
+  proposta) — régua em `mensalidade-pelo-contratado.test.ts`.
+- Alerta "Faltam cadastros" no alto da ficha (só gestores do programa) e na
+  prévia; **aviso no sino** dos gestores, um por empresa por mês
+  (`empresarial.avisar_cadastros_pendentes`, **1026**).
+- ⏳ **1026: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
+  cobrança funciona igual; só o aviso do sino não nasce (fica no log).
+- ⏳ A geração com aviso foi provada por transação desfeita e pela API, **não
+  clicada na tela** (a empresa do relato, Cedássio, é teste de outra pessoa).
+- **AP27 (BACKLOG):** ao ligar o ASAAS, o boleto sai num passo próprio
+  ("Emitir boleto") — gerar a cobrança não emite sozinho (decisão do dono).
+
 **07/10/2026 — PC Administrador (core 0.302.0 → 0.303.0, sem migração)**
 
 - **OC-00092 (dúvida "onde aprovo o plano?") + AP25 + AP26:** para quem

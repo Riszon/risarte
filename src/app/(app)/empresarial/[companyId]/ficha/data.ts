@@ -1,4 +1,4 @@
-import { mensalidadeNaTela } from "@/lib/empresarial/mensalidade-na-tela";
+import { mensalidadeNaTela, minimoDeTitularesNaTela } from "@/lib/empresarial/mensalidade-na-tela";
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
@@ -363,7 +363,9 @@ export async function loadCompanySheet(
       dependentPlan: e.dependent_plan,
       activeDependentCount: depCount.get(e.id) ?? 0,
     })),
-    await carregarFaixasDaEmpresa(db, companyId)
+    await carregarFaixasDaEmpresa(db, companyId),
+    // OC-00090: o contratado é o mínimo — a ficha mostra o que o boleto cobra.
+    await minimoDeTitularesNaTela(db, companyId)
   );
 
   const empByDoc = new Map<string, number>();

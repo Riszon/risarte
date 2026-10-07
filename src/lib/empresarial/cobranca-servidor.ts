@@ -14,6 +14,7 @@ import { carregarFaixasParaCobrar } from "./faixas-da-empresa";
 import {
   computeMonthlyCents,
   precoDoTitularComFaixa,
+  titularesDaMensalidade,
   DEFAULT_ADHESION_PRICING,
   type AdhesionPricing,
 } from "./pricing";
@@ -77,13 +78,55 @@ export async function implantacaoPeloContratado(
   return porTitular === null ? null : porTitular * contratado;
 }
 
-/** Mensalidade total e por documento (para o modelo "um boleto por CNPJ"). */
+/**
+ * AVISA QUEM GERE O PROGRAMA de que a mensalidade saiu com cadastros faltando
+ * (OC-00090, migração 1026). Quem conta os números e segura a repetição (um
+ * por empresa por mês) é o banco.
+ *
+ * ⚠️ NUNCA DERRUBA A COBRANÇA. O aviso é consequência; a cobrança já foi
+ * gravada quando isto roda. Se falhar — inclusive na janela em que o código
+ * novo está no ar e a 1026 ainda não foi aplicada — fica no log e a geração
+ * segue. A pendência continua visível na tela da empresa de qualquer jeito.
+ */
+export async function avisarCadastrosPendentes(
+  db: Db,
+  companyId: string,
+  referenceMonth: string | null | undefined
+): Promise<void> {
+  if (!referenceMonth) return;
+  const { error } = await db.rpc("avisar_cadastros_pendentes", {
+    p_company_id: companyId,
+    p_reference_month: referenceMonth,
+  });
+  if (error) console.error("aviso de cadastros pendentes falhou:", error.message);
+}
+
+/**
+ * Mensalidade total e por documento (para o modelo "um boleto por CNPJ").
+ *
+ * ⚠️ OC-00090 (dono, 07/10/2026): com `peloContratado`, O CONTRATADO É O
+ * MÍNIMO — a empresa que fechou 7 e cadastrou 2 paga 7 (ver
+ * `titularesDaMensalidade`). Quem pede isso é a MENSALIDADE; a implantação
+ * chama sem a opção, porque tem a própria conta do contratado (AP12) e usa
+ * daqui só os cadastrados.
+ *
+ * Os titulares que ainda não têm cadastro não pertencem a CNPJ nenhum: entram
+ * em `__none__`, que a prévia soma ao documento principal.
+ */
 export async function computeMonthlyBreakdown(
   db: Db,
-  companyId: string
+  companyId: string,
+  opcoes: { peloContratado?: boolean } = {}
 ): Promise<{
   totalCents: number;
+  /** Titulares CADASTRADOS e ativos. */
   totalEmployees: number;
+  /** Titulares que a conta cobra (≥ cadastrados quando `peloContratado`). */
+  titularesCobrados: number;
+  /** Cobrados sem cadastro ainda. */
+  faltamCadastrar: number;
+  /** O limite da empresa (contratado + termos aceitos); nulo = sem contrato de quantidade. */
+  limite: number | null;
   byDocument: Map<string, { employees: number; cents: number }>;
 } | null> {
   // ⚠️ AP13: QUALQUER leitura que falhe devolve nulo. Antes, cada falha virava
@@ -94,6 +137,7 @@ export async function computeMonthlyBreakdown(
     { data: pricingRows, error: erroDoPreco },
     { data: emps, error: erroDosTitulares },
     { data: deps, error: erroDosDependentes },
+    { data: limiteRow, error: erroDoLimite },
   ] = await Promise.all([
       db
         .from("adhesion_pricing")
@@ -115,10 +159,18 @@ export async function computeMonthlyBreakdown(
           }[]
         >(),
       db.from("dependents").select("employee_id, status").eq("status", "ACTIVE"),
+      db.rpc("limite_de_titulares", { p_company_id: companyId }),
     ]);
-  if (erroDoPreco || erroDosTitulares || erroDosDependentes || !pricingRows || !emps || !deps) {
+  // O limite entra na mesma regra: sem conseguir lê-lo, a conta cairia nos
+  // cadastrados em silêncio — exatamente a cobrança a menor que o OC-00090
+  // veio corrigir.
+  if (
+    erroDoPreco || erroDosTitulares || erroDosDependentes || erroDoLimite ||
+    !pricingRows || !emps || !deps
+  ) {
     return null;
   }
+  const limite = typeof limiteRow === "number" ? limiteRow : null;
 
   const rows = pricingRows as {
     company_id: string | null;
@@ -152,9 +204,13 @@ export async function computeMonthlyBreakdown(
   const faixas = await carregarFaixasParaCobrar(db, companyId);
   if (!faixas) return null;
   const ativos = emps.filter((e) => e.status === "ACTIVE").length;
+  const { cobrados, faltamCadastrar } = titularesDaMensalidade(
+    ativos,
+    opcoes.peloContratado ? limite : null
+  );
   const precoComFaixa = {
     ...pricing,
-    holderFeeCents: precoDoTitularComFaixa(pricing, faixas, ativos),
+    holderFeeCents: precoDoTitularComFaixa(pricing, faixas, cobrados),
   };
 
   const byDocument = new Map<string, { employees: number; cents: number }>();
@@ -175,5 +231,23 @@ export async function computeMonthlyBreakdown(
     byDocument.set(key, cur);
   }
 
-  return { totalCents, totalEmployees: (emps ?? []).length, byDocument };
+  // Os contratados que ainda não têm cadastro: só o preço do titular (sem
+  // dependentes — ninguém sabe o plano de quem ainda não tem nome).
+  if (faltamCadastrar > 0) {
+    const cents = faltamCadastrar * precoComFaixa.holderFeeCents;
+    totalCents += cents;
+    const cur = byDocument.get("__none__") ?? { employees: 0, cents: 0 };
+    cur.employees += faltamCadastrar;
+    cur.cents += cents;
+    byDocument.set("__none__", cur);
+  }
+
+  return {
+    totalCents,
+    totalEmployees: (emps ?? []).length,
+    titularesCobrados: cobrados,
+    faltamCadastrar,
+    limite,
+    byDocument,
+  };
 }

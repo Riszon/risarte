@@ -1,5 +1,5 @@
 import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
-import { mensalidadeNaTela } from "@/lib/empresarial/mensalidade-na-tela";
+import { mensalidadeNaTela, minimoDeTitularesNaTela } from "@/lib/empresarial/mensalidade-na-tela";
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
@@ -275,7 +275,9 @@ export async function loadCompanyReport(
       dependentPlan: e.dependentPlan,
       activeDependentCount: e.dependents.filter((d) => d.status === "ACTIVE").length,
     })),
-    await carregarFaixasDaEmpresa(db, companyId)
+    await carregarFaixasDaEmpresa(db, companyId),
+    // OC-00090: o contratado é o mínimo — o relatório mostra o que o boleto cobra.
+    await minimoDeTitularesNaTela(db, companyId)
   );
   const mensalidade = await mensalidadeNaTela(db, companyId, monthly.totalCents);
 

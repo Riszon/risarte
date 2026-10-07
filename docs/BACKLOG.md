@@ -2133,3 +2133,36 @@ preciso clicar na setinha para expandir.
 abrir as opções sozinhas para quem aprova enquanto o plano aguarda aprovação;
 ou mostrar os botões também com a opção recolhida; ou ao menos dizer "expanda
 a opção" no texto. O manual (6.2) já diz "expandir a opção", mas em uma linha.
+
+### OC-00090 ✅ (07/10/2026 — 1026 / Empresarial 0.76.0) — a mensalidade passou a cobrar pelo CONTRATADO
+
+**Não era defeito: era a regra, e o dono mudou a regra.** A mensalidade por
+titular somava só os cadastrados ativos (1 de 20 = R$ 39,90) e recusava gerar
+sem nenhum ("Complete os cadastros antes"). A implantação já usava o
+contratado desde 24/09 (OC-00055/57), e o termo de inclusão tratava o contrato
+cheio como base dizendo ser "a mesma conta do boleto" — o boleto é que não era.
+
+**Decisões do dono (07/10/2026):** o contratado (limite = contrato + termos
+aceitos) é o MÍNIMO da mensalidade, com a faixa do contratado; dependentes só
+os já cadastrados; sem contrato de quantidade e sem titulares, recusa e
+explica; alerta fixo na ficha + aviso no sino dos gestores (um por empresa por
+mês — função `empresarial.avisar_cadastros_pendentes`, 1026).
+
+**Limites declarados:** o painel refaz em lote a conta de
+`limite_de_titulares` (se a regra de lá mudar, a de `painel/page.tsx` muda
+junto); a geração da cobrança com o aviso no sino foi provada por transação
+desfeita e pela API, **não clicada na tela** (geraria cobrança no teste de
+outra pessoa e avisos em contas reais do treino).
+
+### AP27. ASAAS: gerar a cobrança NÃO pode emitir o boleto sozinho (07/10/2026) — EXIGÊNCIA para a integração
+
+Do mesmo relato (OC-00090): *"Quando o sistema estiver integrado ao Asaas o
+boleto será gerado com o valor da tela inicial e não após a edição."* Hoje não
+há problema — gerar só cria a linha Pendente, que o **Editar** corrige até ser
+paga, e `createAsaasCharge` não é chamada por lugar nenhum.
+
+**Decisão do dono:** ao ligar o ASAAS, o boleto sai num passo PRÓPRIO
+("Emitir boleto"), depois da conferência e da edição. Ligar a emissão dentro
+de `generateBilling`/`gerarMensalidadesEmLote` quebraria isso. E a edição de
+uma cobrança com boleto já emitido precisa de regra própria (cancelar e
+reemitir no ASAAS) — a decidir na integração.

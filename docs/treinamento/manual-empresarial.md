@@ -610,9 +610,29 @@ O termo de inclusão resolve os dois: informe quantos **titulares** e quantos
 
 ### A mensalidade
 
-Aba **Plano & Benefícios** → **Mensalidade atual**: soma titular + dependentes
-dos titulares **ativos**, aplicando a faixa por quantidade quando houver. O
-**Simulador** ao lado recalcula com outros números, sem gravar nada.
+Aba **Plano & Benefícios** → **Mensalidade atual**: soma titular + dependentes,
+aplicando a faixa por quantidade quando houver. O **Simulador** ao lado
+recalcula com outros números, sem gravar nada.
+
+**O contratado é o mínimo.** A mensalidade cobra o **maior** entre os titulares
+cadastrados e a **quantidade contratada** (o contrato mais os termos de inclusão
+aceitos). A empresa fechou 20 titulares e mandou os dados de 1? A mensalidade é
+a dos **20**, pelo preço da faixa de 20 — foi o que se combinou, e o cadastro
+que falta depende da empresa. Os **dependentes** entram só os de quem já está
+cadastrado. A tela escreve a conta: *"20 titular(es) · R$ … — cobrada pelo
+contratado: 1 cadastrado(s), 19 ainda sem cadastro"*. É o mesmo número na
+ficha, no relatório, no painel (MRR) e no boleto.
+
+> **Empresa sem quantidade contratada** (cadastrada direto, sem passar pelo
+> funil) continua sendo cobrada só pelos titulares cadastrados. Para ela valer
+> como as outras, informe os **Titulares contratados** em **Dados Gerais →
+> Acordo de cobrança**.
+
+> **Faltam cadastros de colaboradores.** Enquanto a empresa tiver menos
+> titulares cadastrados do que contratou, um **alerta amarelo** fica no alto da
+> ficha dela, em todas as abas, com os números (*"só 1 dos 20 titulares
+> contratados está cadastrado"*). Ele aparece para quem gere o programa — é
+> quem cobra os dados da empresa. Some sozinho quando os cadastros chegam.
 
 **Empresa de valor fixo:** a mensalidade é **o valor fixo + os acréscimos dos
 termos de inclusão aceitos** — não depende de quantos titulares estão
@@ -625,6 +645,20 @@ pacote para R$ 6.000,00 → a mensalidade é R$ 6.000,00 (5.000 + 1.000 do termo
 
 **Por empresa:** aba **Financeiro** → **Gerar cobrança mensal**. Nasce
 **Pendente**, com valor e vencimento.
+
+> **A mensalidade não espera os cadastros.** Se a empresa ainda não mandou os
+> dados dos colaboradores, a cobrança sai do mesmo jeito, **pelo contratado**
+> (ou pelo valor fixo, no acordo de valor fixo). A janela de confirmação avisa
+> em amarelo — *"Faltam cadastros de colaboradores. A empresa contratou 20
+> titular(es) e só 1 está cadastrado"* — e, ao gerar, **quem gere o programa
+> recebe um aviso no sino**: *"Cadastros pendentes no Empresarial: (empresa)"*,
+> com os números e um **Abrir** que leva à aba Titulares. É **um aviso por
+> empresa por mês**: gerar, cancelar e gerar de novo não repete. Na geração
+> **em lote**, o resultado lista as empresas que saíram assim.
+>
+> **O valor pode ser ajustado depois de gerar.** A cobrança nasce Pendente e o
+> **Editar** troca valor, vencimento e descrição enquanto ela não for paga.
+> Hoje nenhum boleto é emitido ao gerar (seção 18).
 
 > **A mesma mensalidade não sai duas vezes.** Se a mensalidade do mês já foi
 > gerada — por esta tela ou pela cobrança de todas as empresas —, o sistema
@@ -662,8 +696,9 @@ titular**.
   **ela**, mesmo que ainda haja menos gente cadastrada — e a tela diz isso,
   com os dois números.
 - Se **não há titulares nem quantidade contratada**, a tela **pede o valor**.
-- A **mensalidade**, essa sim, só é gerada com titulares ativos: são perguntas
-  diferentes.
+- A **mensalidade** segue a mesma base (o contratado é o mínimo). A diferença:
+  sem titulares **e** sem quantidade contratada, a mensalidade **não é gerada**
+  — não existe valor combinado — e o sistema diz o que fazer.
 
 **Cada titular paga a implantação UMA vez — na etapa em que entra.** Quando
 a empresa inclui titulares depois (pelo **termo de inclusão**), o primeiro
@@ -832,6 +867,8 @@ daquela empresa.
 | A aba Proposta com **faixa amarela** | Falta rodar uma migração no banco | Avise o Admin: o que você digitar ali não grava |
 | **Ver a proposta** desligado | Falta preencher o levantamento | A tela lista o que falta |
 | Benefício não aparece no orçamento | Carência, frequência, unidade, "vale para quem", ou empresa suspensa | Confira nessa ordem; o painel do cliente mostra a data de liberação |
+| *"Esta empresa não tem titulares cadastrados nem quantidade contratada registrada…"* ao gerar a mensalidade | Não há número combinado para cobrar | Informe os **Titulares contratados** (Dados Gerais → Acordo de cobrança) ou cadastre os titulares |
+| Alerta amarelo **"Faltam cadastros de colaboradores"** | A empresa cadastrou menos titulares do que contratou; a mensalidade é cobrada pelo contratado | Cobre da empresa os dados que faltam (seção 12) |
 | Empresa **Suspensa** | Inadimplência passada da carência | Dê baixa na cobrança; a reativação é automática |
 | Proposta nova chega **sem benefício nenhum** | A rede não tem benefício padrão cadastrado | Configurações → Benefícios |
 
@@ -849,6 +886,9 @@ momento, na frente do cliente.
 - **Boleto pelo ASAAS não é emitido.** O sistema registra valor, vencimento e
   pagador; **a baixa é manual**. A função existe no código e não é chamada por
   lugar nenhum. Quando a emissão for ligada, o link entra na mesma tela.
+  **Combinado para a integração:** o boleto será emitido num passo próprio
+  (**Emitir boleto**), depois de a cobrança ser conferida e, se preciso,
+  editada — gerar a cobrança não vai emitir o boleto sozinho.
 - **Assinatura pela ZapSign** funciona por **Enviar** → **Marcar assinado**
   (simulação) enquanto as chaves não estiverem cadastradas.
 - **Proposta no Gamma** depende de chave configurada; sem ela, o cartão explica

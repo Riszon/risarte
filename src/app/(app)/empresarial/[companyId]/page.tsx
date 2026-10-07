@@ -1,4 +1,7 @@
-import { mensalidadeNaTela } from "@/lib/empresarial/mensalidade-na-tela";
+import {
+  mensalidadeNaTela,
+  minimoDeTitularesNaTela,
+} from "@/lib/empresarial/mensalidade-na-tela";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -195,6 +198,38 @@ export default async function CompanyDetailPage(props: {
     .maybeSingle<CompanyRow>();
   if (!row) notFound();
   const company = toCompany(row);
+
+  // OC-00090: O CONTRATADO É O MÍNIMO DA MENSALIDADE. Lido uma vez, para todas
+  // as abas: entra na conta que a tela mostra (igual ao boleto) e no alerta de
+  // "faltam cadastros", que fica no alto da ficha até a empresa mandar os
+  // dados. Tolerante: se não der para ler, não há alerta e a conta mostra os
+  // cadastrados — quem cobra lê do jeito rigoroso.
+  const [minimoDaMensalidade, contagemDeAtivos] = await Promise.all([
+    minimoDeTitularesNaTela(db, companyId),
+    db
+      .from("employees")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", companyId)
+      .eq("status", "ACTIVE"),
+  ]);
+  const cadastradosAtivos =
+    contagemDeAtivos.error || typeof contagemDeAtivos.count !== "number"
+      ? null
+      : contagemDeAtivos.count;
+  // Só para quem gere o programa: a unidade enxerga apenas os titulares DELA
+  // (RLS), então a contagem dela seria menor que a real e o alerta acusaria
+  // cadastro que existe. E é o gestor quem cobra a empresa.
+  const cadastrosPendentes =
+    isProgramManager(session) &&
+    minimoDaMensalidade != null &&
+    cadastradosAtivos != null &&
+    cadastradosAtivos < minimoDaMensalidade
+      ? {
+          cadastrados: cadastradosAtivos,
+          contratados: minimoDaMensalidade,
+          faltam: minimoDaMensalidade - cadastradosAtivos,
+        }
+      : null;
 
   let consultantName: string | null = null;
   if (row.assigned_consultant_id) {
@@ -486,7 +521,8 @@ export default async function CompanyDetailPage(props: {
           (d) => d.status === "ACTIVE"
         ).length,
       })),
-      await carregarFaixasDaEmpresa(db, companyId)
+      await carregarFaixasDaEmpresa(db, companyId),
+      minimoDaMensalidade
     );
     plano = {
       effectivePricing,
@@ -575,7 +611,8 @@ export default async function CompanyDetailPage(props: {
         dependentPlan: e.dependent_plan,
         activeDependentCount: depCount.get(e.id) ?? 0,
       })),
-      await carregarFaixasDaEmpresa(db, companyId)
+      await carregarFaixasDaEmpresa(db, companyId),
+      minimoDaMensalidade
     );
     const holders = (emps ?? []).length;
     const dependentsCount = (deps ?? []).length;
@@ -954,6 +991,36 @@ export default async function CompanyDetailPage(props: {
         ))}
       </div>
 
+      {/* OC-00090: FALTAM CADASTROS. A mensalidade combinada é cobrada do mesmo
+          jeito; este alerta existe para alguém cobrar os dados da empresa — e
+          fica em todas as abas até a lista chegar. */}
+      {cadastrosPendentes && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm">
+          <span>
+            <strong>Faltam cadastros de colaboradores:</strong>{" "}
+            {cadastrosPendentes.cadastrados === 0
+              ? `nenhum dos ${cadastrosPendentes.contratados} titulares contratados está cadastrado`
+              : cadastrosPendentes.cadastrados === 1
+                ? `só 1 dos ${cadastrosPendentes.contratados} titulares contratados está cadastrado`
+                : `só ${cadastrosPendentes.cadastrados} dos ${cadastrosPendentes.contratados} titulares contratados estão cadastrados`}
+            . A mensalidade é cobrada
+            pelo combinado mesmo assim — cobre da empresa os dados{" "}
+            {cadastrosPendentes.faltam === 1
+              ? "do titular que falta"
+              : `dos ${cadastrosPendentes.faltam} que faltam`}
+            .
+          </span>
+          {aba !== "colaboradores" && (
+            <Link
+              href={{ pathname: `/empresarial/${company.id}`, query: { aba: "colaboradores" } }}
+              className="font-medium text-primary hover:underline"
+            >
+              Ver titulares
+            </Link>
+          )}
+        </div>
+      )}
+
       {aba === "geral" && resumo && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <Card>
@@ -1186,9 +1253,19 @@ export default async function CompanyDetailPage(props: {
                   </p>
                 ) : (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {plano.monthly.holdersCount} titular(es) ·{" "}
+                    {plano.monthly.titularesCobrados} titular(es) ·{" "}
                     {formatBRL(plano.monthly.holdersCents)} + dependentes{" "}
                     {formatBRL(plano.monthly.dependentsCents)}
+                    {/* OC-00090: a conta é pelo contratado — dizer isso faz
+                        parte do número. */}
+                    {plano.monthly.faltamCadastrar > 0 && (
+                      <>
+                        {" "}
+                        — cobrada pelo <strong>contratado</strong>:{" "}
+                        {plano.monthly.holdersCount} cadastrado(s),{" "}
+                        {plano.monthly.faltamCadastrar} ainda sem cadastro
+                      </>
+                    )}
                   </p>
                 )}
                 <p className="mt-2 text-xs text-muted-foreground">

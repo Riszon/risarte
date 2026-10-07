@@ -336,6 +336,33 @@ export function BillingTab({
                 </p>
               )}
 
+              {/* OC-00090: A MENSALIDADE SAI PELO COMBINADO, mesmo sem os
+                  cadastros. Sem esta frase, quem vê "7 titulares" procura os
+                  nomes na lista e não acha — e ninguém cobra a empresa. */}
+              {preview.cadastrosPendentes && (
+                <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2 text-xs">
+                  <strong>Faltam cadastros de colaboradores.</strong> A empresa
+                  contratou {preview.cadastrosPendentes.contratados} titular(es)
+                  e {preview.cadastrosPendentes.cadastrados === 0
+                    ? "ainda não cadastrou nenhum"
+                    : `só ${preview.cadastrosPendentes.cadastrados} ${
+                        preview.cadastrosPendentes.cadastrados === 1
+                          ? "está cadastrado"
+                          : "estão cadastrados"
+                      }`}
+                  .{" "}
+                  {preview.valorFixo
+                    ? "O valor fixo combinado é cobrado do mesmo jeito."
+                    : "A mensalidade é cobrada pelo contratado — foi o que se combinou."}{" "}
+                  Ao gerar, quem gerencia o programa recebe um aviso para cobrar
+                  da empresa os dados{" "}
+                  {preview.cadastrosPendentes.faltam === 1
+                    ? "do titular que falta"
+                    : `dos ${preview.cadastrosPendentes.faltam} que faltam`}
+                  .
+                </p>
+              )}
+
               {/* SEGUNDA ETAPA (AP12): cada titular paga implantação UMA vez.
                   Sem esta frase, quem vê "20 titulares" numa empresa de 100
                   acha que o sistema errou a conta. */}
