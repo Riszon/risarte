@@ -387,8 +387,9 @@ Syncthing se comportarem de forma estranha.**
   geradoras (a negociação aceita manda no plano, na opção e nos itens).
   Cockpit: uma aba por opção em "Atendimentos e sequência" e o campo "Tempo do
   atendimento" (total repartido entre as sessões).
-- ⏳ **0286: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela o
-  cockpit novo funciona, mas as sessões continuam saindo da principal.
+- ✅ **0286 APLICADA nos dois bancos** (o dono rodou na produção em
+  07/10/2026 e conferiu que as duas funções leem a venda; de fora, sem login,
+  as duas recusam — antes da 0286 elas respondiam a quem não estava logado).
 - Produção sem nenhuma negociação em 07/10 → ninguém afetado. No treino, 1
   venda segue com 8 sessões de outra opção (não corrigidas; BACKLOG AP28).
 - Resíduo no treino: o plano de teste do "Teste do portão 1" ganhou 3 e 2

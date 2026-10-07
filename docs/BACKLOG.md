@@ -2185,6 +2185,9 @@ procedimento deixado de fora.
 ninguém afetado. Treino — 4 vendas aceitas, 2 na alternativa, **1 com 8
 sessões de outra opção**.
 
+**0286 aplicada na produção em 07/10/2026** (rodada pelo dono; conferido de
+fora, sem login: as duas funções recusam).
+
 **⚠️ Não corrigido, de propósito:** essas 8 sessões do treino. A 0286 não é
 retroativa — sessão já gerada pode ter agendamento e atendimento em cima, e
 trocar isso é decisão de gente, caso a caso. Se o dono quiser, dá para listar
