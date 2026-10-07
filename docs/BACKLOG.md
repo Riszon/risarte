@@ -2098,3 +2098,38 @@ sozinho**.
 **Para decidir com o dono:** implementar (o benefício entraria na negociação
 do indicado, como o voucher; o prêmio individual, nas metas) ou tirar os
 parâmetros da tela até existir a regra.
+
+### AP25. O cartão "Planos aguardando sua aprovação" leva o Coordenador a uma tela que o devolve (07/10/2026) — CONFIRMADO no código, NÃO visto na tela
+
+Achado ao responder a dúvida OC-00092 ("onde aprovo o plano?").
+
+**Confirmado (lendo o código):** o cartão do Início é montado para o
+Coordenador (`inicio-dados.ts`, `coordenador ? ... status = submitted`) e
+aponta para `/planejamento?situacao=aguardando_aprovacao`. Só que
+`/planejamento` é do Planner: `planejamento/page.tsx` faz
+`if (!isPlanner) redirect("/")`. O Coordenador clica no cartão e volta para o
+Início — o cartão que diz "o caso não anda até você decidir" não leva a lugar
+nenhum.
+
+**Não medido:** não abri a tela como Coordenador (o dono pediu só a resposta).
+
+**Conserto provável (uma linha):** apontar o cartão para
+`/planos?situacao=aguardando_aprovacao` — o Coordenador tem o menu Planos de
+Tratamento por padrão, e a lista de lá tem o link "Ficha". Conferir se o
+filtro por situação existe com esse nome antes de trocar.
+
+### AP26. Aprovar/Reprovar ficam escondidos dentro da opção RECOLHIDA (07/10/2026) — CONFIRMADO no código
+
+Mesma origem (OC-00092). É a causa provável da dúvida.
+
+**Confirmado:** em `planning-section.tsx`, `OptionReview` (os botões Aprovar
+opção / Reprovar opção) só é desenhado dentro de `optOpen`. Para quem não
+edita o plano, `optionOpenByDefault` devolve `false`: o Coordenador abre a aba
+Plano e vê todas as opções recolhidas, sem botão nenhum. O texto no rodapé
+manda "Avalie cada opção acima (Aprovar ou Reprovar)", mas não diz que é
+preciso clicar na setinha para expandir.
+
+**Regra certa, tela mal explicada.** Caminhos de conserto (decisão do dono):
+abrir as opções sozinhas para quem aprova enquanto o plano aguarda aprovação;
+ou mostrar os botões também com a opção recolhida; ou ao menos dizer "expanda
+a opção" no texto. O manual (6.2) já diz "expandir a opção", mas em uma linha.
