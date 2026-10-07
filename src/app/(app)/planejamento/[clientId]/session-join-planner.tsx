@@ -16,10 +16,84 @@ import { formatMinutes, type BudgetItem } from "@/lib/pricing";
 import type { ProjectedSession } from "@/lib/planning";
 import {
   reorderPlannedBlocks,
+  setBlockMinutes,
   setPlannedSessionGroup,
   setSessionMinutes,
   setSessionProvider,
 } from "../../prontuarios/[id]/planning-actions";
+
+/**
+ * "ATENDIMENTOS E SEQUÊNCIA" DE TODAS AS OPÇÕES DO PLANO (OC-00087, 07/10/2026).
+ *
+ * Antes só a opção PRINCIPAL podia ser configurada. Se o cliente comprasse a
+ * alternativa, o tratamento começava sem atendimento conjunto, sem tempo
+ * ajustado e sem sequência — o Planner não tinha onde montar isso.
+ *
+ * Uma aba por opção, a principal primeiro. A configuração é guardada por
+ * procedimento, então cada opção tem a sua, e só a da opção que o cliente
+ * COMPRAR vira sessão de verdade (migração 0286).
+ */
+export function SequenciaPorOpcao({
+  opcoes,
+  providerOptions,
+  canEdit,
+}: {
+  opcoes: {
+    id: string;
+    title: string;
+    isPrimary: boolean;
+    items: BudgetItem[];
+    sessions: ProjectedSession[];
+  }[];
+  providerOptions: { id: string; name: string }[];
+  canEdit: boolean;
+}) {
+  const [ativa, setAtiva] = useState(opcoes[0]?.id ?? "");
+  const opcao = opcoes.find((o) => o.id === ativa) ?? opcoes[0];
+  if (!opcao) return null;
+
+  return (
+    <div className="space-y-3">
+      {opcoes.length > 1 && (
+        <div className="space-y-1.5">
+          <div role="tablist" className="flex flex-wrap gap-1.5">
+            {opcoes.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                role="tab"
+                aria-selected={o.id === opcao.id}
+                onClick={() => setAtiva(o.id)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  o.id === opcao.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {o.title}
+                {o.isPrimary ? " · principal" : ""}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Cada opção tem os seus atendimentos e a sua sequência. Vale a da
+            opção que o cliente <strong>comprar</strong> — configure também as
+            alternativas.
+          </p>
+        </div>
+      )}
+      {/* A chave troca o estado de arrasto junto com a opção. */}
+      <SessionJoinPlanner
+        key={opcao.id}
+        sessions={opcao.sessions}
+        optionId={opcao.id}
+        providerOptions={providerOptions}
+        items={opcao.items}
+        canEdit={canEdit}
+      />
+    </div>
+  );
+}
 
 type Block = {
   key: string;
@@ -207,6 +281,57 @@ export function SessionJoinPlanner({
                   </p>
                 )}
 
+                {/* OC-00087: O TEMPO DO ATENDIMENTO INTEIRO. Dez sessões de 60
+                    min no mesmo horário não levam 600 — o Planner digita o
+                    total e o sistema reparte entre as sessões, em vez de
+                    obrigar a acertar uma por uma. Só aparece com mais de uma
+                    sessão: com uma só, o tempo dela JÁ é o do atendimento. */}
+                {canEdit && b.sessions.length > 1 && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+                    <label
+                      htmlFor={`tempo-${b.key}`}
+                      className="font-medium"
+                    >
+                      Tempo do atendimento
+                    </label>
+                    <Input
+                      // A chave refaz o campo quando o total muda (o campo não
+                      // é controlado): sem ela, depois de salvar ele mostraria
+                      // o número antigo.
+                      key={`${b.key}-${b.minutes}`}
+                      id={`tempo-${b.key}`}
+                      type="number"
+                      inputMode="numeric"
+                      min={b.sessions.length}
+                      defaultValue={b.minutes > 0 ? b.minutes : ""}
+                      disabled={isPending}
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v === "") return;
+                        const n = Number(v);
+                        if (n === b.minutes) return;
+                        run(
+                          () =>
+                            setBlockMinutes(
+                              optionId,
+                              b.sessions.map((s) => ({
+                                itemId: s.itemId,
+                                sessionIndex: s.sessionIndex,
+                              })),
+                              n
+                            ),
+                          "Tempo do atendimento repartido entre as sessões."
+                        );
+                      }}
+                      className="h-7 w-20"
+                    />
+                    <span className="text-muted-foreground">
+                      min — o total é repartido entre as {b.sessions.length}{" "}
+                      sessões abaixo (dá para ajustar cada uma depois).
+                    </span>
+                  </div>
+                )}
+
                 <ul className="mt-1.5 space-y-1.5">
                   {b.sessions.map((s) => (
                     <li
@@ -228,6 +353,9 @@ export function SessionJoinPlanner({
                         <>
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Input
+                              // Refaz o campo quando o tempo muda por fora
+                              // (o "tempo do atendimento" reparte e grava).
+                              key={s.plannedMinutes ?? "vazio"}
                               type="number"
                               inputMode="numeric"
                               min={0}

@@ -174,6 +174,45 @@ export type ProjectedSession = {
   providerId: string | null;
 };
 
+/**
+ * REPARTE O TEMPO DE UM ATENDIMENTO ENTRE AS SESSÕES DELE (OC-00087, dono em
+ * 07/10/2026). O Planner junta dez sessões de 60 minutos no mesmo horário e
+ * sabe que o atendimento leva 240, não 600 — digita o TOTAL e o sistema
+ * reparte, em vez de obrigar a acertar dez campos à mão.
+ *
+ * - Na PROPORÇÃO do tempo que cada sessão tinha; sem tempo nenhum, em partes
+ *   iguais.
+ * - Minutos inteiros, e a soma fecha EXATAMENTE no total: a última sessão
+ *   absorve a sobra do arredondamento (mesma lei da última parcela).
+ * - Toda sessão fica com pelo menos 1 minuto: zero, para o sistema, é "sem
+ *   tempo definido" e faria a sessão voltar ao padrão do procedimento.
+ *
+ * Nulo quando não dá para repartir (total menor que o número de sessões, ou
+ * número inválido) — quem chama recusa, em vez de gravar um tempo inventado.
+ */
+export function repartirTempo(
+  totalMinutos: number,
+  temposAtuais: readonly (number | null | undefined)[]
+): number[] | null {
+  const n = temposAtuais.length;
+  if (n === 0) return null;
+  if (!Number.isFinite(totalMinutos)) return null;
+  const total = Math.floor(totalMinutos);
+  if (total < n) return null;
+
+  const pesos = temposAtuais.map((t) =>
+    t != null && Number.isFinite(t) && t > 0 ? t : 0
+  );
+  const soma = pesos.reduce((a, b) => a + b, 0);
+  // Um minuto garantido para cada; o resto vai na proporção.
+  const livre = total - n;
+  const partes = pesos.map((p) =>
+    1 + Math.floor(soma > 0 ? (livre * p) / soma : livre / n)
+  );
+  partes[n - 1] += total - partes.reduce((a, b) => a + b, 0);
+  return partes;
+}
+
 export type PlanOption = {
   id: string;
   isPrimary: boolean;

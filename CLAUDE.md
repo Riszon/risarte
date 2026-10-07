@@ -378,6 +378,25 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**07/10/2026 (fim da tarde) — PC Administrador (core 0.303.0 → 0.304.0, migração 0286)**
+
+- **OC-00087 + 🔴 AP28:** o diagnóstico do relato (sequência só na opção
+  principal) achou defeito maior — `ensure_treatment_sessions` gerava as
+  sessões da opção PRINCIPAL mesmo com a venda aceita na alternativa, e gerava
+  também o que ficou de fora na compra parcial. **0286** corrige as duas
+  geradoras (a negociação aceita manda no plano, na opção e nos itens).
+  Cockpit: uma aba por opção em "Atendimentos e sequência" e o campo "Tempo do
+  atendimento" (total repartido entre as sessões).
+- ⏳ **0286: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela o
+  cockpit novo funciona, mas as sessões continuam saindo da principal.
+- Produção sem nenhuma negociação em 07/10 → ninguém afetado. No treino, 1
+  venda segue com 8 sessões de outra opção (não corrigidas; BACKLOG AP28).
+- Resíduo no treino: o plano de teste do "Teste do portão 1" ganhou 3 e 2
+  sessões e um atendimento conjunto de 90 min na alternativa.
+- ⚠️ **A pasta temporária de apoio foi limpa pelo sistema** no meio da sessão:
+  sumiram os roteiros antigos, inclusive o retrato "antes" das portas das 6
+  contas de teste (AP6). O estado anterior era FECHADO para as seis.
+
 **07/10/2026 (tarde) — PC Administrador (Empresarial 0.75.0 → 0.76.0, migração 1026)**
 
 - **OC-00090: a mensalidade por titular cobra pelo CONTRATADO** (regra nova do

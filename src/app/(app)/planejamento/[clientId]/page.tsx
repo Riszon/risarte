@@ -56,7 +56,7 @@ import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher"
 import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { TreatmentSummary } from "./treatment-summary";
-import { SessionJoinPlanner } from "./session-join-planner";
+import { SequenciaPorOpcao } from "./session-join-planner";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cockpit de Planejamento" };
@@ -493,12 +493,27 @@ export default async function PlanningCockpitPage(
     .filter((s) => s.roles.includes("dentist"))
     .map((s) => ({ id: s.userId, name: s.name }));
 
-  // H4.5 Pedido 2: sessões projetadas da opção principal, para o Planner agrupar
-  // em atendimentos (juntar sessões já no planejamento).
-  const projectedSessions =
-    summaryOption && summaryOption.items.length > 0
-      ? await projectOptionSessions(summaryOption.id)
-      : [];
+  // H4.5 Pedido 2: sessões projetadas, para o Planner agrupar em atendimentos
+  // (juntar sessões já no planejamento).
+  //
+  // OC-00087: de TODAS as opções, não só da principal. Antes, quem comprava a
+  // alternativa começava o tratamento sem atendimento conjunto, sem tempo
+  // ajustado e sem sequência — não havia onde configurar. A principal vem
+  // primeiro; opção sem procedimento não tem o que sequenciar.
+  const sequencias = (
+    await Promise.all(
+      (treatmentPlan?.options ?? [])
+        .filter((o) => o.items.length > 0)
+        .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+        .map(async (o) => ({
+          id: o.id,
+          title: o.title,
+          isPrimary: o.isPrimary,
+          items: o.items,
+          sessions: await projectOptionSessions(o.id),
+        }))
+    )
+  ).filter((o) => o.sessions.length > 0);
 
   // Risarte Empresarial: mostrar ao Planner o selo do programa + economia por
   // opção também no cockpit (igual à ficha).
@@ -700,17 +715,15 @@ export default async function PlanningCockpitPage(
             <TreatmentSummary options={treatmentPlan?.options ?? []} />
           </PopupCard>
         )}
-        {projectedSessions.length > 0 && summaryOption && (
+        {sequencias.length > 0 && (
           <PopupCard
             label="Atendimentos e sequência"
             icon={<Link2 className="size-4" />}
             wide
           >
-            <SessionJoinPlanner
-              sessions={projectedSessions}
-              optionId={summaryOption.id}
+            <SequenciaPorOpcao
+              opcoes={sequencias}
               providerOptions={providerOptions}
-              items={summaryOption.items}
               canEdit
             />
           </PopupCard>

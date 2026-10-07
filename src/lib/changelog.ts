@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.304.0",
+    data: "2026-10-07",
+    migracao: "0286",
+    titulo: "O tratamento começa com o que o cliente comprou; sequência em todas as opções",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quando o tratamento começa, as sessões passam a sair da opção que o cliente comprou — principal ou alternativa — e só dos procedimentos que ele levou. Antes saíam sempre da opção principal, mesmo quando a alternativa era a comprada, e incluíam o que ficou de fora numa compra parcial.",
+        papeis: ["planner_dentist", "clinical_coordinator", "dentist", "receptionist", "unit_manager", "commercial_consultant"],
+        manual: "Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Planner: \"Atendimentos e sequência\" agora tem uma aba para cada opção do plano. Configure também as alternativas — vale a da opção que o cliente comprar.",
+        papeis: ["planner_dentist"],
+        manual: "Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Planner: o atendimento com mais de uma sessão ganhou o campo \"Tempo do atendimento\". Digite o total e o sistema reparte entre as sessões, em vez de acertar uma por uma.",
+        papeis: ["planner_dentist"],
+        manual: "Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.303.0",
     data: "2026-10-07",
     migracao: null,

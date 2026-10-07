@@ -2169,3 +2169,28 @@ paga, e `createAsaasCharge` não é chamada por lugar nenhum.
 de `generateBilling`/`gerarMensalidadesEmLote` quebraria isso. E a edição de
 uma cobrança com boleto já emitido precisa de regra própria (cancelar e
 reemitir no ASAAS) — a decidir na integração.
+
+### AP28. ✅ RESOLVIDO em 07/10/2026 (0286 / core 0.304.0) — 🔴 as sessões do tratamento saíam da opção PRINCIPAL, não da comprada
+
+Achado ao diagnosticar o OC-00087 (o Planner pedia para configurar a sequência
+das opções alternativas).
+
+**Confirmado no banco (treino, transação desfeita):** negociação ACEITA na
+alternativa, as duas opções aprovadas → `ensure_treatment_sessions` gerou a
+sessão da principal. A função nem lia `plan_negotiations`. **Pelo código, e
+depois provado na correção:** a compra parcial também gerava sessão do
+procedimento deixado de fora.
+
+**Alcance medido (07/10/2026, só leitura):** produção — **0** negociações,
+ninguém afetado. Treino — 4 vendas aceitas, 2 na alternativa, **1 com 8
+sessões de outra opção**.
+
+**⚠️ Não corrigido, de propósito:** essas 8 sessões do treino. A 0286 não é
+retroativa — sessão já gerada pode ter agendamento e atendimento em cima, e
+trocar isso é decisão de gente, caso a caso. Se o dono quiser, dá para listar
+a venda (pelo código `PT-`) e decidir.
+
+**Limite declarado:** a correção escolhe a negociação aceita MAIS RECENTE de
+plano aprovado. Cliente com duas vendas aceitas ao mesmo tempo (dois planos)
+recebe as sessões só da mais recente na geração inicial — não havia nenhum
+caso assim no treino nem na produção.

@@ -1529,8 +1529,35 @@ Planejamento**.
 4. **Adicionar opção de tratamento** (marque uma como principal).
 5. Dentro da opção, **Procedimento** → escolha do catálogo → **Item**.
 6. Classifique o **pilar** (1 dos 6) → **Salvar pilar**.
-7. **Enviar para aprovação do Coordenador**.
-8. Aprovado, **Enviar ao Comercial**.
+7. Monte os **Atendimentos e sequência** (botão no alto do cockpit) — veja
+   abaixo.
+8. **Enviar para aprovação do Coordenador**.
+9. Aprovado, **Enviar ao Comercial**.
+
+**Atendimentos e sequência** — é onde você diz **como o tratamento vai ser
+executado**: o que é feito no mesmo horário, em que ordem e por quem.
+
+- **Uma aba por opção do plano** (a principal primeiro). **Configure também as
+  alternativas:** vale a configuração da opção que o cliente **comprar**. Se
+  ele comprar a alternativa e ela não tiver sido configurada, o tratamento
+  começa sem atendimento conjunto, sem tempo ajustado e sem sequência.
+- Cada cartão é um **atendimento**. Para juntar sessões no mesmo horário,
+  troque **Separado** por **+ Novo atendimento** numa sessão e escolha o mesmo
+  atendimento nas outras.
+- **Tempo do atendimento:** quando o cartão tem mais de uma sessão, aparece um
+  campo com o **total**. Digite quanto o atendimento leva de verdade — dez
+  sessões de 60 minutos no mesmo horário não levam 600 — e o sistema **reparte
+  entre as sessões**, na proporção de cada uma. Dá para acertar uma sessão
+  isolada depois, no campo dela.
+- **Profissional** de cada sessão e a **ordem** dos atendimentos (arraste o
+  cartão ou use as setas), do **Início** ao **Fim**.
+
+> **As sessões do tratamento saem do que o cliente comprou.** Quando o
+> tratamento começa, o sistema cria as sessões da **opção comprada** (principal
+> ou alternativa) e só dos **procedimentos que ele levou** — numa compra
+> parcial, o que ficou de fora não vira sessão. (Até a versão 0.303.0 as
+> sessões saíam sempre da opção principal, mesmo quando a alternativa era a
+> comprada.)
 
 **Cuidados:** o sistema exige procedimentos lançados em cada opção para enviar;
 plano de tratamento **não tem acréscimo** (o preço vem do orçamento aprovado);

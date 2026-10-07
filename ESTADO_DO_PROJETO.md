@@ -1,7 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/10/2026 · Versão do sistema: **0.303.0** · Última migração: **0285** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 07/10/2026 · Versão do sistema: **0.304.0** · Última migração: **0286** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🧩 0.304.0 / 0286 — AS SESSÕES SAEM DO QUE O CLIENTE COMPROU; SEQUÊNCIA EM TODAS AS OPÇÕES (OC-00087, AP28)
+>
+> `ensure_treatment_sessions` escolhia a opção aprovada com `is_primary`
+> primeiro, sem ler `plan_negotiations`: quem comprava a alternativa começava
+> com as sessões da principal (provado). Agora a negociação ACEITA manda no
+> plano, na opção e nos itens (`plan_negotiation_items.included = false` não
+> vira sessão); a `topup` segue o mesmo plano e não devolve o item de fora.
+> Sem venda registrada, nada muda. Cockpit: `SequenciaPorOpcao` (uma aba por
+> opção) e `repartirTempo` + `setBlockMinutes` (tempo do atendimento). Nada
+> retroativo: 1 venda no treino segue com 8 sessões de outra opção.
+>
 > ## ✅ 0.303.0 — APROVAR O PLANO: BOTÕES À VISTA E O CAMINHO ATÉ ELES (OC-00092, AP25, AP26)
 >
 > `opcaoAbertaPorPadrao` (`planning.ts`): quem AVALIA um plano `submitted`

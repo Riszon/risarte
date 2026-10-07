@@ -6,6 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { PlanLifecycle, PlanResult, ProjectedSession } from "@/lib/planning";
+import { repartirTempo } from "@/lib/planning";
 import { parseBRLToCents } from "@/lib/pricing";
 
 /**
@@ -1195,6 +1196,99 @@ export async function setSessionMinutes(
   await patchSessionSetting(itemId, sessionIndex, ctx.clinicId, {
     minutes_override: clean,
   });
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  return { ok: true };
+}
+
+/**
+ * OC-00087: o TEMPO DO ATENDIMENTO inteiro. O Planner informa o total do bloco
+ * e o sistema reparte entre as sessões (`repartirTempo`) — dez sessões de 60
+ * min no mesmo horário não levam 600.
+ *
+ * O tempo de cada sessão continua sendo o que vale (a agenda e a ficha somam
+ * as sessões do atendimento): repartir aqui faz a soma bater com o total, sem
+ * um segundo número de duração para divergir do primeiro.
+ *
+ * Os tempos atuais são lidos DO BANCO (a projeção), não recebidos da tela: a
+ * tela pode estar velha, e a proporção sairia de números que já mudaram.
+ */
+export async function setBlockMinutes(
+  optionId: string,
+  sessions: { itemId: string; sessionIndex: number }[],
+  totalMinutes: number
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadOptionContext(optionId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  if (sessions.length === 0) return { ok: false, error: "Atendimento sem sessões." };
+
+  const projetadas = await projectOptionSessions(optionId);
+  const chave = (s: { itemId: string; sessionIndex: number }) =>
+    `${s.itemId}:${s.sessionIndex}`;
+  const porChave = new Map(projetadas.map((p) => [chave(p), p]));
+  // Só sessões DESTA opção: um id de outro plano não entra pela porta dos fundos.
+  const doBloco = sessions.map((s) => porChave.get(chave(s)));
+  if (doBloco.some((s) => !s)) {
+    return {
+      ok: false,
+      error: "O atendimento mudou desde que a tela foi aberta. Atualize a página e tente de novo.",
+    };
+  }
+
+  const partes = repartirTempo(
+    totalMinutes,
+    doBloco.map((s) => s!.plannedMinutes)
+  );
+  if (!partes) {
+    return {
+      ok: false,
+      error: `Informe o tempo do atendimento em minutos — pelo menos ${sessions.length} (1 minuto por sessão).`,
+    };
+  }
+
+  const supabase = await createClient();
+  const itemIds = [...new Set(sessions.map((s) => s.itemId))];
+  const { data: existentes, error: erroDaLeitura } = await supabase
+    .from("plan_session_joins")
+    .select("item_id, session_index, group_no, provider_override, block_order")
+    .in("item_id", itemIds);
+  // Sem conseguir ler o que já está configurado, gravar apagaria o
+  // atendimento conjunto, o profissional e a ordem dessas sessões.
+  if (erroDaLeitura || !existentes) {
+    return { ok: false, error: "Não foi possível ler a configuração atual. Nada foi alterado; tente de novo." };
+  }
+  const atual = new Map(
+    (existentes as {
+      item_id: string;
+      session_index: number;
+      group_no: number | null;
+      provider_override: string | null;
+      block_order: number | null;
+    }[]).map((r) => [`${r.item_id}:${r.session_index}`, r])
+  );
+
+  const rows = sessions.map((s, i) => {
+    const ex = atual.get(chave(s));
+    return {
+      item_id: s.itemId,
+      clinic_id: ctx.clinicId,
+      session_index: s.sessionIndex,
+      group_no: ex?.group_no ?? null,
+      minutes_override: partes[i],
+      provider_override: ex?.provider_override ?? null,
+      block_order: ex?.block_order ?? null,
+    };
+  });
+  const { error } = await supabase
+    .from("plan_session_joins")
+    .upsert(rows, { onConflict: "item_id,session_index" });
+  if (error) {
+    console.error("setBlockMinutes failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o tempo do atendimento." };
+  }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);
   revalidatePath(`/planejamento/${ctx.clientId}`);
