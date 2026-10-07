@@ -388,8 +388,8 @@ Syncthing se comportarem de forma estranha.**
 - Alerta "Faltam cadastros" no alto da ficha (só gestores do programa) e na
   prévia; **aviso no sino** dos gestores, um por empresa por mês
   (`empresarial.avisar_cadastros_pendentes`, **1026**).
-- ⏳ **1026: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
-  cobrança funciona igual; só o aviso do sino não nasce (fica no log).
+- ✅ **1026 APLICADA nos dois bancos** (o dono rodou na produção em
+  07/10/2026; conferido de fora, sem login: a função existe e recusa).
 - ⏳ A geração com aviso foi provada por transação desfeita e pela API, **não
   clicada na tela** (a empresa do relato, Cedássio, é teste de outra pessoa).
 - **AP27 (BACKLOG):** ao ligar o ASAAS, o boleto sai num passo próprio

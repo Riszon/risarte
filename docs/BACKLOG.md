@@ -2148,6 +2148,9 @@ os já cadastrados; sem contrato de quantidade e sem titulares, recusa e
 explica; alerta fixo na ficha + aviso no sino dos gestores (um por empresa por
 mês — função `empresarial.avisar_cadastros_pendentes`, 1026).
 
+**1026 aplicada na produção em 07/10/2026** (rodada pelo dono; conferido de
+fora, sem login: a função existe e responde "permission denied").
+
 **Limites declarados:** o painel refaz em lote a conta de
 `limite_de_titulares` (se a regra de lá mudar, a de `painel/page.tsx` muda
 junto); a geração da cobrança com o aviso no sino foi provada por transação
