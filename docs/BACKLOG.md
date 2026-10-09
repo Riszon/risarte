@@ -2205,6 +2205,9 @@ enxergar o que cada usuário fez e alterou. Tempo de atividade ou inatividade
 no sistema. O login deve desconectar por inatividade, ou quando muda a data,
 ficando registrado cada dia que fez o acesso."*
 
+**0287 aplicada na produção em 09/10/2026** (rodada pelo dono; conferido de
+fora, sem login: as funções recusam).
+
 **Etapa 1 ✅ (0287 / core 0.305.0, 09/10/2026)** — sessão e acesso: registro de
 cada login, inatividade por função (60 min padrão), login por dia, gravação em
 andamento protege, navegador e IP, quadro Acessos na Auditoria.

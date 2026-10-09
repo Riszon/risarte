@@ -388,8 +388,9 @@ Syncthing se comportarem de forma estranha.**
   `getSessionContext`); sem resposta, ninguém é trancado.
 - 🔴 **AP29:** o login NUNCA era gravado na trilha (0 em 283 na produção) —
   `void recordLogin()` perdia a corrida para a navegação. Corrigido.
-- ⏳ **0287: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela
-  nada muda (não há desconexão, e as telas novas avisam).
+- ✅ **0287 APLICADA nos dois bancos** (o dono rodou na produção em
+  09/10/2026; conferido de fora: as 5 funções recusam sem login, ninguém lê
+  acesso sem estar logado, padrão em 60 min). A regra já vale para todos.
 - ⏳ **Não visto na tela:** o login pelo formulário (o agente não digita senha
   em serviço de autenticação externo), a gravação protegendo e duas abas.
   Conferir o "Entrou no sistema" no primeiro login depois de publicar.

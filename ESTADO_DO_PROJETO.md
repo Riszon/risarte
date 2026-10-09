@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/10/2026 · Versão do sistema: **0.305.0** · Última migração: **0287** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 09/10/2026 · Versão do sistema: **0.305.0** · Última migração: **0287** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## ⏱️ 0.305.0 / 0287 — ACESSOS: INATIVIDADE, LOGIN POR DIA E O REGISTRO DE CADA ENTRADA (auditoria, etapa 1 de 3)
 >
