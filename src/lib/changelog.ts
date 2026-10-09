@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.307.0",
+    data: "2026-10-09",
+    migracao: "0289",
+    titulo: "Relatório de atividade: os números de cada pessoa, por dia, com planilha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: a Auditoria ganhou a aba Relatório de atividade. Escolha o período e veja, por pessoa, em quantos dias ela entrou, quanto tempo ficou em uso e quanto ficou parada, quantas vezes caiu por inatividade, quantas ações fez nas telas e quantas inclusões, alterações e exclusões. Há também a leitura dia a dia, e a lista de quem tem acesso e não entrou nenhuma vez no período.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: o botão Baixar planilha (Excel) leva o relatório para uma planilha já formatada, com o tempo em minutos (para somar e ordenar) e a linha de total. Cada planilha baixada fica registrada na própria Auditoria.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+    ],
+  },
+  {
     versao: "0.306.1",
     data: "2026-10-09",
     migracao: null,

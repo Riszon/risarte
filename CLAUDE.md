@@ -390,6 +390,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/10/2026 (noite) — PC Administrador (core 0.306.1 → 0.307.0, migração 0289)**
+
+- **AUDITORIA, etapa 3 de 3 — COMPLETA.** Aba **Relatório de atividade**: por
+  pessoa (dias com acesso, em uso, parado, quedas por inatividade, ações,
+  inclusões/alterações/exclusões) e dia a dia; lista de quem tem acesso e não
+  entrou; planilha Excel pelo gerador do Financeiro. A conta mora no banco
+  (`audit_activity_report`) e bate, linha por linha, com a conta feita à mão.
+- ⏳ **0289: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
+  aba avisa e as outras quatro funcionam. É só uma função — não trava ninguém.
+- **Para depois (BACKLOG, seção AUDITORIA):** filtro por unidade/função no
+  relatório; medir quanto a trilha de alterações cresce por dia na produção.
+- Resíduo no treino: 2 exportações de teste na trilha (Admin de teste).
+
 **09/10/2026 (fim da tarde) — PC Administrador (core 0.305.0 → 0.306.0, migração 0288)**
 
 - **AUDITORIA, etapa 2 de 3 (pedido do dono):** o BANCO registra sozinho cada
@@ -408,7 +421,7 @@ Syncthing se comportarem de forma estranha.**
   login: as funções recusam e ninguém lê a trilha nem a lista de exclusões;
   44 declaradas fora). A trilha estava vazia na conferência — o primeiro
   lançamento nasce na primeira alteração de alguém.
-- **Etapa 3 a fazer:** relatório de atividade por pessoa/dia com exportação.
+- Etapa 3 entregue no mesmo dia (bloco acima).
 - **AP32 (BACKLOG):** 3 conferências do `npm run test:indica` falham no treino,
   com e sem o gatilho da auditoria — é da sessão do Indica.
 - Resíduo no treino: 5 lançamentos de exemplo na auditoria, em nome do Admin

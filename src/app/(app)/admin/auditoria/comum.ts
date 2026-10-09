@@ -8,7 +8,7 @@ import {
   type Nomes,
 } from "@/lib/auditoria-alteracoes";
 
-export const VISOES = ["alteracoes", "acoes", "acessos", "pessoa"] as const;
+export const VISOES = ["alteracoes", "acoes", "acessos", "pessoa", "relatorio"] as const;
 export type Visao = (typeof VISOES)[number];
 
 export const VISAO_ROTULO: Record<Visao, string> = {
@@ -16,6 +16,7 @@ export const VISAO_ROTULO: Record<Visao, string> = {
   acoes: "Ações",
   acessos: "Acessos",
   pessoa: "O dia de uma pessoa",
+  relatorio: "Relatório de atividade",
 };
 
 export const VISAO_EXPLICA: Record<Visao, string> = {
@@ -27,6 +28,8 @@ export const VISAO_EXPLICA: Record<Visao, string> = {
     "Um registro por login: o dia, a hora em que entrou, como saiu, quanto tempo usou e quanto ficou parado.",
   pessoa:
     "Escolha uma pessoa e um dia para ver, em ordem, tudo o que ela fez: acessos, ações e alterações.",
+  relatorio:
+    "Os números de cada pessoa no período: dias com acesso, tempo em uso e parado, ações e alterações. Dá para baixar em planilha.",
 };
 
 export function lerVisao(v: unknown): Visao {

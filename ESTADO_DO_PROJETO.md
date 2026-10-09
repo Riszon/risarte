@@ -1,7 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/10/2026 · Versão do sistema: **0.306.1** · Última migração: **0288** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 09/10/2026 · Versão do sistema: **0.307.0** · Última migração: **0289** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 📊 0.307.0 / 0289 — RELATÓRIO DE ATIVIDADE POR PESSOA E POR DIA, COM PLANILHA (auditoria, etapa 3 de 3)
+>
+> `audit_activity_report(de, até, pessoa)` junta as três trilhas
+> (`access_sessions`, `audit_logs`, `audit_changes`) num número por pessoa e
+> por dia BRASILEIRO; a conta do tempo é a de `temposDoAcesso` (acesso aberto
+> vai até a última atividade; em uso nunca passa do total). Só Admin Master
+> (para os demais devolve vazio; sem login não responde); no máximo 1 ano por
+> chamada, e a tela limita a 92 dias AVISANDO. Um carregador
+> (`relatorio-dados.ts`) serve à aba e à planilha; a planilha usa o gerador do
+> Financeiro (`planilhaDoRelatorio`), com tempo em minutos como número.
+> Exportar grava `export` / `audit_activity_report` na trilha, e a tela chama
+> a rota por `<a>` (nunca `<Link>`: a pré-carga registraria exportação).
+> **A AUDITORIA ESTÁ COMPLETA (3 de 3).**
+>
 > ## 🔎 0.306.0 / 0288 — O BANCO REGISTRA O QUE MUDOU, COM ANTES E DEPOIS (auditoria, etapa 2 de 3)
 >
 > `audit_changes` + gatilho `audit_capture` (AFTER INSERT/UPDATE/DELETE, um
@@ -20,7 +34,7 @@ _Atualizado em: 09/10/2026 · Versão do sistema: **0.306.1** · Última migraç
 > `<details>` (sem JavaScript), registro sem nome identificado pelo cliente.
 > Dicionário em `auditoria-catalogo.ts` (tabelas, campos, palavras) e
 > `audit-labels.ts` (205 tipos). Regra 9 do `check-migrations` + 14 réguas
-> provadas. **Falta a etapa 3 (relatório de atividade com exportação).**
+> provadas. Etapa 3 entregue na 0.307.0 (bloco acima).
 >
 > ## ⏱️ 0.305.0 / 0287 — ACESSOS: INATIVIDADE, LOGIN POR DIA E O REGISTRO DE CADA ENTRADA (auditoria, etapa 1 de 3)
 >

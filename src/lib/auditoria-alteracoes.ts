@@ -256,6 +256,9 @@ export function formatarValor(
 const DETALHES: Record<string, string> = {
   from: "De",
   to: "Para",
+  de: "De",
+  ate: "Até",
+  modo: "Leitura",
   forcado: "Forçado pelo Admin",
   origem: "Como entrou",
   motivo: "Motivo",
@@ -268,6 +271,8 @@ const VALORES_DOS_DETALHES: Record<string, string> = {
   ...MOTIVO_ROTULO,
   login: "login com senha",
   retomada: "já estava logado",
+  pessoa: "resumo por pessoa",
+  dia: "dia a dia",
 };
 
 export function rotuloDoDetalhe(chave: string): string {

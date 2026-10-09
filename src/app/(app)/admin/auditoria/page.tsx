@@ -15,14 +15,16 @@ import { VisaoAcessos } from "./visao-acessos";
 import { VisaoAcoes } from "./visao-acoes";
 import { VisaoAlteracoes } from "./visao-alteracoes";
 import { VisaoPessoa } from "./visao-pessoa";
+import { VisaoRelatorio } from "./visao-relatorio";
 
 export const metadata: Metadata = { title: "Auditoria" };
 
-// A AUDITORIA, em quatro visões (0287 + 0288):
+// A AUDITORIA, em cinco visões (0287 + 0288 + 0289):
 //   * Alterações — o que mudou, campo a campo (o banco registra sozinho);
 //   * Ações — o que cada pessoa fez nas telas (consultou, exportou, entrou);
 //   * Acessos — um registro por login, com tempo em uso e parado;
-//   * O dia de uma pessoa — tudo isso junto, em ordem, para UMA pessoa.
+//   * O dia de uma pessoa — tudo isso junto, em ordem, para UMA pessoa;
+//   * Relatório de atividade — os números por pessoa e por dia, com planilha.
 // Só o Admin Master entra — e é o banco que garante (RLS), não esta tela.
 export default async function AuditoriaPage(
   props: PageProps<"/admin/auditoria">
@@ -99,6 +101,9 @@ export default async function AuditoriaPage(
       )}
       {visao === "pessoa" && (
         <VisaoPessoa supabase={supabase} pessoas={pessoas} searchParams={searchParams} />
+      )}
+      {visao === "relatorio" && (
+        <VisaoRelatorio pessoas={pessoas} searchParams={searchParams} />
       )}
     </div>
   );

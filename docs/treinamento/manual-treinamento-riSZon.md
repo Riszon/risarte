@@ -2392,7 +2392,7 @@ e quais funções passaram a ter a permissão.
 banco que garante isso, não a tela.
 
 **Para que serve:** responder "quem fez o quê, quando, e o que havia antes".
-São quatro abas. Trocar de aba mantém a pessoa escolhida.
+São cinco abas. Trocar de aba mantém a pessoa escolhida.
 
 ### Aba Alterações — o que mudou, campo a campo
 
@@ -2469,6 +2469,50 @@ Embaixo, o último login de cada pessoa.
 
 O botão **Auditoria** na ficha de acesso de um Risartano abre direto nesta
 aba, com a pessoa escolhida.
+
+### Aba Relatório de atividade — os números, com planilha
+
+Responde "quem usou o sistema, quanto e para quê" num período.
+
+1. Escolha **De** e **até** (sem escolher, vêm os últimos 7 dias; o máximo é
+   92 dias — pedindo mais, o relatório fica com os 92 mais recentes **e
+   avisa**), a **pessoa** (ou todas) e a leitura:
+   - **Resumo por pessoa** — uma linha por pessoa, somando o período:
+     **dias com acesso** (em quantos dias ela entrou, de quantos do período),
+     **acessos**, tempo **em uso** e **parado**, quantas vezes **caiu por
+     inatividade**, **ações** nas telas, e quanto **cadastrou, alterou e
+     excluiu**. Quem mais usou vem primeiro. Clique no **nome** para ver o dia
+     a dia daquela pessoa.
+   - **Dia a dia** — uma linha por pessoa e por dia, com a hora em que
+     **entrou** e a **última atividade**. Clique na **data** para abrir "O dia
+     de uma pessoa" e ver o que ela fez, em ordem.
+2. No fim, **Com acesso ativo e sem nenhum acesso no período**: quem pode
+   entrar e não entrou nem uma vez (só aparece no relatório de todos).
+3. **Baixar planilha (Excel)** leva o que está na tela — mesmo período, mesma
+   pessoa, mesma leitura — para uma planilha formatada, com linha de total.
+
+**Como ler os números:**
+
+- **Em uso** é o tempo clicando ou digitando. **Parado** é o resto do acesso,
+  com a tela aberta e sem uso. Os dois somados dão quanto tempo a pessoa ficou
+  conectada.
+- **Acesso ainda aberto conta até a última atividade**, não até agora — a aba
+  esquecida aberta não vira horas de trabalho.
+- **Ações** são o que as telas registram: consultar uma ficha, exportar,
+  cadastrar. Entrar e sair não contam. Passe o mouse no número para ver
+  quantas foram consultas e quantas exportações.
+- **Cadastrou / alterou / excluiu** são as gravações, registradas pelo banco
+  **desde 09/10/2026**. Antes disso essas colunas ficam vazias.
+- Na planilha o tempo vem em **minutos** (para somar e ordenar), arredondado
+  linha a linha — a soma pode diferir em 1 ou 2 minutos da tela.
+
+> ⚠️ **Tempo em uso não é produtividade.** O dentista que atende o dia inteiro
+> toca pouco na tela; a recepção toca o tempo todo. Compare a pessoa com ela
+> mesma em outros dias, não uma função com outra.
+
+> ⚠️ **Baixar a planilha fica registrado** na aba Ações ("Exportou · Relatório
+> de atividade"), com o período. A planilha traz só nomes e números — nenhum
+> dado de paciente.
 
 ## 14. Checklists
 

@@ -35,6 +35,7 @@ export const AUDIT_ACTION_OPTIONS: { value: string; label: string }[] = [
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   session: "Acesso",
   access_idle_settings: "Tempo de inatividade",
+  audit_activity_report: "Relatório de atividade (Auditoria)",
   // ------------------------------------------------ cliente e prontuário
   client: "Cliente",
   client_consent: "Consentimento do cliente",

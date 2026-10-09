@@ -2237,9 +2237,42 @@ com o gatilho; conferido de fora, sem login: recusa).
 - **Sem limpeza por idade.** A trilha só cresce — é o combinado (nada apaga
   sem pedir). Medir o tamanho na etapa 3; se um dia pesar, a decisão é do dono.
 
-**Etapa 3 — A FAZER: relatório de atividade.** Por pessoa e por dia: primeiro
-acesso, última atividade, tempo em uso, tempo parado, número de ações;
-exportação.
+**Etapa 3 ✅ (0289 / core 0.307.0, 09/10/2026)** — relatório de atividade: aba
+nova na Auditoria, por pessoa (soma do período) e dia a dia, com quem não
+acessou e planilha Excel. ⏳ **0289 aplicada no treino; falta a produção.**
+**A AUDITORIA PEDIDA PELO DONO ESTÁ COMPLETA.**
+
+**O que a etapa 3 NÃO fez, declarado:**
+
+- **Sem filtro por unidade nem por função.** O relatório é da rede inteira ou
+  de uma pessoa. Com 200 unidades vai fazer falta.
+- **Sem gráfico e sem comparação entre períodos.**
+- **Sem PDF.** Só planilha.
+- **O limite de 1 ano da função não foi provado com dados** (o treino não tem
+  dados antigos); o de 92 dias da tela está provado por teste.
+- **Tamanho das trilhas não medido.** Prometido na etapa 2 e ainda por fazer:
+  quantas linhas por dia a `audit_changes` ganha na produção. Medir depois
+  de uma semana de uso real.
+- **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
+
+### AP33. Uma rodada dos testes unitários deu 3 falhas e NÃO se repetiu — causa não identificada
+
+09/10/2026, ao fechar a etapa 3 da auditoria. `npx vitest run` deu **3
+arquivos com falha (3 testes) de 105**, numa rodada que levou **79 s** — o
+normal são 20 s. A máquina estava carregada: o servidor local de teste ligado
+e o Word do manual recém-gerado.
+
+**Confirmado:** nas **4 rodadas seguintes**, com o mesmo código, passaram os
+1.805 testes, em 20 s cada.
+
+**NÃO confirmado — e é o ponto fraco deste registro:** QUAIS testes falharam.
+A saída daquela rodada não foi guardada (eu tinha cortado para as últimas
+linhas). A hipótese é estouro de tempo nos testes que varrem o código-fonte
+inteiro, mas é hipótese: não medi.
+
+**Se voltar a acontecer:** rodar com a saída completa em arquivo
+(`npx vitest run > saida.txt 2>&1`) antes de repetir — repetir sem guardar
+apaga a evidência, que foi exatamente o que aconteceu aqui.
 
 ### AP32. `npm run test:indica`: 3 conferências falham no treino — da sessão do Indica
 
