@@ -19,6 +19,7 @@ export function auditActionLabel(action: string): string {
 /** Ações oferecidas no filtro (as mais comuns). */
 export const AUDIT_ACTION_OPTIONS: { value: string; label: string }[] = [
   { value: "login", label: "Entrou no sistema" },
+  { value: "logout", label: "Saiu do sistema" },
   { value: "create", label: "Cadastrou" },
   { value: "update", label: "Alterou" },
   { value: "view", label: "Consultou" },
@@ -28,6 +29,7 @@ export const AUDIT_ACTION_OPTIONS: { value: string; label: string }[] = [
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   session: "Acesso",
+  access_idle_settings: "Tempo de inatividade",
   client: "Cliente",
   treatment_plan: "Plano de tratamento",
   plan_option: "Opção do plano",

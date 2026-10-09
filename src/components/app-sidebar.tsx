@@ -33,6 +33,7 @@ import {
   MessagesSquare,
   Route,
   ScrollText,
+  Timer,
   Stethoscope,
   Tags,
   Users,
@@ -43,7 +44,6 @@ import {
 } from "lucide-react";
 import { AssinaturaDoAmbiente, RisarteMark } from "@/components/risarte-logo";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { setActiveClinic } from "@/lib/actions/session";
 import { cn } from "@/lib/utils";
 import {
@@ -244,6 +244,8 @@ const ADMIN_ITEMS = [
   { href: "/admin/orientacoes", label: "Orientações", icon: BookOpen },
   { href: "/admin/documentos", label: "Modelos de Documentos", icon: FileText },
   { href: "/admin/chat", label: "Chat (contatos)", icon: MessagesSquare },
+  // 0287: quanto tempo sem uso até desconectar, por função.
+  { href: "/admin/sessao", label: "Sessão e inatividade", icon: Timer },
   { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
 ];
 
@@ -366,11 +368,11 @@ export function AppSidebar({
     });
   }
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+  // 0287: sai pela rota que encerra o acesso e REGISTRA a saída na trilha.
+  // Antes o botão apagava a sessão no navegador e a auditoria nunca soube.
+  // `window.location`, e não `<Link>`: o Next pré-carregaria a rota de saída.
+  function handleLogout() {
+    window.location.assign("/auth/encerrar?motivo=saiu");
   }
 
   function isActive(href: string) {

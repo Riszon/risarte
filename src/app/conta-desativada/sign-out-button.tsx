@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 
 /**
  * O botão que realmente encerra a sessão.
@@ -12,17 +10,16 @@ import { createClient } from "@/lib/supabase/client";
  * Sem ele a pessoa ficaria presa: o token continua válido até vencer, então o
  * porteiro devolveria qualquer tentativa de ir ao login de volta para dentro do
  * sistema — e de dentro ela seria mandada para cá outra vez.
+ *
+ * 0287: sai pela rota que encerra o acesso e registra a saída (a mesma do
+ * menu). `window.location`, e não `<Link>`: o Next pré-carregaria a rota.
  */
 export function SignOutButton() {
-  const router = useRouter();
   const [saindo, setSaindo] = useState(false);
 
-  async function sair() {
+  function sair() {
     setSaindo(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    window.location.assign("/auth/encerrar?motivo=saiu");
   }
 
   return (

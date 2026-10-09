@@ -20,6 +20,7 @@ import {
   lerAcessoPorUnidade,
   type UnidadeFechada,
 } from "@/lib/acesso-por-unidade";
+import { destinoDoAcesso, ipDoPedido, lerEstadoDoAcesso } from "@/lib/acesso";
 
 export const ACTIVE_CLINIC_COOKIE = "risarte_active_clinic";
 
@@ -91,6 +92,13 @@ export type SessionContext = {
   unidadesFechadas: UnidadeFechada[];
   /** A tranca por unidade não pôde ser conferida: tudo ficou fechado (AP11). */
   acessoNaoConferido: boolean;
+  /**
+   * O acesso em curso (0287): quantos minutos sem uso até desconectar (o
+   * tempo da função desta pessoa) e a data em que o acesso começou. A tela usa
+   * para avisar antes de cair. Nulo = o banco não respondeu (sem a 0287): não
+   * há desconexão por inatividade nesta requisição.
+   */
+  acesso: { limiteMin: number; dia: string } | null;
 };
 
 type RoleRow = {
@@ -120,6 +128,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     redirect("/login");
   }
   const userId = user.sub;
+  const cabecalhos = await headers();
 
   const [
     { data: profile },
@@ -128,6 +137,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     { data: allClinics },
     { data: envRows, error: envErro },
     respostaDoAcesso,
+    respostaDoRegistro,
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -167,6 +177,14 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
       isTreino()
         ? Promise.resolve(null)
         : supabase.rpc("system_access_by_clinic", { p_user_id: userId }),
+      // 0287: O ACESSO AINDA VALE? Inatividade e virada do dia, decididas pelo
+      // banco. Entra no MESMO lote — é uma consulta paralela, não uma ida a
+      // mais (CLAUDE.md §0d). Se o acesso ainda não tinha registro (quem já
+      // estava logado quando isto entrou no ar), a própria função cria.
+      supabase.rpc("access_session_check", {
+        p_user_agent: cabecalhos.get("user-agent"),
+        p_ip: ipDoPedido(cabecalhos),
+      }),
     ]);
 
   // Sem a tabela (banco ainda sem a 0246) ou sem linha nenhuma, vale o padrão
@@ -192,6 +210,26 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
   // sistema deixou de depender do relógio do token para uma decisão de acesso.
   if (profile && profile.is_active === false) {
     redirect("/conta-desativada");
+  }
+
+  // ⚠️ O ACESSO VENCEU (0287): parado além do tempo da função, ou é de outro
+  // dia. Quem decide é o banco; aqui só se obedece — e se manda para a rota
+  // que ENCERRA de verdade (apaga a sessão), porque daqui não dá para apagar
+  // cookie.
+  //
+  // Sem resposta legível (banco ainda sem a 0287, falha de rede) NÃO se
+  // tranca ninguém: `lerEstadoDoAcesso` devolve nulo e o sistema segue como
+  // era. O log diz isso, em vez de fingir que conferiu.
+  const acessoLido = lerEstadoDoAcesso(respostaDoRegistro);
+  if (!acessoLido && respostaDoRegistro?.error) {
+    console.error(
+      "acesso (0287): não foi possível conferir a inatividade —",
+      respostaDoRegistro.error.message
+    );
+  }
+  const encerrar = destinoDoAcesso(acessoLido);
+  if (encerrar) {
+    redirect(encerrar);
   }
 
   const isAdminMaster = profile?.is_admin_master ?? false;
@@ -260,7 +298,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
   // telas têm as próprias guardas e a RLS), mas grita no log em vez de fingir
   // que mediu.
   if (!ambientes.sistema) {
-    const caminho = (await headers()).get("x-risarte-path");
+    const caminho = cabecalhos.get("x-risarte-path");
     if (!caminho) {
       console.error(
         "modo portal sem x-risarte-path: o porteiro não informou o caminho"
@@ -303,6 +341,10 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     ambientes,
     unidadesFechadas,
     acessoNaoConferido,
+    acesso:
+      acessoLido && acessoLido.limiteMin != null && acessoLido.dia
+        ? { limiteMin: acessoLido.limiteMin, dia: acessoLido.dia }
+        : null,
   };
 });
 

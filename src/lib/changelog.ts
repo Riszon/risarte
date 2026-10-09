@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.305.0",
+    data: "2026-10-09",
+    migracao: "0287",
+    titulo: "O sistema desconecta por inatividade e pede login a cada dia",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O sistema passou a desconectar sozinho depois de um tempo sem uso (60 minutos como padrão; o Admin pode definir outro tempo por função). Dois minutos antes aparece a pergunta \"Você ainda está aí?\" — qualquer clique mantém você conectado. Salve o que estiver digitando antes de sair da mesa.",
+        papeis: "todos",
+        manual: "Mapeamento da interface",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Um login por dia: o acesso vale para a data em que foi feito. No primeiro clique do dia seguinte o sistema pede a senha de novo, e a tela de login diz o motivo.",
+        papeis: "todos",
+        manual: "Mapeamento da interface",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Em atendimento com a gravação da consulta ligada, o sistema não desconecta — nem por inatividade, nem pela virada do dia.",
+        papeis: ["clinical_coordinator", "dentist"],
+        manual: "Mapeamento da interface",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: a Auditoria ganhou o quadro Acessos (um registro por login, com dia, entrada, saída e motivo, tempo em uso, tempo parado, navegador e endereço de internet), e Administração ganhou a tela Sessão e inatividade, para definir o tempo de cada função. A entrada e a saída do sistema passaram a ser gravadas na trilha.",
+        papeis: [],
+        manual: "Mapeamento da interface",
+      },
+    ],
+  },
+  {
     versao: "0.304.0",
     data: "2026-10-07",
     migracao: "0286",

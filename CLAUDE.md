@@ -378,6 +378,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/10/2026 — PC Administrador (core 0.304.0 → 0.305.0, migração 0287)**
+
+- **AUDITORIA, etapa 1 de 3 (pedido do dono):** registro de cada acesso
+  (`access_sessions`), desconexão por inatividade (60 min padrão, por função
+  em Administração → Sessão e inatividade; a mais curta vence), login por dia,
+  gravação em andamento protege, navegador e IP, quadro Acessos na Auditoria.
+  Quem decide é o BANCO (`access_session_check`, no lote de
+  `getSessionContext`); sem resposta, ninguém é trancado.
+- 🔴 **AP29:** o login NUNCA era gravado na trilha (0 em 283 na produção) —
+  `void recordLogin()` perdia a corrida para a navegação. Corrigido.
+- ⏳ **0287: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela
+  nada muda (não há desconexão, e as telas novas avisam).
+- ⏳ **Não visto na tela:** o login pelo formulário (o agente não digita senha
+  em serviço de autenticação externo), a gravação protegendo e duas abas.
+  Conferir o "Entrou no sistema" no primeiro login depois de publicar.
+- **Etapas 2 e 3 a fazer** (BACKLOG, seção AUDITORIA): auditoria detalhada
+  (qual registro, o que mudou) e relatório de atividade.
+- **AP30 — perguntar ao dono:** Dentista e Planner estão SEM o módulo Estoque
+  na matriz de permissões desde 28/09, nos dois ambientes.
+- **AP31:** rota do Indica respondendo 404 ao Admin na varredura (da outra
+  sessão).
+
 **07/10/2026 (fim da tarde) — PC Administrador (core 0.303.0 → 0.304.0, migração 0286)**
 
 - **OC-00087 + 🔴 AP28:** o diagnóstico do relato (sequência só na opção

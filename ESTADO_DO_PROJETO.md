@@ -1,7 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 07/10/2026 · Versão do sistema: **0.304.0** · Última migração: **0286** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 09/10/2026 · Versão do sistema: **0.305.0** · Última migração: **0287** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ⏱️ 0.305.0 / 0287 — ACESSOS: INATIVIDADE, LOGIN POR DIA E O REGISTRO DE CADA ENTRADA (auditoria, etapa 1 de 3)
+>
+> `access_sessions` (uma linha por login, chaveada pelo `session_id` do token)
+> e `access_idle_settings` (minutos por função; '*' = padrão 60; a mais curta
+> vence). QUEM DECIDE É O BANCO: `access_session_check` entra no lote de
+> `getSessionContext` (sem ida a mais) e encerra por inatividade ou virada do
+> dia; sem resposta legível (banco sem a 0287) NINGUÉM é trancado.
+> `MonitorDeSessao` (layout): sinal de atividade direto do navegador para o
+> banco (≤ 1/min, só com interação ou gravação), aviso 2 min antes, saída por
+> `/auth/encerrar` — a ÚNICA rota de saída, que registra o motivo.
+> 🔴 Achado: o login NUNCA era gravado na trilha (0 em 283 na produção) — a
+> chamada era disparada sem `await` e perdia para a navegação.
+> **Faltam as etapas 2 (auditoria detalhada: qual registro, o que mudou, o dia
+> de uma pessoa) e 3 (relatório de atividade com exportação).**
+>
 > ## 🧩 0.304.0 / 0286 — AS SESSÕES SAEM DO QUE O CLIENTE COMPROU; SEQUÊNCIA EM TODAS AS OPÇÕES (OC-00087, AP28)
 >
 > `ensure_treatment_sessions` escolhia a opção aprovada com `is_primary`

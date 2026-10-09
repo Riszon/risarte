@@ -1729,10 +1729,42 @@ Para essas funções, os passos seguem os módulos descritos na
 |---|---|---|---|
 | Tela de login | `/login` | todos | E-mail + senha. **Não há auto-cadastro nem "esqueci minha senha"** |
 | Botão **Entrar** | `/login` | todos | Autentica; erro genérico não revela se o e-mail existe |
-| Botão **Sair** | barra lateral, rodapé | todos | Encerra a sessão |
+| Botão **Sair** | barra lateral, rodapé | todos | Encerra a sessão **deste aparelho** e registra a saída |
 
 **Evidência:** `src/app/login/login-form.tsx`; `src/app/login/actions.ts`
-(`recordLogin` grava o acesso na auditoria).
+(`iniciarAcesso` abre o acesso do dia e grava a entrada na auditoria);
+`src/app/auth/encerrar/route.ts` (a saída).
+
+**O sistema desconecta sozinho em dois casos** (desde a versão 0.305.0):
+
+- **Ficou sem uso.** Depois de um tempo sem clicar, digitar ou rolar a tela —
+  **60 minutos** como padrão, e o Admin pode definir outro tempo para cada
+  função —, o sistema desconecta. **Dois minutos antes** aparece a pergunta
+  *"Você ainda está aí?"*, com a contagem: qualquer clique ou tecla mantém
+  você conectado. Deixar o sistema aberto **não** conta como uso.
+- **Virou o dia.** O acesso vale para a **data** em que foi feito. No primeiro
+  clique do dia seguinte o sistema pede a senha de novo — é assim que fica
+  registrado cada dia em que você acessou.
+
+Nos dois casos você volta para a tela de login, que **diz o motivo**. Não é
+defeito e não é queda do sistema.
+
+> **Salve antes de sair da mesa.** O que estava digitado e não foi salvo se
+> perde quando o sistema desconecta.
+
+> **Em atendimento com a gravação ligada, o sistema não desconecta** — nem
+> por inatividade, nem pela virada do dia. Enquanto a faixa **Gravando**
+> estiver na tela, você continua conectado, mesmo sem tocar em nada.
+
+> **Mais de uma aba aberta?** Mexer em uma mantém todas conectadas. Sair
+> desconecta só o aparelho em que você clicou em Sair.
+
+> **Para o Admin Master:** o tempo de cada função fica em **Administração →
+> Sessão e inatividade** (em branco, a função segue o padrão; quem tem mais de
+> uma função fica com o menor tempo). E em **Administração → Auditoria**, o
+> quadro **Acessos** mostra um registro por login: o dia, a hora de entrada, a
+> saída e o motivo (saiu, inatividade, virada do dia), o **tempo em uso**, o
+> **tempo parado**, o navegador e o endereço de internet.
 
 ### 7.2. Barra lateral (o menu)
 
@@ -1886,7 +1918,9 @@ depois se saber que aquela fase andou sem o fato que deveria tê-la movido.
 
 ### Fluxo 3 — Encerrar a sessão
 
-Botão **Sair** no rodapé da barra lateral.
+Botão **Sair** no rodapé da barra lateral. A saída fica registrada na
+auditoria. Se você não sair, o sistema desconecta sozinho depois do tempo de
+inatividade da sua função, e sempre na virada do dia (seção 7.1).
 
 ### Fluxo 4 — O cliente que volta depois de perdido
 

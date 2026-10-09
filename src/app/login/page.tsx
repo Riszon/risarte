@@ -3,16 +3,21 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
 import { RisarteMark } from "@/components/risarte-logo";
 import { APP_VERSION } from "@/lib/version";
+import { MOTIVO_NO_LOGIN, lerMotivo } from "@/lib/acesso";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
   title: "Entrar",
 };
 
-export default function LoginPage() {
+export default async function LoginPage(props: PageProps<"/login">) {
   if (!isSupabaseConfigured()) {
     return <SetupNotice />;
   }
+  // 0287: quem foi desconectado (inatividade, virada do dia) chega com o motivo.
+  const motivoParam = (await props.searchParams)?.motivo;
+  const aviso =
+    typeof motivoParam === "string" ? MOTIVO_NO_LOGIN[lerMotivo(motivoParam)] : null;
 
   return (
     <main className="flex flex-1">
@@ -56,7 +61,7 @@ export default function LoginPage() {
               Sistema de gestão da jornada do cliente
             </p>
           </div>
-          <LoginForm />
+          <LoginForm aviso={aviso} />
           <p className="mt-6 text-center text-xs text-muted-foreground">
             riSZon · v{APP_VERSION}
           </p>

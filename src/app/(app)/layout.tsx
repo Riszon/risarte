@@ -16,6 +16,7 @@ import { TreatmentStartPopup } from "@/components/treatment-start-popup";
 import { AccessibilityGuard } from "@/components/accessibility-guard";
 import { Ambiente } from "@/components/ambiente";
 import { NomeDaAba } from "@/components/nome-da-aba";
+import { MonitorDeSessao } from "@/components/monitor-de-sessao";
 import { nomeDaAba } from "@/lib/ambientes";
 import { ambienteAtual } from "@/lib/ambientes-db";
 
@@ -28,6 +29,15 @@ export default async function AppLayout({
 
   const session = await getSessionContext();
 
+  // 0287: o monitor da sessão — sinal de atividade, aviso antes de desconectar
+  // e o encerramento por inatividade ou virada do dia. Vai em TODAS as cascas
+  // (inclusive o modo portal e a escolha de unidade): quem está logado está
+  // sendo contado, onde quer que esteja. Sem resposta do banco (sem a 0287)
+  // não há monitor — e não há desconexão.
+  const monitor = session.acesso ? (
+    <MonitorDeSessao limiteMin={session.acesso.limiteMin} dia={session.acesso.dia} />
+  ) : null;
+
   // H1.7: usuário com acesso a mais de uma unidade (e sem Franqueadora, que
   // entra direto) escolhe a unidade no login antes de ver qualquer tela.
   const hasFranchisor = session.clinics.some((c) => c.type === "franchisor");
@@ -38,14 +48,17 @@ export default async function AppLayout({
     session.clinics.length > 1
   ) {
     return (
-      <ChooseClinicWelcome
-        fullName={session.fullName}
-        clinics={session.clinics.map(({ id, name, type }) => ({
-          id,
-          name,
-          type,
-        }))}
-      />
+      <>
+        <ChooseClinicWelcome
+          fullName={session.fullName}
+          clinics={session.clinics.map(({ id, name, type }) => ({
+            id,
+            name,
+            type,
+          }))}
+        />
+        {monitor}
+      </>
     );
   }
 
@@ -73,6 +86,7 @@ export default async function AppLayout({
         </main>
         <AccessibilityGuard />
         <NomeDaAba nome={nomeDaAba(ambienteAtual())} />
+        {monitor}
       </Ambiente>
     );
   }
@@ -196,6 +210,7 @@ export default async function AppLayout({
       {/* 0259: a aba assume o nome do ambiente, para o atalho de volta
           reaproveitá-la em vez de abrir outra. */}
       <NomeDaAba nome={nomeDaAba(ambienteAtual())} />
+      {monitor}
     </Ambiente>
   );
 }

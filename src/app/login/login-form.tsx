@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { recordLogin } from "./actions";
+import { iniciarAcesso } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,7 +64,7 @@ export function mensagemDeEntrada(erro: {
   return `Não foi possível entrar agora (código ${status || "?"}). Tente de novo; se insistir, avise o administrador.`;
 }
 
-export function LoginForm() {
+export function LoginForm({ aviso = null }: { aviso?: string | null }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -88,11 +88,22 @@ export function LoginForm() {
       return;
     }
 
-    // Registra o acesso na trilha de auditoria (best-effort) SEM bloquear a
-    // navegação: o fetch segue durante a navegação e o botão libera na hora.
-    void recordLogin().catch(() => {
-      // ignora — o login não pode falhar por causa da auditoria.
-    });
+    // ⚠️ O REGISTRO DA ENTRADA É ESPERADO antes de trocar de tela (0287).
+    //
+    // Até 09/10/2026 ele era disparado SEM esperar ("o fetch segue durante a
+    // navegação"). Não seguia: a navegação ganhava a corrida e o login nunca
+    // chegou à trilha — zero em 283 registros na produção. É a mesma corrida
+    // do "Abrir" das notificações (OC-00093).
+    //
+    // O teto de 4 segundos garante que a auditoria nunca prenda ninguém na
+    // tela de login: se o registro demorar, a pessoa entra do mesmo jeito e o
+    // acesso é registrado pela primeira tela que abrir.
+    await Promise.race([
+      iniciarAcesso().catch(() => {
+        // o login não pode falhar por causa do registro
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+    ]);
 
     // Vai direto para a home. O push já renderiza com a sessão nova; o refresh
     // anterior renderizava a home uma 2ª vez e deixava o "Entrando..." preso.
@@ -109,6 +120,16 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 0287: por que a pessoa voltou para cá. Sem a frase, quem foi
+              desconectado por inatividade conclui que o sistema caiu. */}
+          {aviso && (
+            <p
+              role="status"
+              className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-sm"
+            >
+              {aviso}
+            </p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>
             <Input

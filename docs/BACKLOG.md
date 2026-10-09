@@ -2197,3 +2197,75 @@ a venda (pelo código `PT-`) e decidir.
 plano aprovado. Cliente com duas vendas aceitas ao mesmo tempo (dois planos)
 recebe as sessões só da mais recente na geração inicial — não havia nenhum
 caso assim no treino nem na produção.
+
+### AUDITORIA — pedido do dono em 09/10/2026, em TRÊS ETAPAS
+
+*"Melhore a auditoria do riSZon, com mais detalhes e possibilidades de
+enxergar o que cada usuário fez e alterou. Tempo de atividade ou inatividade
+no sistema. O login deve desconectar por inatividade, ou quando muda a data,
+ficando registrado cada dia que fez o acesso."*
+
+**Etapa 1 ✅ (0287 / core 0.305.0, 09/10/2026)** — sessão e acesso: registro de
+cada login, inatividade por função (60 min padrão), login por dia, gravação em
+andamento protege, navegador e IP, quadro Acessos na Auditoria.
+
+**Etapa 2 — A FAZER: auditoria detalhada.** Medido em 09/10/2026: a tela mostra
+só data, pessoa, ação, tipo e unidade — não diz QUAL registro nem o detalhe; 38
+dos 53 tipos de registro aparecem com o código em inglês; só 1 em cada 5
+registros guarda algum detalhe, cada tela do seu jeito. Entregar: qual registro
+(com código e link), o que mudou, todos os tipos em português, e "o dia de uma
+pessoa" (acessos e ações em ordem). **Decisões a pedir ao dono antes:** o que
+guardar do "alterou" (nomes dos campos + valores não sensíveis, só nomes, ou
+tudo — a LGPD proíbe dado de saúde e CPF na trilha); quem vê a auditoria (só
+Admin, ou o gerente vê a da unidade).
+
+**Etapa 3 — A FAZER: relatório de atividade.** Por pessoa e por dia: primeiro
+acesso, última atividade, tempo em uso, tempo parado, número de ações;
+exportação.
+
+### AP29. ✅ RESOLVIDO em 09/10/2026 (0287 / core 0.305.0) — 🔴 o login NUNCA era gravado na auditoria
+
+Achado ao medir a trilha antes de planejar a auditoria nova.
+
+**Confirmado nos dois bancos (só leitura):** produção — 283 registros desde
+31/08, **0 logins**, com 7 contas que já tinham entrado; treino — 1.112
+registros de 17 pessoas, **0 logins**.
+
+**Causa:** `void recordLogin()` seguido de `router.replace("/")`. A ação do
+servidor entrava na fila de navegação do Next e era descartada pela navegação
+— a mesma corrida do "Abrir" das notificações (OC-00093). O comentário ao lado
+dizia "o fetch segue durante a navegação". Não seguia.
+
+**Correção:** o formulário ESPERA `iniciarAcesso()` (com teto de 4 s) antes de
+navegar, e a gravação mora no banco, junto com a abertura do acesso. Régua em
+`acesso.test.ts`, provada voltando o `void`.
+
+**Lição que já apareceu duas vezes:** ação de servidor disparada no mesmo
+clique de uma navegação se perde. Ou se espera, ou se manda direto do
+navegador para o banco.
+
+### AP30. Dentista e Planner SEM o módulo Estoque desde 28/09/2026, nos DOIS ambientes — FATO confirmado, CAUSA não
+
+Achado pela varredura de telas de 09/10/2026 (1.024 aberturas; esta foi uma
+das 3 falhas, nenhuma causada pela entrega do dia).
+
+**Confirmado lendo os dois bancos:** em `permission_matrix`, a capacidade
+`modulo.estoque` tem 7 funções gravadas em 28/09/2026 — coordenador, gerente,
+franqueadora, franqueado, TSB, ASB e financeiro. **Faltam `dentist` e
+`planner_dentist`**, que estão no padrão do código (`CLINICOS`) e na regra
+escrita do CLAUDE.md §8c ("consumo avulso = dentista, coordenador, planner,
+TSB, ASB"). O Dentista ainda tem `acao.estoque.consumir`, mas não abre a tela.
+
+**Não confirmado:** se foi decisão do dono em `/admin/permissoes` ou efeito
+de um salvamento (nenhuma migração tocou a matriz nesse dia; as 153 linhas dos
+dois bancos têm a mesma data). **Perguntar ao dono.** Se foi de propósito,
+a regra da varredura e o §8c é que estão velhos; se não foi, religar as duas
+funções na tela de Permissões, nos dois ambientes.
+
+### AP31. `/indica-mais-risos/equipe/apuracao/[id]` responde 404 para o Admin Master — da sessão do Indica
+
+Mesma varredura (09/10/2026). A régua acusa "rota quebrada, não permissão" nos
+dois perfis de Admin; o registro usado veio de `indica.apuracoes`. **Não
+investigado** — é do módulo Indica +Risos (outra sessão). Pode ser a tela
+recusando um tipo de apuração, ou a régua pegando um registro que a tela não
+abre. Fica para a sessão do Indica conferir.
