@@ -1,7 +1,27 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/10/2026 · Versão do sistema: **0.305.0** · Última migração: **0287** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 09/10/2026 · Versão do sistema: **0.306.0** · Última migração: **0288** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔎 0.306.0 / 0288 — O BANCO REGISTRA O QUE MUDOU, COM ANTES E DEPOIS (auditoria, etapa 2 de 3)
+>
+> `audit_changes` + gatilho `audit_capture` (AFTER INSERT/UPDATE/DELETE, um
+> só para todas) preso por `audit_attach_all()` em 195 tabelas de `public`,
+> `empresarial` e `indica`; 44 ficam de fora com o motivo em
+> `audit_excluded_tables`. Guarda: quem (ou "sistema"/"servico"), o acesso
+> (`session_id`), tabela, chave, um rótulo legível (código · nome), cliente,
+> unidade e `changes` — U: `{campo: {antes, depois}}` só do que mudou; I/D: o
+> registro. Segredo vira "[oculto]"; valor > 20 KB entra cortado; alteração
+> que só mexe no "atualizado em" não registra. **O gatilho nunca derruba a
+> operação** (provado quebrando a trilha de propósito). RLS: só Admin Master
+> lê; sem regra de escrita; gatilhos recusam UPDATE/DELETE/TRUNCATE; sem
+> chave estrangeira (nenhum CASCADE alcança). Decisões do dono (CLAUDE.md §6):
+> guarda TUDO, inclusive dado pessoal; mantém após anonimizar; chat fora.
+> Tela: `/admin/auditoria` em quatro abas (`?visao=`), campo a campo em
+> `<details>` (sem JavaScript), registro sem nome identificado pelo cliente.
+> Dicionário em `auditoria-catalogo.ts` (tabelas, campos, palavras) e
+> `audit-labels.ts` (205 tipos). Regra 9 do `check-migrations` + 14 réguas
+> provadas. **Falta a etapa 3 (relatório de atividade com exportação).**
+>
 > ## ⏱️ 0.305.0 / 0287 — ACESSOS: INATIVIDADE, LOGIN POR DIA E O REGISTRO DE CADA ENTRADA (auditoria, etapa 1 de 3)
 >
 > `access_sessions` (uma linha por login, chaveada pelo `session_id` do token)
@@ -14,8 +34,7 @@ _Atualizado em: 09/10/2026 · Versão do sistema: **0.305.0** · Última migraç
 > `/auth/encerrar` — a ÚNICA rota de saída, que registra o motivo.
 > 🔴 Achado: o login NUNCA era gravado na trilha (0 em 283 na produção) — a
 > chamada era disparada sem `await` e perdia para a navegação.
-> **Faltam as etapas 2 (auditoria detalhada: qual registro, o que mudou, o dia
-> de uma pessoa) e 3 (relatório de atividade com exportação).**
+> Etapa 2 entregue na 0.306.0 (bloco acima); falta a 3.
 >
 > ## 🧩 0.304.0 / 0286 — AS SESSÕES SAEM DO QUE O CLIENTE COMPROU; SEQUÊNCIA EM TODAS AS OPÇÕES (OC-00087, AP28)
 >

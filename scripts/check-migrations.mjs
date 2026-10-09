@@ -4,7 +4,7 @@
 // Duas migrações seguidas chegaram ao dono com erro mecânico que o Postgres só
 // acusa na hora de rodar — e cada uma custou uma ida e volta.
 //
-// Duas regras, as duas já cometidas:
+// As duas primeiras regras (hoje são nove — cada uma descrita onde é conferida):
 //
 //   1. `create or replace function` com RETORNO DIFERENTE do que já existe.
 //      O Postgres recusa: "cannot change return type of existing function".
@@ -158,6 +158,49 @@ if (target.slice(0, 4) > "0278") {
         `      Se a migração foi gerada por script, procure "AS $" ou "end $;" —\n` +
         `      "$$" no texto de substituição do replace vira UM "$".`
     );
+  }
+}
+
+// Regra 9 — TABELA NOVA TEM DE ENTRAR NA AUDITORIA (0288).
+//
+// Desde a 0288 o banco registra sozinho cada inclusão, alteração e exclusão,
+// por um gatilho preso em cada tabela de cadastro. Tabela criada depois nasce
+// SEM o gatilho — e o que acontece nela some da auditoria sem ninguém notar.
+// Quem cria tabela em `public`, `empresarial` ou `indica` termina a migração
+// com `select public.audit_attach_all();` (prende em todas as que faltam; é
+// idempotente). Se a tabela NÃO deve ser auditada (histórico, derivada,
+// registro técnico), declara o motivo em `public.audit_excluded_tables`.
+// Vale para as três faixas, só DEPOIS da 0288 / 1026 / 2008.
+{
+  const faixa = Number(target.slice(0, 4));
+  const vale =
+    (faixa >= 288 && faixa < 1000) || (faixa > 1026 && faixa < 2000) || faixa > 2008;
+  const criadas = [
+    ...semComentarios.matchAll(
+      /create\s+table\s+(?:if\s+not\s+exists\s+)?(public|empresarial|indica)\.(\w+)/gi
+    ),
+  ].map((m) => `${m[1].toLowerCase()}.${m[2].toLowerCase()}`);
+  if (vale && criadas.length > 0) {
+    const prende = /select\s+public\.audit_attach_all\s*\(\s*\)/i.test(semComentarios);
+    const declaradas = new Set(
+      [
+        ...semComentarios.matchAll(
+          /\(\s*'(public|empresarial|indica)'\s*,\s*'(\w+)'\s*,\s*'/gi
+        ),
+      ].map((m) => `${m[1].toLowerCase()}.${m[2].toLowerCase()}`)
+    );
+    const declaraFora =
+      /insert\s+into\s+public\.audit_excluded_tables/i.test(semComentarios);
+    const semDestino = criadas.filter((t) => !(declaraFora && declaradas.has(t)));
+    if (!prende && semDestino.length > 0) {
+      problems.push(
+        `tabela nova fora da auditoria: ${semDestino.join(", ")}\n` +
+          `      Desde a 0288 toda tabela de cadastro tem o gatilho da auditoria.\n` +
+          `      Termine a migração com "select public.audit_attach_all();" — ou,\n` +
+          `      se ela não deve ser auditada, declare o motivo em\n` +
+          `      public.audit_excluded_tables (schema, tabela, motivo).`
+      );
+    }
   }
 }
 

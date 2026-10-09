@@ -495,7 +495,7 @@ export function AcessoDoRisartano({
                 <Link
                   href={{
                     pathname: "/admin/auditoria",
-                    query: { colaborador: acesso.userId },
+                    query: { visao: "pessoa", colaborador: acesso.userId },
                   }}
                 />
               }

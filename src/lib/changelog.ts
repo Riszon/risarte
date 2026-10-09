@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.306.0",
+    data: "2026-10-09",
+    migracao: "0288",
+    titulo: "A Auditoria mostra o que mudou: antes e depois, em todos os cadastros",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "Toda inclusão, alteração e exclusão passou a ser registrada pelo próprio sistema, com o conteúdo de antes e de depois e o nome de quem fez. Vale para todos os cadastros (clientes, agenda, planos, financeiro, estoque, Empresarial, Indica +Risos). Não muda nada no seu dia a dia — só fica registrado.",
+        papeis: "todos",
+        manual: "Segurança e boas práticas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: a Auditoria ganhou quatro abas. Alterações (o que mudou, campo a campo, com antes e depois), Ações (o que cada pessoa fez nas telas), Acessos (um registro por login) e O dia de uma pessoa (tudo o que alguém fez num dia, em ordem, com o tempo em uso e parado). Dá para filtrar por pessoa, por tipo de cadastro, por período e pelo código ou nome do registro.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Admin: na Auditoria, tudo aparece em português — os nomes dos cadastros, dos campos e dos valores (fase, função, situação, dinheiro, datas). Antes, a maior parte dos tipos de registro aparecia com o código em inglês.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+    ],
+  },
+  {
     versao: "0.305.0",
     data: "2026-10-09",
     migracao: "0287",

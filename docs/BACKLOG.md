@@ -2212,19 +2212,50 @@ fora, sem login: as funções recusam).
 cada login, inatividade por função (60 min padrão), login por dia, gravação em
 andamento protege, navegador e IP, quadro Acessos na Auditoria.
 
-**Etapa 2 — A FAZER: auditoria detalhada.** Medido em 09/10/2026: a tela mostra
-só data, pessoa, ação, tipo e unidade — não diz QUAL registro nem o detalhe; 38
-dos 53 tipos de registro aparecem com o código em inglês; só 1 em cada 5
-registros guarda algum detalhe, cada tela do seu jeito. Entregar: qual registro
-(com código e link), o que mudou, todos os tipos em português, e "o dia de uma
-pessoa" (acessos e ações em ordem). **Decisões a pedir ao dono antes:** o que
-guardar do "alterou" (nomes dos campos + valores não sensíveis, só nomes, ou
-tudo — a LGPD proíbe dado de saúde e CPF na trilha); quem vê a auditoria (só
-Admin, ou o gerente vê a da unidade).
+**Etapa 2 ✅ (0288 / core 0.306.0, 09/10/2026)** — auditoria detalhada: o banco
+registra sozinho cada inclusão, alteração e exclusão, com antes e depois, em
+195 tabelas (44 de fora, com motivo); tela em quatro abas (Alterações, Ações,
+Acessos, O dia de uma pessoa); tudo em português. **Decisões do dono:** guarda
+tudo, inclusive dado pessoal; só o Admin Master lê; mantém depois de
+anonimizar; chat de fora (CLAUDE.md §6).
+⏳ **0288 aplicada no treino; falta a produção.**
+
+**O que a etapa 2 NÃO fez, declarado:**
+
+- **O passado não tem "antes e depois".** A trilha começa quando a 0288 roda.
+- **Campo raro sai traduzido palavra a palavra** (958 nomes de coluna; ~230
+  com rótulo escrito à mão). O nome técnico fica na dica.
+- **Valor de situação só é traduzido onde há mapa** (agendamento, plano,
+  cliente, função, fase, pilar, meio de pagamento). O resto aparece como
+  gravado — ex.: situação de conta a pagar, de cobrança, do Empresarial.
+- **Só o cliente tem link.** Empresa, Risartano, plano e conta a pagar
+  aparecem com código e nome, sem atalho.
+- **Gravação pela chave de serviço não diz a pessoa** ("Sistema (em nome de
+  alguém)"); a ação dela está na aba Ações, no mesmo horário.
+- **A lista com mais de 200 linhas não foi vista na tela** (o treino tinha 6).
+- **Sem limpeza por idade.** A trilha só cresce — é o combinado (nada apaga
+  sem pedir). Medir o tamanho na etapa 3; se um dia pesar, a decisão é do dono.
 
 **Etapa 3 — A FAZER: relatório de atividade.** Por pessoa e por dia: primeiro
 acesso, última atividade, tempo em uso, tempo parado, número de ações;
 exportação.
+
+### AP32. `npm run test:indica`: 3 conferências falham no treino — da sessão do Indica
+
+Achado em 09/10/2026, ao rodar os testes do Indica depois de prender o gatilho
+da auditoria nas tabelas dele (CLAUDE.md §0 manda rodar).
+
+**Confirmado:** 209 certas, 3 falhas — *"apuração final: 2 conversões do
+período, comparecimento 100%, faixa atingida, indicações listadas"*, *"a
+aprovação congela a lista para a folha: recepção R$ 500 em dinheiro, demais
+voucher"* e *"custo REALIZADO inclui os prêmios aprovados da seção 16 (0
+centavos)"*. **As mesmas 3 falham com o gatilho da auditoria DESLIGADO**
+dentro da transação do teste — não vêm da 0288.
+
+**Não investigado:** a causa. As três giram em torno da apuração final do
+período; pode ser dependência da data em que o teste roda, ou diferença entre
+o `main` e o ramo `feature/indica-mais-risos` (as migrações 2000+ no treino
+são as do `main`). Fica para a sessão do Indica.
 
 ### AP29. ✅ RESOLVIDO em 09/10/2026 (0287 / core 0.305.0) — 🔴 o login NUNCA era gravado na auditoria
 

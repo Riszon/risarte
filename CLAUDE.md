@@ -87,6 +87,18 @@ resultado como se fosse o banco inteiro.
    Empresarial ainda em obra; aí o branch (`feature/empresarial`) vale, e tem de
    ser criado pela sessão do Empresarial, com plano combinado entre as duas.
 
+7. **TABELA NOVA ENTRA NA AUDITORIA (desde a 0288, 09/10/2026) — vale para os
+   três projetos.** O banco registra sozinho cada inclusão, alteração e
+   exclusão por um gatilho preso em cada tabela de cadastro
+   (`audit_capture_trg`). Tabela criada depois nasce SEM ele. Toda migração
+   que cria tabela em `public`, `empresarial` ou `indica` termina com
+   `select public.audit_attach_all();` (idempotente) — ou, se a tabela não deve
+   ser auditada (histórico, derivada, registro técnico), declara o motivo em
+   `public.audit_excluded_tables`. A **Regra 9** do `check-migrations`
+   reprova quem esquecer; a tela de Auditoria avisa o que ficou de fora; e
+   `auditoria-alteracoes.test.ts` exige o nome em português da tabela em
+   `src/lib/auditoria-catalogo.ts` (arquivo do core, mudança aditiva).
+
 ## 0b. ⚠️ O QUE VIAJA ENTRE OS AMBIENTES (e o que não viaja)
 
 Existem **dois endereços no ar**, publicando do mesmo `main`:
@@ -378,6 +390,31 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/10/2026 (fim da tarde) — PC Administrador (core 0.305.0 → 0.306.0, migração 0288)**
+
+- **AUDITORIA, etapa 2 de 3 (pedido do dono):** o BANCO registra sozinho cada
+  inclusão, alteração e exclusão, com o antes e o depois, em 195 tabelas dos
+  três schemas (`audit_changes`, gatilho `audit_capture`). 44 tabelas ficam
+  de fora, cada uma com o motivo gravado (`audit_excluded_tables`). A tela de
+  Auditoria virou quatro abas: Alterações, Ações, Acessos e O dia de uma
+  pessoa. 205 tipos de registro e 195 tabelas com nome em português.
+- ⚠️ **Decisões do dono que mudam regra antiga** (§6): a trilha de alterações
+  guarda TUDO, inclusive dado pessoal; só o Admin Master lê; cliente
+  anonimizado mantém o histórico; o chat fica de fora.
+- ⚠️ **Regra nova para os três projetos** (§0, regra 7): migração que cria
+  tabela termina com `select public.audit_attach_all();`.
+- ⏳ **0288: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
+  aba Alterações mostra o aviso e as outras três funcionam. Rodar em horário
+  calmo: ela pede cada tabela por um instante e desiste em 8 s se alguém
+  estiver gravando (basta rodar de novo).
+- **Etapa 3 a fazer:** relatório de atividade por pessoa/dia com exportação.
+- **AP32 (BACKLOG):** 3 conferências do `npm run test:indica` falham no treino,
+  com e sem o gatilho da auditoria — é da sessão do Indica.
+- Resíduo no treino: 5 lançamentos de exemplo na auditoria, em nome do Admin
+  de teste (a trilha não se apaga; os dados em si voltaram ao que eram).
+- ⏳ Perguntas ainda abertas ao dono: AP30 (Estoque para Dentista/Planner) e
+  a renovação do Supabase Pro.
+
 **09/10/2026 — PC Administrador (core 0.304.0 → 0.305.0, migração 0287)**
 
 - **AUDITORIA, etapa 1 de 3 (pedido do dono):** registro de cada acesso
@@ -394,8 +431,7 @@ Syncthing se comportarem de forma estranha.**
 - ⏳ **Não visto na tela:** o login pelo formulário (o agente não digita senha
   em serviço de autenticação externo), a gravação protegendo e duas abas.
   Conferir o "Entrou no sistema" no primeiro login depois de publicar.
-- **Etapas 2 e 3 a fazer** (BACKLOG, seção AUDITORIA): auditoria detalhada
-  (qual registro, o que mudou) e relatório de atividade.
+- Etapa 2 entregue no mesmo dia (bloco acima); etapa 3 a fazer.
 - **AP30 — perguntar ao dono:** Dentista e Planner estão SEM o módulo Estoque
   na matriz de permissões desde 28/09, nos dois ambientes.
 - **AP31:** rota do Indica respondendo 404 ao Admin na varredura (da outra
@@ -1043,7 +1079,26 @@ unidades** (Todas / específicas / Nenhuma) que limita o que enxergam. TSB e ASB
   físico (guarda legal do prontuário). Não existe DELETE policy em `clients` de
   propósito.
 - Todo acesso a ficha/prontuário gera `audit_logs` (via `logAudit()` — só ids e
-  metadados, **nunca** dado pessoal em `details`).
+  metadados, **nunca** dado pessoal em `details`). **Esta regra continua valendo
+  para `audit_logs`** — a trilha de AÇÕES.
+- ⚠️ **A trilha de ALTERAÇÕES (`audit_changes`, 0288) GUARDA TUDO, antes e
+  depois, inclusive dado pessoal e de saúde — decisão do dono em 09/10/2026,
+  que muda a regra anterior.** Nas palavras dele: *"Guarda o conteúdo completo
+  de todos os campos. Quanto à LGPD, neste caso, não terá risco aumentado, pois
+  o acesso à auditoria é para o admin, poucos acessos e tudo dentro do
+  sistema."* As quatro decisões, e o que as sustenta no código:
+  - **Só o Admin Master lê** (RLS; não há regra de escrita; gatilhos recusam
+    editar, apagar e esvaziar — nem o dono do banco consegue).
+  - **Cliente anonimizado: a trilha MANTÉM o conteúdo antigo.** Eu avisei que
+    este é o ponto juridicamente fraco (anonimizar é o direito de exclusão da
+    LGPD, e uma cópia do dado sobrevive aqui) e recomendei conferir com o
+    jurídico; o dono manteve. **Se o jurídico pedir o contrário, a mudança é
+    uma migração que mascara os lançamentos do cliente — não existe hoje.**
+  - **Segredo nunca entra** (senha, token, hash: gravados como "[oculto]").
+  - **O chat da equipe fica de fora.**
+  Ao mexer nisso: quem pode LER é o que segura a decisão. Abrir a leitura a
+  outro papel (gerente, franqueado) reabre a discussão de LGPD inteira — pedir
+  ao dono antes.
 - Nunca expor dado de paciente em logs, URLs ou mensagens de erro. Mídia em
   Supabase Storage com **URLs assinadas**, nunca públicas.
 

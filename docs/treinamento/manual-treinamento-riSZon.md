@@ -36,6 +36,7 @@
 12. [Glossário](#12-glossário)
 13. [Perguntas frequentes](#13-perguntas-frequentes)
 13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
+13c. [Para o Admin Master: a Auditoria](#13c-para-o-admin-master-a-auditoria)
 14. [Checklists](#14-checklists)
 15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas) — inclui o **relógio**
 
@@ -1761,10 +1762,11 @@ defeito e não é queda do sistema.
 
 > **Para o Admin Master:** o tempo de cada função fica em **Administração →
 > Sessão e inatividade** (em branco, a função segue o padrão; quem tem mais de
-> uma função fica com o menor tempo). E em **Administração → Auditoria**, o
-> quadro **Acessos** mostra um registro por login: o dia, a hora de entrada, a
+> uma função fica com o menor tempo). E em **Administração → Auditoria**, a
+> aba **Acessos** mostra um registro por login: o dia, a hora de entrada, a
 > saída e o motivo (saiu, inatividade, virada do dia), o **tempo em uso**, o
-> **tempo parado**, o navegador e o endereço de internet.
+> **tempo parado**, o navegador e o endereço de internet. O passo a passo da
+> Auditoria está na **seção 13c**.
 
 ### 7.2. Barra lateral (o menu)
 
@@ -2256,6 +2258,10 @@ exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
 - **Paciente não se apaga.** A exclusão é anonimização — guarda legal do
   prontuário.
 - **Todo acesso a prontuário é registrado** em auditoria.
+- **Toda alteração é registrada pelo próprio sistema**, com o conteúdo de
+  antes e de depois e o nome de quem fez — em todos os cadastros. Não depende
+  de ninguém lembrar, e o registro **não pode ser editado nem apagado**, nem
+  pelo Admin. Só o Admin Master consulta (seção 13c).
 - **Mídia clínica abre só por link assinado**, que expira. Nunca é pública.
 - **Cada pessoa vê apenas a sua unidade** — imposto pelo banco.
 - **O gerente de uma unidade nunca vê o financeiro de outra.**
@@ -2375,6 +2381,90 @@ e quais funções passaram a ter a permissão.
 > vai encontrar, faça **nos dois** — leva o mesmo clique.
 
 ---
+
+## 13c. Para o Admin Master: a Auditoria
+
+**Onde:** **Administração → Auditoria**. Só o Admin Master entra — e é o
+banco que garante isso, não a tela.
+
+**Para que serve:** responder "quem fez o quê, quando, e o que havia antes".
+São quatro abas. Trocar de aba mantém a pessoa escolhida.
+
+### Aba Alterações — o que mudou, campo a campo
+
+Cada linha é **uma** inclusão, alteração ou exclusão: a data e a hora, quem
+fez, o tipo de cadastro e **qual registro** (o código e o nome; quando o
+registro não tem nome próprio — um agendamento, uma parcela —, aparece **de
+qual cliente** ele é). Numa alteração, a linha já adianta **quais campos**
+mudaram.
+
+1. **Clique na linha** para abrir. Aparece a tabela **Campo · Antes ·
+   Depois**. Numa inclusão há só o valor gravado; numa exclusão, **o que
+   existia**.
+2. Use os filtros no alto: **pessoa**, **cadastrou / alterou / excluiu**,
+   **em qual cadastro**, **período** e a caixa **código ou nome do registro**
+   (digite e aperte Enter).
+3. Dentro da linha aberta: **Abrir o prontuário do cliente** e **Ver tudo o
+   que mudou neste cliente** (a história inteira daquele cliente, de todos os
+   cadastros ligados a ele).
+4. A lista traz 200 por vez; no fim há **Ver as 200 anteriores**.
+
+**Quem é "Sistema"?** Nem toda gravação é feita por uma pessoa logada:
+
+- **Sistema (rotina automática)** — tarefas agendadas e regras do próprio
+  banco (a cobrança que vence, o aviso que sai sozinho).
+- **Sistema (em nome de alguém)** — o servidor gravando depois de conferir a
+  permissão da pessoa. A ação **dela** aparece no mesmo horário, na aba Ações.
+
+**O que você vê em português e o que não:** nomes dos cadastros, dos campos
+mais comuns, sim/não, dinheiro, datas, funções, fases e situações saem em
+português. **Campo pouco usado pode aparecer com um nome meio torto** (ele é
+traduzido palavra a palavra) — pare o mouse em cima para ver o nome técnico.
+Valor que o sistema não sabe traduzir aparece **como foi gravado**; nunca é
+inventado.
+
+**O que fica de fora, e por quê:** no fim da aba há a lista **"O que NÃO
+entra nesta lista"**, com o motivo de cada item — o que já é histórico, o que
+é calculado a partir de outro cadastro (o saldo do estoque, por exemplo: o
+que conta é o movimento, e ele é registrado), o chat da equipe e os registros
+técnicos. **Senha e token nunca são gravados:** aparecem como "oculto".
+
+> ⚠️ **A auditoria guarda o conteúdo completo, inclusive dado pessoal e de
+> saúde** (decisão da direção, 09/10/2026). Por isso ela é só do Admin Master
+> e não deve ser fotografada nem copiada para fora do sistema. **Quando um
+> cliente é anonimizado, o que foi registrado antes continua aqui.**
+
+> ⚠️ **Começa em 09/10/2026.** O que foi alterado antes dessa data não tem o
+> "antes e depois" — só o registro da ação, na aba Ações.
+
+**Se aparecer o aviso "N cadastro(s) ainda não estão sendo registrados":** foi
+criado um cadastro novo no sistema e ele ainda não entrou na auditoria. Avise
+o suporte (botão de relato) — é um ajuste rápido.
+
+### Aba Ações — o que cada pessoa fez nas telas
+
+Consultou uma ficha, exportou um relatório, entrou, saiu. Filtros: pessoa,
+ação, tipo de registro e período. Quando o registro é um cliente, o nome do
+tipo é um atalho para o prontuário.
+
+### Aba Acessos — um registro por login
+
+O dia, a hora em que entrou, como saiu (saiu, inatividade, virada do dia), o
+**tempo em uso**, o **tempo parado**, o navegador e o endereço de internet.
+Embaixo, o último login de cada pessoa.
+
+### Aba O dia de uma pessoa
+
+1. Escolha a **pessoa** e o **dia** (ou use **← dia anterior** / **dia
+   seguinte →**).
+2. No alto, o resumo: quando **entrou**, a **última atividade**, o tempo **em
+   uso** e **parado**, quantas **ações nas telas** e quantas **alterações**
+   (quantas inclusões, alterações e exclusões, e em quantos registros).
+3. Embaixo, **o dia em ordem**, do primeiro ao último ato. As linhas com a
+   seta são alterações: clique para ver o antes e o depois.
+
+O botão **Auditoria** na ficha de acesso de um Risartano abre direto nesta
+aba, com a pessoa escolhida.
 
 ## 14. Checklists
 

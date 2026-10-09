@@ -94,6 +94,20 @@ incluindo o token `--gold` exposto como utilitário `bg-gold`.
   logados, o `grant ... to authenticated` vem DEPOIS. Provado na produção em
   26/09/2026: sem login, a regra interna da tranca e a conta do fluxo de caixa
   executaram (AP15). A Regra 7 do `check-migrations` reprova o jeito antigo.
+- **TABELA NOVA TERMINA COM `select public.audit_attach_all();`** (0288). O
+  banco registra cada inclusão, alteração e exclusão por um gatilho só
+  (`public.audit_capture`), preso em toda tabela de cadastro dos schemas
+  `public`, `empresarial` e `indica`. A função prende em quem falta e é
+  idempotente. Tabela que NÃO deve ser auditada (histórico, derivada, registro
+  técnico) ganha uma linha em `public.audit_excluded_tables` com o motivo. A
+  Regra 9 do `check-migrations` reprova a migração que cria tabela sem uma das
+  duas coisas, e `auditoria-alteracoes.test.ts` exige o nome em português em
+  `src/lib/auditoria-catalogo.ts`. **O gatilho nunca derruba a operação**
+  (todo erro vira `raise warning`): se a auditoria de uma tabela parar de
+  gravar, o sinal está no log do banco, não na tela de quem trabalha.
+  **Limites conhecidos:** `TRUNCATE` não dispara gatilho de linha (a limpeza
+  do treino não aparece na trilha); gravação feita com a chave de serviço
+  aparece como "Sistema (em nome de alguém)", sem a pessoa.
 - **Escrever migrações idempotentes** (seguras para rodar de novo): `create table
   if not exists`, `drop policy/trigger if exists` + create, `create or replace
   function`, seeds com `on conflict do nothing`, cron em blocos `do $$ ...
