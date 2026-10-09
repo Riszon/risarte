@@ -403,17 +403,24 @@ Syncthing se comportarem de forma estranha.**
   anonimizado mantém o histórico; o chat fica de fora.
 - ⚠️ **Regra nova para os três projetos** (§0, regra 7): migração que cria
   tabela termina com `select public.audit_attach_all();`.
-- ⏳ **0288: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
-  aba Alterações mostra o aviso e as outras três funcionam. Rodar em horário
-  calmo: ela pede cada tabela por um instante e desiste em 8 s se alguém
-  estiver gravando (basta rodar de novo).
+- ✅ **0288 APLICADA nos dois bancos** (o dono rodou na produção em
+  09/10/2026: o gatilho foi preso em 195 tabelas; conferido de fora, sem
+  login: as funções recusam e ninguém lê a trilha nem a lista de exclusões;
+  44 declaradas fora). A trilha estava vazia na conferência — o primeiro
+  lançamento nasce na primeira alteração de alguém.
 - **Etapa 3 a fazer:** relatório de atividade por pessoa/dia com exportação.
 - **AP32 (BACKLOG):** 3 conferências do `npm run test:indica` falham no treino,
   com e sem o gatilho da auditoria — é da sessão do Indica.
 - Resíduo no treino: 5 lançamentos de exemplo na auditoria, em nome do Admin
   de teste (a trilha não se apaga; os dados em si voltaram ao que eram).
-- ⏳ Perguntas ainda abertas ao dono: AP30 (Estoque para Dentista/Planner) e
-  a renovação do Supabase Pro.
+- ✅ **AP30 respondido pelo dono (09/10): é DE PROPÓSITO** — Dentista e
+  Planner não precisam ver o Estoque. O padrão do código, a régua da varredura
+  e o manual diziam o contrário e foram corrigidos (0.306.1); nada mudou na
+  tela. Sobra uma linha gravada na matriz dos dois bancos dando ao Dentista o
+  "consumo avulso" — sem a tela, não tem efeito; o dono pode desmarcar em
+  Administração → Permissões.
+- ✅ **Supabase Pro RENOVADO até 30/10/2026** (dono, 09/10). ⏰ Lembrar de
+  novo perto dessa data.
 
 **09/10/2026 — PC Administrador (core 0.304.0 → 0.305.0, migração 0287)**
 
@@ -432,8 +439,7 @@ Syncthing se comportarem de forma estranha.**
   em serviço de autenticação externo), a gravação protegendo e duas abas.
   Conferir o "Entrou no sistema" no primeiro login depois de publicar.
 - Etapa 2 entregue no mesmo dia (bloco acima); etapa 3 a fazer.
-- **AP30 — perguntar ao dono:** Dentista e Planner estão SEM o módulo Estoque
-  na matriz de permissões desde 28/09, nos dois ambientes.
+- AP30: respondido no mesmo dia — é de propósito (bloco acima).
 - **AP31:** rota do Indica respondendo 404 ao Admin na varredura (da outra
   sessão).
 
@@ -1551,7 +1557,9 @@ saldo não vale nada. Por isso **a baixa é automática, pelo KIT do procediment
   **6 (Ativos) / 6.1.01 Estoque de materiais** e a natureza `asset`, a única que
   **não entra na DRE**. O custo vira **2.2** no consumo (E4).
 - **Quem opera:** entrada, mínimo e inventário = **Gerente + Admin/Financeiro**;
-  consumo avulso = **dentista, coordenador, planner, TSB, ASB**; **recepção fora**
+  consumo avulso = **coordenador, TSB, ASB** (⚠️ **Dentista e Planner NÃO veem
+  o Estoque** — decisão do dono, confirmada em 09/10/2026; a regra antiga os
+  incluía); **recepção fora**
   (mesma lógica de contas a pagar). O catálogo de itens é da Franqueadora.
 - O módulo mora em **`/estoque`**, fora do Financeiro de propósito: dentista e
   TSB precisam da tela e não podem ver financeiro.

@@ -1092,8 +1092,9 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 - **Objetivo:** transformar o caso em diagnóstico, plano e orçamento.
 - **Pode:** criar plano com opções, lançar procedimentos, classificar o pilar,
   pedir aprovação, enviar ao Comercial.
-- **Vê também:** Procedimentos (catálogo), Relatórios, Planos de Tratamento,
-  Estoque (papel clínico).
+- **Vê também:** Procedimentos (catálogo), Relatórios, Planos de Tratamento.
+- **Não vê:** Estoque (de propósito: material é com o Coordenador, a TSB e a
+  ASB).
 - **Não pode:** avaliar paciente, agendar, negociar.
 - **Riscos:** enviar ao Comercial sem aprovação — o sistema barra.
 - **Depende de:** Coordenador (aprovação).
@@ -1104,8 +1105,11 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 - **Menu diferente dos outros:** ✅ **não tem "Jornada"**, e ganha **Meu Dia** e
   **Minha Agenda**.
 - **Pode:** ver a agenda dele, chamar o paciente, escrever o Desenvolvimento
-  Clínico e concluir o atendimento; consumo avulso de estoque.
-- **Não vê:** Financeiro, Comercial, Compras, Relatórios.
+  Clínico e concluir o atendimento.
+- **Não vê:** Financeiro, Comercial, Compras, Relatórios, **Estoque** (de
+  propósito: o material do procedimento é baixado sozinho ao concluir a
+  sessão; o que sair fora do previsto é lançado pela TSB, pela ASB ou pelo
+  Coordenador).
 - **Riscos:** concluir atendimento sem escrever o Desenvolvimento Clínico — o
   sistema **não deixa** (✅ regra I7b).
 - **Depende de:** Recepção (que registra a chegada).
@@ -1232,9 +1236,9 @@ reais (`canViewFinance`, `canViewStock`, etc.). Quem acumula funções vê a som
 | Comprador da Franqueadora | não | não | SIM | não | não | não | não |
 | Consultor Comercial | não | não | não | SIM | SIM | SIM | não |
 | Assistente Comercial | não | não | não | SIM | não | não | não |
-| Dentista Planner | não | SIM | não | não | SIM | SIM | não |
+| Dentista Planner | não | não | não | não | SIM | SIM | não |
 | Coordenador Clínico | não | SIM | não | não | não | SIM | não |
-| Dentista | não | SIM | não | não | não | não | não |
+| Dentista | não | não | não | não | não | não | não |
 | TSB / ASB | não | SIM | não | não | não | não | não |
 | Recepcionista | não | não | não | não | não | não | não |
 | SDR | não | não | não | não | não | não | não |
@@ -1253,7 +1257,7 @@ diferença.
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |
 | Configurar financeiro da REDE | Admin, Financeiro da Franqueadora |
 | Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente** |
-| Consumo avulso de estoque | Os acima **+ Dentista, Coordenador, Planner, TSB, ASB** |
+| Consumo avulso de estoque | Os acima **+ Coordenador, TSB, ASB** |
 | Cadastrar item no catálogo | Admin, Financeiro da Franqueadora |
 | Criar requisição de compra | Admin, **Gerente** |
 | Mesa de negociação de compras | Admin, **Comprador** |

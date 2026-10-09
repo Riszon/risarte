@@ -2218,7 +2218,8 @@ registra sozinho cada inclusão, alteração e exclusão, com antes e depois, em
 Acessos, O dia de uma pessoa); tudo em português. **Decisões do dono:** guarda
 tudo, inclusive dado pessoal; só o Admin Master lê; mantém depois de
 anonimizar; chat de fora (CLAUDE.md §6).
-⏳ **0288 aplicada no treino; falta a produção.**
+✅ **0288 aplicada na produção em 09/10/2026** (rodada pelo dono: 195 tabelas
+com o gatilho; conferido de fora, sem login: recusa).
 
 **O que a etapa 2 NÃO fez, declarado:**
 
@@ -2278,7 +2279,19 @@ navegar, e a gravação mora no banco, junto com a abertura do acesso. Régua em
 clique de uma navegação se perde. Ou se espera, ou se manda direto do
 navegador para o banco.
 
-### AP30. Dentista e Planner SEM o módulo Estoque desde 28/09/2026, nos DOIS ambientes — FATO confirmado, CAUSA não
+### AP30. ✅ RESPONDIDO em 09/10/2026 (core 0.306.1) — Dentista e Planner sem o Estoque é DE PROPÓSITO
+
+**Resposta do dono:** *"Sim. Foi de propósito. Dentista e Planner não precisam
+ver o estoque."* Quem estava errado era o resto: o padrão do código
+(`permissions.ts`), a régua da varredura (`screen-rules.mjs`, que esperava o
+Dentista DENTRO do Estoque) e o manual (dois perfis, a tabela-resumo e a
+tabela de ações). Os três foram corrigidos; a tela não mudou.
+
+**Sobra, sem efeito:** a matriz gravada nos dois bancos ainda dá ao Dentista o
+"consumo avulso de estoque". Sem a tela ele não chega lá. Não mexi em
+configuração do dono — desmarca-se em Administração → Permissões.
+
+*(registro original do achado, mantido:)* Dentista e Planner SEM o módulo Estoque desde 28/09/2026, nos DOIS ambientes — FATO confirmado, CAUSA não
 
 Achado pela varredura de telas de 09/10/2026 (1.024 aberturas; esta foi uma
 das 3 falhas, nenhuma causada pela entrega do dia).

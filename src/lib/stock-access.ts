@@ -5,10 +5,14 @@ import type { UserRole } from "@/lib/roles";
 // (can_manage_stock / can_consume_stock). Isto é UX: a barreira real é o banco.
 //
 // Decisão do dono (11/08/2026): entrada e inventário são atos de GESTÃO
-// (Gerente + Admin/Financeiro); consumo avulso é ato de ATENDIMENTO (dentista,
-// coordenador, planner, TSB, ASB). Recepção fica de fora — receber mercadoria e
+// (Gerente + Admin/Financeiro); consumo avulso é ato de ATENDIMENTO
+// (coordenador, TSB, ASB). Recepção fica de fora — receber mercadoria e
 // contar prateleira não é ato de balcão, pela mesma razão que contas a pagar
 // não é.
+//
+// ⚠️ Dentista e Planner NÃO veem o Estoque (dono, 09/10/2026): a decisão de
+// 11/08 os incluía no consumo avulso; a matriz de permissões os tirou do
+// módulo em 28/09 e o dono confirmou que é de propósito.
 
 function hasRoleAnywhere(session: SessionContext, role: UserRole): boolean {
   return Object.values(session.rolesByClinic).some((roles) =>

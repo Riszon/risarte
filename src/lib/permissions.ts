@@ -48,13 +48,12 @@ const FRANQUEADORA_RELATORIOS: UserRole[] = [
   "planner_dentist",
   "commercial_consultant",
 ];
-const CLINICOS: UserRole[] = [
-  "dentist",
-  "clinical_coordinator",
-  "planner_dentist",
-  "tsb",
-  "asb",
-];
+// ⚠️ DENTISTA E PLANNER NÃO VEEM O ESTOQUE — decisão do dono, confirmada em
+// 09/10/2026 ("Dentista e Planner não precisam ver o estoque"). A matriz
+// gravada nos dois bancos já estava assim desde 28/09; o padrão do código é
+// que dizia o contrário, e o botão "devolver ao padrão" desfaria a decisão.
+// Quem mexe em material na clínica é o Coordenador, a TSB e a ASB.
+const CLINICOS_DO_ESTOQUE: UserRole[] = ["clinical_coordinator", "tsb", "asb"];
 const TODOS: UserRole[] = [
   "receptionist", "sdr", "clinical_coordinator", "planner_dentist", "dentist",
   "commercial_consultant", "commercial_assistant", "unit_manager",
@@ -246,7 +245,7 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Módulos",
     descricao: "Itens, kits, saldo e inventário.",
     dependeDoBanco: true,
-    padrao: ["finance_franchisor", "unit_manager", "franchisee", ...CLINICOS],
+    padrao: ["finance_franchisor", "unit_manager", "franchisee", ...CLINICOS_DO_ESTOQUE],
   },
   {
     id: "modulo.compras",
@@ -290,7 +289,7 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Ações — Estoque",
     descricao: "Registrar material usado fora do kit do procedimento.",
     dependeDoBanco: true,
-    padrao: ["finance_franchisor", "unit_manager", ...CLINICOS],
+    padrao: ["finance_franchisor", "unit_manager", ...CLINICOS_DO_ESTOQUE],
   },
   {
     id: "acao.estoque.catalogo",

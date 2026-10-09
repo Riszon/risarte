@@ -166,8 +166,8 @@ export const PERMISSION_RULES = [
   {
     role: "dentist",
     route: "/estoque",
-    expect: "ok",
-    why: "o Estoque mora fora do Financeiro justamente para o dentista alcançar",
+    expect: "bloqueado",
+    why: "dentista não vê o Estoque (decisão do dono, 09/10/2026) — quem mexe em material é Coordenador, TSB e ASB",
   },
   {
     role: "unit_manager",

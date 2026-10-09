@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.306.1",
+    data: "2026-10-09",
+    migracao: null,
+    titulo: "Manual corrigido: Dentista e Planner não veem o Estoque",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O manual dizia que o Dentista e o Dentista Planner enxergavam o Estoque. Não enxergam, e é de propósito: quem mexe em material é o Coordenador, a TSB e a ASB. Nada mudou na tela — o sistema já funcionava assim desde 28/09; o texto é que estava errado.",
+        papeis: ["dentist", "planner_dentist"],
+        manual: "Perfis, papéis e funções",
+      },
+    ],
+  },
+  {
     versao: "0.306.0",
     data: "2026-10-09",
     migracao: "0288",
