@@ -2295,9 +2295,10 @@ concluída"). Detalhe em `docs/risarte-empresarial/FUNIL-COMERCIAL.md`, Bloco L.
 
 **✅ O CONTRATO GERADO DENTRO DO SISTEMA — feito no mesmo dia (1027 /
 Empresarial 0.78.0), com o modelo enviado pelo dono.** Detalhe no Bloco M do
-`FUNIL-COMERCIAL.md`. ⏳ **A 1027 está aplicada no TREINO; falta o dono rodar
-na PRODUÇÃO** — sem ela, a tela do contrato e a aba Configurações → Contrato
-dizem que aguardam a migração (nada mais é afetado).
+`FUNIL-COMERCIAL.md`. ✅ **1027 APLICADA nos dois bancos** (o dono rodou na
+produção em 13/10/2026; conferido de fora, só leitura: sem login as duas
+tabelas recusam, o modelo da rede tem as 15 cláusulas com o texto corrigido e
+sem CPF de ninguém, e o representante da Risarte está em branco).
 
 **Depois de rodar a 1027, o dono precisa (nos DOIS ambientes — configuração
 não viaja):** em Configurações → Contrato, digitar o nome, a nacionalidade, o

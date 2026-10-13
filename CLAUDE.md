@@ -411,8 +411,12 @@ Syncthing se comportarem de forma estranha.**
   "DÉCIMA SE PRIMEIRA GUNDA" → "DÉCIMA PRIMEIRA"; e a cláusula 1ª passou a
   apontar para a 8ª (rol) e a 10ª (coparticipação). Pontos de conteúdo para o
   jurídico dele estão no BACKLOG.
-- ⏳ **1027: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela, só
-  o contrato fica esperando (a tela diz).
+- ✅ **1027 APLICADA nos dois bancos** (o dono rodou na produção em
+  13/10/2026: o gatilho da auditoria foi preso nas 2 tabelas novas; conferido
+  de fora, só leitura: sem login as duas tabelas recusam; 1 linha de dados da
+  Risarte, com o representante EM BRANCO; 1 modelo da rede com 15 cláusulas, o
+  texto corrigido, os campos no lugar e nenhum CPF; as 3 colunas novas
+  existem). A produção ainda não tem nenhum levantamento no funil.
 - ⏳ **Depois da 1027, o dono digita os dados de quem assina pela Risarte nos
   DOIS ambientes.** No treino ficou um representante fictício.
 - **Não visto:** o contrato impresso/PDF; o caso de valor fixo na tela.
