@@ -161,6 +161,7 @@ export async function VisaoPessoa({
       startedAt: a.started_at,
       lastActivityAt: a.last_activity_at,
       endedAt: a.ended_at,
+      endReason: a.end_reason,
       activeSeconds: a.active_seconds,
     });
     emUso += t.emUsoS;

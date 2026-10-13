@@ -1,7 +1,27 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.307.0** · Última migração: **0289** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.308.0** · Última migração: **0290** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 📈 0.308.0 / 0290 — PAINEL DE USO + FILTROS POR UNIDADE E FUNÇÃO (auditoria)
+>
+> Só funções de consulta. `audit_usage_members(unidade, função)` (interna)
+> diz quem entra no recorte — quem TEM FUNÇÃO na unidade, lendo
+> `user_clinic_roles_all`. `audit_activity_report` ganhou `p_clinic` e
+> `p_role`; `audit_usage_people` devolve uma linha por pessoa (o período, o
+> período anterior de mesmo tamanho, primeiro/último acesso da vida e o último
+> login de `auth.users`, só leitura); `audit_usage_days` e
+> `audit_usage_hours` (dow × hora, Brasília). **As três novas SOMAM o
+> relatório** — não refazem a conta. Tela: aba Painel de uso (a que abre),
+> desenhada no servidor, sem biblioteca de gráfico; lógica em
+> `auditoria-painel.ts` (rankings, pontos de atenção com limites nomeados em
+> `LIMITES`, por função/unidade, série diária, grade de horas).
+> 🔴 **Dois defeitos meus corrigidos junto:** (1) o tempo do acesso contava até
+> o ENCERRAMENTO pelo sistema, que só acontece no próximo clique — 91 h de
+> "parado" num caso do treino; agora conta até a última atividade, ou até o
+> Sair (`fimDoAcesso`, mesma regra no SQL). (2) a API corta em 1.000 linhas e
+> o relatório somava o que vinha; agora lê em páginas (`paginar.ts`).
+> Janela sem a 0290: o painel avisa; o relatório sai sem os filtros novos E DIZ.
+>
 > ## 📊 0.307.0 / 0289 — RELATÓRIO DE ATIVIDADE POR PESSOA E POR DIA, COM PLANILHA (auditoria, etapa 3 de 3)
 >
 > `audit_activity_report(de, até, pessoa)` junta as três trilhas

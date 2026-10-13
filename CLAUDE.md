@@ -390,6 +390,30 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/10/2026 — PC Administrador (core 0.307.0 → 0.308.0, migração 0290)**
+
+- **AUDITORIA — PAINEL DE USO + FILTROS (pedido do dono):** a Auditoria abre
+  agora na aba **Painel de uso**: números do período, pontos de atenção (o
+  painel aponta sozinho quem nunca entrou, quem sumiu, quem caiu de uso, quem
+  deixa a tela aberta, quem exportou/excluiu muito), pessoas por dia, os seis
+  rankings pedidos, uso por função e por unidade, e o mapa dia × hora. Filtros
+  por **unidade** e **função** no painel e no Relatório de atividade (e na
+  planilha). "Da unidade" = quem TEM FUNÇÃO nela.
+- 🔴 **AP34 (defeito meu, etapas 1 e 3):** o tempo "parado" contava até a hora
+  em que o sistema ENCERROU o acesso — que só acontece no próximo clique. 91
+  horas num caso do treino. Agora conta até a última atividade, ou até o Sair.
+- 🔴 **AP35 (defeito meu, etapa 3):** a API corta em 1.000 linhas (medido) e
+  o relatório somava o que vinha. Agora lê em páginas. ⚠️ Suspeita registrada:
+  outras listagens grandes do sistema podem ter o mesmo corte — não procurei.
+- ⏳ **0290: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Só funções
+  de consulta. Sem ela: o Painel avisa; o Relatório sai sem os filtros novos
+  (e diz), e continua com a conta velha do tempo.
+- ⚠️ A 0290 foi **corrigida depois de aplicada no treino e antes de ir para a
+  produção** (a regra do tempo); reapliquei as funções no treino à mão. O
+  arquivo que vai ao dono é o corrigido.
+- Resíduo no treino: 5 exportações de teste na trilha (Admin de teste).
+- ⏰ **Supabase Pro vence em 30/10/2026.**
+
 **09/10/2026 (noite) — PC Administrador (core 0.306.1 → 0.307.0, migração 0289)**
 
 - **AUDITORIA, etapa 3 de 3 — COMPLETA.** Aba **Relatório de atividade**: por
@@ -405,8 +429,8 @@ Syncthing se comportarem de forma estranha.**
   13 lançamentos, todos do dia 09/10 e todos feitos por pessoa. A produção
   quase não é usada ainda — **não dá para dizer quanto a trilha cresce por
   dia**. Medir de novo quando a equipe estiver usando.
-- **Para depois (BACKLOG, seção AUDITORIA):** filtro por unidade/função no
-  relatório; medir quanto a trilha de alterações cresce por dia na produção.
+- Filtro por unidade/função: feito na 0290 (bloco acima). **Ainda por fazer:**
+  medir quanto a trilha de alterações cresce por dia na produção.
 - Resíduo no treino: 2 exportações de teste na trilha (Admin de teste).
 
 **09/10/2026 (fim da tarde) — PC Administrador (core 0.305.0 → 0.306.0, migração 0288)**

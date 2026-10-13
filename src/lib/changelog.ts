@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.308.0",
+    data: "2026-10-13",
+    migracao: "0290",
+    titulo: "Auditoria: painel de uso do sistema e filtros por unidade e por função",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: a Auditoria abre agora no Painel de uso. Ele mostra quem mais acessou, quem ficou mais tempo conectado, quem mais teve atividade, quem menos interagiu, quem menos acessou e quem está há mais tempo sem entrar — e aponta sozinho o que merece atenção: acesso criado e nunca usado, quem parou de entrar, quem caiu de uso, quem deixa a tela aberta, e quem exportou ou excluiu muito.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: o painel também mostra quantas pessoas entraram por dia, a média de uso por função e por unidade (para comparar a pessoa com quem faz o mesmo trabalho) e em que dias e horários o sistema é mais usado.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: o Painel e o Relatório de atividade ganharam os filtros por unidade e por função. A planilha sai com o mesmo recorte.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Admin: o tempo \"parado\" estava inflado. Quem saía sem clicar em Sair e só voltava no dia seguinte tinha a noite inteira contada como tempo parado. Agora o acesso conta até a última atividade (ou até o clique em Sair). Vale nas abas Acessos e O dia de uma pessoa, no Relatório de atividade e no Painel.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Admin: o Relatório de atividade passou a ler todas as linhas. Com muita gente e um período longo ele podia mostrar um total cortado, sem avisar.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+    ],
+  },
+  {
     versao: "0.307.0",
     data: "2026-10-09",
     migracao: "0289",

@@ -184,18 +184,41 @@ export function duracao(segundos: number | null | undefined): string {
 }
 
 /**
+ * Até quando o acesso conta. A regra é uma só, e mora aqui e na função do
+ * banco (`audit_activity_report`):
+ *
+ *   - a pessoa clicou em SAIR → conta até a saída (ela estava ali);
+ *   - qualquer outro caso → conta até a ÚLTIMA ATIVIDADE.
+ *
+ * ⚠️ POR QUE O ENCERRAMENTO FEITO PELO SISTEMA NÃO CONTA (corrigido em
+ * 13/10/2026). "Inatividade" e "virada do dia" são gravadas quando o sistema
+ * NOTA — e ele só nota no próximo clique, que pode ser dias depois. No treino,
+ * um acesso de sexta às 17:51 foi encerrado na terça às 11:55: a conta antiga
+ * punha 91 horas de "parado" numa pessoa que tinha ido para casa. Depois da
+ * última atividade o sistema não sabe se a tela ficou aberta ou fechada —
+ * então não afirma nada.
+ */
+export function fimDoAcesso(a: {
+  lastActivityAt: string;
+  endedAt: string | null;
+  endReason?: string | null;
+}): string {
+  return a.endReason === "saiu" && a.endedAt ? a.endedAt : a.lastActivityAt;
+}
+
+/**
  * Os números de um acesso: quanto durou, quanto foi em uso e quanto parado.
- * Acesso ainda aberto conta até a ÚLTIMA ATIVIDADE — contar até "agora" faria
- * a aba esquecida aparecer como horas de trabalho.
+ * "Parado" são as pausas DENTRO do acesso (ver `fimDoAcesso`).
  */
 export function temposDoAcesso(a: {
   startedAt: string;
   lastActivityAt: string;
   endedAt: string | null;
+  endReason?: string | null;
   activeSeconds: number;
 }): { totalS: number; emUsoS: number; paradoS: number } {
   const inicio = new Date(a.startedAt).getTime();
-  const fim = new Date(a.endedAt ?? a.lastActivityAt).getTime();
+  const fim = new Date(fimDoAcesso(a)).getTime();
   const totalS = Math.max(0, Math.round((fim - inicio) / 1000));
   const emUsoS = Math.min(totalS, Math.max(0, a.activeSeconds));
   return { totalS, emUsoS, paradoS: totalS - emUsoS };

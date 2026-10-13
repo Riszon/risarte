@@ -8,10 +8,18 @@ import {
   type Nomes,
 } from "@/lib/auditoria-alteracoes";
 
-export const VISOES = ["alteracoes", "acoes", "acessos", "pessoa", "relatorio"] as const;
+export const VISOES = [
+  "painel",
+  "alteracoes",
+  "acoes",
+  "acessos",
+  "pessoa",
+  "relatorio",
+] as const;
 export type Visao = (typeof VISOES)[number];
 
 export const VISAO_ROTULO: Record<Visao, string> = {
+  painel: "Painel de uso",
   alteracoes: "Alterações",
   acoes: "Ações",
   acessos: "Acessos",
@@ -20,6 +28,8 @@ export const VISAO_ROTULO: Record<Visao, string> = {
 };
 
 export const VISAO_EXPLICA: Record<Visao, string> = {
+  painel:
+    "Como o sistema está sendo usado: quem entra, quanto usa, quem parou de usar — e o que merece a sua atenção.",
   alteracoes:
     "Tudo o que foi cadastrado, alterado ou excluído — com o conteúdo de antes e de depois. O banco registra sozinho, em todos os cadastros.",
   acoes:
@@ -33,7 +43,7 @@ export const VISAO_EXPLICA: Record<Visao, string> = {
 };
 
 export function lerVisao(v: unknown): Visao {
-  return VISOES.includes(v as Visao) ? (v as Visao) : "alteracoes";
+  return VISOES.includes(v as Visao) ? (v as Visao) : "painel";
 }
 
 export const PERIODOS: Record<string, number | null> = {

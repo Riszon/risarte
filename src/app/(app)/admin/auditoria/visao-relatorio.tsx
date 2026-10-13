@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { duracao } from "@/lib/acesso";
+import { FUNCOES_DO_FILTRO } from "@/lib/auditoria-painel";
 import {
   MAXIMO_DE_DIAS,
   MODOS,
@@ -41,13 +42,20 @@ export async function VisaoRelatorio({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const carga = await carregarRelatorioDeAtividade(searchParams);
-  const { periodo, modo, colaborador, linhas, quem } = carga;
+  const { periodo, modo, colaborador, unidade, funcao, linhas, quem } = carga;
   const hoje = todayInBrazil();
 
   const nome = (id: string) => quem.nomes.get(id) ?? "Usuário removido";
   const codigo = (id: string) => quem.codigos.get(id);
 
-  const filtros = { de: periodo.de, ate: periodo.ate, modo, colaborador: colaborador || undefined };
+  const filtros = {
+    de: periodo.de,
+    ate: periodo.ate,
+    modo,
+    colaborador: colaborador || undefined,
+    unidade: unidade || undefined,
+    funcao: funcao || undefined,
+  };
   const planilha = `/admin/auditoria/exportar?${new URLSearchParams(
     Object.entries(filtros).filter((e): e is [string, string] => !!e[1])
   ).toString()}`;
@@ -78,6 +86,22 @@ export async function VisaoRelatorio({
             </option>
           ))}
         </select>
+        <select name="unidade" defaultValue={unidade} className={CLASSE_DO_SELECT}>
+          <option value="">Todas as unidades</option>
+          {[...carga.unidades].map(([id, nomeDaUnidade]) => (
+            <option key={id} value={id}>
+              {nomeDaUnidade}
+            </option>
+          ))}
+        </select>
+        <select name="funcao" defaultValue={funcao} className={CLASSE_DO_SELECT}>
+          <option value="">Todas as funções</option>
+          {FUNCOES_DO_FILTRO.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
         <select name="modo" defaultValue={modo} className={CLASSE_DO_SELECT}>
           {MODOS.map((m) => (
             <option key={m} value={m}>
@@ -96,6 +120,23 @@ export async function VisaoRelatorio({
           </a>
         )}
       </FilterForm>
+
+      {carga.filtrosIndisponiveis && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <strong>Os filtros de unidade e de função ainda não funcionam neste
+          banco</strong> (falta rodar a migração 0290). O relatório abaixo está{" "}
+          <strong>sem esses dois filtros</strong> — mostra todas as unidades e
+          todas as funções.
+        </p>
+      )}
+
+      {unidade && !carga.filtrosIndisponiveis && (
+        <p className="text-xs text-muted-foreground">
+          Unidade: entram as pessoas que <strong>têm função</strong> nela. Quem
+          tem função em mais de uma unidade aparece em todas, com os mesmos
+          números (o acesso é ao sistema, não a uma unidade).
+        </p>
+      )}
 
       {periodo.encurtado && (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
@@ -135,8 +176,8 @@ export async function VisaoRelatorio({
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 <strong>Em uso</strong> é o tempo clicando ou digitando;{" "}
-                <strong>parado</strong> é o resto do acesso, com a tela aberta e sem
-                uso. <strong>Ações</strong> são consultas, exportações e demais atos
+                <strong>parado</strong> são as pausas dentro do acesso (ele conta
+                até a última atividade, ou até o clique em Sair). <strong>Ações</strong> são consultas, exportações e demais atos
                 nas telas; <strong>cadastrou, alterou e excluiu</strong> são as
                 gravações, registradas pelo banco desde 09/10/2026.
               </p>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logAudit } from "@/lib/audit";
+import { rotuloDaFuncao } from "@/lib/auditoria-painel";
 import { relatorioDeAtividade } from "@/lib/auditoria-relatorio";
 import { formatBrDateTime } from "@/lib/dates";
 import { planilhaDoRelatorio } from "@/lib/finance/relatorio-xlsx";
@@ -37,6 +38,8 @@ export async function GET(request: Request) {
     filtroPessoa: carga.colaborador
       ? carga.quem.nomes.get(carga.colaborador) ?? null
       : null,
+    filtroUnidade: carga.unidade ? carga.unidades.get(carga.unidade) ?? null : null,
+    filtroFuncao: carga.funcao ? rotuloDaFuncao(carga.funcao) : null,
     semAcesso: carga.semAcesso,
     geradoPor: carga.geradoPor,
     geradoEm: formatBrDateTime(new Date()),
@@ -46,7 +49,13 @@ export async function GET(request: Request) {
     action: "export",
     entityType: "audit_activity_report",
     entityId: carga.colaborador || undefined,
-    details: { de: carga.periodo.de, ate: carga.periodo.ate, modo: carga.modo },
+    details: {
+      de: carga.periodo.de,
+      ate: carga.periodo.ate,
+      modo: carga.modo,
+      ...(carga.unidade ? { unidade: carga.unidade } : {}),
+      ...(carga.funcao ? { funcao: carga.funcao } : {}),
+    },
   });
 
   const buffer = await planilhaDoRelatorio(relatorio);

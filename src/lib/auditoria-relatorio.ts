@@ -280,6 +280,10 @@ export function relatorioDeAtividade(a: {
   quem: QuemEQuem;
   /** Nome da pessoa filtrada, quando o relatório é de uma só. */
   filtroPessoa: string | null;
+  /** Nome da unidade filtrada (quem tem função nela), ou nulo para todas. */
+  filtroUnidade?: string | null;
+  /** Nome da função filtrada, ou nulo para todas. */
+  filtroFuncao?: string | null;
   /** Quem tem acesso ativo e não apareceu (só no relatório de todos). */
   semAcesso: string[];
   geradoPor: string | null;
@@ -351,8 +355,8 @@ export function relatorioDeAtividade(a: {
   const periodoTexto = `${formatIsoDateBr(a.periodo.de)} a ${formatIsoDateBr(a.periodo.ate)} (${a.periodo.dias} dia${a.periodo.dias === 1 ? "" : "s"})`;
 
   const notas = [
-    "Em uso: tempo em que a pessoa esteve clicando ou digitando. Parado: o resto do acesso, com a tela aberta e sem uso.",
-    "Acesso ainda aberto conta até a última atividade registrada, não até a hora em que o relatório foi gerado.",
+    "Em uso: tempo em que a pessoa esteve clicando ou digitando. Parado: as pausas dentro do acesso.",
+    "O acesso conta até a última atividade registrada (ou até o clique em Sair). O tempo depois disso não entra: o sistema não sabe se a tela ficou aberta ou fechada.",
     "O tempo está em minutos, arredondado linha a linha: a soma pode diferir em 1 ou 2 minutos do total mostrado na tela.",
     "Ações nas telas: consultas, cadastros, exportações e demais atos registrados pelas telas (entrar e sair não contam aqui).",
     "Cadastrou / Alterou / Excluiu: registrados pelo banco a partir de 09/10/2026. Antes dessa data essas colunas ficam em zero.",
@@ -360,6 +364,11 @@ export function relatorioDeAtividade(a: {
   if (a.periodo.encurtado) {
     notas.unshift(
       `O período pedido passava de ${MAXIMO_DE_DIAS} dias: o relatório traz os ${MAXIMO_DE_DIAS} dias mais recentes.`
+    );
+  }
+  if (a.filtroUnidade) {
+    notas.push(
+      "Unidade: entram as pessoas que têm função nessa unidade. Quem tem função em mais de uma aparece em todas elas, com os mesmos números."
     );
   }
   if (a.semAcesso.length > 0) {
@@ -374,6 +383,8 @@ export function relatorioDeAtividade(a: {
     metadados: [
       { rotulo: "Período", valor: periodoTexto },
       { rotulo: "Pessoa", valor: a.filtroPessoa ?? "Todas" },
+      { rotulo: "Unidade", valor: a.filtroUnidade ?? "Todas" },
+      { rotulo: "Função", valor: a.filtroFuncao ?? "Todas" },
       { rotulo: "Gerado por", valor: a.geradoPor ?? "—" },
       { rotulo: "Gerado em", valor: a.geradoEm },
     ],

@@ -6,6 +6,7 @@ import {
   destinoDoAcesso,
   deveMandarSinal,
   duracao,
+  fimDoAcesso,
   ipDoPedido,
   lerEstadoDoAcesso,
   lerMotivo,
@@ -201,16 +202,40 @@ describe("o que a auditoria mostra", () => {
     expect(t).toEqual({ totalS: 40 * 60, emUsoS: 30 * 60, paradoS: 10 * 60 });
   });
 
-  it("acesso encerrado conta até o fim; em uso nunca passa do total", () => {
+  it("quem clicou em SAIR conta até a saída; em uso nunca passa do total", () => {
     const t = temposDoAcesso({
       startedAt: "2026-10-09T12:00:00Z",
       lastActivityAt: "2026-10-09T12:10:00Z",
       endedAt: "2026-10-09T13:12:00Z",
+      endReason: "saiu",
       activeSeconds: 99_999,
     });
     expect(t.totalS).toBe(72 * 60);
     expect(t.emUsoS).toBe(72 * 60);
     expect(t.paradoS).toBe(0);
+  });
+
+  it("⚠️ encerrado PELO SISTEMA conta até a última atividade — não até a hora em que o sistema notou", () => {
+    // O caso real do treino (13/10/2026): entrou sexta 16:34, mexeu até 17:51 e
+    // foi embora sem clicar em Sair. Voltou na terça 11:55, e só aí o acesso
+    // antigo foi encerrado por "virada do dia". A conta antiga dava 91 horas.
+    const sexta = {
+      startedAt: "2026-10-09T19:34:00Z",
+      lastActivityAt: "2026-10-09T20:51:00Z",
+      endedAt: "2026-10-13T14:55:00Z",
+      activeSeconds: 698,
+    };
+    for (const endReason of ["virada_do_dia", "inatividade"]) {
+      const t = temposDoAcesso({ ...sexta, endReason });
+      expect(t.totalS).toBe(77 * 60);
+      expect(t.emUsoS).toBe(698);
+      expect(t.paradoS).toBe(77 * 60 - 698);
+    }
+    // Sem motivo informado (linha antiga, chamada antiga): também não inventa.
+    expect(temposDoAcesso(sexta).totalS).toBe(77 * 60);
+    expect(fimDoAcesso({ ...sexta, endReason: "saiu" })).toBe(sexta.endedAt);
+    expect(fimDoAcesso({ ...sexta, endReason: "virada_do_dia" })).toBe(sexta.lastActivityAt);
+    expect(fimDoAcesso({ lastActivityAt: "x", endedAt: null, endReason: "saiu" })).toBe("x");
   });
 
   it("navegador curto", () => {

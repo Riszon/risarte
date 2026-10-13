@@ -67,6 +67,7 @@ export function TabelaDeAcessos({
             startedAt: a.started_at,
             lastActivityAt: a.last_activity_at,
             endedAt: a.ended_at,
+            endReason: a.end_reason,
             activeSeconds: a.active_seconds,
           });
           return (
@@ -193,8 +194,9 @@ export async function VisaoAcessos({
           </CardTitle>
           <p className="text-xs text-muted-foreground">
             Um registro por login. <strong>Em uso</strong> é o tempo em que a pessoa
-            esteve mexendo no sistema; <strong>parado</strong> é o resto do acesso,
-            com a tela aberta e sem uso.
+            esteve mexendo no sistema; <strong>parado</strong> são as pausas dentro
+            do acesso. O acesso conta até a última atividade — ou até o clique em
+            Sair.
           </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">

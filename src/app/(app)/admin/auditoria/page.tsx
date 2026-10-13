@@ -14,12 +14,14 @@ import {
 import { VisaoAcessos } from "./visao-acessos";
 import { VisaoAcoes } from "./visao-acoes";
 import { VisaoAlteracoes } from "./visao-alteracoes";
+import { VisaoPainel } from "./visao-painel";
 import { VisaoPessoa } from "./visao-pessoa";
 import { VisaoRelatorio } from "./visao-relatorio";
 
 export const metadata: Metadata = { title: "Auditoria" };
 
-// A AUDITORIA, em cinco visões (0287 + 0288 + 0289):
+// A AUDITORIA, em seis visões (0287 + 0288 + 0289 + 0290):
+//   * Painel de uso — os rankings e os pontos de atenção (é a que abre);
 //   * Alterações — o que mudou, campo a campo (o banco registra sozinho);
 //   * Ações — o que cada pessoa fez nas telas (consultou, exportou, entrou);
 //   * Acessos — um registro por login, com tempo em uso e parado;
@@ -90,6 +92,9 @@ export default async function AuditoriaPage(
         ))}
       </nav>
 
+      {visao === "painel" && (
+        <VisaoPainel supabase={supabase} pessoas={pessoas} searchParams={searchParams} />
+      )}
       {visao === "alteracoes" && (
         <VisaoAlteracoes supabase={supabase} pessoas={pessoas} searchParams={searchParams} />
       )}

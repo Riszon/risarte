@@ -2392,7 +2392,72 @@ e quais funções passaram a ter a permissão.
 banco que garante isso, não a tela.
 
 **Para que serve:** responder "quem fez o quê, quando, e o que havia antes".
-São cinco abas. Trocar de aba mantém a pessoa escolhida.
+São seis abas, e a Auditoria abre na primeira (**Painel de uso**). Trocar de
+aba mantém a pessoa escolhida.
+
+### Aba Painel de uso — o retrato do uso do sistema
+
+É a que abre. Responde, sem você precisar procurar: **quem está usando o
+sistema, quem parou, e o que merece a sua atenção**.
+
+**Filtros (no alto):** os últimos **7, 30 ou 90 dias**; a **unidade**; a
+**função**.
+
+> **O que "unidade" quer dizer aqui:** entram as pessoas que **têm função**
+> naquela unidade. Quem tem função em duas unidades aparece nas duas, com os
+> mesmos números — a pessoa entra no sistema, não numa unidade.
+
+**De cima para baixo:**
+
+1. **Os números.** Quantas pessoas **entraram** (de quantas têm acesso),
+   quantas **não entraram** (e quantas **nunca** entraram na vida), a **média
+   de dias com acesso**, o **tempo em uso** e a **atividade** (ações nas telas
+   mais alterações). Embaixo de cada um, a seta ▲ ou ▼ compara com o período
+   anterior do mesmo tamanho. **Sem período anterior, não aparece seta** — o
+   painel não inventa uma alta.
+2. **O que merece atenção.** O painel lê os números e aponta o que foge do
+   esperado. Clique no item para ver **quem** e **quanto**. Cada um tem um selo:
+   - **Olhar hoje** — acesso criado há 3 dias ou mais e **nunca usado**
+     (acesso sem dono é porta aberta).
+   - **Acompanhar** — quem **não entra há 15 dias ou mais**; quem **caiu pela
+     metade** no uso, comparado com ele mesmo; quem foi **desconectado por
+     inatividade 3 vezes ou mais** (deixa a tela aberta e sai); quem **excluiu**
+     ou **exportou** 5 vezes ou mais.
+   - **Para saber** — quem fica **conectado por horas quase sem usar**; quem
+     **entra e não registra nada**.
+
+   Sem nada fora do esperado, a lista diz isso e fica vazia.
+3. **Pessoas que entraram, por dia.** Uma barra por dia. Pare o mouse na barra
+   para ver o dia, as pessoas, os acessos e as ações.
+4. **Os seis rankings**, cada um com os cinco primeiros:
+   - **Quem mais acessou** — em quantos dias do período entrou.
+   - **Quem ficou mais tempo conectado** — com o tempo em uso ao lado.
+   - **Quem mais teve atividade** — ações nas telas mais inclusões, alterações
+     e exclusões.
+   - **Quem menos interagiu** — entre quem entrou: quem fez menos coisas.
+   - **Quem menos acessou** — entre quem entrou ao menos uma vez.
+   - **Há mais tempo sem entrar** — quem **nunca entrou** vem primeiro.
+
+   Clique no **nome** para abrir o dia a dia da pessoa.
+5. **Uso por função** e **uso por unidade.** Quantos entraram, a média de dias,
+   de tempo em uso e de ações. Clique na função ou na unidade para filtrar o
+   painel por ela.
+6. **Quando o sistema é usado.** Dia da semana × hora: quanto mais escura a
+   casa, mais movimento. A frase em cima diz o **pico** e quanto acontece
+   **fora de segunda a sexta, das 7h às 19h**.
+
+> ⚠️ **Ranking não é veredito.** Tempo em uso não é produtividade: quem atende
+> na cadeira toca pouco na tela. Por isso existe o **uso por função** — compare
+> a pessoa com a média de quem faz o mesmo trabalho, e com ela mesma no período
+> anterior.
+
+> ⚠️ **Quem entra em cada lista:** os rankings de "menos" e o "há mais tempo sem
+> entrar" contam só quem tem **acesso ativo** (quem foi desligado não aparece).
+> Os de "mais" contam todo mundo que usou o sistema no período.
+
+> ⚠️ **O registro de acessos começou em 09/10/2026.** Antes disso só existe a
+> data do último login de cada pessoa — é ela que o painel usa para dizer "há
+> quantos dias não entra" de quem ainda não voltou desde então.
 
 ### Aba Alterações — o que mudou, campo a campo
 
@@ -2457,6 +2522,12 @@ O dia, a hora em que entrou, como saiu (saiu, inatividade, virada do dia), o
 **tempo em uso**, o **tempo parado**, o navegador e o endereço de internet.
 Embaixo, o último login de cada pessoa.
 
+**Até quando o acesso conta:** até a **última atividade** da pessoa — ou até o
+clique em **Sair**. Quando é o sistema que encerra (inatividade, virada do
+dia), ele só percebe no próximo clique, que pode ser no dia seguinte; esse
+intervalo **não** entra como tempo parado. "Parado" são as pausas **dentro** do
+acesso.
+
 ### Aba O dia de uma pessoa
 
 1. Escolha a **pessoa** e o **dia** (ou use **← dia anterior** / **dia
@@ -2476,7 +2547,7 @@ Responde "quem usou o sistema, quanto e para quê" num período.
 
 1. Escolha **De** e **até** (sem escolher, vêm os últimos 7 dias; o máximo é
    92 dias — pedindo mais, o relatório fica com os 92 mais recentes **e
-   avisa**), a **pessoa** (ou todas) e a leitura:
+   avisa**), a **pessoa** (ou todas), a **unidade**, a **função** e a leitura:
    - **Resumo por pessoa** — uma linha por pessoa, somando o período:
      **dias com acesso** (em quantos dias ela entrou, de quantos do período),
      **acessos**, tempo **em uso** e **parado**, quantas vezes **caiu por
@@ -2493,11 +2564,14 @@ Responde "quem usou o sistema, quanto e para quê" num período.
 
 **Como ler os números:**
 
-- **Em uso** é o tempo clicando ou digitando. **Parado** é o resto do acesso,
-  com a tela aberta e sem uso. Os dois somados dão quanto tempo a pessoa ficou
-  conectada.
-- **Acesso ainda aberto conta até a última atividade**, não até agora — a aba
+- **Em uso** é o tempo clicando ou digitando. **Parado** são as pausas dentro
+  do acesso. Os dois somados dão quanto tempo a pessoa ficou conectada.
+- **O acesso conta até a última atividade** (ou até o clique em Sair) — nunca
+  até "agora", e nunca até a hora em que o sistema o encerrou sozinho. A aba
   esquecida aberta não vira horas de trabalho.
+- **Unidade** filtra por quem **tem função** nela; **função** filtra por quem a
+  exerce em qualquer unidade. Os dois juntos: quem tem aquela função naquela
+  unidade.
 - **Ações** são o que as telas registram: consultar uma ficha, exportar,
   cadastrar. Entrar e sair não contam. Passe o mouse no número para ver
   quantas foram consultas e quantas exportações.

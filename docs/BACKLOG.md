@@ -2243,11 +2243,35 @@ acessou e planilha Excel. ✅ **0289 aplicada na produção em 13/10/2026**
 (rodada pelo dono; conferido de fora, sem login: recusa).
 **A AUDITORIA PEDIDA PELO DONO ESTÁ COMPLETA.**
 
+**PAINEL DE USO + FILTROS ✅ (0290 / core 0.308.0, 13/10/2026)** — pedido do
+dono: filtros por unidade e por função, e um painel com os rankings (quem mais
+acessou, mais tempo conectado, mais atividade, menos interagiu, menos acessou,
+há mais tempo sem entrar) e informações úteis sobre o uso. Entregue: aba Painel
+de uso (a que abre), com números, pontos de atenção, uso por dia, seis
+rankings, uso por função e por unidade e mapa dia × hora.
+⏳ **0290 aplicada no treino; falta a produção.**
+
+**O que o painel NÃO faz, declarado:**
+
+- **Os limites dos avisos são fixos no código** (`LIMITES`, em
+  `auditoria-painel.ts`): 15 dias para "sumido", 3 quedas por inatividade, 5
+  exclusões/exportações, queda de 50%. Se o dono quiser ajustar pela tela,
+  vira configuração.
+- **Sem aviso no sino.** O painel mostra quando alguém abre; não avisa sozinho.
+- **Sem "telas mais usadas".** Sabe-se quanto cada pessoa fez, não em quê.
+- **Ranking mostra 5.** O número de todo mundo está no Relatório de atividade.
+- **Unidade = quem tem função nela**, não "o que aconteceu nela". Funções da
+  Franqueadora com escopo de unidades não contam como "da unidade".
+- **As setas de comparação e três avisos (queda de uso, tela aberta,
+  exclusões) não foram vistos na tela** — o treino não tem dados para isso.
+- **Quem nunca mais voltou desde antes de 09/10** tem só a data do último
+  login com senha; se entrou por sessão já aberta, a data pode ser mais antiga
+  que a última vez em que usou de verdade.
+
 **O que a etapa 3 NÃO fez, declarado:**
 
-- **Sem filtro por unidade nem por função.** O relatório é da rede inteira ou
-  de uma pessoa. Com 200 unidades vai fazer falta.
-- **Sem gráfico e sem comparação entre períodos.**
+- ~~Sem filtro por unidade nem por função.~~ Feito na 0290.
+- **Sem comparação entre períodos no relatório** (o painel compara).
 - **Sem PDF.** Só planilha.
 - **O limite de 1 ano da função não foi provado com dados** (o treino não tem
   dados antigos); o de 92 dias da tela está provado por teste.
@@ -2259,6 +2283,41 @@ acessou e planilha Excel. ✅ **0289 aplicada na produção em 13/10/2026**
   contagens; o roteiro era de apoio e não está no repositório — refazer é
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
+
+### AP35. ✅ RESOLVIDO em 13/10/2026 (core 0.308.0) — 🔴 a API corta em 1.000 linhas e o relatório de atividade somava o que vinha
+
+Defeito MEU, da etapa 3 (0289). **Medido no treino:** `audit_logs` tem 1.212
+linhas; uma leitura sem limite devolveu 1.000, pedindo 5.000 devolveu 1.000,
+sem erro. Vale para função que devolve conjunto. O relatório pessoa×dia passa
+de mil linhas com 30 pessoas em 40 dias — mostraria total cortado com cara de
+certo. **Não chegou a acontecer:** nenhum dos dois bancos tem tanto dado.
+Corrigido com `lerTodasAsPaginas` (`src/lib/paginar.ts`): segue até a página
+vir incompleta; erro em qualquer página devolve erro, nunca a metade.
+
+**⚠️ Fica para olhar (suspeita, não confirmado):** outras telas que leem
+listas grandes sem `.range()` nem agregação no banco podem ter o mesmo
+corte. Não procurei. Candidatas óbvias: listagens de cobranças, lançamentos
+financeiros e movimentos de estoque quando passarem de mil linhas.
+
+### AP34. ✅ RESOLVIDO em 13/10/2026 (0290 / core 0.308.0) — 🔴 o tempo "parado" contava até a hora em que o SISTEMA encerrou o acesso
+
+Defeito MEU, das etapas 1 e 3. "Inatividade" e "virada do dia" são gravadas
+quando o sistema nota — no próximo clique da pessoa, que pode ser dias depois.
+A conta usava `ended_at`. **Medido no treino:** acesso de 09/10 16:34 a
+17:51, encerrado em 13/10 11:55 → 91,3 horas; no total, 95h57 "conectado" para
+29 min de uso. Na prática: quem sai sem clicar em Sair e volta de manhã
+ganhava a noite inteira como "parado".
+
+Corrigido: o acesso conta até a **última atividade**, ou até o **Sair**
+(`fimDoAcesso` em `acesso.ts`; mesma regra em `audit_activity_report`; régua
+prende as duas). **Preço assumido:** numa queda por inatividade com a tela
+aberta, os minutos entre a última atividade e a queda deixam de contar como
+"parado" — o sistema não sabe se a tela estava aberta ou fechada, então não
+afirma. O número de quedas por inatividade continua visível.
+
+**⚠️ Até a 0290 rodar na produção**, o Relatório de atividade de lá segue com
+a regra velha (a função é a da 0289); Acessos e O dia de uma pessoa já mostram
+certo assim que o código publica.
 
 ### AP33. Uma rodada dos testes unitários deu 3 falhas e NÃO se repetiu — causa não identificada
 
