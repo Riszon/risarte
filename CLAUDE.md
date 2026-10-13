@@ -397,8 +397,14 @@ Syncthing se comportarem de forma estranha.**
   inclusões/alterações/exclusões) e dia a dia; lista de quem tem acesso e não
   entrou; planilha Excel pelo gerador do Financeiro. A conta mora no banco
   (`audit_activity_report`) e bate, linha por linha, com a conta feita à mão.
-- ⏳ **0289: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
-  aba avisa e as outras quatro funcionam. É só uma função — não trava ninguém.
+- ✅ **0289 APLICADA nos dois bancos** (o dono rodou na produção em
+  13/10/2026 e a conferência dele deu o esperado; conferido de fora, só
+  leitura: sem login a função recusa, e a chave de serviço — que não é Admin
+  Master — recebe vazio). **A AUDITORIA PEDIDA EM 09/10 ESTÁ INTEIRA NO AR.**
+- **Medido na produção em 13/10 (só contagens):** a trilha de alterações tem
+  13 lançamentos, todos do dia 09/10 e todos feitos por pessoa. A produção
+  quase não é usada ainda — **não dá para dizer quanto a trilha cresce por
+  dia**. Medir de novo quando a equipe estiver usando.
 - **Para depois (BACKLOG, seção AUDITORIA):** filtro por unidade/função no
   relatório; medir quanto a trilha de alterações cresce por dia na produção.
 - Resíduo no treino: 2 exportações de teste na trilha (Admin de teste).

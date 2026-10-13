@@ -2239,7 +2239,8 @@ com o gatilho; conferido de fora, sem login: recusa).
 
 **Etapa 3 ✅ (0289 / core 0.307.0, 09/10/2026)** — relatório de atividade: aba
 nova na Auditoria, por pessoa (soma do período) e dia a dia, com quem não
-acessou e planilha Excel. ⏳ **0289 aplicada no treino; falta a produção.**
+acessou e planilha Excel. ✅ **0289 aplicada na produção em 13/10/2026**
+(rodada pelo dono; conferido de fora, sem login: recusa).
 **A AUDITORIA PEDIDA PELO DONO ESTÁ COMPLETA.**
 
 **O que a etapa 3 NÃO fez, declarado:**
@@ -2250,9 +2251,13 @@ acessou e planilha Excel. ⏳ **0289 aplicada no treino; falta a produção.**
 - **Sem PDF.** Só planilha.
 - **O limite de 1 ano da função não foi provado com dados** (o treino não tem
   dados antigos); o de 92 dias da tela está provado por teste.
-- **Tamanho das trilhas não medido.** Prometido na etapa 2 e ainda por fazer:
-  quantas linhas por dia a `audit_changes` ganha na produção. Medir depois
-  de uma semana de uso real.
+- **Crescimento da trilha: medido em 13/10/2026 e AINDA SEM RESPOSTA.** A
+  produção tinha 13 lançamentos em `audit_changes`, todos de 09/10 (o dia em
+  que a 0288 rodou) e nenhum nos quatro dias seguintes — o sistema ainda não
+  está em uso pela equipe. Com 13 linhas não se estima nada. **Medir de novo
+  depois de uma semana de uso real** (`aud3-prod-0289.mjs` fazia isso só com
+  contagens; o roteiro era de apoio e não está no repositório — refazer é
+  contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
 ### AP33. Uma rodada dos testes unitários deu 3 falhas e NÃO se repetiu — causa não identificada
