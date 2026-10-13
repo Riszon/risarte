@@ -2365,7 +2365,28 @@ antiga. **Não mexi.** Se for brecha: o botão do card passa a exigir os selos
 (ou a pedir justificativa); se for regra: o texto da tela é que precisa dizer
 que existe o caminho direto.
 
+**Acrescentado em 13/10/2026 (noite), ao detalhar a pergunta para o dono:**
+
+- **Há um SEGUNDO atalho, da mesma família (confirmado no código):** no card
+  de uma empresa ganha com cadastro, o botão **"Mover para Implantação"**
+  (`move("IMPLEMENTATION")` em `lead-board.tsx`) leva direto à implantação
+  **sem a conferência do consultor** — que a própria tela descreve como
+  "antes de a empresa entrar em implantação". A conferência é o que leva o
+  *combinado específico* para o cadastro da empresa (gatilho da 1011).
+- **Medido (só contagens):** na **produção o funil está VAZIO** (0 empresas) —
+  ninguém foi afetado, e a decisão pode ser tomada antes de alguém usar. No
+  **treino**, das 5 empresas ganhas ou em implantação, **4 não têm nenhum dos
+  dois selos**; das 3 em implantação, **nenhuma tem conferência**.
+
 ### AP36. Empresa PERDIDA não volta ao funil pela tela — falta decidir se deve voltar
+
+**Acrescentado em 13/10/2026 (noite):** o painel conta a perda pela fase
+ATUAL (`lead.stage === "CLOSED_LOST"` em `painel-funil.ts`). Reabrir a mesma
+ficha tiraria a empresa da estatística de perdas do consultor — se a decisão
+for reabrir, o painel precisa passar a contar a perda pelo HISTÓRICO de fases,
+que já guarda o período. Não encontrei trava de CNPJ único entre empresas do
+funil (só no cadastro de empresas).
+
 
 *(13/10/2026, OC-00083.)* **Confirmado:** nem o card do quadro nem a ficha têm
 botão para reabrir uma empresa em Fechamento (perda); o seletor de fase só
