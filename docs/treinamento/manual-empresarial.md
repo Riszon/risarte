@@ -485,6 +485,66 @@ convênio atual.
 > botão fica desligado e a página recusa, listando o que falta. Ela não imprime
 > "R$ 0,00" com cara de proposta.
 
+### 6.10. O contrato
+
+Botão **Ver o contrato**, ao lado de *Ver a proposta*. Abre em outra aba o
+**contrato do programa já preenchido** com aquela empresa, pronto para
+imprimir ou salvar em PDF. O texto é o modelo da rede; o que muda de uma
+empresa para outra o sistema preenche sozinho:
+
+| No contrato | De onde vem |
+|---|---|
+| Razão social, CNPJ/CAEPF, quem assina, cargo e CPF | Passo 6 da proposta (*Dados do contrato*) |
+| Endereço da sede, RG, nacionalidade | Na própria tela do contrato (abaixo) |
+| Valores da cláusula quarta (titular, dependente, pacote familiar, dependente extra) | A proposta desta empresa, com o valor por extenso |
+| Dia de vencimento | O dia combinado; sem combinado, dia 5 |
+| Cidades de abrangência | As unidades da parceria; sem parceria definida, todas as unidades da rede |
+| A Risarte (razão social, CNPJ, endereço, quem assina) | Configurações → Contrato |
+| Data | A de hoje |
+| **Anexo I** — procedimentos, cobertura, limite e carência | Os benefícios salvos no passo 3 da proposta |
+
+**No alto da tela, antes do documento** (não sai na impressão):
+
+- **Falta preencher** — em vermelho, o que ainda não tem valor. O contrato sai
+  com uma **linha em branco** nesses pontos, como o modelo em papel.
+- **Leia antes de enviar** — em âmbar, onde a proposta **não cabe** no texto
+  do modelo. O sistema avisa; ele não reescreve a cláusula.
+- **Endereço da sede, RG e dia de vencimento** — o que o contrato pede e a
+  proposta não guardava. Salve ali mesmo.
+
+> **RG e nacionalidade são opcionais.** Em branco, o contrato sai com a linha
+> para preencher à mão.
+
+> ⚠️ **Proposta de VALOR FIXO ou com PREÇO POR QUANTIDADE.** A cláusula quarta
+> do modelo fala em valor por colaborador. O contrato avisa quando a proposta
+> é diferente disso. Nesses casos use **Personalizar o texto** (abaixo) e
+> ajuste a cláusula daquela empresa — no valor fixo, o campo
+> `{{valor_fixo_mensal}}` traz o valor já por extenso.
+
+> ⚠️ **Sem benefícios salvos, o Anexo I sai vazio** — e as cláusulas oitava,
+> nona e décima apontam para ele. Salve os benefícios no passo 3 antes.
+
+> **O endereço e o dia de vencimento seguem para o cadastro da empresa** no
+> fechamento. Se o contrato diz "vencem todo dia 10", a cobrança nasce no dia
+> 10.
+
+> **O sistema não guarda cópia do contrato impresso.** Ele é montado na hora,
+> com a proposta SALVA e a data do dia. O que vale é o PDF assinado — guarde-o
+> nos documentos da empresa (tipo *Contrato do programa*).
+
+**Personalizar o texto** (botão no alto da tela do contrato) abre o texto
+inteiro para **esta empresa**: título, qualificação das partes, cada cláusula
+e o fecho. Salvar cria o texto próprio dela; as outras continuam com o modelo
+da rede. **Voltar ao modelo da rede** desfaz a personalização.
+
+> **Os campos entre chaves duplas** — `{{contratante_razao_social}}`,
+> `{{valor_titular}}` — são preenchidos pelo sistema. A lista completa está
+> no alto do editor. **Campo escrito errado é recusado ao salvar**: ele sairia
+> impresso com as chaves num documento que vai para assinatura.
+
+> **Empresa com texto próprio deixa de acompanhar o modelo da rede.** Se o
+> modelo mudar depois, o texto dela continua como foi salvo.
+
 ---
 
 ## 7. Fechar o negócio
@@ -887,7 +947,7 @@ No modelo **Titular paga**, o botão explica que a empresa não participa — e 
 
 ## 15. Configurações da rede
 
-**Empresarial → Configurações**. Cinco abas:
+**Empresarial → Configurações**. Seis abas:
 
 - **Preços de adesão** — os padrões da rede (titular, dependente).
 - **Split de pagamento** — a divisão Risarte/RisLife.
@@ -895,6 +955,12 @@ No modelo **Titular paga**, o botão explica que a empresa não participa — e 
   novas. Tem a coluna **Margem (rede)**.
 - **Proposta comercial** — validade padrão e os **blocos de texto** que saem em
   toda proposta sem texto próprio.
+- **Contrato** — **A Risarte no contrato** (razão social, CNPJ, endereço,
+  cidade da assinatura e quem assina pela Risarte: nome, cargo, nacionalidade,
+  RG e CPF) e o **modelo de contrato da rede**, cláusula por cláusula.
+  Mudar o modelo muda o contrato de toda empresa que não tem texto próprio.
+  Enquanto faltar o nome, o RG ou o CPF de quem assina pela Risarte, todo
+  contrato sai com essa linha em branco e a tela avisa.
 - **Grupos de benefícios** — criar, editar e desligar grupos.
 
 ### A coluna Margem

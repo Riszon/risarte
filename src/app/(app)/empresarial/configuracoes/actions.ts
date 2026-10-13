@@ -7,6 +7,8 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
 import { BENEFIT_TYPES } from "@/lib/empresarial/constants";
+import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
+import { maskDocument } from "@/lib/empresarial/documents";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -528,6 +530,125 @@ export async function salvarItensDoGrupo(
     action: "update",
     entityType: "empresarial_benefit_group",
     entityId: groupId,
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// 1027 — o contrato dentro do sistema
+// -----------------------------------------------------------------------------
+
+/**
+ * Salva o MODELO DE CONTRATO da rede.
+ *
+ * ⚠️ MUDA O CONTRATO DE TODA EMPRESA que não personalizou o texto. Por isso é
+ * ato do gestor do programa (e a RLS confirma), e modelo com campo que o
+ * sistema não conhece é RECUSADO — ele sairia impresso com as chaves num
+ * documento que vai para assinatura.
+ */
+export async function salvarContratoDaRede(
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const modelo = lerModelo(formData);
+  const problemas = problemasDoModelo(modelo);
+  if (problemas.length) {
+    return { ok: false, error: `Antes de salvar: ${problemas.join("; ")}.` };
+  }
+
+  const dados = {
+    title: modelo.titulo,
+    preamble: modelo.preambulo,
+    sections: modelo.blocos,
+    closing: modelo.fecho,
+    updated_by: session.userId,
+  };
+  const db = await empresarialDb();
+  const { data: existente, error: erroDaLeitura } = await db
+    .from("contract_templates")
+    .select("id")
+    .is("lead_id", null)
+    .maybeSingle();
+  if (erroDaLeitura) {
+    console.error("salvarContratoDaRede (leitura) failed:", erroDaLeitura.message);
+    return {
+      ok: false,
+      error: "Não foi possível ler o modelo. Confirme se a migração 1027 foi aplicada neste banco.",
+    };
+  }
+
+  const { error } = existente
+    ? await db.from("contract_templates").update(dados).eq("id", existente.id)
+    : await db.from("contract_templates").insert({ lead_id: null, ...dados });
+  if (error) {
+    console.error("salvarContratoDaRede failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o modelo de contrato." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_contract_template",
+    entityId: "rede",
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}
+
+/**
+ * A parte da RISARTE no contrato: razão social, CNPJ, endereço, e o
+ * representante (nome, RG, CPF).
+ *
+ * ⚠️ É DADO PESSOAL DO REPRESENTANTE, e mora só aqui (decisão do dono,
+ * 13/10/2026): não está em migração nem em código. O registro de auditoria
+ * desta action não leva nenhum dos valores.
+ */
+export async function salvarDadosDaContratada(
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const cpf = field(formData, "rep_cpf");
+  if (cpf && cpf.replace(/\D/g, "").length !== 11) {
+    return { ok: false, error: "O CPF do representante deve ter 11 dígitos." };
+  }
+  const cnpj = field(formData, "cnpj");
+  if (cnpj && cnpj.replace(/\D/g, "").length !== 14) {
+    return { ok: false, error: "O CNPJ da contratada deve ter 14 dígitos." };
+  }
+
+  const db = await empresarialDb();
+  const { error } = await db.from("contract_settings").upsert(
+    {
+      id: true,
+      legal_name: field(formData, "legal_name"),
+      cnpj: cnpj ? maskDocument("CNPJ", cnpj) : null,
+      address: field(formData, "address"),
+      rep_name: field(formData, "rep_name"),
+      rep_role: field(formData, "rep_role"),
+      rep_nationality: field(formData, "rep_nationality"),
+      rep_rg: field(formData, "rep_rg"),
+      rep_cpf: cpf ? maskDocument("CPF", cpf) : null,
+      signing_city: field(formData, "signing_city"),
+      updated_by: session.userId,
+    },
+    { onConflict: "id" }
+  );
+  if (error) {
+    console.error("salvarDadosDaContratada failed:", error.message);
+    return {
+      ok: false,
+      error: "Não foi possível salvar. Confirme se a migração 1027 foi aplicada neste banco.",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_contract_settings",
+    entityId: "rede",
   });
   revalidatePath("/empresarial/configuracoes");
   return { ok: true };

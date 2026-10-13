@@ -1185,7 +1185,118 @@ clicado (a única empresa ganha sem cadastro do treino é teste de outra pessoa,
 e criar o cadastro não tem volta); **Marcar reunião** pela aba Histórico (peça
 reusada sem mudança, não clicada aqui).
 
-**Fica para depois, por decisão do dono (13/10/2026):** o **contrato gerado
-dentro do sistema**. Hoje o contrato é registrado (envio + selo) e não
-produzido — a proposta e a apresentação já são. O dono vai mandar o texto do
-contrato; cláusula jurídica não se inventa.
+~~Fica para depois: o contrato gerado dentro do sistema.~~ **Feito no mesmo
+dia, com o modelo enviado pelo dono — Bloco M.**
+
+### Bloco M — o CONTRATO dentro do sistema ✅ (migração 1027, v0.78.0)
+
+O que faltava do relato OC-00083: *"Toda a apresentação, proposta, contratos
+devem ser elaborados dentro do próprio sistema."* O dono mandou o modelo
+("Contrato PRE+ 2026") em 13/10/2026 com a instrução *"alterar os campos de
+preenchimento da empresa"*.
+
+**Quatro decisões do dono, do mesmo dia**
+
+1. Além dos dados da empresa, saem da **proposta**: os **valores** da cláusula
+   quarta, o **dia de vencimento** e as **cidades de abrangência**.
+2. O **Anexo I** é montado com os **benefícios da proposta** — não há texto de
+   anexo guardado.
+3. **Corrigir a digitação e também as referências** entre cláusulas (lista
+   abaixo, para ele conferir).
+4. O nome, o RG e o CPF de quem assina pela Risarte ficam em **Configurações**,
+   só no banco — **não entram em código nem em migração**.
+
+**O que foi construído**
+
+- `contract_templates` — o texto, na mesma cascata da apresentação e da
+  proposta (rede → empresa). Semeado com as 15 cláusulas do modelo.
+- `contract_settings` — a qualificação da contratada (uma linha).
+- `lead_qualification`: `responsible_rg`, `responsible_nationality`,
+  `due_day` (o `address` já existia desde a 1009, sem tela).
+- `/empresarial/funil/[leadId]/contrato` — o documento, com o painel "Antes
+  de enviar" (o que falta, os avisos, e o formulário do que só o contrato pede).
+- `/empresarial/funil/[leadId]/contrato/texto` — o texto personalizado de uma
+  empresa; **Configurações → Contrato** — o modelo da rede e os dados da
+  Risarte. As duas telas usam **o mesmo editor**.
+- `src/lib/empresarial/contrato.ts` — as regras puras: campos, preenchimento,
+  valor por extenso, abrangência, o que falta e os avisos.
+
+**O que foi corrigido no texto do modelo** (e nada além disso)
+
+| Estava | Ficou | Por quê |
+|---|---|---|
+| PROGRAMA RISARTE EMPRESARIA (PRE) | EMPRESARIAL | digitação |
+| CLÁUSULA DÉCIMA SE PRIMEIRA GUNDA | CLÁUSULA DÉCIMA PRIMEIRA | digitação |
+| cl. 1ª: "previstos na cláusula nona" | "cláusula oitava" | é a 8ª que traz o rol de procedimentos; a 9ª fala de carência |
+| cl. 1ª: "previstos na cláusula décima primeira" | "cláusula décima" | é a 10ª que trata da coparticipação; a 11ª lista o que NÃO é coberto |
+
+**⚠️ Pontos de CONTEÚDO que continuam no texto — assunto do jurídico do dono**
+
+- A cláusula 1ª fala em coparticipação de **20% a 50%**; a 10ª, só em **50%**;
+  e o Anexo I agora mostra o percentual **de cada procedimento da proposta**.
+- A cláusula 1ª, §2º lista benefícios fixos (profilaxia, escova, radiografias,
+  aparelho) que podem não coincidir com o Anexo I daquela empresa.
+- A cláusula 4ª, §1º fala em "primeiro pagamento com o valor total das
+  adesões"; o sistema chama isso de implantação e pode cobrá-la por outra regra
+  (valor fixo, por adesão).
+- A cláusula 4ª cita por dependente **e** pacote familiar; a proposta escolhe
+  **um** dos dois modos. O contrato avisa quando o modo é "por dependente".
+- "pessoa jurídica de direito privado" é texto fixo — não serve como está para
+  autônomo (CPF) nem órgão público.
+- Vigência e permanência mínima de 12 meses são texto fixo; a carência
+  negociada na proposta só aparece no Anexo I.
+
+**Decisões que valem registrar**
+
+- **⚠️ NENHUMA CLÁUSULA É ESCRITA PELO SISTEMA.** Ele preenche lacunas. Quando
+  a proposta não cabe no texto (valor fixo, preço por quantidade, sem
+  dependentes), a resposta é **avisar** — e o consultor personaliza o texto
+  daquela empresa.
+- **O aviso não bloqueia.** Bloquear faria o contrato voltar a ser feito no
+  Word, que é de onde ele saiu.
+- **Sem valor, sai a linha em branco** (`________________`), como no modelo em
+  papel. RG e nacionalidade são opcionais.
+- **Campo desconhecido reprova ao salvar** e, se chegar ao documento, fica à
+  vista com as chaves — nunca some em silêncio.
+- **Leitura que falha não vira contrato.** Preço, faixas, benefícios ou
+  unidades que não vieram fariam o documento sair com "preço padrão" e "anexo
+  vazio" com cara de certo (AP13); a tela recusa e diz o que não leu.
+- **Formulário próprio para os campos novos**, fora do "Salvar proposta": o
+  código vai ao ar sozinho e a 1027 espera alguém rodar. Dentro do salvar da
+  proposta, a proposta inteira pararia de salvar nessa janela.
+- **O endereço e o vencimento viajam para o cadastro no fechamento**
+  (`camposDaEmpresa`), para a cobrança nascer no dia que o contrato diz.
+- **O documento não é guardado** — é montado na hora, com a data do dia, como
+  a proposta. O que vale é o PDF assinado.
+- **Preço por quantidade:** o contrato mostra o valor da faixa da quantidade
+  contratada (a mesma `precoDaFaixa` da proposta) e avisa que o modelo não
+  fala de faixas.
+- **CPF sempre com a máscara**, mesmo guardado só com números.
+
+**Conferido**
+
+- 40 testes em `contrato-empresarial.test.ts`; **23 quebras** de propósito,
+  cada uma reprovada no teste esperado — entre elas: nenhum CPF, RG ou nome de
+  pessoa no texto semeado; todo campo do modelo existe no sistema; a migração
+  não semeia o representante; voltar ao modelo nunca apaga a linha da rede.
+- No banco do treino (transação desfeita): sem login as duas tabelas recusam;
+  quem está fora do programa não lê nem altera os dados da Risarte nem o
+  modelo; o gestor lê e altera; o banco recusa dia 31 e uma segunda linha; as
+  duas tabelas têm o gatilho da auditoria.
+- Na tela do treino, logado: o contrato de cinco empresas (com e sem
+  benefícios, com faixa, sem dependentes); salvar endereço e vencimento;
+  salvar os dados da Risarte; salvar o modelo da rede; texto personalizado
+  (recusa do campo errado, salvar, voltar ao modelo).
+
+**Não visto**: o contrato **impresso/em PDF** (a folha de estilo é a mesma da
+proposta, mas não imprimi); o caso de **valor fixo** na tela (não há empresa
+assim no treino — está coberto por teste).
+
+**Fica para depois, declarado**
+
+- **Emitir o contrato com código próprio e guardar a cópia** (hoje o sistema
+  não sabe qual versão foi assinada).
+- **Enviar para assinatura pela ZapSign** direto desta tela (a integração
+  espera um PDF hospedado).
+- A aba **Contratos** do cadastro da empresa continua registrando o contrato
+  sem texto; ligá-la a este documento é o passo natural.

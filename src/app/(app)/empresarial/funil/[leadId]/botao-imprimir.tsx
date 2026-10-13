@@ -20,7 +20,7 @@ export function BotaoImprimir({
   rotulo = "Salvar em PDF",
 }: {
   /** Entra no nome do arquivo: `risarte-empresarial_<tipo>_<empresa>_<data>`. */
-  tipo: "apresentacao" | "proposta";
+  tipo: "apresentacao" | "proposta" | "contrato";
   companyName: string;
   rotulo?: string;
 }) {

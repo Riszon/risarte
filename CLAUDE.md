@@ -390,6 +390,41 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/10/2026 (noite) — PC Administrador (Empresarial 0.77.0 → 0.78.0, migração 1027)**
+
+- **O CONTRATO DENTRO DO SISTEMA** (o que faltava do OC-00083). O dono mandou
+  o modelo "Contrato PRE+ 2026". O texto mora no BANCO (`contract_templates`,
+  cascata rede → empresa), editável em Configurações → Contrato; o sistema
+  preenche a empresa, os valores da cláusula 4ª, o vencimento, as cidades e a
+  data, e monta o **Anexo I** com os benefícios da proposta. Botão **Ver o
+  contrato** ao lado de *Ver a proposta*. Bloco M do `FUNIL-COMERCIAL.md`;
+  manual do Empresarial §6.10 e §15.
+- ⚠️ **O SISTEMA NÃO ESCREVE CLÁUSULA.** Onde a proposta não cabe no modelo
+  (valor fixo, preço por quantidade), ele AVISA e o consultor personaliza o
+  texto daquela empresa. Ao mexer nisso, manter: preencher lacuna sim, redigir
+  não.
+- ⚠️ **DADO PESSOAL FORA DO REPOSITÓRIO** (decisão do dono): nome, RG e CPF de
+  quem assina pela Risarte ficam só em `contract_settings`, digitados na
+  tela. O modelo veio preenchido com um cliente real — só o texto entrou, e há
+  teste que reprova CPF, RG ou nome de pessoa no texto semeado.
+- **Corrigido no texto, a pedido do dono:** "EMPRESARIA" → "EMPRESARIAL";
+  "DÉCIMA SE PRIMEIRA GUNDA" → "DÉCIMA PRIMEIRA"; e a cláusula 1ª passou a
+  apontar para a 8ª (rol) e a 10ª (coparticipação). Pontos de conteúdo para o
+  jurídico dele estão no BACKLOG.
+- ⏳ **1027: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela, só
+  o contrato fica esperando (a tela diz).
+- ⏳ **Depois da 1027, o dono digita os dados de quem assina pela Risarte nos
+  DOIS ambientes.** No treino ficou um representante fictício.
+- **Não visto:** o contrato impresso/PDF; o caso de valor fixo na tela.
+- ⚠️ **AP40: o disco C: deste PC ENCHEU no meio da sessão** — `.next-test`
+  (cache do servidor de teste local) estava com 18 GB. Limpei com
+  `node scripts/limpar-build-teste.mjs`; voltou a 26 GB livres. **Ao encerrar
+  uma sessão que subiu o servidor de teste, rodar esse script.** O `.next`
+  do servidor de desenvolvimento tem 6 GB e não foi tocado.
+- Resíduo no treino: "ZZZ Fechamento do agente" ganhou endereço fictício,
+  nacionalidade e vencimento dia 10; a trilha de alterações guarda um texto
+  personalizado de teste que foi criado e desfeito.
+
 **13/10/2026 (tarde) — PC Administrador (Empresarial 0.76.0 → 0.77.0, sem migração)**
 
 - **OC-00083, 3ª volta — a ficha da empresa no funil.** A foto do relato era
@@ -402,8 +437,7 @@ Syncthing se comportarem de forma estranha.**
   `FUNIL-COMERCIAL.md`; manual do Empresarial §4, §5 e §7.
 - 🔴 **Achado varrendo as fases:** o selo da aba Fechamento desmentia a fase
   (ganha SEM cadastro aparecia "implantação concluída"). Passou a olhar a fase.
-- ⏳ **O CONTRATO DENTRO DO SISTEMA fica esperando o dono mandar o texto**
-  (decisão dele, 13/10). Não redigir cláusula.
+- ✅ O contrato dentro do sistema foi feito no mesmo dia (bloco acima).
 - ⚠️ **AP39 — perguntar ao dono:** o botão "Fechar (ganho) → criar empresa" do
   card não confere os dois selos; no treino há 4 empresas ganhas/em
   implantação sem selo nenhum. Regra ou brecha? Não mexi.

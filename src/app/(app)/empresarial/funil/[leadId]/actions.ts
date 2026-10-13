@@ -32,6 +32,7 @@ import {
   type FaixaDePreco,
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { formatPhone } from "@/lib/masks";
+import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -966,5 +967,150 @@ export async function saveLeadClinics(
   }
 
   revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// 1027 — o contrato dentro do sistema
+// -----------------------------------------------------------------------------
+
+/**
+ * O que o CONTRATO pede da empresa e a proposta não guardava: o endereço da
+ * sede, o RG e a nacionalidade de quem assina, e o dia de vencimento.
+ *
+ * ⚠️ FORMULÁRIO PRÓPRIO, fora do "Salvar proposta", por um motivo de
+ * calendário: o código vai ao ar sozinho e a migração 1027 espera alguém
+ * rodar (CLAUDE.md §0b). Se estes campos entrassem no salvar da proposta, a
+ * proposta inteira deixaria de salvar nessa janela.
+ */
+export async function saveContractData(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const dia = inteiro(formData, "due_day");
+  if (dia != null && (dia < 1 || dia > 28)) {
+    return { ok: false, error: "O dia de vencimento vai de 1 a 28." };
+  }
+  const uf = texto(formData, "state");
+  if (uf && !/^[A-Za-z]{2}$/.test(uf)) {
+    return { ok: false, error: "O estado é a sigla de duas letras (PR, SP…)." };
+  }
+
+  const endereco = {
+    zipCode: texto(formData, "zip_code") ?? undefined,
+    street: texto(formData, "street") ?? undefined,
+    number: texto(formData, "number") ?? undefined,
+    complement: texto(formData, "complement") ?? undefined,
+    neighborhood: texto(formData, "neighborhood") ?? undefined,
+    city: texto(formData, "city") ?? undefined,
+    state: uf?.toUpperCase() ?? undefined,
+  };
+  const temEndereco = Object.values(endereco).some(Boolean);
+
+  const r = await gravarNoLevantamento(
+    leadId,
+    {
+      // Endereço todo em branco volta a ser NULO — "não informado", e não um
+      // objeto vazio que pareceria preenchido.
+      address: temEndereco ? endereco : null,
+      responsible_rg: texto(formData, "responsible_rg"),
+      responsible_nationality: texto(formData, "responsible_nationality"),
+      due_day: dia,
+      updated_by: session.userId,
+    },
+    "os dados do contrato"
+  );
+  if (r.ok) revalidatePath(`/empresarial/funil/${leadId}/contrato`);
+  return r.ok
+    ? r
+    : {
+        ok: false,
+        error: "Não foi possível salvar os dados do contrato. Confirme se a migração 1027 foi aplicada neste banco.",
+      };
+}
+
+/**
+ * O TEXTO do contrato DESTA empresa.
+ *
+ * Mesma cascata da proposta: enquanto não houver linha própria, a empresa usa
+ * o modelo da rede. Salvar aqui cria a personalização, e o modelo da rede
+ * continua intocado para todo mundo que ainda não personalizou.
+ */
+export async function saveContractText(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const modelo = lerModelo(formData);
+  const problemas = problemasDoModelo(modelo);
+  if (problemas.length) {
+    return { ok: false, error: `Antes de salvar: ${problemas.join("; ")}.` };
+  }
+
+  const dados = {
+    lead_id: leadId,
+    title: modelo.titulo,
+    preamble: modelo.preambulo,
+    sections: modelo.blocos,
+    closing: modelo.fecho,
+    updated_by: session.userId,
+  };
+  const db = await empresarialDb();
+  const { data: existente, error: erroDaLeitura } = await db
+    .from("contract_templates")
+    .select("id")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+  if (erroDaLeitura) {
+    console.error("saveContractText (leitura) failed:", erroDaLeitura.message);
+    return { ok: false, error: "Não foi possível ler o texto do contrato." };
+  }
+
+  const { error } = existente
+    ? await db.from("contract_templates").update(dados).eq("id", existente.id)
+    : await db.from("contract_templates").insert(dados);
+  if (error) {
+    console.error("saveContractText failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar o texto do contrato." };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_contract_template",
+    entityId: leadId,
+  });
+  revalidatePath(`/empresarial/funil/${leadId}/contrato`);
+  return { ok: true };
+}
+
+/** Volta ao modelo da rede: apaga só a personalização deste lead. */
+export async function resetContractText(leadId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const db = await empresarialDb();
+  // `eq("lead_id", leadId)` e não `is null`: apagar a linha da REDE tiraria o
+  // modelo de contrato de todo mundo. O texto apagado continua na trilha de
+  // alterações da Auditoria (0288), com o conteúdo inteiro.
+  const { error } = await db
+    .from("contract_templates")
+    .delete()
+    .eq("lead_id", leadId);
+  if (error) {
+    console.error("resetContractText failed:", error.message);
+    return { ok: false, error: "Não foi possível restaurar o modelo da rede." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_contract_template",
+    entityId: leadId,
+    details: { voltou_ao_modelo_da_rede: true },
+  });
+  revalidatePath(`/empresarial/funil/${leadId}/contrato`);
   return { ok: true };
 }

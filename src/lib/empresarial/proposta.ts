@@ -256,6 +256,11 @@ export type QualificacaoDoLead = {
   // ---- AP18 (1024): a base do acordo e o valor fixo ---------------------------
   billing_basis?: "PER_EMPLOYEE" | "FIXED_PER_COMPANY" | null;
   fixed_monthly_cents?: number | null;
+  // ---- 1027: o que o contrato pediu e também é do cadastro ------------------
+  /** O endereço da sede (mesma forma de `companies.address`). */
+  address?: Record<string, string | undefined> | null;
+  /** Dia de vencimento combinado. Nulo = o padrão do programa, dia 5. */
+  due_day?: number | null;
 };
 
 /**
@@ -308,6 +313,11 @@ export function camposDaEmpresa(
     // padrão da coluna, que é o mesmo de sempre.
     grace_period_days: qual?.company_grace_days ?? 0,
     employee_grace_period_days: qual?.employee_grace_days ?? 0,
+    // ⚠️ O ENDEREÇO E O VENCIMENTO DO CONTRATO VIAJAM JUNTO (1027). O contrato
+    // assinado diz "vencem todo dia 10"; se o cadastro nascesse com o dia 5
+    // de sempre, a primeira cobrança sairia em data diferente da combinada.
+    address: qual?.address ?? null,
+    due_day: qual?.due_day ?? 5,
   };
 }
 

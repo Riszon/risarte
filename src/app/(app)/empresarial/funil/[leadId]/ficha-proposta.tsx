@@ -700,6 +700,7 @@ export function FichaDaProposta({
             faltaProposta={faltaProposta}
             faltaContrato={faltaContrato}
             linkDaProposta={`/empresarial/funil/${leadId}/proposta`}
+            linkDoContrato={`/empresarial/funil/${leadId}/contrato`}
             avisos={avisos}
             incluiDependentes={incluiDependentes}
           />
@@ -934,6 +935,7 @@ function SimuladorDaProposta({
   faltaProposta,
   faltaContrato,
   linkDaProposta,
+  linkDoContrato,
   avisos,
   incluiDependentes,
 }: {
@@ -942,6 +944,7 @@ function SimuladorDaProposta({
   faltaProposta: string[];
   faltaContrato: string[];
   linkDaProposta: string;
+  linkDoContrato: string;
   avisos: { gravidade: "avisa" | "bloqueia"; texto: string }[];
   /** Há dependentes nesta fase — muda o que a tela precisa explicar. */
   incluiDependentes: boolean;
@@ -1078,10 +1081,22 @@ function SimuladorDaProposta({
               Ver a proposta
             </Button>
           )}
+          {/* O contrato abre SEMPRE: a tela dele diz o que falta e é nela
+              que se preenchem o endereço da sede, o RG e o vencimento. */}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            nativeButton={false}
+            render={<Link href={linkDoContrato} target="_blank" />}
+          >
+            <FileText className="mr-1.5 size-4" />
+            Ver o contrato
+          </Button>
           <span className="text-xs text-muted-foreground">
             {faltaProposta.length > 0
-              ? "Preencha o que falta acima para gerar o documento."
-              : "Abre em outra aba, com os dados SALVOS — salve antes, se acabou de mudar algo."}
+              ? "Preencha o que falta acima para gerar a proposta."
+              : "Abrem em outra aba, com os dados SALVOS — salve antes, se acabou de mudar algo."}
           </span>
         </div>
       </CardContent>

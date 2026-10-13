@@ -178,6 +178,8 @@ export const TABELAS: Record<string, string> = {
   "empresarial.company_files": "Arquivo da empresa",
   "empresarial.company_inclusion_terms": "Termo de inclusão",
   "empresarial.company_price_tiers": "Faixa de preço da empresa",
+  "empresarial.contract_settings": "Dados da Risarte no contrato",
+  "empresarial.contract_templates": "Modelo de contrato",
   "empresarial.contracts": "Contrato",
   "empresarial.dependents": "Dependente",
   "empresarial.employee_files": "Arquivo do colaborador",

@@ -2293,10 +2293,26 @@ existiam na janelinha do card**; o cabeçalho trazia uma frase fixa; e o **selo
 da aba Fechamento desmentia a fase** (ganha sem cadastro = "implantação
 concluída"). Detalhe em `docs/risarte-empresarial/FUNIL-COMERCIAL.md`, Bloco L.
 
-**⏳ PENDENTE, por decisão do dono (13/10/2026): o CONTRATO GERADO DENTRO DO
-SISTEMA.** Hoje o contrato só é registrado (envio + selo); proposta e
-apresentação já são produzidas no sistema. **O dono vai mandar o texto do
-contrato** — não redigir cláusula por conta própria.
+**✅ O CONTRATO GERADO DENTRO DO SISTEMA — feito no mesmo dia (1027 /
+Empresarial 0.78.0), com o modelo enviado pelo dono.** Detalhe no Bloco M do
+`FUNIL-COMERCIAL.md`. ⏳ **A 1027 está aplicada no TREINO; falta o dono rodar
+na PRODUÇÃO** — sem ela, a tela do contrato e a aba Configurações → Contrato
+dizem que aguardam a migração (nada mais é afetado).
+
+**Depois de rodar a 1027, o dono precisa (nos DOIS ambientes — configuração
+não viaja):** em Configurações → Contrato, digitar o nome, a nacionalidade, o
+RG e o CPF de quem assina pela Risarte. No treino ficou um representante
+fictício ("Representante de Teste (troque pelo seu)").
+
+**Para o jurídico do dono conferir (texto do modelo, não mexi):** coparticipação
+"20% a 50%" na cl. 1ª × "50%" na 10ª × o percentual de cada procedimento no
+Anexo I; benefícios fixos da cl. 1ª §2º × Anexo I; "primeiro pagamento" da cl.
+4ª §1º × a implantação do sistema; "pessoa jurídica de direito privado" para
+autônomo e órgão público.
+
+**Fica para depois, declarado:** emitir o contrato com código e guardar a
+cópia assinável; enviar pela ZapSign desta tela; ligar a aba Contratos da
+empresa a este documento.
 
 **Não visto na tela:** o botão *Criar empresa* da aba Fechamento (a única
 empresa ganha sem cadastro do treino é teste de outra pessoa, e criar não tem
@@ -2305,6 +2321,28 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP40. O disco C: do PC Administrador ENCHEU (13/10/2026) — a pasta `.next-test` chegou a 18 GB
+
+*(Achado rodando os portões do contrato: "No space left on device".)*
+**Confirmado, medido:** C: com 110 GB e **zero livre**; `.next-test` (a pasta
+de compilação do servidor de teste local) com **18,46 GB**, e `.next` (a do
+servidor de desenvolvimento) com **6,08 GB**. O servidor de teste que o agente
+sobe a cada sessão para conferir as telas grava nessa pasta e nunca a limpa.
+
+**Feito:** parei o servidor de teste e rodei `node scripts/limpar-build-teste.mjs`
+— o script do próprio projeto, que já apaga essa pasta antes de cada rodada
+ponta a ponta. É cache de compilação; nada de dado. C: voltou a **26 GB
+livres**. Conferi depois que nenhum arquivo ficou gravado pela metade
+(documentos, manual em Word, versão) e rodei todos os portões de novo.
+
+**Não mexi no `.next` (6 GB):** é a pasta do servidor de desenvolvimento do
+dono; apagar com ele aberto derruba o servidor. Para liberar, fechar o
+servidor e apagar a pasta — ela se refaz sozinha.
+
+**Para não repetir:** o roteiro do servidor de teste local deveria limpar a
+`.next-test` ao encerrar (ou antes de subir). Fica como hábito do agente até
+alguém prender isso num script do repositório.
 
 ### AP39. ⚠️ Dá para chegar a Fechamento (ganho) e Implantação SEM os dois selos — REGRA OU BRECHA? Perguntar ao dono
 

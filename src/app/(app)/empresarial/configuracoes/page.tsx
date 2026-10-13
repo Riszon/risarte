@@ -17,6 +17,11 @@ import {
 import { loadBenefits, loadPricing, loadProcedures, loadSplit } from "./data";
 import { RetentionButton } from "./retention-button";
 import { PropostaDaRede, type Bloco } from "./proposta-da-rede";
+import { ContratoDaRede } from "./contrato-da-rede";
+import {
+  lerContratada,
+  lerModelosDoContrato,
+} from "@/lib/empresarial/contrato-dados";
 import { GruposDeBeneficios, type GrupoView } from "./grupos-de-beneficios";
 import { Settings } from "lucide-react";
 import type { BenefitType } from "@/lib/empresarial/constants";
@@ -31,6 +36,7 @@ const TABS = [
   { key: "split", label: "Split de pagamento" },
   { key: "beneficios", label: "Benefícios" },
   { key: "proposta", label: "Proposta comercial" },
+  { key: "contrato", label: "Contrato" },
   { key: "grupos", label: "Grupos de benefícios" },
 ] as const;
 
@@ -55,6 +61,16 @@ export default async function EmpresarialConfigPage(props: {
     .select("sections, valid_days")
     .is("lead_id", null)
     .maybeSingle<{ sections: Bloco[]; valid_days: number }>();
+
+  // 1027: o contrato — só quando a aba é a dele (são dados pessoais do
+  // representante; não há por que carregá-los nas outras abas).
+  const contrato =
+    aba === "contrato"
+      ? {
+          modelos: await lerModelosDoContrato(db, null),
+          contratada: await lerContratada(db),
+        }
+      : null;
 
   // H2 (1016): os grupos de benefícios da rede, com os itens de cada um.
   const [{ data: gruposRows }, { data: itensRows }] = await Promise.all([
@@ -203,6 +219,13 @@ export default async function EmpresarialConfigPage(props: {
         <PropostaDaRede
           validDays={modeloDaRede?.valid_days ?? 15}
           blocos={modeloDaRede?.sections ?? []}
+        />
+      )}
+
+      {aba === "contrato" && contrato && (
+        <ContratoDaRede
+          contratada={contrato.contratada.contratada}
+          modelo={contrato.modelos.daRede}
         />
       )}
 

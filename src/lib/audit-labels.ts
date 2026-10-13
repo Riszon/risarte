@@ -233,6 +233,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   empresarial_lead_closing_review: "Revisão de fechamento",
   empresarial_proposal: "Proposta (Empresarial)",
   empresarial_proposal_template: "Modelo de proposta",
+  empresarial_contract_template: "Modelo de contrato",
+  empresarial_contract_settings: "Dados da Risarte no contrato",
   empresarial_welcome_contact: "Contato de boas-vindas",
   empresarial_welcome_list: "Lista de boas-vindas",
   // -------------------------------------------------------- Indica +Risos
