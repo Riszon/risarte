@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.308.0** · Última migração: **0290** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.308.0** · Última migração: **0290** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 📈 0.308.0 / 0290 — PAINEL DE USO + FILTROS POR UNIDADE E FUNÇÃO (auditoria)
 >
@@ -21,6 +21,9 @@ _Atualizado em: 13/10/2026 · Versão do sistema: **0.308.0** · Última migraç
 > Sair (`fimDoAcesso`, mesma regra no SQL). (2) a API corta em 1.000 linhas e
 > o relatório somava o que vinha; agora lê em páginas (`paginar.ts`).
 > Janela sem a 0290: o painel avisa; o relatório sai sem os filtros novos E DIZ.
+> ✅ **0290 APLICADA na produção em 13/10/2026** — o dono rodou e a conferência
+> dele deu o esperado; de fora, só leitura: sem login as cinco funções recusam,
+> a chave de serviço recebe vazio, e há uma versão só do relatório.
 >
 > ## 📊 0.307.0 / 0289 — RELATÓRIO DE ATIVIDADE POR PESSOA E POR DIA, COM PLANILHA (auditoria, etapa 3 de 3)
 >

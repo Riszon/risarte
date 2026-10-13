@@ -2249,7 +2249,7 @@ acessou, mais tempo conectado, mais atividade, menos interagiu, menos acessou,
 há mais tempo sem entrar) e informações úteis sobre o uso. Entregue: aba Painel
 de uso (a que abre), com números, pontos de atenção, uso por dia, seis
 rankings, uso por função e por unidade e mapa dia × hora.
-⏳ **0290 aplicada no treino; falta a produção.**
+✅ **0290 APLICADA nos dois bancos** (o dono rodou na produção em 13/10/2026 e a conferência dele deu o esperado; conferido de fora, só leitura: sem login as cinco funções recusam, a chave de serviço — que não é Admin Master — recebe vazio, e só existe UMA versão do relatório).
 
 **O que o painel NÃO faz, declarado:**
 
@@ -2386,9 +2386,8 @@ aberta, os minutos entre a última atividade e a queda deixam de contar como
 "parado" — o sistema não sabe se a tela estava aberta ou fechada, então não
 afirma. O número de quedas por inatividade continua visível.
 
-**⚠️ Até a 0290 rodar na produção**, o Relatório de atividade de lá segue com
-a regra velha (a função é a da 0289); Acessos e O dia de uma pessoa já mostram
-certo assim que o código publica.
+✅ **A 0290 rodou na produção em 13/10/2026**: o Relatório de atividade de lá
+já usa a regra nova, igual a Acessos e a O dia de uma pessoa.
 
 ### AP33. Uma rodada dos testes unitários deu 3 falhas e NÃO se repetiu — causa não identificada
 

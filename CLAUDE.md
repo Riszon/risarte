@@ -413,7 +413,8 @@ Syncthing se comportarem de forma estranha.**
   na aba Histórico.
 - Resíduo no treino: "ZZZ Fechamento do agente" ficou **perdida**, com contato
   e telefone fictícios, uma anotação e uma tentativa de teste.
-- ⏳ **A 0290 (painel de uso) continua esperando o dono rodar na PRODUÇÃO.**
+- ✅ **A 0290 (painel de uso) foi aplicada na PRODUÇÃO no mesmo dia** (bloco
+  abaixo).
 
 **13/10/2026 — PC Administrador (core 0.307.0 → 0.308.0, migração 0290)**
 
@@ -430,9 +431,12 @@ Syncthing se comportarem de forma estranha.**
 - 🔴 **AP35 (defeito meu, etapa 3):** a API corta em 1.000 linhas (medido) e
   o relatório somava o que vinha. Agora lê em páginas. ⚠️ Suspeita registrada:
   outras listagens grandes do sistema podem ter o mesmo corte — não procurei.
-- ⏳ **0290: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Só funções
-  de consulta. Sem ela: o Painel avisa; o Relatório sai sem os filtros novos
-  (e diz), e continua com a conta velha do tempo.
+- ✅ **0290 APLICADA nos dois bancos** (o dono rodou na produção em 13/10/2026 e a conferência dele deu o esperado; conferido de fora, só leitura: sem login as cinco funções recusam, a chave de serviço — que não é Admin Master — recebe vazio, e só existe UMA versão do relatório). O Painel de uso, os
+  filtros por unidade e função e a conta nova do tempo valem na produção.
+- **Medido de novo na produção em 13/10 (só contagens):** a trilha de
+  alterações segue com os mesmos 13 lançamentos de 09/10; nos últimos 7 dias
+  houve acesso em 2 dias (09/10 e 13/10). **Ainda não dá para dizer quanto a
+  trilha cresce por dia** — medir quando a equipe estiver usando.
 - ⚠️ A 0290 foi **corrigida depois de aplicada no treino e antes de ir para a
   produção** (a regra do tempo); reapliquei as funções no treino à mão. O
   arquivo que vai ao dono é o corrigido.
