@@ -8,6 +8,8 @@ import {
 } from "@/lib/empresarial/etapas-do-funil";
 
 const vazio: DadosDasEtapas = {
+  stage: "FOLLOW_UP",
+  empresaCriada: false,
   temLevantamento: true,
   sabeOConvenioAtual: true,
   faltaProposta: [],
@@ -120,6 +122,8 @@ describe("o que cada aba diz de si mesma", () => {
     // exatamente a sensação de "parece completo e não está" do relato.
     const meio = situacaoDasEtapas({
       ...vazio,
+      stage: "IMPLEMENTATION",
+      empresaCriada: true,
       contratoAssinadoEm: "2026-09-01",
       implantacaoPagaEm: "2026-09-02",
       passosFeitos: 2,
@@ -129,6 +133,8 @@ describe("o que cada aba diz de si mesma", () => {
 
     const fim = situacaoDasEtapas({
       ...vazio,
+      stage: "IMPLEMENTATION",
+      empresaCriada: true,
       contratoAssinadoEm: "2026-09-01",
       implantacaoPagaEm: "2026-09-02",
       passosFeitos: 5,
@@ -147,6 +153,81 @@ describe("o que cada aba diz de si mesma", () => {
     });
     const assinado = situacaoDasEtapas({ ...vazio, contratoAssinadoEm: "2026-09-01" });
     expect(assinado.fechamento.resumo).toBe("contrato assinado");
+  });
+
+  // ---- 13/10/2026: o selo passou a olhar a FASE (3ª volta do OC-00083) ----
+
+  it("GANHA SEM CADASTRO não é 'implantação concluída', mesmo com os dois selos", () => {
+    // O caso visto no treino: contrato assinado, implantação paga, empresa
+    // ainda não criada — e o selo dizia "implantação concluída", em verde.
+    const s = situacaoDasEtapas({
+      ...vazio,
+      stage: "CLOSED_WON",
+      empresaCriada: false,
+      contratoAssinadoEm: "2026-09-01",
+      implantacaoPagaEm: "2026-09-02",
+    });
+    expect(s.fechamento).toEqual({ estado: "falta", resumo: "falta criar a empresa" });
+  });
+
+  it("ganha COM cadastro pede a conferência; conferida, diz isso", () => {
+    const ganha = { ...vazio, stage: "CLOSED_WON" as const, empresaCriada: true };
+    expect(situacaoDasEtapas(ganha).fechamento).toEqual({
+      estado: "falta",
+      resumo: "falta a conferência",
+    });
+    expect(situacaoDasEtapas({ ...ganha, conferido: true }).fechamento.resumo).toBe(
+      "conferido"
+    );
+  });
+
+  it("EM IMPLANTAÇÃO sem selo nenhum conta os passos — não fica 'em aberto'", () => {
+    // Empresa fechada pelo botão do quadro entra em implantação sem os selos.
+    const s = situacaoDasEtapas({
+      ...vazio,
+      stage: "IMPLEMENTATION",
+      empresaCriada: true,
+      passosFeitos: 0,
+      passosTotal: 5,
+    });
+    expect(s.fechamento).toEqual({ estado: "pronto", resumo: "implantação 0/5" });
+  });
+
+  it("perdida diz 'negócio perdido', sem âmbar de pendência", () => {
+    const s = situacaoDasEtapas({ ...vazio, stage: "CLOSED_LOST" });
+    expect(s.fechamento).toEqual({ estado: "pronto", resumo: "negócio perdido" });
+  });
+
+  it("perdida: NENHUMA aba fica em 'falta', mas o resumo continua contando o que ficou", () => {
+    const tudoFaltando = {
+      ...vazio,
+      temLevantamento: false,
+      faltaProposta: ["quem paga o programa"],
+    };
+    // A mesma empresa, aberta, tem três abas pedindo atenção…
+    const aberta = situacaoDasEtapas(tudoFaltando);
+    expect(aberta.levantamento.estado).toBe("falta");
+    expect(aberta.proposta.estado).toBe("falta");
+    expect(aberta.envio.estado).toBe("falta");
+    // …e perdida, nenhuma — com o mesmo texto.
+    const perdida = situacaoDasEtapas({ ...tudoFaltando, stage: "CLOSED_LOST" });
+    for (const aba of ETAPAS_DA_FICHA) {
+      expect(perdida[aba].estado, aba).not.toBe("falta");
+    }
+    expect(perdida.envio.resumo).toBe("nada enviado");
+    expect(perdida.levantamento.resumo).toBe("não começou");
+  });
+
+  it("fechamento em aberto só é PENDÊNCIA depois que a proposta foi para a empresa", () => {
+    for (const fase of ["CAPTURE", "CONTACT", "MEETING_SCHEDULED", "PRESENTED"] as const) {
+      expect(situacaoDasEtapas({ ...vazio, stage: fase }).fechamento).toEqual({
+        estado: "pronto",
+        resumo: "em aberto",
+      });
+    }
+    for (const fase of ["PROPOSAL_SENT", "FOLLOW_UP"] as const) {
+      expect(situacaoDasEtapas({ ...vazio, stage: fase }).fechamento.estado).toBe("falta");
+    }
   });
 
   it("apresentação distingue o modelo da rede da versão desta empresa", () => {

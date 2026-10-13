@@ -1092,3 +1092,100 @@ a menos e ninguém percebe.
 actions que os botões chamam. A régua foi provada apagando a quantidade
 contratada do cálculo — e ela acusou a cobrança voltando a sair por R$ 79,80
 (os 2 cadastrados) em vez de R$ 279,30 (os 7 contratados).
+
+### Bloco L — a ficha diz quem é a empresa e o que fazer agora (OC-00083, 3ª volta) ✅ (sem migração, v0.77.0)
+
+Terceiro retorno do dono sobre a ficha da empresa (13/10/2026): *"está tudo
+muito confuso, sensação de estar incompleto, bagunçado e desorganizado… Deve
+ser mais organizado, fluido, estético, seguir um fluxo lógico de acordo [com
+onde] a empresa se encontra no funil."*
+
+**O que conferi antes de mexer.** A foto do relato é da tela ANTIGA (uma coluna
+só, anterior ao Bloco E). Hoje a ficha já tem abas e a trilha de seis passos.
+Abrindo uma empresa de cada fase no treino, o que continuava verdade:
+
+1. **A aba Fechamento abria EM BRANCO** para toda empresa que ainda não tinha
+   fechado — e para a perdida, que abre justamente nela. A regra por trás está
+   certa (a conferência só faz sentido depois do ganho) e continua; o defeito
+   era "não mostrar a conferência" ter virado "não mostrar nada".
+2. **Os dados e o histórico só existiam na janelinha do card**, no quadro do
+   funil: CNPJ, contato, consultor, próxima ação, tentativas, reuniões. Quem
+   abria a ficha "para ver os dados" não achava dado nenhum.
+3. **O cabeçalho dizia uma frase fixa de ajuda**, igual para todas as empresas.
+4. **O selo da aba Fechamento desmentia a fase** — achado ao varrer as fases,
+   não estava no relato: uma empresa ganha, com os dois selos e SEM cadastro
+   criado, aparecia como *"implantação concluída"*, em verde; uma em
+   Implantação aparecia *"em aberto"*.
+
+**O que foi construído**
+
+- **Dados da empresa** no alto (`resumo-da-empresa.tsx`), com **Editar dados**.
+- **Próximo passo** (`proximoPasso`, em `ficha-do-funil.ts`): UMA frase, com
+  botão que leva à aba. Vira **Atenção** quando há buraco no caminho.
+- **Aba Fechamento com conteúdo em toda fase** (`fechamento-em-aberto.tsx`):
+  o que falta para fechar, marcar como perdido, criar a empresa, o desfecho da
+  perdida.
+- **Aba Histórico** (`historico-da-empresa.tsx`, `linhaDoTempo`): sete origens
+  numa lista só.
+- **O selo do Fechamento passou a olhar a FASE** (`situacaoDoFechamento`, em
+  `etapas-do-funil.ts`).
+
+**Decisões que valem registrar**
+
+- **⚠️ O PRÓXIMO PASSO É UMA RESPOSTA SÓ.** Cada aba já diz o que falta nela; a
+  pergunta do alto é outra — de tudo o que falta, o que se faz AGORA. Lista de
+  pendências no alto seria a mesma confusão, resumida.
+- **O buraco vem antes do roteiro.** Empresa apresentada sem levantamento não
+  ouve "complete a proposta": sem o que ela contou, a proposta é chute.
+- **A ficha REUSA as peças do card** (`LeadFields`, `TentativasDeContato`,
+  `ReunioesDoLead`, exportadas de `lead-board.tsx`), com `semLista` para não
+  repetir na ficha o que a linha do tempo já mostra. Dois formulários para o
+  mesmo cadastro divergem no primeiro campo novo.
+- **A regra de ouro tem uma régua só**: a aba Fechamento lê `faltaParaFechar`,
+  a mesma da aba Envio.
+- **Mudança de fase é gravada duas vezes e aparece uma.** Mover grava o relógio
+  (gatilho) e uma anotação "Movido para…" (tela). A linha do relógio fica, e
+  leva da anotação o autor e o motivo da perda. A anotação é casada **pelo nome
+  da fase**, e quem escolhe é a anotação (a passagem mais próxima dela).
+  "Fechado (ganho) — empresa criada…" **não** é fundida: ela diz o que foi
+  copiado da proposta.
+- **A entrada inicial não inventa data**: "Já estava em Captação quando o
+  registro começou" (relógio ligado em 14/09/2026, migração 1007).
+- **Passos da implantação pela régua `progressoDaImplantacao`**, nunca pelo
+  número de linhas gravadas: passo só vira linha quando alguém marca, e "0 de
+  0" parecia implantação concluída.
+- **Leitura do histórico que falha é avisada**, em vez de virar "sem registros".
+- **Empresa perdida não tem aba em âmbar** — o resumo continua dizendo o que
+  ficou por fazer.
+- **Ids do formulário do lead com prefixo próprio** (`useId`): dentro da ficha
+  ele convivia com o `notes` do levantamento, e o rótulo "Observações" levava
+  o cursor para o campo escondido da outra aba.
+
+**Três erros meus pegos antes de sair** (os três pela conferência, não por
+leitura do código):
+
+1. A anotação casava com a fase mais próxima no tempo → o autor de "Movido para
+   Contato" aparecia em "Entrou em Captação". Visto na tela do treino.
+2. Corrigido para casar pelo nome, percorrendo as fases em ordem → com duas
+   passagens pela mesma fase, a primeira levava a anotação da segunda. Pego
+   pelo teste.
+3. O teste "a empresa vem antes da conferência" passava verde com a ordem
+   invertida — faltava o caso sem cadastro E sem conferência. Pego ao quebrar o
+   código de propósito.
+
+**Conferido**: 16 réguas, cada uma reprovando no teste esperado com o código
+quebrado de propósito (`ficha-do-funil.test.ts`, `etapas-do-funil.test.ts`).
+Na tela do treino, logado, uma empresa de cada fase (Captação, Apresentado,
+Proposta enviada, Follow-up, ganha sem cadastro, ganha com cadastro,
+Implantação, perdida), nos temas claro e escuro; e, na empresa de teste do
+agente: marcar como perdido, editar dados, registrar anotação e tentativa.
+
+**Não visto na tela**: o botão **Criar empresa** da aba Fechamento não foi
+clicado (a única empresa ganha sem cadastro do treino é teste de outra pessoa,
+e criar o cadastro não tem volta); **Marcar reunião** pela aba Histórico (peça
+reusada sem mudança, não clicada aqui).
+
+**Fica para depois, por decisão do dono (13/10/2026):** o **contrato gerado
+dentro do sistema**. Hoje o contrato é registrado (envio + selo) e não
+produzido — a proposta e a apresentação já são. O dono vai mandar o texto do
+contrato; cláusula jurídica não se inventa.

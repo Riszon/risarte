@@ -153,10 +153,12 @@ etapas. As etapas são:
 **★ Hoje do consultor**, no topo, junta o que tem próxima ação para hoje. É por
 onde o dia começa.
 
-**Mover o card** é feito pelo seletor no próprio card. **Abrir** leva à ficha.
-Dentro dela, registre **nota/ligação** na linha do tempo — é o histórico que
-sustenta a negociação três semanas depois, quando ninguém lembra do que foi
-combinado por telefone.
+**Mover o card** é feito pelo seletor no próprio card. **Abrir** mostra a
+janela rápida da empresa, e dela se vai à **ficha completa**. Registre cada
+**tentativa de contato, reunião e anotação** — na janela do card ou na aba
+**Histórico** da ficha, tanto faz: é o mesmo registro. É ele que sustenta a
+negociação três semanas depois, quando ninguém lembra do que foi combinado por
+telefone.
 
 **A agenda do comercial** (**Empresarial → Agenda**) é a agenda das reuniões e
 apresentações do programa, separada da agenda clínica.
@@ -165,13 +167,55 @@ apresentações do programa, separada da agenda clínica.
 
 ## 5. A ficha da empresa no funil, aba por aba
 
-A ficha tem **cinco abas**, e ela **abre na etapa em que a empresa está** — quem
+### O alto da ficha: quem é a empresa e o que fazer agora
+
+Antes das abas, a ficha mostra três coisas:
+
+1. **A fase e o que ela significa** — no cabeçalho, embaixo do nome da empresa
+   (*"O programa já foi apresentado. Agora é levantar os dados e montar a
+   proposta."*).
+2. **Dados da empresa** — CNPJ, contato, telefone, consultor, origem, valor
+   estimado, há quanto tempo está na fase e a **próxima ação** agendada (em
+   vermelho quando já passou da data). O botão **Editar dados** abre o mesmo
+   formulário do card do funil.
+
+   > **"Sem histórico anterior"** ao lado do tempo na fase quer dizer que o
+   > relógio começou a contar em 14/09/2026, quando a empresa já estava
+   > naquela fase — o número não mede desde a entrada de verdade.
+
+   > **Sem o CNPJ completo não dá para criar o cadastro da empresa** no
+   > fechamento. A ficha avisa enquanto ele estiver faltando.
+3. **Próximo passo** — uma frase só, dizendo o que se faz agora com aquela
+   empresa, e um botão que leva à aba onde isso se resolve. Quando a empresa
+   andou no funil e algo ficou para trás (por exemplo: está em *Apresentado* e
+   o levantamento não começou), o quadro vira **Atenção** e aponta o buraco
+   antes do passo seguinte.
+
+| A empresa está em… | O próximo passo diz… |
+|---|---|
+| Captação | Fazer o primeiro contato |
+| Contato | Conseguir a reunião (e quantas tentativas já houve) |
+| Reunião agendada | Preparar a apresentação |
+| Apresentado | Completar a proposta — ou enviá-la, se já está pronta |
+| Proposta enviada / Follow-up | Registrar o envio, conseguir a assinatura, confirmar o pagamento — nessa ordem |
+| Fechamento (ganho) | Criar o cadastro da empresa; depois, fazer a conferência |
+| Implantação | Concluir a implantação (*2 de 5 passos resolvidos*) |
+| Fechamento (perda) | Não há passo: mostra o motivo registrado |
+
+### As abas
+
+A ficha tem **seis abas**, e ela **abre na etapa em que a empresa está** — quem
 abre uma empresa em follow-up não quer reler a entrevista inicial.
 
-**Levantamento · Proposta · Apresentação · Envio e selos · Fechamento**
+**Levantamento · Proposta · Apresentação · Envio e selos · Fechamento · Histórico**
 
 Cada aba mostra embaixo do nome a sua situação (*falta 2 campos*, *modelo da
-rede*, *nada enviado*, *em aberto*, *implantação 3/7*).
+rede*, *nada enviado*, *em aberto*, *falta criar a empresa*, *implantação
+3/5*, *8 registros*). Âmbar é pendência; cinza é informação.
+
+> **Empresa perdida não tem pendência.** As abas continuam dizendo o que ficou
+> por fazer (*nada enviado*), mas sem o âmbar — ninguém vai completar a
+> proposta de um negócio que acabou.
 
 ### Levantamento — o que a empresa TEM
 
@@ -204,9 +248,40 @@ assinado **e** pagamento confirmado.
 
 ### Fechamento
 
-O desfecho, e os passos da implantação. Empresa **perdida** também abre aqui —
-é onde está a resposta, e abrir no levantamento sugeriria que ainda há o que
-preencher.
+O que a aba mostra depende de onde a empresa está:
+
+- **Ainda em negociação** — *O que falta para fechar*: os dois selos (contrato
+  assinado e boleto da implantação pago), o que falta, e o botão **Marcar em
+  Envio e selos**, que leva à aba onde eles são marcados. Embaixo, **O negócio
+  não vai acontecer?**: escreva o motivo e marque como perdido.
+
+  > **Marcar como perdido não tem volta pela tela.** A empresa sai do funil e
+  > não há botão para trazê-la de novo. O motivo é obrigatório — é essa lista
+  > que mostra o que corrigir na oferta.
+- **Ganha, sem cadastro** — o botão **Criar empresa** (o mesmo do card do
+  funil). A conferência só é aceita depois dele.
+- **Ganha, com cadastro** — a **conferência do consultor responsável**.
+- **Em implantação** — a conferência e os **passos da implantação**.
+- **Perdida** — *Negócio perdido*, com o motivo registrado. A ficha de uma
+  empresa perdida abre nesta aba: é onde está a resposta.
+
+### Histórico
+
+Tudo o que já aconteceu com a empresa no funil, numa **linha do tempo** só, do
+mais recente para o mais antigo: cada mudança de fase (com quanto tempo ficou
+nela, quem moveu e — na perda — o motivo), cada tentativa de contato, reunião,
+envio, selo, a conferência e as anotações. Os botões no alto da lista filtram
+por tipo.
+
+Ao lado, **Registrar**: tentativa de contato, reunião e anotação. São os mesmos
+registros da janela do card — o que se lança num lugar aparece no outro.
+
+> **Marcar reunião aqui move a empresa para "Reunião agendada"**, como no card.
+> O desfecho de cada reunião continua sendo dado na **Agenda do programa**.
+
+> **"Já estava em … quando o registro começou"** é a primeira linha das
+> empresas que entraram no funil antes de 14/09/2026: o sistema não sabe a
+> data de entrada delas, e diz isso em vez de inventar uma.
 
 > **Trocar de aba não apaga nada.** Digite no Levantamento, vá para a
 > Apresentação e volte: o que você digitou continua lá. As abas escondem, não
@@ -414,7 +489,9 @@ convênio atual.
 
 ## 7. Fechar o negócio
 
-Botão **Fechar — ganho**. O sistema **cria a empresa** no cadastro e **leva a
+Botão **Fechar — ganho**, na janela do card — ou **Criar empresa**, na aba
+**Fechamento** da ficha, quando os dois selos já levaram a empresa para
+*Fechamento (ganho)*. O sistema **cria a empresa** no cadastro e **leva a
 proposta junto**:
 
 - **Preços de adesão** — os da proposta, não os da rede.
@@ -424,8 +501,8 @@ proposta junto**:
 - **Unidades da parceria** e a restrição de cada benefício.
 - **Quantidade contratada** e a regra do excedente.
 
-Na linha do tempo do lead fica a anotação do fechamento. **Se ela disser que
-algo não foi copiado, confira aquilo no cadastro** — é um aviso, não um detalhe.
+Na aba **Histórico** fica a anotação do fechamento. **Se ela disser que algo
+não foi copiado, confira aquilo no cadastro** — é um aviso, não um detalhe.
 
 ---
 

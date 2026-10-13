@@ -602,6 +602,11 @@ export function FichaDaProposta({
             </Campo>
             <Campo id="responsible_phone" rotulo="Telefone">
               <Input
+                // Sem telefone salvo aqui, a sugestão é o telefone do cadastro
+                // da empresa — que agora pode ser editado na própria ficha.
+                // A chave refaz o campo quando a sugestão muda; sem ela ele
+                // guardava o número antigo até recarregar a página.
+                key={qualificacao.responsiblePhone ?? ""}
                 id="responsible_phone"
                 name="responsible_phone"
                 defaultValue={qualificacao.responsiblePhone ?? ""}

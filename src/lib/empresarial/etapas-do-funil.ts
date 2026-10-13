@@ -89,6 +89,10 @@ export type SituacaoDaEtapa = {
 };
 
 export type DadosDasEtapas = {
+  /** A fase em que a empresa está — quem manda no selo do Fechamento. */
+  stage: LeadStage;
+  /** O cadastro da empresa já foi criado (o lead virou empresa). */
+  empresaCriada: boolean;
   /**
    * A empresa já tem levantamento salvo.
    *
@@ -123,7 +127,12 @@ export type DadosDasEtapas = {
   implantacaoPagaEm: string | null;
   /** A conferência de fechamento foi confirmada. */
   conferido: boolean;
-  /** Passos de implantação: quantos já resolvidos e quantos existem. */
+  /**
+   * Passos de implantação: quantos já resolvidos e quantos CONTAM — pela régua
+   * `progressoDaImplantacao`, nunca pelo número de linhas gravadas. Passo só
+   * vira linha no banco quando alguém marca; contar linhas dava "0 de 0", e
+   * zero de zero parecia implantação concluída.
+   */
   passosFeitos: number;
   passosTotal: number;
 };
@@ -171,18 +180,63 @@ export function situacaoDasEtapas(
       ? { estado: "pronto", resumo: plural(d.envios, "envio", "envios") }
       : { estado: "falta", resumo: "nada enviado" };
 
-  const fechamento: SituacaoDaEtapa = d.implantacaoPagaEm
-    ? d.passosTotal > 0 && d.passosFeitos < d.passosTotal
-      ? {
-          estado: "pronto",
-          resumo: `implantação ${d.passosFeitos}/${d.passosTotal}`,
-        }
-      : { estado: "feito", resumo: "implantação concluída" }
-    : d.contratoAssinadoEm
-      ? { estado: "pronto", resumo: "contrato assinado" }
-      : d.conferido
-        ? { estado: "pronto", resumo: "conferido" }
-        : { estado: "falta", resumo: "em aberto" };
+  const abas = {
+    levantamento,
+    proposta,
+    apresentacao,
+    envio,
+    fechamento: situacaoDoFechamento(d),
+  };
 
-  return { levantamento, proposta, apresentacao, envio, fechamento };
+  // EMPRESA PERDIDA NÃO TEM PENDÊNCIA. O resumo de cada aba continua dizendo
+  // o que ficou por fazer (é informação: "nada enviado" ajuda a entender a
+  // perda), mas sem o âmbar de "falta" — ninguém vai completar a proposta de
+  // um negócio que acabou.
+  if (d.stage === "CLOSED_LOST") {
+    for (const aba of ETAPAS_DA_FICHA) {
+      if (abas[aba].estado === "falta") abas[aba] = { ...abas[aba], estado: "pronto" };
+    }
+  }
+  return abas;
+}
+
+/**
+ * O SELO DA ABA FECHAMENTO — pela FASE, e só depois pelos selos.
+ *
+ * ⚠️ ATÉ 13/10/2026 ELE OLHAVA SÓ OS SELOS, e a fase desmentia o selo na
+ * mesma tela (visto no treino, varrendo uma empresa de cada fase):
+ *
+ *   - ganha, com os dois selos e SEM cadastro criado → "implantação concluída",
+ *     em verde. Nada tinha sido implantado: não havia nem onde implantar;
+ *   - em Implantação, fechada pelo botão do quadro (sem selo) → "em aberto";
+ *   - perdida → "em aberto", em âmbar, convidando a trabalhar num negócio que
+ *     acabou.
+ *
+ * A fase é o que a empresa É; os selos dizem o que falta dentro dela.
+ */
+function situacaoDoFechamento(d: DadosDasEtapas): SituacaoDaEtapa {
+  switch (d.stage) {
+    case "CLOSED_LOST":
+      return { estado: "pronto", resumo: "negócio perdido" };
+    case "IMPLEMENTATION":
+      return d.passosFeitos < d.passosTotal
+        ? { estado: "pronto", resumo: `implantação ${d.passosFeitos}/${d.passosTotal}` }
+        : { estado: "feito", resumo: "implantação concluída" };
+    case "CLOSED_WON":
+      // A empresa vem antes da conferência: a conferência recusa sem ela.
+      if (!d.empresaCriada) return { estado: "falta", resumo: "falta criar a empresa" };
+      return d.conferido
+        ? { estado: "pronto", resumo: "conferido" }
+        : { estado: "falta", resumo: "falta a conferência" };
+    default:
+      if (d.contratoAssinadoEm) return { estado: "pronto", resumo: "contrato assinado" };
+      if (d.implantacaoPagaEm) return { estado: "pronto", resumo: "implantação paga" };
+      // Só é PENDÊNCIA quando a proposta já foi para a empresa. Antes disso,
+      // fechamento em aberto é o esperado — âmbar ali, em toda empresa recém
+      // captada, é alarme que ensina a não olhar para o alarme.
+      return {
+        estado: d.stage === "PROPOSAL_SENT" || d.stage === "FOLLOW_UP" ? "falta" : "pronto",
+        resumo: "em aberto",
+      };
+  }
 }

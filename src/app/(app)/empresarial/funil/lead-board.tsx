@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -568,7 +568,17 @@ function LeadDetailDialog({
  * contar depois quantas ligações foram precisas até marcar a reunião. A
  * anotação livre fica no campo de observação, ao lado.
  */
-function TentativasDeContato({ lead }: { lead: LeadView }) {
+export function TentativasDeContato({
+  lead,
+  semLista = false,
+}: {
+  lead: LeadView;
+  /**
+   * A ficha da empresa mostra as tentativas na linha do tempo, junto do
+   * resto; lá a lista daqui seria a mesma coisa escrita duas vezes.
+   */
+  semLista?: boolean;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -617,7 +627,7 @@ function TentativasDeContato({ lead }: { lead: LeadView }) {
         </Button>
       </form>
 
-      {lead.contactAttempts.length === 0 ? (
+      {semLista ? null : lead.contactAttempts.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           Nenhuma tentativa registrada ainda.
         </p>
@@ -649,7 +659,14 @@ function TentativasDeContato({ lead }: { lead: LeadView }) {
  * banco (migração 1008), então vale por qualquer caminho. O desfecho de cada
  * reunião é dado na Agenda do programa, que é onde elas aparecem todas juntas.
  */
-function ReunioesDoLead({ lead }: { lead: LeadView }) {
+export function ReunioesDoLead({
+  lead,
+  semLista = false,
+}: {
+  lead: LeadView;
+  /** Mesma razão de `TentativasDeContato`: na ficha, a lista é a linha do tempo. */
+  semLista?: boolean;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [aberto, setAberto] = useState(false);
@@ -751,7 +768,7 @@ function ReunioesDoLead({ lead }: { lead: LeadView }) {
         </form>
       )}
 
-      {lead.meetings.length === 0 ? (
+      {semLista ? null : lead.meetings.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           Nenhuma reunião marcada ainda.
         </p>
@@ -784,7 +801,7 @@ function ReunioesDoLead({ lead }: { lead: LeadView }) {
   );
 }
 
-function LeadFields({
+export function LeadFields({
   lead,
   consultants,
   showConsultant,
@@ -796,13 +813,20 @@ function LeadFields({
   /** Só no cadastro: em qual fase o lead entra (padrão, Captação). */
   showStage?: boolean;
 }) {
+  // ⚠️ IDS COM PREFIXO PRÓPRIO. Este formulário agora abre também DENTRO da
+  // ficha da empresa, onde o levantamento já tem um campo "notes": dois
+  // elementos com o mesmo id, e clicar no rótulo "Observações" levava o cursor
+  // para o campo escondido da outra aba (visto no treino, 13/10/2026). O
+  // `name` — que é o que a action lê — não muda.
+  const prefixo = useId();
+  const id = (campo: string) => `${prefixo}-${campo}`;
   return (
     <div className="space-y-3">
       {showStage && (
         <div>
-          <Label htmlFor="stage">Entra em qual fase do funil?</Label>
+          <Label htmlFor={id("stage")}>Entra em qual fase do funil?</Label>
           <select
-            id="stage"
+            id={id("stage")}
             name="stage"
             defaultValue="CAPTURE"
             className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
@@ -822,13 +846,13 @@ function LeadFields({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor="company_name">Empresa *</Label>
-          <Input id="company_name" name="company_name" required defaultValue={lead?.companyName ?? ""} />
+          <Label htmlFor={id("company_name")}>Empresa *</Label>
+          <Input id={id("company_name")} name="company_name" required defaultValue={lead?.companyName ?? ""} />
         </div>
         <div>
-          <Label htmlFor="cnpj">CNPJ</Label>
+          <Label htmlFor={id("cnpj")}>CNPJ</Label>
           <Input
-            id="cnpj"
+            id={id("cnpj")}
             name="cnpj"
             placeholder="00.000.000/0000-00"
             defaultValue={lead?.cnpj ? formatCnpj(lead.cnpj) : ""}
@@ -836,22 +860,22 @@ function LeadFields({
           />
         </div>
         <div>
-          <Label htmlFor="contact_name">Contato</Label>
-          <Input id="contact_name" name="contact_name" defaultValue={lead?.contactName ?? ""} />
+          <Label htmlFor={id("contact_name")}>Contato</Label>
+          <Input id={id("contact_name")} name="contact_name" defaultValue={lead?.contactName ?? ""} />
         </div>
         <div>
-          <Label htmlFor="contact_phone">Telefone</Label>
+          <Label htmlFor={id("contact_phone")}>Telefone</Label>
           <Input
-            id="contact_phone"
+            id={id("contact_phone")}
             name="contact_phone"
             defaultValue={lead?.contactPhone ?? ""}
             onChange={(e) => (e.target.value = formatPhone(e.target.value))}
           />
         </div>
         <div>
-          <Label htmlFor="estimated_value">Valor estimado (R$)</Label>
+          <Label htmlFor={id("estimated_value")}>Valor estimado (R$)</Label>
           <Input
-            id="estimated_value"
+            id={id("estimated_value")}
             name="estimated_value"
             defaultValue={
               lead?.estimatedValueCents != null
@@ -861,9 +885,9 @@ function LeadFields({
           />
         </div>
         <div>
-          <Label htmlFor="next_action_at">Próxima ação (data/hora)</Label>
+          <Label htmlFor={id("next_action_at")}>Próxima ação (data/hora)</Label>
           <Input
-            id="next_action_at"
+            id={id("next_action_at")}
             name="next_action_at"
             type="datetime-local"
             defaultValue={
@@ -876,16 +900,16 @@ function LeadFields({
         </div>
       </div>
       <div>
-        <Label htmlFor="next_action_note">O que fazer na próxima ação</Label>
-        <Input id="next_action_note" name="next_action_note" defaultValue={lead?.nextActionNote ?? ""} />
+        <Label htmlFor={id("next_action_note")}>O que fazer na próxima ação</Label>
+        <Input id={id("next_action_note")} name="next_action_note" defaultValue={lead?.nextActionNote ?? ""} />
       </div>
 
       {/* De onde veio a empresa, e quem abre a porta para o primeiro contato. */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor="capture_channel">Canal da captação</Label>
+          <Label htmlFor={id("capture_channel")}>Canal da captação</Label>
           <select
-            id="capture_channel"
+            id={id("capture_channel")}
             name="capture_channel"
             defaultValue={lead?.captureChannel ?? ""}
             className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
@@ -899,18 +923,18 @@ function LeadFields({
           </select>
         </div>
         <div>
-          <Label htmlFor="referral_name">Quem indicou</Label>
+          <Label htmlFor={id("referral_name")}>Quem indicou</Label>
           <Input
-            id="referral_name"
+            id={id("referral_name")}
             name="referral_name"
             placeholder="Nome de quem fez a ponte"
             defaultValue={lead?.referralName ?? ""}
           />
         </div>
         <div className="sm:col-span-2">
-          <Label htmlFor="referral_contact">Contato de quem indicou</Label>
+          <Label htmlFor={id("referral_contact")}>Contato de quem indicou</Label>
           <Input
-            id="referral_contact"
+            id={id("referral_contact")}
             name="referral_contact"
             placeholder="Telefone ou e-mail"
             defaultValue={lead?.referralContact ?? ""}
@@ -919,9 +943,9 @@ function LeadFields({
       </div>
       {showConsultant && consultants.length > 0 && (
         <div>
-          <Label htmlFor="consultant_id">Consultor</Label>
+          <Label htmlFor={id("consultant_id")}>Consultor</Label>
           <select
-            id="consultant_id"
+            id={id("consultant_id")}
             name="consultant_id"
             defaultValue={lead?.consultantId ?? ""}
             className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
@@ -936,9 +960,9 @@ function LeadFields({
         </div>
       )}
       <div>
-        <Label htmlFor="notes">Observações</Label>
+        <Label htmlFor={id("notes")}>Observações</Label>
         <textarea
-          id="notes"
+          id={id("notes")}
           name="notes"
           rows={2}
           defaultValue={lead?.notes ?? ""}

@@ -22,6 +22,11 @@ import {
   type PassoRegistrado,
 } from "@/lib/empresarial/implantacao";
 import { confirmClosing, setImplementationStep } from "./actions";
+import {
+  CriarEmpresaDoLead,
+  FechamentoEmAberto,
+  NegocioPerdido,
+} from "./fechamento-em-aberto";
 
 export type ConferenciaView = {
   confirmedAt: string;
@@ -37,20 +42,41 @@ export function FechamentoEImplantacao({
   companyId,
   conferencia,
   passos,
+  contractSignedAt,
+  implantationPaidAt,
+  lostReason,
 }: {
   leadId: string;
   stage: string;
   companyId: string | null;
   conferencia: ConferenciaView | null;
   passos: PassoRegistrado[];
+  contractSignedAt: string | null;
+  implantationPaidAt: string | null;
+  lostReason: string | null;
 }) {
   // A conferência só faz sentido a partir do fechamento; antes disso, mostrá-la
   // convidaria a confirmar um negócio que ainda não foi ganho.
+  //
+  // ⚠️ "NÃO MOSTRAR A CONFERÊNCIA" NÃO É "NÃO MOSTRAR NADA". Até 13/10/2026
+  // esta função devolvia vazio aqui, e a aba abria em branco para toda empresa
+  // em negociação — e para a PERDIDA, que abre justamente nesta aba. Toda fase
+  // tem de devolver alguma coisa (régua em `ficha-do-funil.test.ts`).
+  if (stage === "CLOSED_LOST") return <NegocioPerdido motivo={lostReason} />;
   const noFechamento = stage === "CLOSED_WON" || stage === "IMPLEMENTATION";
-  if (!noFechamento) return null;
+  if (!noFechamento) {
+    return (
+      <FechamentoEmAberto
+        leadId={leadId}
+        contractSignedAt={contractSignedAt}
+        implantationPaidAt={implantationPaidAt}
+      />
+    );
+  }
 
   return (
     <>
+      {!companyId && <CriarEmpresaDoLead leadId={leadId} />}
       <Conferencia
         leadId={leadId}
         companyId={companyId}

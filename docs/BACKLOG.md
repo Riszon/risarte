@@ -2284,6 +2284,77 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00083, 3ª volta ✅ (13/10/2026 — Empresarial 0.77.0, sem migração) — a ficha da empresa no funil
+
+Relato do dono: a ficha "confusa, incompleta, bagunçada". A foto era da tela
+antiga; o que continuava verdade hoje e foi corrigido: a aba **Fechamento
+abria em branco** antes do ganho (e para a perdida); **dados e histórico só
+existiam na janelinha do card**; o cabeçalho trazia uma frase fixa; e o **selo
+da aba Fechamento desmentia a fase** (ganha sem cadastro = "implantação
+concluída"). Detalhe em `docs/risarte-empresarial/FUNIL-COMERCIAL.md`, Bloco L.
+
+**⏳ PENDENTE, por decisão do dono (13/10/2026): o CONTRATO GERADO DENTRO DO
+SISTEMA.** Hoje o contrato só é registrado (envio + selo); proposta e
+apresentação já são produzidas no sistema. **O dono vai mandar o texto do
+contrato** — não redigir cláusula por conta própria.
+
+**Não visto na tela:** o botão *Criar empresa* da aba Fechamento (a única
+empresa ganha sem cadastro do treino é teste de outra pessoa, e criar não tem
+volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
+
+**Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
+marcada como **perdida** (serve de exemplo da tela), com contato e telefone
+fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP39. ⚠️ Dá para chegar a Fechamento (ganho) e Implantação SEM os dois selos — REGRA OU BRECHA? Perguntar ao dono
+
+*(13/10/2026, varrendo uma empresa de cada fase para o OC-00083.)*
+
+**Confirmado no código:** o botão **"Fechar (ganho) → criar empresa"** da
+janela do card (`convertLeadToCompany`, em `funil/actions.ts`) aparece em
+QUALQUER fase aberta e não confere `contract_signed_at` nem
+`implantation_paid_at` — exige só CNPJ e proposta legível. Ele põe a empresa
+em Fechamento (ganho) direto.
+
+**Confirmado nos dados do treino:** 3 empresas em Implantação e 1 em
+Fechamento (ganho) **sem nenhum dos dois selos**.
+
+Isso contradiz o que a própria tela diz (*"Só é ganho com contrato assinado E
+pagamento confirmado"*) e a regra de ouro do projeto. **Mas pode ser de
+propósito** — empresa que fecha por fora do roteiro, ou cadastro de parceria
+antiga. **Não mexi.** Se for brecha: o botão do card passa a exigir os selos
+(ou a pedir justificativa); se for regra: o texto da tela é que precisa dizer
+que existe o caminho direto.
+
+### AP36. Empresa PERDIDA não volta ao funil pela tela — falta decidir se deve voltar
+
+*(13/10/2026, OC-00083.)* **Confirmado:** nem o card do quadro nem a ficha têm
+botão para reabrir uma empresa em Fechamento (perda); o seletor de fase só
+aparece em fase aberta. A aba Fechamento nova avisa disso antes de marcar.
+**Decisão do dono:** empresa que disse "não" em março e volta em setembro
+reabre a mesma ficha (com o histórico) ou vira cadastro novo?
+
+### AP37. O card do funil ESCONDE o aviso "a empresa foi criada, mas não copiei…"
+
+*(13/10/2026, lendo `lead-board.tsx` para o OC-00083.)* **Confirmado no
+código:** `convertLeadToCompany` devolve `ok: true` COM `error` quando a
+empresa nasce mas algo da proposta não é copiado (faixas, benefícios…). Os dois
+botões do card tratam só o `ok` e mostram "Empresa criada" — o aviso é
+descartado. Ele fica gravado na anotação do fechamento (aba Histórico), mas a
+pessoa não é avisada na hora. O botão novo da aba Fechamento mostra o aviso.
+**Corrigir os dois botões do card** (mudança de três linhas, não feita aqui
+para não misturar assunto).
+
+### AP38. Sugestões da aba Proposta vindas do cadastro não se atualizam ao editar os dados no alto da ficha
+
+*(13/10/2026, OC-00083.)* **Confirmado:** *Razão social* e *Quem assina*
+começam com o nome da empresa e o contato do lead quando o levantamento não os
+tem (`useState` em `ficha-proposta.tsx`). Com o **Editar dados** agora na
+mesma tela, mudar o contato lá em cima não muda a sugestão até recarregar a
+página. O **telefone** tinha o mesmo defeito e foi corrigido (era o que
+disparava erro no console). Baixo risco: o campo está à vista e é a pessoa
+quem salva. Resolver junto com o próximo trabalho na aba Proposta.
+
 ### AP35. ✅ RESOLVIDO em 13/10/2026 (core 0.308.0) — 🔴 a API corta em 1.000 linhas e o relatório de atividade somava o que vinha
 
 Defeito MEU, da etapa 3 (0289). **Medido no treino:** `audit_logs` tem 1.212

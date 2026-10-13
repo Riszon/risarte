@@ -390,6 +390,31 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/10/2026 (tarde) — PC Administrador (Empresarial 0.76.0 → 0.77.0, sem migração)**
+
+- **OC-00083, 3ª volta — a ficha da empresa no funil.** A foto do relato era
+  da tela antiga. O que continuava verdade e foi corrigido: a aba
+  **Fechamento abria em branco** antes do ganho e para a perdida; **dados e
+  histórico só existiam na janelinha do card**; o cabeçalho dizia uma frase
+  fixa. Agora: **Dados da empresa** + **Próximo passo** no alto, aba
+  Fechamento com conteúdo em toda fase, e a sexta aba, **Histórico** (linha do
+  tempo única + registrar tentativa, reunião e anotação). Bloco L do
+  `FUNIL-COMERCIAL.md`; manual do Empresarial §4, §5 e §7.
+- 🔴 **Achado varrendo as fases:** o selo da aba Fechamento desmentia a fase
+  (ganha SEM cadastro aparecia "implantação concluída"). Passou a olhar a fase.
+- ⏳ **O CONTRATO DENTRO DO SISTEMA fica esperando o dono mandar o texto**
+  (decisão dele, 13/10). Não redigir cláusula.
+- ⚠️ **AP39 — perguntar ao dono:** o botão "Fechar (ganho) → criar empresa" do
+  card não confere os dois selos; no treino há 4 empresas ganhas/em
+  implantação sem selo nenhum. Regra ou brecha? Não mexi.
+- AP36 (perdida não volta ao funil), AP37 (o card esconde o aviso de "não
+  copiei") e AP38 (sugestão da proposta não se atualiza) no BACKLOG.
+- **Não visto na tela:** *Criar empresa* na aba Fechamento e *Marcar reunião*
+  na aba Histórico.
+- Resíduo no treino: "ZZZ Fechamento do agente" ficou **perdida**, com contato
+  e telefone fictícios, uma anotação e uma tentativa de teste.
+- ⏳ **A 0290 (painel de uso) continua esperando o dono rodar na PRODUÇÃO.**
+
 **13/10/2026 — PC Administrador (core 0.307.0 → 0.308.0, migração 0290)**
 
 - **AUDITORIA — PAINEL DE USO + FILTROS (pedido do dono):** a Auditoria abre

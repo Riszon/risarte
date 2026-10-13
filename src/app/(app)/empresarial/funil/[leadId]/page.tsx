@@ -23,7 +23,28 @@ import {
   type BillingBasis,
   type InterestLevel,
 } from "@/lib/empresarial/proposta";
-import { LEAD_STAGE_LABELS, type BenefitType } from "@/lib/empresarial/constants";
+import {
+  LEAD_STAGE_LABELS,
+  type BenefitType,
+  type CaptureChannel,
+  type ContactChannel,
+  type ContactOutcome,
+  type MeetingMode,
+  type MeetingStatus,
+} from "@/lib/empresarial/constants";
+import {
+  FASE_SIGNIFICA,
+  linhaDoTempo,
+  proximaAcao,
+  proximaReuniao,
+  proximoPasso,
+  situacaoDoHistorico,
+} from "@/lib/empresarial/ficha-do-funil";
+import { tempoNaFaseAtual, type StagePeriod } from "@/lib/empresarial/funnel";
+import { isoDateIn, todayInBrazil } from "@/lib/dates";
+import type { LeadView } from "../lead-board";
+import { ResumoDaEmpresa } from "./resumo-da-empresa";
+import { HistoricoDaEmpresa } from "./historico-da-empresa";
 import {
   etapaInicial,
   situacaoDasEtapas,
@@ -33,9 +54,10 @@ import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
 import { FichaDaProposta } from "./ficha-proposta";
 import type { CondicoesView } from "./condicoes-editor";
-import type {
-  ImplementationStep,
-  PassoRegistrado,
+import {
+  progressoDaImplantacao,
+  type ImplementationStep,
+  type PassoRegistrado,
 } from "@/lib/empresarial/implantacao";
 import { ApresentacaoEditor } from "./apresentacao-editor";
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
@@ -55,6 +77,51 @@ type LeadRow = {
   company_id: string | null;
   contract_signed_at: string | null;
   implantation_paid_at: string | null;
+  lost_reason: string | null;
+  estimated_value_cents: number | null;
+  next_action_at: string | null;
+  next_action_note: string | null;
+  notes: string | null;
+  capture_channel: CaptureChannel | null;
+  referral_name: string | null;
+  referral_contact: string | null;
+};
+
+// O HISTÓRICO da empresa (3ª volta do OC-00083) — as mesmas quatro leituras
+// que o quadro do funil já faz para o cartão, aqui para UMA empresa.
+type ActivityRow = {
+  id: string;
+  author_id: string | null;
+  kind: string;
+  note: string | null;
+  created_at: string;
+};
+
+type HistoryRow = {
+  stage: LeadStage;
+  entered_at: string;
+  left_at: string | null;
+  is_initial: boolean;
+};
+
+type ContactAttemptRow = {
+  id: string;
+  channel: ContactChannel;
+  outcome: ContactOutcome;
+  note: string | null;
+  attempted_at: string;
+  author_id: string | null;
+};
+
+type MeetingRow = {
+  id: string;
+  title: string | null;
+  mode: MeetingMode;
+  location: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: MeetingStatus;
+  status_note: string | null;
 };
 
 type ReviewRow = {
@@ -180,7 +247,7 @@ export default async function FichaDoLeadPage({
   const { data: lead } = await db
     .from("commercial_leads")
     .select(
-      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, company_id, contract_signed_at, implantation_paid_at"
+      "id, company_name, cnpj, contact_name, contact_phone, stage, consultant_id, company_id, contract_signed_at, implantation_paid_at, lost_reason, estimated_value_cents, next_action_at, next_action_note, notes, capture_channel, referral_name, referral_contact"
     )
     .eq("id", leadId)
     .maybeSingle<LeadRow>();
@@ -230,6 +297,53 @@ export default async function FichaDoLeadPage({
       .eq("lead_id", leadId)
       .returns<StepRow[]>(),
   ]);
+
+  // O histórico: anotações, relógio das fases, tentativas e reuniões.
+  //
+  // ⚠️ LEITURA QUE FALHA NÃO VIRA "SEM HISTÓRICO". Lista vazia e leitura que
+  // não respondeu dão a mesma tela se ninguém separar — e "nenhuma tentativa
+  // registrada" sobre uma empresa com dez ligações é a ficha mentindo. A aba
+  // avisa quando não conseguiu ler.
+  const [
+    { data: actRows, error: erroNotas },
+    { data: histRows, error: erroFases },
+    { data: attemptRows, error: erroTentativas },
+    { data: meetingRows, error: erroReunioes },
+  ] = await Promise.all([
+    db
+      .from("commercial_lead_activities")
+      .select("id, author_id, kind, note, created_at")
+      .eq("lead_id", leadId)
+      .order("created_at", { ascending: false })
+      .returns<ActivityRow[]>(),
+    db
+      .from("commercial_lead_stage_history")
+      .select("stage, entered_at, left_at, is_initial")
+      .eq("lead_id", leadId)
+      .order("entered_at", { ascending: true })
+      .returns<HistoryRow[]>(),
+    db
+      .from("lead_contact_attempts")
+      .select("id, channel, outcome, note, attempted_at, author_id")
+      .eq("lead_id", leadId)
+      .order("attempted_at", { ascending: false })
+      .returns<ContactAttemptRow[]>(),
+    db
+      .from("lead_meetings")
+      .select("id, title, mode, location, starts_at, ends_at, status, status_note")
+      .eq("lead_id", leadId)
+      .order("starts_at", { ascending: false })
+      .returns<MeetingRow[]>(),
+  ]);
+  const naoLidoDoHistorico = [
+    erroNotas && "as anotações",
+    erroFases && "as mudanças de fase",
+    erroTentativas && "as tentativas de contato",
+    erroReunioes && "as reuniões",
+  ].filter((x): x is string => Boolean(x));
+  for (const e of [erroNotas, erroFases, erroTentativas, erroReunioes]) {
+    if (e) console.error("histórico do lead:", e.message);
+  }
 
   const daEmpresa = templates?.find((t) => t.lead_id === leadId);
   const daRede = templates?.find((t) => !t.lead_id);
@@ -385,6 +499,8 @@ export default async function FichaDoLeadPage({
         review?.confirmed_by ?? null,
         ...(dispatches ?? []).map((d) => d.sent_by),
         ...(stepRows ?? []).map((s) => s.done_by),
+        ...(actRows ?? []).map((a) => a.author_id),
+        ...(attemptRows ?? []).map((a) => a.author_id),
       ].filter((x): x is string => Boolean(x))
     ),
   ];
@@ -458,8 +574,22 @@ export default async function FichaDoLeadPage({
     responsibleEmail: view.responsibleEmail,
     cnpj: lead.cnpj,
   };
-  const passos = stepRows ?? [];
+  const passos = (stepRows ?? []).map(
+    (s): PassoRegistrado => ({
+      step: s.step,
+      doneAt: s.done_at,
+      notApplicable: s.not_applicable,
+      note: s.note,
+      doneByName: s.done_by ? nomePorId.get(s.done_by) ?? null : null,
+    })
+  );
+  // ⚠️ A MESMA conta que a aba mostra ("2 de 5 passos"). Contar as linhas
+  // gravadas dava "0 de 0" para quem ainda não marcou passo nenhum — e o selo
+  // dizia "implantação concluída".
+  const progresso = progressoDaImplantacao(passos);
   const situacao = situacaoDasEtapas({
+    stage: lead.stage,
+    empresaCriada: Boolean(lead.company_id),
     // "Ainda não começou" é uma resposta diferente de "falta um campo", e a
     // aba precisa das duas: a linha vazia vem com os padrões da rede
     // preenchidos e pareceria quase pronta.
@@ -474,10 +604,113 @@ export default async function FichaDoLeadPage({
     contratoAssinadoEm: lead.contract_signed_at,
     implantacaoPagaEm: lead.implantation_paid_at,
     conferido: Boolean(review),
-    passosFeitos: passos.filter((s) => s.done_at || s.not_applicable).length,
-    passosTotal: passos.length,
+    passosFeitos: progresso.concluidos,
+    passosTotal: progresso.total,
   });
   const aberta = etapaInicial(lead.stage);
+
+  // ------------------------------------------------------------------------
+  // 3ª volta do OC-00083: QUEM é a empresa, O QUE FAZER agora, e o HISTÓRICO.
+  // ------------------------------------------------------------------------
+  const agora = new Date();
+  const fases: StagePeriod[] = (histRows ?? []).map((h) => ({
+    stage: h.stage,
+    enteredAt: h.entered_at,
+    leftAt: h.left_at,
+    isInitial: h.is_initial,
+  }));
+  const nome = (id: string | null) => (id ? nomePorId.get(id) ?? null : null);
+
+  // A MESMA forma que o cartão do quadro usa (`LeadView`): é o que deixa a
+  // ficha reusar as peças dele (editar dados, registrar tentativa, marcar
+  // reunião) em vez de ter cópias.
+  const leadView: LeadView = {
+    id: lead.id,
+    companyName: lead.company_name,
+    cnpj: lead.cnpj,
+    contactName: lead.contact_name,
+    contactPhone: lead.contact_phone,
+    stage: lead.stage,
+    consultantId: lead.consultant_id,
+    consultantName: nome(lead.consultant_id),
+    lostReason: lead.lost_reason,
+    companyId: lead.company_id,
+    estimatedValueCents: lead.estimated_value_cents,
+    nextActionAt: lead.next_action_at,
+    nextActionNote: lead.next_action_note,
+    notes: lead.notes,
+    captureChannel: lead.capture_channel,
+    referralName: lead.referral_name,
+    referralContact: lead.referral_contact,
+    tempoNaFase: tempoNaFaseAtual(fases, agora),
+    activities: (actRows ?? []).map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      note: a.note,
+      createdAt: a.created_at,
+      authorName: nome(a.author_id),
+    })),
+    contactAttempts: (attemptRows ?? []).map((a) => ({
+      id: a.id,
+      channel: a.channel,
+      outcome: a.outcome,
+      note: a.note,
+      attemptedAt: a.attempted_at,
+      authorName: nome(a.author_id),
+    })),
+    meetings: (meetingRows ?? []).map((m) => ({
+      id: m.id,
+      title: m.title,
+      mode: m.mode,
+      location: m.location,
+      startsAt: m.starts_at,
+      endsAt: m.ends_at,
+      status: m.status,
+      statusNote: m.status_note,
+    })),
+  };
+
+  const eventos = linhaDoTempo(
+    {
+      fases,
+      tentativas: leadView.contactAttempts,
+      reunioes: leadView.meetings,
+      envios,
+      notas: leadView.activities,
+      contratoAssinadoEm: lead.contract_signed_at,
+      implantacaoPagaEm: lead.implantation_paid_at,
+      conferidoEm: review?.confirmed_at ?? null,
+      conferidoPor: nome(review?.confirmed_by ?? null),
+    },
+    agora
+  );
+
+  const proximo = proximoPasso({
+    stage: lead.stage,
+    motivoDaPerda: lead.lost_reason,
+    temLevantamento: view.temLevantamento,
+    // A mesma conta do selo da aba Proposta (`situacaoDasEtapas`).
+    faltaProposta: new Set([
+      ...faltaParaProposta(dadosDaProposta),
+      ...faltaParaContrato(dadosDaProposta),
+    ]).size,
+    propostaEnviada: envios.some((e) => e.items.includes("PROPOSAL")),
+    contratoAssinado: Boolean(lead.contract_signed_at),
+    implantacaoPaga: Boolean(lead.implantation_paid_at),
+    conferido: Boolean(review),
+    empresaCriada: Boolean(lead.company_id),
+    passosFeitos: progresso.concluidos,
+    passosTotal: progresso.total,
+    tentativasDeContato: leadView.contactAttempts.length,
+    proximaReuniao: proximaReuniao(leadView.meetings, agora),
+  });
+
+  // A próxima ação é comparada com HOJE em dias de calendário de Brasília —
+  // no servidor, que é onde o fuso está resolvido (`@/lib/dates`).
+  const acao = proximaAcao(
+    lead.next_action_at ? isoDateIn(new Date(lead.next_action_at)) : null,
+    todayInBrazil()
+  );
 
   // A ficha ficou larga em `xl` por causa das três colunas da Proposta. As
   // demais abas são formulário de coluna única: sem esta trava elas virariam
@@ -583,6 +816,9 @@ export default async function FichaDoLeadPage({
           leadId={lead.id}
           stage={lead.stage}
           companyId={lead.company_id}
+          contractSignedAt={lead.contract_signed_at}
+          implantationPaidAt={lead.implantation_paid_at}
+          lostReason={lead.lost_reason}
           conferencia={
             review
               ? {
@@ -596,17 +832,26 @@ export default async function FichaDoLeadPage({
                 }
               : null
           }
-          passos={passos.map(
-            (s): PassoRegistrado => ({
-              step: s.step,
-              doneAt: s.done_at,
-              notApplicable: s.not_applicable,
-              note: s.note,
-              doneByName: s.done_by ? nomePorId.get(s.done_by) ?? null : null,
-            })
-          )}
+          passos={passos}
         />
         </div>
+      ),
+    },
+    {
+      id: "historico",
+      situacao: situacaoDoHistorico(eventos.length),
+      agora: false,
+      painel: (
+        <>
+          {naoLidoDoHistorico.length > 0 && (
+            <p className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+              Não foi possível ler {naoLidoDoHistorico.join(", ")} desta
+              empresa agora. O que aparece abaixo está incompleto — recarregue
+              a página antes de concluir que não há registro.
+            </p>
+          )}
+          <HistoricoDaEmpresa lead={leadView} eventos={eventos} />
+        </>
       ),
     },
   ];
@@ -625,14 +870,18 @@ export default async function FichaDoLeadPage({
         chapeu={`Funil comercial · ${LEAD_STAGE_LABELS[lead.stage]}`}
         icone={ClipboardList}
         titulo={lead.company_name}
-        descricao="Cada etapa na sua aba. A ficha abre na etapa em que a empresa está; as outras continuam a um clique."
+        /* O QUE ESTA FASE QUER DIZER — era uma frase de ajuda igual para
+           todas as empresas, e não dizia nada sobre aquela. */
+        descricao={FASE_SIGNIFICA[lead.stage]}
         voltar={{ href: "/empresarial/funil", rotulo: "Funil" }}
       />
 
-      {/* As abas montam os QUATRO formulários de uma vez e escondem os
+      <ResumoDaEmpresa lead={leadView} acao={acao} />
+
+      {/* As abas montam os formulários todos de uma vez e escondem os
           inativos — aninhar <form> dentro de <form> não funciona, e
           desmontar apagaria o que ainda não foi salvo. */}
-      <AbasDaFicha abas={abas} inicial={aberta} />
+      <AbasDaFicha abas={abas} inicial={aberta} proximo={proximo} />
     </div>
   );
 }
