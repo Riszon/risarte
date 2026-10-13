@@ -2345,7 +2345,19 @@ servidor e apagar a pasta — ela se refaz sozinha.
 `.next-test` ao encerrar (ou antes de subir). Fica como hábito do agente até
 alguém prender isso num script do repositório.
 
-### AP39. ⚠️ Dá para chegar a Fechamento (ganho) e Implantação SEM os dois selos — REGRA OU BRECHA? Perguntar ao dono
+### AP39. ✅ RESOLVIDO em 13/10/2026 (1028 / Empresarial 0.79.0) — era BRECHA: o dono escolheu "exigir os selos e a conferência, sempre"
+
+**Como ficou:** o banco recusa ganho sem os dois selos e implantação sem
+cadastro e conferência (`guard_lead_closing`); os dois botões saíram do
+cartão. Detalhe no Bloco N do `FUNIL-COMERCIAL.md`. ⏳ **1028 aplicada no
+TREINO; falta o dono rodar na PRODUÇÃO** — até lá, na produção, os botões já
+saíram da tela e a action já confere os selos, mas a barreira do banco não
+existe. O funil de lá está vazio.
+
+**Anterior à regra, no treino (não mexi):** 3 empresas em Implantação sem
+conferência e 1 ganha com cadastro e sem selos. Continuam onde estão.
+
+**O texto original do achado, para o registro:**
 
 *(13/10/2026, varrendo uma empresa de cada fase para o OC-00083.)*
 
@@ -2378,7 +2390,12 @@ que existe o caminho direto.
   **treino**, das 5 empresas ganhas ou em implantação, **4 não têm nenhum dos
   dois selos**; das 3 em implantação, **nenhuma tem conferência**.
 
-### AP36. Empresa PERDIDA não volta ao funil pela tela — falta decidir se deve voltar
+### AP36. ✅ RESOLVIDO em 13/10/2026 (Empresarial 0.79.0) — o dono escolheu "reabrir a mesma ficha"
+
+**Como ficou:** *Reabrir negociação* na aba Fechamento da empresa perdida
+(fase de volta + motivo obrigatório); o painel conta a perda pelo histórico de
+fases. **Quem pode reabrir:** quem pode marcar como perdido — o dono não
+restringiu; se quiser só o gestor, é uma linha em `reopenLead`.
 
 **Acrescentado em 13/10/2026 (noite):** o painel conta a perda pela fase
 ATUAL (`lead.stage === "CLOSED_LOST"` em `painel-funil.ts`). Reabrir a mesma
@@ -2394,7 +2411,10 @@ aparece em fase aberta. A aba Fechamento nova avisa disso antes de marcar.
 **Decisão do dono:** empresa que disse "não" em março e volta em setembro
 reabre a mesma ficha (com o histórico) ou vira cadastro novo?
 
-### AP37. O card do funil ESCONDE o aviso "a empresa foi criada, mas não copiei…"
+### AP37. ✅ RESOLVIDO em 13/10/2026 (Empresarial 0.79.0) — o card escondia o aviso "a empresa foi criada, mas não copiei…"
+
+Corrigido de carona no AP39: sobrou um botão só de criar empresa no cartão, e
+ele mostra o aviso que vem junto do "ok".
 
 *(13/10/2026, lendo `lead-board.tsx` para o OC-00083.)* **Confirmado no
 código:** `convertLeadToCompany` devolve `ok: true` COM `error` quando a

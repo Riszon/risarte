@@ -206,6 +206,17 @@ export function proximoPasso(d: DadosDoProximoPasso): ProximoPasso {
     case "CLOSED_WON":
       // A empresa vem ANTES da conferência: a conferência recusa sem ela (a
       // implantação cadastra os titulares no cadastro da empresa).
+      // Ganha SEM os dois selos só existe em empresa anterior à regra (1028).
+      // O cadastro não é criado assim — então o passo é o selo, não o botão
+      // que vai recusar.
+      if (!d.empresaCriada && !(d.contratoAssinado && d.implantacaoPaga)) {
+        return {
+          tom: "alerta",
+          titulo: "Marcar os dois selos",
+          detalhe: "A empresa está em Fechamento (ganho) sem contrato assinado e implantação paga. O cadastro só é criado com os dois.",
+          aba: "envio",
+        };
+      }
       if (!d.empresaCriada) {
         return {
           tom: "agir",

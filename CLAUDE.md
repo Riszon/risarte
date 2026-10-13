@@ -390,6 +390,29 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/10/2026 (fim da noite) — PC Administrador (Empresarial 0.78.0 → 0.79.0, migração 1028)**
+
+- **AP39 — NO FUNIL, SÓ É GANHO COM OS DOIS SELOS; SÓ IMPLANTA COM A
+  CONFERÊNCIA** (dono: "opção A"). Dois botões do cartão passavam por fora
+  ("Fechar (ganho) → criar empresa" e "Mover para Implantação") e saíram.
+  ⚠️ **A REGRA MORA NO BANCO** (`guard_lead_closing`, 1028): confere a
+  PASSAGEM de fase — o que já estava lá não é tocado. Ao mexer em fase do
+  funil, lembrar que ganho e implantação não se escolhem: chegam pelos selos
+  e pela conferência.
+- **AP36 — EMPRESA PERDIDA PODE SER REABERTA** na mesma ficha (dono: "opção
+  A"). Aba Fechamento → *Reabrir negociação*, com fase e motivo. O painel
+  passou a contar a perda pelo HISTÓRICO de fases, para reabrir não apagar a
+  perda da estatística. Quem pode reabrir = quem pode marcar como perdido (o
+  dono não restringiu).
+- AP37 de carona: o cartão mostra o aviso "criada, mas não copiei…".
+- ⏳ **1028: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Só função e
+  gatilho; não altera dado. O funil da produção está vazio.
+- **Não visto na tela:** o link "Reabrir pela ficha" no cartão de uma perdida.
+- Resíduo no treino: "ZZZ Fechamento do agente" foi reaberta, selada, virou
+  **empresa cadastrada** ("ZZZ Fechamento LTDA", CNPJ fictício trocado para
+  99.888.777/0003-28) e está em Implantação, com conferência de teste.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **13/10/2026 (noite) — PC Administrador (Empresarial 0.77.0 → 0.78.0, migração 1027)**
 
 - **O CONTRATO DENTRO DO SISTEMA** (o que faltava do OC-00083). O dono mandou
@@ -442,11 +465,8 @@ Syncthing se comportarem de forma estranha.**
 - 🔴 **Achado varrendo as fases:** o selo da aba Fechamento desmentia a fase
   (ganha SEM cadastro aparecia "implantação concluída"). Passou a olhar a fase.
 - ✅ O contrato dentro do sistema foi feito no mesmo dia (bloco acima).
-- ⚠️ **AP39 — perguntar ao dono:** o botão "Fechar (ganho) → criar empresa" do
-  card não confere os dois selos; no treino há 4 empresas ganhas/em
-  implantação sem selo nenhum. Regra ou brecha? Não mexi.
-- AP36 (perdida não volta ao funil), AP37 (o card esconde o aviso de "não
-  copiei") e AP38 (sugestão da proposta não se atualiza) no BACKLOG.
+- ✅ AP39, AP36 e AP37 resolvidos no mesmo dia (bloco da 1028, acima). AP38
+  (sugestão da proposta não se atualiza) segue no BACKLOG.
 - **Não visto na tela:** *Criar empresa* na aba Fechamento e *Marcar reunião*
   na aba Histórico.
 - Resíduo no treino: "ZZZ Fechamento do agente" ficou **perdida**, com contato

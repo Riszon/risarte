@@ -277,8 +277,9 @@ export function EnvioESelos({
             </p>
           ) : (
             <p className="text-xs text-emerald-700 dark:text-emerald-400">
-              Os dois selos estão verdes — a empresa foi para Fechamento (ganho).
-              Crie a empresa pelo cartão, no Funil.
+              Os dois selos estão verdes: em Proposta enviada ou Follow-up, a
+              empresa passa para Fechamento (ganho). O cadastro da empresa é
+              criado na aba Fechamento.
             </p>
           )}
         </CardContent>

@@ -153,6 +153,11 @@ etapas. As etapas são:
 **★ Hoje do consultor**, no topo, junta o que tem próxima ação para hoje. É por
 onde o dia começa.
 
+> **O seletor do card só oferece as fases em aberto.** Fechamento (ganho) e
+> Implantação não se escolhem: a empresa chega ao ganho pelos **dois selos** e
+> à implantação pela **conferência** (seção 7). O sistema recusa qualquer
+> outro caminho.
+
 **Mover o card** é feito pelo seletor no próprio card. **Abrir** mostra a
 janela rápida da empresa, e dela se vai à **ficha completa**. Registre cada
 **tentativa de contato, reunião e anotação** — na janela do card ou na aba
@@ -255,15 +260,23 @@ O que a aba mostra depende de onde a empresa está:
   Envio e selos**, que leva à aba onde eles são marcados. Embaixo, **O negócio
   não vai acontecer?**: escreva o motivo e marque como perdido.
 
-  > **Marcar como perdido não tem volta pela tela.** A empresa sai do funil e
-  > não há botão para trazê-la de novo. O motivo é obrigatório — é essa lista
-  > que mostra o que corrigir na oferta.
+  > **O motivo da perda é obrigatório** — é essa lista que mostra o que
+  > corrigir na oferta. Se a empresa voltar a procurar, a negociação pode ser
+  > **reaberta** (abaixo).
 - **Ganha, sem cadastro** — o botão **Criar empresa** (o mesmo do card do
-  funil). A conferência só é aceita depois dele.
+  funil). Ele exige os **dois selos** e o CNPJ completo. A conferência só é
+  aceita depois dele.
 - **Ganha, com cadastro** — a **conferência do consultor responsável**.
 - **Em implantação** — a conferência e os **passos da implantação**.
 - **Perdida** — *Negócio perdido*, com o motivo registrado. A ficha de uma
-  empresa perdida abre nesta aba: é onde está a resposta.
+  empresa perdida abre nesta aba: é onde está a resposta. Logo abaixo,
+  **A empresa voltou a procurar?**: escolha a fase em que a negociação
+  recomeça, escreva por que foi retomada e clique em **Reabrir negociação**.
+
+  > **Reabrir traz a mesma ficha de volta**, com o levantamento, a proposta e
+  > o histórico — inclusive o motivo da perda, que é o que mais vale numa
+  > retomada. **A perda continua contando no painel**: reabrir não melhora a
+  > taxa de ganho de ninguém.
 
 ### Histórico
 
@@ -549,10 +562,38 @@ da rede. **Voltar ao modelo da rede** desfaz a personalização.
 
 ## 7. Fechar o negócio
 
-Botão **Fechar — ganho**, na janela do card — ou **Criar empresa**, na aba
-**Fechamento** da ficha, quando os dois selos já levaram a empresa para
-*Fechamento (ganho)*. O sistema **cria a empresa** no cadastro e **leva a
-proposta junto**:
+**O caminho é um só, e nesta ordem:**
+
+1. **Os dois selos** — na aba *Envio e selos* da ficha, marque **Contrato
+   assinado** e **Boleto da implantação pago**. Com a empresa em *Proposta
+   enviada* ou *Follow-up*, ela passa **sozinha** para *Fechamento (ganho)*.
+2. **Criar empresa** — na aba *Fechamento* da ficha (ou no card).
+3. **A conferência do consultor** — na aba *Fechamento*. Confirmada com "está
+   tudo certo", a empresa passa **sozinha** para *Implantação*.
+
+> ⚠️ **Só é ganho com contrato assinado E implantação paga** (regra do dono,
+> 13/10/2026). O botão "Fechar (ganho)" que existia na janela do card saiu, e
+> o "Mover para Implantação" também: os dois passavam por fora dos selos e da
+> conferência. Hoje **o próprio banco recusa** ganho sem os dois selos e
+> implantação sem conferência — por qualquer caminho.
+
+> **Marcou os selos cedo demais?** Com a empresa ainda em *Apresentado*, os
+> selos ficam marcados e ela não fecha. Fecha ao chegar em *Proposta enviada*
+> — registre o envio da proposta.
+
+> **Desmarcou um selo de uma empresa ganha?** Sem cadastro criado, ela volta
+> para *Follow-up*. Com o cadastro já criado, o selo é desmarcado e a fase
+> não muda (o fato fica registrado no Histórico).
+
+> **Empresas que já estavam em Fechamento ou Implantação antes desta regra**
+> continuam onde estão. A ficha de uma ganha sem selos pede os selos antes de
+> criar o cadastro.
+
+> **Empresa que não passou pelo funil** continua podendo ser cadastrada
+> direto em *Empresarial → Nova empresa* — só pelo gestor do programa. A
+> regra dos selos é do funil.
+
+Ao **criar a empresa**, o sistema **leva a proposta junto**:
 
 - **Preços de adesão** — os da proposta, não os da rede.
 - **Faixas por quantidade** — continuam valendo no cadastro.
@@ -991,6 +1032,11 @@ usaram **não mudam** — elas guardam os benefícios, não um atalho para o gru
 **economia gerada** e funil aberto, mais a tabela por empresa.
 
 **Funil → Painel** — os indicadores e alertas da parte comercial.
+
+> **As perdas são contadas pelo histórico.** Empresa perdida e depois reaberta
+> continua valendo uma perda para o consultor e para o canal — e, se depois
+> for ganha, vale também um ganho. A taxa de ganho é ganhos ÷ (ganhos +
+> perdas).
 
 **Na empresa, aba Financeiro** — economia gerada e benefícios utilizados
 daquela empresa.

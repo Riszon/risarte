@@ -141,7 +141,13 @@ describe("o próximo passo", () => {
   });
 
   it("GANHA: a empresa vem ANTES da conferência — a conferência recusa sem ela", () => {
-    const ganha = { ...base, stage: "CLOSED_WON" as const };
+    // Ganha de verdade: com os dois selos (desde a 1028 não há outro jeito).
+    const ganha = {
+      ...base,
+      stage: "CLOSED_WON" as const,
+      contratoAssinado: true,
+      implantacaoPaga: true,
+    };
     // Sem cadastro E sem conferência — o caso de quem acabou de ganhar. A
     // primeira versão deste teste não tinha esta linha e passava verde com a
     // ordem invertida (pego ao quebrar o código de propósito).
@@ -155,6 +161,22 @@ describe("o próximo passo", () => {
     );
     const tudo = proximoPasso({ ...ganha, empresaCriada: true, conferido: true });
     expect(tudo.tom).toBe("ok");
+  });
+
+  it("ganha SEM os dois selos (anterior à regra) e sem cadastro: o passo é o selo, não o botão que recusa", () => {
+    const antiga = { ...base, stage: "CLOSED_WON" as const };
+    const semNada = proximoPasso(antiga);
+    expect(semNada.tom).toBe("alerta");
+    expect(semNada.titulo).toBe("Marcar os dois selos");
+    expect(semNada.aba).toBe("envio");
+    // Um selo só não basta.
+    expect(proximoPasso({ ...antiga, contratoAssinado: true }).titulo).toBe(
+      "Marcar os dois selos"
+    );
+    // Com cadastro já criado, a empresa antiga segue para a conferência.
+    expect(proximoPasso({ ...antiga, empresaCriada: true }).titulo).toBe(
+      "Fazer a conferência do fechamento"
+    );
   });
 
   it("implantação conta os passos — e '0 de 5' não é 'concluída'", () => {

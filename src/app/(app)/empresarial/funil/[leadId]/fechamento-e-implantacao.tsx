@@ -62,12 +62,15 @@ export function FechamentoEImplantacao({
   // esta função devolvia vazio aqui, e a aba abria em branco para toda empresa
   // em negociação — e para a PERDIDA, que abre justamente nesta aba. Toda fase
   // tem de devolver alguma coisa (régua em `ficha-do-funil.test.ts`).
-  if (stage === "CLOSED_LOST") return <NegocioPerdido motivo={lostReason} />;
+  if (stage === "CLOSED_LOST") {
+    return <NegocioPerdido leadId={leadId} motivo={lostReason} />;
+  }
   const noFechamento = stage === "CLOSED_WON" || stage === "IMPLEMENTATION";
   if (!noFechamento) {
     return (
       <FechamentoEmAberto
         leadId={leadId}
+        stage={stage}
         contractSignedAt={contractSignedAt}
         implantationPaidAt={implantationPaidAt}
       />

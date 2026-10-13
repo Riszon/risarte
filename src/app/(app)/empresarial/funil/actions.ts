@@ -17,7 +17,11 @@ import {
   LEAD_STAGE_LABELS,
   type LeadStage,
 } from "@/lib/empresarial/constants";
-import { ENTRY_STAGES } from "@/lib/empresarial/funnel";
+import {
+  ENTRY_STAGES,
+  impedimentoDaFase,
+  recusaDoBanco,
+} from "@/lib/empresarial/funnel";
 import {
   camposDaEmpresa,
   type QualificacaoDoLead,
@@ -168,6 +172,40 @@ export async function moveLeadStage(
     return { ok: false, error: "Escreva o motivo da perda." };
   }
   const db = await empresarialDb();
+
+  // AP39 (dono, 13/10/2026): só é ganho com os dois selos, e a implantação só
+  // começa pela conferência. O BANCO impõe (1028); aqui a tela pergunta antes,
+  // para a recusa chegar com o motivo e o lugar de resolver.
+  if (stage === "CLOSED_WON" || stage === "IMPLEMENTATION") {
+    const [{ data: atual, error: erroDoLead }, { data: conferencia, error: erroDaConferencia }] =
+      await Promise.all([
+        db
+          .from("commercial_leads")
+          .select("company_id, contract_signed_at, implantation_paid_at")
+          .eq("id", leadId)
+          .maybeSingle<{
+            company_id: string | null;
+            contract_signed_at: string | null;
+            implantation_paid_at: string | null;
+          }>(),
+        db
+          .from("lead_closing_reviews")
+          .select("everything_ok")
+          .eq("lead_id", leadId)
+          .maybeSingle<{ everything_ok: boolean }>(),
+      ]);
+    if (erroDoLead || erroDaConferencia || !atual) {
+      return { ok: false, error: naoConseguiConferir("os selos e a conferência desta empresa") };
+    }
+    const impedimento = impedimentoDaFase(stage, {
+      contractSignedAt: atual.contract_signed_at,
+      implantationPaidAt: atual.implantation_paid_at,
+      companyId: atual.company_id,
+      conferidoOk: Boolean(conferencia?.everything_ok),
+    });
+    if (impedimento) return { ok: false, error: impedimento };
+  }
+
   const patch: Record<string, unknown> = { stage };
   if (stage === "CLOSED_LOST") patch.lost_reason = lostReason!.trim();
   const { error } = await db
@@ -176,7 +214,10 @@ export async function moveLeadStage(
     .eq("id", leadId);
   if (error) {
     console.error("moveLeadStage failed:", error.message);
-    return { ok: false, error: "Não foi possível mover o lead." };
+    return {
+      ok: false,
+      error: recusaDoBanco(error.message) ?? "Não foi possível mover o lead.",
+    };
   }
   // O relógio da fase é gravado por GATILHO (migração 1007). Esta anotação é a
   // linha do tempo que a pessoa lê — e vai em português: "Movido para
@@ -190,6 +231,75 @@ export async function moveLeadStage(
     }`,
   });
   revalidatePath("/empresarial/funil");
+  return { ok: true };
+}
+
+/**
+ * REABRE UMA EMPRESA PERDIDA (AP36, decisão do dono em 13/10/2026).
+ *
+ * A mesma ficha volta ao funil, com tudo o que tinha: levantamento, proposta,
+ * tentativas, e o motivo pelo qual foi perdida — que é o que mais vale numa
+ * retomada. Antes, o único caminho era cadastrar um cartão novo à mão, sem
+ * ligação com o anterior.
+ *
+ * - Volta para uma fase EM ABERTO (as mesmas do cadastro). Ganho e implantação
+ *   têm caminho próprio — e o banco recusaria de qualquer jeito (1028).
+ * - O MOTIVO DA RETOMADA é obrigatório, como o da perda: daqui a seis meses
+ *   alguém vai querer saber por que a empresa voltou.
+ * - `lost_reason` NÃO é apagado: é o último motivo de perda registrado, e o
+ *   cartão só o mostra quando a empresa está perdida.
+ * - A perda continua na estatística: o painel conta pelo histórico de fases
+ *   (`perdasDoLead`), não pela fase atual.
+ */
+export async function reopenLead(
+  leadId: string,
+  stage: LeadStage,
+  motivo: string
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  if (!ENTRY_STAGES.includes(stage)) {
+    return { ok: false, error: "Escolha a fase em que a negociação recomeça." };
+  }
+  if (!motivo.trim()) {
+    return { ok: false, error: "Escreva por que a negociação foi retomada." };
+  }
+
+  const db = await empresarialDb();
+  const { data: lead, error: erroDaLeitura } = await db
+    .from("commercial_leads")
+    .select("stage")
+    .eq("id", leadId)
+    .maybeSingle<{ stage: LeadStage }>();
+  if (erroDaLeitura) {
+    return { ok: false, error: naoConseguiConferir("a fase desta empresa") };
+  }
+  if (!lead) return { ok: false, error: "Lead não encontrado." };
+  if (lead.stage !== "CLOSED_LOST") {
+    return { ok: false, error: "Só uma empresa perdida pode ser reaberta." };
+  }
+
+  const { error } = await db
+    .from("commercial_leads")
+    .update({ stage })
+    .eq("id", leadId);
+  if (error) {
+    console.error("reopenLead failed:", error.message);
+    return {
+      ok: false,
+      error: recusaDoBanco(error.message) ?? "Não foi possível reabrir a negociação.",
+    };
+  }
+  // No formato que a linha do tempo já sabe ler ("Movido para X — motivo: …"):
+  // a retomada aparece na linha da fase, com quem reabriu e por quê.
+  await db.from("commercial_lead_activities").insert({
+    lead_id: leadId,
+    author_id: session.userId,
+    kind: "STAGE_CHANGE",
+    note: `Movido para ${LEAD_STAGE_LABELS[stage]} — motivo: negociação reaberta — ${motivo.trim()}`,
+  });
+  revalidatePath("/empresarial/funil");
+  revalidatePath(`/empresarial/funil/${leadId}`);
   return { ok: true };
 }
 
@@ -276,13 +386,26 @@ export async function convertLeadToCompany(
 
   const { data: lead } = await db
     .from("commercial_leads")
-    .select("company_name, cnpj, consultant_id, company_id")
+    .select(
+      "company_name, cnpj, consultant_id, company_id, contract_signed_at, implantation_paid_at"
+    )
     .eq("id", leadId)
     .maybeSingle();
   if (!lead) return { ok: false, error: "Lead não encontrado." };
   if (lead.company_id) {
     return { ok: false, error: "Este lead já virou empresa." };
   }
+  // ⚠️ AP39 (dono, 13/10/2026): O CADASTRO SÓ NASCE DE NEGÓCIO GANHO — com os
+  // dois selos. Este botão criava a empresa ATIVA (com cobrança e benefício
+  // valendo) a partir de qualquer fase, sem contrato e sem pagamento. A
+  // conferência vem ANTES de criar: depois, a empresa já existiria.
+  const semSelos = impedimentoDaFase("CLOSED_WON", {
+    contractSignedAt: lead.contract_signed_at,
+    implantationPaidAt: lead.implantation_paid_at,
+    companyId: null,
+    conferidoOk: false,
+  });
+  if (semSelos) return { ok: false, error: semSelos };
   const cnpj = (lead.cnpj ?? "").replace(/\D/g, "");
   if (cnpj.length !== 14) {
     return {
@@ -373,10 +496,23 @@ export async function convertLeadToCompany(
     qual as unknown as Record<string, unknown> | null
   );
 
-  await db
+  // O resultado desta gravação era ignorado. Com a regra no banco (1028) ela
+  // pode ser recusada — e empresa criada sem o cartão apontar para ela é
+  // cadastro órfão que ninguém acha pelo funil. A empresa JÁ existe; a tela
+  // precisa saber que o vínculo não foi feito.
+  const { error: erroDoVinculo } = await db
     .from("commercial_leads")
     .update({ stage: "CLOSED_WON", company_id: company.id })
     .eq("id", leadId);
+  if (erroDoVinculo) {
+    console.error("convertLeadToCompany (vínculo) failed:", erroDoVinculo.message);
+    revalidatePath("/empresarial");
+    return {
+      ok: true,
+      companyId: company.id,
+      error: `A empresa foi criada, mas o cartão do funil NÃO foi ligado a ela (${recusaDoBanco(erroDoVinculo.message) ?? "erro ao gravar"}). Avise o suporte antes de seguir.`,
+    };
+  }
   await db.from("commercial_lead_activities").insert({
     lead_id: leadId,
     author_id: session.userId,

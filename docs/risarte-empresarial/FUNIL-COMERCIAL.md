@@ -1300,3 +1300,84 @@ assim no treino — está coberto por teste).
   espera um PDF hospedado).
 - A aba **Contratos** do cadastro da empresa continua registrando o contrato
   sem texto; ligá-la a este documento é o passo natural.
+
+### Bloco N — só é ganho com os selos; perdida pode voltar ✅ (migração 1028, v0.79.0)
+
+Duas perguntas que ficaram do OC-00083, respondidas pelo dono em 13/10/2026:
+**opção A nas duas**.
+
+**AP39 — o ganho e a implantação tinham atalho.** A tela dizia "só é ganho com
+contrato assinado E pagamento confirmado" e que a conferência vem "antes de a
+empresa entrar em implantação". Dois botões do cartão passavam por fora:
+"Fechar (ganho) → criar empresa" (em qualquer fase aberta, sem olhar os selos;
+criava a empresa ATIVA) e "Mover para Implantação" (sem a conferência, que é
+quem leva o combinado específico para o cadastro). Medido: funil da produção
+vazio; no treino, 4 de 5 ganhas sem nenhum selo e 3 de 3 em implantação sem
+conferência.
+
+**AP36 — empresa perdida não voltava.** Não havia botão; o caminho era
+cadastrar um cartão novo à mão, sem ligação com o anterior.
+
+**O que foi construído**
+
+- **A regra mora no BANCO** (`guard_lead_closing`, gatilho BEFORE em
+  `commercial_leads`): entrar em Fechamento (ganho) exige os dois selos;
+  entrar em Implantação exige cadastro criado e conferência com "tudo certo".
+- Os dois botões saíram do cartão. No lugar: o texto que diz o caminho, e
+  "Fazer a conferência" (leva à ficha).
+- `convertLeadToCompany` confere os selos **antes** de criar a empresa, e não
+  ignora mais a recusa ao ligar o cartão a ela.
+- **Reabrir negociação** na aba Fechamento da empresa perdida (`reopenLead`):
+  fase de volta + motivo obrigatório.
+- O painel conta a perda pelo **histórico** de fases (`perdasDoLead`).
+- AP37 de carona: o cartão deixou de descartar o aviso "a empresa foi criada,
+  mas não copiei…".
+
+**Decisões que valem registrar**
+
+- **⚠️ CONFERE A PASSAGEM, NÃO A FASE.** O que já estava em Fechamento ou
+  Implantação continua lá e continua editável. Regra nova não desfaz o que
+  foi feito sob a regra velha.
+- **Em negociação e com os dois selos, é ganho — por qualquer caminho.** A
+  1010 só fechava no instante em que o selo era marcado; quem marcava os dois
+  em "Apresentado" e só depois registrava o envio ficava selado e sem fechar.
+  O botão manual escondia esse buraco; sem ele, o gatilho precisou fechá-lo.
+- **Desmarcar um selo desfaz o ganho só enquanto não há cadastro.** Senão,
+  marcar, ganhar e desmarcar seria a mesma brecha por outro caminho. Com o
+  cadastro criado, o selo pode ser desmarcado e a fase fica: é fato que
+  precisa poder ser registrado, e desfazer cadastro em uso não é ato de
+  gatilho.
+- **O nome do gatilho decide a ordem**: `…_guard_closing` roda depois de
+  `…_close_when_sealed` (ordem alfabética). Há teste.
+- **A tela pergunta antes e diz a MESMA frase que o banco** (`impedimentoDaFase`
+  × `recusaDoBanco`; teste prende as duas e exige tradução para todo código
+  que a migração levanta).
+- **Reabrir não apaga o motivo da perda** (`lost_reason` fica) e escreve a
+  retomada no formato que a linha do tempo já funde à linha da fase.
+- **Quem pode reabrir é quem pode marcar como perdido** (quem acessa o
+  cartão). O dono não restringiu; se quiser só o gestor, é uma linha.
+- **Empresa cadastrada direto** (Empresarial → Nova empresa, só gestor) não
+  passa pelo funil e não é afetada.
+
+**Conferido**
+
+- No banco do treino, como usuário logado, em transação desfeita — 19
+  conferências: ganho sem selo e com um selo recusados; segundo selo fecha
+  sozinho e o relógio registra; nascer fechado ou implantando é recusado;
+  selada cedo fecha ao chegar em Proposta enviada; desmarcar devolve ao
+  Follow-up; implantação sem cadastro e sem conferência recusadas; conferência
+  com pendência não implanta; confirmada implanta; as 4 empresas antigas sem
+  selo continuam editáveis; perdida reabre e o histórico guarda as duas perdas.
+- 16 quebras de propósito, cada uma reprovada no teste esperado
+  (`fechamento-do-funil.test.ts`, `ficha-do-funil.test.ts`).
+- Na tela do treino, com a empresa de teste: reabrir (Follow-up, motivo na
+  linha do tempo) → um selo (continua em Follow-up) → segundo selo (ganho
+  sozinho) → **Criar empresa** na aba Fechamento (recusou o CNPJ repetido,
+  criou depois de trocar) → **conferência** → Implantação. No quadro: sem
+  "Mover para Implantação", sem "Fechar (ganho)" na janela do cartão.
+
+**Não visto na tela**: o link "Reabrir pela ficha" no cartão de uma empresa
+perdida (a única perdida do treino foi a reaberta no teste).
+
+**Anterior à regra, no treino (não mexi):** 3 empresas em Implantação sem
+conferência e 1 ganha com cadastro e sem selos.

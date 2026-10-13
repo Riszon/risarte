@@ -7,6 +7,7 @@
 // Ver migração 1007 (`commercial_lead_stage_history`).
 
 import type { LeadStage } from "./constants";
+import { faltaParaFechar } from "./envio";
 
 // -----------------------------------------------------------------------------
 // As colunas do quadro
@@ -97,6 +98,69 @@ export function isOpenStage(stage: LeadStage): boolean {
 export const ENTRY_STAGES: readonly LeadStage[] = FUNNEL_COLUMNS.filter(
   (c) => c.stages.length === 1 && isOpenStage(c.stages[0])
 ).map((c) => c.stages[0]);
+
+// -----------------------------------------------------------------------------
+// O que impede uma empresa de entrar em Fechamento (ganho) e em Implantação
+// -----------------------------------------------------------------------------
+
+export type DadosDoFechamento = {
+  contractSignedAt: string | null;
+  implantationPaidAt: string | null;
+  companyId: string | null;
+  /** Existe conferência do consultor com "está tudo certo". */
+  conferidoOk: boolean;
+};
+
+/**
+ * O QUE IMPEDE A PASSAGEM para `destino` — ou `null`, quando pode passar.
+ *
+ * Decisão do dono (13/10/2026, AP39): **só é ganho com os dois selos, e a
+ * implantação só começa pela conferência**. Antes, dois botões do cartão
+ * passavam por fora das duas regras que a própria tela enunciava.
+ *
+ * ⚠️ QUEM IMPÕE É O BANCO (gatilho `guard_lead_closing`, migração 1028). Esta
+ * função existe para a tela dizer o motivo ANTES de tentar, com as mesmas
+ * palavras — recusa que chega como código de erro ninguém entende.
+ */
+export function impedimentoDaFase(
+  destino: LeadStage,
+  d: DadosDoFechamento
+): string | null {
+  if (destino === "CLOSED_WON") {
+    const falta = faltaParaFechar(d);
+    return falta.length === 0
+      ? null
+      : `Só é ganho com contrato assinado e implantação paga. Falta: ${falta.join(" e ")}. Marque os selos na aba Envio e selos da ficha.`;
+  }
+  if (destino === "IMPLEMENTATION") {
+    if (!d.companyId) {
+      return "Crie o cadastro da empresa antes: é nele que a implantação cadastra os titulares.";
+    }
+    if (!d.conferidoOk) {
+      return "A implantação começa pela conferência do consultor, na aba Fechamento da ficha.";
+    }
+  }
+  return null;
+}
+
+/**
+ * A recusa do BANCO, em português — para o caso de a passagem ser tentada por
+ * um caminho que não perguntou antes. Devolve `null` no que não reconhece:
+ * erro novo nunca vira mensagem errada com cara de certa.
+ */
+export function recusaDoBanco(mensagem: string | null | undefined): string | null {
+  const m = mensagem ?? "";
+  if (m.includes("WON_WITHOUT_SEALS")) {
+    return "Só é ganho com contrato assinado e implantação paga. Marque os dois selos na aba Envio e selos da ficha.";
+  }
+  if (m.includes("IMPLEMENTATION_WITHOUT_COMPANY")) {
+    return "Crie o cadastro da empresa antes: é nele que a implantação cadastra os titulares.";
+  }
+  if (m.includes("IMPLEMENTATION_WITHOUT_REVIEW")) {
+    return "A implantação começa pela conferência do consultor, na aba Fechamento da ficha.";
+  }
+  return null;
+}
 
 // -----------------------------------------------------------------------------
 // O filtro da coluna de Fechamento

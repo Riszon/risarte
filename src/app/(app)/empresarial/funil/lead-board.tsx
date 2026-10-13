@@ -280,6 +280,14 @@ function LeadCard({
           Motivo: {lead.lostReason}
         </p>
       )}
+      {lead.stage === "CLOSED_LOST" && (
+        <Link
+          href={`/empresarial/funil/${lead.id}`}
+          className="mt-1 block text-xs underline underline-offset-2"
+        >
+          Reabrir pela ficha
+        </Link>
+      )}
 
       {lead.stage === "CLOSED_WON" ? (
         <div className="mt-2 space-y-1">
@@ -294,13 +302,17 @@ function LeadCard({
               >
                 Ver empresa
               </Button>
+              {/* ⚠️ ERA "Mover para Implantação", e pulava a conferência do
+                  consultor — que é o que leva o combinado específico para o
+                  cadastro da empresa (AP39, dono, 13/10/2026). A implantação
+                  começa pela conferência, na ficha. */}
               <Button
                 size="sm"
                 className="h-7 w-full text-xs"
-                disabled={isPending}
-                onClick={() => move("IMPLEMENTATION")}
+                nativeButton={false}
+                render={<Link href={`/empresarial/funil/${lead.id}`} />}
               >
-                Mover para Implantação
+                Fazer a conferência
               </Button>
             </>
           ) : (
@@ -319,7 +331,11 @@ function LeadCard({
                   startTransition(async () => {
                     const r = await convertLeadToCompany(lead.id);
                     if (r.ok) {
-                      toast.success("Empresa criada.");
+                      // AP37: a action devolve `ok` COM aviso quando a
+                      // empresa nasceu mas algo não foi copiado (ou o cartão
+                      // não foi ligado a ela). O aviso era descartado aqui.
+                      if (r.error) toast.warning(r.error);
+                      else toast.success("Empresa criada.");
                       router.refresh();
                     } else toast.error(r.error ?? "Erro.");
                   })
@@ -461,20 +477,16 @@ function LeadDetailDialog({
         {isOpenStage(lead.stage) && (
           <div className="space-y-2 rounded-lg border p-3">
             <p className="text-sm font-medium">Fechamento</p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                disabled={isPending}
-                onClick={() =>
-                  run(
-                    async () => convertLeadToCompany(lead.id),
-                    "Fechado! Empresa criada."
-                  )
-                }
-              >
-                Fechar (ganho) → criar empresa
-              </Button>
-            </div>
+            {/* ⚠️ AQUI FICAVA "Fechar (ganho) → criar empresa", que criava a
+                empresa ATIVA a partir de qualquer fase, sem olhar os selos
+                (AP39, dono, 13/10/2026). O ganho agora tem um caminho só: os
+                dois selos, na ficha. */}
+            <p className="text-xs text-muted-foreground">
+              Só é ganho com <strong>contrato assinado e implantação
+              paga</strong>. Marque os dois selos na ficha (aba{" "}
+              <em>Envio e selos</em>): a empresa passa sozinha para Fechamento
+              (ganho), e o cadastro é criado na aba <em>Fechamento</em>.
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 value={lostReason}

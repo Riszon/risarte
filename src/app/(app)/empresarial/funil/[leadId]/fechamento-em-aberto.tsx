@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatBrDate } from "@/lib/dates";
 import { faltaParaFechar } from "@/lib/empresarial/envio";
-import { convertLeadToCompany, moveLeadStage } from "../actions";
+import { LEAD_STAGE_LABELS, type LeadStage } from "@/lib/empresarial/constants";
+import { ENTRY_STAGES } from "@/lib/empresarial/funnel";
+import { convertLeadToCompany, moveLeadStage, reopenLead } from "../actions";
 import { BotaoIrParaAba } from "./abas-da-ficha";
 
 /**
@@ -27,10 +29,12 @@ import { BotaoIrParaAba } from "./abas-da-ficha";
  */
 export function FechamentoEmAberto({
   leadId,
+  stage,
   contractSignedAt,
   implantationPaidAt,
 }: {
   leadId: string;
+  stage: string;
   contractSignedAt: string | null;
   implantationPaidAt: string | null;
 }) {
@@ -46,8 +50,9 @@ export function FechamentoEmAberto({
             <p className="text-xs text-muted-foreground">
               Só é ganho com <strong>contrato assinado E pagamento da
               implantação confirmado</strong>. Quando os dois estiverem
-              marcados, a empresa passa sozinha para Fechamento (ganho) e a
-              conferência do consultor aparece nesta aba.
+              marcados, a empresa passa sozinha para Fechamento (ganho); aí
+              esta aba traz o botão de criar o cadastro e, depois, a
+              conferência do consultor. Não há outro caminho para o ganho.
             </p>
           </div>
 
@@ -60,7 +65,11 @@ export function FechamentoEmAberto({
             <p className="text-sm">
               {falta.length > 0
                 ? `Falta: ${falta.join(" e ")}.`
-                : "Os dois selos estão marcados."}
+                : // Selada antes da hora: o ganho acontece ao chegar em
+                  // Proposta enviada — registrar o envio é o que falta.
+                  stage === "PROPOSAL_SENT" || stage === "FOLLOW_UP"
+                  ? "Os dois selos estão marcados."
+                  : "Os dois selos estão marcados. A empresa vira ganho quando chegar em Proposta enviada — registre o envio da proposta."}
             </p>
             <BotaoIrParaAba aba="envio">Marcar em Envio e selos</BotaoIrParaAba>
           </div>
@@ -117,8 +126,9 @@ function MarcarComoPerdido({ leadId }: { leadId: string }) {
           <p className="text-sm font-medium">O negócio não vai acontecer?</p>
           <p className="text-xs text-muted-foreground">
             Marque como perdido e escreva o motivo — é essa lista que mostra o
-            que corrigir na oferta. A empresa sai do funil, e a tela não tem
-            botão para trazê-la de volta: confira antes de marcar.
+            que corrigir na oferta. A empresa sai do funil; se ela voltar a
+            procurar, dá para reabrir a negociação por esta mesma aba, e a
+            perda continua contando no painel.
           </p>
         </div>
         <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
@@ -147,21 +157,101 @@ function MarcarComoPerdido({ leadId }: { leadId: string }) {
   );
 }
 
-/** A empresa foi perdida: a aba diz isso, e por quê. */
-export function NegocioPerdido({ motivo }: { motivo: string | null }) {
+/** A empresa foi perdida: a aba diz isso, por quê — e deixa retomar. */
+export function NegocioPerdido({
+  leadId,
+  motivo,
+}: {
+  leadId: string;
+  motivo: string | null;
+}) {
   return (
-    <Card>
+    <>
+      <Card>
+        <CardContent className="space-y-2 p-4">
+          <p className="text-sm font-medium">Negócio perdido</p>
+          <p className="text-sm">
+            <span className="text-muted-foreground">Motivo registrado: </span>
+            {motivo || "nenhum motivo foi registrado."}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O levantamento, a proposta e o histórico desta empresa continuam nas
+            outras abas, para consulta.
+          </p>
+          <BotaoIrParaAba aba="historico">Ver o histórico</BotaoIrParaAba>
+        </CardContent>
+      </Card>
+      <ReabrirNegociacao leadId={leadId} />
+    </>
+  );
+}
+
+/**
+ * A empresa voltou a procurar (AP36, dono, 13/10/2026). A MESMA ficha volta ao
+ * funil, com tudo o que tinha — inclusive o motivo da perda, que é o que mais
+ * vale numa retomada.
+ */
+function ReabrirNegociacao({ leadId }: { leadId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [fase, setFase] = useState<LeadStage>("CONTACT");
+  const [motivo, setMotivo] = useState("");
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    startTransition(async () => {
+      const r = await reopenLead(leadId, fase, motivo);
+      if (r.ok) {
+        toast.success("Negociação reaberta.");
+        router.refresh();
+      } else toast.error(r.error ?? "Erro.");
+    });
+  }
+
+  return (
+    <Card className="border-gold/40">
       <CardContent className="space-y-2 p-4">
-        <p className="text-sm font-medium">Negócio perdido</p>
-        <p className="text-sm">
-          <span className="text-muted-foreground">Motivo registrado: </span>
-          {motivo || "nenhum motivo foi registrado."}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          O levantamento, a proposta e o histórico desta empresa continuam nas
-          outras abas, para consulta.
-        </p>
-        <BotaoIrParaAba aba="historico">Ver o histórico</BotaoIrParaAba>
+        <div>
+          <p className="text-sm font-medium">A empresa voltou a procurar?</p>
+          <p className="text-xs text-muted-foreground">
+            Reabra a negociação nesta mesma ficha: o levantamento, a proposta e
+            o histórico voltam junto. A perda de agora continua registrada e
+            contando no painel.
+          </p>
+        </div>
+        <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
+          <div>
+            <Label htmlFor="fase-da-retomada" className="text-xs">
+              Recomeça em
+            </Label>
+            <select
+              id="fase-da-retomada"
+              value={fase}
+              onChange={(e) => setFase(e.target.value as LeadStage)}
+              className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs"
+            >
+              {ENTRY_STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {LEAD_STAGE_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-56 flex-1">
+            <Label htmlFor="motivo-da-retomada" className="text-xs">
+              Por que foi retomada *
+            </Label>
+            <Input
+              id="motivo-da-retomada"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+          <Button type="submit" size="sm" disabled={isPending || !motivo.trim()}>
+            Reabrir negociação
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
@@ -200,7 +290,8 @@ export function CriarEmpresaDoLead({ leadId }: { leadId: string }) {
           O negócio está ganho, mas a empresa ainda não tem cadastro — e é nele
           que a implantação cadastra os titulares. O cadastro nasce com os
           preços, as faixas e os benefícios desta proposta. Exige o CNPJ
-          completo.
+          completo e os dois selos marcados (contrato assinado e implantação
+          paga).
         </p>
         <Button type="button" size="sm" disabled={isPending} onClick={criar}>
           Criar empresa

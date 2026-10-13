@@ -196,6 +196,24 @@ export type Recorte = {
   taxaDeGanho: number | null;
 };
 
+/**
+ * QUANTAS VEZES ESTA EMPRESA FOI PERDIDA — pelo HISTÓRICO, não pela fase de
+ * agora.
+ *
+ * Desde 13/10/2026 (AP36) uma empresa perdida pode ser reaberta. Contando a
+ * perda pela fase atual, reabrir apagaria a perda da estatística do
+ * consultor — e a taxa de ganho subiria sem ninguém ter ganhado nada. O
+ * relógio das fases guarda cada passagem por "Fechamento (perda)"; é dele que
+ * se conta.
+ *
+ * Perdida SEM histórico (lead anterior ao relógio, sem linha nenhuma) conta
+ * uma: a fase atual é a única evidência, e ela existe.
+ */
+export function perdasDoLead(lead: LeadDoPainel): number {
+  const noHistorico = lead.history.filter((h) => h.stage === "CLOSED_LOST").length;
+  return Math.max(noHistorico, lead.stage === "CLOSED_LOST" ? 1 : 0);
+}
+
 function recortar(
   leads: readonly LeadDoPainel[],
   chaveDe: (l: LeadDoPainel) => { chave: string; rotulo: string }
@@ -218,12 +236,11 @@ function recortar(
 
     if (lead.stage === "CLOSED_WON" || lead.stage === "IMPLEMENTATION") {
       atual.ganhos += 1;
-    } else if (lead.stage === "CLOSED_LOST") {
-      atual.perdas += 1;
-    } else {
+    } else if (lead.stage !== "CLOSED_LOST") {
       atual.emAberto += 1;
       atual.valorEmAbertoCents += lead.estimatedValueCents ?? 0;
     }
+    atual.perdas += perdasDoLead(lead);
     mapa.set(chave, atual);
   }
 
