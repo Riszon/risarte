@@ -31,7 +31,7 @@ import { toIsoDate } from "@/lib/agenda-view";
 // sem fuso aqui: no servidor da Vercel (UTC) isso nasce 3 horas atrás, e a
 // agenda passa a recusar remarcação dizendo "horário no passado". Ver o
 // comentário grande em `src/lib/dates.ts`.
-import { instantFromBrazil, startOfDayInBrazil, weekdayOf } from "@/lib/dates";
+import { formatInBrazil, instantFromBrazil, startOfDayInBrazil, weekdayOf } from "@/lib/dates";
 import {
   missingClientFields,
   missingSummary,
@@ -1381,6 +1381,52 @@ export async function checkInAppointment(
 
 /** Professional calls the client (in_service), finishes the attendance (done)
  * or records that the client gave up waiting (gave_up — H3.4). */
+/**
+ * OC-00091: a recusa "o profissional já está em atendimento" passou a dizer
+ * QUAL atendimento está aberto e de que dia — antes, o atendimento aberto podia
+ * ser de outro dia, fora do quadro, e ninguém achava onde concluir.
+ *
+ * Só lê o que a pessoa já enxerga (a regra do banco vale aqui também); se não
+ * enxergar, a frase continua útil, sem o nome.
+ */
+async function qualAtendimentoEstaAberto(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  appointmentId: string
+): Promise<string> {
+  const base =
+    "Este profissional já está em atendimento não concluído. Conclua o atendimento atual antes de chamar outro cliente.";
+  const { data: atual } = await supabase
+    .from("appointments")
+    .select("provider_user_id")
+    .eq("id", appointmentId)
+    .maybeSingle();
+  if (!atual?.provider_user_id) return base;
+  const { data: aberto } = await supabase
+    .from("appointments")
+    .select("starts_at, type, clients ( full_name ), clinics ( name )")
+    .eq("provider_user_id", atual.provider_user_id)
+    .eq("attendance", "in_service")
+    .neq("id", appointmentId)
+    .order("called_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{
+      starts_at: string;
+      type: string;
+      clients: { full_name: string } | null;
+      clinics: { name: string } | null;
+    }>();
+  if (!aberto) return base;
+  const quando = formatInBrazil(aberto.starts_at, {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const quem = aberto.clients?.full_name ?? "um cliente";
+  const onde = aberto.clinics?.name ? ` (${aberto.clinics.name})` : "";
+  return `Este profissional ainda está em atendimento com ${quem} — agendamento de ${quando}${onde}. Conclua esse atendimento (ele aparece em "Em atendimento") antes de chamar outro cliente.`;
+}
+
 export async function updateAttendance(
   appointmentId: string,
   state: "in_service" | "done" | "gave_up"
@@ -1415,8 +1461,7 @@ export async function updateAttendance(
     if (error.message.includes("PROVIDER_BUSY")) {
       return {
         ok: false,
-        error:
-          "Este profissional já está em atendimento não concluído. Conclua o atendimento atual antes de chamar outro cliente.",
+        error: await qualAtendimentoEstaAberto(supabase, appointmentId),
       };
     }
     if (error.message.includes("ROOM_BUSY")) {

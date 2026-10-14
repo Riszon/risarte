@@ -1,7 +1,34 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.312.0** · Última migração: **0292** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.313.0** · Última migração: **0293** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎤 0.313.0 / 0293 — A APRESENTAÇÃO TERMINA QUANDO O TRABALHO TERMINA (OC-00091, 14/10/2026)
+>
+> **O que aconteceu (lido no banco do treino):** em 28/09, 18:25, o consultor
+> iniciou pelo funil a apresentação de um cliente — e o agendamento escolhido
+> era o de AMANHÃ 14:00 (janela de ±1 dia da 0269), que virou "em
+> atendimento"; 18:26 a venda foi concluída e o atendimento ficou aberto (só
+> "apresentado/cancelado/perdido" encerravam); 18:40 o consultor não conseguiu
+> chamar o próximo ("profissional já está em atendimento"), e o atendimento
+> aberto, de outro dia, não aparecia no quadro.
+>
+> **Decisões do dono:** venda concluída e follow-up também encerram; a regra
+> do profissional ocupado (H3.4b) continua.
+>
+> **0293:** `commercial_set_stage` encerra também no follow-up (só o que
+> estava acontecendo) e procura primeiro o atendimento ABERTO de qualquer dia;
+> gatilho `commercial_sales_end_presentation` encerra a apresentação quando a
+> venda é concluída — mesmo se quem confirma não chamou o cliente (a regra
+> "quem chamou conclui" recusaria) — e nunca derruba a venda.
+>
+> **Tela:** o quadro de Atendimento mostra o "em atendimento" de qualquer dia
+> (selo "Marcado para…"); a recusa diz com quem e de quando é o atendimento
+> aberto.
+>
+> **Provado:** transação desfeita no treino reproduzindo o relato (8
+> conferências); 10 quebras de propósito; quadro visto no treino. **Não
+> visto:** o selo "Marcado para…" e a frase nova da recusa.
+>
 > ## 🧾 0.312.0 (sem migração) — A TELA SEGUE O BANCO (OC-00094 a OC-00099, 14/10/2026)
 >
 > **Seis relatos, uma causa.** Quem relatou é **Franqueadora/Rede** — função de

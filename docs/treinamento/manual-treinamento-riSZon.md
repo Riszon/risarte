@@ -1683,7 +1683,20 @@ e a cobrança não muda até alguém autorizar.
 > |---|---|
 > | Recebe o cliente e coloca **em espera** | O cartão mostra **Em espera** e há quantos minutos |
 > | — | Você move o cartão para **Acontecendo agora** → o cliente vira **Em atendimento** na tela dela |
-> | — | Você marca **Apresentado** (ou cancelado/perdido) → o atendimento é **concluído** sozinho |
+> | — | Você marca **Apresentado**, **Follow-up**, **Cancelado** ou **Perdido** → o atendimento é **concluído** sozinho |
+> | — | A **venda é concluída** (contrato + pagamento confirmados, por você ou pela Assistente) → o atendimento é **concluído** sozinho |
+>
+> **Follow-up só encerra o que estava acontecendo:** mandar para follow-up um
+> cliente que nem foi apresentado não marca a apresentação como feita.
+>
+> **Um atendimento aberto de cada vez.** Enquanto você tiver um atendimento
+> sem concluir, o sistema não deixa chamar outro cliente — é o que mantém a
+> sala de espera confiável. A recusa diz **com quem e de quando** é o
+> atendimento aberto, e ele aparece em **Em atendimento** na tela da recepção,
+> **seja de que dia for** (com o selo *Marcado para…* quando a apresentação
+> era de outro dia e foi iniciada antes). Fechar venda em follow-up não
+> depende de chamar ninguém: contrato e pagamento não passam pela sala de
+> espera.
 >
 > Por isso o menu **Atendimento** não aparece mais para você: o que você
 > precisa saber já está no cartão. O quadro se atualiza sozinho a cada 45

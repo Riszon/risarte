@@ -481,6 +481,24 @@ export default async function AtendimentoPage(
   const { data } = await query.returns<Row[]>();
   let rows = data ?? [];
 
+  // OC-00091: o que está EM ATENDIMENTO aparece no quadro, seja de que dia for.
+  // Uma apresentação de AMANHÃ iniciada hoje pelo funil ficava "em
+  // atendimento" sem aparecer em lugar nenhum — e o profissional ficava preso
+  // ("já está em atendimento não concluído") sem ter onde concluir.
+  {
+    let abertos = supabase
+      .from("appointments")
+      .select(SELECT)
+      .eq("attendance", "in_service")
+      .order("starts_at");
+    abertos = consultantView
+      ? abertos.eq("provider_user_id", session.userId)
+      : abertos.eq("clinic_id", clinicId!);
+    const { data: emAndamento } = await abertos.returns<Row[]>();
+    const jaNaLista = new Set(rows.map((r) => r.id));
+    rows = [...rows, ...(emAndamento ?? []).filter((r) => !jaNaLista.has(r.id))];
+  }
+
   // H3.4b: pendências de dias anteriores (a chegar / em espera / em atendimento)
   // são CARREGADAS para o painel de hoje até serem resolvidas — sem precisar
   // caçar em que dia ficaram. (Só na visão da unidade.)
@@ -635,6 +653,9 @@ export default async function AtendimentoPage(
       roomName: a.is_online ? "ONLINE" : (a.room?.name ?? null),
       // H3.4b: carregado de um dia anterior ainda sem resolução.
       pendingSinceIso: apptDate < todayIsoDate ? apptDate : null,
+      // OC-00091: iniciado ANTES do dia marcado (o funil chama a apresentação
+      // de amanhã). O card diz de que dia é, para ninguém achar que é de hoje.
+      scheduledForIso: apptDate > todayIsoDate ? apptDate : null,
       checkedInAt: a.checked_in_at,
       calledAt: a.called_at,
       doneAt: a.done_at,

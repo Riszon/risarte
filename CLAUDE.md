@@ -390,6 +390,22 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**14/10/2026 (fim da tarde) — PC Administrador (core 0.312.0 → 0.313.0, migração 0293)**
+
+- **OC-00091 — A APRESENTAÇÃO NÃO TERMINAVA.** Iniciar pelo funil pegou o
+  agendamento de AMANHÃ (janela ±1 dia), a venda concluída não encerrava, e o
+  atendimento aberto de outro dia não aparecia no quadro — o consultor ficava
+  preso pela regra "profissional ocupado".
+- ⚠️ **Decisões do dono:** venda concluída e follow-up encerram; a regra do
+  profissional ocupado CONTINUA.
+- ⚠️ **A venda concluída encerra por GATILHO na venda**
+  (`commercial_sales_end_presentation`), e encerra mesmo quando quem confirma
+  não chamou o cliente — exceção estreita à regra "quem chamou conclui", só
+  para apresentação comercial. O gatilho nunca derruba a venda.
+- ⏳ **0293: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.**
+- **Não visto na tela:** o selo "Marcado para…" e a frase nova da recusa.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **14/10/2026 (tarde) — PC Administrador (core 0.311.0 → 0.312.0, sem migração)**
 
 - **OC-00094 a OC-00099 (André, Franqueadora/Rede): UMA causa.** A função é de

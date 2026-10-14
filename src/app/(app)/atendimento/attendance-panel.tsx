@@ -88,6 +88,8 @@ export type PanelAppointment = {
   roomName?: string | null;
   /** H3.4b: dia (YYYY-MM-DD) desde quando está pendente, se veio de dia anterior. */
   pendingSinceIso?: string | null;
+  /** OC-00091: agendado para outro dia (futuro), mas já em atendimento. */
+  scheduledForIso?: string | null;
   // Attendance timeline (for the per-visit history).
   checkedInAt?: string | null;
   calledAt?: string | null;
@@ -515,6 +517,12 @@ export function AttendancePanel({
           month: "2-digit",
         })
       : null;
+    const scheduledFor = a.scheduledForIso
+      ? formatIsoDateInBrazil(a.scheduledForIso, {
+          day: "2-digit",
+          month: "2-digit",
+        })
+      : null;
     return (
       <li
         className={cn(
@@ -544,6 +552,15 @@ export function AttendancePanel({
                 className="border-red-300 bg-red-100 text-[10px] text-red-700"
               >
                 Pendente desde {pendingSince}
+              </Badge>
+            )}
+            {scheduledFor && (
+              <Badge
+                variant="outline"
+                className="border-amber-400 text-[10px] text-amber-700 dark:text-amber-300"
+                title="Iniciado antes do dia marcado — conclua aqui quando terminar."
+              >
+                Marcado para {scheduledFor}
               </Badge>
             )}
             {/* OC-00076: a recepção vê de relance quem já confirmou — a mesma

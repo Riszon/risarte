@@ -2284,6 +2284,22 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00091 ✅ (14/10/2026 — core 0.313.0, migração 0293) — a apresentação termina quando o trabalho termina
+
+Venda concluída e follow-up passaram a encerrar o atendimento da
+apresentação; o quadro de Atendimento mostra o atendimento aberto de qualquer
+dia; a recusa "profissional ocupado" diz qual é. A regra do profissional
+ocupado continua (decisão do dono). Detalhe no `ESTADO_DO_PROJETO.md`.
+⏳ **0293 aplicada no treino; falta a produção.**
+
+**Declarado, não feito:**
+
+- **A janela de ±1 dia da 0269 continua escolhendo** o agendamento ao INICIAR
+  a apresentação: iniciar hoje pode pegar a de amanhã (foi o caso do relato).
+  Agora isso aparece no quadro e encerra direito; mudar a escolha não foi
+  pedido.
+- **Não visto na tela:** o selo "Marcado para…" e a frase nova da recusa.
+
 ### OC-00094 a OC-00099 ✅ (14/10/2026 — core 0.312.0, sem migração) — a tela segue o banco
 
 Seis relatos do André (Franqueadora/Rede), uma causa: função de consulta, e o

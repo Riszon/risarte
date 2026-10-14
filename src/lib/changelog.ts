@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.313.0",
+    data: "2026-10-14",
+    migracao: "0293",
+    titulo: "A apresentação comercial termina quando o trabalho termina",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Concluir a venda (contrato + pagamento) passou a encerrar sozinho o atendimento da apresentação. Antes ele ficava aberto, e o consultor não conseguia chamar o próximo cliente (\"o profissional já está em atendimento\").",
+        papeis: ["commercial_consultant", "commercial_assistant", "receptionist"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Mover o cartão para Follow-up também encerra o atendimento da apresentação que estava acontecendo — a apresentação acabou, mesmo sem venda.",
+        papeis: ["commercial_consultant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A tela de Atendimento passou a mostrar todo atendimento em andamento, de qualquer dia — inclusive a apresentação marcada para amanhã que foi iniciada hoje, com o selo \"Marcado para\". E a recusa \"o profissional já está em atendimento\" agora diz com quem e de quando é o atendimento aberto.",
+        papeis: ["receptionist", "commercial_consultant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.312.0",
     data: "2026-10-14",
     migracao: null,
