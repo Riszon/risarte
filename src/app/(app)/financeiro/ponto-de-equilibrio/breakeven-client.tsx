@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import type { Breakeven, BreakevenRole } from "@/lib/finance/breakeven";
 import type { Bridge } from "@/lib/finance/bridge";
-
-const selectClass =
-  "h-8 rounded-md border border-input bg-background px-2 text-xs";
 
 const ROLE_LABELS: Record<BreakevenRole, string> = {
   receita: "Receita",
@@ -151,18 +149,16 @@ export function BreakevenView({
           </label>
           <label className="block">
             <Label className="text-[11px]">Centro de custo</Label>
-            <select
+            <ListaComBusca
+              aria-label="Centro de custo"
               value={costCenterId}
-              onChange={(e) => apply({ centro: e.target.value })}
-              className={cn(selectClass, "w-48")}
-            >
-              <option value="">Todos</option>
-              {costCenters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => apply({ centro: v })}
+              className="h-8 w-48"
+              options={[
+                { value: "", label: "Todos" },
+                ...costCenters.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
           </label>
           <p className="ml-auto text-[11px] text-muted-foreground">
             {days} {days === 1 ? "dia" : "dias"} no período

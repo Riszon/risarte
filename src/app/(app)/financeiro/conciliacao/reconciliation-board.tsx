@@ -45,6 +45,7 @@ import {
   unreconcileTransaction,
 } from "./actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 export type ImportRow = {
   id: string;
@@ -776,39 +777,33 @@ export function ReconciliationBoard({
               </p>
               <label className="block">
                 <Label className="text-[11px]">Conta do plano de contas</Label>
-                <select
+                <ListaComBusca
                   value={newAccountCode}
-                  onChange={(e) => setNewAccountCode(e.target.value)}
-                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— escolha —</option>
-                  {chart
-                    .filter((a) =>
-                      creatingFor.amountCents < 0
-                        ? a.kind === "expense"
-                        : a.kind === "revenue"
-                    )
-                    .map((a) => (
-                      <option key={a.code} value={a.code}>
-                        {a.code} · {a.name}
-                      </option>
-                    ))}
-                </select>
+                  onValueChange={setNewAccountCode}
+                  className="mt-0.5 h-9 w-full"
+                  options={[
+                    { value: "", label: "— escolha —" },
+                    ...chart
+                      .filter((a) =>
+                        creatingFor.amountCents < 0
+                          ? a.kind === "expense"
+                          : a.kind === "revenue"
+                      )
+                      .map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Centro de custo</Label>
-                <select
+                <ListaComBusca
                   value={newCostCenter}
-                  onChange={(e) => setNewCostCenter(e.target.value)}
-                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— sem centro —</option>
-                  {costCenters.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setNewCostCenter}
+                  className="mt-0.5 h-9 w-full"
+                  options={[
+                    { value: "", label: "— sem centro —" },
+                    ...costCenters.map((c) => ({ value: c.id, label: `${c.name}` })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Descrição</Label>

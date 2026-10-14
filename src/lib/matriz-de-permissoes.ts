@@ -16,6 +16,7 @@
 
 import type { Capability, MatrizPermissoes } from "@/lib/permissions";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+import { atendeABusca, normalizar } from "@/lib/busca";
 
 export type PadraoFixado = { roles: UserRole[]; updatedAt: string | null };
 
@@ -141,14 +142,9 @@ export function fraseDaMudanca(m: Mudanca, capacidades: readonly Capability[]): 
     : `${ROLE_LABELS[m.papel]} perde “${nome}”`;
 }
 
-/** Sem acento e sem caixa: "relatorio" acha "Relatórios". */
-export function normalizar(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
+/** Sem acento e sem caixa: "relatorio" acha "Relatórios". A regra mora em
+ * `busca.ts` — a mesma das listas com busca (OC-00100). */
+export { normalizar };
 
 export type FiltroDePermissoes = {
   busca?: string;
@@ -165,13 +161,10 @@ export function filtrarPermissoes(
   matriz: MatrizPermissoes,
   padrao: MatrizPermissoes
 ): Capability[] {
-  const termos = normalizar(filtro.busca ?? "").split(/\s+/).filter(Boolean);
   return capacidades.filter((c) => {
     if (filtro.grupo && c.grupo !== filtro.grupo) return false;
     if (filtro.soForaDoPadrao && !foraDoPadrao(matriz, padrao, c.id)) return false;
-    if (termos.length === 0) return true;
-    const texto = normalizar(`${c.rotulo} ${c.descricao} ${c.grupo}`);
-    return termos.every((t) => texto.includes(t));
+    return atendeABusca(`${c.rotulo} ${c.descricao} ${c.grupo}`, filtro.busca ?? "");
   });
 }
 

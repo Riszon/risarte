@@ -24,6 +24,7 @@ import {
   type ApprovalRule,
 } from "@/lib/finance/payables";
 import { deleteApprovalRule, saveApprovalRule } from "../payables-actions";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 /**
  * FIN3 — a alçada das contas a pagar, no padrão cascata da rede.
@@ -179,18 +180,15 @@ export function ApprovalRulesDialog({
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block sm:col-span-2">
               <Label className="text-[11px]">Conta</Label>
-              <select
+              <ListaComBusca
                 value={accountCode}
-                onChange={(e) => setAccountCode(e.target.value)}
-                className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-              >
-                <option value="">Todas as contas (padrão)</option>
-                {accounts.map((a) => (
-                  <option key={a.code} value={a.code}>
-                    {a.code} · {a.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setAccountCode}
+                className="mt-0.5 h-9 w-full"
+                options={[
+                  { value: "", label: "Todas as contas (padrão)" },
+                  ...accounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` })),
+                ]}
+              />
             </label>
             <label className="block">
               <Label className="text-[11px]">Modo</Label>

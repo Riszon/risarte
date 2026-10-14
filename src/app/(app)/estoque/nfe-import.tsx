@@ -22,6 +22,7 @@ import {
   type NfeLine,
 } from "@/lib/nfe";
 import { importNfe, resolveNfeItems } from "./actions";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 type Item = {
   id: string;
@@ -268,33 +269,27 @@ export function NfeImport({
               </div>
               <label className="block">
                 <Label className="text-[11px]">Fornecedor no sistema</Label>
-                <select
+                <ListaComBusca
                   value={supplierId}
-                  onChange={(e) => setSupplierId(e.target.value)}
-                  className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                >
-                  <option value="">—</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setSupplierId}
+                  className="h-8 w-full"
+                  options={[
+                    { value: "", label: "—" },
+                    ...suppliers.map((s) => ({ value: s.id, label: `${s.name}` })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Centro de custo</Label>
-                <select
+                <ListaComBusca
                   value={costCenterId}
-                  onChange={(e) => setCostCenterId(e.target.value)}
-                  className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                >
-                  <option value="">—</option>
-                  {costCenters.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setCostCenterId}
+                  className="h-8 w-full"
+                  options={[
+                    { value: "", label: "—" },
+                    ...costCenters.map((c) => ({ value: c.id, label: `${c.name}` })),
+                  ]}
+                />
               </label>
             </div>
 
@@ -349,34 +344,30 @@ export function NfeImport({
                           </Badge>
                         )}
                       </Label>
-                      <select
+                      <ListaComBusca
                         value={r.itemId}
-                        onChange={(e) =>
+                        onValueChange={(v) =>
                           setRows((rs) =>
                             rs.map((x, i) =>
                               i === idx
                                 ? {
                                     ...x,
-                                    itemId: e.target.value,
+                                    itemId: v,
                                     matchedBy: x.matchedBy ?? "sugestao",
                                   }
                                 : x
                             )
                           )
                         }
-                        className={cn(
-                          "h-8 w-full rounded-md border bg-background px-2 text-xs",
-                          r.itemId ? "border-input" : "border-amber-400"
-                        )}
-                      >
-                        <option value="">Escolher o item…</option>
-                        {items.map((i) => (
-                          <option key={i.id} value={i.id}>
-                            {i.name}
-                            {i.brand ? ` · ${i.brand}` : ""}
-                          </option>
-                        ))}
-                      </select>
+                        className={cn("h-8 w-full", !r.itemId && "border-amber-400")}
+                        options={[
+                          { value: "", label: "Escolher o item…" },
+                          ...items.map((i) => ({
+                            value: i.id,
+                            label: `${i.name}${i.brand ? ` · ${i.brand}` : ""}`,
+                          })),
+                        ]}
+                      />
                     </label>
                     <label className="block w-32">
                       <Label className="text-[11px]">

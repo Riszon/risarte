@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -830,20 +831,13 @@ export function StockManager({
                 <div className="grid gap-2 sm:grid-cols-4">
                   <label className="block">
                     <Label className="text-[11px]">Fornecedor</Label>
-                    <select
+                    <ListaComBusca
+                      aria-label="Fornecedor"
                       value={purchase.supplierId}
-                      onChange={(e) =>
-                        setPurchase({ ...purchase, supplierId: e.target.value })
-                      }
-                      className={selectClass}
-                    >
-                      <option value="">—</option>
-                      {suppliers.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={(v) => setPurchase({ ...purchase, supplierId: v })}
+                      className="h-8 w-full"
+                      options={[{ value: "", label: "—" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
+                    />
                   </label>
                   <label className="block">
                     <Label className="text-[11px]">Nota fiscal</Label>
@@ -871,23 +865,13 @@ export function StockManager({
                   </label>
                   <label className="block">
                     <Label className="text-[11px]">Centro de custo</Label>
-                    <select
+                    <ListaComBusca
+                      aria-label="Centro de custo"
                       value={purchase.costCenterId}
-                      onChange={(e) =>
-                        setPurchase({
-                          ...purchase,
-                          costCenterId: e.target.value,
-                        })
-                      }
-                      className={selectClass}
-                    >
-                      <option value="">—</option>
-                      {costCenters.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={(v) => setPurchase({ ...purchase, costCenterId: v })}
+                      className="h-8 w-full"
+                      options={[{ value: "", label: "—" }, ...costCenters.map((c) => ({ value: c.id, label: c.name }))]}
+                    />
                   </label>
                 </div>
 
@@ -898,28 +882,23 @@ export function StockManager({
                     <div key={idx} className="flex flex-wrap items-end gap-2">
                       <label className="block min-w-48 flex-1">
                         <Label className="text-[11px]">Item</Label>
-                        <select
+                        <ListaComBusca
+                          aria-label="Item da nota"
                           value={line.itemId}
-                          onChange={(e) =>
+                          onValueChange={(v) =>
                             setPurchase({
                               ...purchase,
-                              items: purchase.items.map((l, i) =>
-                                i === idx ? { ...l, itemId: e.target.value } : l
-                              ),
+                              items: purchase.items.map((l, i) => (i === idx ? { ...l, itemId: v } : l)),
                             })
                           }
-                          className={selectClass}
-                        >
-                          <option value="">Escolher…</option>
-                          {items
-                            .filter((i) => i.isActive)
-                            .map((i) => (
-                              <option key={i.id} value={i.id}>
-                                {i.name}
-                                {i.brand && ` · ${i.brand}`}
-                              </option>
-                            ))}
-                        </select>
+                          className="h-8 w-full"
+                          options={[
+                            { value: "", label: "Escolher…" },
+                            ...items
+                              .filter((i) => i.isActive)
+                              .map((i) => ({ value: i.id, label: `${i.name}${i.brand ? ` · ${i.brand}` : ""}` })),
+                          ]}
+                        />
                       </label>
                       <label className="block w-24">
                         <Label className="text-[11px]">
@@ -1424,22 +1403,21 @@ export function StockManager({
             <div className="grid gap-2 sm:grid-cols-6">
               <label className="block sm:col-span-3">
                 <Label className="text-[11px]">Item</Label>
-                <select
+                <ListaComBusca
+                  aria-label="Item"
                   value={mvItem}
-                  onChange={(e) => setMvItem(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Escolher…</option>
-                  {items
-                    .filter((i) => i.isActive)
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                        {i.brand && ` · ${i.brand}`} — {fmtQty(i.quantity)}{" "}
-                        {unitShort(i.unitOfMeasure)}
-                      </option>
-                    ))}
-                </select>
+                  onValueChange={setMvItem}
+                  className="h-8 w-full"
+                  options={[
+                    { value: "", label: "Escolher…" },
+                    ...items
+                      .filter((i) => i.isActive)
+                      .map((i) => ({
+                        value: i.id,
+                        label: `${i.name}${i.brand ? ` · ${i.brand}` : ""} — ${fmtQty(i.quantity)} ${unitShort(i.unitOfMeasure)}`,
+                      })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Tipo</Label>
@@ -1532,18 +1510,13 @@ export function StockManager({
                   </label>
                   <label className="block">
                     <Label className="text-[11px]">Fornecedor</Label>
-                    <select
+                    <ListaComBusca
+                      aria-label="Fornecedor"
                       value={mvSupplier}
-                      onChange={(e) => setMvSupplier(e.target.value)}
-                      className={selectClass}
-                    >
-                      <option value="">—</option>
-                      {suppliers.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={setMvSupplier}
+                      className="h-8 w-full"
+                      options={[{ value: "", label: "—" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
+                    />
                   </label>
                   <label className="block">
                     <Label className="text-[11px]">Nota fiscal</Label>
@@ -2098,18 +2071,13 @@ export function StockManager({
                           <Label className="text-[11px]">
                             Fornecedor habitual
                           </Label>
-                          <select
+                          <ListaComBusca
+                            aria-label="Fornecedor"
                             value={stSupplier}
-                            onChange={(e) => setStSupplier(e.target.value)}
-                            className={selectClass}
-                          >
-                            <option value="">—</option>
-                            {suppliers.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name}
-                              </option>
-                            ))}
-                          </select>
+                            onValueChange={setStSupplier}
+                            className="h-8 w-full"
+                            options={[{ value: "", label: "—" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
+                          />
                         </label>
                         <div className="sm:col-span-5 flex justify-end">
                           <Button
@@ -2399,28 +2367,27 @@ export function StockManager({
                   <div key={idx} className="flex flex-wrap items-end gap-2">
                     <label className="block min-w-52 flex-1">
                       <Label className="text-[11px]">Item</Label>
-                      <select
+                      <ListaComBusca
+                        aria-label="Item do kit"
                         value={line.itemId}
-                        onChange={(e) =>
+                        onValueChange={(v) =>
                           setKitDraft({
                             ...kitDraft,
-                            lines: kitDraft.lines.map((l, i) =>
-                              i === idx ? { ...l, itemId: e.target.value } : l
-                            ),
+                            lines: kitDraft.lines.map((l, i) => (i === idx ? { ...l, itemId: v } : l)),
                           })
                         }
-                        className={selectClass}
-                      >
-                        <option value="">Escolher…</option>
-                        {items
-                          .filter((i) => i.isActive)
-                          .map((i) => (
-                            <option key={i.id} value={i.id}>
-                              {i.name} — {fmtUnitCost(i.avgCostCents)}/
-                              {unitShort(i.unitOfMeasure)}
-                            </option>
-                          ))}
-                      </select>
+                        className="h-8 w-full"
+                        options={[
+                          { value: "", label: "Escolher…" },
+                          ...items
+                            .filter((i) => i.isActive)
+                            .map((i) => ({
+                              value: i.id,
+                              label: `${i.name} — ${fmtUnitCost(i.avgCostCents)}/${unitShort(i.unitOfMeasure)}`,
+                              busca: i.brand ?? "",
+                            })),
+                        ]}
+                      />
                     </label>
                     <label className="block w-32">
                       <Label className="text-[11px]">

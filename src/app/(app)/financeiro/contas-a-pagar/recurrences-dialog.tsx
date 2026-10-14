@@ -7,6 +7,7 @@ import { CalendarSync, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -251,60 +252,40 @@ export function RecurrencesDialog({
               </label>
               <label className="block">
                 <Label className="text-[11px]">Conta</Label>
-                <select
+                <ListaComBusca
+                  aria-label="Conta"
                   value={editing.accountCode}
-                  onChange={(e) =>
-                    setEditing({ ...editing, accountCode: e.target.value })
-                  }
-                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— escolha —</option>
-                  {accounts.map((a) => (
-                    <option key={a.code} value={a.code}>
-                      {a.code} · {a.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => setEditing({ ...editing, accountCode: v })}
+                  className="mt-0.5 h-9 w-full"
+                  options={[
+                    { value: "", label: "— escolha —" },
+                    ...accounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Fornecedor</Label>
-                <select
+                <ListaComBusca
                   value={editing.supplierId ?? ""}
-                  onChange={(e) =>
-                    setEditing({
-                      ...editing,
-                      supplierId: e.target.value || null,
-                    })
-                  }
-                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— sem fornecedor —</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => setEditing({ ...editing, supplierId: v || null })}
+                  className="mt-0.5 h-9 w-full"
+                  options={[
+                    { value: "", label: "— sem fornecedor —" },
+                    ...suppliers.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Centro de custo</Label>
-                <select
+                <ListaComBusca
                   value={editing.costCenterId ?? ""}
-                  onChange={(e) =>
-                    setEditing({
-                      ...editing,
-                      costCenterId: e.target.value || null,
-                    })
-                  }
-                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— sem centro —</option>
-                  {costCenters.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => setEditing({ ...editing, costCenterId: v || null })}
+                  className="mt-0.5 h-9 w-full"
+                  options={[
+                    { value: "", label: "— sem centro —" },
+                    ...costCenters.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Valor (R$)</Label>

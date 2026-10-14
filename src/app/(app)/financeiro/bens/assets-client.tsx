@@ -7,6 +7,7 @@ import { Plus, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -334,20 +335,16 @@ export function AssetsManager({
 
               <label className="block">
                 <Label className="text-[11px]">Fornecedor</Label>
-                <select
+                <ListaComBusca
+                  aria-label="Fornecedor"
                   value={form.supplierId}
-                  onChange={(e) =>
-                    setForm({ ...form, supplierId: e.target.value })
-                  }
-                  className={selectClass}
-                >
-                  <option value="">—</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => setForm({ ...form, supplierId: v })}
+                  className="h-9 w-full"
+                  options={[
+                    { value: "", label: "—" },
+                    ...suppliers.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Nota fiscal</Label>

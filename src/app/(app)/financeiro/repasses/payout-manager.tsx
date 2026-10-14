@@ -18,6 +18,7 @@ import {
   savePayoutRate,
   setProviderLevel,
 } from "./actions";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 type Level = {
   id: string;
@@ -795,18 +796,15 @@ export function PayoutManager({
             <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 sm:grid-cols-5">
               <label className="block sm:col-span-2">
                 <Label className="text-[11px]">Procedimento</Label>
-                <select
+                <ListaComBusca
                   value={procedureId}
-                  onChange={(e) => setProcedureId(e.target.value)}
-                  className="mt-0.5 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                >
-                  <option value="">Escolher…</option>
-                  {procedures.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setProcedureId}
+                  className="mt-0.5 h-8 w-full"
+                  options={[
+                    { value: "", label: "Escolher…" },
+                    ...procedures.map((p) => ({ value: p.id, label: `${p.name}` })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <Label className="text-[11px]">Nível</Label>

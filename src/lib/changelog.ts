@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.316.0",
+    data: "2026-10-14",
+    migracao: null,
+    titulo: "Listas longas com busca em Compras, Estoque e Financeiro",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Nas telas de Compras, Estoque e Financeiro, as listas de fornecedor, item do estoque, conta do plano de contas, centro de custo e procedimento abrem com um campo \"Digite para procurar…\" no alto: digite parte do nome (sem precisar de acento) e escolha com Enter ou com o clique.",
+        papeis: ["finance_franchisor", "purchaser", "unit_manager", "franchisor_staff", "franchisee", "clinical_coordinator", "tsb", "asb"],
+        manual: "7.5. Listas com busca",
+      },
+    ],
+  },
+  {
     versao: "0.315.0",
     data: "2026-10-14",
     migracao: null,

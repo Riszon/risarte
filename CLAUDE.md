@@ -390,6 +390,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**14/10/2026 (noite, 2ª) — PC Administrador (core 0.315.0 → 0.316.0, sem migração)**
+
+- **OC-00100 — LISTAS LONGAS COM BUSCA** (André, Financeiro da Franqueadora).
+  Não era defeito nem regra: o `<select>` do navegador não procura. Peça nova
+  `ListaComBusca` (`src/components/ui/lista-com-busca.tsx`) em 27 listas de
+  12 telas de Compras, Estoque e Financeiro; manual 7.5.
+- ⚠️ **A BUSCA DE TEXTO MORA EM `src/lib/busca.ts`** (sem acento, por pedaços
+  de palavra). Campo de procurar novo usa ela — a tela de Permissões já usa.
+- ⚠️ **O editor de arquivos troca `\u0300` pelo caractere invisível ao
+  gravar** (aconteceu duas vezes nesta sessão). Faixa de acento em regex se
+  escreve por script com `String.fromCharCode(92)`, e a régua confere.
+- ⚠️ **Painel do navegador escondido não desenha quadros:** o que espera "a
+  lista terminou de abrir" só acontece na próxima foto. Antes de concluir
+  "o foco não chegou", tirar uma foto entre os passos.
+- **AP45 (BACKLOG):** listas longas de outros módulos (procedimentos no
+  prontuário e nos benefícios, pessoas na Auditoria) seguem sem busca.
+- **Não visto na tela:** a lista da requisição de Compras (criaria rascunho
+  no treino) e o uso no celular.
+- Nenhum resíduo no treino (a janela de conta a pagar foi cancelada).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **14/10/2026 (noite) — PC Administrador (core 0.313.0 → 0.314.0, sem migração)**
 
 - **OC-00074 — Jornada mostra se o cliente tem agendamento** (decisão do dono:

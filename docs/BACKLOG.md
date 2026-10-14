@@ -2284,6 +2284,20 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00100 ✅ (14/10/2026 — core 0.316.0, sem migração) — listas longas com busca
+
+Relato do André (Financeiro da Franqueadora): lupa nas listas de compras,
+fornecedor, material. Não era defeito nem regra (a caixa do navegador não tem
+busca). 27 listas em 12 telas de Compras, Estoque e Financeiro ganharam o
+campo "Digite para procurar…". Manual 7.5. Detalhe no `ESTADO_DO_PROJETO.md`.
+
+**Declarado, não feito:**
+
+- **Não visto na tela:** a lista da requisição de Compras (montar a lista
+  criaria um rascunho no treino; é o mesmo componente visto em Estoque, Contas
+  a pagar e DRE) e o uso no celular, com o dedo.
+- Listas longas de outros módulos ficaram como eram — ver AP45.
+
 ### OC-00074 ✅ (14/10/2026 — core 0.314.0, sem migração) — Jornada: tem agendamento?
 
 Cada cartão da Jornada mostra o próximo agendamento ou "Sem agendamento" em
@@ -2428,6 +2442,23 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP45. Listas longas sem busca fora de Compras, Estoque e Financeiro (14/10/2026)
+
+*(Achado varrendo o sistema para o OC-00100.)*
+**Confirmado no código** (inventário das caixas nativas, 209 no total, quase
+todas curtas): continuam sem busca, por não terem sido pedidas —
+- o **catálogo de procedimentos** no orçamento do plano
+  (`prontuarios/[id]/planning-section.tsx`, "Item personalizado"), na venda
+  direta (`direct-sale-dialog.tsx`) e nos editores de benefícios do
+  Empresarial e do PPR+;
+- o filtro de **pessoas** nas cinco abas da Auditoria (este fica dentro do
+  `FilterForm`, que aplica ao trocar a caixa nativa — converter pede adaptar
+  o filtro);
+- as listas de **dentistas** e de **consultores** (crescem com a rede).
+**Conserto quando convier:** a mesma `ListaComBusca`; decisão do dono sobre
+quais. A régua de `lista-com-busca.test.ts` cobre só Compras, Estoque e
+Financeiro — estender a régua junto.
 
 ### AP44. A Jornada carrega no máximo 1.000 clientes — em silêncio (14/10/2026)
 

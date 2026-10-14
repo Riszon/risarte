@@ -1,7 +1,38 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.315.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 14/10/2026 · Versão do sistema: **0.316.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔎 0.316.0 (sem migração) — LISTAS LONGAS COM BUSCA (OC-00100, 14/10/2026)
+>
+> Relato do André (Financeiro da Franqueadora): as listas de seleção só
+> rolavam. **Não era defeito nem regra** — o `<select>` do navegador não tem
+> busca. Peça nova `src/components/ui/lista-com-busca.tsx` (Combobox do Base
+> UI, campo "Digite para procurar…" no alto) em **27 listas de 12 telas** de
+> Compras, Estoque e Financeiro: fornecedor, item, conta do plano de contas,
+> centro de custo, procedimento — inclusive os filtros de fornecedor (Contas a
+> pagar) e de centro de custo (DRE, Ponto de equilíbrio). Listas curtas
+> ficaram nativas, de propósito.
+>
+> ⚠️ **A busca mora em `src/lib/busca.ts`** (sem acento, por pedaços de
+> palavra em qualquer ordem) — a tela de Permissões passou a usar a mesma, em
+> vez de uma cópia.
+>
+> ⚠️ **O CURSOR NA BUSCA FOI MEDIDO, NÃO SUPOSTO.** A biblioteca diz focar a
+> busca ao abrir; na tela, o foco ficava no botão e o que se digitava sumia.
+> Registrando os eventos de foco: no apertar do mouse a biblioteca focava a
+> busca e o navegador devolvia o foco ao botão. Conserto: o botão não toma o
+> foco no apertar, e o cursor vai para a busca quando a lista termina de
+> abrir. Presos por teste (`lista-com-busca.test.ts`, 11 quebras
+> reprovadas).
+>
+> ⚠️ **Armadilha do ambiente de teste:** com o painel do navegador escondido,
+> a página não desenha quadros e "terminou de abrir" demora até a próxima
+> foto — o foco parece não chegar. Medir com uma foto entre os passos.
+>
+> **AP45 (BACKLOG):** listas longas fora destes módulos (catálogo de
+> procedimentos no prontuário e nos benefícios, pessoas na Auditoria) seguem
+> sem busca — não pedidas.
+>
 > ## 📅 0.314.0 (sem migração) — JORNADA: TEM AGENDAMENTO? (OC-00074, 14/10/2026)
 >
 > Pedido do Consultor e do dono: marcar na Jornada o cliente sem horário.

@@ -64,6 +64,7 @@ import {
   RecurrencesDialog,
   type RecurrenceRow,
 } from "./recurrences-dialog";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 export type PaymentRow = {
   id: string;
@@ -406,18 +407,16 @@ export function PayablesBoard({
           </>
         )}
         {suppliers.length > 0 && (
-          <select
+          <ListaComBusca
             value={supplierFilter}
-            onChange={(e) => setSupplierFilter(e.target.value)}
-            className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
-          >
-            <option value="">Todos os fornecedores</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+            onValueChange={setSupplierFilter}
+            aria-label="Fornecedor"
+            className="h-8 w-56"
+            options={[
+              { value: "", label: "Todos os fornecedores" },
+              ...suppliers.map((s) => ({ value: s.id, label: `${s.name}` })),
+            ]}
+          />
         )}
         <span className="ml-auto flex gap-1">
           {!canManage && (
@@ -770,18 +769,15 @@ export function PayablesBoard({
             </label>
             <label className="block">
               <Label className="text-[11px]">Fornecedor</Label>
-              <select
+              <ListaComBusca
                 value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
-                className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-              >
-                <option value="">— sem fornecedor —</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setSupplierId}
+                className="mt-0.5 h-9 w-full"
+                options={[
+                  { value: "", label: "— sem fornecedor —" },
+                  ...suppliers.map((s) => ({ value: s.id, label: `${s.name}` })),
+                ]}
+              />
             </label>
             <label className="block">
               <Label className="text-[11px]">Valor (R$)</Label>
@@ -794,33 +790,27 @@ export function PayablesBoard({
             </label>
             <label className="block sm:col-span-2">
               <Label className="text-[11px]">Conta do plano de contas</Label>
-              <select
+              <ListaComBusca
                 value={accountCode}
-                onChange={(e) => setAccountCode(e.target.value)}
-                className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-              >
-                <option value="">— escolha —</option>
-                {accounts.map((a) => (
-                  <option key={a.code} value={a.code}>
-                    {a.code} · {a.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setAccountCode}
+                className="mt-0.5 h-9 w-full"
+                options={[
+                  { value: "", label: "— escolha —" },
+                  ...accounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` })),
+                ]}
+              />
             </label>
             <label className="block sm:col-span-2">
               <Label className="text-[11px]">Centro de custo</Label>
-              <select
+              <ListaComBusca
                 value={costCenterId}
-                onChange={(e) => setCostCenterId(e.target.value)}
-                className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-              >
-                <option value="">— sem centro —</option>
-                {costCenters.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setCostCenterId}
+                className="mt-0.5 h-9 w-full"
+                options={[
+                  { value: "", label: "— sem centro —" },
+                  ...costCenters.map((c) => ({ value: c.id, label: `${c.name}` })),
+                ]}
+              />
             </label>
             <label className="block">
               <Label className="text-[11px]">Vencimento</Label>

@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,9 +38,6 @@ import {
   sendPurchaseRequest,
   updateRequestItem,
 } from "./actions";
-
-const selectClass =
-  "h-8 rounded-md border border-input bg-background px-2 text-xs";
 
 const TRUST_CLASS: Record<EstimateTrust, string> = {
   boa: "text-emerald-700",
@@ -345,31 +343,27 @@ export function PurchasesView({
                                 <Label className="text-[11px]">
                                   Item do estoque
                                 </Label>
-                                <select
+                                <ListaComBusca
+                                  aria-label="Item do estoque"
                                   value={newItemId}
-                                  onChange={(e) => {
-                                    setNewItemId(e.target.value);
-                                    const s = stockItems.find(
-                                      (x) => x.id === e.target.value
-                                    );
+                                  onValueChange={(v) => {
+                                    setNewItemId(v);
+                                    const s = stockItems.find((x) => x.id === v);
                                     if (s) {
                                       setNewDescription(
                                         s.brand ? `${s.name} — ${s.brand}` : s.name
                                       );
                                     }
                                   }}
-                                  className={cn(selectClass, "w-64")}
-                                >
-                                  <option value="">
-                                    Linha livre (não é item de estoque)
-                                  </option>
-                                  {stockItems.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                      {s.name}
-                                      {s.brand ? ` — ${s.brand}` : ""}
-                                    </option>
-                                  ))}
-                                </select>
+                                  className="h-8 w-64"
+                                  options={[
+                                    { value: "", label: "Linha livre (não é item de estoque)" },
+                                    ...stockItems.map((s) => ({
+                                      value: s.id,
+                                      label: s.brand ? `${s.name} — ${s.brand}` : s.name,
+                                    })),
+                                  ]}
+                                />
                               </label>
                               <label className="block flex-1">
                                 <Label className="text-[11px]">Descrição</Label>
@@ -413,20 +407,19 @@ export function PurchasesView({
                                     <Label className="text-[11px]">
                                       Conta de despesa
                                     </Label>
-                                    <select
+                                    <ListaComBusca
+                                      aria-label="Conta de despesa"
                                       value={newAccount}
-                                      onChange={(e) =>
-                                        setNewAccount(e.target.value)
-                                      }
-                                      className={cn(selectClass, "w-72")}
-                                    >
-                                      <option value="">Escolha…</option>
-                                      {accounts.map((a) => (
-                                        <option key={a.code} value={a.code}>
-                                          {a.code} {a.name}
-                                        </option>
-                                      ))}
-                                    </select>
+                                      onValueChange={setNewAccount}
+                                      className="h-8 w-72"
+                                      options={[
+                                        { value: "", label: "Escolha…" },
+                                        ...accounts.map((a) => ({
+                                          value: a.code,
+                                          label: `${a.code} ${a.name}`,
+                                        })),
+                                      ]}
+                                    />
                                   </label>
                                 </>
                               )}

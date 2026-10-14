@@ -1937,6 +1937,38 @@ cada uma.
 de referência técnica, não de treinamento, e exigiria validação em tela.
 Registrado nas lacunas.
 
+### 7.5. Listas com busca
+
+Nas telas de **Compras, Estoque e Financeiro**, as listas que crescem com a
+rede — **fornecedor, item do estoque, conta do plano de contas, centro de custo
+e procedimento** — têm um campo de busca (a lupa) no alto (desde a versão
+0.316.0):
+
+1. **Clique na lista.** Ela abre com o cursor já no campo *"Digite para
+   procurar…"*.
+2. **Digite parte do nome.** Não precisa de acento nem de maiúscula, e vale
+   digitar pedaços de palavras, em qualquer ordem: *"anest lido"* acha
+   *"Anestésico lidocaína 2%"*; *"royal"* acha *"2.6.01 · Royalties"*.
+3. **Escolha.** A primeira que atende fica destacada: **Enter** escolhe ela.
+   Também dá para clicar na que quiser, ou descer com as setas.
+4. **Esc** fecha a lista sem mudar a escolha. Dentro de uma janela (como a
+   *Nova conta a pagar*), fecha só a lista — a janela continua aberta, com o
+   que já estava preenchido.
+
+Se nada atender, a lista diz *"Nada encontrado com essa busca."* — o nome
+procurado não está nessa lista.
+
+O filtro de **fornecedor** de Contas a pagar e o de **centro de custo** da
+**DRE** e do **Ponto de equilíbrio** também têm a busca, e aplicam assim que
+se escolhe.
+
+**Continuam como eram, de propósito:** as listas curtas (unidade de medida,
+tipo de movimento, mês, conta bancária), em que rolar é mais rápido que
+digitar.
+
+**Evidência:** `src/components/ui/lista-com-busca.tsx` e `src/lib/busca.ts`;
+EV-171 e EV-172.
+
 ---
 
 ## 8. Fluxos principais de uso

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Check, Lock, Plus, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -274,20 +275,18 @@ export function RoundsView({
               <CardContent className="flex flex-wrap items-end gap-2 p-4">
                 <label className="block">
                   <Label className="text-[11px]">Cotar com o fornecedor</Label>
-                  <select
+                  <ListaComBusca
+                    aria-label="Cotar com o fornecedor"
                     value={newSupplier}
-                    onChange={(e) => setNewSupplier(e.target.value)}
-                    className={cn(selectClass, "w-56")}
-                  >
-                    <option value="">Escolha…</option>
-                    {suppliers
-                      .filter((s) => !quotes.some((q) => q.supplierId === s.id))
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                  </select>
+                    onValueChange={setNewSupplier}
+                    className="h-8 w-56"
+                    options={[
+                      { value: "", label: "Escolha…" },
+                      ...suppliers
+                        .filter((s) => !quotes.some((q) => q.supplierId === s.id))
+                        .map((s) => ({ value: s.id, label: s.name })),
+                    ]}
+                  />
                 </label>
                 <Button
                   size="sm"
