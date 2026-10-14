@@ -5,7 +5,11 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowRight, CalendarCheck, CalendarX, Clock, Plus, Stethoscope } from "lucide-react";
-import { rotuloDoAgendamento, type ProximoAgendamento } from "@/lib/agendamento-na-jornada";
+import {
+  linkDaAgenda,
+  rotuloDoAgendamento,
+  type ProximoAgendamento,
+} from "@/lib/agendamento-na-jornada";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,10 +58,14 @@ export type KanbanClient = {
    * ter lido).
    */
   next_appointment?: ProximoAgendamento | null;
+  /** A unidade do cliente — para a marca abrir a agenda certa na visão da rede. */
+  clinic_id?: string;
 };
 
 type Props = {
   clients: KanbanClient[];
+  /** Visão da rede (Franqueadora): a marca leva à agenda da unidade do cliente. */
+  visaoDaRede?: boolean;
   sla: Record<SlaKey, number | null>;
   isAdminMaster: boolean;
   clinicRoles: UserRole[];
@@ -84,6 +92,7 @@ export function KanbanBoard({
   clinicRoles,
   isPlannerAnywhere,
   canRegister,
+  visaoDaRede = false,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -258,24 +267,38 @@ export function KanbanBoard({
                     </div>
                     {/* OC-00074: tem agendamento? "Sem agendamento" em
                         destaque em todas as fases (decisão do dono). */}
+                    {/* Clicar abre a agenda: no dia do agendamento, ou para
+                        agendar com o cliente já escolhido (dono, 14/10/2026). */}
                     {client.next_appointment === undefined ? null : client.next_appointment ? (
-                      <p
-                        className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground"
-                        title="Próximo agendamento"
+                      <Link
+                        href={linkDaAgenda({
+                          clientId: client.id,
+                          clientClinicId: client.clinic_id ?? "",
+                          proximo: client.next_appointment,
+                          visaoDaRede: Boolean(visaoDaRede),
+                        })}
+                        className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                        title="Abrir a agenda no dia deste agendamento"
                       >
                         <CalendarCheck className="size-3 shrink-0" />
                         <span className="truncate">
                           {rotuloDoAgendamento(client.next_appointment)}
                         </span>
-                      </p>
+                      </Link>
                     ) : (
-                      <p
-                        className="mt-1.5 flex w-fit items-center gap-1 rounded-full border border-amber-500/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300"
-                        title="Nenhum horário marcado daqui para a frente"
+                      <Link
+                        href={linkDaAgenda({
+                          clientId: client.id,
+                          clientClinicId: client.clinic_id ?? "",
+                          proximo: null,
+                          visaoDaRede: Boolean(visaoDaRede),
+                        })}
+                        className="mt-1.5 flex w-fit items-center gap-1 rounded-full border border-amber-500/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+                        title="Nenhum horário marcado daqui para a frente — abrir a agenda para agendar"
                       >
                         <CalendarX className="size-3 shrink-0" />
                         Sem agendamento
-                      </p>
+                      </Link>
                     )}
                     {canCoordinate &&
                       (phase === "clinical_conversion" ||

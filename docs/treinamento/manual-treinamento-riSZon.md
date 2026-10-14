@@ -1679,8 +1679,10 @@ para a fase **Início de Tratamento** na Jornada, e a Recepção recebe o aviso
 agendado (fechar o aviso só adia 15 minutos). Você não precisa agendar nada.
 Para conferir se o seu cliente já tem horário, veja o cartão dele na
 **Jornada**: ele mostra o próximo agendamento ou, em amarelo, **"Sem
-agendamento"**. Se ficar sem horário mais tempo do que devia, avise a Recepção
-da unidade.
+agendamento"**. **Clicar na marca abre a agenda:** no dia do agendamento,
+para ver; ou, se não houver horário, a agenda da unidade — e para quem agenda
+(Recepção e SDR) já com o **Novo agendamento** aberto e o cliente escolhido. Se
+ficar sem horário mais tempo do que devia, avise a Recepção da unidade.
 
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
 e a cobrança não muda até alguém autorizar.
@@ -2392,7 +2394,7 @@ exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
 
 | Termo | O que é | Exemplo no sistema |
 |---|---|---|
-| **Jornada** | O caminho de 7 fases do paciente | Tela "Jornada" mostra o quadro por fase; cada cartão diz o próximo agendamento ou "Sem agendamento" (em amarelo) |
+| **Jornada** | O caminho de 7 fases do paciente | Tela "Jornada" mostra o quadro por fase; cada cartão diz o próximo agendamento ou "Sem agendamento" (em amarelo), e o clique abre a agenda |
 | **Fase** | Onde o paciente está agora | "Centro de Planejamento" |
 | **Sub-status** | Detalhe dentro da fase | "Aguardando Aprovação" |
 | **SLA** | Prazo daquela fase | Estourou → selo vermelho |

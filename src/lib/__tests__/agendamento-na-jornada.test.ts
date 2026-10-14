@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   contaComoAgendamento,
   emLotes,
+  linkDaAgenda,
   proximoPorCliente,
   rotuloDoAgendamento,
   type AgendamentoLido,
@@ -17,6 +18,7 @@ const HOJE = "2026-10-14T03:00:00.000Z";
 function ag(mudancas: Partial<AgendamentoLido> = {}): AgendamentoLido {
   return {
     client_id: "c1",
+    clinic_id: "u1",
     starts_at: "2026-10-16T17:00:00.000Z", // 16/10 14:00 no Brasil
     type: "treatment_start",
     status: "scheduled",
@@ -60,19 +62,41 @@ describe("o próximo de cada cliente", () => {
       ],
       HOJE
     );
-    expect(m.get("c1")).toEqual({ startsAt: "2026-10-16T17:00:00.000Z", type: "treatment_start" });
+    expect(m.get("c1")).toEqual({ startsAt: "2026-10-16T17:00:00.000Z", type: "treatment_start", clinicId: "u1" });
     expect(m.has("c2")).toBe(false);
   });
 });
 
 describe("o rótulo", () => {
   it("dia, hora brasileira e tipo", () => {
-    expect(rotuloDoAgendamento({ startsAt: "2026-10-16T17:00:00.000Z", type: "treatment_start" })).toBe(
+    expect(rotuloDoAgendamento({ startsAt: "2026-10-16T17:00:00.000Z", type: "treatment_start", clinicId: "u1" })).toBe(
       "16/10 14:00 · Início de Tratamento"
     );
   });
   it("tipo desconhecido vira 'Agendamento'", () => {
-    expect(rotuloDoAgendamento({ startsAt: "2026-10-16T17:00:00.000Z", type: "xyz" })).toMatch(/· Agendamento$/);
+    expect(rotuloDoAgendamento({ startsAt: "2026-10-16T17:00:00.000Z", type: "xyz", clinicId: "u1" })).toMatch(/· Agendamento$/);
+  });
+});
+
+describe("clicar na marca abre a agenda (dono, 14/10/2026)", () => {
+  const proximo = { startsAt: "2026-10-17T01:30:00.000Z", type: "evaluation", clinicId: "u9" }; // 16/10 22:30 no Brasil
+  it("com agendamento: a agenda no DIA brasileiro dele, para ver", () => {
+    expect(linkDaAgenda({ clientId: "c1", clientClinicId: "u1", proximo, visaoDaRede: false })).toBe(
+      "/agenda?vista=dia&ref=2026-10-16"
+    );
+  });
+  it("sem agendamento: a agenda já com o cliente escolhido, para agendar", () => {
+    expect(linkDaAgenda({ clientId: "c1", clientClinicId: "u1", proximo: null, visaoDaRede: false })).toBe(
+      "/agenda?cliente=c1"
+    );
+  });
+  it("na visão da rede, a unidade vai junto (a do agendamento, ou a do cliente)", () => {
+    expect(linkDaAgenda({ clientId: "c1", clientClinicId: "u1", proximo, visaoDaRede: true })).toBe(
+      "/agenda?vista=dia&ref=2026-10-16&unidade=u9"
+    );
+    expect(linkDaAgenda({ clientId: "c1", clientClinicId: "u1", proximo: null, visaoDaRede: true })).toBe(
+      "/agenda?cliente=c1&unidade=u1"
+    );
   });
 });
 
@@ -106,8 +130,13 @@ describe("a tela da Jornada", () => {
     expect(pagina).toMatch(/agendamentosLidos \? \(agendamentosLidos\.get\(id\) \?\? null\) : undefined/);
     expect(cartao).toMatch(/client\.next_appointment === undefined/);
   });
+  it("as duas marcas são links para a agenda", () => {
+    expect(cartao.match(/<Link\s+href=\{linkDaAgenda\(\{/g)).toHaveLength(2);
+    expect(cartao).toMatch(/proximo: client\.next_appointment,/);
+    expect(cartao).toMatch(/proximo: null,/);
+  });
   it("'Sem agendamento' em destaque em todas as fases (decisão do dono)", () => {
-    expect(cartao).toMatch(/border-amber-500\/60[^"]*"\s+title="Nenhum horário marcado daqui para a frente"\s*>\s*<CalendarX className="size-3 shrink-0" \/>\s*Sem agendamento/);
+    expect(cartao).toMatch(/border-amber-500\/60[^"]*"\s+title="Nenhum horário marcado daqui para a frente[^"]*"\s*>\s*<CalendarX className="size-3 shrink-0" \/>\s*Sem agendamento/);
     expect(cartao).not.toMatch(/journey_phase === "treatment_start" && .*Sem agendamento/);
   });
 });

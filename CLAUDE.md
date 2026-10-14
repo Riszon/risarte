@@ -398,6 +398,8 @@ Syncthing se comportarem de forma estranha.**
   agendamento". Manual 6.5: quem agenda depois do fechamento é a Recepção.
 - **AP44 (BACKLOG):** a Jornada tem `.limit(1000)` nos clientes — corta em
   silêncio quando a rede crescer.
+- **0.315.0:** clicar na marca abre a agenda (no dia; ou para agendar, com o
+  cliente já escolhido). Regra em `linkDaAgenda`.
 - Resíduo no treino: 1 agendamento de teste (16/12/2026 13:00, Início de
   Tratamento, cliente fictício "Teste do portão 1", observação "TESTE
   OC-00074 (pode ignorar)"). Não apagado.

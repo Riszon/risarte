@@ -148,7 +148,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
       lerTodasAsPaginas<AgendamentoLido>((de, ate) =>
         supabase
           .from("appointments")
-          .select("client_id, starts_at, type, status, attendance")
+          .select("client_id, clinic_id, starts_at, type, status, attendance")
           .in("client_id", lote)
           .gte("starts_at", inicioDeHoje)
           .in("status", ["scheduled", "confirmed"])
@@ -281,7 +281,9 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
             methodology_pillar: c.methodology_pillar,
             clinic_name: isFranchisor ? (c.clinics?.name ?? null) : null,
             next_appointment: proximoDe(c.id),
+            clinic_id: c.clinic_id,
           })) as KanbanClient[]}
+          visaoDaRede={isFranchisor}
           sla={sla}
           isAdminMaster={session.isAdminMaster}
           clinicRoles={clinicRoles}

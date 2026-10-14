@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.314.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.315.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 📅 0.314.0 (sem migração) — JORNADA: TEM AGENDAMENTO? (OC-00074, 14/10/2026)
 >
@@ -14,6 +14,11 @@ _Atualizado em: 13/10/2026 · Versão do sistema: **0.314.0** · Última migraç
 > resposta ao relato) e o glossário.
 >
 > **AP44 (BACKLOG):** a Jornada carrega no máximo 1.000 clientes, em silêncio.
+>
+> **0.315.0 (pedido do dono, mesmo dia):** a marca abre a agenda — no dia do
+> agendamento, ou com o Novo agendamento já preenchido com o cliente
+> (`?cliente=`, o mesmo caminho dos avisos da Recepção). Visto na tela como
+> Recepcionista de teste.
 >
 > ## 🎤 0.313.0 / 0293 — A APRESENTAÇÃO TERMINA QUANDO O TRABALHO TERMINA (OC-00091, 14/10/2026)
 >

@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.315.0",
+    data: "2026-10-14",
+    migracao: null,
+    titulo: "Jornada: a marca de agendamento abre a agenda",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Na Jornada, clicar no próximo agendamento do cartão abre a agenda no dia dele. Clicar em \"Sem agendamento\" abre a agenda com o Novo agendamento já preenchido com o cliente (para quem agenda: Recepção e SDR); as outras funções só abrem a agenda.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.314.0",
     data: "2026-10-14",
     migracao: null,

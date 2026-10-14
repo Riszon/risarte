@@ -14,17 +14,18 @@
 // Regra pura; a leitura mora na página.
 
 import { APPOINTMENT_TYPE_LABELS, type AppointmentType } from "@/lib/appointments";
-import { formatInBrazil } from "@/lib/dates";
+import { formatInBrazil, isoDateIn } from "@/lib/dates";
 
 export type AgendamentoLido = {
   client_id: string;
+  clinic_id: string;
   starts_at: string;
   type: string;
   status: string;
   attendance: string | null;
 };
 
-export type ProximoAgendamento = { startsAt: string; type: string };
+export type ProximoAgendamento = { startsAt: string; type: string; clinicId: string };
 
 /** Este agendamento é um horário que o cliente TEM pela frente? */
 export function contaComoAgendamento(a: AgendamentoLido, inicioDeHojeIso: string): boolean {
@@ -46,7 +47,7 @@ export function proximoPorCliente(
     if (!contaComoAgendamento(a, inicioDeHojeIso)) continue;
     const atual = saida.get(a.client_id);
     if (!atual || new Date(a.starts_at).getTime() < new Date(atual.startsAt).getTime()) {
-      saida.set(a.client_id, { startsAt: a.starts_at, type: a.type });
+      saida.set(a.client_id, { startsAt: a.starts_at, type: a.type, clinicId: a.clinic_id });
     }
   }
   return saida;
@@ -62,6 +63,30 @@ export function rotuloDoAgendamento(p: ProximoAgendamento): string {
   }).replace(",", "");
   const tipo = APPOINTMENT_TYPE_LABELS[p.type as AppointmentType] ?? "Agendamento";
   return `${quando} · ${tipo}`;
+}
+
+/**
+ * Para onde a marca leva (pedido do dono, 14/10/2026):
+ *   - COM agendamento: a agenda no DIA dele, para ver;
+ *   - SEM agendamento: a agenda com o "Novo agendamento" aberto e o cliente já
+ *     escolhido (`?cliente=`, o mesmo caminho dos avisos da Recepção). Quem
+ *     não agenda (o consultor, por exemplo) só abre a agenda.
+ * Na visão da REDE (Franqueadora), a unidade vai junto — é a agenda dela que
+ * interessa, não a da Franqueadora.
+ */
+export function linkDaAgenda(p: {
+  clientId: string;
+  clientClinicId: string;
+  proximo: ProximoAgendamento | null;
+  visaoDaRede: boolean;
+}): string {
+  if (p.proximo) {
+    const dia = isoDateIn(new Date(p.proximo.startsAt));
+    const unidade = p.visaoDaRede ? `&unidade=${p.proximo.clinicId}` : "";
+    return `/agenda?vista=dia&ref=${dia}${unidade}`;
+  }
+  const unidade = p.visaoDaRede ? `&unidade=${p.clientClinicId}` : "";
+  return `/agenda?cliente=${p.clientId}${unidade}`;
 }
 
 /** Os ids em lotes: a lista vai na URL, e mil ids de uma vez passariam do limite dela. */
