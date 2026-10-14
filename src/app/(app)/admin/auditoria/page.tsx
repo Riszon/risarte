@@ -15,6 +15,7 @@ import { VisaoAcessos } from "./visao-acessos";
 import { VisaoAcoes } from "./visao-acoes";
 import { VisaoAlteracoes } from "./visao-alteracoes";
 import { VisaoPainel } from "./visao-painel";
+import { AgoraNoSistema, VisaoOnline } from "./visao-online";
 import { VisaoPessoa } from "./visao-pessoa";
 import { VisaoRelatorio } from "./visao-relatorio";
 
@@ -93,8 +94,12 @@ export default async function AuditoriaPage(
       </nav>
 
       {visao === "painel" && (
-        <VisaoPainel supabase={supabase} pessoas={pessoas} searchParams={searchParams} />
+        <>
+          <AgoraNoSistema supabase={supabase} />
+          <VisaoPainel supabase={supabase} pessoas={pessoas} searchParams={searchParams} />
+        </>
       )}
+      {visao === "online" && <VisaoOnline supabase={supabase} />}
       {visao === "alteracoes" && (
         <VisaoAlteracoes supabase={supabase} pessoas={pessoas} searchParams={searchParams} />
       )}

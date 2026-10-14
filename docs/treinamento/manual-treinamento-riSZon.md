@@ -862,11 +862,12 @@ o sistema usa para decidir se um horário já passou, quando uma parcela vence e
 que mês um lançamento pertence. Se o relógio do seu computador mostrar outra
 coisa, quem manda é este.
 
-**E seis desenhos:**
+**E os desenhos:**
 
 | | O que é |
 |---|---|
 | Lua / Sol | **Claro ou escuro** — troca a aparência do sistema. A escolha fica no seu computador |
+| Antena, com número verde | **Quem está online** — **só o Admin Master vê este desenho.** O número é quantas pessoas estão online agora; um clique abre a lista (veja a [seção 13c](#13c-para-o-admin-master-a-auditoria)) |
 | Balão de conversa | **Chat** da equipe, com o número de mensagens não lidas |
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
@@ -2392,7 +2393,7 @@ e quais funções passaram a ter a permissão.
 banco que garante isso, não a tela.
 
 **Para que serve:** responder "quem fez o quê, quando, e o que havia antes".
-São seis abas, e a Auditoria abre na primeira (**Painel de uso**). Trocar de
+São sete abas, e a Auditoria abre na primeira (**Painel de uso**). Trocar de
 aba mantém a pessoa escolhida.
 
 ### Aba Painel de uso — o retrato do uso do sistema
@@ -2458,6 +2459,57 @@ sistema, quem parou, e o que merece a sua atenção**.
 > ⚠️ **O registro de acessos começou em 09/10/2026.** Antes disso só existe a
 > data do último login de cada pessoa — é ela que o painel usa para dizer "há
 > quantos dias não entra" de quem ainda não voltou desde então.
+
+### Aba Online agora — quem está no sistema neste instante
+
+O Painel de uso responde "como o sistema vem sendo usado". Esta aba responde
+"e **agora**?". São quatro listas:
+
+| Lista | Quem aparece |
+|---|---|
+| **Online** | Está com o sistema aberto e mexeu nele nos **últimos 5 minutos** |
+| **Ausente** | Está com o sistema aberto, mas sem clicar nem digitar há mais de 5 minutos |
+| **Saiu** | Entrou hoje e não está conectado agora — clicou em Sair, ou caiu por inatividade |
+| **Não entrou hoje** | Tem acesso ativo e ainda não entrou hoje |
+
+Para quem está online ou ausente, a linha mostra a **função e a unidade**, **em
+qual tela** a pessoa está, **a hora em que entrou** e **há quanto tempo foi a
+última atividade**. Para quem saiu, a hora em que entrou e até quando esteve.
+
+A página **se atualiza sozinha a cada minuto**, e diz no alto a hora da última
+leitura. O botão **Atualizar agora** lê na hora.
+
+**O mesmo aparece em dois outros lugares:**
+
+- **Na barra de cima**, o desenho de **antena com um número verde** — quantas
+  pessoas estão online. Um clique abre a lista de quem está conectado (online
+  e ausentes), em qualquer tela.
+- **No alto do Painel de uso**, o quadro **Agora**, com os quatro números e o
+  atalho **Ver quem**.
+
+> **"Em qual tela" é o módulo, não o endereço.** O sistema registra *Agenda*,
+> *Prontuários*, *Financeiro*, *Administração › Auditoria* — nunca qual
+> paciente a pessoa está vendo. Isso continua na aba **Ações**, com as regras
+> dela.
+
+> **"Não informada"** na coluna da tela quer dizer que aquele acesso começou
+> antes de o sistema passar a registrar a tela. Some sozinho na próxima vez
+> que a pessoa trocar de tela.
+
+> **A última atividade pode estar até um minuto atrás do que aconteceu.** A
+> tela avisa o banco no máximo uma vez por minuto.
+
+> **A bolinha do Chat pode discordar por instantes.** O Chat usa os mesmos 5
+> minutos, mas conta também o movimento do mouse; esta lista conta clique,
+> tecla, toque e rolagem — o mesmo sinal que decide a desconexão por
+> inatividade.
+
+> **Quem está "ausente" há muito tempo vai cair sozinho.** Passado o tempo de
+> inatividade da função (60 minutos, se ninguém mudou), o acesso é encerrado e
+> a pessoa passa para **Saiu**. Ver *Sessão e inatividade*.
+
+> **Só o Admin Master vê.** O resto da equipe continua vendo apenas a bolinha
+> ao lado de cada contato, dentro do Chat.
 
 ### Aba Alterações — o que mudou, campo a campo
 

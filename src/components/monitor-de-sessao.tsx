@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { todayInBrazil } from "@/lib/dates";
 import { clienteGravando, relogio } from "@/lib/gravacao";
+import { telaParaRegistrar } from "@/lib/quem-esta-online";
 import {
   CONFERIR_DIA_A_CADA_MS,
   deveMandarSinal,
@@ -62,6 +64,34 @@ export function MonitorDeSessao({
   dia: string;
 }) {
   const [restam, setRestam] = useState<number | null>(null);
+  const caminho = usePathname();
+
+  // EM QUAL TELA A PESSOA ESTÁ (0291) — o que o Admin Master vê em "Quem está
+  // online". Vai o MÓDULO, nunca o endereço: `telaParaRegistrar` corta o que
+  // tiver identificador, e o banco recusa de novo.
+  //
+  // ⚠️ CHAMADA À PARTE, e não um dado a mais no sinal de atividade: o código
+  // vai ao ar sozinho e a migração espera alguém rodar. Se o sinal passasse a
+  // pedir algo que o banco ainda não conhece, ele falharia — e todo mundo
+  // cairia por inatividade trabalhando. Esta aqui pode falhar à vontade.
+  //
+  // ⚠️ NÃO É ATIVIDADE. Abrir uma página não renova o tempo de ninguém; quem
+  // decide o que é atividade continua sendo o sinal acima.
+  useEffect(() => {
+    const tela = telaParaRegistrar(caminho);
+    if (!tela) return;
+    const avisar = () => {
+      // Aba escondida não diz onde está: com duas abas, vale a que a pessoa
+      // está olhando.
+      if (document.visibilityState !== "visible") return;
+      void createClient()
+        .rpc("access_session_screen", { p_tela: tela })
+        .then(() => undefined);
+    };
+    avisar();
+    document.addEventListener("visibilitychange", avisar);
+    return () => document.removeEventListener("visibilitychange", avisar);
+  }, [caminho]);
   const ultimaInteracao = useRef(0);
   const ultimoSinal = useRef(0);
   const saindo = useRef(false);

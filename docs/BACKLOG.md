@@ -2284,6 +2284,22 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### QUEM ESTÁ ONLINE ✅ (13/10/2026 — 0291 / core 0.309.0) — pedido do dono
+
+Antena com número na barra de cima e aba **Online agora** na Auditoria; só o
+Admin Master vê. Detalhe no `ESTADO_DO_PROJETO.md` e no manual, seção 13c.
+⏳ **0291 aplicada no treino; falta a produção.**
+
+**Declarado, não feito:**
+
+- **Duas réguas de "online"** convivem: a desta lista (banco: clique, tecla,
+  toque, rolagem) e a do Chat (Realtime: conta também o mouse). Podem
+  discordar por instantes. Unificar exigiria mexer no Chat — não foi pedido.
+- **Gerentes não veem** (decisão do dono: só Admin Master). Se um dia a lista
+  for aberta a gerentes, a função precisa filtrar por unidade — hoje ela
+  devolve a rede inteira ou nada.
+- **Não há histórico de "em qual tela"**: guarda-se só a tela de agora.
+
 ### OC-00083, 3ª volta ✅ (13/10/2026 — Empresarial 0.77.0, sem migração) — a ficha da empresa no funil
 
 Relato do dono: a ficha "confusa, incompleta, bagunçada". A foto era da tela

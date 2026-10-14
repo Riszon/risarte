@@ -1,7 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.308.0** · Última migração: **0290** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.309.0** · Última migração: **0291** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🟢 0.309.0 / 0291 — QUEM ESTÁ ONLINE (pedido do dono, 13/10/2026)
+>
+> O sistema já sabia quem estava online (a bolinha do Chat), mas só mostrava
+> dentro do Chat. Decisões do dono: na barra de cima E na Auditoria; só o
+> Admin Master vê; com a hora de entrada, a última atividade, **em qual tela**
+> e quem não entrou hoje.
+>
+> `presence_now(grupo)` e `presence_summary()` leem `access_sessions` (0287):
+> **online** = atividade nos últimos 5 min; **ausente** = aberto e parado,
+> ainda dentro do tempo de inatividade; **saiu**; **não entrou**. Uma régua só,
+> no banco. `access_session_screen(tela)` grava o MÓDULO em que a pessoa está —
+> nunca o endereço (sem identificador de paciente); o banco recusa número e
+> maiúscula. Chamada à parte do sinal de atividade, para não derrubá-lo
+> enquanto a migração não roda. Sem a 0291: a antena e o quadro Agora não
+> aparecem, e a aba Online agora diz que aguarda a migração.
+>
 > ## 📈 0.308.0 / 0290 — PAINEL DE USO + FILTROS POR UNIDADE E FUNÇÃO (auditoria)
 >
 > Só funções de consulta. `audit_usage_members(unidade, função)` (interna)

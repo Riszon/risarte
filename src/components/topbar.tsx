@@ -8,6 +8,7 @@ import { SystemClock } from "@/components/clock";
 import { BotaoDeTema } from "@/components/tema";
 import { GravacaoDaConsulta } from "@/components/gravacao-da-consulta";
 import { TopbarItem } from "@/components/topbar-item";
+import { QuemEstaOnline } from "@/components/quem-esta-online";
 
 /**
  * A BARRA DE CIMA — o que se usa em qualquer tela.
@@ -71,6 +72,10 @@ export function Topbar({
 
       <div className="flex shrink-0 items-center gap-0.5">
         <BotaoDeTema />
+        {/* QUEM ESTÁ ONLINE (0291) — só o Admin Master. A barra não desenha
+            para mais ninguém, e o banco repete a regra: para os outros as
+            consultas devolvem vazio. */}
+        {isAdminMaster && !modoPortal && <QuemEstaOnline />}
         {!modoPortal && (
           <>
             <ChatNavItem />

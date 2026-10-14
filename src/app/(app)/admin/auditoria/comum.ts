@@ -10,6 +10,7 @@ import {
 
 export const VISOES = [
   "painel",
+  "online",
   "alteracoes",
   "acoes",
   "acessos",
@@ -20,6 +21,7 @@ export type Visao = (typeof VISOES)[number];
 
 export const VISAO_ROTULO: Record<Visao, string> = {
   painel: "Painel de uso",
+  online: "Online agora",
   alteracoes: "Alterações",
   acoes: "Ações",
   acessos: "Acessos",
@@ -30,6 +32,8 @@ export const VISAO_ROTULO: Record<Visao, string> = {
 export const VISAO_EXPLICA: Record<Visao, string> = {
   painel:
     "Como o sistema está sendo usado: quem entra, quanto usa, quem parou de usar — e o que merece a sua atenção.",
+  online:
+    "Quem está com o sistema aberto neste momento, em qual tela, desde que horas — e quem entrou e saiu ou ainda não entrou hoje.",
   alteracoes:
     "Tudo o que foi cadastrado, alterado ou excluído — com o conteúdo de antes e de depois. O banco registra sozinho, em todos os cadastros.",
   acoes:

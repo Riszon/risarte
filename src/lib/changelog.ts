@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.309.0",
+    data: "2026-10-13",
+    migracao: "0291",
+    titulo: "Quem está online: na barra de cima e na Auditoria",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: a barra de cima ganhou um desenho de antena com o número de pessoas online. Um clique abre a lista de quem está com o sistema aberto agora — online ou ausente —, com a função, a unidade, em qual tela a pessoa está, a hora em que entrou e a última atividade. Só o Admin Master vê.",
+        papeis: [],
+        manual: "A barra de cima",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: a Auditoria ganhou a aba Online agora, com quatro listas: quem está online, quem está ausente (sistema aberto, parado há mais de 5 minutos), quem entrou hoje e já saiu, e quem tem acesso e ainda não entrou hoje. O Painel de uso passou a mostrar esses quatro números no alto.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Admin: o sistema passou a registrar em qual tela cada pessoa está — só o módulo (Agenda, Prontuários, Financeiro), nunca o endereço nem qual paciente. Isso aparece apenas para o Admin Master, em Quem está online.",
+        papeis: [],
+        manual: "Para o Admin Master: a Auditoria",
+      },
+    ],
+  },
+  {
     versao: "0.308.0",
     data: "2026-10-13",
     migracao: "0290",

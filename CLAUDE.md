@@ -390,6 +390,39 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/10/2026 (madrugada) — PC Administrador (core 0.308.0 → 0.309.0, migração 0291)**
+
+- **QUEM ESTÁ ONLINE (pedido do dono).** O sistema já sabia (a bolinha do
+  Chat), mas só mostrava no Chat. Agora: **antena com número na barra de
+  cima** (janela com online e ausentes) e a aba **Online agora** na Auditoria
+  (online, ausente, saiu, não entrou hoje), mais o quadro **Agora** no Painel
+  de uso. Decisões do dono: **só o Admin Master vê**; mostra hora de entrada,
+  última atividade, **em qual tela** e quem não entrou hoje.
+- ⚠️ **"EM QUAL TELA" É O MÓDULO, NUNCA O ENDEREÇO** (`telaParaRegistrar` +
+  `access_session_screen`): o identificador do paciente não sai do navegador,
+  e o banco recusa número e maiúscula. Quem olha a ficha de quem continua na
+  trilha de ações, com as regras dela. Ao mexer nisso, não alargar.
+- ⚠️ **A régua de "online" mora no BANCO** (`presence_now`: 5 minutos, acesso
+  de hoje, dentro do tempo de inatividade). A tela não recalcula. O Chat tem a
+  régua dele (Realtime, conta o mouse) — as duas podem discordar por
+  instantes, e o manual diz isso.
+- ⚠️ **TELA NOVA PRECISA DE NOME:** pasta nova em `src/app/(app)` (ou em
+  `admin/`) sem entrada em `NOME_DA_TELA` reprova o portão — senão apareceria
+  como "Outra tela" na lista. Vale para os três projetos (o arquivo é do core,
+  mudança aditiva).
+- ⏳ **0291: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Duas colunas
+  em `access_sessions` e três funções. Sem ela: a antena e o quadro Agora não
+  aparecem (não mostram zero), e a aba diz que aguarda a migração. O sinal de
+  atividade NÃO depende dela.
+- A 0291 foi **corrigida depois de aplicada no treino** (lista de colunas
+  explícita, e a tela passou a ser a informada por último); reapliquei no
+  treino. O arquivo que vai ao dono é o corrigido.
+- **Não visto:** a lista com mais de 1.000 pessoas (a leitura em páginas está
+  presa por régua).
+- Resíduo no treino: acessos e telas das contas de teste (Admin e Recepção)
+  desta sessão — registro normal de uso.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **13/10/2026 (fim da noite) — PC Administrador (Empresarial 0.78.0 → 0.79.0, migração 1028)**
 
 - **AP39 — NO FUNIL, SÓ É GANHO COM OS DOIS SELOS; SÓ IMPLANTA COM A
