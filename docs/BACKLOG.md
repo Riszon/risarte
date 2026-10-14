@@ -2284,6 +2284,17 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00074 ✅ (14/10/2026 — core 0.314.0, sem migração) — Jornada: tem agendamento?
+
+Cada cartão da Jornada mostra o próximo agendamento ou "Sem agendamento" em
+amarelo, em todas as fases (decisão do dono). Manual 6.5 e glossário.
+
+**Declarado, não feito:**
+
+- Não há filtro "só sem agendamento" na Jornada — não foi pedido.
+- Fases em que "sem agendamento" é normal (ex.: Acompanhamento) também ficam
+  amarelas, por decisão do dono.
+
 ### OC-00091 ✅ (14/10/2026 — core 0.313.0, migração 0293) — a apresentação termina quando o trabalho termina
 
 Venda concluída e follow-up passaram a encerrar o atendimento da
@@ -2417,6 +2428,17 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP44. A Jornada carrega no máximo 1.000 clientes — em silêncio (14/10/2026)
+
+*(Achado mexendo na Jornada para o OC-00074.)*
+**Confirmado no código:** `jornada/page.tsx` lê os clientes com
+`.order("phase_entered_at").limit(1000)`. Na visão da rede, com mais de mil
+clientes ativos, os MAIS RECENTES em cada fase deixam de aparecer, sem aviso,
+e a contagem do topo mostra 1.000. Hoje o treino tem 36 e a produção quase
+nenhum — não dói ainda; dói com 200 unidades.
+**Conserto quando convier:** ler em páginas (`lerTodasAsPaginas`) ou
+paginar/filtrar por fase na tela — decisão de desenho, não só de leitura.
 
 ### AP43. `commercial_set_stage` executa SEM LOGIN até a guarda (14/10/2026)
 

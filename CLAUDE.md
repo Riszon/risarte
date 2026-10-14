@@ -390,6 +390,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**14/10/2026 (noite) — PC Administrador (core 0.313.0 → 0.314.0, sem migração)**
+
+- **OC-00074 — Jornada mostra se o cliente tem agendamento** (decisão do dono:
+  todas as fases, "Sem agendamento" em destaque em todas). Regra em
+  `src/lib/agendamento-na-jornada.ts`; leitura que falha não vira "Sem
+  agendamento". Manual 6.5: quem agenda depois do fechamento é a Recepção.
+- **AP44 (BACKLOG):** a Jornada tem `.limit(1000)` nos clientes — corta em
+  silêncio quando a rede crescer.
+- Resíduo no treino: 1 agendamento de teste (16/12/2026 13:00, Início de
+  Tratamento, cliente fictício "Teste do portão 1", observação "TESTE
+  OC-00074 (pode ignorar)"). Não apagado.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **14/10/2026 (fim da tarde) — PC Administrador (core 0.312.0 → 0.313.0, migração 0293)**
 
 - **OC-00091 — A APRESENTAÇÃO NÃO TERMINAVA.** Iniciar pelo funil pegou o

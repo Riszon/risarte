@@ -1673,6 +1673,15 @@ linha *"Apresentação remarcada para …"*.
 > **A regra de ouro:** só é venda com os dois. O banco recusa receber dinheiro
 > de venda não fechada.
 
+**Depois do fechamento, quem agenda é a Recepção.** O cliente passa sozinho
+para a fase **Início de Tratamento** na Jornada, e a Recepção recebe o aviso
+**"Fechamento! Iniciar tratamento"**, que fica na tela dela até o início ser
+agendado (fechar o aviso só adia 15 minutos). Você não precisa agendar nada.
+Para conferir se o seu cliente já tem horário, veja o cartão dele na
+**Jornada**: ele mostra o próximo agendamento ou, em amarelo, **"Sem
+agendamento"**. Se ficar sem horário mais tempo do que devia, avise a Recepção
+da unidade.
+
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
 e a cobrança não muda até alguém autorizar.
 
@@ -2383,7 +2392,7 @@ exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
 
 | Termo | O que é | Exemplo no sistema |
 |---|---|---|
-| **Jornada** | O caminho de 7 fases do paciente | Tela "Jornada" mostra o quadro por fase |
+| **Jornada** | O caminho de 7 fases do paciente | Tela "Jornada" mostra o quadro por fase; cada cartão diz o próximo agendamento ou "Sem agendamento" (em amarelo) |
 | **Fase** | Onde o paciente está agora | "Centro de Planejamento" |
 | **Sub-status** | Detalhe dentro da fase | "Aguardando Aprovação" |
 | **SLA** | Prazo daquela fase | Estourou → selo vermelho |

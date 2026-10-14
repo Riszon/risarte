@@ -1,7 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.313.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.314.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 📅 0.314.0 (sem migração) — JORNADA: TEM AGENDAMENTO? (OC-00074, 14/10/2026)
+>
+> Pedido do Consultor e do dono: marcar na Jornada o cliente sem horário.
+> Decisão do dono: **todas as fases**, com "Sem agendamento" em **destaque em
+> todas**. Conta o marcado/confirmado de hoje em diante, em qualquer unidade
+> (a busca é pelos ids dos clientes da tela, em lotes de 150 e lida em páginas
+> — AP35). Leitura que falha não vira "Sem agendamento": o cartão fica sem a
+> marca. Regra pura em `src/lib/agendamento-na-jornada.ts`. Manual: 6.5 ganhou
+> "depois do fechamento, quem agenda é a Recepção" (o que faltava, apontado na
+> resposta ao relato) e o glossário.
+>
+> **AP44 (BACKLOG):** a Jornada carrega no máximo 1.000 clientes, em silêncio.
+>
 > ## 🎤 0.313.0 / 0293 — A APRESENTAÇÃO TERMINA QUANDO O TRABALHO TERMINA (OC-00091, 14/10/2026)
 >
 > **O que aconteceu (lido no banco do treino):** em 28/09, 18:25, o consultor

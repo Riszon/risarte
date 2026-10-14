@@ -19,6 +19,14 @@ import {
   type MethodologyPillar,
 } from "@/lib/journey";
 import { KanbanBoard, type KanbanClient } from "./kanban-board";
+import {
+  emLotes,
+  proximoPorCliente,
+  type AgendamentoLido,
+  type ProximoAgendamento,
+} from "@/lib/agendamento-na-jornada";
+import { startOfTodayInBrazil } from "@/lib/dates";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 
 export const metadata: Metadata = { title: "Jornada do Cliente" };
 
@@ -124,6 +132,42 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
             .order("name")
         : Promise.resolve({ data: [] as { id: string; name: string }[] }),
     ]);
+
+  // OC-00074: o próximo agendamento de cada cliente da tela. Pelos IDS dos
+  // clientes, e não pela unidade: o cliente pode ter horário marcado em outra
+  // unidade (a SDR agenda onde houver vaga). Em lotes, porque a lista vai na
+  // URL. Uma leitura que falha deixa a marca de fora — nunca diz "Sem
+  // agendamento" sem ter conferido.
+  const inicioDeHoje = startOfTodayInBrazil().toISOString();
+  const lotes = emLotes((clients ?? []).map((c) => c.id), 150);
+  // E cada lote em PÁGINAS: a API corta em 1.000 linhas (AP35), e 150
+  // clientes em tratamento passam disso com folga. Cortado, o cliente cujo
+  // próximo horário ficasse depois do corte apareceria "Sem agendamento".
+  const respostas = await Promise.all(
+    lotes.map((lote) =>
+      lerTodasAsPaginas<AgendamentoLido>((de, ate) =>
+        supabase
+          .from("appointments")
+          .select("client_id, starts_at, type, status, attendance")
+          .in("client_id", lote)
+          .gte("starts_at", inicioDeHoje)
+          .in("status", ["scheduled", "confirmed"])
+          .order("starts_at")
+          .order("id")
+          .range(de, ate)
+      )
+    )
+  );
+  const falhou = respostas.find((r) => !r.ok);
+  if (falhou && !falhou.ok) console.error("jornada — agendamentos:", falhou.error.message);
+  const agendamentosLidos = falhou
+    ? null
+    : proximoPorCliente(
+        respostas.flatMap((r) => (r.ok ? r.linhas : [])),
+        inicioDeHoje
+      );
+  const proximoDe = (id: string): ProximoAgendamento | null | undefined =>
+    agendamentosLidos ? (agendamentosLidos.get(id) ?? null) : undefined;
 
   // In the network view use the unit's SLA when filtered, else network default.
   const slaClinicId = isFranchisor ? unitFilter || null : clinicId;
@@ -236,6 +280,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
             phase_entered_at: c.phase_entered_at,
             methodology_pillar: c.methodology_pillar,
             clinic_name: isFranchisor ? (c.clinics?.name ?? null) : null,
+            next_appointment: proximoDe(c.id),
           })) as KanbanClient[]}
           sla={sla}
           isAdminMaster={session.isAdminMaster}

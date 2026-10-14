@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.314.0",
+    data: "2026-10-14",
+    migracao: null,
+    titulo: "Jornada: cada cartão diz se o cliente tem agendamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na Jornada, cada cartão mostra o próximo agendamento do cliente (dia, hora e tipo) ou, em amarelo, \"Sem agendamento\" — em todas as fases. Conta o horário marcado ou confirmado de hoje em diante, em qualquer unidade; cancelado e falta não contam.",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.313.0",
     data: "2026-10-14",
     migracao: "0293",

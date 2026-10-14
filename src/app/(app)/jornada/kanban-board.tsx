@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Clock, Plus, Stethoscope } from "lucide-react";
+import { ArrowRight, CalendarCheck, CalendarX, Clock, Plus, Stethoscope } from "lucide-react";
+import { rotuloDoAgendamento, type ProximoAgendamento } from "@/lib/agendamento-na-jornada";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +48,12 @@ export type KanbanClient = {
   methodology_pillar: MethodologyPillar | null;
   /** Set only in the network (franchisor) view, to show the unit per card. */
   clinic_name: string | null;
+  /**
+   * OC-00074: o próximo agendamento. `null` = não tem; `undefined` = não
+   * deu para conferir (aí o cartão não diz nada — nunca "Sem agendamento" sem
+   * ter lido).
+   */
+  next_appointment?: ProximoAgendamento | null;
 };
 
 type Props = {
@@ -249,6 +256,27 @@ export function KanbanBoard({
                         </Badge>
                       )}
                     </div>
+                    {/* OC-00074: tem agendamento? "Sem agendamento" em
+                        destaque em todas as fases (decisão do dono). */}
+                    {client.next_appointment === undefined ? null : client.next_appointment ? (
+                      <p
+                        className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground"
+                        title="Próximo agendamento"
+                      >
+                        <CalendarCheck className="size-3 shrink-0" />
+                        <span className="truncate">
+                          {rotuloDoAgendamento(client.next_appointment)}
+                        </span>
+                      </p>
+                    ) : (
+                      <p
+                        className="mt-1.5 flex w-fit items-center gap-1 rounded-full border border-amber-500/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300"
+                        title="Nenhum horário marcado daqui para a frente"
+                      >
+                        <CalendarX className="size-3 shrink-0" />
+                        Sem agendamento
+                      </p>
+                    )}
                     {canCoordinate &&
                       (phase === "clinical_conversion" ||
                         phase === "reevaluation") && (
