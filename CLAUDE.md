@@ -405,8 +405,13 @@ Syncthing se comportarem de forma estranha.**
   perda da estatística. Quem pode reabrir = quem pode marcar como perdido (o
   dono não restringiu).
 - AP37 de carona: o cartão mostra o aviso "criada, mas não copiei…".
-- ⏳ **1028: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Só função e
-  gatilho; não altera dado. O funil da produção está vazio.
+- ✅ **1028 APLICADA nos dois bancos** (o dono rodou na produção em
+  13/10/2026 e a conferência dele deu o esperado: gatilho ligado, depois do
+  `close_when_sealed`). ⚠️ **De fora NÃO dá para ver gatilho** — a prova da
+  ordem é a consulta do dono. O que conferi de fora, só leitura: a função não
+  é chamável pela API (nem sem login, nem com a chave de serviço) e o funil
+  da produção segue com 0 empresas. Não tentei gravar para "testar" a recusa:
+  isso não se faz na produção — a recusa está provada no treino.
 - **Não visto na tela:** o link "Reabrir pela ficha" no cartão de uma perdida.
 - Resíduo no treino: "ZZZ Fechamento do agente" foi reaberta, selada, virou
   **empresa cadastrada** ("ZZZ Fechamento LTDA", CNPJ fictício trocado para

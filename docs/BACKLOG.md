@@ -2349,10 +2349,11 @@ alguém prender isso num script do repositório.
 
 **Como ficou:** o banco recusa ganho sem os dois selos e implantação sem
 cadastro e conferência (`guard_lead_closing`); os dois botões saíram do
-cartão. Detalhe no Bloco N do `FUNIL-COMERCIAL.md`. ⏳ **1028 aplicada no
-TREINO; falta o dono rodar na PRODUÇÃO** — até lá, na produção, os botões já
-saíram da tela e a action já confere os selos, mas a barreira do banco não
-existe. O funil de lá está vazio.
+cartão. Detalhe no Bloco N do `FUNIL-COMERCIAL.md`. ✅ **1028 APLICADA nos
+dois bancos** (o dono rodou na produção em 13/10/2026; a conferência dele
+mostrou o gatilho ligado e na ordem certa. De fora só dá para ver que a função
+não é chamável pela API e que o funil de lá segue vazio — gatilho não aparece
+pela API, e a recusa não se testa gravando na produção).
 
 **Anterior à regra, no treino (não mexi):** 3 empresas em Implantação sem
 conferência e 1 ganha com cadastro e sem selos. Continuam onde estão.
