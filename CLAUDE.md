@@ -390,6 +390,26 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**14/10/2026 (noite, 3ª) — PC Administrador (core 0.316.0 → 0.317.0, sem migração)**
+
+- **OC-00101 — SETA ← NA BARRA DE CIMA** (decisão do dono): volta à tela
+  anterior do jeito que estava (`history.back`). Quando acende:
+  `src/lib/voltar.ts`. De carona: "← Compras" no Painel da Franqueadora.
+- ⚠️ **Escutar a troca de endereço e redesenhar na hora dá erro no React**
+  ("useInsertionEffect must not schedule updates"): o Next grava o endereço
+  nessa fase. Avisar com `queueMicrotask`. Para conferir erro de console,
+  **usar aba NOVA** — o leitor do console não zera ao recarregar.
+- **AP46 (BACKLOG):** a barra de cima transborda no celular (antes da seta).
+- `check:telas` rodado (a barra de cima vai em toda tela): só sobrou a AP31.
+  ⚠️ No servidor recém-ligado, tela que demora a compilar aparece como "não
+  respondeu em 60s" — rodar de novo antes de acusar a tela.
+- ⚠️ Os roteiros de apoio `cookie-treino.mjs` e `entrega-sessao.mjs` SUMIRAM
+  da pasta temporária no meio da sessão (nenhum script do projeto apaga ali;
+  suspeita: antivírus, por gerarem sessão). Refazer quando precisar.
+- Resíduo no treino: aberturas de ficha pelo Admin de teste (registro normal
+  de "Consultou" na Auditoria).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **14/10/2026 (noite, 2ª) — PC Administrador (core 0.315.0 → 0.316.0, sem migração)**
 
 - **OC-00100 — LISTAS LONGAS COM BUSCA** (André, Financeiro da Franqueadora).

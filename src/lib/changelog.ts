@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.317.0",
+    data: "2026-10-14",
+    migracao: null,
+    titulo: "Seta para voltar à tela anterior",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na barra de cima, à esquerda, uma seta ← volta para a tela em que você estava, do jeito que ela estava (a mesma aba, os mesmos filtros) — sem precisar passar pelo Início. Apagada, quer dizer que não há tela anterior nesta aba.",
+        papeis: "todos",
+        manual: "A barra de cima",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O Painel de compras, aberto pela Franqueadora, passou a ter o link \"← Compras\" no alto, como já tinha para as unidades.",
+        papeis: ["finance_franchisor", "purchaser", "franchisor_staff"],
+      },
+    ],
+  },
+  {
     versao: "0.316.0",
     data: "2026-10-14",
     migracao: null,

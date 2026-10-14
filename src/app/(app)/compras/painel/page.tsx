@@ -201,7 +201,9 @@ export default async function PurchaseDashboardPage(
             ? "Os dois números que medem a tese do módulo: quanto a negociação conjunta economizou, e quanto está sendo comprado por fora."
             : "Quanto a rede negociou para a sua unidade, e quanto você comprou por fora dela."
         }
-        voltar={isNetwork ? undefined : { href: "/compras", rotulo: "Compras" }}
+        // A Franqueadora também chega aqui pela trilha de Compras — sem o link,
+        // ela ficava sem caminho de volta (relato OC-00101).
+        voltar={{ href: "/compras", rotulo: "Compras" }}
       />
 
       {!isNetwork && clinicId && (

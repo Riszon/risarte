@@ -862,7 +862,21 @@ fechado na ficha.
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu
 lateral. O menu da esquerda é só o caminho entre os módulos.
 
-**À esquerda: "Procurar paciente".** O caminho mais curto para uma ficha:
+**Na ponta esquerda: a seta ← (Voltar).** Volta para a **tela anterior** em
+que você estava, do jeito que ela estava — a mesma aba, os mesmos filtros.
+Exemplo: na Auditoria, aba **Ações**, você abre a ficha de um cliente; a seta
+traz você de volta à aba Ações, sem passar pelo Início (desde a versão
+0.317.0).
+
+- Ela faz o mesmo que a seta do navegador (ou **Alt + ←**): use a que preferir.
+- Ela volta à tela **anterior**, não à "tela de cima": quem veio da Auditoria
+  para a ficha volta para a Auditoria, não para a lista de clientes.
+- **Apagada** quer dizer que não há tela anterior do sistema nesta aba — por
+  exemplo, logo depois de entrar, ou numa aba que você acabou de abrir.
+- **O que estava digitado e não foi salvo se perde ao voltar**, como ao clicar
+  em qualquer item do menu. Salve antes.
+
+**Logo depois: "Procurar paciente".** O caminho mais curto para uma ficha:
 clique (ou **Ctrl + K**), digite, escolha com as setas e abra com **Enter**.
 Procura por **nome**, pelo **código** (ex.: `CAM-00001`) e pelo **CPF** —
 inclusive digitando só os números, sem pontos nem traço.

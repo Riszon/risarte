@@ -1,7 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 14/10/2026 · Versão do sistema: **0.316.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 14/10/2026 · Versão do sistema: **0.317.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ← 0.317.0 (sem migração) — SETA PARA VOLTAR (OC-00101, 14/10/2026)
+>
+> Relato do André (e o dono, com a Auditoria de exemplo): para voltar à tela
+> anterior era preciso passar pelo Início. **Não era regra nem defeito:** a
+> seta do navegador sempre funcionou (as telas guardam aba e filtros no
+> endereço); faltava o botão no sistema. Decisão do dono: **seta fixa na barra
+> de cima**, que volta à tela ANTERIOR do jeito que estava.
+>
+> ⚠️ **A regra de quando a seta acende mora em `src/lib/voltar.ts`**: só se a
+> tela anterior da aba é do riSZon (login, entrada e conta desativada não
+> contam). Lida pela Navigation API do navegador; sem ela, qualquer histórico.
+>
+> ⚠️ **Avisar a troca de tela DEPOIS** (`queueMicrotask`): o Next grava o
+> endereço numa fase do React em que redesenhar é proibido, e avisar na hora
+> dava erro no console a cada troca de tela — visto, reproduzido de propósito
+> e preso por teste.
+>
+> De carona: o **Painel de compras** da Franqueadora não tinha "← Compras".
+>
+> **AP46 (BACKLOG):** na largura de celular a barra de cima já transbordava
+> (Admin: 582 px numa tela de 375) — a seta soma 48 px.
+>
 > ## 🔎 0.316.0 (sem migração) — LISTAS LONGAS COM BUSCA (OC-00100, 14/10/2026)
 >
 > Relato do André (Financeiro da Franqueadora): as listas de seleção só

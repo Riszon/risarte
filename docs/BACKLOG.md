@@ -2284,6 +2284,20 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00101 ✅ (14/10/2026 — core 0.317.0, sem migração) — seta para voltar
+
+Relato do André; exemplo do dono na Auditoria. A seta do navegador já fazia o
+trabalho; faltava o botão no sistema. Decisão do dono: seta ← fixa na barra de
+cima, que volta à tela anterior do jeito que estava. De carona: "← Compras" no
+Painel de compras da Franqueadora. Manual, *A barra de cima*.
+
+**Declarado, não feito:**
+
+- Não há "tela de cima" (caminho de migalhas) — a seta é o histórico da aba,
+  por decisão do dono.
+- Em navegador sem a Navigation API, a seta acende com qualquer histórico da
+  aba (no pior caso volta ao login, que manda para dentro de novo).
+
 ### OC-00100 ✅ (14/10/2026 — core 0.316.0, sem migração) — listas longas com busca
 
 Relato do André (Financeiro da Franqueadora): lupa nas listas de compras,
@@ -2442,6 +2456,16 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP46. A barra de cima transborda na largura de celular (14/10/2026)
+
+*(Achado conferindo a seta do OC-00101 em 375 px.)*
+**Confirmado na tela, como Admin de teste:** a página fica com 582 px de
+largura numa tela de 375 — a fileira de ícones da direita da barra de cima não
+cabe e cria rolagem para o lado. Medido SEM a seta (ela soma 48 px). Para
+funções com menos ícones deve ser menor; não medi as outras.
+**Conserto quando convier:** encolher a busca a um ícone no celular, ou levar
+parte dos ícones para um menu "mais".
 
 ### AP45. Listas longas sem busca fora de Compras, Estoque e Financeiro (14/10/2026)
 

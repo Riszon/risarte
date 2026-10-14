@@ -1,5 +1,6 @@
 import { AlertTriangle, BookMarked, Sparkles, UserRound } from "lucide-react";
 import { BotaoSair } from "@/components/botao-sair";
+import { BotaoVoltar } from "@/components/botao-voltar";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ReportNavItem } from "@/components/report-nav-item";
@@ -57,6 +58,10 @@ export function Topbar({
     <header
       data-moldura
       className="sticky top-[var(--faixa-treino,0px)] z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      {/* VOLTAR À TELA ANTERIOR (relato OC-00101, decisão do dono): a mesma
+          coisa que a seta do navegador, no lugar onde a pessoa olha. */}
+      <BotaoVoltar />
+
       {/* A busca ocupa o espaço livre; os ícones ficam colados à direita. */}
       <div className="min-w-0 flex-1">
         {podeBuscar && <QuickSearch />}
