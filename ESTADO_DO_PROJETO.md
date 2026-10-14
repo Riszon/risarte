@@ -1,7 +1,48 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.309.0** · Última migração: **0291** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.310.0** · Última migração: **0291** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ⏱️ 0.310.0 (sem migração) — HORAS POSSÍVEIS × HORAS TRABALHADAS (OC-00071, 13/10/2026)
+>
+> **O relato:** liberar horário avulso não aumentava a estimativa de horas do
+> Planejamento Anual. **Não era defeito:** a tela dizia, por escrito, que
+> "dias avulsos liberados não entram nesta conta" (desde 28/06/2026). O dono —
+> que é quem relatou — pediu a mudança da regra e mais: horas possíveis ×
+> realmente trabalhadas, ocupação e filtro por período.
+>
+> **As três decisões dele:** (1) duas contas de horas possíveis —
+> funcionamento (relógio) e cadeira (× cadeiras ativas), ocupação sobre a de
+> cadeira; (2) hora trabalhada = tempo MARCADO do atendimento concluído (o
+> relógio chamou→concluiu não serve: no treino, metade dos concluídos durou
+> menos de 2 min e um durou 11 dias); (3) fechamento de agenda reduz quando é
+> da unidade (tudo) ou de sala (aquela cadeira); o de profissional não reduz.
+>
+> **Onde mora:** a conta é pura, em `src/lib/horas-da-agenda.ts` (minutos,
+> intervalos, sem relógio); a leitura em
+> `planejamento-anual/horas-dados.ts`; o desenho em `horas-da-unidade.tsx`.
+> A página deixou de fazer conta. **Leitura que falha não vira zero:** a tela
+> recusa o número e diz o que não leu. Atendimentos e fechamentos são lidos em
+> páginas (AP35).
+>
+> **Corrigido de carona (achados lendo o código):** período planejado pela
+> REDE fechava a agenda da unidade e não era descontado da estimativa; e a
+> página usava o "hoje" e o ano do relógio da MÁQUINA (no servidor, das 21h em
+> diante já é amanhã — na virada do ano, o ano seguinte).
+>
+> **Janela do dia = a regra ESCRITA da agenda (AJ7):** avulso em dia normal
+> estende; em dia fechado vale só a janela dele. Dia fechado por período
+> planejado é dia fechado. ⚠️ A AGENDA, nesse último caso, hoje aceita o
+> horário normal inteiro (AP41, no BACKLOG) — as duas podem discordar ali.
+>
+> **Provado:** 52 conferências; 34 quebras de propósito, todas reprovadas no
+> teste esperado (4 réguas fracas foram refeitas no caminho); e na tela, no
+> treino — os dois avulsos do próprio relato somaram 13h, e dois fechamentos
+> feitos pela tela descontaram certo. A conta dos atendimentos foi refeita em
+> SQL por outro caminho e bateu.
+>
+> **Não visto na tela:** período da rede, feriado fechado, fechamento de
+> profissional, a falha de leitura e a tela como Gerente.
+>
 > ## 🟢 0.309.0 / 0291 — QUEM ESTÁ ONLINE (pedido do dono, 13/10/2026)
 >
 > O sistema já sabia quem estava online (a bolinha do Chat), mas só mostrava

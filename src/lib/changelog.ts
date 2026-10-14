@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.310.0",
+    data: "2026-10-13",
+    migracao: null,
+    titulo: "Planejamento Anual: horas possíveis × horas trabalhadas, com ocupação",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No Planejamento Anual, liberar um horário avulso passou a AUMENTAR as horas possíveis de trabalho, e fechar a agenda (da unidade toda ou de uma sala) passou a REDUZIR. Antes a estimativa só olhava os dias da semana, o almoço, os feriados fechados e os períodos planejados da unidade.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Planejamento Anual ganhou o quadro Horas possíveis × horas trabalhadas: horas de funcionamento, horas de cadeira, horas agendadas, horas trabalhadas e o percentual de ocupação, com o passo a passo da conta, o que aconteceu na agenda (faltas, atendimentos sem desfecho) e a tabela mês a mês. Dá para escolher o período (De/Até) ou usar os atalhos: o ano, este mês, mês passado e do início do ano até hoje.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Hora trabalhada, nesse quadro, é o tempo marcado na agenda de cada atendimento CONCLUÍDO. Atendimento de dia que já passou e ficou sem desfecho (ninguém concluiu, nem marcou falta) não conta como trabalhado e aparece numa linha própria — concluir os atendimentos no sistema é o que faz a ocupação dizer a verdade.",
+        papeis: ["unit_manager", "receptionist"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A estimativa de horas do Planejamento Anual não descontava o recesso, o evento ou o treinamento lançado pela REDE, embora a agenda da unidade ficasse fechada nesses dias. Agora desconta, e mostra a linha separada.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.309.0",
     data: "2026-10-13",
     migracao: "0291",

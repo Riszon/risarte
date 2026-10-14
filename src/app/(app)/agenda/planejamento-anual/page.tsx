@@ -5,19 +5,12 @@ import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  resolveAgendaSettings,
-  timeToMinutes,
-  type AgendaSettingRow,
-} from "@/lib/agenda-settings";
 import { holidaysInRange } from "@/lib/holidays";
 import {
   mapPlanItem,
-  UNIT_BLOCKING_TYPES,
   PLAN_ITEM_LABELS,
   PLAN_ITEM_CLASS,
   PLAN_ITEM_TYPES,
-  itemCoversDate,
   itemDayCount,
   type PlanItem,
   type PlanItemRow,
@@ -25,12 +18,15 @@ import {
 } from "@/lib/annual-plan";
 import { AnnualPlanManager } from "./annual-plan-manager";
 import { NetworkPlanManager } from "./network-plan-manager";
+import { HorasDaUnidade } from "./horas-da-unidade";
+import { diasDoPeriodo, lerAtendimentosDoPeriodo, lerBaseDasHoras } from "./horas-dados";
+import { BRAZIL_TIME_ZONE, formatIsoDayMonthBr, todayInBrazil } from "@/lib/dates";
 import {
-  BRAZIL_TIME_ZONE,
-  addDaysIso,
-  formatIsoDayMonthBr,
-  weekdayOf,
-} from "@/lib/dates";
+  formatarHoras,
+  lerPeriodo,
+  montarQuadro,
+  resumir,
+} from "@/lib/horas-da-agenda";
 
 export const metadata: Metadata = { title: "Planejamento anual" };
 
@@ -45,14 +41,15 @@ export default async function AnnualPlanPage(
   const clinic = session.activeClinic;
 
   const sp = await props.searchParams;
-  const now = new Date();
+  // "Hoje" é o dia BRASILEIRO: no servidor (UTC), das 21h em diante o relógio
+  // da máquina já está no dia seguinte — e na virada do ano, no ano seguinte.
+  const todayIso = todayInBrazil();
   const year =
     typeof sp.ano === "string" && /^\d{4}$/.test(sp.ano)
       ? Number(sp.ano)
-      : now.getFullYear();
+      : Number(todayIso.slice(0, 4));
   const jan1 = `${year}-01-01`;
   const dec31 = `${year}-12-31`;
-  const todayIso = ymd(now);
 
   if (!clinic) {
     return (
@@ -142,20 +139,21 @@ export default async function AnnualPlanPage(
   const canManage = hasRoleInClinic(session, clinic.id, ["unit_manager"]);
   if (!canManage) redirect("/agenda");
 
+  // OC-00071: o período da conta de horas (o ano inteiro, se nada foi pedido).
+  const periodo = lerPeriodo({ de: sp.de, ate: sp.ate }, year);
+  // Uma leitura só serve ao resumo do ano e ao período escolhido.
+  const leituraDe = periodo.de < jan1 ? periodo.de : jan1;
+  const leituraAte = periodo.ate > dec31 ? periodo.ate : dec31;
+
   const supabase = await createClient();
   const [
-    { data: settingRows },
     { data: planRows },
     { data: staffRows },
     { data: holidayRows },
     { data: netRows },
+    baseDasHoras,
+    atendimentos,
   ] = await Promise.all([
-    supabase
-      .from("clinic_agenda_settings")
-      .select(
-        "clinic_id, open_time, close_time, weekdays, chairs, lunch_enabled, lunch_start, lunch_end"
-      )
-      .returns<AgendaSettingRow[]>(),
     supabase
       .from("agenda_plan_items")
       .select(
@@ -183,9 +181,10 @@ export default async function AnnualPlanPage(
       .lte("starts_date", dec31)
       .gte("ends_date", jan1)
       .order("starts_date"),
+    lerBaseDasHoras(supabase, clinic.id, leituraDe, leituraAte),
+    lerAtendimentosDoPeriodo(supabase, clinic.id, periodo.de, periodo.ate),
   ]);
 
-  const cfg = resolveAgendaSettings(settingRows ?? [], clinic.id);
   const items = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
   const networkItems = (netRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
 
@@ -212,37 +211,17 @@ export default async function AnnualPlanPage(
   const yearHolidays = holidaysInRange(jan1, dec31);
 
   // -------------------------------------------------------------------------
-  // Report: working days + estimated attendance hours.
+  // As horas possíveis do ANO (resumo) e do PERÍODO escolhido (OC-00071).
+  //
+  // ⚠️ A conta mora em `src/lib/horas-da-agenda.ts`. Até a 0.309.0 ela era
+  // feita aqui (dias da semana × jornada) e não via horário avulso, fechamento
+  // de agenda nem período planejado pela rede.
   // -------------------------------------------------------------------------
-  const unitBlocking = items.filter((i) => UNIT_BLOCKING_TYPES.includes(i.type));
-  const dayBlocked = (iso: string) =>
-    unitBlocking.some((i) => itemCoversDate(i, iso));
-
-  // ⚠️ O ANO É PERCORRIDO POR CALENDÁRIO, não por instantes (achado AP3).
-  // Antes cada dia era um `new Date("...T00:00:00")`, lido no fuso da máquina —
-  // funcionava por acaso, porque `ymd` e `getDay` liam no mesmo fuso, mas
-  // bastava alguém trocar um dos dois para o ano inteiro escorregar um dia.
-  let workingDays = 0;
-  let iso = jan1;
-  while (iso <= dec31) {
-    const wd = weekdayOf(iso);
-    const hd = holidayDecision.get(iso);
-    const open =
-      hd === false
-        ? false
-        : cfg.weekdays.includes(wd) || hd === true;
-    if (open && !dayBlocked(iso)) workingDays += 1;
-    iso = addDaysIso(iso, 1);
-  }
-  const dailyMinutes = Math.max(
-    0,
-    timeToMinutes(cfg.closeTime) -
-      timeToMinutes(cfg.openTime) -
-      (cfg.lunchEnabled
-        ? timeToMinutes(cfg.lunchEnd) - timeToMinutes(cfg.lunchStart)
-        : 0)
-  );
-  const attendanceHours = Math.round((workingDays * dailyMinutes) / 60);
+  const entrada = baseDasHoras.entrada;
+  const resumoDoAno = entrada ? resumir(diasDoPeriodo(entrada, jan1, dec31)) : null;
+  const quadro = entrada
+    ? montarQuadro(diasDoPeriodo(entrada, periodo.de, periodo.ate), atendimentos, todayIso)
+    : null;
 
   const countByType: Record<PlanItemType, { items: number; days: number }> =
     Object.fromEntries(
@@ -320,13 +299,20 @@ export default async function AnnualPlanPage(
         <CardContent className="space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-lg border p-2">
-              <p className="text-2xl font-semibold">{workingDays}</p>
+              <p className="text-2xl font-semibold">
+                {resumoDoAno ? resumoDoAno.diasAbertos : "—"}
+              </p>
               <p className="text-xs text-muted-foreground">dias trabalháveis</p>
             </div>
             <div className="rounded-lg border p-2">
-              <p className="text-2xl font-semibold">{attendanceHours}h</p>
+              <p className="text-2xl font-semibold">
+                {resumoDoAno ? formatarHoras(resumoDoAno.funcionamento) : "—"}
+              </p>
               <p className="text-xs text-muted-foreground">
-                horas de atendimento (estimativa)
+                horas de funcionamento
+                {resumoDoAno
+                  ? ` · ${formatarHoras(resumoDoAno.cadeira)} de cadeira`
+                  : " (não consegui calcular)"}
               </p>
             </div>
             <div className="rounded-lg border p-2">
@@ -355,12 +341,23 @@ export default async function AnnualPlanPage(
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Estimativa baseada nos dias e horários configurados (desconta almoço,
-            feriados fechados e períodos planejados). Dias avulsos liberados não
-            entram nesta conta automática.
+            Estimativa do ano inteiro pelos dias e horários configurados. Desconta
+            o almoço, os feriados fechados, os períodos planejados (da unidade e
+            da rede) e a agenda fechada; soma os horários avulsos liberados. O
+            passo a passo da conta está no quadro abaixo.
           </p>
         </CardContent>
       </Card>
+
+      <HorasDaUnidade
+        ano={year}
+        hoje={todayIso}
+        periodo={periodo}
+        quadro={quadro}
+        cadeiras={baseDasHoras.cadeiras}
+        cadeirasPelaConfiguracao={baseDasHoras.cadeirasPelaConfiguracao}
+        naoLido={baseDasHoras.naoLido}
+      />
 
       {/* Visão dos 12 meses ------------------------------------------------- */}
       <Card>

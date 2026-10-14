@@ -390,6 +390,34 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/10/2026 (fim da noite, 2ª) — PC Administrador (core 0.309.0 → 0.310.0, sem migração)**
+
+- **OC-00071 — HORAS POSSÍVEIS × HORAS TRABALHADAS** no Planejamento Anual.
+  O relato (horário avulso não aumentava a estimativa) **não era defeito**: a
+  tela dizia por escrito que avulso não entrava. O dono pediu a mudança e
+  mais. Agora: avulso aumenta, fechamento de agenda reduz, e há o quadro com
+  horas de funcionamento, de cadeira, agendadas, trabalhadas, ocupação, passo
+  a passo, mês a mês e filtro De/Até.
+- ⚠️ **AS TRÊS DECISÕES DO DONO** (não mudar sem ele): duas contas
+  (funcionamento e cadeira; ocupação sobre a de cadeira); **hora trabalhada =
+  tempo MARCADO do atendimento concluído**, nunca o relógio chamou→concluiu;
+  fechamento de unidade e de sala reduzem, o de profissional não.
+- ⚠️ **A CONTA MORA EM `src/lib/horas-da-agenda.ts`** (pura, em minutos). A
+  página não calcula. Leitura que falha **não vira zero** — a tela recusa.
+- **Achados corrigidos de carona:** período planejado pela REDE não era
+  descontado; "hoje" e o ano vinham do relógio da máquina.
+- **AP41 (BACKLOG, não mexi):** num dia fechado por período planejado, com
+  horário avulso por cima, a AGENDA aceita o horário normal inteiro; a regra
+  escrita (AJ7) diz que vale só a janela do avulso. A conta nova segue a regra
+  escrita. Decisão do dono.
+- **Não visto na tela:** período da rede, feriado fechado, fechamento de
+  profissional, a falha de leitura e a tela como Gerente (a leitura dele foi
+  conferida no banco).
+- Resíduo no treino: **2 fechamentos de agenda de teste** na "Risarte Unidade
+  Teste", em 27/12/2026 (02h–04h unidade toda; 10h–11h Sala 1), com a
+  observação "TESTE OC-00071 (pode ignorar)". Não apagados.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **13/10/2026 (madrugada) — PC Administrador (core 0.308.0 → 0.309.0, migração 0291)**
 
 - **QUEM ESTÁ ONLINE (pedido do dono).** O sistema já sabia (a bolinha do

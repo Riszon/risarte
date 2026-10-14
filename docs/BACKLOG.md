@@ -2284,6 +2284,27 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00071 ✅ (13/10/2026 — core 0.310.0, sem migração) — horas possíveis × horas trabalhadas
+
+Relato do dono: liberar horário avulso não aumentava a estimativa de horas do
+Planejamento Anual. **Era regra declarada na tela**, não defeito; ele pediu a
+mudança. Entregue: avulso aumenta, fechamento de agenda (unidade e sala)
+reduz, e o quadro com as duas contas de horas possíveis, horas agendadas e
+trabalhadas, ocupação, passo a passo, mês a mês e filtro por período. Detalhe
+no `ESTADO_DO_PROJETO.md` e no manual, seção 6.6.
+
+**Declarado, não feito:**
+
+- **Só a unidade vê.** A Franqueadora continua vendo nessa tela só o calendário
+  da rede; comparar a ocupação entre unidades não foi pedido.
+- **Sem ocupação por cadeira nem por profissional.** No treino, nenhum
+  atendimento concluído tinha sala gravada — a conta por cadeira sairia vazia.
+- **O passado é calculado com a configuração de hoje** (horário, dias, salas):
+  o sistema não guarda o histórico da configuração. A tela avisa.
+- **Não visto na tela:** período planejado pela rede, feriado fechado,
+  fechamento de profissional, a falha de leitura e a tela como Gerente.
+- **Sem planilha** (exportar o quadro) — não foi pedido.
+
 ### QUEM ESTÁ ONLINE ✅ (13/10/2026 — 0291 / core 0.309.0) — pedido do dono
 
 Antena com número na barra de cima e aba **Online agora** na Auditoria; só o
@@ -2338,6 +2359,32 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP41. Dia fechado por período planejado + horário avulso: a AGENDA aceita o horário normal inteiro (13/10/2026)
+
+*(Achado lendo a validação do agendamento para o OC-00071.)*
+**Confirmado no código, NÃO visto na tela:** em `agenda/actions.ts`, a janela
+do dia é calculada com `isNormalDay = dia da semana configurado || feriado que
+atende` — sem olhar se o dia está dentro de um recesso, evento ou treinamento
+do Planejamento Anual. Resultado: num dia de recesso (segunda a sábado) em que
+a Gerente libera um horário avulso das 08h às 12h, a agenda trata o dia como
+"normal" e **une** as janelas — aceita agendamento das 08h às 18h.
+
+**A regra escrita (AJ7, comentário de `effectiveDayHours`):** "num dia FECHADO
+com dia avulso = usa só a janela do avulso". Um dia de recesso é um dia
+fechado.
+
+**O que a 0.310.0 fez:** a conta de horas possíveis segue a regra ESCRITA
+(vale só a janela do avulso). Então, nesse caso específico, **a estimativa e a
+agenda discordam**: a estimativa soma 4 horas; a agenda deixa marcar 10.
+
+**Suspeita (não confirmada):** é descuido, não intenção — a regra do avulso
+(AJ7) e o Planejamento Anual (GR6) nasceram em entregas diferentes.
+
+**Decisão do dono:** (a) a agenda passa a respeitar só a janela do avulso em
+dia de período planejado — é a regra escrita; ou (b) fica como está e a
+estimativa passa a seguir a agenda. Não mexi na agenda: é mudança de
+comportamento do agendamento, fora do relato.
 
 ### AP40. O disco C: do PC Administrador ENCHEU (13/10/2026) — a pasta `.next-test` chegou a 18 GB
 

@@ -1709,6 +1709,70 @@ Risartanos, Empresarial.
 > gera um **contra-lançamento** com motivo. Conferir antes de salvar vale mais
 > aqui do que em qualquer outra tela.
 
+#### Planejamento anual: quantas horas a unidade pode trabalhar — e quantas trabalhou
+
+**Onde:** Agenda → **Mais ações** → **Planejamento anual**
+(`/agenda/planejamento-anual`). **Quem vê:** a Gerente da unidade e o Admin.
+
+A tela tem duas contas de **horas possíveis**:
+
+- **Horas de funcionamento** — o relógio da unidade. Um dia das 08h às 18h
+  vale 10 horas (o almoço, se configurado, sai da conta).
+- **Horas de cadeira** — as horas de funcionamento vezes o número de cadeiras
+  ativas. Duas cadeiras num dia de 10 horas são 20 horas de cadeira. **É sobre
+  elas que a ocupação é calculada.**
+
+**O que aumenta e o que reduz as horas possíveis:**
+
+| Você faz… | Onde | Efeito |
+|---|---|---|
+| Libera um **horário avulso** | Configurar agenda | **Aumenta.** Num dia que a unidade não abre, vale o horário liberado. Num dia normal, vale só o que passou do horário de sempre (liberar das 18h às 20h soma 2 horas) |
+| **Fecha a agenda** da **unidade toda** | Agenda → Fechar agenda | **Reduz** as duas contas, pelo tempo fechado dentro do horário de atendimento |
+| **Fecha a agenda** de uma **sala** | Agenda → Fechar agenda | **Reduz só as horas daquela cadeira**; a unidade continua aberta |
+| **Fecha a agenda** de um **profissional** | Agenda → Fechar agenda | **Não reduz** — a cadeira continua disponível para outro. Aparece numa linha à parte |
+| Decide que um **feriado fecha** | Planejamento anual | **Reduz** o dia inteiro |
+| Lança **recesso, férias coletivas, evento, treinamento ou manutenção** | Planejamento anual | **Reduz** os dias do período — os da unidade e os lançados pela **rede** |
+
+O quadro **Como se chega às horas possíveis** mostra essa conta linha por
+linha, com o sinal de cada parcela. Se um número parecer errado, é ali que se
+confere.
+
+**O outro lado — o que aconteceu na agenda:**
+
+- **Horas agendadas:** tudo o que está marcado na cadeira e não foi cancelado.
+- **Horas trabalhadas:** o **tempo marcado na agenda** de cada atendimento
+  **concluído**. Não é o relógio entre chamar o paciente e concluir.
+- **Ocupação da agenda:** agendadas ÷ horas de cadeira do período inteiro.
+- **Ocupação realizada:** trabalhadas ÷ horas de cadeira **dos dias até hoje**.
+  Num período que ainda não começou, aparece um traço — não 0%.
+
+> **Atendimento sem desfecho não conta como trabalhado.** Se o dia passou e
+> ninguém concluiu o atendimento nem marcou a falta, ele aparece na linha
+> *"Dia já passou e ninguém registrou o desfecho"* e a ocupação realizada fica
+> menor do que foi de verdade. **Concluir os atendimentos no sistema é o que
+> faz esse número dizer a verdade.**
+
+**Ficam fora da ocupação**, e a tela diz quanto foi: os agendamentos
+**cancelados** (o horário voltou a ficar livre) e o atendimento **online**,
+que não usa cadeira.
+
+**Período:** os campos **De** e **Até**, ou os atalhos *Ano*, *Este mês*,
+*Mês passado* e *Do início do ano até hoje*. Com mais de um mês no período,
+aparece a tabela **Mês a mês**.
+
+**Três avisos que a própria tela dá:**
+
+1. **Feriado ainda sem decisão conta como dia normal**, porque a agenda aceita
+   agendamento nele. Decidir os feriados acerta a conta.
+2. **Os dias que já passaram são calculados com o horário e as cadeiras de
+   hoje.** O sistema não guarda como a agenda estava configurada no passado.
+3. **Unidade sem sala cadastrada** em Configurar agenda usa o número de
+   cadeiras da configuração, e a tela avisa. Cadastrar as salas faz o número
+   seguir as cadeiras de verdade.
+
+**Evidência:** EV-160 a EV-162; `src/lib/horas-da-agenda.ts`;
+`src/app/(app)/agenda/planejamento-anual/`.
+
 ### 6.7. Demais funções
 
 **SDR:** cadastrar e agendar; não move fases. **Assistente Comercial:** enviar
