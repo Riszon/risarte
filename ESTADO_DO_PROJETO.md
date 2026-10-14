@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.313.0** · Última migração: **0293** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.313.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎤 0.313.0 / 0293 — A APRESENTAÇÃO TERMINA QUANDO O TRABALHO TERMINA (OC-00091, 14/10/2026)
 >
@@ -28,6 +28,7 @@ _Atualizado em: 13/10/2026 · Versão do sistema: **0.313.0** · Última migraç
 > **Provado:** transação desfeita no treino reproduzindo o relato (8
 > conferências); 10 quebras de propósito; quadro visto no treino. **Não
 > visto:** o selo "Marcado para…" e a frase nova da recusa.
+> ✅ **0293 APLICADA na produção em 14/10/2026** — o dono rodou na produção em 14/10/2026 e a conferência dele deu o esperado — gatilho da venda, função do gatilho, sem login não executa, follow-up encerra e só o que estava acontecendo; conferido de fora, só leitura: a função do gatilho não é chamável pela API; a produção tinha 0 atendimentos em andamento e 0 vendas registradas. Gatilho não aparece pela API — a prova da existência é a consulta do dono.
 >
 > ## 🧾 0.312.0 (sem migração) — A TELA SEGUE O BANCO (OC-00094 a OC-00099, 14/10/2026)
 >

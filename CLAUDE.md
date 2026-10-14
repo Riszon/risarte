@@ -402,7 +402,9 @@ Syncthing se comportarem de forma estranha.**
   (`commercial_sales_end_presentation`), e encerra mesmo quando quem confirma
   não chamou o cliente — exceção estreita à regra "quem chamou conclui", só
   para apresentação comercial. O gatilho nunca derruba a venda.
-- ⏳ **0293: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.**
+- ✅ **0293 APLICADA nos dois bancos** (o dono rodou na produção em 14/10/2026 e a conferência dele deu o esperado — gatilho da venda, função do gatilho, sem login não executa, follow-up encerra e só o que estava acontecendo; conferido de fora, só leitura: a função do gatilho não é chamável pela API; a produção tinha 0 atendimentos em andamento e 0 vendas registradas. Gatilho não aparece pela API — a prova da existência é a consulta do dono).
+- **AP43 (BACKLOG):** `commercial_set_stage` executa SEM LOGIN até a guarda
+  (antigo — a 0293 não mexeu nas permissões); a guarda recusa (NOT_ALLOWED).
 - **Não visto na tela:** o selo "Marcado para…" e a frase nova da recusa.
 - Cache do servidor de teste limpo ao encerrar (AP40).
 

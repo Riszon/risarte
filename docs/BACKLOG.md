@@ -2290,7 +2290,7 @@ Venda concluída e follow-up passaram a encerrar o atendimento da
 apresentação; o quadro de Atendimento mostra o atendimento aberto de qualquer
 dia; a recusa "profissional ocupado" diz qual é. A regra do profissional
 ocupado continua (decisão do dono). Detalhe no `ESTADO_DO_PROJETO.md`.
-⏳ **0293 aplicada no treino; falta a produção.**
+✅ **0293 APLICADA nos dois bancos** (o dono rodou na produção em 14/10/2026 e a conferência dele deu o esperado — gatilho da venda, função do gatilho, sem login não executa, follow-up encerra e só o que estava acontecendo; conferido de fora, só leitura: a função do gatilho não é chamável pela API; a produção tinha 0 atendimentos em andamento e 0 vendas registradas. Gatilho não aparece pela API — a prova da existência é a consulta do dono).
 
 **Declarado, não feito:**
 
@@ -2417,6 +2417,22 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP43. `commercial_set_stage` executa SEM LOGIN até a guarda (14/10/2026)
+
+*(Achado conferindo a 0293 na produção, de fora.)*
+**Confirmado:** sem login, a chamada pela API responde "CLIENT_NOT_FOUND" (com
+um id inventado) — a função executa para `anon`. No treino, `anon` tem
+EXECUTE; com um cliente que existe, a guarda (`commercial_is_team`) recusa
+com NOT_ALLOWED antes de gravar qualquer coisa (provado em transação desfeita).
+**É antigo:** a 0293 fez `create or replace`, que mantém as permissões que já
+existiam; a 0280 (AP16) não incluiu esta função.
+
+**Risco:** baixo — nada é gravado; a diferença entre as duas mensagens só diz
+se um id de cliente existe (id aleatório, impraticável de adivinhar).
+**Conserto quando convier:** `revoke execute ... from public, anon` +
+`grant ... to authenticated` numa migração; vale procurar as outras funções do
+Comercial no mesmo estado.
 
 ### AP42. Coordenador e ASB com ações ligadas na matriz que o banco não aceita (14/10/2026)
 
