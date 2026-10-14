@@ -2291,7 +2291,7 @@ longa e misturada, deveria filtrar por função e por permissão. Era regra (o
 padrão de fábrica morava no código), e o dono decidiu mudá-la: o padrão passa
 a ser gravado no banco pelo botão. Detalhe no `ESTADO_DO_PROJETO.md` e no
 manual, seção 13b.
-⏳ **0292 aplicada no treino; falta a produção.**
+✅ **0292 APLICADA nos dois bancos** (o dono rodou na produção em 14/10/2026 e a conferência dele deu o esperado — tabela, 2 funções, trava do treino, gatilho da auditoria, sem login não executa, 0 padrões; conferido de fora, só leitura: sem login as duas funções recusam e a tabela não entrega nada; com a chave de serviço as colunas existem e há 0 padrões fixados).
 
 **Declarado, não feito:**
 

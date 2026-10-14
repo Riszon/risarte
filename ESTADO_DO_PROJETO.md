@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.311.0** · Última migração: **0292** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.311.0** · Última migração: **0292** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🔐 0.311.0 / 0292 — PERMISSÕES: TORNAR PADRÃO + TELA NOVA (OC-00002, 14/10/2026)
 >
@@ -33,6 +33,7 @@ _Atualizado em: 13/10/2026 · Versão do sistema: **0.311.0** · Última migraç
 >
 > **Corrigido no manual de carona:** a 13b dizia que permissão mudada "não vai
 > para o treino" — desde a 0260 vai (o treino é cópia).
+> ✅ **0292 APLICADA na produção em 14/10/2026** — o dono rodou na produção em 14/10/2026 e a conferência dele deu o esperado — tabela, 2 funções, trava do treino, gatilho da auditoria, sem login não executa, 0 padrões; conferido de fora, só leitura: sem login as duas funções recusam e a tabela não entrega nada; com a chave de serviço as colunas existem e há 0 padrões fixados.
 >
 > ## ⏱️ 0.310.0 (sem migração) — HORAS POSSÍVEIS × HORAS TRABALHADAS (OC-00071, 13/10/2026)
 >

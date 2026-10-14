@@ -403,9 +403,8 @@ Syncthing se comportarem de forma estranha.**
   testando — sem ela, o treino divergiria da produção.
 - **Manual 13b corrigido de carona:** dizia que permissão não vai para o
   treino; vai desde a 0260.
-- ⏳ **0292: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
-  tela nova funciona, compara com o de fábrica e o "Tornar padrão" fica
-  desligado dizendo que aguarda a migração.
+- ✅ **0292 APLICADA nos dois bancos** (o dono rodou na produção em 14/10/2026 e a conferência dele deu o esperado — tabela, 2 funções, trava do treino, gatilho da auditoria, sem login não executa, 0 padrões; conferido de fora, só leitura: sem login as duas funções recusam e a tabela não entrega nada; com a chave de serviço as colunas existem e há 0 padrões fixados). O "Tornar padrão"
+  está liberado na produção; o dono ainda não fixou nenhum.
 - **Não visto gravando na tela:** o Salvar e o Tornar padrão num banco que
   aceita — provados por transação desfeita.
 - Resíduo no treino: 1 linha em `permission_defaults`
