@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.311.0",
+    data: "2026-10-14",
+    migracao: "0292",
+    titulo: "Permissões: tornar padrão, ver por função ou por permissão",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Admin: na tela de Permissões, a permissão marcada como \"diferente do padrão\" ganhou o botão Tornar padrão (e há também Tornar tudo padrão). O que está valendo vira o padrão: o aviso some e o Voltar ao padrão passa a voltar para essa escolha. Ninguém ganha nem perde acesso ao tornar padrão.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Admin: a tela de Permissões ficou em três visões — Por função (uma função de cada vez, com chaves de liga/desliga), Por permissão (quem tem e quem não tem) e a Grade completa —, com busca, filtro por grupo e \"só as diferentes do padrão\".",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Admin: marcar uma permissão não grava mais sozinho. O que mudou fica numa barra no rodapé, com a lista das alterações, até você clicar em Salvar (ou Descartar).",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.310.0",
     data: "2026-10-13",
     migracao: null,

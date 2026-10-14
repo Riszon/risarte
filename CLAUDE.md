@@ -390,6 +390,29 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**14/10/2026 — PC Administrador (core 0.310.0 → 0.311.0, migração 0292)**
+
+- **OC-00002 — PERMISSÕES: "TORNAR PADRÃO" + TELA NOVA.** O selo "fora do
+  padrão" comparava com o padrão de FÁBRICA (código); toda decisão do dono
+  ficava marcada para sempre (13 de 27 na produção). Decisões do dono: o
+  botão grava o padrão **no banco**; a tela salva por **barra de alterações**.
+- ⚠️ **DOIS PADRÕES:** o fixado (`permission_defaults`, 0292) manda; sem ele,
+  o de fábrica (`Capability.padrao`). "Tornar padrão" copia o GRAVADO, no
+  banco — nunca o rascunho. Padrão não decide acesso de ninguém.
+- ⚠️ **No treino a tabela nova tem a trava do espelho** (como a matriz). Achado
+  testando — sem ela, o treino divergiria da produção.
+- **Manual 13b corrigido de carona:** dizia que permissão não vai para o
+  treino; vai desde a 0260.
+- ⏳ **0292: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Sem ela a
+  tela nova funciona, compara com o de fábrica e o "Tornar padrão" fica
+  desligado dizendo que aguarda a migração.
+- **Não visto gravando na tela:** o Salvar e o Tornar padrão num banco que
+  aceita — provados por transação desfeita.
+- Resíduo no treino: 1 linha em `permission_defaults`
+  (`acao.indica.indicar`, igual ao original — mesmo efeito de não ter linha),
+  gravada antes da trava; e 2 registros de auditoria do teste.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **13/10/2026 (fim da noite, 2ª) — PC Administrador (core 0.309.0 → 0.310.0, sem migração)**
 
 - **OC-00071 — HORAS POSSÍVEIS × HORAS TRABALHADAS** no Planejamento Anual.

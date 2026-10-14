@@ -576,6 +576,26 @@ async function espelharPermissoesCtx(ctx: Ctx): Promise<number> {
       "gravar a matriz de permissões no treino"
     );
   }
+
+  // 0292: o PADRÃO fixado pelo dono vai junto — senão o treino mostraria
+  // "fora do padrão" onde a produção não mostra. Sem exclusão: o padrão só é
+  // regravado (upsert), nunca apagado, nos dois bancos. Enquanto a 0292 não
+  // rodou em algum dos dois, a cópia do padrão é pulada com aviso — a da
+  // matriz, acima, não depende dela.
+  const padroes = await ctx.prod
+    .from("permission_defaults")
+    .select("capability, roles, updated_at")
+    .returns<{ capability: string; roles: string[]; updated_at: string }[]>();
+  if (padroes.error) {
+    ctx.avisos.push("o padrão das permissões não foi copiado (a migração 0292 ainda não rodou na produção?)");
+  } else if (padroes.data.length > 0) {
+    const gravou = await ctx.treino
+      .from("permission_defaults")
+      .upsert(padroes.data.map((p) => ({ ...p, updated_by: null })), { onConflict: "capability" });
+    if (gravou.error) {
+      ctx.avisos.push("o padrão das permissões não foi copiado para o treino (a migração 0292 ainda não rodou lá?)");
+    }
+  }
   return linhas?.length ?? 0;
 }
 

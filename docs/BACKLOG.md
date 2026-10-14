@@ -2284,6 +2284,24 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00002 ✅ (14/10/2026 — core 0.311.0, migração 0292) — permissões: tornar padrão + tela nova
+
+Relato do dono: o selo "fora do padrão" deveria ter "tornar padrão"; e a tela,
+longa e misturada, deveria filtrar por função e por permissão. Era regra (o
+padrão de fábrica morava no código), e o dono decidiu mudá-la: o padrão passa
+a ser gravado no banco pelo botão. Detalhe no `ESTADO_DO_PROJETO.md` e no
+manual, seção 13b.
+⏳ **0292 aplicada no treino; falta a produção.**
+
+**Declarado, não feito:**
+
+- **O selo vale para a permissão inteira, por função** — não há histórico de
+  "quem fixou o quê" além da trilha de auditoria (que já registra).
+- **Grade sem cabeçalho fixo ao rolar** (a tabela rola para o lado; cabeçalho
+  fixo nos dois sentidos não funciona dentro dela). Cada casinha diz a função
+  ao passar o mouse.
+- **Não visto gravando na tela** num banco que aceita (produção).
+
 ### OC-00071 ✅ (13/10/2026 — core 0.310.0, sem migração) — horas possíveis × horas trabalhadas
 
 Relato do dono: liberar horário avulso não aumentava a estimativa de horas do

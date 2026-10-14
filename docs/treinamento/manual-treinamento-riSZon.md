@@ -2426,9 +2426,38 @@ na capa dele contra a que aparece no rodapé do menu.
 
 **Onde:** Administração → **Permissões** (`/admin/permissoes`). Só você entra.
 
-**Como:** cada linha é uma permissão, cada coluna é uma função. Marque ou
-desmarque e clique em **Salvar** na linha. Vale para toda a rede, e passa a
-valer na próxima tela que a pessoa abrir (peça para ela recarregar).
+**Três jeitos de olhar, no alto da tela:**
+
+| Visão | Para quê |
+|---|---|
+| **Por função** | Escolha uma função à esquerda (o número ao lado diz quantas permissões ela tem) e veja todas as permissões com uma **chave** de liga/desliga |
+| **Por permissão** | Escolha uma permissão e veja, em duas colunas, **quem tem** e **quem não tem** |
+| **Grade completa** | Tudo de uma vez: uma linha por permissão, uma coluna por função |
+
+**Para achar rápido:** a caixa **Procurar permissão** (não precisa de acento),
+o filtro de **grupo** e a opção **Só as diferentes do padrão**.
+
+**Como salvar:** marcar **não grava**. Tudo o que você mudou — em qualquer das
+três visões — fica numa **barra no rodapé** ("3 alterações em 2 permissões"),
+com a lista do que muda ("Recepcionista passa a ter Financeiro"). Clique em
+**Salvar** para gravar tudo, ou em **Descartar** para desfazer. Vale para toda
+a rede, e passa a valer na próxima tela que a pessoa abrir (peça para ela
+recarregar).
+
+**"Diferente do padrão" não é erro.** É o aviso de que a permissão está
+diferente do padrão. O padrão é o **original do sistema** até você fixar
+outro. Se a diferença é de propósito:
+
+- **Tornar padrão** (na permissão) — o que está valendo vira o padrão. O aviso
+  some, e o **Voltar ao padrão** passa a voltar para essa escolha. **Ninguém
+  ganha nem perde acesso** ao tornar padrão.
+- **Tornar tudo padrão** (no alto) — faz isso de uma vez para todas as
+  diferentes, depois de mostrar a lista e pedir confirmação.
+- Só dá para tornar padrão o que já está **salvo**: com alteração na barra,
+  salve ou descarte antes.
+- Na visão **Por permissão**, o rodapé mostra o padrão, quando foi fixado e,
+  se for diferente, o **original do sistema** — com **Usar o original como
+  padrão** para voltar atrás.
 
 **Três coisas para saber antes de mexer:**
 
@@ -2440,14 +2469,15 @@ valer na próxima tela que a pessoa abrir (peça para ela recarregar).
    vazios** — a regra do banco continua a mesma até ser ajustada. Se acontecer,
    é ajuste de código; peça.
 
-**Se errar:** o botão **↺** ao lado da linha devolve ao padrão de fábrica.
+**Se errar:** **Voltar ao padrão** (o **↺** na grade) põe o padrão de volta na
+barra de alterações — e só vale depois de **Salvar**.
 
 **Fica registrado:** toda alteração vai para a Auditoria, com quem mudou, quando
 e quais funções passaram a ter a permissão.
 
-> ⚠️ **A permissão que você mudar aqui NÃO vai para o ambiente de treino**, e
-> vice-versa. Cada ambiente tem o seu banco. Se a mudança é algo que a equipe
-> vai encontrar, faça **nos dois** — leva o mesmo clique.
+> ⚠️ **No treino, as permissões são cópia do sistema de verdade.** Mude aqui,
+> no sistema de verdade: a mudança (e o padrão que você fixar) chega ao treino
+> sozinha. No treino a tela é só consulta, e o banco de lá recusa gravar.
 
 ---
 

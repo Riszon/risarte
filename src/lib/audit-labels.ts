@@ -183,6 +183,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   user_environments: "Portas do usuário (treino / sistema)",
   environments: "Ambientes (treino / sistema)",
   permission_matrix: "Permissões",
+  permission_defaults: "Padrão das permissões",
   system_clinic_access: "Liberação do sistema por unidade",
   chat_contact_rule: "Regra de contato do chat",
   clinic: "Clínica",

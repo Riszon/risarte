@@ -93,6 +93,7 @@ export const TABELAS: Record<string, string> = {
   "public.payment_receipts": "Recebimento",
   "public.payment_renegotiations": "Renegociação",
   "public.payout_closings": "Fechamento de repasse",
+  "public.permission_defaults": "Padrão de permissão",
   "public.permission_matrix": "Permissão",
   "public.plan_cancellations": "Cancelamento de plano",
   "public.plan_negotiation_items": "Item da negociação",

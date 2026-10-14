@@ -1,7 +1,39 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.310.0** · Última migração: **0291** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.311.0** · Última migração: **0292** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔐 0.311.0 / 0292 — PERMISSÕES: TORNAR PADRÃO + TELA NOVA (OC-00002, 14/10/2026)
+>
+> **O relato:** "fora do padrão" deveria ter um botão "tornar padrão"; e a
+> tela "muito longa e misturada", com filtro por função e por permissão.
+> **Não era defeito:** o padrão era o de FÁBRICA, escrito no código, e mudar
+> exigia código — por isso toda decisão do dono ficava para sempre com o selo
+> (13 das 27 na produção em 14/10).
+>
+> **Decisões do dono:** o botão grava o padrão NO BANCO; e a tela salva por
+> uma barra de alterações (marcar não grava).
+>
+> **0292:** `permission_defaults` (uma linha por permissão, lista de funções —
+> "fixado vazio" ≠ "nunca fixado"); `fix_permission_defaults(caps)` copia o
+> que está GRAVADO na matriz, no banco; `set_permission_default` regrava (para
+> "usar o original"). Sem porta de exclusão. Só o Admin Master lê e grava. No
+> treino, a mesma trava da matriz (`block_mirror_writes`, 0260) — achada
+> testando: sem ela o "Tornar padrão" gravava no treino enquanto a matriz era
+> recusada. O espelho para o treino copia o padrão junto (upsert, sem apagar).
+>
+> **A tela:** três visões (por função, por permissão, grade), busca sem
+> acento, filtro de grupo, "só as diferentes", barra de alterações com a lista
+> e Salvar/Descartar, Tornar padrão / Tornar tudo padrão / Usar o original. A
+> conta mora em `src/lib/matriz-de-permissoes.ts` (pura, com teste).
+>
+> **Provado:** 23 conferências; 19 quebras de propósito (2 réguas fracas
+> refeitas); transação desfeita no treino fingindo produção (salvar, tornar
+> padrão, usar o original, recepção e sem login recusados); e na tela, no
+> treino. **Não visto gravando na tela:** o Salvar num banco que aceita.
+>
+> **Corrigido no manual de carona:** a 13b dizia que permissão mudada "não vai
+> para o treino" — desde a 0260 vai (o treino é cópia).
+>
 > ## ⏱️ 0.310.0 (sem migração) — HORAS POSSÍVEIS × HORAS TRABALHADAS (OC-00071, 13/10/2026)
 >
 > **O relato:** liberar horário avulso não aumentava a estimativa de horas do
