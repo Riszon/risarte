@@ -410,10 +410,8 @@ Syncthing se comportarem de forma estranha.**
   `admin/`) sem entrada em `NOME_DA_TELA` reprova o portão — senão apareceria
   como "Outra tela" na lista. Vale para os três projetos (o arquivo é do core,
   mudança aditiva).
-- ⏳ **0291: aplicada no TREINO; falta o dono rodar na PRODUÇÃO.** Duas colunas
-  em `access_sessions` e três funções. Sem ela: a antena e o quadro Agora não
-  aparecem (não mostram zero), e a aba diz que aguarda a migração. O sinal de
-  atividade NÃO depende dela.
+- ✅ **0291 APLICADA nos dois bancos** (o dono rodou na produção em 13/10/2026 e a conferência dele deu o esperado; conferido de fora, só leitura: sem login as três funções recusam; a chave de serviço — que não é Admin Master — recebe lista vazia e resumo nulo; as duas colunas existem; e a única tela já gravada lá é só o módulo). Na hora da
+  conferência a produção tinha 5 acessos no dia, 1 já com a tela informada.
 - A 0291 foi **corrigida depois de aplicada no treino** (lista de colunas
   explícita, e a tela passou a ser a informada por último); reapliquei no
   treino. O arquivo que vai ao dono é o corrigido.

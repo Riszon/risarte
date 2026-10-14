@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.309.0** · Última migração: **0291** (aplicada no treino; **falta a produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.309.0** · Última migração: **0291** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🟢 0.309.0 / 0291 — QUEM ESTÁ ONLINE (pedido do dono, 13/10/2026)
 >
@@ -17,6 +17,7 @@ _Atualizado em: 13/10/2026 · Versão do sistema: **0.309.0** · Última migraç
 > maiúscula. Chamada à parte do sinal de atividade, para não derrubá-lo
 > enquanto a migração não roda. Sem a 0291: a antena e o quadro Agora não
 > aparecem, e a aba Online agora diz que aguarda a migração.
+> ✅ **0291 APLICADA na produção em 13/10/2026** — o dono rodou na produção em 13/10/2026 e a conferência dele deu o esperado; conferido de fora, só leitura: sem login as três funções recusam; a chave de serviço — que não é Admin Master — recebe lista vazia e resumo nulo; as duas colunas existem; e a única tela já gravada lá é só o módulo.
 >
 > ## 📈 0.308.0 / 0290 — PAINEL DE USO + FILTROS POR UNIDADE E FUNÇÃO (auditoria)
 >

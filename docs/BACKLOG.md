@@ -2288,7 +2288,7 @@ rankings, uso por função e por unidade e mapa dia × hora.
 
 Antena com número na barra de cima e aba **Online agora** na Auditoria; só o
 Admin Master vê. Detalhe no `ESTADO_DO_PROJETO.md` e no manual, seção 13c.
-⏳ **0291 aplicada no treino; falta a produção.**
+✅ **0291 APLICADA nos dois bancos** (o dono rodou na produção em 13/10/2026 e a conferência dele deu o esperado; conferido de fora, só leitura: sem login as três funções recusam; a chave de serviço — que não é Admin Master — recebe lista vazia e resumo nulo; as duas colunas existem; e a única tela já gravada lá é só o módulo).
 
 **Declarado, não feito:**
 
