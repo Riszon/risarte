@@ -175,6 +175,13 @@ export function PurchasesView({
   return (
     <div className={cn("space-y-4", isPending && "opacity-70")}>
       {/* -- GERAR --------------------------------------------------------- */}
+      {!canManage && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <strong>Só consulta.</strong> Quem monta e envia a lista de compras desta
+          unidade é o Gerente da unidade (ou o Admin Master e o Financeiro da
+          Franqueadora).
+        </p>
+      )}
       {canManage && (
         <Card>
           <CardContent className="flex flex-wrap items-center gap-3 p-4">

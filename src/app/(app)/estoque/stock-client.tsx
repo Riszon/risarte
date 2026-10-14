@@ -1636,7 +1636,7 @@ export function StockManager({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-medium">Saldo ({shown.length})</h2>
             <div className="flex items-center gap-2">
-              {canManageCatalog && (
+              {canManageCatalog ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -1646,6 +1646,11 @@ export function StockManager({
                   <Plus className="mr-1 size-4" />
                   Novo item
                 </Button>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  O cadastro de itens é da rede: quem faz é o Admin Master ou o
+                  Financeiro da Franqueadora.
+                </span>
               )}
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />

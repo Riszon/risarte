@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AlertTriangle, ChevronDown, ChevronRight, Clock } from "lucide-react";
@@ -176,7 +177,11 @@ export function CashFlowView({
               <>
                 <br />
                 Nenhuma conta bancária cadastrada — o saldo conta só o que passou
-                pelo sistema.
+                pelo sistema. A conta (com o saldo de abertura) se cadastra em{" "}
+                <Link href="/financeiro/conciliacao" className="underline underline-offset-2">
+                  Conciliação
+                </Link>
+                .
               </>
             )}
           </p>

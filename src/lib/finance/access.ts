@@ -47,3 +47,30 @@ export function canPostFinance(
 export function canConfigureFinanceNetwork(session: SessionContext): boolean {
   return pode(session, "acao.financeiro.configurar_rede");
 }
+
+/**
+ * O BANCO só aceita GRAVAR a configuração da rede (multa e juros, centros de
+ * custo, catálogo de estoque) de duas funções: Admin Master e Financeiro da
+ * Franqueadora — `is_admin_master() or is_finance_franchisor()` nas regras de
+ * `finance_settings`, `cost_centers` e `stock_items`.
+ *
+ * ⚠️ A TELA SEGUE O BANCO (relatos OC-00094 a OC-00099, decisão do dono em
+ * 14/10/2026). Ligar uma dessas ações na matriz para outra função (a
+ * Franqueadora/Rede, por exemplo) ABRE a tela, mas o banco recusa no Salvar —
+ * e a pessoa preenchia tudo para ouvir "não". Agora quem o banco recusa vê só
+ * consulta, com o aviso de quem faz. Desligar na matriz continua funcionando.
+ *
+ * Só para GRAVAR: `canConfigureFinanceNetwork` sozinho continua abrindo as
+ * telas de CONSULTA da rede (consolidado, painel) para quem a matriz liberou.
+ */
+export function bancoAceitaGravarNaRede(session: SessionContext): boolean {
+  return session.isAdminMaster || isFinanceFranchisor(session);
+}
+
+/** Pode EDITAR a configuração da rede: a matriz libera E o banco aceita. */
+export function canEditFinanceNetwork(session: SessionContext): boolean {
+  return canConfigureFinanceNetwork(session) && bancoAceitaGravarNaRede(session);
+}
+
+/** A frase de quem faz, para a tela de quem só consulta. */
+export const QUEM_GRAVA_NA_REDE = "o Admin Master ou o Financeiro da Franqueadora";

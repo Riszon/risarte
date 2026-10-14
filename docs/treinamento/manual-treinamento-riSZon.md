@@ -221,6 +221,19 @@ saldo em caixa de hoje.
 **Embaixo, os caminhos agrupados** pela pergunta que respondem: *O mês deu
 lucro?*, *Tenho dinheiro?*, *A rede* e *Cadastros*.
 
+**Quem lança e quem consulta.** Ver o Financeiro não é o mesmo que lançar
+nele. Quem **grava** é decidido pelo banco, e a tela segue o banco:
+
+| O quê | Quem grava |
+|---|---|
+| Contas a pagar, fornecedores, conta bancária e conciliação da unidade | Gerente da unidade, Financeiro da Franqueadora, Admin Master |
+| Multa, juros, carência e centros de custo (regras da rede) | Financeiro da Franqueadora, Admin Master |
+
+Quem abre a tela sem poder gravar vê **"Só consulta"** e o nome de quem faz.
+**A conta bancária se cadastra em Financeiro → Conciliação → "Cadastrar conta
+bancária"** — é ela que dá o saldo de abertura ao Fluxo de caixa, que avisa e
+leva até lá quando não há conta.
+
 > **O número do painel é o mesmo da tela para onde ele leva.** O resultado do
 > mês no painel é o mesmo lucro líquido da DRE, do mesmo período — as duas usam
 > a mesma conta, não duas parecidas.
@@ -1176,9 +1189,13 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 
 #### Franqueadora/Rede *(franqueadora)*
 
-- **Vê:** Relatórios ✅, Planos ✅, Risartanos ✅, Empresarial ✅.
-- **Não vê:** Financeiro ⚠️ — `canViewFinance` **não** inclui
-  `franchisor_staff`. **Ponto que merece validação** (ver lacunas).
+- **Vê:** Relatórios ✅, Planos ✅, Risartanos ✅, Empresarial ✅ — e
+  Financeiro, Estoque e Compras quando o Admin liga na matriz de permissões
+  (na produção estão ligados desde antes de 14/10/2026).
+- **Não grava** no Financeiro, no Estoque nem nas Compras: é função de
+  **consulta**, e o banco recusa. As telas abrem com **"Só consulta"** e dizem
+  quem faz. Quem lança pela Franqueadora é o **Financeiro da Franqueadora**
+  (relatos OC-00094 a OC-00099).
 
 #### Consultor RisLife *(franqueadora)*
 
@@ -2466,8 +2483,12 @@ outro. Se a diferença é de propósito:
 2. **Desligar sempre funciona.** É seguro e imediato.
 3. **Ligar** uma permissão com o selo **"o banco também decide"** (Financeiro,
    Estoque, Compras) abre a tela para a pessoa, **mas os dados podem vir
-   vazios** — a regra do banco continua a mesma até ser ajustada. Se acontecer,
-   é ajuste de código; peça.
+   vazios** — a regra do banco continua a mesma até ser ajustada. E se a
+   **ação** for de gravar (lançar, cadastrar, montar lista, configurar) e o
+   banco não aceitar aquela função, a tela abre **só para consulta**, com o
+   aviso de quem faz. Para lançar pela Franqueadora, a função certa é
+   **Financeiro da Franqueadora**; mudar a regra do banco é ajuste de código —
+   peça.
 
 **Se errar:** **Voltar ao padrão** (o **↺** na grade) põe o padrão de volta na
 barra de alterações — e só vale depois de **Salvar**.

@@ -111,11 +111,15 @@ export function SupplierManager({
           />
           Mostrar inativos
         </label>
-        {canEdit && (
+        {canEdit ? (
           <Button size="sm" onClick={() => setEditing({ ...EMPTY })}>
             <Plus className="mr-1 size-4" />
             Novo fornecedor
           </Button>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Só consulta: quem cadastra fornecedor é o Gerente da unidade, o Financeiro da Franqueadora ou o Admin Master.
+          </span>
         )}
       </div>
 

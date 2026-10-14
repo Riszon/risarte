@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canManagePurchaseRequests } from "@/lib/purchases-access";
+import { canDecidePurchaseAllocations } from "@/lib/purchases-access";
 import { logAudit } from "@/lib/audit";
 
 type Result = { ok: boolean; error?: string; count?: number };
@@ -33,7 +33,7 @@ export async function decideItem(input: {
   reason: string;
 }): Promise<Result> {
   const session = await getSessionContext();
-  if (!canManagePurchaseRequests(session, input.clinicId)) {
+  if (!canDecidePurchaseAllocations(session, input.clinicId)) {
     return { ok: false, error: ERRORS.NOT_ALLOWED };
   }
 
@@ -72,7 +72,7 @@ export async function generateOrders(input: {
   clinicId: string;
 }): Promise<Result> {
   const session = await getSessionContext();
-  if (!canManagePurchaseRequests(session, input.clinicId)) {
+  if (!canDecidePurchaseAllocations(session, input.clinicId)) {
     return { ok: false, error: ERRORS.NOT_ALLOWED };
   }
 

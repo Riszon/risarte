@@ -4,7 +4,7 @@ import { ClipboardCheck } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
-  canManagePurchaseRequests,
+  canDecidePurchaseAllocations,
   canViewPurchases,
   isPurchaser,
 } from "@/lib/purchases-access";
@@ -160,7 +160,7 @@ export default async function ApprovalPage() {
         clinicId={clinicId}
         allocations={allocations}
         orders={orders}
-        canDecide={canManagePurchaseRequests(session, clinicId)}
+        canDecide={canDecidePurchaseAllocations(session, clinicId)}
       />
     </div>
   );

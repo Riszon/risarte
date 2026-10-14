@@ -378,6 +378,11 @@ export function ReconciliationBoard({
                 Cadastrar conta bancária
               </Button>
             )}
+            {!canReconcile && (
+              <p className="text-xs text-muted-foreground">
+                Só consulta: quem cadastra a conta bancária é o Gerente da unidade, o Financeiro da Franqueadora ou o Admin Master.
+              </p>
+            )}
           </CardContent>
         </Card>
         {renderAccountDialog()}

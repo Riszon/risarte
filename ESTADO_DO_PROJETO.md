@@ -1,7 +1,37 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 13/10/2026 · Versão do sistema: **0.311.0** · Última migração: **0292** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 13/10/2026 · Versão do sistema: **0.312.0** · Última migração: **0292** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🧾 0.312.0 (sem migração) — A TELA SEGUE O BANCO (OC-00094 a OC-00099, 14/10/2026)
+>
+> **Seis relatos, uma causa.** Quem relatou é **Franqueadora/Rede** — função de
+> consulta. O banco aceita gravar no Financeiro, no Estoque e nas Compras só de
+> Admin Master, Financeiro da Franqueadora e (na unidade) Gerente. A matriz
+> liga, na produção, várias ações para a Franqueadora/Rede (e para Coordenador
+> e ASB): três telas abriam o formulário e o banco recusava no Salvar; as
+> outras três já eram consulta, sem dizer por quê.
+>
+> **Decisões do dono:** (1) o André ganha a função **Financeiro da
+> Franqueadora** (o dono faz na ficha — sem código); (2) **a tela segue o
+> banco**.
+>
+> **O que mudou:** `canEditFinanceNetwork`/`bancoAceitaGravarNaRede`
+> (juros e centros de custo), `canManageStockCatalog` e `canManageStock`
+> (estoque), `canManagePurchaseRequests` e o novo
+> `canDecidePurchaseAllocations` (compras) passam a exigir a matriz E o
+> banco. **Ver continua seguindo a matriz** — achado testando: o Coordenador
+> tinha deixado de abrir Compras, e ver não podia mudar. Avisos "Só consulta"
+> com quem faz nas seis telas; o Fluxo de caixa aponta para a Conciliação.
+>
+> **Provado:** 19 conferências, 12 quebras de propósito (4 réguas fracas
+> refeitas); na tela, no treino, como Coordenador e como Financeiro da
+> Franqueadora. **Não visto:** a tela como Franqueadora/Rede (a conta de teste
+> está com a porta fechada no treino).
+>
+> **Manual:** 2.3 (quem lança × quem consulta; onde fica a conta bancária),
+> perfil Franqueadora/Rede (dizia que não via o Financeiro — desatualizado) e
+> 13b.
+>
 > ## 🔐 0.311.0 / 0292 — PERMISSÕES: TORNAR PADRÃO + TELA NOVA (OC-00002, 14/10/2026)
 >
 > **O relato:** "fora do padrão" deveria ter um botão "tornar padrão"; e a

@@ -4,6 +4,8 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   canConfigureFinanceNetwork,
+  canEditFinanceNetwork,
+  QUEM_GRAVA_NA_REDE,
   canPostFinance,
   canViewFinance,
 } from "@/lib/finance/access";
@@ -95,6 +97,8 @@ export default async function FinanceSettingsPage() {
   // Gerente/Franqueado veem SÓ a configuração que vale para a própria unidade
   // (decisão do dono, 31/07/2026) — nada da rede nem das outras unidades.
   const isNetworkAdmin = canConfigureFinanceNetwork(session);
+  // Ver a rede é uma coisa; GRAVAR é outra, e quem decide é o banco (OC-00098).
+  const podeEditarRede = canEditFinanceNetwork(session);
   const activeClinicId = session.activeClinic?.id ?? null;
   const visibleClinics = (clinics ?? [])
     .map((c) => ({
@@ -118,11 +122,18 @@ export default async function FinanceSettingsPage() {
         </p>
       </div>
 
+      {isNetworkAdmin && !podeEditarRede && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <strong>Só consulta.</strong> Quem altera multa, juros e carência é{" "}
+          {QUEM_GRAVA_NA_REDE}.
+        </p>
+      )}
+
       <FinanceSettingsForm
         network={network}
         overrides={overrides}
         clinics={visibleClinics}
-        canEdit={isNetworkAdmin}
+        canEdit={podeEditarRede}
         showNetwork={isNetworkAdmin}
       />
 

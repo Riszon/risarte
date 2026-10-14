@@ -5,7 +5,11 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { isValidAccountCode } from "@/lib/finance/accounts";
-import { canConfigureFinanceNetwork } from "@/lib/finance/access";
+import {
+  QUEM_GRAVA_NA_REDE,
+  bancoAceitaGravarNaRede,
+  canEditFinanceNetwork,
+} from "@/lib/finance/access";
 
 export type FinanceResult = { ok: boolean; error?: string };
 
@@ -31,6 +35,13 @@ export async function saveFinanceSettings(input: {
 }): Promise<FinanceResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
+
+  // A tela segue o banco (OC-00098): `finance_settings` só aceita Admin Master
+  // e Financeiro da Franqueadora. Antes a recusa só vinha do banco, depois de
+  // a pessoa preencher tudo.
+  if (!bancoAceitaGravarNaRede(session)) {
+    return { ok: false, error: `Só consulta: quem altera multa, juros e carência é ${QUEM_GRAVA_NA_REDE}.` };
+  }
 
   if (input.lateFeePercent < 0 || input.lateFeePercent > 2) {
     return {
@@ -136,7 +147,7 @@ export async function createCostCenter(input: {
 
   // A árvore é da REDE: só a Franqueadora cria centro (decisão do dono,
   // 31/07/2026). A RLS da 0186 é a barreira real; isto é a mensagem amigável.
-  if (!canConfigureFinanceNetwork(session)) {
+  if (!canEditFinanceNetwork(session)) {
     return {
       ok: false,
       error:
@@ -202,7 +213,7 @@ export async function updateCostCenter(input: {
   const session = await getSessionContext();
   const supabase = await createClient();
 
-  if (!canConfigureFinanceNetwork(session)) {
+  if (!canEditFinanceNetwork(session)) {
     return {
       ok: false,
       error: "Centros de custo são definidos pela Franqueadora.",

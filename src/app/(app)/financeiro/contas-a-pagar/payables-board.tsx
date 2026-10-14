@@ -420,6 +420,11 @@ export function PayablesBoard({
           </select>
         )}
         <span className="ml-auto flex gap-1">
+          {!canManage && (
+            <span className="self-center text-xs text-muted-foreground">
+              Só consulta: quem lança conta a pagar é o Gerente da unidade, o Financeiro da Franqueadora ou o Admin Master.
+            </span>
+          )}
           {canManage && (
             <Button
               size="sm"

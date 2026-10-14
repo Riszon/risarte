@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Network } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canConfigureFinanceNetwork, canViewFinance } from "@/lib/finance/access";
+import { canEditFinanceNetwork, canViewFinance, QUEM_GRAVA_NA_REDE } from "@/lib/finance/access";
 import type { CostCenter } from "@/lib/finance/accounts";
 import { CostCenterManager } from "./cost-center-manager";
 import { CostCenterReport, type CenterTotals } from "./cost-center-report";
@@ -45,7 +45,9 @@ export default async function CostCentersPage(
   const start = `${month}-01`;
   const end = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
 
-  const canManageNetwork = canConfigureFinanceNetwork(session);
+  // A tela segue o banco (OC-00098): `cost_centers` só aceita Admin Master e
+  // Financeiro da Franqueadora.
+  const canManageNetwork = canEditFinanceNetwork(session);
   const activeClinicId = session.activeClinic?.id ?? null;
 
   const supabase = await createClient();
@@ -111,7 +113,7 @@ export default async function CostCentersPage(
           Administrativo, Marketing e Infraestrutura.{" "}
           {canManageNetwork
             ? "A árvore é da rede: o que você cria aqui vale para todas as unidades."
-            : "A árvore é definida pela Franqueadora, para que todas as unidades sejam comparáveis. Aqui você consulta e acompanha o movimento da sua unidade."}
+            : `A árvore é definida pela Franqueadora, para que todas as unidades sejam comparáveis — quem cria e altera é ${QUEM_GRAVA_NA_REDE}. Aqui você consulta e acompanha o movimento.`}
         </p>
       </div>
 

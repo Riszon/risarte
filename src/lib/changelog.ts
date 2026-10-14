@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.312.0",
+    data: "2026-10-14",
+    migracao: null,
+    titulo: "Financeiro, Estoque e Compras: a tela diz quem pode gravar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Configuração financeira (multa e juros), centros de custo, cadastro de item do estoque e lista de compras deixavam preencher e só recusavam no Salvar para quem a função não permite gravar. Agora essas telas abrem só para consulta para essas pessoas, com o aviso de quem faz.",
+        papeis: ["franchisor_staff", "clinical_coordinator", "asb"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Contas a pagar, Fornecedores e Conciliação passaram a dizer, para quem só consulta, quem lança: o Gerente da unidade, o Financeiro da Franqueadora ou o Admin Master.",
+        papeis: ["franchisor_staff", "franchisee"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O Fluxo de caixa, quando não há conta bancária, aponta onde ela se cadastra: em Financeiro → Conciliação.",
+        papeis: ["unit_manager", "finance_franchisor", "franchisee", "franchisor_staff"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Admin: ligar na tela de Permissões uma ação marcada com \"o banco também decide\" para uma função que o banco não aceita abre a tela só para consulta. Para lançar no Financeiro, no Estoque e nas Compras da Franqueadora, a função certa é Financeiro da Franqueadora.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.311.0",
     data: "2026-10-14",
     migracao: "0292",

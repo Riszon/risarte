@@ -2284,6 +2284,28 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00094 a OC-00099 ✅ (14/10/2026 — core 0.312.0, sem migração) — a tela segue o banco
+
+Seis relatos do André (Franqueadora/Rede), uma causa: função de consulta, e o
+banco grava só de Admin, Financeiro da Franqueadora e Gerente. Decisões do
+dono: o André ganha a função Financeiro da Franqueadora (ele faz na ficha), e
+a tela segue o banco. Detalhe no `ESTADO_DO_PROJETO.md`.
+
+**Com o dono:**
+
+- Dar ao André a função **Financeiro da Franqueadora** (Risartanos, produção).
+- Se o André deve montar a **lista de compras da própria Franqueadora**: ligar
+  "Criar requisição de compra" para o Financeiro da Franqueadora na matriz (o
+  banco já aceita). Hoje ela não está ligada para essa função.
+
+**Declarado, não feito:**
+
+- **As telas de CONSULTA da rede não mudaram** (consolidado, painel da rede,
+  taxas, adquirentes, plano de contas usam `canConfigureFinanceNetwork`). Se
+  alguma delas tiver gravação para quem a matriz liga e o banco recusa, é o
+  mesmo defeito — não varri.
+- **Não visto na tela** como Franqueadora/Rede.
+
 ### OC-00002 ✅ (14/10/2026 — core 0.311.0, migração 0292) — permissões: tornar padrão + tela nova
 
 Relato do dono: o selo "fora do padrão" deveria ter "tornar padrão"; e a tela,
@@ -2377,6 +2399,19 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 **Resíduo no treino:** a empresa de teste **"ZZZ Fechamento do agente"** ficou
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
+
+### AP42. Coordenador e ASB com ações ligadas na matriz que o banco não aceita (14/10/2026)
+
+*(Achado medindo a matriz da produção para o OC-00094.)*
+**Confirmado (matriz da produção × regras do banco do treino):** "Criar
+requisição de compra" está ligada para **Coordenador Clínico** e **ASB**, e
+"Entrada e inventário de estoque" para **ASB**; o banco aceita essas ações só
+de Admin, Financeiro da Franqueadora e Gerente. Desde a 0.312.0 a tela mostra
+"Só consulta" para eles — antes, o botão aparecia e o Salvar era recusado.
+
+**Decisão do dono:** se Coordenador e ASB devem mesmo montar lista e dar
+entrada, é mudança de regra no banco (`can_manage_stock`); se não, desligar
+na matriz. Até lá eles veem e não gravam.
 
 ### AP41. Dia fechado por período planejado + horário avulso: a AGENDA aceita o horário normal inteiro (13/10/2026)
 

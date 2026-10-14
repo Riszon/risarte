@@ -390,6 +390,26 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**14/10/2026 (tarde) — PC Administrador (core 0.311.0 → 0.312.0, sem migração)**
+
+- **OC-00094 a OC-00099 (André, Franqueadora/Rede): UMA causa.** A função é de
+  consulta; o banco grava só de Admin, Financeiro da Franqueadora e Gerente.
+  A matriz ligava ações para a Franqueadora/Rede e três telas abriam o
+  formulário que o banco recusava.
+- ⚠️ **A TELA SEGUE O BANCO** (decisão do dono): as regras de GRAVAR em
+  `finance/access.ts`, `stock-access.ts` e `purchases-access.ts` exigem
+  matriz E banco. **VER continua seguindo só a matriz** — não tirar leitura de
+  ninguém (quase aconteceu com o Coordenador em Compras; a régua prende).
+- ⏳ **Com o dono:** dar ao André a função **Financeiro da Franqueadora** na
+  ficha dele (produção; chega ao treino pelo espelho). Para ele montar lista
+  de compras da Franqueadora, ligar "Criar requisição de compra" para o
+  Financeiro da Franqueadora na matriz — o banco já aceita.
+- **Não visto na tela:** como Franqueadora/Rede (a conta `rede@example.com`
+  está com a porta do sistema FECHADA no treino; não abri sem pedido).
+- **AP42 (BACKLOG):** Coordenador e ASB têm na matriz ações de estoque/compras
+  que o banco não aceita.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **14/10/2026 — PC Administrador (core 0.310.0 → 0.311.0, migração 0292)**
 
 - **OC-00002 — PERMISSÕES: "TORNAR PADRÃO" + TELA NOVA.** O selo "fora do

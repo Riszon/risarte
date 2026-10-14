@@ -1,4 +1,4 @@
-import { pode, type SessionContext } from "@/lib/auth";
+import { hasRoleInClinic, pode, type SessionContext } from "@/lib/auth";
 import type { UserRole } from "@/lib/roles";
 
 // 0213 — quem enxerga e quem mexe no Estoque. Espelha os helpers de RLS
@@ -34,7 +34,14 @@ export function canManageStock(
   clinicId: string | null | undefined
 ): boolean {
   if (session.isAdminMaster || isFinanceFranchisor(session)) return true;
-  return pode(session, "acao.estoque.gerir", clinicId);
+  // A tela segue o banco (OC-00097): `can_manage_stock` aceita, além dos dois
+  // acima, só o GERENTE da unidade. Ligar "entrada e inventário" na matriz para
+  // outra função abria o formulário e o banco recusava no Lançar.
+  return (
+    pode(session, "acao.estoque.gerir", clinicId) &&
+    Boolean(clinicId) &&
+    hasRoleInClinic(session, clinicId as string, ["unit_manager"])
+  );
 }
 
 /** Registra o consumo que fugiu do kit. */
@@ -57,5 +64,10 @@ export function canViewStock(
 
 /** Só a Franqueadora cadastra o item — o catálogo é da rede. */
 export function canManageStockCatalog(session: SessionContext): boolean {
-  return pode(session, "acao.estoque.catalogo");
+  // A tela segue o banco (OC-00097): `stock_items` só aceita Admin Master e
+  // Financeiro da Franqueadora.
+  return (
+    pode(session, "acao.estoque.catalogo") &&
+    (session.isAdminMaster || isFinanceFranchisor(session))
+  );
 }
