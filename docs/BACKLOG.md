@@ -2293,7 +2293,9 @@ a tela segue o banco. Detalhe no `ESTADO_DO_PROJETO.md`.
 
 **Com o dono:**
 
-- Dar ao André a função **Financeiro da Franqueadora** (Risartanos, produção).
+- ~~Dar ao André a função **Financeiro da Franqueadora**~~ ✅ **Feito pelo dono em 14/10/2026** — conferido de fora, só leitura: na produção o André tem a função Financeiro da Franqueadora na RISARTE Franchising (a de Franqueadora/Rede saiu); no treino a cópia chegou igual, com a porta do sistema aberta lá. Na PRODUÇÃO a porta do sistema dele segue fechada (portão de certificação) — assunto à parte.
+- No treino, a conta de teste `rede@example.com` (Franqueadora/Rede) tem o
+  nome do André: quem entrar com ela continua só consultando.
 - Se o André deve montar a **lista de compras da própria Franqueadora**: ligar
   "Criar requisição de compra" para o Financeiro da Franqueadora na matriz (o
   banco já aceita). Hoje ela não está ligada para essa função.

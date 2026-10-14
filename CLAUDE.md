@@ -400,10 +400,12 @@ Syncthing se comportarem de forma estranha.**
   `finance/access.ts`, `stock-access.ts` e `purchases-access.ts` exigem
   matriz E banco. **VER continua seguindo só a matriz** — não tirar leitura de
   ninguém (quase aconteceu com o Coordenador em Compras; a régua prende).
-- ⏳ **Com o dono:** dar ao André a função **Financeiro da Franqueadora** na
-  ficha dele (produção; chega ao treino pelo espelho). Para ele montar lista
-  de compras da Franqueadora, ligar "Criar requisição de compra" para o
-  Financeiro da Franqueadora na matriz — o banco já aceita.
+- ✅ **Feito pelo dono em 14/10/2026** — conferido de fora, só leitura: na produção o André tem a função Financeiro da Franqueadora na RISARTE Franchising (a de Franqueadora/Rede saiu); no treino a cópia chegou igual, com a porta do sistema aberta lá. Na PRODUÇÃO a porta do sistema dele segue fechada (portão de certificação) — assunto à parte.
+- ⏳ **Com o dono:** para o André montar lista de compras da Franqueadora,
+  ligar "Criar requisição de compra" para o Financeiro da Franqueadora na
+  matriz — o banco já aceita.
+- ⚠️ **No treino, a conta de teste `rede@example.com` (Franqueadora/Rede)
+  tem o NOME do André.** Quem entrar com ela continua só consultando.
 - **Não visto na tela:** como Franqueadora/Rede (a conta `rede@example.com`
   está com a porta do sistema FECHADA no treino; não abri sem pedido).
 - **AP42 (BACKLOG):** Coordenador e ASB têm na matriz ações de estoque/compras
