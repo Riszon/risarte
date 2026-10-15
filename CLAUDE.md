@@ -404,7 +404,8 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **`check-migrations` agora olha os três schemas.** Conferir migração
   ANTIGA contra outra faixa pode acusar à toa (a ordem é a do nome, não a do
   tempo); para migração nova, vale.
-- ⏳ **0294 e 0295: produção com o dono.**
+- ✅ **0295 APLICADA nos dois bancos** (o dono rodou na produção em 15/10/2026 e a conferência dele deu o esperado — 21 funções, 0 sem login, 21 logado, 21 chave de serviço; conferido de fora, sem login: `commercial_set_stage` e `accept_negotiation` agora recusam com "permission denied" ANTES de rodar — antes a primeira respondia CLIENT_NOT_FOUND).
+- ✅ **0294 APLICADA nos dois bancos** (conferido de fora em 15/10/2026: sem login, `can_decide_purchase` existe e recusa; lido com a chave de serviço, a permissão "Aprovar compra da unidade" está ligada para Financeiro da Franqueadora e Gerente).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **15/10/2026 — PC Administrador (core 0.317.0 → 0.318.0, migração 0294)**
@@ -420,7 +421,7 @@ Syncthing se comportarem de forma estranha.**
   (com a matriz gravada, `auth.ts` usa só o que está lá). Migração que cria
   permissão semeia as linhas; e a tela trata a janela até a migração rodar
   (`semAprovarNoBanco` em `purchases-access.ts`).
-- ⏳ **0294 aplicada só no TREINO** — produção com o dono.
+- ✅ **0294 aplicada nos dois bancos** (conferida de fora em 15/10/2026).
 - 🔴 **A 0294 foi ao `main` com o item 4 QUEBRADO** (aspas perdidas ao
   acrescentá-lo por script) e passou pelo `check-migrations`; o treino não
   acusou porque o item 4 entrou lá à parte. Achado relendo antes de colar.

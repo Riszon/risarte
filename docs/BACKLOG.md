@@ -2304,9 +2304,7 @@ da tela e manual corrigidos. Detalhe no `ESTADO_DO_PROJETO.md`.
 
 **Com o dono:**
 
-- ⏳ **Rodar a 0294 na produção.** Até lá, na produção, aprovar continua como
-  antes (gerente e Admin) — a tela foi feita para não tirar o botão de
-  ninguém nesse intervalo.
+- ✅ **0294 APLICADA nos dois bancos** (conferido de fora em 15/10/2026: sem login, `can_decide_purchase` existe e recusa; lido com a chave de serviço, a permissão "Aprovar compra da unidade" está ligada para Financeiro da Franqueadora e Gerente).
 
 **Declarado, não feito:**
 
@@ -2545,7 +2543,7 @@ paginar/filtrar por fase na tela — decisão de desenho, não só de leitura.
 
 ### AP43. ✅ RESOLVIDO em 15/10/2026 (0295 / core 0.319.0) — as funções do Comercial executavam SEM LOGIN até a guarda
 
-**Resolvido:** medido no treino, eram **21** funções do Comercial (funil, follow-up, negociação, venda direta, renegociação) no mesmo estado. Conferido antes de fechar: nenhuma em regra de segurança, rotina agendada ou tela pública. A 0295 tira de quem não está logado e mantém para quem está; provado no treino (21/21). ⏳ **Produção com o dono.**
+**Resolvido:** medido no treino, eram **21** funções do Comercial (funil, follow-up, negociação, venda direta, renegociação) no mesmo estado. Conferido antes de fechar: nenhuma em regra de segurança, rotina agendada ou tela pública. A 0295 tira de quem não está logado e mantém para quem está; provado no treino (21/21). ✅ **0295 APLICADA nos dois bancos** (o dono rodou na produção em 15/10/2026 e a conferência dele deu o esperado — 21 funções, 0 sem login, 21 logado, 21 chave de serviço; conferido de fora, sem login: `commercial_set_stage` e `accept_negotiation` agora recusam com "permission denied" ANTES de rodar — antes a primeira respondia CLIENT_NOT_FOUND).
 
 
 *(Achado conferindo a 0293 na produção, de fora.)*
