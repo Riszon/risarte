@@ -1,7 +1,30 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 14/10/2026 · Versão do sistema: **0.317.0** · Última migração: **0293** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 14/10/2026 · Versão do sistema: **0.318.0** · Última migração: **0294** (aplicada no treino; ⏳ produção com o dono) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ? 0.318.0 / 0294 — QUEM APROVA A COMPRA + AJUDA DE CADA TELA (OC-00102, 15/10/2026)
+>
+> Relato do André: "fiz o pedido e não aparece para aprovação". Aparecia — sem
+> os botões: aprovar era do Gerente da unidade e do Admin, e a RISARTE
+> Franchising **não tem gerente** (lido nos dois bancos). **Decisões do dono:**
+> (1) na compra da PRÓPRIA Franqueadora, o **Financeiro da Franqueadora**
+> aprova; nas unidades nada muda; (2) ajuda em cada tela como **painel com
+> passos na tela**; (3) corrigir o texto da tela e o manual.
+>
+> ⚠️ **A régua mora no banco: `can_decide_purchase` (0294)**, usada por
+> `decide_allocation` e `create_orders_from_round` (copiadas da 0241, só a
+> guarda mudou — conferido linha a linha). A tela ganhou a permissão própria
+> **"Aprovar compra da unidade"** (antes pegava carona em "Criar requisição",
+> que não está ligada para o Financeiro). ⚠️ **Janela da migração:** sem a
+> permissão no banco, vale a regra antiga — senão o gerente perderia os botões
+> até a 0294 rodar.
+>
+> ⚠️ **A AJUDA É UM SEGUNDO TEXTO** (`src/lib/ajuda-das-telas.ts`), e a régua
+> prende que não se descole: cada botão em negrito tem de existir na tela, a
+> rota tem de existir e a seção do manual também. **Escrita só para Compras**;
+> as outras telas dizem que ainda não têm e oferecem o manual. O manual ganhou
+> o Fluxo 5 (Compras) e abre na seção pedida (`/manual?secao=`).
+>
 > ## ← 0.317.0 (sem migração) — SETA PARA VOLTAR (OC-00101, 14/10/2026)
 >
 > Relato do André (e o dono, com a Auditoria de exemplo): para voltar à tela

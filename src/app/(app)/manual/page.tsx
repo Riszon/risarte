@@ -51,7 +51,7 @@ function lerManual(): string | null {
   }
 }
 
-export default async function ManualPage() {
+export default async function ManualPage(props: PageProps<"/manual">) {
   const session = await getSessionContext();
   if (!pode(session, "menu.manual")) redirect("/");
 
@@ -72,12 +72,16 @@ export default async function ManualPage() {
   }
 
   const secoes = secoesDoManual(parseMarkdown(bruto));
+  // A ajuda da tela abre o manual na seção certa (OC-00102). O trecho dentro
+  // dela vai no #, e o navegador rola até lá — a seção já vem desenhada.
+  const pedida = (await props.searchParams).secao;
 
   return (
     <ManualReader
       secoes={secoes}
       versao={APP_VERSION}
       migracao={LATEST_MIGRATION}
+      secaoInicial={typeof pedida === "string" ? pedida : undefined}
     />
   );
 }

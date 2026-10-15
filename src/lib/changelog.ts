@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.318.0",
+    data: "2026-10-15",
+    migracao: "0294",
+    titulo: "Compras: quem aprova, e a ajuda de cada tela",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na barra de cima, o botão ? abre ao lado o passo a passo da tela em que você está: para que serve, quem faz, os passos com o nome dos botões e o que costuma confundir. Começa pelas telas de Compras; nas outras, ele avisa que o passo a passo ainda está sendo escrito e oferece o manual.",
+        papeis: "todos",
+        manual: "A barra de cima",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A compra da própria Franqueadora passa a ser aprovada pelo Financeiro da Franqueadora (antes só o Admin conseguia, porque a Franqueadora não tem gerente). Nas unidades nada muda: aprova o gerente.",
+        papeis: ["finance_franchisor", "purchaser", "unit_manager"],
+        manual: "8. Fluxos principais de uso",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na tela Aprovar compra, quem não aprova vê na coluna Decisão quem decide (antes aparecia só um traço). E o manual ganhou o passo a passo de Compras: pedir, negociar, aprovar e receber, com quem faz cada passo.",
+        papeis: ["finance_franchisor", "purchaser", "unit_manager", "franchisee", "franchisor_staff"],
+        manual: "8. Fluxos principais de uso",
+      },
+    ],
+  },
+  {
     versao: "0.317.0",
     data: "2026-10-14",
     migracao: null,

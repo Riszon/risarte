@@ -1,6 +1,7 @@
 import { AlertTriangle, BookMarked, Sparkles, UserRound } from "lucide-react";
 import { BotaoSair } from "@/components/botao-sair";
 import { BotaoVoltar } from "@/components/botao-voltar";
+import { AjudaDaTela } from "@/components/ajuda-da-tela";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ReportNavItem } from "@/components/report-nav-item";
@@ -116,6 +117,10 @@ export function Topbar({
             icon={<Sparkles className="size-[18px]" />}
           />
         )}
+        {/* AJUDA DESTA TELA (OC-00102, decisão do dono): o passo a passo da tela
+            em que a pessoa está, num painel ao lado. No portal não — lá as
+            poucas telas são o próprio treinamento. */}
+        {!modoPortal && <AjudaDaTela podeVerManual={podeVerManual} />}
         {podeVerManual && (
           <TopbarItem
             href="/manual"

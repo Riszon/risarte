@@ -7,6 +7,7 @@ import {
   canDecidePurchaseAllocations,
   canViewPurchases,
   isPurchaser,
+  quemDecideACompra,
 } from "@/lib/purchases-access";
 import { canConfigureFinanceNetwork } from "@/lib/finance/access";
 import { ApprovalView, type AllocationRow, type OrderRow } from "./approval-client";
@@ -161,6 +162,7 @@ export default async function ApprovalPage() {
         allocations={allocations}
         orders={orders}
         canDecide={canDecidePurchaseAllocations(session, clinicId)}
+        quemDecide={quemDecideACompra(session, clinicId)}
       />
     </div>
   );

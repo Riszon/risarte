@@ -66,11 +66,14 @@ export function ApprovalView({
   allocations,
   orders,
   canDecide,
+  quemDecide,
 }: {
   clinicId: string;
   allocations: AllocationRow[];
   orders: OrderRow[];
   canDecide: boolean;
+  /** Quem decide, em palavras: a tela diz isso a quem não decide (OC-00102). */
+  quemDecide: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -239,7 +242,11 @@ export function ApprovalView({
                                 </Button>
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              // Um traço sozinho fazia parecer que o item não
+                              // tinha chegado (OC-00102). Diz quem decide.
+                              <span className="text-[11px] text-muted-foreground">
+                                Decide: {quemDecide}
+                              </span>
                             )}
                           </td>
                         </tr>

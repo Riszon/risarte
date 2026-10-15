@@ -69,6 +69,7 @@ describe("matriz de permissões", () => {
     "acao.financeiro.configurar_rede": ["finance_franchisor"],
     "acao.compras.negociar": ["purchaser"],
     "acao.compras.requisitar": ["unit_manager"],
+    "acao.compras.aprovar": ["unit_manager", "finance_franchisor"],
     "menu.planejamento": ["planner_dentist"],
     "menu.procedimentos": ["planner_dentist"],
   };

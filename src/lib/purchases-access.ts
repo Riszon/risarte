@@ -42,18 +42,40 @@ function bancoAceitaEstoqueDaUnidade(
   return Boolean(clinicId) && hasRoleInClinic(session, clinicId as string, ["unit_manager"]);
 }
 
+/** A unidade é a própria Franqueadora? (Lida da lista de unidades da sessão.) */
+function eAFranqueadora(session: SessionContext, clinicId: string | null | undefined): boolean {
+  return Boolean(clinicId) && (session.clinics ?? []).some((c) => c.id === clinicId && c.type === "franchisor");
+}
+
 /**
- * Quem APROVA a parte da unidade na rodada. O banco (`decide_allocation`) é
- * mais estreito que a lista: só Admin Master e o GERENTE da unidade — quem
- * paga é a unidade, e o Financeiro da Franqueadora não decide por ela.
+ * Quem APROVA a parte da unidade na rodada — o espelho de
+ * `can_decide_purchase` (0294). Quem aprova é quem PAGA: o gerente da unidade
+ * (e o Admin). Na compra da PRÓPRIA Franqueadora, que não tem gerente, o
+ * Financeiro da Franqueadora (decisão do dono, OC-00102). Ele NÃO decide a
+ * compra de uma unidade — é dinheiro dela.
  */
 export function canDecidePurchaseAllocations(
   session: SessionContext,
   clinicId: string | null | undefined
 ): boolean {
-  if (!pode(session, "acao.compras.requisitar", clinicId)) return false;
+  // A JANELA DA MIGRAÇÃO (CLAUDE.md §0b): o código chega aos dois ambientes
+  // antes de a 0294 ser rodada, e com a matriz gravada no banco permissão sem
+  // linha não alcança ninguém — o gerente perderia os botões nesse intervalo.
+  // Sem a permissão no banco, vale a regra de antes ("Criar requisição").
+  const semAprovarNoBanco = !(session.permissoes ?? {})["acao.compras.aprovar"];
+  const capacidade = semAprovarNoBanco ? "acao.compras.requisitar" : "acao.compras.aprovar";
+  if (!pode(session, capacidade, clinicId)) return false;
   if (session.isAdminMaster) return true;
-  return Boolean(clinicId) && hasRoleInClinic(session, clinicId as string, ["unit_manager"]);
+  if (!clinicId) return false;
+  if (hasRoleInClinic(session, clinicId, ["unit_manager"])) return true;
+  return eAFranqueadora(session, clinicId) && hasRoleInClinic(session, clinicId, ["finance_franchisor"]);
+}
+
+/** Quem decide, em palavras — a tela diz isso a quem não decide (OC-00102). */
+export function quemDecideACompra(session: SessionContext, clinicId: string | null | undefined): string {
+  return eAFranqueadora(session, clinicId)
+    ? "o Financeiro da Franqueadora ou o Admin"
+    : "o gerente da unidade ou o Admin";
 }
 
 /**

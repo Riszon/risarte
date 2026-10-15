@@ -10,7 +10,7 @@ type Result = { ok: boolean; error?: string; count?: number };
 
 const ERRORS: Record<string, string> = {
   NOT_ALLOWED:
-    "Só o gerente da unidade decide — é dinheiro dela, e a Franqueadora não aprova no lugar.",
+    "Quem aprova é quem paga: o gerente da unidade (ou o Admin). Na compra da própria Franqueadora, o Financeiro da Franqueadora.",
   ALLOCATION_NOT_FOUND: "Item não encontrado.",
   ALREADY_ORDERED:
     "Este item já virou pedido. Para desfazer, é preciso cancelar o pedido.",

@@ -48,7 +48,12 @@ function sessao(
   permissoes: MatrizPermissoes = matrizDaProducao(),
   isAdminMaster = false
 ): SessionContext {
-  return { isAdminMaster, rolesByClinic, permissoes } as unknown as SessionContext;
+  // As unidades com o TIPO: a Franqueadora decide a própria compra (OC-00102).
+  const clinics = [
+    { id: FRANQUEADORA, name: "Franqueadora", type: "franchisor", is_active: true },
+    { id: UNIDADE, name: "Cambé", type: "franchise_unit", is_active: true },
+  ];
+  return { isAdminMaster, rolesByClinic, permissoes, clinics } as unknown as SessionContext;
 }
 
 describe("a Franqueadora/Rede (quem relatou): a matriz liga, o banco recusa — a tela segue o banco", () => {
@@ -88,11 +93,25 @@ describe("o Financeiro da Franqueadora (a função feita para isto)", () => {
     ligada["acao.compras.requisitar"] = [...ligada["acao.compras.requisitar"], "finance_franchisor"];
     expect(canManagePurchaseRequests(sessao({ [FRANQUEADORA]: ["finance_franchisor"] }, ligada), FRANQUEADORA)).toBe(true);
   });
-  it("NÃO aprova a parte da unidade na rodada — o banco só aceita Admin e Gerente", () => {
-    const ligada = matrizPadrao();
-    ligada["acao.compras.requisitar"] = [...ligada["acao.compras.requisitar"], "finance_franchisor"];
-    // Na unidade onde ele TEM a função e a matriz liga: mesmo assim, não aprova.
-    expect(canDecidePurchaseAllocations(sessao({ [FRANQUEADORA]: ["finance_franchisor"] }, ligada), FRANQUEADORA)).toBe(false);
+  it("APROVA a compra da própria Franqueadora (OC-00102, 0294) — sem precisar de \"Criar requisição\"", () => {
+    // A matriz de fábrica NÃO liga "requisitar" para ele; aprovar tem permissão própria.
+    expect(canDecidePurchaseAllocations(sessao({ [FRANQUEADORA]: ["finance_franchisor"] }, matrizPadrao()), FRANQUEADORA)).toBe(true);
+  });
+  it("NÃO aprova a compra de uma UNIDADE — quem paga é ela (o banco recusa)", () => {
+    const emTodas = sessao({ [FRANQUEADORA]: ["finance_franchisor"], [UNIDADE]: ["finance_franchisor"] }, matrizPadrao());
+    expect(canDecidePurchaseAllocations(emTodas, UNIDADE)).toBe(false);
+  });
+  it("antes da 0294 no banco (sem a permissão gravada): vale a regra de antes — o gerente não perde os botões", () => {
+    const semAprovar = matrizPadrao();
+    delete semAprovar["acao.compras.aprovar"];
+    expect(canDecidePurchaseAllocations(sessao({ [UNIDADE]: ["unit_manager"] }, semAprovar), UNIDADE)).toBe(true);
+    // …e o Financeiro só ganha quando a permissão chegar ao banco.
+    expect(canDecidePurchaseAllocations(sessao({ [FRANQUEADORA]: ["finance_franchisor"] }, semAprovar), FRANQUEADORA)).toBe(false);
+  });
+  it("desligado na matriz, não aprova nem a da Franqueadora — desligar sempre vale", () => {
+    const m = matrizPadrao();
+    m["acao.compras.aprovar"] = m["acao.compras.aprovar"].filter((p) => p !== "finance_franchisor");
+    expect(canDecidePurchaseAllocations(sessao({ [FRANQUEADORA]: ["finance_franchisor"] }, m), FRANQUEADORA)).toBe(false);
   });
 });
 

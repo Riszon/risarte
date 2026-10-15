@@ -192,15 +192,20 @@ export function ManualReader({
   // que divergem na primeira correção feita só de um lado.
   titulo = "Manual de Treinamento",
   exemplosDeBusca = "anamnese, desconto, permissão",
+  secaoInicial,
 }: {
   secoes: Secao[];
+  /** Abre nesta seção (`/manual?secao=…`) — é por onde a ajuda da tela chega (OC-00102). */
+  secaoInicial?: string;
   versao: string;
   migracao: string;
   titulo?: string;
   exemplosDeBusca?: string;
 }) {
   const [busca, setBusca] = useState("");
-  const [ativa, setAtiva] = useState(secoes[0]?.id ?? "");
+  const [ativa, setAtiva] = useState(
+    secoes.find((s) => s.id === secaoInicial)?.id ?? secoes[0]?.id ?? ""
+  );
 
   const termo = normalizar(busca.trim());
   const encontradas = useMemo(

@@ -899,6 +899,7 @@ coisa, quem manda é este.
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
 | Boia | **Relatar um problema** — abre um painel ao lado da tela em que você está. Dali também se chega aos relatos e respostas. **Tem número** (veja abaixo) |
+| Ponto de interrogação **?** | **Ajuda desta tela** — abre ao lado o passo a passo da tela em que você está: para que serve, quem faz, os passos com o nome dos botões e o que costuma confundir, com o link para a parte do manual que explica. Desde a versão 0.318.0; começa pelas telas de **Compras** e vai sendo escrito tela a tela — onde ainda não há, ele diz isso e oferece o manual |
 | Livro | **Manual** — este texto, sempre na versão que está no ar |
 
 > **O número da boia não quer dizer a mesma coisa para todo mundo.** Para o
@@ -1179,6 +1180,10 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   (`canConfigureFinanceNetwork` ✅), o catálogo de estoque
   (`canManageStockCatalog` ✅) e ver Compras.
 - **Não pode:** aprovar a própria conta lançada (regra de alçada, FIN3).
+- **Compras:** entra na mesa de negociação; **aprova a compra da própria
+  Franqueadora** (desde a versão 0.318.0) e recebe a entrega. **Não aprova a
+  compra de uma unidade** — quem paga é ela, e quem aprova é o gerente dela.
+  Passo a passo no Fluxo 5 (seção 8).
 
 #### Comprador da Franqueadora *(franqueadora)*
 
@@ -1292,7 +1297,9 @@ diferença.
 | Consumo avulso de estoque | Os acima **+ Coordenador, TSB, ASB** |
 | Cadastrar item no catálogo | Admin, Financeiro da Franqueadora |
 | Criar requisição de compra | Admin, **Gerente** |
-| Mesa de negociação de compras | Admin, **Comprador** |
+| Mesa de negociação de compras | Admin, **Comprador**, Financeiro da Franqueadora |
+| Aprovar compra e gerar o pedido | Admin, **Gerente** da unidade; na compra da **própria Franqueadora**, o **Financeiro da Franqueadora** |
+| Receber a entrega | Admin, Financeiro da Franqueadora, **Gerente** |
 | Configurar PPR+ | **Só Admin** |
 | **Mover o cliente de fase à mão** | **Só Admin** (as demais funções movem pelos atos do fluxo — seção 8, Fluxo 2b) |
 
@@ -2115,6 +2122,31 @@ Nem todo cliente que some some para sempre. Este é o caminho de volta.
 **Se o cliente voltar logo**, sem necessidade de nova avaliação: o Admin Master
 move a fase direto para a Conversão Comercial — e o cartão reabre do mesmo
 jeito.
+
+### Fluxo 5 — Compras: pedir, negociar, aprovar e receber
+
+A regra que organiza tudo: **a negociação é da rede, o dinheiro é da unidade.**
+A Franqueadora negocia por todas; cada unidade aprova, é faturada, paga e
+recebe a sua parte. Por isso **quem aprova é quem paga**.
+
+| Passo | Tela | Quem faz | O que fazer |
+|---|---|---|---|
+| 1. Pedir | Compras → **Pedir** | Gerente da unidade (e o Admin) | **Gerar lista de compras** (o sistema sugere o que está abaixo do mínimo) → ajustar as quantidades, **Acrescentar item** se faltar algo → **Enviar à Franqueadora** |
+| 2. Negociar | **Mesa de negociação** | Comprador, Financeiro da Franqueadora, Admin | **Abrir rodada** com as listas recebidas → **Incluir na cotação** os fornecedores com o preço de cada um → escolher o fornecedor de cada item → **Fechar rodada** |
+| 3. Aprovar | Compras → **Aprovar** | Gerente da unidade (e o Admin). Na compra da **própria Franqueadora**: o **Financeiro da Franqueadora** | **Aprovar** ou **Recusar** cada item (recusar pede o motivo) → **Gerar pedidos** (um por fornecedor) |
+| 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
+
+> **Item sem decisão não vira pedido.** O sistema não aprova sozinho: o
+> dinheiro é da unidade. Quem não decide vê, na coluna **Decisão**, quem
+> decide (por exemplo, *"Decide: o gerente da unidade ou o Admin"*).
+
+> **A Franqueadora também compra para si.** Quando a unidade da compra é a
+> própria Franqueadora, quem aprova é o **Financeiro da Franqueadora** — ela
+> não tem gerente (desde a versão 0.318.0; antes, só o Admin aprovava).
+
+O **Painel de compras** mostra quanto a negociação conjunta economizou e quanto
+foi comprado por fora. O passo a passo de cada tela também está no botão
+**?** da barra de cima (ver *A barra de cima*).
 
 ### Fluxos com evidência parcial
 

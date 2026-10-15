@@ -175,6 +175,9 @@ export async function montarPendencias(
   const gestao = naUnidade && (admin || tem("unit_manager", "franchisee"));
   const consultor = naUnidade && tem("commercial_consultant");
   const comprador = !naUnidade && (admin || tem("purchaser"));
+  // OC-00102 (0294): a compra da PRÓPRIA Franqueadora é aprovada e recebida
+  // pelo Financeiro da Franqueadora — sem isto, ela esperava sem ninguém ver.
+  const comprasDaFranqueadora = !naUnidade && (admin || tem("finance_franchisor"));
 
   const { inicio, fim } = janelaDeHoje();
 
@@ -242,7 +245,7 @@ export async function montarPendencias(
           .eq("status", "active")
       : null,
     gestao || coordenador ? contarPrazoEstourado(supabase, clinica.id) : null,
-    gestao ? contarEtapasDaCompra(supabase, clinica.id) : null,
+    gestao || comprasDaFranqueadora ? contarEtapasDaCompra(supabase, clinica.id) : null,
     gestao ? supabase.rpc("replenishment_list", { p_clinic_id: clinica.id }) : null,
     // ⚠️ QUEM LIMITA AOS CLIENTES DELE É A RLS, não um filtro meu. O consultor
     // só enxerga os seus (regra da matriz), então a contagem já nasce no

@@ -390,6 +390,24 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**15/10/2026 — PC Administrador (core 0.317.0 → 0.318.0, migração 0294)**
+
+- **OC-00102 — QUEM APROVA A COMPRA + AJUDA DE CADA TELA.** Decisões do dono:
+  na compra da PRÓPRIA Franqueadora o **Financeiro da Franqueadora** aprova
+  (régua `can_decide_purchase`, 0294); nas unidades, o gerente (e o Admin).
+  Ajuda = botão **?** na barra de cima, painel com passos
+  (`src/lib/ajuda-das-telas.ts`), **escrita só para Compras** — ao escrever
+  outra tela, a régua `ajuda-das-telas.test.ts` exige botão, rota e seção do
+  manual existentes.
+- ⚠️ **Permissão nova na matriz não alcança ninguém sem LINHA no banco**
+  (com a matriz gravada, `auth.ts` usa só o que está lá). Migração que cria
+  permissão semeia as linhas; e a tela trata a janela até a migração rodar
+  (`semAprovarNoBanco` em `purchases-access.ts`).
+- ⏳ **0294 aplicada só no TREINO** — produção com o dono.
+- Os roteiros de entrar no treino foram refeitos como UM só
+  (`entrar-treino.mjs`, só contas @example.com, recusa a produção).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **14/10/2026 (noite, 3ª) — PC Administrador (core 0.316.0 → 0.317.0, sem migração)**
 
 - **OC-00101 — SETA ← NA BARRA DE CIMA** (decisão do dono): volta à tela

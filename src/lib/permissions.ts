@@ -308,6 +308,19 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["unit_manager"],
   },
   {
+    // OC-00102: aprovar tinha carona em "Criar requisição", que não está
+    // ligada para o Financeiro da Franqueadora. Quem aprova é quem paga — o
+    // banco (`can_decide_purchase`, 0294) deixa o Financeiro decidir só a
+    // compra da PRÓPRIA Franqueadora.
+    id: "acao.compras.aprovar",
+    rotulo: "Aprovar compra da unidade",
+    grupo: "Ações — Compras",
+    descricao:
+      "Aprovar ou recusar o que a rede negociou e gerar o pedido. Quem aprova é quem paga: o gerente na unidade; o Financeiro da Franqueadora na compra da Franqueadora.",
+    dependeDoBanco: true,
+    padrao: ["unit_manager", "finance_franchisor"],
+  },
+  {
     id: "acao.compras.negociar",
     rotulo: "Mesa de negociação (cotação)",
     grupo: "Ações — Compras",

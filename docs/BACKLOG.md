@@ -2284,6 +2284,29 @@ rankings, uso por função e por unidade e mapa dia × hora.
   contar `audit_changes` por dia).
 - **A planilha não foi aberta no Excel por uma pessoa** — foi lida por programa.
 
+### OC-00102 ✅ (15/10/2026 — core 0.318.0, migração 0294) — quem aprova a compra + ajuda de cada tela
+
+Não era defeito: a RISARTE Franchising não tem gerente, e aprovar era do
+gerente e do Admin. Decisões do dono: o Financeiro da Franqueadora aprova a
+compra da própria Franqueadora; ajuda como painel com passos na tela; texto
+da tela e manual corrigidos. Detalhe no `ESTADO_DO_PROJETO.md`.
+
+**Com o dono:**
+
+- ⏳ **Rodar a 0294 na produção.** Até lá, na produção, aprovar continua como
+  antes (gerente e Admin) — a tela foi feita para não tirar o botão de
+  ninguém nesse intervalo.
+
+**Declarado, não feito:**
+
+- **A ajuda está escrita só nas 5 telas de Compras.** As outras ~120 dizem
+  que ainda não têm e oferecem o manual. Escrever o resto é trabalho tela a
+  tela, com a mesma disciplina de evidência; sugestão: começar pelas telas
+  mais usadas pela equipe (Agenda, Atendimento, Jornada, Prontuário). A régua
+  já prende cada nova ajuda à tela e ao manual.
+- **Não visto na tela:** o Financeiro clicando em Aprovar (provado no banco),
+  o texto "Decide: …" e o cartão do Início para ele.
+
 ### OC-00101 ✅ (14/10/2026 — core 0.317.0, sem migração) — seta para voltar
 
 Relato do André; exemplo do dono na Auditoria. A seta do navegador já fazia o
