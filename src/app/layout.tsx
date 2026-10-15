@@ -45,9 +45,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // ⚠️ `suppressHydrationWarning` SÓ NESTE ELEMENTO (AP22, reproduzido em
+    // 15/10/2026): o `RoteiroDoTema` põe a marca `dark` no <html> ANTES de o
+    // React acordar — é o que impede a tela de piscar branco —, e o servidor
+    // não tem como saber o tema da pessoa. No tema escuro, toda abertura dava
+    // "some attributes of the server rendered HTML didn't match". A licença
+    // vale para os atributos do <html>, um nível só: o resto da página
+    // continua sendo conferido.
     <html
       lang="pt-BR"
       className={`${interSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <RoteiroDoTema />

@@ -1712,6 +1712,8 @@ pedidas ao dono.
 
 ---
 
+**Medido em 15/10/2026 (treino):** **248** funções do `public` ainda executam sem login. Parte são as funções-régua que as próprias regras de segurança chamam (`is_admin_master`, `has_role_in_clinic`, …) — fechá-las a esmo quebraria consulta legítima; as do Comercial saíram na 0295 (AP43). O resto precisa da mesma triagem, módulo a módulo.
+
 ### AP17. ⚠️ A janela da 0277 pode estar escondendo a função dos NOVATOS no Academy (26/09/2026) — SUSPEITA
 
 **Achado lendo a resposta do dono sobre o Academy.** O Risarte Academy (outro
@@ -2016,7 +2018,10 @@ aberta (precisa do OK do dono).
 no treino.
 
 
-### AP21. ⚠️ `check-migrations` só enxerga funções do schema `public` (28/09/2026) — ACHADO DE PASSAGEM
+### AP21. ✅ RESOLVIDO em 15/10/2026 (core 0.319.0) — `check-migrations` só enxergava funções do schema `public`
+
+**Resolvido:** as Regras 1 a 4 passaram a ver `public`, `empresarial` e `indica` (o nome guardado leva o schema). Ao ligar, a régua acusou 3 migrações antigas — eram SINÔNIMOS (`int`/`integer`, `timestamptz`/`timestamp with time zone`, `default null::text`), não defeito: a régua aprendeu os sinônimos. Rodada nas 333 migrações, antes e depois: resultado idêntico. Provada com migrações erradas de propósito numa cópia da pasta (retorno do `indica` mudado e parâmetro do `empresarial` mudado: acusados; com `drop` antes: passa). **Limite que fica:** a régua lê os arquivos na ordem do NOME, e as faixas não são cronológicas entre si (a 0280 mexeu em funções do Empresarial depois da 1005) — conferir migração antiga contra a de outra faixa pode acusar à toa; para migração NOVA, vale.
+
 
 Achado ao conferir as migrações 2000–2002 do Indica +Risos.
 
@@ -2040,7 +2045,10 @@ migrações numa transação desfeita.
 **Correção proposta:** aceitar qualquer schema em `FN` (`(\w+)\.(\w+)`) e usar
 `schema.nome` como chave do mapa `known`; provar quebrando de propósito com uma
 função `indica.` de retorno trocado.
-### AP22. ⚠️ Aviso de hidratação intermitente no navegador (28/09/2026) — SUSPEITA, NÃO REPRODUZIDA
+### AP22. ✅ RESOLVIDO em 15/10/2026 (core 0.319.0) — aviso de hidratação intermitente no navegador
+
+**Resolvido:** a suspeita (o relógio) estava ERRADA — ele já desenha nada no servidor. **Reproduzido** com o tema ESCURO numa aba nova: o roteiro do tema põe `dark` no `<html>` antes de o React acordar, e o servidor não sabe o tema da pessoa; daí o "intermitente" (só no escuro). `suppressHydrationWarning` SÓ no `<html>` — e há régua que reprova a licença em qualquer outro lugar. Conferido: no escuro, a aba nova não mostra mais o aviso.
+
 
 Achado durante a conferência de tela da IND2 do Indica +Risos (servidor de
 teste 3100, banco de treino, `next dev`).
@@ -2060,7 +2068,10 @@ do servidor e o do navegador. Não conferi o componente.
 
 **Para retomar:** régua que imprima o erro inteiro (o React mostra o diff do
 atributo) e rode em loop cruzando a virada do minuto.
-### AP23. Barra de cima estoura a largura no celular em TODAS as telas (28/09/2026) — CONFIRMADO, núcleo
+### AP23. ✅ RESOLVIDO em 15/10/2026 (core 0.319.0; o dono escolheu "gaveta com ☰") — a tela rolava para o lado no celular
+
+**Resolvido junto com o AP46.** A causa MAIOR era o menu lateral aberto (256 de 375 px): virou gaveta no celular (☰ na barra de cima; fecha ao trocar de tela, ao tocar fora, no Esc). Tema, alertas, novidades e manual foram para o ⋯. Medido como Admin em 375 px: a página passou de 554 para 375 px. Em tela ≥ 768 px nada muda.
+
 
 Achado na conferência de tela da IND4 do Indica +Risos (servidor de teste
 3100, banco de treino, Admin, janela de 390 px).
@@ -2480,7 +2491,18 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
 
-### AP46. A barra de cima transborda na largura de celular (14/10/2026)
+### AP47. Telas que pedem mais de 1.000 linhas e SOMAM o que vem (15/10/2026) — CONFIRMADO
+
+*(Achado consertando o AP44.)*
+**Confirmado no código:** a API corta CADA resposta em 1.000 linhas (AP35, medido), e várias telas pedem mais com `.limit()` — o pedido de 5.000 volta com 1.000, sem erro. Onde a tela **soma ou conta** o que vem, o total sai errado com cara de certo quando a rede crescer:
+- `relatorios/page.tsx` (três leituras com `.limit(5000)`) e `src/lib/painel-dados.ts` (duas com `.limit(5000)`) — quadros e contagens;
+- `planos/page.tsx` (2.000), `prontuarios/page.tsx` (2.000), `risartanos/dados.ts` (2.000), `empresarial/page.tsx` (2.000), `procedimentos/page.tsx` (1.000 e 2.000), `planejamento/page.tsx` e `estoque/page.tsx` (1.000) — listas;
+- `indica-mais-risos/relatorios/csv/route.ts` (10.000 — da sessão do Indica).
+**Não medido:** quantas linhas cada uma tem hoje (o treino e a produção são pequenos; não dói ainda).
+**Conserto:** ler em páginas (`lerTodasAsPaginas`), começando pelas que SOMAM (Relatórios e o painel do Início); as listas podem paginar na tela.
+
+### AP46. ✅ RESOLVIDO em 15/10/2026 (core 0.319.0) — a barra de cima transbordava no celular (ver AP23)
+
 
 *(Achado conferindo a seta do OC-00101 em 375 px.)*
 **Confirmado na tela, como Admin de teste:** a página fica com 582 px de
@@ -2507,7 +2529,10 @@ todas curtas): continuam sem busca, por não terem sido pedidas —
 quais. A régua de `lista-com-busca.test.ts` cobre só Compras, Estoque e
 Financeiro — estender a régua junto.
 
-### AP44. A Jornada carrega no máximo 1.000 clientes — em silêncio (14/10/2026)
+### AP44. ✅ RESOLVIDO em 15/10/2026 (core 0.319.0) — a Jornada carregava no máximo 1.000 clientes, em silêncio
+
+**Resolvido:** lê em páginas (`lerTodasAsPaginas`), na ordem (entrada na fase, id), e a tela avisa quando a leitura falha. ⚠️ Achado no caminho: outras telas têm o mesmo corte — ver **AP47**.
+
 
 *(Achado mexendo na Jornada para o OC-00074.)*
 **Confirmado no código:** `jornada/page.tsx` lê os clientes com
@@ -2518,7 +2543,10 @@ nenhum — não dói ainda; dói com 200 unidades.
 **Conserto quando convier:** ler em páginas (`lerTodasAsPaginas`) ou
 paginar/filtrar por fase na tela — decisão de desenho, não só de leitura.
 
-### AP43. `commercial_set_stage` executa SEM LOGIN até a guarda (14/10/2026)
+### AP43. ✅ RESOLVIDO em 15/10/2026 (0295 / core 0.319.0) — as funções do Comercial executavam SEM LOGIN até a guarda
+
+**Resolvido:** medido no treino, eram **21** funções do Comercial (funil, follow-up, negociação, venda direta, renegociação) no mesmo estado. Conferido antes de fechar: nenhuma em regra de segurança, rotina agendada ou tela pública. A 0295 tira de quem não está logado e mantém para quem está; provado no treino (21/21). ⏳ **Produção com o dono.**
+
 
 *(Achado conferindo a 0293 na produção, de fora.)*
 **Confirmado:** sem login, a chamada pela API responde "CLIENT_NOT_FOUND" (com

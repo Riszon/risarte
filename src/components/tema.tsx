@@ -44,19 +44,27 @@ const noServidor = () => false;
  * entre produção e treino. Guardá-la no banco custaria uma consulta por clique
  * pelo resto da vida do sistema, para resolver um problema que ninguém tem.
  */
-export function BotaoDeTema({ className }: { className?: string }) {
-  const escuro = useSyncExternalStore(assinar, estaEscuro, noServidor);
+/** Troca claro ⇄ escuro e guarda a escolha. Usado pelo botão e pelo menu "⋯"
+ *  da barra de cima no celular (AP23) — uma troca só, nos dois lugares. */
+export function alternarTema() {
+  const novo = !document.documentElement.classList.contains("dark");
+  document.documentElement.classList.toggle("dark", novo);
+  try {
+    localStorage.setItem(CHAVE, novo ? "escuro" : "claro");
+  } catch {
+    /* navegador com armazenamento bloqueado: vale só nesta aba */
+  }
+  // Não há `setState` aqui de propósito: mexer na marca já avisa o assinante.
+}
 
-  const alternar = useCallback(() => {
-    const novo = !document.documentElement.classList.contains("dark");
-    document.documentElement.classList.toggle("dark", novo);
-    try {
-      localStorage.setItem(CHAVE, novo ? "escuro" : "claro");
-    } catch {
-      /* navegador com armazenamento bloqueado: vale só nesta aba */
-    }
-    // Não há `setState` aqui de propósito: mexer na marca já avisa o assinante.
-  }, []);
+/** O tema está escuro agora? (No servidor, a resposta é a do `noServidor`.) */
+export function useTemaEscuro(): boolean {
+  return useSyncExternalStore(assinar, estaEscuro, noServidor);
+}
+
+export function BotaoDeTema({ className }: { className?: string }) {
+  const escuro = useTemaEscuro();
+  const alternar = useCallback(() => alternarTema(), []);
 
   const rotulo = escuro ? "Usar tema claro" : "Usar tema escuro";
 

@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.319.0",
+    data: "2026-10-15",
+    migracao: "0295",
+    titulo: "O sistema no celular, e a Jornada com todos os clientes",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No celular, a tela não rola mais para o lado: o menu da esquerda fica escondido e abre pelo botão ☰ (fecha sozinho ao escolher um item), e tema, alertas, novidades e manual ficam no botão ⋯ da barra de cima. Em computador e tablet nada muda.",
+        papeis: "todos",
+        manual: "7.2. Barra lateral (o menu)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A Jornada passa a mostrar todos os clientes: antes, acima de 1.000, os mais recentes de cada fase deixavam de aparecer sem aviso. Se a leitura falhar, a tela diz isso em vez de aparecer vazia.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.318.0",
     data: "2026-10-15",
     migracao: "0294",

@@ -1,7 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 14/10/2026 · Versão do sistema: **0.318.0** · Última migração: **0294** (aplicada no treino; ⏳ produção com o dono) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 14/10/2026 · Versão do sistema: **0.319.0** · Última migração: **0295** (0294 e 0295 aplicadas no treino; ⏳ produção com o dono) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 📱 0.319.0 / 0295 — PENDÊNCIAS DO BACKLOG: CELULAR, JORNADA, COMERCIAL, RÉGUAS (15/10/2026)
+>
+> O dono escolheu resolver quatro itens técnicos do BACKLOG:
+>
+> - **AP23/AP46 — celular.** A causa MAIOR era o menu lateral aberto (256 de
+>   375 px). Decisão do dono: **gaveta com ☰**. Tema, alertas, novidades e
+>   manual foram para o ⋯. Medido: a página passou de 554 para 375 px.
+>   ⚠️ A gaveta abre por um evento da janela (`ABRIR_MENU_LATERAL`): a barra
+>   de cima e a lateral são vizinhas no layout.
+> - **AP44 — Jornada** lê todos os clientes em páginas e avisa quando falha.
+>   **AP47 (novo):** Relatórios e o painel do Início pedem 5.000 linhas e a
+>   API devolve 1.000 — somam o que vem.
+> - **AP43 — 0295:** 21 funções do Comercial deixam de executar sem login.
+>   **AP16:** medido, 248 funções do `public` ainda executam sem login.
+> - **AP21** — `check-migrations` olha `empresarial` e `indica` e entende
+>   sinônimos de tipo. **AP22** — era o tema escuro marcando o `<html>`
+>   (reproduzido; a suspeita do relógio estava errada).
+>
 > ## ? 0.318.0 / 0294 — QUEM APROVA A COMPRA + AJUDA DE CADA TELA (OC-00102, 15/10/2026)
 >
 > Relato do André: "fiz o pedido e não aparece para aprovação". Aparecia — sem

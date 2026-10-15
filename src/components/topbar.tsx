@@ -2,6 +2,8 @@ import { AlertTriangle, BookMarked, Sparkles, UserRound } from "lucide-react";
 import { BotaoSair } from "@/components/botao-sair";
 import { BotaoVoltar } from "@/components/botao-voltar";
 import { AjudaDaTela } from "@/components/ajuda-da-tela";
+import { MenuMaisDaBarra } from "@/components/menu-mais-da-barra";
+import { BotaoMenuLateral } from "@/components/botao-menu-lateral";
 import { ChatNavItem } from "@/components/chat-nav-item";
 import { NotificationNavItem } from "@/components/notification-nav-item";
 import { ReportNavItem } from "@/components/report-nav-item";
@@ -58,9 +60,11 @@ export function Topbar({
   return (
     <header
       data-moldura
-      className="sticky top-[var(--faixa-treino,0px)] z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      className="sticky top-[var(--faixa-treino,0px)] z-30 flex h-14 shrink-0 items-center gap-1.5 border-b bg-background/95 px-2 backdrop-blur sm:gap-3 sm:px-3 supports-[backdrop-filter]:bg-background/80">
       {/* VOLTAR À TELA ANTERIOR (relato OC-00101, decisão do dono): a mesma
           coisa que a seta do navegador, no lugar onde a pessoa olha. */}
+      {/* No celular o menu lateral é gaveta: este ☰ a abre (some em tela maior). */}
+      {!modoPortal && <BotaoMenuLateral />}
       <BotaoVoltar />
 
       {/* A busca ocupa o espaço livre; os ícones ficam colados à direita. */}
@@ -74,10 +78,16 @@ export function Topbar({
           rodapé, por portal (relato OC-00060). */}
       <GravacaoDaConsulta />
 
+      {/* ⚠️ NO CELULAR A BARRA NÃO CABIA (AP23/AP46): a página ficava mais
+          larga que a tela e rolava para o lado em TODA tela. A causa maior era
+          o menu lateral (virou gaveta, com o ☰); aqui, abaixo de 640 px, tema,
+          alertas, novidades e manual vão para o menu "⋯" (`MenuMaisDaBarra`).
+          `hidden sm:contents` some só no celular. O relógio já se esconde
+          sozinho no celular. */}
       <SystemClock />
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <BotaoDeTema />
+        <BotaoDeTema className="hidden sm:grid" />
         {/* QUEM ESTÁ ONLINE (0291) — só o Admin Master. A barra não desenha
             para mais ninguém, e o banco repete a regra: para os outros as
             consultas devolvem vazio. */}
@@ -96,12 +106,14 @@ export function Topbar({
         )}
         {podeVerSistema && (
           <>
-            <TopbarItem
-              href="/alertas"
-              label="Alertas do sistema"
-              icon={<AlertTriangle className="size-[18px]" />}
-              destaque
-            />
+            <div className="hidden sm:contents">
+              <TopbarItem
+                href="/alertas"
+                label="Alertas do sistema"
+                icon={<AlertTriangle className="size-[18px]" />}
+                destaque
+              />
+            </div>
             {/* A boia tem número, o triângulo não — ver o comentário abaixo:
                 a diferença não é descuido, é o que cada um consegue contar sem
                 mentir. */}
@@ -111,23 +123,32 @@ export function Topbar({
         {/* As novidades têm tela própria desde 19/09/2026 (o Início mostra só
             as últimas). No modo portal ela não abre — como as demais. */}
         {!modoPortal && (
-          <TopbarItem
-            href="/novidades"
-            label="Novidades do sistema"
-            icon={<Sparkles className="size-[18px]" />}
-          />
+          <div className="hidden sm:contents">
+            <TopbarItem
+              href="/novidades"
+              label="Novidades do sistema"
+              icon={<Sparkles className="size-[18px]" />}
+            />
+          </div>
         )}
         {/* AJUDA DESTA TELA (OC-00102, decisão do dono): o passo a passo da tela
             em que a pessoa está, num painel ao lado. No portal não — lá as
             poucas telas são o próprio treinamento. */}
         {!modoPortal && <AjudaDaTela podeVerManual={podeVerManual} />}
         {podeVerManual && (
-          <TopbarItem
-            href="/manual"
-            label="Manual de treinamento"
-            icon={<BookMarked className="size-[18px]" />}
-          />
+          <div className="hidden sm:contents">
+            <TopbarItem
+              href="/manual"
+              label="Manual de treinamento"
+              icon={<BookMarked className="size-[18px]" />}
+            />
+          </div>
         )}
+        <MenuMaisDaBarra
+          podeVerSistema={podeVerSistema}
+          podeVerManual={podeVerManual}
+          modoPortal={modoPortal}
+        />
         {/* No modo portal não há menu lateral: o Perfil (trocar a senha) e o
             Sair moram aqui, senão a pessoa entra e não tem como sair. */}
         {modoPortal && (

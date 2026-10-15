@@ -83,42 +83,45 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
   const baseSelect =
     "id, full_name, status, journey_phase, journey_status, phase_entered_at, methodology_pillar, clinic_id, clinics!clients_clinic_id_fkey ( name )";
 
-  let clientsQuery = supabase
-    .from("clients")
-    .select(baseSelect)
-    .order("phase_entered_at")
-    .limit(1000);
-
-  // Inactive clients appear too (marked); default shows active + inactive.
-  if (statusFilter === "active" || statusFilter === "inactive") {
-    clientsQuery = clientsQuery.eq("status", statusFilter);
-  } else {
-    clientsQuery = clientsQuery.neq("status", "anonymized");
-  }
-
-  if (isFranchisor) {
-    // Network view: all units; planner/admin/franchisor see the whole rede.
-    if (unitFilter) clientsQuery = clientsQuery.eq("clinic_id", unitFilter);
-  } else {
-    clientsQuery = clientsQuery.eq("clinic_id", clinicId);
-  }
-  if (pillarFilter) {
-    clientsQuery = clientsQuery.eq("methodology_pillar", pillarFilter);
-  }
-
   // H3.7: a SDR "pura" vê na Jornada só os clientes que ela tocou (mesmo
   // conjunto de Prontuários), não a rede toda.
-  if (isSdrRestricted(session)) {
-    const ids = await sdrAccessibleClientIds();
-    clientsQuery = clientsQuery.in(
-      "id",
-      ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]
-    );
-  }
+  const sdrIds = isSdrRestricted(session) ? await sdrAccessibleClientIds() : null;
 
-  const [{ data: clients }, { data: slaRows }, { data: unitOptions }] =
+  // AP44: a Jornada lia no máximo 1.000 clientes (`.limit(1000)`) e, na visão
+  // da rede, escondia os demais SEM AVISO — a contagem do topo dizia 1.000.
+  // Agora lê tudo, em páginas (a API corta cada resposta em 1.000 — AP35), na
+  // ordem estável (entrada na fase, id): sem o id, a mesma linha poderia cair
+  // em duas páginas ou em nenhuma.
+  const montarConsulta = () => {
+    let q = supabase.from("clients").select(baseSelect);
+    // Inactive clients appear too (marked); default shows active + inactive.
+    if (statusFilter === "active" || statusFilter === "inactive") {
+      q = q.eq("status", statusFilter);
+    } else {
+      q = q.neq("status", "anonymized");
+    }
+    if (isFranchisor) {
+      // Network view: all units; planner/admin/franchisor see the whole rede.
+      if (unitFilter) q = q.eq("clinic_id", unitFilter);
+    } else {
+      q = q.eq("clinic_id", clinicId);
+    }
+    if (pillarFilter) q = q.eq("methodology_pillar", pillarFilter);
+    if (sdrIds) {
+      q = q.in("id", sdrIds.length > 0 ? sdrIds : ["00000000-0000-0000-0000-000000000000"]);
+    }
+    return q;
+  };
+
+  const [leituraDosClientes, { data: slaRows }, { data: unitOptions }] =
     await Promise.all([
-      clientsQuery.returns<ClientRow[]>(),
+      lerTodasAsPaginas<ClientRow>((de, ate) =>
+        montarConsulta()
+          .order("phase_entered_at")
+          .order("id")
+          .range(de, ate)
+          .returns<ClientRow[]>()
+      ),
       supabase
         .from("sla_settings")
         .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
@@ -132,6 +135,9 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
             .order("name")
         : Promise.resolve({ data: [] as { id: string; name: string }[] }),
     ]);
+  // Leitura que falha não vira "Jornada vazia": a tela diz que não conseguiu ler.
+  if (!leituraDosClientes.ok) console.error("jornada — clientes:", leituraDosClientes.error.message);
+  const clients = leituraDosClientes.ok ? leituraDosClientes.linhas : null;
 
   // OC-00074: o próximo agendamento de cada cliente da tela. Pelos IDS dos
   // clientes, e não pela unidade: o cliente pode ter horário marcado em outra
@@ -186,6 +192,13 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
 
   return (
     <div className="space-y-4 px-4 py-8">
+      {!clients && (
+        <p className="mx-auto max-w-7xl rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          Não foi possível ler os clientes agora — a Jornada abaixo pode estar
+          incompleta. Recarregue a página; se continuar, avise pelo Relatar um
+          problema.
+        </p>
+      )}
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

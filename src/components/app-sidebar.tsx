@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ChevronDown, Wifi } from "lucide-react";
 import {
   BarChart3,
@@ -249,6 +249,9 @@ const ADMIN_ITEMS = [
   { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
 ];
 
+/** O evento que o botão ☰ da barra de cima dispara para abrir a gaveta. */
+export const ABRIR_MENU_LATERAL = "risarte:abrir-menu-lateral";
+
 export function AppSidebar({
   fullName,
   email,
@@ -274,6 +277,34 @@ export function AppSidebar({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  // ⚠️ NO CELULAR O MENU É GAVETA (AP23/AP46, decisão do dono, 15/10/2026).
+  // Aberto o tempo todo, ele ocupava 256 dos 375 px da tela e a página rolava
+  // para o lado em TODA tela. Abaixo de 768 px ele some; o botão ☰ da barra
+  // de cima (`BotaoMenuLateral`) o abre por cima da tela, e ele fecha ao
+  // escolher um item, ao tocar fora ou no Esc. Em tela maior, nada muda.
+  const [abertoNoCelular, setAbertoNoCelular] = useState(false);
+  useEffect(() => {
+    const abrir = () => setAbertoNoCelular(true);
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAbertoNoCelular(false);
+    };
+    window.addEventListener(ABRIR_MENU_LATERAL, abrir);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener(ABRIR_MENU_LATERAL, abrir);
+      window.removeEventListener("keydown", esc);
+    };
+  }, []);
+  // Trocou de tela, a gaveta fecha (o ajuste é feito no próprio desenho — o
+  // jeito do React de derivar estado de outro valor).
+  const [caminhoDaGaveta, setCaminhoDaGaveta] = useState(pathname);
+  if (caminhoDaGaveta !== pathname) {
+    setCaminhoDaGaveta(pathname);
+    setAbertoNoCelular(false);
+  }
+  // Aberta no celular, a gaveta mostra o menu inteiro mesmo que a pessoa o
+  // tenha minimizado no computador.
+  const minimizada = collapsed && !abertoNoCelular;
   // ADMINISTRAÇÃO: 11 itens que o dia a dia não usa. Começa fechada (pedido do
   // dono, 19/09/2026) e lembra a escolha; numa tela de administração ela abre
   // sozinha, senão o item em que você está ficaria escondido.
@@ -291,7 +322,7 @@ export function AppSidebar({
 
   // Minimizada, os itens viram só ícones e o grupo não tem cabeçalho para
   // clicar: ali eles aparecem sempre. Em /admin/... também.
-  const adminVisivel = adminAberto || collapsed || pathname.startsWith("/admin");
+  const adminVisivel = adminAberto || minimizada || pathname.startsWith("/admin");
 
   function toggleCollapsed() {
     setCollapsed((v) => {
@@ -382,7 +413,7 @@ export function AppSidebar({
   const linkClass = (href: string) =>
     cn(
       "relative flex items-center rounded-md text-sm transition-colors",
-      collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2",
+      minimizada ? "justify-center px-0 py-2" : "gap-3 px-3 py-2",
       // ⚠️ HIERARQUIA POR PESO, NÃO POR OPACIDADE. Texto a 80% sobre a lateral
       // TURQUESA da Franqueadora dá 4,38:1 e reprova; sobre a marinho das
       // unidades dá 7,75:1 e passa. A mesma classe, dois resultados — e o que
@@ -394,6 +425,15 @@ export function AppSidebar({
     );
 
   return (
+    <>
+    {abertoNoCelular && (
+      <button
+        type="button"
+        aria-label="Fechar o menu"
+        onClick={() => setAbertoNoCelular(false)}
+        className="fixed inset-0 z-40 bg-black/30 md:hidden"
+      />
+    )}
     <aside
       // `data-moldura`: sai na impressão. Ver o bloco @media print do globals.
       data-moldura
@@ -402,10 +442,13 @@ export function AppSidebar({
         // faixa amarela (que agora fica visível o tempo todo). Sem isto, a
         // faixa cobriria a assinatura no alto da lateral ao rolar a página.
         "sticky top-[var(--faixa-treino,0px)] flex h-[calc(100vh-var(--faixa-treino,0px))] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
-        collapsed ? "w-16" : "w-64"
+        minimizada ? "w-16" : "w-64",
+        abertoNoCelular
+          ? "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:h-dvh max-md:shadow-2xl"
+          : "max-md:hidden"
       )}
     >
-      {collapsed ? (
+      {minimizada ? (
         <div className="flex flex-col items-center gap-3 px-2 py-4">
           <RisarteMark className="h-7 text-sidebar-primary" />
           <button
@@ -442,14 +485,15 @@ export function AppSidebar({
             onClick={toggleCollapsed}
             title="Minimizar menu"
             aria-label="Minimizar menu"
-            className="rounded-md p-1.5 text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            // Na gaveta do celular não há o que minimizar: ela fecha sozinha.
+            className="rounded-md p-1.5 text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-foreground max-md:hidden"
           >
             <ChevronsLeft className="size-4" />
           </button>
         </div>
       )}
 
-      {clinics.length > 0 && !collapsed && (
+      {clinics.length > 0 && !minimizada && (
         <div className="px-3 pb-3">
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -510,10 +554,10 @@ export function AppSidebar({
             key={href}
             href={href}
             className={linkClass(href)}
-            title={collapsed ? label : undefined}
+            title={minimizada ? label : undefined}
           >
             <Icon className="size-4 shrink-0" />
-            {!collapsed && <span className="truncate">{label}</span>}
+            {!minimizada && <span className="truncate">{label}</span>}
           </Link>
         ))}
         {/* Chat, avisos, busca, manual e o diário do sistema saíram daqui em
@@ -523,7 +567,7 @@ export function AppSidebar({
 
         {isAdminMaster && (
           <>
-            {collapsed ? (
+            {minimizada ? (
               <div className="my-2 border-t border-sidebar-border/60" />
             ) : (
               // O CABEÇALHO VIROU BOTÃO (19/09/2026): 11 itens de configuração
@@ -557,10 +601,10 @@ export function AppSidebar({
                   key={href}
                   href={href}
                   className={linkClass(href)}
-                  title={collapsed ? label : undefined}
+                  title={minimizada ? label : undefined}
                 >
                   <Icon className="size-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{label}</span>}
+                  {!minimizada && <span className="truncate">{label}</span>}
                 </Link>
               ))}
           </>
@@ -573,14 +617,14 @@ export function AppSidebar({
           href="/perfil"
           className={cn(
             "mb-2 flex items-center rounded-md hover:bg-sidebar-accent",
-            collapsed ? "justify-center p-1.5" : "gap-2.5 px-2 py-1.5"
+            minimizada ? "justify-center p-1.5" : "gap-2.5 px-2 py-1.5"
           )}
-          title={collapsed ? `${fullName} — Meu perfil` : "Meu perfil"}
+          title={minimizada ? `${fullName} — Meu perfil` : "Meu perfil"}
         >
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-primary">
             {initials}
           </span>
-          {!collapsed && (
+          {!minimizada && (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{fullName}</p>
               <p className="truncate text-[11px] text-sidebar-foreground/85">
@@ -589,7 +633,7 @@ export function AppSidebar({
             </div>
           )}
         </Link>
-        {!collapsed && (
+        {!minimizada && (
           <p className="mb-2 text-center text-[11px] text-sidebar-foreground/85">
             Versão {APP_VERSION} · migração {LATEST_MIGRATION}
             {/* ⚠️ AQUI HAVIA UM `opacity-80` ANINHADO, e ele era invisível para a
@@ -608,10 +652,11 @@ export function AppSidebar({
           title="Sair"
           className="w-full justify-center border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
-          <LogOut className={cn("size-4", !collapsed && "mr-2")} />
-          {!collapsed && "Sair"}
+          <LogOut className={cn("size-4", !minimizada && "mr-2")} />
+          {!minimizada && "Sair"}
         </Button>
       </div>
     </aside>
+    </>
   );
 }

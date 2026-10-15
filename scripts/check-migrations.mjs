@@ -37,15 +37,42 @@ if (!target) {
   process.exit(1);
 }
 
+// ⚠️ OS TRÊS SCHEMAS DO REPOSITÓRIO (AP21, 15/10/2026). Até aqui só `public.`
+// era visto, e as Regras 1 a 4 respondiam "OK" para funções do `empresarial.`
+// e do `indica.` SEM TER CONFERIDO NADA — a régua que passa por ausência (§0d
+// do CLAUDE.md). O nome guardado leva o schema (`empresarial.settle_billing`):
+// funções de mesmo nome em schemas diferentes são funções diferentes.
 const FN =
-  /create\s+(?:or\s+replace\s+)?function\s+public\.(\w+)\s*\(([\s\S]*?)\)\s*returns\s+([\s\S]*?)\s+language\s+(\w+)/gi;
+  /create\s+(?:or\s+replace\s+)?function\s+(public|empresarial|indica)\.(\w+)\s*\(([\s\S]*?)\)\s*returns\s+([\s\S]*?)\s+language\s+(\w+)/gi;
+/** O nome completo, como as Regras 1 a 3 guardam e comparam. */
+const nomeDe = (schema, nome) => `${schema.toLowerCase()}.${nome.toLowerCase()}`;
 
 // Comentário sai ANTES de achatar o espaço: uma migração que só acrescenta um
 // `--` explicando um parâmetro não mudou assinatura nenhuma, e comparar com o
 // comentário dentro acusaria as quatro migrações que apenas se documentaram
 // melhor.
+// ⚠️ O MESMO TIPO TEM VÁRIOS NOMES (AP21): `int` = `integer`, `timestamptz` =
+// `timestamp with time zone`, e o default `null::text` = `null`. A 0280
+// recriou funções do Empresarial no formato que o PRÓPRIO Postgres imprime, e
+// sem isto a régua acusava "parâmetros mudaram" numa assinatura idêntica —
+// régua que erra manda consertar o que está certo.
+const SINONIMOS = [
+  [/\btimestamptz\b/g, "timestamp with time zone"],
+  [/\btimetz\b/g, "time with time zone"],
+  [/\bint4\b|\bint\b/g, "integer"],
+  [/\bint8\b/g, "bigint"],
+  [/\bint2\b/g, "smallint"],
+  [/\bbool\b/g, "boolean"],
+  [/\bfloat8\b/g, "double precision"],
+  [/\bvarchar\b/g, "character varying"],
+  // O tipo escrito no default é redundante: `null::text` é o mesmo `null`.
+  [/::[a-z_][a-z0-9_. \[\]]*?(?=,|$)/g, ""],
+];
 const norm = (s) =>
-  s.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+  SINONIMOS.reduce(
+    (t, [de, para]) => t.replace(de, para),
+    s.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
+  );
 
 /** Última definição conhecida de cada função, antes da migração alvo. */
 const known = new Map();
@@ -53,7 +80,7 @@ for (const f of files) {
   if (f === target) break;
   const sql = readFileSync(join(DIR, f), "utf8");
   for (const m of sql.matchAll(FN)) {
-    known.set(m[1], { file: f, args: norm(m[2]), returns: norm(m[3]) });
+    known.set(nomeDe(m[1], m[2]), { file: f, args: norm(m[3]), returns: norm(m[4]) });
   }
 }
 
@@ -63,12 +90,14 @@ const sql = readFileSync(join(DIR, target), "utf8");
 // com guarda na frente da original renomeada). Sem isto, a régua acusava
 // "retorno mudou" em cada porta.
 const drops = new Set([
-  ...[...sql.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?public\.(\w+)/gi)].map(
-    (m) => m[1]
-  ),
-  ...[...sql.matchAll(/alter\s+function\s+public\.(\w+)\s*\([^)]*\)\s+rename\s+to\s+\w+/gi)].map(
-    (m) => m[1]
-  ),
+  ...[
+    ...sql.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?(public|empresarial|indica)\.(\w+)/gi),
+  ].map((m) => nomeDe(m[1], m[2])),
+  ...[
+    ...sql.matchAll(
+      /alter\s+function\s+(public|empresarial|indica)\.(\w+)\s*\([^)]*\)\s+rename\s+to\s+\w+/gi
+    ),
+  ].map((m) => nomeDe(m[1], m[2])),
 ]);
 
 const problems = [];
@@ -205,13 +234,17 @@ if (target.slice(0, 4) > "0278") {
 }
 
 for (const m of sql.matchAll(FN)) {
-  const [, name, args, returns, lang] = m;
-  const prev = known.get(name);
+  const [, schema, nomeCurto, args, returns, lang] = m;
+  // Nas mensagens `public.` fica implícito (como sempre foi); os outros
+  // schemas aparecem, para não confundir funções de mesmo nome.
+  const name = schema.toLowerCase() === "public" ? nomeCurto : `${schema}.${nomeCurto}`;
+  const prev = known.get(nomeDe(schema, nomeCurto));
+  const caiu = drops.has(nomeDe(schema, nomeCurto));
 
   // Regra 3 — lista de PARÂMETROS mudou sem drop. Não dá erro ao criar: cria
   // uma sobrecarga. O erro aparece depois, na chamada, como "function is not
   // unique" — longe da causa, e só quando alguém usa a tela.
-  if (prev && norm(args) !== prev.args && !drops.has(name)) {
+  if (prev && norm(args) !== prev.args && !caiu) {
     problems.push(
       `${name}: os parâmetros mudaram desde ${prev.file} e não há ` +
         `"drop function" antes — vai virar sobrecarga, e a chamada antiga ` +
@@ -220,7 +253,7 @@ for (const m of sql.matchAll(FN)) {
   }
 
   // Regra 1 — retorno mudou sem drop.
-  if (prev && norm(returns) !== prev.returns && !drops.has(name)) {
+  if (prev && norm(returns) !== prev.returns && !caiu) {
     problems.push(
       `${name}: o retorno mudou desde ${prev.file} e não há "drop function" ` +
         `antes.\n      antes: ${prev.returns.slice(0, 70)}\n      agora: ${norm(returns).slice(0, 70)}`

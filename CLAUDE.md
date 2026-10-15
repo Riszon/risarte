@@ -390,6 +390,23 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**15/10/2026 (tarde) — PC Administrador (core 0.318.0 → 0.319.0, migração 0295)**
+
+- **Pendências do BACKLOG (escolha do dono):** AP23/AP46 (celular), AP44
+  (Jornada), AP43 (0295), AP21 e AP22 — todos resolvidos. Novo: **AP47**
+  (telas que somam com `.limit(5000)` e recebem 1.000).
+- ⚠️ **NO CELULAR O MENU LATERAL É GAVETA** (decisão do dono): abaixo de
+  768 px some; o ☰ da barra a abre por um evento da janela
+  (`ABRIR_MENU_LATERAL`). Item novo na barra de cima: pensar no celular — os
+  menos usados vão para o ⋯ (`MenuMaisDaBarra`).
+- ⚠️ **`suppressHydrationWarning` só no `<html>`** (tema escuro, AP22). Há
+  régua que reprova a licença em qualquer outro lugar.
+- ⚠️ **`check-migrations` agora olha os três schemas.** Conferir migração
+  ANTIGA contra outra faixa pode acusar à toa (a ordem é a do nome, não a do
+  tempo); para migração nova, vale.
+- ⏳ **0294 e 0295: produção com o dono.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **15/10/2026 — PC Administrador (core 0.317.0 → 0.318.0, migração 0294)**
 
 - **OC-00102 — QUEM APROVA A COMPRA + AJUDA DE CADA TELA.** Decisões do dono:

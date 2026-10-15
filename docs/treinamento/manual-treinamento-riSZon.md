@@ -928,6 +928,10 @@ coisa, quem manda é este.
 > daria um número diferente do que a tela apresenta — número que não bate com a
 > tela é pior que número nenhum.)
 
+**No celular**, para a barra caber na tela, o relógio não aparece e **tema,
+alertas, novidades e manual** ficam no botão **⋯** (no canto direito). A seta,
+a busca, o **?**, o chat, os avisos e a boia continuam à vista.
+
 **As novidades do sistema ficam na tela de Início** — a primeira que você vê ao
 entrar. Ver [seção 15](#15-novidades-problemas-e-alertas).
 
@@ -1909,6 +1913,11 @@ fica guardada), e o **seletor de unidade** no alto para quem atende em mais de
 uma.
 
 No rodapé: seu nome, seu e-mail, a **versão do sistema** e o botão **Sair**.
+
+**No celular** (tela estreita), o menu fica **escondido** para a tela ter a
+largura inteira. Toque no **☰**, no canto esquerdo da barra de cima: o menu
+abre por cima da tela e **fecha sozinho** quando você escolhe um item (ou toca
+fora dele). Em computador e tablet, nada muda (desde a versão 0.319.0).
 
 ### 7.3. Telas por área
 
