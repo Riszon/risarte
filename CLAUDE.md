@@ -400,7 +400,8 @@ Syncthing se comportarem de forma estranha.**
   usuário e ele não pode…" deixa passar quem NÃO está logado. Ao escrever
   guarda para rotina agendada, FECHAR a função para `anon` — a rotina roda
   como dono do banco e não precisa da porta aberta.
-- ⏳ **0296 e 0297 na produção com o dono (0297 é prioridade).**
+- ✅ **0296 APLICADA nos dois bancos** (o dono rodou na produção em 15/10/2026 e rodou a conferência; conferido de fora, sem login: `can_request_purchase` e `can_post_stock_entry` existem e recusam — uma função inexistente, de controle, responde "não encontrada").
+- ⏳ **0297 na produção com o dono — PRIORIDADE (brecha).**
 - Ainda deste lote (escolha do dono): AP47, AP41, AP45 e a ajuda das telas.
 
 **15/10/2026 (tarde) — PC Administrador (core 0.318.0 → 0.319.0, migração 0295)**

@@ -2562,7 +2562,7 @@ Comercial no mesmo estado.
 
 ### AP42. ✅ RESOLVIDO em 15/10/2026 (0296 / core 0.320.0; o dono escolheu "liberar no banco") — Coordenador e ASB com ações ligadas na matriz que o banco não aceitava
 
-**Resolvido:** `can_request_purchase` (Coordenador e ASB montam, editam e enviam a lista da unidade) e `can_post_stock_entry` (ASB: entrada e contagem). Receber o pedido, nota de compra, mínimo e kits continuam com `can_manage_stock` (criam conta a pagar ou mudam configuração). As réguas vão POR NOME — a Franqueadora/Rede segue em consulta (OC-00094). Provado no treino (14 conferências). ⏳ **0296 na produção com o dono.**
+**Resolvido:** `can_request_purchase` (Coordenador e ASB montam, editam e enviam a lista da unidade) e `can_post_stock_entry` (ASB: entrada e contagem). Receber o pedido, nota de compra, mínimo e kits continuam com `can_manage_stock` (criam conta a pagar ou mudam configuração). As réguas vão POR NOME — a Franqueadora/Rede segue em consulta (OC-00094). Provado no treino (14 conferências). ✅ **0296 APLICADA nos dois bancos** (o dono rodou na produção em 15/10/2026 e rodou a conferência; conferido de fora, sem login: `can_request_purchase` e `can_post_stock_entry` existem e recusam — uma função inexistente, de controle, responde "não encontrada").
 
 
 *(Achado medindo a matriz da produção para o OC-00094.)*

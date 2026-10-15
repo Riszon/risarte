@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 14/10/2026 · Versão do sistema: **0.320.0** · Última migração: **0297** (0296 e 0297 aplicadas no treino; ⏳ produção com o dono) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 14/10/2026 · Versão do sistema: **0.320.0** · Última migração: **0297** (0296 aplicada na produção e no treino; ⏳ 0297 na produção com o dono) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🔐 0.320.0 / 0296 + 0297 — AP42 LIBERADO NO BANCO; FINANCEIRO SEM LOGIN (15/10/2026)
 >
