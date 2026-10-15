@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.320.0",
+    data: "2026-10-15",
+    migracao: "0297",
+    titulo: "Coordenador e ASB em Compras e Estoque",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Onde a matriz de permissões liga, o Coordenador Clínico e o ASB passam a montar e enviar a lista de compras da unidade, e o ASB a dar entrada no estoque e fazer o inventário — antes a tela mostrava só consulta. Receber o pedido, registrar nota de compra, mínimo e kits continuam com o gerente.",
+        papeis: ["clinical_coordinator", "asb", "unit_manager"],
+        manual: "8. Fluxos principais de uso",
+      },
+    ],
+  },
+  {
     versao: "0.319.0",
     data: "2026-10-15",
     migracao: "0295",

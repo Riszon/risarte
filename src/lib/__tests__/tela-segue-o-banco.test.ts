@@ -9,10 +9,11 @@ import {
   canConfigureFinanceNetwork,
   canEditFinanceNetwork,
 } from "@/lib/finance/access";
-import { canConsumeStock, canManageStock, canManageStockCatalog } from "@/lib/stock-access";
+import { canConsumeStock, canManageStock, canManageStockCatalog, canPostStockEntry } from "@/lib/stock-access";
 import {
   canDecidePurchaseAllocations,
   canManagePurchaseRequests,
+  canReceivePurchases,
   canViewPurchases,
 } from "@/lib/purchases-access";
 
@@ -138,18 +139,64 @@ describe("o Gerente da unidade", () => {
   });
 });
 
-describe("outras funções que a matriz ligou e o banco recusa", () => {
-  it("ASB com 'entrada e inventário' ligado: o formulário não abre (o banco só aceita o gerente)", () => {
-    const asb = sessao({ [UNIDADE]: ["asb"] });
-    expect(canManageStock(asb, UNIDADE)).toBe(false);
+// AP42 (decisão do dono, 15/10/2026, 0296): a matriz ligava e o banco
+// recusava; o dono escolheu LIBERAR NO BANCO — mas só o que a matriz dizia.
+describe("Coordenador e ASB em Compras e Estoque (AP42, 0296)", () => {
+  const coord = sessao({ [UNIDADE]: ["clinical_coordinator"] });
+  const asb = sessao({ [UNIDADE]: ["asb"] });
+
+  it("Coordenador e ASB montam a lista de compras da própria unidade", () => {
+    expect(canManagePurchaseRequests(coord, UNIDADE)).toBe(true);
+    expect(canManagePurchaseRequests(asb, UNIDADE)).toBe(true);
+    // Em outra unidade, não.
+    expect(canManagePurchaseRequests(coord, FRANQUEADORA)).toBe(false);
+    expect(canViewPurchases(coord, UNIDADE)).toBe(true);
+  });
+  it("…mas NÃO recebem o pedido: o recebimento cria conta a pagar", () => {
+    expect(canReceivePurchases(coord, UNIDADE)).toBe(false);
+    expect(canReceivePurchases(asb, UNIDADE)).toBe(false);
+    expect(canReceivePurchases(sessao({ [UNIDADE]: ["unit_manager"] }), UNIDADE)).toBe(true);
+  });
+  it("o ASB dá entrada e faz o inventário; o Coordenador não (não foi liberado)", () => {
+    expect(canPostStockEntry(asb, UNIDADE)).toBe(true);
+    expect(canPostStockEntry(coord, UNIDADE)).toBe(false);
+    // …nem se alguém ligar para ele na matriz: o banco não aceita, e a tela segue o banco.
+    const ligada = matrizDaProducao();
+    ligada["acao.estoque.gerir"] = [...ligada["acao.estoque.gerir"], "clinical_coordinator"];
+    expect(canPostStockEntry(sessao({ [UNIDADE]: ["clinical_coordinator"] }, ligada), UNIDADE)).toBe(false);
     expect(canConsumeStock(asb, UNIDADE)).toBe(true); // consumo avulso continua
   });
-  it("Coordenador e ASB com 'criar requisição' ligado: não montam a lista, mas continuam VENDO Compras", () => {
-    const coord = sessao({ [UNIDADE]: ["clinical_coordinator"] });
-    expect(canManagePurchaseRequests(coord, UNIDADE)).toBe(false);
-    expect(canManagePurchaseRequests(sessao({ [UNIDADE]: ["asb"] }), UNIDADE)).toBe(false);
-    // Ver segue a matriz — a regra nova não pode tirar leitura de ninguém.
-    expect(canViewPurchases(coord, UNIDADE)).toBe(true);
+  it("…e o ASB NÃO passa a gerir o resto (nota de compra, mínimo, kits)", () => {
+    expect(canManageStock(asb, UNIDADE)).toBe(false);
+  });
+  it("a Franqueadora/Rede continua só consultando (OC-00094), mesmo com a matriz ligada", () => {
+    const rede = sessao({ [FRANQUEADORA]: ["franchisor_staff"] });
+    expect(canManagePurchaseRequests(rede, FRANQUEADORA)).toBe(false);
+    expect(canPostStockEntry(rede, FRANQUEADORA)).toBe(false);
+  });
+  it("desligado na matriz, não monta e não dá entrada — desligar sempre vale", () => {
+    const m = matrizDaProducao();
+    m["acao.compras.requisitar"] = m["acao.compras.requisitar"].filter((p) => p !== "asb");
+    m["acao.estoque.gerir"] = m["acao.estoque.gerir"].filter((p) => p !== "asb");
+    expect(canManagePurchaseRequests(sessao({ [UNIDADE]: ["asb"] }, m), UNIDADE)).toBe(false);
+    expect(canPostStockEntry(sessao({ [UNIDADE]: ["asb"] }, m), UNIDADE)).toBe(false);
+  });
+  it("as telas usam as regras novas (e o recebimento a dele)", () => {
+    const ler = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+    expect(ler("src/app/(app)/compras/receber/page.tsx")).toContain(
+      "canReceive={canReceivePurchases(session, clinicId)}"
+    );
+    expect(ler("src/app/(app)/compras/receber/actions.ts")).toContain(
+      "if (!canReceivePurchases(session, input.clinicId))"
+    );
+    const acoes = ler("src/app/(app)/estoque/actions.ts");
+    expect(acoes).toContain("? canPostStockEntry(session, input.clinicId)");
+    expect(acoes.split("if (!canPostStockEntry(session, input.clinicId))").length - 1).toBe(4);
+    const tela = ler("src/app/(app)/estoque/stock-client.tsx").replace(/\r\n/g, "\n");
+    expect(tela).toContain('canPostEntry ? true : k === "consumo" || k === "perda"');
+    const inventario = tela.indexOf("INVENTÁRIO (0222)");
+    expect(inventario).toBeGreaterThan(0);
+    expect(tela.slice(inventario, inventario + 120)).toContain("{canPostEntry && (");
   });
 });
 

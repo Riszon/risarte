@@ -44,6 +44,26 @@ export function canManageStock(
   );
 }
 
+/**
+ * Dá ENTRADA e faz o INVENTÁRIO — o espelho de `can_post_stock_entry` (0296).
+ *
+ * AP42 (decisão do dono, 15/10/2026): o ASB, que a matriz já ligava em
+ * "Entrada e inventário", passa a poder de verdade na unidade dele. Fica de
+ * fora o resto da gestão (compra com nota, mínimo, kits — `canManageStock`):
+ * a nota cria conta a pagar, e isso não foi liberado.
+ */
+export function canPostStockEntry(
+  session: SessionContext,
+  clinicId: string | null | undefined
+): boolean {
+  if (canManageStock(session, clinicId)) return true;
+  return (
+    pode(session, "acao.estoque.gerir", clinicId) &&
+    Boolean(clinicId) &&
+    hasRoleInClinic(session, clinicId as string, ["asb"])
+  );
+}
+
 /** Registra o consumo que fugiu do kit. */
 export function canConsumeStock(
   session: SessionContext,

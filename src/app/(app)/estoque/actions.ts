@@ -9,6 +9,7 @@ import {
   canManageStock,
   canManageStockCatalog,
   canConsumeStock,
+  canPostStockEntry,
 } from "@/lib/stock-access";
 import { movementErrors, type MovementKind } from "@/lib/stock";
 
@@ -183,8 +184,9 @@ export async function postMovement(input: {
     input.kind === "ajuste_entrada" ||
     input.kind === "transferencia_entrada";
 
+  // AP42 (0296): entrada é "Entrada e inventário" — o ASB também.
   const allowed = isInbound
-    ? canManageStock(session, input.clinicId)
+    ? canPostStockEntry(session, input.clinicId)
     : canConsumeStock(session, input.clinicId);
   if (!allowed) {
     return { ok: false, error: "Sua função não permite este lançamento." };
@@ -386,7 +388,7 @@ export async function openCount(input: {
   onlyWithBalance: boolean;
 }): Promise<StockResult> {
   const session = await getSessionContext();
-  if (!canManageStock(session, input.clinicId)) {
+  if (!canPostStockEntry(session, input.clinicId)) {
     return { ok: false, error: "Só a gestão faz inventário." };
   }
 
@@ -418,7 +420,7 @@ export async function saveCountLine(input: {
   counted: string;
 }): Promise<StockResult> {
   const session = await getSessionContext();
-  if (!canManageStock(session, input.clinicId)) {
+  if (!canPostStockEntry(session, input.clinicId)) {
     return { ok: false, error: "Só a gestão faz inventário." };
   }
 
@@ -456,7 +458,7 @@ export async function applyCount(input: {
   reason: string;
 }): Promise<StockResult> {
   const session = await getSessionContext();
-  if (!canManageStock(session, input.clinicId)) {
+  if (!canPostStockEntry(session, input.clinicId)) {
     return { ok: false, error: "Só a gestão faz inventário." };
   }
 
@@ -497,7 +499,7 @@ export async function discardCount(input: {
   countId: string;
 }): Promise<StockResult> {
   const session = await getSessionContext();
-  if (!canManageStock(session, input.clinicId)) {
+  if (!canPostStockEntry(session, input.clinicId)) {
     return { ok: false, error: "Só a gestão faz inventário." };
   }
 

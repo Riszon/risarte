@@ -462,6 +462,7 @@ export function StockManager({
   clinicId,
   today,
   canManage,
+  canPostEntry,
   canConsume,
   canManageCatalog,
   items,
@@ -481,6 +482,8 @@ export function StockManager({
   clinicId: string;
   today: string;
   canManage: boolean;
+  /** Entrada e inventário (0296): o gerente E o ASB. A nota, o mínimo e os kits seguem `canManage`. */
+  canPostEntry: boolean;
   canConsume: boolean;
   canManageCatalog: boolean;
   items: Item[];
@@ -679,7 +682,7 @@ export function StockManager({
   }
 
   const kindsAllowed = MANUAL_KINDS.filter((k) =>
-    canManage ? true : k === "consumo" || k === "perda"
+    canPostEntry ? true : k === "consumo" || k === "perda"
   );
 
   function openKit(kit: Kit | null) {
@@ -1358,7 +1361,7 @@ export function StockManager({
       )}
 
       {/* -- INVENTÁRIO (0222) --------------------------------------------- */}
-      {canManage && (
+      {canPostEntry && (
         <StockCount
           clinicId={clinicId}
           openCount={openCount}

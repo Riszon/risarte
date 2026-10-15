@@ -8,6 +8,7 @@ import {
   canConsumeStock,
   canManageStock,
   canManageStockCatalog,
+  canPostStockEntry,
   canViewStock,
 } from "@/lib/stock-access";
 import { NfeImport } from "./nfe-import";
@@ -432,6 +433,7 @@ export default async function StockPage() {
         clinicId={clinicId}
         today={todayInBrazil()}
         canManage={canManageStock(session, clinicId)}
+        canPostEntry={canPostStockEntry(session, clinicId)}
         canConsume={canConsumeStock(session, clinicId)}
         canManageCatalog={canManageStockCatalog(session)}
         items={items}

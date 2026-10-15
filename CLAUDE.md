@@ -390,6 +390,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**15/10/2026 (noite) — PC Administrador (core 0.319.0 → 0.320.0, migrações 0296 e 0297)**
+
+- **AP42 (0296, decisão do dono: liberar no banco).** ⚠️ Réguas POR NOME
+  (Coordenador e ASB), não pela matriz: a matriz da produção liga as mesmas
+  ações para a Franqueadora/Rede, que ficou em consulta (OC-00094).
+  Receber/nota/mínimo/kits seguem `can_manage_stock` (criam conta a pagar).
+- 🔴 **0297 — Financeiro sem login, com DUAS BRECHAS:** a guarda "se HÁ
+  usuário e ele não pode…" deixa passar quem NÃO está logado. Ao escrever
+  guarda para rotina agendada, FECHAR a função para `anon` — a rotina roda
+  como dono do banco e não precisa da porta aberta.
+- ⏳ **0296 e 0297 na produção com o dono (0297 é prioridade).**
+- Ainda deste lote (escolha do dono): AP47, AP41, AP45 e a ajuda das telas.
+
 **15/10/2026 (tarde) — PC Administrador (core 0.318.0 → 0.319.0, migração 0295)**
 
 - **Pendências do BACKLOG (escolha do dono):** AP23/AP46 (celular), AP44

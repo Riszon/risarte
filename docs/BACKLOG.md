@@ -1712,7 +1712,7 @@ pedidas ao dono.
 
 ---
 
-**Medido em 15/10/2026 (treino):** **248** funções do `public` ainda executam sem login. Parte são as funções-régua que as próprias regras de segurança chamam (`is_admin_master`, `has_role_in_clinic`, …) — fechá-las a esmo quebraria consulta legítima; as do Comercial saíram na 0295 (AP43). O resto precisa da mesma triagem, módulo a módulo.
+**Medido em 15/10/2026 (treino):** **248** funções do `public` ainda executam sem login. **Financeiro feito na 0297** (60 fechadas; ficam 6 que as regras das tabelas chamam). 🔴 **Achado nessa triagem:** a guarda "se HÁ usuário e ele não pode, recusa" deixa passar quem NÃO está logado — 11 funções têm esse desenho; 9 já estavam fechadas, e as 2 abertas (`charge_fixed_network_fees`, que gera cobranças, e `cash_balance_before`) fecharam na 0297. ⏳ **0297 na produção com o dono — prioridade.** Próximos módulos da triagem: Estoque e Compras, Agenda/Clínico, Empresarial. Parte são as funções-régua que as próprias regras de segurança chamam (`is_admin_master`, `has_role_in_clinic`, …) — fechá-las a esmo quebraria consulta legítima; as do Comercial saíram na 0295 (AP43). O resto precisa da mesma triagem, módulo a módulo.
 
 ### AP17. ⚠️ A janela da 0277 pode estar escondendo a função dos NOVATOS no Academy (26/09/2026) — SUSPEITA
 
@@ -2560,7 +2560,10 @@ se um id de cliente existe (id aleatório, impraticável de adivinhar).
 `grant ... to authenticated` numa migração; vale procurar as outras funções do
 Comercial no mesmo estado.
 
-### AP42. Coordenador e ASB com ações ligadas na matriz que o banco não aceita (14/10/2026)
+### AP42. ✅ RESOLVIDO em 15/10/2026 (0296 / core 0.320.0; o dono escolheu "liberar no banco") — Coordenador e ASB com ações ligadas na matriz que o banco não aceitava
+
+**Resolvido:** `can_request_purchase` (Coordenador e ASB montam, editam e enviam a lista da unidade) e `can_post_stock_entry` (ASB: entrada e contagem). Receber o pedido, nota de compra, mínimo e kits continuam com `can_manage_stock` (criam conta a pagar ou mudam configuração). As réguas vão POR NOME — a Franqueadora/Rede segue em consulta (OC-00094). Provado no treino (14 conferências). ⏳ **0296 na produção com o dono.**
+
 
 *(Achado medindo a matriz da produção para o OC-00094.)*
 **Confirmado (matriz da produção × regras do banco do treino):** "Criar

@@ -1,7 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 14/10/2026 · Versão do sistema: **0.319.0** · Última migração: **0295** (0294 e 0295 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 14/10/2026 · Versão do sistema: **0.320.0** · Última migração: **0297** (0296 e 0297 aplicadas no treino; ⏳ produção com o dono) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🔐 0.320.0 / 0296 + 0297 — AP42 LIBERADO NO BANCO; FINANCEIRO SEM LOGIN (15/10/2026)
+>
+> **AP42 (decisão do dono: liberar no banco).** Duas réguas novas, POR NOME
+> de função (não pela matriz — a matriz da produção também liga essas ações
+> para a Franqueadora/Rede, que o OC-00094 deixou só em consulta):
+> `can_request_purchase` (Coordenador e ASB montam a lista) e
+> `can_post_stock_entry` (ASB dá entrada e conta). ⚠️ Receber pedido, nota de
+> compra, mínimo e kits seguem `can_manage_stock` — receber e a nota criam
+> CONTA A PAGAR. Na tela: `canReceivePurchases` e `canPostStockEntry`.
+>
+> 🔴 **AP16 do Financeiro (0297): 60 funções deixam de executar sem login, e
+> duas eram brecha:** a guarda "se HÁ usuário e ele não pode, recusa" deixa
+> passar quem não está logado (existe para a rotina agendada) —
+> `charge_fixed_network_fees` GERAVA cobranças e `cash_balance_before`
+> devolvia o saldo de qualquer unidade. A rotina roda como dono do banco e não
+> é afetada.
+>
 > ## 📱 0.319.0 / 0295 — PENDÊNCIAS DO BACKLOG: CELULAR, JORNADA, COMERCIAL, RÉGUAS (15/10/2026)
 >
 > O dono escolheu resolver quatro itens técnicos do BACKLOG:

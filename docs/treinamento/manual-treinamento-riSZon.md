@@ -1115,7 +1115,10 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   **aprovar ou reprovar** cada opção do plano.
 - **Vê também:** Planos de Tratamento (✅ `planRoles` inclui
   `clinical_coordinator` na unidade), Estoque (✅ é papel clínico).
-- **Não vê:** Financeiro, Compras, Comercial.
+- **Não vê:** Financeiro, Compras, Comercial — **por padrão**. Com "Criar
+  requisição de compra" ligada na matriz de permissões, ele vê Compras e
+  **monta e envia a lista de compras da unidade** (desde a versão 0.320.0;
+  antes a tela mostrava só consulta). Receber o pedido não: cria conta a pagar.
 - **Riscos:** aprovar plano sem ler o orçamento. Ele vê **o total** de cada
   opção, não o preço item a item (✅ regra do LOTE F4).
 - **Depende de:** Dentista Planner (que monta o plano).
@@ -1228,7 +1231,11 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 #### TSB e ASB *(unidade)*
 
 - **Pode:** consumo avulso de estoque ✅ (são papéis clínicos).
-- **Não vê:** Financeiro, Comercial, Compras, Relatórios, Planos.
+- **ASB, quando a matriz liga** (desde a versão 0.320.0): **entrada e
+  inventário de estoque** da unidade, e **montar e enviar a lista de
+  compras**. Não registra nota de compra, não mexe em mínimo nem em kit, e não
+  recebe pedido — esses criam conta a pagar ou mudam a configuração.
+- **Não vê:** Financeiro, Comercial, Relatórios, Planos (e Compras, por padrão).
 
 ### Evidências analisadas
 
@@ -1297,10 +1304,10 @@ diferença.
 |---|---|
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |
 | Configurar financeiro da REDE | Admin, Financeiro da Franqueadora |
-| Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente** |
+| Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente**, **ASB** (na unidade dele, desde a 0.320.0) |
 | Consumo avulso de estoque | Os acima **+ Coordenador, TSB, ASB** |
 | Cadastrar item no catálogo | Admin, Financeiro da Franqueadora |
-| Criar requisição de compra | Admin, **Gerente** |
+| Criar requisição de compra | Admin, **Gerente**, **Coordenador Clínico** e **ASB** (na unidade deles, desde a 0.320.0) |
 | Mesa de negociação de compras | Admin, **Comprador**, Financeiro da Franqueadora |
 | Aprovar compra e gerar o pedido | Admin, **Gerente** da unidade; na compra da **própria Franqueadora**, o **Financeiro da Franqueadora** |
 | Receber a entrega | Admin, Financeiro da Franqueadora, **Gerente** |
@@ -2140,10 +2147,10 @@ recebe a sua parte. Por isso **quem aprova é quem paga**.
 
 | Passo | Tela | Quem faz | O que fazer |
 |---|---|---|---|
-| 1. Pedir | Compras → **Pedir** | Gerente da unidade (e o Admin) | **Gerar lista de compras** (o sistema sugere o que está abaixo do mínimo) → ajustar as quantidades, **Acrescentar item** se faltar algo → **Enviar à Franqueadora** |
+| 1. Pedir | Compras → **Pedir** | Gerente, Coordenador Clínico ou ASB da unidade (e o Admin) | **Gerar lista de compras** (o sistema sugere o que está abaixo do mínimo) → ajustar as quantidades, **Acrescentar item** se faltar algo → **Enviar à Franqueadora** |
 | 2. Negociar | **Mesa de negociação** | Comprador, Financeiro da Franqueadora, Admin | **Abrir rodada** com as listas recebidas → **Incluir na cotação** os fornecedores com o preço de cada um → escolher o fornecedor de cada item → **Fechar rodada** |
 | 3. Aprovar | Compras → **Aprovar** | Gerente da unidade (e o Admin). Na compra da **própria Franqueadora**: o **Financeiro da Franqueadora** | **Aprovar** ou **Recusar** cada item (recusar pede o motivo) → **Gerar pedidos** (um por fornecedor) |
-| 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
+| 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin — **não** o Coordenador nem o ASB: receber cria a conta a pagar | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
 
 > **Item sem decisão não vira pedido.** O sistema não aprova sozinho: o
 > dinheiro é da unidade. Quem não decide vê, na coluna **Decisão**, quem

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canManagePurchaseRequests } from "@/lib/purchases-access";
+import { canReceivePurchases } from "@/lib/purchases-access";
 import { logAudit } from "@/lib/audit";
 
 type Result = { ok: boolean; error?: string; receiptId?: string };
@@ -50,7 +50,7 @@ export async function receiveOrder(input: {
   notes: string;
 }): Promise<Result> {
   const session = await getSessionContext();
-  if (!canManagePurchaseRequests(session, input.clinicId)) {
+  if (!canReceivePurchases(session, input.clinicId)) {
     return { ok: false, error: MESSAGES.NOT_ALLOWED };
   }
 

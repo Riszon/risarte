@@ -16,16 +16,34 @@ export function isPurchaser(session: SessionContext): boolean {
   return pode(session, "acao.compras.negociar");
 }
 
-/** Quem MONTA e envia a lista da unidade. */
+/**
+ * Quem MONTA e envia a lista da unidade — o espelho de `can_request_purchase`
+ * (0296). AP42 (decisão do dono, 15/10/2026): além de Admin, Financeiro da
+ * Franqueadora e Gerente, o Coordenador Clínico e o ASB da unidade.
+ */
 export function canManagePurchaseRequests(
   session: SessionContext,
   clinicId: string | null | undefined
 ): boolean {
-  // Vem da matriz de permissões (0246), editável em /admin/permissoes — E do
-  // banco: `build_purchase_request`, `send_purchase_request` e
-  // `receive_purchase_order` só aceitam Admin Master, Financeiro da
-  // Franqueadora e o GERENTE da unidade (`can_manage_stock`). A tela segue o
-  // banco (OC-00096): antes o botão aparecia e a recusa vinha no clique.
+  return (
+    pode(session, "acao.compras.requisitar", clinicId) &&
+    (bancoAceitaEstoqueDaUnidade(session, clinicId) ||
+      (Boolean(clinicId) &&
+        hasRoleInClinic(session, clinicId as string, ["clinical_coordinator", "asb"])))
+  );
+}
+
+/**
+ * Quem RECEBE o pedido. O recebimento cria a CONTA A PAGAR, e isso NÃO foi
+ * liberado ao Coordenador e ao ASB (0296): segue `can_manage_stock`.
+ */
+export function canReceivePurchases(
+  session: SessionContext,
+  clinicId: string | null | undefined
+): boolean {
+  // Matriz (0246) E banco: `receive_purchase_order` só aceita Admin Master,
+  // Financeiro da Franqueadora e o GERENTE da unidade (`can_manage_stock`).
+  // A tela segue o banco (OC-00096).
   return (
     pode(session, "acao.compras.requisitar", clinicId) &&
     bancoAceitaEstoqueDaUnidade(session, clinicId)

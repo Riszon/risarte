@@ -46,7 +46,7 @@ export const AJUDAS: AjudaDaTela[] = [
     paraQue:
       "Montar a lista do que falta na unidade e enviar à Franqueadora, que negocia por toda a rede.",
     quem:
-      "Monta e envia: o gerente da unidade (e o Admin). As outras funções que abrem esta tela só consultam.",
+      "Monta e envia: o gerente, o coordenador clínico ou o ASB da unidade (e o Admin). As outras funções que abrem esta tela só consultam.",
     passos: [
       "Clique em **Gerar lista de compras**: o sistema sugere o que está abaixo do mínimo no Estoque.",
       "Ajuste as quantidades. Faltou algo? **Acrescentar item** — um item do estoque ou uma linha livre (com a conta de despesa).",
@@ -101,7 +101,8 @@ export const AJUDAS: AjudaDaTela[] = [
     titulo: "Receber a entrega",
     paraQue:
       "Registrar a entrega: o material entra no estoque e a conta a pagar nasce sozinha.",
-    quem: "Gerente da unidade, Financeiro da Franqueadora e Admin.",
+    quem:
+      "Gerente da unidade, Financeiro da Franqueadora e Admin. O coordenador e o ASB montam a lista, mas não recebem: o recebimento cria a conta a pagar.",
     passos: [
       "Quando a entrega chegar, abra o pedido e confira pela nota fiscal.",
       "Informe, item a item, a quantidade que chegou e o preço da nota (e o lote, nos itens de estoque).",

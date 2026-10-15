@@ -4,7 +4,7 @@ import { PackageCheck } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
-  canManagePurchaseRequests,
+  canReceivePurchases,
   canViewPurchases,
   isPurchaser,
 } from "@/lib/purchases-access";
@@ -123,7 +123,7 @@ export default async function ReceivingPage() {
         clinicId={clinicId}
         orders={orders}
         today={todayInBrazil()}
-        canReceive={canManagePurchaseRequests(session, clinicId)}
+        canReceive={canReceivePurchases(session, clinicId)}
       />
     </div>
   );
