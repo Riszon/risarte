@@ -174,7 +174,7 @@ grant execute on function public.create_orders_from_round(uuid, uuid) to authent
 -- por isso as linhas entram aqui. Quem fica com a última palavra é o banco
 -- (can_decide_purchase): o Financeiro só decide a compra da Franqueadora.
 insert into public.permission_matrix (capability, role) values
-  (acao.compras.aprovar, unit_manager),
-  (acao.compras.aprovar, finance_franchisor)
+  ('acao.compras.aprovar', 'unit_manager'),
+  ('acao.compras.aprovar', 'finance_franchisor')
 on conflict (capability, role) do nothing;
 

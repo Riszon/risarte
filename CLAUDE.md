@@ -404,6 +404,11 @@ Syncthing se comportarem de forma estranha.**
   permissão semeia as linhas; e a tela trata a janela até a migração rodar
   (`semAprovarNoBanco` em `purchases-access.ts`).
 - ⏳ **0294 aplicada só no TREINO** — produção com o dono.
+- 🔴 **A 0294 foi ao `main` com o item 4 QUEBRADO** (aspas perdidas ao
+  acrescentá-lo por script) e passou pelo `check-migrations`; o treino não
+  acusou porque o item 4 entrou lá à parte. Achado relendo antes de colar.
+  **Regra: acrescentou algo à migração depois do `migrar:teste`, roda o
+  ARQUIVO INTEIRO no treino (duas vezes, transação desfeita) antes de colar.**
 - Os roteiros de entrar no treino foram refeitos como UM só
   (`entrar-treino.mjs`, só contas @example.com, recusa a produção).
 - Cache do servidor de teste limpo ao encerrar (AP40).
