@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.323.0** · Última migração: **0299** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.323.0** · Última migração: **0299** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 👥 0.323.0 / 0299 — O GRUPO DO TESTE COLETIVO VOLTA A SALVAR (AP48, 16/10/2026)
 >
@@ -10,6 +10,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.323.0** · Última migraç
 > versão mais recente de CADA função das migrações não pode ter DELETE/UPDATE
 > sem WHERE — a varredura do banco (629 funções) achou só estas duas e a da
 > importação.
+> ✅ **0299 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado; conferido de fora: sem login recusa com "permission denied"; a chave de serviço, que não é Admin Master, recebe NOT_ALLOWED antes de gravar). Na produção o grupo do teste coletivo está VAZIO (0 cargos, 0 pessoas) — coerente com nunca ter salvado pela tela; o Admin precisa montá-lo de novo se for usar a liberação coletiva.
 >
 > ## 🏦 0.322.0 / 0298 — A IMPORTAÇÃO DO EXTRATO VOLTA A FUNCIONAR (OC-00103, 16/10/2026)
 >

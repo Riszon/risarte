@@ -394,8 +394,8 @@ Syncthing se comportarem de forma estranha.**
 
 - **AP48 (o dono pediu):** o grupo do teste coletivo não salvava pela tela —
   mesmo DELETE sem WHERE. 0299 corrige. ⚠️ **Régua global**:
-  `delete-sem-where.test.ts` (versão mais recente de cada função). ⏳ **0299 a
-  aplicar na produção** (aplicada no treino).
+  `delete-sem-where.test.ts` (versão mais recente de cada função).
+  ✅ **0299 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado; conferido de fora: sem login recusa com "permission denied"; a chave de serviço, que não é Admin Master, recebe NOT_ALLOWED antes de gravar). Na produção o grupo do teste coletivo está VAZIO (0 cargos, 0 pessoas) — coerente com nunca ter salvado pela tela; o Admin precisa montá-lo de novo se for usar a liberação coletiva.
 - A pasta `_extratos-oc103` foi apagada (OK do dono) e saiu do
   `.git/info/exclude`.
 
