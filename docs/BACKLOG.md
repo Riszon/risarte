@@ -2513,7 +2513,8 @@ recepção, dentista, Financeiro e Admin faziam as três; depois, só recepção
 Admin (a régua da tela, `canManageEmployees`), e a unidade escolhida tem de
 estar no alcance (`canUseClinic`). `delete_billing` e `check_funnel_alerts`
 também fecharam para `anon` (já recusavam pela guarda). Régua:
-`empresarial-sem-login.test.ts`.
+`empresarial-sem-login.test.ts`. ✅ **1030 aplicada na produção em
+16/10/2026** — conferido de fora: sem login, as cinco recusam antes de rodar.
 **Ficaram, declarado:** as funções que as regras das tabelas chamam
 (`is_program_manager`, `accessible_company_ids`, `can_access_lead`,
 `can_manage_company_files`) — sem login respondem "não"/vazio;

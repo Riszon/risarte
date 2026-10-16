@@ -400,7 +400,10 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Prova de "executa sem login" na produção sem gravar:** chamar com
   identificador INEXISTENTE — a função para no NOT_FOUND antes de gravar; se a
   resposta for o NOT_FOUND, ela executou. "permission denied" = fechada.
-- ⏳ **1030 a aplicar na produção** (aplicada no treino).
+- ✅ **1030 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026
+  e a conferência deu o esperado — 0 executam sem login, 5 logado; conferido
+  de fora: as cinco recusam ANTES de rodar sem login, onde antes três
+  executavam).
 
 **16/10/2026 (fim da tarde) — PC Administrador (Empresarial 0.79.0 → 0.80.0, migração 1029)**
 
