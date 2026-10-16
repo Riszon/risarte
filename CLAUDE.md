@@ -401,7 +401,7 @@ Syncthing se comportarem de forma estranha.**
   guarda para rotina agendada, FECHAR a função para `anon` — a rotina roda
   como dono do banco e não precisa da porta aberta.
 - ✅ **0296 APLICADA nos dois bancos** (o dono rodou na produção em 15/10/2026 e rodou a conferência; conferido de fora, sem login: `can_request_purchase` e `can_post_stock_entry` existem e recusam — uma função inexistente, de controle, responde "não encontrada").
-- ⏳ **0297 na produção com o dono — PRIORIDADE (brecha).**
+- ✅ **0297 APLICADA nos dois bancos** (o dono rodou na produção em 15/10/2026 e a conferência deu o esperado — 60 funções, 0 sem login, 60 logado, 60 chave de serviço, brecha fechada; conferido de fora, sem login: `cash_balance_before`, `charge_fixed_network_fees` e `dre_lines` recusam com "permission denied" ANTES de rodar — a das cobranças só foi chamada depois de a primeira provar que a 0297 estava lá).
 - Ainda deste lote (escolha do dono): AP47, AP41, AP45 e a ajuda das telas.
 
 **15/10/2026 (tarde) — PC Administrador (core 0.318.0 → 0.319.0, migração 0295)**
