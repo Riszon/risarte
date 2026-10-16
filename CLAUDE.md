@@ -408,8 +408,12 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ A aba de cobranças mostrava os botões para todo mundo — agora só para
   quem cobra (`podeCobrar`).
 - Visto na tela no treino como `financeiro@example.com`: a prévia da
-  mensalidade abriu (não confirmada; nada gravado). ⏳ **1029 a aplicar na
-  produção** (aplicada no treino).
+  mensalidade abriu (não confirmada; nada gravado). ✅ **1029 APLICADA nos dois bancos** (o dono rodou na
+  produção em 16/10/2026 e a conferência deu o esperado; conferido de fora:
+  `cancel_billing`, `reverse_billing` e `salvar_acordo_de_cobranca` recusam
+  ANTES de rodar sem login — antes `cancel_billing` executava — e também com a
+  chave de serviço, que nenhuma tela usa para elas; o webhook do ASAAS usa
+  `settle_billing`, que não mudou de permissão).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **16/10/2026 (tarde) — PC Administrador (core 0.322.0 → 0.323.0, migração 0299)**

@@ -2507,7 +2507,8 @@ regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 checagem); `reverse_billing` recusava sem login mas aceitava qualquer pessoa
 logada (no treino, a recepção de teste cancelou e estornou, em transação
 desfeita). A 1029 dá às duas a guarda do financeiro do programa e as fecha
-para `anon`. ⚠️ **Suspeita, não medida:** outras funções do schema
+para `anon`. ✅ **1029 aplicada na produção em 16/10/2026** — conferido de fora:
+sem login as duas recusam antes de rodar. ⚠️ **Suspeita, não medida:** outras funções do schema
 `empresarial` podem ter o mesmo problema (o AP16 varreu o `public`).
 
 ### AP48. ✅ RESOLVIDO em 16/10/2026 (core 0.323.0, migração 0299) — `save_training_cohort` tinha DELETE sem WHERE: o grupo do teste coletivo não salvava pela tela
