@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
 import {
   canViewEmpresarial,
+  isProgramFinance,
   isProgramManager,
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
@@ -117,6 +118,7 @@ export default async function EmpresarialPage(props: {
   const session = await getSessionContext();
   if (!canViewEmpresarial(session)) redirect("/");
   const canManage = isProgramManager(session);
+  const podeCobrar = isProgramFinance(session);
   const canFunnel = canManage || isRislifeConsultant(session);
 
   const searchParams = await props.searchParams;
@@ -240,20 +242,23 @@ export default async function EmpresarialPage(props: {
               Agenda
             </Button>
           )}
+          {/* OC-00004: o caminho para as cobranças de TODAS as empresas.
+              Sem este botão a tela existiria e ninguém a encontraria.
+              OC-00105: aparece para quem cobra (gestor OU Financeiro). */}
+          {podeCobrar && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={BOTAO_NO_CABECALHO}
+              nativeButton={false}
+              render={<Link href="/empresarial/cobrancas" />}
+            >
+              <Receipt className="mr-1 size-4" />
+              Cobranças
+            </Button>
+          )}
           {canManage && (
             <>
-              {/* OC-00004: o caminho para as cobranças de TODAS as empresas.
-                  Sem este botão a tela existiria e ninguém a encontraria. */}
-              <Button
-                variant="outline"
-                size="sm"
-                className={BOTAO_NO_CABECALHO}
-                nativeButton={false}
-                render={<Link href="/empresarial/cobrancas" />}
-              >
-                <Receipt className="mr-1 size-4" />
-                Cobranças
-              </Button>
               <Button
                 variant="outline"
                 size="sm"

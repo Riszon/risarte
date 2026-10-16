@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Receipt } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { isProgramFinance } from "@/lib/empresarial/access";
 import { isAsaasConfigured } from "@/lib/empresarial/asaas";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
@@ -70,7 +70,7 @@ export default async function CobrancasPage(
   // ⚠️ `notFound()`, não `redirect`: é assim que o resto do sistema recusa
   // acesso, e a varredura de telas conhece essa forma. Só quem gere o programa
   // enxerga a rede inteira — a unidade vê as empresas dela pela ficha.
-  if (!isProgramManager(session)) notFound();
+  if (!isProgramFinance(session)) notFound();
 
   const params = await props.searchParams;
   const pick = (k: string) => {

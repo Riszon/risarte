@@ -390,6 +390,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 (fim da tarde) — PC Administrador (Empresarial 0.79.0 → 0.80.0, migração 1029)**
+
+- **OC-00105 — "Sem permissão" ao gerar cobrança no Empresarial.** NÃO era
+  defeito: a regra escrita dava a cobrança só ao gestor do programa (Admin,
+  Franqueadora/Rede, RisLife); o Financeiro da Franqueadora nunca esteve na
+  lista. **Decisão do dono: o Financeiro faz SÓ O FINANCEIRO do programa**
+  (cobranças, baixas, estorno, inadimplência, Acordo de cobrança); o
+  comercial segue com o gestor. Régua `isProgramFinance` ↔
+  `empresarial.is_program_finance()` (1029). A Franqueadora/Rede fica como
+  está (AP49, decisão do dono).
+- 🔴 **AP50, achado e corrigido junto:** `cancel_billing` executava SEM LOGIN
+  na produção; `reverse_billing` aceitava qualquer logado.
+- ⚠️ **O Acordo de cobrança grava por porta estreita**
+  (`salvar_acordo_de_cobranca`): abrir a regra de alteração de empresa ao
+  Financeiro deixaria ele mudar a empresa inteira pela API.
+- ⚠️ A aba de cobranças mostrava os botões para todo mundo — agora só para
+  quem cobra (`podeCobrar`).
+- Visto na tela no treino como `financeiro@example.com`: a prévia da
+  mensalidade abriu (não confirmada; nada gravado). ⏳ **1029 a aplicar na
+  produção** (aplicada no treino).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **16/10/2026 (tarde) — PC Administrador (core 0.322.0 → 0.323.0, migração 0299)**
 
 - **AP48 (o dono pediu):** o grupo do teste coletivo não salvava pela tela —

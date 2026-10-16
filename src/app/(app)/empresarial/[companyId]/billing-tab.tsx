@@ -75,6 +75,7 @@ export function BillingTab({
   billings,
   asaasConfigured,
   isAdminMaster = false,
+  podeCobrar = false,
 }: {
   companyId: string;
   companyStatus: string;
@@ -82,6 +83,12 @@ export function BillingTab({
   asaasConfigured: boolean;
   /** Só o Admin Master pode EXCLUIR uma cobrança (limpeza de teste). */
   isAdminMaster?: boolean;
+  /**
+   * OC-00105: quem pode cobrar (gestor do programa OU Financeiro da
+   * Franqueadora). Sem isso, os botões apareciam para todo mundo que abre a
+   * ficha e respondiam "Sem permissão" no clique.
+   */
+  podeCobrar?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -126,6 +133,7 @@ export function BillingTab({
         </div>
       )}
 
+      {podeCobrar && (
       <Card>
         <CardContent className="flex flex-wrap items-center gap-2 p-4">
           <Button
@@ -170,6 +178,7 @@ export function BillingTab({
           </span>
         </CardContent>
       </Card>
+      )}
 
       {billings.length === 0 ? (
         <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
@@ -231,7 +240,7 @@ export function BillingTab({
                   </td>
                   <td className="px-3 py-2">
                     <span className="flex flex-wrap items-center justify-end gap-1">
-                    {b.status !== "PAID" && b.status !== "CANCELLED" && (
+                    {podeCobrar && b.status !== "PAID" && b.status !== "CANCELLED" && (
                       <>
                         <Button
                           variant="outline"

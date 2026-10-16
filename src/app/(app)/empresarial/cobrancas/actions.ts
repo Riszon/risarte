@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { isProgramFinance } from "@/lib/empresarial/access";
 import { avisarCadastrosPendentes } from "@/lib/empresarial/cobranca-servidor";
 import { previewBilling } from "../[companyId]/billing-actions";
 
@@ -46,7 +46,7 @@ export async function baixarCobrancasEmLote(
   ids: string[]
 ): Promise<ResultadoEmLote> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
   if (ids.length === 0) return { ok: false, error: "Nenhuma cobrança escolhida." };
 
   const db = await empresarialDb();
@@ -129,7 +129,7 @@ export async function gerarMensalidadesEmLote(
   companyIds: string[]
 ): Promise<ResultadoEmLote> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
   if (companyIds.length === 0) {
     return { ok: false, error: "Nenhuma empresa escolhida." };
   }
@@ -273,7 +273,7 @@ export async function estornarCobranca(
   motivo: string
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
 
   const texto = motivo.trim();
   if (texto.length < 5) {

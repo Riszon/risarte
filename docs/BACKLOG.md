@@ -2489,6 +2489,27 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
 
+### AP49. A Franqueadora/Rede ainda é GESTORA do programa no Empresarial (16/10/2026) — DECISÃO DO DONO: MANTER, por enquanto
+
+*(Achado no OC-00105.)*
+**Confirmado no código e no banco:** no núcleo a Franqueadora/Rede ficou só
+consulta (OC-00094, 14/10), mas no Empresarial ela continua **gestora do
+programa** (`empresarial.is_program_manager()` inclui `is_network_viewer()`):
+pode gerar, baixar, cancelar e estornar cobrança, mexer no funil, nas
+propostas e nas configurações. O dono escolheu **manter como está** (16/10).
+**Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
+regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
+
+### AP50. Cancelar e estornar cobrança do Empresarial não conferiam quem chamava — ✅ CORRIGIDO na 1029 (16/10/2026)
+
+*(Achado no OC-00105.)* **Confirmado na produção, de fora, sem gravar:**
+`empresarial.cancel_billing` executava SEM LOGIN (chegou à primeira
+checagem); `reverse_billing` recusava sem login mas aceitava qualquer pessoa
+logada (no treino, a recepção de teste cancelou e estornou, em transação
+desfeita). A 1029 dá às duas a guarda do financeiro do programa e as fecha
+para `anon`. ⚠️ **Suspeita, não medida:** outras funções do schema
+`empresarial` podem ter o mesmo problema (o AP16 varreu o `public`).
+
 ### AP48. ✅ RESOLVIDO em 16/10/2026 (core 0.323.0, migração 0299) — `save_training_cohort` tinha DELETE sem WHERE: o grupo do teste coletivo não salvava pela tela
 
 **Confirmado e corrigido (o dono pediu):** provado pela API no treino, sem

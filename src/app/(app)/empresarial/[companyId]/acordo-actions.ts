@@ -4,12 +4,17 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { isProgramFinance, isProgramManager } from "@/lib/empresarial/access";
 import { parseBRLToCents } from "@/lib/pricing";
 import { validarAcordo } from "@/lib/empresarial/acordo-de-cobranca";
 import { naoConseguiConferir } from "@/lib/contagem";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/** A função da 1029 ainda não existe neste banco (a API não a encontra). */
+function semAPorta(e: { code?: string; message: string }): boolean {
+  return e.code === "PGRST202" || /could not find the function|schema cache/i.test(e.message);
+}
 
 const COLUNAS =
   "billing_basis, fixed_monthly_cents, contracted_holders, contracted_dependents, excess_mode, excess_fixed_cents, excess_holder_fee_cents, excess_dependent_fee_cents";
@@ -18,8 +23,8 @@ const COLUNAS =
  * O ACORDO DE COBRANÇA, editado na empresa (AP19 — dono, 27/09/2026).
  *
  * Empresa cadastrada direto também pode ser de valor fixo e ter regra do
- * excedente; a quantidade contratada vem junto. Quem pode: quem já edita a
- * empresa (gestor do programa).
+ * excedente; a quantidade contratada vem junto. Quem pode: o financeiro do
+ * programa — gestor do programa ou Financeiro da Franqueadora (OC-00105).
  *
  * ⚠️ A MUDANÇA FICA REGISTRADA com o antes e o depois (números, nenhum dado de
  * pessoa) — mudar a base de cobrança muda o boleto, e daqui a seis meses
@@ -30,7 +35,7 @@ export async function salvarAcordoDeCobranca(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) {
+  if (!isProgramFinance(session)) {
     return { ok: false, error: "Você não tem permissão para mudar o acordo de cobrança." };
   }
 
@@ -70,16 +75,32 @@ export async function salvarAcordoDeCobranca(
   if (erroAntes) return { ok: false, error: naoConseguiConferir("o acordo atual da empresa") };
   if (!antes) return { ok: false, error: "Empresa não encontrada." };
 
-  const { data: depois, error } = await db
-    .from("companies")
-    .update(r.valores)
-    .eq("id", companyId)
-    .select(COLUNAS)
-    .single();
+  // OC-00105: grava pela PORTA ESTREITA do banco (1029), que mexe só nas
+  // colunas do acordo — é ela que deixa o Financeiro da Franqueadora salvar
+  // sem poder alterar a empresa inteira. Na janela em que o banco ainda não
+  // recebeu a 1029, o gestor do programa grava pelo caminho antigo.
+  const { error: erroPorta } = await db.rpc("salvar_acordo_de_cobranca", {
+    p_company_id: companyId,
+    p_acordo: r.valores,
+  });
+  let error = erroPorta;
+  if (erroPorta && semAPorta(erroPorta) && isProgramManager(session)) {
+    ({ error } = await db.from("companies").update(r.valores).eq("id", companyId));
+  }
   if (error) {
     console.error("salvarAcordoDeCobranca failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar o acordo de cobrança." };
+    return {
+      ok: false,
+      error: semAPorta(error)
+        ? "O banco ainda não recebeu a atualização 1029: o acordo não foi salvo."
+        : "Não foi possível salvar o acordo de cobrança.",
+    };
   }
+  const { data: depois } = await db
+    .from("companies")
+    .select(COLUNAS)
+    .eq("id", companyId)
+    .maybeSingle();
 
   await logAudit({
     action: "update",

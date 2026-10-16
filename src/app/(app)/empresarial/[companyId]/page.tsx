@@ -8,7 +8,7 @@ import { notFound, redirect } from "next/navigation";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { canViewEmpresarial, isProgramManager } from "@/lib/empresarial/access";
+import { canViewEmpresarial, isProgramFinance, isProgramManager } from "@/lib/empresarial/access";
 import {
   ColaboradoresTab,
   type DependentView,
@@ -182,6 +182,9 @@ export default async function CompanyDetailPage(props: {
   const session = await getSessionContext();
   if (!canViewEmpresarial(session)) redirect("/");
   const canManage = isProgramManager(session);
+  // OC-00105: cobrar é do financeiro do programa (gestor OU Financeiro da
+  // Franqueadora) — mais largo que gerir a empresa.
+  const podeCobrar = isProgramFinance(session);
 
   const { companyId } = await props.params;
   const searchParams = await props.searchParams;
@@ -220,7 +223,7 @@ export default async function CompanyDetailPage(props: {
   // (RLS), então a contagem dela seria menor que a real e o alerta acusaria
   // cadastro que existe. E é o gestor quem cobra a empresa.
   const cadastrosPendentes =
-    isProgramManager(session) &&
+    podeCobrar &&
     minimoDaMensalidade != null &&
     cadastradosAtivos != null &&
     cadastradosAtivos < minimoDaMensalidade
@@ -1187,7 +1190,7 @@ export default async function CompanyDetailPage(props: {
           <AcordoDeCobranca
             companyId={companyId}
             acordo={acordo}
-            podeEditar={canManage}
+            podeEditar={podeCobrar}
           />
         </div>
       )}
@@ -1368,6 +1371,7 @@ export default async function CompanyDetailPage(props: {
             billings={financeiro.billings}
             asaasConfigured={isAsaasConfigured()}
             isAdminMaster={session.isAdminMaster}
+            podeCobrar={podeCobrar}
           />
         </div>
       )}

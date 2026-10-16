@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { isProgramFinance } from "@/lib/empresarial/access";
 import {
   avisarCadastrosPendentes,
   computeMonthlyBreakdown,
@@ -89,7 +89,7 @@ export async function previewBilling(
   billingType: "IMPLANTATION" | "MONTHLY"
 ): Promise<BillingPreview> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
 
   const db = await empresarialDb();
   const { data: company } = await db
@@ -484,7 +484,7 @@ export async function generateBilling(
   valorInformadoCents?: number
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
 
   // A prévia é a mesma que o usuário confirmou na tela (um ou vários boletos).
   const preview = await previewBilling(companyId, billingType);
@@ -593,7 +593,7 @@ export async function updateBilling(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
 
   const db = await empresarialDb();
   const { data: current } = await db
@@ -647,7 +647,7 @@ export async function cancelBilling(
   reason: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
   if (!reason.trim()) {
     return { ok: false, error: "Informe o motivo do cancelamento." };
   }
@@ -685,7 +685,7 @@ export async function markBillingPaid(
   billingId: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
   const db = await empresarialDb();
   const { error } = await db.rpc("settle_billing", {
     p_billing_id: billingId,
@@ -740,7 +740,7 @@ export async function deleteBilling(
 /** Roda a checagem de inadimplência (suspende empresas com atraso > 5 dias). */
 export async function runOverdueCheck(companyId: string): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
   const db = await empresarialDb();
   const { error } = await db.rpc("mark_overdue_and_suspend", {});
   if (error) {

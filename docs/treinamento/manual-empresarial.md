@@ -115,6 +115,20 @@ fechamento, configurações da rede, cobranças, termos de inclusão. São:
 - **Franqueadora (rede)**
 - **Consultor Comercial Empresarial (RisLife)**
 
+**Financeiro da Franqueadora** — cuida do **financeiro do programa**, e só
+dele (desde a versão 0.80.0, relato OC-00105): na aba **Financeiro** da
+empresa, **Gerar cobrança mensal**, **Gerar implantação**, **Checar
+inadimplência**, **Marcar pago**, **Editar** e **Cancelar**; na tela
+**Cobranças**, as mensalidades e as baixas em lote e o estorno; e o **Acordo de
+cobrança** em Dados Gerais. Vê todas as empresas do programa para poder
+cobrá-las. **Não** mexe no funil, na proposta, no contrato, nos termos de
+inclusão nem nas configurações — isso continua com o gestor do programa.
+Separar quem vende de quem cobra é de propósito.
+
+> **Os botões de cobrança só aparecem para quem pode cobrar.** Antes eles
+> apareciam para todo mundo que abria a ficha, e quem não podia recebia
+> "Sem permissão" no clique.
+
 **Quem só enxerga o módulo** — gestão e atendimento da unidade, que veem as
 empresas com titulares na sua unidade. Isso é controlado pela matriz de
 permissões (**Administração → Permissões**, chave `modulo.empresarial`), então
