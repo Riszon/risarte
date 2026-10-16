@@ -2489,7 +2489,22 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
 
-### AP47. Telas que pedem mais de 1.000 linhas e SOMAM o que vem (15/10/2026) — CONFIRMADO
+### AP47. ✅ RESOLVIDO em 15/10/2026 (core 0.321.0) — telas que pediam mais de 1.000 linhas e SOMAVAM o que vinha
+
+**Resolvido (escolha do dono):** Relatórios, o painel de relatos
+(`painel-dados.ts` — é o painel da tela de Relatos, **não** o do Início, como
+dizia o texto abaixo), a inadimplência da lista de Prontuários, Planos, Centro
+de Planejamento e a lista de Risartanos leem em páginas (`lerTodasAsPaginas`)
+ou em lotes de 150 ids (`lerPorLotes`, novo em `paginar.ts`: lista de ids
+grande estoura o tamanho do endereço). Leitura que falha vira aviso vermelho,
+nunca número pela metade. Régua: `limite-da-api.test.ts` (nenhum
+`.limit` acima de 1.000 em `src/app`/`src/lib`, exceto os declarados).
+**Ficou de fora, de propósito:** os catálogos (procedimentos, itens de
+estoque) seguem com `.limit(1000)` — a rede tem centenas; e o Empresarial e
+o CSV do Indica, que são das outras sessões (declarados na régua).
+**Não medido:** com mais de 1.000 registros reais.
+
+*(Registro original:)*
 
 *(Achado consertando o AP44.)*
 **Confirmado no código:** a API corta CADA resposta em 1.000 linhas (AP35, medido), e várias telas pedem mais com `.limit()` — o pedido de 5.000 volta com 1.000, sem erro. Onde a tela **soma ou conta** o que vem, o total sai errado com cara de certo quando a rede crescer:
@@ -2510,7 +2525,23 @@ funções com menos ícones deve ser menor; não medi as outras.
 **Conserto quando convier:** encolher a busca a um ícone no celular, ou levar
 parte dos ícones para um menu "mais".
 
-### AP45. Listas longas sem busca fora de Compras, Estoque e Financeiro (14/10/2026)
+### AP45. ✅ RESOLVIDO em 15/10/2026 (core 0.321.0) — listas longas sem busca fora de Compras, Estoque e Financeiro
+
+**Resolvido (escolha do dono):** a `ListaComBusca` em 13 telas — pessoa nas
+cinco abas da Auditoria, procedimento do catálogo no plano, na venda direta e
+nos benefícios do PPR+, dentista na avaliação de qualidade e nos filtros das
+abas da ficha, profissional no Atendimento e consultor na Agenda do
+Comercial. Dentro do `FilterForm`, a lista aplica ao escolher
+(`aplicaAoEscolher` → `requestSubmit`). Régua estendida em
+`lista-com-busca.test.ts`.
+**Ficaram como eram, declarado:** as caixinhas miúdas dentro da linha do plano
+(`planning-section` profissional, h-6; `session-join-planner`, h-7) — a
+janela de busca é maior que a linha; e os do **Empresarial** (benefícios,
+consultores do funil e da empresa), que são da outra sessão.
+⚠️ O E2E `03-planejamento` e `apoio.ts` foram ajustados à lista nova e
+**não rodados** (a suíte limpa o treino).
+
+*(Registro original:)*
 
 *(Achado varrendo o sistema para o OC-00100.)*
 **Confirmado no código** (inventário das caixas nativas, 209 no total, quase
@@ -2576,7 +2607,18 @@ de Admin, Financeiro da Franqueadora e Gerente. Desde a 0.312.0 a tela mostra
 entrada, é mudança de regra no banco (`can_manage_stock`); se não, desligar
 na matriz. Até lá eles veem e não gravam.
 
-### AP41. Dia fechado por período planejado + horário avulso: a AGENDA aceita o horário normal inteiro (13/10/2026)
+### AP41. ✅ RESOLVIDO em 15/10/2026 (core 0.321.0) — dia fechado por período planejado + horário avulso: a agenda aceitava o horário normal inteiro
+
+**Resolvido — decisão do dono: (a), a agenda segue a regra escrita.** Uma
+regra só, `situacaoDoPlanoNoDia` (`annual-plan.ts`), usada pela validação do
+agendamento E pela lista de próximos horários (que antes nem lia o
+Planejamento anual): período da unidade (ou da rede sem trava) fecha o dia e o
+avulso abre só a janela dele; período da rede travado bloqueia; férias
+individuais bloqueiam só a pessoa; campanha não fecha; o online só é alcançado
+pelas férias da própria pessoa. Régua: `agenda-dia-fechado-pelo-plano.test.ts`.
+**Não visto na tela** (exige um recesso com avulso lançado no treino).
+
+*(Registro original:)*
 
 *(Achado lendo a validação do agendamento para o OC-00071.)*
 **Confirmado no código, NÃO visto na tela:** em `agenda/actions.ts`, a janela

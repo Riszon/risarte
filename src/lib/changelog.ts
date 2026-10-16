@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.321.0",
+    data: "2026-10-15",
+    migracao: null,
+    titulo: "Totais completos, agenda do recesso, busca em mais listas e a ajuda das telas",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Relatórios, Centro de Planejamento e Planos de Tratamento passam a somar todos os registros: antes, acima de 1.000, a conta parava em 1.000 sem aviso. Se uma parte não puder ser lida, a tela mostra um aviso vermelho em vez de um número pela metade.",
+        papeis: "todos",
+        manual: "10.6. \"Não foi possível conferir … Nada foi alterado\"",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Num dia de recesso (ou férias coletivas, evento, treinamento, manutenção) com horário avulso liberado, a agenda passa a aceitar só a janela do avulso — antes aceitava o horário inteiro do dia. A lista de próximos horários segue a mesma regra.",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Mais listas longas ganharam a busca: a pessoa nos filtros da Auditoria, o procedimento no plano, na venda direta e nos benefícios do PPR+, o dentista na avaliação de qualidade e nos filtros da ficha, e o profissional no filtro do Atendimento.",
+        papeis: "todos",
+        manual: "7.5. Listas com busca",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O botão ? da barra de cima passa a ter o passo a passo da Agenda, do Atendimento, da Jornada e da ficha do cliente.",
+        papeis: "todos",
+        manual: "A barra de cima",
+      },
+    ],
+  },
+  {
     versao: "0.320.0",
     data: "2026-10-15",
     migracao: "0297",

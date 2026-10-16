@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { requestSessionScheduling } from "./treatment-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 export type ProcedureSession = {
   id: string;
@@ -235,18 +236,16 @@ export function ClientProceduresSection({
         className={`${selectClass} min-w-[180px]`}
       />
       {dentists.length > 0 && (
-        <select
+        <ListaComBusca
+          aria-label="Dentista"
           value={dentistFilter}
-          onChange={(e) => setDentistFilter(e.target.value)}
-          className={selectClass}
-        >
-          <option value="">Todos os dentistas</option>
-          {dentists.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+          onValueChange={setDentistFilter}
+          className="h-9 w-52"
+          options={[
+            { value: "", label: "Todos os dentistas" },
+            ...dentists.map((d) => ({ value: d, label: d })),
+          ]}
+        />
       )}
     </div>
   );

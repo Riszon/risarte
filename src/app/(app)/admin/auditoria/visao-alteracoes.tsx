@@ -24,6 +24,7 @@ import {
   type Pessoas,
 } from "./comum";
 import { LinhaDaAlteracao } from "./linha-da-alteracao";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 const POR_PAGINA = 200;
 /** No filtro de pessoa: o que NÃO foi feito por alguém logado. */
@@ -95,15 +96,15 @@ export async function VisaoAlteracoes({
       <FilterForm className="flex flex-wrap items-center gap-2">
         <input type="hidden" name="visao" value="alteracoes" />
         {cliente && <input type="hidden" name="cliente" value={cliente} />}
-        <select name="colaborador" defaultValue={colaborador} className={CLASSE_DO_SELECT}>
-          <option value="">Todas as pessoas</option>
-          <option value={SISTEMA}>Sistema (sem pessoa logada)</option>
-          {pessoas.opcoes.map((u) => (
-            <option key={u.value} value={u.value}>
-              {u.label}
-            </option>
-          ))}
-        </select>
+        {/* AP45: a lista de pessoas cresce com a rede — com busca. */}
+        <ListaComBusca
+          name="colaborador"
+          defaultValue={colaborador}
+          aplicaAoEscolher
+          aria-label="Pessoa"
+          className="w-64"
+          options={[{ value: "", label: "Todas as pessoas" }, { value: SISTEMA, label: "Sistema (sem pessoa logada)" }, ...pessoas.opcoes]}
+        />
         <select name="operacao" defaultValue={operacao} className={CLASSE_DO_SELECT}>
           <option value="">Cadastrou, alterou ou excluiu</option>
           {OPERACOES.map((o) => (

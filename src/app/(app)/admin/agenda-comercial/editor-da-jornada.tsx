@@ -9,11 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FilterForm } from "@/components/filter-form";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { WEEKDAY_NAMES, type OnlineAgendaSettings } from "@/lib/agenda-settings";
 import { salvarJornadaOnline, voltarAoPadraoDaRede } from "./actions";
-
-const selectClass =
-  "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 /**
  * A JORNADA DO ATENDIMENTO ONLINE (0268) — relato OC-00072.
@@ -88,19 +86,18 @@ export function EditorDaJornada({
           <Label htmlFor="consultor" className="text-xs">
             Configurando
           </Label>
-          <select
+          {/* AP45: a lista de consultores cresce com a rede — com busca. */}
+          <ListaComBusca
             id="consultor"
             name="consultor"
             defaultValue={escopo}
-            className={selectClass}
-          >
-            <option value="">Padrão da rede (todos os consultores)</option>
-            {consultores.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.full_name}
-              </option>
-            ))}
-          </select>
+            aplicaAoEscolher
+            className="w-72"
+            options={[
+              { value: "", label: "Padrão da rede (todos os consultores)" },
+              ...consultores.map((c) => ({ value: c.id, label: c.full_name })),
+            ]}
+          />
         </FilterForm>
 
         {!ehRede && (

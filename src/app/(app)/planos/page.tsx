@@ -6,6 +6,7 @@ import { PresentationCountdown } from "@/components/presentation-countdown";
 import { RequestSchedulingButton } from "./request-scheduling-button";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 import { FilterForm } from "@/components/filter-form";
 import { Badge } from "@/components/ui/badge";
 import { PhaseBadge } from "@/components/phase-badge";
@@ -189,15 +190,19 @@ export default async function PlansPage(props: PageProps<"/planos">) {
 
   const supabase = await createClient();
 
-  let planQuery = supabase
-    .from("treatment_plans")
-    .select(
-      "id, client_id, clinic_id, status, commercial_return_note, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
-    )
-    .order("created_at", { ascending: false })
-    .limit(2000);
-  if (scopeIds) planQuery = planQuery.in("clinic_id", scopeIds);
-  if (unidade) planQuery = planQuery.eq("clinic_id", unidade);
+  // AP47: pedia 2.000 e a API devolve no máximo 1.000 — a lista e os
+  // contadores por situação ficariam cortados sem aviso. Em páginas, na ordem
+  // estável (mais novo primeiro, id); leitura que falha DIZ isso na tela.
+  const consultaDePlanos = () => {
+    let q = supabase
+      .from("treatment_plans")
+      .select(
+        "id, client_id, clinic_id, status, commercial_return_note, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
+      );
+    if (scopeIds) q = q.in("clinic_id", scopeIds);
+    if (unidade) q = q.eq("clinic_id", unidade);
+    return q;
+  };
 
   let unitsQuery = supabase
     .from("clinics")
@@ -207,10 +212,18 @@ export default async function PlansPage(props: PageProps<"/planos">) {
     .order("name");
   if (scopeIds) unitsQuery = unitsQuery.in("id", scopeIds);
 
-  const [{ data: planRows }, { data: units }] = await Promise.all([
-    planQuery.returns<PlanRow[]>(),
+  const [leituraDosPlanos, { data: units }] = await Promise.all([
+    lerTodasAsPaginas<PlanRow>((de, ate) =>
+      consultaDePlanos()
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, ate)
+        .returns<PlanRow[]>()
+    ),
     unitsQuery,
   ]);
+  if (!leituraDosPlanos.ok) console.error("planos — leitura:", leituraDosPlanos.error.message);
+  const planRows = leituraDosPlanos.ok ? leituraDosPlanos.linhas : null;
 
   const entries = (planRows ?? [])
     .filter((p) => p.clients)
@@ -390,6 +403,13 @@ export default async function PlansPage(props: PageProps<"/planos">) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+      {!planRows && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          Não foi possível ler os planos agora — a lista abaixo pode estar
+          incompleta. Recarregue a página; se continuar, avise pelo Relatar um
+          problema.
+        </p>
+      )}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Planos de Tratamento

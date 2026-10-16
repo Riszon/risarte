@@ -415,10 +415,9 @@ export async function levarAoComercial(
   }
   await item.waitFor({ state: "visible" });
   await item.click();
-  await page
-    .getByRole("combobox")
-    .first()
-    .selectOption({ label: "Restauração em resina 1 face (R$ 280,00)" });
+  // AP45: o catálogo virou lista COM BUSCA (botão + opções), não <select>.
+  await page.getByRole("combobox", { name: "Procedimento do catálogo" }).first().click();
+  await page.getByRole("option", { name: "Restauração em resina 1 face (R$ 280,00)" }).click();
   await page.getByRole("button", { name: "Item", exact: true }).click();
   await page.getByText(/adicionad/i).first().waitFor().catch(() => {});
 

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 import {
   addDaysIso,
   instantFromBrazil,
@@ -190,33 +191,46 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
 
   const supabase = await createClient();
 
+  // ⚠️ AP47: as três leituras abaixo pediam até 5.000 linhas, e a API devolve
+  // no máximo 1.000 por resposta (AP35) — sem erro. Os quadros SOMAM o que
+  // vem, então o total sairia menor, sem aviso, quando a rede crescesse.
+  // Agora cada uma é lida em PÁGINAS, na ordem estável por id (sem ela, a
+  // mesma linha poderia cair em duas páginas ou em nenhuma), e uma leitura
+  // que falha DIZ isso na tela em vez de mostrar zero.
+
   // -- Agendamentos no período (escopo aplicado explicitamente, além da RLS) --
-  let apptQuery = supabase
-    .from("appointments")
-    .select(
-      "type, status, provider_user_id, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name )"
-    )
-    .limit(5000);
-  if (range.from) apptQuery = apptQuery.gte("starts_at", range.from);
-  if (range.to) apptQuery = apptQuery.lte("starts_at", range.to);
-  if (scopeIds) apptQuery = apptQuery.in("clinic_id", scopeIds);
-  if (unidade) apptQuery = apptQuery.eq("clinic_id", unidade);
+  const consultaDeAgendamentos = () => {
+    let q = supabase
+      .from("appointments")
+      .select(
+        "type, status, provider_user_id, clinic_id, clinics ( name ), provider:profiles!appointments_provider_user_id_fkey ( full_name )"
+      );
+    if (range.from) q = q.gte("starts_at", range.from);
+    if (range.to) q = q.lte("starts_at", range.to);
+    if (scopeIds) q = q.in("clinic_id", scopeIds);
+    if (unidade) q = q.eq("clinic_id", unidade);
+    return q;
+  };
 
   // B5: clientes por unidade/fase (somente contagens, sem nomes).
-  let clientQuery = supabase
-    .from("clients")
-    .select("journey_phase, clinic_id, clinics!clients_clinic_id_fkey ( name )")
-    .neq("status", "anonymized")
-    .limit(5000);
-  if (scopeIds) clientQuery = clientQuery.in("clinic_id", scopeIds);
+  const consultaDeClientes = () => {
+    let q = supabase
+      .from("clients")
+      .select("journey_phase, clinic_id, clinics!clients_clinic_id_fkey ( name )")
+      .neq("status", "anonymized");
+    if (scopeIds) q = q.in("clinic_id", scopeIds);
+    return q;
+  };
 
   // B6: planos do Planner.
-  let planQuery = supabase
-    .from("treatment_plans")
-    .select("status, created_at, submitted_at, reviewed_at")
-    .limit(5000);
-  if (scopeIds) planQuery = planQuery.in("clinic_id", scopeIds);
-  if (unidade) planQuery = planQuery.eq("clinic_id", unidade);
+  const consultaDePlanos = () => {
+    let q = supabase
+      .from("treatment_plans")
+      .select("status, created_at, submitted_at, reviewed_at");
+    if (scopeIds) q = q.in("clinic_id", scopeIds);
+    if (unidade) q = q.eq("clinic_id", unidade);
+    return q;
+  };
 
   // Opções do filtro de unidade: só as unidades do escopo.
   let unitsQuery = supabase
@@ -227,35 +241,45 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
     .order("name");
   if (scopeIds) unitsQuery = unitsQuery.in("id", scopeIds);
 
-  const [{ data: appts }, { data: clientRows }, { data: planRows }, { data: units }] =
-    await Promise.all([
-      apptQuery.returns<
-        {
-          type: AppointmentType;
-          status: AppointmentStatus;
-          provider_user_id: string | null;
-          clinic_id: string;
-          clinics: { name: string } | null;
-          provider: { full_name: string } | null;
-        }[]
-      >(),
-      clientQuery.returns<
-        {
-          journey_phase: JourneyPhase;
-          clinic_id: string;
-          clinics: { name: string } | null;
-        }[]
-      >(),
-      planQuery.returns<
-        {
-          status: TreatmentPlanStatus;
-          created_at: string;
-          submitted_at: string | null;
-          reviewed_at: string | null;
-        }[]
-      >(),
-      unitsQuery,
-    ]);
+  type LinhaDeAgendamento = {
+    type: AppointmentType;
+    status: AppointmentStatus;
+    provider_user_id: string | null;
+    clinic_id: string;
+    clinics: { name: string } | null;
+    provider: { full_name: string } | null;
+  };
+  type LinhaDeCliente = {
+    journey_phase: JourneyPhase;
+    clinic_id: string;
+    clinics: { name: string } | null;
+  };
+  type LinhaDePlano = {
+    status: TreatmentPlanStatus;
+    created_at: string;
+    submitted_at: string | null;
+    reviewed_at: string | null;
+  };
+
+  const [leituraAg, leituraCli, leituraPla, { data: units }] = await Promise.all([
+    lerTodasAsPaginas<LinhaDeAgendamento>((de, ate) =>
+      consultaDeAgendamentos().order("id").range(de, ate).returns<LinhaDeAgendamento[]>()
+    ),
+    lerTodasAsPaginas<LinhaDeCliente>((de, ate) =>
+      consultaDeClientes().order("id").range(de, ate).returns<LinhaDeCliente[]>()
+    ),
+    lerTodasAsPaginas<LinhaDePlano>((de, ate) =>
+      consultaDePlanos().order("id").range(de, ate).returns<LinhaDePlano[]>()
+    ),
+    unitsQuery,
+  ]);
+  const appts = leituraAg.ok ? leituraAg.linhas : null;
+  const clientRows = leituraCli.ok ? leituraCli.linhas : null;
+  const planRows = leituraPla.ok ? leituraPla.linhas : null;
+  const leituraFalhou = !appts || !clientRows || !planRows;
+  for (const l of [leituraAg, leituraCli, leituraPla]) {
+    if (!l.ok) console.error("relatórios — leitura:", l.error.message);
+  }
 
   // ---- B4: quadros-resumo de agendamentos ----
   const byStatus = {} as Record<AppointmentStatus, number>;
@@ -347,6 +371,14 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
         titulo="Relatórios"
         descricao="Agenda, rede por fase e produtividade do Centro de Planejamento."
       />
+
+      {leituraFalhou && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          Não foi possível ler todos os dados agora — os números abaixo podem
+          estar incompletos. Recarregue a página; se continuar, avise pelo
+          Relatar um problema.
+        </p>
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="text-sm text-muted-foreground">

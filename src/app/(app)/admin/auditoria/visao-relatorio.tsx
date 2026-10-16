@@ -16,6 +16,7 @@ import {
 import { formatIsoDateBr, todayInBrazil } from "@/lib/dates";
 import { CLASSE_DO_SELECT, enderecoDaVisao, type Pessoas } from "./comum";
 import { carregarRelatorioDeAtividade } from "./relatorio-dados";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 const TH = "px-2 py-1.5 font-medium";
 const TD = "whitespace-nowrap px-2 py-1.5";
@@ -78,14 +79,15 @@ export async function VisaoRelatorio({
           até
           <input type="date" name="ate" defaultValue={periodo.ate} max={hoje} className={CLASSE_DO_SELECT} />
         </label>
-        <select name="colaborador" defaultValue={colaborador} className={CLASSE_DO_SELECT}>
-          <option value="">Todas as pessoas</option>
-          {pessoas.opcoes.map((u) => (
-            <option key={u.value} value={u.value}>
-              {u.label}
-            </option>
-          ))}
-        </select>
+        {/* AP45: a lista de pessoas cresce com a rede — com busca. */}
+        <ListaComBusca
+          name="colaborador"
+          defaultValue={colaborador}
+          aplicaAoEscolher
+          aria-label="Pessoa"
+          className="w-64"
+          options={[{ value: "", label: "Todas as pessoas" }, ...pessoas.opcoes]}
+        />
         <select name="unidade" defaultValue={unidade} className={CLASSE_DO_SELECT}>
           <option value="">Todas as unidades</option>
           {[...carga.unidades].map(([id, nomeDaUnidade]) => (

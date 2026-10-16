@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatIsoDateBr } from "@/lib/dates";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import {
   MOTIVO_ROTULO,
   duracao,
@@ -170,14 +171,15 @@ export async function VisaoAcessos({
     <div className="space-y-4">
       <FilterForm className="flex flex-wrap items-center gap-2">
         <input type="hidden" name="visao" value="acessos" />
-        <select name="colaborador" defaultValue={colaborador} className={CLASSE_DO_SELECT}>
-          <option value="">Todas as pessoas</option>
-          {pessoas.opcoes.map((u) => (
-            <option key={u.value} value={u.value}>
-              {u.label}
-            </option>
-          ))}
-        </select>
+        {/* AP45: a lista de pessoas cresce com a rede — com busca. */}
+        <ListaComBusca
+          name="colaborador"
+          defaultValue={colaborador}
+          aplicaAoEscolher
+          aria-label="Pessoa"
+          className="w-64"
+          options={[{ value: "", label: "Todas as pessoas" }, ...pessoas.opcoes]}
+        />
         <select name="periodo" defaultValue={periodo} className={CLASSE_DO_SELECT}>
           <option value="hoje">Hoje</option>
           <option value="7d">Últimos 7 dias</option>

@@ -44,6 +44,12 @@ type Props = {
   "aria-label"?: string;
   /** Texto quando a busca não acha nada. */
   vazio?: string;
+  /**
+   * Escolheu, aplica: envia o formulário em volta (AP45). É o que o
+   * `FilterForm` faz com o <select> nativo — sem isto, trocar a lista dentro
+   * de um filtro não filtraria nada. Exige `name` (o valor vai no envio).
+   */
+  aplicaAoEscolher?: boolean;
 };
 
 export function ListaComBusca({
@@ -59,6 +65,7 @@ export function ListaComBusca({
   className,
   "aria-label": ariaLabel,
   vazio = "Nada encontrado com essa busca.",
+  aplicaAoEscolher = false,
 }: Props) {
   const controlado = value !== undefined;
   const [interno, setInterno] = React.useState<string>(defaultValue ?? "");
@@ -66,6 +73,7 @@ export function ListaComBusca({
   const escolhida = options.find((o) => o.value === atual) ?? null;
   // Ao abrir, o cursor vai para a BUSCA — senão o que a pessoa digita se perde.
   const buscaRef = React.useRef<HTMLInputElement>(null);
+  const gatilhoRef = React.useRef<HTMLButtonElement>(null);
 
   return (
     <Combobox.Root<OpcaoDaLista>
@@ -75,6 +83,9 @@ export function ListaComBusca({
         const novo = o?.value ?? "";
         if (!controlado) setInterno(novo);
         onValueChange?.(novo);
+        // Depois do desenho: o campo escondido com o valor novo já está no
+        // formulário quando o filtro lê.
+        if (aplicaAoEscolher) setTimeout(() => gatilhoRef.current?.form?.requestSubmit(), 0);
       }}
       itemToStringLabel={(o) => o.label}
       itemToStringValue={(o) => o.value}
@@ -92,6 +103,7 @@ export function ListaComBusca({
       required={required}
     >
       <Combobox.Trigger
+        ref={gatilhoRef}
         id={id}
         aria-label={ariaLabel}
         // O cursor tem de ficar na BUSCA. Medido na tela: no apertar do botão

@@ -15,8 +15,10 @@ import { apelido } from "@/lib/markdown";
 // E a mesma disciplina do manual: só entra aqui o que está no código (os
 // nomes dos botões são os da tela, conferidos um a um).
 //
-// Começa por COMPRAS (as telas do relato). Tela sem ajuda escrita mostra isso
-// com honestidade e oferece o manual — nunca um passo a passo genérico.
+// Começou por COMPRAS (as telas do relato); depois vieram as mais usadas no
+// dia a dia — Agenda, Atendimento, Jornada e a ficha do cliente (15/10/2026).
+// Tela sem ajuda escrita mostra isso com honestidade e oferece o manual —
+// nunca um passo a passo genérico.
 
 export type AjudaDaTela = {
   /** A rota da tela, como no endereço. `[id]` vale para qualquer valor. */
@@ -32,6 +34,10 @@ export type AjudaDaTela = {
   atencao?: string[];
   /** Onde o manual explica: a seção (##) e, se houver, o trecho (###). */
   manual: { secao: string; trecho?: string };
+  /** Endereços que a rota com `[id]` pegaria, mas são OUTRA tela (a pasta
+   * vizinha: `/prontuarios/novo` não é a ficha de um cliente "novo"). A régua
+   * exige que toda pasta vizinha esteja aqui. */
+  naoVale?: string[];
 };
 
 const FLUXO_COMPRAS = {
@@ -130,6 +136,93 @@ export const AJUDAS: AjudaDaTela[] = [
     atencao: ["A economia é medida contra a PREVISÃO de preço da lista, não contra o mercado."],
     manual: FLUXO_COMPRAS,
   },
+  // As telas mais usadas no dia a dia (escolha do dono, 15/10/2026).
+  {
+    rota: "/agenda",
+    titulo: "Agenda",
+    paraQue:
+      "Marcar, remarcar e acompanhar os horários da unidade — por dia, semana ou mês.",
+    quem:
+      "Agendam a recepção e a SDR (que pode agendar em outra unidade). As outras funções consultam conforme a permissão de cada uma; o dentista vê a agenda dele.",
+    passos: [
+      "Clique em **Novo agendamento**.",
+      "Procure o cliente digitando o nome, o código do prontuário ou o CPF.",
+      "Escolha o tipo, o profissional, a sala, a duração, a data e o horário — ou use a lista **Próximos horários disponíveis**: clicar num horário confirma o agendamento.",
+      "Clique em **Agendar**.",
+      "Para mudar a situação (confirmado, faltou, cancelado), clique no agendamento e use **Alterar situação**.",
+    ],
+    atencao: [
+      "O sistema recusa horário fora do funcionamento da unidade, dia fechado ou sala lotada — exceto urgência e emergência.",
+      "Num dia fechado pelo **Planejamento anual** (recesso, férias coletivas, evento, treinamento, manutenção), um horário avulso abre só a janela dele: o horário normal do dia não volta. Período travado pela rede não abre nem com horário avulso.",
+      "**Fechar agenda** fecha um período da unidade, de uma sala ou de um profissional. **Mais ações** leva a **Configurar agenda**, **Planejamento anual** e **Retornos e controles**, para quem pode mexer neles.",
+    ],
+    manual: { secao: "6. Scripts de treinamento por função", trecho: "6.1. Recepcionista" },
+  },
+  {
+    rota: "/atendimento",
+    titulo: "Atendimento — a sala de espera",
+    paraQue:
+      "Acompanhar os atendimentos de hoje: quem vai chegar, quem está esperando, quem está sendo atendido e quem já terminou.",
+    quem:
+      "A recepção confirma e registra a chegada. Quem chama e conclui é o profissional do atendimento.",
+    passos: [
+      "O paciente avisou que vem? No cartão **A chegar**, clique em **Confirmar**.",
+      "Ele chegou: **Registrar chegada**, confira com ele o profissional, o horário e a sala, e clique em **Confirmar chegada**.",
+      "O profissional clica em **Chamar** quando for atendê-lo.",
+      "Terminou: **Concluir**, marque as sessões que foram feitas e clique em **Concluir atendimento**.",
+    ],
+    atencao: [
+      "Avaliação e reavaliação terminam no cockpit: o cartão mostra **Abrir avaliação**, e não Concluir.",
+      "O paciente não veio? No menu do cartão: **Não compareceu (faltou)** ou **Cancelou em cima da hora**.",
+      "Confirmar (ele disse que vem) não é Confirmar chegada (ele está na sua frente).",
+    ],
+    manual: { secao: "6. Scripts de treinamento por função", trecho: "6.1. Recepcionista" },
+  },
+  {
+    rota: "/jornada",
+    titulo: "Jornada do Cliente",
+    paraQue:
+      "Ver em que fase da jornada está cada cliente, há quanto tempo está nela e se tem horário marcado.",
+    quem:
+      "Consulta de quem acompanha a jornada. A fase anda sozinha, pelo trabalho feito; só o Admin Master move à mão.",
+    passos: [
+      "Cada coluna é uma fase; cada cartão, um cliente. Cartão com borda vermelha passou do prazo da fase (**SLA estourado**).",
+      "**Sem agendamento** quer dizer que o cliente não tem horário marcado daqui para a frente: clique para abrir a agenda e agendar.",
+      "Filtre por pilar de tratamento e por ativos ou inativos (na Franqueadora, também por unidade).",
+      "Coordenador: na avaliação e na reavaliação, o cartão tem **Cockpit de avaliação**.",
+    ],
+    atencao: [
+      "Não existe botão de mover de fase para a equipe: a fase muda pelo check-in, pelo envio ao Planejamento, pela venda fechada. Fase que parece travada é um passo do fluxo que ainda falta.",
+      "Admin Master: **Mover para...** força a passagem — e ela fica marcada na auditoria como forçada.",
+      "No alto: **Cadastrar cliente** e **Ir para a agenda**.",
+    ],
+    manual: {
+      secao: "8. Fluxos principais de uso",
+      trecho: "Fluxo 2b — Quem move o cliente de fase (e quando)",
+    },
+  },
+  {
+    rota: "/prontuarios/[id]",
+    titulo: "Ficha do cliente (prontuário)",
+    paraQue:
+      "Tudo do cliente num lugar só, em abas na ordem do trabalho: cadastro, jornada, clínico, plano, sessões, documentos, financeiro e histórico.",
+    quem:
+      "Cada função vê as abas do seu trabalho: a recepção não vê os dados de saúde, e o dentista vê só os pacientes dele.",
+    passos: [
+      "Os dados pessoais ficam na aba **Cadastro**. A ficha abre só para leitura; para mudar, **Editar**.",
+      "Para marcar um horário, **Novo agendamento**, no alto da ficha.",
+      "A aba **Jornada** mostra a fase, o tempo nela e o pilar do tratamento.",
+      "A aba **Plano** traz as opções de tratamento — é ali que o Coordenador aprova ou reprova cada opção.",
+      "Em **Sessões & Procedimentos**, o que foi planejado e o que já foi feito. Em **Financeiro**, as cobranças: o número vermelho na aba é o que está em atraso.",
+      "O **Histórico** mostra os agendamentos, as unidades e as alterações do cadastro.",
+    ],
+    atencao: [
+      "Abrir a ficha fica registrado (exigência da LGPD): olhar é registrado, mas não chama o paciente.",
+      "Falta uma aba? Ela depende da sua função — não é defeito.",
+    ],
+    manual: { secao: "6. Scripts de treinamento por função", trecho: "6.1. Recepcionista" },
+    naoVale: ["/prontuarios/novo"],
+  },
 ];
 
 function casa(rota: string, caminho: string): boolean {
@@ -143,7 +236,7 @@ function casa(rota: string, caminho: string): boolean {
 /** A ajuda da tela deste endereço, ou `null` quando ainda não foi escrita. */
 export function ajudaDaTela(caminho: string): AjudaDaTela | null {
   const limpo = caminho.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
-  return AJUDAS.find((a) => casa(a.rota, limpo)) ?? null;
+  return AJUDAS.find((a) => casa(a.rota, limpo) && !a.naoVale?.includes(limpo)) ?? null;
 }
 
 /** O endereço do manual aberto na seção (e rolado até o trecho) desta ajuda. */

@@ -1,7 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 14/10/2026 · Versão do sistema: **0.320.0** · Última migração: **0297** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 15/10/2026 · Versão do sistema: **0.321.0** · Última migração: **0297** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 📊 0.321.0 (sem migração) — TOTAIS ACIMA DE 1.000, AGENDA DO RECESSO, BUSCA E AJUDA (15/10/2026)
+>
+> Resto do lote que o dono escolheu no BACKLOG:
+>
+> - **AP47 — totais acima de 1.000.** Relatórios, painel de relatos,
+>   inadimplência dos Prontuários, Planos, Planejamento e Risartanos leem em
+>   páginas; listas de ids grandes vão em lotes de 150 (`lerPorLotes`, em
+>   `paginar.ts` — um `.in()` com milhares de ids estoura o endereço).
+>   Leitura que falha = aviso vermelho. ⚠️ **Régua nova:** nenhum
+>   `.limit` acima de 1.000 em `src/app`/`src/lib` (a API corta ali) —
+>   `limite-da-api.test.ts`. Catálogos ficam em 1.000 de propósito.
+> - **AP41 — a agenda segue a regra escrita** (decisão do dono): dia fechado
+>   pelo Planejamento anual + horário avulso = só a janela do avulso; período
+>   da rede travado bloqueia. ⚠️ **Uma regra só, `situacaoDoPlanoNoDia`**,
+>   para a validação e para a lista de próximos horários — que antes nem lia
+>   o plano.
+> - **AP45 — busca em mais 13 listas** (Auditoria, prontuário, venda direta,
+>   PPR+, avaliação de qualidade, Atendimento, Agenda do Comercial). Dentro de
+>   filtro, `aplicaAoEscolher` envia o formulário. Empresarial fica para a
+>   sessão dele.
+> - **Ajuda (?)** escrita para Agenda, Atendimento, Jornada e a ficha do
+>   cliente. ⚠️ Rota com `[id]` declara as pastas vizinhas em `naoVale`
+>   (`/prontuarios/novo` não é ficha) — a régua confere pelo disco.
+>
 > ## 🔐 0.320.0 / 0296 + 0297 — AP42 LIBERADO NO BANCO; FINANCEIRO SEM LOGIN (15/10/2026)
 >
 > **AP42 (decisão do dono: liberar no banco).** Duas réguas novas, POR NOME

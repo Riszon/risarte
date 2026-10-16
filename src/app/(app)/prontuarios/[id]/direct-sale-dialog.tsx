@@ -22,6 +22,7 @@ import type {
 } from "./direct-sale-loader";
 import { createDirectSaleFromChart } from "./direct-sale-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 const inputClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -204,25 +205,29 @@ export function DirectSaleDialog({
               Procedimentos (só aparecem os que você pode lançar)
             </p>
             <div className="flex gap-2">
-              <select
+              {/* AP45: o catálogo da rede cresce — com busca. O rótulo é o mesmo
+                  de antes (preço, preço da unidade, benefício do programa). */}
+              <ListaComBusca
+                aria-label="Adicionar procedimento"
                 value={picking}
-                onChange={(e) => addLine(e.target.value)}
-                className={inputClass}
-              >
-                <option value="">Adicionar procedimento...</option>
-                {procedures.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} — {formatBRL(p.unitPriceCents)}
-                    {p.isUnitPrice ? " (preço da unidade)" : ""}
-                    {p.programDiscountCents > 0
-                      ? p.programDiscountCents >= p.unitPriceCents
-                        ? " · SEM CUSTO pelo programa"
-                        : ` · -${formatBRL(p.programDiscountCents)} pelo programa`
-                      : ""}
-                    {p.benefitBlockedReason ? ` · ${p.benefitBlockedReason}` : ""}
-                  </option>
-                ))}
-              </select>
+                onValueChange={addLine}
+                className="w-full"
+                options={[
+                  { value: "", label: "Adicionar procedimento..." },
+                  ...procedures.map((p) => ({
+                    value: p.id,
+                    label:
+                      `${p.name} — ${formatBRL(p.unitPriceCents)}` +
+                      (p.isUnitPrice ? " (preço da unidade)" : "") +
+                      (p.programDiscountCents > 0
+                        ? p.programDiscountCents >= p.unitPriceCents
+                          ? " · SEM CUSTO pelo programa"
+                          : ` · -${formatBRL(p.programDiscountCents)} pelo programa`
+                        : "") +
+                      (p.benefitBlockedReason ? ` · ${p.benefitBlockedReason}` : ""),
+                  })),
+                ]}
+              />
             </div>
 
             {lines.length > 0 && (

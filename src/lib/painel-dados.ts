@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 import { clienteDoTreino } from "@/lib/treino";
 import { podeOlharOTreino } from "@/lib/relatos-do-treino";
 import {
@@ -58,30 +59,40 @@ async function lerRelatos(
   db: SupabaseClient,
   ambiente: "sistema" | "treino"
 ): Promise<{ linhas: LinhaDeRelato[]; ambiente: "sistema" | "treino" }> {
-  const { data, error } = await db
-    .from("system_reports")
-    .select(COLUNAS)
-    .order("created_at", { ascending: false })
-    .limit(5000);
-  if (error) throw new Error(`relatos (${ambiente}): ${error.code ?? ""}`);
-  return { linhas: (data ?? []) as unknown as LinhaDeRelato[], ambiente };
+  // AP47: pedia 5.000 e a API devolve no máximo 1.000 — o painel CONTA o que
+  // vem. Em páginas, na ordem estável (data, id).
+  const leitura = await lerTodasAsPaginas<LinhaDeRelato>((de, ate) =>
+    db
+      .from("system_reports")
+      .select(COLUNAS)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(de, ate)
+      .returns<LinhaDeRelato[]>()
+  );
+  if (!leitura.ok) throw new Error(`relatos (${ambiente}): ${leitura.error.message}`);
+  return { linhas: leitura.linhas, ambiente };
 }
 
 async function lerRespostas(
   db: SupabaseClient,
   desde: string
 ): Promise<{ created_at: string; system_reports: { clinic_id: string } | null }[]> {
-  const { data, error } = await db
-    .from("system_report_messages")
-    .select("created_at, system_reports ( clinic_id )")
-    .eq("kind", "resposta")
-    .gte("created_at", desde)
-    .limit(5000);
-  if (error) throw new Error(`respostas: ${error.code ?? ""}`);
-  return (data ?? []) as unknown as {
-    created_at: string;
-    system_reports: { clinic_id: string } | null;
-  }[];
+  type Resposta = { created_at: string; system_reports: { clinic_id: string } | null };
+  // AP47: em páginas (a API corta em 1.000), na ordem estável (data, id).
+  const leitura = await lerTodasAsPaginas<Resposta>((de, ate) =>
+    db
+      .from("system_report_messages")
+      .select("created_at, system_reports ( clinic_id )")
+      .eq("kind", "resposta")
+      .gte("created_at", desde)
+      .order("created_at")
+      .order("id")
+      .range(de, ate)
+      .returns<Resposta[]>()
+  );
+  if (!leitura.ok) throw new Error(`respostas: ${leitura.error.message}`);
+  return leitura.linhas;
 }
 
 /** O escopo de quem abriu o painel — a mesma régua da 0258. */

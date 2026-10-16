@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Info } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { lerPorLotes, lerTodasAsPaginas } from "@/lib/paginar";
 import {
   BRAZIL_TIME_ZONE,
   addDaysIso,
@@ -148,20 +149,28 @@ export default async function PlanningCenterPage(
 
   // Cases in the Planning Center (Fase 3) and those already sent to the
   // Comercial (Fase 4). RLS limits to the units the Planner can see.
-  let clientsQuery = supabase
-    .from("clients")
-    .select(
-      "id, full_name, code, status, clinic_id, journey_phase, methodology_pillar, phase_entered_at, clinics!clients_clinic_id_fkey ( name )"
-    )
-    .in("journey_phase", ["planning_center", "commercial_conversion"])
-    .neq("status", "anonymized")
-    .limit(1000);
-  if (range.from) clientsQuery = clientsQuery.gte("phase_entered_at", range.from);
-  if (range.to) clientsQuery = clientsQuery.lte("phase_entered_at", range.to);
-  if (unidade) clientsQuery = clientsQuery.eq("clinic_id", unidade);
-  if (pilar) clientsQuery = clientsQuery.eq("methodology_pillar", pilar);
-
-  const { data: clients } = await clientsQuery.returns<QueueClient[]>();
+  //
+  // ⚠️ AP47: esta leitura parava em 1.000 clientes, e as de baixo mandavam
+  // TODOS os ids no endereço da chamada — com mil ids, ele passa do tamanho
+  // que o servidor aceita, e as apresentações e os planos voltariam vazios sem
+  // aviso. Agora: clientes em páginas; o resto em lotes de ids, cada lote em
+  // páginas (`lerPorLotes`, a mesma leitura da Jornada).
+  const leituraDosClientes = await lerTodasAsPaginas<QueueClient>((de, ate) => {
+    let q = supabase
+      .from("clients")
+      .select(
+        "id, full_name, code, status, clinic_id, journey_phase, methodology_pillar, phase_entered_at, clinics!clients_clinic_id_fkey ( name )"
+      )
+      .in("journey_phase", ["planning_center", "commercial_conversion"])
+      .neq("status", "anonymized");
+    if (range.from) q = q.gte("phase_entered_at", range.from);
+    if (range.to) q = q.lte("phase_entered_at", range.to);
+    if (unidade) q = q.eq("clinic_id", unidade);
+    if (pilar) q = q.eq("methodology_pillar", pilar);
+    return q.order("id").range(de, ate).returns<QueueClient[]>();
+  });
+  if (!leituraDosClientes.ok) console.error("planejamento — clientes:", leituraDosClientes.error.message);
+  const clients = leituraDosClientes.ok ? leituraDosClientes.linhas : null;
   const ids = (clients ?? []).map((c) => c.id);
 
   // H3.13: unidades para o filtro (RLS limita às visíveis pelo Planner).
@@ -173,49 +182,57 @@ export default async function PlanningCenterPage(
     .order("name");
 
   const nowIso = new Date().toISOString();
-  const [{ data: presentations }, { data: planRows }, { data: slaRows }, { data: supRows }] =
-    await Promise.all([
-      ids.length > 0
-        ? supabase
-            .from("appointments")
-            .select("client_id, starts_at")
-            .in("client_id", ids)
-            .eq("type", "commercial_presentation")
-            .in("status", ["scheduled", "confirmed"])
-            .gte("starts_at", nowIso)
-            .order("starts_at")
-            .returns<{ client_id: string; starts_at: string }[]>()
-        : Promise.resolve({ data: [] as { client_id: string; starts_at: string }[] }),
-      ids.length > 0
-        ? supabase
-            .from("treatment_plans")
-            .select("client_id, status, created_at")
-            .in("client_id", ids)
-            .order("created_at", { ascending: false })
-            .returns<
-              { client_id: string; status: TreatmentPlanStatus; created_at: string }[]
-            >()
-        : Promise.resolve({
-            data: [] as {
-              client_id: string;
-              status: TreatmentPlanStatus;
-              created_at: string;
-            }[],
-          }),
+  type Apresentacao = { client_id: string; starts_at: string };
+  type PlanoDaFila = { client_id: string; status: TreatmentPlanStatus; created_at: string };
+  // Dentro de cada lote a ordem é a que a conta abaixo usa (a apresentação
+  // mais próxima; o plano mais novo) — e os lotes não dividem cliente.
+  const [leAp, lePl, { data: slaRows }, leSup] = await Promise.all([
+    lerPorLotes<Apresentacao>(ids, (lote, de, ate) =>
       supabase
-        .from("sla_settings")
-        .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
-        .returns<SlaSettingRow[]>(),
-      // H3.11: clientes com informação complementar ainda não vista pelo Planner.
-      ids.length > 0
-        ? supabase
-            .from("planning_supplements")
-            .select("client_id")
-            .in("client_id", ids)
-            .is("seen_at", null)
-            .returns<{ client_id: string }[]>()
-        : Promise.resolve({ data: [] as { client_id: string }[] }),
-    ]);
+        .from("appointments")
+        .select("client_id, starts_at")
+        .in("client_id", lote)
+        .eq("type", "commercial_presentation")
+        .in("status", ["scheduled", "confirmed"])
+        .gte("starts_at", nowIso)
+        .order("starts_at")
+        .order("id")
+        .range(de, ate)
+        .returns<Apresentacao[]>()
+    ),
+    lerPorLotes<PlanoDaFila>(ids, (lote, de, ate) =>
+      supabase
+        .from("treatment_plans")
+        .select("client_id, status, created_at")
+        .in("client_id", lote)
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, ate)
+        .returns<PlanoDaFila[]>()
+    ),
+    supabase
+      .from("sla_settings")
+      .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
+      .returns<SlaSettingRow[]>(),
+    // H3.11: clientes com informação complementar ainda não vista pelo Planner.
+    lerPorLotes<{ client_id: string }>(ids, (lote, de, ate) =>
+      supabase
+        .from("planning_supplements")
+        .select("client_id")
+        .in("client_id", lote)
+        .is("seen_at", null)
+        .order("id")
+        .range(de, ate)
+        .returns<{ client_id: string }[]>()
+    ),
+  ]);
+  for (const l of [leAp, lePl, leSup]) {
+    if (!l.ok) console.error("planejamento — leitura:", l.error.message);
+  }
+  const leituraFalhou = !clients || !leAp.ok || !lePl.ok || !leSup.ok;
+  const presentations = leAp.ok ? leAp.linhas : [];
+  const planRows = lePl.ok ? lePl.linhas : [];
+  const supRows = leSup.ok ? leSup.linhas : [];
 
   const presentationByClient = new Map<string, string>();
   for (const p of presentations ?? []) {
@@ -276,6 +293,13 @@ export default async function PlanningCenterPage(
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+      {leituraFalhou && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          Não foi possível ler toda a fila agora — os números e a lista abaixo
+          podem estar incompletos. Recarregue a página; se continuar, avise pelo
+          Relatar um problema.
+        </p>
+      )}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Centro de Planejamento

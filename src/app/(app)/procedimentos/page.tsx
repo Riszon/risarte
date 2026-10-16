@@ -114,7 +114,9 @@ export default async function ProceduresPage(
       .select("name")
       .eq("is_active", true)
       .order("name")
-      .limit(2000)
+      // A API devolve no máximo 1.000 (AP35); pedir 2.000 só escondia isso.
+      // São SUGESTÕES de nome — o catálogo da rede tem centenas de itens.
+      .limit(1000)
       .returns<{ name: string }[]>(),
     supabase
       .from("clinics")

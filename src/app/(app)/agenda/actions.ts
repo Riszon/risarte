@@ -41,6 +41,7 @@ import {
   mapPlanItem,
   PLAN_ITEM_LABELS,
   type PlanItemRow,
+  situacaoDoPlanoNoDia,
 } from "@/lib/annual-plan";
 import { holidayOn } from "@/lib/holidays";
 
@@ -441,8 +442,8 @@ async function checkAgendaRules(
     .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
     .lte("starts_date", date)
     .gte("ends_date", date);
-  for (const r of planRows ?? []) {
-    const item = mapPlanItem(r as PlanItemRow);
+  const itensDoPlano = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
+  for (const item of itensDoPlano) {
     if (item.type === "campaign") continue; // campanha é informativa, não fecha.
     if (item.type === "individual_vacation") {
       if (providerId && item.userIds.includes(providerId)) {
@@ -534,8 +535,18 @@ async function checkAgendaRules(
   }
   // AJ7: janela efetiva do dia — dia avulso num dia NORMAL estende o horário
   // (une); num dia fechado usa a janela própria.
+  // ⚠️ AP41: dia FECHADO pelo Planejamento Anual (recesso, evento,
+  // treinamento…) NÃO é dia normal, mesmo caindo num dia útil — com dia
+  // avulso, vale só a janela do avulso (regra escrita; decisão do dono).
+  const { fechaODia: fechadoPeloPlano } = situacaoDoPlanoNoDia(
+    itensDoPlano,
+    date,
+    providerId || null,
+    false
+  );
   const isNormalDay =
-    cfg.weekdays.includes(weekday) || holidayDecision?.will_attend === true;
+    (cfg.weekdays.includes(weekday) || holidayDecision?.will_attend === true) &&
+    !fechadoPeloPlano;
   const { open: openHHMM, close: closeHHMM } = effectiveDayHours(
     cfg.openTime,
     cfg.closeTime,
@@ -2329,6 +2340,7 @@ export async function getNextAvailableSlots(params: {
     { data: openDayRows },
     { data: holidayRows },
     { data: apptRows },
+    { data: planRows },
   ] = await Promise.all([
     supabase
       .from("clinic_agenda_settings")
@@ -2362,7 +2374,18 @@ export async function getNextAvailableSlots(params: {
       .eq("clinic_id", clinicId)
       .gte("starts_at", startIso)
       .lt("starts_at", endIso),
+    // AP41: o Planejamento Anual da unidade E da rede, na janela — sem ele, a
+    // lista oferecia horários num dia de recesso que o agendamento recusava.
+    supabase
+      .from("agenda_plan_items")
+      .select(
+        "id, clinic_id, type, locked, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
+      )
+      .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
+      .lte("starts_date", toIsoDate(winEnd))
+      .gte("ends_date", toIsoDate(winStart)),
   ]);
+  const itensDoPlano = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
 
   const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
   // 0268: para o ONLINE, quem manda é a jornada do consultor — senão a tela
@@ -2417,10 +2440,16 @@ export async function getNextAvailableSlots(params: {
     const special = jornadaOnline ? undefined : openDayHours.get(dateOnly);
     const dayOpen = isWeekdayOpen || Boolean(special) || (hd === true && !jornadaOnline);
     if (!dayOpen) continue;
+    // AP41: a mesma régua da validação. Férias / período da rede travado:
+    // ninguém marca. Período da unidade: fechado — só abre com dia avulso, e
+    // aí vale só a janela dele.
+    const plano = situacaoDoPlanoNoDia(itensDoPlano, dateOnly, providerUserId || null, isOnline);
+    if (plano.bloqueia) continue;
+    if (plano.fechaODia && !special) continue;
     // AJ7: dia avulso num dia NORMAL estende (une); em dia fechado usa a própria.
     const normalOpenMin = timeToMinutes((jornadaOnline ?? cfg).openTime);
     const normalCloseMin = timeToMinutes((jornadaOnline ?? cfg).closeTime);
-    const isNormalDay = isWeekdayOpen || hd === true;
+    const isNormalDay = (isWeekdayOpen || hd === true) && !plano.fechaODia;
     const openMin = special
       ? isNormalDay
         ? Math.min(normalOpenMin, special.open)

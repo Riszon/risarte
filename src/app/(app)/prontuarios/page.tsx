@@ -7,6 +7,7 @@ import {
   sdrAccessibleClientIds,
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { PhaseBadge } from "@/components/phase-badge";
@@ -262,18 +263,22 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
   const overdueByClient = new Map<string, number>();
   if (canSeeFinance) {
     const todayIso = todayInBrazil();
-    let q = supabase
-      .from("payment_installments")
-      .select("client_id, due_date, grace_days")
-      .in("status", ["em_aberto", "parcial"])
-      .lte("due_date", todayIso)
-      .limit(2000);
     const scope = isFranchisor ? clinicFilter : clinicId;
-    if (scope) q = q.eq("clinic_id", scope);
-    const { data: overdueRows } = await q.returns<
-      { client_id: string | null; due_date: string; grace_days: number | null }[]
-    >();
-    for (const row of overdueRows ?? []) {
+    type Parcela = { client_id: string | null; due_date: string; grace_days: number | null };
+    // AP47: pedia 2.000 e a API devolve no máximo 1.000 — e isto CONTA as
+    // parcelas atrasadas de cada cliente. Em páginas, na ordem estável por id.
+    const leitura = await lerTodasAsPaginas<Parcela>((de, ate) => {
+      let q = supabase
+        .from("payment_installments")
+        .select("client_id, due_date, grace_days")
+        .in("status", ["em_aberto", "parcial"])
+        .lte("due_date", todayIso);
+      if (scope) q = q.eq("clinic_id", scope);
+      return q.order("id").range(de, ate).returns<Parcela[]>();
+    });
+    if (!leitura.ok) console.error("prontuários — parcelas em atraso:", leitura.error.message);
+    const overdueRows = leitura.ok ? leitura.linhas : [];
+    for (const row of overdueRows) {
       // A carência é a congelada na parcela (mesma conta da ficha).
       if (!row.client_id) continue;
       if (daysLate(row.due_date, todayIso, row.grace_days ?? 0) <= 0) continue;

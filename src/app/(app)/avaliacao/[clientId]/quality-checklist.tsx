@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import {
   requestItemScheduling,
   requestQualityScheduling,
@@ -35,9 +36,6 @@ export type QualityItem = {
   /** Estado das sessões: só "done" (finalizado) pode ser avaliado. */
   procState: "open" | "scheduled" | "done";
 };
-
-const selectClass =
-  "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 const RESOLUTIONS: { value: QualityResolution; label: string }[] = [
   { value: "redo_same", label: "O mesmo dentista refaz o procedimento" },
@@ -291,18 +289,16 @@ export function QualityChecklist({
                 <label className="block text-xs text-muted-foreground">
                   Dentista que executou (revisa o procedimento):
                 </label>
-                <select
+                <ListaComBusca
+                  aria-label="Dentista"
                   value={executorId}
-                  onChange={(e) => setExecutorId(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Selecione o dentista</option>
-                  {dentists.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setExecutorId}
+                  className="w-full"
+                  options={[
+                    { value: "", label: "Selecione o dentista" },
+                    ...dentists.map((d) => ({ value: d.id, label: d.name })),
+                  ]}
+                />
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -384,18 +380,16 @@ export function QualityChecklist({
                 <label className="block text-xs text-muted-foreground">
                   Dentista que executou:
                 </label>
-                <select
+                <ListaComBusca
+                  aria-label="Dentista"
                   value={executorId}
-                  onChange={(e) => setExecutorId(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Selecione o dentista</option>
-                  {dentists.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setExecutorId}
+                  className="w-full"
+                  options={[
+                    { value: "", label: "Selecione o dentista" },
+                    ...dentists.map((d) => ({ value: d.id, label: d.name })),
+                  ]}
+                />
               </div>
             )}
             {resolution === "redo_other" && (
@@ -403,18 +397,16 @@ export function QualityChecklist({
                 <label className="block text-xs text-muted-foreground">
                   Dentista que vai refazer:
                 </label>
-                <select
+                <ListaComBusca
+                  aria-label="Dentista"
                   value={assignedId}
-                  onChange={(e) => setAssignedId(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Selecione o dentista</option>
-                  {dentists.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setAssignedId}
+                  className="w-full"
+                  options={[
+                    { value: "", label: "Selecione o dentista" },
+                    ...dentists.map((d) => ({ value: d.id, label: d.name })),
+                  ]}
+                />
               </div>
             )}
             {resolution === "replan" && (

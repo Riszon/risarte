@@ -13,6 +13,7 @@ import {
   type PprBenefitType,
 } from "@/lib/ppr/constants";
 import { removePprBenefit, savePprBenefit } from "../actions";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 export type PprBenefitRow = {
   id: string;
@@ -214,18 +215,17 @@ function BenefitForm({
         {scope === "procedure" ? (
           <label className="text-xs">
             <span className="text-muted-foreground">Procedimento</span>
-            <select
+            {/* AP45: com busca — o catálogo da rede cresce. */}
+            <ListaComBusca
               name="procedureId"
               defaultValue={benefit?.procedure_id ?? ""}
-              className={selectClass}
-            >
-              <option value="">Escolha o procedimento</option>
-              {procedures.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              aria-label="Procedimento"
+              className="w-full"
+              options={[
+                { value: "", label: "Escolha o procedimento" },
+                ...procedures.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
           </label>
         ) : (
           <label className="text-xs">

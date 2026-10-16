@@ -9,6 +9,7 @@ import {
   auditEntityLabel,
 } from "@/lib/audit-labels";
 import { formatarDetalhe, rotuloDoDetalhe } from "@/lib/auditoria-alteracoes";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import {
   CLASSE_DO_SELECT,
   dataEHora,
@@ -88,14 +89,15 @@ export async function VisaoAcoes({
     <div className="space-y-4">
       <FilterForm className="flex flex-wrap items-center gap-2">
         <input type="hidden" name="visao" value="acoes" />
-        <select name="colaborador" defaultValue={colaborador} className={CLASSE_DO_SELECT}>
-          <option value="">Todas as pessoas</option>
-          {pessoas.opcoes.map((u) => (
-            <option key={u.value} value={u.value}>
-              {u.label}
-            </option>
-          ))}
-        </select>
+        {/* AP45: a lista de pessoas cresce com a rede — com busca. */}
+        <ListaComBusca
+          name="colaborador"
+          defaultValue={colaborador}
+          aplicaAoEscolher
+          aria-label="Pessoa"
+          className="w-64"
+          options={[{ value: "", label: "Todas as pessoas" }, ...pessoas.opcoes]}
+        />
         <select name="acao" defaultValue={acao} className={CLASSE_DO_SELECT}>
           <option value="">Todas as ações</option>
           {AUDIT_ACTION_OPTIONS.map((a) => (

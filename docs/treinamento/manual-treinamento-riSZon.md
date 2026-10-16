@@ -899,7 +899,7 @@ coisa, quem manda é este.
 | Sino | **Notificações**, com o número de avisos não lidos |
 | Triângulo | **Alertas do sistema** — o que o financeiro e o estoque estão avisando |
 | Boia | **Relatar um problema** — abre um painel ao lado da tela em que você está. Dali também se chega aos relatos e respostas. **Tem número** (veja abaixo) |
-| Ponto de interrogação **?** | **Ajuda desta tela** — abre ao lado o passo a passo da tela em que você está: para que serve, quem faz, os passos com o nome dos botões e o que costuma confundir, com o link para a parte do manual que explica. Desde a versão 0.318.0; começa pelas telas de **Compras** e vai sendo escrito tela a tela — onde ainda não há, ele diz isso e oferece o manual |
+| Ponto de interrogação **?** | **Ajuda desta tela** — abre ao lado o passo a passo da tela em que você está: para que serve, quem faz, os passos com o nome dos botões e o que costuma confundir, com o link para a parte do manual que explica. Desde a versão 0.318.0; já escrito para **Compras**, **Agenda**, **Atendimento**, **Jornada** e a **ficha do cliente** (desde a 0.321.0), e vai sendo escrito tela a tela — onde ainda não há, ele diz isso e oferece o manual |
 | Livro | **Manual** — este texto, sempre na versão que está no ar |
 
 > **O número da boia não quer dizer a mesma coisa para todo mundo.** Para o
@@ -1365,6 +1365,16 @@ trabalha. **Duração estimada:** 60 minutos.
 3. Preencha o resto: tipo, profissional, sala, duração, data e horário.
 4. **O sistema recusa** horário fora do funcionamento da unidade, dia fechado ou
    sala lotada — exceto urgência/emergência.
+
+> **Recesso com horário avulso: vale só o avulso** (desde a versão 0.321.0).
+> Num dia fechado pelo **Planejamento anual** — recesso, férias coletivas,
+> evento, treinamento ou manutenção —, liberar um horário avulso abre **só a
+> janela dele**: liberar das 08h às 12h numa segunda de recesso abre das 08h
+> às 12h, e não a segunda inteira. A lista de **Próximos horários disponíveis**
+> segue a mesma regra. Período lançado pela **rede com trava** não abre nem com
+> horário avulso; e as férias de um profissional fecham só a agenda dele.
+> (Antes, a agenda tratava o dia de recesso como dia normal e aceitava o
+> horário inteiro — contrariando a regra combinada para o horário avulso.)
 5. **Resultado esperado:** a janela fecha e o horário aparece na agenda.
 
 > **Quem atende depende do tipo.** Numa Avaliação o sistema oferece só o
@@ -1999,12 +2009,23 @@ O filtro de **fornecedor** de Contas a pagar e o de **centro de custo** da
 **DRE** e do **Ponto de equilíbrio** também têm a busca, e aplicam assim que
 se escolhe.
 
+**Fora desses módulos (desde a versão 0.321.0)**, as mesmas listas que crescem
+com a rede também ganharam a busca:
+
+- a **pessoa**, nos filtros da **Auditoria** (todas as abas que filtram por
+  pessoa) — escolheu, o filtro aplica;
+- o **procedimento do catálogo**, no plano de tratamento do prontuário, na
+  **venda direta** e nos **benefícios** do PPR+;
+- o **dentista**, na avaliação de qualidade da reavaliação e nos filtros das
+  abas de procedimentos e de tratamento da ficha;
+- o **profissional**, no filtro do **Atendimento** — escolheu, o filtro aplica.
+
 **Continuam como eram, de propósito:** as listas curtas (unidade de medida,
 tipo de movimento, mês, conta bancária), em que rolar é mais rápido que
 digitar.
 
 **Evidência:** `src/components/ui/lista-com-busca.tsx` e `src/lib/busca.ts`;
-EV-171 e EV-172.
+EV-171, EV-172 e EV-182.
 
 ---
 
@@ -2446,6 +2467,16 @@ exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
 > problema com o código da adesão**, para o valor ser acertado. (Antes, nesse
 > mesmo caso, o sistema gravava a mensalidade como se não houvesse dependente
 > nenhum — e a adesão passava a cobrar menos, sem ninguém saber.)
+
+> **Nas telas de números: "Não foi possível ler … agora"** (desde a versão
+> 0.321.0). Em **Relatórios**, **Centro de Planejamento** e **Planos de
+> Tratamento**, se a leitura de uma parte dos dados falhar, a tela mostra um
+> aviso vermelho no alto — *"Não foi possível ler todos os dados agora — os
+> números abaixo podem estar incompletos"* — em vez de mostrar uma conta pela
+> metade como se fosse a inteira. Recarregue a página; se continuar, relate o
+> problema. Essas telas também
+> passaram a somar **todos** os registros: antes, acima de 1.000, a conta
+> parava em 1.000 sem aviso.
 
 ---
 

@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fullAccessClinicIds, type SessionContext } from "@/lib/auth";
 import { isTreino } from "@/lib/environment";
+import { lerPorLotes, lerTodasAsPaginas } from "@/lib/paginar";
 import {
   ROLE_LABELS,
   type ClinicType,
@@ -186,25 +187,41 @@ export async function carregarAcessos(
   const mapa = new Map<string, StaffAccess>();
   if (userIds.length === 0) return mapa;
 
-  const [{ data: perfis }, { data: papeis }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name, email, is_active, is_admin_master")
-      .in("id", userIds)
-      .returns<PerfilRow[]>(),
-    supabase
-      .from("user_clinic_roles")
-      .select("user_id, role, clinic_id, clinics ( name )")
-      .in("user_id", userIds)
-      .returns<
-        {
-          user_id: string;
-          role: UserRole;
-          clinic_id: string;
-          clinics: { name: string } | null;
-        }[]
-      >(),
+  type PapelRow = {
+    user_id: string;
+    role: UserRole;
+    clinic_id: string;
+    clinics: { name: string } | null;
+  };
+  // AP47: os ids iam TODOS no endereço da chamada e cada resposta para em
+  // 1.000 linhas — com a rede crescendo, a lista de acessos sairia cortada.
+  // Em lotes de ids, cada lote em páginas (`lerPorLotes`).
+  const [lePerfis, lePapeis] = await Promise.all([
+    lerPorLotes<PerfilRow>(userIds, (lote, de, ate) =>
+      supabase
+        .from("profiles")
+        .select("id, full_name, email, is_active, is_admin_master")
+        .in("id", lote)
+        .order("id")
+        .range(de, ate)
+        .returns<PerfilRow[]>()
+    ),
+    lerPorLotes<PapelRow>(userIds, (lote, de, ate) =>
+      supabase
+        .from("user_clinic_roles")
+        .select("user_id, role, clinic_id, clinics ( name )")
+        .in("user_id", lote)
+        .order("user_id")
+        .order("clinic_id")
+        .range(de, ate)
+        .returns<PapelRow[]>()
+    ),
   ]);
+  for (const l of [lePerfis, lePapeis]) {
+    if (!l.ok) console.error("risartanos — acessos:", l.error.message);
+  }
+  const perfis = lePerfis.ok ? lePerfis.linhas : [];
+  const papeis = lePapeis.ok ? lePapeis.linhas : [];
 
   const unidadesPorUsuario = new Map<
     string,
@@ -280,19 +297,18 @@ export async function carregarEquipe(
   // mostra o Risartano a quem gere QUALQUER unidade onde ele tem acesso.
   // Filtrar pela "unidade de origem" aqui esconderia os multi-unidade.
   // No treino a lista é a da produção: só o cadastro que veio de lá (0260).
-  let cadastrosQuery = supabase
-    .from("staff_members")
-    .select(COLUNAS)
-    .order("full_name")
-    .limit(2000);
-  if (isTreino()) cadastrosQuery = cadastrosQuery.not("mirrored_at", "is", null);
-
-  const [{ data: unidades }, { data: linhas }] = await Promise.all([
+  // AP47: pedia 2.000 e a API devolve no máximo 1.000 — com 200 unidades a
+  // equipe passa disso. Em páginas, na ordem estável (nome, id).
+  const [{ data: unidades }, leituraDosCadastros] = await Promise.all([
     unidadesQuery.returns<{ id: string; name: string }[]>(),
-    cadastrosQuery.returns<StaffRow[]>(),
+    lerTodasAsPaginas<StaffRow>((de, ate) => {
+      let q = supabase.from("staff_members").select(COLUNAS);
+      if (isTreino()) q = q.not("mirrored_at", "is", null);
+      return q.order("full_name").order("id").range(de, ate).returns<StaffRow[]>();
+    }),
   ]);
-
-  const cadastros = linhas ?? [];
+  if (!leituraDosCadastros.ok) console.error("risartanos — cadastros:", leituraDosCadastros.error.message);
+  const cadastros = leituraDosCadastros.ok ? leituraDosCadastros.linhas : [];
   const acessos = await carregarAcessos(
     supabase,
     [...new Set(cadastros.filter((r) => r.user_id).map((r) => r.user_id!))]

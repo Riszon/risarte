@@ -26,6 +26,7 @@ import {
   type Pessoas,
 } from "./comum";
 import { LinhaDaAlteracao } from "./linha-da-alteracao";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import {
   COLUNAS_DO_ACESSO,
   TabelaDeAcessos,
@@ -70,14 +71,15 @@ export async function VisaoPessoa({
   const filtro = (
     <FilterForm className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="visao" value="pessoa" />
-      <select name="colaborador" defaultValue={colaborador} className={CLASSE_DO_SELECT}>
-        <option value="">Escolha a pessoa…</option>
-        {pessoas.opcoes.map((u) => (
-          <option key={u.value} value={u.value}>
-            {u.label}
-          </option>
-        ))}
-      </select>
+      {/* AP45: a lista de pessoas cresce com a rede — com busca. */}
+      <ListaComBusca
+        name="colaborador"
+        defaultValue={colaborador}
+        aplicaAoEscolher
+        aria-label="Pessoa"
+        className="w-64"
+        options={[{ value: "", label: "Escolha a pessoa…" }, ...pessoas.opcoes]}
+      />
       <input
         type="date"
         name="dia"

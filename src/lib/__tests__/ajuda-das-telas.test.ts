@@ -38,6 +38,33 @@ describe("a ajuda de cada tela", () => {
     }
   });
 
+  it("e as mais usadas no dia a dia (escolha do dono, 15/10/2026)", () => {
+    for (const r of ["/agenda", "/atendimento", "/jornada", "/prontuarios/[id]"]) {
+      expect(AJUDAS.some((a) => a.rota === r), r).toBe(true);
+    }
+    expect(ajudaDaTela("/prontuarios/0b6c-qualquer-id")?.rota).toBe("/prontuarios/[id]");
+    expect(ajudaDaTela("/prontuarios/0b6c?aba=plano")?.rota).toBe("/prontuarios/[id]");
+    expect(ajudaDaTela("/prontuarios")).toBeNull();
+    expect(ajudaDaTela("/agenda/configuracao")).toBeNull();
+  });
+
+  it("rota com [id] não pega a tela vizinha (/prontuarios/novo não é uma ficha)", () => {
+    expect(ajudaDaTela("/prontuarios/novo")).toBeNull();
+    // Toda pasta vizinha de um [id] tem de estar declarada: tela nova ao lado
+    // passaria a mostrar a ajuda da ficha sem ninguém perceber.
+    const dinamicas = AJUDAS.filter((a) => /\/\[[^/]+\]/.test(a.rota));
+    expect(dinamicas.length).toBeGreaterThan(0);
+    for (const a of dinamicas) {
+      const partes = a.rota.split("/").filter(Boolean);
+      const i = partes.findIndex((p) => /^\[.+\]$/.test(p));
+      const pai = join(APP, ...partes.slice(0, i));
+      const vizinhas = readdirSync(pai, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && !/^\[.+\]$/.test(d.name))
+        .map((d) => "/" + [...partes.slice(0, i), d.name].join("/"));
+      for (const v of vizinhas) expect(a.naoVale ?? [], `${a.rota} pegaria ${v}`).toContain(v);
+    }
+  });
+
   it.each(AJUDAS.map((a) => [a.rota, a]))("%s: a tela existe em src/app", (_rota, a) => {
     const pasta = join(APP, ...a.rota.split("/").filter(Boolean));
     expect(existsSync(join(pasta, "page.tsx"))).toBe(true);

@@ -390,6 +390,31 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**15/10/2026 (fim da noite) — PC Administrador (core 0.320.0 → 0.321.0, sem migração)**
+
+- **Resto do lote do BACKLOG (escolha do dono): AP47, AP41, AP45 e a ajuda
+  das telas** — todos resolvidos.
+- ⚠️ **A API CORTA EM 1.000 — régua nova** (`limite-da-api.test.ts`):
+  `.limit` acima de 1.000 reprova; tela que soma lê em páginas
+  (`lerTodasAsPaginas`), e lista grande de ids vai em lotes
+  (`lerPorLotes`). Leitura que falha vira aviso, nunca número pela metade.
+- ⚠️ **AGENDA x PLANEJAMENTO ANUAL: uma regra só** (`situacaoDoPlanoNoDia`).
+  Ao mexer na validação do agendamento ou nos próximos horários, usar ela —
+  duas réguas para o mesmo dia é como uma oferece o que a outra recusa.
+- ⚠️ **`ListaComBusca` dentro de `FilterForm` precisa de
+  `aplicaAoEscolher`** — o campo escondido não avisa a mudança e o filtro
+  não aplicaria.
+- ⚠️ **Ajuda de rota com `[id]`:** declarar as pastas vizinhas em
+  `naoVale` (a régua lê o disco).
+- **Visto na tela** (treino, Admin de teste): a pessoa da Auditoria — digitar
+  filtra, Enter escolhe e o filtro aplica (⚠️ no servidor de desenvolvimento
+  leva mais de 5 s; esperar antes de concluir "não aplicou" — eu quase
+  concluí). `check:telas`: 1.024 aberturas, só a AP31.
+- **Não visto na tela:** as outras listas novas, o painel ? das quatro telas e
+  o recesso com avulso — presos por teste (20 quebras de propósito
+  reprovadas). E2E do planejamento ajustado e **não rodado**.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **15/10/2026 (noite) — PC Administrador (core 0.319.0 → 0.320.0, migrações 0296 e 0297)**
 
 - **AP42 (0296, decisão do dono: liberar no banco).** ⚠️ Réguas POR NOME

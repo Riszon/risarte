@@ -19,6 +19,7 @@ import {
   type AgendaSettingRow,
 } from "@/lib/agenda-settings";
 import type { JourneyPhase } from "@/lib/journey";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import {
   AttendancePanel,
   type PanelAppointment,
@@ -934,19 +935,19 @@ export default async function AtendimentoPage(
               </option>
             ))}
           </select>
+          {/* AP45: com busca; escolheu, o filtro aplica (como o <select>). */}
           {!consultantView && providerOptions.length > 0 && (
-            <select
+            <ListaComBusca
               name="profissional"
               defaultValue={providerFilter}
-              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-            >
-              <option value="">Todos os profissionais</option>
-              {providerOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              aplicaAoEscolher
+              aria-label="Profissional"
+              className="h-8 w-56"
+              options={[
+                { value: "", label: "Todos os profissionais" },
+                ...providerOptions.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
           )}
           {consultantView && consultantUnits.length > 0 && (
             <select

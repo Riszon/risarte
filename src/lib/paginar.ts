@@ -52,3 +52,33 @@ export async function lerTodasAsPaginas<T>(
     },
   };
 }
+
+/** Quantos ids vão num `.in()` de cada vez: a lista viaja no endereço da chamada. */
+export const IDS_POR_LOTE = 150;
+
+/**
+ * Para consultas `.in(coluna, ids)`: lê em LOTES de ids e cada lote em PÁGINAS.
+ *
+ * Os dois cortes são diferentes e os dois calam: a lista de ids vai no
+ * endereço (com mil ids ele passa do tamanho que o servidor aceita), e cada
+ * resposta volta com no máximo 1.000 linhas (AP35). A Jornada (OC-00074) e o
+ * Centro de Planejamento (AP47) fazem a mesma leitura — daí uma peça só.
+ *
+ * Erro em qualquer lote devolve erro, nunca o que deu para ler até ali.
+ */
+export async function lerPorLotes<T>(
+  ids: readonly string[],
+  buscar: (lote: string[], de: number, ate: number) => PromiseLike<Pagina<T>>,
+  tamanhoDoLote: number = IDS_POR_LOTE
+): Promise<TudoLido<T>> {
+  const linhas: T[] = [];
+  let paginas = 0;
+  for (let i = 0; i < ids.length; i += tamanhoDoLote) {
+    const lote = ids.slice(i, i + tamanhoDoLote);
+    const r = await lerTodasAsPaginas<T>((de, ate) => buscar(lote, de, ate));
+    if (!r.ok) return r;
+    linhas.push(...r.linhas);
+    paginas += r.paginas;
+  }
+  return { ok: true, linhas, paginas };
+}

@@ -165,3 +165,66 @@ describe("as listas longas de Compras, Estoque e Financeiro têm busca", () => {
     expect(longas).toEqual([]);
   });
 });
+
+// AP45 (decisão do dono, 15/10/2026: "busca nas outras listas longas"): as
+// listas que crescem com a rede FORA de Compras/Estoque/Financeiro — pessoas na
+// Auditoria, procedimentos no prontuário e nos benefícios, dentistas e
+// profissionais. Cada par diz a tela e a lista que não pode voltar a ser nativa.
+// Ficaram nativas, de propósito, as caixinhas miúdas dentro de uma linha do
+// plano (planning-section `providerOptions`, h-6; session-join-planner, h-7):
+// a lista de busca abre uma janela maior que a linha inteira.
+const AP45: [string, string][] = [
+  ["app/(app)/admin/auditoria/visao-acessos.tsx", "pessoas.opcoes"],
+  ["app/(app)/admin/auditoria/visao-acoes.tsx", "pessoas.opcoes"],
+  ["app/(app)/admin/auditoria/visao-alteracoes.tsx", "pessoas.opcoes"],
+  ["app/(app)/admin/auditoria/visao-pessoa.tsx", "pessoas.opcoes"],
+  ["app/(app)/admin/auditoria/visao-relatorio.tsx", "pessoas.opcoes"],
+  ["app/(app)/prontuarios/[id]/planning-section.tsx", "catalog"],
+  ["app/(app)/prontuarios/[id]/direct-sale-dialog.tsx", "procedures"],
+  ["app/(app)/ppr/configuracao/[planId]/benefits-editor.tsx", "procedures"],
+  ["app/(app)/avaliacao/[clientId]/quality-checklist.tsx", "dentists"],
+  ["app/(app)/prontuarios/[id]/client-procedures-section.tsx", "dentists"],
+  ["app/(app)/prontuarios/[id]/treatment-section.tsx", "dentists"],
+  ["app/(app)/atendimento/page.tsx", "providerOptions"],
+  ["app/(app)/admin/agenda-comercial/editor-da-jornada.tsx", "consultores"],
+];
+
+describe("AP45: as listas longas dos outros módulos também têm busca", () => {
+  it.each(AP45)("%s — a lista %s usa a busca", (rel, lista) => {
+    const fonte = ler(rel);
+    expect(fonte).toContain(
+      `import { ListaComBusca } from "@/components/ui/lista-com-busca";`
+    );
+    // A lista tem de alimentar a busca…
+    expect(fonte).toContain(`...${lista}`);
+    // …e não pode ter sobrado como <option> nativa.
+    const nativas = [...fonte.matchAll(OPCAO_NATIVA)].map((m) => m[1]);
+    expect(nativas).not.toContain(lista);
+  });
+
+  it("dentro de um filtro, escolher na lista aplica o filtro (como o <select> fazia)", () => {
+    // O FilterForm aplica ao MUDAR uma caixa nativa; a lista de busca grava num
+    // campo escondido, que não avisa a mudança — sem isto, escolher a pessoa
+    // não filtraria nada, e a tela pareceria quebrada.
+    const fonte = ler("components/ui/lista-com-busca.tsx");
+    expect(fonte).toMatch(
+      /if \(aplicaAoEscolher\) setTimeout\(\(\) => gatilhoRef\.current\?\.form\?\.requestSubmit\(\), 0\);/
+    );
+    const gatilho = fonte.slice(
+      fonte.indexOf("<Combobox.Trigger"),
+      fonte.indexOf("<Combobox.Value")
+    );
+    expect(gatilho).toMatch(/ref=\{gatilhoRef\}/);
+    const filtros = AP45.map(([rel]) => rel).filter(
+      (rel) =>
+        rel.includes("auditoria") || rel.includes("atendimento") || rel.includes("agenda-comercial")
+    );
+    expect(filtros.length).toBe(7);
+    for (const rel of filtros) {
+      const fonte = ler(rel);
+      const lista = fonte.slice(fonte.indexOf("<ListaComBusca"), fonte.indexOf("/>", fonte.indexOf("<ListaComBusca")));
+      expect(lista.length, rel).toBeGreaterThan(0);
+      expect(lista, rel).toMatch(/^\s*aplicaAoEscolher\s*$/m);
+    }
+  });
+});

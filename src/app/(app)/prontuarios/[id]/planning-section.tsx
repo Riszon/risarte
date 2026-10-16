@@ -87,6 +87,7 @@ import {
 import { DevolverAoCoordenador } from "./devolver-ao-coordenador";
 import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
@@ -2060,18 +2061,20 @@ function OptionBudget({
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <select
+            {/* AP45: o catálogo da rede cresce — com busca. */}
+            <ListaComBusca
+              aria-label="Procedimento do catálogo"
               value={procId}
-              onChange={(e) => pickProcedure(e.target.value)}
-              className="h-9 max-w-[180px] rounded-lg border border-input bg-transparent px-2 text-sm"
-            >
-              <option value="">Item personalizado</option>
-              {catalog.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({formatBRL(p.effectivePriceCents)})
-                </option>
-              ))}
-            </select>
+              onValueChange={pickProcedure}
+              className="h-9 w-56"
+              options={[
+                { value: "", label: "Item personalizado" },
+                ...catalog.map((p) => ({
+                  value: p.id,
+                  label: `${p.name} (${formatBRL(p.effectivePriceCents)})`,
+                })),
+              ]}
+            />
             <Input
               value={desc}
               onChange={(e) => setDesc(e.target.value)}

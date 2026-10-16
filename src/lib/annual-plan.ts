@@ -100,6 +100,45 @@ export function itemCoversDate(item: PlanItem, dateIso: string): boolean {
   return dateIso >= item.startsDate && dateIso <= item.endsDate;
 }
 
+/**
+ * O QUE O PLANEJAMENTO ANUAL FAZ COM UM DIA, para quem agenda (AP41,
+ * decisão do dono 15/10/2026: "a agenda segue a regra escrita").
+ *
+ * - `bloqueia`: ninguém marca — férias do profissional escolhido, ou período
+ *   da REDE travado (nem dia avulso abre).
+ * - `fechaODia`: período da unidade (ou da rede, sem trava) — o dia está
+ *   FECHADO. Um dia avulso abre, mas aí vale SÓ a janela do avulso (AJ7:
+ *   "num dia fechado com dia avulso, usa só a janela do avulso"). Antes a
+ *   agenda tratava o recesso de uma segunda como dia normal e UNIA as
+ *   janelas — aceitava o horário inteiro.
+ *
+ * Campanha é informativa. O online só é alcançado pelas férias da própria
+ * pessoa (0268): o fechamento da unidade não fecha o consultor remoto.
+ *
+ * A validação do agendamento e a lista de próximos horários usam esta regra —
+ * duas réguas para o mesmo dia é como uma oferece o que a outra recusa.
+ */
+export function situacaoDoPlanoNoDia(
+  items: readonly PlanItem[],
+  dateIso: string,
+  providerId: string | null,
+  isOnline: boolean
+): { bloqueia: boolean; fechaODia: boolean } {
+  let bloqueia = false;
+  let fechaODia = false;
+  for (const item of items) {
+    if (!itemCoversDate(item, dateIso) || item.type === "campaign") continue;
+    if (item.type === "individual_vacation") {
+      if (providerId && item.userIds.includes(providerId)) bloqueia = true;
+      continue;
+    }
+    if (isOnline) continue;
+    if (item.isNetwork && item.locked) bloqueia = true;
+    else fechaODia = true;
+  }
+  return { bloqueia, fechaODia };
+}
+
 /** Whole-day count of an item (inclusive). */
 export function itemDayCount(item: PlanItem): number {
   // Meia-noite BRASILEIRA nos dois lados (AP4). Antes eram duas
