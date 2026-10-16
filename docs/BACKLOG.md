@@ -2502,6 +2502,28 @@ regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
 ### AP50. Cancelar e estornar cobrança do Empresarial não conferiam quem chamava — ✅ CORRIGIDO na 1029 (16/10/2026)
 
+**✅ VARREDURA DO SCHEMA `empresarial` FEITA (pedido do dono, 16/10/2026) —
+corrigida na 1030 (Empresarial 0.80.1).** 53 funções (37 chamáveis + 16 de
+gatilho), lidas no treino. **🔴 Três GRAVAVAM sem login e sem conferir quem
+chama**, confirmado na PRODUÇÃO de fora (identificador inexistente — pararam
+no NOT_FOUND, isto é, executaram): `delete_employee` (exclui titular, encerra
+a participação, tira o selo), `complete_employee` e `link_dependent` (podem
+CRIAR cliente no cadastro geral). No treino, antes da 1030, sem login,
+recepção, dentista, Financeiro e Admin faziam as três; depois, só recepção e
+Admin (a régua da tela, `canManageEmployees`), e a unidade escolhida tem de
+estar no alcance (`canUseClinic`). `delete_billing` e `check_funnel_alerts`
+também fecharam para `anon` (já recusavam pela guarda). Régua:
+`empresarial-sem-login.test.ts`.
+**Ficaram, declarado:** as funções que as regras das tabelas chamam
+(`is_program_manager`, `accessible_company_ids`, `can_access_lead`,
+`can_manage_company_files`) — sem login respondem "não"/vazio;
+`format_cpf` e `dependent_plan_for` (só formatam/calculam).
+**Suspeita de baixo risco, não corrigida:** `dependentes_ativos`,
+`limite_de_titulares` e `limite_de_dependentes` devolvem CONTAGENS de
+qualquer empresa a qualquer pessoa LOGADA que tenha o identificador (sem
+nome, só números). **Não varrido:** o schema `indica` (sessão do Indica).
+
+
 *(Achado no OC-00105.)* **Confirmado na produção, de fora, sem gravar:**
 `empresarial.cancel_billing` executava SEM LOGIN (chegou à primeira
 checagem); `reverse_billing` recusava sem login mas aceitava qualquer pessoa

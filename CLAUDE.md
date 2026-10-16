@@ -390,6 +390,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 (noite) — PC Administrador (Empresarial 0.80.0 → 0.80.1, migração 1030)**
+
+- **AP50 — VARREDURA DO EMPRESARIAL (pedido do dono).** 🔴 `delete_employee`,
+  `complete_employee` e `link_dependent` GRAVAVAM SEM LOGIN e sem conferir
+  quem chama (confirmado na produção). A 1030 põe no banco a régua da tela
+  (`can_manage_employees` = `canManageEmployees`; e a unidade, como
+  `canUseClinic`) e fecha as três para `anon`. Nenhuma tela muda.
+- ⚠️ **Prova de "executa sem login" na produção sem gravar:** chamar com
+  identificador INEXISTENTE — a função para no NOT_FOUND antes de gravar; se a
+  resposta for o NOT_FOUND, ela executou. "permission denied" = fechada.
+- ⏳ **1030 a aplicar na produção** (aplicada no treino).
+
 **16/10/2026 (fim da tarde) — PC Administrador (Empresarial 0.79.0 → 0.80.0, migração 1029)**
 
 - **OC-00105 — "Sem permissão" ao gerar cobrança no Empresarial.** NÃO era
