@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.322.0** · Última migração: **0298** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.322.0** · Última migração: **0298** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🏦 0.322.0 / 0298 — A IMPORTAÇÃO DO EXTRATO VOLTA A FUNCIONAR (OC-00103, 16/10/2026)
 >
@@ -19,6 +19,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.322.0** · Última migraç
 >   como Latin-1 e estragava os acentos), data inexistente fica de fora,
 >   caractere de controle sai da descrição.
 > - **AP48 (novo):** `save_training_cohort` tem o mesmo defeito.
+> - ✅ **0298 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado — 1 versão, comando corrigido, o antigo ausente, sem login não executa, logado executa; conferido de fora, sem login: recusa com "permission denied"; com a chave de serviço responde ACCOUNT_NOT_FOUND para conta inexistente, antes de gravar). ⚠️ A produção tem 0 contas bancárias: a importação de verdade só pode ser provada lá quando alguém cadastrar uma.
 >
 > ## 📊 0.321.0 (sem migração) — TOTAIS ACIMA DE 1.000, AGENDA DO RECESSO, BUSCA E AJUDA (15/10/2026)
 >

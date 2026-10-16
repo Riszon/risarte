@@ -404,7 +404,7 @@ Syncthing se comportarem de forma estranha.**
   `where true`.** Regra 10 do `check-migrations`.
 - ⚠️ **Extrato do Inter vem em UTF-8**; a tela lia tudo como Latin-1.
   `decodeStatement` escolhe pelo conteúdo.
-- ⏳ **0298 a aplicar na produção** (aplicada no treino).
+- ✅ **0298 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado — 1 versão, comando corrigido, o antigo ausente, sem login não executa, logado executa; conferido de fora, sem login: recusa com "permission denied"; com a chave de serviço responde ACCOUNT_NOT_FOUND para conta inexistente, antes de gravar). ⚠️ A produção tem 0 contas bancárias: a importação de verdade só pode ser provada lá quando alguém cadastrar uma.
 - **AP48 (BACKLOG):** `save_training_cohort` tem o mesmo defeito (não
   executado — mudaria a configuração).
 - ⚠️ **Os extratos do relato estão em `_extratos-oc103/`** (fora do Git por
