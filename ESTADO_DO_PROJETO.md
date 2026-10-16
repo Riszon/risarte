@@ -1,7 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 15/10/2026 · Versão do sistema: **0.321.0** · Última migração: **0297** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.322.0** · Última migração: **0298** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🏦 0.322.0 / 0298 — A IMPORTAÇÃO DO EXTRATO VOLTA A FUNCIONAR (OC-00103, 16/10/2026)
+>
+> 🔴 **A importação do extrato não chegava ao fim pela tela** (o comando
+> existe desde a 0196, de 05/08/2026; desde quando a API o recusa, não se sabe). A API do
+> Supabase carrega o `safeupdate`, que recusa DELETE sem WHERE — inclusive
+> dentro de função `security definer`. `import_bank_transactions` esvaziava
+> a tabela temporária com `delete from tmp_import_keys;`. ⚠️ **No SQL Editor e
+> na conexão direta dos scripts o safeupdate NÃO está carregado**: a função
+> passava em toda prova por transação desfeita. **Prova pela API sem gravar:**
+> mandar uma linha com valor inválido — a função chega ao DELETE antes de
+> ler o valor, e o erro diz qual dos dois parou.
+> - **0298:** só aquela linha vira `where true`. **Regra 10** do
+>   `check-migrations` reprova DELETE/UPDATE sem WHERE em corpo de função.
+> - De carona: `decodeStatement` (o Inter exporta em UTF-8; a tela lia tudo
+>   como Latin-1 e estragava os acentos), data inexistente fica de fora,
+>   caractere de controle sai da descrição.
+> - **AP48 (novo):** `save_training_cohort` tem o mesmo defeito.
+>
 > ## 📊 0.321.0 (sem migração) — TOTAIS ACIMA DE 1.000, AGENDA DO RECESSO, BUSCA E AJUDA (15/10/2026)
 >
 > Resto do lote que o dono escolheu no BACKLOG:

@@ -108,6 +108,18 @@ incluindo o token `--gold` exposto como utilitário `bg-gold`.
   **Limites conhecidos:** `TRUNCATE` não dispara gatilho de linha (a limpeza
   do treino não aparece na trilha); gravação feita com a chave de serviço
   aparece como "Sistema (em nome de alguém)", sem a pessoa.
+- **DELETE/UPDATE SEM WHERE NÃO RODA PELA API** (OC-00103, 16/10/2026). A
+  conexão da API do Supabase (papel `authenticator`) carrega o `safeupdate`,
+  que recusa *"DELETE requires a WHERE clause"* — inclusive dentro de função
+  `security definer`. No SQL Editor e na conexão direta dos scripts ele NÃO
+  está carregado: a função passa em toda prova por transação desfeita e quebra
+  na tela. A importação de extrato tinha o comando desde a 0196 (05/08/2026;
+  não se sabe desde quando a API o recusa — a 0195, sem ele, funcionou no
+  teste do dono). Esvaziar a tabela
+  inteira é `where true`; `on conflict … do update` não é afetado. Regra 10 do
+  `check-migrations`. **Para provar pelo caminho da API sem gravar:** fazer a
+  função falhar de propósito logo DEPOIS do comando suspeito e ler qual erro
+  voltou.
 - **Escrever migrações idempotentes** (seguras para rodar de novo): `create table
   if not exists`, `drop policy/trigger if exists` + create, `create or replace
   function`, seeds com `on conflict do nothing`, cron em blocos `do $$ ...

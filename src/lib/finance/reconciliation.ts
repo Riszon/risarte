@@ -85,25 +85,69 @@ export function parseAmountCents(raw: string): number | null {
   return negative ? -cents : cents;
 }
 
+/**
+ * A data existe no calendário? "2026-14-10" (dia e mês trocados) e
+ * "2026-02-30" não existem — e o banco recusa a importação INTEIRA por uma
+ * linha assim, com uma mensagem que a tela não sabe explicar (OC-00103).
+ * Melhor a linha ficar de fora, contada entre as ignoradas.
+ */
+function dataQueExiste(y: string, m: string, d: string): string | null {
+  const [ano, mes, dia] = [Number(y), Number(m), Number(d)];
+  const x = new Date(Date.UTC(ano, mes - 1, dia));
+  if (x.getUTCFullYear() !== ano || x.getUTCMonth() !== mes - 1 || x.getUTCDate() !== dia) {
+    return null;
+  }
+  return `${y}-${m}-${d}`;
+}
+
 /** Data em YYYY-MM-DD a partir de dd/mm/aaaa, aaaa-mm-dd ou aaaammdd (OFX). */
 export function parseDate(raw: string): string | null {
   if (!raw) return null;
   const text = raw.trim();
 
   const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  if (iso) return dataQueExiste(iso[1], iso[2], iso[3]);
 
   const br = text.match(/^(\d{2})[/.](\d{2})[/.](\d{2,4})/);
   if (br) {
     const year = br[3].length === 2 ? `20${br[3]}` : br[3];
-    return `${year}-${br[2]}-${br[1]}`;
+    return dataQueExiste(year, br[2], br[1]);
   }
 
   // OFX: 20260804 ou 20260804120000[-3:BRT]
   const ofx = text.match(/^(\d{4})(\d{2})(\d{2})/);
-  if (ofx) return `${ofx[1]}-${ofx[2]}-${ofx[3]}`;
+  if (ofx) return dataQueExiste(ofx[1], ofx[2], ofx[3]);
 
   return null;
+}
+
+/**
+ * Tira da descrição os caracteres invisíveis de controle (o nulo, sobretudo):
+ * o banco recusa o nulo e derrubaria a importação inteira por ele (OC-00103).
+ */
+export function limparDescricao(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    const c = ch.charCodeAt(0);
+    out += c < 32 || (c >= 127 && c < 160) ? " " : ch;
+  }
+  return out.replace(/ {2,}/g, " ").trim();
+}
+
+/**
+ * O texto do arquivo, na codificação em que ele veio (OC-00103). Banco
+ * brasileiro costuma exportar em Latin-1 (windows-1252), mas o Inter exporta
+ * em UTF-8 — e ler UTF-8 como Latin-1 estraga todo acento ("Transferência"
+ * vira "TransferÃªncia"). Tenta UTF-8 a sério (recusa qualquer byte inválido);
+ * se não for, é Latin-1. Um arquivo Latin-1 com acento quase nunca é UTF-8
+ * válido por acaso.
+ */
+export function decodeStatement(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -153,7 +197,7 @@ export function parseOfx(content: string): ParseResult {
       fitId: tagValue(block, "FITID") || null,
       postedAt,
       amountCents,
-      description: memo || "(sem descrição)",
+      description: limparDescricao(memo) || "(sem descrição)",
       kind: amountCents < 0 ? "debit" : "credit",
     });
   }
@@ -283,7 +327,7 @@ export function parseCsv(content: string): ParseResult {
       fitId: null,
       postedAt,
       amountCents,
-      description: (cols[descCol] ?? "").trim() || "(sem descrição)",
+      description: limparDescricao(cols[descCol] ?? "") || "(sem descrição)",
       kind: amountCents < 0 ? "debit" : "credit",
     });
   }

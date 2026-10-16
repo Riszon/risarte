@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.322.0",
+    data: "2026-10-16",
+    migracao: "0298",
+    titulo: "A importação do extrato bancário volta a funcionar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Importar o extrato na Conciliação (OFX ou CSV) falhava para todo arquivo com \"Não foi possível importar o extrato.\" — era defeito do sistema, não do arquivo. Depois da atualização 0298, importa.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Os acentos das descrições do extrato saem certos em qualquer banco: o sistema reconhece sozinho se o arquivo veio em UTF-8 (como o do Inter) ou em Latin-1. Uma linha com data que não existe fica de fora, contada no aviso, em vez de derrubar a importação inteira.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.321.0",
     data: "2026-10-15",
     migracao: null,

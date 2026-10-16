@@ -234,6 +234,28 @@ Quem abre a tela sem poder gravar vê **"Só consulta"** e o nome de quem faz.
 bancária"** — é ela que dá o saldo de abertura ao Fluxo de caixa, que avisa e
 leva até lá quando não há conta.
 
+**Importar o extrato do banco** (Conciliação → escolha a conta → **Importar
+extrato**). Aceita **OFX** (o preferido: cada lançamento traz um identificador
+do banco, e importar o mesmo arquivo de novo não duplica nada) e **CSV** (o
+sistema acha as colunas de data, descrição e valor pelo cabeçalho). Desde a
+versão 0.322.0:
+
+- **Os acentos saem certos qualquer que seja o banco.** O sistema descobre
+  sozinho se o arquivo veio em UTF-8 (o Inter) ou em Latin-1 (a maioria dos
+  outros) — antes lia tudo como Latin-1, e "Transferência" virava
+  "TransferÃªncia".
+- **Linha com data que não existe** (por exemplo, dia e mês trocados) fica de
+  fora e é contada no aviso de linhas ignoradas — antes ela fazia a importação
+  inteira falhar.
+- Se o extrato for de **outra conta** (o próprio OFX diz qual é), o sistema
+  avisa e só importa se você confirmar em **Importar mesmo assim**. Importou na
+  conta errada? **Desfazer**, na lista de importações.
+
+> **"Não foi possível importar o extrato" (relato OC-00103).** Até a
+> atualização 0298, a importação falhava assim para todo arquivo, por um
+> defeito do sistema — não do arquivo nem da sua função. Se a mensagem voltar
+> a aparecer depois da 0298, relate o problema com o arquivo à mão.
+
 > **O número do painel é o mesmo da tela para onde ele leva.** O resultado do
 > mês no painel é o mesmo lucro líquido da DRE, do mesmo período — as duas usam
 > a mesma conta, não duas parecidas.

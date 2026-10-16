@@ -2489,6 +2489,23 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
 
+### AP48. `save_training_cohort` tem DELETE sem WHERE — o grupo do teste coletivo provavelmente não salva pela tela (16/10/2026)
+
+*(Achado varrendo o banco no OC-00103.)*
+**Confirmado no código:** a função que grava o grupo do teste coletivo
+(Administração → Certificação) começa com `delete from
+public.training_cohort_roles;` e `delete from public.training_cohort_members;`
+— sem WHERE. É o mesmo defeito do OC-00103: a API do Supabase carrega o
+`safeupdate`, que recusa esse comando ("DELETE requires a WHERE clause").
+**Mecanismo provado** (OC-00103, pela API, no treino); **esta função NÃO foi
+executada** — chamá-la mudaria a configuração. **Suspeita:** salvar o grupo
+pela tela falha (ou nunca foi salvo por ela).
+**Conserto:** `where true` nos dois, numa migração. A Regra 10 do
+`check-migrations` reprova o padrão em migração nova.
+**Varredura completa (629 funções dos três schemas, treino):** só estas duas
+e a da importação; o resto é `on conflict … do update`, que o `safeupdate`
+não recusa.
+
 ### AP47. ✅ RESOLVIDO em 15/10/2026 (core 0.321.0) — telas que pediam mais de 1.000 linhas e SOMAVAM o que vinha
 
 **Resolvido (escolha do dono):** Relatórios, o painel de relatos

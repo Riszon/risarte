@@ -4,7 +4,7 @@
 // Duas migrações seguidas chegaram ao dono com erro mecânico que o Postgres só
 // acusa na hora de rodar — e cada uma custou uma ida e volta.
 //
-// As duas primeiras regras (hoje são nove — cada uma descrita onde é conferida):
+// As duas primeiras regras (hoje são dez — cada uma descrita onde é conferida):
 //
 //   1. `create or replace function` com RETORNO DIFERENTE do que já existe.
 //      O Postgres recusa: "cannot change return type of existing function".
@@ -228,6 +228,42 @@ if (target.slice(0, 4) > "0278") {
           `      Termine a migração com "select public.audit_attach_all();" — ou,\n` +
           `      se ela não deve ser auditada, declare o motivo em\n` +
           `      public.audit_excluded_tables (schema, tabela, motivo).`
+      );
+    }
+  }
+}
+
+// Regra 10 — DELETE/UPDATE SEM WHERE NÃO RODA PELA API (OC-00103, 16/10/2026).
+//
+// A conexão da API do Supabase carrega o `safeupdate`, que RECUSA "DELETE
+// requires a WHERE clause" — também dentro de função `security definer`. No
+// SQL Editor e na conexão direta dos scripts ele NÃO está carregado: a função
+// passa em todo teste e quebra na tela. Foi assim que a importação de extrato
+// (0196) parou: `delete from tmp_import_keys;`. O conserto é declarar o
+// alcance: `where true` quando a intenção é mesmo a tabela inteira.
+// Só olha o CORPO das funções (o que roda pela API); `on conflict ... do
+// update set` é INSERT e não é afetado. Vale depois da 0297.
+if (target.slice(0, 4) > "0297") {
+  const corpos = semComentarios.split("$$").filter((_, i) => i % 2 === 1);
+  for (const corpo of corpos) {
+    // Texto entre aspas sai antes de separar por ";" (um ";" dentro de uma
+    // mensagem partiria o comando ao meio).
+    const semTextos = corpo.replace(/'(?:[^']|'')*'/g, "''");
+    for (const comando of semTextos.split(";")) {
+      const c = comando.replace(/\s+/g, " ");
+      const m = c.match(/\b(delete\s+from|update)\s+(?:only\s+)?([\w."]+)/i);
+      if (!m) continue;
+      const resto = c.slice(m.index);
+      if (/^update/i.test(m[1])) {
+        if (!/\bset\b/i.test(resto)) continue; // "for update", gatilho "or update on"
+        if (/\bdo\s*$/i.test(c.slice(0, m.index))) continue; // on conflict do update
+      }
+      if (/\bwhere\b/i.test(resto)) continue;
+      problems.push(
+        `${m[1].toUpperCase()} sem WHERE dentro de função: ${resto.trim().slice(0, 80)}\n` +
+          `      Pela API o Supabase recusa ("DELETE requires a WHERE clause") — a\n` +
+          `      função passa no SQL Editor e quebra na tela. Se a intenção é a\n` +
+          `      tabela inteira, escreva "where true". Ver OC-00103.`
       );
     }
   }

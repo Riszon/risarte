@@ -390,6 +390,29 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 — PC Administrador (core 0.321.0 → 0.322.0, migração 0298)**
+
+- **OC-00103 — A IMPORTAÇÃO DO EXTRATO NÃO FUNCIONAVA PELA TELA, PARA NENHUM
+  ARQUIVO.** O relato era do TREINO (a produção não tem conta bancária). Os
+  arquivos do Inter estavam certos.
+- 🔴 **A API DO SUPABASE RECUSA DELETE/UPDATE SEM WHERE** (`safeupdate`,
+  carregado no papel `authenticator`), também dentro de função. **Prova por
+  transação desfeita NÃO enxerga isso** — a conexão direta não carrega o
+  safeupdate (e `load 'safeupdate'` é recusado). Para provar pelo caminho
+  da API sem gravar: fazer a função falhar de propósito LOGO DEPOIS do
+  comando suspeito e ler qual erro veio. **Esvaziar a tabela inteira =
+  `where true`.** Regra 10 do `check-migrations`.
+- ⚠️ **Extrato do Inter vem em UTF-8**; a tela lia tudo como Latin-1.
+  `decodeStatement` escolhe pelo conteúdo.
+- ⏳ **0298 a aplicar na produção** (aplicada no treino).
+- **AP48 (BACKLOG):** `save_training_cohort` tem o mesmo defeito (não
+  executado — mudaria a configuração).
+- ⚠️ **Os extratos do relato estão em `_extratos-oc103/`** (fora do Git por
+  `.git/info/exclude`; o Syncthing não copia `risarte/`). Apagar só com o OK
+  do dono.
+- **Não visto na tela:** a importação de verdade (fica para quem relatou, na
+  conta dele, depois da 0298).
+
 **15/10/2026 (fim da noite) — PC Administrador (core 0.320.0 → 0.321.0, sem migração)**
 
 - **Resto do lote do BACKLOG (escolha do dono): AP47, AP41, AP45 e a ajuda

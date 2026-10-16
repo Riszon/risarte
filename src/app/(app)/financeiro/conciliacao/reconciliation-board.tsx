@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import type { ChartAccount } from "@/lib/finance/accounts";
 import {
+  decodeStatement,
   parseStatement,
   RECONCILIATION_STATUS_LABELS,
   suggestMatches,
@@ -211,8 +212,8 @@ export function ReconciliationBoard({
   function onFile(file: File) {
     const reader = new FileReader();
     reader.onload = () => {
-      const content = String(reader.result ?? "");
-      const parsed = parseStatement(content);
+      const bytes = new Uint8Array(reader.result as ArrayBuffer);
+      const parsed = parseStatement(decodeStatement(bytes));
       if (parsed.transactions.length === 0) {
         toast.error(
           parsed.errors[0] ?? "Não consegui ler nenhum lançamento deste arquivo."
@@ -244,9 +245,10 @@ export function ReconciliationBoard({
         } else toast.error(r.error ?? "Algo deu errado.");
       });
     };
-    // Extrato de banco brasileiro costuma vir em Latin-1; ler como UTF-8
-    // estragaria os acentos da descrição.
-    reader.readAsText(file, "windows-1252");
+    // Os BYTES, e não o texto: a codificação é escolhida pelo conteúdo
+    // (`decodeStatement`) — o Inter exporta em UTF-8, outros bancos em Latin-1,
+    // e ler um como o outro estraga os acentos da descrição (OC-00103).
+    reader.readAsArrayBuffer(file);
   }
 
   function forceImport() {
