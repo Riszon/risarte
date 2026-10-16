@@ -64,6 +64,16 @@ describe("AP50: as funções do Empresarial que gravam conferem quem chama", () 
     }
   });
 
+  it.each(["dependentes_ativos", "limite_de_titulares", "limite_de_dependentes"])(
+    "a contagem %s só responde sobre empresa que quem chama enxerga (1031)",
+    (nome) => {
+      expect(ultimaDefinicao(nome).corpo).toMatch(
+        /if p_company_id is null or p_company_id not in \(select empresarial\.accessible_company_ids\(\)\) then\s+raise exception 'NOT_ALLOWED';/
+      );
+      expect(ultimoRevoke(nome)).toMatch(/\banon\b/);
+    }
+  );
+
   it("a régua do banco é a mesma da tela (quem mexe nos titulares)", () => {
     const banco = ultimaDefinicao("can_manage_employees").corpo;
     const tela = readFileSync(

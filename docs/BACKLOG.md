@@ -2519,10 +2519,13 @@ também fecharam para `anon` (já recusavam pela guarda). Régua:
 (`is_program_manager`, `accessible_company_ids`, `can_access_lead`,
 `can_manage_company_files`) — sem login respondem "não"/vazio;
 `format_cpf` e `dependent_plan_for` (só formatam/calculam).
-**Suspeita de baixo risco, não corrigida:** `dependentes_ativos`,
-`limite_de_titulares` e `limite_de_dependentes` devolvem CONTAGENS de
-qualquer empresa a qualquer pessoa LOGADA que tenha o identificador (sem
-nome, só números). **Não varrido:** o schema `indica` (sessão do Indica).
+**✅ Contagens corrigidas na 1031 (Empresarial 0.80.2, a pedido do dono):**
+`dependentes_ativos`, `limite_de_titulares` e `limite_de_dependentes`
+devolviam CONTAGENS de qualquer empresa a qualquer pessoa LOGADA (no treino,
+recepção e dentista recebiam números de empresas que não enxergam). Agora só
+respondem sobre empresa que quem chama enxerga (`accessible_company_ids`);
+os números não mudaram (conferido como Admin nas 13 empresas do treino), e o
+aviso de cadastros pendentes continua rodando. **Não varrido:** o schema `indica` (sessão do Indica).
 
 
 *(Achado no OC-00105.)* **Confirmado na produção, de fora, sem gravar:**

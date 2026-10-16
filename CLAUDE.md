@@ -390,6 +390,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 (noite, 2ª) — PC Administrador (Empresarial 0.80.1 → 0.80.2, migração 1031)**
+
+- **AP50, a sobra:** as três contagens do Empresarial (titulares e dependentes
+  contratados, dependentes ativos) respondiam sobre QUALQUER empresa a
+  qualquer logado. A 1031 exige que quem chama enxergue a empresa
+  (`accessible_company_ids`). Números iguais; nenhuma tela muda.
+- ⏳ **1031 a aplicar na produção** (aplicada no treino).
+
 **16/10/2026 (noite) — PC Administrador (Empresarial 0.80.0 → 0.80.1, migração 1030)**
 
 - **AP50 — VARREDURA DO EMPRESARIAL (pedido do dono).** 🔴 `delete_employee`,
