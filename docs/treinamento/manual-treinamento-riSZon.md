@@ -758,6 +758,11 @@ ou recém-contratada para travar a equipe inteira sem ninguém entender por quê
 > escolher — e, enquanto faltar, a liberação coletiva não acontece. A tela
 > avisa.
 
+> **"As regras foram salvas, mas o grupo não"** (AP48). Até a atualização
+> 0299, salvar o grupo falhava sempre assim, por um defeito do sistema: as
+> regras eram gravadas e o grupo não. Depois da 0299 o grupo salva. Se a
+> mensagem voltar, relate o problema.
+
 ### ⚠️ A missão só começa quando você aceita
 
 **Esta é a parte mais importante desta seção.** A certificação **não fica

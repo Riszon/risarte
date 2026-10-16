@@ -390,6 +390,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 (tarde) — PC Administrador (core 0.322.0 → 0.323.0, migração 0299)**
+
+- **AP48 (o dono pediu):** o grupo do teste coletivo não salvava pela tela —
+  mesmo DELETE sem WHERE. 0299 corrige. ⚠️ **Régua global**:
+  `delete-sem-where.test.ts` (versão mais recente de cada função). ⏳ **0299 a
+  aplicar na produção** (aplicada no treino).
+- A pasta `_extratos-oc103` foi apagada (OK do dono) e saiu do
+  `.git/info/exclude`.
+
 **16/10/2026 — PC Administrador (core 0.321.0 → 0.322.0, migração 0298)**
 
 - **OC-00103 — A IMPORTAÇÃO DO EXTRATO NÃO FUNCIONAVA PELA TELA, PARA NENHUM
@@ -407,9 +416,8 @@ Syncthing se comportarem de forma estranha.**
 - ✅ **0298 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado — 1 versão, comando corrigido, o antigo ausente, sem login não executa, logado executa; conferido de fora, sem login: recusa com "permission denied"; com a chave de serviço responde ACCOUNT_NOT_FOUND para conta inexistente, antes de gravar). ⚠️ A produção tem 0 contas bancárias: a importação de verdade só pode ser provada lá quando alguém cadastrar uma.
 - **AP48 (BACKLOG):** `save_training_cohort` tem o mesmo defeito (não
   executado — mudaria a configuração).
-- ⚠️ **Os extratos do relato estão em `_extratos-oc103/`** (fora do Git por
-  `.git/info/exclude`; o Syncthing não copia `risarte/`). Apagar só com o OK
-  do dono.
+- Os extratos do relato ficaram em `_extratos-oc103/` só durante o
+  diagnóstico; apagados no mesmo dia, com o OK do dono.
 - **Não visto na tela:** a importação de verdade (fica para quem relatou, na
   conta dele, depois da 0298).
 

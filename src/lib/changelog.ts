@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.323.0",
+    data: "2026-10-16",
+    migracao: "0299",
+    titulo: "O grupo do teste coletivo volta a salvar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Em Administração → Certificação, escolher QUEM participa da liberação coletiva (por cargo ou por pessoa) falhava sempre com \"As regras foram salvas, mas o grupo não\". Depois da atualização 0299, o grupo salva.",
+        papeis: [],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.322.0",
     data: "2026-10-16",
     migracao: "0298",

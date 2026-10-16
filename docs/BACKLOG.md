@@ -2489,7 +2489,14 @@ volta) e *Marcar reunião* pela aba Histórico (peça reusada sem mudança).
 marcada como **perdida** (serve de exemplo da tela), com contato e telefone
 fictícios, uma anotação e uma tentativa de contato de teste. Nada apagado.
 
-### AP48. `save_training_cohort` tem DELETE sem WHERE — o grupo do teste coletivo provavelmente não salva pela tela (16/10/2026)
+### AP48. ✅ RESOLVIDO em 16/10/2026 (core 0.323.0, migração 0299) — `save_training_cohort` tinha DELETE sem WHERE: o grupo do teste coletivo não salvava pela tela
+
+**Confirmado e corrigido (o dono pediu):** provado pela API no treino, sem
+gravar — salvar parava em "DELETE requires a WHERE clause" e a tela dizia "As
+regras foram salvas, mas o grupo não". A 0299 troca as duas linhas por
+`where true`. Régua global: `delete-sem-where.test.ts`.
+
+*(Registro original:)*
 
 *(Achado varrendo o banco no OC-00103.)*
 **Confirmado no código:** a função que grava o grupo do teste coletivo

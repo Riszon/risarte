@@ -1,7 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.322.0** · Última migração: **0298** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.323.0** · Última migração: **0299** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 👥 0.323.0 / 0299 — O GRUPO DO TESTE COLETIVO VOLTA A SALVAR (AP48, 16/10/2026)
+>
+> Mesmo defeito da 0298: `save_training_cohort` esvaziava as listas com
+> DELETE sem WHERE, que a API recusa. A 0299 troca as duas linhas por
+> `where true`. ⚠️ **Régua global nova** (`delete-sem-where.test.ts`): a
+> versão mais recente de CADA função das migrações não pode ter DELETE/UPDATE
+> sem WHERE — a varredura do banco (629 funções) achou só estas duas e a da
+> importação.
+>
 > ## 🏦 0.322.0 / 0298 — A IMPORTAÇÃO DO EXTRATO VOLTA A FUNCIONAR (OC-00103, 16/10/2026)
 >
 > 🔴 **A importação do extrato não chegava ao fim pela tela** (o comando
