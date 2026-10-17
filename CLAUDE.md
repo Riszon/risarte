@@ -404,7 +404,7 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino (Admin de teste na RISARTE Franchising): as 12
   parcelas com o texto novo e a janela de pagar a nota (cancelada).
   ⚠️ Os textos das contas da nota do relato NO TREINO já foram reescritos pela
-  0300. ⏳ **0300 a aplicar na produção.**
+  0300. ✅ **0300 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado; conferido de fora: "pagar a nota" recusa sem login antes de rodar; a produção tem 0 contas vindas de nota, então a reescrita do texto não tocou nada lá).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **16/10/2026 (noite, 2ª) — PC Administrador (Empresarial 0.80.1 → 0.80.2, migração 1031)**
