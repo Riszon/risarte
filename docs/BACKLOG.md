@@ -2525,7 +2525,9 @@ devolviam CONTAGENS de qualquer empresa a qualquer pessoa LOGADA (no treino,
 recepção e dentista recebiam números de empresas que não enxergam). Agora só
 respondem sobre empresa que quem chama enxerga (`accessible_company_ids`);
 os números não mudaram (conferido como Admin nas 13 empresas do treino), e o
-aviso de cadastros pendentes continua rodando. **Não varrido:** o schema `indica` (sessão do Indica).
+aviso de cadastros pendentes continua rodando. ✅ **1031 aplicada na produção
+em 16/10/2026** — conferido de fora. **AP50 ENCERRADO** (o schema `indica` não
+foi varrido: é da sessão do Indica). **Não varrido:** o schema `indica` (sessão do Indica).
 
 
 *(Achado no OC-00105.)* **Confirmado na produção, de fora, sem gravar:**

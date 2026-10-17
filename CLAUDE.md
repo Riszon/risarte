@@ -396,7 +396,10 @@ Syncthing se comportarem de forma estranha.**
   contratados, dependentes ativos) respondiam sobre QUALQUER empresa a
   qualquer logado. A 1031 exige que quem chama enxergue a empresa
   (`accessible_company_ids`). Números iguais; nenhuma tela muda.
-- ⏳ **1031 a aplicar na produção** (aplicada no treino).
+- ✅ **1031 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026
+  e a conferência deu o esperado; conferido de fora: sem login as três recusam
+  antes de rodar, e a chave de serviço — que não enxerga empresa — cai na
+  guarda nova, NOT_ALLOWED).
 
 **16/10/2026 (noite) — PC Administrador (Empresarial 0.80.0 → 0.80.1, migração 1030)**
 
