@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.325.0** · Última migração: **0301** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.325.0** · Última migração: **0301** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🏦 0.325.0 / 0301 — CONCILIAÇÃO: VÁRIOS, TRANSFERÊNCIA E AVISO CONTRA DUPLICAR (OC-00108, 16/10/2026)
 >
@@ -15,6 +15,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.325.0** · Última migraç
 > ⚠️ A conta bancária do treino (60 linhas, 1 importação, 3 lançamentos do
 > banco) foi movida da RISARTE Franchising para a **Risarte Cambé - Centro**
 > (resposta do dono: a conta é de uma clínica). **AP51** no BACKLOG.
+> ✅ **0301 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado; conferido de fora: a conta 6.3.01 existe como ativo, a tabela nova existe e está vazia; sem login, as três funções da conciliação recusam com "permission denied" antes de rodar; com a chave de serviço, o Vários responde TRANSACTION_NOT_FOUND para linha inexistente, antes de gravar. A produção tem 0 contas bancárias, então ninguém foi afetado).
 >
 > ## 🧾 0.324.0 / 0300 — AS PARCELAS DA NOTA FISCAL (OC-00109, 16/10/2026)
 >

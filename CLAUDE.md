@@ -407,7 +407,7 @@ Syncthing se comportarem de forma estranha.**
   em volta de parênteses e vírgulas** (falso positivo em
   `cash_flow_series_raw`); provado que ainda pega mudança real.
 - ⚠️ **No treino, a conta bancária e o extrato foram MOVIDOS para a Risarte
-  Cambé - Centro** (resposta do dono). ⏳ **0301 pendente na produção.**
+  Cambé - Centro** (resposta do dono). ✅ **0301 APLICADA nos dois bancos** (o dono rodou na produção em 16/10/2026 e a conferência deu o esperado; conferido de fora: a conta 6.3.01 existe como ativo, a tabela nova existe e está vazia; sem login, as três funções da conciliação recusam com "permission denied" antes de rodar; com a chave de serviço, o Vários responde TRANSACTION_NOT_FOUND para linha inexistente, antes de gravar. A produção tem 0 contas bancárias, então ninguém foi afetado).
 - **AP51 (BACKLOG):** o saldo pelo sistema soma todas as contas bancárias da
   unidade; casar a maquininha sozinho exigiria o relatório da adquirente.
 - Visto na tela no treino (Admin de teste, Cambé): botões, orientação,
