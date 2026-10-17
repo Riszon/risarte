@@ -308,11 +308,24 @@ export async function importNfe(input: {
     supplierDescription: string;
     gtin: string;
   }[];
-  installments: { dueDate: string; amountCents: number }[];
+  installments: { dueDate: string; amountCents: number; paymentMethod?: string | null }[];
 }): Promise<StockResult> {
   const session = await getSessionContext();
   if (!canManageStock(session, input.clinicId)) {
     return { ok: false, error: "Sua função não permite importar notas." };
+  }
+  // OC-00109: as parcelas podem ter sido trocadas na tela — conferir o mínimo
+  // antes de virar conta a pagar (valor positivo, data de verdade).
+  if (
+    input.installments.length === 0 ||
+    input.installments.some(
+      (p) =>
+        !Number.isInteger(p.amountCents) ||
+        p.amountCents <= 0 ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(p.dueDate)
+    )
+  ) {
+    return { ok: false, error: "Confira as parcelas: cada uma precisa de data e valor." };
   }
   if (input.items.length === 0) {
     return { ok: false, error: "Aponte o item de cada linha antes de lançar." };

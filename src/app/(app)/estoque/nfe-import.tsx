@@ -22,6 +22,13 @@ import {
   type NfeLine,
 } from "@/lib/nfe";
 import { importNfe, resolveNfeItems } from "./actions";
+import { FORMAS_DE_PAGAR, formaDaNota, rotuloDaForma } from "@/lib/finance/formas-de-pagar";
+import {
+  montarParcelas,
+  ROTULO_DO_MODO,
+  somaFecha,
+  type ModoDasParcelas,
+} from "@/lib/finance/parcelas-da-nota";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 type Item = {
@@ -84,6 +91,7 @@ function readNfe(xml: string): NfeInvoice {
     supplierName: emit ? txt(emit, "xNome") : "",
     totalCents: total,
     lines,
+    paymentMethod: formaDaNota(txt(doc, "tPag")),
     installments:
       installments.length > 0
         ? installments
@@ -126,6 +134,11 @@ export function NfeImport({
   const [errors, setErrors] = useState<string[]>([]);
   const [supplierId, setSupplierId] = useState("");
   const [costCenterId, setCostCenterId] = useState("");
+  // OC-00109: as parcelas vêm do XML, mas quem importa pode trocar.
+  const [modo, setModo] = useState<ModoDasParcelas>("nota");
+  const [dataParcelas, setDataParcelas] = useState("");
+  const [vezes, setVezes] = useState("2");
+  const [forma, setForma] = useState("");
 
   async function onFile(file: File) {
     const text = await file.text();
@@ -141,6 +154,10 @@ export function NfeImport({
     setErrors(problems);
     setInvoice(parsed);
     setXmlText(text);
+    setModo("nota");
+    setDataParcelas(parsed.issueDate);
+    setVezes(String(Math.max(2, parsed.installments.length)));
+    setForma(parsed.paymentMethod ?? "");
 
     // O fornecedor é achado pelo CNPJ da nota, não pelo nome.
     const known = suppliers.find(
@@ -184,6 +201,23 @@ export function NfeImport({
   }
 
   const pending = rows.filter((r) => !r.itemId).length;
+  const montagem = invoice
+    ? montarParcelas({
+        modo,
+        totalCents: invoice.totalCents,
+        daNota: invoice.installments,
+        data: dataParcelas,
+        vezes: Number(vezes),
+      })
+    : null;
+  const parcelas = montagem?.ok ? montagem.parcelas : [];
+  const erroDasParcelas = !montagem
+    ? null
+    : !montagem.ok
+      ? montagem.erro
+      : invoice && !somaFecha(parcelas, invoice.totalCents)
+        ? "As parcelas da nota não somam o total dela — escolha à vista ou em várias vezes."
+        : null;
   const suggested = rows.filter((r) => r.matchedBy === "sugestao").length;
 
   function confirm() {
@@ -208,7 +242,7 @@ export function NfeImport({
             supplierDescription: x.line.description,
             gtin: x.line.gtin,
           })),
-        installments: invoice.installments,
+        installments: parcelas.map((p) => ({ ...p, paymentMethod: forma || null })),
       });
       if (r.ok) {
         toast.success("Nota importada — estoque e conta a pagar lançados.");
@@ -393,14 +427,90 @@ export function NfeImport({
               ))}
             </ul>
 
-            <div className="rounded-lg border bg-muted/30 p-2 text-xs">
-              <strong>Vencimentos da nota:</strong>{" "}
-              {invoice.installments
-                .map(
-                  (p) =>
-                    `${p.dueDate.split("-").reverse().join("/")} ${formatBRL(p.amountCents)}`
-                )
-                .join(" · ")}
+            {/* OC-00109: CADA PARCELA VIRA UMA CONTA A PAGAR. O XML traz as
+                duplicatas do fornecedor; quem importa pode trocar. */}
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-2 text-xs">
+              <p>
+                <strong>Como vai ser pago.</strong> Cada parcela vira uma conta
+                em Contas a pagar. A nota trouxe{" "}
+                {invoice.installments.length === 1
+                  ? "uma parcela"
+                  : `${invoice.installments.length} parcelas`}
+                {invoice.paymentMethod
+                  ? ` e diz que a forma é ${rotuloDaForma(invoice.paymentMethod)?.toLowerCase()}`
+                  : ""}
+                .
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="block">
+                  <Label className="text-[11px]">Parcelas</Label>
+                  <select
+                    aria-label="Parcelas"
+                    value={modo}
+                    onChange={(e) => setModo(e.target.value as ModoDasParcelas)}
+                    className="mt-0.5 h-8 rounded-lg border border-input bg-background px-2 text-xs"
+                  >
+                    {(Object.keys(ROTULO_DO_MODO) as ModoDasParcelas[]).map((m) => (
+                      <option key={m} value={m}>
+                        {ROTULO_DO_MODO[m]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {modo !== "nota" && (
+                  <label className="block">
+                    <Label className="text-[11px]">
+                      {modo === "avista" ? "Data do pagamento" : "1º vencimento"}
+                    </Label>
+                    <Input
+                      type="date"
+                      className="mt-0.5 h-8 w-40 text-xs"
+                      value={dataParcelas}
+                      onChange={(e) => setDataParcelas(e.target.value)}
+                    />
+                  </label>
+                )}
+                {modo === "vezes" && (
+                  <label className="block">
+                    <Label className="text-[11px]">Quantas vezes</Label>
+                    <Input
+                      className="mt-0.5 h-8 w-20 text-xs"
+                      inputMode="numeric"
+                      value={vezes}
+                      onChange={(e) => setVezes(e.target.value.replace(/[^0-9]/g, ""))}
+                    />
+                  </label>
+                )}
+                <label className="block">
+                  <Label className="text-[11px]">Forma de pagamento</Label>
+                  <select
+                    aria-label="Forma de pagamento"
+                    value={forma}
+                    onChange={(e) => setForma(e.target.value)}
+                    className="mt-0.5 h-8 rounded-lg border border-input bg-background px-2 text-xs"
+                  >
+                    <option value="">Não informar</option>
+                    {FORMAS_DE_PAGAR.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {erroDasParcelas ? (
+                <p className="text-destructive">{erroDasParcelas}</p>
+              ) : (
+                <p className="text-muted-foreground">
+                  {parcelas.length === 1 ? "1 conta" : `${parcelas.length} contas`}:{" "}
+                  {parcelas
+                    .map((p, i) => {
+                      const qual = parcelas.length > 1 ? `${i + 1}/${parcelas.length} ` : "";
+                      return `${qual}${p.dueDate.split("-").reverse().join("/")} ${formatBRL(p.amountCents)}`;
+                    })
+                    .join(" · ")}
+                </p>
+              )}
             </div>
 
             {(pending > 0 || suggested > 0) && (
@@ -438,7 +548,11 @@ export function NfeImport({
                 >
                   Cancelar
                 </Button>
-                <Button size="sm" disabled={isPending || pending > 0} onClick={confirm}>
+                <Button
+                  size="sm"
+                  disabled={isPending || pending > 0 || !!erroDasParcelas}
+                  onClick={confirm}
+                >
                   Confirmar e lançar
                 </Button>
               </span>

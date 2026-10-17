@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.324.0",
+    data: "2026-10-16",
+    migracao: "0300",
+    titulo: "Nota fiscal: as parcelas ficam claras e a nota se paga de uma vez",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "As contas a pagar de uma nota fiscal passam a dizer qual parcela são — \"Compra de material — NF 2852836 · parcela 1/12 (17 itens)\". Elas são as parcelas que o fornecedor pôs na nota, não os produtos divididos; o valor real de cada produto está no estoque. As contas antigas foram corrigidas.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Contas a pagar, \"Pagar a nota\" dá baixa de uma vez em todas as parcelas em aberto de uma nota, com a mesma data e forma.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Ao importar o XML da nota, dá para trocar as parcelas antes de confirmar: como veio na nota, à vista ou em várias vezes, com a forma de pagamento anotada em cada conta.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.323.0",
     data: "2026-10-16",
     migracao: "0299",

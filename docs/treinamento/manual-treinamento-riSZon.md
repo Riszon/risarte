@@ -256,6 +256,31 @@ versão 0.322.0:
 > defeito do sistema — não do arquivo nem da sua função. Se a mensagem voltar
 > a aparecer depois da 0298, relate o problema com o arquivo à mão.
 
+**A nota fiscal (XML) e as contas a pagar dela** (Estoque → **Importar nota
+fiscal (XML)**; desde a versão 0.324.0, relato OC-00109). Ao importar, os
+**produtos** entram no estoque, cada um com o **valor real** da nota; e as
+**parcelas** viram contas a pagar — **uma conta por parcela**, não por
+produto.
+
+- **De onde vêm as parcelas.** O XML traz as **duplicatas** que o fornecedor
+  emitiu (vencimento e valor de cada uma) e diz a **forma de pagamento**. A
+  tela de importação mostra isso no quadro **Como vai ser pago**, e você pode
+  trocar antes de confirmar: **Como veio na nota**, **À vista** (uma conta, na
+  data do pagamento) ou **Em várias vezes** (quantas e o 1º vencimento — uma
+  por mês). A forma escolhida fica anotada em cada conta. A soma sempre fecha
+  com o total da nota: a última parcela absorve os centavos.
+- **Como a conta aparece.** *"Compra de material — NF 2852836 · parcela 1/12 ·
+  boleto (17 itens)"*: o número da nota, **qual parcela é**, a forma (quando
+  informada) e quantos produtos a nota tem. Os R$ 137,33 de cada linha são o
+  valor **da parcela**, não de um produto. (Antes a descrição não dizia
+  "parcela" e trazia "itemns" — as contas antigas foram corrigidas.)
+- **Pagar a nota inteira de uma vez.** Na parcela de uma nota com mais de uma
+  em aberto, **Pagar a nota (N)**: escolha a data, a forma e o comprovante, e
+  todas as parcelas em aberto recebem a baixa do que falta delas. Cada uma
+  continua na lista, como paga. Multa, juros ou valor diferente numa parcela
+  pedem o **Pagar** daquela parcela; parcela aguardando autorização fica de
+  fora.
+
 > **O número do painel é o mesmo da tela para onde ele leva.** O resultado do
 > mês no painel é o mesmo lucro líquido da DRE, do mesmo período — as duas usam
 > a mesma conta, não duas parecidas.

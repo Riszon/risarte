@@ -43,6 +43,11 @@ export type NfeInvoice = {
   lines: NfeLine[];
   /** As duplicatas: é daqui que saem os vencimentos. */
   installments: { dueDate: string; amountCents: number }[];
+  /**
+   * A forma de pagamento que a nota declara (`<tPag>`), já na nossa lista
+   * (OC-00109). Sugestão: quem importa confere e pode trocar.
+   */
+  paymentMethod?: string | null;
 };
 
 /** Só dígitos — a mesma convenção das máscaras do sistema. */

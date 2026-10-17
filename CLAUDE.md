@@ -390,6 +390,23 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 (noite, 3ª) — PC Administrador (core 0.323.0 → 0.324.0, migração 0300)**
+
+- **OC-00109 — a nota fiscal "dividida pelas linhas".** NÃO era: as 12 contas
+  são as 12 DUPLICATAS do próprio XML (cartão, a prazo); os produtos entraram
+  no estoque com o valor real. O defeito era o TEXTO ("(17 itemns)", sem
+  "parcela"). Decisões do dono: descrição "parcela X/Y (N itens)" — também nas
+  antigas; **Pagar a nota** (todas as parcelas em aberto, pela mesma porta do
+  Pagar); e trocar as parcelas na importação (nota / à vista / em N vezes, com
+  a forma de pagamento).
+- ⚠️ **A lista de formas de pagar é uma só** (`formas-de-pagar.ts`), e a
+  função do banco que escreve a descrição conhece as mesmas (teste compara).
+- Visto na tela no treino (Admin de teste na RISARTE Franchising): as 12
+  parcelas com o texto novo e a janela de pagar a nota (cancelada).
+  ⚠️ Os textos das contas da nota do relato NO TREINO já foram reescritos pela
+  0300. ⏳ **0300 a aplicar na produção.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **16/10/2026 (noite, 2ª) — PC Administrador (Empresarial 0.80.1 → 0.80.2, migração 1031)**
 
 - **AP50, a sobra:** as três contagens do Empresarial (titulares e dependentes

@@ -46,7 +46,7 @@ export default async function PayablesPage() {
     supabase
       .from("payables")
       .select(
-        "id, clinic_id, supplier_id, account_code, cost_center_id, description, document_number, accrual_date, due_date, amount_cents, paid_amount_cents, paid_fee_cents, paid_interest_cents, status, approval_mode, requires_approval, approval_note, cancel_reason, notes, recurrence_id, created_by, supplier:suppliers ( name ), account:chart_of_accounts!payables_account_code_fkey ( name ), center:cost_centers ( name ), author:profiles!payables_created_by_fkey ( full_name ), approver:profiles!payables_approved_by_fkey ( full_name )"
+        "id, clinic_id, supplier_id, account_code, cost_center_id, description, document_number, accrual_date, due_date, amount_cents, paid_amount_cents, paid_fee_cents, paid_interest_cents, status, approval_mode, requires_approval, approval_note, cancel_reason, notes, recurrence_id, stock_purchase_id, created_by, supplier:suppliers ( name ), account:chart_of_accounts!payables_account_code_fkey ( name ), center:cost_centers ( name ), author:profiles!payables_created_by_fkey ( full_name ), approver:profiles!payables_approved_by_fkey ( full_name )"
       )
       .eq("clinic_id", clinicId)
       .order("due_date"),
@@ -118,6 +118,7 @@ export default async function PayablesPage() {
     paidFeeCents: Number(r.paid_fee_cents ?? 0),
     paidInterestCents: Number(r.paid_interest_cents ?? 0),
     status: r.status as Payable["status"],
+    stockPurchaseId: (r.stock_purchase_id as string | null) ?? null,
     approvalMode: r.approval_mode as ApprovalMode,
     requiresApproval: Boolean(r.requires_approval),
     approvedByName: person(r.approver as PersonEmbed),

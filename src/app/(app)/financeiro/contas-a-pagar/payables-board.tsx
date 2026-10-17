@@ -45,6 +45,7 @@ import {
   type PayableFilter,
   type PayablePaymentEntry,
   type PayableStatus,
+  type PayableView,
 } from "@/lib/finance/payables";
 import {
   PERIOD_PRESETS,
@@ -55,10 +56,12 @@ import {
 import {
   approvePayable,
   cancelPayable,
+  payStockPurchase,
   registerPayablePayment,
   reversePayablePayment,
   savePayable,
 } from "../payables-actions";
+import { FORMAS_DE_PAGAR } from "@/lib/finance/formas-de-pagar";
 import { ApprovalRulesDialog } from "./approval-rules-dialog";
 import {
   RecurrencesDialog,
@@ -90,14 +93,8 @@ const STATUS_STYLE: Record<PayableStatus, string> = {
   recusada: "border-destructive/40 bg-destructive/5 text-destructive",
 };
 
-const METHODS = [
-  { value: "pix", label: "PIX" },
-  { value: "boleto", label: "Boleto" },
-  { value: "transferencia", label: "Transferência" },
-  { value: "debito_automatico", label: "Débito automático" },
-  { value: "cartao", label: "Cartão" },
-  { value: "dinheiro", label: "Dinheiro" },
-];
+// As formas de pagar moram num lugar só (a importação da nota usa as mesmas).
+const METHODS = FORMAS_DE_PAGAR;
 
 function fmtDate(iso: string): string {
   const [y, m, d] = iso.split("-");
@@ -153,6 +150,8 @@ export function PayablesBoard({
   // Diálogos
   const [creating, setCreating] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
+  // OC-00109: pagar todas as parcelas da mesma nota de uma vez.
+  const [notaParaPagar, setNotaParaPagar] = useState<string | null>(null);
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [decisionApprove, setDecisionApprove] = useState(true);
   const [decisionNote, setDecisionNote] = useState("");
@@ -229,6 +228,16 @@ export function PayablesBoard({
   });
 
   const paying = allViews.find((v) => v.id === payingId) ?? null;
+  // As parcelas em aberto de cada nota (compra de estoque), para o "pagar todas".
+  const abertasPorNota = useMemo(() => {
+    const m = new Map<string, PayableView[]>();
+    for (const v of allViews) {
+      if (!v.stockPurchaseId || !v.isOpen || v.status === "aguardando_autorizacao") continue;
+      m.set(v.stockPurchaseId, [...(m.get(v.stockPurchaseId) ?? []), v]);
+    }
+    return m;
+  }, [allViews]);
+  const parcelasDaNota = notaParaPagar ? (abertasPorNota.get(notaParaPagar) ?? []) : [];
   const payCents = parseBRLToCents(payAmount) ?? 0;
   const payErrors = paying
     ? payablePaymentErrors({
@@ -294,6 +303,37 @@ export function PayablesBoard({
     setPayMethod("pix");
     setPayReference("");
     setPayNotes("");
+  }
+
+  function openPayAll(purchaseId: string) {
+    setNotaParaPagar(purchaseId);
+    setPaidAt(today);
+    setPayMethod("pix");
+    setPayReference("");
+    setPayNotes("");
+  }
+
+  function payAll() {
+    if (!notaParaPagar) return;
+    startTransition(async () => {
+      const r = await payStockPurchase({
+        purchaseId: notaParaPagar,
+        paidAt,
+        paymentMethod: payMethod,
+        reference: payReference,
+        notes: payNotes,
+      });
+      if (r.ok) {
+        toast.success(
+          `${r.pagas} parcela${r.pagas === 1 ? "" : "s"} paga${r.pagas === 1 ? "" : "s"} — ${formatBRL(r.totalCents ?? 0)}.` +
+            (r.aguardando
+              ? ` ${r.aguardando} aguardando autorização ficou de fora.`
+              : "")
+        );
+        setNotaParaPagar(null);
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
   }
 
   function pay() {
@@ -648,6 +688,22 @@ export function PayablesBoard({
                           onClick={() => openPayment(v.id)}
                         >
                           Pagar
+                        </Button>
+                      )}
+                    {/* OC-00109: a nota em parcelas paga-se inteira de uma vez. */}
+                    {canManage &&
+                      v.stockPurchaseId &&
+                      v.isOpen &&
+                      v.status !== "aguardando_autorizacao" &&
+                      (abertasPorNota.get(v.stockPurchaseId)?.length ?? 0) > 1 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-[11px]"
+                          title="Pagar todas as parcelas em aberto desta nota"
+                          onClick={() => openPayAll(v.stockPurchaseId!)}
+                        >
+                          Pagar a nota ({abertasPorNota.get(v.stockPurchaseId)?.length})
                         </Button>
                       )}
                     {canManage &&
@@ -1019,6 +1075,80 @@ export function PayablesBoard({
             <Button disabled={isPending || payErrors.length > 0} onClick={pay}>
               <Check className="mr-1 size-4" />
               Registrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OC-00109: pagar todas as parcelas da nota. */}
+      <Dialog
+        open={notaParaPagar !== null}
+        onOpenChange={(o) => !o && setNotaParaPagar(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pagar todas as parcelas da nota</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              <strong>{parcelasDaNota.length}</strong> parcela
+              {parcelasDaNota.length === 1 ? "" : "s"} em aberto, somando{" "}
+              <strong>
+                {formatBRL(parcelasDaNota.reduce((s, v) => s + v.balanceCents, 0))}
+              </strong>
+              . Cada parcela recebe a baixa do que falta dela, com a data e a
+              forma abaixo — e continua aparecendo na lista, como paga.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="block">
+                <Label className="text-[11px]">Data</Label>
+                <Input
+                  className="h-9"
+                  type="date"
+                  value={paidAt}
+                  onChange={(e) => setPaidAt(e.target.value)}
+                />
+              </label>
+              <label className="block">
+                <Label className="text-[11px]">Forma</Label>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value)}
+                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                >
+                  {METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block sm:col-span-2">
+                <Label className="text-[11px]">Comprovante</Label>
+                <Input
+                  className="h-9"
+                  value={payReference}
+                  onChange={(e) => setPayReference(e.target.value)}
+                  placeholder="opcional"
+                />
+              </label>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Multa, juros ou valor diferente em alguma parcela? Use o{" "}
+              <strong>Pagar</strong> daquela parcela. Parcela aguardando
+              autorização fica de fora.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setNotaParaPagar(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={isPending || parcelasDaNota.length === 0 || !paidAt}
+              onClick={payAll}
+            >
+              <Check className="mr-1 size-4" />
+              Pagar todas
             </Button>
           </DialogFooter>
         </DialogContent>

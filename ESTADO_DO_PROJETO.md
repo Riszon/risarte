@@ -1,7 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.323.0** · Última migração: **0299** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.324.0** · Última migração: **0300** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🧾 0.324.0 / 0300 — AS PARCELAS DA NOTA FISCAL (OC-00109, 16/10/2026)
+>
+> O relato achava que a nota era "dividida pelas linhas". Não era: as contas
+> são as DUPLICATAS do XML (12, cartão a prazo). O defeito era o texto — sem
+> "parcela" e com "itemns". Decisões do dono: texto novo
+> (`stock_purchase_payable_description`, também nas antigas), **Pagar a
+> nota** (`pay_stock_purchase`, pela mesma porta do Pagar) e trocar as
+> parcelas na importação (`montarParcelas`). ⚠️ **As formas de pagar moram
+> em `formas-de-pagar.ts`** e o banco tem a mesma lista (teste compara).
+>
 > ## 👥 0.323.0 / 0299 — O GRUPO DO TESTE COLETIVO VOLTA A SALVAR (AP48, 16/10/2026)
 >
 > Mesmo defeito da 0298: `save_training_cohort` esvaziava as listas com

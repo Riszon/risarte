@@ -166,6 +166,53 @@ export async function registerPayablePayment(input: {
   return { ok: true };
 }
 
+/**
+ * OC-00109 — PAGAR TODAS AS PARCELAS DA NOTA de uma vez. Quem paga cada uma é o
+ * banco (`pay_stock_purchase`, 0300), parcela a parcela, pela MESMA porta do
+ * botão Pagar — com permissão, razão contábil e período fechado. Tudo ou nada.
+ */
+export async function payStockPurchase(input: {
+  purchaseId: string;
+  paidAt: string;
+  paymentMethod: string;
+  reference: string;
+  notes: string;
+}): Promise<PayableResult & { pagas?: number; totalCents?: number; aguardando?: number }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("pay_stock_purchase", {
+    p_purchase_id: input.purchaseId,
+    p_paid_at: input.paidAt,
+    p_payment_method: input.paymentMethod || null,
+    p_reference: input.reference || null,
+    p_notes: input.notes || null,
+  });
+  if (error) {
+    console.error("pay_stock_purchase failed:", error.message);
+    if (error.message.includes("NOTHING_TO_PAY")) {
+      return { ok: false, error: "Esta nota não tem parcela em aberto para pagar." };
+    }
+    if (/could not find the function|schema cache/i.test(error.message)) {
+      return { ok: false, error: "O banco ainda não recebeu a atualização 0300 — pague uma parcela por vez." };
+    }
+    return {
+      ok: false,
+      error: translate(error.message, "Não foi possível pagar as parcelas da nota."),
+    };
+  }
+
+  const r = (data ?? {}) as { pagas?: number; total_cents?: number; aguardando?: number };
+  await logAudit({
+    action: "create",
+    entityType: "payable_payment_batch",
+    entityId: input.purchaseId,
+    details: { parcelas: r.pagas ?? 0 },
+  });
+  refresh();
+  return { ok: true, pagas: r.pagas ?? 0, totalCents: Number(r.total_cents ?? 0), aguardando: r.aguardando ?? 0 };
+}
+
 /** FIN3 — estorna um pagamento (contra-lançamento; o original fica). */
 export async function reversePayablePayment(input: {
   paymentId: string;

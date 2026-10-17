@@ -136,6 +136,8 @@ export type Payable = {
   createdById: string | null;
   notes: string | null;
   recurrenceId: string | null;
+  /** A compra (nota) de onde a conta veio — junta as parcelas dela (OC-00109). */
+  stockPurchaseId?: string | null;
 };
 
 export type PayableView = Payable & {
