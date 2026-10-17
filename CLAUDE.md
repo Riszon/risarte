@@ -390,6 +390,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/10/2026 — PC Administrador (core 0.325.0 → 0.326.0, migração 0302)**
+
+- **OC-00110 — "conciliei e não entrou na DRE"; "não acho as contas pagas".**
+  NÃO era defeito: as 3 linhas foram LANÇADAS e estão na DRE de SETEMBRO (a
+  competência é a data do extrato); o print era de outubro. Conserto do texto:
+  o Lançar diz o mês (`mesDaDre`). O filtro "Pagas" já existia.
+- Decisões do dono: **Pagar conta** pela conciliação
+  (`pay_payable_from_bank_transaction`, 0302) + aviso no Lançar quando há
+  conta a pagar em aberto do mesmo valor; **Relatório de contas pagas**
+  (`contas-a-pagar/pagas`, PDF e planilha, pela data do pagamento).
+- ⚠️ **Pagar pela conciliação NÃO é caminho novo para o dinheiro:** a 0302
+  chama `register_payable_payment` e `reconcile_bank_transaction`. Só o
+  saldo EXATO (com multa/juros: pagar em Contas a pagar e casar por Vários).
+- ⚠️ **O saldo da conta a pagar é `amount − pago − desconto`** (sem
+  estornos); `paid_amount_cents` NÃO inclui o desconto por pontualidade.
+- Visto na tela no treino: o relatório (Franchising, 6 pagamentos,
+  R$ 679,12), a planilha e o texto do mês no Lançar. **Não visto:** o botão
+  Pagar conta (nenhuma conta do treino tem o valor de uma linha pendente; não
+  criei dado de teste na unidade do relato). ⏳ **0302 pendente na produção.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **16/10/2026 (noite, 4ª) — PC Administrador (core 0.324.0 → 0.325.0, migração 0301)**
 
 - **OC-00108 — "não há opção para baixa do crédito" na Conciliação.** NÃO era

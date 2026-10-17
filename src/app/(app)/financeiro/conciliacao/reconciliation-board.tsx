@@ -30,19 +30,24 @@ import type { ChartAccount } from "@/lib/finance/accounts";
 import {
   candidatosParaVarios,
   CONTA_DE_TRANSFERENCIA,
+  contasDoValor,
+  mesDaDre,
   decodeStatement,
   parseStatement,
   somaDosLancamentos,
   RECONCILIATION_STATUS_LABELS,
   suggestMatches,
   summarizeReconciliation,
+  type ContaEmAberto,
   type LedgerEntry,
   type ReconciliationStatus,
 } from "@/lib/finance/reconciliation";
+import { FORMAS_DE_PAGAR } from "@/lib/finance/formas-de-pagar";
 import {
   createEntryFromTransaction,
   deleteImport,
   ignoreTransaction,
+  payPayableFromTransaction,
   reconcileMultiple,
   importStatement,
   reconcileTransaction,
@@ -128,6 +133,7 @@ export function ReconciliationBoard({
   transactions,
   imports,
   entries,
+  openPayables,
   chart,
   costCenters,
   today,
@@ -138,6 +144,8 @@ export function ReconciliationBoard({
   transactions: BankTxRow[];
   imports: ImportRow[];
   entries: LedgerEntry[];
+  /** OC-00110: contas a pagar em aberto da unidade. */
+  openPayables: ContaEmAberto[];
   chart: ChartAccount[];
   costCenters: { id: string; name: string }[];
   today: string;
@@ -168,6 +176,10 @@ export function ReconciliationBoard({
   const [variosSel, setVariosSel] = useState<string[]>([]);
   const [transferFor, setTransferFor] = useState<BankTxRow | null>(null);
   const [transferDesc, setTransferDesc] = useState("");
+  // OC-00110: a linha de saída paga uma conta a pagar.
+  const [pagarFor, setPagarFor] = useState<BankTxRow | null>(null);
+  const [pagarSel, setPagarSel] = useState("");
+  const [pagarForma, setPagarForma] = useState<string>("pix");
   const [showImports, setShowImports] = useState(false);
   /** A trava disparou: guardamos o arquivo lido para o "importar mesmo assim". */
   const [blocked, setBlocked] = useState<{
@@ -232,6 +244,15 @@ export function ReconciliationBoard({
           )
         : [],
     [creatingFor, scopedEntries]
+  );
+
+  const contasAoLancar = useMemo(
+    () => (creatingFor ? contasDoValor(creatingFor, openPayables) : []),
+    [creatingFor, openPayables]
+  );
+  const contasDoPagar = useMemo(
+    () => (pagarFor ? contasDoValor(pagarFor, openPayables) : []),
+    [pagarFor, openPayables]
   );
 
   const counts = {
@@ -335,6 +356,7 @@ export function ReconciliationBoard({
 
   function createEntry() {
     if (!creatingFor) return;
+    const mes = mesDaDre(creatingFor.postedAt);
     startTransition(async () => {
       const r = await createEntryFromTransaction({
         transactionId: creatingFor.id,
@@ -343,7 +365,7 @@ export function ReconciliationBoard({
         description: newDescription,
       });
       if (r.ok) {
-        toast.success("Lançamento criado e conciliado.");
+        toast.success(`Lançado e conciliado — entra na DRE de ${mes}.`);
         setCreatingFor(null);
         setNewAccountCode("");
         setNewCostCenter("");
@@ -382,6 +404,30 @@ export function ReconciliationBoard({
         toast.success("Lançado como transferência e conciliado.");
         setTransferFor(null);
         setTransferDesc("");
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  function abrirPagar(linha: BankTxRow | null, contaId = "") {
+    if (!linha) return;
+    setPagarFor(linha);
+    setPagarSel(contaId);
+    setPagarForma("pix");
+  }
+
+  function payIt() {
+    if (!pagarFor || !pagarSel) return;
+    startTransition(async () => {
+      const r = await payPayableFromTransaction({
+        transactionId: pagarFor.id,
+        payableId: pagarSel,
+        paymentMethod: pagarForma,
+      });
+      if (r.ok) {
+        toast.success("Conta paga e linha conciliada.");
+        setPagarFor(null);
+        setPagarSel("");
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -685,6 +731,8 @@ export function ReconciliationBoard({
                   )
                 : [];
             const matched = entries.find((e) => e.id === t.matchedEntryId);
+            const contas =
+              t.status === "pendente" ? contasDoValor(t, openPayables) : [];
             return (
               <div
                 key={t.id}
@@ -713,7 +761,13 @@ export function ReconciliationBoard({
                         Ignorada: {t.ignoreReason}
                       </span>
                     )}
-                    {t.status === "pendente" && candidates.length === 0 && (
+                    {t.status === "pendente" && contas.length > 0 && (
+                      <span className="mt-0.5 block text-[11px] text-amber-800 dark:text-amber-300">
+                        Há conta a pagar em aberto deste valor — use{" "}
+                        <strong>Pagar conta</strong>.
+                      </span>
+                    )}
+                    {t.status === "pendente" && candidates.length === 0 && contas.length === 0 && (
                       <span className="mt-0.5 flex items-center gap-1 text-[11px] text-destructive">
                         <AlertTriangle className="size-3" />
                         Nada no sistema com este valor — provavelmente falta
@@ -751,6 +805,18 @@ export function ReconciliationBoard({
                               }
                             >
                               Casar ({candidates.length})
+                            </Button>
+                          )}
+                          {contas.length > 0 && (
+                            <Button
+                              size="sm"
+                              className="h-8 text-[11px]"
+                              title="Dar baixa numa conta a pagar em aberto deste valor e conciliar"
+                              onClick={() =>
+                                abrirPagar(t, contas.length === 1 ? contas[0].id : "")
+                              }
+                            >
+                              Pagar conta ({contas.length})
                             </Button>
                           )}
                           <Button
@@ -897,6 +963,47 @@ export function ReconciliationBoard({
                   ))}
                 </div>
               )}
+              {/* OC-00110: a linha de saída tem conta a pagar em aberto do
+                  mesmo valor. Lançar aqui contaria a despesa duas vezes (a
+                  conta já está na DRE) e deixaria a conta em aberto. */}
+              {contasAoLancar.length > 0 && (
+                <div className="space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                  <p>
+                    <strong>Existe conta a pagar em aberto deste valor.</strong>{" "}
+                    Se for ela, pague-a em vez de lançar — lançar aqui contaria a
+                    despesa duas vezes e a conta continuaria em aberto.
+                  </p>
+                  {contasAoLancar.slice(0, 3).map((c) => (
+                    <div key={c.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <span>
+                        {c.supplierName ? `${c.supplierName} — ` : ""}
+                        {c.description} · vence {fmtDate(c.dueDate)}
+                      </span>
+                      <Button
+                        size="sm"
+                        className="h-7 text-[11px]"
+                        onClick={() => {
+                          const linha = creatingFor;
+                          setCreatingFor(null);
+                          abrirPagar(linha, c.id);
+                        }}
+                      >
+                        Pagar esta conta
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {creatingFor.amountCents < 0 && contasAoLancar.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  <strong>Conta de fornecedor que está em Contas a pagar?</strong>{" "}
+                  Pague-a lá (com multa ou juros, se houver) e depois case esta
+                  linha (<strong>Casar</strong> ou <strong>Vários</strong>) —
+                  lançar aqui contaria a despesa duas vezes. Este botão é para o
+                  que o sistema não sabia (tarifa do banco, uma despesa que não
+                  passou por Contas a pagar).
+                </p>
+              )}
               {creatingFor.amountCents > 0 && (
                 <p className="text-[11px] text-muted-foreground">
                   <strong>Recebimento de paciente ou de cartão?</strong> Ele
@@ -947,8 +1054,12 @@ export function ReconciliationBoard({
                 />
               </label>
               <p className="text-[11px] text-muted-foreground">
-                O lançamento nasce com a data do extrato e já conciliado com
-                esta linha.
+                O lançamento nasce com a data do extrato (
+                {fmtDate(creatingFor.postedAt)}) e já conciliado com esta linha.{" "}
+                <strong>
+                  Na DRE, entra em {mesDaDre(creatingFor.postedAt)}
+                </strong>{" "}
+                — o mês da linha do extrato, não o mês de hoje.
               </p>
             </div>
           )}
@@ -961,6 +1072,95 @@ export function ReconciliationBoard({
               onClick={createEntry}
             >
               Lançar e conciliar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OC-00110: a linha de saída paga uma conta a pagar em aberto. */}
+      <Dialog
+        open={pagarFor !== null}
+        onOpenChange={(o) => !o && setPagarFor(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Pagar conta a pagar</DialogTitle>
+          </DialogHeader>
+          {pagarFor && (
+            <div className="space-y-3 text-sm">
+              <p className="rounded-lg bg-muted/40 p-2 text-xs">
+                {pagarFor.description} · {fmtDate(pagarFor.postedAt)} ·{" "}
+                <strong>{formatBRL(pagarFor.amountCents)}</strong>
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                A conta escolhida recebe a baixa com a data do extrato (
+                {fmtDate(pagarFor.postedAt)}) e esta linha fica conciliada com o
+                pagamento — tudo de uma vez. A despesa já está na DRE desde que
+                a conta foi lançada, no mês da competência dela: pagar não lança
+                de novo.
+              </p>
+              {contasDoPagar.length === 0 ? (
+                <p className="rounded-lg border p-3 text-xs text-muted-foreground">
+                  Nenhuma conta a pagar em aberto com este valor.
+                </p>
+              ) : (
+                <ul className="max-h-72 space-y-1 overflow-y-auto rounded-lg border p-2 text-xs">
+                  {contasDoPagar.map((c) => (
+                    <li key={c.id}>
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          type="radio"
+                          name="conta-a-pagar"
+                          checked={pagarSel === c.id}
+                          onChange={() => setPagarSel(c.id)}
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {c.supplierName ? `${c.supplierName} — ` : ""}
+                          {c.description}
+                          <span className="ml-1 text-muted-foreground">
+                            {c.accountCode} · vence {fmtDate(c.dueDate)}
+                          </span>
+                        </span>
+                        <span className="tabular-nums">
+                          {formatBRL(c.balanceCents)}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <label className="block">
+                <Label className="text-[11px]">Forma de pagamento</Label>
+                <select
+                  value={pagarForma}
+                  onChange={(e) => setPagarForma(e.target.value)}
+                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                >
+                  {FORMAS_DE_PAGAR.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="text-[11px] text-muted-foreground">
+                Só aparece conta com o saldo <strong>exato</strong> da linha.
+                Pagou com multa ou juros, ou só uma parte? Pague em{" "}
+                <strong>Contas a pagar</strong> (lá se informam multa e juros) e
+                depois case esta linha com <strong>Vários</strong>.
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPagarFor(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={isPending || !pagarSel}
+              onClick={payIt}
+            >
+              <Check className="mr-1 size-4" />
+              Pagar e conciliar
             </Button>
           </DialogFooter>
         </DialogContent>

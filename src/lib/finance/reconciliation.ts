@@ -484,6 +484,57 @@ export function somaDosLancamentos(escolhidos: Pick<LedgerEntry, "amountCents">[
   return escolhidos.reduce((s, e) => s + e.amountCents, 0);
 }
 
+// ---------------------------------------------------------------------------
+// A conciliação e as contas a pagar — e em que mês o lançamento entra (OC-00110)
+// ---------------------------------------------------------------------------
+const MESES = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+/**
+ * O mês da DRE em que entra o lançamento criado pela linha do extrato: o mês
+ * da LINHA, não o de hoje (a competência nasce na data do extrato). Foi o que
+ * gerou o relato: lançado em outubro, com extrato de setembro, procurado na
+ * DRE de outubro.
+ */
+export function mesDaDre(iso: string): string {
+  const [ano, mes] = iso.split("-");
+  return `${MESES[Number(mes) - 1]} de ${ano}`;
+}
+
+/** Uma conta a pagar ainda em aberto, como a conciliação precisa dela. */
+export type ContaEmAberto = {
+  id: string;
+  description: string;
+  supplierName: string | null;
+  accountCode: string;
+  dueDate: string;
+  /** O que falta pagar (positivo). */
+  balanceCents: number;
+};
+
+/**
+ * As contas a pagar que essa linha de SAÍDA pode quitar: em aberto e com o
+ * saldo EXATO da linha. Valor diferente (multa, juros, pagamento parcial) não
+ * entra — paga-se em Contas a pagar e casa-se por "Vários". O banco confere a
+ * mesma regra (`pay_payable_from_bank_transaction`, 0302). As de vencimento
+ * mais perto da data da linha primeiro.
+ */
+export function contasDoValor(
+  tx: Pick<ParsedBankTx, "postedAt" | "amountCents">,
+  contas: ContaEmAberto[]
+): ContaEmAberto[] {
+  if (tx.amountCents >= 0) return [];
+  return contas
+    .filter((c) => c.balanceCents > 0 && c.balanceCents === -tx.amountCents)
+    .sort(
+      (a, b) =>
+        daysApart(a.dueDate, tx.postedAt) - daysApart(b.dueDate, tx.postedAt) ||
+        a.dueDate.localeCompare(b.dueDate)
+    );
+}
+
 export function summarizeReconciliation(input: {
   openingBalanceCents: number;
   transactions: { amountCents: number; status: ReconciliationStatus }[];

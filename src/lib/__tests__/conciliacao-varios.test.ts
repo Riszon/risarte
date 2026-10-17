@@ -121,15 +121,17 @@ describe("a tela da conciliação", () => {
   });
 
   it("lê o extrato e os lançamentos INTEIROS, em páginas, e avisa se falhar", () => {
-    expect(pagina.match(/lerTodasAsPaginas<Record<string, unknown>>\(\(de, ate\) =>/g)).toHaveLength(2);
+    // Extrato, lançamentos e (OC-00110) as contas a pagar em aberto.
+    expect(pagina.match(/lerTodasAsPaginas<Record<string, unknown>>\(\(de, ate\) =>/g)).toHaveLength(3);
     // O envelope sem o .range() leria a mesma primeira página para sempre: a
     // página tem de ir até o fim de cada leitura.
-    for (const tabela of ["bank_transactions", "financial_entries"]) {
+    for (const tabela of ["bank_transactions", "financial_entries", "payables"]) {
       const i = pagina.indexOf(`.from("${tabela}")`);
       expect(i, tabela).toBeGreaterThan(0);
       const trecho = pagina.slice(i, pagina.indexOf("),", pagina.indexOf(".range(", i) > 0 ? pagina.indexOf(".range(", i) : i));
       expect(trecho, tabela).toContain(".range(de, ate)");
     }
-    expect(pagina).toContain("Não foi possível ler todo o extrato ou todos os lançamentos agora");
+    expect(pagina).toContain("Não foi possível ler todo o extrato, todos os lançamentos ou as contas");
+    expect(pagina).toContain("!leituraDasLinhas.ok || !leituraDosLancamentos.ok || !leituraDasContas.ok");
   });
 });

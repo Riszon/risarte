@@ -12,6 +12,7 @@ import type {
 } from "@/lib/finance/payables";
 import { PayablesBoard, type PaymentRow } from "./payables-board";
 import type { RecurrenceRow } from "./recurrences-dialog";
+import { RelatorioDePagas } from "./relatorio-de-pagas";
 import { todayInBrazil } from "@/lib/dates";
 
 /** FIN3 — contas a pagar da unidade: o outro lado do caixa. */
@@ -238,6 +239,8 @@ export default async function PayablesPage() {
           classificar tudo no fim do mês.
         </p>
       </div>
+
+      <RelatorioDePagas hoje={today} />
 
       <PayablesBoard
         clinicId={clinicId}

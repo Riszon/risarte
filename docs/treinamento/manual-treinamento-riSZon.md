@@ -257,21 +257,35 @@ versão 0.322.0:
 > a aparecer depois da 0298, relate o problema com o arquivo à mão.
 
 **Conciliar: cada linha do extrato com o que o sistema já sabe** (relato
-OC-00108; desde a versão 0.325.0). Cada linha pendente tem botões, e escolher o
+OC-00108; desde a versão 0.325.0; **Pagar conta** desde a 0.326.0, relato
+OC-00110). Cada linha pendente tem botões, e escolher o
 certo é o que impede o mesmo dinheiro de entrar duas vezes:
 
 | A linha do banco é… | Botão | O que acontece |
 |---|---|---|
 | Um recebimento ou pagamento que **já está no sistema** com o mesmo valor (a baixa da parcela do paciente, a conta paga) | **Casar (N)** — aparece quando há lançamento do mesmo valor perto da data | só liga os dois; não cria nada |
+| Um pagamento de uma **conta a pagar que ainda está em aberto**, com o mesmo valor | **Pagar conta (N)** — aparece quando há conta em aberto com o saldo exato da linha | a conta recebe a baixa com a **data do extrato** e a linha fica conciliada com o pagamento, de uma vez. A despesa já estava na DRE desde que a conta foi lançada: pagar não lança de novo |
 | **Vários lançamentos juntos** — o depósito da maquininha é a soma das vendas menos as taxas | **Vários** | você marca os lançamentos (até 7 dias da data da linha) e só concilia quando a soma bate no centavo |
 | Dinheiro **entre contas da própria clínica** — resgate ou aplicação de investimento, transferência de uma conta para outra | **Transferência** | lança na conta **6.3.01** (aplicações e transferências), já conciliada. **Não é receita nem despesa:** fica fora da DRE e, no Fluxo de caixa, aparece como investimento |
-| Algo que o sistema **não sabia** — rendimento da aplicação, tarifa do banco, uma receita que não passou pelos Recebíveis | **Lançar** | cria o lançamento, na conta que você escolher, já conciliado |
+| Algo que o sistema **não sabia** — rendimento da aplicação, tarifa do banco, uma receita que não passou pelos Recebíveis | **Lançar** | cria o lançamento, na conta que você escolher, já conciliado. **Na DRE ele entra no mês da linha do extrato** — a janela diz qual |
 | Uma linha que **não pertence** a esta conciliação (linha repetida no extrato, lançamento que o próprio banco desfez) | **×** (Ignorar) | a linha sai desta conta, com o motivo registrado |
 
 - **O recebimento do paciente nasce na baixa da parcela**, em Recebíveis. Na
   Conciliação ele só é **casado** — nunca lançado de novo. Se você abrir o
   **Lançar** numa linha que parece já estar no sistema, a janela avisa
   ("Isto parece já estar no sistema") e oferece **Conciliar com este**.
+- **"Conciliei e não apareceu na DRE"** (relato OC-00110). O lançamento criado
+  pela linha entra na DRE na **data do extrato**: uma linha de 02/09 lançada em
+  outubro está na DRE de **setembro**. Na DRE, escolha o período do extrato. A
+  janela do Lançar e a confirmação dizem o mês.
+- **Conta de fornecedor que já está em Contas a pagar não se lança aqui** — a
+  despesa dela já está na DRE desde que ela foi lançada, e lançar de novo
+  contaria duas vezes (e a conta continuaria em aberto). Com o mesmo valor, use
+  **Pagar conta**; a janela do Lançar avisa quando existe conta em aberto do
+  mesmo valor. Pagou com multa, juros ou só uma parte? Pague em **Contas a
+  pagar** (lá se informam multa e juros) e depois case a linha com **Vários**.
+  O **Desfazer** da Conciliação solta só a conciliação: a conta continua paga
+  (para desfazer o pagamento, use o estorno em Contas a pagar).
 - **Ignorar não é para transferência.** A linha ignorada não entra no saldo
   pelo banco, e o saldo deixa de bater com o extrato. Para resgate, aplicação
   ou transferência, use **Transferência**, que mantém o saldo certo.
@@ -283,6 +297,16 @@ certo é o que impede o mesmo dinheiro de entrar duas vezes:
 - A tela lê o extrato e os lançamentos **inteiros**, por maior que seja a
   conta (antes parava nas primeiras 1.000 linhas). Se a leitura falhar, um
   aviso vermelho diz que os saldos podem estar incompletos.
+
+**As contas pagas** (Contas a pagar; relato OC-00110, desde a versão 0.326.0).
+Na lista, o filtro **Pagas** mostra as contas já quitadas — mas o período da
+lista é pelo **vencimento**. Para saber **o que foi pago e quando**, use o
+quadro **Relatório de contas pagas**, no alto da tela: escolha *Pago de … até*
+e clique em **Relatório (PDF)** ou **Planilha**. Uma linha por pagamento, pela
+**data do pagamento**: fornecedor, descrição, conta, vencimento, forma, valor,
+multa e juros, desconto, total pago e se o pagamento **já foi conferido com o
+banco** (conciliado). Pagamento estornado não entra. Na DRE, a despesa continua
+entrando pela competência da conta, não pela data do pagamento.
 
 **A nota fiscal (XML) e as contas a pagar dela** (Estoque → **Importar nota
 fiscal (XML)**; desde a versão 0.324.0, relato OC-00109). Ao importar, os

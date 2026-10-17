@@ -118,6 +118,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   payable_cancel: "Conta a pagar cancelada",
   payable_payment: "Pagamento de conta",
   payable_payment_batch: "Pagamento de todas as parcelas de uma nota",
+  payable_payment_from_bank: "Conta paga pela conciliação do extrato",
   payable_payment_reversal: "Estorno de pagamento de conta",
   payable_recurrence: "Conta recorrente",
   bank_account: "Conta bancária",

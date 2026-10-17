@@ -40,6 +40,14 @@ function translate(message: string, fallback: string): string {
       "Algum dos lançamentos escolhidos não está disponível (já conciliado, cancelado ou de outra unidade).",
     ],
     ["NEED_TWO_OR_MORE", "Escolha pelo menos dois lançamentos."],
+    ["NOT_PENDING", "Esta linha não está mais pendente."],
+    ["NOT_AN_OUTFLOW", "Só uma saída do banco paga conta a pagar."],
+    ["PAYABLE_NOT_FOUND", "Conta a pagar não encontrada."],
+    [
+      "NOT_APPROVED",
+      "Esta conta ainda espera autorização — só pode ser paga depois de liberada.",
+    ],
+    ["PAYABLE_CLOSED", "Esta conta está cancelada ou recusada."],
   ];
   for (const [code, text] of map) {
     if (message.includes(code)) return text;
@@ -190,6 +198,47 @@ export async function reconcileMultiple(input: {
     details: { lancamentos: input.entryIds.length },
   });
   refresh();
+  return { ok: true };
+}
+
+/**
+ * OC-00110 — a linha de SAÍDA paga uma conta a pagar em aberto do mesmo valor:
+ * baixa com a data do extrato e conciliação, numa transação só. O banco chama
+ * a mesma baixa de Contas a pagar e o mesmo Casar
+ * (`pay_payable_from_bank_transaction`, 0302).
+ */
+export async function payPayableFromTransaction(input: {
+  transactionId: string;
+  payableId: string;
+  paymentMethod: string | null;
+}): Promise<ReconcileResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("pay_payable_from_bank_transaction", {
+    p_transaction_id: input.transactionId,
+    p_payable_id: input.payableId,
+    p_payment_method: input.paymentMethod,
+  });
+  if (error) {
+    console.error("pay_payable_from_bank_transaction failed:", error.message);
+    if (/could not find the function|schema cache/i.test(error.message)) {
+      return { ok: false, error: "O banco ainda não recebeu a atualização 0302." };
+    }
+    return {
+      ok: false,
+      error: translate(error.message, "Não foi possível pagar a conta."),
+    };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "payable_payment_from_bank",
+    entityId: input.payableId,
+    details: { pagamento: data as string, linha: input.transactionId },
+  });
+  refresh();
+  revalidatePath("/financeiro/contas-a-pagar");
   return { ok: true };
 }
 

@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.326.0",
+    data: "2026-10-17",
+    migracao: "0302",
+    titulo: "Conciliação paga conta a pagar, e o relatório de contas pagas",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na Conciliação, uma saída do banco com o mesmo valor de uma conta a pagar em aberto ganha o botão \"Pagar conta\": a conta recebe a baixa com a data do extrato e a linha fica conciliada, de uma vez. A janela do \"Lançar\" avisa quando existe conta a pagar daquele valor — lançar de novo contaria a despesa duas vezes.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao lançar uma linha do extrato, a tela diz em que mês ela entra na DRE: o mês da linha, não o de hoje. Uma linha de setembro lançada em outubro está na DRE de setembro.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Contas a pagar, o \"Relatório de contas pagas\" (PDF e planilha) lista o que foi pago pela data do pagamento — fornecedor, conta, forma, multa e juros e se já foi conferido com o banco.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.325.0",
     data: "2026-10-16",
     migracao: "0301",

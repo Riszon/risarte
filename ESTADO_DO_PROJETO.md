@@ -1,7 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.325.0** · Última migração: **0301** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.326.0** · Última migração: **0302** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🧾 0.326.0 / 0302 — CONCILIAÇÃO PAGA CONTA A PAGAR + RELATÓRIO DE CONTAS PAGAS (OC-00110, 17/10/2026)
+>
+> "Conciliei e não entrou na DRE": NÃO era defeito — as 3 linhas lançadas
+> estão na DRE de SETEMBRO (data do extrato); o print era de outubro. A
+> tela passou a dizer o mês (`mesDaDre`). Decisões do dono: **Pagar conta**
+> pela conciliação (`pay_payable_from_bank_transaction`, 0302 — a mesma
+> baixa de Contas a pagar e o mesmo Casar, só o saldo exato) + aviso no
+> Lançar; e o **Relatório de contas pagas** (pela data do pagamento, PDF e
+> planilha). ⚠️ O saldo da conta na Conciliação desconta o desconto por
+> pontualidade, como o banco (`paid_amount_cents` não o inclui).
+> ⚠️ As 3 linhas do relato estão hoje na Risarte Cambé - Centro (a conta
+> bancária foi movida no OC-00108).
+>
 > ## 🏦 0.325.0 / 0301 — CONCILIAÇÃO: VÁRIOS, TRANSFERÊNCIA E AVISO CONTRA DUPLICAR (OC-00108, 16/10/2026)
 >
 > O relato ("não há opção para baixa do crédito"; "ignorar tira do saldo";

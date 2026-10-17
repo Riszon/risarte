@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canViewFinance } from "@/lib/finance/access";
 import { sortAccounts, type ChartAccount } from "@/lib/finance/accounts";
 import type {
+  ContaEmAberto,
   LedgerEntry,
   ReconciliationStatus,
 } from "@/lib/finance/reconciliation";
@@ -43,6 +44,7 @@ export default async function ReconciliationPage() {
     leituraDosLancamentos,
     { data: chartRows },
     { data: centerRows },
+    leituraDasContas,
   ] = await Promise.all([
     supabase
       .from("bank_accounts")
@@ -96,12 +98,27 @@ export default async function ReconciliationPage() {
       .select("id, name, clinic_id")
       .eq("active", true)
       .order("code"),
+    // OC-00110: as contas a pagar em aberto — a linha de saída pode quitá-las.
+    lerTodasAsPaginas<Record<string, unknown>>((de, ate) =>
+      supabase
+        .from("payables")
+        .select(
+          "id, description, account_code, due_date, amount_cents, paid_amount_cents, supplier:suppliers ( name ), pagamentos:payable_payments!payable_payments_payable_id_fkey ( discount_cents, reversed, reversal_of )"
+        )
+        .eq("clinic_id", clinicId)
+        .in("status", ["aberta", "parcial"])
+        .order("due_date")
+        .order("id")
+        .range(de, ate)
+    ),
   ]);
 
   // Leitura que falha NÃO vira lista vazia: a tela avisa (saldo pela metade engana).
   if (!leituraDasLinhas.ok) console.error("conciliação — extrato:", leituraDasLinhas.error.message);
   if (!leituraDosLancamentos.ok) console.error("conciliação — razão:", leituraDosLancamentos.error.message);
-  const leituraFalhou = !leituraDasLinhas.ok || !leituraDosLancamentos.ok;
+  if (!leituraDasContas.ok) console.error("conciliação — contas a pagar:", leituraDasContas.error.message);
+  const leituraFalhou =
+    !leituraDasLinhas.ok || !leituraDosLancamentos.ok || !leituraDasContas.ok;
   const txRows = leituraDasLinhas.ok ? leituraDasLinhas.linhas : null;
   const entryRows = leituraDosLancamentos.ok ? leituraDosLancamentos.linhas : null;
 
@@ -166,6 +183,27 @@ export default async function ReconciliationPage() {
     reconciled: e.reconciled_at !== null,
   }));
 
+  type NameEmbed = { name: string } | { name: string }[] | null;
+  const nome = (v: NameEmbed): string | null =>
+    Array.isArray(v) ? (v[0]?.name ?? null) : (v?.name ?? null);
+  const openPayables: ContaEmAberto[] = (
+    (leituraDasContas.ok ? leituraDasContas.linhas : []) as unknown as Record<string, unknown>[]
+  ).map((p) => ({
+    id: p.id as string,
+    description: (p.description as string) ?? "",
+    supplierName: nome(p.supplier as NameEmbed),
+    accountCode: p.account_code as string,
+    dueDate: p.due_date as string,
+    // O saldo pela MESMA conta do banco (0302): pago + desconto por
+    // pontualidade, sem estornos. `paid_amount_cents` não inclui o desconto.
+    balanceCents:
+      Number(p.amount_cents) -
+      Number(p.paid_amount_cents ?? 0) -
+      ((p.pagamentos as { discount_cents: number; reversed: boolean; reversal_of: string | null }[] | null) ?? [])
+        .filter((x) => !x.reversed && x.reversal_of === null)
+        .reduce((soma, x) => soma + Number(x.discount_cents ?? 0), 0),
+  }));
+
   const isFranchisorClinic = session.activeClinic?.type === "franchisor";
   const chart: ChartAccount[] = sortAccounts(
     (chartRows ?? [])
@@ -216,8 +254,8 @@ export default async function ReconciliationPage() {
 
       {leituraFalhou && (
         <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          Não foi possível ler todo o extrato ou todos os lançamentos agora — os
-          saldos abaixo podem estar incompletos. Recarregue a página; se
+          Não foi possível ler todo o extrato, todos os lançamentos ou as contas
+          a pagar agora — os saldos abaixo podem estar incompletos. Recarregue a página; se
           continuar, avise pelo Relatar um problema.
         </p>
       )}
@@ -228,6 +266,7 @@ export default async function ReconciliationPage() {
         transactions={transactions}
         imports={imports}
         entries={entries}
+        openPayables={openPayables}
         chart={chart}
         costCenters={costCenters}
         today={today}
