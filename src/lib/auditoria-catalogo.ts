@@ -37,6 +37,7 @@ export const TABELAS: Record<string, string> = {
   "public.attendance_session_outcomes": "Resultado da sessão no atendimento",
   "public.bank_accounts": "Conta bancária",
   "public.bank_statement_imports": "Importação de extrato",
+  "public.bank_transaction_matches": "Linha do extrato casada com vários lançamentos",
   "public.bank_transactions": "Lançamento do extrato",
   "public.budget_lines": "Meta do orçamento",
   "public.card_acquirer_clinics": "Adquirente — unidade",

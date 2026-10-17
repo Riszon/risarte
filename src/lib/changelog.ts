@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.325.0",
+    data: "2026-10-16",
+    migracao: "0301",
+    titulo: "Conciliação: casar vários de uma vez, transferência e aviso contra duplicar",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na Conciliação, o botão \"Vários\" casa uma linha do extrato com vários lançamentos do sistema — o depósito da maquininha, que é a soma das vendas menos as taxas. Só concilia quando a soma bate no centavo.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O botão \"Transferência\" registra resgate, aplicação ou transferência entre contas da própria clínica: fica no saldo do banco e não entra na DRE como receita nem despesa. Antes o único jeito era ignorar a linha, e o saldo deixava de bater.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao lançar uma linha do extrato que parece já estar no sistema (mesmo valor, data perto), a janela avisa e oferece \"Conciliar com este\" — o recebimento do paciente nasce na baixa da parcela e só é casado aqui, nunca lançado de novo.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A Conciliação lê o extrato e os lançamentos inteiros — antes parava nas primeiras 1.000 linhas de cada um, e os saldos podiam sair incompletos sem aviso.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.324.0",
     data: "2026-10-16",
     migracao: "0300",

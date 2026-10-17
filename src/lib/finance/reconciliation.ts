@@ -446,6 +446,44 @@ export type ReconciliationSummary = {
   unmatchedEntryCount: number;
 };
 
+// ---------------------------------------------------------------------------
+// Uma linha, vários lançamentos — e a transferência (OC-00108)
+// ---------------------------------------------------------------------------
+/**
+ * A conta das aplicações e transferências entre contas da própria clínica
+ * (resgate, aplicação, transferência). Grupo 6: fica FORA da DRE — não é
+ * receita nem despesa; no fluxo de caixa conta como investimento (0301).
+ */
+export const CONTA_DE_TRANSFERENCIA = "6.3.01";
+
+/**
+ * Os lançamentos que podem entrar numa conciliação de VÁRIOS: ainda sem par,
+ * até `dias` da data da linha (o depósito da maquininha cai dias depois da
+ * venda). Os mais perto da data primeiro.
+ */
+export function candidatosParaVarios(
+  tx: Pick<ParsedBankTx, "postedAt">,
+  entries: LedgerEntry[],
+  dias = 7
+): LedgerEntry[] {
+  return entries
+    .filter((e) => !e.reconciled && daysApart(e.cashDate, tx.postedAt) <= dias)
+    .sort(
+      (a, b) =>
+        daysApart(a.cashDate, tx.postedAt) - daysApart(b.cashDate, tx.postedAt) ||
+        a.cashDate.localeCompare(b.cashDate)
+    );
+}
+
+/**
+ * A soma dos escolhidos do ponto de vista da conta: entradas − saídas. É o
+ * que tem de bater com a linha — o depósito líquido do cartão = recebimentos
+ * − taxas. O banco confere a mesma conta (`reconcile_bank_transaction_multi`).
+ */
+export function somaDosLancamentos(escolhidos: Pick<LedgerEntry, "amountCents">[]): number {
+  return escolhidos.reduce((s, e) => s + e.amountCents, 0);
+}
+
 export function summarizeReconciliation(input: {
   openingBalanceCents: number;
   transactions: { amountCents: number; status: ReconciliationStatus }[];
@@ -458,7 +496,9 @@ export function summarizeReconciliation(input: {
 
   for (const t of input.transactions) {
     // Ignorado não entra no saldo do banco: é linha que o usuário disse que
-    // não pertence a esta conciliação (transferência entre contas próprias).
+    // não pertence a esta conciliação (linha repetida, lançamento que o banco
+    // desfez). Transferência entre contas próprias NÃO vem para cá: ela tem
+    // botão próprio e fica no saldo (OC-00108).
     if (t.status === "ignorado") {
       ignored += 1;
       continue;

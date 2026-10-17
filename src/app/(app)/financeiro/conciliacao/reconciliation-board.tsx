@@ -28,8 +28,11 @@ import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import type { ChartAccount } from "@/lib/finance/accounts";
 import {
+  candidatosParaVarios,
+  CONTA_DE_TRANSFERENCIA,
   decodeStatement,
   parseStatement,
+  somaDosLancamentos,
   RECONCILIATION_STATUS_LABELS,
   suggestMatches,
   summarizeReconciliation,
@@ -40,6 +43,7 @@ import {
   createEntryFromTransaction,
   deleteImport,
   ignoreTransaction,
+  reconcileMultiple,
   importStatement,
   reconcileTransaction,
   saveBankAccount,
@@ -159,6 +163,11 @@ export function ReconciliationBoard({
   const [newDescription, setNewDescription] = useState("");
   const [ignoringFor, setIgnoringFor] = useState<BankTxRow | null>(null);
   const [ignoreReason, setIgnoreReason] = useState("");
+  // OC-00108: uma linha com vários lançamentos, e a transferência.
+  const [variosFor, setVariosFor] = useState<BankTxRow | null>(null);
+  const [variosSel, setVariosSel] = useState<string[]>([]);
+  const [transferFor, setTransferFor] = useState<BankTxRow | null>(null);
+  const [transferDesc, setTransferDesc] = useState("");
   const [showImports, setShowImports] = useState(false);
   /** A trava disparou: guardamos o arquivo lido para o "importar mesmo assim". */
   const [blocked, setBlocked] = useState<{
@@ -200,6 +209,29 @@ export function ReconciliationBoard({
         entries: scopedEntries,
       }),
     [account, accountTx, scopedEntries]
+  );
+
+  const candidatosDosVarios = useMemo(
+    () => (variosFor ? candidatosParaVarios(variosFor, scopedEntries) : []),
+    [variosFor, scopedEntries]
+  );
+  const somaDosVarios = somaDosLancamentos(
+    candidatosDosVarios.filter((e) => variosSel.includes(e.id))
+  );
+  // O aviso contra duplicar: o que já está no sistema com o mesmo valor.
+  const parecidosAoLancar = useMemo(
+    () =>
+      creatingFor
+        ? suggestMatches(
+            {
+              amountCents: creatingFor.amountCents,
+              postedAt: creatingFor.postedAt,
+              description: creatingFor.description,
+            },
+            scopedEntries
+          )
+        : [],
+    [creatingFor, scopedEntries]
   );
 
   const counts = {
@@ -316,6 +348,40 @@ export function ReconciliationBoard({
         setNewAccountCode("");
         setNewCostCenter("");
         setNewDescription("");
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  function matchMany() {
+    if (!variosFor) return;
+    startTransition(async () => {
+      const r = await reconcileMultiple({
+        transactionId: variosFor.id,
+        entryIds: variosSel,
+      });
+      if (r.ok) {
+        toast.success(`Conciliado com ${variosSel.length} lançamentos.`);
+        setVariosFor(null);
+        setVariosSel([]);
+        router.refresh();
+      } else toast.error(r.error ?? "Algo deu errado.");
+    });
+  }
+
+  function doTransfer() {
+    if (!transferFor) return;
+    startTransition(async () => {
+      const r = await createEntryFromTransaction({
+        transactionId: transferFor.id,
+        accountCode: CONTA_DE_TRANSFERENCIA,
+        costCenterId: null,
+        description: transferDesc,
+      });
+      if (r.ok) {
+        toast.success("Lançado como transferência e conciliado.");
+        setTransferFor(null);
+        setTransferDesc("");
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -702,6 +768,30 @@ export function ReconciliationBoard({
                           </Button>
                           <Button
                             size="sm"
+                            variant="outline"
+                            className="h-8 text-[11px]"
+                            title="Casar esta linha com vários lançamentos do sistema (depósito da maquininha)"
+                            onClick={() => {
+                              setVariosFor(t);
+                              setVariosSel([]);
+                            }}
+                          >
+                            Vários
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-[11px]"
+                            title="Dinheiro entre contas próprias: aplicação, resgate, transferência"
+                            onClick={() => {
+                              setTransferFor(t);
+                              setTransferDesc(t.description);
+                            }}
+                          >
+                            Transferência
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="ghost"
                             className="h-8"
                             title="Ignorar esta linha"
@@ -777,6 +867,47 @@ export function ReconciliationBoard({
                 {creatingFor.description} · {fmtDate(creatingFor.postedAt)} ·{" "}
                 <strong>{formatBRL(creatingFor.amountCents)}</strong>
               </p>
+              {/* OC-00108: AVISO CONTRA DUPLICAR. Se o sistema já tem um
+                  lançamento de mesmo valor perto da data, o certo é casar com
+                  ele — lançar de novo contaria o mesmo dinheiro duas vezes. */}
+              {parecidosAoLancar.length > 0 && (
+                <div className="space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                  <p>
+                    <strong>Isto parece já estar no sistema.</strong> Se for o
+                    mesmo dinheiro, concilie em vez de lançar — lançar de novo
+                    contaria duas vezes.
+                  </p>
+                  {parecidosAoLancar.slice(0, 3).map((c) => (
+                    <div key={c.entry.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <span>
+                        {c.entry.description} · {c.entry.accountCode} · {fmtDate(c.entry.cashDate)}
+                      </span>
+                      <Button
+                        size="sm"
+                        className="h-7 text-[11px]"
+                        onClick={() => {
+                          const id = creatingFor.id;
+                          setCreatingFor(null);
+                          match(id, c.entry.id);
+                        }}
+                      >
+                        Conciliar com este
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {creatingFor.amountCents > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  <strong>Recebimento de paciente ou de cartão?</strong> Ele
+                  nasce na baixa da parcela, em Recebíveis — aqui você só o
+                  casa (<strong>Casar</strong> ou <strong>Vários</strong>).
+                  Resgate ou transferência entre contas próprias:{" "}
+                  <strong>Transferência</strong>. Este botão é para o que o
+                  sistema não sabia (rendimento da aplicação, uma receita que
+                  não passou pelos Recebíveis).
+                </p>
+              )}
               <label className="block">
                 <Label className="text-[11px]">Conta do plano de contas</Label>
                 <ListaComBusca
@@ -835,6 +966,143 @@ export function ReconciliationBoard({
         </DialogContent>
       </Dialog>
 
+      {/* OC-00108: uma linha com vários lançamentos (o depósito da maquininha). */}
+      <Dialog
+        open={variosFor !== null}
+        onOpenChange={(o) => !o && setVariosFor(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Casar com vários lançamentos</DialogTitle>
+          </DialogHeader>
+          {variosFor && (
+            <div className="space-y-3 text-sm">
+              <p className="rounded-lg bg-muted/40 p-2 text-xs">
+                {variosFor.description} · {fmtDate(variosFor.postedAt)} ·{" "}
+                <strong>{formatBRL(variosFor.amountCents)}</strong>
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Para quando o banco junta vários lançamentos numa linha só — o
+                depósito da maquininha, por exemplo, é a soma dos recebimentos
+                menos as taxas. Marque os lançamentos do sistema (até 7 dias da
+                data da linha) até a soma bater no centavo.
+              </p>
+              {candidatosDosVarios.length === 0 ? (
+                <p className="rounded-lg border p-3 text-xs text-muted-foreground">
+                  Nenhum lançamento do sistema sem par perto desta data.
+                </p>
+              ) : (
+                <ul className="max-h-72 space-y-1 overflow-y-auto rounded-lg border p-2 text-xs">
+                  {candidatosDosVarios.map((e) => (
+                    <li key={e.id}>
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={variosSel.includes(e.id)}
+                          onChange={(ev) =>
+                            setVariosSel((sel) =>
+                              ev.target.checked ? [...sel, e.id] : sel.filter((x) => x !== e.id)
+                            )
+                          }
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {e.description}
+                          <span className="ml-1 text-muted-foreground">
+                            {e.accountCode} · {fmtDate(e.cashDate)}
+                          </span>
+                        </span>
+                        <span
+                          className={cn(
+                            "tabular-nums",
+                            e.amountCents < 0 ? "text-destructive" : "text-emerald-700"
+                          )}
+                        >
+                          {formatBRL(e.amountCents)}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p
+                className={cn(
+                  "rounded-lg p-2 text-xs",
+                  somaDosVarios === variosFor.amountCents && variosSel.length >= 2
+                    ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-200"
+                    : "bg-muted/40"
+                )}
+              >
+                Soma dos marcados: <strong>{formatBRL(somaDosVarios)}</strong> · a
+                linha: <strong>{formatBRL(variosFor.amountCents)}</strong>
+                {somaDosVarios !== variosFor.amountCents &&
+                  ` · faltam ${formatBRL(variosFor.amountCents - somaDosVarios)}`}
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setVariosFor(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={
+                isPending ||
+                !variosFor ||
+                variosSel.length < 2 ||
+                somaDosVarios !== variosFor.amountCents
+              }
+              onClick={matchMany}
+            >
+              <Check className="mr-1 size-4" />
+              Conciliar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OC-00108: transferência entre contas próprias (aplicação, resgate). */}
+      <Dialog
+        open={transferFor !== null}
+        onOpenChange={(o) => !o && setTransferFor(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Transferência / aplicação</DialogTitle>
+          </DialogHeader>
+          {transferFor && (
+            <div className="space-y-3 text-sm">
+              <p className="rounded-lg bg-muted/40 p-2 text-xs">
+                {transferFor.description} · {fmtDate(transferFor.postedAt)} ·{" "}
+                <strong>{formatBRL(transferFor.amountCents)}</strong>
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Dinheiro entre contas da própria clínica — resgate ou aplicação
+                de investimento, transferência de uma conta para outra.{" "}
+                <strong>Não é receita nem despesa:</strong> não entra na DRE. A
+                linha fica no saldo do banco e o sistema lança na conta{" "}
+                {CONTA_DE_TRANSFERENCIA} (aplicações e transferências), já
+                conciliada.
+              </p>
+              <label className="block">
+                <Label className="text-[11px]">Descrição</Label>
+                <Input
+                  className="h-9"
+                  value={transferDesc}
+                  onChange={(e) => setTransferDesc(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTransferFor(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={isPending} onClick={doTransfer}>
+              Lançar como transferência
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Ignorar. */}
       <Dialog
         open={ignoringFor !== null}
@@ -845,14 +1113,18 @@ export function ReconciliationBoard({
             <DialogTitle>Ignorar esta linha</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Use para o que não pertence a esta conciliação — transferência entre
-            contas próprias, por exemplo. A linha sai do saldo do banco e o
-            motivo fica registrado.
+            Use só para o que não pertence a esta conciliação — uma linha
+            repetida, um lançamento do banco que ele mesmo desfez. A linha sai
+            desta conta: não entra no saldo pelo banco e não cria lançamento no
+            sistema, então a diferença entre os dois não muda — mas o saldo pelo
+            banco deixa de bater com o extrato. Para resgate, aplicação ou
+            transferência entre contas próprias, use{" "}
+            <strong>Transferência</strong>, que mantém o saldo certo.
           </p>
           <textarea
             value={ignoreReason}
             onChange={(e) => setIgnoreReason(e.target.value)}
-            placeholder="Ex.: transferência para a conta poupança da própria unidade"
+            placeholder="Ex.: linha repetida no extrato"
             className="min-h-16 w-full rounded-lg border border-input bg-transparent p-2 text-sm"
           />
           <DialogFooter className="gap-2">

@@ -31,6 +31,15 @@ function translate(message: string, fallback: string): string {
       "O valor não bate: conciliação exige o mesmo valor e o mesmo sentido (entrada/saída).",
     ],
     ["REASON_REQUIRED", "Escreva o motivo."],
+    [
+      "ENTRY_ALREADY_RECONCILED",
+      "Este lançamento já está conciliado com outra linha.",
+    ],
+    [
+      "ENTRY_NOT_AVAILABLE",
+      "Algum dos lançamentos escolhidos não está disponível (já conciliado, cancelado ou de outra unidade).",
+    ],
+    ["NEED_TWO_OR_MORE", "Escolha pelo menos dois lançamentos."],
   ];
   for (const [code, text] of map) {
     if (message.includes(code)) return text;
@@ -142,6 +151,43 @@ export async function reconcileTransaction(input: {
     action: "update",
     entityType: "bank_reconciliation",
     entityId: input.transactionId,
+  });
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * OC-00108 — uma linha do extrato com VÁRIOS lançamentos (o depósito da
+ * maquininha: recebimentos menos as taxas). Quem confere a soma no centavo é
+ * o banco (`reconcile_bank_transaction_multi`, 0301).
+ */
+export async function reconcileMultiple(input: {
+  transactionId: string;
+  entryIds: string[];
+}): Promise<ReconcileResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("reconcile_bank_transaction_multi", {
+    p_transaction_id: input.transactionId,
+    p_entry_ids: input.entryIds,
+  });
+  if (error) {
+    console.error("reconcile_bank_transaction_multi failed:", error.message);
+    if (/could not find the function|schema cache/i.test(error.message)) {
+      return { ok: false, error: "O banco ainda não recebeu a atualização 0301." };
+    }
+    return {
+      ok: false,
+      error: translate(error.message, "Não foi possível conciliar."),
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "bank_reconciliation",
+    entityId: input.transactionId,
+    details: { lancamentos: input.entryIds.length },
   });
   refresh();
   return { ok: true };

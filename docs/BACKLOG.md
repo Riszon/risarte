@@ -2500,6 +2500,29 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
+### AP51. Conciliação: o que ficou depois do OC-00108 (16/10/2026)
+
+*(Achado no diagnóstico do OC-00108; o relato foi resolvido na 0301 / core
+0.325.0.)*
+
+**✅ Corrigido junto:** a tela lia no máximo 1.000 linhas do extrato e 1.000
+lançamentos (corte da API) — agora lê em páginas e avisa se falhar.
+
+**Confirmado no código, NÃO corrigido (decisão a tomar):**
+
+1. **O "saldo pelo sistema" soma todo lançamento de caixa da unidade, de
+   qualquer conta bancária e de qualquer data** (`page.tsx` filtra só por
+   unidade, `cash_date` preenchida e não cancelado). Com UMA conta por
+   unidade, bate; com duas contas (corrente + aplicação), a diferença da
+   conciliação de cada uma fica errada. O lançamento não guarda de qual conta
+   bancária saiu — corrigir exige essa coluna.
+2. **O depósito da maquininha é casado à mão** (Vários). Casar sozinho exigiria
+   ler o relatório da adquirente (vendas, taxas, antecipação), que o sistema
+   não importa.
+
+**Suspeita (não medida):** em conta com muitos meses, a lista de candidatos do
+"Casar" pode ficar lenta (o cálculo roda no navegador sobre tudo).
+
 ### AP50. Cancelar e estornar cobrança do Empresarial não conferiam quem chamava — ✅ CORRIGIDO na 1029 (16/10/2026)
 
 **✅ VARREDURA DO SCHEMA `empresarial` FEITA (pedido do dono, 16/10/2026) —

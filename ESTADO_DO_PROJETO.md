@@ -1,7 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.324.0** · Última migração: **0300** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.325.0** · Última migração: **0301** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🏦 0.325.0 / 0301 — CONCILIAÇÃO: VÁRIOS, TRANSFERÊNCIA E AVISO CONTRA DUPLICAR (OC-00108, 16/10/2026)
+>
+> O relato ("não há opção para baixa do crédito"; "ignorar tira do saldo";
+> medo de duplicar o boleto do paciente) NÃO era defeito na regra: o que já
+> está no sistema se CASA; "Lançar" cria. As lacunas, escolhidas pelo dono:
+> **Vários** (`reconcile_bank_transaction_multi`, tabela
+> `bank_transaction_matches`), **Transferência** (conta **6.3.01**, ativo,
+> fora da DRE; investimento no fluxo de caixa), **aviso contra duplicar** no
+> Lançar, e a tela lendo **tudo** (antes, 1.000 linhas). De carona:
+> `reconcile_bank_transaction` recusa lançamento já conciliado.
+> ⚠️ A conta bancária do treino (60 linhas, 1 importação, 3 lançamentos do
+> banco) foi movida da RISARTE Franchising para a **Risarte Cambé - Centro**
+> (resposta do dono: a conta é de uma clínica). **AP51** no BACKLOG.
+>
 > ## 🧾 0.324.0 / 0300 — AS PARCELAS DA NOTA FISCAL (OC-00109, 16/10/2026)
 >
 > O relato achava que a nota era "dividida pelas linhas". Não era: as contas

@@ -71,7 +71,16 @@ const SINONIMOS = [
 const norm = (s) =>
   SINONIMOS.reduce(
     (t, [de, para]) => t.replace(de, para),
-    s.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
+    s
+      .replace(/--[^\n]*/g, " ")
+      .replace(/\s+/g, " ")
+      // "table (" e "table(" são o mesmo retorno: a definição copiada do banco
+      // (pg_get_functiondef) vem sem o espaço — sem isto a régua acusava à toa.
+      .replace(/\s*\(\s*/g, "(")
+      .replace(/\s*\)/g, ")")
+      .replace(/\s*,\s*/g, ", ")
+      .trim()
+      .toLowerCase()
   );
 
 /** Última definição conhecida de cada função, antes da migração alvo. */

@@ -390,6 +390,30 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/10/2026 (noite, 4ª) — PC Administrador (core 0.324.0 → 0.325.0, migração 0301)**
+
+- **OC-00108 — "não há opção para baixa do crédito" na Conciliação.** NÃO era
+  defeito na regra: o recebimento do paciente nasce na baixa da parcela
+  (Recebíveis) e na Conciliação só se CASA; "Lançar" cria e duplicaria. A
+  conta do relato estava na RISARTE Franchising, por isso o Lançar mostrava as
+  contas da franqueadora. Melhorias escolhidas pelo dono: **Vários** (uma
+  linha × vários lançamentos, soma no centavo), **Transferência** (conta
+  **6.3.01**, ativo — fora da DRE pelo `not like '6%'`), **aviso contra
+  duplicar** no Lançar e a tela lendo **tudo** (antes, 1.000 linhas).
+- ⚠️ **Lançamento casado com várias linhas vive em `bank_transaction_matches`**
+  (a linha fica com `matched_entry_id` nulo). Um lançamento casa com UMA linha
+  só, nos dois caminhos (índice único + `ENTRY_ALREADY_RECONCILED`).
+- ⚠️ **`check-migrations`: a comparação de retorno passou a ignorar espaço
+  em volta de parênteses e vírgulas** (falso positivo em
+  `cash_flow_series_raw`); provado que ainda pega mudança real.
+- ⚠️ **No treino, a conta bancária e o extrato foram MOVIDOS para a Risarte
+  Cambé - Centro** (resposta do dono). ⏳ **0301 pendente na produção.**
+- **AP51 (BACKLOG):** o saldo pelo sistema soma todas as contas bancárias da
+  unidade; casar a maquininha sozinho exigiria o relatório da adquirente.
+- Visto na tela no treino (Admin de teste, Cambé): botões, orientação,
+  janelas de Transferência e Vários (canceladas; nada gravado).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **16/10/2026 (noite, 3ª) — PC Administrador (core 0.323.0 → 0.324.0, migração 0300)**
 
 - **OC-00109 — a nota fiscal "dividida pelas linhas".** NÃO era: as 12 contas

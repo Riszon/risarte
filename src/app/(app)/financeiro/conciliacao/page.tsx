@@ -15,6 +15,7 @@ import {
   type ImportRow,
 } from "./reconciliation-board";
 import { todayInBrazil } from "@/lib/dates";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 
 /** FIN4a — conciliação bancária: o que o sistema diz × o que o banco mostra. */
 export default async function ReconciliationPage() {
@@ -37,9 +38,9 @@ export default async function ReconciliationPage() {
 
   const [
     { data: accountRows },
-    { data: txRows },
+    leituraDasLinhas,
     { data: importRows },
-    { data: entryRows },
+    leituraDosLancamentos,
     { data: chartRows },
     { data: centerRows },
   ] = await Promise.all([
@@ -50,13 +51,19 @@ export default async function ReconciliationPage() {
       )
       .eq("clinic_id", clinicId)
       .order("alias"),
-    supabase
-      .from("bank_transactions")
-      .select(
-        "id, bank_account_id, posted_at, amount_cents, description, fit_id, status, matched_entry_id, ignore_reason, matcher:profiles!bank_transactions_matched_by_fkey ( full_name )"
-      )
-      .eq("clinic_id", clinicId)
-      .order("posted_at"),
+    // OC-00108: a API corta cada resposta em 1.000 linhas — o extrato e o
+    // razão são lidos INTEIROS, em páginas (senão os saldos ficariam pela metade).
+    lerTodasAsPaginas<Record<string, unknown>>((de, ate) =>
+      supabase
+        .from("bank_transactions")
+        .select(
+          "id, bank_account_id, posted_at, amount_cents, description, fit_id, status, matched_entry_id, ignore_reason, matcher:profiles!bank_transactions_matched_by_fkey ( full_name )"
+        )
+        .eq("clinic_id", clinicId)
+        .order("posted_at")
+        .order("id")
+        .range(de, ate)
+    ),
     supabase
       .from("bank_statement_imports")
       .select(
@@ -65,15 +72,19 @@ export default async function ReconciliationPage() {
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false }),
     // Só o que tem CAIXA: conciliação é sobre dinheiro que se moveu.
-    supabase
-      .from("financial_entries")
-      .select(
-        "id, amount_cents, cash_date, description, account_code, direction, reconciled_at"
-      )
-      .eq("clinic_id", clinicId)
-      .not("cash_date", "is", null)
-      .neq("status", "cancelled")
-      .order("cash_date"),
+    lerTodasAsPaginas<Record<string, unknown>>((de, ate) =>
+      supabase
+        .from("financial_entries")
+        .select(
+          "id, amount_cents, cash_date, description, account_code, direction, reconciled_at"
+        )
+        .eq("clinic_id", clinicId)
+        .not("cash_date", "is", null)
+        .neq("status", "cancelled")
+        .order("cash_date")
+        .order("id")
+        .range(de, ate)
+    ),
     supabase
       .from("chart_of_accounts")
       .select(
@@ -86,6 +97,13 @@ export default async function ReconciliationPage() {
       .eq("active", true)
       .order("code"),
   ]);
+
+  // Leitura que falha NÃO vira lista vazia: a tela avisa (saldo pela metade engana).
+  if (!leituraDasLinhas.ok) console.error("conciliação — extrato:", leituraDasLinhas.error.message);
+  if (!leituraDosLancamentos.ok) console.error("conciliação — razão:", leituraDosLancamentos.error.message);
+  const leituraFalhou = !leituraDasLinhas.ok || !leituraDosLancamentos.ok;
+  const txRows = leituraDasLinhas.ok ? leituraDasLinhas.linhas : null;
+  const entryRows = leituraDosLancamentos.ok ? leituraDosLancamentos.linhas : null;
 
   type PersonEmbed = { full_name: string } | { full_name: string }[] | null;
   const person = (v: PersonEmbed): string | null =>
@@ -195,6 +213,14 @@ export default async function ReconciliationPage() {
           lançamento correspondente.
         </p>
       </div>
+
+      {leituraFalhou && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          Não foi possível ler todo o extrato ou todos os lançamentos agora — os
+          saldos abaixo podem estar incompletos. Recarregue a página; se
+          continuar, avise pelo Relatar um problema.
+        </p>
+      )}
 
       <ReconciliationBoard
         clinicId={clinicId}

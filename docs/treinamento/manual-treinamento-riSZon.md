@@ -256,6 +256,34 @@ versão 0.322.0:
 > defeito do sistema — não do arquivo nem da sua função. Se a mensagem voltar
 > a aparecer depois da 0298, relate o problema com o arquivo à mão.
 
+**Conciliar: cada linha do extrato com o que o sistema já sabe** (relato
+OC-00108; desde a versão 0.325.0). Cada linha pendente tem botões, e escolher o
+certo é o que impede o mesmo dinheiro de entrar duas vezes:
+
+| A linha do banco é… | Botão | O que acontece |
+|---|---|---|
+| Um recebimento ou pagamento que **já está no sistema** com o mesmo valor (a baixa da parcela do paciente, a conta paga) | **Casar (N)** — aparece quando há lançamento do mesmo valor perto da data | só liga os dois; não cria nada |
+| **Vários lançamentos juntos** — o depósito da maquininha é a soma das vendas menos as taxas | **Vários** | você marca os lançamentos (até 7 dias da data da linha) e só concilia quando a soma bate no centavo |
+| Dinheiro **entre contas da própria clínica** — resgate ou aplicação de investimento, transferência de uma conta para outra | **Transferência** | lança na conta **6.3.01** (aplicações e transferências), já conciliada. **Não é receita nem despesa:** fica fora da DRE e, no Fluxo de caixa, aparece como investimento |
+| Algo que o sistema **não sabia** — rendimento da aplicação, tarifa do banco, uma receita que não passou pelos Recebíveis | **Lançar** | cria o lançamento, na conta que você escolher, já conciliado |
+| Uma linha que **não pertence** a esta conciliação (linha repetida no extrato, lançamento que o próprio banco desfez) | **×** (Ignorar) | a linha sai desta conta, com o motivo registrado |
+
+- **O recebimento do paciente nasce na baixa da parcela**, em Recebíveis. Na
+  Conciliação ele só é **casado** — nunca lançado de novo. Se você abrir o
+  **Lançar** numa linha que parece já estar no sistema, a janela avisa
+  ("Isto parece já estar no sistema") e oferece **Conciliar com este**.
+- **Ignorar não é para transferência.** A linha ignorada não entra no saldo
+  pelo banco, e o saldo deixa de bater com o extrato. Para resgate, aplicação
+  ou transferência, use **Transferência**, que mantém o saldo certo.
+- **As contas que aparecem no Lançar são as da unidade escolhida no alto da
+  tela.** A conta bancária da clínica precisa estar cadastrada **na unidade**
+  (não na Franqueadora); senão as contas de receita de paciente não aparecem.
+- **Errou?** **Desfazer** devolve a linha para pendente e solta todos os
+  lançamentos que estavam casados com ela, inclusive os do **Vários**.
+- A tela lê o extrato e os lançamentos **inteiros**, por maior que seja a
+  conta (antes parava nas primeiras 1.000 linhas). Se a leitura falhar, um
+  aviso vermelho diz que os saldos podem estar incompletos.
+
 **A nota fiscal (XML) e as contas a pagar dela** (Estoque → **Importar nota
 fiscal (XML)**; desde a versão 0.324.0, relato OC-00109). Ao importar, os
 **produtos** entram no estoque, cada um com o **valor real** da nota; e as
