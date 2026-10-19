@@ -183,3 +183,36 @@ finalizado, **o banco recusa** alterar e apagar (gatilho), e a correção é
 
 Cada fase: plano → seu OK → código → testes → migração no treino → commit →
 manual e estado → resumo para você.
+
+---
+
+## 8. Decisões do dono (19/10/2026) — OD0 fechada
+
+| # | Decisão |
+|---|---|
+| D1 | Situações além das 5 TUSS: **lista da Risarte**, marcada "não TUSS", que eu proponho e **o dono aprova** item por item |
+| D2 | Faces por dente e dentes por região: **derivadas pela regra odontológica**, conferidas pelo dono antes de valer |
+| D3 | Preço: **rede + ajuste por unidade, com vigência** (data de início), como o repasse |
+| D4 | Plano aprovado que muda: **nova versão**; a anterior fica "substituída" e consultável (sai o "Reabrir para edição") |
+| D5 | Planner: **define** o diagnóstico e monta o plano. Avaliação segue do Coordenador, apresentação do Consultor — **o CLAUDE.md §5 não muda** nisso |
+| D6 | Admin Master não titular **perde só as ações clínicas** do odontograma (sugerir, definir, montar plano, evoluir); o titular (`is_owner`) faz tudo |
+| D7 | Coordenador vê **só totais**; Gerente **vê preços** |
+| D8 | Assistente comercial **não vê** o odontograma |
+| D8b | ⚠️ **Coordenador passa a registrar evolução clínica** (hoje só o Dentista) — mudança de regra, entra na OD5 |
+| D9 | Orçamento/contrato **impresso com a miniatura** na OD4; ZapSign quando houver a chave |
+| D10 | Descontos: **as regras comerciais que já existem** |
+| D11 | Os 370 procedimentos: **o sistema sugere a classificação, o dono revisa** a planilha; só entra o revisado |
+| D12 | Cores: vermelho = a realizar · azul = existente/realizado · cinza = ausente · tracejado + ícone = sugestão; sempre com símbolo |
+| — | Revisor das planilhas clínicas (situações, faces/regiões, classificação): **o dono** |
+
+## 9. OD1 — o que vem primeiro (aguardando o OK)
+
+1. **Três planilhas para o dono revisar** (antes de qualquer migração):
+   situações da Risarte (D1); faces por dente e dentes por região (D2);
+   classificação sugerida dos 370 procedimentos (D11).
+2. Depois da revisão: migração com as tabelas de referência (seed dos JSON
+   TUSS + o que foi aprovado), as regras clínicas do catálogo e a
+   **vigência do preço** (D3), no treino primeiro.
+3. Tela do Admin para as regras clínicas de cada procedimento.
+4. O `<Odontogram />` em modo `compact` e leitura, e a aba **Odontograma**
+   na ficha (vazia de achados até a OD2).
