@@ -1,7 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.326.0** · Última migração: **0302** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.327.0** · Última migração: **0303** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎓 0.327.0 / 0303 — CERTIFICAÇÃO: AVISO, EQUIPE E ACOMPANHAMENTO (OC-00003, 19/10/2026)
+>
+> "O convocado não recebe alerta": REGRA — o quadro da missão aparece só no
+> Início do sistema REAL, e o teste foi feito no treino. Mas nenhum aviso no
+> sino era criado. Decisões do dono: **aviso no sino** (gatilho na matrícula,
+> 0303), **a equipe da coletiva no Início** (`my_training_group`, o mesmo
+> grupo de `_system_access_raw`) e o **painel Acompanhamento**. ⚠️ O
+> progresso dos colegas e do painel é o ÚLTIMO RETRATO
+> (`progress_snapshot`, só o servidor grava — `guardarProgresso` antes de
+> cada `registrarSeCumprida`). A situação de cada pessoa: uma regra só
+> (`situacaoDaMatricula`, `certificacao-equipe.ts`).
+>
 > ## 🧾 0.326.0 / 0302 — CONCILIAÇÃO PAGA CONTA A PAGAR + RELATÓRIO DE CONTAS PAGAS (OC-00110, 17/10/2026)
 >
 > "Conciliei e não entrou na DRE": NÃO era defeito — as 3 linhas lançadas

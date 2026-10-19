@@ -20,8 +20,15 @@ import { isoDateIn, todayInBrazil } from "@/lib/dates";
 import { deveMostrarBoasVindas } from "@/lib/textos-automaticos";
 import { createClient } from "@/lib/supabase/server";
 import { BirthdayNotifier } from "./birthday-notifier";
-import { montarPendencias, atalhosPara, missaoAberta, type Pendencia } from "./inicio-dados";
+import {
+  montarPendencias,
+  atalhosPara,
+  equipeDaMissao,
+  missaoAberta,
+  type Pendencia,
+} from "./inicio-dados";
 import { MissaoDeCertificacao } from "@/components/missao-de-certificacao";
+import { EquipeDaCertificacao } from "@/components/equipe-da-certificacao";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -203,6 +210,8 @@ export default async function HomePage() {
   const minhaMissao = treino
     ? null
     : await missaoAberta(supabase, session.userId, session.email);
+  // 0303 (OC-00003): na coletiva, a equipe da unidade e como cada um avança.
+  const minhaEquipe = minhaMissao ? await equipeDaMissao(supabase) : null;
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
@@ -227,6 +236,7 @@ export default async function HomePage() {
       )}
 
       {minhaMissao && <MissaoDeCertificacao missao={minhaMissao} />}
+      {minhaEquipe && <EquipeDaCertificacao grupos={minhaEquipe} />}
 
       {/* 0276: AS UNIDADES AINDA FECHADAS, e por quê. Sem isto a unidade
           simplesmente some da lista, e a pessoa conclui que perdeu o acesso

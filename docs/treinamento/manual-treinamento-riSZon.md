@@ -849,10 +849,18 @@ Primeiro você usa o ambiente de treino **à vontade**, para aprender: cadastre
 paciente de mentira, erre, apague, refaça, teste todos os botões. **Nada disso
 é contado.** É para isso que o treino existe.
 
-Depois, quando a liderança abrir uma **turma**, aparece um aviso na sua tela de
-**Início** dizendo que você foi convocado e **o que exatamente você vai precisar
+Depois, quando a liderança abrir uma **turma**, você recebe um **aviso no
+sino** (*"Você foi convocado para a certificação"*) e aparece um quadro na sua
+tela de **Início do sistema REAL** dizendo **o que exatamente você vai precisar
 cumprir**. Você lê com calma. Sem pressa — enquanto não clicar, continua nada
 sendo contado.
+
+> ⚠️ **O quadro da convocação aparece no sistema REAL, não no treino** (relato
+> OC-00003). A certificação é guardada no real, e é lá que você aceita e
+> acompanha. **A missão você cumpre trabalhando no treino** — e o que faz lá
+> aparece no quadro do real. Quem entrar só no treino não vê o quadro: isso não
+> é defeito. Quem ainda está com o sistema real fechado também entra no real e
+> cai direto no Início, onde o quadro está.
 
 **Quando estiver pronto, clique em "Aceitar e começar a missão".** A partir
 desse instante — e só dele — o que você fizer no treino conta para a sua
@@ -876,8 +884,22 @@ Duas regras que valem a pena saber:
   algum critério não puder ser conferido, a missão **não** é dada por
   cumprida — nada é liberado no escuro.
 
+**Na liberação coletiva, você vê a sua equipe.** Logo abaixo do quadro da
+missão, no Início, aparece **"Sua equipe na certificação"**: cada colega da
+unidade com nome, função e situação — *ainda não aceitou*, *em andamento* (com
+o percentual e a hora da última medição), *cumpriu*, *aguardando aprovação* ou
+*certificado* — e quantos já cumpriram (*"2 de 5"*). A unidade só abre quando
+todos cumprirem; o quadro mostra por quem o grupo está esperando. O percentual
+dos colegas é a **última medição** feita (quando cada um abriu o Início ou
+conferiu a missão), não uma medição deste instante — por isso a hora aparece.
+
 **Para o Admin Master:** a lista de cada turma mostra, pessoa por pessoa, o
-progresso de quem já começou.
+progresso de quem já começou. E o quadro **Acompanhamento da certificação**, no
+alto de Administração → Certificação, junta **todas as turmas abertas**: cada
+equipe (unidade) com *"N de M cumpriram"* e uma barra, e cada pessoa com a
+situação e o percentual da última medição. Filtre por turma, unidade, função e
+situação. **Medir agora** mede a unidade no treino naquele momento e atualiza
+os números.
 
 **Para o Admin Master:** as turmas ficam na mesma tela de Certificação. Escolha
 **uma unidade, várias, ou marque "Rede toda"** — com muitas unidades, há uma

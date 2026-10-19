@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import type { MetaDoTreino } from "@/lib/certificacao";
-import { medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
+import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import { recadoDaConclusao } from "@/lib/certificacao-conclusao";
 import type { UserRole } from "@/lib/roles";
 
@@ -114,6 +114,7 @@ export async function conferirMinhaMissao(
     };
   }
 
+  await guardarProgresso(String(data.id), medicao);
   const registrado = await registrarSeCumprida(String(data.id), medicao);
   revalidatePath("/");
   if (registrado) {

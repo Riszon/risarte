@@ -19,7 +19,12 @@ import {
   type Medicao,
   type MetaDoTreino,
 } from "@/lib/certificacao";
-import { medirMatricula, medirVarias, registrarSeCumprida } from "@/lib/certificacao-servidor";
+import {
+  guardarProgresso,
+  medirMatricula,
+  medirVarias,
+  registrarSeCumprida,
+} from "@/lib/certificacao-servidor";
 import type { ResultadoDaConclusao } from "@/lib/certificacao-conclusao";
 import type { UserRole } from "@/lib/roles";
 import { todayInBrazil } from "@/lib/dates";
@@ -335,6 +340,8 @@ export async function medirUnidadeDaTurma(
   const concluidas: Record<string, ResultadoDaConclusao> = {};
   for (const m of lista) {
     if (m.status !== "em_andamento") continue;
+    // 0303: o retrato que o painel de acompanhamento lê.
+    await guardarProgresso(m.id, medidas.get(m.chave) ?? null);
     const r = await registrarSeCumprida(m.id, medidas.get(m.chave) ?? null);
     if (r) concluidas[m.chave] = r;
   }

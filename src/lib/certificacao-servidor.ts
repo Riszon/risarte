@@ -16,6 +16,7 @@ import {
   retratoDaMedicao,
   type ResultadoDaConclusao,
 } from "@/lib/certificacao-conclusao";
+import { retratoDoProgresso } from "@/lib/certificacao-equipe";
 
 /**
  * MEDIR UMA MATRÍCULA — do banco da produção até o banco de treino e de volta.
@@ -115,6 +116,27 @@ export async function registrarSeCumprida(
     return null;
   }
   return data;
+}
+
+/**
+ * GUARDA A ÚLTIMA MEDIÇÃO NA MATRÍCULA (0303, relato OC-00003) — é ela que os
+ * colegas da coletiva e o painel do Admin leem, sem medir de novo no treino.
+ *
+ * Só o que foi MEDIDO vira retrato: "não deu para medir" não apaga o último
+ * número bom. E falhar aqui nunca atrapalha quem mediu — a pessoa vê o
+ * progresso dela de qualquer jeito; quem perde é só o painel, que fica com o
+ * retrato anterior (e a data dele).
+ */
+export async function guardarProgresso(
+  enrollmentId: string,
+  medicao: Medicao | null
+): Promise<void> {
+  if (medicao?.estado !== "medido") return;
+  const { error } = await createAdminClient().rpc("record_training_progress", {
+    p_enrollment_id: enrollmentId,
+    p_snapshot: retratoDoProgresso(medicao.progresso, new Date()),
+  });
+  if (error) console.error("guardarProgresso falhou:", error.message);
 }
 
 /**

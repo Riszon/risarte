@@ -13,8 +13,32 @@ import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { contarEtapasDaCompra } from "./compras/trilha-dados";
 import { startOfTodayInBrazil } from "@/lib/dates";
 import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
-import { medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
+import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import type { MissaoNaTela } from "@/components/missao-de-certificacao";
+import {
+  lerColegas,
+  porUnidade,
+  type ColegaDoGrupo,
+  type GrupoDaUnidade,
+} from "@/lib/certificacao-equipe";
+
+/**
+ * A EQUIPE DA PESSOA NA CERTIFICAÇÃO COLETIVA (0303, relato OC-00003).
+ *
+ * Vazio quando a liberação é individual ou a pessoa não está numa turma de
+ * novatos aberta — o banco decide (`my_training_group`). Falha ao ler devolve
+ * nulo, como o cartão da missão: o quadro some, o Início abre.
+ */
+export async function equipeDaMissao(
+  supabase: SupabaseClient
+): Promise<GrupoDaUnidade<ColegaDoGrupo>[] | null> {
+  const { data, error } = await supabase.rpc("my_training_group");
+  if (error) {
+    console.error("equipeDaMissao:", error.message);
+    return null;
+  }
+  return porUnidade(lerColegas((data ?? []) as Record<string, unknown>[]));
+}
 
 /**
  * O QUE ESPERA POR VOCÊ — o miolo da tela de início.
@@ -516,6 +540,8 @@ export async function missaoAberta(
         : "certificado"
       : null;
   if (status === "em_andamento") {
+    // 0303: a última medição fica na matrícula para a equipe e o painel.
+    await guardarProgresso(String(data.id), medicao);
     const registrado = await registrarSeCumprida(String(data.id), medicao);
     if (registrado) {
       status = "concluido";

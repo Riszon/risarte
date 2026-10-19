@@ -22,6 +22,9 @@ import {
   type TurmaAberta,
   type UnidadeParaTurma,
 } from "./turmas";
+import { Acompanhamento, type MatriculaNoPainel } from "./acompanhamento";
+import { percentualDoRetrato } from "@/lib/certificacao-equipe";
+import { lerTodasAsPaginas } from "@/lib/paginar";
 
 export const metadata: Metadata = { title: "Certificação para o sistema real" };
 
@@ -161,6 +164,63 @@ export default async function CertificacaoPage() {
     };
   });
 
+  // 0303 (OC-00003): O ACOMPANHAMENTO. Consulta própria, separada da lista de
+  // turmas: enquanto a 0303 não rodar num banco, só o painel avisa — a lista
+  // de turmas (que já funciona) não pode cair junto.
+  const [leituraDoPainel, leituraDosCertificados] = await Promise.all([
+    lerTodasAsPaginas<Record<string, unknown>>((de, ate) =>
+      supabase
+        .from("training_enrollments")
+        .select(
+          "id, campaign_id, user_id, role, status, invited_at, started_at, approval_status, access_suspended_at, clinic_id, progress_snapshot, progress_measured_at, profiles!training_enrollments_user_id_fkey(full_name, email), training_campaigns!inner(code, kind, status)"
+        )
+        .eq("training_campaigns.status", "aberta")
+        .order("id")
+        .range(de, ate)
+    ),
+    lerTodasAsPaginas<Record<string, unknown>>((de, ate) =>
+      supabase
+        .from("training_certifications")
+        .select("user_id, role, certified_at")
+        .order("id")
+        .range(de, ate)
+    ),
+  ]);
+  const painelFalhou = !leituraDoPainel.ok || !leituraDosCertificados.ok;
+  if (!leituraDoPainel.ok) console.error("acompanhamento:", leituraDoPainel.error.message);
+  if (!leituraDosCertificados.ok) console.error("acompanhamento — certificados:", leituraDosCertificados.error.message);
+  // Certificado vale a partir da convocação (a mesma régua de `_system_access_raw`).
+  const certificadoEm = new Map<string, string[]>();
+  for (const c of leituraDosCertificados.ok ? leituraDosCertificados.linhas : []) {
+    const k = `${c.user_id}:${c.role}`;
+    certificadoEm.set(k, [...(certificadoEm.get(k) ?? []), String(c.certified_at)]);
+  }
+  const umaTurma = (v: unknown) => (Array.isArray(v) ? v[0] : v) as { code?: string | null; kind?: string } | null;
+  const umPerfil = (v: unknown) => (Array.isArray(v) ? v[0] : v) as { full_name?: string | null; email?: string | null } | null;
+  const noPainel: MatriculaNoPainel[] = (leituraDoPainel.ok ? leituraDoPainel.linhas : []).map((m) => {
+    const t = umaTurma(m.training_campaigns);
+    const p = umPerfil(m.profiles);
+    const convocadoEm = String(m.invited_at ?? "");
+    const clinicId = m.clinic_id ? String(m.clinic_id) : "";
+    return {
+      campaignId: String(m.campaign_id),
+      turma: `${t?.code ?? "Turma"} · ${t?.kind === "reciclagem" ? "Reciclagem" : "Novatos"}`,
+      clinicId,
+      clinicName: nomeDe.get(clinicId) ?? "Unidade desativada",
+      nome: p?.full_name || p?.email || "Sem nome",
+      role: m.role as UserRole,
+      status: String(m.status),
+      certificado: (certificadoEm.get(`${m.user_id}:${m.role}`) ?? []).some(
+        (em) => new Date(em).getTime() >= new Date(convocadoEm).getTime()
+      ),
+      aprovacao: m.approval_status ? String(m.approval_status) : null,
+      startedAt: m.started_at ? String(m.started_at) : null,
+      percentual: percentualDoRetrato(m.progress_snapshot),
+      medidoEm: m.progress_measured_at ? String(m.progress_measured_at) : null,
+      suspenso: Boolean(m.access_suspended_at),
+    };
+  });
+
   // Unidade que já está numa turma aberta não pode entrar em outra (0275).
   const turmaDaUnidade = new Map<string, string>();
   for (const t of turmas) {
@@ -213,6 +273,32 @@ export default async function CertificacaoPage() {
         <AprovacoesPendentes pendentes={pendentes} />
       ) : null}
 
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Acompanhamento da certificação
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Todas as turmas abertas: cada equipe (unidade) e cada pessoa — quem
+            ainda não aceitou, quem está em andamento e quanto já fez, quem
+            cumpriu e quem espera a sua aprovação. O progresso é a{" "}
+            <strong>última medição</strong>, com a data; para atualizar uma
+            unidade agora, use <strong>Medir agora</strong>.
+          </p>
+        </div>
+        {painelFalhou ? (
+          <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+            Não foi possível ler o acompanhamento. Se a atualização 0303 ainda
+            não foi aplicada neste banco, é isso: rode-a e recarregue.
+          </p>
+        ) : (
+          <Acompanhamento
+            matriculas={noPainel}
+            coletiva={atual.release_scope === "coletiva"}
+          />
+        )}
+      </div>
+
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
         <p className="font-medium">Vale para a rede inteira.</p>
         <p className="mt-1 text-muted-foreground">
@@ -252,7 +338,11 @@ export default async function CertificacaoPage() {
           <p className="text-sm text-muted-foreground">
             A missão <strong>não fica valendo o tempo todo</strong>. A pessoa
             usa o treino livremente para aprender; só quando é convocada — e
-            aceita — o que ela faz passa a contar para a certificação.
+            aceita — o que ela faz passa a contar para a certificação. Ao ser
+            convocada, ela recebe um aviso no sino e vê a missão no{" "}
+            <strong>Início do sistema REAL</strong> — no treino o quadro não
+            aparece (a certificação é guardada no real); é no treino que ela
+            cumpre a missão.
           </p>
         </div>
         <Turmas

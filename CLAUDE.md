@@ -390,6 +390,30 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 — PC Administrador (core 0.326.0 → 0.327.0, migração 0303)**
+
+- **OC-00003 (PRODUÇÃO) — "o convocado não recebe alerta".** REGRA: o quadro
+  da missão existe só no Início do sistema REAL (a certificação mora lá); o
+  dono testou entrando como o dentista no TREINO. Mas nenhum aviso no sino era
+  criado (confirmado na produção). Decisões do dono: **aviso no sino** ao
+  convocar (gatilho na matrícula; os já convocados de turma aberta receberam o
+  seu), **a equipe da coletiva no Início** e o **painel Acompanhamento** em
+  Administração → Certificação.
+- ⚠️ **O progresso dos outros é a ÚLTIMA MEDIÇÃO GUARDADA**
+  (`progress_snapshot`, `record_training_progress` só para service_role).
+  Toda medição que já existia guarda o retrato antes de registrar a conclusão.
+  Não medir a rede inteira ao abrir tela.
+- ⚠️ **A equipe = o MESMO grupo que segura a unidade** (`my_training_group`
+  espelha `_system_access_raw`, 0277). Mudou um, mudar o outro.
+- ⚠️ **O painel lê numa consulta própria**: se a 0303 não rodou num banco, só
+  ele avisa; a lista de Turmas não cai junto.
+- Na produção: TR-00002 (reciclagem, "suspende agora") com dois dentistas
+  convocados — **nenhum suspenso** (só suspende quem tinha acesso).
+- Visto na tela no treino: o painel. **Não visto:** o quadro da equipe e o
+  sino (só existem no real). A 0303 no treino avisou o dentista convocado na
+  TR-00018 de lá. ⏳ **0303 pendente na produção.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **17/10/2026 — PC Administrador (core 0.325.0 → 0.326.0, migração 0302)**
 
 - **OC-00110 — "conciliei e não entrou na DRE"; "não acho as contas pagas".**

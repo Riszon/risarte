@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.327.0",
+    data: "2026-10-19",
+    migracao: "0303",
+    titulo: "Certificação: aviso ao ser convocado, a equipe e o acompanhamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quem é convocado para a certificação recebe um aviso no sino. A missão aparece no Início do sistema REAL (no treino o quadro não aparece) — é lá que se aceita e acompanha; a missão se cumpre trabalhando no treino.",
+        papeis: "todos",
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na certificação coletiva, o Início mostra a sua equipe: cada colega da unidade, a situação dele e quanto já fez — e quantos já cumpriram, porque a unidade só abre quando todos cumprirem.",
+        papeis: "todos",
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Em Administração → Certificação, o quadro \"Acompanhamento da certificação\" junta todas as turmas abertas: cada equipe e cada pessoa, com a situação e o progresso, filtros e \"Medir agora\".",
+        papeis: [],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.326.0",
     data: "2026-10-17",
     migracao: "0302",
