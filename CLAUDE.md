@@ -411,7 +411,7 @@ Syncthing se comportarem de forma estranha.**
   convocados — **nenhum suspenso** (só suspende quem tinha acesso).
 - Visto na tela no treino: o painel. **Não visto:** o quadro da equipe e o
   sino (só existem no real). A 0303 no treino avisou o dentista convocado na
-  TR-00018 de lá. ⏳ **0303 pendente na produção.**
+  TR-00018 de lá. ✅ **0303 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login, a equipe e a gravação do progresso recusam com "permission denied"; a leitura do painel (colunas novas) responde; os dois dentistas convocados na TR-00002 têm 1 aviso cada no sino, ainda não lidos).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **17/10/2026 — PC Administrador (core 0.325.0 → 0.326.0, migração 0302)**

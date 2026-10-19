@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.327.0** · Última migração: **0303** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.327.0** · Última migração: **0303** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎓 0.327.0 / 0303 — CERTIFICAÇÃO: AVISO, EQUIPE E ACOMPANHAMENTO (OC-00003, 19/10/2026)
 >
@@ -13,6 +13,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.327.0** · Última migraç
 > (`progress_snapshot`, só o servidor grava — `guardarProgresso` antes de
 > cada `registrarSeCumprida`). A situação de cada pessoa: uma regra só
 > (`situacaoDaMatricula`, `certificacao-equipe.ts`).
+> ✅ **0303 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login, a equipe e a gravação do progresso recusam com "permission denied"; a leitura do painel (colunas novas) responde; os dois dentistas convocados na TR-00002 têm 1 aviso cada no sino, ainda não lidos).
 >
 > ## 🧾 0.326.0 / 0302 — CONCILIAÇÃO PAGA CONTA A PAGAR + RELATÓRIO DE CONTAS PAGAS (OC-00110, 17/10/2026)
 >
