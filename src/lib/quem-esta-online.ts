@@ -229,6 +229,7 @@ export const NOME_NA_ADMINISTRACAO: Record<string, string> = {
   chat: "Chat (contatos)",
   clinicas: "Clínicas",
   documentos: "Modelos de Documentos",
+  odontograma: "Odontograma",
   orientacoes: "Orientações",
   permissoes: "Permissões",
   "regras-comerciais": "Regras Comerciais",

@@ -1,7 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.331.1** · Última migração: **0307** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.332.0** · Última migração: **0308** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🦷 0.332.0 / 0308 — ODONTOGRAMA OD1: A BASE (19/10/2026)
+>
+> Referência TUSS (dentes, faces, regiões), situações do dente (5 TUSS + 33
+> Risarte) e a regra clínica dos 370 procedimentos, das planilhas aprovadas
+> pelo dono, com a tela Administração → Odontograma para ajustar. Plano em
+> `docs/odontograma/OD0-PLANO.md`. Próximos passos da OD1: vigência do preço
+> e o desenho `<Odontogram />` + aba na ficha.
+>
 > ## 🎓 0.331.1 — AS TAREFAS DA ASB NA CERTIFICAÇÃO (OC-00004, 19/10/2026)
 >
 > Defeito: a lista oferecia à ASB seis ações que o sistema não deixa ela

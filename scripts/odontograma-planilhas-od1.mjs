@@ -1,9 +1,10 @@
 // OD1 — as três planilhas para o dono revisar (D1, D2, D11). Nada é gravado
 // no banco: lê os JSON TUSS e o catálogo da PRODUÇÃO (só leitura).
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
 const RAIZ = "C:/Users/Administrador/Risarte riSZon/risarte";
-const exigir = require("module").createRequire(RAIZ + "/package.json");
+const exigir = createRequire(RAIZ + "/package.json");
 const XLSX = exigir("xlsx");
 const { createClient } = exigir("@supabase/supabase-js");
 const SAIDA = "C:/Users/Administrador/Risarte riSZon/Odontograma - revisão OD1";

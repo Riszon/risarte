@@ -1236,10 +1236,35 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   auditoria. É o **único** que cadastra, altera e precifica procedimentos, e é
   quem decide as **sugestões de procedimento novo** dos Planners (em
   **Procedimentos → Sugestões de novos procedimentos**: aprovar e cadastrar,
-  pedir mais informações ou recusar).
+  pedir mais informações ou recusar). Também é quem configura a **base do
+  odontograma** em **Administração → Odontograma** (veja abaixo).
 - **Riscos:** é o único que pode apagar configuração da rede inteira. Um engano
   aqui atinge todas as unidades.
 - **Depende de:** ninguém.
+
+**Administração → Odontograma** (versão 0.332.0, só o Admin Master). É a
+base do odontograma que está chegando ao riSZon, em quatro abas:
+
+- **Situações do dente** — as 5 oficiais da TUSS (Hígido, Cariado,
+  Restaurado, Ausente, Extração indicada) e as da Risarte (código **RZ-…**:
+  canal tratado, coroa, implante, prótese, selante…). Em cada uma: onde se
+  marca (face, coroa, raiz, dente inteiro, entre dentes), se é achado do
+  exame ou efeito de um procedimento, e o **símbolo** que aparece no desenho.
+  **Nova situação** cria uma da Risarte.
+- **Faces dos dentes** — que faces podem ser marcadas em cada dente
+  (marque/desmarque e **Salvar** na linha).
+- **Regiões** — que dentes cada região seleciona de uma vez (sextante, arco,
+  grupo de dentes). Região sem dentes é tecido ou osso (língua, palato…).
+- **Procedimentos** — a **regra** de cada procedimento: onde se marca (face,
+  dente, região, arcada ou sem marcação), quantas faces, dentição, dentes
+  compatíveis, situações que **impedem** (ex.: restauração em dente ausente)
+  e que são **exigidas** (ex.: coroa sobre implante exige implante), e o
+  **efeito** depois de realizado (ex.: exodontia deixa o dente ausente).
+  Filtros: **Só os sem regra** e **Só confiança baixa**.
+
+O que é **oficial da TUSS** (código e nome) não muda, e **nada se apaga**:
+situação se desativa; procedimento que não aparece no dente fica como "sem
+marcação". Toda alteração fica na Auditoria.
 
 #### Recepcionista *(unidade)*
 
@@ -2164,7 +2189,8 @@ cadastro, só Admin).
 
 **Administração (9 telas):** `/admin/clinicas`, `/admin/permissoes`,
 `/admin/sla`, `/admin/regras-comerciais`, `/admin/agenda`, `/admin/anamnese`,
-`/admin/orientacoes`, `/admin/documentos`, `/admin/chat`, `/admin/auditoria`.
+`/admin/orientacoes`, `/admin/documentos`, `/admin/chat`, `/admin/auditoria`,
+`/admin/odontograma` (desde a versão 0.332.0).
 O antigo `/admin/usuarios` **não existe mais**: o acesso de cada pessoa mora na
 ficha dela, em `/risartanos`.
 

@@ -220,7 +220,7 @@ manual e estado → resumo para você.
 ### OD1 — passo 1 entregue (19/10/2026): as três planilhas
 
 Na pasta sincronizada `Odontograma - revisão OD1/` (fora do repositório),
-geradas por `scripts/odontograma-planilhas-od1.cjs` (lê os JSON TUSS e o
+geradas por `scripts/odontograma-planilhas-od1.mjs` (lê os JSON TUSS e o
 catálogo da PRODUÇÃO, só leitura):
 
 1. **Situações do dente** — as 5 da TUSS 44 + 33 propostas da Risarte (`RZ-…`).
@@ -233,3 +233,17 @@ catálogo da PRODUÇÃO, só leitura):
 
 ⏳ Aguardando a revisão do dono (coluna "Decisão" em cada planilha). Nada
 vai para o banco antes disso.
+
+### OD1 — passo 2 entregue (19/10/2026): a base no banco e a tela do Admin
+
+As planilhas voltaram com a coluna "Decisão" vazia e o dono escreveu
+"revisei as planilhas, pode seguir" — **aprovado como proposto**, com a
+condição de o Admin poder ajustar depois. Migração **0308** (gerada por
+`scripts/odontograma-gerar-0308.mjs`) + tela **Administração → Odontograma**
+(Situações, Faces dos dentes, Regiões, Procedimentos). ⏳ Na produção depois
+do "cole aqui a 0308".
+
+**Faltam da OD1:** (3) a **vigência do preço** (D3) — mexe no caminho do
+preço que está no ar (`catalog_price_for`, a trava da 0306), por isso em
+migração própria; (4) o `<Odontogram />` em `compact`/leitura e a aba
+**Odontograma** na ficha.

@@ -38,6 +38,7 @@ import {
   Tags,
   Users,
   ShieldCheck,
+  Smile,
   Contact,
   ChevronsUpDown,
   type LucideIcon,
@@ -243,6 +244,9 @@ const ADMIN_ITEMS = [
   { href: "/admin/anamnese", label: "Fichas de Anamnese", icon: ClipboardList },
   { href: "/admin/orientacoes", label: "Orientações", icon: BookOpen },
   { href: "/admin/documentos", label: "Modelos de Documentos", icon: FileText },
+  // 0308 (OD1): dentes, faces, regiões, situações e as regras clínicas do
+  // catálogo — a base do odontograma.
+  { href: "/admin/odontograma", label: "Odontograma", icon: Smile },
   { href: "/admin/chat", label: "Chat (contatos)", icon: MessagesSquare },
   // 0287: quanto tempo sem uso até desconectar, por função.
   { href: "/admin/sessao", label: "Sessão e inatividade", icon: Timer },

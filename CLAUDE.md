@@ -390,6 +390,24 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (8ª) — PC Administrador (core 0.331.1 → 0.332.0, migração 0308)**
+
+- **ODONTOGRAMA começou** (prompt do dono; plano e decisões em
+  `docs/odontograma/OD0-PLANO.md`). OD0 fechada com 13 decisões; OD1 passo 2:
+  a **0308** (referência TUSS + situações Risarte + regras dos 370
+  procedimentos, das planilhas aprovadas) e a tela **Administração →
+  Odontograma**.
+- ⚠️ **As planilhas voltaram com "Decisão" vazia** — o dono disse "revisei, pode
+  seguir": tratado como aprovado como proposto, e registrado assim.
+- ⚠️ **Num CHECK, "desconhecido" PASSA** (conta com valor vazio): a regra
+  "face exige nº de faces" deixava passar; corrigido com `coalesce(…, false)`.
+  Ao escrever CHECK com OR/AND sobre coluna anulável, testar com o vazio.
+- ⚠️ **Odontograma = ACRESCENTAR o dente ao que existe** (catálogo, plano,
+  negociação, sessões, repasse, auditoria) — nunca um segundo sistema ao lado.
+- ⏳ **0308 pendente na produção.** Próximo: vigência do preço (D3) e o
+  desenho `<Odontogram />`.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **19/10/2026 (7ª) — PC Administrador (core 0.331.0 → 0.331.1, sem migração)**
 
 - **OC-00004 — as tarefas da ASB na certificação.** DEFEITO (eu tinha dito

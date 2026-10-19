@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.332.0",
+    data: "2026-10-19",
+    migracao: "0308",
+    titulo: "Odontograma: a base (dentes, faces, regiões, situações e regras)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Nova tela Administração → Odontograma, só para o Admin Master: as situações do dente (as 5 da TUSS e as da Risarte), as faces de cada dente, os dentes de cada região e a regra clínica de cada procedimento (onde se marca, o que impede, o que exige e o que muda no dente depois de realizado). É a base do odontograma, que chega nas próximas versões.",
+        papeis: [],
+        manual: "Admin Master",
+      },
+    ],
+  },
+  {
     versao: "0.331.1",
     data: "2026-10-19",
     migracao: null,
