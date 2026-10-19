@@ -426,9 +426,14 @@ Syncthing se comportarem de forma estranha.**
   pelo capítulo, pilar/tempo/preço em branco. ✅ **Importada no TREINO** pela
   tela (Admin de teste): 370 novos, 0 atualizados, todos com preço R$ 0,00.
   No treino eles convivem com os 9 de antes (ex.: "Restauração em resina 1
-  face" e "Restauração em resina fotopolimerizável 1 face"). ⏳ Produção: o
-  dono decide (preço antes de usar no orçamento). AP54: especialidades
-  parecidas.
+  face" e "Restauração em resina fotopolimerizável 1 face"). ✅ **Importada na PRODUÇÃO em
+  19/10/2026** (decisão do dono: pela chave do servidor, todos ATIVOS): 370
+  procedimentos, PRC-00001 a PRC-00370, todos com preço R$ 0,00; o roteiro
+  conferiu as 370 linhas contra o que a tela gravou no treino (iguais) e
+  recusaria colisão de nome/TUSS (a produção tinha 0). Histórico "Criado
+  (importação de planilha)" sem autor, e a trilha de alterações registra as
+  370 como "Sistema". ⚠️ **Falta o PREÇO** antes de a equipe orçar. AP54:
+  especialidades parecidas ficam (decisão do dono).
 - **Não visto na tela:** como Planner (conta de teste em modo portal no
   treino) e o orçamento (nenhum plano em rascunho lá). ✅ **0306 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login, sugerir, editar sessões, aprovar e o aviso interno recusam com "permission denied"; com a chave de serviço, que não é Admin, aprovar responde NOT_ALLOWED antes de gravar; a tabela de sugestões não entrega nada sem login e está vazia. A produção tem 0 procedimentos e 0 itens de plano, então ninguém foi afetado).
 - Cache do servidor de teste limpo ao encerrar (AP40).
