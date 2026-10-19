@@ -402,7 +402,7 @@ Syncthing se comportarem de forma estranha.**
   (régua presa por `uma-missao-por-funcao.test.ts`).
 - A 0305 acerta o caso existente: 1 matrícula na produção (TR-00004) passa a
   "em andamento" com o marco da irmã. **Não visto na tela** (o quadro só
-  existe no real). ⏳ **0305 pendente na produção.**
+  existe no real). ✅ **0305 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: as duas matrículas de dentista (TR-00004 e TR-00005) estão em andamento com o MESMO marco, 19/10 10:21; sem login, aceitar recusa com "permission denied"; a regra das irmãs não é chamável por usuário (só pelo servidor, e com identificador inexistente não mexe em nada)).
 
 **19/10/2026 (2ª) — PC Administrador (core 0.327.0 → 0.328.0, migração 0304)**
 

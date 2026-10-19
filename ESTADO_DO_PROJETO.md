@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.329.0** · Última migração: **0305** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.329.0** · Última migração: **0305** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎓 0.329.0 / 0305 — UMA MISSÃO POR FUNÇÃO (AP52, 19/10/2026)
 >
@@ -11,6 +11,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.329.0** · Última migraç
 > nunca volta atrás) — chamada no aceitar, no cumprir e no certificar. O
 > certificado só nasce se não houver um da mesma função desde a convocação. O
 > Início junta por função (`agruparMissoes`).
+> ✅ **0305 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: as duas matrículas de dentista (TR-00004 e TR-00005) estão em andamento com o MESMO marco, 19/10 10:21; sem login, aceitar recusa com "permission denied"; a regra das irmãs não é chamável por usuário (só pelo servidor, e com identificador inexistente não mexe em nada)).
 >
 > ## 🎓 0.328.0 / 0304 — PORTAL: TODAS AS MISSÕES, RELATAR E O SINO (OC-00111, 19/10/2026)
 >
