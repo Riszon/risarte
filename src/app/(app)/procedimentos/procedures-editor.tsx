@@ -605,6 +605,7 @@ export function ProceduresEditor({
   sessionsByProcedure,
   unitSessionsByProcedure,
   canManageCatalog,
+  canEditNetworkSessions,
   isAdmin,
   levels = [],
   payoutByProcedure = {},
@@ -625,6 +626,8 @@ export function ProceduresEditor({
   sessionsByProcedure: Record<string, ProcedureSession[]>;
   unitSessionsByProcedure: Record<string, ProcedureSession[]>;
   canManageCatalog: boolean;
+  /** OC-00068: o Planner edita direto as sessões da rede (Admin também). */
+  canEditNetworkSessions: boolean;
   /** Admin aplica protocolo direto; Planner (não-admin) apenas propõe. */
   isAdmin: boolean;
   /** 0212: níveis do plano de carreira, para o repasse por nível. */
@@ -755,6 +758,7 @@ export function ProceduresEditor({
                   sessions={sessionsByProcedure[p.id] ?? []}
                   unitSessions={unitSessionsByProcedure[p.id] ?? []}
                   canManageCatalog={canManageCatalog}
+                  canEditNetworkSessions={canEditNetworkSessions}
                   isAdmin={isAdmin}
                   isPending={isPending}
                   run={run}
@@ -921,6 +925,7 @@ function ProcedureRow({
   sessions,
   unitSessions,
   canManageCatalog,
+  canEditNetworkSessions,
   isAdmin,
   isPending,
   run,
@@ -940,6 +945,8 @@ function ProcedureRow({
   sessions: ProcedureSession[];
   unitSessions: ProcedureSession[];
   canManageCatalog: boolean;
+  /** OC-00068: o Planner edita direto as sessões da rede (Admin também). */
+  canEditNetworkSessions: boolean;
   isAdmin: boolean;
   isPending: boolean;
   run: (
@@ -963,11 +970,13 @@ function ProcedureRow({
     overrideCents != null ? centsToInput(overrideCents) : ""
   );
 
-  // H4.3 Lote 4: Admin aplica direto; Coordenador aplica a própria unidade;
-  // Planner (não-admin) só PROPÕE. (Coordenador = acessa unidade sem catálogo.)
-  const networkPanelMode: "apply" | "propose" = isAdmin ? "apply" : "propose";
+  // OC-00068 (decisão do dono, 19/10/2026): Admin e Planner aplicam direto o
+  // protocolo da REDE. Na unidade: Admin e Coordenador aplicam; o Planner
+  // propõe. (Coordenador = acessa a unidade sem ver o catálogo da rede.)
+  const networkPanelMode: "apply" | "propose" =
+    isAdmin || canEditNetworkSessions ? "apply" : "propose";
   const unitPanelMode: "apply" | "propose" =
-    isAdmin || !canManageCatalog ? "apply" : "propose";
+    isAdmin || !canEditNetworkSessions ? "apply" : "propose";
 
   if (editing) {
     return (
@@ -1127,41 +1136,46 @@ function ProcedureRow({
             >
               <History className="size-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Editar"
-              onClick={() => {
-                setForm(toInput(p));
-                setEditing(true);
-              }}
-            >
-              <Pencil className="size-3.5" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={isPending}
-              onClick={() =>
-                run(
-                  () => setProcedureActive(p.id, !p.isActive),
-                  p.isActive ? "Desativado." : "Reativado."
-                )
-              }
-            >
-              {p.isActive ? "Desativar" : "Reativar"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Excluir"
-              disabled={isPending}
-              onClick={() =>
-                run(() => deleteProcedure(p.id), "Procedimento excluído.")
-              }
-            >
-              <Trash2 className="size-4 text-destructive" />
-            </Button>
+            {/* OC-00068: cadastro, ativação e exclusão são da rede (Admin). */}
+            {canManageCatalog && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Editar"
+                  onClick={() => {
+                    setForm(toInput(p));
+                    setEditing(true);
+                  }}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={isPending}
+                  onClick={() =>
+                    run(
+                      () => setProcedureActive(p.id, !p.isActive),
+                      p.isActive ? "Desativado." : "Reativado."
+                    )
+                  }
+                >
+                  {p.isActive ? "Desativar" : "Reativar"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Excluir"
+                  disabled={isPending}
+                  onClick={() =>
+                    run(() => deleteProcedure(p.id), "Procedimento excluído.")
+                  }
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <div className="flex shrink-0 items-center gap-1">

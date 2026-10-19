@@ -20,10 +20,9 @@ export const metadata: Metadata = { title: "Precificação" };
  */
 export default async function PricingPage() {
   const session = await getSessionContext();
-  const isPlanner = Object.values(session.rolesByClinic).some((r) =>
-    r.includes("planner_dentist")
-  );
-  if (!session.isAdminMaster && !isPlanner) redirect("/procedimentos");
+  // OC-00068 (decisão do dono, 19/10/2026): preço é da rede — só o Admin
+  // Master precifica. (Antes o Planner também entrava.)
+  if (!session.isAdminMaster) redirect("/procedimentos");
 
   const clinicId = session.activeClinic?.id ?? null;
   const supabase = await createClient();
@@ -170,7 +169,7 @@ export default async function PricingPage() {
       <PricingSimulator
         clinicId={clinicId}
         clinicName={session.activeClinic?.name ?? null}
-        canManageCatalog={session.isAdminMaster || isPlanner}
+        canManageCatalog={session.isAdminMaster}
         specialties={specialties}
         settings={{
           chairCostPerHourCents: Number(

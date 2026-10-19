@@ -157,6 +157,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   procedure: "Procedimento",
   procedure_cost: "Custo do procedimento",
   procedure_price_from_simulator: "Preço definido pelo precificador",
+  procedure_suggestion: "Sugestão de novo procedimento",
   procedure_sessions: "Sessões padrão do procedimento",
   specialty: "Especialidade",
   stock_item: "Item de estoque",

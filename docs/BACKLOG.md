@@ -2500,6 +2500,22 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
+### AP53. O Planner ainda gerencia as ESPECIALIDADES (19/10/2026)
+
+**Confirmado no código, não decidido.** Achado ao corrigir o OC-00067/68
+(0306): a regra do dono passou a ser "o catálogo é do Admin; o Planner
+consulta e edita as sessões". As **especialidades** (0129/0130) continuam com
+escrita para `is_planner()` — o Planner cria, renomeia e inativa
+especialidade, que é parte do catálogo. Não mexi: não estava no relato.
+
+**Se mudar:** trocar `is_admin_master() or is_planner()` por
+`is_admin_master()` nas regras de escrita de especialidades e esconder os
+botões da tela para o Planner.
+
+**Também deste caso (registro, não defeito):** no TREINO ficaram 8 itens
+"personalizados" antigos em planos (sem procedimento); seguem editáveis só na
+quantidade, e a cópia de plano não os leva. A produção não tinha nenhum.
+
 ### AP52. Certificação: a mesma FUNÇÃO em duas turmas abertas vira duas missões (19/10/2026) — ✅ CORRIGIDO na 0305 (core 0.329.0)
 
 **Decisão do dono (19/10/2026): uma missão vale para as duas unidades.** As

@@ -390,6 +390,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (5ª) — PC Administrador (core 0.329.1 → 0.330.0, migração 0306)**
+
+- **OC-00067 + OC-00068 (um caso só): o Planner e o catálogo.** As duas eram
+  REGRA (0039 deu o catálogo ao Planner; 0036 previa linha livre no
+  orçamento), e o Planner ainda mudava o preço de qualquer item. Decisões do
+  dono: o Planner **consulta** e edita DIRETO só as **sessões**; **item
+  personalizado sai para todos**; o **preço é o do catálogo, fixo**;
+  procedimento novo é **sugestão** que o Admin aprova (já cria), recusa ou
+  pede informação.
+- ⚠️ **Gatilho que confere `current_user` tem de ser `security invoker`**:
+  com `security definer`, `current_user` é sempre o dono e a trava nunca
+  vale — o ensaio da 0306 pegou isso (régua presa por teste).
+- ⚠️ **O preço do item do plano quem põe é o BANCO**
+  (`plan_item_catalog_guard` + `catalog_price_for`); a tela não manda.
+  Funções do banco que mexem nos itens (rodam como dono) passam livres.
+- AP53 (BACKLOG): as especialidades seguem com o Planner. No treino ficaram 8
+  itens personalizados antigos (a cópia de plano não os leva).
+- **Não visto na tela:** como Planner (conta de teste em modo portal no
+  treino) e o orçamento (nenhum plano em rascunho lá). ⏳ **0306 pendente na
+  produção.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **19/10/2026 (4ª) — PC Administrador (core 0.329.0 → 0.329.1, sem migração)**
 
 - **OC-00104 — o destaque da linha em Problemas parava no meio.** Defeito: o

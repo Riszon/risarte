@@ -1,7 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.329.1** · Última migração: **0305** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.330.0** · Última migração: **0306** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🦷 0.330.0 / 0306 — O CATÁLOGO É DO ADMIN; O PLANNER SUGERE (OC-00067 + OC-00068, 19/10/2026)
+>
+> Eram regra (0039 e 0036), mudada pelo dono: o Planner consulta o catálogo e
+> edita DIRETO só as sessões (`set_network_procedure_sessions`); o orçamento
+> usa só item do catálogo, com o preço do catálogo, fixo
+> (`plan_item_catalog_guard`, ⚠️ **security invoker** — com definer a trava
+> nunca vale); procedimento novo vira **sugestão** (`procedure_suggestions`,
+> `SP-`) que o Admin aprova (cria no catálogo), recusa ou pede informação.
+> AP53: as especialidades seguem com o Planner.
+>
 > ## 🎨 0.329.1 — O DESTAQUE DA LINHA EM PROBLEMAS (OC-00104, 19/10/2026)
 >
 > O fundo de "Resposta nova" parava no fim do texto: o link dentro da linha

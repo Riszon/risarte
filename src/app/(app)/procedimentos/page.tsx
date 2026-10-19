@@ -15,6 +15,8 @@ import type { Procedure, ProcedureSession, UnitPrice } from "@/lib/pricing";
 import { ProceduresEditor, type ProcedureChange } from "./procedures-editor";
 import { ImportProcedures } from "./import-procedures";
 import { ProtocolProposals, type PendingProposal } from "./protocol-proposals";
+import { SugestoesDeProcedimento, type SugestaoNaTela } from "./sugestoes";
+import type { SituacaoDaSugestao } from "@/lib/sugestao-de-procedimento";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
@@ -52,8 +54,12 @@ export default async function ProceduresPage(
   const coordinatorUnitIds = Object.entries(session.rolesByClinic)
     .filter(([, roles]) => roles.includes("clinical_coordinator"))
     .map(([cid]) => cid);
-  const canManageCatalog = session.isAdminMaster || isPlanner;
-  if (!canManageCatalog && coordinatorUnitIds.length === 0) redirect("/");
+  // OC-00068 (decisão do dono, 19/10/2026): o Planner VÊ o catálogo da rede
+  // e edita as sessões; mexer no catálogo (criar, preço, comissão) é só do
+  // Admin Master.
+  const canSeeCatalog = session.isAdminMaster || isPlanner;
+  const canManageCatalog = session.isAdminMaster;
+  if (!canSeeCatalog && coordinatorUnitIds.length === 0) redirect("/");
 
   const sp = await props.searchParams;
   const search = typeof sp.q === "string" ? sp.q : "";
@@ -62,7 +68,7 @@ export default async function ProceduresPage(
   const pillarFilter = typeof sp.pilar === "string" ? sp.pilar : "";
   let unitId = typeof sp.unidade === "string" ? sp.unidade : "";
   // Coordenador (sem catálogo): força uma das unidades dele (nunca modo rede).
-  if (!canManageCatalog && !coordinatorUnitIds.includes(unitId)) {
+  if (!canSeeCatalog && !coordinatorUnitIds.includes(unitId)) {
     unitId = coordinatorUnitIds[0];
   }
 
@@ -127,7 +133,7 @@ export default async function ProceduresPage(
   ]);
 
   const nameSuggestions = [...new Set((nameRows ?? []).map((n) => n.name))];
-  const unitOptions = canManageCatalog
+  const unitOptions = canSeeCatalog
     ? (units ?? [])
     : (units ?? []).filter((u) => coordinatorUnitIds.includes(u.id));
 
@@ -407,6 +413,42 @@ export default async function ProceduresPage(
         clinics: { name: string } | null;
       }[]
     >();
+  // OC-00067: as sugestões de procedimento — a RLS entrega as do próprio
+  // Planner, ou todas ao Admin Master.
+  type Embed<T> = T | T[] | null;
+  const um = <T,>(v: Embed<T>): T | null => (Array.isArray(v) ? (v[0] ?? null) : v);
+  const { data: sugRows } = canSeeCatalog
+    ? await supabase
+        .from("procedure_suggestions")
+        .select(
+          "id, code, name, specialty, pillar, sessions, total_minutes, justification, status, proposed_by, created_at, proposer:profiles!procedure_suggestions_proposed_by_fkey(full_name), procedure_suggestion_messages(kind, body, created_at, author:profiles(full_name))"
+        )
+        .order("created_at", { ascending: false })
+        .limit(200)
+    : { data: [] };
+  const sugestoes: SugestaoNaTela[] = ((sugRows ?? []) as Record<string, unknown>[]).map((r) => ({
+    id: String(r.id),
+    code: String(r.code),
+    name: String(r.name),
+    specialty: (r.specialty as string | null) ?? null,
+    pillar: (r.pillar as string | null) ?? null,
+    sessions: Number(r.sessions),
+    totalMinutes: r.total_minutes == null ? null : Number(r.total_minutes),
+    justification: String(r.justification ?? ""),
+    status: r.status as SituacaoDaSugestao,
+    proponente: um(r.proposer as Embed<{ full_name: string | null }>)?.full_name ?? null,
+    souEu: r.proposed_by === session.userId,
+    criadaEm: String(r.created_at),
+    mensagens: ((r.procedure_suggestion_messages as Record<string, unknown>[] | null) ?? [])
+      .map((m) => ({
+        kind: m.kind as SugestaoNaTela["mensagens"][number]["kind"],
+        body: String(m.body),
+        autor: um(m.author as Embed<{ full_name: string | null }>)?.full_name ?? null,
+        em: String(m.created_at),
+      }))
+      .sort((a, b) => a.em.localeCompare(b.em)),
+  }));
+
   const pendingProposals: PendingProposal[] = (propRows ?? []).map((r) => {
     const proposer = Array.isArray(r.proposer) ? r.proposer[0] : r.proposer;
     return {
@@ -430,20 +472,24 @@ export default async function ProceduresPage(
           <p className="text-sm text-muted-foreground">
             {canManageCatalog
               ? `Catálogo de procedimentos da rede (${procedures.length}). Preço padrão da rede com ajuste por unidade; código interno gerado automaticamente.`
-              : "Protocolo de sessões da sua unidade. Clique no relógio de um procedimento para personalizar os tempos/sessões (a base é o padrão da Rede)."}
+              : canSeeCatalog
+                ? `Catálogo de procedimentos da rede (${procedures.length}) — consulta. Você edita as SESSÕES de cada procedimento (no relógio); preço, comissão e cadastro são da rede. Não achou o que precisa? Sugira um procedimento abaixo.`
+                : "Protocolo de sessões da sua unidade. Clique no relógio de um procedimento para personalizar os tempos/sessões (a base é o padrão da Rede)."}
           </p>
         </div>
-        {canManageCatalog && (
+        {canSeeCatalog && (
           <div className="flex shrink-0 flex-wrap gap-2">
             {/* 0211: o precificador fica AO LADO do preço que ele justifica —
                 simula, vê o custo real e aplica ali mesmo. */}
-            <Link
-              href="/procedimentos/precificacao"
-              className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
-            >
-              <Calculator className="size-4" />
-              Precificação
-            </Link>
+            {canManageCatalog && (
+              <Link
+                href="/procedimentos/precificacao"
+                className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
+              >
+                <Calculator className="size-4" />
+                Precificação
+              </Link>
+            )}
             <Link
               href="/procedimentos/especialidades"
               className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
@@ -492,10 +538,10 @@ export default async function ProceduresPage(
           <option value="inactive">Somente inativos</option>
         </select>
         <select name="unidade" defaultValue={unitId} className={selectClass}>
-          {canManageCatalog && <option value="">Padrão da rede</option>}
+          {canSeeCatalog && <option value="">Padrão da rede</option>}
           {unitOptions.map((u) => (
             <option key={u.id} value={u.id}>
-              {canManageCatalog ? `Unidade: ${u.name}` : u.name}
+              {canSeeCatalog ? `Unidade: ${u.name}` : u.name}
             </option>
           ))}
         </select>
@@ -503,7 +549,16 @@ export default async function ProceduresPage(
 
       <ProtocolProposals proposals={pendingProposals} />
 
-      {!unitId && <ImportProcedures />}
+      {canSeeCatalog && (
+        <SugestoesDeProcedimento
+          sugestoes={sugestoes}
+          isAdmin={session.isAdminMaster}
+          podeSugerir={isPlanner}
+          especialidades={activeSpecialties}
+        />
+      )}
+
+      {!unitId && canManageCatalog && <ImportProcedures />}
 
       <ProceduresEditor
         procedures={procedures}
@@ -516,6 +571,7 @@ export default async function ProceduresPage(
         sessionsByProcedure={sessionsByProcedure}
         unitSessionsByProcedure={unitSessionsByProcedure}
         canManageCatalog={canManageCatalog}
+        canEditNetworkSessions={canSeeCatalog}
         isAdmin={session.isAdminMaster}
         levels={levels}
         payoutByProcedure={payoutByProcedure}

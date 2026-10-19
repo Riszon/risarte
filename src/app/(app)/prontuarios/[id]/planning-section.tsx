@@ -88,6 +88,7 @@ import { DevolverAoCoordenador } from "./devolver-ao-coordenador";
 import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
+import { BotaoSugerirProcedimento } from "../../procedimentos/sugestoes";
 
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
@@ -1743,11 +1744,8 @@ function OptionBudget({
                       >
                         {editingId === it.id ? (
                           <div className="space-y-1.5">
-                            <Input
-                              value={eDesc}
-                              onChange={(e) => setEDesc(e.target.value)}
-                              placeholder="Descrição"
-                            />
+                            {/* Nome e preço vêm do catálogo e não mudam (OC-00067). */}
+                            <p className="text-sm font-medium">{eDesc}</p>
                             <div className="flex flex-wrap items-center gap-1.5">
                               <Input
                                 value={eQty}
@@ -1759,16 +1757,9 @@ function OptionBudget({
                               <span className="text-xs text-muted-foreground">
                                 ×
                               </span>
-                              <span className="text-sm text-muted-foreground">
-                                R$
+                              <span className="text-sm text-muted-foreground" aria-label="Valor unitário do catálogo">
+                                R$ {ePrice}
                               </span>
-                              <Input
-                                value={ePrice}
-                                onChange={(e) => setEPrice(e.target.value)}
-                                inputMode="decimal"
-                                className="w-28"
-                                aria-label="Valor unitário"
-                              />
                             </div>
                             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                               <span>Sessões</span>
@@ -2067,19 +2058,15 @@ function OptionBudget({
               value={procId}
               onValueChange={pickProcedure}
               className="h-9 w-56"
+              // OC-00067 (decisão do dono, 19/10/2026): SÓ itens do catálogo
+              // da rede — o "item personalizado" saiu. Não achou? Sugira.
               options={[
-                { value: "", label: "Item personalizado" },
+                { value: "", label: "— escolha o procedimento —" },
                 ...catalog.map((p) => ({
                   value: p.id,
                   label: `${p.name} (${formatBRL(p.effectivePriceCents)})`,
                 })),
               ]}
-            />
-            <Input
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="Descrição"
-              className="max-w-[180px]"
             />
             <Input
               value={qty}
@@ -2088,14 +2075,18 @@ function OptionBudget({
               className="w-14"
               aria-label="Quantidade"
             />
-            <span className="text-sm text-muted-foreground">R$</span>
-            <Input
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              inputMode="decimal"
-              placeholder="0,00"
-              className="w-24"
-              aria-label="Valor unitário"
+            {/* O preço é o do catálogo da unidade e não muda aqui (OC-00067);
+                desconto é assunto do Comercial, na negociação. */}
+            <span className="text-sm text-muted-foreground" aria-label="Valor unitário do catálogo">
+              {procId ? `× R$ ${price}` : ""}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Não achou o procedimento?{" "}
+            <BotaoSugerirProcedimento
+              variante="link"
+              rotulo="Sugira à rede"
+              especialidades={[...new Set(catalog.map((p) => p.specialty).filter((x): x is string => Boolean(x)))].sort((a, b) => a.localeCompare(b, "pt-BR"))}
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
@@ -2148,7 +2139,7 @@ function OptionBudget({
             <Button
               size="sm"
               variant="outline"
-              disabled={!desc.trim() || isPending}
+              disabled={!procId || isPending}
               onClick={() =>
                 run(
                   () =>

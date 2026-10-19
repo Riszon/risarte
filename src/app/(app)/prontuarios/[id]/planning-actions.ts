@@ -251,7 +251,11 @@ export async function createTreatmentPlan(
               sort_order: it.sort_order,
             };
           })
-          .filter((r): r is NonNullable<typeof r> => r !== null);
+          .filter((r): r is NonNullable<typeof r> => r !== null)
+          // OC-00067: o item personalizado antigo não é copiado — o banco só
+          // aceita item do catálogo, e um item recusado derrubaria a cópia
+          // inteira. O preço do que vem é o do catálogo de HOJE (0306).
+          .filter((r) => r.procedure_id != null);
         if (rows.length > 0) {
           await supabase.from("treatment_plan_option_items").insert(rows);
         }
@@ -765,11 +769,18 @@ export async function addBudgetItem(
     gutTendency?: number | null;
   }
 ): Promise<PlanResult> {
-  const description = input.description.trim();
-  if (!description) return { ok: false, error: "Descreva o item do orçamento." };
+  // OC-00067 (decisão do dono, 19/10/2026): SÓ item do catálogo. O nome e o
+  // preço quem põe é o BANCO (`plan_item_catalog_guard`, 0306) — o que a tela
+  // mandar nesses dois campos não vale.
+  if (!input.procedureId) {
+    return {
+      ok: false,
+      error: "Escolha um procedimento do catálogo. Não achou? Sugira à rede.",
+    };
+  }
+  const description = input.description.trim() || "(do catálogo)";
   const quantity = Math.max(1, Math.floor(input.quantity || 1));
-  const priceCents = parseBRLToCents(input.price);
-  if (priceCents === null) return { ok: false, error: "Valor inválido." };
+  const priceCents = parseBRLToCents(input.price) ?? 0;
 
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
@@ -800,7 +811,12 @@ export async function addBudgetItem(
   });
   if (error) {
     console.error("addBudgetItem failed:", error.message);
-    return { ok: false, error: "Não foi possível adicionar o item." };
+    return {
+      ok: false,
+      error: error.message.includes("CATALOG_ITEM_REQUIRED")
+        ? "Escolha um procedimento do catálogo. Não achou? Sugira à rede."
+        : "Não foi possível adicionar o item.",
+    };
   }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);
@@ -810,19 +826,17 @@ export async function addBudgetItem(
 export async function editBudgetItem(
   itemId: string,
   input: {
-    description: string;
+    /** Ignorado: o nome vem do catálogo e não muda (OC-00067). */
+    description?: string;
     quantity: number;
-    price: string;
+    /** Ignorado: o preço vem do catálogo e não muda (OC-00067). */
+    price?: string;
     plannedSessions?: number | null;
     plannedMinutes?: number | null;
     stageId?: string | null;
   }
 ): Promise<PlanResult> {
-  const description = input.description.trim();
-  if (!description) return { ok: false, error: "Descreva o item do orçamento." };
   const quantity = Math.max(1, Math.floor(input.quantity || 1));
-  const priceCents = parseBRLToCents(input.price);
-  if (priceCents === null) return { ok: false, error: "Valor inválido." };
 
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
@@ -840,9 +854,7 @@ export async function editBudgetItem(
   const { error } = await supabase
     .from("treatment_plan_option_items")
     .update({
-      description,
       quantity,
-      unit_price_cents: priceCents,
       planned_sessions: posIntOrNull(input.plannedSessions),
       planned_total_minutes: posIntOrNull(input.plannedMinutes),
       stage_id: input.stageId ?? null,

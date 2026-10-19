@@ -1120,7 +1120,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Atendimento | `/atendimento` | Chegada, chamada e conclusão do atendimento do dia |
 | Prontuários | `/prontuarios` | A ficha completa do paciente |
 | Centro de Planejamento | `/planejamento` | Fila de casos a planejar, com prazo |
-| Procedimentos | `/procedimentos` | Catálogo: preço, protocolo de sessões, comissionamento |
+| Procedimentos | `/procedimentos` | Catálogo: preço, protocolo de sessões, comissionamento. Cadastro e preço só do Admin Master; o Planner consulta, edita as sessões e sugere procedimento novo |
 | Planos de Tratamento | `/planos` | Visão gerencial dos planos |
 | Comercial | `/comercial` | Funil de negociação e fechamento |
 | Financeiro | `/financeiro` | Abre no **Painel** (ver [seção 2.3](#23-a-porta-do-financeiro)); dentro dele, DRE, fluxo de caixa, contas, taxas, repasses |
@@ -1231,7 +1231,10 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   exclusivo dele (✅ `app-sidebar.tsx`: `{isAdminMaster && (…)}`).
 - **Pode:** criar clínicas, criar usuários, redefinir senha, configurar prazos,
   regras comerciais, agenda, fichas de anamnese, modelos de documento e ver a
-  auditoria.
+  auditoria. É o **único** que cadastra, altera e precifica procedimentos, e é
+  quem decide as **sugestões de procedimento novo** dos Planners (em
+  **Procedimentos → Sugestões de novos procedimentos**: aprovar e cadastrar,
+  pedir mais informações ou recusar).
 - **Riscos:** é o único que pode apagar configuração da rede inteira. Um engano
   aqui atinge todas as unidades.
 - **Depende de:** ninguém.
@@ -1271,11 +1274,15 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 - **Pode:** criar plano com opções, lançar procedimentos, classificar o pilar,
   pedir aprovação, enviar ao Comercial.
 - **Vê também:** Procedimentos (catálogo), Relatórios, Planos de Tratamento.
+  No catálogo ele **consulta** tudo e **edita direto só as sessões** de cada
+  procedimento (o protocolo da rede); procedimento que falta, ele **sugere**.
 - **Não vê:** Estoque (de propósito: material é com o Coordenador, a TSB e a
   ASB).
-- **Não pode:** avaliar paciente, agendar, negociar.
+- **Não pode:** avaliar paciente, agendar, negociar; cadastrar, alterar ou
+  precificar procedimento (só o Admin Master — desde a versão 0.330.0); lançar
+  item fora do catálogo ou mudar o preço de um item no orçamento.
 - **Riscos:** enviar ao Comercial sem aprovação — o sistema barra.
-- **Depende de:** Coordenador (aprovação).
+- **Depende de:** Coordenador (aprovação) e Admin Master (procedimento novo).
 
 #### Dentista (executor) *(unidade)*
 
@@ -1734,7 +1741,10 @@ Planejamento**.
    disparou alerta** — as outras opções marcadas aparecem em cinza.
 3. **Iniciar plano de tratamento** → escreva o **Diagnóstico**.
 4. **Adicionar opção de tratamento** (marque uma como principal).
-5. Dentro da opção, **Procedimento** → escolha do catálogo → **Item**.
+5. Dentro da opção, **Procedimento** → escolha do catálogo → **Item**. O nome
+   e o **preço vêm do catálogo** da unidade e não se digitam — não existe mais
+   "item personalizado". Não achou o procedimento? **Sugira à rede** (o link
+   fica logo abaixo da lista; veja adiante).
 6. Classifique o **pilar** (1 dos 6) → **Salvar pilar**.
 7. Monte os **Atendimentos e sequência** (botão no alto do cockpit) — veja
    abaixo.
@@ -1770,6 +1780,30 @@ executado**: o que é feito no mesmo horário, em que ordem e por quem.
 plano de tratamento **não tem acréscimo** (o preço vem do orçamento aprovado);
 depois de aprovado o plano fica em leitura — há **Reabrir para edição**, que
 exige nova aprovação.
+
+**Procedimento que não está no catálogo — sugira à rede.** Desde a versão
+0.330.0 o Planner não cadastra procedimento e não lança item livre: o
+orçamento usa só o catálogo da rede, com o preço dele. Quando o caso pede algo
+que não está lá:
+
+1. Clique em **Sugira à rede** (no plano, abaixo da lista de procedimentos) ou
+   em **Sugerir novo procedimento** (em **Procedimentos**).
+2. Preencha **nome**, **especialidade**, **pilar**, **quantidade de
+   sessões**, **tempo total** (opcional) e a **justificativa** — por que a
+   rede deve ter esse procedimento.
+3. **Enviar à rede.** A sugestão ganha um código (`SP-`) e o Admin Master
+   recebe o aviso no sino.
+4. Acompanhe em **Procedimentos → Sugestões de novos procedimentos**. O Admin
+   pode **pedir mais informações** (você recebe o aviso; clique em
+   **Responder à rede**, escreva a resposta e, se quiser, corrija os campos),
+   **recusar** (com o motivo) ou **aprovar** — aprovar já cadastra o
+   procedimento no catálogo, com o preço que ele definir, e as sessões que você
+   sugeriu viram o protocolo. A partir daí ele aparece na lista do plano.
+
+Se o nome já existe no catálogo, o sistema recusa a sugestão e manda escolher
+na lista. **As sessões de um procedimento que já existe** você mesmo ajusta:
+em **Procedimentos**, no **relógio** (Protocolo de sessões) da linha do
+procedimento — a mudança vale direto para a rede.
 
 **Quando faltar informação para planejar**, não devolva o caso em silêncio: use
 **Devolver ao Coordenador**, na aba Plano, e escreva o que falta (foto, exame,

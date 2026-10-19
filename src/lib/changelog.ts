@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.330.0",
+    data: "2026-10-19",
+    migracao: "0306",
+    titulo: "Procedimentos: o catálogo é do Admin; o Planner sugere",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O Dentista Planner passou a consultar o catálogo de Procedimentos: cadastrar, alterar, precificar e importar procedimentos é só do Admin Master. O Planner continua editando direto as sessões de cada procedimento.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "No orçamento do plano, o item é sempre um procedimento do catálogo, com o nome e o preço do catálogo — o \"item personalizado\" e o preço digitado saíram. Ao copiar um plano antigo, um item personalizado que ele tivesse não é copiado.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Sugestão de procedimento novo: quando o catálogo não tem o que o caso pede, o Planner sugere (nome, especialidade, pilar, sessões, tempo e justificativa) e o Admin Master aprova e cadastra, pede mais informações ou recusa — com aviso no sino nas duas pontas.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.329.1",
     data: "2026-10-19",
     migracao: null,

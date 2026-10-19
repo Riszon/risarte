@@ -116,6 +116,8 @@ export const TABELAS: Record<string, string> = {
   "public.procedure_costs": "Custo do procedimento",
   "public.procedure_kit_links": "Kit do procedimento",
   "public.procedure_sessions": "Sessão padrão do procedimento",
+  "public.procedure_suggestion_messages": "Conversa da sugestão de procedimento",
+  "public.procedure_suggestions": "Sugestão de novo procedimento",
   "public.procedures": "Procedimento",
   "public.profiles": "Usuário",
   "public.protocol_change_proposals": "Proposta de mudança de protocolo",

@@ -11,6 +11,11 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { formatBRL, formatSessions, parseBRLToCents } from "@/lib/pricing";
 import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
+import {
+  mensagemDaSugestao,
+  validarSugestao,
+  type CamposDaSugestao,
+} from "@/lib/sugestao-de-procedimento";
 
 export type ProcedureResult = { ok: boolean; error?: string };
 
@@ -41,13 +46,19 @@ export type ProcedureInput = {
   directSaleSdr: boolean;
 };
 
-/** Admin Master and Dentista Planner may manage the procedures catalog. */
+/**
+ * SÓ O ADMIN MASTER mexe no catálogo (relato OC-00068, decisão do dono
+ * 19/10/2026; antes, desde a 0039, o Planner também). O Planner consulta,
+ * edita as SESSÕES (`setProcedureSessions`) e SUGERE procedimento novo.
+ * O banco repete a regra (0306).
+ */
 function canEdit(session: SessionContext): boolean {
-  return (
-    session.isAdminMaster ||
-    Object.values(session.rolesByClinic).some((roles) =>
-      roles.includes("planner_dentist")
-    )
+  return session.isAdminMaster;
+}
+
+function isPlannerSession(session: SessionContext): boolean {
+  return Object.values(session.rolesByClinic).some((roles) =>
+    roles.includes("planner_dentist")
   );
 }
 
@@ -678,9 +689,11 @@ export async function setProcedureSessions(
 ): Promise<ProcedureResult> {
   const session = await getSessionContext();
   const isNetwork = clinicId === null;
-  // O Planner NÃO grava direto o protocolo definitivo — ele propõe (H4.3 Lote 4).
+  // OC-00068 (decisão do dono, 19/10/2026): o Planner EDITA DIRETO o
+  // protocolo da REDE — é a única coisa que ele grava no catálogo. Na unidade
+  // segue o Coordenador (o Planner propõe).
   const allowed = isNetwork
-    ? session.isAdminMaster
+    ? session.isAdminMaster || isPlannerSession(session)
     : session.isAdminMaster ||
       hasRoleInClinic(session, clinicId!, ["clinical_coordinator"]);
   if (!allowed) {
@@ -696,25 +709,40 @@ export async function setProcedureSessions(
   }
 
   const supabase = await createClient();
-  const w = await writeProcedureSessions(
-    supabase,
-    procedureId,
-    clinicId,
-    clean,
-    session.userId
-  );
-  if (w.error) return { ok: false, error: w.error };
-
-  await logChange(
-    procedureId,
-    session.userId,
-    `${isNetwork ? "Protocolo da rede" : "Protocolo da unidade"}: ${formatSessions(clean.length)}, ${w.total} min.`
-  );
+  // A REDE grava pela função do banco (0306): ela confere quem pode, troca o
+  // protocolo, recalcula o tempo do procedimento e registra no histórico —
+  // o Planner não grava mais em `procedures` direto.
+  let total = 0;
+  if (isNetwork) {
+    const { error } = await supabase.rpc("set_network_procedure_sessions", {
+      p_procedure_id: procedureId,
+      p_sessions: clean.map((c) => ({ name: c.name, minutes: c.minutes, intervalDays: c.intervalDays })),
+    });
+    if (error) {
+      console.error("set_network_procedure_sessions failed:", error.message);
+      return {
+        ok: false,
+        error: /could not find the function|schema cache/i.test(error.message)
+          ? "O banco ainda não recebeu a atualização 0306."
+          : "Não foi possível salvar as sessões.",
+      };
+    }
+    total = clean.reduce((soma, c) => soma + c.minutes, 0);
+  } else {
+    const w = await writeProcedureSessions(supabase, procedureId, clinicId, clean, session.userId);
+    if (w.error) return { ok: false, error: w.error };
+    total = w.total;
+    await logChange(
+      procedureId,
+      session.userId,
+      `Protocolo da unidade: ${formatSessions(clean.length)}, ${w.total} min.`
+    );
+  }
   await logAudit({
     action: "update",
     entityType: "procedure_sessions",
     entityId: procedureId,
-    details: { network: isNetwork, sessions: clean.length, total: w.total },
+    details: { network: isNetwork, sessions: clean.length, total },
   });
   refreshCatalog();
   return { ok: true };
@@ -976,5 +1004,129 @@ export async function saveProcedurePayoutLevels(input: {
   });
   refreshCatalog();
   revalidatePath("/financeiro/repasses");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// SUGESTÃO DE PROCEDIMENTO (relatos OC-00067/OC-00068, 0306)
+// ---------------------------------------------------------------------------
+function refreshSugestoes() {
+  revalidatePath("/procedimentos");
+}
+
+function erroDaSugestao(message: string, padrao: string): string {
+  if (/could not find the function|schema cache/i.test(message)) {
+    return "O banco ainda não recebeu a atualização 0306.";
+  }
+  return mensagemDaSugestao(message) ?? padrao;
+}
+
+/** O Planner (ou o Admin) sugere um procedimento que o catálogo não tem. */
+export async function suggestProcedure(
+  campos: CamposDaSugestao
+): Promise<ProcedureResult & { code?: string }> {
+  await getSessionContext();
+  const v = validarSugestao(campos);
+  if ("erro" in v) return { ok: false, error: v.erro };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("suggest_procedure", {
+    p_name: v.valores.name,
+    p_specialty: v.valores.specialty,
+    p_pillar: v.valores.pillar,
+    p_sessions: v.valores.sessions,
+    p_total_minutes: v.valores.totalMinutes,
+    p_justification: v.valores.justification,
+  });
+  if (error) {
+    console.error("suggest_procedure failed:", error.message);
+    return { ok: false, error: erroDaSugestao(error.message, "Não foi possível enviar a sugestão.") };
+  }
+  await logAudit({ action: "create", entityType: "procedure_suggestion", entityId: String(data) });
+  refreshSugestoes();
+  return { ok: true, code: String(data) };
+}
+
+export async function askProcedureSuggestionInfo(id: string, question: string): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return { ok: false, error: "Só o Admin Master decide as sugestões." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ask_procedure_suggestion_info", { p_id: id, p_question: question });
+  if (error) return { ok: false, error: erroDaSugestao(error.message, "Não foi possível enviar a pergunta.") };
+  await logAudit({ action: "update", entityType: "procedure_suggestion", entityId: id, details: { acao: "pergunta" } });
+  refreshSugestoes();
+  return { ok: true };
+}
+
+export async function answerProcedureSuggestion(
+  id: string,
+  answer: string,
+  campos: CamposDaSugestao
+): Promise<ProcedureResult> {
+  await getSessionContext();
+  const v = validarSugestao(campos);
+  if ("erro" in v) return { ok: false, error: v.erro };
+  if (answer.trim().length < 3) return { ok: false, error: "Escreva a resposta." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("answer_procedure_suggestion", {
+    p_id: id,
+    p_answer: answer.trim(),
+    p_name: v.valores.name,
+    p_specialty: v.valores.specialty,
+    p_pillar: v.valores.pillar,
+    p_sessions: v.valores.sessions,
+    p_total_minutes: v.valores.totalMinutes,
+    p_justification: v.valores.justification,
+  });
+  if (error) return { ok: false, error: erroDaSugestao(error.message, "Não foi possível enviar a resposta.") };
+  await logAudit({ action: "update", entityType: "procedure_suggestion", entityId: id, details: { acao: "resposta" } });
+  refreshSugestoes();
+  return { ok: true };
+}
+
+export async function rejectProcedureSuggestion(id: string, reason: string): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return { ok: false, error: "Só o Admin Master decide as sugestões." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reject_procedure_suggestion", { p_id: id, p_reason: reason });
+  if (error) return { ok: false, error: erroDaSugestao(error.message, "Não foi possível recusar.") };
+  await logAudit({ action: "update", entityType: "procedure_suggestion", entityId: id, details: { acao: "recusa" } });
+  refreshSugestoes();
+  return { ok: true };
+}
+
+/**
+ * APROVAR = CADASTRAR. O procedimento nasce aqui (o Admin define preço e
+ * comissão, pela mesma régua do cadastro), e o banco liga a sugestão a ele e
+ * transforma as sessões sugeridas no protocolo da rede.
+ */
+export async function approveProcedureSuggestion(id: string, input: ProcedureInput): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return { ok: false, error: "Só o Admin Master decide as sugestões." };
+  const parsed = parseProcedure(input);
+  if ("error" in parsed) return { ok: false, error: parsed.error };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("procedures").insert(parsed.values).select("id").single();
+  if (error || !data) {
+    console.error("approveProcedureSuggestion (cadastro) failed:", error?.message);
+    return { ok: false, error: "Não foi possível cadastrar o procedimento." };
+  }
+  const { error: erroDaLigacao } = await supabase.rpc("approve_procedure_suggestion", {
+    p_id: id,
+    p_procedure_id: data.id,
+  });
+  if (erroDaLigacao) {
+    // O procedimento já existe — o Admin vê e pode ligar de novo; não some nada.
+    console.error("approve_procedure_suggestion failed:", erroDaLigacao.message);
+    return {
+      ok: false,
+      error: `O procedimento foi cadastrado, mas a sugestão não foi marcada como aprovada: ${erroDaSugestao(erroDaLigacao.message, "tente de novo")}.`,
+    };
+  }
+  await logChange(data.id, session.userId, "Procedimento criado a partir de sugestão do Centro de Planejamento.");
+  await logAudit({ action: "create", entityType: "procedure", entityId: data.id });
+  await logAudit({ action: "update", entityType: "procedure_suggestion", entityId: id, details: { acao: "aprovacao" } });
+  refreshCatalog();
+  refreshSugestoes();
   return { ok: true };
 }
