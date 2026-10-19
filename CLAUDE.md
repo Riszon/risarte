@@ -400,8 +400,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Teste que lê arquivo do disco tem de normalizar CRLF**: ao trocar de
   ramo, o Git devolveu os arquivos com CRLF e a régua da 0306 (que procurava
   `\n`) reprovou sem defeito nenhum. As duas réguas agora normalizam.
-- **Não visto:** como Planner e o modo unidade. ⏳ **0307 pendente na
-  produção.**
+- **Não visto:** como Planner e o modo unidade. ✅ **0307 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login a contagem recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada" — a recusa é da 0307); a chave de serviço, que não é Admin nem Planner, recebe NOT_ALLOWED. Ela só lê).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **19/10/2026 (5ª) — PC Administrador (core 0.329.1 → 0.330.0, migração 0306)**
