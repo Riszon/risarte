@@ -407,8 +407,7 @@ Syncthing se comportarem de forma estranha.**
 - **AP52 (BACKLOG):** a mesma função em duas turmas abertas vira duas missões
   que medem o mesmo trabalho (confirmado na produção; o efeito no
   certificado é suspeita).
-- **Não visto na tela** (o quadro só existe no real). ⏳ **0304 pendente na
-  produção.**
+- **Não visto na tela** (o quadro só existe no real). ✅ **0304 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login, a função da unidade da ficha recusa com "permission denied"; com a chave de serviço, que não é pessoa nenhuma, devolve vazio — ela só responde sobre quem está logado).
 
 **19/10/2026 — PC Administrador (core 0.326.0 → 0.327.0, migração 0303)**
 

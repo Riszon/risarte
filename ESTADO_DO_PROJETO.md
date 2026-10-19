@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.328.0** · Última migração: **0304** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.328.0** · Última migração: **0304** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎓 0.328.0 / 0304 — PORTAL: TODAS AS MISSÕES, RELATAR E O SINO (OC-00111, 19/10/2026)
 >
@@ -11,6 +11,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.328.0** · Última migraç
 > `missoesAbertas` (um quadro por missão, com a unidade), relato na unidade da
 > FICHA (`my_report_clinic`, 0304) e o SINO no portal (`/notificacoes` em
 > `PORTAL_PATHS`). ⚠️ **AP52** no BACKLOG: mesma função em duas turmas abertas.
+> ✅ **0304 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login, a função da unidade da ficha recusa com "permission denied"; com a chave de serviço, que não é pessoa nenhuma, devolve vazio — ela só responde sobre quem está logado).
 >
 > ## 🎓 0.327.0 / 0303 — CERTIFICAÇÃO: AVISO, EQUIPE E ACOMPANHAMENTO (OC-00003, 19/10/2026)
 >
