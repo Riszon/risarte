@@ -390,6 +390,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (4ª) — PC Administrador (core 0.329.0 → 0.329.1, sem migração)**
+
+- **OC-00104 — o destaque da linha em Problemas parava no meio.** Defeito: o
+  link dentro da `<li>` flex não esticava (`min-w-0 flex-1`). Medido no
+  navegador antes/depois.
+- ⚠️ **O painel do navegador escondido mede tudo como 0** (`innerWidth` = 0):
+  para medir largura, fixar o tamanho com `resize_window` antes.
+- ⚠️ **A régua do texto pegou o próprio COMENTÁRIO** que citava a classe e
+  passou com a correção arrancada — de novo o padrão do §0d. Régua que procura
+  classe lê só o `className`.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **19/10/2026 (3ª) — PC Administrador (core 0.328.0 → 0.329.0, migração 0305)**
 
 - **AP52 (pedido do dono): a mesma função em duas turmas abertas virava duas

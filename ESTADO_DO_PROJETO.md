@@ -1,7 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.329.0** · Última migração: **0305** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.329.1** · Última migração: **0305** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎨 0.329.1 — O DESTAQUE DA LINHA EM PROBLEMAS (OC-00104, 19/10/2026)
+>
+> O fundo de "Resposta nova" parava no fim do texto: o link dentro da linha
+> flex não esticava. `min-w-0 flex-1`. Medido no navegador (sobra de 9 a
+> 144 px → 0).
+>
 > ## 🎓 0.329.0 / 0305 — UMA MISSÃO POR FUNÇÃO (AP52, 19/10/2026)
 >
 > A mesma pessoa na mesma função em duas turmas abertas virava duas missões

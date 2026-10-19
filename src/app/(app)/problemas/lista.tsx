@@ -337,8 +337,12 @@ function Linha({
       <Link
         href={enderecoDoRelato(r)}
         target={r.ambiente === "treino" ? nomeDaAba("treino") : undefined}
+        // ⚠️ `min-w-0 flex-1`: a linha (`<li>`) é flex, e sem isto o link
+        // encolhia até o fim do texto — o fundo de "Resposta nova" (e o do
+        // passar o mouse) parava no meio da linha, cada uma num tamanho
+        // (relato OC-00104).
         className={cn(
-          "flex flex-wrap items-start gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-muted/50",
+          "flex min-w-0 flex-1 flex-wrap items-start gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-muted/50",
           novo && "bg-gold/10"
         )}
       >

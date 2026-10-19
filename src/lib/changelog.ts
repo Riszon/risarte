@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.329.1",
+    data: "2026-10-19",
+    migracao: null,
+    titulo: "Problemas: o destaque da linha ocupa a linha inteira",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Na lista de Problemas, o fundo das linhas com \"Resposta nova\" (e o do passar o mouse) parava logo depois do texto, cada linha num tamanho. Agora ocupa a linha inteira.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.329.0",
     data: "2026-10-19",
     migracao: "0305",
