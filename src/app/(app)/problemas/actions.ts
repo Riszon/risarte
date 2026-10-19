@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { responderNoTreino } from "@/lib/relatos-do-treino";
 import { APP_VERSION } from "@/lib/version";
-import { ROLE_LABELS } from "@/lib/roles";
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { ehModulo } from "@/lib/system-reports";
 
 type Resultado = {
@@ -37,6 +37,19 @@ export async function registrarProblema(
   // clínica nenhuma, não há o que escolher no menu — e era isso que impedia o
   // recém-chegado de relatar. A unidade vem então da ficha dele (o cadastro de
   // Risartano sempre tem uma), que é a unidade onde a pessoa trabalha.
+  // OC-00111: no modo portal a tranca (0277) esconde as unidades da pessoa —
+  // a leitura da ficha pela tela não as enxerga, e o banco recusava o relato.
+  // `my_report_clinic` (0304) devolve a unidade da ficha e as funções nela.
+  let papeisDaFicha: string[] | null = null;
+  if (!clinicId) {
+    const { data: daFicha } = await (await createClient()).rpc("my_report_clinic");
+    const linha = ((daFicha ?? []) as { clinic_id: string | null; roles: string[] | null }[])[0];
+    if (linha?.clinic_id) {
+      clinicId = linha.clinic_id;
+      papeisDaFicha = linha.roles ?? [];
+    }
+  }
+
   if (!clinicId) {
     const supabaseDaFicha = await createClient();
     const { data: ficha } = await supabaseDaFicha
@@ -52,7 +65,8 @@ export async function registrarProblema(
   if (!clinicId) {
     return {
       ok: false,
-      error: "Escolha uma unidade no menu lateral antes de registrar.",
+      error:
+        "Seu cadastro ainda não tem unidade — peça ao Admin para completar a sua ficha. (Com unidade no menu lateral, escolha-a antes de registrar.)",
     };
   }
 
@@ -91,7 +105,7 @@ export async function registrarProblema(
 
   // O papel CONGELADO: quem relata hoje como recepcionista e vira gerente em
   // outubro não pode aparecer como gerente num problema que viu no balcão.
-  const papeis = session.rolesByClinic[clinicId] ?? [];
+  const papeis = (session.rolesByClinic[clinicId] ?? papeisDaFicha ?? []) as UserRole[];
   const papel = session.isAdminMaster
     ? "Admin Master"
     : papeis.map((p) => ROLE_LABELS[p]).join(", ") || null;

@@ -40,6 +40,10 @@ const PORTAL_PATHS = [
   // acompanhar a resposta no sistema real: a tela devolvia para o Início.
   // Achado ao provar a régua de visibilidade com um login que não é Admin.
   "/problemas",
+  // ⚠️ OS AVISOS ENTRARAM EM 19/10/2026 (relato OC-00111, decisão do dono): o
+  // sino aparece no portal, porque é por ele que chega "Você foi convocado
+  // para a certificação" (0303) — e clicar nele levava de volta ao Início.
+  "/notificacoes",
 ];
 
 export function caminhoDoPortal(caminho: string): boolean {

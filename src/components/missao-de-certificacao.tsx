@@ -31,6 +31,8 @@ export type MissaoNaTela = Pick<
   medicao: Medicao | null;
   /** Depois de cumprida (0281): o que aconteceu. Nulo enquanto não cumpriu. */
   conclusao: "aguardando_aprovacao" | "certificado" | "porta_fechada" | null;
+  /** OC-00111: a unidade da turma — é ela que separa duas missões na tela. */
+  unidade: string | null;
 };
 
 /**
@@ -78,6 +80,7 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
             </h2>
             <p className="text-sm text-muted-foreground">
               Função: {ROLE_LABELS[missao.role]}
+              {missao.unidade && ` · Unidade: ${missao.unidade}`}
             </p>
             <p className="text-sm">
               {missao.conclusao === "aguardando_aprovacao"
@@ -123,6 +126,7 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
             </h2>
             <p className="text-sm text-muted-foreground">
               Função: {ROLE_LABELS[missao.role]}
+              {missao.unidade && ` · Unidade: ${missao.unidade}`}
             </p>
           </div>
 

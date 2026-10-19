@@ -1,7 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.327.0** · Última migração: **0303** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.328.0** · Última migração: **0304** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎓 0.328.0 / 0304 — PORTAL: TODAS AS MISSÕES, RELATAR E O SINO (OC-00111, 19/10/2026)
+>
+> Dois defeitos confirmados na produção: o Início lia só UMA missão
+> (`.limit(1)`) e quem tinha duas funções não conseguia aceitar a outra; e no
+> portal ninguém relatava (a boia pedia unidade, e o banco recusava a unidade
+> fechada — a tranca da 0277 a esconde de `user_clinic_ids`). Agora:
+> `missoesAbertas` (um quadro por missão, com a unidade), relato na unidade da
+> FICHA (`my_report_clinic`, 0304) e o SINO no portal (`/notificacoes` em
+> `PORTAL_PATHS`). ⚠️ **AP52** no BACKLOG: mesma função em duas turmas abertas.
+>
 > ## 🎓 0.327.0 / 0303 — CERTIFICAÇÃO: AVISO, EQUIPE E ACOMPANHAMENTO (OC-00003, 19/10/2026)
 >
 > "O convocado não recebe alerta": REGRA — o quadro da missão aparece só no

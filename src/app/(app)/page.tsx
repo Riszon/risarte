@@ -24,7 +24,7 @@ import {
   montarPendencias,
   atalhosPara,
   equipeDaMissao,
-  missaoAberta,
+  missoesAbertas,
   type Pendencia,
 } from "./inicio-dados";
 import { MissaoDeCertificacao } from "@/components/missao-de-certificacao";
@@ -207,11 +207,12 @@ export default async function HomePage() {
   // certificado fica guardado. Mostrar o cartão nos dois lados criaria duas
   // matrículas e dois marcos de início, em bancos diferentes, e nenhum dos
   // dois seria a verdade.
-  const minhaMissao = treino
-    ? null
-    : await missaoAberta(supabase, session.userId, session.email);
+  // OC-00111: TODAS as missões abertas — uma por função/unidade.
+  const minhasMissoes = treino
+    ? []
+    : await missoesAbertas(supabase, session.userId, session.email);
   // 0303 (OC-00003): na coletiva, a equipe da unidade e como cada um avança.
-  const minhaEquipe = minhaMissao ? await equipeDaMissao(supabase) : null;
+  const minhaEquipe = minhasMissoes.length > 0 ? await equipeDaMissao(supabase) : null;
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
@@ -235,7 +236,9 @@ export default async function HomePage() {
         <BirthdayNotifier clinicId={homeClinic.id} />
       )}
 
-      {minhaMissao && <MissaoDeCertificacao missao={minhaMissao} />}
+      {minhasMissoes.map((m) => (
+        <MissaoDeCertificacao key={m.id} missao={m} />
+      ))}
       {minhaEquipe && <EquipeDaCertificacao grupos={minhaEquipe} />}
 
       {/* 0276: AS UNIDADES AINDA FECHADAS, e por quê. Sem isto a unidade
@@ -278,8 +281,9 @@ export default async function HomePage() {
                       "aguardando a missão" contradiria o cartão logo acima
                       (achado no teste ponta a ponta, 26/09/2026). */}
                   {u.motivo === "aguardando_missao" &&
-                  minhaMissao?.conclusao === "aguardando_aprovacao" &&
-                  minhaMissao.role === u.role
+                  minhasMissoes.some(
+                    (m) => m.conclusao === "aguardando_aprovacao" && m.role === u.role
+                  )
                     ? "Aguardando a aprovação do Admin"
                     : ROTULO_DO_MOTIVO[u.motivo]}
                 </span>

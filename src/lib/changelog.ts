@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.328.0",
+    data: "2026-10-19",
+    migracao: "0304",
+    titulo: "Certificação: todas as missões no Início, e quem está no Início relata e vê o sino",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem tem mais de uma missão (funções diferentes, em unidades diferentes) vê um quadro para cada uma, com a função e a unidade no título e o seu próprio \"Aceitar\". Antes só a convocação mais recente aparecia, e a outra não tinha como ser aceita.",
+        papeis: "todos",
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Quem ainda não tem o sistema real liberado consegue relatar um problema pela boia: o relato vai para a unidade da ficha. Antes a boia pedia para escolher uma unidade no menu lateral, que no Início não existe.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O sino aparece também para quem ainda está só no Início, com os avisos da certificação (convocação, missão cumprida, aguardando aprovação).",
+        papeis: "todos",
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.327.0",
     data: "2026-10-19",
     migracao: "0303",

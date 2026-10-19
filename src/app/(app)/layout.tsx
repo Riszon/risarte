@@ -77,7 +77,8 @@ export default async function AppLayout({
           podeBuscar={false}
           podeVerManual={pode(session, "menu.manual")}
           podeVerSistema={false}
-          temUnidade={false}
+          // A boia do portal registra na unidade da ficha (OC-00111).
+          temUnidade
           isAdminMaster={false}
           modoPortal
         />

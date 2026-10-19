@@ -475,15 +475,18 @@ export function atalhosPara(session: SessionContext): Atalho[] {
  * não abre trava a pessoa inteira. (Mesma janela tratada em
  * `permission_matrix`, §0b do CLAUDE.md.)
  */
-export async function missaoAberta(
+export async function missoesAbertas(
   supabase: SupabaseClient,
   userId: string,
   email: string
-): Promise<MissaoNaTela | null> {
+): Promise<MissaoNaTela[]> {
+  // ⚠️ TODAS AS MISSÕES, NÃO A MAIS RECENTE (relato OC-00111). Quem tem duas
+  // funções em turmas abertas (TSB em Cambé, ASB em Londrina) tem duas
+  // missões — e com `.limit(1)` a outra ficava invisível, sem ter como aceitar.
   const { data, error } = await supabase
     .from("training_enrollments")
     .select(
-      "id, role, status, started_at, access_suspended_at, approval_status, training_campaigns!inner(status, access_policy, deadline)"
+      "id, role, status, started_at, access_suspended_at, approval_status, clinic_id, training_campaigns!inner(status, access_policy, deadline)"
     )
     .eq("user_id", userId)
     // 0281: a concluída também aparece enquanto a turma está aberta — é o
@@ -491,78 +494,84 @@ export async function missaoAberta(
     // missão cumprida simplesmente sumiria da tela.
     .in("status", ["convocado", "em_andamento", "concluido"])
     .eq("training_campaigns.status", "aberta")
-    .order("invited_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("invited_at", { ascending: false });
 
-  if (error || !data) return null;
+  if (error || !data || data.length === 0) return [];
 
-  const papel = data.role as UserRole;
-  // O Supabase devolve o embutido como objeto ou lista conforme a relação.
-  const turma = (
-    Array.isArray(data.training_campaigns)
-      ? data.training_campaigns[0]
-      : data.training_campaigns
-  ) as { access_policy?: string; deadline?: string | null } | undefined;
+  // O NOME DA UNIDADE de cada missão: é ele que separa duas missões na tela.
+  // A pessoa no portal não "tem" a unidade (a tranca a esconde, 0277), mas o
+  // nome das unidades é leitura livre para quem está logado.
+  const idsDasUnidades = [...new Set(data.map((d) => d.clinic_id).filter(Boolean))] as string[];
+  const { data: unidades } = idsDasUnidades.length
+    ? await supabase.from("clinics").select("id, name").in("id", idsDasUnidades)
+    : { data: [] as { id: string; name: string }[] };
+  const nomeDaUnidade = new Map((unidades ?? []).map((u) => [String(u.id), String(u.name)]));
 
   // O resumo vem das metas DE AGORA. A pessoa precisa ver o que vai cumprir
   // antes de aceitar — um cartão que diz "você foi convocado" sem dizer para
   // quê pede um clique no escuro.
+  const papeis = [...new Set(data.map((d) => d.role as UserRole))];
   const { data: metas } = await supabase
     .from("training_requirements")
     .select("role, indicator, minimum_count")
-    .eq("role", papel)
+    .in("role", papeis)
     .returns<MetaDoTreino[]>();
 
-  const startedAt = data.started_at ? String(data.started_at) : null;
+  const missoes: MissaoNaTela[] = [];
+  for (const d of data) {
+    const papel = d.role as UserRole;
+    const metasDoPapel = (metas ?? []).filter((m) => m.role === papel);
+    // O Supabase devolve o embutido como objeto ou lista conforme a relação.
+    const turma = (
+      Array.isArray(d.training_campaigns) ? d.training_campaigns[0] : d.training_campaigns
+    ) as { access_policy?: string; deadline?: string | null } | undefined;
+    const startedAt = d.started_at ? String(d.started_at) : null;
 
-  // ⚠️ SÓ MEDE QUEM JÁ COMEÇOU. Antes do clique não existe janela de contagem
-  // (lei do marco, 0273) — e medir mesmo assim iria ao banco de treino a cada
-  // abertura do Início para devolver uma resposta que já se sabe qual é.
-  const medicao: Medicao | null =
-    data.status === "em_andamento" && startedAt
-      ? await medirMatricula({
-          email,
-          role: papel,
-          started_at: startedAt,
-          metas: metas ?? [],
-        })
-      : null;
+    // ⚠️ SÓ MEDE QUEM JÁ COMEÇOU. Antes do clique não existe janela de contagem
+    // (lei do marco, 0273) — e medir mesmo assim iria ao banco de treino a cada
+    // abertura do Início para devolver uma resposta que já se sabe qual é.
+    const medicao: Medicao | null =
+      d.status === "em_andamento" && startedAt
+        ? await medirMatricula({ email, role: papel, started_at: startedAt, metas: metasDoPapel })
+        : null;
 
-  // ⚠️ 0281: MEDIU E CUMPRIU → REGISTRA. É aqui que a missão vira certificado
-  // para quem simplesmente abre o Início. O registro é do SERVIDOR (chave de
-  // serviço), depois desta medição — nunca de um valor vindo do navegador.
-  let status = data.status as MissaoNaTela["status"];
-  let conclusao: MissaoNaTela["conclusao"] =
-    status === "concluido"
-      ? data.approval_status === "pendente"
-        ? "aguardando_aprovacao"
-        : "certificado"
-      : null;
-  if (status === "em_andamento") {
-    // 0303: a última medição fica na matrícula para a equipe e o painel.
-    await guardarProgresso(String(data.id), medicao);
-    const registrado = await registrarSeCumprida(String(data.id), medicao);
-    if (registrado) {
-      status = "concluido";
-      conclusao =
-        registrado === "aguardando_aprovacao"
+    // ⚠️ 0281: MEDIU E CUMPRIU → REGISTRA. É aqui que a missão vira certificado
+    // para quem simplesmente abre o Início. O registro é do SERVIDOR (chave de
+    // serviço), depois desta medição — nunca de um valor vindo do navegador.
+    let status = d.status as MissaoNaTela["status"];
+    let conclusao: MissaoNaTela["conclusao"] =
+      status === "concluido"
+        ? d.approval_status === "pendente"
           ? "aguardando_aprovacao"
-          : registrado === "porta_fechada"
-            ? "porta_fechada"
-            : "certificado";
+          : "certificado"
+        : null;
+    if (status === "em_andamento") {
+      // 0303: a última medição fica na matrícula para a equipe e o painel.
+      await guardarProgresso(String(d.id), medicao);
+      const registrado = await registrarSeCumprida(String(d.id), medicao);
+      if (registrado) {
+        status = "concluido";
+        conclusao =
+          registrado === "aguardando_aprovacao"
+            ? "aguardando_aprovacao"
+            : registrado === "porta_fechada"
+              ? "porta_fechada"
+              : "certificado";
+      }
     }
-  }
 
-  return {
-    id: String(data.id),
-    role: papel,
-    status,
-    conclusao,
-    started_at: startedAt,
-    resumo: resumoDaMissao(metas ?? [], papel),
-    medicao,
-    prazo: turma?.deadline ? String(turma.deadline) : null,
-    suspenso: Boolean(data.access_suspended_at),
-  };
+    missoes.push({
+      id: String(d.id),
+      role: papel,
+      status,
+      conclusao,
+      started_at: startedAt,
+      resumo: resumoDaMissao(metasDoPapel, papel),
+      medicao,
+      prazo: turma?.deadline ? String(turma.deadline) : null,
+      suspenso: Boolean(d.access_suspended_at),
+      unidade: d.clinic_id ? (nomeDaUnidade.get(String(d.clinic_id)) ?? null) : null,
+    });
+  }
+  return missoes;
 }

@@ -390,6 +390,26 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (2ª) — PC Administrador (core 0.327.0 → 0.328.0, migração 0304)**
+
+- **OC-00111 (PRODUÇÃO) — modo portal: "não consigo escolher a unidade para
+  aceitar" e "não consigo relatar".** DOIS defeitos: o Início lia só UMA
+  missão (`.limit(1)`) — com TSB em Cambé e ASB em Londrina, a de Cambé não
+  tinha como ser aceita; e a boia do portal nascia sem unidade, com o banco
+  recusando o relato (a tranca da 0277 esconde a unidade fechada de
+  `user_clinic_ids`). O OC-00111 foi registrado pelo TREINO.
+- Decisões do dono: **um quadro por missão** (`missoesAbertas`, com a
+  unidade), **relato na unidade da FICHA** (`my_report_clinic`, 0304) e o
+  **sino no portal** (`/notificacoes` em `PORTAL_PATHS`; o chat segue fora).
+- ⚠️ **No portal, `session.activeClinic` é nulo e `user_clinic_ids()` é
+  vazio** — função do banco que precisa da unidade da pessoa no portal lê
+  `user_clinic_roles_all` (como `my_report_clinic`).
+- **AP52 (BACKLOG):** a mesma função em duas turmas abertas vira duas missões
+  que medem o mesmo trabalho (confirmado na produção; o efeito no
+  certificado é suspeita).
+- **Não visto na tela** (o quadro só existe no real). ⏳ **0304 pendente na
+  produção.**
+
 **19/10/2026 — PC Administrador (core 0.326.0 → 0.327.0, migração 0303)**
 
 - **OC-00003 (PRODUÇÃO) — "o convocado não recebe alerta".** REGRA: o quadro

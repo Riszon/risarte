@@ -2500,6 +2500,24 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
+### AP52. Certificação: a mesma FUNÇÃO em duas turmas abertas vira duas missões (19/10/2026)
+
+*(Achado no OC-00111.)*
+
+**Confirmado na produção (só leitura):** uma dentista está convocada como
+**dentista** em DUAS turmas abertas ao mesmo tempo (TR-00004, Cambé, e
+TR-00005, Londrina) — uma em andamento, outra só convocada. A certificação é
+por FUNÇÃO (0273): a contagem no treino não separa unidade, então as duas
+missões medem **o mesmo trabalho**. A 0275 impede a mesma unidade em duas
+turmas abertas, mas não a mesma pessoa+função em turmas de unidades
+diferentes.
+
+**Suspeita (não medida):** ao cumprir, cada matrícula registra a sua
+conclusão — podem sair **dois certificados** da mesma função, e na coletiva a
+pessoa conta no grupo das DUAS unidades. Decidir com o dono: impedir a segunda
+matrícula da mesma função (a turma nova pula quem já está em turma aberta com
+aquela função) ou aceitar uma missão valendo para as duas unidades.
+
 ### AP51. Conciliação: o que ficou depois do OC-00108 (16/10/2026)
 
 *(Achado no diagnóstico do OC-00108; o relato foi resolvido na 0301 / core

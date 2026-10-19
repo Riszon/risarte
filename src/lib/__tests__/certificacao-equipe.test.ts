@@ -100,7 +100,7 @@ describe("as telas", () => {
 
   it("o Início mostra a equipe junto com a missão", () => {
     const pagina = ler("src/app/(app)/page.tsx");
-    expect(pagina).toContain("const minhaEquipe = minhaMissao ? await equipeDaMissao(supabase) : null;");
+    expect(pagina).toContain("const minhaEquipe = minhasMissoes.length > 0 ? await equipeDaMissao(supabase) : null;");
     expect(pagina).toContain("<EquipeDaCertificacao grupos={minhaEquipe} />");
   });
 

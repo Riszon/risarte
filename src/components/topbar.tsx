@@ -92,18 +92,20 @@ export function Topbar({
             para mais ninguém, e o banco repete a regra: para os outros as
             consultas devolvem vazio. */}
         {isAdminMaster && !modoPortal && <QuemEstaOnline />}
-        {!modoPortal && (
-          <>
-            <ChatNavItem />
-            <NotificationNavItem />
-          </>
-        )}
+        {!modoPortal && <ChatNavItem />}
+        {/* O SINO TAMBÉM NO PORTAL (OC-00111, decisão do dono): é por ele que
+            chegam os avisos da certificação — convocação, missão cumprida,
+            aguardando aprovação. O chat continua de fora. */}
+        <NotificationNavItem />
         {/* A BOIA TAMBÉM NO MODO PORTAL (20/09/2026): quem está treinando é
             quem mais tropeça, e sem ela não teria como relatar. Os alertas do
             sistema, não: são de operação. */}
-        {modoPortal && (
-          <ReportNavItem temUnidade={false} isAdminMaster={false} />
-        )}
+        {/* OC-00111: no portal não há unidade ativa (a tranca esconde as
+            unidades fechadas) — o relato vai para a unidade da FICHA da
+            pessoa, decidido no servidor (`my_report_clinic`, 0304). Com
+            `temUnidade={false}` o painel mandava "escolher no menu lateral",
+            que no portal não existe. */}
+        {modoPortal && <ReportNavItem temUnidade isAdminMaster={false} />}
         {podeVerSistema && (
           <>
             <div className="hidden sm:contents">

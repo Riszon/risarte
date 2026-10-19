@@ -860,7 +860,15 @@ sendo contado.
 > acompanha. **A missão você cumpre trabalhando no treino** — e o que faz lá
 > aparece no quadro do real. Quem entrar só no treino não vê o quadro: isso não
 > é defeito. Quem ainda está com o sistema real fechado também entra no real e
-> cai direto no Início, onde o quadro está.
+> cai direto no Início, onde o quadro está — e o **sino** aparece também para
+> ele, com os avisos da certificação.
+
+**Tem mais de uma função, em turmas diferentes?** Aparece **um quadro para cada
+missão**, um embaixo do outro, cada um com a **função e a unidade** no título
+(*"Função: TSB · Unidade: Risarte Cambé - Centro"*) e o seu próprio botão
+**"Aceitar e começar a missão"**. Aceite cada uma quando estiver pronto — elas
+são contadas separadamente. (Até a versão 0.328.0 só a convocação mais recente
+aparecia, e a outra ficava sem ter como ser aceita — relato OC-00111.)
 
 **Quando estiver pronto, clique em "Aceitar e começar a missão".** A partir
 desse instante — e só dele — o que você fizer no treino conta para a sua
@@ -3131,7 +3139,10 @@ mostra quantos relatos ainda dependem de você.
 **Quem ainda está só no Início também relata.** Mesmo sem o sistema real
 liberado, a boia aparece na barra de cima e a tela de Problemas abre: a pessoa
 relata, acompanha a resposta e vê as próprias solicitações. A unidade do relato
-é a do cadastro dela.
+é a **da ficha dela** (o cadastro de Risartano), escolhida pelo sistema — não
+precisa escolher nada. (Até a versão 0.328.0 a boia pedia "escolha uma unidade
+no menu lateral", que no Início não existe, e o relato não entrava — relato
+OC-00111.)
 
 **Relatar é igual nos dois ambientes (desde 20/09/2026).** Se você está no
 **riSZon Treino** e algo dá errado, relate por lá mesmo, pela boia de sempre —
