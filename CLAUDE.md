@@ -408,8 +408,7 @@ Syncthing se comportarem de forma estranha.**
 - AP53 (BACKLOG): as especialidades seguem com o Planner. No treino ficaram 8
   itens personalizados antigos (a cópia de plano não os leva).
 - **Não visto na tela:** como Planner (conta de teste em modo portal no
-  treino) e o orçamento (nenhum plano em rascunho lá). ⏳ **0306 pendente na
-  produção.**
+  treino) e o orçamento (nenhum plano em rascunho lá). ✅ **0306 APLICADA nos dois bancos** (o dono rodou na produção em 19/10/2026 e a conferência deu o esperado; conferido de fora: sem login, sugerir, editar sessões, aprovar e o aviso interno recusam com "permission denied"; com a chave de serviço, que não é Admin, aprovar responde NOT_ALLOWED antes de gravar; a tabela de sugestões não entrega nada sem login e está vazia. A produção tem 0 procedimentos e 0 itens de plano, então ninguém foi afetado).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **19/10/2026 (4ª) — PC Administrador (core 0.329.0 → 0.329.1, sem migração)**
