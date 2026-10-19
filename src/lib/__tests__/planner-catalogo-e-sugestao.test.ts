@@ -12,7 +12,7 @@ import { mensagemDaSugestao, validarSugestao } from "@/lib/sugestao-de-procedime
 //     pede mais informações.
 
 const RAIZ = join(__dirname, "..", "..", "..");
-const ler = (rel: string) => readFileSync(join(RAIZ, rel), "utf8");
+const ler = (rel: string) => readFileSync(join(RAIZ, rel), "utf8").replace(/\r\n/g, "\n");
 const MIGRACAO = ler("supabase/migrations/0306_planner_procedimentos_e_sugestoes.sql");
 const corpoDe = (nome: string) => {
   const i = MIGRACAO.indexOf(`function public.${nome}(`);

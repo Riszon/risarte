@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.331.0",
+    data: "2026-10-19",
+    migracao: "0307",
+    titulo: "Procedimentos: lista por especialidade, com o que falta em cada um",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista de Procedimentos virou blocos por especialidade, que abrem e fecham. Cada procedimento é um cartão com uma linha de resumo (preço, tempo, sobra depois do material e do repasse, e em quantos planos entrou nos últimos 90 dias); clicar abre os detalhes.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada procedimento diz o que falta para estar pronto para o orçamento (preço, tempo, pilar ou repasse), e o botão \"Só os com pendência\" mostra apenas os incompletos.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Os procedimentos inativos ficam numa seção própria no fim da lista, em cinza e riscados, com o botão Reativar à vista — não se misturam mais com os ativos.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.330.0",
     data: "2026-10-19",
     migracao: "0306",

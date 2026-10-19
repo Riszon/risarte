@@ -1805,6 +1805,25 @@ na lista. **As sessões de um procedimento que já existe** você mesmo ajusta:
 em **Procedimentos**, no **relógio** (Protocolo de sessões) da linha do
 procedimento — a mudança vale direto para a rede.
 
+**Como ler a lista de Procedimentos** (versão 0.331.0). Os procedimentos vêm
+em **blocos por especialidade**, cada um com a quantidade; clique no título
+para abrir ou fechar (os botões **Abrir todos** e **Fechar todos** ficam no
+alto). Cada procedimento é um cartão com **uma linha de resumo**:
+
+- **preço** (ou "sem preço") e o **tempo** / as sessões;
+- **sobra** — quanto fica do preço depois do material do kit e do maior
+  repasse entre os níveis. Em vermelho quando é negativa. Não é a margem
+  completa: cadeira, imposto e taxa estão na **Precificação**;
+- **uso** — em quantos planos ele entrou nos últimos 90 dias;
+- **falta …** (amarelo) — o que ainda falta para ele estar pronto para o
+  orçamento: preço, tempo, pilar ou repasse. **Completo** (verde) quando não
+  falta nada. O botão **Só os com pendência** mostra apenas os incompletos.
+
+Clique no cartão para ver os detalhes (faixa de preço, comissão, repasse por
+nível, kits, sessões, histórico e os botões de editar); abre um por vez. Os
+**inativos** ficam numa seção própria no fim da lista, em cinza e riscados,
+com o botão **Reativar** à vista — eles não aparecem no orçamento nem na venda.
+
 **Quando faltar informação para planejar**, não devolva o caso em silêncio: use
 **Devolver ao Coordenador**, na aba Plano, e escreva o que falta (foto, exame,
 consideração). Escolha **Conversão Clínica** quando for só dado faltando, ou

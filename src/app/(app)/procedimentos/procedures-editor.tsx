@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   History,
   Pencil,
@@ -12,6 +16,15 @@ import {
   ShoppingCart,
   Trash2,
 } from "lucide-react";
+import {
+  agruparPorEspecialidade,
+  pendenciasDoProcedimento,
+  ROTULO_DA_PENDENCIA,
+  sobraDoPreco,
+  textoDoUso,
+  type Pendencia,
+  type Sobra,
+} from "@/lib/procedimento-na-lista";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -611,6 +624,7 @@ export function ProceduresEditor({
   payoutByProcedure = {},
   canEditPayout = false,
   kitsByProcedure = {},
+  usageByProcedure = null,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -639,6 +653,9 @@ export function ProceduresEditor({
   canEditPayout?: boolean;
   /** 0216: kits vinculados a cada procedimento, com o que compõe cada um. */
   kitsByProcedure?: Record<string, ProcedureKit[]>;
+  /** 0307: em quantos planos cada procedimento entrou em 90 dias. Nulo = não
+   *  foi possível medir (a tela esconde, nunca mostra "0"). */
+  usageByProcedure?: Record<string, number> | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -647,6 +664,82 @@ export function ProceduresEditor({
 
   const [adding, setAdding] = useState(false);
   const [newProc, setNewProc] = useState<ProcedureInput>(EMPTY);
+
+  // Pedido do dono (19/10/2026): blocos por especialidade, uma linha de resumo
+  // por procedimento (clique abre; um aberto por vez) e os inativos à parte.
+  const levelIds = levels.map((l) => l.id);
+  const pendenciasDe = (p: Procedure) =>
+    pendenciasDoProcedimento({
+      defaultPriceCents: p.defaultPriceCents,
+      estimatedMinutes: p.estimatedMinutes ?? null,
+      sessionsCount: (sessionsByProcedure[p.id] ?? []).length,
+      pillar: p.pillar ?? null,
+      levelIds,
+      payoutByLevel: payoutByProcedure[p.id] ?? {},
+    });
+  const ativos = procedures.filter((p) => p.isActive);
+  const inativos = procedures.filter((p) => !p.isActive);
+  const comPendencia = ativos.filter((p) => pendenciasDe(p).length > 0).length;
+  const [somentePendentes, setSomentePendentes] = useState(false);
+  const visiveis = somentePendentes
+    ? ativos.filter((p) => pendenciasDe(p).length > 0)
+    : ativos;
+  const grupos = agruparPorEspecialidade(visiveis, specialties);
+  // Lista curta (busca, filtro) já abre; a longa abre fechada, por blocos.
+  const [abertos, setAbertos] = useState<Set<string>>(() =>
+    visiveis.length <= 40 ? new Set(grupos.map((g) => g.especialidade)) : new Set()
+  );
+  const [verInativos, setVerInativos] = useState(ativos.length === 0);
+  const [abertoId, setAbertoId] = useState<string | null>(null);
+
+  function alternarGrupo(nome: string) {
+    setAbertos((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(nome)) novo.delete(nome);
+      else novo.add(nome);
+      return novo;
+    });
+  }
+
+  const linha = (p: Procedure, inativo: boolean) => {
+    const kits = kitsByProcedure[p.id] ?? [];
+    const precoCents = networkMode
+      ? p.defaultPriceCents
+      : (overrideByProc.get(p.id) ?? p.defaultPriceCents);
+    return (
+      <ProcedureRow
+        key={p.id}
+        procedure={p}
+        specialties={specialties}
+        networkMode={networkMode}
+        selectedUnitId={selectedUnitId}
+        overrideCents={overrideByProc.get(p.id) ?? null}
+        adjustedUnits={adjustedByProcedure[p.id] ?? []}
+        changes={changesByProcedure[p.id] ?? []}
+        sessions={sessionsByProcedure[p.id] ?? []}
+        unitSessions={unitSessionsByProcedure[p.id] ?? []}
+        canManageCatalog={canManageCatalog}
+        canEditNetworkSessions={canEditNetworkSessions}
+        isAdmin={isAdmin}
+        isPending={isPending}
+        run={run}
+        levels={levels}
+        payoutByLevel={payoutByProcedure[p.id] ?? {}}
+        canEditPayout={canEditPayout}
+        kits={kits}
+        open={abertoId === p.id}
+        onToggle={() => setAbertoId((id) => (id === p.id ? null : p.id))}
+        pendencias={inativo ? [] : pendenciasDe(p)}
+        sobra={sobraDoPreco(
+          precoCents,
+          kits.reduce((s, k) => s + k.costCents, 0),
+          payoutByProcedure[p.id] ?? {}
+        )}
+        uso={usageByProcedure ? (usageByProcedure[p.id] ?? 0) : null}
+        inativo={inativo}
+      />
+    );
+  };
 
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -737,41 +830,143 @@ export function ProceduresEditor({
         </p>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          {procedures.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              Nenhum procedimento encontrado.
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {procedures.map((p) => (
-                <ProcedureRow
-                  key={p.id}
-                  procedure={p}
-                  specialties={specialties}
-                  networkMode={networkMode}
-                  selectedUnitId={selectedUnitId}
-                  overrideCents={overrideByProc.get(p.id) ?? null}
-                  adjustedUnits={adjustedByProcedure[p.id] ?? []}
-                  changes={changesByProcedure[p.id] ?? []}
-                  sessions={sessionsByProcedure[p.id] ?? []}
-                  unitSessions={unitSessionsByProcedure[p.id] ?? []}
-                  canManageCatalog={canManageCatalog}
-                  canEditNetworkSessions={canEditNetworkSessions}
-                  isAdmin={isAdmin}
-                  isPending={isPending}
-                  run={run}
-                  levels={levels}
-                  payoutByLevel={payoutByProcedure[p.id] ?? {}}
-                  canEditPayout={canEditPayout}
-                  kits={kitsByProcedure[p.id] ?? []}
-                />
-              ))}
-            </ul>
+      {procedures.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            Nenhum procedimento encontrado.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {/* O resumo do que está na tela, e o atalho para o que falta. */}
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card px-3 py-2 text-sm">
+            <span>
+              <strong>{ativos.length}</strong> ativo{ativos.length === 1 ? "" : "s"}
+              {comPendencia > 0 ? (
+                <span className="ml-2 inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="size-3.5" />
+                  {comPendencia} com pendência
+                </span>
+              ) : (
+                ativos.length > 0 && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle2 className="size-3.5" />
+                    todos completos
+                  </span>
+                )
+              )}
+              {inativos.length > 0 && (
+                <span className="ml-2 text-muted-foreground">
+                  · {inativos.length} inativo{inativos.length === 1 ? "" : "s"}
+                </span>
+              )}
+            </span>
+            <span className="flex flex-wrap items-center gap-1">
+              {(comPendencia > 0 || somentePendentes) && (
+                <Button
+                  size="sm"
+                  variant={somentePendentes ? "default" : "outline"}
+                  onClick={() => {
+                    const proximo = !somentePendentes;
+                    setSomentePendentes(proximo);
+                    // Ver só o que falta = abrir os blocos que sobram.
+                    if (proximo) {
+                      setAbertos(
+                        new Set(
+                          agruparPorEspecialidade(
+                            ativos.filter((p) => pendenciasDe(p).length > 0),
+                            specialties
+                          ).map((g) => g.especialidade)
+                        )
+                      );
+                    }
+                  }}
+                >
+                  {somentePendentes ? "Mostrar todos" : "Só os com pendência"}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAbertos(new Set(grupos.map((g) => g.especialidade)))}
+              >
+                Abrir todos
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setAbertos(new Set())}>
+                Fechar todos
+              </Button>
+            </span>
+          </div>
+
+          {grupos.map((g) => {
+            const aberto = abertos.has(g.especialidade);
+            const pendentes = g.itens.filter((p) => pendenciasDe(p).length > 0).length;
+            return (
+              <section key={g.especialidade} className="rounded-lg border bg-card">
+                <button
+                  type="button"
+                  onClick={() => alternarGrupo(g.especialidade)}
+                  aria-expanded={aberto}
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left hover:bg-muted/40"
+                >
+                  <span className="flex items-center gap-2 font-semibold">
+                    {aberto ? (
+                      <ChevronDown className="size-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    )}
+                    {g.especialidade}
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                      {g.itens.length}
+                    </span>
+                  </span>
+                  {pendentes > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="size-3.5" />
+                      {pendentes} com pendência
+                    </span>
+                  )}
+                </button>
+                {aberto && (
+                  <ul className="space-y-2 border-t p-2">
+                    {g.itens.map((p) => linha(p, false))}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+
+          {/* Inativos: nunca no meio dos ativos (pedido do dono). */}
+          {inativos.length > 0 && (
+            <section className="rounded-lg border border-dashed bg-muted/40">
+              <button
+                type="button"
+                onClick={() => setVerInativos((v) => !v)}
+                aria-expanded={verInativos}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left font-semibold text-muted-foreground hover:bg-muted/60"
+              >
+                {verInativos ? (
+                  <ChevronDown className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
+                )}
+                Inativos
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                  {inativos.length}
+                </span>
+                <span className="text-xs font-normal">
+                  — fora do orçamento e da venda; reative para voltar a usar
+                </span>
+              </button>
+              {verInativos && (
+                <ul className="space-y-2 border-t border-dashed p-2">
+                  {inativos.map((p) => linha(p, true))}
+                </ul>
+              )}
+            </section>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -933,6 +1128,12 @@ function ProcedureRow({
   payoutByLevel,
   canEditPayout,
   kits,
+  open,
+  onToggle,
+  pendencias,
+  sobra,
+  uso,
+  inativo,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -960,6 +1161,16 @@ function ProcedureRow({
   payoutByLevel: Record<string, { amountCents: number; source: string }>;
   canEditPayout: boolean;
   kits: ProcedureKit[];
+  /** A linha está aberta (detalhes à mostra). Uma por vez, quem manda é a lista. */
+  open: boolean;
+  onToggle: () => void;
+  /** O que falta para estar pronto para o orçamento (vazio = completo). */
+  pendencias: Pendencia[];
+  /** Preço − material − maior repasse; nulo sem preço. */
+  sobra: Sobra | null;
+  /** Planos em 90 dias; nulo = não medido. */
+  uso: number | null;
+  inativo: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [showKits, setShowKits] = useState(false);
@@ -980,7 +1191,7 @@ function ProcedureRow({
 
   if (editing) {
     return (
-      <li className="space-y-3 p-3">
+      <li className="space-y-3 rounded-lg border-2 border-primary/50 bg-card p-3">
         <ProcedureFields
           value={form}
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
@@ -1034,49 +1245,137 @@ function ProcedureRow({
     );
   }
 
+  const tempo =
+    sessions.length > 0
+      ? protocolSummary(sessions)
+      : p.estimatedMinutes != null && p.estimatedMinutes > 0
+        ? formatMinutes(p.estimatedMinutes)
+        : null;
+  const precoNaTela = networkMode ? p.defaultPriceCents : (overrideCents ?? p.defaultPriceCents);
+  const textoUso = textoDoUso(uso);
+
+  // Cada procedimento é um CARTÃO (pedido do dono: "difícil entender quando
+  // muda de um procedimento para outro"). Inativo: cinza, tracejado, apagado.
+  const cartao = inativo
+    ? "rounded-lg border border-dashed bg-muted/60 text-muted-foreground"
+    : open
+      ? "rounded-lg border-2 border-primary/50 bg-card shadow-sm"
+      : "rounded-lg border bg-card shadow-sm transition-colors hover:border-primary/40";
+
   return (
-    <li className="p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 items-start gap-2">
-          <div className="min-w-0">
-          <p className="font-medium">
-            {p.name}
-            {!p.isActive && (
-              <Badge variant="outline" className="ml-2 text-[10px]">
-                Inativo
-              </Badge>
-            )}
-            {p.pillar && (
-              <Badge className="ml-2 bg-gold text-gold-foreground text-[10px]">
-                {PILLAR_LABELS[p.pillar]}
-              </Badge>
-            )}
-            {/* Indicador de venda direta + quem pode lançar (§7.3). */}
-            {p.directSale && (
-              <Badge
-                variant="outline"
-                className="ml-2 gap-1 border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800"
-                title="Autorizado para venda direta na unidade"
+    <li className={cartao}>
+      <div className="flex items-stretch">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2.5 text-left"
+        >
+          <span className="min-w-0">
+            <span className={`flex flex-wrap items-center gap-1.5 font-medium ${inativo ? "line-through decoration-1" : ""}`}>
+              {p.name}
+              {inativo && (
+                <Badge variant="outline" className="border-muted-foreground/50 bg-background text-[10px] font-semibold uppercase no-underline">
+                  Inativo
+                </Badge>
+              )}
+              {!inativo && p.pillar && (
+                <Badge className="bg-gold text-gold-foreground text-[10px]">
+                  {PILLAR_LABELS[p.pillar]}
+                </Badge>
+              )}
+              {/* Indicador de venda direta + quem pode lançar (§7.3). */}
+              {!inativo && p.directSale && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800"
+                  title="Autorizado para venda direta na unidade"
+                >
+                  <ShoppingCart className="size-3" />
+                  Venda direta
+                  {(p.directSaleReception || p.directSaleSdr) && (
+                    <span className="opacity-80">
+                      ·{" "}
+                      {[
+                        p.directSaleReception && "Recepção",
+                        p.directSaleSdr && "SDR",
+                      ]
+                        .filter(Boolean)
+                        .join(" + ")}
+                    </span>
+                  )}
+                </Badge>
+              )}
+            </span>
+            <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+              {p.code && <span className="font-mono text-gold-tinta">{p.code}</span>}
+              {p.tussCode && <span>TUSS {p.tussCode}</span>}
+              {inativo && p.specialty && <span>{p.specialty}</span>}
+            </span>
+          </span>
+
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {precoNaTela > 0 ? formatBRL(precoNaTela) : <span className="text-muted-foreground">sem preço</span>}
+              {!networkMode && overrideCents != null && (
+                <span className="ml-1 text-[10px] font-normal text-primary">unidade</span>
+              )}
+            </span>
+            {tempo && <span className="text-muted-foreground">{tempo}</span>}
+            {!inativo && sobra && (
+              <span
+                className={sobra.negativa ? "font-medium text-destructive" : "text-muted-foreground"}
+                title="Preço − material do kit − o maior repasse entre os níveis. Cadeira, imposto e taxa ficam na Precificação."
               >
-                <ShoppingCart className="size-3" />
-                Venda direta
-                {(p.directSaleReception || p.directSaleSdr) && (
-                  <span className="opacity-80">
-                    ·{" "}
-                    {[
-                      p.directSaleReception && "Recepção",
-                      p.directSaleSdr && "SDR",
-                    ]
-                      .filter(Boolean)
-                      .join(" + ")}
-                  </span>
-                )}
-              </Badge>
+                sobra {formatBRL(sobra.sobraCents)} ({sobra.percentual}%)
+              </span>
             )}
-          </p>
+            {!inativo && textoUso && (
+              <span className={uso === 0 ? "text-muted-foreground/80" : "text-muted-foreground"}>
+                {textoUso}
+              </span>
+            )}
+            {!inativo &&
+              (pendencias.length > 0 ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                  title="O que falta para o procedimento estar pronto para o orçamento"
+                >
+                  <AlertTriangle className="size-3" />
+                  falta {pendencias.map((x) => ROTULO_DA_PENDENCIA[x]).join(" · ")}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                  <CheckCircle2 className="size-3" />
+                  completo
+                </span>
+              ))}
+            {open ? (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )}
+          </span>
+        </button>
+        {/* Reativar à vista, sem abrir: é o que se faz com um inativo. */}
+        {inativo && canManageCatalog && networkMode && (
+          <div className="flex items-center pr-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => run(() => setProcedureActive(p.id, true), "Reativado.")}
+            >
+              Reativar
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {open && (
+      <div className="space-y-2 border-t px-3 pb-3 pt-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
           <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-            {p.code && <span className="font-mono text-gold-tinta">{p.code}</span>}
-            {p.tussCode && <span>TUSS {p.tussCode}</span>}
             {p.specialty && <span>{p.specialty}</span>}
             <span>Padrão: {formatBRL(p.defaultPriceCents)}</span>
             {/* Modo rede: avisa que alguma unidade tem preço próprio, senão
@@ -1114,8 +1413,6 @@ function ProcedureRow({
               </span>
             )}
           </p>
-          </div>
-        </div>
 
         {networkMode ? (
           <div className="flex shrink-0 items-center gap-1">
@@ -1314,6 +1611,8 @@ function ProcedureRow({
             run={run}
           />
         ))}
+      </div>
+      )}
     </li>
   );
 }

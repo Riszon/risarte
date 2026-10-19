@@ -389,6 +389,23 @@ export default async function ProceduresPage(
     });
   }
 
+  // 0307: em quantos planos cada procedimento entrou nos últimos 90 dias (na
+  // unidade escolhida, ou na rede). Leitura que falha NÃO vira zero: a tela
+  // esconde o número (`usageByProcedure` nulo) em vez de dizer "não usado".
+  let usageByProcedure: Record<string, number> | null = null;
+  if (canSeeCatalog) {
+    const { data: usageRows, error: usageError } = await supabase.rpc(
+      "procedure_usage_counts",
+      { p_clinic_id: unitId || null, p_days: 90 }
+    );
+    if (!usageError) {
+      usageByProcedure = {};
+      for (const r of (usageRows ?? []) as { procedure_id: string; plans: number }[]) {
+        usageByProcedure[r.procedure_id] = Number(r.plans ?? 0);
+      }
+    }
+  }
+
   // H4.3 Lote 4: propostas de protocolo pendentes visíveis a este usuário (a RLS
   // já limita: Admin vê todas; Coordenador vê as da sua unidade; Planner as suas).
   const { data: propRows } = await supabase
@@ -561,6 +578,9 @@ export default async function ProceduresPage(
       {!unitId && canManageCatalog && <ImportProcedures />}
 
       <ProceduresEditor
+        // Filtro novo = lista nova (blocos abertos, linha aberta, "só os com
+        // pendência" recomeçam do zero).
+        key={[search, specialtyFilter, statusFilter, pillarFilter, unitId].join("|")}
         procedures={procedures}
         specialties={activeSpecialties}
         selectedUnitId={unitId}
@@ -577,6 +597,7 @@ export default async function ProceduresPage(
         payoutByProcedure={payoutByProcedure}
         canEditPayout={session.isAdminMaster}
         kitsByProcedure={kitsByProcedure}
+        usageByProcedure={usageByProcedure}
       />
     </div>
   );

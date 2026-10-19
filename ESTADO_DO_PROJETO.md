@@ -1,7 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.330.0** · Última migração: **0306** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.331.0** · Última migração: **0307** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🗂️ 0.331.0 / 0307 — A LISTA DE PROCEDIMENTOS (pedido do dono, 19/10/2026)
+>
+> Blocos por especialidade, um cartão de resumo por procedimento (clique
+> abre os detalhes, um por vez), inativos numa seção própria no fim, e em
+> cada linha o que falta (preço, tempo, pilar, repasse), a sobra (preço −
+> material − maior repasse) e o uso (planos em 90 dias,
+> `procedure_usage_counts`, 0307). Regras em `procedimento-na-lista.ts`.
+>
 > ## 🦷 0.330.0 / 0306 — O CATÁLOGO É DO ADMIN; O PLANNER SUGERE (OC-00067 + OC-00068, 19/10/2026)
 >
 > Eram regra (0039 e 0036), mudada pelo dono: o Planner consulta o catálogo e

@@ -390,6 +390,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (6ª) — PC Administrador (core 0.330.0 → 0.331.0, migração 0307)**
+
+- **A lista de Procedimentos (pedido do dono):** com a TUSS no treino ela
+  tinha 49 mil pixels. Agora: blocos por especialidade, cartão de resumo
+  (clique abre, um por vez), **inativos numa seção própria**, e em cada linha
+  o que falta / a sobra / o uso (0307). Especialidades parecidas: o dono
+  decidiu **não juntar** (AP54 fechado).
+- ⚠️ **Teste que lê arquivo do disco tem de normalizar CRLF**: ao trocar de
+  ramo, o Git devolveu os arquivos com CRLF e a régua da 0306 (que procurava
+  `\n`) reprovou sem defeito nenhum. As duas réguas agora normalizam.
+- **Não visto:** como Planner e o modo unidade. ⏳ **0307 pendente na
+  produção.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **19/10/2026 (5ª) — PC Administrador (core 0.329.1 → 0.330.0, migração 0306)**
 
 - **OC-00067 + OC-00068 (um caso só): o Planner e o catálogo.** As duas eram

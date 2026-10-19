@@ -2500,7 +2500,10 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
-### AP54. Especialidades com nomes parecidos, lado a lado (19/10/2026)
+### AP54. Especialidades com nomes parecidos, lado a lado (19/10/2026) — ✅ DECIDIDO: ficam como estão
+
+**Decisão do dono (19/10/2026): não juntar.** As especialidades parecidas são
+de propósito; nada a fazer.
 
 **Confirmado no banco; se é defeito, é SUSPEITA.** Achado ao preparar a
 importação da TUSS odontológica: a produção (e o treino) têm, ativas ao mesmo
