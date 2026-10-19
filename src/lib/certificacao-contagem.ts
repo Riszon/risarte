@@ -50,7 +50,12 @@ export async function contarAcao(
     .eq(o.coluna, pessoaNoTreino)
     .gte(indicador.quando, desde.toISOString());
 
-  for (const f of o.filtros) consulta = consulta.eq(f.coluna, f.valor);
+  // "kind=ajuste_entrada|ajuste_saida" = qualquer um dos valores (OC-00004).
+  for (const f of o.filtros) {
+    consulta = f.valor.includes("|")
+      ? consulta.in(f.coluna, f.valor.split("|"))
+      : consulta.eq(f.coluna, f.valor);
+  }
 
   try {
     const { count, error, status } = await consulta.abortSignal(

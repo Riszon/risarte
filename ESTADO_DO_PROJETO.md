@@ -1,7 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.331.0** · Última migração: **0307** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.331.1** · Última migração: **0307** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎓 0.331.1 — AS TAREFAS DA ASB NA CERTIFICAÇÃO (OC-00004, 19/10/2026)
+>
+> Defeito: a lista oferecia à ASB seis ações que o sistema não deixa ela
+> fazer (missão impossível). Saíram; entraram as do material e a indicação
+> (que ela já podia fazer desde a 0296). Filtro "a|b" na contagem; a régua lê
+> o schema `indica`. AP55: TSB e Recepção têm o mesmo problema.
+>
 > ## 🗂️ 0.331.0 / 0307 — A LISTA DE PROCEDIMENTOS (pedido do dono, 19/10/2026)
 >
 > Blocos por especialidade, um cartão de resumo por procedimento (clique

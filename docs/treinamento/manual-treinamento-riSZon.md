@@ -796,11 +796,13 @@ próprias, escolhidas entre **as ações que o sistema realmente consegue
 contar** — a recepção cadastra pessoas, faz primeiros agendamentos, registra
 check-ins e consentimentos; o coordenador conclui avaliações e avalia opções de
 plano; o dentista conclui sessões e escreve evoluções; o comercial faz
-apresentações e fecha contratos. Três delas valem para **todas** as funções:
+apresentações e fecha contratos; a **ASB** cuida do material — envia a lista
+de compras (para a franqueadora ou local), dá entrada, manda material para
+uso, faz o inventário e acerta o saldo — e pede indicação. Três delas valem para **todas** as funções:
 relatar um problema, enviar uma sugestão e usar o chat — e a tela recomenda
 meta **1** para as três (relato inventado para bater número dá trabalho a quem
 responde; mensagem de chat em quantidade mede conversa, não competência). São
-**82 ações ao todo, em 13 funções**, e
+**88 ações ao todo, em 13 funções**, e
 cada função só enxerga as suas. As metas valem para a **rede inteira**: não
 existe unidade com régua mais fácil.
 
@@ -1379,7 +1381,12 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 
 #### TSB e ASB *(unidade)*
 
-- **Pode:** consumo avulso de estoque ✅ (são papéis clínicos).
+- **Pode:** consumo avulso de estoque ✅ (são papéis clínicos) e **pedir
+  indicação** na ficha do cliente.
+- **ASB não faz:** registrar chegada, chamar paciente, preencher anamnese,
+  enviar foto ou exame, nem ser o profissional responsável ou registrar o
+  desfecho do atendimento — o sistema não deixa, e por isso essas ações
+  também não estão na missão dela (desde a versão 0.331.1).
 - **ASB, quando a matriz liga** (desde a versão 0.320.0): **entrada e
   inventário de estoque** da unidade, e **montar e enviar a lista de
   compras**. Não registra nota de compra, não mexe em mínimo nem em kit, e não

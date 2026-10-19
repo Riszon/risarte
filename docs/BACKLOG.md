@@ -2500,6 +2500,37 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
+### AP55. Certificação: TSB e Recepção também têm tarefas que o sistema não deixa fazer (19/10/2026)
+
+**Confirmado no código e nas regras do banco** (mapeado no OC-00004). O
+catálogo (`certificacao.ts`) oferece:
+- à **TSB**: check-in, chamar paciente, anamnese, fotos e exames, profissional
+  responsável e desfecho — ela não pode fazer NENHUMA das seis (mesmas regras
+  que barram a ASB, EV-195);
+- à **Recepção**: anamnese (só coordenador grava, 0054) e chamar paciente
+  (coordenador, dentista, consultor ou o profissional do horário, 0065).
+Missão com um desses itens não tem como ser cumprida. Nenhuma meta da TSB
+está configurada hoje, e a missão da Recepção configurada (produção e treino)
+não usa nenhum dos dois — ninguém está travado agora (conferido em 19/10/2026). **Decisão do dono:**
+qual é a lista certa da TSB (como ele fez com a ASB) e o que tirar da Recepção.
+
+### AP56. Agenda: o servidor não confere a FUNÇÃO de quem vira profissional do horário (19/10/2026)
+
+**Confirmado lendo o código; não provado no banco.** A tela só oferece os
+papéis de `TYPE_PROVIDER_ROLES`, mas `parseAppointmentForm`
+(`agenda/actions.ts`) só exige que haja um profissional, e as regras do banco
+(0016, 0064, 0171) conferem quem CHAMA, não quem é escolhido. Um pedido
+montado à mão poderia pôr uma ASB como profissional — e o profissional do
+horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
+(fora do relato).
+
+### AP57. Certificação: o "Onde" de outras funções cita botões com nome antigo (19/10/2026)
+
+**Um confirmado; o resto é suspeita.** Ao conferir os da ASB, "Estoque →
+Inventário → Nova contagem" (gerente) não existe — o botão é "Abrir
+contagem". Os textos da ASB foram corrigidos (consumo, inventário e os novos);
+os das outras funções não foram conferidos um a um.
+
 ### AP54. Especialidades com nomes parecidos, lado a lado (19/10/2026) — ✅ DECIDIDO: ficam como estão
 
 **Decisão do dono (19/10/2026): não juntar.** As especialidades parecidas são

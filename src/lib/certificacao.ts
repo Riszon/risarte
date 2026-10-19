@@ -119,7 +119,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "appointments.checked_in_by",
     quando: "checked_in_at",
-    papeis: ["receptionist", "tsb", "asb"],
+    papeis: ["receptionist", "tsb"],
   },
   {
     chave: "chamadas_paciente",
@@ -130,7 +130,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "appointments.called_by",
     quando: "called_at",
-    papeis: ["receptionist", "clinical_coordinator", "dentist", "tsb", "asb"],
+    papeis: ["receptionist", "clinical_coordinator", "dentist", "tsb"],
   },
   {
     chave: "remarcacoes",
@@ -150,7 +150,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "anamnesis_fills.filled_by",
     quando: "filled_at",
-    papeis: ["receptionist", "tsb", "asb"],
+    papeis: ["receptionist", "tsb"],
   },
   {
     chave: "consentimentos",
@@ -240,7 +240,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "clinical_media.uploaded_by",
     quando: "created_at",
-    papeis: ["clinical_coordinator", "tsb", "asb"],
+    papeis: ["clinical_coordinator", "tsb"],
   },
   {
     chave: "consideracoes_clinicas",
@@ -296,7 +296,7 @@ export const INDICADORES = [
     dependeDeOutro: true,
     origem: "appointments.provider_user_id",
     quando: "done_at",
-    papeis: ["dentist", "clinical_coordinator", "tsb", "asb"],
+    papeis: ["dentist", "clinical_coordinator", "tsb"],
   },
   {
     chave: "desfechos_atendimento",
@@ -306,7 +306,7 @@ export const INDICADORES = [
     nivel: "complementar",
     origem: "attendance_session_outcomes.recorded_by",
     quando: "recorded_at",
-    papeis: ["clinical_coordinator", "tsb", "asb"],
+    papeis: ["clinical_coordinator", "tsb"],
   },
   {
     chave: "solicitacoes_clinicas",
@@ -421,11 +421,80 @@ export const INDICADORES = [
     rotulo: "Lançamentos de consumo de material",
     ajuda:
       "Baixas de estoque feitas à mão, para quando o kit do procedimento não cobre o que foi usado.",
-    onde: "Estoque → Registrar consumo",
+    onde: "Estoque → Lançar movimento (tipo Consumo)",
     nivel: "complementar",
     origem: "stock_movements.created_by + source_type=manual + kind=consumo",
     quando: "created_at",
     papeis: ["tsb", "asb"],
+  },
+  // OC-00004 (decisão do dono, 19/10/2026): a ASB cuida do material — pede,
+  // dá entrada, manda para a sala e acerta o saldo. Ela já podia fazer tudo
+  // isto desde a 0296 (e a matriz liga as ações para ela); faltava contar.
+  {
+    chave: "pedidos_franqueadora",
+    rotulo: "Pedidos de material para a franqueadora",
+    ajuda:
+      "Listas de compras que ela montou e ENVIOU para a franqueadora negociar. Rascunho não conta.",
+    onde: "Compras → Gerar lista de compras → Enviar à Franqueadora",
+    nivel: "essencial",
+    origem: "purchase_requests.sent_by + is_local=false",
+    quando: "sent_at",
+    papeis: ["asb"],
+  },
+  {
+    chave: "pedidos_locais",
+    rotulo: "Pedidos de material locais",
+    ajuda:
+      "Listas de compras marcadas como compra local (a unidade resolve sem a franqueadora) que ela enviou.",
+    onde: "Compras → Gerar lista de compras (marcando Compra local) → Enviar",
+    nivel: "complementar",
+    origem: "purchase_requests.sent_by + is_local=true",
+    quando: "sent_at",
+    papeis: ["asb"],
+  },
+  {
+    chave: "entradas_estoque",
+    rotulo: "Entradas de material no estoque",
+    ajuda:
+      "Material que chegou e ela lançou no estoque à mão. Entrada por nota fiscal ou recebimento de pedido não conta (isso é do gerente).",
+    onde: "Estoque → Lançar movimento (tipo Entrada)",
+    nivel: "essencial",
+    origem: "stock_movements.created_by + source_type=manual + kind=entrada",
+    quando: "created_at",
+    papeis: ["asb"],
+  },
+  {
+    chave: "envios_para_uso",
+    rotulo: "Material enviado para uso",
+    ajuda:
+      "Embalagens que ela abriu e mandou para a sala (o botão usar, na linha do item). O acerto da embalagem anterior não conta à parte.",
+    onde: "Estoque → na linha do item, o botão usar",
+    nivel: "essencial",
+    origem: "stock_movements.created_by + source_type=abertura + kind=abertura",
+    quando: "created_at",
+    papeis: ["asb"],
+  },
+  {
+    chave: "ajustes_saldo",
+    rotulo: "Ajustes de saldo do estoque",
+    ajuda:
+      "Correções avulsas do saldo de um item, com motivo (sobra ou falta), fora da contagem do inventário.",
+    onde: "Estoque → Lançar movimento (tipo Ajuste — sobra ou falta)",
+    nivel: "complementar",
+    origem: "stock_movements.created_by + source_type=manual + kind=ajuste_entrada|ajuste_saida",
+    quando: "created_at",
+    papeis: ["asb"],
+  },
+  {
+    chave: "pedidos_indicacao",
+    rotulo: "Indicações pedidas",
+    ajuda:
+      "Vezes em que ela pediu indicação a um paciente e registrou (o Pedir indicação, no topo da ficha), com qualquer resultado.",
+    onde: "Ficha do cliente → Pedir indicação",
+    nivel: "essencial",
+    origem: "indica.pedidos_indicacao.risartano_id",
+    quando: "criado_em",
+    papeis: ["asb"],
   },
 
   // ===========================================================================
@@ -581,12 +650,12 @@ export const INDICADORES = [
     chave: "inventarios",
     rotulo: "Inventários aplicados",
     ajuda: "Contagens de estoque que ela fechou, virando ajuste com motivo.",
-    onde: "Estoque → Inventário → Aplicar",
+    onde: "Estoque → Inventário → Aplicar contagem",
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "stock_counts.applied_by",
     quando: "applied_at",
-    papeis: ["unit_manager"],
+    papeis: ["unit_manager", "asb"],
   },
   {
     chave: "contagens_iniciadas",

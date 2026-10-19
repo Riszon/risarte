@@ -390,6 +390,21 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (7ª) — PC Administrador (core 0.331.0 → 0.331.1, sem migração)**
+
+- **OC-00004 — as tarefas da ASB na certificação.** DEFEITO (eu tinha dito
+  "regra" antes de mapear): seis itens da lista eram ações que o sistema
+  NUNCA deixou a ASB fazer — missão impossível. O dono pediu tirar "também da
+  permissão": não havia permissão a tirar. Entraram pedidos (franqueadora e
+  local), entrada, envio para uso, inventário, ajuste e indicação.
+- ⚠️ **Indicador novo = conferir que AQUELA FUNÇÃO consegue fazer aquilo no
+  sistema** (tela E banco). O catálogo de 25/09 foi montado pelas colunas que
+  registram autor, não pela permissão — e assim ofereceu ações impossíveis.
+  AP55 (TSB e Recepção), AP56 (agenda), AP57 ("Onde" antigos).
+- ⚠️ Filtro da origem aceita `a|b` (= qualquer um); `check:indicadores`
+  lê `public`, `empresarial` e `indica`.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **19/10/2026 (6ª) — PC Administrador (core 0.330.0 → 0.331.0, migração 0307)**
 
 - **A lista de Procedimentos (pedido do dono):** com a TUSS no treino ela

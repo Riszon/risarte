@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.331.1",
+    data: "2026-10-19",
+    migracao: null,
+    titulo: "Certificação: as tarefas da ASB",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Na certificação, a lista de tarefas da ASB oferecia ações que o sistema não deixa a ASB fazer (registrar chegada, chamar paciente, anamnese, fotos e exames, profissional responsável e desfecho) — uma missão com elas não teria como ser cumprida. Saíram, e entraram: pedidos de material para a franqueadora e locais, entradas no estoque, material enviado para uso, inventários, ajustes de saldo e indicações pedidas.",
+        papeis: ["asb"],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.331.0",
     data: "2026-10-19",
     migracao: "0307",

@@ -75,7 +75,7 @@ const db = await connect();
 const { rows: colunas } = await db.query(
   `select table_schema s, table_name t, column_name c, data_type d, udt_name u
      from information_schema.columns
-    where table_schema in ('public', 'empresarial')`
+    where table_schema in ('public', 'empresarial', 'indica')`
 );
 if (colunas.length === 0) {
   console.error("RECUSADO: o banco não devolveu coluna nenhuma. Não dá para conferir.");
@@ -128,13 +128,16 @@ for (const { chave, origem, quando } of itens) {
     // Enum: o valor tem de ser um dos rótulos. Texto livre não tem como
     // conferir aqui — e está dito, em vez de fingir que foi conferido.
     const rot = enumDe.get(fc.u);
-    if (fc.d === "USER-DEFINED" && rot && !rot.has(f.valor)) {
-      problemas.push({
-        chave,
-        erro:
-          `o valor "${f.valor}" não existe em ${fc.u} ` +
-          `(valores: ${[...rot].join(", ")})`,
-      });
+    // "a|b" = lista de valores: confere cada um.
+    for (const v of f.valor.split("|")) {
+      if (fc.d === "USER-DEFINED" && rot && !rot.has(v)) {
+        problemas.push({
+          chave,
+          erro:
+            `o valor "${v}" não existe em ${fc.u} ` +
+            `(valores: ${[...rot].join(", ")})`,
+        });
+      }
     }
   }
 }
