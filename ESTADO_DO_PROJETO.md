@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.326.0** · Última migração: **0302** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.326.0** · Última migração: **0302** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🧾 0.326.0 / 0302 — CONCILIAÇÃO PAGA CONTA A PAGAR + RELATÓRIO DE CONTAS PAGAS (OC-00110, 17/10/2026)
 >
@@ -14,6 +14,7 @@ _Atualizado em: 16/10/2026 · Versão do sistema: **0.326.0** · Última migraç
 > pontualidade, como o banco (`paid_amount_cents` não o inclui).
 > ⚠️ As 3 linhas do relato estão hoje na Risarte Cambé - Centro (a conta
 > bancária foi movida no OC-00108).
+> ✅ **0302 APLICADA nos dois bancos** (o dono rodou na produção e a conferência deu o esperado; conferido de fora: sem login a função recusa com "permission denied" antes de rodar; com a chave de serviço responde TRANSACTION_NOT_FOUND para linha inexistente, antes de gravar; a leitura nova da Conciliação (contas com os pagamentos) responde. A produção tem 0 contas bancárias e 0 pagamentos de contas, então ninguém foi afetado).
 >
 > ## 🏦 0.325.0 / 0301 — CONCILIAÇÃO: VÁRIOS, TRANSFERÊNCIA E AVISO CONTRA DUPLICAR (OC-00108, 16/10/2026)
 >

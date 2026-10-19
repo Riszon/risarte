@@ -408,7 +408,7 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino: o relatório (Franchising, 6 pagamentos,
   R$ 679,12), a planilha e o texto do mês no Lançar. **Não visto:** o botão
   Pagar conta (nenhuma conta do treino tem o valor de uma linha pendente; não
-  criei dado de teste na unidade do relato). ⏳ **0302 pendente na produção.**
+  criei dado de teste na unidade do relato). ✅ **0302 APLICADA nos dois bancos** (o dono rodou na produção e a conferência deu o esperado; conferido de fora: sem login a função recusa com "permission denied" antes de rodar; com a chave de serviço responde TRANSACTION_NOT_FOUND para linha inexistente, antes de gravar; a leitura nova da Conciliação (contas com os pagamentos) responde. A produção tem 0 contas bancárias e 0 pagamentos de contas, então ninguém foi afetado).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **16/10/2026 (noite, 4ª) — PC Administrador (core 0.324.0 → 0.325.0, migração 0301)**
