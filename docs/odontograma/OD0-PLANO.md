@@ -216,3 +216,20 @@ manual e estado → resumo para você.
 3. Tela do Admin para as regras clínicas de cada procedimento.
 4. O `<Odontogram />` em modo `compact` e leitura, e a aba **Odontograma**
    na ficha (vazia de achados até a OD2).
+
+### OD1 — passo 1 entregue (19/10/2026): as três planilhas
+
+Na pasta sincronizada `Odontograma - revisão OD1/` (fora do repositório),
+geradas por `scripts/odontograma-planilhas-od1.cjs` (lê os JSON TUSS e o
+catálogo da PRODUÇÃO, só leitura):
+
+1. **Situações do dente** — as 5 da TUSS 44 + 33 propostas da Risarte (`RZ-…`).
+2. **Faces por dente** (60 dentes, pela regra anterior/posterior,
+   superior/inferior) e **dentes por região** (33 regiões com dentes; as de
+   tecido/osso não selecionam dente).
+3. **Classificação dos 370 procedimentos** — nível, nº de faces, dentição,
+   dentes compatíveis, situações que impedem/exigem, efeito, confiança
+   (112 alta, 152 média, 106 baixa).
+
+⏳ Aguardando a revisão do dono (coluna "Decisão" em cada planilha). Nada
+vai para o banco antes disso.
