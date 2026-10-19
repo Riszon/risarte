@@ -1,7 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.328.0** · Última migração: **0304** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.329.0** · Última migração: **0305** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🎓 0.329.0 / 0305 — UMA MISSÃO POR FUNÇÃO (AP52, 19/10/2026)
+>
+> A mesma pessoa na mesma função em duas turmas abertas virava duas missões
+> medindo o mesmo trabalho (confirmado na produção). Decisão do dono: uma
+> missão vale para as duas unidades. ⚠️ **`_sync_training_siblings`** (0305)
+> é a régua das irmãs (mesma pessoa, função e TIPO de turma, turma aberta,
+> nunca volta atrás) — chamada no aceitar, no cumprir e no certificar. O
+> certificado só nasce se não houver um da mesma função desde a convocação. O
+> Início junta por função (`agruparMissoes`).
+>
 > ## 🎓 0.328.0 / 0304 — PORTAL: TODAS AS MISSÕES, RELATAR E O SINO (OC-00111, 19/10/2026)
 >
 > Dois defeitos confirmados na produção: o Início lia só UMA missão

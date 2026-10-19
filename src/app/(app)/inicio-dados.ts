@@ -16,7 +16,9 @@ import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certifica
 import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import type { MissaoNaTela } from "@/components/missao-de-certificacao";
 import {
+  agruparMissoes,
   lerColegas,
+  listaDeNomes,
   porUnidade,
   type ColegaDoGrupo,
   type GrupoDaUnidade,
@@ -486,7 +488,7 @@ export async function missoesAbertas(
   const { data, error } = await supabase
     .from("training_enrollments")
     .select(
-      "id, role, status, started_at, access_suspended_at, approval_status, clinic_id, training_campaigns!inner(status, access_policy, deadline)"
+      "id, role, status, started_at, access_suspended_at, approval_status, clinic_id, training_campaigns!inner(status, access_policy, deadline, kind)"
     )
     .eq("user_id", userId)
     // 0281: a concluída também aparece enquanto a turma está aberta — é o
@@ -517,14 +519,33 @@ export async function missoesAbertas(
     .in("role", papeis)
     .returns<MetaDoTreino[]>();
 
+  // AP52: a mesma função em duas unidades é UMA missão — um quadro só, medido
+  // e registrado pela matrícula mais adiantada; o banco leva as irmãs junto
+  // (0305). As unidades vão todas para o título.
+  const turmaDe = (d: (typeof data)[number]) =>
+    (Array.isArray(d.training_campaigns) ? d.training_campaigns[0] : d.training_campaigns) as
+      | { access_policy?: string; deadline?: string | null; kind?: string }
+      | undefined;
+  const grupos = agruparMissoes(
+    data.map((d) => ({
+      linha: d,
+      role: String(d.role),
+      kind: String(turmaDe(d)?.kind ?? ""),
+      status: String(d.status),
+      started_at: d.started_at ? String(d.started_at) : null,
+    }))
+  );
+
   const missoes: MissaoNaTela[] = [];
-  for (const d of data) {
+  for (const grupo of grupos) {
+    const d = grupo.representante.linha;
+    const unidadesDaMissao = grupo.todas
+      .map((g) => (g.linha.clinic_id ? nomeDaUnidade.get(String(g.linha.clinic_id)) : undefined))
+      .filter((n): n is string => Boolean(n));
     const papel = d.role as UserRole;
     const metasDoPapel = (metas ?? []).filter((m) => m.role === papel);
     // O Supabase devolve o embutido como objeto ou lista conforme a relação.
-    const turma = (
-      Array.isArray(d.training_campaigns) ? d.training_campaigns[0] : d.training_campaigns
-    ) as { access_policy?: string; deadline?: string | null } | undefined;
+    const turma = turmaDe(d);
     const startedAt = d.started_at ? String(d.started_at) : null;
 
     // ⚠️ SÓ MEDE QUEM JÁ COMEÇOU. Antes do clique não existe janela de contagem
@@ -570,7 +591,8 @@ export async function missoesAbertas(
       medicao,
       prazo: turma?.deadline ? String(turma.deadline) : null,
       suspenso: Boolean(d.access_suspended_at),
-      unidade: d.clinic_id ? (nomeDaUnidade.get(String(d.clinic_id)) ?? null) : null,
+      unidade: unidadesDaMissao.length ? listaDeNomes(unidadesDaMissao) : null,
+      variasUnidades: new Set(unidadesDaMissao).size > 1,
     });
   }
   return missoes;

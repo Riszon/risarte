@@ -2500,7 +2500,11 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
-### AP52. Certificação: a mesma FUNÇÃO em duas turmas abertas vira duas missões (19/10/2026)
+### AP52. Certificação: a mesma FUNÇÃO em duas turmas abertas vira duas missões (19/10/2026) — ✅ CORRIGIDO na 0305 (core 0.329.0)
+
+**Decisão do dono (19/10/2026): uma missão vale para as duas unidades.** As
+matrículas irmãs andam juntas no aceitar, no cumprir e no aprovar; um
+certificado só; ela conta no grupo de cada unidade. EV-191.
 
 *(Achado no OC-00111.)*
 

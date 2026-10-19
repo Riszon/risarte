@@ -111,6 +111,40 @@ export type GrupoDaUnidade<T> = {
   total: number;
 };
 
+/** "Cambé", "Cambé e Londrina", "Cambé, Londrina e Maringá". */
+export function listaDeNomes(nomes: readonly string[]): string {
+  const unicos = [...new Set(nomes.filter(Boolean))];
+  if (unicos.length <= 1) return unicos[0] ?? "";
+  return `${unicos.slice(0, -1).join(", ")} e ${unicos[unicos.length - 1]}`;
+}
+
+const ORDEM_DA_SITUACAO: Record<string, number> = { concluido: 0, em_andamento: 1, convocado: 2 };
+
+/**
+ * UMA MISSÃO POR FUNÇÃO (AP52, decisão do dono 19/10/2026). A mesma pessoa
+ * convocada na mesma função em duas unidades (turmas do mesmo tipo) tem UMA
+ * missão: o banco anda com as matrículas irmãs juntas (0305), e a tela mostra
+ * um quadro só, com as unidades. A REPRESENTANTE é a mais adiantada
+ * (concluída > em andamento > convocada) — é ela que se mede e se registra.
+ */
+export function agruparMissoes<
+  T extends { role: string; kind: string; status: string; started_at: string | null },
+>(linhas: readonly T[]): { representante: T; todas: T[] }[] {
+  const grupos = new Map<string, T[]>();
+  for (const l of linhas) {
+    const chave = `${l.role}:${l.kind}`;
+    grupos.set(chave, [...(grupos.get(chave) ?? []), l]);
+  }
+  return [...grupos.values()].map((todas) => {
+    const ordenadas = [...todas].sort(
+      (a, b) =>
+        (ORDEM_DA_SITUACAO[a.status] ?? 9) - (ORDEM_DA_SITUACAO[b.status] ?? 9) ||
+        (a.started_at ?? "9").localeCompare(b.started_at ?? "9")
+    );
+    return { representante: ordenadas[0], todas };
+  });
+}
+
 /** Agrupa por unidade, na ordem do nome, com a contagem do grupo. */
 export function porUnidade<T extends BaseDaSituacao & { clinicId: string; clinicName: string }>(
   pessoas: readonly T[]

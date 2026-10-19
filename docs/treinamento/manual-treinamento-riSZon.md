@@ -870,6 +870,14 @@ missão**, um embaixo do outro, cada um com a **função e a unidade** no títul
 são contadas separadamente. (Até a versão 0.328.0 só a convocação mais recente
 aparecia, e a outra ficava sem ter como ser aceita — relato OC-00111.)
 
+**A mesma função em duas unidades é UMA missão.** Se você é, por exemplo,
+dentista em Cambé e em Londrina e foi convocado nas duas, aparece **um quadro
+só** — *"Função: Dentista · Unidades: Cambé e Londrina"*. Aceitar começa a
+missão nas duas, e cumprir vale para as duas, com **um certificado**. Na
+liberação coletiva você conta no grupo de **cada** unidade, e libera as duas de
+uma vez. (Se você já tinha aceitado numa delas, a outra passa a contar a partir
+do mesmo momento — nada do que você fez se perde.)
+
 **Quando estiver pronto, clique em "Aceitar e começar a missão".** A partir
 desse instante — e só dele — o que você fizer no treino conta para a sua
 certificação. O que você fez antes, aprendendo, não entra.

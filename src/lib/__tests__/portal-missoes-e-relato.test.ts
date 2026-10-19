@@ -30,14 +30,14 @@ describe("todas as missões, uma por quadro", () => {
   });
 
   it("cada quadro diz a UNIDADE e o Início desenha um por missão", () => {
-    expect(corpo).toContain("unidade: d.clinic_id ? (nomeDaUnidade.get(String(d.clinic_id)) ?? null) : null,");
+    expect(corpo).toContain("unidade: unidadesDaMissao.length ? listaDeNomes(unidadesDaMissao) : null,");
     // Nos DOIS estados do quadro: a missão em andamento e a cumprida.
-    expect(ler("src/components/missao-de-certificacao.tsx").split("{missao.unidade && ` · Unidade: ${missao.unidade}`}").length - 1).toBe(2);
+    expect(ler("src/components/missao-de-certificacao.tsx").split("` · ${missao.variasUnidades ? \"Unidades\" : \"Unidade\"}: ${missao.unidade}`").length - 1).toBe(2);
     expect(ler("src/app/(app)/page.tsx")).toMatch(/\{minhasMissoes\.map\(\(m\) => \(\s+<MissaoDeCertificacao key=\{m\.id\} missao=\{m\} \/>/);
   });
 
   it("cada missão é medida e registrada por conta própria", () => {
-    expect(corpo).toMatch(/for \(const d of data\) \{[\s\S]*await guardarProgresso\(String\(d\.id\), medicao\);\s+const registrado = await registrarSeCumprida\(String\(d\.id\), medicao\);/);
+    expect(corpo).toMatch(/for \(const grupo of grupos\) \{\s+const d = grupo\.representante\.linha;[\s\S]*await guardarProgresso\(String\(d\.id\), medicao\);\s+const registrado = await registrarSeCumprida\(String\(d\.id\), medicao\);/);
   });
 });
 

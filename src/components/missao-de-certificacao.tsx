@@ -31,8 +31,10 @@ export type MissaoNaTela = Pick<
   medicao: Medicao | null;
   /** Depois de cumprida (0281): o que aconteceu. Nulo enquanto não cumpriu. */
   conclusao: "aguardando_aprovacao" | "certificado" | "porta_fechada" | null;
-  /** OC-00111: a unidade da turma — é ela que separa duas missões na tela. */
+  /** OC-00111: a(s) unidade(s) da missão — "Cambé" ou "Cambé e Londrina". */
   unidade: string | null;
+  /** AP52: a mesma função em mais de uma unidade — uma missão só, para todas. */
+  variasUnidades: boolean;
 };
 
 /**
@@ -80,7 +82,8 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
             </h2>
             <p className="text-sm text-muted-foreground">
               Função: {ROLE_LABELS[missao.role]}
-              {missao.unidade && ` · Unidade: ${missao.unidade}`}
+              {missao.unidade &&
+                ` · ${missao.variasUnidades ? "Unidades" : "Unidade"}: ${missao.unidade}`}
             </p>
             <p className="text-sm">
               {missao.conclusao === "aguardando_aprovacao"
@@ -126,11 +129,20 @@ export function MissaoDeCertificacao({ missao }: { missao: MissaoNaTela }) {
             </h2>
             <p className="text-sm text-muted-foreground">
               Função: {ROLE_LABELS[missao.role]}
-              {missao.unidade && ` · Unidade: ${missao.unidade}`}
+              {missao.unidade &&
+                ` · ${missao.variasUnidades ? "Unidades" : "Unidade"}: ${missao.unidade}`}
             </p>
           </div>
 
           <p className="text-sm">{recadoDaMatricula(missao)}</p>
+
+          {/* AP52: a mesma função em duas unidades é UMA missão. */}
+          {missao.variasUnidades && (
+            <p className="text-xs text-muted-foreground">
+              É uma missão só, valendo para todas estas unidades: aceitar e
+              cumprir aqui vale para todas — você conta no grupo de cada uma.
+            </p>
+          )}
 
           {/* ⚠️ A PESSOA PRECISA SABER O QUE ESTÁ EM JOGO. Uma reciclagem com
               prazo que não aparece na tela é um prazo que ninguém cumpre — e a

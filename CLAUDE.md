@@ -390,6 +390,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/10/2026 (3ª) — PC Administrador (core 0.328.0 → 0.329.0, migração 0305)**
+
+- **AP52 (pedido do dono): a mesma função em duas turmas abertas virava duas
+  missões** medindo o mesmo trabalho (na produção: uma dentista em Cambé e
+  Londrina). Decisão do dono: **uma missão vale para as duas** — aceitar,
+  cumprir e aprovar levam as matrículas irmãs junto; um certificado só; ela
+  conta no grupo de cada unidade.
+- ⚠️ **Mexer em `start_training_mission`, `record_training_completion` ou
+  `_certify_enrollment` = manter a chamada a `_sync_training_siblings`**
+  (régua presa por `uma-missao-por-funcao.test.ts`).
+- A 0305 acerta o caso existente: 1 matrícula na produção (TR-00004) passa a
+  "em andamento" com o marco da irmã. **Não visto na tela** (o quadro só
+  existe no real). ⏳ **0305 pendente na produção.**
+
 **19/10/2026 (2ª) — PC Administrador (core 0.327.0 → 0.328.0, migração 0304)**
 
 - **OC-00111 (PRODUÇÃO) — modo portal: "não consigo escolher a unidade para

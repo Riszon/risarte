@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.329.0",
+    data: "2026-10-19",
+    migracao: "0305",
+    titulo: "Certificação: a mesma função em duas unidades é uma missão só",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem foi convocado na mesma função em duas unidades (dentista em Cambé e em Londrina, por exemplo) vê um quadro só, com as duas unidades. Aceitar começa nas duas e cumprir vale para as duas, com um certificado. Antes eram duas missões medindo o mesmo trabalho.",
+        papeis: "todos",
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.328.0",
     data: "2026-10-19",
     migracao: "0304",
