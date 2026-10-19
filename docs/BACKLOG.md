@@ -2500,6 +2500,17 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
+### AP54. Especialidades com nomes parecidos, lado a lado (19/10/2026)
+
+**Confirmado no banco; se é defeito, é SUSPEITA.** Achado ao preparar a
+importação da TUSS odontológica: a produção (e o treino) têm, ativas ao mesmo
+tempo, as da lista padrão da 0129 e outras parecidas — "Dentística/Estética"
+e "Dentística" + "Estética"; "Cirurgia (Bucomaxilo)" e "Cirurgia";
+"Odontologia Preventiva" e "Prevenção"; e "Diagnóstico". Pode ser de
+propósito. Se não for, o filtro de Procedimentos e os relatórios por
+especialidade dividem o mesmo assunto em dois. Decisão do dono; renomear pela
+tela de Especialidades leva os procedimentos junto.
+
 ### AP53. O Planner ainda gerencia as ESPECIALIDADES (19/10/2026)
 
 **Confirmado no código, não decidido.** Achado ao corrigir o OC-00067/68
