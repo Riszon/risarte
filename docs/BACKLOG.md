@@ -2524,6 +2524,18 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP63. Nova venda depois de uma negociação cancelada — suspeita (20/10/2026)
+
+**Suspeita, lida no código (não executado).** Achado no levantamento da OD4.
+`evaluate_negotiation_rules` (0182, ~:197-198) volta para "em negociação" as
+situações `aguardando_autorizacao`, `aceita` e `devolvida`, mas **não**
+`cancelada` — salvar de novo uma negociação cancelada a deixa cancelada. E
+`plan_negotiations.plan_id` é único (0147) e `commercial_sales` é única por
+negociação, com `commercial_close_step` recusando `ALREADY_CLOSED` (0202:80).
+Não conferi por qual caminho um cliente que cancelou volta a comprar o MESMO
+plano (talvez só por nova versão do plano, OD3). A produção tem 0
+negociações. Conferir antes de mexer.
+
 ### AP62. O plano aprovado só está trancado na TELA (20/10/2026) — ✅ RESOLVIDO na OD3 (0311, 0.336.0)
 
 **Confirmado no código (não executado).** Achado no levantamento da OD3. As
