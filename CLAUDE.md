@@ -405,7 +405,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ Num script `node -e`, `\n` dentro de texto vira quebra de linha de
   verdade e quebra o arquivo de teste (2× nesta sessão) — editar teste pela
   ferramenta de edição.
-- ⏳ **0309 pendente na produção.** Resíduo no treino: 1 reajuste agendado e
+- ✅ **0309 APLICADA nos dois bancos** (o dono rodou na produção em 20/10/2026 e a conferência deu o esperado (370 procedimentos com o ponto de partida no histórico, 0 preço de unidade, 0 agendamento, 3 gatilhos, a rotina da madrugada agendada, o histórico fora da auditoria); conferido de fora: sem login, agendar e a rotina interna recusam com "permission denied" e o histórico não aparece; a chave de serviço, que não é Admin, recebe NOT_ALLOWED no "Aplicar agora". Nenhum preço mudou). Resíduo no treino: 1 reajuste agendado e
   cancelado no "Ajuste de Bordas Incisais".
 - Cache do servidor de teste limpo ao encerrar (AP40).
 

@@ -254,8 +254,8 @@ Decisões do dono: o **banco aplica à 0h + aviso** (com "Aplicar agora"); data
 **hoje ou futura**; nos **três lugares** (editar, preço da unidade, reajuste em
 massa). Migração **0309**: histórico por gatilho (imutável) + agendamento +
 rotina `risarte-precos-agendados`. O preço de hoje continua onde estava —
-nenhuma tela nem conta que lê preço mudou. ⏳ Na produção depois do "cole aqui
-a 0309".
+nenhuma tela nem conta que lê preço mudou. ✅ **0309 aplicada na produção em
+20/10/2026** (conferência do dono e de fora deram o esperado).
 
 **Falta da OD1:** (4) o `<Odontogram />` em `compact`/leitura e a aba
 **Odontograma** na ficha.
