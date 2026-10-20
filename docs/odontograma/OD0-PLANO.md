@@ -240,8 +240,8 @@ As planilhas voltaram com a coluna "Decisão" vazia e o dono escreveu
 "revisei as planilhas, pode seguir" — **aprovado como proposto**, com a
 condição de o Admin poder ajustar depois. Migração **0308** (gerada por
 `scripts/odontograma-gerar-0308.mjs`) + tela **Administração → Odontograma**
-(Situações, Faces dos dentes, Regiões, Procedimentos). ⏳ Na produção depois
-do "cole aqui a 0308".
+(Situações, Faces dos dentes, Regiões, Procedimentos). ✅ **0308 aplicada na
+produção em 20/10/2026** (conferência do dono e de fora deram o esperado).
 
 **Faltam da OD1:** (3) a **vigência do preço** (D3) — mexe no caminho do
 preço que está no ar (`catalog_price_for`, a trava da 0306), por isso em

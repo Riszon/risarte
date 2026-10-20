@@ -404,7 +404,7 @@ Syncthing se comportarem de forma estranha.**
   Ao escrever CHECK com OR/AND sobre coluna anulável, testar com o vazio.
 - ⚠️ **Odontograma = ACRESCENTAR o dente ao que existe** (catálogo, plano,
   negociação, sessões, repasse, auditoria) — nunca um segundo sistema ao lado.
-- ⏳ **0308 pendente na produção.** Próximo: vigência do preço (D3) e o
+- ✅ **0308 APLICADA nos dois bancos** (o dono rodou na produção em 20/10/2026 e a conferência deu o esperado (60 dentes, 7 faces, 308 faces por dente, 61 regiões / 33 com dentes, 5 + 33 situações, 370 regras, 0 procedimento odontológico sem regra, 7 tabelas na auditoria); conferido de fora: sem login, trocar faces recusa com "permission denied" e as situações não aparecem; a chave de serviço, que não é Admin, recebe NOT_ALLOWED antes de gravar; a regra do implante (82000980) está lá: dente, efeito RZ-IMPLANTE). Próximo: vigência do preço (D3) e o
   desenho `<Odontogram />`.
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
