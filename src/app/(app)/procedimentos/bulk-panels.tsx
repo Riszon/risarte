@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { todayInBrazil } from "@/lib/dates";
 import {
   METHODOLOGY_PILLARS,
   PILLAR_LABELS,
@@ -129,6 +130,9 @@ export function ReadjustPanel({
   const [specialty, setSpecialty] = useState("");
   const [pillar, setPillar] = useState("");
   const [applyToBand, setApplyToBand] = useState(true);
+  // 0309: data futura = o reajuste fica agendado (sobre o preço de hoje).
+  const [validFrom, setValidFrom] = useState("");
+  const agendado = validFrom !== "" && validFrom > todayInBrazil();
 
   return (
     <Card>
@@ -174,6 +178,21 @@ export function ReadjustPanel({
             />
             Ajustar também os preços mínimo e máximo
           </label>
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            Vale a partir de
+            <Input
+              type="date"
+              min={todayInBrazil()}
+              value={validFrom || todayInBrazil()}
+              onChange={(e) => setValidFrom(e.target.value)}
+              className="w-44"
+            />
+            <span className="text-xs text-muted-foreground">
+              {agendado
+                ? "Fica agendado: o percentual é aplicado sobre o preço de hoje, e o sistema troca o preço sozinho na data."
+                : "Hoje: o reajuste vale na hora."}
+            </span>
+          </label>
           <Button
             size="sm"
             disabled={!percent.trim() || isPending}
@@ -187,8 +206,9 @@ export function ReadjustPanel({
                     pillar: pillar || undefined,
                     ids: scope === "selected" ? getSelectedIds() : undefined,
                     applyToBand,
+                    validFrom: validFrom || undefined,
                   }),
-                "Reajuste aplicado.",
+                agendado ? "Reajuste agendado." : "Reajuste aplicado.",
                 () => {
                   setPercent("");
                   onDone();
@@ -196,7 +216,7 @@ export function ReadjustPanel({
               )
             }
           >
-            Aplicar reajuste
+            {agendado ? "Agendar reajuste" : "Aplicar reajuste"}
           </Button>
           <p className="text-xs text-muted-foreground">
             Use “Selecionados” marcando os procedimentos na lista abaixo. O

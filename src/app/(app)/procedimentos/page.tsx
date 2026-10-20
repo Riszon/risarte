@@ -14,6 +14,9 @@ import {
 import type { Procedure, ProcedureSession, UnitPrice } from "@/lib/pricing";
 import { ProceduresEditor, type ProcedureChange } from "./procedures-editor";
 import { ImportProcedures } from "./import-procedures";
+import { ReajustesAtrasados } from "./reajustes-atrasados";
+import { atrasados, type Agendamento } from "@/lib/vigencia-do-preco";
+import { todayInBrazil } from "@/lib/dates";
 import { ProtocolProposals, type PendingProposal } from "./protocol-proposals";
 import { SugestoesDeProcedimento, type SugestaoNaTela } from "./sugestoes";
 import type { SituacaoDaSugestao } from "@/lib/sugestao-de-procedimento";
@@ -406,6 +409,29 @@ export default async function ProceduresPage(
     }
   }
 
+  // 0309: os reajustes agendados (ainda não aplicados). Sem a 0309 no banco a
+  // leitura falha — a tela segue sem eles (nada a agendar ainda).
+  let agendamentos: Agendamento[] = [];
+  {
+    const { data: agRows, error: agError } = await supabase
+      .from("procedure_price_schedule")
+      .select("id, procedure_id, clinic_id, price_cents, valid_from, note")
+      .eq("status", "agendado")
+      .order("valid_from")
+      .limit(1000);
+    if (!agError) {
+      agendamentos = (agRows ?? []).map((a) => ({
+        id: a.id as string,
+        procedureId: a.procedure_id as string,
+        clinicId: (a.clinic_id as string | null) ?? null,
+        priceCents: Number(a.price_cents),
+        validFrom: String(a.valid_from),
+        note: (a.note as string | null) ?? null,
+      }));
+    }
+  }
+  const nomesDasUnidades = Object.fromEntries((units ?? []).map((u) => [u.id as string, u.name as string]));
+
   // H4.3 Lote 4: propostas de protocolo pendentes visíveis a este usuário (a RLS
   // já limita: Admin vê todas; Coordenador vê as da sua unidade; Planner as suas).
   const { data: propRows } = await supabase
@@ -575,6 +601,11 @@ export default async function ProceduresPage(
         />
       )}
 
+      <ReajustesAtrasados
+        quantos={atrasados(agendamentos, todayInBrazil()).length}
+        podeAplicar={canManageCatalog}
+      />
+
       {!unitId && canManageCatalog && <ImportProcedures />}
 
       <ProceduresEditor
@@ -598,6 +629,8 @@ export default async function ProceduresPage(
         canEditPayout={session.isAdminMaster}
         kitsByProcedure={kitsByProcedure}
         usageByProcedure={usageByProcedure}
+        agendamentos={agendamentos}
+        nomesDasUnidades={nomesDasUnidades}
       />
     </div>
   );

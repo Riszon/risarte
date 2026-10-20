@@ -1266,6 +1266,30 @@ O que é **oficial da TUSS** (código e nome) não muda, e **nada se apaga**:
 situação se desativa; procedimento que não aparece no dente fica como "sem
 marcação". Toda alteração fica na Auditoria.
 
+**Preço com data — o reajuste agendado** (versão 0.333.0, só o Admin Master).
+Ao mudar um preço, dá para escolher **a partir de quando** ele vale:
+
+- **Hoje** (o padrão): o preço muda na hora, como sempre.
+- **Uma data futura**: o reajuste fica **agendado**. Até a data, continua valendo
+  o preço atual; na madrugada do dia, o sistema troca o preço sozinho. O cartão
+  do procedimento mostra o selo azul *"R$ X a partir de dd/mm"*.
+- **Data no passado não é aceita**: o passado fica como foi.
+
+Funciona em três lugares: **Editar** o procedimento (campo *O preço vale a
+partir de*), o **preço da unidade** (campo *a partir de*, ao lado do valor) e o
+**Reajuste de preços em massa**, na Precificação (campo *Vale a partir de*;
+agendado, o percentual é calculado sobre o preço de hoje).
+
+No cartão aberto, o quadro **Preço no tempo** mostra os reajustes agendados
+(com **Cancelar**) e, em **Ver histórico de preço**, todo preço que o
+procedimento já teve, com a data, a origem e quem mudou. O histórico nasce em
+20/10/2026 (o que veio antes não estava registrado) e **não pode ser alterado**.
+
+Se a troca da madrugada falhar, a tela de Procedimentos avisa *"reajuste
+atrasado"* e o Admin tem o botão **Aplicar agora**. Um reajuste atrasado **não
+passa por cima** de um preço mudado à mão depois da data marcada: ele é
+cancelado, com o motivo.
+
 #### Recepcionista *(unidade)*
 
 - **Objetivo:** porta de entrada e organização do dia.

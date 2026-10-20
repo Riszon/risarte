@@ -8,6 +8,13 @@ import {
   type SessionContext,
 } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { todayInBrazil } from "@/lib/dates";
+import {
+  dataBr,
+  mensagemDaVigencia,
+  quandoVale,
+  RECADO_DA_DATA,
+} from "@/lib/vigencia-do-preco";
 import { logAudit } from "@/lib/audit";
 import { formatBRL, formatSessions, parseBRLToCents } from "@/lib/pricing";
 import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
@@ -44,6 +51,9 @@ export type ProcedureInput = {
   directSale: boolean;
   directSaleReception: boolean;
   directSaleSdr: boolean;
+  /** 0309: a partir de quando vale o PREÇO PADRÃO (aaaa-mm-dd). Vazio/hoje =
+   *  já; data futura = o reajuste fica AGENDADO e o banco aplica na data. */
+  priceValidFrom?: string;
 };
 
 /**
@@ -216,6 +226,12 @@ export async function editProcedure(
   const parsed = parseProcedure(input);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
+  // 0309 (decisão do dono): o preço pode valer a partir de uma data futura.
+  const quando = quandoVale(input.priceValidFrom, todayInBrazil());
+  if (quando === "passado" || quando === "invalida") {
+    return { ok: false, error: RECADO_DA_DATA[quando] };
+  }
+
   const supabase = await createClient();
   const { data: old } = await supabase
     .from("procedures")
@@ -225,9 +241,17 @@ export async function editProcedure(
     .eq("id", id)
     .single();
 
+  // Preço novo com data futura: o resto salva agora; o preço fica AGENDADO
+  // (o de hoje não muda até lá).
+  const agendarPreco =
+    quando === "futuro" && old != null && parsed.values.default_price_cents !== old.default_price_cents;
+  const valores = agendarPreco
+    ? { ...parsed.values, default_price_cents: old.default_price_cents }
+    : parsed.values;
+
   const { error } = await supabase
     .from("procedures")
-    .update({ ...parsed.values, updated_at: new Date().toISOString() })
+    .update({ ...valores, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     console.error("editProcedure failed:", error.message);
@@ -243,12 +267,31 @@ export async function editProcedure(
       }
     }
   }
+  if (agendarPreco) {
+    const { error: e2 } = await supabase.rpc("schedule_procedure_price", {
+      p_procedure_id: id,
+      p_clinic_id: null,
+      p_price_cents: parsed.values.default_price_cents,
+      p_valid_from: input.priceValidFrom,
+      p_note: null,
+    });
+    if (e2) {
+      console.error("schedule_procedure_price failed:", e2.message);
+      return { ok: false, error: erroDaVigencia(e2.message, "Os dados foram salvos, mas o reajuste NÃO foi agendado.") };
+    }
+  }
+
   await logChange(
     id,
     session.userId,
-    changed.length > 0
-      ? `Alterou: ${changed.join(", ")}.`
-      : "Procedimento salvo (sem mudanças)."
+    [
+      changed.filter((c) => !(agendarPreco && c === FIELD_LABELS.default_price_cents)).length > 0
+        ? `Alterou: ${changed.filter((c) => !(agendarPreco && c === FIELD_LABELS.default_price_cents)).join(", ")}.`
+        : "",
+      agendarPreco
+        ? `Reajuste agendado: ${formatBRL(parsed.values.default_price_cents)} a partir de ${dataBr(input.priceValidFrom as string)}.`
+        : "",
+    ].filter(Boolean).join(" ") || "Procedimento salvo (sem mudanças)."
   );
   await logAudit({ action: "update", entityType: "procedure", entityId: id });
   refreshCatalog();
@@ -443,6 +486,8 @@ export async function readjustPrices(input: {
   pillar?: string;
   ids?: string[];
   applyToBand: boolean;
+  /** 0309: data futura = o reajuste fica agendado (sobre o preço de HOJE). */
+  validFrom?: string;
 }): Promise<ProcedureResult & { adjusted?: number }> {
   const session = await getSessionContext();
   if (!canEdit(session)) {
@@ -485,6 +530,33 @@ export async function readjustPrices(input: {
   >();
   if (!procs || procs.length === 0) {
     return { ok: false, error: "Nenhum procedimento no escopo selecionado." };
+  }
+
+  const quando = quandoVale(input.validFrom, todayInBrazil());
+  if (quando === "passado" || quando === "invalida") {
+    return { ok: false, error: RECADO_DA_DATA[quando] };
+  }
+  if (quando === "futuro") {
+    const { data: n, error } = await supabase.rpc("schedule_price_readjust", {
+      p_procedure_ids: procs.map((p) => p.id),
+      p_percent: percent,
+      p_apply_to_band: input.applyToBand,
+      p_valid_from: input.validFrom,
+    });
+    if (error) {
+      console.error("schedule_price_readjust failed:", error.message);
+      return { ok: false, error: erroDaVigencia(error.message, "Não foi possível agendar o reajuste.") };
+    }
+    const rotulo = `Reajuste de ${percent > 0 ? "+" : ""}${input.percent}% agendado para ${dataBr(input.validFrom as string)}.`;
+    for (const p of procs) await logChange(p.id, session.userId, rotulo);
+    await logAudit({
+      action: "update",
+      entityType: "procedure",
+      entityId: "readjust",
+      details: { percent, scope: input.scope, scheduled: Number(n ?? procs.length) },
+    });
+    refreshCatalog();
+    return { ok: true, adjusted: Number(n ?? procs.length) };
   }
 
   const adj = (cents: number | null) =>
@@ -907,13 +979,41 @@ export async function clearProcedureSessions(
 export async function setUnitPrice(
   clinicId: string,
   procedureId: string,
-  price: string
+  price: string,
+  /** 0309: data futura = agenda o preço da unidade. */
+  validFrom?: string
 ): Promise<ProcedureResult> {
   const session = await getSessionContext();
   if (!canEdit(session)) {
     return { ok: false, error: "Sem permissão para editar procedimentos." };
   }
   const supabase = await createClient();
+
+  const quando = quandoVale(validFrom, todayInBrazil());
+  if (quando === "passado" || quando === "invalida") {
+    return { ok: false, error: RECADO_DA_DATA[quando] };
+  }
+  if (quando === "futuro") {
+    if (price.trim() === "") {
+      return { ok: false, error: "Para a unidade voltar ao preço da rede, use a data de hoje." };
+    }
+    const cents = parseBRLToCents(price);
+    if (cents === null) return { ok: false, error: "Preço inválido." };
+    const { error } = await supabase.rpc("schedule_procedure_price", {
+      p_procedure_id: procedureId,
+      p_clinic_id: clinicId,
+      p_price_cents: cents,
+      p_valid_from: validFrom,
+      p_note: null,
+    });
+    if (error) {
+      console.error("schedule_procedure_price (unit) failed:", error.message);
+      return { ok: false, error: erroDaVigencia(error.message, "Não foi possível agendar o preço da unidade.") };
+    }
+    await logChange(procedureId, session.userId, `Preço da unidade agendado: ${formatBRL(cents)} a partir de ${dataBr(validFrom as string)}.`);
+    refreshCatalog();
+    return { ok: true };
+  }
 
   if (price.trim() === "") {
     const { error } = await supabase
@@ -1129,4 +1229,82 @@ export async function approveProcedureSuggestion(id: string, input: ProcedureInp
   refreshCatalog();
   refreshSugestoes();
   return { ok: true };
+}
+
+// =============================================================================
+// 0309 — VIGÊNCIA DO PREÇO: cancelar, aplicar o atrasado, ler o histórico.
+// =============================================================================
+
+function erroDaVigencia(mensagem: string, padrao: string): string {
+  if (/could not find the function|schema cache|does not exist/i.test(mensagem)) {
+    return "O banco ainda não recebeu a atualização 0309.";
+  }
+  return mensagemDaVigencia(mensagem) ?? padrao;
+}
+
+export async function cancelarReajusteAgendado(id: string): Promise<ProcedureResult> {
+  const session = await getSessionContext();
+  if (!canEdit(session)) return { ok: false, error: "Só o Admin Master mexe no preço." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_procedure_price_schedule", { p_id: id });
+  if (error) {
+    console.error("cancel_procedure_price_schedule failed:", error.message);
+    return { ok: false, error: erroDaVigencia(error.message, "Não foi possível cancelar o reajuste.") };
+  }
+  await logAudit({ action: "update", entityType: "procedure_price_schedule", entityId: id });
+  refreshCatalog();
+  return { ok: true };
+}
+
+/** "Aplicar agora": para quando a rotina da madrugada não aplicou. */
+export async function aplicarReajustesAtrasados(): Promise<ProcedureResult & { aplicados?: number }> {
+  const session = await getSessionContext();
+  if (!canEdit(session)) return { ok: false, error: "Só o Admin Master mexe no preço." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apply_due_procedure_prices");
+  if (error) {
+    console.error("apply_due_procedure_prices failed:", error.message);
+    return { ok: false, error: erroDaVigencia(error.message, "Não foi possível aplicar os reajustes.") };
+  }
+  await logAudit({ action: "update", entityType: "procedure_price_schedule", entityId: "aplicar-atrasados" });
+  refreshCatalog();
+  return { ok: true, aplicados: Number(data ?? 0) };
+}
+
+export type LinhaDoHistoricoDePreco = {
+  clinicId: string | null;
+  priceCents: number | null;
+  validFrom: string;
+  source: string;
+  quem: string | null;
+};
+
+/** O histórico de preço de um procedimento (lido quando o cartão abre). */
+export async function historicoDoPreco(
+  procedureId: string
+): Promise<{ ok: true; linhas: LinhaDoHistoricoDePreco[] } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("procedure_price_history")
+    .select("clinic_id, price_cents, valid_from, source, created_at, quem:profiles!procedure_price_history_changed_by_fkey(full_name)")
+    .eq("procedure_id", procedureId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) {
+    console.error("historicoDoPreco failed:", error.message);
+    return { ok: false, error: erroDaVigencia(error.message, "Não foi possível ler o histórico de preço.") };
+  }
+  return {
+    ok: true,
+    linhas: (data ?? []).map((r) => {
+      const quem = Array.isArray(r.quem) ? r.quem[0] : r.quem;
+      return {
+        clinicId: r.clinic_id as string | null,
+        priceCents: r.price_cents as number | null,
+        validFrom: r.valid_from as string,
+        source: r.source as string,
+        quem: (quem?.full_name as string | undefined) ?? null,
+      };
+    }),
+  };
 }

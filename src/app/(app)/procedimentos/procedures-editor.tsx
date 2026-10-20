@@ -56,9 +56,18 @@ import {
   setProcedureActive,
   setProcedureSessions,
   setUnitPrice,
+  cancelarReajusteAgendado,
+  historicoDoPreco,
+  type LinhaDoHistoricoDePreco,
   type ProcedureInput,
 } from "./actions";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { BRAZIL_TIME_ZONE, todayInBrazil } from "@/lib/dates";
+import {
+  dataBr,
+  proximoReajuste,
+  ROTULO_DA_ORIGEM,
+  type Agendamento,
+} from "@/lib/vigencia-do-preco";
 
 export type ProcedureKit = {
   id: string;
@@ -142,10 +151,13 @@ function ProcedureFields({
   value,
   onChange,
   specialties,
+  mostrarVigencia = false,
 }: {
   value: ProcedureInput;
   onChange: (patch: Partial<ProcedureInput>) => void;
   specialties: string[];
+  /** 0309: na edição, o preço pode valer a partir de uma data futura. */
+  mostrarVigencia?: boolean;
 }) {
   // Inclui o valor atual (mesmo que seja antigo/desativado) para não se perder.
   const specialtyOptions =
@@ -209,6 +221,21 @@ function ProcedureFields({
           placeholder="0,00"
         />
       </div>
+      {mostrarVigencia && (
+        <div>
+          <Label>O preço vale a partir de</Label>
+          <Input
+            type="date"
+            min={todayInBrazil()}
+            value={value.priceValidFrom || todayInBrazil()}
+            onChange={(e) => onChange({ priceValidFrom: e.target.value })}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Hoje = vale na hora. Data futura = o reajuste fica agendado e o
+            sistema aplica sozinho na data; até lá vale o preço atual.
+          </p>
+        </div>
+      )}
       <div>
         <Label>Preço mínimo (R$)</Label>
         <Input
@@ -625,6 +652,8 @@ export function ProceduresEditor({
   canEditPayout = false,
   kitsByProcedure = {},
   usageByProcedure = null,
+  agendamentos = [],
+  nomesDasUnidades = {},
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -656,6 +685,9 @@ export function ProceduresEditor({
   /** 0307: em quantos planos cada procedimento entrou em 90 dias. Nulo = não
    *  foi possível medir (a tela esconde, nunca mostra "0"). */
   usageByProcedure?: Record<string, number> | null;
+  /** 0309: reajustes agendados (ainda não aplicados), de toda a rede. */
+  agendamentos?: Agendamento[];
+  nomesDasUnidades?: Record<string, string>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -737,6 +769,8 @@ export function ProceduresEditor({
         )}
         uso={usageByProcedure ? (usageByProcedure[p.id] ?? 0) : null}
         inativo={inativo}
+        agendamentos={agendamentos.filter((a) => a.procedureId === p.id)}
+        nomesDasUnidades={nomesDasUnidades}
       />
     );
   };
@@ -1134,6 +1168,8 @@ function ProcedureRow({
   sobra,
   uso,
   inativo,
+  agendamentos,
+  nomesDasUnidades,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -1171,6 +1207,9 @@ function ProcedureRow({
   /** Planos em 90 dias; nulo = não medido. */
   uso: number | null;
   inativo: boolean;
+  /** 0309: os reajustes agendados DESTE procedimento (rede e unidades). */
+  agendamentos: Agendamento[];
+  nomesDasUnidades: Record<string, string>;
 }) {
   const [editing, setEditing] = useState(false);
   const [showKits, setShowKits] = useState(false);
@@ -1180,6 +1219,8 @@ function ProcedureRow({
   const [unitPrice, setUnitPriceValue] = useState(
     overrideCents != null ? centsToInput(overrideCents) : ""
   );
+  const [unitValidFrom, setUnitValidFrom] = useState("");
+  const proximo = proximoReajuste(agendamentos, p.id, networkMode ? null : selectedUnitId);
 
   // OC-00068 (decisão do dono, 19/10/2026): Admin e Planner aplicam direto o
   // protocolo da REDE. Na unidade: Admin e Coordenador aplicam; o Planner
@@ -1196,6 +1237,7 @@ function ProcedureRow({
           value={form}
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           specialties={specialties}
+          mostrarVigencia
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -1321,6 +1363,14 @@ function ProcedureRow({
                 <span className="ml-1 text-[10px] font-normal text-primary">unidade</span>
               )}
             </span>
+            {!inativo && proximo && (
+              <span
+                className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 font-medium text-sky-800 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                title="Reajuste agendado — o sistema aplica sozinho na data"
+              >
+                {formatBRL(proximo.priceCents)} a partir de {dataBr(proximo.validFrom)}
+              </span>
+            )}
             {tempo && <span className="text-muted-foreground">{tempo}</span>}
             {!inativo && sobra && (
               <span
@@ -1495,14 +1545,25 @@ function ProcedureRow({
                   placeholder={centsToInput(p.defaultPriceCents)}
                   className="w-28"
                 />
+                <span className="text-xs text-muted-foreground">a partir de</span>
+                <Input
+                  type="date"
+                  aria-label="O preço da unidade vale a partir de"
+                  min={todayInBrazil()}
+                  value={unitValidFrom || todayInBrazil()}
+                  onChange={(e) => setUnitValidFrom(e.target.value)}
+                  className="w-40"
+                />
                 <Button
                   size="sm"
                   variant="outline"
                   disabled={isPending}
                   onClick={() =>
                     run(
-                      () => setUnitPrice(selectedUnitId, p.id, unitPrice),
-                      "Preço da unidade salvo."
+                      () => setUnitPrice(selectedUnitId, p.id, unitPrice, unitValidFrom),
+                      unitValidFrom && unitValidFrom > todayInBrazil()
+                        ? "Preço da unidade agendado."
+                        : "Preço da unidade salvo."
                     )
                   }
                 >
@@ -1513,6 +1574,15 @@ function ProcedureRow({
           </div>
         )}
       </div>
+
+      <PrecoNoTempo
+        procedureId={p.id}
+        agendamentos={agendamentos}
+        nomesDasUnidades={nomesDasUnidades}
+        podeCancelar={canManageCatalog}
+        isPending={isPending}
+        run={run}
+      />
 
       {/* 0216: os kits que este procedimento consome, e o que tem dentro —
           sem sair do catálogo e sem entrar em modo de edição. */}
@@ -1614,5 +1684,108 @@ function ProcedureRow({
       </div>
       )}
     </li>
+  );
+}
+
+/**
+ * 0309 — o preço no tempo: os reajustes agendados (com Cancelar, para o
+ * Admin) e o histórico de preço, lido do banco só quando se pede.
+ */
+function PrecoNoTempo({
+  procedureId,
+  agendamentos,
+  nomesDasUnidades,
+  podeCancelar,
+  isPending,
+  run,
+}: {
+  procedureId: string;
+  agendamentos: Agendamento[];
+  nomesDasUnidades: Record<string, string>;
+  podeCancelar: boolean;
+  isPending: boolean;
+  run: (
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    msg: string,
+    after?: () => void
+  ) => void;
+}) {
+  const [historico, setHistorico] = useState<LinhaDoHistoricoDePreco[] | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [lendo, setLendo] = useState(false);
+  const onde = (clinicId: string | null) =>
+    clinicId ? (nomesDasUnidades[clinicId] ?? "unidade") : "Rede";
+
+  async function abrirHistorico() {
+    if (historico) {
+      setHistorico(null);
+      return;
+    }
+    setLendo(true);
+    const r = await historicoDoPreco(procedureId);
+    setLendo(false);
+    if (r.ok) {
+      setErro(null);
+      setHistorico(r.linhas);
+    } else setErro(r.error);
+  }
+
+  return (
+    <div className="mt-2 space-y-1 rounded-md border bg-muted/20 p-2 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">Preço no tempo</span>
+        <Button size="sm" variant="ghost" className="h-6 text-[11px]" disabled={lendo} onClick={abrirHistorico}>
+          {historico ? "Ocultar histórico" : lendo ? "Lendo…" : "Ver histórico de preço"}
+        </Button>
+      </div>
+      {agendamentos.length > 0 ? (
+        <ul className="space-y-0.5">
+          {agendamentos
+            .slice()
+            .sort((a, b) => a.validFrom.localeCompare(b.validFrom))
+            .map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-sky-300 bg-sky-50 px-1.5 text-[10px] font-medium text-sky-800 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                  agendado
+                </span>
+                <span>
+                  {onde(a.clinicId)}: <strong className="tabular-nums">{formatBRL(a.priceCents)}</strong> a partir de{" "}
+                  {dataBr(a.validFrom)}
+                  {a.note && <span className="text-muted-foreground"> · {a.note}</span>}
+                </span>
+                {podeCancelar && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-[11px] text-destructive"
+                    disabled={isPending}
+                    onClick={() => run(() => cancelarReajusteAgendado(a.id), "Reajuste cancelado.")}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </li>
+            ))}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground">Nenhum reajuste agendado.</p>
+      )}
+      {erro && <p className="text-destructive">{erro}</p>}
+      {historico && (
+        <ul className="space-y-0.5 border-t pt-1">
+          {historico.length === 0 && <li className="text-muted-foreground">Sem histórico registrado.</li>}
+          {historico.map((h, i) => (
+            <li key={i} className="tabular-nums">
+              {dataBr(h.validFrom)} · {onde(h.clinicId)}:{" "}
+              <strong>{h.priceCents == null ? "volta ao preço da rede" : formatBRL(h.priceCents)}</strong>{" "}
+              <span className="text-muted-foreground">
+                ({ROTULO_DA_ORIGEM[h.source] ?? h.source}
+                {h.quem ? ` · ${h.quem}` : ""})
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

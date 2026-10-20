@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.333.0",
+    data: "2026-10-20",
+    migracao: "0309",
+    titulo: "Procedimentos: o preço passa a ter data (reajuste agendado e histórico)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao mudar o preço de um procedimento (da rede, da unidade ou no reajuste em massa), o Admin escolhe a partir de quando ele vale: hoje vale na hora; data futura fica agendada e o sistema troca o preço sozinho na madrugada do dia. Cada procedimento mostra os reajustes agendados e o histórico de preço.",
+        papeis: [],
+        manual: "Admin Master",
+      },
+    ],
+  },
+  {
     versao: "0.332.0",
     data: "2026-10-19",
     migracao: "0308",

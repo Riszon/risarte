@@ -390,6 +390,25 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 — PC Administrador (core 0.332.0 → 0.333.0, migração 0309)**
+
+- **Vigência do preço (Odontograma OD1, D3).** Decisões do dono: banco aplica
+  à 0h + aviso; hoje ou futuro; editar, preço da unidade e reajuste em massa.
+  O preço de hoje continua nas colunas de sempre — **nenhum leitor mudou**.
+- ⚠️ **O histórico de preço nasce por GATILHO** (`procedure_price_history`):
+  todo caminho que grava preço registra sozinho. Não gravar histórico "à mão"
+  em action nenhuma — duplicaria. Ele é imutável; só sai em cascata quando um
+  procedimento nunca usado é apagado (`pg_trigger_depth() > 1`).
+- ⚠️ **O histórico conta o que VALEU**: reajuste aplicado com atraso registra o
+  dia em que o preço mudou, não a data marcada; e não passa por cima de
+  mudança feita à mão depois da data (achados no ensaio).
+- ⚠️ Num script `node -e`, `\n` dentro de texto vira quebra de linha de
+  verdade e quebra o arquivo de teste (2× nesta sessão) — editar teste pela
+  ferramenta de edição.
+- ⏳ **0309 pendente na produção.** Resíduo no treino: 1 reajuste agendado e
+  cancelado no "Ajuste de Bordas Incisais".
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **19/10/2026 (8ª) — PC Administrador (core 0.331.1 → 0.332.0, migração 0308)**
 
 - **ODONTOGRAMA começou** (prompt do dono; plano e decisões em

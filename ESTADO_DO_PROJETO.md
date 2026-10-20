@@ -1,7 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.332.0** · Última migração: **0308** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 16/10/2026 · Versão do sistema: **0.333.0** · Última migração: **0309** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🗓️ 0.333.0 / 0309 — VIGÊNCIA DO PREÇO (Odontograma OD1, D3, 20/10/2026)
+>
+> O preço de hoje continua onde está (nenhum leitor muda); o histórico nasce
+> por gatilho e não muda; reajuste com data futura fica agendado e a rotina da
+> madrugada aplica (ou o "Aplicar agora"). ⚠️ O histórico registra o dia em
+> que o preço MUDOU, e reajuste atrasado não passa por cima de mudança à mão.
+>
 > ## 🦷 0.332.0 / 0308 — ODONTOGRAMA OD1: A BASE (19/10/2026)
 >
 > Referência TUSS (dentes, faces, regiões), situações do dente (5 TUSS + 33

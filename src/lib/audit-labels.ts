@@ -162,6 +162,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   dental_tooth_faces: "Faces de um dente (odontograma)",
   dental_region_teeth: "Dentes de uma região (odontograma)",
   procedure_dental_rule: "Regra clínica do procedimento (odontograma)",
+  procedure_price_schedule: "Reajuste de preço agendado",
   procedure_sessions: "Sessões padrão do procedimento",
   specialty: "Especialidade",
   stock_item: "Item de estoque",

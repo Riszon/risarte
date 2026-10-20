@@ -124,6 +124,7 @@ export const TABELAS: Record<string, string> = {
   "public.dental_region_teeth": "Dentes de cada região",
   "public.dental_conditions": "Situações do dente",
   "public.procedure_dental_rules": "Regra clínica do procedimento",
+  "public.procedure_price_schedule": "Reajuste de preço agendado",
   "public.procedure_suggestions": "Sugestão de novo procedimento",
   "public.procedures": "Procedimento",
   "public.profiles": "Usuário",
