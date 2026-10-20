@@ -403,7 +403,7 @@ Syncthing se comportarem de forma estranha.**
   ajuste do Admin.
 - ⚠️ **No treino, a "Risarte Unidade Teste" tem um Coordenador REAL:** enviar
   plano lá avisa uma pessoa. Não enviei pela tela.
-- ⏳ **0312 aguarda a produção.**
+- ✅ **0312 APLICADA nos dois bancos** (o dono rodou na produção em 20/10/2026 e a conferência deu o esperado — 13 regras de gravar com o titular, 0 com qualquer Admin, envio só titular/Planner, a coluna e 12 situações "a tratar"; conferido de fora: sem login enviar recusa com "permission denied" e criar plano é barrado pela regra; a chave de serviço para em PLAN_NOT_FOUND antes de gravar; as 12 situações estão lá).
 - Cache do servidor de teste limpo ao encerrar (AP40).
 
 **20/10/2026 (4ª) — PC Administrador (core 0.335.0 → 0.336.0, migração 0311)**
