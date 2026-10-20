@@ -2524,6 +2524,43 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP62. O plano aprovado só está trancado na TELA (20/10/2026)
+
+**Confirmado no código (não executado).** Achado no levantamento da OD3. As
+ações de item, etapa, sessões, profissional e GUT
+(`prontuarios/[id]/planning-actions.ts`) só conferem `requirePlanner()`; nada
+olha a situação do plano. A RLS de `treatment_plan_option_items` (0036) também
+não. O "só edita em rascunho ou devolvido" é do componente
+(`canEditContent`). Pela API, um Planner muda item de plano aprovado.
+**O plano da OD3 propõe a trava no banco** (versões, D4).
+
+### AP61. Repasse por SESSÃO paga o valor inteiro a cada sessão — suspeita (20/10/2026)
+
+**Suspeita, lida no código.** `accrue_session_payout` (último corpo 0218)
+lança o valor INTEIRO de `payout_rate_for` em cada sessão concluída; não
+divide pelo total de sessões do procedimento. Já `estimated_option_payout`
+estima taxa × quantidade. Num procedimento de 3 sessões, o apurado seria 3×
+o estimado. Pode ser de propósito (a tabela ser "por sessão") — a regra do
+FIN5 diz "valor fixo por procedimento". Hoje a produção tem 0 repasses.
+Decisão do dono antes de mexer.
+
+### AP60. A apresentação pega o plano MAIS NOVO, de qualquer situação — suspeita (20/10/2026)
+
+**Suspeita, lida no código.** `loadPresentationData`
+(`apresentacao/[clientId]/presentation-data.ts`, ~:54-58) lê o plano mais
+recente sem olhar a situação. Uma "cópia para revisar" em rascunho, criada
+depois do aprovado, esconderia o aprovado na apresentação. Não reproduzido na
+tela. A OD3 (versões) mexe nisso.
+
+### AP59. O Coordenador vê o preço item a item na Apresentação (20/10/2026)
+
+**Confirmado no código (não visto na tela).** A regra (F4, D7) é o
+Coordenador ver **só os totais** — e é o que o editor do plano faz. Mas
+`/apresentacao/[clientId]` deixa o Coordenador entrar
+(`presentation-data.ts` ~:37-50) e mostra `qtd × preço` por item (~:158). E
+o inverso: o **Gerente** vê só os totais no plano, mas a D7 diz que ele vê
+os preços. A OD3 propõe acertar os dois.
+
 ### AP58. Aviso "Caso devolvido pelo Centro de Planejamento" provavelmente nunca chega (20/10/2026)
 
 **Confirmado o mecanismo; o efeito na tela NÃO foi clicado.** Achado no
