@@ -58,7 +58,7 @@ import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { TreatmentSummary } from "./treatment-summary";
 import { SequenciaPorOpcao } from "./session-join-planner";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
-import { carregarOdontograma } from "@/lib/odontograma/carregar";
+import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
 import { diagnosticoADefinir, podeDefinirOdontograma } from "@/lib/odontograma/diagnostico";
 import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 
@@ -529,10 +529,13 @@ export default async function PlanningCockpitPage(
 
   // OD2: o odontograma do diagnóstico. Quem define é o Planner (ou o titular);
   // o Admin que não é o titular só vê (D6).
-  const odontograma = await carregarOdontograma(
-    client.id,
-    (client.birth_date as string | null) ?? null
-  );
+  const [odontograma, regrasDoPlano] = await Promise.all([
+    carregarOdontograma(client.id, (client.birth_date as string | null) ?? null),
+    // OD3: as regras dos procedimentos — o plano por dente.
+    carregarRegrasDoPlano(),
+  ]);
+  const odontoDoPlano =
+    odontograma && regrasDoPlano ? { dados: odontograma, regras: regrasDoPlano } : undefined;
   const podeDefinir = podeDefinirOdontograma(
     session,
     Object.values(session.rolesByClinic).some((r) => r.includes("planner_dentist"))
@@ -854,8 +857,8 @@ export default async function PlanningCockpitPage(
       </div>
 
       {/* OD2 — o diagnóstico por dente: o Planner define o que o Coordenador
-          sugeriu (aceita / ajusta / rejeita), marca direto e finaliza. E2: na
-          OD2 o plano só AVISA "diagnóstico a definir"; a trava vem na OD3. */}
+          sugeriu (aceita / ajusta / rejeita), marca direto e finaliza. E2: o
+          aviso "diagnóstico a definir" virou TRAVA do envio na OD3 (0311). */}
       {odontograma && situacaoDoDiagnostico?.aDefinir && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <TriangleAlert className="size-4 shrink-0" />
@@ -864,7 +867,8 @@ export default async function PlanningCockpitPage(
             {situacaoDoDiagnostico.pendentes > 0
               ? `${situacaoDoDiagnostico.pendentes} ${situacaoDoDiagnostico.pendentes === 1 ? "sugestão do Coordenador espera" : "sugestões do Coordenador esperam"} a sua decisão no odontograma.`
               : "nenhuma rodada teve o diagnóstico finalizado ainda."}{" "}
-            Por enquanto é só um aviso — o plano continua andando.
+            O plano pode ser montado, mas o envio para aprovação só passa com o
+            diagnóstico definido.
           </span>
         </div>
       )}
@@ -902,6 +906,7 @@ export default async function PlanningCockpitPage(
         clientId={client.id}
         clientName={client.full_name}
         plans={plans}
+        odonto={odontoDoPlano}
         canEdit
         canReview={false}
         inPlanningPhase={phase === "planning_center"}

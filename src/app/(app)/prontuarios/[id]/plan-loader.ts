@@ -170,8 +170,27 @@ export async function loadClientPlans(
       }
     }
 
+    // OD3 (0311): onde cada item acontece. Leitura À PARTE de propósito — num
+    // banco que ainda não recebeu a 0311 ela falha sozinha e o plano continua
+    // abrindo (só sem os dentes), em vez de a tela inteira cair.
+    const localPorItem = new Map<
+      string,
+      { tooth_code: string | null; face_codes: string[] | null; region_code: string | null; situation_override_reason: string | null }
+    >();
+    {
+      const { data: locRows, error: locErro } = await supabase
+        .from("treatment_plan_option_items")
+        .select("id, tooth_code, face_codes, region_code, situation_override_reason")
+        .in("option_id", optionIds)
+        .returns<
+          { id: string; tooth_code: string | null; face_codes: string[] | null; region_code: string | null; situation_override_reason: string | null }[]
+        >();
+      if (!locErro) for (const l of locRows ?? []) localPorItem.set(l.id, l);
+    }
+
     for (const it of itemRows ?? []) {
       const list = itemsByOption.get(it.option_id) ?? [];
+      const loc = localPorItem.get(it.id);
       list.push({
         id: it.id,
         procedureId: it.procedure_id,
@@ -186,6 +205,10 @@ export async function loadClientPlans(
         gutUrgency: it.gut_urgency,
         gutTendency: it.gut_tendency,
         clientRejected: rejectedItemIds.has(it.id),
+        toothCode: loc?.tooth_code ?? null,
+        faceCodes: loc?.face_codes ?? [],
+        regionCode: loc?.region_code ?? null,
+        situationReason: loc?.situation_override_reason ?? null,
       });
       itemsByOption.set(it.option_id, list);
     }
@@ -203,6 +226,22 @@ export async function loadClientPlans(
       list.push({ id: st.id, name: st.name, sortOrder: st.sort_order });
       stagesByOption.set(st.option_id, list);
     }
+  }
+
+  // OD3 (0311): versão e substituição — à parte, pelo mesmo motivo do lugar.
+  const versaoPorPlano = new Map<
+    string,
+    { version_no: number; previous_plan_id: string | null; superseded_at: string | null; superseded_by_plan_id: string | null; prices_frozen_at: string | null }
+  >();
+  {
+    const { data: verRows, error: verErro } = await supabase
+      .from("treatment_plans")
+      .select("id, version_no, previous_plan_id, superseded_at, superseded_by_plan_id, prices_frozen_at")
+      .in("id", planIds)
+      .returns<
+        { id: string; version_no: number; previous_plan_id: string | null; superseded_at: string | null; superseded_by_plan_id: string | null; prices_frozen_at: string | null }[]
+      >();
+    if (!verErro) for (const v of verRows ?? []) versaoPorPlano.set(v.id, v);
   }
 
   const optionsByPlan = new Map<string, PlanOption[]>();
@@ -237,5 +276,10 @@ export async function loadClientPlans(
     commercialReturnedAt: p.commercial_returned_at,
     events: eventsByPlan.get(p.id) ?? [],
     options: optionsByPlan.get(p.id) ?? [],
+    versionNo: versaoPorPlano.get(p.id)?.version_no ?? 1,
+    previousPlanId: versaoPorPlano.get(p.id)?.previous_plan_id ?? null,
+    supersededAt: versaoPorPlano.get(p.id)?.superseded_at ?? null,
+    supersededByPlanId: versaoPorPlano.get(p.id)?.superseded_by_plan_id ?? null,
+    pricesFrozenAt: versaoPorPlano.get(p.id)?.prices_frozen_at ?? null,
   }));
 }

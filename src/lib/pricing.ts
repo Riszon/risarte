@@ -124,6 +124,12 @@ export type BudgetItem = {
   gutTendency?: number | null;
   /** COM: o cliente NÃO aprovou este procedimento na negociação comercial. */
   clientRejected?: boolean;
+  /** OD3 (0311): onde o procedimento acontece — dente (+ faces) ou região. */
+  toothCode?: string | null;
+  faceCodes?: string[];
+  regionCode?: string | null;
+  /** Motivo de lançar apesar do aviso de situação (F1). */
+  situationReason?: string | null;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

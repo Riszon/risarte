@@ -41,6 +41,7 @@ const achado = (p: Partial<Achado>): Achado => ({
 
 const dados = (achados: Achado[] | null, finalizadoEm: string | null = null): Dados => ({
   nomes: { "16": "Primeiro Molar Superior Direito" },
+  dentes: { "16": { dentition: "permanent", group: "molar" } },
   faces: { "16": ["V", "M", "D", "O", "P"] },
   situacoes: [
     { code: "C", name: "Cariado", appliesTo: "face", usage: "finding", symbol: "C", isActive: true, sortOrder: 1 },

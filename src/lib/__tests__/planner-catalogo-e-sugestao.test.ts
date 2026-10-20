@@ -111,7 +111,9 @@ describe("as telas", () => {
     const plano = ler("src/app/(app)/prontuarios/[id]/planning-section.tsx");
     expect(plano).not.toContain('label: "Item personalizado"');
     expect(plano).not.toContain('aria-label="Valor unitário"');
-    expect(plano).toContain("disabled={!procId || isPending}");
+    // Sem procedimento do catálogo, o botão não habilita (OD3 acrescentou o
+    // lugar do item à mesma condição).
+    expect(plano).toMatch(/disabled=\{\s*!procId \|\|\s*isPending/);
     expect(plano).toContain("<BotaoSugerirProcedimento");
     const acoes = ler("src/app/(app)/prontuarios/[id]/planning-actions.ts");
     expect(acoes).toContain("if (!input.procedureId) {");

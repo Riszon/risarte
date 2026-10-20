@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.336.0",
+    data: "2026-10-20",
+    migracao: "0311",
+    titulo: "Odontograma: o plano por dente (dente, faces e região em cada procedimento)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No plano de tratamento, cada procedimento diz onde acontece: toque nos dentes (e nas faces) ou escolha a região ou a arcada. Vários dentes viram um item por dente. O sistema recusa o que não cabe no dente e avisa quando a situação não combina (ex.: restauração em dente ausente) — aí só entra com motivo. Cada opção mostra o odontograma com o que ela planeja em vermelho.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Enviar o plano para aprovação passou a exigir o diagnóstico por dente finalizado (sem sugestão pendente) e o dente ou a região de cada procedimento que se marca na boca. O preço de cada item congela no envio, pelo preço do dia.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Plano enviado ou aprovado não se edita por caminho nenhum: para mudar, \"Criar nova versão\". A anterior continua valendo até a nova ser aprovada; depois fica como \"substituída\", guardada para consulta. A Apresentação usa sempre a versão que vale.",
+        papeis: ["planner_dentist", "commercial_consultant", "clinical_coordinator"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Preços no plano: o Gerente da unidade passa a ver o preço de cada item (antes só os totais); o Coordenador vê só os totais também na Apresentação (antes ela mostrava o preço item a item).",
+        papeis: ["unit_manager", "clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.335.0",
     data: "2026-10-20",
     migracao: "0310",

@@ -2524,7 +2524,7 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
-### AP62. O plano aprovado só está trancado na TELA (20/10/2026)
+### AP62. O plano aprovado só está trancado na TELA (20/10/2026) — ✅ RESOLVIDO na OD3 (0311, 0.336.0)
 
 **Confirmado no código (não executado).** Achado no levantamento da OD3. As
 ações de item, etapa, sessões, profissional e GUT
@@ -2544,7 +2544,7 @@ o estimado. Pode ser de propósito (a tabela ser "por sessão") — a regra do
 FIN5 diz "valor fixo por procedimento". Hoje a produção tem 0 repasses.
 Decisão do dono antes de mexer.
 
-### AP60. A apresentação pega o plano MAIS NOVO, de qualquer situação — suspeita (20/10/2026)
+### AP60. A apresentação pega o plano MAIS NOVO, de qualquer situação — suspeita (20/10/2026) — ✅ RESOLVIDO na OD3 (usa a versão aprovada que vale)
 
 **Suspeita, lida no código.** `loadPresentationData`
 (`apresentacao/[clientId]/presentation-data.ts`, ~:54-58) lê o plano mais
@@ -2552,7 +2552,7 @@ recente sem olhar a situação. Uma "cópia para revisar" em rascunho, criada
 depois do aprovado, esconderia o aprovado na apresentação. Não reproduzido na
 tela. A OD3 (versões) mexe nisso.
 
-### AP59. O Coordenador vê o preço item a item na Apresentação (20/10/2026)
+### AP59. O Coordenador vê o preço item a item na Apresentação (20/10/2026) — ✅ RESOLVIDO na OD3 (D7 nos dois sentidos)
 
 **Confirmado no código (não visto na tela).** A regra (F4, D7) é o
 Coordenador ver **só os totais** — e é o que o editor do plano faz. Mas

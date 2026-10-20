@@ -18,6 +18,7 @@ import { Odontograma } from "@/components/odontograma/odontograma";
 import { cn } from "@/lib/utils";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import type { DadosDoOdontograma } from "@/lib/odontograma/carregar";
+import type { MarcaNoDente } from "@/lib/odontograma/desenho";
 import {
   ROTULO_DO_FILTRO,
   ROTULO_DO_STATUS,
@@ -70,7 +71,10 @@ export function PainelDoDiagnostico({
   dados,
   euId,
   podeMudarDenticao,
+  marcasDoPlano = [],
 }: {
+  /** OD3: o vermelho do plano que vale (a ficha). Vazio = sem o filtro "Só o plano". */
+  marcasDoPlano?: MarcaNoDente[];
   clientId: string;
   modo: "sugerir" | "definir" | "leitura";
   /** A unidade da rodada em que o Coordenador sugere. */
@@ -95,7 +99,17 @@ export function PainelDoDiagnostico({
     () => new Map(dados.situacoes.map((s) => [s.code, s.name])),
     [dados.situacoes]
   );
-  const marcas = useMemo(() => marcasDoDesenho(achados, dados.situacoes, filtro), [achados, dados.situacoes, filtro]);
+  // O plano (vermelho) vem primeiro: na mesma face aparece por cima do diagnóstico.
+  const marcas = useMemo(
+    () => [
+      ...(filtro === "todos" || filtro === "plano" ? marcasDoPlano : []),
+      ...marcasDoDesenho(achados, dados.situacoes, filtro),
+    ],
+    [achados, dados.situacoes, filtro, marcasDoPlano]
+  );
+  const filtros = (Object.keys(ROTULO_DO_FILTRO) as FiltroDoDesenho[]).filter(
+    (f) => f !== "plano" || marcasDoPlano.length > 0
+  );
   const atuais = useMemo(() => marcasAtuais(achados), [achados]);
   const aDecidir = useMemo(() => pendentes(achados), [achados]);
   const minhas = aDecidir.filter((a) => a.criadoPor === euId);
@@ -196,7 +210,7 @@ export function PainelDoDiagnostico({
       }
       extra={
         <div role="radiogroup" aria-label="O que mostrar" className="inline-flex rounded-md border p-0.5">
-          {(Object.keys(ROTULO_DO_FILTRO) as FiltroDoDesenho[]).map((f) => (
+          {filtros.map((f) => (
             <button
               key={f}
               type="button"
@@ -235,7 +249,9 @@ export function PainelDoDiagnostico({
             )}
             <div className="ml-auto w-full sm:w-64">
               <ListaComBusca
-                options={dados.regioes.map((r) => ({ value: r.code, label: `${r.name} (${r.dentes.length})` }))}
+                options={dados.regioes
+                  .filter((r) => r.dentes.length > 0)
+                  .map((r) => ({ value: r.code, label: `${r.name} (${r.dentes.length})` }))}
                 value=""
                 onValueChange={(code) => {
                   const r = dados.regioes.find((x) => x.code === code);

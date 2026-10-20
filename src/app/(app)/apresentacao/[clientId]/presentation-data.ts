@@ -12,6 +12,7 @@ import {
 } from "@/lib/pricing";
 import type { PresentationData } from "./presentation-view";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { rotuloDoLocal } from "@/lib/odontograma/plano";
 
 export type LoadResult =
   | { ok: true; data: PresentationData; clinicId: string; hasApprovedPlan: boolean }
@@ -48,14 +49,22 @@ export async function loadPresentationData(
       "unit_manager",
     ]));
   if (!canPresent) return { ok: false, reason: "forbidden" };
+  // D7 / F4 (AP59): o Coordenador vê só os TOTAIS — o preço item a item é de
+  // quem vende (Consultor), planeja (Planner) ou gere (Gerente) e do Admin.
+  const veApenasTotais =
+    !session.isAdminMaster &&
+    !isPlannerAnywhere &&
+    !(await hasRoleWithScopeForClinic(session, client.clinic_id, ["commercial_consultant", "unit_manager"]));
 
-  // -- Plano aprovado: opção principal aprovada (ou a primeira aprovada) --
+  // -- O plano que VALE: a versão aprovada mais nova que não foi substituída
+  // (OD3, D4). AP60: antes era o plano mais novo de QUALQUER situação — uma
+  // nova versão ainda em rascunho escondia o aprovado.
   const { data: planRows } = await supabase
     .from("treatment_plans")
     .select("id, status, diagnosis, objectives, planning_notes")
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
-    .limit(1)
+    .limit(50)
     .returns<
       {
         id: string;
@@ -65,7 +74,19 @@ export async function loadPresentationData(
         planning_notes: string | null;
       }[]
     >();
-  const planRow = planRows?.[0];
+  // Substituídos à parte: num banco sem a 0311 a coluna não existe e nada é substituído.
+  const substituidos = new Set<string>();
+  {
+    const { data: subRows, error: subErro } = await supabase
+      .from("treatment_plans")
+      .select("id")
+      .eq("client_id", clientId)
+      .not("superseded_at", "is", null)
+      .returns<{ id: string }[]>();
+    if (!subErro) for (const s of subRows ?? []) substituidos.add(s.id);
+  }
+  const vigentes = (planRows ?? []).filter((p) => !substituidos.has(p.id));
+  const planRow = vigentes.find((p) => p.status === "approved") ?? vigentes[0] ?? planRows?.[0];
   const hasApprovedPlan = planRow?.status === "approved";
 
   let diagnosis: string | null = null;
@@ -115,6 +136,27 @@ export async function loadPresentationData(
             sort_order: number;
           }[]
         >();
+      // OD3: o dente/região de cada item (à parte — sem a 0311, sem dente).
+      const ondePorItem = new Map<string, string>();
+      {
+        const { data: locRows, error: locErro } = await supabase
+          .from("treatment_plan_option_items")
+          .select("id, tooth_code, face_codes, region_code, region:dental_regions ( name )")
+          .eq("option_id", opt.id)
+          .returns<
+            { id: string; tooth_code: string | null; face_codes: string[] | null; region_code: string | null; region: { name: string } | { name: string }[] | null }[]
+          >();
+        if (!locErro) {
+          for (const l of locRows ?? []) {
+            const reg = Array.isArray(l.region) ? l.region[0] : l.region;
+            const rotulo = rotuloDoLocal(
+              { toothCode: l.tooth_code, faceCodes: l.face_codes ?? [], regionCode: l.region_code },
+              () => reg?.name?.trim()
+            );
+            if (rotulo) ondePorItem.set(l.id, rotulo);
+          }
+        }
+      }
       const items: BudgetItem[] = (itemRows ?? []).map((it) => ({
         id: it.id,
         procedureId: it.procedure_id,
@@ -147,7 +189,7 @@ export async function loadPresentationData(
       option = {
         title: opt.title,
         items: items.map((it) => ({
-          description: it.description,
+          description: ondePorItem.has(it.id) ? `${it.description} — ${ondePorItem.get(it.id)}` : it.description,
           quantity: it.quantity,
           sessionsLabel: it.plannedSessions
             ? formatSessions(it.plannedSessions)
@@ -156,7 +198,7 @@ export async function loadPresentationData(
             ? formatMinutes(it.plannedMinutes)
             : null,
           priceLabel:
-            it.unitPriceCents > 0
+            !veApenasTotais && it.unitPriceCents > 0
               ? formatBRL(it.unitPriceCents * it.quantity)
               : null,
         })),

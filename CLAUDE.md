@@ -390,6 +390,29 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 (4ª) — PC Administrador (core 0.335.0 → 0.336.0, migração 0311)**
+
+- **Odontograma OD3 — o plano por dente** (plano e decisões F1–F4 em
+  `docs/odontograma/OD3-PLANO.md`).
+- ⚠️ **PLANO ENVIADO/APROVADO É TRANCADO NO BANCO** (AP62): itens, opções e o
+  texto do plano não mudam pela API; a situação do plano só muda pelas
+  funções. Mudar = **nova versão** (`createTreatmentPlan` com
+  `copyFromPlanId` → `previous_plan_id`). O "Reabrir para edição" SAIU — a
+  §7 abaixo ainda o cita (histórico da 0042).
+- ⚠️ **Trava que confere `current_user` é `security invoker`** (de novo, como
+  na 0306): as três da 0311 só valem para `authenticated`; as funções do banco
+  passam.
+- ⚠️ **Coluna nova + código no ar antes da migração:** o loader lê as colunas
+  da 0311 numa consulta À PARTE, e o item só leva as colunas novas quando têm
+  valor — senão lançar item quebraria na produção até a 0311 rodar.
+- ⚠️ **O preço do item congela NO ENVIO** (F3, `submit_treatment_plan`), não
+  mais quando o item entra.
+- ⏳ **0311 aguarda a produção.** Pergunta aberta: D6 para "montar plano"
+  (Admin não titular) — não aplicada. Continua aberta a cor da cárie.
+- Resíduo no treino: "Teste do portão 2" no Centro de Planejamento com um
+  plano de ensaio em rascunho.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **20/10/2026 (3ª) — PC Administrador (core 0.334.0 → 0.335.0, migração 0310)**
 
 - **Odontograma OD2 — o diagnóstico por dente** (plano e decisões E1–E4 em

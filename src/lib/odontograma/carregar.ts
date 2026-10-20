@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { evaluationLabel, type EvaluationKind } from "@/lib/clinical";
 import { todayInBrazil } from "@/lib/dates";
 import { anosCompletos, denticaoPelaIdade, type Denticao } from "@/lib/odontograma/desenho";
+import { regraDaLinha, type DenteDaReferencia, type RegraDoPlano } from "@/lib/odontograma/plano";
 import {
   COLUNAS_DO_ACHADO,
   achadoDaLinha,
@@ -23,6 +24,8 @@ export type RodadaDoOdontograma = {
 
 export type DadosDoOdontograma = {
   nomes: Record<string, string>;
+  /** Dentição e grupo de cada dente (a régua da forma, OD3). */
+  dentes: Record<string, DenteDaReferencia>;
   faces: Record<string, string[]>;
   situacoes: SituacaoDoDente[];
   regioes: { code: string; name: string; dentes: string[] }[];
@@ -50,7 +53,7 @@ export async function carregarOdontograma(
   const supabase = await createClient();
   const [dentesR, facesR, situacoesR, regioesR, regiaoDentesR, odontoR, achadosR, rodadasR] =
     await Promise.all([
-      supabase.from("dental_teeth").select("code, name"),
+      supabase.from("dental_teeth").select("code, name, dentition, tooth_group"),
       supabase.from("dental_tooth_faces").select("tooth_code, face_code"),
       supabase
         .from("dental_conditions")
@@ -75,7 +78,11 @@ export async function carregarOdontograma(
   }
 
   const nomes: Record<string, string> = {};
-  for (const d of dentesR.data ?? []) nomes[d.code] = d.name;
+  const dentes: Record<string, DenteDaReferencia> = {};
+  for (const d of dentesR.data ?? []) {
+    nomes[d.code] = d.name;
+    dentes[d.code] = { dentition: d.dentition, group: d.tooth_group };
+  }
   const faces: Record<string, string[]> = {};
   for (const f of facesR.data ?? []) (faces[f.tooth_code] ??= []).push(f.face_code);
   const situacoes: SituacaoDoDente[] = (situacoesR.data ?? []).map((s) => ({
@@ -91,9 +98,11 @@ export async function carregarOdontograma(
   for (const r of regiaoDentesR.data ?? []) {
     dentesDaRegiao.set(r.region_code, [...(dentesDaRegiao.get(r.region_code) ?? []), r.tooth_code]);
   }
+  // Todas as regiões. As de tecido (língua, palato…) vêm com `dentes` vazio:
+  // não selecionam dente no diagnóstico, mas servem de lugar a procedimento
+  // "de região" no plano (OD3).
   const regioes = (regioesR.data ?? [])
-    .filter((r) => dentesDaRegiao.has(r.code))
-    .map((r) => ({ code: r.code, name: r.name.trim(), dentes: dentesDaRegiao.get(r.code)! }))
+    .map((r) => ({ code: r.code, name: r.name.trim(), dentes: dentesDaRegiao.get(r.code) ?? [] }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // Sem a 0310: a tabela das marcas não existe (as outras leituras deram certo).
@@ -147,5 +156,23 @@ export async function carregarOdontograma(
     };
   });
 
-  return { nomes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas };
+  return { nomes, dentes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas };
+}
+
+/**
+ * As regras clínicas de TODOS os procedimentos (0308), para o plano por dente
+ * (OD3). São 370 hoje — uma leitura só. Falhou: devolve nulo, e a tela de
+ * lançar item avisa em vez de deixar lançar sem conferir.
+ */
+export async function carregarRegrasDoPlano(): Promise<Record<string, RegraDoPlano> | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("procedure_dental_rules")
+    .select(
+      "procedure_id, application_level, face_count_min, face_count_max, fixed_faces, dentition, tooth_groups, blocked_conditions, required_conditions, effect_condition"
+    );
+  if (error) return null;
+  const regras: Record<string, RegraDoPlano> = {};
+  for (const r of data ?? []) regras[r.procedure_id] = regraDaLinha(r);
+  return regras;
 }

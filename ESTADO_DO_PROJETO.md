@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.335.0** · Última migração: **0310** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.336.0** · Última migração: **0311** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🦷 0.336.0 / 0311 — ODONTOGRAMA OD3: O PLANO POR DENTE (20/10/2026)
+>
+> Cada item do plano diz onde acontece (dente + faces, ou região/arcada); um
+> item por dente (F4). ⚠️ **Forma recusa, situação pede motivo** (F1) — o
+> banco confere (`plan_item_location_check`), a tela avisa antes
+> (`src/lib/odontograma/plano.ts`). ⚠️ **Plano enviado/aprovado é trancado no
+> BANCO** (AP62): mudar = nova versão; a anterior fica substituída quando a
+> nova é aprovada (F2). ⚠️ **O envio exige diagnóstico definido (E2) e congela
+> o preço do dia (F3).** O "Reabrir para edição" saiu. D7 aplicado (Gerente
+> vê preço; Coordenador só totais, inclusive na Apresentação).
 
 > ## 🦷 0.335.0 / 0310 — ODONTOGRAMA OD2: O DIAGNÓSTICO POR DENTE (20/10/2026)
 >

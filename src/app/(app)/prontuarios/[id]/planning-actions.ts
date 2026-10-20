@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import type { PlanLifecycle, PlanResult, ProjectedSession } from "@/lib/planning";
 import { repartirTempo } from "@/lib/planning";
 import { parseBRLToCents } from "@/lib/pricing";
+import { mensagemDoPlano } from "@/lib/odontograma/plano";
 
 /**
  * Only the Dentista Planner (or Admin) works on a treatment plan. The plan is
@@ -110,7 +111,7 @@ async function loadPlanContext(
 export async function createTreatmentPlan(
   clientId: string,
   copyFromPlanId?: string | null
-): Promise<PlanResult & { planId?: string }> {
+): Promise<PlanResult & { planId?: string; aviso?: string }> {
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
 
@@ -134,14 +135,18 @@ export async function createTreatmentPlan(
       client_id: clientId,
       clinic_id: client.clinic_id,
       created_by: guard.userId,
+      // OD3 (D4): a cópia é a NOVA VERSÃO da anterior — o banco numera e,
+      // quando ela for aprovada, marca a anterior como substituída (F2).
+      ...(copyFromPlanId ? { previous_plan_id: copyFromPlanId } : {}),
     })
     .select("id")
     .single();
   if (error || !created) {
     console.error("createTreatmentPlan failed:", error?.message);
-    return { ok: false, error: "Não foi possível iniciar o plano." };
+    return { ok: false, error: mensagemDoPlano(error?.message ?? "") ?? "Não foi possível iniciar o plano." };
   }
   const newPlanId = created.id as string;
+  let itensNaoCopiados = 0;
 
   // Duplicação (opcional) de um plano existente do MESMO cliente.
   if (copyFromPlanId) {
@@ -224,15 +229,29 @@ export async function createTreatmentPlan(
         const { data: srcItems } = await supabase
           .from("treatment_plan_option_items")
           .select(
-            "option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
+            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
           )
           .in("option_id", srcOptionIds)
           .order("sort_order");
+        // OD3: o lugar de cada item vem junto, pelo id (leitura à parte: sem a
+        // 0311, a cópia segue como antes, sem dente).
+        const { data: srcLoc } = await supabase
+          .from("treatment_plan_option_items")
+          .select("id, tooth_code, face_codes, region_code, situation_override_reason")
+          .in("option_id", srcOptionIds)
+          .returns<
+            { id: string; tooth_code: string | null; face_codes: string[] | null; region_code: string | null; situation_override_reason: string | null }[]
+          >();
+        const localDoItem = new Map((srcLoc ?? []).map((l) => [l.id, l]));
         const rows = (srcItems ?? [])
           .map((it) => {
             const newOptionId = optionMap.get(it.option_id as string);
             if (!newOptionId) return null;
+            const loc = localDoItem.get(it.id as string);
             return {
+              ...(loc?.tooth_code ? { tooth_code: loc.tooth_code, face_codes: loc.face_codes ?? [] } : {}),
+              ...(loc?.region_code ? { region_code: loc.region_code } : {}),
+              ...(loc?.situation_override_reason ? { situation_override_reason: loc.situation_override_reason } : {}),
               option_id: newOptionId,
               clinic_id: client.clinic_id,
               procedure_id: it.procedure_id,
@@ -256,8 +275,15 @@ export async function createTreatmentPlan(
           // aceita item do catálogo, e um item recusado derrubaria a cópia
           // inteira. O preço do que vem é o do catálogo de HOJE (0306).
           .filter((r) => r.procedure_id != null);
-        if (rows.length > 0) {
-          await supabase.from("treatment_plan_option_items").insert(rows);
+        // Um a um: a OD3 confere cada item contra o diagnóstico de HOJE, e um
+        // item que não passa mais (ex.: o dente agora consta ausente) não
+        // pode derrubar a cópia inteira — ele fica de fora e a tela avisa.
+        for (const row of rows) {
+          const { error: erroDoItem } = await supabase.from("treatment_plan_option_items").insert(row);
+          if (erroDoItem) {
+            itensNaoCopiados++;
+            console.error("createTreatmentPlan — item não copiado:", erroDoItem.message);
+          }
         }
       }
     }
@@ -272,7 +298,14 @@ export async function createTreatmentPlan(
   });
   revalidatePath(`/prontuarios/${clientId}`);
   revalidatePath("/planejamento");
-  return { ok: true, planId: newPlanId };
+  return {
+    ok: true,
+    planId: newPlanId,
+    aviso:
+      itensNaoCopiados > 0
+        ? `${itensNaoCopiados} ${itensNaoCopiados === 1 ? "procedimento não foi copiado" : "procedimentos não foram copiados"} para a nova versão (não combinam mais com o diagnóstico ou com o dente). Lance de novo os que ainda valem.`
+        : undefined,
+  };
 }
 
 export async function saveDiagnosis(
@@ -591,25 +624,10 @@ export async function reviewPlanOption(
  * 'draft' — the Planner can edit, but must re-submit so the Coordenador approves
  * the changes again before it can go to the Comercial (owner rule).
  */
-export async function reopenTreatmentPlan(planId: string): Promise<PlanResult> {
-  const guard = await requirePlanner();
-  if ("error" in guard) return { ok: false, error: guard.error };
-  const ctx = await loadPlanContext(planId);
-  if ("error" in ctx) return { ok: false, error: ctx.error };
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("treatment_plans")
-    .update({ status: "draft", updated_at: new Date().toISOString() })
-    .eq("id", planId);
-  if (error) {
-    console.error("reopenTreatmentPlan failed:", error.message);
-    return { ok: false, error: "Não foi possível reabrir o plano." };
-  }
-  revalidatePath(`/prontuarios/${ctx.clientId}`);
-  revalidatePath("/planejamento");
-  return { ok: true };
-}
+// OD3 (D4): o antigo "Reabrir para edição" (voltar o plano a rascunho) SAIU.
+// Plano enviado ou aprovado não se edita — vira NOVA VERSÃO
+// (`createTreatmentPlan` com `copyFromPlanId`). O banco recusa voltar a
+// situação pela API (`treatment_plan_lock`, 0311).
 
 /**
  * Fase 2 — avança (ou ajusta) o CICLO DE VIDA do plano depois de aprovado:
@@ -698,6 +716,9 @@ export async function submitTreatmentPlan(planId: string): Promise<PlanResult> {
           "Cada opção precisa ter ao menos um procedimento lançado no orçamento antes de enviar.",
       };
     }
+    // OD3 (0311): o diagnóstico definido (E2), o lugar de cada item, versões.
+    const doPlano = mensagemDoPlano(error.message);
+    if (doPlano) return { ok: false, error: doPlano };
     console.error("submit_treatment_plan failed:", error.message);
     return { ok: false, error: "Não foi possível enviar o plano." };
   }
@@ -767,6 +788,16 @@ export async function addBudgetItem(
     gutGravity?: number | null;
     gutUrgency?: number | null;
     gutTendency?: number | null;
+    /**
+     * OD3 (0311): onde acontece. Vários dentes = UM ITEM POR DENTE, quantidade
+     * 1 (F4). Quem confere a forma e a situação é o BANCO
+     * (`plan_item_location_check`); `motivo` é o de lançar apesar do aviso.
+     */
+    local?: {
+      teeth?: { tooth: string; faces: string[] }[];
+      regionCode?: string | null;
+      motivo?: string | null;
+    };
   }
 ): Promise<PlanResult> {
   // OC-00067 (decisão do dono, 19/10/2026): SÓ item do catálogo. O nome e o
@@ -793,12 +824,13 @@ export async function addBudgetItem(
     .select("id", { count: "exact", head: true })
     .eq("option_id", optionId);
 
-  const { error } = await supabase.from("treatment_plan_option_items").insert({
+  // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
+  const ordem = contagemConfirmada({ count, error: erroDaOrdem }) ?? 0;
+  const base = {
     option_id: optionId,
     clinic_id: ctx.clinicId,
     procedure_id: input.procedureId,
     description,
-    quantity,
     unit_price_cents: priceCents,
     planned_sessions: posIntOrNull(input.plannedSessions),
     planned_total_minutes: posIntOrNull(input.plannedMinutes),
@@ -806,16 +838,26 @@ export async function addBudgetItem(
     gut_gravity: gutNote(input.gutGravity),
     gut_urgency: gutNote(input.gutUrgency),
     gut_tendency: gutNote(input.gutTendency),
-    // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
-    sort_order: contagemConfirmada({ count, error: erroDaOrdem }) ?? 0,
-  });
+  };
+  // As colunas da 0311 só vão quando têm valor: num banco que ainda não
+  // recebeu a migração, o item sem lugar continua entrando como antes.
+  const motivo = input.local?.motivo?.trim();
+  const comMotivo = motivo ? { situation_override_reason: motivo } : {};
+  const dentes = input.local?.teeth ?? [];
+  const regiao = input.local?.regionCode ?? null;
+  // F4: um item por dente (quantidade 1). Uma gravação só: ou entram todos, ou nenhum.
+  const linhas: Record<string, unknown>[] =
+    dentes.length > 0
+      ? dentes.map((d, i) => ({ ...base, ...comMotivo, quantity: 1, tooth_code: d.tooth, face_codes: d.faces, sort_order: ordem + i }))
+      : [{ ...base, ...comMotivo, quantity, ...(regiao ? { region_code: regiao } : {}), sort_order: ordem }];
+  const { error } = await supabase.from("treatment_plan_option_items").insert(linhas);
   if (error) {
     console.error("addBudgetItem failed:", error.message);
     return {
       ok: false,
       error: error.message.includes("CATALOG_ITEM_REQUIRED")
         ? "Escolha um procedimento do catálogo. Não achou? Sugira à rede."
-        : "Não foi possível adicionar o item.",
+        : (mensagemDoPlano(error.message) ?? "Não foi possível adicionar o item."),
     };
   }
   await touchPlan(ctx.planId);
@@ -862,7 +904,7 @@ export async function editBudgetItem(
     .eq("id", itemId);
   if (error) {
     console.error("editBudgetItem failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar o item." };
+    return { ok: false, error: mensagemDoPlano(error.message) ?? "Não foi possível salvar o item." };
   }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);
@@ -889,7 +931,7 @@ export async function removeBudgetItem(itemId: string): Promise<PlanResult> {
     .eq("id", itemId);
   if (error) {
     console.error("removeBudgetItem failed:", error.message);
-    return { ok: false, error: "Não foi possível remover o item." };
+    return { ok: false, error: mensagemDoPlano(error.message) ?? "Não foi possível remover o item." };
   }
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);

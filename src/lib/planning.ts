@@ -256,4 +256,11 @@ export type TreatmentPlan = {
   /** Histórico detalhado deste plano (mais antigo primeiro). */
   events: PlanEvent[];
   options: PlanOption[];
+  /** OD3 (0311, D4): versão do plano, a anterior e a substituição. */
+  versionNo?: number;
+  previousPlanId?: string | null;
+  supersededAt?: string | null;
+  supersededByPlanId?: string | null;
+  /** F3: quando o preço dos itens congelou (no envio para aprovação). */
+  pricesFrozenAt?: string | null;
 };

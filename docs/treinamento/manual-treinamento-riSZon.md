@@ -1368,7 +1368,9 @@ cancelado, com o motivo.
   Comercial ✅, Relatórios ✅, Planos ✅, Risartanos ✅, Empresarial ✅.
 - **Pode:** lançar dinheiro (`canPostFinance`), dar entrada e fazer inventário
   de estoque (`canManageStock`), criar requisição de compra
-  (`canManagePurchaseRequests`), autorizar contas dentro da alçada.
+  (`canManagePurchaseRequests`), autorizar contas dentro da alçada. No plano
+  de tratamento, **vê o preço item a item** (decisão do dono, D7; desde a
+  0.336.0 — antes via só os totais), sem editar.
 - **Não pode:** configurar o que vale para a rede inteira
   (`canConfigureFinanceNetwork` exclui o gerente) nem cadastrar item no catálogo
   de estoque (`canManageStockCatalog`).
@@ -1751,7 +1753,9 @@ Por qualquer um deles, o prontuário do cliente abre **direto na aba Plano**.
 > está em **outra unidade** que não a do cliente (confira no alto do menu).
 
 **Cuidado:** você vê **o total** de cada opção, não o preço item a item. Isso é
-proposital: sua aprovação é clínica, não comercial.
+proposital: sua aprovação é clínica, não comercial. Desde a 0.336.0 vale
+também na **Apresentação** (antes ela mostrava o preço de cada item ao
+Coordenador). Cada item mostra **o dente ou a região** onde acontece.
 
 > **A faixa atrapalhando? Mova ou encolha.** Ela aparece no **canto de baixo à
 > direita**. Arraste pela **alça** (o pontilhado à esquerda) para onde preferir,
@@ -1822,20 +1826,54 @@ Planejamento**.
    fotos e exames ficam trancados. Precisou corrigir depois? Marque de novo: o
    sistema pede o **motivo do adendo** e guarda o original. Enquanto houver
    sugestão pendente ou nenhuma rodada finalizada, o cockpit mostra o aviso
-   **"Diagnóstico a definir"** — por enquanto é só aviso, o plano continua
-   andando. Na fila, o filtro **Com sugestões a definir** e o selo **"N a
-   definir"** mostram quem está esperando.
+   **"Diagnóstico a definir"** — desde a 0.336.0 o plano pode ser montado,
+   mas **o envio para aprovação só passa com o diagnóstico definido**. Na
+   fila, o filtro **Com sugestões a definir** e o selo **"N a definir"**
+   mostram quem está esperando.
 3. **Iniciar plano de tratamento** → escreva o **Diagnóstico**.
 4. **Adicionar opção de tratamento** (marque uma como principal).
 5. Dentro da opção, **Procedimento** → escolha do catálogo → **Item**. O nome
    e o **preço vêm do catálogo** da unidade e não se digitam — não existe mais
    "item personalizado". Não achou o procedimento? **Sugira à rede** (o link
    fica logo abaixo da lista; veja adiante).
+   **Onde o procedimento acontece** (desde a 0.336.0). Depois de escolher o
+   procedimento, aparece o lugar, conforme a regra dele:
+   - **por dente / face:** toque nos dentes no desenho (e nas faces, se o
+     procedimento for de face — "2 faces" pede duas). **Vários dentes viram
+     um item por dente** (quantidade 1 cada): o cliente pode aceitar um dente
+     e não outro, e a baixa sai no dente certo. O sistema **recusa** o que
+     não cabe (face que o dente não tem, nº de faces, dentição, grupo de
+     dentes — ex.: selante não se faz em incisivo) e **avisa** quando a
+     situação do dente não combina (ex.: restauração num dente marcado como
+     ausente; implante num dente que não está ausente nem com extração
+     planejada). Com aviso, o item só entra com o **motivo**, que fica à
+     vista no item. O que a **mesma opção** já planeja conta: implante no 36
+     + reabertura no 36 passa.
+   - **por região / arcada:** escolha a região (sextante, hemiarco…) ou a
+     arcada (superior, inferior, as duas).
+   - **sem marcação** (consulta, exame…): como sempre, com quantidade.
+   Cada opção tem o **Odontograma desta opção**: o diagnóstico em azul/cinza
+   e, em **vermelho**, o que ela planeja. Itens lançados antes desta versão
+   aparecem com **"sem dente — indique antes de enviar"**: remova e lance de
+   novo com o lugar.
 6. Classifique o **pilar** (1 dos 6) → **Salvar pilar**.
 7. Monte os **Atendimentos e sequência** (botão no alto do cockpit) — veja
    abaixo.
-8. **Enviar para aprovação do Coordenador**.
+8. **Enviar para aprovação do Coordenador**. O banco confere: diagnóstico por
+   dente **finalizado** e sem sugestão pendente, e o **dente ou região** de
+   cada procedimento que se marca na boca. ⚠️ **O preço de cada item congela
+   no envio**, pelo preço do catálogo daquele dia (se houve reajuste durante
+   o planejamento, vale o do dia do envio).
 9. Aprovado, **Enviar ao Comercial**.
+
+**Plano enviado ou aprovado não se edita** (desde a 0.336.0 o banco recusa
+por qualquer caminho; o antigo "Reabrir para edição" saiu). Para mudar:
+**Criar nova versão** — ela copia tudo, inclusive os dentes, e nasce como
+"Plano v2" em rascunho. Enquanto a v2 não for aprovada, a v1 **continua
+valendo** (é ela que o Comercial apresenta); quando a v2 é aprovada, a v1
+fica **substituída**, guardada para consulta. Procedimento que não combina
+mais com o diagnóstico de hoje não é copiado — a tela avisa quantos ficaram
+de fora.
 
 **Atendimentos e sequência** — é onde você diz **como o tratamento vai ser
 executado**: o que é feito no mesmo horário, em que ordem e por quem.
@@ -2262,8 +2300,10 @@ Coordenador esperando o Planner, a miniatura mostra **"N a definir"**.
 - **O que mostra:** o desenho da boca, dente a dente, na notação de dois
   algarismos (11 a 48 os permanentes, 51 a 85 os de leite), com as **marcas
   do diagnóstico** (desde a 0.335.0): o que está **definido** e, tracejado, o
-  que ainda é **sugestão**. O filtro **Todos / Só definidos / Só sugestões**
-  troca o que aparece. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
+  que ainda é **sugestão**. Desde a 0.336.0 entra também, em **vermelho**, o
+  que o **plano que vale** planeja (a versão aprovada mais nova; sem
+  aprovada, a mais nova). O filtro **Todos / Só definidos / Só sugestões / Só
+  o plano** troca o que aparece. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
   Reavaliação 2…), com o selo **"Finalizado em … por …"**, e o **Histórico das
   marcas** (quem sugeriu, quem decidiu, quando e o motivo).
 - **Na ficha é só leitura.** Quem marca faz isso nos cockpits: o Coordenador

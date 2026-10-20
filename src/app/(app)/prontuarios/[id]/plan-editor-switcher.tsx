@@ -19,7 +19,7 @@ import type {
 } from "@/lib/pricing";
 import type { MethodologyPillar } from "@/lib/journey";
 import type { ProgramBenefit } from "@/lib/empresarial/benefits";
-import { PlanningSection } from "./planning-section";
+import { PlanningSection, type OdontoDoPlano } from "./planning-section";
 import { PlanLifecycleBar, type LifecycleCaps } from "./plan-lifecycle-bar";
 import { createTreatmentPlan } from "./planning-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
@@ -48,7 +48,13 @@ export function PlanEditorSwitcher({
   programBenefits = {},
   lifecycleCaps = { presentation: false, commercial: false, treatment: false },
   commercialByPlan = {},
+  odonto,
+  podeVerPrecos = false,
 }: {
+  /** OD3: o plano por dente (o odontograma e as regras). */
+  odonto?: OdontoDoPlano;
+  /** D7: o Gerente vê o preço item a item. */
+  podeVerPrecos?: boolean;
   clientId: string;
   clientName: string;
   plans: TreatmentPlan[];
@@ -75,10 +81,13 @@ export function PlanEditorSwitcher({
   const [isPending, startTransition] = useTransition();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(() => {
     const editable = plans.find(
-      (p) => p.status === "draft" || p.status === "returned"
+      (p) => (p.status === "draft" || p.status === "returned") && !p.supersededAt
     );
-    return (editable ?? plans[0])?.id ?? null;
+    // OD3 (D4): a versão substituída não abre sozinha — abre a que vale.
+    const vigente = plans.find((p) => !p.supersededAt);
+    return (editable ?? vigente ?? plans[0])?.id ?? null;
   });
+  const versaoDe = (id: string | null | undefined) => plans.find((p) => p.id === id)?.versionNo ?? null;
 
   const selected =
     plans.find((p) => p.id === selectedPlanId) ?? plans[0] ?? null;
@@ -88,8 +97,9 @@ export function PlanEditorSwitcher({
       const r = await createTreatmentPlan(clientId, copyFromId);
       if (r.ok) {
         toast.success(
-          copyFromId ? "Cópia criada para revisão." : "Novo plano criado."
+          copyFromId ? "Nova versão criada (em rascunho)." : "Novo plano criado."
         );
+        if (r.aviso) toast.warning(r.aviso, { duration: 12000 });
         if (r.planId) setSelectedPlanId(r.planId);
         router.refresh();
       } else {
@@ -128,7 +138,8 @@ export function PlanEditorSwitcher({
                   )}
                   aria-hidden
                 />
-                Plano {plans.length - i} · {PLAN_STAGE_LABELS[st]} ·{" "}
+                {pl.previousPlanId ? `Plano v${pl.versionNo ?? plans.length - i}` : `Plano ${plans.length - i}`} ·{" "}
+                {pl.supersededAt ? "substituído" : PLAN_STAGE_LABELS[st]} ·{" "}
                 {new Date(pl.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
               </button>
             );
@@ -148,6 +159,25 @@ export function PlanEditorSwitcher({
           >
             {PLAN_STAGE_LABELS[planStage(selected)]}
           </span>
+          {selected.previousPlanId && (
+            <span className="text-muted-foreground">
+              · versão {selected.versionNo} (nova versão da v{versaoDe(selected.previousPlanId) ?? "anterior"})
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* OD3 (D4 / F2): versão substituída — consultável, não vale mais. */}
+      {selected?.supersededAt && (
+        <div className="rounded-xl border border-dashed border-muted-foreground/40 bg-muted/40 px-4 py-3 text-sm">
+          <p className="font-semibold">
+            Plano substituído
+            {versaoDe(selected.supersededByPlanId) ? ` pela versão ${versaoDe(selected.supersededByPlanId)}` : ""} em{" "}
+            {new Date(selected.supersededAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Fica guardado para consulta. O que vale é a versão nova — é ela que vai para a apresentação.
+          </p>
         </div>
       )}
 
@@ -215,6 +245,8 @@ export function PlanEditorSwitcher({
         programCompanyName={programCompanyName}
         programBenefits={programBenefits}
         onNewPlan={newPlan}
+        odonto={odonto}
+        podeVerPrecos={podeVerPrecos}
       />
     </div>
   );

@@ -73,12 +73,13 @@ export function pendentes(achados: Achado[]): Achado[] {
   return achados.filter((a) => a.status === "suggested");
 }
 
-export type FiltroDoDesenho = "todos" | "definidos" | "sugestoes";
+export type FiltroDoDesenho = "todos" | "definidos" | "sugestoes" | "plano";
 
 export const ROTULO_DO_FILTRO: Record<FiltroDoDesenho, string> = {
   todos: "Todos",
   definidos: "Só definidos",
   sugestoes: "Só sugestões",
+  plano: "Só o plano",
 };
 
 /** O que o desenho mostra: definidas como existentes; sugestões tracejadas.
@@ -95,6 +96,8 @@ export function marcasDoDesenho(
     return { dente: a.dente, faces: a.faces, local: s.appliesTo, situacao, codigo: s.code, simbolo: s.symbol, nome: s.name };
   };
   const lista: (MarcaNoDente | null)[] = [];
+  // "Só o plano": o diagnóstico sai do desenho (o plano vem de fora, OD3).
+  if (filtro === "plano") return [];
   if (filtro !== "sugestoes") lista.push(...marcasAtuais(achados).map((a) => marca(a, "existente")));
   if (filtro !== "definidos")
     lista.push(...pendentes(achados).filter((a) => a.acao === "mark").map((a) => marca(a, "sugerido")));

@@ -18,7 +18,8 @@ import { RisarteMark } from "@/components/risarte-logo";
 import { Odontograma } from "@/components/odontograma/odontograma";
 import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 import { rodadasFinalizadas } from "@/lib/odontograma/rodadas-trancadas";
-import { carregarOdontograma } from "@/lib/odontograma/carregar";
+import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
+import { itensDoPlanoVigente, marcasDoPlano } from "@/lib/odontograma/plano";
 import {
   marcasDoDesenho,
   pendentes,
@@ -2474,6 +2475,28 @@ export default async function ClientDetailPage(
     ? await carregarOdontograma(client.id, client.birth_date)
     : null;
   const odontogramaErro = canViewOdontograma && !odontograma;
+  // OD3: o plano por dente precisa das regras dos procedimentos (para o
+  // Planner lançar com o dente e para o desenho de cada opção).
+  const regrasDoPlano = odontograma && canViewPlanning ? await carregarRegrasDoPlano() : null;
+  const odontoDoPlano =
+    odontograma && regrasDoPlano ? { dados: odontograma, regras: regrasDoPlano } : undefined;
+  // OD3: o vermelho da aba Odontograma = o plano que VALE (D4).
+  const marcasDoPlanoVigente =
+    odontograma && regrasDoPlano
+      ? marcasDoPlano(
+          itensDoPlanoVigente(plans).map((it) => ({
+            toothCode: it.toothCode ?? null,
+            faceCodes: it.faceCodes ?? [],
+            procedureId: it.procedureId,
+            description: it.description,
+          })),
+          regrasDoPlano,
+          odontograma.situacoes
+        )
+      : [];
+  // D7 (decisão do dono): o Gerente vê o preço item a item; o Coordenador só
+  // os totais (F4).
+  const podeVerPrecosDoPlano = await hasRoleWithScopeForClinic(session, client.clinic_id, ["unit_manager"]);
   const marcasDaMiniatura = odontograma
     ? marcasDoDesenho(odontograma.achados ?? [], odontograma.situacoes)
     : [];
@@ -3082,6 +3105,7 @@ export default async function ClientDetailPage(
                   </div>
                 )}
                 <PainelDoDiagnostico
+                  marcasDoPlano={marcasDoPlanoVigente}
                   clientId={client.id}
                   modo="leitura"
                   dados={odontograma}
@@ -3241,6 +3265,8 @@ export default async function ClientDetailPage(
                 clientId={client.id}
                 clientName={client.full_name}
                 plans={plans}
+                odonto={odontoDoPlano}
+                podeVerPrecos={podeVerPrecosDoPlano}
                 canEdit={canEditPlanning}
                 canReview={canReviewPlan}
                 inPlanningPhase={client.journey_phase === "planning_center"}

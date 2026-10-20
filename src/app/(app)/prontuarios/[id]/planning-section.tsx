@@ -89,6 +89,27 @@ import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { BotaoSugerirProcedimento } from "../../procedimentos/sugestoes";
+import { Odontograma } from "@/components/odontograma/odontograma";
+import {
+  LOCAL_VAZIO,
+  LocalDoProcedimento,
+  type LocalEscolhido,
+} from "@/components/odontograma/local-do-procedimento";
+import type { DadosDoOdontograma } from "@/lib/odontograma/carregar";
+import { marcasDoDesenho } from "@/lib/odontograma/diagnostico";
+import {
+  ehPorDente,
+  ehPorRegiao,
+  marcasDoPlano,
+  rotuloDoLocal,
+  type RegraDoPlano,
+} from "@/lib/odontograma/plano";
+
+/** OD3: o que o plano por dente precisa (o odontograma e as regras). */
+export type OdontoDoPlano = {
+  dados: DadosDoOdontograma;
+  regras: Record<string, RegraDoPlano>;
+};
 
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
@@ -330,6 +351,8 @@ export function PlanningSection({
   programBenefits = {},
   onNewPlan,
   commercialByPlan = {},
+  odonto,
+  podeVerPrecos = false,
 }: {
   clientId: string;
   clientName: string;
@@ -357,6 +380,10 @@ export function PlanningSection({
   programBenefits?: Record<string, ProgramBenefit>;
   /** Cria um plano novo (em branco ou copiando `copyFromId`) — o switcher trata. */
   onNewPlan?: (copyFromId?: string) => void;
+  /** OD3: o odontograma e as regras — o plano por dente. Ausente = como antes. */
+  odonto?: OdontoDoPlano;
+  /** D7: quem vê o preço item a item sem editar (o Gerente). O Coordenador, não. */
+  podeVerPrecos?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -519,7 +546,9 @@ export function PlanningSection({
 
   const options = plan.options;
   // The Planner/Admin always SEE prices; the Coordenador never does.
-  const canSeePrices = canEdit;
+  // D7 (decisão do dono): o Planner e o Gerente veem o preço por item; o
+  // Coordenador só os totais (F4).
+  const canSeePrices = canEdit || podeVerPrecos;
   const suggestedPillar = canEdit
     ? suggestTreatmentPillar(options, catalog)
     : null;
@@ -994,6 +1023,7 @@ export function PlanningSection({
                         providerOptions={providerOptions}
                         canEdit={canEditContent}
                         summaryOnly={!canSeePrices}
+                        odonto={odonto}
                         programBenefits={
                           programActive ? programBenefits : undefined
                         }
@@ -1154,22 +1184,27 @@ export function PlanningSection({
                 Para enviar: preencha o diagnóstico, tenha ao menos uma opção,
                 lance os <strong>procedimentos</strong> (itens do orçamento) em{" "}
                 <strong>cada opção</strong> e defina o{" "}
-                <strong>pilar da Metodologia</strong> acima.
+                <strong>pilar da Metodologia</strong> acima. O banco também
+                confere: o <strong>diagnóstico por dente finalizado</strong> no
+                odontograma e o <strong>dente ou região</strong> de cada
+                procedimento que se marca na boca.
               </p>
             )}
           </div>
         )}
 
-        {/* Plano travado (enviado/aprovado): para alterar, cria-se uma CÓPIA num
-            plano novo — o plano atual NUNCA é desfeito nem sai do prontuário. */}
-        {canRevise && onNewPlan && (
+        {/* Plano travado (enviado/aprovado): para alterar, cria-se uma NOVA
+            VERSÃO (D4, OD3) — o plano atual NUNCA é desfeito nem sai do
+            prontuário; fica "substituído" quando a nova for aprovada (F2). */}
+        {canRevise && onNewPlan && !plan.supersededAt && (
           <div className="space-y-2 border-t pt-3">
             <p className="text-xs text-muted-foreground">
               Este plano está{" "}
               {plan.status === "approved" ? "aprovado" : "enviado para aprovação"}{" "}
-              e não pode ser alterado diretamente. Para revisar, crie uma{" "}
-              <strong>cópia</strong> num plano novo — o plano atual continua
-              registrado e intacto.
+              e não pode ser alterado — nem por aqui, nem por outro caminho. Para
+              mudar, crie uma <strong>nova versão</strong>: ela copia tudo
+              (inclusive os dentes) e, quando for aprovada, esta fica como
+              &quot;substituída&quot;. Até lá, esta continua valendo.
             </p>
             <Button
               variant="outline"
@@ -1178,7 +1213,7 @@ export function PlanningSection({
               onClick={() => onNewPlan(plan.id)}
             >
               <Pencil className="mr-1 size-4" />
-              Criar cópia para revisar
+              Criar nova versão
             </Button>
           </div>
         )}
@@ -1409,8 +1444,11 @@ function OptionBudget({
   canEdit,
   summaryOnly,
   programBenefits,
+  odonto,
 }: {
   optionId: string;
+  /** OD3: o plano por dente (desenho + lugar do item). Ausente = como antes. */
+  odonto?: OdontoDoPlano;
   items: BudgetItem[];
   /** H4.5: etapas do tratamento desta opção (ordenadas). */
   stages: PlanStage[];
@@ -1455,6 +1493,21 @@ function OptionBudget({
   // O formulário de novo procedimento começa fechado (abre pelo botão) para não
   // ocupar espaço à toa.
   const [adding, setAdding] = useState(false);
+  // OD3: onde o procedimento acontece (o seletor zera ao trocar de procedimento).
+  const [local, setLocal] = useState<LocalEscolhido>(LOCAL_VAZIO);
+  const [localKey, setLocalKey] = useState(0);
+  const regraEscolhida = procId ? (odonto?.regras[procId] ?? null) : null;
+  const precisaDeLugar = Boolean(odonto) && (ehPorDente(regraEscolhida) || ehPorRegiao(regraEscolhida));
+  const nomeDaRegiao = (c: string) => odonto?.dados.regioes.find((r) => r.code === c)?.name;
+  const localDoItem = (it: BudgetItem) =>
+    rotuloDoLocal(
+      { toothCode: it.toothCode ?? null, faceCodes: it.faceCodes ?? [], regionCode: it.regionCode ?? null },
+      nomeDaRegiao
+    );
+  const semLugar = (it: BudgetItem) => {
+    const r = it.procedureId ? odonto?.regras[it.procedureId] : undefined;
+    return Boolean(r && r.nivel !== "none" && !it.toothCode && !it.regionCode);
+  };
 
   const total = budgetTotalCents(items);
   const program = computeProgramTotal(items, programBenefits);
@@ -1484,6 +1537,8 @@ function OptionBudget({
 
   function pickProcedure(id: string) {
     setProcId(id);
+    setLocal(LOCAL_VAZIO);
+    setLocalKey((k) => k + 1);
     const p = catalog.find((c) => c.id === id);
     if (p) {
       setDesc(p.name);
@@ -1492,7 +1547,11 @@ function OptionBudget({
     // Base de sessões/tempo: protocolo da unidade (se houver) ou da Rede.
     const ref = protocols[id];
     const base = ref?.unit ?? ref?.network ?? null;
-    const q = Math.max(1, Number(qty) || 1);
+    // OD3 (F4): procedimento por dente = um item por dente, quantidade 1 —
+    // as sessões e o tempo sugeridos são os de UM dente.
+    const porDente = Boolean(odonto) && ehPorDente(odonto?.regras[id]);
+    if (porDente) setQty("1");
+    const q = porDente ? 1 : Math.max(1, Number(qty) || 1);
     setBaseSess(base ? base.count : 0);
     setBaseMin(base ? base.minutes : 0);
     setPSess(base ? String(base.count * q) : "");
@@ -1541,6 +1600,11 @@ function OptionBudget({
                         >
                           <span>
                             {it.quantity}× {it.description}
+                            {localDoItem(it) && (
+                              <span className="ml-1 rounded bg-primary/10 px-1 text-xs font-medium text-primary">
+                                {localDoItem(it)}
+                              </span>
+                            )}
                             {plannedText(it) && (
                               <span className="text-xs"> — {plannedText(it)}</span>
                             )}
@@ -1572,6 +1636,39 @@ function OptionBudget({
         <span className="text-sm font-semibold">{formatBRL(total)}</span>
       </div>
       <ProgramSavings program={program} />
+
+      {/* OD3: o odontograma DESTA opção — o diagnóstico definido (azul /
+          cinza) e, em vermelho, o que ela planeja. */}
+      {odonto && (canEdit || items.some((it) => it.toothCode)) && (
+        <details open className="mt-2 rounded-md border bg-card p-2">
+          <summary className="cursor-pointer text-xs font-medium">
+            Odontograma desta opção (vermelho = a realizar)
+          </summary>
+          <div className="mt-2">
+            <Odontograma
+              modo="leitura"
+              denticaoInicial={odonto.dados.denticao}
+              nomes={odonto.dados.nomes}
+              faces={odonto.dados.faces}
+              // O que a opção planeja vem PRIMEIRO: na mesma face, o vermelho
+              // (a realizar) aparece por cima do diagnóstico.
+              marcas={[
+                ...marcasDoPlano(
+                  items.map((it) => ({
+                    toothCode: it.toothCode ?? null,
+                    faceCodes: it.faceCodes ?? [],
+                    procedureId: it.procedureId,
+                    description: it.description,
+                  })),
+                  odonto.regras,
+                  odonto.dados.situacoes
+                ),
+                ...marcasDoDesenho(odonto.dados.achados ?? [], odonto.dados.situacoes, "definidos"),
+              ]}
+            />
+          </div>
+        </details>
+      )}
 
       {canEdit && (
         <div className="mt-2">
@@ -1835,6 +1932,27 @@ function OptionBudget({
                               <div className="min-w-0">
                                 <p className="font-medium leading-snug">
                                   {it.description}
+                                  {localDoItem(it) && (
+                                    <span className="ml-1.5 inline-block rounded bg-primary/10 px-1.5 py-0.5 align-middle text-[11px] font-medium text-primary">
+                                      {localDoItem(it)}
+                                    </span>
+                                  )}
+                                  {semLugar(it) && (
+                                    <span
+                                      className="ml-1.5 inline-block rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 align-middle text-[10px] font-medium text-amber-800"
+                                      title="Procedimento que se marca na boca, lançado antes do odontograma. Para enviar, remova e lance de novo com o dente ou a região."
+                                    >
+                                      sem dente — indique antes de enviar
+                                    </span>
+                                  )}
+                                  {it.situationReason && (
+                                    <span
+                                      className="ml-1.5 inline-block rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 align-middle text-[10px] font-medium text-amber-800"
+                                      title={`Lançado apesar do aviso de situação. Motivo: ${it.situationReason}`}
+                                    >
+                                      ⚠ motivo: {it.situationReason}
+                                    </span>
+                                  )}
                                   {it.clientRejected && (
                                     <span className="ml-1.5 inline-block rounded-full border border-rose-300 bg-rose-50 px-1.5 py-0.5 align-middle text-[10px] font-medium text-rose-800">
                                       Não aprovado pelo cliente (Comercial)
@@ -2068,19 +2186,42 @@ function OptionBudget({
                 })),
               ]}
             />
-            <Input
-              value={qty}
-              onChange={(e) => changeQty(e.target.value)}
-              inputMode="numeric"
-              className="w-14"
-              aria-label="Quantidade"
-            />
+            {/* F4: por dente, a quantidade é o número de dentes (um item cada). */}
+            {precisaDeLugar && ehPorDente(regraEscolhida) ? (
+              <span className="text-sm text-muted-foreground">
+                {local.quantos} {local.quantos === 1 ? "dente" : "dentes"}
+              </span>
+            ) : (
+              <Input
+                value={qty}
+                onChange={(e) => changeQty(e.target.value)}
+                inputMode="numeric"
+                className="w-14"
+                aria-label="Quantidade"
+              />
+            )}
             {/* O preço é o do catálogo da unidade e não muda aqui (OC-00067);
-                desconto é assunto do Comercial, na negociação. */}
+                desconto é assunto do Comercial, na negociação. F3: ele
+                congela no envio para aprovação, pelo preço daquele dia. */}
             <span className="text-sm text-muted-foreground" aria-label="Valor unitário do catálogo">
               {procId ? `× R$ ${price}` : ""}
             </span>
           </div>
+          {procId && odonto && (
+            <LocalDoProcedimento
+              key={localKey}
+              regra={regraEscolhida}
+              regras={odonto.regras}
+              dados={odonto.dados}
+              itensDaOpcao={items.map((it) => ({ id: it.id, procedureId: it.procedureId, toothCode: it.toothCode ?? null }))}
+              onChange={setLocal}
+            />
+          )}
+          {procId && !odonto && (
+            <p className="text-xs text-amber-700">
+              O odontograma não carregou: o procedimento entra sem o dente, e o envio para aprovação vai pedir o lugar.
+            </p>
+          )}
           <div className="text-xs text-muted-foreground">
             Não achou o procedimento?{" "}
             <BotaoSugerirProcedimento
@@ -2139,7 +2280,12 @@ function OptionBudget({
             <Button
               size="sm"
               variant="outline"
-              disabled={!procId || isPending}
+              disabled={
+                !procId ||
+                isPending ||
+                (precisaDeLugar &&
+                  (!local.valido || (local.teeth.length === 0 && !local.regionCode)))
+              }
               onClick={() =>
                 run(
                   () =>
@@ -2154,9 +2300,16 @@ function OptionBudget({
                       gutGravity: nG,
                       gutUrgency: nU,
                       gutTendency: nT,
+                      local: precisaDeLugar
+                        ? { teeth: local.teeth, regionCode: local.regionCode, motivo: local.motivo }
+                        : undefined,
                     }),
-                  "Item adicionado.",
+                  precisaDeLugar && local.teeth.length > 1
+                    ? `${local.teeth.length} itens adicionados (um por dente).`
+                    : "Item adicionado.",
                   () => {
+                    setLocal(LOCAL_VAZIO);
+                    setLocalKey((k) => k + 1);
                     setProcId("");
                     setDesc("");
                     setPrice("");

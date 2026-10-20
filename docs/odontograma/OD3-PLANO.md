@@ -136,7 +136,29 @@ miniatura no documento (OD4); a baixa por dente e o efeito no odontograma
 | F3 | O preço do item **congela no envio para aprovação**, pelo preço daquele dia |
 | F4 | **Um item por dente**, quantidade 1 |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono para o código em 20/10/2026.
+
+### OD3 entregue (20/10/2026) — versão 0.336.0, migração 0311
+
+- Como no plano acima, com estes detalhes decididos no código (sem mudar
+  regra): a conferência de forma vale **quando o lugar é informado**; quem
+  cobra o lugar é o **envio** (`ITEM_LOCATION_REQUIRED`) — assim os itens
+  antigos e as cópias não quebram. Na trava do plano aprovado, **indicar o
+  profissional e a prioridade (GUT) seguem livres**. Na nova versão, o item
+  que não combina mais com o diagnóstico de hoje não é copiado e a tela avisa.
+- **Achado no código e corrigido junto:** pela API dava para voltar um plano
+  aprovado a "rascunho" (o antigo Reabrir, já sem botão) — agora a situação do
+  plano só muda pelas funções (`treatment_plan_lock`).
+- ⏳ **Não aplicado, pergunta ao dono:** a D6 (OD0) diz que o Admin Master
+  que não é o titular perde "montar plano". Hoje o Admin monta plano (a
+  OD3 não mudou isso — o plano aprovado da OD3 não tratava disso).
+- **Não visto na tela:** envio, aprovação e nova versão pela tela; o
+  Gerente/Coordenador vendo preço (ensaio + testes).
+- **Resíduo no treino:** "Teste do portão 2 (pode ignorar)" foi posto no
+  Centro de Planejamento direto no banco (para não avisar os Planners do
+  treino) e tem um plano em rascunho, "Opção A (ensaio OD3)", com selante
+  no 16 e no 26, implante no 46 (com motivo) e ajuste oclusal no arco
+  superior.
 
 ---
 
