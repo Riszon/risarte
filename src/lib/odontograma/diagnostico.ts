@@ -41,6 +41,8 @@ export type SituacaoDoDente = {
   symbol: string;
   isActive: boolean;
   sortOrder: number;
+  /** 0312: achado que pede tratamento — vermelho no diagnóstico. */
+  aTratar?: boolean;
 };
 
 // -- A dentição: o banco fala inglês, a tela português ---------------------------
@@ -93,7 +95,16 @@ export function marcasDoDesenho(
   const marca = (a: Achado, situacao: MarcaNoDente["situacao"]): MarcaNoDente | null => {
     const s = porCodigo.get(a.situacao);
     if (!s) return null;
-    return { dente: a.dente, faces: a.faces, local: s.appliesTo, situacao, codigo: s.code, simbolo: s.symbol, nome: s.name };
+    return {
+      dente: a.dente,
+      faces: a.faces,
+      local: s.appliesTo,
+      situacao,
+      codigo: s.code,
+      simbolo: s.symbol,
+      nome: s.name,
+      aTratar: Boolean(s.aTratar),
+    };
   };
   const lista: (MarcaNoDente | null)[] = [];
   // "Só o plano": o diagnóstico sai do desenho (o plano vem de fora, OD3).

@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.336.0** · Última migração: **0311** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.337.0** · Última migração: **0312** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🦷 0.337.0 / 0312 — D6 NO PLANO + ACHADO A TRATAR EM VERMELHO (20/10/2026)
+>
+> ⚠️ **Montar/enviar o plano = Planner OU titular** (`is_owner`), no banco e na
+> tela; o Admin que não é o titular VÊ (com preço). ⚠️ **Vermelho = a realizar
+> OU achado a tratar** (`dental_conditions.needs_treatment`, configurável).
+> A conta de teste do Planner teve a porta aberta no treino (OK do dono).
 
 > ## 🦷 0.336.0 / 0311 — ODONTOGRAMA OD3: O PLANO POR DENTE (20/10/2026)
 >

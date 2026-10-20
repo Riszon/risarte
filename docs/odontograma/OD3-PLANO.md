@@ -152,9 +152,9 @@ deram o esperado).
 - **Achado no código e corrigido junto:** pela API dava para voltar um plano
   aprovado a "rascunho" (o antigo Reabrir, já sem botão) — agora a situação do
   plano só muda pelas funções (`treatment_plan_lock`).
-- ⏳ **Não aplicado, pergunta ao dono:** a D6 (OD0) diz que o Admin Master
-  que não é o titular perde "montar plano". Hoje o Admin monta plano (a
-  OD3 não mudou isso — o plano aprovado da OD3 não tratava disso).
+- ✅ **D6 no plano — aplicada na 0312 (0.337.0)** depois de o dono
+  confirmar: montar e enviar plano = Planner ou titular; o Admin vê. Na mesma
+  entrega, o achado a tratar ficou vermelho (decisão do dono).
 - **Não visto na tela:** envio, aprovação e nova versão pela tela; o
   Gerente/Coordenador vendo preço (ensaio + testes).
 - **Resíduo no treino:** "Teste do portão 2 (pode ignorar)" foi posto no

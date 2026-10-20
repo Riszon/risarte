@@ -39,7 +39,7 @@ function atualizar() {
 
 /** Cria (código novo, só da Risarte) ou altera uma situação. */
 export async function salvarSituacao(
-  campos: CamposDaSituacao & { isActive: boolean },
+  campos: CamposDaSituacao & { isActive: boolean; aTratar?: boolean },
   nova: boolean
 ): Promise<Resultado> {
   const quem = await soAdmin();
@@ -54,6 +54,8 @@ export async function salvarSituacao(
     usage: v.valores.usage,
     symbol: v.valores.symbol,
     is_active: campos.isActive,
+    // 0312: só vai quando a tela conhece a marca (banco sem a 0312 = sem a coluna).
+    ...(campos.aTratar !== undefined ? { needs_treatment: campos.aTratar } : {}),
   };
   const { error } = nova
     ? await supabase.from("dental_conditions").insert({

@@ -2172,6 +2172,9 @@ export default async function ClientDetailPage(
   // -- Plano de tratamento (Etapa 5 — Centro de Planejamento). O plano pertence
   // à unidade de origem do cliente; o Planner edita, o Coordenador/Gerente leem.
   const canEditPlanning = session.isAdminMaster || isPlannerAnywhere;
+  // D6 (0312): MONTAR o plano é do Planner e do titular. `canEditPlanning`
+  // segue valendo para VER o plano e o cockpit (o Admin continua vendo tudo).
+  const podeMontarPlano = Boolean(session.isOwner) || isPlannerAnywhere;
   const canViewPlanning =
     canEditPlanning ||
     hasRoleInClinic(session, client.clinic_id, [
@@ -2496,7 +2499,8 @@ export default async function ClientDetailPage(
       : [];
   // D7 (decisão do dono): o Gerente vê o preço item a item; o Coordenador só
   // os totais (F4).
-  const podeVerPrecosDoPlano = await hasRoleWithScopeForClinic(session, client.clinic_id, ["unit_manager"]);
+  const podeVerPrecosDoPlano =
+    session.isAdminMaster || (await hasRoleWithScopeForClinic(session, client.clinic_id, ["unit_manager"]));
   const marcasDaMiniatura = odontograma
     ? marcasDoDesenho(odontograma.achados ?? [], odontograma.situacoes)
     : [];
@@ -3267,7 +3271,7 @@ export default async function ClientDetailPage(
                 plans={plans}
                 odonto={odontoDoPlano}
                 podeVerPrecos={podeVerPrecosDoPlano}
-                canEdit={canEditPlanning}
+                canEdit={podeMontarPlano}
                 canReview={canReviewPlan}
                 inPlanningPhase={client.journey_phase === "planning_center"}
                 catalog={priceCatalog}

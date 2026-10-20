@@ -365,7 +365,7 @@ function Legenda() {
       <summary className="cursor-pointer font-medium">Como ler o desenho</summary>
       <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
         <li className="flex items-center gap-2">
-          <Amostra classe="planejado" /> Vermelho: a realizar (do plano)
+          <Amostra classe="planejado" /> Vermelho: a realizar (do plano) ou achado a tratar (cárie, fratura, lesão…)
         </li>
         <li className="flex items-center gap-2">
           <Amostra classe="existente" /> Azul: existente ou já realizado

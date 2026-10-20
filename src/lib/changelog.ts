@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.337.0",
+    data: "2026-10-20",
+    migracao: "0312",
+    titulo: "Odontograma: achado a tratar em vermelho; plano só pelo Planner e pelo titular",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No odontograma, o achado que pede tratamento (cárie, fratura, lesão…) aparece em vermelho já no diagnóstico. Quais situações são \"a tratar\" o Admin ajusta em Administração → Odontograma → Situações.",
+        papeis: ["planner_dentist", "clinical_coordinator", "dentist", "unit_manager", "commercial_consultant"],
+        manual: "Na ficha do cliente: a aba Odontograma",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Montar e enviar o plano de tratamento passou a ser só do Dentista Planner e do Admin Principal. Os demais Admin Master continuam vendo o plano (com os preços), sem editar.",
+        papeis: [],
+        manual: "Admin Master",
+      },
+    ],
+  },
+  {
     versao: "0.336.0",
     data: "2026-10-20",
     migracao: "0311",

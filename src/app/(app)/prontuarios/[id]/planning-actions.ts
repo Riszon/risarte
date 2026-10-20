@@ -16,8 +16,11 @@ import { mensagemDoPlano } from "@/lib/odontograma/plano";
  * franchisor scope. RLS is the real barrier — this guard is for UX/early errors.
  */
 function isPlannerSession(session: Awaited<ReturnType<typeof getSessionContext>>) {
+  // D6 (decisão do dono, 20/10/2026; banco: 0312): montar o plano é do Planner
+  // e do TITULAR (Admin Principal). O Admin Master que não é o titular vê,
+  // mas não monta nem envia.
   return (
-    session.isAdminMaster ||
+    Boolean(session.isOwner) ||
     Object.values(session.rolesByClinic).some((roles) =>
       roles.includes("planner_dentist")
     )
@@ -29,7 +32,7 @@ async function requirePlanner(): Promise<
 > {
   const session = await getSessionContext();
   if (!isPlannerSession(session)) {
-    return { error: "Apenas o Dentista Planner pode trabalhar no plano." };
+    return { error: "Apenas o Dentista Planner (ou o Admin Principal) monta o plano." };
   }
   return { userId: session.userId };
 }

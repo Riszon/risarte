@@ -1238,6 +1238,11 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   **Procedimentos → Sugestões de novos procedimentos**: aprovar e cadastrar,
   pedir mais informações ou recusar). Também é quem configura a **base do
   odontograma** em **Administração → Odontograma** (veja abaixo).
+- **Atos clínicos do odontograma — só o titular** (decisão do dono, D6): o
+  Admin Master que **não** é o Admin Principal **vê** o diagnóstico e o
+  plano (com preços), mas **não** sugere, não define, **não monta nem envia
+  plano** (desde a 0.337.0 também o plano; o banco recusa). O titular faz
+  tudo, como o Planner.
 - **Riscos:** é o único que pode apagar configuração da rede inteira. Um engano
   aqui atinge todas as unidades.
 - **Depende de:** ninguém.
@@ -1250,7 +1255,13 @@ base do odontograma que está chegando ao riSZon, em quatro abas:
   canal tratado, coroa, implante, prótese, selante…). Em cada uma: onde se
   marca (face, coroa, raiz, dente inteiro, entre dentes), se é achado do
   exame ou efeito de um procedimento, e o **símbolo** que aparece no desenho.
-  **Nova situação** cria uma da Risarte.
+  **Nova situação** cria uma da Risarte. Desde a 0.337.0, a marca **"Achado a
+  tratar"** decide o que aparece em **vermelho** já no diagnóstico (decisão
+  do dono). Veio marcada em: Cariado, Extração indicada, Restauração
+  insatisfatória, Cárie incipiente, Lesão cervical não cariosa, Fratura,
+  Endodontia insatisfatória/lesão periapical, Raiz residual, Mobilidade,
+  Recessão gengival, Bolsa periodontal e Lesão de furca — ajuste aqui o que a
+  rede considerar diferente. A tabela mostra o selo **"a tratar"**.
 - **Faces dos dentes** — que faces podem ser marcadas em cada dente
   (marque/desmarque e **Salvar** na linha).
 - **Regiões** — que dentes cada região seleciona de uma vez (sextante, arco,
@@ -2315,9 +2326,10 @@ Coordenador esperando o Planner, a miniatura mostra **"N a definir"**.
   fora), **P** ou **L** (palatina ou lingual, a de dentro), **M** (mesial,
   voltada para o meio da boca), **D** (distal) e, no centro, **O** (oclusal,
   nos dentes de trás) ou **I** (incisal, nos da frente). O quadro **Como ler o
-  desenho** explica as cores que vão aparecer: vermelho = a realizar, azul =
-  existente ou já feito, cinza com X = ausente, contorno tracejado = sugestão
-  ainda não definida. A cor sempre vem com o símbolo da situação.
+  desenho** explica as cores: **vermelho** = a realizar (do plano) **ou achado
+  a tratar** (cárie, fratura, lesão… — desde a 0.337.0, decisão do dono),
+  azul = existente ou já feito, cinza com X = ausente, contorno tracejado =
+  sugestão ainda não definida. A cor sempre vem com o símbolo da situação.
 - **Dentição:** os botões **Permanente**, **Decídua** e **Mista** trocam o
   desenho. Se o Coordenador ou o Planner já **registraram** a dentição do
   paciente, ela abre assim ("Dentição registrada no odontograma do

@@ -112,18 +112,22 @@ export type MarcaNoDente = {
   codigo: string;
   simbolo: string;
   nome: string;
+  /** Achado que PEDE TRATAMENTO (cárie, fratura, lesão…) — vermelho já no
+   *  diagnóstico (decisão do dono, 20/10/2026; configurável por situação). */
+  aTratar?: boolean;
 };
 
-/** A convenção de cores do dono (D12): vermelho = a realizar, azul =
- *  existente/realizado, cinza = ausente; a sugestão tem contorno tracejado.
- *  A cor NUNCA é a única informação: o símbolo vai junto. */
-export function corDaMarca(m: Pick<MarcaNoDente, "situacao" | "codigo">): {
+/** A convenção de cores do dono (D12, ajustada em 20/10/2026): vermelho = a
+ *  realizar (plano) OU achado a tratar; azul = existente/realizado; cinza =
+ *  ausente; a sugestão tem contorno tracejado. A cor NUNCA é a única
+ *  informação: o símbolo vai junto. */
+export function corDaMarca(m: Pick<MarcaNoDente, "situacao" | "codigo" | "aTratar">): {
   classe: "planejado" | "existente" | "ausente";
   tracejado: boolean;
 } {
   const ausente = m.codigo === "A" || m.codigo === "RZ-ESFOLIADO";
   return {
-    classe: m.situacao === "planejado" ? "planejado" : ausente ? "ausente" : "existente",
+    classe: m.situacao === "planejado" || m.aTratar ? "planejado" : ausente ? "ausente" : "existente",
     tracejado: m.situacao === "sugerido",
   };
 }

@@ -189,7 +189,11 @@ describe("OD3 — nas telas", () => {
   });
   it("D7: o Gerente vê o preço por item; o Coordenador só os totais (inclusive na Apresentação)", () => {
     const ficha = ler("src/app/(app)/prontuarios/[id]/page.tsx");
-    expect(ficha).toContain('const podeVerPrecosDoPlano = await hasRoleWithScopeForClinic(session, client.clinic_id, ["unit_manager"]);');
+    // O Admin também vê preço (vê tudo; só não MONTA o plano — D6, 0312).
+    expect(ficha).toContain(
+      'session.isAdminMaster || (await hasRoleWithScopeForClinic(session, client.clinic_id, ["unit_manager"]));'
+    );
+    expect(ficha).not.toMatch(/podeVerPrecosDoPlano[^;]*clinical_coordinator/);
     expect(ler("src/app/(app)/prontuarios/[id]/planning-section.tsx")).toContain("const canSeePrices = canEdit || podeVerPrecos;");
     const ap = ler("src/app/(app)/apresentacao/[clientId]/presentation-data.ts");
     expect(ap).toContain('!(await hasRoleWithScopeForClinic(session, client.clinic_id, ["commercial_consultant", "unit_manager"]))');

@@ -60,9 +60,14 @@ export default async function OdontogramaAdminPage(props: {
     );
   }
 
+  // 0312: "achado a tratar" (vermelho). À parte: sem a 0312 a coluna não existe
+  // e a tela não mostra a marca (nem tenta gravar).
+  const tratar = await supabase.from("dental_conditions").select("code, needs_treatment");
+  const aTratar = tratar.error ? null : new Map((tratar.data ?? []).map((t) => [t.code as string, Boolean(t.needs_treatment)]));
   const situacoes: SituacaoNaTela[] = (cond.data ?? []).map((c) => ({
     code: c.code, name: c.name, source: c.source, appliesTo: c.applies_to, usage: c.usage,
     symbol: c.symbol, isActive: c.is_active,
+    aTratar: aTratar ? (aTratar.get(c.code) ?? false) : undefined,
   }));
   const facesPorDente = new Map<string, string[]>();
   for (const l of ligFaces.data ?? []) {

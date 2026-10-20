@@ -98,6 +98,19 @@ export async function carregarOdontograma(
   for (const r of regiaoDentesR.data ?? []) {
     dentesDaRegiao.set(r.region_code, [...(dentesDaRegiao.get(r.region_code) ?? []), r.tooth_code]);
   }
+  // 0312: o achado "a tratar" (vermelho). Leitura À PARTE: sem a 0312 a
+  // coluna não existe e nada fica vermelho no diagnóstico (como antes).
+  {
+    const { data: tratar, error: tratarErro } = await supabase
+      .from("dental_conditions")
+      .select("code, needs_treatment")
+      .returns<{ code: string; needs_treatment: boolean }[]>();
+    if (!tratarErro) {
+      const aTratar = new Set((tratar ?? []).filter((t) => t.needs_treatment).map((t) => t.code));
+      for (const s of situacoes) s.aTratar = aTratar.has(s.code);
+    }
+  }
+
   // Todas as regiões. As de tecido (língua, palato…) vêm com `dentes` vazio:
   // não selecionam dente no diagnóstico, mas servem de lugar a procedimento
   // "de região" no plano (OD3).

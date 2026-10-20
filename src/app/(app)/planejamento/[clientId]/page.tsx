@@ -748,7 +748,7 @@ export default async function PlanningCockpitPage(
             <SequenciaPorOpcao
               opcoes={sequencias}
               providerOptions={providerOptions}
-              canEdit
+              canEdit={podeDefinir}
             />
           </PopupCard>
         )}
@@ -907,7 +907,9 @@ export default async function PlanningCockpitPage(
         clientName={client.full_name}
         plans={plans}
         odonto={odontoDoPlano}
-        canEdit
+        // D6 (0312): montar o plano é do Planner e do titular; o Admin vê (com preço).
+        canEdit={podeDefinir}
+        podeVerPrecos={session.isAdminMaster}
         canReview={false}
         inPlanningPhase={phase === "planning_center"}
         catalog={catalog}

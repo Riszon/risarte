@@ -390,6 +390,22 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 (5ª) — PC Administrador (core 0.336.0 → 0.337.0, migração 0312)**
+
+- **Respostas do dono:** D6 vale para o plano (só Planner e titular montam);
+  pode abrir a porta da conta de teste do Planner no treino (aberta); achado
+  a tratar em VERMELHO.
+- ⚠️ **"Montar plano" ≠ "ver plano":** na ficha, `canEditPlanning` segue para
+  VER (inclui o Admin); `podeMontarPlano` (titular ou Planner) é quem edita.
+  As regras de leitura das tabelas do plano não mudaram.
+- ⚠️ **A cor:** `corDaMarca` pinta de vermelho o `aTratar` (da situação,
+  `needs_treatment`). A 0312 semeia UMA vez — rodar de novo não desfaz o
+  ajuste do Admin.
+- ⚠️ **No treino, a "Risarte Unidade Teste" tem um Coordenador REAL:** enviar
+  plano lá avisa uma pessoa. Não enviei pela tela.
+- ⏳ **0312 aguarda a produção.**
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **20/10/2026 (4ª) — PC Administrador (core 0.335.0 → 0.336.0, migração 0311)**
 
 - **Odontograma OD3 — o plano por dente** (plano e decisões F1–F4 em

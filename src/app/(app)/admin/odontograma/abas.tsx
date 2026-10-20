@@ -43,6 +43,8 @@ export type SituacaoNaTela = {
   usage: string;
   symbol: string;
   isActive: boolean;
+  /** 0312: achado que pede tratamento (vermelho). undefined = banco sem a 0312. */
+  aTratar?: boolean;
 };
 export type DenteNaTela = { code: string; name: string; dentition: string; arch: string; group: string; faces: string[] };
 export type RegiaoNaTela = { code: string; name: string; teeth: string[] };
@@ -132,7 +134,14 @@ export function AbaSituacoes({ situacoes }: { situacoes: SituacaoNaTela[] }) {
                 <td className="px-3 py-2 text-xs">{s.source === "tuss" ? "TUSS (oficial)" : "Risarte"}</td>
                 <td className="px-3 py-2 text-xs">{ROTULO_DO_ONDE[s.appliesTo as keyof typeof ROTULO_DO_ONDE] ?? s.appliesTo}</td>
                 <td className="px-3 py-2 text-xs">{(ROTULO_DO_USO[s.usage as keyof typeof ROTULO_DO_USO] ?? s.usage).split(" (")[0]}</td>
-                <td className="px-3 py-2 font-mono text-xs font-semibold">{s.symbol}</td>
+                <td className="px-3 py-2 font-mono text-xs font-semibold">
+                  {s.symbol}
+                  {s.aTratar && (
+                    <span className="ml-1.5 rounded bg-red-100 px-1 py-0.5 font-sans text-[10px] font-medium text-red-800 dark:bg-red-950 dark:text-red-200">
+                      a tratar
+                    </span>
+                  )}
+                </td>
                 <td className="px-3 py-2 text-right">
                   <Button size="icon" variant="ghost" aria-label={`Editar ${s.name}`} onClick={() => { setNova(false); setEditando(s); }}>
                     <Pencil className="size-3.5" />
@@ -185,6 +194,13 @@ function DialogoSituacao({ inicial, nova, fechar }: { inicial: SituacaoNaTela; n
             <span className="text-xs text-muted-foreground">Símbolo no desenho (1 a 3 letras — a cor nunca é a única informação)</span>
             <Input value={s.symbol} maxLength={3} onChange={(e) => setS({ ...s, symbol: e.target.value.toUpperCase() })} className="w-24" />
           </label>
+          {s.aTratar !== undefined && (
+            <Marcador
+              marcado={Boolean(s.aTratar)}
+              onChange={(v) => setS({ ...s, aTratar: v })}
+              rotulo="Achado a tratar — aparece em VERMELHO no diagnóstico (cárie, fratura, lesão…)"
+            />
+          )}
           {!nova && !tuss && (
             <Marcador marcado={s.isActive} onChange={(v) => setS({ ...s, isActive: v })} rotulo="Ativa (desmarcar desativa — situação não se apaga)" />
           )}
