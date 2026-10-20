@@ -2524,6 +2524,22 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP58. Aviso "Caso devolvido pelo Centro de Planejamento" provavelmente nunca chega (20/10/2026)
+
+**Confirmado o mecanismo; o efeito na tela NÃO foi clicado.** Achado no
+levantamento da OD2. `devolverAoCoordenador` (`src/app/(app)/jornada/actions.ts`,
+~linha 330) grava o aviso ao Coordenador **direto da tela**
+(`supabase.from("notifications").insert(...)`, cliente com RLS) e **não
+confere o erro**. Lido no treino em 20/10/2026: a tabela `notifications` tem
+RLS ligada e só políticas de SELECT e UPDATE (nenhuma de INSERT) — então a
+gravação é recusada em silêncio. No treino há 519 avisos e **0** com esse
+título. O mesmo padrão existe em `src/app/(app)/ppr/actions.ts` (~linha 442),
+não conferido.
+
+**Se corrigir:** gravar o aviso dentro de uma função do banco (como
+`move_client_phase` já faz), e conferir o erro. Não abrir INSERT na tabela
+para logados: qualquer um poderia mandar aviso em nome do sistema.
+
 ### AP57. Certificação: o "Onde" de outras funções cita botões com nome antigo (19/10/2026)
 
 **Um confirmado; o resto é suspeita.** Ao conferir os da ASB, "Estoque →
