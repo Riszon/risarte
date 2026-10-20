@@ -1,7 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 16/10/2026 · Versão do sistema: **0.333.0** · Última migração: **0309** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.334.0** · Última migração: **0309** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🦷 0.334.0 — ODONTOGRAMA OD1: O DESENHO NA FICHA (20/10/2026, sem migração)
+>
+> Aba **Odontograma** na ficha (entre Clínico e Desenvolvimento) + miniatura
+> no cabeçalho. O onde-fica-cada-face mora em `src/lib/odontograma/desenho.ts`
+> (puro, testado contra as faces da 0308); o componente
+> `src/components/odontograma/odontograma.tsx` só desenha (`compact` e
+> `leitura`). Sem marcas até a OD2. Quem vê: `canViewAnamnesis || canPresent`
+> — o Assistente comercial NÃO (D8). **OD1 COMPLETA**; próximo: plano da OD2.
+>
 > ## 🗓️ 0.333.0 / 0309 — VIGÊNCIA DO PREÇO (Odontograma OD1, D3, 20/10/2026)
 >
 > O preço de hoje continua onde está (nenhum leitor muda); o histórico nasce

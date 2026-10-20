@@ -15,6 +15,12 @@ import {
   Users,
 } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
+import { Odontograma } from "@/components/odontograma/odontograma";
+import {
+  anosCompletos,
+  denticaoPelaIdade,
+  type Denticao,
+} from "@/lib/odontograma/desenho";
 import { phaseTintStyle } from "@/components/phase-badge";
 import { cn } from "@/lib/utils";
 import {
@@ -2444,6 +2450,43 @@ export default async function ClientDetailPage(
     hasApprovedPlan = (count ?? 0) > 0;
   }
 
+  // -- Odontograma (OD1): quem vê = quem lida com o caso clínico ou o
+  // apresenta (decisão do dono, D8: o Assistente comercial NÃO vê; recepção e
+  // SDR também não). Na OD1 é só o desenho — os achados chegam na OD2.
+  const canViewOdontograma = canViewAnamnesis || canPresent;
+  let odontograma: {
+    nomes: Record<string, string>;
+    faces: Record<string, string[]>;
+    denticao: Denticao;
+    motivo: string;
+  } | null = null;
+  let odontogramaErro = false;
+  if (canViewOdontograma) {
+    const [dentesR, facesR] = await Promise.all([
+      supabase.from("dental_teeth").select("code, name"),
+      supabase.from("dental_tooth_faces").select("tooth_code, face_code"),
+    ]);
+    if (dentesR.error || facesR.error || (dentesR.data ?? []).length === 0) {
+      // Leitura que falha não vira desenho vazio: a aba diz que não carregou.
+      odontogramaErro = true;
+    } else {
+      const nomes: Record<string, string> = {};
+      for (const d of dentesR.data ?? []) nomes[d.code] = d.name;
+      const faces: Record<string, string[]> = {};
+      for (const f of facesR.data ?? []) (faces[f.tooth_code] ??= []).push(f.face_code);
+      const anos = anosCompletos(client.birth_date, todayInBrazil());
+      odontograma = {
+        nomes,
+        faces,
+        denticao: denticaoPelaIdade(anos),
+        motivo:
+          anos === null
+            ? "Sem data de nascimento na ficha: o desenho começa na dentição permanente."
+            : `Dentição sugerida pela idade (${anos} ${anos === 1 ? "ano" : "anos"}).`,
+      };
+    }
+  }
+
   // Programas do cliente (Empresarial + PPR+): benefícios que entram no
   // orçamento. Vale o melhor dos dois, procedimento a procedimento.
   const isProgramMember =
@@ -2639,6 +2682,23 @@ export default async function ClientDetailPage(
                 Pilar:{" "}
                 {PILLAR_LABELS[client.methodology_pillar as MethodologyPillar]}
               </span>
+            )}
+            {/* Miniatura do odontograma: abre a aba (OD1). */}
+            {odontograma && (
+              <Link
+                href={`/prontuarios/${client.id}?aba=odontograma`}
+                title="Abrir o odontograma"
+                className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-2.5 py-0.5 text-xs text-foreground/80 transition-colors hover:bg-muted"
+              >
+                <Odontograma
+                  modo="compact"
+                  denticaoInicial={odontograma.denticao}
+                  nomes={odontograma.nomes}
+                  faces={odontograma.faces}
+                  className="w-16"
+                />
+                Odontograma
+              </Link>
             )}
             <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
             {clinicName && (
@@ -2987,6 +3047,34 @@ export default async function ClientDetailPage(
                 canAdd={canAddSupplement}
                 supplements={planningSupplements}
               />
+            )}
+          </TabPanel>
+        )}
+
+        {canViewOdontograma && (
+          <TabPanel id="odontograma" label="Odontograma">
+            {odontograma ? (
+              <div className="rounded-xl border bg-card p-4">
+                <Odontograma
+                  modo="leitura"
+                  denticaoInicial={odontograma.denticao}
+                  motivoDaDenticao={odontograma.motivo}
+                  nomes={odontograma.nomes}
+                  faces={odontograma.faces}
+                />
+                <p className="mt-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                  Ainda não há nada marcado nos dentes: o registro do que foi
+                  encontrado na avaliação (o diagnóstico por dente) chega na
+                  próxima etapa do odontograma. Por enquanto o desenho serve
+                  de referência.
+                </p>
+              </div>
+            ) : (
+              <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+                {odontogramaErro
+                  ? "Não foi possível carregar os dentes agora. Recarregue a página; se continuar, avise o suporte."
+                  : "O odontograma não está disponível."}
+              </p>
             )}
           </TabPanel>
         )}

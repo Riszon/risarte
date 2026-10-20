@@ -259,3 +259,22 @@ nenhuma tela nem conta que lê preço mudou. ✅ **0309 aplicada na produção e
 
 **Falta da OD1:** (4) o `<Odontogram />` em `compact`/leitura e a aba
 **Odontograma** na ficha.
+
+### OD1 — passo 4 entregue (20/10/2026): o desenho na ficha — OD1 COMPLETA
+
+Versão **0.334.0**, sem migração. A regra do desenho mora em
+`src/lib/odontograma/desenho.ts` (ordem FDI vista de frente, que face fica em
+cada lado da coroa, dentição pela idade, cor da marca D12, frase do leitor de
+tela); o componente `src/components/odontograma/odontograma.tsx` desenha nos
+modos `compact` (miniatura do cabeçalho) e `leitura` (a aba). As marcas já
+são aceitas pelo componente (`MarcaNoDente`), mas nenhuma tela as fornece
+até a OD2. Quem vê: `canViewAnamnesis || canPresent` — Admin, Planner,
+Coordenador, Dentista, Gerente e Consultor; **não** o Assistente (D8), a
+Recepção e o SDR. Leitura da referência que falha vira aviso, nunca desenho
+vazio.
+
+⚠️ **Para a OD2:** a dentição escolhida no botão NÃO é gravada (é só o ponto
+de partida do desenho). Quando houver achados, a dentição passa a ser do
+odontograma do paciente — decidir onde guardá-la no plano da OD2.
+
+**Próximo: o plano da OD2 (diagnóstico)**, para o OK do dono antes do código.

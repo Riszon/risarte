@@ -390,6 +390,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 (2ª) — PC Administrador (core 0.333.0 → 0.334.0, sem migração)**
+
+- **Odontograma OD1, passo 4 — o desenho na ficha. OD1 COMPLETA.** Aba
+  Odontograma (entre Clínico e Desenvolvimento) + miniatura no cabeçalho.
+  Sem marcas até a OD2; a aba diz isso.
+- ⚠️ **Onde cada face fica no desenho mora em `src/lib/odontograma/desenho.ts`**
+  (vista de frente: lado direito do paciente à esquerda; V fora, P/L dentro,
+  M para o meio da boca). O teste confere contra as faces semeadas na 0308 —
+  ao mexer em `dental_tooth_faces` pela tela, o desenho continua certo porque
+  só vira face o que o dente tem.
+- ⚠️ **Quem vê = `canViewAnamnesis || canPresent`** — nunca o Assistente
+  comercial (D8). Régua presa por teste.
+- ⚠️ **PowerShell 5.1 estragou os acentos do `version.ts`** com
+  `Get-Content -Raw` + `Set-Content` (a armadilha já escrita na
+  ARQUITETURA): desfeito pelo Git antes de commitar. Editar arquivo do
+  projeto só pela ferramenta de edição.
+- **Visto na tela** no treino (Admin de teste: permanente, mista, escuro,
+  celular; Recepção de teste: aba some). **Não visto:** as outras funções
+  (régua por teste) e as marcas coloridas (teste que desenha o componente).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **20/10/2026 — PC Administrador (core 0.332.0 → 0.333.0, migração 0309)**
 
 - **Vigência do preço (Odontograma OD1, D3).** Decisões do dono: banco aplica

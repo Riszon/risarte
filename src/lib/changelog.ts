@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.334.0",
+    data: "2026-10-20",
+    migracao: null,
+    titulo: "Odontograma: o desenho na ficha do cliente",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha do cliente ganhou a aba Odontograma (entre Clínico e Desenvolvimento Clínico) e uma miniatura no cabeçalho: o desenho da boca, dente a dente, com as faces de cada um. Ele abre na dentição da idade (decídua, mista ou permanente) e dá para trocar nos botões. Por enquanto é só o desenho — marcar o que foi encontrado em cada dente chega na próxima etapa.",
+        papeis: ["planner_dentist", "clinical_coordinator", "dentist", "unit_manager", "commercial_consultant"],
+        manual: "Na ficha do cliente: a aba Odontograma",
+      },
+    ],
+  },
+  {
     versao: "0.333.0",
     data: "2026-10-20",
     migracao: "0309",

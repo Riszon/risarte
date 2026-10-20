@@ -2222,6 +2222,39 @@ ficha dela, em `/risartanos`.
 
 **Outros:** `/notificacoes`, `/perfil`, `/chat`, `/relatorios`, `/documentos`.
 
+#### Na ficha do cliente: a aba Odontograma (desde a versão 0.334.0)
+
+A ficha do cliente (`/prontuarios/[id]`) ganhou a aba **Odontograma**, entre
+**Clínico** e **Desenvolvimento Clínico**, e uma **miniatura** no cabeçalho,
+na linha da fase e do pilar — clicar nela abre a aba.
+
+- **O que mostra hoje:** o desenho da boca, dente a dente, na notação de dois
+  algarismos (11 a 48 os permanentes, 51 a 85 os de leite). Cada dente tem as
+  5 faces e a raiz. **Ainda não há nada marcado**: o registro do que foi
+  encontrado na avaliação chega na próxima etapa do odontograma, e a aba diz
+  isso.
+- **Como ler:** a vista é **de frente para o paciente** — o lado direito dele
+  fica à **esquerda** da tela. Em cada dente: **V** (vestibular, a face de
+  fora), **P** ou **L** (palatina ou lingual, a de dentro), **M** (mesial,
+  voltada para o meio da boca), **D** (distal) e, no centro, **O** (oclusal,
+  nos dentes de trás) ou **I** (incisal, nos da frente). O quadro **Como ler o
+  desenho** explica as cores que vão aparecer: vermelho = a realizar, azul =
+  existente ou já feito, cinza com X = ausente, contorno tracejado = sugestão
+  ainda não definida. A cor sempre vem com o símbolo da situação.
+- **Dentição:** os botões **Permanente**, **Decídua** e **Mista** trocam o
+  desenho. Ele já abre pela idade da ficha (até 5 anos, decídua; de 6 a 12,
+  mista; depois, permanente) e diz por quê. Sem data de nascimento, abre na
+  permanente. Trocar o botão não grava nada.
+- **Quem vê:** Admin Master, Dentista Planner, Coordenador Clínico, Dentista,
+  Gerente da unidade e Consultor Comercial. **Não veem:** Assistente
+  Comercial (decisão do dono: só precisa do que serve para documento e
+  pagamento), Recepção e SDR — para eles a aba e a miniatura não aparecem.
+- **Se aparecer "Não foi possível carregar os dentes agora":** a leitura da
+  referência falhou. Recarregue a página; se continuar, relate pela boia. O
+  sistema não mostra um desenho vazio no lugar, para ninguém achar que o
+  paciente não tem registro.
+- **No celular**, o desenho rola de lado dentro do quadro.
+
 A lista completa das 87 rotas, com as guardas de acesso encontradas em cada
 página, está em
 [`inventario-funcionalidades-riSZon.json`](inventario-funcionalidades-riSZon.json).
