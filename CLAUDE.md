@@ -407,7 +407,7 @@ Syncthing se comportarem de forma estranha.**
   valor — senão lançar item quebraria na produção até a 0311 rodar.
 - ⚠️ **O preço do item congela NO ENVIO** (F3, `submit_treatment_plan`), não
   mais quando o item entra.
-- ⏳ **0311 aguarda a produção.** Pergunta aberta: D6 para "montar plano"
+- ✅ **0311 APLICADA nos dois bancos** (o dono rodou na produção em 20/10/2026 e a conferência deu o esperado: 4 colunas no item, 5 no plano, 6 gatilhos, 8 funções, 3 travas como quem chama, o envio exige o diagnóstico, 0 sem login, 0 itens com lugar; conferido de fora: sem login o envio e as duas réguas internas recusam com "permission denied"; com a chave de serviço o envio de plano inexistente para em PLAN_NOT_FOUND antes de gravar; as colunas novas respondem e as 370 regras estão lá). Pergunta aberta: D6 para "montar plano"
   (Admin não titular) — não aplicada. Continua aberta a cor da cárie.
 - Resíduo no treino: "Teste do portão 2" no Centro de Planejamento com um
   plano de ensaio em rascunho.

@@ -140,6 +140,9 @@ miniatura no documento (OD4); a baixa por dente e o efeito no odontograma
 
 ### OD3 entregue (20/10/2026) — versão 0.336.0, migração 0311
 
+✅ **0311 aplicada na produção em 20/10/2026** (conferência do dono e de fora
+deram o esperado).
+
 - Como no plano acima, com estes detalhes decididos no código (sem mudar
   regra): a conferência de forma vale **quando o lugar é informado**; quem
   cobra o lugar é o **envio** (`ITEM_LOCATION_REQUIRED`) — assim os itens
