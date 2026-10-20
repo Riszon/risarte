@@ -43,6 +43,8 @@ export type EvaluationRound = {
   closedAt: string | null;
   openedByName: string | null;
   clinicName: string | null;
+  /** OD2 (0310): o Planner finalizou o diagnóstico — a rodada está trancada. */
+  diagnosisFinalizedAt?: string | null;
 };
 
 /** Rótulo curto da rodada: "Avaliação 1", "Reavaliação 2" (+ título, se houver). */
@@ -86,6 +88,8 @@ export type ClinicalNoteItem = {
   editedByName: string | null;
   /** Rodada (avaliação) a que pertence — Fase 3. */
   evaluationId?: string | null;
+  /** OD2 (E1): a rodada teve o diagnóstico finalizado — não se edita mais. */
+  locked?: boolean;
   /** Unidade onde a consideração/avaliação foi registrada (mostra na ficha para
    * a unidade de destino saber que foi feita na unidade de origem). */
   clinicName: string | null;
@@ -106,6 +110,8 @@ export type ClinicalMediaItem = {
   sizeBytes: number | null;
   /** Rodada (avaliação) a que pertence — Fase 3. */
   evaluationId?: string | null;
+  /** OD2 (E1): a rodada teve o diagnóstico finalizado — não se edita nem apaga. */
+  locked?: boolean;
 };
 
 /** Nome a exibir para a mídia: o renomeado, senão o original. */

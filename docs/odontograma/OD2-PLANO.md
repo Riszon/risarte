@@ -143,7 +143,36 @@ considerações.
 | E3 | Quem sugeriu recebe **um aviso por rodada, quando o Planner finaliza**, com o resumo |
 | E4 | Na fila do Planner: **selo + filtro** "Com sugestões a definir", por cima das situações de hoje |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono para o código em 20/10/2026.
+
+### OD2 entregue (20/10/2026) — versão 0.335.0, migração 0310
+
+- **Banco (0310):** `odontograms`, `tooth_findings`, a rodada com
+  `diagnosis_finalized_at/by`, `content_hash` e os campos de assinatura;
+  funções `suggest_tooth_findings`, `withdraw_tooth_finding`,
+  `decide_tooth_findings`, `define_tooth_findings`,
+  `finalize_tooth_diagnosis`, `set_client_dentition`; réguas
+  `can_view_odontogram`, `_can_suggest_findings`, `_can_define_findings`;
+  gatilhos de validação, imutabilidade e da trava E1 (rodada, considerações,
+  mídias). `ensure_open_evaluation` passou a abrir rodada nova
+  ("Registros após o diagnóstico") depois de uma finalizada.
+- **Telas:** passo 3 do cockpit do Coordenador (sugerir); quadro acima do
+  plano no cockpit do Planner (definir + aviso E2); selo e filtro na fila
+  (E4); a aba da ficha com as marcas, o filtro, as rodadas e o histórico.
+- **Decisões de desenho tomadas no código (sem mudar regra):** finalizar
+  também **fecha** a rodada; o Planner marca direto na rodada **mais recente**
+  do cliente (sem rodada nenhuma, recusa — quem abre a avaliação é o
+  Coordenador); retirada não se ajusta (aceita ou rejeita); a ficha é só
+  leitura.
+- ⏳ **Pergunta ao dono:** cárie DEFINIDA aparece em **azul** ("existente"),
+  pela convenção D12 (azul = existente; vermelho = a realizar, que chega com
+  o plano na OD3). Muitos odontogramas pintam cárie de vermelho. Confirmar.
+- **Não visto na tela:** o Planner decidindo (porta da conta de teste do
+  Planner fechada no treino); o selo da fila (cliente de teste na fase 2).
+- **Resíduo no treino:** o cliente fictício "Teste do portão 2 (pode
+  ignorar)" foi para a fase 2 (Conversão Clínica) pelo Admin de teste; tem a
+  "Avaliação 1" com o diagnóstico finalizado (cárie M+O no 16 por ajuste,
+  ausente no 36) e o Coordenador de teste recebeu o aviso.
 
 ---
 

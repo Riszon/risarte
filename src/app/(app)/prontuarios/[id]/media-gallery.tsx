@@ -322,8 +322,9 @@ export function MediaGallery({
   // NB: renderRow/renderEditButton/renderDeleteButton são FUNÇÕES que retornam
   // JSX (chamadas como {renderX(...)}), não componentes aninhados — senão o
   // React remontaria o subtree a cada render.
+  // OD2 (E1): mídia de rodada com diagnóstico finalizado não muda nem sai.
   const renderEditButton = (m: ClinicalMediaItem) =>
-    canEdit ? (
+    canEdit && !m.locked ? (
       <Button
         variant="ghost"
         size="icon"
@@ -336,7 +337,7 @@ export function MediaGallery({
     ) : null;
 
   const renderDeleteButton = (m: ClinicalMediaItem) =>
-    canEdit ? (
+    canEdit && !m.locked ? (
       <Button
         variant="ghost"
         size="icon"
@@ -501,7 +502,7 @@ export function MediaGallery({
                       <span className="line-clamp-1 flex-1 break-all text-[10px] text-muted-foreground">
                         {mediaDisplayName(m)}
                       </span>
-                      {canEdit && (
+                      {canEdit && !m.locked && (
                         <>
                           <button
                             type="button"

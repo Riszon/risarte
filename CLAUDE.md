@@ -390,6 +390,33 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 (3ª) — PC Administrador (core 0.334.0 → 0.335.0, migração 0310)**
+
+- **Odontograma OD2 — o diagnóstico por dente** (plano e decisões E1–E4 em
+  `docs/odontograma/OD2-PLANO.md`). Coordenador sugere, Planner define e
+  finaliza; a ficha só lê.
+- ⚠️ **Marca do odontograma SÓ SE ACRESCENTA** (`tooth_findings`): corrigir é
+  marca nova (retirar / adendo com motivo), nunca editar. Situação atual é
+  CÁLCULO (`marcasAtuais`). Não criar caminho que grave na tabela fora das
+  funções da 0310.
+- ⚠️ **E1: rodada com diagnóstico finalizado tranca considerações e mídias**
+  (gatilho). Ação nova que mexa nelas: conferir a trava ANTES de qualquer
+  efeito fora do banco (apagar mídia removia o arquivo antes da linha).
+- ⚠️ **D6 no código:** `session.isOwner` (Admin Principal). Admin Master que
+  não é o titular VÊ o odontograma, mas não sugere nem define — no banco
+  (`_can_suggest_findings`/`_can_define_findings`) e na tela.
+- ⚠️ No PowerShell, **`R` é atalho de `Invoke-History`**: função auxiliar com
+  esse nome não roda (nada foi alterado; refeito pela ferramenta de edição).
+- **Ensaio da 0310** pegou um erro meu (registro lido antes de existir) e a
+  prova de quebra do banco pegou um caso que o ensaio não cobria (status de
+  marca decidida) — acrescentado.
+- **Não visto:** o Planner decidindo na tela (porta da conta de teste do
+  Planner fechada no treino — não abri sem pedir). ⏳ **0310 aguarda a
+  produção.** Pergunta aberta: cor da cárie definida (azul × vermelho).
+- Resíduo no treino: "Teste do portão 2 (pode ignorar)" na fase 2, com
+  diagnóstico finalizado e um aviso ao Coordenador de teste.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **20/10/2026 (2ª) — PC Administrador (core 0.333.0 → 0.334.0, sem migração)**
 
 - **Odontograma OD1, passo 4 — o desenho na ficha. OD1 COMPLETA.** Aba

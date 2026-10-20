@@ -16,11 +16,15 @@ import {
 } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { Odontograma } from "@/components/odontograma/odontograma";
+import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
+import { rodadasFinalizadas } from "@/lib/odontograma/rodadas-trancadas";
+import { carregarOdontograma } from "@/lib/odontograma/carregar";
 import {
-  anosCompletos,
-  denticaoPelaIdade,
-  type Denticao,
-} from "@/lib/odontograma/desenho";
+  marcasDoDesenho,
+  pendentes,
+  podeDefinirOdontograma,
+  podeSugerirOdontograma,
+} from "@/lib/odontograma/diagnostico";
 import { phaseTintStyle } from "@/components/phase-badge";
 import { cn } from "@/lib/utils";
 import {
@@ -1192,6 +1196,15 @@ export default async function ClientDetailPage(
         clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
       };
     });
+  }
+
+  // OD2 (E1): rodada com o diagnóstico finalizado tranca o que é dela.
+  if (clinicalNotes.length > 0 || clinicalMedia.length > 0 || evaluations.length > 0) {
+    const finalizadas = await rodadasFinalizadas(id);
+    const trancada = (r: string | null | undefined) => Boolean(r && finalizadas.has(r));
+    clinicalNotes = clinicalNotes.map((n) => ({ ...n, locked: trancada(n.evaluationId) }));
+    clinicalMedia = clinicalMedia.map((m) => ({ ...m, locked: trancada(m.evaluationId) }));
+    evaluations = evaluations.map((e) => ({ ...e, diagnosisFinalizedAt: finalizadas.get(e.id) ?? null }));
   }
 
   // H3.11: informações complementares ao Centro de Planejamento.
@@ -2452,40 +2465,25 @@ export default async function ClientDetailPage(
 
   // -- Odontograma (OD1): quem vê = quem lida com o caso clínico ou o
   // apresenta (decisão do dono, D8: o Assistente comercial NÃO vê; recepção e
-  // SDR também não). Na OD1 é só o desenho — os achados chegam na OD2.
+  // SDR também não). OD2: a aba mostra as marcas; sugerir e definir são nos
+  // cockpits do Coordenador e do Planner.
   const canViewOdontograma = canViewAnamnesis || canPresent;
-  let odontograma: {
-    nomes: Record<string, string>;
-    faces: Record<string, string[]>;
-    denticao: Denticao;
-    motivo: string;
-  } | null = null;
-  let odontogramaErro = false;
-  if (canViewOdontograma) {
-    const [dentesR, facesR] = await Promise.all([
-      supabase.from("dental_teeth").select("code, name"),
-      supabase.from("dental_tooth_faces").select("tooth_code, face_code"),
-    ]);
-    if (dentesR.error || facesR.error || (dentesR.data ?? []).length === 0) {
-      // Leitura que falha não vira desenho vazio: a aba diz que não carregou.
-      odontogramaErro = true;
-    } else {
-      const nomes: Record<string, string> = {};
-      for (const d of dentesR.data ?? []) nomes[d.code] = d.name;
-      const faces: Record<string, string[]> = {};
-      for (const f of facesR.data ?? []) (faces[f.tooth_code] ??= []).push(f.face_code);
-      const anos = anosCompletos(client.birth_date, todayInBrazil());
-      odontograma = {
-        nomes,
-        faces,
-        denticao: denticaoPelaIdade(anos),
-        motivo:
-          anos === null
-            ? "Sem data de nascimento na ficha: o desenho começa na dentição permanente."
-            : `Dentição sugerida pela idade (${anos} ${anos === 1 ? "ano" : "anos"}).`,
-      };
-    }
-  }
+  // Leitura que falha não vira desenho vazio: `carregarOdontograma` devolve
+  // nulo e a aba diz que não carregou.
+  const odontograma = canViewOdontograma
+    ? await carregarOdontograma(client.id, client.birth_date)
+    : null;
+  const odontogramaErro = canViewOdontograma && !odontograma;
+  const marcasDaMiniatura = odontograma
+    ? marcasDoDesenho(odontograma.achados ?? [], odontograma.situacoes)
+    : [];
+  const sugestoesPendentes = odontograma ? pendentes(odontograma.achados ?? []).length : 0;
+  // Atos clínicos do odontograma (D6): Admin que não é o titular só vê.
+  const podeSugerirNoOdontograma = podeSugerirOdontograma(session, [
+    client.clinic_id,
+    scheduleClinicId,
+  ]);
+  const podeDefinirNoOdontograma = podeDefinirOdontograma(session, isPlannerAnywhere);
 
   // Programas do cliente (Empresarial + PPR+): benefícios que entram no
   // orçamento. Vale o melhor dos dois, procedimento a procedimento.
@@ -2695,9 +2693,18 @@ export default async function ClientDetailPage(
                   denticaoInicial={odontograma.denticao}
                   nomes={odontograma.nomes}
                   faces={odontograma.faces}
+                  marcas={marcasDaMiniatura}
                   className="w-16"
                 />
                 Odontograma
+                {sugestoesPendentes > 0 && (
+                  <span
+                    className="rounded-full border border-dashed border-amber-400 bg-amber-50 px-1.5 text-[10px] font-medium text-amber-800"
+                    title="Sugestões do Coordenador esperando o Planner definir"
+                  >
+                    {sugestoesPendentes} a definir
+                  </span>
+                )}
               </Link>
             )}
             <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
@@ -3054,20 +3061,33 @@ export default async function ClientDetailPage(
         {canViewOdontograma && (
           <TabPanel id="odontograma" label="Odontograma">
             {odontograma ? (
-              <div className="rounded-xl border bg-card p-4">
-                <Odontograma
+              <div className="space-y-3 rounded-xl border bg-card p-4">
+                {/* Onde se marca: o Coordenador sugere no cockpit da avaliação;
+                    o Planner define no Centro de Planejamento (OD2). */}
+                {(podeSugerirNoOdontograma || podeDefinirNoOdontograma) && (
+                  <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-sm">
+                    <span className="text-muted-foreground">
+                      Aqui é só leitura. Para marcar:
+                    </span>
+                    {podeSugerirNoOdontograma && (
+                      <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/avaliacao/${client.id}`} />}>
+                        Sugerir na avaliação →
+                      </Button>
+                    )}
+                    {podeDefinirNoOdontograma && (
+                      <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/planejamento/${client.id}`} />}>
+                        Definir no Centro de Planejamento →
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <PainelDoDiagnostico
+                  clientId={client.id}
                   modo="leitura"
-                  denticaoInicial={odontograma.denticao}
-                  motivoDaDenticao={odontograma.motivo}
-                  nomes={odontograma.nomes}
-                  faces={odontograma.faces}
+                  dados={odontograma}
+                  euId={session.userId}
+                  podeMudarDenticao={false}
                 />
-                <p className="mt-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                  Ainda não há nada marcado nos dentes: o registro do que foi
-                  encontrado na avaliação (o diagnóstico por dente) chega na
-                  próxima etapa do odontograma. Por enquanto o desenho serve
-                  de referência.
-                </p>
               </div>
             ) : (
               <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">

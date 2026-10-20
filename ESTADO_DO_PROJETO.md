@@ -1,7 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.334.0** · Última migração: **0309** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.335.0** · Última migração: **0310** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## 🦷 0.335.0 / 0310 — ODONTOGRAMA OD2: O DIAGNÓSTICO POR DENTE (20/10/2026)
+>
+> O Coordenador SUGERE no desenho (cockpit da avaliação, passo 3); o Planner
+> aceita / ajusta / rejeita, marca direto e FINALIZA. ⚠️ **Marca só se
+> acrescenta** (`tooth_findings`; gatilho recusa apagar e mudar — só a decisão
+> de uma pendente, uma vez). ⚠️ **E1: diagnóstico finalizado tranca a rodada
+> INTEIRA** (marcas, considerações, mídias); o que vier depois cai numa rodada
+> nova, "Registros após o diagnóstico" (`ensure_open_evaluation`). ⚠️ D6:
+> Admin não titular só vê — `SessionContext.isOwner`. E2 só avisa; E3 um aviso
+> por rodada; E4 selo + filtro na fila. Plano em `docs/odontograma/OD2-PLANO.md`.
+>
 > ## 🦷 0.334.0 — ODONTOGRAMA OD1: O DESENHO NA FICHA (20/10/2026, sem migração)
 >
 > Aba **Odontograma** na ficha (entre Clínico e Desenvolvimento) + miniatura

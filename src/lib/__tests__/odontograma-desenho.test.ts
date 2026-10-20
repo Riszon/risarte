@@ -198,7 +198,13 @@ describe("odontograma — na ficha", () => {
   });
 
   it("leitura que falha não vira desenho vazio", () => {
-    expect(ficha).toContain("if (dentesR.error || facesR.error || (dentesR.data ?? []).length === 0) {");
-    expect(ficha).toContain("odontogramaErro = true;");
+    // A referência sem resposta (ou sem dente nenhum) devolve nulo…
+    const carregar = ler("src/lib/odontograma/carregar.ts");
+    expect(carregar).toContain(
+      "if (dentesR.error || facesR.error || situacoesR.error || (dentesR.data ?? []).length === 0) {\n    return null;"
+    );
+    // …e a ficha transforma o nulo em aviso.
+    expect(ficha).toContain("const odontogramaErro = canViewOdontograma && !odontograma;");
+    expect(ficha).toContain("Não foi possível carregar os dentes agora.");
   });
 });

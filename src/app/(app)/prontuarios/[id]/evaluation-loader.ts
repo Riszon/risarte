@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { rodadasFinalizadas } from "@/lib/odontograma/rodadas-trancadas";
 import {
   CLINICAL_BUCKET,
   type ClinicalMediaItem,
@@ -52,13 +53,17 @@ export async function loadEvaluationWorkspace(
         .order("created_at", { ascending: false }),
     ]);
 
-  const { data: evalRows } = await supabase
-    .from("clinical_evaluations")
-    .select(
-      "id, kind, seq, status, title, opened_at, closed_at, opened_by, clinic:clinics ( name )"
-    )
-    .eq("client_id", clientId)
-    .order("opened_at", { ascending: false });
+  const [{ data: evalRows }, finalizadas] = await Promise.all([
+    supabase
+      .from("clinical_evaluations")
+      .select(
+        "id, kind, seq, status, title, opened_at, closed_at, opened_by, clinic:clinics ( name )"
+      )
+      .eq("client_id", clientId)
+      .order("opened_at", { ascending: false }),
+    rodadasFinalizadas(clientId),
+  ]);
+  const trancada = (id: string | null | undefined) => Boolean(id && finalizadas.has(id));
 
   const peopleIds = [
     ...new Set(
@@ -103,6 +108,7 @@ export async function loadEvaluationWorkspace(
       clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
       evaluationId:
         (n as { evaluation_id?: string | null }).evaluation_id ?? null,
+      locked: trancada((n as { evaluation_id?: string | null }).evaluation_id),
     };
   });
 
@@ -132,6 +138,7 @@ export async function loadEvaluationWorkspace(
         sizeBytes: (m.size_bytes as number | null) ?? null,
         evaluationId:
           (m as { evaluation_id?: string | null }).evaluation_id ?? null,
+        locked: trancada((m as { evaluation_id?: string | null }).evaluation_id),
       };
     })
   );
@@ -150,6 +157,7 @@ export async function loadEvaluationWorkspace(
       closedAt: (e.closed_at as string | null) ?? null,
       openedByName: e.opened_by ? (nameById.get(e.opened_by) ?? null) : null,
       clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
+      diagnosisFinalizedAt: finalizadas.get(e.id as string) ?? null,
     };
   });
 

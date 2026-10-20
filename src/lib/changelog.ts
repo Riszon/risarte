@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.335.0",
+    data: "2026-10-20",
+    migracao: "0310",
+    titulo: "Odontograma: o diagnóstico por dente (Coordenador sugere, Planner define)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na avaliação e na reavaliação (passo 3 do roteiro), o Coordenador marca no desenho o que encontrou em cada dente — escolhe o dente (ou uma região), a face e a situação. A marca é uma sugestão, aparece tracejada e pode ser desfeita até o Planner decidir. Quando o Planner finaliza, chega um aviso com o resumo.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No Centro de Planejamento, o Planner aceita, ajusta ou rejeita cada sugestão do Coordenador, marca direto e finaliza o diagnóstico da rodada. A fila ganhou o filtro \"Com sugestões a definir\" e o cockpit avisa quando o diagnóstico ainda está a definir (por enquanto só aviso).",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Diagnóstico finalizado não muda mais: as marcas, as considerações e as fotos e exames daquela rodada ficam trancados (os botões de editar e apagar somem). Correção depois, só por adendo, com motivo.",
+        papeis: ["clinical_coordinator", "planner_dentist"],
+        manual: "Na ficha do cliente: a aba Odontograma",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A aba Odontograma da ficha passou a mostrar as marcas (definidas e sugestões), com o filtro Todos / Só definidos / Só sugestões, o diagnóstico de cada rodada e o histórico de quem marcou e decidiu.",
+        papeis: ["planner_dentist", "clinical_coordinator", "dentist", "unit_manager", "commercial_consultant"],
+        manual: "Na ficha do cliente: a aba Odontograma",
+      },
+    ],
+  },
+  {
     versao: "0.334.0",
     data: "2026-10-20",
     migracao: null,

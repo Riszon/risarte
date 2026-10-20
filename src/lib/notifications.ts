@@ -63,7 +63,8 @@ export type AbaDoProntuario =
   | "sessoes"
   | "financeiro"
   | "jornada"
-  | "historico";
+  | "historico"
+  | "odontograma";
 
 /**
  * EM QUE ABA O AVISO ABRE O PRONTUÁRIO (OC-00093, 05/10/2026). Antes todo
@@ -93,6 +94,9 @@ const ABA_DO_AVISO: [prefixo: string, aba: AbaDoProntuario][] = [
   ["Plano de tratamento para aprovação", "plano"],
   ["Plano de tratamento segue para outra unidade", "plano"],
   ["Novo caso no Centro de Planejamento", "plano"],
+
+  // OD2 (0310): o Planner finalizou o diagnóstico (aviso a quem sugeriu).
+  ["Diagnóstico do odontograma finalizado", "odontograma"],
 
   ["Agendar sessões", "sessoes"],
   ["Agendar próxima sessão de tratamento", "sessoes"],

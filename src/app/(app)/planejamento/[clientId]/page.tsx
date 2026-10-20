@@ -58,6 +58,9 @@ import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { TreatmentSummary } from "./treatment-summary";
 import { SequenciaPorOpcao } from "./session-join-planner";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { carregarOdontograma } from "@/lib/odontograma/carregar";
+import { diagnosticoADefinir, podeDefinirOdontograma } from "@/lib/odontograma/diagnostico";
+import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 
 export const metadata: Metadata = { title: "Cockpit de Planejamento" };
 
@@ -106,7 +109,7 @@ export default async function PlanningCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_company_name, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, birth_date, clinic_id, journey_phase, journey_status, methodology_pillar, phase_entered_at, empresarial_company_id, empresarial_company_name, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -524,6 +527,24 @@ export default async function PlanningCockpitPage(
     Boolean(client.ppr_membership_id);
   const program = isProgramMember ? await loadClientPrograms(client.id) : null;
 
+  // OD2: o odontograma do diagnóstico. Quem define é o Planner (ou o titular);
+  // o Admin que não é o titular só vê (D6).
+  const odontograma = await carregarOdontograma(
+    client.id,
+    (client.birth_date as string | null) ?? null
+  );
+  const podeDefinir = podeDefinirOdontograma(
+    session,
+    Object.values(session.rolesByClinic).some((r) => r.includes("planner_dentist"))
+  );
+  const situacaoDoDiagnostico =
+    odontograma && odontograma.achados
+      ? diagnosticoADefinir(
+          odontograma.achados,
+          odontograma.rodadas.map((r) => ({ id: r.id, finalizadoEm: r.finalizadoEm }))
+        )
+      : null;
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
       {/* Cartão de identidade — faixa fina na cor da Fase, igual ao resto do app. */}
@@ -831,6 +852,50 @@ export default async function PlanningCockpitPage(
           </PopupCard>
         )}
       </div>
+
+      {/* OD2 — o diagnóstico por dente: o Planner define o que o Coordenador
+          sugeriu (aceita / ajusta / rejeita), marca direto e finaliza. E2: na
+          OD2 o plano só AVISA "diagnóstico a definir"; a trava vem na OD3. */}
+      {odontograma && situacaoDoDiagnostico?.aDefinir && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <TriangleAlert className="size-4 shrink-0" />
+          <span>
+            <strong>Diagnóstico a definir:</strong>{" "}
+            {situacaoDoDiagnostico.pendentes > 0
+              ? `${situacaoDoDiagnostico.pendentes} ${situacaoDoDiagnostico.pendentes === 1 ? "sugestão do Coordenador espera" : "sugestões do Coordenador esperam"} a sua decisão no odontograma.`
+              : "nenhuma rodada teve o diagnóstico finalizado ainda."}{" "}
+            Por enquanto é só um aviso — o plano continua andando.
+          </span>
+        </div>
+      )}
+      <details
+        open={Boolean(situacaoDoDiagnostico?.pendentes)}
+        className="rounded-xl border bg-card p-4"
+      >
+        <summary className="cursor-pointer text-sm font-semibold">
+          Odontograma — diagnóstico por dente
+          {situacaoDoDiagnostico && situacaoDoDiagnostico.pendentes > 0 && (
+            <span className="ml-2 rounded-full border border-dashed border-amber-400 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+              {situacaoDoDiagnostico.pendentes} a definir
+            </span>
+          )}
+        </summary>
+        <div className="mt-3">
+          {odontograma ? (
+            <PainelDoDiagnostico
+              clientId={client.id}
+              modo={podeDefinir ? "definir" : "leitura"}
+              dados={odontograma}
+              euId={session.userId}
+              podeMudarDenticao={podeDefinir}
+            />
+          ) : (
+            <p className="text-sm text-destructive">
+              Não foi possível carregar os dentes agora. Recarregue a página; se continuar, avise o suporte.
+            </p>
+          )}
+        </div>
+      </details>
 
       {/* Editor do plano — a área principal do cockpit, em largura total. */}
       <PlanEditorSwitcher

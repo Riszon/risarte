@@ -8,7 +8,7 @@
 // (a aba da ficha). Os modos que GRAVAM (diagnóstico, plano, execução) chegam
 // nas fases seguintes — aqui nada é clicável além da troca de dentição.
 
-import { useState } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   ROTULO_DA_DENTICAO,
   corDaMarca,
@@ -65,6 +65,8 @@ function Dente({
   x,
   y,
   compacto,
+  selecionado = false,
+  onDente,
 }: {
   dente: string;
   nome: string;
@@ -73,6 +75,9 @@ function Dente({
   x: number;
   y: number;
   compacto: boolean;
+  selecionado?: boolean;
+  /** No modo diagnóstico, tocar no dente o seleciona. */
+  onDente?: (dente: string) => void;
 }) {
   const sup = ehSuperior(dente);
   const cx = x + (CELULA - COROA) / 2;
@@ -94,9 +99,38 @@ function Dente({
     : `M ${cx + 6} ${yRaiz} L ${cx + COROA / 2} ${yRaiz + RAIZ} L ${cx + COROA - 6} ${yRaiz} Z`;
   const corRaiz = marcaDaRaiz ? corDaMarca(marcaDaRaiz) : null;
 
+  const descricao = descricaoDoDente(dente, nome, marcas);
+  const tocavel = onDente
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        "aria-pressed": selecionado,
+        onClick: () => onDente(dente),
+        onKeyDown: (e: KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onDente(dente);
+          }
+        },
+        className: "cursor-pointer outline-none [&:focus-visible>rect:first-of-type]:stroke-ring",
+      }
+    : { role: "img" as const };
+
   return (
-    <g role="img" aria-label={descricaoDoDente(dente, nome, marcas)}>
-      <title>{descricaoDoDente(dente, nome, marcas)}</title>
+    <g {...tocavel} aria-label={descricao}>
+      <title>{descricao}</title>
+      {/* A área de toque é o dente inteiro (coroa, raiz e número), não só a face. */}
+      {onDente && (
+        <rect
+          x={x - VAO / 2}
+          y={y - 2}
+          width={CELULA + VAO}
+          height={ALTURA_DA_FILEIRA - 6}
+          rx={4}
+          className={cn(selecionado ? "fill-gold/20 stroke-gold" : "fill-transparent stroke-transparent")}
+          strokeWidth={2}
+        />
+      )}
       <path
         d={raiz}
         className={cn(
@@ -157,7 +191,7 @@ function Dente({
       {!compacto && doDente.length > 0 && (
         <text
           x={x + CELULA / 2}
-          y={sup ? yCoroa + COROA + 1 : yCoroa - 3}
+          y={sup ? yCoroa + COROA + 9 : yCoroa - 3}
           textAnchor="middle"
           className="fill-foreground text-[8px] font-semibold"
         >
@@ -169,7 +203,15 @@ function Dente({
 }
 
 export type OdontogramaProps = {
-  modo: "compact" | "leitura";
+  /** `diagnostico` (OD2) = a leitura com os dentes tocáveis (`onDente`). */
+  modo: "compact" | "leitura" | "diagnostico";
+  /** Dentes selecionados (modo diagnóstico). */
+  selecionados?: string[];
+  onDente?: (dente: string) => void;
+  /** Chamado quando a pessoa troca a dentição (quem pode, guarda). */
+  onDenticao?: (d: Denticao) => void;
+  /** Vai na linha dos botões de dentição (ex.: o filtro das marcas). */
+  extra?: ReactNode;
   /** Dentição de partida (pela idade); em `leitura` a pessoa troca no botão. */
   denticaoInicial: Denticao;
   /** Por que essa dentição veio marcada — frase inteira (ex.: "Dentição sugerida pela idade (8 anos)."). */
@@ -190,9 +232,14 @@ export function Odontograma({
   faces,
   marcas = [],
   className,
+  selecionados = [],
+  onDente,
+  onDenticao,
+  extra,
 }: OdontogramaProps) {
   const [denticao, setDenticao] = useState<Denticao>(denticaoInicial);
   const compacto = modo === "compact";
+  const tocavel = modo === "diagnostico" ? onDente : undefined;
   const linhas = fileiras(denticao);
   const larguraDaFileira = 16 * CELULA + 15 * VAO + MEIO;
   const altura = linhas.length * ALTURA_DA_FILEIRA + (linhas.length > 2 ? 8 : 0) + 6;
@@ -240,6 +287,8 @@ export function Odontograma({
                   x={x}
                   y={y}
                   compacto={compacto}
+                  selecionado={selecionados.includes(dente)}
+                  onDente={tocavel}
                 />
               );
             })}
@@ -261,7 +310,11 @@ export function Odontograma({
               type="button"
               role="radio"
               aria-checked={denticao === d}
-              onClick={() => setDenticao(d)}
+              onClick={() => {
+                if (d === denticao) return;
+                setDenticao(d);
+                onDenticao?.(d);
+              }}
               className={cn(
                 "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                 denticao === d ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
@@ -271,6 +324,7 @@ export function Odontograma({
             </button>
           ))}
         </div>
+        {extra}
         {motivoDaDenticao && (
           <p className="text-xs text-muted-foreground">
             {motivoDaDenticao} Dá para trocar nos botões.

@@ -723,7 +723,7 @@ export function ClinicalSection({
                     <>
                       <div className="flex items-start justify-between gap-2">
                         <p className="whitespace-pre-wrap">{n.body}</p>
-                        {canEdit && (
+                        {canEdit && !n.locked && (
                           <Button
                             variant="ghost"
                             size="icon"

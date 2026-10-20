@@ -34,6 +34,28 @@ async function openEvaluationId(
 }
 
 /**
+ * OD2 (0310, decisão E1): rodada com o diagnóstico FINALIZADO fica trancada —
+ * considerações e mídias dela não mudam nem se apagam (o banco recusa). Aqui a
+ * conferência vem ANTES de qualquer efeito: apagar a mídia remove o arquivo do
+ * Storage antes da linha, e editar a consideração grava a revisão antes — sem
+ * conferir primeiro, o arquivo sumiria e a linha ficaria.
+ */
+const RODADA_TRANCADA =
+  "O diagnóstico desta rodada já foi finalizado: o que foi registrado nela não muda mais.";
+async function rodadaTrancada(evaluationId: string | null | undefined): Promise<boolean> {
+  if (!evaluationId) return false;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clinical_evaluations")
+    .select("diagnosis_finalized_at")
+    .eq("id", evaluationId)
+    .maybeSingle<{ diagnosis_finalized_at: string | null }>();
+  // Banco sem a 0310 (a coluna não existe): não há trava a conferir.
+  if (error) return false;
+  return Boolean(data?.diagnosis_finalized_at);
+}
+
+/**
  * Only the Coordenador Clínico (or Admin) may record the evaluation. The clinic
  * the record is scoped to is the home unit OR a unit the client is currently
  * SHARED with (E7) — preferring the user's active clinic — so a shared unit (B)
@@ -357,7 +379,7 @@ export async function deleteClinicalMedia(
   const supabase = await createClient();
   const { data: media } = await supabase
     .from("clinical_media")
-    .select("client_id, clinic_id, storage_path")
+    .select("client_id, clinic_id, storage_path, evaluation_id")
     .eq("id", mediaId)
     .single();
   if (!media) return { ok: false, error: "Arquivo não encontrado." };
@@ -370,6 +392,7 @@ export async function deleteClinicalMedia(
       error: "Apenas o Coordenador Clínico pode remover arquivos.",
     };
   }
+  if (await rodadaTrancada(media.evaluation_id)) return { ok: false, error: RODADA_TRANCADA };
 
   // External-link items have no file in Storage.
   if (media.storage_path) {
@@ -403,7 +426,7 @@ export async function updateClinicalMedia(
   const supabase = await createClient();
   const { data: media } = await supabase
     .from("clinical_media")
-    .select("client_id, clinic_id")
+    .select("client_id, clinic_id, evaluation_id")
     .eq("id", mediaId)
     .single();
   if (!media) return { ok: false, error: "Arquivo não encontrado." };
@@ -416,6 +439,7 @@ export async function updateClinicalMedia(
       error: "Apenas o Coordenador Clínico pode editar arquivos.",
     };
   }
+  if (await rodadaTrancada(media.evaluation_id)) return { ok: false, error: RODADA_TRANCADA };
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -462,7 +486,7 @@ export async function editClinicalNote(
   const supabase = await createClient();
   const { data: note } = await supabase
     .from("clinical_notes")
-    .select("client_id, clinic_id, body")
+    .select("client_id, clinic_id, body, evaluation_id")
     .eq("id", noteId)
     .single();
   if (!note) return { ok: false, error: "Consideração não encontrada." };
@@ -476,6 +500,7 @@ export async function editClinicalNote(
     };
   }
   if (note.body === text) return { ok: true };
+  if (await rodadaTrancada(note.evaluation_id)) return { ok: false, error: RODADA_TRANCADA };
 
   // Keep the previous version in the history before overwriting.
   await supabase.from("clinical_note_revisions").insert({

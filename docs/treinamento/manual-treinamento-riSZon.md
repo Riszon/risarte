@@ -1681,6 +1681,22 @@ fase do paciente ☐ sei que não sou eu quem chama
 > **Quem vê o alerta:** só quem já pode ler a anamnese — equipe clínica,
 > Planner, Gerente da unidade e Dentista. A recepção não vê (dado de saúde).
 5. Subir fotos e exames.
+5b. **Odontograma — o que você encontrou em cada dente** (desde a 0.335.0, no
+   passo **3 · Avaliação clínica inicial** do roteiro). Toque no dente (ou em
+   vários, ou escolha uma **região** — sextante, arcada…), escolha as
+   **faces** (para cárie, restauração…) ou deixe sem face (ausente, coroa,
+   canal…), escolha a **situação** e **Sugerir**. A lista só oferece o que cabe:
+   com face, só situações de face; o sistema avisa se um dos dentes não tem a
+   face escolhida (ex.: Oclusal num incisivo). **A sua marca é uma SUGESTÃO**
+   (fica tracejada): quem define é o Planner. Enquanto ele não decidiu, dá
+   para **Desfazer** em *Minhas sugestões esperando o Planner*. Na
+   reavaliação, o desenho já vem com o que estava definido: sugira só o que
+   mudou — inclusive **Sugerir retirar** uma marca que não vale mais. Quando
+   o Planner **finaliza**, você recebe **um aviso** com o resumo (quantas
+   aceitas, ajustadas e rejeitadas). ⚠️ **Rodada finalizada fica trancada**:
+   as considerações, fotos e exames dela não se editam nem se apagam mais (os
+   botões de lápis e lixeira somem). O que você registrar depois entra numa
+   rodada nova, com o título **"Registros após o diagnóstico"**.
 6. **Enviar ao Centro de Planejamento**. O sistema **para a gravação, espera
    o áudio ser salvo na ficha e só então envia** — o Planner recebe o caso já
    com o áudio. É também o que encerra o atendimento, **seja quem for que
@@ -1795,6 +1811,20 @@ Planejamento**.
    marcado (ex.: **Diabetes**, **AIDS**, **Dipirona**); abaixo, a ficha por
    seção, com pergunta e resposta lado a lado e **em vermelho só o que
    disparou alerta** — as outras opções marcadas aparecem em cinza.
+2b. **Odontograma — diagnóstico por dente** (desde a 0.335.0; o quadro fica
+   acima do plano e já vem aberto quando há sugestão). Para cada sugestão do
+   Coordenador: **Aceitar**, **Ajustar** (troca a face ou a situação — a
+   sugestão original fica guardada e ligada) ou **Rejeitar** (o motivo é
+   recomendado: o Coordenador vai ver). **Aceitar todas** decide a lista de
+   uma vez. Você também marca **direto** (toque no dente → faces → situação →
+   **Marcar como definido**). Com tudo decidido, **Finalizar diagnóstico** da
+   rodada: a partir daí **nada daquela rodada muda** — marcas, considerações,
+   fotos e exames ficam trancados. Precisou corrigir depois? Marque de novo: o
+   sistema pede o **motivo do adendo** e guarda o original. Enquanto houver
+   sugestão pendente ou nenhuma rodada finalizada, o cockpit mostra o aviso
+   **"Diagnóstico a definir"** — por enquanto é só aviso, o plano continua
+   andando. Na fila, o filtro **Com sugestões a definir** e o selo **"N a
+   definir"** mostram quem está esperando.
 3. **Iniciar plano de tratamento** → escreva o **Diagnóstico**.
 4. **Adicionar opção de tratamento** (marque uma como principal).
 5. Dentro da opção, **Procedimento** → escolha do catálogo → **Item**. O nome
@@ -2222,17 +2252,24 @@ ficha dela, em `/risartanos`.
 
 **Outros:** `/notificacoes`, `/perfil`, `/chat`, `/relatorios`, `/documentos`.
 
-#### Na ficha do cliente: a aba Odontograma (desde a versão 0.334.0)
+#### Na ficha do cliente: a aba Odontograma (desde a versão 0.334.0; marcas desde a 0.335.0)
 
-A ficha do cliente (`/prontuarios/[id]`) ganhou a aba **Odontograma**, entre
+A ficha do cliente (`/prontuarios/[id]`) tem a aba **Odontograma**, entre
 **Clínico** e **Desenvolvimento Clínico**, e uma **miniatura** no cabeçalho,
-na linha da fase e do pilar — clicar nela abre a aba.
+na linha da fase e do pilar — clicar nela abre a aba. Quando há sugestão do
+Coordenador esperando o Planner, a miniatura mostra **"N a definir"**.
 
-- **O que mostra hoje:** o desenho da boca, dente a dente, na notação de dois
-  algarismos (11 a 48 os permanentes, 51 a 85 os de leite). Cada dente tem as
-  5 faces e a raiz. **Ainda não há nada marcado**: o registro do que foi
-  encontrado na avaliação chega na próxima etapa do odontograma, e a aba diz
-  isso.
+- **O que mostra:** o desenho da boca, dente a dente, na notação de dois
+  algarismos (11 a 48 os permanentes, 51 a 85 os de leite), com as **marcas
+  do diagnóstico** (desde a 0.335.0): o que está **definido** e, tracejado, o
+  que ainda é **sugestão**. O filtro **Todos / Só definidos / Só sugestões**
+  troca o que aparece. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
+  Reavaliação 2…), com o selo **"Finalizado em … por …"**, e o **Histórico das
+  marcas** (quem sugeriu, quem decidiu, quando e o motivo).
+- **Na ficha é só leitura.** Quem marca faz isso nos cockpits: o Coordenador
+  **sugere** na avaliação (seção 6.2) e o Planner **define** no Centro de
+  Planejamento (seção 6.3). A aba traz os botões que levam até lá, para quem
+  pode usar.
 - **Como ler:** a vista é **de frente para o paciente** — o lado direito dele
   fica à **esquerda** da tela. Em cada dente: **V** (vestibular, a face de
   fora), **P** ou **L** (palatina ou lingual, a de dentro), **M** (mesial,
@@ -2242,9 +2279,11 @@ na linha da fase e do pilar — clicar nela abre a aba.
   existente ou já feito, cinza com X = ausente, contorno tracejado = sugestão
   ainda não definida. A cor sempre vem com o símbolo da situação.
 - **Dentição:** os botões **Permanente**, **Decídua** e **Mista** trocam o
-  desenho. Ele já abre pela idade da ficha (até 5 anos, decídua; de 6 a 12,
-  mista; depois, permanente) e diz por quê. Sem data de nascimento, abre na
-  permanente. Trocar o botão não grava nada.
+  desenho. Se o Coordenador ou o Planner já **registraram** a dentição do
+  paciente, ela abre assim ("Dentição registrada no odontograma do
+  paciente"); senão, pela idade da ficha (até 5 anos, decídua; de 6 a 12,
+  mista; depois, permanente). Sem data de nascimento, abre na permanente. Na
+  ficha, trocar o botão não grava nada; nos cockpits, quem marca grava.
 - **Quem vê:** Admin Master, Dentista Planner, Coordenador Clínico, Dentista,
   Gerente da unidade e Consultor Comercial. **Não veem:** Assistente
   Comercial (decisão do dono: só precisa do que serve para documento e

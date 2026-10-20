@@ -52,6 +52,9 @@ import {
   type AppointmentType,
 } from "@/lib/appointments";
 import { PLAN_STAGE_LABELS, planStage } from "@/lib/planning";
+import { carregarOdontograma } from "@/lib/odontograma/carregar";
+import { podeSugerirOdontograma } from "@/lib/odontograma/diagnostico";
+import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 
 export const metadata: Metadata = { title: "Cockpit de Avaliação" };
 
@@ -70,7 +73,7 @@ export default async function EvaluationCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, status, gender, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, status, gender, birth_date, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, ppr_membership_id, ppr_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -120,9 +123,10 @@ export default async function EvaluationCockpitPage(
     (Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw)?.name ?? null;
 
   // -- Espaço de avaliação (consent, considerações, mídias, rodadas) + planos --
-  const [{ consent, notes, media, evaluations }, plans] = await Promise.all([
+  const [{ consent, notes, media, evaluations }, plans, odontograma] = await Promise.all([
     loadEvaluationWorkspace(clientId),
     loadClientPlans(clientId),
+    carregarOdontograma(clientId, (client.birth_date as string | null) ?? null),
   ]);
 
   // -- Bloco A: painel de status do cliente (topo do cockpit). ----------------
@@ -454,6 +458,34 @@ export default async function EvaluationCockpitPage(
   // e envio ao planejamento. Os demais passos são só orientação.
   const evalById = new Map(evaluations.map((e) => [e.id, e]));
   const hasConsent = Boolean(consent);
+
+  // OD2: o Coordenador SUGERE no desenho, na avaliação e na reavaliação; o
+  // Planner define. Admin que não é o titular só vê (D6).
+  const podeSugerir = Boolean(flowKind) && podeSugerirOdontograma(session, [clinicId]);
+  const blocoDoOdontograma = (
+    <div className="rounded-xl border p-3">
+      <p className="text-sm font-semibold">Odontograma — o que você encontrou em cada dente</p>
+      <p className="mb-3 text-xs text-muted-foreground">
+        {podeSugerir
+          ? "A sua marca é uma SUGESTÃO (aparece tracejada): o Planner define. Dá para desfazer enquanto ele não decidiu."
+          : "Só leitura aqui: quem sugere é o Coordenador, na avaliação ou na reavaliação; quem define é o Planner."}
+      </p>
+      {odontograma ? (
+        <PainelDoDiagnostico
+          clientId={client.id}
+          modo={podeSugerir ? "sugerir" : "leitura"}
+          clinicId={clinicId}
+          dados={odontograma}
+          euId={session.userId}
+          podeMudarDenticao={podeSugerir}
+        />
+      ) : (
+        <p className="text-sm text-destructive">
+          Não foi possível carregar os dentes agora. Recarregue a página; se continuar, avise o suporte.
+        </p>
+      )}
+    </div>
+  );
   const toolsByStep: Record<number, ReactNode> = flowKind
     ? {
         2: (
@@ -476,6 +508,8 @@ export default async function EvaluationCockpitPage(
         ),
         3: (
           <div className="space-y-4">
+            {/* OD2: o exame dos dentes é o momento da avaliação clínica. */}
+            {blocoDoOdontograma}
             {qualityChecklist && (
               <QualityChecklist
                 clientId={client.id}
@@ -637,6 +671,7 @@ export default async function EvaluationCockpitPage(
               anamnesisBlockMessage={anamnesisBlockMessage}
             />
           )}
+          {!flowKind && blocoDoOdontograma}
         </div>
         <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <PlanEditorSwitcher

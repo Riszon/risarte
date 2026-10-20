@@ -143,6 +143,8 @@ export default async function PlanningCenterPage(
   // H3.13: filtros por unidade e por pilar da metodologia.
   const unidade = typeof sp.unidade === "string" ? sp.unidade : "";
   const pilar = typeof sp.pilar === "string" ? sp.pilar : "";
+  // OD2 (E4): só os casos com sugestão do Coordenador esperando o Planner.
+  const soSugestoes = sp.sugestoes === "1";
   const range = periodRange(periodo, de, ate);
 
   const supabase = await createClient();
@@ -186,7 +188,7 @@ export default async function PlanningCenterPage(
   type PlanoDaFila = { client_id: string; status: TreatmentPlanStatus; created_at: string };
   // Dentro de cada lote a ordem é a que a conta abaixo usa (a apresentação
   // mais próxima; o plano mais novo) — e os lotes não dividem cliente.
-  const [leAp, lePl, { data: slaRows }, leSup] = await Promise.all([
+  const [leAp, lePl, { data: slaRows }, leSup, leSug] = await Promise.all([
     lerPorLotes<Apresentacao>(ids, (lote, de, ate) =>
       supabase
         .from("appointments")
@@ -225,6 +227,17 @@ export default async function PlanningCenterPage(
         .range(de, ate)
         .returns<{ client_id: string }[]>()
     ),
+    // OD2 (E4): sugestões do odontograma esperando o Planner definir.
+    lerPorLotes<{ client_id: string }>(ids, (lote, de, ate) =>
+      supabase
+        .from("tooth_findings")
+        .select("client_id")
+        .in("client_id", lote)
+        .eq("status", "suggested")
+        .order("id")
+        .range(de, ate)
+        .returns<{ client_id: string }[]>()
+    ),
   ]);
   for (const l of [leAp, lePl, leSup]) {
     if (!l.ok) console.error("planejamento — leitura:", l.error.message);
@@ -244,6 +257,13 @@ export default async function PlanningCenterPage(
   for (const p of planRows ?? []) {
     if (!planByClient.has(p.client_id)) planByClient.set(p.client_id, p.status);
   }
+  // Leitura das sugestões que falha (ou banco sem a 0310) não vira "0": o
+  // selo e o filtro somem, em vez de afirmar que não há nada a definir.
+  if (!leSug.ok) console.error("planejamento — sugestões do odontograma:", leSug.error.message);
+  const sugestoesPorCliente = new Map<string, number>();
+  for (const s of leSug.ok ? leSug.linhas : []) {
+    sugestoesPorCliente.set(s.client_id, (sugestoesPorCliente.get(s.client_id) ?? 0) + 1);
+  }
   const clientsWithNewInfo = new Set(
     (supRows ?? []).map((s) => s.client_id)
   );
@@ -262,9 +282,12 @@ export default async function PlanningCenterPage(
     return { client: c, situation };
   });
 
-  const filtered = situacao
-    ? withSituation.filter((x) => x.situation === situacao)
-    : withSituation;
+  const comSugestoes = withSituation.filter((x) => sugestoesPorCliente.has(x.client.id)).length;
+  const filtered = withSituation.filter(
+    (x) =>
+      (!situacao || x.situation === situacao) &&
+      (!soSugestoes || sugestoesPorCliente.has(x.client.id))
+  );
 
   // Priority: nearest scheduled commercial presentation; tiebreak = who entered
   // the phase first.
@@ -277,9 +300,10 @@ export default async function PlanningCenterPage(
     return a.client.phase_entered_at < b.client.phase_entered_at ? -1 : 1;
   });
 
-  function hrefFor(key: string | null): string {
+  function hrefFor(key: string | null, sugestoes = soSugestoes): string {
     const p = new URLSearchParams();
     if (key) p.set("situacao", key);
+    if (sugestoes) p.set("sugestoes", "1");
     if (periodo) p.set("periodo", periodo);
     if (de) p.set("de", de);
     if (ate) p.set("ate", ate);
@@ -333,11 +357,23 @@ export default async function PlanningCenterPage(
             {s.label} ({counts[s.key]})
           </Link>
         ))}
+        {leSug.ok && (
+          <Link
+            href={hrefFor(situacao || null, !soSugestoes)}
+            title="Casos com sugestões do Coordenador no odontograma esperando a sua decisão"
+            className={`rounded-full border border-dashed px-3 py-1 text-sm ${
+              soSugestoes ? "border-amber-500 bg-amber-50 text-amber-900" : "border-amber-400"
+            }`}
+          >
+            Com sugestões a definir ({comSugestoes})
+          </Link>
+        )}
       </div>
 
       {/* Filtro de período. */}
       <FilterForm className="flex flex-wrap items-center gap-2">
         {situacao && <input type="hidden" name="situacao" value={situacao} />}
+        {soSugestoes && <input type="hidden" name="sugestoes" value="1" />}
         <label className="text-sm text-muted-foreground">Período:</label>
         <select name="periodo" defaultValue={periodo} className={selectClass}>
           <option value="">Tudo</option>
@@ -420,6 +456,14 @@ export default async function PlanningCenterPage(
                           >
                             <Info className="size-3" />
                             nova info
+                          </span>
+                        )}
+                        {sugestoesPorCliente.has(c.id) && (
+                          <span
+                            className="inline-flex items-center rounded-full border border-dashed border-amber-400 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
+                            title="Sugestões do Coordenador no odontograma esperando a sua decisão"
+                          >
+                            {sugestoesPorCliente.get(c.id)} a definir
                           </span>
                         )}
                       </span>

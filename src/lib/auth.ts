@@ -66,6 +66,10 @@ export type SessionContext = {
   email: string;
   fullName: string;
   isAdminMaster: boolean;
+  /** O Admin Principal (titular, `profiles.is_owner`, 0262). No odontograma é
+   * o único Admin que faz os atos clínicos (decisão D6). Opcional para os
+   * testes que montam uma sessão à mão; ausente = não é o titular. */
+  isOwner?: boolean;
   /** Clinics the user can work in (all clinics for Admin Master) */
   clinics: Clinic[];
   /** Roles per clinic id */
@@ -145,7 +149,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
   ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("full_name, is_admin_master, is_active")
+        .select("full_name, is_admin_master, is_active, is_owner")
         .eq("id", userId)
         .single(),
       supabase
@@ -337,6 +341,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     email: user.email ?? "",
     fullName: profile?.full_name || (user.email ?? ""),
     isAdminMaster,
+    isOwner: isAdminMaster && profile?.is_owner === true,
     clinics,
     rolesByClinic,
     activeClinic,
