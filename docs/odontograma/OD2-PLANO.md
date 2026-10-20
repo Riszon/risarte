@@ -147,6 +147,9 @@ considerações.
 
 ### OD2 entregue (20/10/2026) — versão 0.335.0, migração 0310
 
+✅ **0310 aplicada na produção em 20/10/2026** (conferência do dono e de fora
+deram o esperado).
+
 - **Banco (0310):** `odontograms`, `tooth_findings`, a rodada com
   `diagnosis_finalized_at/by`, `content_hash` e os campos de assinatura;
   funções `suggest_tooth_findings`, `withdraw_tooth_finding`,

@@ -411,8 +411,7 @@ Syncthing se comportarem de forma estranha.**
   prova de quebra do banco pegou um caso que o ensaio não cobria (status de
   marca decidida) — acrescentado.
 - **Não visto:** o Planner decidindo na tela (porta da conta de teste do
-  Planner fechada no treino — não abri sem pedir). ⏳ **0310 aguarda a
-  produção.** Pergunta aberta: cor da cárie definida (azul × vermelho).
+  Planner fechada no treino — não abri sem pedir). ✅ **0310 APLICADA nos dois bancos** (o dono rodou na produção em 20/10/2026 e a conferência deu o esperado: 2 tabelas, 7 colunas, 5 travas, 7 funções, 0 sem login, 2 na auditoria, 0 marcas, 0 rodadas finalizadas; conferido de fora: sem login as 7 funções recusam com "permission denied" e as duas tabelas não entregam nada; a chave de serviço, que não é pessoa, recebe NOT_ALLOWED nas 6 portas de escrita antes de gravar). Pergunta aberta: cor da cárie definida (azul × vermelho).
 - Resíduo no treino: "Teste do portão 2 (pode ignorar)" na fase 2, com
   diagnóstico finalizado e um aviso ao Coordenador de teste.
 - Cache do servidor de teste limpo ao encerrar (AP40).
