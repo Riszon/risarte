@@ -105,8 +105,8 @@ PDF**, com:
 | **Novo:** prontuário completo | página para imprimir / salvar em PDF, com motivo (J3) |
 
 **Fica para depois:** a assinatura digital (ZapSign — D9); entregar os
-**arquivos** das fotos e exames em pacote (J4); a anonimização do paciente
-(não existe função no núcleo — vira item do BACKLOG).
+**arquivos** originais (áudio, vídeo, documentos) em pacote; a anonimização
+do paciente (não existe função no núcleo — vira item do BACKLOG).
 
 ---
 
@@ -118,6 +118,17 @@ PDF**, com:
 | **J2** | A **linha do tempo** | **Uma linha do tempo clínica única** + "ver o odontograma neste dia" |
 | **J3** | Quem **gera o prontuário completo** | **O Admin Master e o Gerente da unidade**, sempre com o **motivo** (pedido do paciente, transferência, auditoria, ordem judicial…) e tudo na auditoria |
 | **J4** | As **fotos e exames** no prontuário | **A lista** (nome, tipo, data) no PDF; os arquivos, só sob pedido (fica para depois) |
+
+### Decisões do dono (21/10/2026)
+
+| # | Decisão |
+|---|---|
+| J1 | A evolução tranca **ao concluir o atendimento**; sem atendimento, no fim do dia em que foi escrita. Depois, só **adendo** com motivo |
+| J2 | **Linha do tempo clínica única** + "ver o odontograma neste dia" |
+| J3 | O prontuário completo é gerado pelo **Admin Master e pelo Gerente da unidade**, sempre com **motivo**, tudo na auditoria |
+| J4 | ⚠️ Diferente da recomendação: as **fotos e radiografias entram impressas no PDF** (áudio, vídeo e arquivos que não são imagem continuam só na lista). Consequência a cuidar no código: o PDF pode ficar grande — as imagens entram numa largura de página, com nome, tipo e data embaixo |
+
+⏳ Aguardando o OK do dono para começar o código.
 
 ---
 
