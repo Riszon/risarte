@@ -100,8 +100,9 @@ export function anosCompletos(nascimento: string | null, hoje: string): number |
 // -- Marcas ---------------------------------------------------------------------
 
 /** existente = já está no dente (achado definido ou procedimento feito);
- *  planejado = a realizar (plano); sugerido = ainda não definido pelo Planner. */
-export type SituacaoDaMarca = "existente" | "planejado" | "sugerido";
+ *  planejado = a realizar (plano); sugerido = ainda não definido pelo Planner;
+ *  fora = estava no plano e o cliente não quis agora (aceite, OD4). */
+export type SituacaoDaMarca = "existente" | "planejado" | "sugerido" | "fora";
 
 export type MarcaNoDente = {
   dente: string;
@@ -120,11 +121,13 @@ export type MarcaNoDente = {
 /** A convenção de cores do dono (D12, ajustada em 20/10/2026): vermelho = a
  *  realizar (plano) OU achado a tratar; azul = existente/realizado; cinza =
  *  ausente; a sugestão tem contorno tracejado. A cor NUNCA é a única
- *  informação: o símbolo vai junto. */
+ *  informação: o símbolo vai junto. No aceite (OD4), o que o cliente não quis
+ *  agora fica cinza-claro e tracejado — sem o X, que é de dente ausente. */
 export function corDaMarca(m: Pick<MarcaNoDente, "situacao" | "codigo" | "aTratar">): {
-  classe: "planejado" | "existente" | "ausente";
+  classe: "planejado" | "existente" | "ausente" | "fora";
   tracejado: boolean;
 } {
+  if (m.situacao === "fora") return { classe: "fora", tracejado: true };
   const ausente = m.codigo === "A" || m.codigo === "RZ-ESFOLIADO";
   return {
     classe: m.situacao === "planejado" || m.aTratar ? "planejado" : ausente ? "ausente" : "existente",
@@ -138,7 +141,14 @@ export function descricaoDoDente(dente: string, nome: string, marcas: MarcaNoDen
   if (doDente.length === 0) return `Dente ${dente}, ${nome}: sem registro`;
   const partes = doDente.map((m) => {
     const onde = m.faces.length ? ` (faces ${m.faces.join(", ")})` : "";
-    const como = m.situacao === "planejado" ? "a realizar" : m.situacao === "sugerido" ? "sugestão" : "existente";
+    const como =
+      m.situacao === "planejado"
+        ? "a realizar"
+        : m.situacao === "sugerido"
+          ? "sugestão"
+          : m.situacao === "fora"
+            ? "o cliente não quis agora"
+            : "existente";
     return `${m.nome}${onde}, ${como}`;
   });
   return `Dente ${dente}, ${nome}: ${partes.join("; ")}`;

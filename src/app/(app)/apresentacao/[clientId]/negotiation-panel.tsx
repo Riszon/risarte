@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   CornerUpLeft,
   Handshake,
+  Printer,
   ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,13 @@ import {
   savePlanNegotiation,
 } from "./negotiation-actions";
 import { todayInBrazil } from "@/lib/dates";
+import { Odontograma } from "@/components/odontograma/odontograma";
+import {
+  alternarDente,
+  localDoItem,
+  marcasDoAceite,
+  type OdontoDaApresentacao,
+} from "@/lib/odontograma/aceite";
 
 export type NegotiationOption = {
   id: string;
@@ -71,6 +79,10 @@ export type NegotiationOption = {
     gutGravity: number | null;
     gutUrgency: number | null;
     gutTendency: number | null;
+    /** OD3/OD4: o lugar do item — com um item por dente, o aceite é dente a dente. */
+    toothCode?: string | null;
+    faceCodes?: string[] | null;
+    regionCode?: string | null;
   }[];
 };
 
@@ -122,6 +134,7 @@ const STATUS_PILL: Record<NegotiationStatus, string> = {
   devolvida: "border-border bg-muted text-muted-foreground",
   perdida: "border-rose-300 bg-rose-50 text-rose-800",
   cancelada: "border-border bg-muted text-muted-foreground",
+  substituida: "border-border bg-muted text-muted-foreground",
 };
 
 export function NegotiationPanel({
@@ -137,11 +150,14 @@ export function NegotiationPanel({
   programConditions = null,
   payoutByOption = {},
   minMarginPercent = null,
+  odonto = null,
 }: {
   clientId: string;
   planId: string;
   options: NegotiationOption[];
   negotiation: NegotiationData | null;
+  /** OD4: o desenho do aceite (tocar no dente marca/desmarca os itens dele). */
+  odonto?: OdontoDaApresentacao | null;
   rule: CommercialRule;
   planEvents?: PlanEvent[];
   canEdit: boolean;
@@ -271,6 +287,15 @@ export function NegotiationPanel({
       else cur.add(id);
       return { ...prev, [optionId]: [...cur] };
     });
+  }
+
+  // OD4: tocar no dente do desenho marca/desmarca TODOS os itens dele.
+  function toggleTooth(dente: string) {
+    if (locked || !option) return;
+    setExcludedByOption((prev) => ({
+      ...prev,
+      [optionId]: alternarDente(option.items, prev[optionId] ?? [], dente),
+    }));
   }
 
   // Todos os itens/exclusões de TODAS as opções (vão juntos ao salvar/devolver).
@@ -628,6 +653,19 @@ export function NegotiationPanel({
             {/* Histórico do plano — o Consultor e o Gerente entendem o caminho
                 do plano (quem criou/aprovou/devolveu) antes de decidir. */}
             <PlanHistoryDialog events={planEvents} />
+            {/* OD4: o orçamento impresso lê o que está SALVO na negociação. */}
+            {negotiation && (
+              <a
+                href={`/orcamentos/${negotiation.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium hover:bg-muted"
+                title="Abre o orçamento com o que já foi salvo — salve antes, se mudou algo"
+              >
+                <Printer className="size-3.5" />
+                Orçamento
+              </a>
+            )}
             {status && (
               <span
                 className={cn(
@@ -756,6 +794,7 @@ export function NegotiationPanel({
           <ul className="space-y-1">
             {sortByGutDesc(option.items).map((i) => {
               const out = excluded.has(i.id);
+              const onde = localDoItem(i, odonto?.regioes);
               return (
                 <li
                   key={i.id}
@@ -769,10 +808,13 @@ export function NegotiationPanel({
                     checked={!out}
                     onChange={() => toggleItem(i.id)}
                     disabled={locked}
-                    aria-label={`Incluir ${i.description}`}
+                    aria-label={`Incluir ${i.description}${onde ? ` — ${onde}` : ""}`}
                   />
                   <span className={cn("min-w-0 flex-1", out && "line-through opacity-70")}>
                     {i.description}
+                    {onde && (
+                      <span className="ml-1 text-xs font-medium text-muted-foreground">— {onde}</span>
+                    )}
                     {i.quantity > 1 ? ` ×${i.quantity}` : ""}
                     {/* J7: benefício do programa neste procedimento. */}
                     {(i.programDiscountCents ?? 0) > 0 && (
@@ -796,6 +838,31 @@ export function NegotiationPanel({
               );
             })}
           </ul>
+          {/* OD4: o desenho do aceite — vermelho = aceito; cinza tracejado = o
+              cliente não quis agora. Tocar no dente marca/desmarca os itens dele. */}
+          {odonto && option.items.some((i) => i.toothCode) && (
+            <details className="rounded-md border bg-muted/10 px-3 py-2" open>
+              <summary className="cursor-pointer text-xs font-medium">
+                Odontograma do aceite
+                {!locked && (
+                  <span className="ml-1 font-normal text-muted-foreground">
+                    — toque no dente para marcar ou desmarcar o que ele aceitou
+                  </span>
+                )}
+              </summary>
+              <div className="mt-2">
+                <Odontograma
+                  key={optionId}
+                  modo={locked ? "leitura" : "diagnostico"}
+                  denticaoInicial={odonto.denticao}
+                  nomes={odonto.nomes}
+                  faces={odonto.faces}
+                  marcas={marcasDoAceite(option.items, excluded, odonto)}
+                  onDente={toggleTooth}
+                />
+              </div>
+            </details>
+          )}
           {isPartial && (
             <div>
               <label className="block text-[11px] font-medium text-rose-700">

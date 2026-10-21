@@ -89,6 +89,7 @@ export default async function PresentationPage(
           canAuthorize={canAuthorize}
           payoutByOption={negotiationBlock.payoutByOption}
           minMarginPercent={negotiationBlock.minMarginPercent}
+          odonto={negotiationBlock.odonto}
         />
       )}
       {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}

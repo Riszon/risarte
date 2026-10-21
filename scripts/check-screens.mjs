@@ -114,6 +114,7 @@ const FIXTURE_SOURCES = {
   clinicalDocument: () => admin.from("clinical_documents").select("id").limit(1),
   renegotiation: () =>
     admin.from("payment_renegotiations").select("id").limit(1),
+  negotiation: () => admin.from("plan_negotiations").select("id").limit(1),
   // `id:code` — a rota usa o código, e o resto do script lê `.id`.
   systemReport: () => admin.from("system_reports").select("id:code").limit(1),
   staffMember: () =>

@@ -2524,6 +2524,17 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP64. Versão nova do plano aprovada DEPOIS da venda — o painel passa para ela (20/10/2026)
+
+**Suspeita, lida no código (não executado).** Achado na OD4. "Criar nova
+versão" não confere se o plano já foi vendido. Se a versão nova for aprovada
+depois do aceite, `planoDaNegociacao` escolhe a versão nova (a mais nova que
+vale), sem negociação — e o painel de fechamento da venda da anterior some da
+apresentação enquanto o fechamento ainda corre. **Não é novo:** antes da OD4 o
+painel já pegava "o aprovado mais novo". A venda e as sessões não mudam (a
+0313 não toca a aceita; as sessões seguem a venda). Mesma família da AP63:
+decidir com o dono como se muda um plano já vendido. Produção com 0 vendas.
+
 ### AP63. Nova venda depois de uma negociação cancelada — suspeita (20/10/2026)
 
 **Suspeita, lida no código (não executado).** Achado no levantamento da OD4.

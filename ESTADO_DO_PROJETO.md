@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.337.0** · Última migração: **0312** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.338.0** · Última migração: **0313** (aplicada no treino; ⏳ produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🦷 0.338.0 / 0313 — ODONTOGRAMA OD4: APRESENTAÇÃO, ACEITE POR DENTE E ORÇAMENTO (20/10/2026)
+>
+> Slide "O seu odontograma" e proposta por dente; "Mostrar alternativa" (G1,
+> abre na principal); anotações do Coordenador fora da tela do cliente e do
+> Gamma (G4). Negociação com o dente em cada caixinha e o odontograma do
+> aceite (tocar alterna os itens do dente; fora = cinza tracejado). **Novo:
+> orçamento impresso** `/orcamentos/[negociação]` (G3: é o papel assinado até
+> vir o contrato do dono), com validade da regra comercial (G2: 15 dias,
+> configurável rede → unidade). ⚠️ **Versão nova aprovada encerra a negociação
+> ABERTA da anterior** ("substituída"); venda aceita não muda; sessões sem venda
+> não saem de plano substituído. Pura e testada: `src/lib/odontograma/aceite.ts`,
+> `src/lib/orcamento.ts`.
 
 > ## 🦷 0.337.0 / 0312 — D6 NO PLANO + ACHADO A TRATAR EM VERMELHO (20/10/2026)
 >

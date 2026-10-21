@@ -125,7 +125,32 @@ chave); o envio do orçamento por WhatsApp/e-mail; o desenho no deck do Gamma
 | G3 | **Agora só o orçamento assinado**; o contrato com cláusulas quando o dono mandar o modelo |
 | G4 | As **considerações do Coordenador saem** da tela do cliente |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono ("pode começar o código da OD4"). **Código entregue na 0.338.0,
+migração 0313** — aplicada no treino; ⏳ produção pendente.
+
+### O que foi feito (0.338.0)
+
+- **0313:** `commercial_rules.budget_validity_days` (1–365; vazio = 15);
+  situação `substituida` na negociação; gatilho que, ao substituir o plano,
+  encerra a negociação aberta dele com a linha "substituído pela versão N" (e
+  registro na linha do tempo do plano); sessões sem venda ignoram plano
+  substituído (`ensure_treatment_sessions`, `topup_treatment_sessions`).
+- **Apresentação:** slide "O seu odontograma" + proposta por dente; G1
+  "Mostrar alternativa"; G4 sem as anotações do Coordenador (tela e Gamma).
+- **Negociação:** rótulo do dente; odontograma do aceite (tocar no dente
+  alterna os itens dele); plano escolhido por `planoDaNegociacao`.
+- **Orçamento impresso** `/orcamentos/[negociação]`: lê o que está salvo;
+  avisos no papel (aguardando autorização, perdida, cancelada, substituída,
+  conta que não fecha); validade; assinaturas do cliente e do Consultor. Abre
+  para Consultor, Assistente comercial, Gerente, Planner e Admin (não para o
+  Coordenador nem a Recepção — D7/F4).
+- **Fechamento:** "Imprimir orçamento para assinar"; "Contrato assinado"
+  segue manual.
+
+**Uma coisa que a leitura mostrou e não muda regra:** a **devolução ao
+planejamento** reabre o MESMO plano como rascunho (não cria versão), então a
+negociação "devolvida" não é encerrada pela 0313 — ela continua e o Consultor
+salva a nova rodada, como antes. Só uma **versão nova aprovada** encerra.
 
 ---
 

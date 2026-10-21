@@ -12,6 +12,8 @@ import type { PlanEvent } from "@/lib/planning";
 import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import type { ScheduleEntry } from "@/lib/payments";
+import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
+import { planoDaNegociacao, type OdontoDaApresentacao } from "@/lib/odontograma/aceite";
 import type {
   NegotiationData,
   NegotiationOption,
@@ -29,6 +31,8 @@ export type NegotiationBlock = {
   planId: string;
   options: NegotiationOption[];
   negotiation: NegotiationData | null;
+  /** OD4: o desenho do aceite (nulo = não carregou; o painel segue sem ele). */
+  odonto: OdontoDaApresentacao | null;
   rule: CommercialRule;
   /** Histórico do plano em negociação (para o Consultor e o Gerente). */
   planEvents: PlanEvent[];
@@ -75,14 +79,33 @@ export async function loadNegotiationBlock(
 ): Promise<NegotiationBlock | null> {
   const supabase = await createClient();
 
+  // OD4: o plano aprovado mais novo QUE VALE. Versão substituída só entra se
+  // foi vendida — a negociação aberta dela a 0313 encerra ("substituída").
   const { data: planRows } = await supabase
     .from("treatment_plans")
-    .select("id")
+    .select("id, created_at, superseded_at, plan_negotiations ( status )")
     .eq("client_id", clientId)
     .eq("status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(1);
-  const planId = planRows?.[0]?.id as string | undefined;
+    .returns<
+      {
+        id: string;
+        created_at: string;
+        superseded_at: string | null;
+        plan_negotiations: { status: string }[] | { status: string } | null;
+      }[]
+    >();
+  const planId =
+    planoDaNegociacao(
+      (planRows ?? []).map((p) => {
+        const n = Array.isArray(p.plan_negotiations) ? p.plan_negotiations[0] : p.plan_negotiations;
+        return {
+          id: p.id,
+          createdAt: p.created_at,
+          supersededAt: p.superseded_at,
+          negociacao: n?.status ?? null,
+        };
+      })
+    ) ?? undefined;
   if (!planId) return null;
 
   const [{ data: optRows }, { data: negRows }, { data: ruleRows }] =
@@ -91,7 +114,7 @@ export async function loadNegotiationBlock(
       supabase
         .from("treatment_plan_options")
         .select(
-          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency )"
+          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency, tooth_code, face_codes, region_code )"
         )
         .eq("plan_id", planId)
         .eq("review_status", "approved")
@@ -113,6 +136,9 @@ export async function loadNegotiationBlock(
               gut_gravity: number | null;
               gut_urgency: number | null;
               gut_tendency: number | null;
+              tooth_code: string | null;
+              face_codes: string[] | null;
+              region_code: string | null;
             }[];
           }[]
         >(),
@@ -188,9 +214,23 @@ export async function loadNegotiationBlock(
         gutGravity: i.gut_gravity,
         gutUrgency: i.gut_urgency,
         gutTendency: i.gut_tendency,
+        toothCode: i.tooth_code ?? null,
+        faceCodes: i.face_codes ?? [],
+        regionCode: i.region_code ?? null,
       })),
   }));
   if (options.length === 0) return null;
+
+  // OD4: o desenho do aceite (o mesmo da apresentação).
+  const { data: cliRow } = await supabase
+    .from("clients")
+    .select("birth_date")
+    .eq("id", clientId)
+    .maybeSingle();
+  const odonto = await carregarOdontoDaApresentacao(
+    clientId,
+    (cliRow?.birth_date as string | null) ?? null
+  );
 
   // Histórico do plano em negociação (linha do tempo com autores) — o Gerente
   // usa para entender o plano ao autorizar uma negociação fora da regra.
@@ -362,6 +402,7 @@ export async function loadNegotiationBlock(
     planId,
     options,
     negotiation,
+    odonto,
     payoutByOption,
     minMarginPercent: minMargin === null ? null : Number(minMargin),
     // J4b/J5: MESMA regra da venda direta — o PPR+ amplia teto/parcelas e as

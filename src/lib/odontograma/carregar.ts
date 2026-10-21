@@ -8,9 +8,11 @@ import {
   COLUNAS_DO_ACHADO,
   achadoDaLinha,
   denticaoDoBanco,
+  marcasDoDesenho,
   type Achado,
   type SituacaoDoDente,
 } from "@/lib/odontograma/diagnostico";
+import type { OdontoDaApresentacao } from "@/lib/odontograma/aceite";
 
 export type RodadaDoOdontograma = {
   id: string;
@@ -170,6 +172,33 @@ export async function carregarOdontograma(
   });
 
   return { nomes, dentes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas };
+}
+
+/**
+ * OD4: o odontograma que a tela do CLIENTE (apresentação, aceite, orçamento)
+ * desenha. Leva só o diagnóstico DEFINIDO — nada de sugestão pendente nem de
+ * quem sugeriu. Nulo quando a referência ou as regras não carregaram: a tela
+ * segue sem o desenho (a proposta continua de pé).
+ */
+export async function carregarOdontoDaApresentacao(
+  clientId: string,
+  nascimento: string | null
+): Promise<OdontoDaApresentacao | null> {
+  const [dados, regras] = await Promise.all([
+    carregarOdontograma(clientId, nascimento),
+    carregarRegrasDoPlano(),
+  ]);
+  if (!dados || !regras) return null;
+  return {
+    nomes: dados.nomes,
+    faces: dados.faces,
+    denticao: dados.denticao,
+    motivoDaDenticao: dados.motivoDaDenticao,
+    situacoes: dados.situacoes,
+    regras,
+    regioes: dados.regioes.map((r) => ({ code: r.code, name: r.name })),
+    existentes: marcasDoDesenho(dados.achados ?? [], dados.situacoes, "definidos"),
+  };
 }
 
 /**

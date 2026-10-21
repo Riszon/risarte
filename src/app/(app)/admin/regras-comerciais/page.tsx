@@ -13,7 +13,7 @@ export default async function CommercialRulesPage() {
   await requireAdminMaster();
   const supabase = await createClient();
 
-  const [{ data: rows }, { data: followup }, { data: clinics }] =
+  const [{ data: rows }, { data: followup }, { data: clinics }, validade] =
     await Promise.all([
       supabase
         .from("commercial_rules")
@@ -29,7 +29,19 @@ export default async function CommercialRulesPage() {
         .eq("type", "franchise_unit")
         .eq("is_active", true)
         .order("name"),
+      // OD4 (G2): consulta à parte — antes da 0313 a coluna não existe e a
+      // tela segue funcionando, só sem o campo da validade.
+      supabase
+        .from("commercial_rules")
+        .select("clinic_id, budget_validity_days")
+        .returns<{ clinic_id: string | null; budget_validity_days: number | null }[]>(),
     ]);
+  const validadePronta = !validade.error;
+  const comValidade: RuleRowUi[] = (rows ?? []).map((r) => ({
+    ...r,
+    budget_validity_days:
+      validade.data?.find((v) => v.clinic_id === r.clinic_id)?.budget_validity_days ?? null,
+  }));
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
@@ -40,10 +52,15 @@ export default async function CommercialRulesPage() {
         <p className="text-sm text-muted-foreground">
           Limites que o Consultor Comercial pratica na negociação: desconto
           máximo, parcelamento e meios de pagamento. Negociação fora da regra
-          exige autorização do Gerente da unidade.
+          exige autorização do Gerente da unidade. Aqui também fica a
+          validade do orçamento impresso.
         </p>
       </div>
-      <CommercialRulesEditor rows={rows ?? []} clinics={clinics ?? []} />
+      <CommercialRulesEditor
+        rows={comValidade}
+        clinics={clinics ?? []}
+        validadePronta={validadePronta}
+      />
 
       <div className="border-t pt-6">
         <FollowupCadenceEditor

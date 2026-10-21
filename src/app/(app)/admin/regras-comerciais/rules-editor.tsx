@@ -23,6 +23,8 @@ export type RuleRowUi = {
   /** I8: desconto automático à vista (%) e parcela mínima por meio. */
   cash_discount_percent?: number | null;
   min_installment_cents_by_method?: Record<string, number> | null;
+  /** OD4 (G2): validade do orçamento impresso, em dias (vazio = herda / 15). */
+  budget_validity_days?: number | null;
 };
 
 const selectClass =
@@ -37,9 +39,12 @@ function centsToInput(cents: number | null | undefined): string {
 export function CommercialRulesEditor({
   rows,
   clinics,
+  validadePronta = false,
 }: {
   rows: RuleRowUi[];
   clinics: { id: string; name: string }[];
+  /** OD4: a coluna da validade só existe depois da 0313. */
+  validadePronta?: boolean;
 }) {
   const networkRule = rows.find((r) => r.clinic_id === null) ?? null;
   const unitRules = rows.filter((r) => r.clinic_id !== null);
@@ -58,6 +63,7 @@ export function CommercialRulesEditor({
         subtitle="Vale para todas as unidades que não tiverem ajuste próprio."
         clinicId={null}
         rule={networkRule}
+        validadePronta={validadePronta}
       />
 
       <div>
@@ -77,6 +83,7 @@ export function CommercialRulesEditor({
           clinicId={r.clinic_id}
           rule={r}
           removableId={r.id}
+          validadePronta={validadePronta}
         />
       ))}
 
@@ -106,6 +113,7 @@ export function CommercialRulesEditor({
           subtitle="Novo ajuste — salve para valer."
           clinicId={addUnitId}
           rule={null}
+          validadePronta={validadePronta}
         />
       )}
     </div>
@@ -118,12 +126,14 @@ function RuleForm({
   clinicId,
   rule,
   removableId,
+  validadePronta,
 }: {
   title: string;
   subtitle?: string;
   clinicId: string | null;
   rule: RuleRowUi | null;
   removableId?: string;
+  validadePronta: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -209,6 +219,29 @@ function RuleForm({
               />
             </label>
           </div>
+          {/* OD4 (G2): validade do orçamento impresso. */}
+          <label className="block text-sm">
+            <span className="text-xs text-muted-foreground">
+              Validade do orçamento impresso (dias)
+            </span>
+            {validadePronta && <input type="hidden" name="validadePronta" value="1" />}
+            <Input
+              name="budgetValidityDays"
+              inputMode="numeric"
+              disabled={!validadePronta}
+              placeholder={clinicId ? "herda da rede" : "15 (padrão)"}
+              defaultValue={
+                rule?.budget_validity_days != null
+                  ? String(rule.budget_validity_days)
+                  : ""
+              }
+            />
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+              {validadePronta
+                ? "O orçamento que o cliente assina mostra até quando o valor vale, contado do dia da impressão. Em branco = 15 dias."
+                : "Disponível depois da atualização do banco (0313). Até lá, o orçamento vale 15 dias."}
+            </span>
+          </label>
           {/* I8: desconto automático — só existe à vista. */}
           <label className="block text-sm">
             <span className="text-xs text-muted-foreground">

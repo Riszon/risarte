@@ -10,15 +10,16 @@ import {
   formatSessions,
   type BudgetItem,
 } from "@/lib/pricing";
-import type { PresentationData } from "./presentation-view";
+import type { PresentationData, PresentationOption } from "./presentation-view";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
-import { rotuloDoLocal } from "@/lib/odontograma/plano";
+import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
+import { localDoItem, marcasDoAceite, porDente } from "@/lib/odontograma/aceite";
 
 export type LoadResult =
   | { ok: true; data: PresentationData; clinicId: string; hasApprovedPlan: boolean }
   | { ok: false; reason: "not_found" | "forbidden" };
 
-/** Carrega os dados da apresentação (opção principal aprovada) e valida o acesso.
+/** Carrega os dados da apresentação (opções aprovadas, a principal primeiro) e valida o acesso.
  * Usado pela página (server component) e pela action de geração no Gamma. */
 export async function loadPresentationData(
   clientId: string
@@ -29,7 +30,7 @@ export async function loadPresentationData(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, clinic_id, journey_phase, methodology_pillar, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, clinic_id, journey_phase, methodology_pillar, birth_date, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -92,12 +93,18 @@ export async function loadPresentationData(
   let diagnosis: string | null = null;
   let objectives: string | null = null;
   let planningNotes: string | null = null;
-  let option: PresentationData["option"] = null;
+  const options: PresentationOption[] = [];
   let sessionGroups: PresentationData["sessionGroups"] = [];
+  // OD4: o desenho da boca (diagnóstico definido + o que cada opção faz).
+  const odonto = planRow
+    ? await carregarOdontoDaApresentacao(clientId, (client.birth_date as string | null) ?? null)
+    : null;
   if (planRow) {
     diagnosis = planRow.diagnosis;
     objectives = planRow.objectives;
     planningNotes = planRow.planning_notes;
+    // G1 (OD4): TODAS as opções aprovadas — a principal primeiro; as outras
+    // só aparecem quando o Consultor escolhe "mostrar alternativa".
     const { data: optRows } = await supabase
       .from("treatment_plan_options")
       .select("id, is_primary, title, sort_order, review_status")
@@ -105,7 +112,6 @@ export async function loadPresentationData(
       .eq("review_status", "approved")
       .order("is_primary", { ascending: false })
       .order("sort_order")
-      .limit(1)
       .returns<
         {
           id: string;
@@ -115,49 +121,36 @@ export async function loadPresentationData(
           review_status: string;
         }[]
       >();
-    const opt = optRows?.[0];
-    if (opt) {
-      const { data: itemRows } = await supabase
-        .from("treatment_plan_option_items")
-        .select(
-          "id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, sort_order"
-        )
-        .eq("option_id", opt.id)
-        .order("sort_order")
-        .returns<
-          {
-            id: string;
-            procedure_id: string | null;
-            description: string;
-            quantity: number;
-            unit_price_cents: number;
-            planned_sessions: number | null;
-            planned_total_minutes: number | null;
-            sort_order: number;
-          }[]
-        >();
-      // OD3: o dente/região de cada item (à parte — sem a 0311, sem dente).
-      const ondePorItem = new Map<string, string>();
-      {
-        const { data: locRows, error: locErro } = await supabase
+    const { data: itemRows } = optRows?.length
+      ? await supabase
           .from("treatment_plan_option_items")
-          .select("id, tooth_code, face_codes, region_code, region:dental_regions ( name )")
-          .eq("option_id", opt.id)
+          .select(
+            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, sort_order, tooth_code, face_codes, region_code"
+          )
+          .in("option_id", optRows.map((o) => o.id))
+          .order("sort_order")
           .returns<
-            { id: string; tooth_code: string | null; face_codes: string[] | null; region_code: string | null; region: { name: string } | { name: string }[] | null }[]
-          >();
-        if (!locErro) {
-          for (const l of locRows ?? []) {
-            const reg = Array.isArray(l.region) ? l.region[0] : l.region;
-            const rotulo = rotuloDoLocal(
-              { toothCode: l.tooth_code, faceCodes: l.face_codes ?? [], regionCode: l.region_code },
-              () => reg?.name?.trim()
-            );
-            if (rotulo) ondePorItem.set(l.id, rotulo);
-          }
-        }
-      }
-      const items: BudgetItem[] = (itemRows ?? []).map((it) => ({
+            {
+              id: string;
+              option_id: string;
+              procedure_id: string | null;
+              description: string;
+              quantity: number;
+              unit_price_cents: number;
+              planned_sessions: number | null;
+              planned_total_minutes: number | null;
+              sort_order: number;
+              tooth_code: string | null;
+              face_codes: string[] | null;
+              region_code: string | null;
+            }[]
+          >()
+      : { data: [] };
+
+    let principal: BudgetItem[] = [];
+    for (const opt of optRows ?? []) {
+      const linhas = (itemRows ?? []).filter((it) => it.option_id === opt.id);
+      const items: BudgetItem[] = linhas.map((it) => ({
         id: it.id,
         procedureId: it.procedure_id,
         description: it.description,
@@ -168,15 +161,13 @@ export async function loadPresentationData(
         // A apresentação não usa etapas/indicação — campos só para o tipo.
         stageId: null,
         suggestedProviderId: null,
+        toothCode: it.tooth_code,
+        faceCodes: it.face_codes ?? [],
+        regionCode: it.region_code,
       }));
-      const totalSessions = items.reduce(
-        (s, it) => s + (it.plannedSessions ?? 0),
-        0
-      );
-      const totalMinutes = items.reduce(
-        (s, it) => s + (it.plannedMinutes ?? 0),
-        0
-      );
+      if (options.length === 0) principal = items;
+      const totalSessions = items.reduce((s, it) => s + (it.plannedSessions ?? 0), 0);
+      const totalMinutes = items.reduce((s, it) => s + (it.plannedMinutes ?? 0), 0);
       const summaryLabel =
         totalSessions > 0 || totalMinutes > 0
           ? [
@@ -186,29 +177,33 @@ export async function loadPresentationData(
               .filter(Boolean)
               .join(" · ")
           : null;
-      option = {
+      const comLocal = items.map((it) => ({ ...it, faceCodes: it.faceCodes ?? [] }));
+      options.push({
+        id: opt.id,
         title: opt.title,
-        items: items.map((it) => ({
-          description: ondePorItem.has(it.id) ? `${it.description} — ${ondePorItem.get(it.id)}` : it.description,
+        isPrimary: opt.is_primary,
+        // "Proposta e investimento" por dente/região (OD4).
+        items: porDente(comLocal, odonto?.regioes).map(({ item: it, local }) => ({
+          description: it.description,
+          local,
           quantity: it.quantity,
-          sessionsLabel: it.plannedSessions
-            ? formatSessions(it.plannedSessions)
-            : null,
-          minutesLabel: it.plannedMinutes
-            ? formatMinutes(it.plannedMinutes)
-            : null,
+          sessionsLabel: it.plannedSessions ? formatSessions(it.plannedSessions) : null,
+          minutesLabel: it.plannedMinutes ? formatMinutes(it.plannedMinutes) : null,
           priceLabel:
             !veApenasTotais && it.unitPriceCents > 0
               ? formatBRL(it.unitPriceCents * it.quantity)
               : null,
         })),
-        totalLabel:
-          budgetTotalCents(items) > 0 ? formatBRL(budgetTotalCents(items)) : null,
+        totalLabel: budgetTotalCents(items) > 0 ? formatBRL(budgetTotalCents(items)) : null,
         summaryLabel,
-      };
+        marcas: odonto ? marcasDoAceite(comLocal, [], odonto) : [],
+      });
+    }
 
-      // Sessão por sessão: protocolo de cada procedimento (unidade > Rede);
-      // sem protocolo, cai na contagem planejada do item.
+    // Sessão por sessão (da principal): protocolo de cada procedimento
+    // (unidade > Rede); sem protocolo, cai na contagem planejada do item.
+    const items = principal;
+    if (items.length > 0) {
       const procIds = items
         .map((it) => it.procedureId)
         .filter((x): x is string => Boolean(x));
@@ -267,8 +262,9 @@ export async function loadPresentationData(
             minutesLabel: per ? formatMinutes(per) : null,
           }));
         }
+        const onde = localDoItem(it, odonto?.regioes);
         return {
-          procedure: it.description,
+          procedure: onde ? `${it.description} — ${onde}` : it.description,
           quantity: it.quantity,
           repeatNote:
             it.quantity > 1 && base.length > 0
@@ -280,17 +276,9 @@ export async function loadPresentationData(
     }
   }
 
-  // -- Considerações clínicas (queixa/condição) --
-  const { data: noteRows } = await supabase
-    .from("clinical_notes")
-    .select("body, created_at")
-    .eq("client_id", clientId)
-    .order("created_at", { ascending: false })
-    .returns<{ body: string; created_at: string }[]>();
-  const considerations = (noteRows ?? [])
-    .map((n) => n.body)
-    .filter((b): b is string => Boolean(b && b.trim()))
-    .slice(0, 6);
+  // G4 (OD4): as anotações clínicas do Coordenador (clinical_notes) NÃO vão
+  // para a tela do cliente — são registro interno. O cliente vê o diagnóstico
+  // do plano, o odontograma e as considerações do planejamento.
 
   // -- Imagens clínicas (somente imagens; URLs assinadas) --
   const { data: mediaRows } = await supabase
@@ -348,9 +336,12 @@ export async function loadPresentationData(
     diagnosis,
     objectives,
     planningNotes,
-    considerations,
     photos,
-    option,
+    option: options[0] ?? null,
+    alternatives: options.slice(1),
+    odonto: odonto
+      ? { nomes: odonto.nomes, faces: odonto.faces, denticao: odonto.denticao }
+      : null,
     sessionGroups,
   };
 

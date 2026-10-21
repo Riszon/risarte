@@ -17,10 +17,14 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Odontograma } from "@/components/odontograma/odontograma";
+import type { Denticao, MarcaNoDente } from "@/lib/odontograma/desenho";
 import { generateGammaDeck, getGammaStatus } from "./actions";
 
 export type PresentationOptionItem = {
   description: string;
+  /** OD4: "16 (O)", "Dente 46", "Arcada superior" — nulo = item sem lugar. */
+  local: string | null;
   quantity: number;
   sessionsLabel: string | null;
   minutesLabel: string | null;
@@ -34,6 +38,18 @@ export type PresentationSessionGroup = {
   sessions: { label: string; minutesLabel: string | null }[];
 };
 
+export type PresentationOption = {
+  id: string;
+  title: string;
+  isPrimary: boolean;
+  /** Em ordem de dente (FDI), depois região, depois o que não tem lugar. */
+  items: PresentationOptionItem[];
+  totalLabel: string | null;
+  summaryLabel: string | null;
+  /** OD4: o vermelho do que a opção faz + o diagnóstico definido. */
+  marcas: MarcaNoDente[];
+};
+
 export type PresentationData = {
   clientName: string;
   clientCode: string | null;
@@ -43,13 +59,17 @@ export type PresentationData = {
   diagnosis: string | null;
   objectives: string | null;
   planningNotes: string | null;
-  considerations: string[];
+  // G4 (OD4): as anotações clínicas do Coordenador NÃO vêm mais para cá.
   photos: { id: string; url: string; name: string | null }[];
-  option: {
-    title: string;
-    items: PresentationOptionItem[];
-    totalLabel: string | null;
-    summaryLabel: string | null;
+  /** A opção principal aprovada. */
+  option: PresentationOption | null;
+  /** G1 (OD4): as outras aprovadas — só entram quando o Consultor escolhe. */
+  alternatives: PresentationOption[];
+  /** OD4: a referência do desenho (nulo = não carregou; segue sem o slide). */
+  odonto: {
+    nomes: Record<string, string>;
+    faces: Record<string, string[]>;
+    denticao: Denticao;
   } | null;
   sessionGroups: PresentationSessionGroup[];
 };
@@ -238,6 +258,76 @@ function PhotoPicker({
   );
 }
 
+// OD4: o desenho da opção + a lista "16 — Selante (O)".
+function OdontoDaOpcao({
+  odonto,
+  option,
+}: {
+  odonto: NonNullable<PresentationData["odonto"]>;
+  option: PresentationOption;
+}) {
+  const comLugar = option.items.filter((it) => it.local);
+  return (
+    <div className="space-y-3">
+      <Odontograma
+        modo="leitura"
+        denticaoInicial={odonto.denticao}
+        nomes={odonto.nomes}
+        faces={odonto.faces}
+        marcas={option.marcas}
+      />
+      {comLugar.length > 0 && (
+        <ul className="grid gap-x-6 gap-y-0.5 text-sm sm:grid-cols-2">
+          {comLugar.map((it, i) => (
+            <li key={i}>
+              <span className="font-semibold tabular-nums">{it.local}</span> — {it.description}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// A lista de procedimentos (por dente) e o investimento total de uma opção.
+function PropostaDaOpcao({ option }: { option: PresentationOption }) {
+  return (
+    <div>
+      <ul className="space-y-2">
+        {option.items.map((it, i) => (
+          <li
+            key={i}
+            className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 last:border-0"
+          >
+            <span className="font-medium">
+              {it.quantity > 1 ? `${it.quantity}× ` : ""}
+              {it.description}
+              {it.local && (
+                <span className="ml-1 font-normal text-muted-foreground">— {it.local}</span>
+              )}
+              {(it.sessionsLabel || it.minutesLabel) && (
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  ({[it.sessionsLabel, it.minutesLabel].filter(Boolean).join(" · ")})
+                </span>
+              )}
+            </span>
+            {it.priceLabel && <span className="tabular-nums">{it.priceLabel}</span>}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wide opacity-80">Investimento total</p>
+          {option.summaryLabel && <p className="text-xs opacity-80">{option.summaryLabel}</p>}
+        </div>
+        {option.totalLabel && (
+          <p className="text-2xl font-bold tabular-nums">{option.totalLabel}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function PresentationView({
   data,
   clientId,
@@ -261,6 +351,8 @@ export function PresentationView({
   const [presentPhotoIds, setPresentPhotoIds] = useState<string[]>(() =>
     data.photos.map((p) => p.id)
   );
+  // G1 (OD4): abre só na principal; o Consultor escolhe mostrar alternativas.
+  const [alternativasVisiveis, setAlternativasVisiveis] = useState<string[]>([]);
 
   // Polling do status da geração no Gamma (até completar).
   useEffect(() => {
@@ -324,26 +416,22 @@ export function PresentationView({
   function buildSlides(mode: "scroll" | "present"): SlideDef[] {
     const list: SlideDef[] = [{ key: "cover", title: "Capa", cover: true }];
 
-    if (data.diagnosis || data.considerations.length > 0) {
+    // G4 (OD4): só o diagnóstico do plano — as anotações clínicas do
+    // Coordenador são internas e não vêm para a tela do cliente.
+    if (data.diagnosis) {
       list.push({
         key: "diag",
         title: "Diagnóstico e condição",
-        body: (
-          <>
-            {data.diagnosis && (
-              <p className="whitespace-pre-wrap">{data.diagnosis}</p>
-            )}
-            {data.considerations.length > 0 && (
-              <ul className="mt-2 list-disc space-y-1 pl-5">
-                {data.considerations.map((c, i) => (
-                  <li key={i} className="whitespace-pre-wrap">
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        ),
+        body: <p className="whitespace-pre-wrap">{data.diagnosis}</p>,
+      });
+    }
+
+    // OD4: o desenho da boca — o que existe e, em vermelho, o que o plano faz.
+    if (data.odonto && data.option) {
+      list.push({
+        key: "odonto",
+        title: "O seu odontograma",
+        body: <OdontoDaOpcao odonto={data.odonto} option={data.option} />,
       });
     }
 
@@ -453,54 +541,28 @@ export function PresentationView({
       key: "proposta",
       title: "Proposta e investimento",
       body: data.option ? (
-        <div>
-          <ul className="space-y-2">
-            {data.option.items.map((it, i) => (
-              <li
-                key={i}
-                className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 last:border-0"
-              >
-                <span className="font-medium">
-                  {it.quantity > 1 ? `${it.quantity}× ` : ""}
-                  {it.description}
-                  {(it.sessionsLabel || it.minutesLabel) && (
-                    <span className="ml-1 text-xs font-normal text-muted-foreground">
-                      (
-                      {[it.sessionsLabel, it.minutesLabel]
-                        .filter(Boolean)
-                        .join(" · ")}
-                      )
-                    </span>
-                  )}
-                </span>
-                {it.priceLabel && (
-                  <span className="tabular-nums">{it.priceLabel}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
-            <div className="min-w-0">
-              <p className="text-xs uppercase tracking-wide opacity-80">
-                Investimento total
-              </p>
-              {data.option.summaryLabel && (
-                <p className="text-xs opacity-80">{data.option.summaryLabel}</p>
-              )}
-            </div>
-            {data.option.totalLabel && (
-              <p className="text-2xl font-bold tabular-nums">
-                {data.option.totalLabel}
-              </p>
-            )}
-          </div>
-        </div>
+        <PropostaDaOpcao option={data.option} />
       ) : (
         <p className="text-muted-foreground">
           O plano ainda não tem uma opção aprovada para apresentar.
         </p>
       ),
     });
+
+    // G1 (OD4): cada alternativa que o Consultor escolheu mostrar — com o seu
+    // odontograma e o seu total.
+    for (const alt of data.alternatives.filter((a) => alternativasVisiveis.includes(a.id))) {
+      list.push({
+        key: `alt-${alt.id}`,
+        title: `Alternativa — ${alt.title}`,
+        body: (
+          <div className="space-y-4">
+            {data.odonto && <OdontoDaOpcao odonto={data.odonto} option={alt} />}
+            <PropostaDaOpcao option={alt} />
+          </div>
+        ),
+      });
+    }
 
     if (data.planningNotes) {
       list.push({
@@ -755,6 +817,40 @@ export function PresentationView({
         O plano foi montado pelo Dentista Planner. Você, Consultor Comercial,
         apresenta esta proposta ao cliente — use “Apresentar” para projetar em
         tela cheia ou “Baixar PDF” para enviar.
+        {data.alternatives.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span>
+              A apresentação abre na opção principal. Há{" "}
+              {data.alternatives.length === 1
+                ? "1 alternativa aprovada"
+                : `${data.alternatives.length} alternativas aprovadas`}
+              :
+            </span>
+            {data.alternatives.map((a) => {
+              const on = alternativasVisiveis.includes(a.id);
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setAlternativasVisiveis((prev) =>
+                      on ? prev.filter((x) => x !== a.id) : [...prev, a.id]
+                    )
+                  }
+                  className={cn(
+                    "rounded border px-2 py-0.5 font-medium",
+                    on
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-primary/40 text-primary hover:border-primary"
+                  )}
+                >
+                  {on ? "Esconder" : "Mostrar alternativa"}: {a.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div id="apresentacao" className="space-y-4">

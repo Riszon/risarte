@@ -32,6 +32,9 @@ export const NEGOTIATION_STATUSES = [
   "perdida",
   /** 0205: venda fechada e depois cancelada — o cliente volta à Fase 4. */
   "cancelada",
+  /** OD4 (0313): o plano ganhou nova versão aprovada antes do aceite — a
+   *  negociação aberta da versão antiga é encerrada; a nova recomeça. */
+  "substituida",
 ] as const;
 
 export type NegotiationStatus = (typeof NEGOTIATION_STATUSES)[number];
@@ -43,6 +46,7 @@ export const NEGOTIATION_STATUS_LABELS: Record<NegotiationStatus, string> = {
   devolvida: "Devolvida ao planejamento",
   perdida: "Perdida",
   cancelada: "Cancelada",
+  substituida: "Substituída por nova versão do plano",
 };
 
 /** Linha da tabela commercial_rules (cascata: clinic_id null = padrão da rede). */

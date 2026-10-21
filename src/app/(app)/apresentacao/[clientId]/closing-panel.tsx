@@ -9,6 +9,7 @@ import {
   FileSignature,
   Lock,
   PartyPopper,
+  Printer,
   Receipt,
   Wallet,
 } from "lucide-react";
@@ -178,11 +179,21 @@ export function ClosingPanel({
             {/* 0202: os MESMOS três passos da venda direta e da renegociação.
                 Só contrato + pagamento CONFIRMADO concluem a venda; "cobrança
                 emitida" registra que o documento foi gerado. */}
+            {/* OD4 (G3): o papel que se assina hoje é o orçamento impresso. */}
+            <a
+              href={`/orcamentos/${negotiationId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted"
+            >
+              <Printer className="size-3.5" />
+              Imprimir orçamento para assinar
+            </a>
             <div className="grid gap-2 sm:grid-cols-3">
               <StepToggle
                 icon={<FileSignature className="size-4" />}
                 label="Contrato assinado"
-                hint="Assinatura via ZapSign (marcação manual por enquanto)"
+                hint="Por enquanto, o orçamento impresso assinado (botão abaixo). Marcação manual até o ZapSign."
                 done={signed}
                 disabled={!canClose || isPending}
                 onToggle={(v) => toggle("contract", v)}

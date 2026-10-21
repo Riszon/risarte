@@ -62,6 +62,56 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.338.0",
+    data: "2026-10-20",
+    migracao: "0313",
+    titulo: "Odontograma na apresentação, aceite dente a dente e orçamento impresso",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A apresentação ganhou o slide \"O seu odontograma\": o desenho da boca do cliente, com o que o plano faz em vermelho e a lista por dente. A proposta também vem por dente. Quando o plano tem alternativas aprovadas, o botão \"Mostrar alternativa\" acrescenta cada uma, com o seu desenho e o seu total — a apresentação abre só na principal.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "As anotações clínicas do Coordenador saíram da apresentação e do deck do Gamma: são registro interno. O cliente vê o diagnóstico do plano, o odontograma e as considerações do planejamento.",
+        papeis: ["commercial_consultant", "clinical_coordinator"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na negociação, cada caixinha mostra o dente (\"Selante — 16 (O)\") e, ao lado, o odontograma do aceite: tocar no dente marca ou desmarca o que ele aceitou. O que ficou de fora aparece em cinza tracejado.",
+        papeis: ["commercial_consultant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Orçamento impresso: botão \"Orçamento\" na negociação e \"Imprimir orçamento para assinar\" no fechamento. Traz o desenho do que foi aceito, os procedimentos por dente, o total, o pagamento, o que ficou de fora e a validade. Por enquanto é ele o papel que o cliente assina.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Regras Comerciais: novo campo \"Validade do orçamento impresso (dias)\", na rede e por unidade. Em branco, vale 15 dias.",
+        papeis: [],
+        manual: "Admin Master",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Quando uma versão nova do plano é aprovada, a negociação ainda aberta da versão anterior é encerrada como \"Substituída por nova versão do plano\" e o Consultor recomeça na nova. Venda já aceita não muda. E as sessões não nascem mais de versão substituída que não foi vendida.",
+        papeis: ["commercial_consultant", "planner_dentist"],
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.337.0",
     data: "2026-10-20",
     migracao: "0312",

@@ -73,6 +73,22 @@ export async function saveCommercialRule(
     if (value > 0) minByMethod[m] = Math.round(value * 100);
   }
 
+  // OD4 (G2): validade do orçamento (dias). Só vai na gravação quando a tela
+  // sabe que a coluna existe (0313) — antes disso, gravar quebraria a regra.
+  const validadePronta = formData.get("validadePronta") === "1";
+  const validityRaw = String(formData.get("budgetValidityDays") ?? "").trim();
+  const budgetValidityDays =
+    validityRaw === "" ? null : Number.parseInt(validityRaw, 10);
+  if (
+    budgetValidityDays !== null &&
+    (!Number.isInteger(budgetValidityDays) ||
+      budgetValidityDays < 1 ||
+      budgetValidityDays > 365 ||
+      !/^\d+$/.test(validityRaw))
+  ) {
+    return { ok: false, error: "Validade do orçamento inválida (1 a 365 dias)." };
+  }
+
   const { error } = await supabase.from("commercial_rules").upsert(
     {
       clinic_id: clinicId,
@@ -81,6 +97,7 @@ export async function saveCommercialRule(
       allowed_methods: allowedMethods,
       cash_discount_percent: cashDiscountPercent,
       min_installment_cents_by_method: minByMethod,
+      ...(validadePronta ? { budget_validity_days: budgetValidityDays } : {}),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "clinic_id" }

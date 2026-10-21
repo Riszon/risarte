@@ -73,6 +73,8 @@ export const ROUTE_FIXTURES = {
   "/cancelamentos/[id]/termo": "cancellation",
   "/documentos/[id]/imprimir": "clinicalDocument",
   "/renegociacoes/[id]/acordo": "renegotiation",
+  // OD4: o orçamento impresso é endereçado pela negociação.
+  "/orcamentos/[id]": "negotiation",
   // O detalhe do relato é endereçado pelo CÓDIGO (OC-00009), não pelo id.
   "/problemas/[codigo]": "systemReport",
 };

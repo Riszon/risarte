@@ -34,11 +34,13 @@ const CLASSE_DA_COR = {
   planejado: "fill-red-500/80 dark:fill-red-500/70",
   existente: "fill-blue-600/80 dark:fill-blue-500/70",
   ausente: "fill-zinc-400/80 dark:fill-zinc-500/70",
+  fora: "fill-zinc-300 dark:fill-zinc-600",
 } as const;
 const TRACO_DA_COR = {
   planejado: "stroke-red-600 dark:stroke-red-400",
   existente: "stroke-blue-700 dark:stroke-blue-400",
   ausente: "stroke-zinc-500 dark:stroke-zinc-400",
+  fora: "stroke-zinc-400 dark:stroke-zinc-500",
 } as const;
 
 /** Os 5 polígonos da coroa (quadrado com o miolo), na posição (x, y). */
@@ -203,8 +205,9 @@ function Dente({
 }
 
 export type OdontogramaProps = {
-  /** `diagnostico` (OD2) = a leitura com os dentes tocáveis (`onDente`). */
-  modo: "compact" | "leitura" | "diagnostico";
+  /** `diagnostico` (OD2) = a leitura com os dentes tocáveis (`onDente`).
+   *  `impresso` (OD4) = o desenho com os números, sem botões nem legenda (papel). */
+  modo: "compact" | "leitura" | "diagnostico" | "impresso";
   /** Dentes selecionados (modo diagnóstico). */
   selecionados?: string[];
   onDente?: (dente: string) => void;
@@ -298,7 +301,7 @@ export function Odontograma({
     </svg>
   );
 
-  if (compacto) return <div className={className}>{desenho}</div>;
+  if (compacto || modo === "impresso") return <div className={className}>{desenho}</div>;
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -337,7 +340,7 @@ export function Odontograma({
       <p className="text-center text-xs text-muted-foreground">
         Vista de frente: o lado direito do paciente fica à esquerda da tela.
       </p>
-      <Legenda />
+      <Legenda comFora={marcas.some((m) => m.situacao === "fora")} />
     </div>
   );
 }
@@ -359,7 +362,7 @@ function Amostra({ classe, tracejado }: { classe: keyof typeof CLASSE_DA_COR | "
   );
 }
 
-function Legenda() {
+function Legenda({ comFora = false }: { comFora?: boolean }) {
   return (
     <details className="rounded-md border bg-muted/20 px-3 py-2 text-xs">
       <summary className="cursor-pointer font-medium">Como ler o desenho</summary>
@@ -376,6 +379,11 @@ function Legenda() {
         <li className="flex items-center gap-2">
           <Amostra classe="existente" tracejado /> Contorno tracejado: sugestão, ainda não definida
         </li>
+        {comFora && (
+          <li className="flex items-center gap-2">
+            <Amostra classe="fora" tracejado /> Cinza-claro tracejado: estava no plano e o cliente não quis agora
+          </li>
+        )}
         <li className="flex items-center gap-2 sm:col-span-2">
           <Amostra classe="vazio" /> Cada dente tem 5 faces: V (vestibular, de fora), P ou L
           (palatina ou lingual, de dentro), M (mesial, para o meio da boca), D (distal) e,

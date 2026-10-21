@@ -36,13 +36,10 @@ function buildInputText(
     .join(" · ");
   cards.push(`# Plano de Tratamento — ${d.clientName}\n\n${capaSub}`);
 
-  if (d.diagnosis || d.considerations.length > 0) {
-    let s = "## Diagnóstico e condição\n";
-    if (d.diagnosis) s += `\n${d.diagnosis}\n`;
-    if (d.considerations.length > 0) {
-      s += "\n" + d.considerations.map((c) => `- ${c}`).join("\n");
-    }
-    cards.push(s);
+  // G4 (OD4): as anotações clínicas do Coordenador são internas — o deck leva
+  // só o diagnóstico do plano.
+  if (d.diagnosis) {
+    cards.push(`## Diagnóstico e condição\n\n${d.diagnosis}`);
   }
 
   if (d.objectives) {
@@ -76,8 +73,8 @@ function buildInputText(
     for (const it of d.option.items) {
       const extra = [it.sessionsLabel, it.minutesLabel].filter(Boolean).join(" · ");
       s += `\n- ${it.quantity > 1 ? `${it.quantity}× ` : ""}${it.description}${
-        extra ? ` (${extra})` : ""
-      }${it.priceLabel ? ` — ${it.priceLabel}` : ""}`;
+        it.local ? ` — ${it.local}` : ""
+      }${extra ? ` (${extra})` : ""}${it.priceLabel ? ` — ${it.priceLabel}` : ""}`;
     }
     if (d.option.summaryLabel) s += `\n\n${d.option.summaryLabel}`;
     if (d.option.totalLabel) s += `\n\n**Total: ${d.option.totalLabel}**`;

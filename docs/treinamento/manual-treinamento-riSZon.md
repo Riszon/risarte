@@ -1247,6 +1247,12 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   aqui atinge todas as unidades.
 - **Depende de:** ninguém.
 
+**Administração → Regras Comerciais — validade do orçamento** (desde a
+0.338.0). O campo **Validade do orçamento impresso (dias)** diz até quando vale
+o orçamento que o cliente assina, contado do dia da impressão. Fica no
+**Padrão da rede** e, se preciso, no ajuste de cada unidade (a unidade vence a
+rede). **Em branco, vale 15 dias** (decisão do dono, G2). Aceita de 1 a 365.
+
 **Administração → Odontograma** (versão 0.332.0, só o Admin Master). É a
 base do odontograma que está chegando ao riSZon, em quatro abas:
 
@@ -2058,6 +2064,49 @@ ficar sem horário mais tempo do que devia, avise a Recepção da unidade.
 
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
 e a cobrança não muda até alguém autorizar.
+
+**O odontograma na apresentação e no aceite (desde a 0.338.0).**
+
+- **Slide "O seu odontograma":** o desenho da boca do cliente. Azul é o que já
+  existe; **vermelho** é o que o plano faz (e o achado que pede tratamento, como
+  cárie). Embaixo, a lista por dente: *"16 (O) — Selante"*. O slide **Proposta
+  e investimento** também vem por dente.
+- **Alternativas:** a apresentação abre **só na opção principal**. Se o plano
+  tem outras opções aprovadas, aparece o botão **Mostrar alternativa: …** —
+  cada uma entra como um slide com o seu desenho e o seu total. Clicar de novo
+  esconde.
+- **O que o cliente NÃO vê:** as anotações clínicas do Coordenador (as da
+  avaliação) não vão para a apresentação nem para o deck do Gamma — são
+  registro interno. O cliente vê o diagnóstico do plano, o odontograma e as
+  considerações do planejamento.
+- **No aceite:** cada caixinha diz o dente (*"Selante — 16 (O)"*). Ao lado, o
+  **Odontograma do aceite**: tocar num dente marca ou desmarca **todos** os
+  itens daquele dente. O que ficou de fora aparece em **cinza tracejado**. A
+  aprovação parcial continua pedindo o motivo.
+
+**O orçamento impresso.** Depois de **Salvar negociação**, o botão
+**Orçamento** (no alto do painel) abre o documento para imprimir ou salvar em
+PDF; no fechamento, o mesmo documento está em **Imprimir orçamento para
+assinar**. Ele traz o desenho do que foi aceito, os procedimentos por dente, o
+total (subtotal, benefício do programa, desconto), o pagamento, o que ficou de
+fora com o motivo, a **validade** e as linhas de assinatura.
+
+> **O orçamento lê o que está SALVO**, não o que está na tela. Mudou alguma
+> coisa? Salve antes de abrir. Enquanto a negociação estiver aguardando a
+> autorização do Gerente, o papel sai com o aviso de que os valores ainda
+> podem mudar — não colha assinatura antes.
+>
+> **Validade:** 15 dias a partir do dia em que foi impresso, salvo se o Admin
+> configurou outro prazo para a rede ou para a unidade.
+>
+> Por enquanto o orçamento é o papel que o cliente assina; o contrato com
+> cláusulas virá quando o modelo da Risarte for cadastrado.
+
+**Versão nova do plano durante a negociação.** Se o Planner fizer uma versão
+nova do plano e ela for aprovada antes do aceite, a negociação da versão
+anterior é **encerrada** com a situação **"Substituída por nova versão do
+plano"** — você recomeça na versão nova (o painel já abre nela). Venda já
+aceita não muda: o que foi vendido vale.
 
 > **Você trabalha no funil; a sala de espera é da recepção.** As duas telas se
 > falam sozinhas desde a v0.270.0:

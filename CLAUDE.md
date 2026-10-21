@@ -390,6 +390,34 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 (6ª) — PC Administrador (core 0.337.0 → 0.338.0, migração 0313)**
+
+- **Odontograma OD4 — apresentação, aceite por dente e orçamento impresso**
+  (plano e decisões G1–G4 em `docs/odontograma/OD4-PLANO.md`).
+- ⚠️ **Plano substituído encerra a negociação ABERTA dele** (gatilho
+  `treatment_plan_supersede_negotiation`, 0313): vira `substituida`; a ACEITA
+  não muda. A DEVOLUÇÃO ao planejamento NÃO passa por aqui: ela reabre o
+  MESMO plano como rascunho (`return_commercial_to_planning`) e a negociação
+  "devolvida" continua.
+- ⚠️ **O painel de negociação escolhe o plano por `planoDaNegociacao`**
+  (`src/lib/odontograma/aceite.ts`): o aprovado mais novo que vale;
+  substituído só se vendido. Antes: "o aprovado mais novo".
+- ⚠️ **O orçamento (`/orcamentos/[id]`) lê o que está SALVO** e não abre para o
+  Coordenador nem a Recepção (D7/F4: preço item a item) — a regra de leitura
+  da negociação deixa, a página recusa. Conta da tela ≠ `final_cents` → aviso
+  no papel.
+- ⚠️ **G4:** `presentation-data.ts` não lê mais `clinical_notes`; o tipo
+  `PresentationData` perdeu `considerations` (o Gamma também).
+- ⚠️ **Coluna nova antes da migração:** a validade do orçamento é lida À PARTE
+  e só é gravada quando a tela sabe que a coluna existe (`validadePronta`).
+- **Resíduo no treino (meu, de ensaio):** o cliente "Teste do portão 2 (pode
+  ignorar)" ganhou a Opção A aprovada, a "Opção B (ensaio OD4)" e uma
+  negociação de ensaio em negociação, tudo direto no banco (nenhuma tela que
+  avisa gente). A regra comercial da rede do treino agora EXISTE (salvei 20
+  dias e voltei para vazio — tudo em branco, igual a não ter regra).
+- Aceite pela tela NÃO feito (a unidade de teste tem pessoa real).
+- ⏳ **0313 ainda NÃO aplicada na produção** (aplicada no treino).
+
 **20/10/2026 (5ª) — PC Administrador (core 0.336.0 → 0.337.0, migração 0312)**
 
 - **Respostas do dono:** D6 vale para o plano (só Planner e titular montam);
