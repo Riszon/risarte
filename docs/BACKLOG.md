@@ -2524,6 +2524,17 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP67. O banco ignora o escopo "Específicas" do Financeiro da Franqueadora (21/10/2026)
+
+**Lido no código (não executado).** A regra diz "Financeiro da Franqueadora,
+com escopo de unidades" (§8b). Desde a OC-00120 (0.340.1) o seletor oferece só
+as unidades do escopo; mas no banco `is_finance_franchisor()` (0185) dá acesso
+de leitura e lançamento a **todas** as clínicas, seja o escopo "Todas" ou
+"Específicas". Hoje só há um Financeiro da Franqueadora (escopo "Todas") —
+sem efeito prático. Fechar quando aparecer o primeiro com escopo restrito:
+`finance_visible_clinic_ids` e `can_post_finance` passariam a usar
+`user_full_access_clinic_ids`.
+
 ### AP66. O núcleo não tem como anonimizar um paciente (21/10/2026)
 
 **Lido no código (não executado).** O CLAUDE.md manda "apagar cliente =

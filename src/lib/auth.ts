@@ -21,6 +21,7 @@ import {
   type UnidadeFechada,
 } from "@/lib/acesso-por-unidade";
 import { destinoDoAcesso, ipDoPedido, lerEstadoDoAcesso } from "@/lib/acesso";
+import { ehFinanceiroDaFranqueadora, unidadesDoEscopoFinanceiro } from "@/lib/finance/escopo";
 
 export const ACTIVE_CLINIC_COOKIE = "risarte_active_clinic";
 
@@ -313,6 +314,19 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
       );
     } else if (!caminhoDoPortal(caminho)) {
       redirect("/");
+    }
+  }
+
+  // OC-00120: o Financeiro da Franqueadora trabalha no financeiro das unidades
+  // do ESCOPO dele — elas entram no seletor, sem função nelas (ver
+  // `src/lib/finance/escopo.ts`). Uma consulta a mais, só para quem tem a função.
+  if (!isAdminMaster && ambientes.sistema && ehFinanceiroDaFranqueadora(rolesByClinic)) {
+    const { data: escopo } = await supabase.rpc("user_full_access_clinic_ids");
+    const ids = ((escopo as { clinic_id?: string }[] | string[] | null) ?? [])
+      .map((x) => (typeof x === "string" ? x : (x.clinic_id ?? "")))
+      .filter(Boolean);
+    for (const c of unidadesDoEscopoFinanceiro(allClinics ?? [], ids, memberClinics.keys())) {
+      memberClinics.set(c.id, c);
     }
   }
 

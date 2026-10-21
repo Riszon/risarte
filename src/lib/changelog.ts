@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.340.1",
+    data: "2026-10-21",
+    migracao: null,
+    titulo: "Financeiro da Franqueadora trabalha no financeiro das unidades",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O Financeiro da Franqueadora passa a ver, no \"Trabalhar na clínica\", as unidades do escopo dele: escolhendo a unidade, ele lança contas a pagar, dá baixas e concilia o financeiro dela. Antes só a Franqueadora aparecia, e o financeiro das unidades ficava fora do alcance.",
+        papeis: ["finance_franchisor"],
+        manual: "Financeiro da Franqueadora",
+      },
+    ],
+  },
+  {
     versao: "0.340.0",
     data: "2026-10-21",
     migracao: "0315",

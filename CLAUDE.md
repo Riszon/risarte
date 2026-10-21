@@ -390,6 +390,29 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**21/10/2026 (2ª) — PC Administrador (core 0.340.0 → 0.340.1, sem migração)**
+
+- **OC-00120 (TREINO; vale para a produção):** o Financeiro da Franqueadora
+  (André) não conseguia lançar conta a pagar nem dar baixa numa unidade.
+  **Defeito confirmado, não regra:** a função dele tem escopo "Todas" nos
+  dois bancos (conferido só lendo) e o banco deixa lançar em qualquer unidade
+  (`is_finance_franchisor`, 0185); mas o Financeiro é por **unidade ativa** e
+  o "Trabalhar na clínica" só listava clínicas com função própria — para ele,
+  só a Franqueadora.
+- Decisão do dono: **as unidades do escopo entram no seletor** (não um
+  seletor só dentro do Financeiro). `src/lib/finance/escopo.ts` + um bloco em
+  `getSessionContext` (uma consulta a mais, só para quem tem a função). As
+  unidades entram em `clinics`, **nunca** em `rolesByClinic`: fora do
+  Financeiro ele segue a função dele. As telas do Financeiro já tratavam
+  `isFinanceFranchisor` como o Admin.
+- ⚠️ **Divergência anotada (AP67):** o banco dá ao Financeiro da Franqueadora
+  TODAS as unidades, mesmo com escopo "Específicas"; a tela agora respeita o
+  escopo. Para o André (escopo "Todas") não faz diferença.
+- Conferido no treino com a conta de TESTE do Financeiro da Franqueadora (não
+  a do André): seletor com as 4 unidades; na Unidade Teste o Contas a pagar
+  abre com "Nova conta"; no banco (transação desfeita) ela vê e lança na
+  unidade; Início, Financeiro, Recebíveis e Conciliação abrem sem erro.
+
 **21/10/2026 — PC Administrador (core 0.339.0 → 0.340.0, migração 0315)**
 
 - **Odontograma OD6 — o prontuário** (plano e decisões J1–J4 em

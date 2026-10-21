@@ -1412,6 +1412,13 @@ cancelado, com o motivo.
 - **Pode:** tudo do financeiro, inclusive **configurar a rede**
   (`canConfigureFinanceNetwork` ✅), o catálogo de estoque
   (`canManageStockCatalog` ✅) e ver Compras.
+- **Trabalhar no financeiro de uma unidade (desde a 0.340.1, relato
+  OC-00120):** no **Trabalhar na clínica**, além da Franqueadora, aparecem as
+  **unidades do escopo** dele (Todas, ou as específicas marcadas na função).
+  Escolha a unidade e o Financeiro inteiro — contas a pagar, baixas,
+  conciliação, DRE — passa a ser o dela, como para o Gerente. Fora do
+  Financeiro, as telas da unidade continuam seguindo o que a função dele
+  permite (ele não vira gerente nem recepção ali).
 - **Não pode:** aprovar a própria conta lançada (regra de alçada, FIN3).
 - **Compras:** entra na mesa de negociação; **aprova a compra da própria
   Franqueadora** (desde a versão 0.318.0) e recebe a entrega. **Não aprova a
