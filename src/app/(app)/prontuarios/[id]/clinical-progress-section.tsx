@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Check,
   CircleCheck,
   CircleSlash,
+  FilePlus2,
   Loader2,
   PencilLine,
 } from "lucide-react";
@@ -16,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { saveProgressNote } from "./clinical-progress-actions";
+import { addProgressAddendum, saveProgressNote } from "./clinical-progress-actions";
 import {
   AttendanceConcludeBlock,
   type AttendanceSession,
@@ -40,6 +42,10 @@ export type ProgressNoteItem = {
     unplanned: boolean;
     reason: string | null;
   }[];
+  /** OD6 (J1): trancada (atendimento concluído / dia encerrado) — só adendo. */
+  trancada?: boolean;
+  /** OD6: as correções, em ordem, logo abaixo da original. */
+  adendos?: { id: string; body: string; reason: string | null; authorName: string | null; createdAt: string }[];
 };
 
 /** I7b: o atendimento aberto que esta anotação está descrevendo. */
@@ -79,6 +85,72 @@ function fmtTime(iso: string): string {
   });
 }
 
+/** OD6 (J1): a correção de uma anotação trancada — texto + motivo. */
+function FormularioDoAdendo({
+  noteId,
+  clientId,
+  onFeito,
+}: {
+  noteId: string;
+  clientId: string;
+  onFeito: () => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [isPending, startTransition] = useTransition();
+  if (!aberto) {
+    return (
+      <Button variant="ghost" size="sm" className="mt-1 h-7 px-2 text-xs" onClick={() => setAberto(true)}>
+        <FilePlus2 className="mr-1 size-3.5" /> Adendo
+      </Button>
+    );
+  }
+  return (
+    <div className="mt-2 space-y-1.5 rounded-md border border-dashed p-2">
+      <p className="text-xs text-muted-foreground">
+        A anotação está trancada e não muda. O adendo fica logo abaixo dela, com o seu nome, a data e o motivo.
+      </p>
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        rows={3}
+        placeholder="O que precisa ser corrigido ou acrescentado…"
+        className="w-full rounded-md border border-input bg-transparent p-2 text-sm"
+      />
+      <input
+        value={motivo}
+        onChange={(e) => setMotivo(e.target.value)}
+        placeholder="Motivo (ex.: faltou registrar, correção de dente)"
+        className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+      />
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          disabled={isPending || texto.trim() === "" || motivo.trim().length < 5}
+          onClick={() =>
+            startTransition(async () => {
+              const r = await addProgressAddendum({ noteId, clientId, body: texto, reason: motivo });
+              if (r.ok) {
+                toast.success("Adendo registrado.");
+                setAberto(false);
+                setTexto("");
+                setMotivo("");
+                onFeito();
+              } else toast.error(r.error ?? "Não foi possível registrar o adendo.");
+            })
+          }
+        >
+          Registrar adendo
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setAberto(false)}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** H4.6 A2: Desenvolvimento Clínico — o dentista escreve as anotações do
  * atendimento com salvamento automático; abaixo, a linha do tempo de todas as
  * anotações (visível aos dentistas/coordenadores/planner). */
@@ -88,11 +160,14 @@ export function ClinicalProgressSection({
   canWrite,
   notes,
   attendance,
+  podeAdendo = false,
 }: {
   clientId: string;
   clinicId: string;
   canWrite: boolean;
   notes: ProgressNoteItem[];
+  /** OD6: quem pode corrigir uma anotação trancada (o banco confere o resto). */
+  podeAdendo?: boolean;
   /** I7b: atendimento aberto — a anotação é dele e a conclusão sai daqui. */
   attendance?: OpenAttendance | null;
 }) {
@@ -105,6 +180,7 @@ export function ClinicalProgressSection({
     "idle"
   );
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
   // Refs atualizados apenas em handlers (nunca no render) para o save com debounce
   // enxergar sempre o valor mais recente do texto e do id da anotação.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,8 +211,10 @@ export function ClinicalProgressSection({
       if (res.savedAt) setSavedAt(res.savedAt);
       // Se o usuário voltou a digitar durante o save, não sobrescreve o "idle".
       setStatus((s) => (s === "saving" ? "saved" : s));
+      setErro(null);
     } else {
       setStatus("error");
+      setErro(res.error ?? null);
     }
   }
 
@@ -233,7 +311,7 @@ export function ClinicalProgressSection({
                 )}
                 {status === "error" && (
                   <span className="text-red-600">
-                    Erro ao salvar — tente novamente
+                    {erro ?? "Erro ao salvar — tente novamente"}
                   </span>
                 )}
                 {status === "idle" && body.trim() !== "" && (
@@ -269,6 +347,20 @@ export function ClinicalProgressSection({
                     )}
                 </div>
                 <p className="whitespace-pre-wrap text-sm">{n.body}</p>
+                {/* OD6 (J1): as correções, abaixo da original — que não muda. */}
+                {(n.adendos ?? []).map((a) => (
+                  <div key={a.id} className="mt-2 rounded-md border-l-4 border-amber-400 bg-amber-50/50 p-2 dark:bg-amber-500/10">
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Adendo</span> · {a.authorName ?? "—"} ·{" "}
+                      {fmtDateTime(a.createdAt)}
+                      {a.reason ? ` · motivo: ${a.reason}` : ""}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm">{a.body}</p>
+                  </div>
+                ))}
+                {n.trancada && podeAdendo && (
+                  <FormularioDoAdendo noteId={n.id} clientId={clientId} onFeito={() => router.refresh()} />
+                )}
                 {/* I7b: o que foi feito e o que ficou para depois naquele dia. */}
                 {n.outcomes && n.outcomes.length > 0 && (
                   <ul className="mt-2 space-y-1 border-t pt-2">

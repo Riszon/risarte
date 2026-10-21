@@ -17,6 +17,7 @@ import {
   itensFeitos,
   procedimentosFeitos,
   type ProcedimentoFeito,
+  type SessaoComHistorico,
   type SessaoDoOdontograma,
 } from "@/lib/odontograma/execucao";
 
@@ -51,6 +52,11 @@ export type DadosDoOdontograma = {
   /** OD5: o vermelho do que FALTA, pelas sessões do tratamento (o que foi
    *  vendido e ainda não terminou) — a visão de quem executa. */
   aFazer: MarcaNoDente[];
+  /** OD6 (J2): as sessões com quando nasceram e quando foram feitas — o
+   *  odontograma de um dia do passado (vazio sem a 0315). */
+  historico: SessaoComHistorico[];
+  /** As regras dos procedimentos das sessões (o efeito, para o dia escolhido). */
+  regrasDasSessoes: Record<string, RegraDoPlano>;
 };
 
 /**
@@ -213,6 +219,26 @@ export async function carregarOdontograma(
   // do que foi feito e o vermelho do que falta — o dentista não lê o plano.
   let feitos: ProcedimentoFeito[] = [];
   let aFazer: MarcaNoDente[] = [];
+  let regrasDasSessoes: Record<string, RegraDoPlano> = {};
+  // OD6 (J2): o histórico (0315) — à parte: sem a migração, segue vazio.
+  let historico: SessaoComHistorico[] = [];
+  if (sessoes.length > 0) {
+    const { data: histR, error: histErro } = await supabase.rpc("odontogram_session_history", { p_client: clientId });
+    if (!histErro) {
+      historico = ((histR ?? []) as (LinhaDaSessao & { created_at: string; done_records: string[] | null })[]).map((s) => ({
+        sessionId: s.session_id,
+        itemId: s.item_id,
+        procedureId: s.procedure_id,
+        status: s.status,
+        doneAt: s.done_at,
+        toothCode: s.tooth_code,
+        faceCodes: s.face_codes ?? [],
+        regionCode: s.region_code,
+        createdAt: s.created_at,
+        registrosFeita: s.done_records ?? [],
+      }));
+    }
+  }
   const procs = [...new Set(sessoes.filter((s) => s.toothCode && s.procedureId).map((s) => s.procedureId as string))];
   if (procs.length > 0) {
     const [{ data: regrasR }, { data: nomesR }] = await Promise.all([
@@ -226,6 +252,7 @@ export async function carregarOdontograma(
     ]);
     const regras: Record<string, RegraDoPlano> = {};
     for (const r of regrasR ?? []) regras[r.procedure_id] = regraDaLinha(r);
+    regrasDasSessoes = regras;
     feitos = procedimentosFeitos(sessoes, regras, achados ?? []);
     const nomeDoProc = new Map((nomesR ?? []).map((p) => [p.id as string, p.name as string]));
     // A fazer = item com sessão viva (não cancelada) que ainda não está feito.
@@ -245,7 +272,10 @@ export async function carregarOdontograma(
     );
   }
 
-  return { nomes, dentes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas, sessoes, feitos, aFazer };
+  return {
+    nomes, dentes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas,
+    sessoes, feitos, aFazer, historico, regrasDasSessoes,
+  };
 }
 
 /**

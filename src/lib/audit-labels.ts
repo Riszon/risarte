@@ -57,6 +57,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   clinical_media: "Mídia clínica",
   clinical_note: "Anotação clínica",
   clinical_progress_note: "Evolução clínica",
+  clinical_progress_addendum: "Adendo da evolução clínica",
+  clinical_record_export: "Prontuário completo gerado",
   clinical_request: "Pedido clínico",
   document_template: "Modelo de documento",
   // ------------------------------------------------------- plano e agenda

@@ -48,6 +48,13 @@ export async function saveProgressNote(input: {
       .update({ body, updated_at: savedAt })
       .eq("id", input.id);
     if (error) {
+      // OD6 (J1): concluído o atendimento, a anotação tranca no banco.
+      if (error.message.includes("NOTE_LOCKED")) {
+        return {
+          ok: false,
+          error: "Esta anotação já foi trancada (atendimento concluído ou dia encerrado). Para corrigir, use o Adendo.",
+        };
+      }
       console.error("progress note update failed:", error.message);
       return { ok: false, error: "Não foi possível salvar." };
     }
@@ -79,6 +86,46 @@ export async function saveProgressNote(input: {
     clinicId: input.clinicId,
   });
   return { ok: true, id: data.id, savedAt: data.updated_at };
+}
+
+/**
+ * OD6 (J1): o ADENDO — a correção de uma anotação trancada. A original não
+ * muda; o adendo fica logo abaixo, com autor, data e motivo. Quem pode e se a
+ * anotação está mesmo trancada, o banco confere (0315).
+ */
+export async function addProgressAddendum(input: {
+  noteId: string;
+  clientId: string;
+  body: string;
+  reason: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("add_progress_addendum", {
+    p_note: input.noteId,
+    p_body: input.body,
+    p_reason: input.reason,
+  });
+  if (error) {
+    const mapa: [string, string][] = [
+      ["ADDENDUM_REASON_REQUIRED", "Escreva o motivo do adendo (mínimo de 5 letras)."],
+      ["ADDENDUM_BODY_REQUIRED", "Escreva o texto do adendo."],
+      ["NOTE_STILL_OPEN", "Esta anotação ainda está aberta: corrija direto no texto."],
+      ["ADDENDUM_OF_ADDENDUM", "O adendo é da anotação original — não de outro adendo."],
+      ["NOTE_NOT_FOUND", "Anotação não encontrada. Atualize a tela."],
+      ["NOT_ALLOWED", "Adendo é de quem registra evolução nesta unidade (o dentista, o Coordenador do atendimento ou o autor)."],
+    ];
+    const recado = mapa.find(([k]) => error.message.includes(k))?.[1];
+    if (!recado) console.error("addProgressAddendum failed:", error.message);
+    return { ok: false, error: recado ?? "Não foi possível registrar o adendo." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "clinical_progress_addendum",
+    entityId: (data as string | null) ?? input.noteId,
+  });
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  return { ok: true };
 }
 
 /**

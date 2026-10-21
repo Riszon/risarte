@@ -61,6 +61,7 @@ export const TABELAS: Record<string, string> = {
   "public.clinical_media": "Mídia clínica",
   "public.clinical_notes": "Anotação clínica",
   "public.clinical_progress_notes": "Evolução clínica",
+  "public.clinical_record_exports": "Prontuário completo gerado",
   "public.clinical_request_media": "Arquivo do pedido clínico",
   "public.clinical_requests": "Pedido clínico",
   "public.clinics": "Unidade",

@@ -390,6 +390,33 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**21/10/2026 — PC Administrador (core 0.339.0 → 0.340.0, migração 0315)**
+
+- **Odontograma OD6 — o prontuário** (plano e decisões J1–J4 em
+  `docs/odontograma/OD6-PLANO.md`; J4 diferente da recomendação: fotos e
+  radiografias IMPRESSAS no PDF).
+- ⚠️ **A evolução tranca no BANCO** (`clinical_progress_notes_lock`,
+  `_progress_note_locked`): concluído o atendimento, ou passado o dia (Brasil)
+  da anotação sem atendimento. Correção = `add_progress_addendum`. A régua em
+  TS é `src/lib/prontuario/evolucao.ts` — mudou uma, muda a outra.
+- ⚠️ **Documento clínico e anamnese imutáveis no banco** (gatilhos); a única
+  remoção permitida é a versão de anamnese SEM respostas criada há < 10 min
+  (o "desfazer" de `saveAnamnesisFill`).
+- ⚠️ **Colunas novas + código antes da migração:** a ficha lê
+  `addendum_of/addendum_reason` À PARTE (`com0315`); sem a 0315, nada aparece
+  trancado e o botão Adendo não surge.
+- ⚠️ **Os arquivos clínicos ficam em `unidade/cliente/arquivo`** no bucket
+  `clinical-media` — a regra de leitura olha a PRIMEIRA pasta (a unidade). Um
+  arquivo de ensaio gravado em `cliente/…` não abre para ninguém além do Admin.
+- ⚠️ **Prova de quebra por script: troca SEMPRE por função** (`replace(de, () =>
+  para)`) — com `$$` no texto de troca o SQL estragado nem rodava e a quebra
+  "passou". E o script tem de dizer NÃO MEDI quando o SQL não roda.
+- **Resíduo no treino (meu, de ensaio):** no cliente "Teste do portão 2 (pode
+  ignorar)": um adendo à evolução do atendimento de ensaio, uma foto de
+  ensaio sem rodada (`ensaio-od6.png`, no caminho da unidade) e dois registros
+  de prontuário gerado (Gerente de teste).
+- ⏳ **0315 ainda NÃO aplicada na produção** (aplicada no treino).
+
 **20/10/2026 (7ª) — PC Administrador (core 0.338.0 → 0.339.0, migração 0314)**
 
 - **Odontograma OD5 — a execução** (plano e decisões H1–H4 em

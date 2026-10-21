@@ -21,6 +21,10 @@ import { rodadasFinalizadas } from "@/lib/odontograma/rodadas-trancadas";
 import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
 import { itensDoPlanoVigente, marcasDoPlano } from "@/lib/odontograma/plano";
 import { localDaSessao, rotuloDaSessao } from "@/lib/odontograma/execucao";
+import { agruparAdendos, anotacaoTrancada } from "@/lib/prontuario/evolucao";
+import { carregarLinhaDoTempo } from "@/lib/prontuario/carregar";
+import { LinhaDoTempoClinica } from "@/components/prontuario/linha-do-tempo-clinica";
+import { BotaoProntuarioCompleto } from "./prontuario-completo-botao";
 import {
   marcasDoDesenho,
   pendentes,
@@ -1472,20 +1476,57 @@ export default async function ClientDetailPage(
         .in("id", progressAuthorIds);
       for (const p of people ?? []) progressAuthorNames.set(p.id, p.full_name);
     }
-    progressNotes = (pnRows ?? []).map((r) => {
+    // OD6 (J1): o adendo e a tranca. Colunas da 0315 lidas À PARTE — sem a
+    // migração, a lista segue como antes (sem adendo, nada trancado).
+    const adendoDe = new Map<string, { of: string; reason: string | null }>();
+    let com0315 = false;
+    {
+      const { data: adRows, error: adErro } = await supabase
+        .from("clinical_progress_notes")
+        .select("id, addendum_of, addendum_reason")
+        .eq("client_id", id)
+        .not("addendum_of", "is", null)
+        .returns<{ id: string; addendum_of: string; addendum_reason: string | null }[]>();
+      com0315 = !adErro;
+      if (!adErro) for (const a of adRows ?? []) adendoDe.set(a.id, { of: a.addendum_of, reason: a.addendum_reason });
+    }
+    const concluidos = new Set<string>();
+    if (noteApptIds.length > 0) {
+      const { data: apRows } = await supabase
+        .from("appointments")
+        .select("id, attendance")
+        .in("id", noteApptIds);
+      for (const a of apRows ?? []) if (a.attendance === "done") concluidos.add(a.id as string);
+    }
+    const hojeBr = todayInBrazil();
+    const linhas = (pnRows ?? []).map((r) => ({
+      ...r,
+      appointmentId: r.appointment_id,
+      createdAt: r.created_at,
+      addendumOf: adendoDe.get(r.id)?.of ?? null,
+    }));
+    const nomeDoAutor = (a: string | null) => (a ? (progressAuthorNames.get(a) ?? null) : null);
+    progressNotes = agruparAdendos(linhas).map(({ original: r, adendos }) => {
       const cRaw = r.clinic;
       return {
         id: r.id,
         body: r.body,
-        authorName: r.author_id
-          ? (progressAuthorNames.get(r.author_id) ?? null)
-          : null,
+        authorName: nomeDoAutor(r.author_id),
         clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
         createdAt: r.created_at,
         updatedAt: r.updated_at ?? null,
         outcomes: r.appointment_id
           ? (outcomesByAppt.get(r.appointment_id) ?? [])
           : [],
+        // Sem a 0315 nada tranca no banco — e o adendo não existe ainda.
+        trancada: com0315 ? anotacaoTrancada(r, concluidos, hojeBr) : false,
+        adendos: adendos.map((a) => ({
+          id: a.id,
+          body: a.body,
+          reason: adendoDe.get(a.id)?.reason ?? null,
+          authorName: nomeDoAutor(a.author_id),
+          createdAt: a.created_at,
+        })),
       };
     });
   }
@@ -2497,6 +2538,10 @@ export default async function ClientDetailPage(
     ? await carregarOdontograma(client.id, client.birth_date)
     : null;
   const odontogramaErro = canViewOdontograma && !odontograma;
+  // OD6 (J2/J3): a linha do tempo clínica e quem gera o prontuário completo.
+  const linhaDoTempo = canViewAnamnesis ? await carregarLinhaDoTempo(client.id, odontograma) : [];
+  const podeGerarProntuario =
+    session.isAdminMaster || hasRoleInClinic(session, client.clinic_id, ["unit_manager"]);
   // OD5: a sessão herda o dente do item (leitura própria, 0314 — o dentista
   // não lê os itens do plano). Vale no painel de sessões e no atendimento.
   if (odontograma) {
@@ -3163,6 +3208,23 @@ export default async function ClientDetailPage(
           </TabPanel>
         )}
 
+        {/* OD6 (J2): a linha do tempo clínica + o odontograma de um dia do
+            passado; J3: o prontuário completo (Admin e Gerente, com motivo). */}
+        {canViewAnamnesis && (
+          <TabPanel id="linha-do-tempo" label="Linha do tempo">
+            <div className="space-y-3 rounded-xl border bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                  Tudo o que foi registrado no atendimento clínico deste paciente, do mais novo para o
+                  mais antigo.
+                </p>
+                {podeGerarProntuario && <BotaoProntuarioCompleto clientId={client.id} />}
+              </div>
+              <LinhaDoTempoClinica eventos={linhaDoTempo} odonto={odontograma} />
+            </div>
+          </TabPanel>
+        )}
+
         {/* Desenvolvimento Clínico (dentista executor) — Fase 4B: a execução do
             plano aprovado (referência) + a evolução clínica, separada da
             avaliação do Coordenador (aba Clínico). */}
@@ -3289,6 +3351,12 @@ export default async function ClientDetailPage(
               clinicId={scheduleClinicId}
               canWrite={canWriteProgress}
               notes={progressNotes}
+              // OD6: adendo — o titular, o dentista da unidade, o Coordenador
+              // (no atendimento dele) ou o autor; o banco confere (0315).
+              podeAdendo={
+                escreveEvolucaoPeloPapel ||
+                hasRoleInClinic(session, scheduleClinicId, ["clinical_coordinator"])
+              }
               attendance={
                 todayAttendance && !todayAttendance.concluded
                   ? {

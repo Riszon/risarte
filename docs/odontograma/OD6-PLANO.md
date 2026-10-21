@@ -128,7 +128,26 @@ do paciente (não existe função no núcleo — vira item do BACKLOG).
 | J3 | O prontuário completo é gerado pelo **Admin Master e pelo Gerente da unidade**, sempre com **motivo**, tudo na auditoria |
 | J4 | ⚠️ Diferente da recomendação: as **fotos e radiografias entram impressas no PDF** (áudio, vídeo e arquivos que não são imagem continuam só na lista). Consequência a cuidar no código: o PDF pode ficar grande — as imagens entram numa largura de página, com nome, tipo e data embaixo |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono ("pode começar o código da OD6"). **Código entregue na 0.340.0,
+migração 0315** — aplicada no treino; ⏳ produção pendente.
+
+### O que foi feito (0.340.0)
+
+- **0315:** a tranca da evolução e o adendo (J1); documento clínico e
+  anamnese imutáveis; `odontogram_session_history` (J2); o registro de cada
+  geração do prontuário completo, só Admin e Gerente, com motivo (J3).
+- **Telas:** botão **Adendo** na anotação trancada, com os adendos abaixo da
+  original; a aba **Linha do tempo** na ficha, com "ver o odontograma neste
+  dia"; o **Prontuário completo** (botão na Linha do tempo → motivo → página
+  para imprimir/salvar em PDF, com fotos e radiografias impressas, J4).
+- **Dois cuidados que entraram sem pedir decisão:** o link do prontuário vale
+  24 horas (depois, gera-se de novo — e fica registrado de novo); o que não
+  pertence a uma rodada de avaliação (registros antigos e os achados do
+  atendimento, OD5) entra numa seção própria, para nada ficar de fora.
+- **Um limite conhecido:** no documento, o nome de quem finalizou o
+  diagnóstico aparece como "—" quando quem gera não lê o perfil daquela
+  pessoa (o Gerente não lê o perfil do Planner da Franqueadora). É a regra de
+  leitura de perfis; não mexi.
 
 ---
 

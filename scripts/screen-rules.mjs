@@ -75,6 +75,8 @@ export const ROUTE_FIXTURES = {
   "/renegociacoes/[id]/acordo": "renegotiation",
   // OD4: o orçamento impresso é endereçado pela negociação.
   "/orcamentos/[id]": "negotiation",
+  // OD6: o prontuário completo é endereçado pelo REGISTRO da geração.
+  "/prontuario-completo/[id]": "recordExport",
   // O detalhe do relato é endereçado pelo CÓDIGO (OC-00009), não pelo id.
   "/problemas/[codigo]": "systemReport",
 };

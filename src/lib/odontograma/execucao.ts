@@ -138,6 +138,52 @@ export function marcasDosFeitos(feitos: ProcedimentoFeito[], situacoes: Situacao
   return marcas;
 }
 
+// -- OD6 (J2): o odontograma de um dia do passado --------------------------------
+
+/** A sessão com o histórico (`odontogram_session_history`, 0315): quando nasceu
+ *  e as vezes em que o atendimento registrou que ela foi feita. */
+export type SessaoComHistorico = SessaoDoOdontograma & {
+  createdAt: string;
+  /** Os registros de "feita" dos atendimentos — a refação apaga a data da
+   *  sessão (0143), estes ficam. */
+  registrosFeita: string[];
+};
+
+/**
+ * As sessões como estavam no FIM de um instante: só as que já existiam; feita
+ * se havia registro de feita (ou a data da sessão) até ali. Limite declarado:
+ * entre uma refação e o novo "feita" a sessão ainda conta como feita (o banco
+ * não guarda quando a refação a reabriu).
+ */
+export function sessoesNoDia(historico: SessaoComHistorico[], ate: string): SessaoDoOdontograma[] {
+  const limite = new Date(ate).getTime();
+  return historico
+    .filter((s) => new Date(s.createdAt).getTime() <= limite)
+    .map((s) => {
+      const vezes = [...s.registrosFeita, ...(s.doneAt ? [s.doneAt] : [])]
+        .filter((t) => new Date(t).getTime() <= limite)
+        .sort();
+      const feita = vezes.at(-1) ?? null;
+      return {
+        sessionId: s.sessionId,
+        itemId: s.itemId,
+        procedureId: s.procedureId,
+        // cancelada continua cancelada; o resto é feita ou a fazer naquele dia
+        status: s.status === "cancelled" ? "cancelled" : feita ? "done" : "pending",
+        doneAt: feita,
+        toothCode: s.toothCode,
+        faceCodes: s.faceCodes,
+        regionCode: s.regionCode,
+      };
+    });
+}
+
+/** Os achados como estavam até o instante (decididos até ali). */
+export function achadosAte(achados: Achado[], ate: string): Achado[] {
+  const limite = new Date(ate).getTime();
+  return achados.filter((a) => a.decididoEm !== null && new Date(a.decididoEm).getTime() <= limite);
+}
+
 /** "16 (O)", "Dente 46", "Arcada superior" — o lugar da sessão (nulo = sem dente). */
 export function localDaSessao(
   s: Pick<SessaoDoOdontograma, "toothCode" | "faceCodes" | "regionCode">,

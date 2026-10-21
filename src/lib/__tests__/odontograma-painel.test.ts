@@ -50,6 +50,8 @@ const dados = (achados: Achado[] | null, finalizadoEm: string | null = null): Da
   sessoes: [],
   feitos: [],
   aFazer: [],
+  historico: [],
+  regrasDasSessoes: {},
   denticao: "permanente",
   motivoDaDenticao: "Dentição sugerida pela idade (30 anos).",
   achados,

@@ -2524,6 +2524,16 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP66. O núcleo não tem como anonimizar um paciente (21/10/2026)
+
+**Lido no código (não executado).** O CLAUDE.md manda "apagar cliente =
+anonimizar, nunca apagar", e o banco tem o estado `anonymized` e a coluna
+`anonymized_at` (0002) — mas **não há função nem tela** que anonimize um
+paciente no núcleo (só o Empresarial e o Indica têm rotina de retenção). E a
+trilha `audit_changes` guarda o conteúdo de antes (0288, ponto já anotado).
+Achado no levantamento da OD6; fica para quando o dono definir o pedido de
+exclusão do titular (LGPD).
+
 ### AP65. Qualquer dentista da unidade concluía o atendimento de outro (20/10/2026) — ✅ CORRIGIDO na 0314 (0.339.0)
 
 **Provado no banco de treino antes de corrigir** (transação desfeita): com o

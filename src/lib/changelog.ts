@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.340.0",
+    data: "2026-10-21",
+    migracao: "0315",
+    titulo: "Prontuário: evolução que tranca, adendo, linha do tempo e prontuário completo",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "A evolução clínica tranca quando o atendimento é concluído (sem atendimento, no fim do dia). Para corrigir depois, use o botão Adendo na própria anotação: o texto e o motivo ficam logo abaixo da original, que não muda.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Documento clínico emitido (receita, atestado, declaração, orientação) e anamnese preenchida não podem mais ser alterados. Errou um documento? Emita outro.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha do cliente, a aba Linha do tempo reúne tudo o que foi registrado no atendimento clínico (avaliações, diagnóstico, planos, sessões, evolução, adendos, documentos), e o botão \"ver o odontograma neste dia\" mostra a boca como estava em qualquer data.",
+        papeis: ["dentist", "clinical_coordinator", "planner_dentist", "unit_manager"],
+        manual: "Na ficha do cliente: a aba Odontograma",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Prontuário completo: o Gerente da unidade (e o Admin) gera, na aba Linha do tempo, o prontuário do paciente para imprimir ou salvar em PDF — com fotos e radiografias — sempre escolhendo o motivo. Cada geração e cada abertura ficam registradas.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.339.0",
     data: "2026-10-20",
     migracao: "0314",

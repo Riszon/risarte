@@ -2020,6 +2020,15 @@ estoque** e o repasse do procedimento é apurado. Você não digita nada disso.
 > desenho é recalculado a cada vez — se uma sessão voltar a pendente, o efeito
 > sai sozinho.
 
+**A evolução tranca (desde a 0.340.0, decisão do dono J1).** Enquanto o
+atendimento está aberto, escreva e corrija à vontade. **Concluiu o
+atendimento, a anotação tranca** (a anotação sem atendimento tranca no fim do
+dia em que foi escrita). Para corrigir depois: botão **Adendo** na própria
+anotação → o que corrigir + o **motivo** → **Registrar adendo**. O adendo
+aparece logo abaixo da original, com o seu nome e a data; a original não muda
+e não some. O mesmo vale para os **documentos clínicos**: emitido, não muda —
+errou, emita outro.
+
 **Quem conclui o atendimento:** quem atendeu — quem **chamou** o paciente
 (ou, se ninguém chamou pelo painel, o profissional do agendamento). Outro
 dentista da unidade não conclui o atendimento de um colega (até a 0.339.0 o
@@ -2194,6 +2203,22 @@ mais telas).
 
 Módulos: Financeiro, Estoque, Compras, Comercial, Relatórios, Planos,
 Risartanos, Empresarial.
+
+**O prontuário completo do paciente (desde a 0.340.0, decisão do dono J3).**
+Quando o paciente pede os dados dele (LGPD), numa transferência, numa
+auditoria ou por ordem judicial: ficha do paciente → aba **Linha do tempo** →
+**Prontuário completo** → escolha o **motivo** (em "Outro", escreva qual) →
+**Gerar e abrir** → **Imprimir / salvar em PDF**.
+
+- O documento traz: paciente, consentimentos, **todas** as versões da
+  anamnese, as avaliações (considerações, diagnóstico por dente com o carimbo
+  de quando foi finalizado, **fotos e radiografias impressas**; áudio, vídeo e
+  outros arquivos na lista), o odontograma de hoje e o que foi feito, os
+  planos (versões), a evolução com os adendos e os documentos emitidos.
+- O rodapé diz **quem gerou, quando e por quê**. Cada geração e cada abertura
+  ficam registradas. O link vale **24 horas**; depois, gere de novo.
+- Só o **Gerente da unidade** e o **Admin Master** geram. O documento é dado
+  sensível de saúde: entregue só a quem tem direito.
 
 **Rotinas mensais:**
 1. **Fechamento de competência** (`/financeiro/fechamento`) — trava o mês.
@@ -2401,7 +2426,10 @@ Coordenador esperando o Planner, a miniatura mostra **"N a definir"**.
   o plano** troca o que aparece. Desde a 0.339.0, o que já foi **feito** no
   tratamento entra em **azul** (com o símbolo e "feito em …") e sai do
   vermelho; o achado que ele tratou some do desenho e fica no histórico como
-  **"tratado em …"**. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
+  **"tratado em …"**. Desde a 0.340.0, a aba **Linha do tempo** (ao lado)
+  junta tudo o que foi registrado no atendimento clínico, por dia, e o botão
+  **"ver o odontograma neste dia"** (ou o campo da data) mostra a boca **como
+  estava** naquele dia. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
   Reavaliação 2…), com o selo **"Finalizado em … por …"**, e o **Histórico das
   marcas** (quem sugeriu, quem decidiu, quando e o motivo).
 - **Na ficha é só leitura.** Quem marca faz isso nos cockpits: o Coordenador

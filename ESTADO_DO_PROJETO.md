@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.339.0** · Última migração: **0314** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 21/10/2026 · Versão do sistema: **0.340.0** · Última migração: **0315** (aplicada no treino; ⏳ produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🦷 0.340.0 / 0315 — ODONTOGRAMA OD6: O PRONTUÁRIO (21/10/2026)
+>
+> ⚠️ **A evolução tranca ao concluir o atendimento** (sem atendimento, no fim
+> do dia) — no BANCO; depois, só **adendo** com motivo (`add_progress_addendum`).
+> ⚠️ **Documento clínico e anamnese não mudam** no banco. **Linha do tempo
+> clínica** na ficha + o odontograma de um dia do passado (`odontogram_session_history`
+> + `src/lib/odontograma/historico.ts`). **Prontuário completo**
+> (`/prontuario-completo/[registro]`): Admin e Gerente, com motivo
+> (`clinical_record_exports`), fotos impressas, link de 24 h, tudo auditado.
 
 > ## 🦷 0.339.0 / 0314 — ODONTOGRAMA OD5: A EXECUÇÃO (20/10/2026)
 >
