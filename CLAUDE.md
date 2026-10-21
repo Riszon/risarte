@@ -416,7 +416,7 @@ Syncthing se comportarem de forma estranha.**
   avisa gente). A regra comercial da rede do treino agora EXISTE (salvei 20
   dias e voltei para vazio — tudo em branco, igual a não ter regra).
 - Aceite pela tela NÃO feito (a unidade de teste tem pessoa real).
-- ⏳ **0313 ainda NÃO aplicada na produção** (aplicada no treino).
+- ✅ **0313 APLICADA nos dois bancos** (o dono rodou na produção em 20/10/2026 e a conferência deu o esperado — coluna da validade, situação "substituída", gatilho, as duas funções de sessão ignorando plano substituído, gatilho fechado e sessões abertas a logados; conferido de fora: sem login gerar/completar sessões recusa com "permission denied", o gatilho não responde pela API, a chave de serviço com cliente inexistente volta sem gravar; a produção tem 1 regra comercial, nenhuma com validade, e 0 negociações).
 
 **20/10/2026 (5ª) — PC Administrador (core 0.336.0 → 0.337.0, migração 0312)**
 

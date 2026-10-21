@@ -126,7 +126,8 @@ chave); o envio do orçamento por WhatsApp/e-mail; o desenho no deck do Gamma
 | G4 | As **considerações do Coordenador saem** da tela do cliente |
 
 ✅ OK do dono ("pode começar o código da OD4"). **Código entregue na 0.338.0,
-migração 0313** — aplicada no treino; ⏳ produção pendente.
+migração 0313** — ✅ aplicada no treino e na produção (o dono rodou em
+20/10/2026; conferência ok e conferido de fora, só lendo).
 
 ### O que foi feito (0.338.0)
 

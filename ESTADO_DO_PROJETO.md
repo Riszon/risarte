@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.338.0** · Última migração: **0313** (aplicada no treino; ⏳ produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.338.0** · Última migração: **0313** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🦷 0.338.0 / 0313 — ODONTOGRAMA OD4: APRESENTAÇÃO, ACEITE POR DENTE E ORÇAMENTO (20/10/2026)
 >
