@@ -129,7 +129,8 @@ do paciente (não existe função no núcleo — vira item do BACKLOG).
 | J4 | ⚠️ Diferente da recomendação: as **fotos e radiografias entram impressas no PDF** (áudio, vídeo e arquivos que não são imagem continuam só na lista). Consequência a cuidar no código: o PDF pode ficar grande — as imagens entram numa largura de página, com nome, tipo e data embaixo |
 
 ✅ OK do dono ("pode começar o código da OD6"). **Código entregue na 0.340.0,
-migração 0315** — aplicada no treino; ⏳ produção pendente.
+migração 0315** — ✅ aplicada no treino e na produção (o dono rodou em
+21/10/2026; conferência ok e conferido de fora, só lendo).
 
 ### O que foi feito (0.340.0)
 

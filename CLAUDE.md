@@ -415,7 +415,7 @@ Syncthing se comportarem de forma estranha.**
   ignorar)": um adendo à evolução do atendimento de ensaio, uma foto de
   ensaio sem rodada (`ensaio-od6.png`, no caminho da unidade) e dois registros
   de prontuário gerado (Gerente de teste).
-- ⏳ **0315 ainda NÃO aplicada na produção** (aplicada no treino).
+- ✅ **0315 APLICADA nos dois bancos** (o dono rodou na produção em 21/10/2026 e a conferência deu o esperado — as 2 colunas do adendo, as 5 travas, as 4 funções, nenhuma regra de alterar documento, adendo só pela função, a tabela nova na auditoria, gerar fechado sem login; conferido de fora: sem login, adendo, gerar prontuário e histórico das sessões recusam com "permission denied"; a chave de serviço para em NOT_ALLOWED no adendo e na geração e lê 0 sessões; as colunas e a tabela existem, sem nenhum registro).
 
 **20/10/2026 (7ª) — PC Administrador (core 0.338.0 → 0.339.0, migração 0314)**
 
