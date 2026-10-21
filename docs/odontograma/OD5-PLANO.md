@@ -116,6 +116,17 @@ e espera a sua decisão própria.
 | **H3** | O dentista **sugere achado** durante o atendimento? | **Sim, sugere preso à sessão; o Planner define** (mesmo fluxo da OD2) |
 | **H4** | Alcance da evolução do **Coordenador** (D8b) | **O mesmo do dentista:** escreve a evolução e dá baixa nas sessões **nos atendimentos em que ele é o profissional** |
 
+### Decisões do dono (20/10/2026) — as quatro como recomendado
+
+| # | Decisão |
+|---|---|
+| H1 | O efeito entra **na última sessão concluída** daquele dente |
+| H2 | O procedimento concluído **resolve o achado** do mesmo lugar (face, ou dente inteiro), **automático**; o achado fica no histórico como "tratado em DD/MM" — nada se apaga |
+| H3 | O dentista **sugere** achado durante o atendimento, preso à sessão; **o Planner define** |
+| H4 | O Coordenador **igual ao dentista**: evolução e baixa das sessões nos atendimentos em que ele é o profissional |
+
+⏳ Aguardando o OK do dono para começar o código.
+
 ---
 
 ## 6. Como vai ser provado
