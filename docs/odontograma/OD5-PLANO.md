@@ -126,7 +126,8 @@ e espera a sua decisão própria.
 | H4 | O Coordenador **igual ao dentista**: evolução e baixa das sessões nos atendimentos em que ele é o profissional |
 
 ✅ OK do dono ("pode começar o código da OD5"). **Código entregue na 0.339.0,
-migração 0314** — aplicada no treino; ⏳ produção pendente.
+migração 0314** — ✅ aplicada no treino e na produção (o dono rodou em
+21/10/2026; conferência ok e conferido de fora, só lendo).
 
 ### O que foi feito (0.339.0)
 

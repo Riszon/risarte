@@ -414,7 +414,7 @@ Syncthing se comportarem de forma estranha.**
   sugestão no 24 esperando o Planner, e o repasse que nasceu das sessões
   (Dentista de teste). O cliente está no Centro de Planejamento: nada de
   "tratamento iniciado".
-- ⏳ **0314 ainda NÃO aplicada na produção** (aplicada no treino).
+- ✅ **0314 APLICADA nos dois bancos** (o dono rodou na produção em 21/10/2026 e a conferência deu o esperado — 4 funções novas, a gravação das marcas com uma versão só, a régua somando o feito, a conclusão com o `coalesce` e o Coordenador, a evolução com o titular, leitura fechada sem login; conferido de fora: sem login, ler sessões, sugerir, concluir e a régua interna recusam com "permission denied" e gravar evolução é barrado pela regra; a chave de serviço lê 0 sessões e a sugestão para em NOT_ALLOWED).
 
 **20/10/2026 (6ª) — PC Administrador (core 0.337.0 → 0.338.0, migração 0313)**
 
