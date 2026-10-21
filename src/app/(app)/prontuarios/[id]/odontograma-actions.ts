@@ -55,6 +55,23 @@ export async function sugerirNoOdontograma(
   return { ok: true, quantos: (data as number | null) ?? itens.length };
 }
 
+/** OD5 (H3): quem atende sugere durante o tratamento, preso à SESSÃO (sem
+ *  rodada). O banco confere que é o profissional daquele atendimento (0314). */
+export async function sugerirNaSessao(
+  clientId: string,
+  sessaoId: string,
+  itens: ItemDoDiagnostico[]
+): Promise<ResultadoDoOdontograma> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("suggest_session_findings", {
+    p_session: sessaoId,
+    p_items: itens,
+  });
+  if (error) return falha("suggest_session_findings", error.message);
+  revalidar(clientId);
+  return { ok: true, quantos: (data as number | null) ?? itens.length };
+}
+
 /** Quem sugeriu desfaz a própria sugestão (enquanto ninguém decidiu). */
 export async function desfazerSugestao(clientId: string, findingId: string): Promise<ResultadoDoOdontograma> {
   const supabase = await createClient();

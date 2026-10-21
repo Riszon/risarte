@@ -25,6 +25,8 @@ export type RegraDoPlano = {
   impede: string[];
   exige: string[];
   efeito: string | null;
+  /** 0308: o efeito quando o dente está ausente (prótese fixa: pôntico em vez de pilar). */
+  efeitoSeAusente?: string | null;
 };
 
 export type DenteDaReferencia = { dentition: "permanent" | "deciduous"; group: string };
@@ -42,6 +44,7 @@ export function regraDaLinha(r: {
   blocked_conditions: string[] | null;
   required_conditions: string[] | null;
   effect_condition: string | null;
+  effect_when_absent?: string | null;
 }): RegraDoPlano {
   return {
     nivel: r.application_level as NivelDoProcedimento,
@@ -53,6 +56,7 @@ export function regraDaLinha(r: {
     impede: r.blocked_conditions ?? [],
     exige: r.required_conditions ?? [],
     efeito: r.effect_condition,
+    efeitoSeAusente: r.effect_when_absent ?? null,
   };
 }
 

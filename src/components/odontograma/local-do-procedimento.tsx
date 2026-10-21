@@ -117,7 +117,7 @@ export function LocalDoProcedimento({
             denticaoInicial={dados.denticao}
             nomes={dados.nomes}
             faces={dados.faces}
-            marcas={marcasDoDesenho(dados.achados ?? [], dados.situacoes, "definidos")}
+            marcas={marcasDoDesenho(dados.achados ?? [], dados.situacoes, "definidos", dados.feitos)}
             selecionados={dentes}
             onDente={(d) => {
               const nd = dentes.includes(d) ? dentes.filter((x) => x !== d) : [...dentes, d];

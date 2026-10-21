@@ -1241,8 +1241,9 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 - **Atos clínicos do odontograma — só o titular** (decisão do dono, D6): o
   Admin Master que **não** é o Admin Principal **vê** o diagnóstico e o
   plano (com preços), mas **não** sugere, não define, **não monta nem envia
-  plano** (desde a 0.337.0 também o plano; o banco recusa). O titular faz
-  tudo, como o Planner.
+  plano** (desde a 0.337.0 também o plano; o banco recusa) e, desde a
+  0.339.0, **não escreve evolução clínica nem conclui atendimento** (lê
+  tudo). O titular faz tudo, como o Planner.
 - **Riscos:** é o único que pode apagar configuração da rede inteira. Um engano
   aqui atinge todas as unidades.
 - **Depende de:** ninguém.
@@ -1334,6 +1335,10 @@ cancelado, com o motivo.
   antes a tela mostrava só consulta). Receber o pedido não: cria conta a pagar.
 - **Riscos:** aprovar plano sem ler o orçamento. Ele vê **o total** de cada
   opção, não o preço item a item (✅ regra do LOTE F4).
+- **Evolução clínica (desde a 0.339.0, decisão do dono D8b/H4):** no
+  atendimento em que **ele é o profissional**, o Coordenador escreve o
+  Desenvolvimento Clínico, dá baixa nas sessões e sugere achado no dente —
+  igual ao dentista. No atendimento de outro profissional, só lê.
 - **Depende de:** Dentista Planner (que monta o plano).
 
 #### Dentista Planner *(franqueadora)*
@@ -1358,7 +1363,9 @@ cancelado, com o motivo.
 - **Menu diferente dos outros:** ✅ **não tem "Jornada"**, e ganha **Meu Dia** e
   **Minha Agenda**.
 - **Pode:** ver a agenda dele, chamar o paciente, escrever o Desenvolvimento
-  Clínico e concluir o atendimento.
+  Clínico e concluir o atendimento. Desde a 0.339.0 vê o **dente** de cada
+  sessão e o **odontograma do atendimento**, e **sugere** achado novo durante o
+  tratamento (o Planner decide).
 - **Não vê:** Financeiro, Comercial, Compras, Relatórios, **Estoque** (de
   propósito: o material do procedimento é baixado sozinho ao concluir a
   sessão; o que sair fora do previsto é lançado pela TSB, pela ASB ou pelo
@@ -1990,6 +1997,34 @@ Seu menu é diferente: **não tem Jornada**, e tem **Meu Dia** e **Minha Agenda*
 **O que acontece automaticamente ao concluir:** o material do kit **baixa do
 estoque** e o repasse do procedimento é apurado. Você não digita nada disso.
 
+**O dente de cada sessão e o odontograma do atendimento (desde a 0.339.0).**
+
+- Cada sessão mostra **onde** é: *"Implante — Dente 46 · Sessão 2 de 3"*,
+  *"Selante — 16 (O)"*. Vale na lista de sessões da ficha, no atendimento de
+  hoje e na tela **Atendimento**.
+- Na aba **Desenvolvimento Clínico**, durante o atendimento, aparece o
+  **Odontograma do atendimento**: em **azul** o que já foi feito (com o
+  símbolo), em **vermelho** o que falta do tratamento e o achado que pede
+  tratamento.
+- **Viu algo novo na boca?** Toque no dente, escolha a face e a situação e
+  clique **Sugerir**. A sugestão fica presa a esta sessão e vai para o
+  Planner decidir (aceitar, ajustar ou rejeitar). Durante o atendimento só se
+  **sugere marca nova** — retirar uma marca continua com o Planner. Enquanto
+  ninguém decidiu, **Desfazer** apaga a sua sugestão.
+
+> **Quando o procedimento passa a contar como feito:** na **última** sessão
+> daquele dente. Um implante de 3 sessões só vira implante no desenho quando a
+> 3ª é concluída (decisão do dono, H1). E o feito **resolve o achado** do mesmo
+> lugar: a restauração na face O do 16 tira do vermelho a cárie da face O do
+> 16, que fica no histórico como **"tratado em …"** (H2). Nada é apagado: o
+> desenho é recalculado a cada vez — se uma sessão voltar a pendente, o efeito
+> sai sozinho.
+
+**Quem conclui o atendimento:** quem atendeu — quem **chamou** o paciente
+(ou, se ninguém chamou pelo painel, o profissional do agendamento). Outro
+dentista da unidade não conclui o atendimento de um colega (até a 0.339.0 o
+banco deixava, quando ninguém tinha chamado — corrigido).
+
 ### 6.5. Consultor Comercial
 
 **Objetivo:** negociar e fechar. **Duração:** 60 minutos.
@@ -2363,7 +2398,10 @@ Coordenador esperando o Planner, a miniatura mostra **"N a definir"**.
   que ainda é **sugestão**. Desde a 0.336.0 entra também, em **vermelho**, o
   que o **plano que vale** planeja (a versão aprovada mais nova; sem
   aprovada, a mais nova). O filtro **Todos / Só definidos / Só sugestões / Só
-  o plano** troca o que aparece. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
+  o plano** troca o que aparece. Desde a 0.339.0, o que já foi **feito** no
+  tratamento entra em **azul** (com o símbolo e "feito em …") e sai do
+  vermelho; o achado que ele tratou some do desenho e fica no histórico como
+  **"tratado em …"**. Embaixo: o **diagnóstico por rodada** (Avaliação 1,
   Reavaliação 2…), com o selo **"Finalizado em … por …"**, e o **Histórico das
   marcas** (quem sugeriu, quem decidiu, quando e o motivo).
 - **Na ficha é só leitura.** Quem marca faz isso nos cockpits: o Coordenador

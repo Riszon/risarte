@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.339.0",
+    data: "2026-10-20",
+    migracao: "0314",
+    titulo: "Odontograma na execução: o dente de cada sessão e o que foi feito",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cada sessão do tratamento mostra o dente (\"Implante — Dente 46 · Sessão 2 de 3\") na ficha, no atendimento de hoje e na tela Atendimento.",
+        papeis: ["dentist", "clinical_coordinator", "receptionist", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O odontograma passa a mostrar o que foi FEITO: na última sessão daquele dente, o procedimento sai do vermelho e entra em azul (implante, restauração, coroa…), e o achado que ele tratou no mesmo lugar (ex.: a cárie da face restaurada) sai do vermelho e fica no histórico como \"tratado em\".",
+        papeis: ["dentist", "clinical_coordinator", "planner_dentist", "commercial_consultant", "unit_manager"],
+        manual: "Na ficha do cliente: a aba Odontograma",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Durante o atendimento, a aba Desenvolvimento Clínico mostra o odontograma do atendimento, e quem atende pode sugerir um achado novo no dente; o Planner decide.",
+        papeis: ["dentist", "clinical_coordinator", "planner_dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O Coordenador Clínico passa a escrever o Desenvolvimento Clínico e a dar baixa nas sessões nos atendimentos em que ele é o profissional. O Admin Master que não é o Admin Principal deixa de escrever evolução e de concluir atendimento (continua vendo tudo).",
+        papeis: ["clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Concluir o atendimento ficou só para quem atendeu: antes, quando ninguém tinha chamado o paciente pelo painel, outro dentista da unidade conseguia concluir o atendimento de um colega.",
+        papeis: ["dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.338.0",
     data: "2026-10-20",
     migracao: "0313",

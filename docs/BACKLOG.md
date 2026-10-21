@@ -2524,6 +2524,17 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP65. Qualquer dentista da unidade concluía o atendimento de outro (20/10/2026) — ✅ CORRIGIDO na 0314 (0.339.0)
+
+**Provado no banco de treino antes de corrigir** (transação desfeita): com o
+atendimento de um profissional que ninguém chamou pelo painel, o Dentista de
+teste (outro profissional) concluiu sem recusa. Causa: na guarda de
+`conclude_attendance_partial` (0176), `v_called_by = v_user` dá NULO quando
+ninguém chamou, e `not (… nulo …)` não barra. O recado da tela dizia "Apenas o
+dentista que atendeu pode concluir" — a regra estava certa, a conta não.
+Corrigido com `coalesce(…, false)` na mesma guarda que a OD5 recriou (H4/D6).
+Produção: 0 atendimentos com sessão concluídos.
+
 ### AP64. Versão nova do plano aprovada DEPOIS da venda — o painel passa para ela (20/10/2026)
 
 **Suspeita, lida no código (não executado).** Achado na OD4. "Criar nova

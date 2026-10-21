@@ -380,6 +380,8 @@ export function AttendancePanel({
   currentUserId,
   isAdmin,
   isDentist,
+  isCoordinator = false,
+  isOwner = false,
   waitingAlertMinutes,
   canSwapProvider,
   swapStaff,
@@ -391,6 +393,11 @@ export function AttendancePanel({
   isAdmin: boolean;
   /** H4.6 A1: usuário atua como Dentista na unidade (confirma a baixa). */
   isDentist?: boolean;
+  /** OD5 (H4): o Coordenador dá baixa nas sessões do atendimento DELE. */
+  isCoordinator?: boolean;
+  /** OD5 (D6): a baixa das sessões é ato clínico — o Admin que não é o
+   *  titular não dá; o titular dá em qualquer atendimento. */
+  isOwner?: boolean;
   /** H3.4: minutos de espera que disparam o destaque "Espera longa". */
   waitingAlertMinutes?: number;
   /** H3.6: Recepção/Gerente pode trocar o profissional de última hora. */
@@ -449,6 +456,12 @@ export function AttendancePanel({
     isAdmin ||
     a.calledBy === currentUserId ||
     (a.calledBy === null && a.providerUserId === currentUserId);
+  // OD5 (H4/D6): a baixa das SESSÕES — a mesma régua do banco (0314):
+  // o titular, ou o dentista/Coordenador que atendeu.
+  const canConcludeSessions = (a: PanelAppointment) =>
+    isOwner ||
+    ((isDentist || isCoordinator) &&
+      (a.calledBy === currentUserId || (a.calledBy === null && a.providerUserId === currentUserId)));
 
   // H3.6: profissionais elegíveis para assumir o atendimento (pela função que
   // o tipo do compromisso exige), exceto o atual.
@@ -1182,9 +1195,10 @@ export function AttendancePanel({
                 accent={STAGE.service.row}
                 action={
                   a.sessions && a.sessions.length > 0 ? (
-                    // H4.6 A1: atendimento com sessões — só o Dentista (ou Admin)
-                    // conclui, confirmando o que foi feito.
-                    canConclude(a) && (isDentist || isAdmin) ? (
+                    // H4.6 A1: atendimento com sessões — quem atendeu conclui,
+                    // confirmando o que foi feito (OD5: dentista ou
+                    // Coordenador; o titular sempre).
+                    canConcludeSessions(a) ? (
                       <Button
                         size="sm"
                         variant="outline"

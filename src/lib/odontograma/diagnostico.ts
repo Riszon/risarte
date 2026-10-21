@@ -9,12 +9,15 @@
 // Puro e testado.
 
 import type { Denticao, MarcaNoDente } from "@/lib/odontograma/desenho";
+import { achadosTratados, marcasDosFeitos, type ProcedimentoFeito } from "@/lib/odontograma/execucao";
 
 export type StatusDoAchado = "suggested" | "defined" | "rejected" | "adjusted" | "withdrawn";
 
 export type Achado = {
   id: string;
   evaluationId: string | null;
+  /** OD5 (H3): a sessão de tratamento em que o dentista sugeriu (sem rodada). */
+  sessaoId?: string | null;
   dente: string;
   faces: string[];
   situacao: string;
@@ -85,11 +88,14 @@ export const ROTULO_DO_FILTRO: Record<FiltroDoDesenho, string> = {
 };
 
 /** O que o desenho mostra: definidas como existentes; sugestões tracejadas.
- *  (O vermelho "a realizar" chega com o plano, na OD3.) */
+ *  (O vermelho "a realizar" chega com o plano, na OD3.) OD5: o que foi FEITO
+ *  entra como existente e tira do desenho o achado "a tratar" que resolveu (H2);
+ *  na mesma face, o achado a tratar que ainda vale vem antes do feito. */
 export function marcasDoDesenho(
   achados: Achado[],
   situacoes: SituacaoDoDente[],
-  filtro: FiltroDoDesenho = "todos"
+  filtro: FiltroDoDesenho = "todos",
+  feitos: ProcedimentoFeito[] = []
 ): MarcaNoDente[] {
   const porCodigo = new Map(situacoes.map((s) => [s.code, s]));
   const marca = (a: Achado, situacao: MarcaNoDente["situacao"]): MarcaNoDente | null => {
@@ -109,7 +115,16 @@ export function marcasDoDesenho(
   const lista: (MarcaNoDente | null)[] = [];
   // "Só o plano": o diagnóstico sai do desenho (o plano vem de fora, OD3).
   if (filtro === "plano") return [];
-  if (filtro !== "sugestoes") lista.push(...marcasAtuais(achados).map((a) => marca(a, "existente")));
+  if (filtro !== "sugestoes") {
+    const atuais = marcasAtuais(achados);
+    const tratados = achadosTratados(atuais, feitos, situacoes);
+    const valendo = atuais.filter((a) => !tratados.has(a.id)).map((a) => marca(a, "existente"));
+    lista.push(
+      ...valendo.filter((m) => m?.aTratar),
+      ...marcasDosFeitos(feitos, situacoes),
+      ...valendo.filter((m) => !m?.aTratar)
+    );
+  }
   if (filtro !== "definidos")
     lista.push(...pendentes(achados).filter((a) => a.acao === "mark").map((a) => marca(a, "sugerido")));
   return lista.filter((m): m is MarcaNoDente => m !== null);
@@ -241,6 +256,10 @@ export function mensagemDoDiagnostico(erro: string): string | null {
     ["INVALID_DENTITION", "Dentição inválida."],
     ["INVALID_DECISION", "Decisão inválida."],
     ["EMPTY_ITEMS", "Nada para gravar."],
+    // OD5 (0314): a sugestão do atendimento.
+    ["SESSION_NOT_FOUND", "Sessão não encontrada. Atualize a tela."],
+    ["SESSION_CANCELLED", "Esta sessão foi cancelada: não recebe sugestão."],
+    ["ONLY_MARK", "Durante o atendimento só se sugere marca nova; retirar é com o Planner."],
     ["NOT_ALLOWED", "A sua função não faz isso no odontograma: o Coordenador sugere; o Planner define e finaliza."],
   ];
   for (const [k, v] of mapa) if (erro.includes(k)) return v;
@@ -267,10 +286,12 @@ export function achadoDaLinha(r: {
   decided_by: string | null;
   decided_at: string | null;
   decision_reason: string | null;
+  treatment_session_id?: string | null;
 }): Achado {
   return {
     id: r.id,
     evaluationId: r.evaluation_id,
+    sessaoId: r.treatment_session_id ?? null,
     dente: r.tooth_code,
     faces: r.face_codes ?? [],
     situacao: r.condition_code,
@@ -291,4 +312,4 @@ export function achadoDaLinha(r: {
 }
 
 export const COLUNAS_DO_ACHADO =
-  "id, evaluation_id, tooth_code, face_codes, condition_code, action, removes_finding_id, origin, is_addendum, addendum_reason, status, adjusted_from, note, created_by, created_at, decided_by, decided_at, decision_reason";
+  "id, evaluation_id, treatment_session_id, tooth_code, face_codes, condition_code, action, removes_finding_id, origin, is_addendum, addendum_reason, status, adjusted_from, note, created_by, created_at, decided_by, decided_at, decision_reason";

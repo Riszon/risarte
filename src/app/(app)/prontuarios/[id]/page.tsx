@@ -20,6 +20,7 @@ import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnost
 import { rodadasFinalizadas } from "@/lib/odontograma/rodadas-trancadas";
 import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
 import { itensDoPlanoVigente, marcasDoPlano } from "@/lib/odontograma/plano";
+import { localDaSessao, rotuloDaSessao } from "@/lib/odontograma/execucao";
 import {
   marcasDoDesenho,
   pendentes,
@@ -1382,8 +1383,11 @@ export default async function ClientDetailPage(
 
   // -- H4.6 A2: Desenvolvimento Clínico (anotações do dentista) — visível aos
   // dentistas/coordenadores/planner; o dentista escreve (salvamento automático).
-  const canWriteProgress =
-    session.isAdminMaster ||
+  // OD5 (D6): o Admin que não é o titular só VÊ a evolução. O Coordenador
+  // (H4) escreve só no atendimento dele — decidido mais abaixo, com o
+  // atendimento de hoje em mãos (`canWriteProgress`).
+  const escreveEvolucaoPeloPapel =
+    Boolean(session.isOwner) ||
     hasRoleInClinic(session, scheduleClinicId, ["dentist"]);
   const canViewProgress = canViewAnamnesis;
   let progressNotes: ProgressNoteItem[] = [];
@@ -1516,6 +1520,7 @@ export default async function ClientDetailPage(
     providerName: string | null;
   }[] = [];
   let attendanceNote: { id: string; body: string } | null = null;
+  let souQuemAtendeHoje = false;
   // I7c: cronômetro do atendimento + sala de espera.
   let attendanceClock: {
     calledAt: string | null;
@@ -1536,7 +1541,7 @@ export default async function ClientDetailPage(
     const { data: todayAppts } = await supabase
       .from("appointments")
       .select(
-        "id, starts_at, attendance, status, called_at, checked_in_at, provider:profiles!appointments_provider_user_id_fkey ( full_name ), room:clinic_rooms ( name )"
+        "id, starts_at, attendance, status, called_at, checked_in_at, provider_user_id, called_by, provider:profiles!appointments_provider_user_id_fkey ( full_name ), room:clinic_rooms ( name )"
       )
       .eq("client_id", id)
       .gte("starts_at", dayStart.toISOString())
@@ -1551,6 +1556,8 @@ export default async function ClientDetailPage(
           status: string;
           called_at: string | null;
           checked_in_at: string | null;
+          provider_user_id: string | null;
+          called_by: string | null;
           provider: { full_name: string } | { full_name: string }[] | null;
           room: { name: string } | { name: string }[] | null;
         }[]
@@ -1584,6 +1591,10 @@ export default async function ClientDetailPage(
         >();
       const one2 = <T,>(v: T | T[] | null | undefined): T | null =>
         Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+      // OD5 (H4): quem atendeu — a mesma régua da baixa (0314).
+      souQuemAtendeHoje =
+        chosen.called_by === session.userId ||
+        (chosen.called_by === null && chosen.provider_user_id === session.userId);
       todayAttendance = {
         appointmentId: chosen.id,
         startsAt: chosen.starts_at,
@@ -1692,6 +1703,14 @@ export default async function ClientDetailPage(
         20;
     }
   }
+  // OD5 (H4): o Coordenador escreve a evolução (e conclui) só no atendimento
+  // em que ele é o profissional; o banco confere o mesmo (0314).
+  const canWriteProgress =
+    escreveEvolucaoPeloPapel ||
+    (hasRoleInClinic(session, scheduleClinicId, ["clinical_coordinator"]) &&
+      souQuemAtendeHoje &&
+      todayAttendance !== null &&
+      !todayAttendance.concluded);
 
   // -- H4.6 A3: Procedimentos do cliente (em aberto / agendados / finalizados) --
   const canViewProcedures =
@@ -2478,16 +2497,32 @@ export default async function ClientDetailPage(
     ? await carregarOdontograma(client.id, client.birth_date)
     : null;
   const odontogramaErro = canViewOdontograma && !odontograma;
+  // OD5: a sessão herda o dente do item (leitura própria, 0314 — o dentista
+  // não lê os itens do plano). Vale no painel de sessões e no atendimento.
+  if (odontograma) {
+    const nomeDaRegiao = (c: string) => odontograma.regioes.find((r) => r.code === c)?.name;
+    const localPorSessao = new Map(
+      odontograma.sessoes.map((s) => [s.sessionId, localDaSessao(s, nomeDaRegiao)])
+    );
+    for (const s of treatmentSessions) s.local = localPorSessao.get(s.id) ?? null;
+    if (todayAttendance) {
+      for (const s of todayAttendance.sessions) s.label = rotuloDaSessao(s.label, localPorSessao.get(s.id) ?? null);
+    }
+    for (const s of extraSessionOptions) s.label = rotuloDaSessao(s.label, localPorSessao.get(s.id) ?? null);
+  }
   // OD3: o plano por dente precisa das regras dos procedimentos (para o
   // Planner lançar com o dente e para o desenho de cada opção).
   const regrasDoPlano = odontograma && canViewPlanning ? await carregarRegrasDoPlano() : null;
   const odontoDoPlano =
     odontograma && regrasDoPlano ? { dados: odontograma, regras: regrasDoPlano } : undefined;
-  // OD3: o vermelho da aba Odontograma = o plano que VALE (D4).
+  // OD3: o vermelho da aba Odontograma = o plano que VALE (D4). OD5: só o que
+  // ainda FALTA — o item feito vira o efeito (azul) pelo `feitos`.
   const marcasDoPlanoVigente =
     odontograma && regrasDoPlano
       ? marcasDoPlano(
-          itensDoPlanoVigente(plans).map((it) => ({
+          itensDoPlanoVigente(plans)
+            .filter((it) => !odontograma.feitos.some((f) => f.itemId === it.id))
+            .map((it) => ({
             toothCode: it.toothCode ?? null,
             faceCodes: it.faceCodes ?? [],
             procedureId: it.procedureId,
@@ -2502,7 +2537,7 @@ export default async function ClientDetailPage(
   const podeVerPrecosDoPlano =
     session.isAdminMaster || (await hasRoleWithScopeForClinic(session, client.clinic_id, ["unit_manager"]));
   const marcasDaMiniatura = odontograma
-    ? marcasDoDesenho(odontograma.achados ?? [], odontograma.situacoes)
+    ? marcasDoDesenho(odontograma.achados ?? [], odontograma.situacoes, "todos", odontograma.feitos)
     : [];
   const sugestoesPendentes = odontograma ? pendentes(odontograma.achados ?? []).length : 0;
   // Atos clínicos do odontograma (D6): Admin que não é o titular só vê.
@@ -3109,7 +3144,8 @@ export default async function ClientDetailPage(
                   </div>
                 )}
                 <PainelDoDiagnostico
-                  marcasDoPlano={marcasDoPlanoVigente}
+                  // OD5: quem não lê o plano (o dentista) vê o que falta pelas sessões.
+                  marcasDoPlano={marcasDoPlanoVigente.length > 0 ? marcasDoPlanoVigente : odontograma.aFazer}
                   clientId={client.id}
                   modo="leitura"
                   dados={odontograma}
@@ -3198,10 +3234,42 @@ export default async function ClientDetailPage(
                   >
                     Atendimento
                   </Link>{" "}
-                  — lá o dentista marca o que foi feito; o que não foi volta
-                  para “a agendar”.
+                  — lá quem atendeu (o dentista, ou o Coordenador no atendimento
+                  dele) marca o que foi feito; o que não foi volta para “a
+                  agendar”. Também dá para concluir por aqui, embaixo.
                 </p>
               </div>
+            )}
+            {/* OD5: o odontograma da execução — o que foi feito (azul), o que
+                falta (vermelho) e, para quem atende, "sugerir achado" preso à
+                sessão de hoje (H3: o Planner decide). */}
+            {odontograma && todayAttendance && todayAttendance.sessions.length > 0 && (
+              <details className="mb-3 rounded-lg border p-3" open>
+                <summary className="cursor-pointer text-sm font-semibold">
+                  Odontograma do atendimento
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    {canWriteProgress && !todayAttendance.concluded
+                      ? "— viu algo novo na boca? Toque no dente e sugira; o Planner decide."
+                      : "— feito em azul, a fazer em vermelho"}
+                  </span>
+                </summary>
+                <div className="mt-3">
+                  <PainelDoDiagnostico
+                    clientId={client.id}
+                    modo={canWriteProgress && !todayAttendance.concluded ? "sugerir" : "leitura"}
+                    sessaoId={
+                      canWriteProgress && !todayAttendance.concluded
+                        ? todayAttendance.sessions[0].id
+                        : undefined
+                    }
+                    dados={odontograma}
+                    euId={session.userId}
+                    podeMudarDenticao={false}
+                    // O que FALTA pelas sessões (quem executa não lê o plano).
+                    marcasDoPlano={odontograma.aFazer}
+                  />
+                </div>
+              </details>
             )}
             {planSummary ? (
               <PlanSummarySection
@@ -3241,7 +3309,8 @@ export default async function ClientDetailPage(
                           status: s.status,
                         })),
                       extraOptions: extraSessionOptions,
-                      // Só o dentista do atendimento (ou admin) conclui.
+                      // Quem atendeu conclui (dentista ou, OD5, o Coordenador
+                      // no atendimento dele; o titular) — o banco confere.
                       canConclude:
                         canWriteProgress && todayAttendance.inService,
                       clock: attendanceClock,

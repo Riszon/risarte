@@ -94,7 +94,10 @@ function Dente({
     doDente.find((m) => m.local === "face" && m.faces.includes(face));
   const marcaDaRaiz = doDente.find((m) => m.local === "root");
   const marcaDoDente = doDente.find((m) => m.local === "crown" || m.local === "whole_tooth");
-  const ausente = doDente.find((m) => corDaMarca(m).classe === "ausente");
+  // OD5: dente ausente que recebeu implante ou pôntico (feito) não leva o X.
+  const ausente =
+    doDente.find((m) => corDaMarca(m).classe === "ausente") &&
+    !doDente.some((m) => m.feito && corDaMarca(m).classe !== "ausente");
 
   const raiz = sup
     ? `M ${cx + 6} ${yRaiz + RAIZ} L ${cx + COROA / 2} ${yRaiz} L ${cx + COROA - 6} ${yRaiz + RAIZ} Z`

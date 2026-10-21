@@ -2,8 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { evaluationLabel, type EvaluationKind } from "@/lib/clinical";
 import { todayInBrazil } from "@/lib/dates";
-import { anosCompletos, denticaoPelaIdade, type Denticao } from "@/lib/odontograma/desenho";
-import { regraDaLinha, type DenteDaReferencia, type RegraDoPlano } from "@/lib/odontograma/plano";
+import { anosCompletos, denticaoPelaIdade, type Denticao, type MarcaNoDente } from "@/lib/odontograma/desenho";
+import { marcasDoPlano, regraDaLinha, type DenteDaReferencia, type RegraDoPlano } from "@/lib/odontograma/plano";
 import {
   COLUNAS_DO_ACHADO,
   achadoDaLinha,
@@ -13,6 +13,12 @@ import {
   type SituacaoDoDente,
 } from "@/lib/odontograma/diagnostico";
 import type { OdontoDaApresentacao } from "@/lib/odontograma/aceite";
+import {
+  itensFeitos,
+  procedimentosFeitos,
+  type ProcedimentoFeito,
+  type SessaoDoOdontograma,
+} from "@/lib/odontograma/execucao";
 
 export type RodadaDoOdontograma = {
   id: string;
@@ -38,6 +44,13 @@ export type DadosDoOdontograma = {
   achados: Achado[] | null;
   rodadas: RodadaDoOdontograma[];
   pessoas: Record<string, string>;
+  /** OD5: as sessões do tratamento com o dente (vazio sem a 0314 ou sem sessões). */
+  sessoes: SessaoDoOdontograma[];
+  /** OD5: o que foi FEITO (H1), com o efeito — entra no desenho como existente. */
+  feitos: ProcedimentoFeito[];
+  /** OD5: o vermelho do que FALTA, pelas sessões do tratamento (o que foi
+   *  vendido e ainda não terminou) — a visão de quem executa. */
+  aFazer: MarcaNoDente[];
 };
 
 /**
@@ -53,7 +66,7 @@ export async function carregarOdontograma(
   nascimento: string | null
 ): Promise<DadosDoOdontograma | null> {
   const supabase = await createClient();
-  const [dentesR, facesR, situacoesR, regioesR, regiaoDentesR, odontoR, achadosR, rodadasR] =
+  const [dentesR, facesR, situacoesR, regioesR, regiaoDentesR, odontoR, achadosR, rodadasR, sessoesR] =
     await Promise.all([
       supabase.from("dental_teeth").select("code, name, dentition, tooth_group"),
       supabase.from("dental_tooth_faces").select("tooth_code, face_code"),
@@ -73,6 +86,9 @@ export async function carregarOdontograma(
         .select("id, kind, seq, title, status, clinic_id, diagnosis_finalized_at, diagnosis_finalized_by, clinic:clinics ( name )")
         .eq("client_id", clientId)
         .order("opened_at", { ascending: false }),
+      // OD5: leitura própria (0314) — o dentista não lê os itens do plano.
+      // Sem a 0314 a função não existe: segue sem o feito, como antes.
+      supabase.rpc("odontogram_sessions", { p_client: clientId }),
     ]);
 
   if (dentesR.error || facesR.error || situacoesR.error || (dentesR.data ?? []).length === 0) {
@@ -171,7 +187,65 @@ export async function carregarOdontograma(
     };
   });
 
-  return { nomes, dentes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas };
+  type LinhaDaSessao = {
+    session_id: string;
+    item_id: string | null;
+    procedure_id: string | null;
+    status: string;
+    done_at: string | null;
+    tooth_code: string | null;
+    face_codes: string[] | null;
+    region_code: string | null;
+  };
+  const sessoes: SessaoDoOdontograma[] = (sessoesR.error ? [] : ((sessoesR.data ?? []) as LinhaDaSessao[])).map(
+    (s) => ({
+      sessionId: s.session_id,
+      itemId: s.item_id,
+      procedureId: s.procedure_id,
+      status: s.status,
+      doneAt: s.done_at,
+      toothCode: s.tooth_code,
+      faceCodes: s.face_codes ?? [],
+      regionCode: s.region_code,
+    })
+  );
+  // As regras (e os nomes) dos procedimentos das sessões com dente: o efeito
+  // do que foi feito e o vermelho do que falta — o dentista não lê o plano.
+  let feitos: ProcedimentoFeito[] = [];
+  let aFazer: MarcaNoDente[] = [];
+  const procs = [...new Set(sessoes.filter((s) => s.toothCode && s.procedureId).map((s) => s.procedureId as string))];
+  if (procs.length > 0) {
+    const [{ data: regrasR }, { data: nomesR }] = await Promise.all([
+      supabase
+        .from("procedure_dental_rules")
+        .select(
+          "procedure_id, application_level, face_count_min, face_count_max, fixed_faces, dentition, tooth_groups, blocked_conditions, required_conditions, effect_condition, effect_when_absent"
+        )
+        .in("procedure_id", procs),
+      supabase.from("procedures").select("id, name").in("id", procs),
+    ]);
+    const regras: Record<string, RegraDoPlano> = {};
+    for (const r of regrasR ?? []) regras[r.procedure_id] = regraDaLinha(r);
+    feitos = procedimentosFeitos(sessoes, regras, achados ?? []);
+    const nomeDoProc = new Map((nomesR ?? []).map((p) => [p.id as string, p.name as string]));
+    // A fazer = item com sessão viva (não cancelada) que ainda não está feito.
+    const jaFeitos = itensFeitos(sessoes);
+    aFazer = marcasDoPlano(
+      [...new Map(sessoes.filter((s) => s.itemId && s.toothCode).map((s) => [s.itemId, s])).values()]
+        .filter((s) => !jaFeitos.has(s.itemId as string))
+        .filter((s) => sessoes.some((x) => x.itemId === s.itemId && x.status !== "cancelled"))
+        .map((s) => ({
+          toothCode: s.toothCode,
+          faceCodes: s.faceCodes,
+          procedureId: s.procedureId,
+          description: nomeDoProc.get(s.procedureId ?? "") ?? "Procedimento",
+        })),
+      regras,
+      situacoes
+    );
+  }
+
+  return { nomes, dentes, faces, situacoes, regioes, denticao, motivoDaDenticao, achados, rodadas, pessoas, sessoes, feitos, aFazer };
 }
 
 /**
@@ -197,7 +271,7 @@ export async function carregarOdontoDaApresentacao(
     situacoes: dados.situacoes,
     regras,
     regioes: dados.regioes.map((r) => ({ code: r.code, name: r.name })),
-    existentes: marcasDoDesenho(dados.achados ?? [], dados.situacoes, "definidos"),
+    existentes: marcasDoDesenho(dados.achados ?? [], dados.situacoes, "definidos", dados.feitos),
   };
 }
 
@@ -211,7 +285,7 @@ export async function carregarRegrasDoPlano(): Promise<Record<string, RegraDoPla
   const { data, error } = await supabase
     .from("procedure_dental_rules")
     .select(
-      "procedure_id, application_level, face_count_min, face_count_max, fixed_faces, dentition, tooth_groups, blocked_conditions, required_conditions, effect_condition"
+      "procedure_id, application_level, face_count_min, face_count_max, fixed_faces, dentition, tooth_groups, blocked_conditions, required_conditions, effect_condition, effect_when_absent"
     );
   if (error) return null;
   const regras: Record<string, RegraDoPlano> = {};

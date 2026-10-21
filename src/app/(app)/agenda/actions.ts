@@ -1510,7 +1510,7 @@ function concludeAttendanceError(message: string): string {
     return "Descreva o atendimento no Desenvolvimento clínico antes de concluir.";
   }
   if (message.includes("NOT_ALLOWED")) {
-    return "Apenas o dentista que atendeu pode dar baixa nas sessões.";
+    return "Apenas quem atendeu (o dentista ou o Coordenador do atendimento) pode dar baixa nas sessões.";
   }
   if (message.includes("APPOINTMENT_NOT_FOUND")) {
     return "Agendamento não encontrado — atualize a tela e tente de novo.";
@@ -1523,7 +1523,8 @@ function concludeAttendanceError(message: string): string {
 /** H4.6 A1: o Dentista conclui o atendimento confirmando QUAIS sessões foram
  * feitas. As confirmadas são liquidadas (tempo real rateado só entre elas); as
  * não feitas voltam para "a agendar" (com motivo opcional) e a Recepção é
- * avisada. Só o Dentista (ou Admin) pode confirmar a baixa. */
+ * avisada. Quem confirma a baixa é quem atendeu — o Dentista ou, desde a OD5
+ * (H4), o Coordenador — ou o titular (D6); o banco confere (0314). */
 export async function concludeAttendancePartial(
   appointmentId: string,
   doneSessionIds: string[],

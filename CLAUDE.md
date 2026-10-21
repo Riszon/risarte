@@ -390,6 +390,32 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**20/10/2026 (7ª) — PC Administrador (core 0.338.0 → 0.339.0, migração 0314)**
+
+- **Odontograma OD5 — a execução** (plano e decisões H1–H4 em
+  `docs/odontograma/OD5-PLANO.md`).
+- ⚠️ **O dentista NÃO lê os itens do plano** (regra da tabela): o dente da
+  sessão vem de `odontogram_sessions` (0314, `security definer`, guarda
+  `can_view_odontogram`). `carregarOdontograma` devolve `sessoes`, `feitos` e
+  `aFazer` (o vermelho do que falta pelas sessões — para quem não lê o plano).
+- ⚠️ **A mesma conta em dois lugares:** `src/lib/odontograma/execucao.ts` e
+  `_tooth_done_effects` / `_tooth_current_conditions` (0314). Mudou uma, muda
+  a outra.
+- ⚠️ **`_insert_tooth_findings` ganhou `p_session` (8 args, com padrão)**; as
+  chamadas de 7 da 0310 continuam valendo.
+- ⚠️ **AP65 (achado no ensaio, provado no banco de hoje):** `not (… = nulo)`
+  não barra. A guarda da conclusão (0176) deixava qualquer dentista da
+  unidade concluir quando ninguém tinha chamado. Corrigido com `coalesce` na
+  0314 (a guarda que eu já estava recriando). **Toda guarda nova `if not (...)`
+  com comparação a coluna que pode ser nula leva `coalesce(..., false)`.**
+- **Resíduo no treino (meu, de ensaio):** no cliente "Teste do portão 2 (pode
+  ignorar)": 3 sessões ("… (ensaio OD5)", todas feitas), um atendimento de
+  hoje concluído pela tela pelo Dentista de teste, a evolução dele, uma
+  sugestão no 24 esperando o Planner, e o repasse que nasceu das sessões
+  (Dentista de teste). O cliente está no Centro de Planejamento: nada de
+  "tratamento iniciado".
+- ⏳ **0314 ainda NÃO aplicada na produção** (aplicada no treino).
+
 **20/10/2026 (6ª) — PC Administrador (core 0.337.0 → 0.338.0, migração 0313)**
 
 - **Odontograma OD4 — apresentação, aceite por dente e orçamento impresso**

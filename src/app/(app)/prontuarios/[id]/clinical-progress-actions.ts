@@ -15,7 +15,9 @@ export type SaveProgressResult = {
 /** H4.6 A2: salva (cria ou atualiza) a anotação de Desenvolvimento Clínico do
  * dentista. Chamada em segundo plano pelo salvamento automático da UI — por isso
  * NÃO faz revalidatePath (não atrapalha a digitação); a linha do tempo se atualiza
- * ao recarregar / clicar em "Nova anotação". Só o Dentista (ou Admin) grava. */
+ * ao recarregar / clicar em "Nova anotação". Grava: o Dentista; o Coordenador
+ * só no atendimento em que ele é o profissional (OD5, H4); o titular (D6 — o
+ * Admin que não é o titular só vê). O banco confere (0314). */
 export async function saveProgressNote(input: {
   id: string | null;
   clientId: string;
@@ -26,12 +28,13 @@ export async function saveProgressNote(input: {
 }): Promise<SaveProgressResult> {
   const session = await getSessionContext();
   const canWrite =
-    session.isAdminMaster ||
-    hasRoleInClinic(session, input.clinicId, ["dentist"]);
+    Boolean(session.isOwner) ||
+    hasRoleInClinic(session, input.clinicId, ["dentist"]) ||
+    (Boolean(input.appointmentId) && hasRoleInClinic(session, input.clinicId, ["clinical_coordinator"]));
   if (!canWrite) {
     return {
       ok: false,
-      error: "Apenas o dentista pode registrar o desenvolvimento clínico.",
+      error: "Apenas quem atendeu (o dentista, ou o Coordenador no atendimento dele) registra o desenvolvimento clínico.",
     };
   }
 
@@ -109,7 +112,7 @@ export async function concludeFromProgress(input: {
     if (error.message.includes("NOT_ALLOWED")) {
       return {
         ok: false,
-        error: "Apenas o dentista que atendeu pode concluir o atendimento.",
+        error: "Apenas quem atendeu (o dentista ou o Coordenador do atendimento) pode concluir o atendimento.",
       };
     }
     if (error.message.includes("APPOINTMENT_NOT_FOUND")) {

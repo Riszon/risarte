@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 20/10/2026 · Versão do sistema: **0.338.0** · Última migração: **0313** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 20/10/2026 · Versão do sistema: **0.339.0** · Última migração: **0314** (aplicada no treino; ⏳ produção pendente) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🦷 0.339.0 / 0314 — ODONTOGRAMA OD5: A EXECUÇÃO (20/10/2026)
+>
+> A sessão herda o dente do item (leitura própria `odontogram_sessions` — o
+> dentista não lê o plano). ⚠️ **Feito = TODAS as sessões do item concluídas**
+> (H1); o efeito entra em azul e **resolve o achado "a tratar"** do mesmo
+> lugar decidido antes (H2) — calculado, nunca gravado; a régua do plano
+> (`_tooth_current_conditions`) soma o feito. O dentista **sugere preso à
+> sessão**, o Planner decide (H3). ⚠️ **Evolução e baixa:** Dentista;
+> Coordenador só no atendimento dele (H4); o titular no lugar de qualquer
+> Admin (D6). ⚠️ **AP65 corrigido:** a guarda da conclusão (0176) deixava
+> passar qualquer dentista quando ninguém tinha chamado (nulo).
 
 > ## 🦷 0.338.0 / 0313 — ODONTOGRAMA OD4: APRESENTAÇÃO, ACEITE POR DENTE E ORÇAMENTO (20/10/2026)
 >

@@ -20,6 +20,7 @@ import {
 } from "@/lib/agenda-settings";
 import type { JourneyPhase } from "@/lib/journey";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
+import { localDaSessao } from "@/lib/odontograma/execucao";
 import {
   AttendancePanel,
   type PanelAppointment,
@@ -602,7 +603,7 @@ export default async function AtendimentoPage(
     const { data: sessRows } = await supabase
       .from("treatment_sessions")
       .select(
-        "id, appointment_id, procedure_name, name, planned_minutes, plan_order, session_index, session_total, stage_name"
+        "id, appointment_id, client_id, procedure_name, name, planned_minutes, plan_order, session_index, session_total, stage_name"
       )
       .in("appointment_id", shownIds)
       .not("status", "in", "(done,cancelled)")
@@ -612,6 +613,7 @@ export default async function AtendimentoPage(
         {
           id: string;
           appointment_id: string;
+          client_id: string;
           procedure_name: string;
           name: string | null;
           planned_minutes: number | null;
@@ -621,14 +623,44 @@ export default async function AtendimentoPage(
           stage_name: string | null;
         }[]
       >();
+    // OD5: o dente de cada sessão (leitura própria, 0314 — o dentista não lê
+    // os itens do plano). Uma leitura por cliente com sessão hoje; sem a 0314
+    // ou sem acesso, a sessão segue sem o dente, como antes.
+    const localPorSessao = new Map<string, string | null>();
+    const clientesComSessao = [...new Set((sessRows ?? []).map((s) => s.client_id))];
+    if (clientesComSessao.length > 0) {
+      const { data: regioes } = await supabase.from("dental_regions").select("code, name");
+      const nomeDaRegiao = (c: string) => regioes?.find((r) => r.code === c)?.name?.trim();
+      const leituras = await Promise.all(
+        clientesComSessao.map((c) => supabase.rpc("odontogram_sessions", { p_client: c }))
+      );
+      for (const r of leituras) {
+        if (r.error) continue;
+        for (const s of (r.data ?? []) as {
+          session_id: string;
+          tooth_code: string | null;
+          face_codes: string[] | null;
+          region_code: string | null;
+        }[]) {
+          localPorSessao.set(
+            s.session_id,
+            localDaSessao(
+              { toothCode: s.tooth_code, faceCodes: s.face_codes ?? [], regionCode: s.region_code },
+              nomeDaRegiao
+            )
+          );
+        }
+      }
+    }
     for (const s of sessRows ?? []) {
       const list = sessionsByAppt.get(s.appointment_id) ?? [];
       // I7: o dentista precisa saber QUAL sessão é (nome do protocolo quando
-      // existe, senão "Sessão X de Y") e de que etapa ela vem.
+      // existe, senão "Sessão X de Y") e de que etapa ela vem. OD5: e o dente.
       const which = s.name ?? `Sessão ${s.session_index} de ${s.session_total}`;
+      const onde = localPorSessao.get(s.id);
       list.push({
         id: s.id,
-        label: `${s.procedure_name} — ${which}${s.stage_name ? ` · ${s.stage_name}` : ""}`,
+        label: `${s.procedure_name}${onde ? ` — ${onde}` : ""} — ${which}${s.stage_name ? ` · ${s.stage_name}` : ""}`,
         plannedMinutes: s.planned_minutes,
       });
       sessionsByAppt.set(s.appointment_id, list);
@@ -678,9 +710,12 @@ export default async function AtendimentoPage(
       "dentist",
       "commercial_consultant",
     ]);
-  // H4.6 A1: só o Dentista (ou Admin) confirma a baixa das sessões.
+  // H4.6 A1: quem atendeu confirma a baixa das sessões — o Dentista e, desde
+  // a OD5 (H4), o Coordenador, no atendimento dele.
   const isDentist =
     !consultantView && hasRoleInClinic(session, clinicId, ["dentist"]);
+  const isCoordinator =
+    !consultantView && hasRoleInClinic(session, clinicId, ["clinical_coordinator"]);
 
   // H3.6: Recepção ou Gerente troca o profissional de última hora. Carrega a
   // equipe da unidade para o seletor do novo profissional.
@@ -981,6 +1016,8 @@ export default async function AtendimentoPage(
         currentUserId={session.userId}
         isAdmin={session.isAdminMaster}
         isDentist={isDentist}
+        isCoordinator={isCoordinator}
+        isOwner={Boolean(session.isOwner)}
         waitingAlertMinutes={waitingAlertMinutes}
         canSwapProvider={canSwapProvider}
         swapStaff={swapStaff}

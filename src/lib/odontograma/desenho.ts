@@ -116,6 +116,8 @@ export type MarcaNoDente = {
   /** Achado que PEDE TRATAMENTO (cárie, fratura, lesão…) — vermelho já no
    *  diagnóstico (decisão do dono, 20/10/2026; configurável por situação). */
   aTratar?: boolean;
+  /** OD5: o efeito de um procedimento FEITO (não um achado do exame). */
+  feito?: boolean;
 };
 
 /** A convenção de cores do dono (D12, ajustada em 20/10/2026): vermelho = a

@@ -1652,18 +1652,21 @@ function OptionBudget({
               faces={odonto.dados.faces}
               // O que a opção planeja vem PRIMEIRO: na mesma face, o vermelho
               // (a realizar) aparece por cima do diagnóstico.
+              // OD5: o item já FEITO sai do vermelho e entra como o efeito.
               marcas={[
                 ...marcasDoPlano(
-                  items.map((it) => ({
-                    toothCode: it.toothCode ?? null,
-                    faceCodes: it.faceCodes ?? [],
-                    procedureId: it.procedureId,
-                    description: it.description,
-                  })),
+                  items
+                    .filter((it) => !odonto.dados.feitos.some((f) => f.itemId === it.id))
+                    .map((it) => ({
+                      toothCode: it.toothCode ?? null,
+                      faceCodes: it.faceCodes ?? [],
+                      procedureId: it.procedureId,
+                      description: it.description,
+                    })),
                   odonto.regras,
                   odonto.dados.situacoes
                 ),
-                ...marcasDoDesenho(odonto.dados.achados ?? [], odonto.dados.situacoes, "definidos"),
+                ...marcasDoDesenho(odonto.dados.achados ?? [], odonto.dados.situacoes, "definidos", odonto.dados.feitos),
               ]}
             />
           </div>

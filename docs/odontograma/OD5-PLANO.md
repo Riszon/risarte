@@ -125,7 +125,28 @@ e espera a sua decisão própria.
 | H3 | O dentista **sugere** achado durante o atendimento, preso à sessão; **o Planner define** |
 | H4 | O Coordenador **igual ao dentista**: evolução e baixa das sessões nos atendimentos em que ele é o profissional |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono ("pode começar o código da OD5"). **Código entregue na 0.339.0,
+migração 0314** — aplicada no treino; ⏳ produção pendente.
+
+### O que foi feito (0.339.0)
+
+- **0314:** `odontogram_sessions` (o dente da sessão, para quem vê o
+  odontograma); `_tooth_done_effects` + `_tooth_current_conditions` (H1 e
+  H2, a régua do plano passa a somar o feito); `suggest_session_findings`
+  (H3); evolução e conclusão com o Coordenador no atendimento dele (H4) e o
+  titular no lugar de qualquer Admin (D6).
+- **Telas:** o dente em cada sessão (ficha, atendimento de hoje, tela
+  Atendimento); o **Odontograma do atendimento** na aba Desenvolvimento
+  Clínico, com "Sugerir"; o feito em azul e o achado tratado fora do
+  vermelho em todos os desenhos; "tratado em" no histórico.
+- **Achado no ensaio e corrigido (AP65):** a guarda da conclusão do
+  atendimento (0176) deixava qualquer dentista da unidade concluir o
+  atendimento de outro profissional quando ninguém tinha chamado o paciente
+  pelo painel — comparação com campo vazio. Era a guarda que a OD5 já
+  recriava (H4/D6); corrigida junto.
+- **Uma escolha minha:** procedimento **sem efeito** cadastrado (ex.:
+  radiografia) não resolve achado — "o mesmo lugar" só vale para o que deixa
+  marca no dente.
 
 ---
 

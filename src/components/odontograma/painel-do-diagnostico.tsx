@@ -38,8 +38,10 @@ import {
   finalizarDiagnostico,
   guardarDenticao,
   marcarNoOdontograma,
+  sugerirNaSessao,
   sugerirNoOdontograma,
 } from "@/app/(app)/prontuarios/[id]/odontograma-actions";
+import { achadosTratados } from "@/lib/odontograma/execucao";
 
 const ORDEM_DAS_FACES = ["V", "M", "D", "O", "I", "P", "L"];
 const NOME_DA_FACE: Record<string, string> = {
@@ -72,6 +74,7 @@ export function PainelDoDiagnostico({
   euId,
   podeMudarDenticao,
   marcasDoPlano = [],
+  sessaoId,
 }: {
   /** OD3: o vermelho do plano que vale (a ficha). Vazio = sem o filtro "Só o plano". */
   marcasDoPlano?: MarcaNoDente[];
@@ -79,6 +82,9 @@ export function PainelDoDiagnostico({
   modo: "sugerir" | "definir" | "leitura";
   /** A unidade da rodada em que o Coordenador sugere. */
   clinicId?: string;
+  /** OD5 (H3): no atendimento — a sugestão nasce presa a esta sessão (sem
+   *  rodada) e só marca (retirar continua com o Planner). */
+  sessaoId?: string;
   dados: DadosDoOdontograma;
   euId: string;
   podeMudarDenticao: boolean;
@@ -103,14 +109,19 @@ export function PainelDoDiagnostico({
   const marcas = useMemo(
     () => [
       ...(filtro === "todos" || filtro === "plano" ? marcasDoPlano : []),
-      ...marcasDoDesenho(achados, dados.situacoes, filtro),
+      ...marcasDoDesenho(achados, dados.situacoes, filtro, dados.feitos),
     ],
-    [achados, dados.situacoes, filtro, marcasDoPlano]
+    [achados, dados.situacoes, filtro, marcasDoPlano, dados.feitos]
   );
   const filtros = (Object.keys(ROTULO_DO_FILTRO) as FiltroDoDesenho[]).filter(
     (f) => f !== "plano" || marcasDoPlano.length > 0
   );
   const atuais = useMemo(() => marcasAtuais(achados), [achados]);
+  // OD5 (H2): o achado "a tratar" que um procedimento feito resolveu.
+  const tratados = useMemo(
+    () => achadosTratados(atuais, dados.feitos, dados.situacoes),
+    [atuais, dados.feitos, dados.situacoes]
+  );
   const aDecidir = useMemo(() => pendentes(achados), [achados]);
   const minhas = aDecidir.filter((a) => a.criadoPor === euId);
   const rodadaMaisRecente = dados.rodadas[0] ?? null;
@@ -164,7 +175,13 @@ export function PainelDoDiagnostico({
       toast.error(montagem.problemas[0]);
       return;
     }
-    if (modo === "sugerir") {
+    if (modo === "sugerir" && sessaoId) {
+      rodar(
+        () => sugerirNaSessao(clientId, sessaoId, montagem.itens),
+        "Sugestão registrada — o Planner decide.",
+        limpar
+      );
+    } else if (modo === "sugerir") {
       if (!clinicId) return;
       rodar(() => sugerirNoOdontograma(clientId, clinicId, montagem.itens), "Sugestão registrada.", limpar);
     } else {
@@ -271,9 +288,17 @@ export function PainelDoDiagnostico({
                     {atuaisDaSelecao.map((a) => (
                       <li key={a.id} className="flex items-center gap-2 text-sm">
                         <span>{descricaoDoAchado(a, nomeDaSituacao.get(a.situacao) ?? a.situacao)}</span>
-                        <Button size="sm" variant="outline" disabled={isPending} onClick={() => retirar(a)}>
-                          {modo === "sugerir" ? "Sugerir retirar" : "Retirar"}
-                        </Button>
+                        {tratados.has(a.id) && (
+                          <span className="text-xs text-muted-foreground">
+                            tratado em {quando(tratados.get(a.id)?.feitoEm ?? null)}
+                          </span>
+                        )}
+                        {/* OD5: no atendimento só se sugere marca nova. */}
+                        {!sessaoId && (
+                          <Button size="sm" variant="outline" disabled={isPending} onClick={() => retirar(a)}>
+                            {modo === "sugerir" ? "Sugerir retirar" : "Retirar"}
+                          </Button>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -409,6 +434,7 @@ export function PainelDoDiagnostico({
                   <span className="text-xs text-muted-foreground">
                     sugerido por {quem(a.criadoPor)} em {quando(a.criadoEm)}
                     {a.evaluationId ? ` · ${rotuloDaRodada.get(a.evaluationId) ?? ""}` : ""}
+                    {a.sessaoId ? " · durante o tratamento" : ""}
                   </span>
                   {a.observacao && <span className="text-xs italic">“{a.observacao}”</span>}
                   <div className="ml-auto flex gap-1">
@@ -574,6 +600,8 @@ export function PainelDoDiagnostico({
                 {a.decididoEm && a.origem === "suggestion" ? ` · decidido por ${quem(a.decididoPor)} em ${quando(a.decididoEm)}` : ""}
                 {a.motivoDaDecisao ? ` · motivo: ${a.motivoDaDecisao}` : ""}
                 {a.adendo ? ` · ADENDO: ${a.motivoDoAdendo ?? ""}` : ""}
+                {a.sessaoId && a.origem === "suggestion" ? " · durante o tratamento" : ""}
+                {tratados.has(a.id) ? ` · tratado em ${quando(tratados.get(a.id)?.feitoEm ?? null)}` : ""}
               </li>
             ))}
           </ul>

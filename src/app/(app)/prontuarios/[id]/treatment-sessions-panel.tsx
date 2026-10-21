@@ -28,6 +28,8 @@ export type TreatmentSession = {
   id: string;
   procedureId: string | null;
   procedureName: string;
+  /** OD5: o dente/região do item ("16 (O)", "Dente 46") — nulo sem dente. */
+  local?: string | null;
   sessionIndex: number;
   sessionTotal: number;
   name: string | null;
@@ -524,6 +526,10 @@ export function TreatmentSessionsPanel({
                         <span className="min-w-0">
                           <span className="block">
                             <span className="font-medium">{s.procedureName}</span>{" "}
+                            {/* OD5: a sessão herda o dente do item do plano. */}
+                            {s.local && (
+                              <span className="font-medium text-muted-foreground">— {s.local} </span>
+                            )}
                             {planLabelById?.get(s.id) && (
                               <Badge
                                 variant="secondary"
