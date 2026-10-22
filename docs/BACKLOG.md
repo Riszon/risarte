@@ -2694,6 +2694,7 @@ A 0316 cria `notify_case_returned` e `notify_ppr_membership_created`: cada
 uma só avisa sobre o ato que ACABOU de acontecer, feito por quem chama, e uma
 vez só. A tela confere o erro e diz quando o recado não foi entregue. A tabela
 continua sem regra de gravar. Régua: `avisos-pela-porta-do-banco.test.ts`.
+✅ **0316 APLICADA nos dois bancos** (o dono rodou na produção em 22/10/2026 e a conferência deu o esperado — 2 funções, as 2 rodando como dono, 0 sem login, 2 logado, 0 regras de gravar avisos; conferido de fora: sem login as duas recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é pessoa, para em NOT_ALLOWED antes de gravar; a produção tem 0 avisos com os dois títulos — o primeiro nasce na próxima devolução ou adesão).
 
 *Registro original:*
 

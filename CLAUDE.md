@@ -406,7 +406,7 @@ Syncthing se comportarem de forma estranha.**
   ato vale) — melhor que o silêncio de antes.
 - **Não visto na tela:** devolver e vender PPR+ no treino avisaria pessoas
   reais. Provado por ensaio (15 conferências, transação desfeita) + quebra 7/7.
-- ⏳ **0316 aplicada no treino; falta a produção.**
+- ✅ **0316 APLICADA nos dois bancos** (o dono rodou na produção em 22/10/2026 e a conferência deu o esperado — 2 funções, as 2 rodando como dono, 0 sem login, 2 logado, 0 regras de gravar avisos; conferido de fora: sem login as duas recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é pessoa, para em NOT_ALLOWED antes de gravar; a produção tem 0 avisos com os dois títulos — o primeiro nasce na próxima devolução ou adesão).
 
 **22/10/2026 (2ª) — PC Administrador (core 0.341.0 → 0.341.1, sem migração)**
 
