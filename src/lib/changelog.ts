@@ -62,6 +62,33 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.341.2",
+    data: "2026-10-22",
+    migracao: "0316",
+    titulo: "O motivo da devolução ao Coordenador e o aviso de adesão ao PPR+ passam a chegar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quando o Planner devolve um caso ao Coordenador, o Coordenador passa a receber no sino o aviso \"Caso devolvido pelo Centro de Planejamento\" com o motivo escrito. Antes a fase mudava, mas o recado com o motivo não era entregue.",
+        papeis: ["planner_dentist", "clinical_coordinator"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ao registrar uma adesão ao PPR+, a recepção, o gerente e o coordenador da unidade passam a receber o aviso no sino. Antes esse aviso não chegava.",
+        papeis: ["receptionist", "unit_manager", "clinical_coordinator"],
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Se algum desses avisos não puder ser entregue, a tela agora diz isso (o ato vale do mesmo jeito) — aí é só avisar a pessoa pelo chat.",
+        papeis: ["planner_dentist", "receptionist"],
+      },
+    ],
+  },
+  {
     versao: "0.341.1",
     data: "2026-10-22",
     migracao: null,

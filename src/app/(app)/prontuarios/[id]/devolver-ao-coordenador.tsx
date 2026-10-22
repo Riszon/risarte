@@ -48,6 +48,7 @@ export function DevolverAoCoordenador({
       const r = await devolverAoCoordenador(clientId, destino, motivo);
       if (r.ok) {
         toast.success(`${clientName} devolvido(a) ao Coordenador.`);
+        if (r.aviso) toast.warning(r.aviso);
         setAberto(false);
         setMotivo("");
         router.refresh();

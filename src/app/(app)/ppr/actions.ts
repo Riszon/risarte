@@ -420,36 +420,15 @@ export async function createPprMembership(input: {
 
   // Avisa a unidade: recepção, gerente e coordenador precisam saber da adesão
   // para agendar a primeira limpeza e acompanhar o beneficiário.
-  const { data: holderRow } = await supabase
-    .from("clients")
-    .select("full_name")
-    .eq("id", input.holderClientId)
-    .maybeSingle();
-  const holderName = (holderRow?.full_name as string) ?? "Cliente";
-  const { data: staff } = await supabase
-    .from("user_clinic_roles")
-    .select("user_id, role")
-    .eq("clinic_id", input.clinicId)
-    .in("role", ["receptionist", "unit_manager", "clinical_coordinator"]);
-  const targets = [
-    ...new Set(
-      (staff ?? [])
-        .map((r) => r.user_id as string)
-        .filter((id) => id !== session.userId)
-    ),
-  ];
-  if (targets.length > 0) {
-    await supabase.from("notifications").insert(
-      targets.map((userId) => ({
-        user_id: userId,
-        clinic_id: input.clinicId,
-        title: `PPR+ — nova adesão ao ${plan.name}`,
-        body: `${holderName} aderiu ao ${plan.name}${
-          deps.length > 0 ? ` com ${deps.length} dependente(s)` : ""
-        }. Mensalidade ${(monthly / 100).toFixed(2).replace(".", ",")}. Falta o contrato e a 1ª mensalidade para ativar.`,
-        link: `/ppr/adesoes/${membershipId}`,
-      }))
-    );
+  // ⚠️ AP58: pela porta do banco (0316). Gravar direto na tabela de avisos era
+  // recusado em silêncio — ela não tem regra de gravar, de propósito. A adesão
+  // já está registrada; se o aviso falhar, quem vendeu fica sabendo.
+  const { error: avisoErro } = await supabase.rpc(
+    "notify_ppr_membership_created",
+    { p_membership_id: membershipId }
+  );
+  if (avisoErro) {
+    console.error("notify_ppr_membership_created failed:", avisoErro.message);
   }
   await logAudit({
     action: "create",
@@ -458,7 +437,14 @@ export async function createPprMembership(input: {
     clinicId: input.clinicId,
   });
   refresh(membershipId, input.holderClientId);
-  return { ok: true, membershipId };
+  return avisoErro
+    ? {
+        ok: true,
+        membershipId,
+        aviso:
+          "A adesão foi registrada, mas o aviso à recepção, ao gerente e ao coordenador não foi entregue. Avise a unidade.",
+      }
+    : { ok: true, membershipId };
 }
 
 /**

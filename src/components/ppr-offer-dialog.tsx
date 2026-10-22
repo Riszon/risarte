@@ -258,6 +258,7 @@ function PprOfferDialog({
         return;
       }
       toast.success("Adesão registrada! Falta o contrato e a 1ª mensalidade.");
+      if (r.aviso) toast.warning(r.aviso);
       setOpen(false);
       if (r.membershipId) router.push(`/ppr/adesoes/${r.membershipId}`);
       else router.refresh();

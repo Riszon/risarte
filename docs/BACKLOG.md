@@ -3,6 +3,60 @@
 Itens organizados por momento de implementação. Fonte: revisão do proprietário
 após a Etapa 3. Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 
+## ☑️ CHECKLIST DAS PENDÊNCIAS ABERTAS (levantado em 22/10/2026)
+
+Pedido do dono. É o ÍNDICE do que está aberto; o detalhe de cada item está na
+seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seção.
+
+**Esperando decisão do dono**
+- [ ] **AP61** — repasse por sessão paga o valor inteiro a cada sessão: a tabela é "por sessão" ou "por procedimento"?
+- [ ] **AP63 / AP64** — como mudar um plano já vendido (nova versão depois da venda; nova venda depois de cancelada)
+- [ ] **AP55** — lista certa de tarefas da TSB na certificação, e o que tirar da Recepção
+- [ ] **AP53** — tirar do Planner a gestão das especialidades?
+- [ ] **AP24** — Indica +Risos: implementar ou tirar da tela os 3 parâmetros que nada usa
+- [ ] **AP66** — como anonimizar um paciente no núcleo (LGPD)
+- [ ] **AP51** — conciliação com duas contas bancárias na mesma unidade; maquininha casada à mão
+- [x] **AP49** — Franqueadora/Rede gestora no Empresarial: decidido MANTER (16/10/2026)
+
+**Defeitos confirmados, a corrigir**
+- [x] **AP58** — aviso "Caso devolvido" (e o da adesão ao PPR+) recusado pelo banco — corrigido na 0316 (0.341.2)
+- [ ] **AP56** — pedido montado à mão põe qualquer função como profissional do horário
+- [ ] **AP11 (sobra)** — telas que mostram "0 esperando" se a contagem falhar (Início, Compras, relatos)
+- [ ] **AP38** — Empresarial: sugestão de "Quem assina" na aba Proposta não se atualiza
+
+**Segurança e banco (por etapas)**
+- [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
+- [ ] **AP67** — o banco ignora o escopo "Específicas" do Financeiro da Franqueadora
+
+**Dependem do Risarte Academy**
+- [ ] **AP17 + "ACADEMY — PARA RETOMAR"** — o dono roda a consulta só-leitura das 5 funções do Academy
+
+**Da sessão do Indica +Risos**
+- [ ] **AP31** — tela de apuração responde 404 para o Admin
+- [ ] **AP32** — 3 conferências do `test:indica` falham no treino
+
+**Futuro / sem causa encontrada**
+- [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
+- [ ] **AP68** — aba Fluxo de caixa do Painel da rede lê unidade por unidade (medir com a rede grande)
+- [ ] **AP57** — textos da certificação que podem citar botões com nome antigo
+- [ ] **AP33** — rodada de testes que falhou uma vez e não se repetiu
+- [ ] **AP40** — prender num script a limpeza da `.next-test` (hoje é hábito do agente)
+
+**Adiados antigos (do início do projeto)**
+- [ ] Gênero no cadastro (rótulos "Coordenadora/Coordenador")
+- [ ] Foto do cliente pela webcam
+- [ ] Semana começando no domingo + esconder fim de semana sem agendamento
+- [ ] Funcionar sem internet (offline / sincronização)
+- [ ] Consolidação financeira na transferência de cliente
+- [ ] Revisar as marcações da lista **H4** (quase todos os módulos já existem; as caixas estão velhas)
+
+**Com o dono, registradas no CLAUDE.md (conferir se já foram feitas)**
+- [ ] ⏰ Renovar o Supabase Pro (vence em 30/10/2026)
+- [ ] Definir as metas da certificação (em branco na produção)
+- [ ] Cadastrar os benefícios padrão da rede do Empresarial na produção
+- [ ] Digitar os dados de quem assina pela Risarte no contrato do Empresarial (os dois ambientes)
+- [ ] Ligar "Criar requisição de compra" para o Financeiro da Franqueadora na matriz
+
 ## Princípios que mudam o modelo (valem para tudo daqui em diante)
 
 - **Risarte Franchising NÃO é uma clínica** — é a franqueadora, o "guarda-chuva"
@@ -2628,7 +2682,20 @@ Coordenador ver **só os totais** — e é o que o editor do plano faz. Mas
 o inverso: o **Gerente** vê só os totais no plano, mas a D7 diz que ele vê
 os preços. A OD3 propõe acertar os dois.
 
-### AP58. Aviso "Caso devolvido pelo Centro de Planejamento" provavelmente nunca chega (20/10/2026)
+### AP58. Aviso "Caso devolvido pelo Centro de Planejamento" provavelmente nunca chega (20/10/2026) — ✅ CORRIGIDO na 0316 (0.341.2, 22/10/2026)
+
+**✅ Confirmado e corrigido (22/10/2026).** Provado no treino, numa transação
+desfeita, como o Planner de teste: gravar na tabela recusa com *"new row
+violates row-level security policy"*; 0 avisos com o título no treino. O
+efeito era maior que o aviso: a fase já avisava o Coordenador (sem o motivo),
+e o **motivo da devolução não ficava guardado em lugar nenhum**. O mesmo
+defeito estava no aviso de **adesão ao PPR+** (confirmado pela mesma regra).
+A 0316 cria `notify_case_returned` e `notify_ppr_membership_created`: cada
+uma só avisa sobre o ato que ACABOU de acontecer, feito por quem chama, e uma
+vez só. A tela confere o erro e diz quando o recado não foi entregue. A tabela
+continua sem regra de gravar. Régua: `avisos-pela-porta-do-banco.test.ts`.
+
+*Registro original:*
 
 **Confirmado o mecanismo; o efeito na tela NÃO foi clicado.** Achado no
 levantamento da OD2. `devolverAoCoordenador` (`src/app/(app)/jornada/actions.ts`,

@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/10/2026 · Versão do sistema: **0.341.1** · Última migração: **0315** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 22/10/2026 · Versão do sistema: **0.341.2** · Última migração: **0316** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🔔 0.341.2 / 0316 — AP58: OS AVISOS QUE O BANCO RECUSAVA (22/10/2026)
+>
+> A tabela de avisos não tem regra de gravar (de propósito); duas ações da tela
+> gravavam direto e o banco recusava em silêncio: o motivo da devolução ao
+> Coordenador (que se perdia) e a adesão ao PPR+. ⚠️ **Aviso nasce pela porta
+> do banco** — `notify_case_returned` e `notify_ppr_membership_created`
+> (0316); régua `avisos-pela-porta-do-banco.test.ts`. Checklist das
+> pendências abertas no topo do `docs/BACKLOG.md`.
 
 > ## 📊 0.341.1 — OC-00122: AS ABAS DO PAINEL DA REDE EM COLUNAS (22/10/2026, sem migração)
 >

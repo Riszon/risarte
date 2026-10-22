@@ -390,6 +390,24 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**22/10/2026 (3ª) — PC Administrador (core 0.341.1 → 0.341.2, migração 0316)**
+
+- **Checklist das pendências abertas** no topo do `docs/BACKLOG.md` (pedido do
+  dono) — é o índice; o detalhe segue em cada seção. Fechar = marcar nos dois.
+- **AP58 corrigido (pedido do dono).** Provado antes: a tabela `notifications`
+  só tem regras de ler e marcar como lido, e gravar direto da tela era recusado
+  em silêncio. Dois avisos nunca chegaram: o "Caso devolvido" (o motivo do
+  Planner se perdia) e a adesão ao PPR+.
+- ⚠️ **AVISO NASCE PELA PORTA DO BANCO.** Não abrir regra de gravar em
+  `notifications` (qualquer logado mandaria aviso em nome do sistema). As
+  portas da 0316 só avisam o ato que ACABOU de acontecer, por quem chama, uma
+  vez. Régua `avisos-pela-porta-do-banco.test.ts`.
+- **Antes da 0316 na produção** a tela mostra "o recado não foi entregue" (o
+  ato vale) — melhor que o silêncio de antes.
+- **Não visto na tela:** devolver e vender PPR+ no treino avisaria pessoas
+  reais. Provado por ensaio (15 conferências, transação desfeita) + quebra 7/7.
+- ⏳ **0316 aplicada no treino; falta a produção.**
+
 **22/10/2026 (2ª) — PC Administrador (core 0.341.0 → 0.341.1, sem migração)**
 
 - **OC-00122 (sugestão do Admin Master): as abas do Painel da rede em

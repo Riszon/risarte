@@ -13,7 +13,12 @@ import {
   type TreatmentPillar,
 } from "@/lib/journey";
 
-export type ActionResult = { ok: boolean; error?: string };
+export type ActionResult = {
+  ok: boolean;
+  error?: string;
+  /** Deu certo, mas algo à parte falhou e a pessoa precisa saber (AP58). */
+  aviso?: string;
+};
 
 /** Answer a mandatory end-of-treatment decision (Sim / Não / Não sei). */
 export async function answerDecision(
@@ -303,32 +308,22 @@ export async function devolverAoCoordenador(
   if (!moved.ok) return moved;
 
   const supabase = await createClient();
-  const session = await getSessionContext();
   const { data: client } = await supabase
     .from("clients")
-    .select("full_name, clinic_id")
+    .select("clinic_id")
     .eq("id", clientId)
-    .single<{ full_name: string; clinic_id: string }>();
+    .single<{ clinic_id: string }>();
 
   // O motivo vai para quem recebe o caso de volta — senão ele volta igual.
-  if (client) {
-    const { data: coordenadores } = await supabase
-      .from("user_clinic_roles")
-      .select("user_id")
-      .eq("clinic_id", client.clinic_id)
-      .eq("role", "clinical_coordinator")
-      .returns<{ user_id: string }[]>();
-    const avisos = (coordenadores ?? [])
-      .filter((c) => c.user_id !== session.userId)
-      .map((c) => ({
-        user_id: c.user_id,
-        clinic_id: client.clinic_id,
-        title: "Caso devolvido pelo Centro de Planejamento",
-        body: `${client.full_name} — ${texto}`,
-        link: `/prontuarios/${clientId}`,
-      }));
-    if (avisos.length > 0) await supabase.from("notifications").insert(avisos);
-  }
+  // ⚠️ AP58: aviso nasce pela porta do banco (0316). Gravar direto na tabela
+  // era recusado em silêncio (ela não tem regra de gravar, de propósito) e o
+  // motivo se perdia. E o erro é conferido: a fase já mudou, então a
+  // devolução vale — mas a pessoa fica sabendo que o recado não chegou.
+  const { error: avisoErro } = await supabase.rpc("notify_case_returned", {
+    p_client_id: clientId,
+    p_reason: texto,
+  });
+  if (avisoErro) console.error("notify_case_returned failed:", avisoErro.message);
 
   await logAudit({
     action: "update",
@@ -341,5 +336,11 @@ export async function devolverAoCoordenador(
   revalidatePath("/jornada");
   revalidatePath("/planejamento");
   revalidatePath(`/prontuarios/${clientId}`);
-  return { ok: true };
+  return avisoErro
+    ? {
+        ok: true,
+        aviso:
+          "O caso voltou ao Coordenador, mas o recado com o motivo não foi entregue. Avise-o pelo chat.",
+      }
+    : { ok: true };
 }

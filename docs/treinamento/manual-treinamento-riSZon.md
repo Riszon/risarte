@@ -2045,6 +2045,11 @@ consideração). Escolha **Conversão Clínica** quando for só dado faltando, o
 **Reavaliação** quando o caso precisar ser examinado de novo. O Coordenador
 recebe o aviso com o seu motivo — sem ele, o caso volta igual.
 
+> **Desde a 0.341.2 esse aviso chega de verdade.** Antes, o sistema mudava a
+> fase, mas o recado com o motivo não era entregue (AP58). Se aparecer o
+> alerta *"o recado com o motivo não foi entregue"*, o caso voltou mesmo assim:
+> avise o Coordenador pelo chat.
+
 ### 6.4. Dentista (executor)
 
 **Objetivo:** executar e registrar. **Duração:** 40 minutos.
